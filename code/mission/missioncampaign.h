@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.6 $
- * $Date: 2004-08-11 05:06:27 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2004-10-31 21:53:24 $
+ * $Author: taylor $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/08/11 05:06:27  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.5  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -312,6 +315,7 @@ struct sexp_variable;
 
 #define CAMPAIGN_ERROR_CORRUPT			-1
 #define CAMPAIGN_ERROR_SEXP_EXHAUSTED	-2
+#define CAMPAIGN_ERROR_MISSING			-3
 
 // types of campaigns -- these defines match the string literals listed below which
 // are found in the campaign files.  I don't think that we need campaigns for furball
@@ -428,6 +432,9 @@ extern char *Campaign_names[MAX_CAMPAIGNS];
 extern char *Campaign_file_names[MAX_CAMPAIGNS];
 extern int	Num_campaigns;
 
+// if the campaign file is missing this will get set for us to check against
+extern int Campaign_file_missing;
+
 // called at game startup time to load the default single player campaign
 void mission_campaign_init( void );
 
@@ -437,13 +444,13 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign );
 
 
 // load up and initialize a new campaign
-int mission_campaign_load( char *filename, int load_savefile = 1 );
+int mission_campaign_load( char *filename, player *pl = NULL, int load_savefile = 1 );
 
 // function to save the state of the campaign between missions or to load a campaign save file
 extern int mission_campaign_save( void );
 
 // declaration for local campaign save game load function
-extern void mission_campaign_savefile_load( char *cfilename );
+extern int mission_campaign_savefile_load( char *cfilename, player *pl = NULL );
 extern void mission_campaign_savefile_delete( char *cfilename, int is_multi = -1 );
 extern void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi );
 
@@ -476,7 +483,9 @@ extern void mission_campaign_maybe_play_movie(int type);
 // save persistent information
 extern void mission_campaign_save_persistent( int type, int index );
 
-void mission_campaign_savefile_generate_root(char *filename);
+void mission_campaign_savefile_generate_root(char *filename, player *pl = NULL);
+
+int mission_campaign_savefile_save();
 
 // The following are functions I added to set up the globals and then
 // execute the corresponding mission_campaign_savefile functions.
@@ -495,7 +504,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 int mission_campaign_get_mission_list(char *filename, char **list, int max);
 
 // load up a campaign for the current player.
-int mission_load_up_campaign();
+int mission_load_up_campaign( player *p = NULL );
 
 // stores mission goals and events in Campaign struct
 void mission_campaign_store_goals_and_events_and_variables();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.14 $
+ * $Date: 2004-10-31 21:53:23 $
+ * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.12  2004/07/17 18:46:07  taylor
  * various OGL and memory leak fixes
  *
@@ -225,6 +228,8 @@
  * $NoKeywords: $
  *
  */
+
+#include <ctype.h>
 
 #include "menuui/playermenu.h"
 #include "ui/ui.h"
@@ -556,7 +561,7 @@ void player_select_init()
 //	}
 		
 	// if we found a pilot
-#if defined(DEMO) || defined(OEM_BUILD) || defined(E3_BUILD) || defined(PRESS_TOUR_BUILD) // not for FS2_DEMO
+#if defined(DEMO) || defined(OEM_BUILD) || defined(E3_BUILD) || defined(PRESS_TOUR_BUILD) || defined(NO_NETWORK) // not for FS2_DEMO
 	player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);	
 #elif defined(MULTIPLAYER_BETA_BUILD)
 	player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);	
@@ -766,7 +771,11 @@ void player_select_close()
 	if (read_pilot_file(Pilots[Player_select_pilot], !Player_select_mode, Player) != 0) {
 		Error(LOCATION,"Couldn't load pilot file, bailing");
 		Player = NULL;
-	} 		
+	} else {
+		if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
+			mission_load_up_campaign(); // load up campaign savefile - taylor
+		}
+	}
 
 	if (Player_select_force_main_hall) {
 		Player->main_hall = 1;
@@ -845,7 +854,11 @@ void player_select_button_pressed(int n)
 				Error(LOCATION,"Couldn't load pilot file, bailing");
 				Player = NULL;
 				Int3();
-			}				
+			} else {
+				if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
+					mission_load_up_campaign(); // get campaign file - taylor
+				}
+			}
 
 			// set the clone flag
 			Player_select_clone_flag = 1;
@@ -935,6 +948,8 @@ void player_select_button_pressed(int n)
 		Player_select_autoaccept = 0;
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 		game_feature_not_in_demo_popup();
+#elif defined(NO_NETWORKING)
+		game_feature_disabled_popup();
 #else
 		// switch to multiplayer mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_MULTI) {
@@ -1015,7 +1030,7 @@ void player_select_delete_pilot()
 	// build up the path name length
 	// make sure we do this based upon whether we're in single or multiplayer mode
 	strcpy( filename, Pilots[Player_select_pilot] );
-	strcat( filename, NOX(".plr") );
+	strcat( filename, NOX(".pl2") );
 
 	int del_rval;
 	int popup_rval = 0;
@@ -1116,16 +1131,35 @@ int player_select_get_last_pilot()
 {
 	// if the player has the Cmdline_use_last_pilot command line option set, try and drop out quickly
 	if(Cmdline_use_last_pilot){			
-		int idx;				
+		int idx;
 
 		if(!player_select_get_last_pilot_info()){
 			return 0;
 		}
 
-		if(Player_select_last_is_multi){
-			Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"), CF_SORT_TIME);				
+		Get_file_list_filter = player_select_pilot_file_filter;
+		if (Player_select_last_is_multi) {
+			Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 		} else {
-			Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);						
+			int i,j, new_pilot_num = 0;
+			int old_pilot_num = 0;
+			char old_pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
+			char *old_pilots[MAX_PILOTS];
+
+			Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
+			old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+
+			new_pilot_num = Player_select_num_pilots + old_pilot_num;
+
+			for (i = Player_select_num_pilots; i<new_pilot_num;) {
+				for (j = 0; j<old_pilot_num; j++) {
+					if ( i <= MAX_PILOTS ) {
+						strcpy( Pilots[i], old_pilots[j] );
+						Player_select_num_pilots++;
+						i++;
+					}
+				}
+			}
 		}
 
 		Player_select_pilot = -1;
@@ -1146,6 +1180,9 @@ int player_select_get_last_pilot()
 		if(Player_select_pilot != -1){
 			Player = &Players[0];			
 			read_pilot_file(Pilots_arr[idx],!Player_select_last_is_multi,Player);
+			if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
+				mission_load_up_campaign(); // load up campaign file now - taylor
+			}
 			Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 			return 1;		
 		}			
@@ -1163,8 +1200,26 @@ void player_select_init_player_stuff(int mode)
 
 	// load up the list of players based upon the Player_select_mode (single or multiplayer)
 	Get_file_list_filter = player_select_pilot_file_filter;
-	if (mode == PLAYER_SELECT_MODE_SINGLE){
-		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+	if (mode == PLAYER_SELECT_MODE_SINGLE) {
+		int i,j, new_pilot_num = 0;
+		int old_pilot_num = 0;
+		char old_pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
+		char *old_pilots[MAX_PILOTS];
+	
+		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
+		old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+
+		new_pilot_num = Player_select_num_pilots + old_pilot_num;
+
+		for (i = Player_select_num_pilots; i<new_pilot_num;) {
+			for (j = 0; j<old_pilot_num; j++) {
+				if ( i <= MAX_PILOTS ) {
+					strcpy( Pilots[i], old_pilots[j] );
+					Player_select_num_pilots++;
+					i++;
+				}
+			}
+		}
 	} else {
 		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 	}

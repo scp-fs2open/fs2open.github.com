@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.21 $
+ * $Date: 2004-10-31 21:53:23 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.19  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -800,11 +803,11 @@ void main_hall_process_help_stuff();
 int Recording = 0;
 
 
-#ifndef NO_NETWORK
 // called when multiplayer clicks on the ready room door.  May pop up dialog depending on network
 // connection status and errors
 void main_hall_do_multi_ready()
 {
+#ifndef NO_NETWORK
 	int error;
 
 	error = psnet_get_network_status();
@@ -889,8 +892,9 @@ void main_hall_do_multi_ready()
 
 	// select protocol
 	psnet_use_protocol(Multi_options_g.protocol);
-}
 #endif  // ifndef NO_NETWORK
+}
+
 
 // blit some small color indicators to show whether ships.tbl and weapons.tbl are valid
 // green == valid, red == invalid.
@@ -1211,6 +1215,11 @@ void main_hall_do(float frametime)
 
 		// clicked on the readyroom region
 		case READY_ROOM_REGION:
+			if (Campaign_file_missing) {
+				// error popup for a missing campaign file, don't try to enter ready room in this case
+				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
+				break;
+			}
 #ifdef MULTIPLAYER_BETA_BUILD
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			Player->flags |= PLAYER_FLAGS_IS_MULTI;
@@ -1330,7 +1339,9 @@ void main_hall_do(float frametime)
 				if (Num_recent_missions > 0)	{
 					strncpy( Game_current_mission_filename, Recent_missions[0], MAX_FILENAME_LEN );
 				} else {
-					mission_load_up_campaign();
+					if ( mission_load_up_campaign() == CAMPAIGN_ERROR_MISSING )
+						main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", -1));
+
 					strncpy( Game_current_mission_filename, Campaign.missions[0].name, MAX_FILENAME_LEN );
 				}
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2004-10-31 21:53:23 $
+ * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.8  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -131,6 +134,8 @@
  * $NoKeywords: $
  */
 
+#include <ctype.h>
+
 #include "menuui/barracks.h"
 #include "playerman/managepilot.h"
 #include "ui/ui.h"
@@ -149,6 +154,7 @@
 #include "ship/ship.h"
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
+#include "mission/missioncampaign.h"
 
 
 
@@ -605,6 +611,7 @@ int barracks_new_pilot_selected()
 	// save the previous pilot first, so changes to it are kept
 	if (strlen(Cur_pilot->callsign)) {
 		write_pilot_file();
+		mission_campaign_savefile_save();
 	}
 
 	// check if we have a valid pilot hilighted.  If so, attempt to active it
@@ -616,6 +623,12 @@ int barracks_new_pilot_selected()
 	if (read_pilot_file(Pilots[Selected_line], !Player_sel_mode, Cur_pilot)) {
 		Cur_pilot->callsign[0] = 0;  // this indicates no pilot active
 		return -1;
+	} else {
+		// we need to load up the current campaign file now so we can get at the stats - taylor
+		// had to change this to import the values to a specific player rather than global
+		if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
+			mission_load_up_campaign(Cur_pilot);
+		}
 	}
 
 	// init stuff to reflect new pilot
@@ -677,6 +690,7 @@ void barracks_create_new_pilot()
 	// only write pilot file if there is an active pilot
 	if (strlen(Player->callsign)) {
 		write_pilot_file();
+		mission_campaign_savefile_save();
 	}
 
 	// move other pilot names and ranks down to make room for the new one
@@ -970,6 +984,8 @@ void barracks_squad_change_popup()
 
 void barracks_init_player_stuff(int mode)
 {
+	int i, j;
+
 	// determine if we should be looking for single or multiplayers at the outset
 	Player_sel_mode = mode;
 	
@@ -979,7 +995,25 @@ void barracks_init_player_stuff(int mode)
 
 	// single player specific stuff
 	if (mode == PLAYER_SELECT_MODE_SINGLE) {
-		Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+		int old_pilot_num = 0;
+		int new_pilot_num = 0;
+		char old_pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
+		char *old_pilots[MAX_PILOTS];
+
+		Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
+		old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+
+		new_pilot_num = Num_pilots + old_pilot_num;
+
+		for (i = Num_pilots; i<new_pilot_num;) {
+			for (j = 0; j<old_pilot_num; j++) {
+				if ( i <= MAX_PILOTS ) {
+					strcpy( Pilots[i], old_pilots[j] );
+					Num_pilots++;
+					i++;
+				}
+			}
+		}
 
 		// disable squad logo switching		
 		Buttons[gr_screen.res][B_SQUAD_PREV_BUTTON].button.hide();
@@ -1002,9 +1036,7 @@ void barracks_init_player_stuff(int mode)
 
 	int ranks[MAX_PILOTS];
 
-	int i;
 	for (i=0; i<Num_pilots; i++) {
-		int j;
 		for (j=0; j<Num_pilots; j++) {
 			if (!strcmp(Pilots[i], Pilots_arr[j])) {
 				ranks[i] = Pilot_ranks[j];
@@ -1136,6 +1168,7 @@ void barracks_button_pressed(int n)
 
 				} else {
 					write_pilot_file();
+					mission_campaign_savefile_save();
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 				}
 
@@ -1186,6 +1219,8 @@ void barracks_button_pressed(int n)
 		case B_PILOT_MULTI_MODE_BUTTON:
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 			game_feature_not_in_demo_popup();
+#elif defined(NO_NETWORKING)
+			game_feature_disabled_popup();
 #else
 			if (Player_sel_mode != PLAYER_SELECT_MODE_MULTI) {
 				gamesnd_play_iface(SND_USER_SELECT);
@@ -1406,6 +1441,7 @@ void barracks_init()
 
 	// save current pilot file, so we don't possibly loose it.
 	write_pilot_file();
+	mission_campaign_savefile_save();
 
 	// create interface
 	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);

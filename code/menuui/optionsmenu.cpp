@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2004-10-31 21:53:23 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -858,6 +861,11 @@ void options_change_tab(int n)
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 	if (n == MULTIPLAYER_TAB) {
 		game_feature_not_in_demo_popup();
+		return;
+	}
+#elif defined(NO_NETWORKING)
+	if (n == MULTIPLAYER_TAB) {
+		game_feature_disabled_popup();
 		return;
 	}
 #endif
