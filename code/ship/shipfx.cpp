@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-03-19 12:29:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.9 $
+ * $Date: 2003-04-29 01:03:21 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/03/19 12:29:02  unknownplayer
+ * Woohoo! Killed two birds with one stone!
+ * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
+ *
  * Revision 2.7  2003/03/18 01:44:30  Goober5000
  * fixed some misspellings
  * --Goober5000
@@ -1660,7 +1664,7 @@ void shipfx_emit_spark( int n, int sn )
 	obj = &Objects[shipp->objnum];
 	ship_info* si = &Ship_info[shipp->ship_info_index];
 
-	float hull_percent = obj->hull_strength / si->initial_hull_strength;
+	float hull_percent = obj->hull_strength / shipp->ship_initial_hull_strength;
 	if (hull_percent < 0.001) {
 		hull_percent = 0.001f;
 	}
@@ -2402,11 +2406,10 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	int i;
 	int should_arc;
 	object *obj = &Objects[shipp->objnum];
-	ship_info * sip = &Ship_info[shipp->ship_info_index];
 
 	should_arc = 1;
 
-	float damage = obj->hull_strength / sip->initial_hull_strength;	
+	float damage = obj->hull_strength / shipp->ship_initial_hull_strength;	
 
 	if (damage < 0) {
 		damage = 0.0f;
@@ -2995,7 +2998,7 @@ void engine_wash_ship_process(ship *shipp)
 		if (!do_damage) {
 			damage = 0;
 		} else {
-			damage = (0.001f * 0.003f * ENGINE_WASH_CHECK_INTERVAL * Ship_info[shipp->ship_info_index].initial_hull_strength * shipp->wash_intensity);
+			damage = (0.001f * 0.003f * ENGINE_WASH_CHECK_INTERVAL * shipp->ship_initial_hull_strength * shipp->wash_intensity);
 		}
 
 		ship_apply_wash_damage(&Objects[shipp->objnum], max_ship_intensity_objp, damage);

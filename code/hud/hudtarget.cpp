@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-01-17 07:59:09 $
+ * $Revision: 2.13 $
+ * $Date: 2003-04-29 01:03:23 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/01/17 07:59:09  Goober5000
+ * fixed some really strange behavior with strings not being truncated at the
+ * # symbol
+ * --Goober5000
+ *
  * Revision 2.11  2003/01/03 21:58:08  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -2648,7 +2653,6 @@ int object_targetable_in_reticle(object *target_objp)
 	return 0;
 }
 
-
 // hud_target_in_reticle_new() will target the object that is closest to the player, and who is 
 // intersected by a ray passed from the center of the reticle out along the forward vector of the 
 // player.
@@ -2679,11 +2683,10 @@ void hud_target_in_reticle_new()
 
 	mc.model_num = 0;
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
-
 		if ( !object_targetable_in_reticle(A) ) {
 			continue;
 		}
-		
+
 		if ( A->type == OBJ_WEAPON ) {
 			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
 				continue;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.2 $
- * $Date: 2002-12-10 05:43:33 $
+ * $Revision: 2.3 $
+ * $Date: 2003-04-29 01:03:22 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/10 05:43:33  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -466,7 +469,7 @@ typedef struct object {
 	vector			last_pos;		// where object was last frame
 	matrix			last_orient;	// how the object was oriented last frame
 	physics_info	phys_info;		// a physics object
-	float				shields[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
+	float				shield_quadrant[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
 	float				hull_strength;	//	Remaining hull strength.
 	short				objsnd_num[MAX_OBJECT_SOUNDS];		// Index of persistant sound struct.  -1 if no persistant sound assigned.
 	ushort			net_signature;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-22 06:06:22 $
+ * $Revision: 2.4 $
+ * $Date: 2003-04-29 01:03:23 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/22 06:06:22  Goober5000
+ * changed event_sexp_change_music to event_change_sexp_soundtrack
+ * --Goober5000
+ *
  * Revision 2.2  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
  * --Ian Warfield
@@ -371,8 +375,8 @@ void event_music_force_switch()
 			// AL 06-24-99: maybe switch to battle 2 if hull is less than 70%
 			if (Player_obj != NULL && Player_ship != NULL) {
 				Assert(Player_ship->ship_info_index >= 0);
-				Assert(Ship_info[Player_ship->ship_info_index].initial_hull_strength != 0);
-				float integrity = Player_obj->hull_strength / Ship_info[Player_ship->ship_info_index].initial_hull_strength;
+				Assert(Player_ship->ship_initial_hull_strength != 0);
+				float integrity = Player_obj->hull_strength / Player_ship->ship_initial_hull_strength;
 				if (integrity < HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC) {
 					new_pattern = SONG_BTTL_2;
 				}
@@ -756,8 +760,8 @@ int event_music_enemy_arrival()
 	bool play_intense_battle_music = false;
 	if (Player_obj != NULL && Player_ship != NULL) {
 		Assert(Player_ship->ship_info_index >= 0);
-		Assert(Ship_info[Player_ship->ship_info_index].initial_hull_strength != 0);
-		float integrity = Player_obj->hull_strength / Ship_info[Player_ship->ship_info_index].initial_hull_strength;
+		Assert(Player_ship->ship_initial_hull_strength != 0);
+		float integrity = Player_obj->hull_strength / Player_ship->ship_initial_hull_strength;
 		if (integrity < HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC) {
 			play_intense_battle_music = true;
 		}

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.7 $
+ * $Date: 2003-04-29 01:03:24 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.5  2003/01/03 21:58:08  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -2144,7 +2147,7 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 	
 	// shield percentages
 	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
-		f_tmp = objp->shields[idx];
+		f_tmp = objp->shield_quadrant[idx];
 		ADD_DATA(f_tmp);
 	}
 	
@@ -2184,7 +2187,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
  	GET_DATA(lookup->hull_strength);
 	for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
 		GET_DATA(f_tmp);
-		lookup->shields[idx] = f_tmp;
+		lookup->shield_quadrant[idx] = f_tmp;
 	}
 
 	PACKET_SET_SIZE();

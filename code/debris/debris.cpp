@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-19 12:29:01 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-04-29 01:03:22 $
+ * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/19 12:29:01  unknownplayer
+ * Woohoo! Killed two birds with one stone!
+ * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -807,7 +811,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vecto
 	// -- No long need shield: bset_shield_strength(obj, 100.0f);		//	Hey!  Set to some meaningful value!
 
 	if (source_obj->type == OBJ_SHIP) {
-		obj->hull_strength = Ship_info[Ships[source_obj->instance].ship_info_index].initial_hull_strength/8.0f;
+		obj->hull_strength = Ships[source_obj->instance].ship_initial_hull_strength/8.0f;
 	} else
 		obj->hull_strength = 10.0f;
 

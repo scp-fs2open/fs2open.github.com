@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.58 $
- * $Date: 2003-03-30 07:27:34 $
+ * $Revision: 2.59 $
+ * $Date: 2003-04-29 01:03:21 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2003/03/30 07:27:34  Goober5000
+ * resolved a nasty bug that caused some missions to crash
+ * --Goober5000
+ *
  * Revision 2.57  2003/03/18 10:07:05  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1791,7 +1795,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	required_string("$Shields:");
-	stuff_float(&sip->shields);
+	stuff_float(&sip->initial_shield_strength);
 
 	// optional shield color
 	sip->shield_color[0] = 255;
@@ -2081,7 +2085,7 @@ strcpy(parse_error_text, temp_error);
 			stuff_float(&percentage_of_hits);
 			stuff_float(&turning_rate);
 			hull_percentage_of_hits -= percentage_of_hits;
-			sp->max_hits = sip->initial_hull_strength * (percentage_of_hits / 100.0f);
+			sp->max_subsys_strength = sip->initial_hull_strength * (percentage_of_hits / 100.0f);
 			sp->type = SUBSYSTEM_UNKNOWN;
 			// specified as how long to turn 360 degrees in ships.tbl
 			if ( turning_rate > 0.0f ){
@@ -2524,6 +2528,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->score = 0;
 	shipp->escort_priority = 0;
 	shipp->special_exp_index = -1;
+	shipp->special_hitpoint_index = -1;
 	shipp->num_hits = 0;
 	shipp->flags = 0;
 	shipp->flags2 = 0;
@@ -2587,10 +2592,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->last_targeted_subobject[i] = NULL;
 
 	if (Fred_running){
-		objp->hull_strength = 100.0f;
+		shipp->ship_initial_hull_strength = 100.0f;
 	} else {
-		objp->hull_strength = sip->initial_hull_strength;
+		shipp->ship_initial_hull_strength = sip->initial_hull_strength;
 	}
+	objp->hull_strength = shipp->ship_initial_hull_strength;
 	
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
@@ -2690,10 +2696,15 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
 
 	physics_ship_init(objp);
-	if (Fred_running)
-		objp->shields[0] = 100.0f;
-	else
-		set_shield_strength(objp, sip->shields);
+	if (Fred_running) {
+		shipp->ship_initial_shield_strength = 100.0f;
+		shipp->ship_initial_hull_strength = 100.0f;
+		objp->shield_quadrant[0] = 100.0f;
+	} else {
+		shipp->ship_initial_shield_strength = sip->initial_shield_strength;
+		shipp->ship_initial_hull_strength = sip->initial_hull_strength;
+		set_shield_strength(objp, shipp->ship_initial_shield_strength);
+	}
 
 	shipp->target_shields_delta = 0.0f;
 	shipp->target_weapon_energy_delta = 0.0f;
@@ -2798,7 +2809,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 		type = ship_system->system_info->type;
 		Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
 		shipp->subsys_info[type].num++;
-		shipp->subsys_info[type].total_hits += ship_system->system_info->max_hits;
+		shipp->subsys_info[type].total_hits += ship_system->max_hits;
 		shipp->subsys_info[type].current_hits += ship_system->current_hits;
 	}
 
@@ -2899,8 +2910,10 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->system_info = sp;						// set the system_info pointer to point to the data read in from the model
 
+		ship_system->max_hits = sp->max_subsys_strength * shipp->ship_initial_hull_strength / sinfo->initial_hull_strength;
+
 		if ( !Fred_running ){
-			ship_system->current_hits = sp->max_hits;		// set the max hits 
+			ship_system->current_hits = ship_system->max_hits;		// set the current hits
 		} else {
 			ship_system->current_hits = 0.0f;				// Jason wants this to be 0 in Fred.
 		}
@@ -3811,7 +3824,7 @@ void do_dying_undock_physics(object* objp, ship* sp)
 		return;
 	}
 
-	float damage = 0.2f*Ship_info[sp->ship_info_index].initial_hull_strength;
+	float damage = 0.2f*sp->ship_initial_hull_strength;
 	ship_apply_global_damage(dock_obj, objp, &objp->pos, damage);
 
 	// do physics
@@ -4153,14 +4166,14 @@ void ship_dying_frame(object *objp, int ship_num)
 void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 {
 	float delta;
-	ship_info	*sip;
+	ship_info *sip;
 
 	if (shipp->flags & SF_DYING)
 		return;
 
 	sip = &Ship_info[shipp->ship_info_index];
 
-	delta = frametime * ETS_RECHARGE_RATE * sip->shields / 100.0f;
+	delta = frametime * ETS_RECHARGE_RATE * shipp->ship_initial_shield_strength / 100.0f;
 
 	//	Chase target_shields and target_weapon_energy
 	if (shipp->target_shields_delta > 0.0f) {
@@ -4474,20 +4487,20 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 		Assert(ssp->system_info->type >= 0 && ssp->system_info->type < SUBSYSTEM_MAX);
 		ssip = &sp->subsys_info[ssp->system_info->type];
 
-		if ( ssp->current_hits != ssp->system_info->max_hits ) {		
+		if ( ssp->current_hits != ssp->max_hits ) {		
 
 			// only repair those subsystems which are not destroyed
-			if ( ssp->system_info->max_hits <= 0 || ssp->current_hits <= 0 )
+			if ( ssp->max_hits <= 0 || ssp->current_hits <= 0 )
 				continue;
 
 			// do incremental repair on the subsystem
-			ssp->current_hits += ssp->system_info->max_hits * SHIP_REPAIR_SUBSYSTEM_RATE * frametime;
+			ssp->current_hits += ssp->max_hits * SHIP_REPAIR_SUBSYSTEM_RATE * frametime;
 			ssip->current_hits += ssip->total_hits * SHIP_REPAIR_SUBSYSTEM_RATE * frametime;
 		
 			// check for overflow of current_hits
-			if ( ssp->current_hits >= ssp->system_info->max_hits ) {
+			if ( ssp->current_hits >= ssp->max_hits ) {
 				// TODO: here is hook for when a subsystem is fully repaired (eg add voice)
-				ssp->current_hits = ssp->system_info->max_hits;
+				ssp->current_hits = ssp->max_hits;
 			}
 			if ( ssip->current_hits >= ssip->total_hits ) {
 				ssip->current_hits = ssip->total_hits;
@@ -5681,6 +5694,45 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	ship_model_change(n, ship_type, 1);
 
+	// set the correct hull strength
+	if (Fred_running) {
+		sp->ship_initial_hull_strength = 100.0f;
+		objp->hull_strength = 100.0f;
+	} else {
+		if (sp->special_hitpoint_index != -1) {
+			sp->ship_initial_hull_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+HULL_STRENGTH].text);
+		} else {
+			sp->ship_initial_hull_strength = sip->initial_hull_strength;
+		}
+
+		// Goober5000: don't set hull strength if called by sexp
+		if (!by_sexp)
+		{
+			objp->hull_strength = sp->ship_initial_hull_strength;
+		}
+	}
+
+	// set the correct shields strength
+	if (Fred_running) {
+		if (sp->ship_initial_shield_strength)
+			sp->ship_initial_shield_strength = 100.0f;
+		objp->shield_quadrant[0] = 100.0f;
+	} else {
+		if (sp->special_hitpoint_index != -1) {
+			sp->ship_initial_shield_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		} else {
+			sp->ship_initial_shield_strength = sip->initial_shield_strength;
+		}
+
+		// Goober5000: don't set shield strength if called by sexp
+		if (!by_sexp)
+		{
+			set_shield_strength(objp, sp->ship_initial_shield_strength);
+		}
+	}
+
+	// subsys stuff done only after hull stuff is set
+
 	// if the subsystem list is not currently empty, then we need to clear it out first.
 	if ( NOT_EMPTY(&sp->subsys_list) ) {
 		ship_subsys *ship_system, *tmp;
@@ -5694,28 +5746,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	}
 	// fix up the subsystems
 	subsys_set( sp->objnum );
-
-	// set the correct hull strength
-	if (Fred_running) {
-		objp->hull_strength = 100.0f;
-	} else {
-		// Goober5000: don't set hull strength if called by sexp
-		if (!by_sexp)
-		{
-			objp->hull_strength = sip->initial_hull_strength;
-		}
-	}
-
-	// set the correct shields strength
-	if (Fred_running) {
-		objp->shields[0] = 100.0f;
-	} else {
-		// Goober5000: don't set shield strength if called by sexp
-		if (!by_sexp)
-		{
-			set_shield_strength(objp, sip->shields);
-		}
-	}
 
 	sp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
@@ -8180,7 +8210,7 @@ float ship_get_subsystem_strength( ship *shipp, int type )
 			if ( ssp->system_info->type == SUBSYSTEM_ENGINE ) {
 				float ratio;
 
-				ratio = ssp->current_hits / ssp->system_info->max_hits;
+				ratio = ssp->current_hits / ssp->max_hits;
 				if ( ratio < ENGINE_MIN_STR )
 					ratio = ENGINE_MIN_STR;
 
@@ -8213,7 +8243,7 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 
 		if ( ssp->system_info->type == type ) {
-			ssp->current_hits = strength * ssp->system_info->max_hits;
+			ssp->current_hits = strength * ssp->max_hits;
 			total_current_hits += ssp->current_hits;
 		}
 		ssp = GET_NEXT( ssp );
@@ -8279,13 +8309,13 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( !(objp->flags & OF_NO_SHIELDS) )
 	{
 		shield_str = get_shield_strength(objp);
-		if ( shield_str < sip->shields ) {
+		if ( shield_str < shipp->ship_initial_shield_strength ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}
-			shield_str += sip->shields * frametime * SHIELD_REPAIR_RATE;
-			if ( shield_str > sip->shields ) {
-				 shield_str = sip->shields;
+			shield_str += shipp->ship_initial_shield_strength * frametime * SHIELD_REPAIR_RATE;
+			if ( shield_str > shipp->ship_initial_shield_strength ) {
+				 shield_str = shipp->ship_initial_shield_strength;
 			}
 			set_shield_strength(objp, shield_str);
 		}
@@ -8294,7 +8324,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// Repair the ship integrity (subsystems + hull).  This works by applying the repair points
 	// to the subsystems.  Ships integrity is stored is objp->hull_strength, so that always is 
 	// incremented by repair_allocated
-	repair_allocated = sip->initial_hull_strength * frametime * HULL_REPAIR_RATE;
+	repair_allocated = shipp->ship_initial_hull_strength * frametime * HULL_REPAIR_RATE;
 
 
 //	AL 11-24-97: remove increase to hull integrity
@@ -8303,9 +8333,9 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
 		objp->hull_strength += repair_allocated;
-		if ( objp->hull_strength > sip->initial_hull_strength ) {
-			repair_allocated -= ( sip->initial_hull_strength - objp->hull_strength);
-			objp->hull_strength = sip->initial_hull_strength;
+		if ( objp->hull_strength > shipp->ship_initial_hull_strength ) {
+			repair_allocated -= ( shipp->ship_initial_hull_strength - objp->hull_strength);
+			objp->hull_strength = shipp->ship_initial_hull_strength;
 		}
 	}
 
@@ -8314,7 +8344,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	ssp = GET_FIRST(&shipp->subsys_list);
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 
-		if ( ssp->current_hits < ssp->system_info->max_hits && repair_allocated > 0 ) {
+		if ( ssp->current_hits < ssp->max_hits && repair_allocated > 0 ) {
 			subsys_all_ok = 0;
 			subsys_type = ssp->system_info->type;
 
@@ -8322,7 +8352,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				player_maybe_start_repair_sound();
 			}
 			
-			repair_delta = ssp->system_info->max_hits - ssp->current_hits;
+			repair_delta = ssp->max_hits - ssp->current_hits;
 			if ( repair_delta > repair_allocated ) {
 				repair_delta = repair_allocated;
 			}
@@ -8331,8 +8361,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 			// add repair to current strength of single subsystem
 			ssp->current_hits += repair_delta;
-			if ( ssp->current_hits > ssp->system_info->max_hits ) {
-				ssp->current_hits = ssp->system_info->max_hits;
+			if ( ssp->current_hits > ssp->max_hits ) {
+				ssp->current_hits = ssp->max_hits;
 			}
 
 			// add repair to aggregate strength of subsystems of that type
@@ -8340,8 +8370,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			if ( shipp->subsys_info[subsys_type].current_hits > shipp->subsys_info[subsys_type].total_hits )
 				shipp->subsys_info[subsys_type].current_hits = shipp->subsys_info[subsys_type].total_hits;
 
-			if ( ssp->current_hits > ssp->system_info->max_hits )
-				ssp->current_hits = ssp->system_info->max_hits;
+			if ( ssp->current_hits > ssp->max_hits )
+				ssp->current_hits = ssp->max_hits;
 
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
@@ -8492,13 +8522,13 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( (objp->flags & OF_NO_SHIELDS) ) {
 		shields_full = 1;
 	} else {
-		if ( get_shield_strength(objp) >= sip->shields ) 
+		if ( get_shield_strength(objp) >= shipp->ship_initial_shield_strength ) 
 			shields_full = 1;
 	}
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
-//	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == sip->initial_hull_strength)&&(shields_full) ) {
-	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == sip->initial_hull_strength) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
+//	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == shipp->ship_initial_hull_strength)&&(shields_full) ) {
+	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == shipp->ship_initial_hull_strength) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
 	{
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();
@@ -8725,7 +8755,7 @@ DCF(set_shield,"Change player ship shield strength")
 				Dc_arg_float = 0.0f;
 			if ( Dc_arg_float > 1.0 )
 				Dc_arg_float = 1.0f;
-			set_shield_strength(Player_obj, Dc_arg_float * sip->shields);
+			set_shield_strength(Player_obj, Dc_arg_float * Player_ship->ship_initial_shield_strength);
 			dc_printf("Shields set to %.2f\n", get_shield_strength(Player_obj) );
 		}
 	}
@@ -8760,7 +8790,7 @@ DCF(set_hull, "Change player ship hull strength")
 				Dc_arg_float = 0.0f;
 			if ( Dc_arg_float > 1.0 )
 				Dc_arg_float = 1.0f;
-			Player_obj->hull_strength = Dc_arg_float * sip->initial_hull_strength;
+			Player_obj->hull_strength = Dc_arg_float * Player_ship->ship_initial_hull_strength;
 			dc_printf("Hull set to %.2f\n", Player_obj->hull_strength );
 		}
 	}
@@ -9487,7 +9517,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vector *hitpos)
 
 	// Check if all the shield quadrants are all already 0, if so return 0
 	for ( i = 0; i < 4; i++ ) {
-		if ( hit_objp->shields[i] > 0 )
+		if ( hit_objp->shield_quadrant[i] > 0 )
 			break;
 	}
 
@@ -9504,14 +9534,14 @@ float ship_quadrant_shield_strength(object *hit_objp, vector *hitpos)
 	if ( quadrant_num < 0 )
 		quadrant_num = 0;
 
-	max_quadrant = Ship_info[Ships[hit_objp->instance].ship_info_index].shields / 4.0f;
+	max_quadrant = Ships[hit_objp->instance].ship_initial_shield_strength / 4.0f;
 	if ( max_quadrant <= 0 ) {
 		return 0.0f;
 	}
 
-	Assert(hit_objp->shields[quadrant_num] <= max_quadrant);
+	Assert(hit_objp->shield_quadrant[quadrant_num] <= max_quadrant);
 
-	return hit_objp->shields[quadrant_num]/max_quadrant;
+	return hit_objp->shield_quadrant[quadrant_num]/max_quadrant;
 }
 
 // Determine if a ship is threatened by any dumbfire projectiles (laser or missile)
@@ -10065,13 +10095,13 @@ void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 	int message = -1;
 	objp = &Objects[sp->objnum];
 
-	if ( objp->hull_strength < ( (AWACS_HELP_HULL_LOW + 0.01f *(static_rand(objp-Objects) & 5)) * Ship_info[sp->ship_info_index].initial_hull_strength) ) {
+	if ( objp->hull_strength < ( (AWACS_HELP_HULL_LOW + 0.01f *(static_rand(objp-Objects) & 5)) * sp->ship_initial_hull_strength) ) {
 		// awacs ship below 25 + (0-4) %
 		if (!(sp->awacs_warning_flag & AWACS_WARN_25)) {
 			message = MESSAGE_AWACS_25;
 			sp->awacs_warning_flag |=  AWACS_WARN_25;
 		}
-	} else if ( objp->hull_strength < ( (AWACS_HELP_HULL_HI + 0.01f*(static_rand(objp-Objects) & 5)) * Ship_info[sp->ship_info_index].initial_hull_strength) ) {
+	} else if ( objp->hull_strength < ( (AWACS_HELP_HULL_HI + 0.01f*(static_rand(objp-Objects) & 5)) * sp->ship_initial_hull_strength) ) {
 		// awacs ship below 75 + (0-4) %
 		if (!(sp->awacs_warning_flag & AWACS_WARN_75)) {
 			message = MESSAGE_AWACS_75;
@@ -10136,7 +10166,7 @@ void ship_maybe_ask_for_help(ship *sp)
 	}
 
 	// first check if hull is at a critical level
-	if ( objp->hull_strength < ASK_HELP_HULL_PERCENT * Ship_info[sp->ship_info_index].initial_hull_strength ) {
+	if ( objp->hull_strength < ASK_HELP_HULL_PERCENT * sp->ship_initial_hull_strength ) {
 		goto play_ask_help;
 	}
 
@@ -10145,7 +10175,7 @@ void ship_maybe_ask_for_help(ship *sp)
 		return;	// no shields on ship, no don't check shield levels
 	}
 
-	if ( get_shield_strength(objp) > (ASK_HELP_SHIELD_PERCENT * Ship_info[sp->ship_info_index].shields) ) {
+	if ( get_shield_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_initial_shield_strength) ) {
 		return;
 	}
 
@@ -10260,7 +10290,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	int message_type = -1;
 	int heavily_damaged = 0;
-	if ( Objects[sp->objnum].hull_strength/Ship_info[sp->ship_info_index].initial_hull_strength < 0.4 ) {
+	if ( Objects[sp->objnum].hull_strength/sp->ship_initial_hull_strength < 0.4 ) {
 		heavily_damaged = 1;
 	}
 
@@ -11541,5 +11571,5 @@ int ship_subsys_takes_damage(ship_subsys *ss)
 {
 	Assert(ss);
 
-	return (ss->system_info->max_hits > SUBSYS_MAX_HITS_THRESHOLD);
+	return (ss->max_hits > SUBSYS_MAX_HITS_THRESHOLD);
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-01-18 10:00:43 $
+ * $Revision: 2.10 $
+ * $Date: 2003-04-29 01:03:23 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/01/18 10:00:43  Goober5000
+ * added "no-subspace-drive" flag for ships
+ * --Goober5000
+ *
  * Revision 2.8  2003/01/03 21:58:08  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -982,7 +986,7 @@ void process_debug_keys(int k)
 				object	*objp = &Objects[Player_ai->target_objnum];
 
 				if (objp->type == OBJ_SHIP) {
-					ship_apply_local_damage( objp, Player_obj, &objp->pos, Ship_info[Ships[objp->instance].ship_info_index].initial_hull_strength * 0.1f + 10.0f, MISS_SHIELDS, CREATE_SPARKS);
+					ship_apply_local_damage( objp, Player_obj, &objp->pos, Ships[objp->instance].ship_initial_hull_strength * 0.1f + 10.0f, MISS_SHIELDS, CREATE_SPARKS);
 				}
 			}
 			break;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.61 $
- * $Date: 2003-04-05 20:47:58 $
+ * $Revision: 2.62 $
+ * $Date: 2003-04-29 01:03:24 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2003/04/05 20:47:58  Goober5000
+ * gotta love those compiler errors ;)
+ * fixed those and cleaned up conflicts with the missile-locked sexp
+ * --Goober5000
+ *
  * Revision 2.60  2003/04/05 20:17:23  sesquipedalian
  * Recommit of is-missile-locked.
  * I changed the sexp's category from non-campaign to training, so you may get a conflict with that.
@@ -3961,7 +3966,7 @@ int sexp_shields_left(int n)
 	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	percent = (int)(get_shield_strength(&Objects[Ships[shipnum].objnum]) / Ship_info[Ships[shipnum].ship_info_index].shields * 100.0f);
+	percent = (int)(get_shield_strength(&Objects[Ships[shipnum].objnum]) / Ships[shipnum].ship_initial_shield_strength * 100.0f);
 	return percent;
 }
 
@@ -3987,9 +3992,8 @@ int sexp_hits_left(int n)
 	// now return the amount of hits left as a percentage of the whole.  Subtract the percentage from 100
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
-	ship_info *sip  = &Ship_info[shipp->ship_info_index];
 	object	*objp = &Objects[shipp->objnum];
-	percent = (int) (100.0f * objp->hull_strength / sip->initial_hull_strength);
+	percent = (int) (100.0f * objp->hull_strength / shipp->ship_initial_hull_strength);
 	return percent;
 }
 
@@ -4150,7 +4154,7 @@ int sexp_hits_left_subsystem(int n)
 			while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) ) {
 
 				if ( !stricmp(ss->system_info->subobj_name, subsys_name)) {
-					percent = (int) (ss->current_hits / ss->system_info->max_hits * 100.0f);
+					percent = (int) (ss->current_hits / ss->max_hits * 100.0f);
 					return percent;
 				}
 
@@ -6622,7 +6626,7 @@ void sexp_sabotage_subsystem( int n )
 		float ihs;
 		object *objp;
 
-		ihs = Ship_info[shipp->ship_info_index].initial_hull_strength;
+		ihs = shipp->ship_initial_hull_strength;
 		sabotage_hits = ihs * ((float)percentage / 100.0f);
 		objp = &Objects[shipp->objnum];
 		objp->hull_strength -= sabotage_hits;
@@ -6645,7 +6649,7 @@ void sexp_sabotage_subsystem( int n )
 	// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 	// set the strength to the given percentage if current strength is > given percentage
 	ss = ship_get_indexed_subsys( shipp, index );
-	sabotage_hits = ss->system_info->max_hits * ((float)percentage / 100.0f);
+	sabotage_hits = ss->max_hits * ((float)percentage / 100.0f);
 	ss->current_hits -= sabotage_hits;
 	if ( ss->current_hits < 0.0f )
 		ss->current_hits = 0.0f;
@@ -6684,7 +6688,7 @@ void sexp_repair_subsystem( int n )
 		float ihs;
 		object *objp;
 
-		ihs = Ship_info[shipp->ship_info_index].initial_hull_strength;
+		ihs = shipp->ship_initial_hull_strength;
 		repair_hits = ihs * ((float)percentage / 100.0f);
 		objp = &Objects[shipp->objnum];
 		objp->hull_strength += repair_hits;
@@ -6705,10 +6709,10 @@ void sexp_repair_subsystem( int n )
 	// get the pointer to the subsystem.  Check it's current hits against it's max hits, and
 	// set the strength to the given percentage if current strength is < given percentage
 	ss = ship_get_indexed_subsys( shipp, index );
-	repair_hits = ss->system_info->max_hits * ((float)percentage / 100.0f);
+	repair_hits = ss->max_hits * ((float)percentage / 100.0f);
 	ss->current_hits += repair_hits;
-	if ( ss->current_hits > ss->system_info->max_hits )
-		ss->current_hits = ss->system_info->max_hits;
+	if ( ss->current_hits > ss->max_hits )
+		ss->current_hits = ss->max_hits;
 	ship_recalc_subsys_strength( shipp );
 }
 
@@ -6750,7 +6754,7 @@ void sexp_set_subsystem_strength( int n )
 		if ( percentage == 0 ) {
 			ship_self_destruct( objp );
 		} else {
-			ihs = Ship_info[shipp->ship_info_index].initial_hull_strength;
+			ihs = shipp->ship_initial_hull_strength;
 			objp->hull_strength = ihs * ((float)percentage / 100.0f);
 		}
 
@@ -6778,7 +6782,7 @@ void sexp_set_subsystem_strength( int n )
 	}
 
 	// set hit points
-	ss->current_hits = ss->system_info->max_hits * ((float)percentage / 100.0f);
+	ss->current_hits = ss->max_hits * ((float)percentage / 100.0f);
 
 	ship_recalc_subsys_strength( shipp );
 }
@@ -8628,14 +8632,14 @@ int sexp_shield_quad_low(int node)
 	if(!(sip->flags & SIF_SMALL_SHIP)){
 		return 0;
 	}
-	max_quad = sip->shields / (float)MAX_SHIELD_SECTIONS;	
+	max_quad = Ships[sindex].ship_initial_shield_strength / (float)MAX_SHIELD_SECTIONS;	
 
 	// shield pct
 	check = (float)sexp_get_val(CDR(node));
 
 	// check his quadrants
 	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
-		if( ((objp->shields[idx] / max_quad) * 100.0f) <= check ){
+		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
 			return 1;
 		}
 	}
@@ -9322,7 +9326,7 @@ void sexp_damage_escort_list(int node)
 		shipp=&Ships[shipnum];
 
 		//calc hull integrity and compare
-		current_hull_pct=Objects[shipp->objnum].hull_strength/Ship_info[shipp->ship_info_index].initial_hull_strength;
+		current_hull_pct=Objects[shipp->objnum].hull_strength/shipp->ship_initial_hull_strength;
 
 		if (current_hull_pct < smallest_hull_pct)
 		{
@@ -9471,7 +9475,7 @@ void sexp_damage_escort_list_all(int n)
 		escort_ship[num_escort_ships].index = i;
 
 		// calc and set hull integrity
-		escort_ship[num_escort_ships].hull = Objects[shipp->objnum].hull_strength / Ship_info[shipp->ship_info_index].initial_hull_strength;
+		escort_ship[num_escort_ships].hull = Objects[shipp->objnum].hull_strength / shipp->ship_initial_hull_strength;
 
 		num_escort_ships++;
 	}
@@ -9832,7 +9836,7 @@ void sexp_subsys_set_random(int node)
 
 			// randomize its hit points
 			rand = rand_internal(low, high);
-			subsys->current_hits = 0.01f * rand * subsys->system_info->max_hits;
+			subsys->current_hits = 0.01f * rand * subsys->max_hits;
 		}
 	}
 }
@@ -9917,10 +9921,10 @@ int shield_quad_near_max(int quadnum)
 		if (i == quadnum){
 			continue;
 		}
-		remaining += Player_obj->shields[i];
+		remaining += Player_obj->shield_quadrant[i];
 	}
 
-	if ((remaining < 2.0f) || (Player_obj->shields[quadnum] > Ship_info[Player_ship->ship_info_index].shields/MAX_SHIELD_SECTIONS - 5.0f)) {
+	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > Player_ship->ship_initial_shield_strength/MAX_SHIELD_SECTIONS - 5.0f)) {
 		return SEXP_TRUE;
 	} else {
 		return SEXP_FALSE;
@@ -9978,29 +9982,29 @@ int process_special_sexps(int index)
 		nprintf(("AI", "Frame %i\n", Framecount));
 		apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
-		if (Player_obj->shields[FRONT_QUAD] < 2.0f)
+		if (Player_obj->shield_quadrant[FRONT_QUAD] < 2.0f)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;
 		break;
 	case 5:	//	Player's shield is quick repaired
-		nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shields[FRONT_QUAD]));
+		nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shield_quadrant[FRONT_QUAD]));
 
 		apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
-		if (Player_obj->shields[FRONT_QUAD] > Ship_info[Player_ship->ship_info_index].shields/4.0f)
-			Player_obj->shields[FRONT_QUAD] = Ship_info[Player_ship->ship_info_index].shields/4.0f;
+		if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_ship->ship_initial_shield_strength/4.0f)
+			Player_obj->shield_quadrant[FRONT_QUAD] = Player_ship->ship_initial_shield_strength/4.0f;
 
 		//hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
-		if (Player_obj->shields[FRONT_QUAD] > Player_obj->shields[(FRONT_QUAD+1)%4] - 2.0f)
+		if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%4] - 2.0f)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;
 		break;
 	case 6:	//	3 of player's shield quadrants are reduced to 0.
-		Player_obj->shields[1] = 1.0f;
-		Player_obj->shields[2] = 1.0f;
-		Player_obj->shields[3] = 1.0f;
+		Player_obj->shield_quadrant[1] = 1.0f;
+		Player_obj->shield_quadrant[2] = 1.0f;
+		Player_obj->shield_quadrant[3] = 1.0f;
 		//apply_damage_to_shield(Player_obj, FRONT_QUAD, 1.0f);
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 		return SEXP_TRUE;
@@ -10013,8 +10017,8 @@ int process_special_sexps(int index)
 		break;
 	
 	case 9:	//	Zero left and right quadrants in preparation for maximizing rear quadrant.
-		Player_obj->shields[LEFT_QUAD] = 0.0f;
-		Player_obj->shields[RIGHT_QUAD] = 0.0f;
+		Player_obj->shield_quadrant[LEFT_QUAD] = 0.0f;
+		Player_obj->shield_quadrant[RIGHT_QUAD] = 0.0f;
 		hud_shield_quadrant_hit(Player_obj, LEFT_QUAD);
 		return SEXP_TRUE;
 		break;
@@ -10041,7 +10045,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 13:	// Zero front shield quadrant.  Added for Jim Boone on August 26, 1999 by MK.
-		Player_obj->shields[FRONT_QUAD] = 0.0f;
+		Player_obj->shield_quadrant[FRONT_QUAD] = 0.0f;
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 		return SEXP_TRUE;
 		break;
@@ -13000,6 +13004,8 @@ int sexp_variable_allocate_block(const char* block_name, int block_type)
 
 	if (block_type & SEXP_VARIABLE_BLOCK_EXP) {
 		num_blocks = BLOCK_EXP_SIZE;
+	} else if (block_type & SEXP_VARIABLE_BLOCK_HIT) {
+		num_blocks = BLOCK_HIT_SIZE;
 	} else {
 		Int3();	// add new block type here with size
 		return -1;

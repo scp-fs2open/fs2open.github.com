@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.25 $
+ * $Revision: 2.26 $
  * $Author: Goober5000 $
- * $Date: 2003-03-25 07:03:30 $
+ * $Date: 2003-04-29 01:03:23 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/03/25 07:03:30  Goober5000
+ * added beginning functionality for $Texture Replace implementation in FRED
+ * --Goober5000
+ *
  * Revision 2.24  2003/03/20 23:20:26  Goober5000
  * comments
  * --Goober500
@@ -544,6 +548,7 @@ typedef struct p_object {
 	int	persona_index;
 	float	kamikaze_damage;					// base damage for a kamikaze attack
 	int	special_exp_index;
+	int special_hitpoint_index;
 	ushort net_signature;					// network signature this object can have
 
 	char	wing_status_wing_index;			// wing index (0-4) in wingman status gauge
@@ -553,6 +558,9 @@ typedef struct p_object {
 	int	respawn_priority;					// priority this ship has for controlling respawn points
 
 	char	alt_type_index;					// optional alt type index
+
+	float ship_initial_hull_strength;
+	float ship_initial_shield_strength;
 
 	// Goober5000
 	int num_texture_replacements;

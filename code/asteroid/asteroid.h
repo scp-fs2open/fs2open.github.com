@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-04-29 01:03:22 $
+ * $Author: Goober5000 $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -182,7 +185,7 @@ typedef struct asteroid_info {
 	float			outer_rad;												// radius at which no area effect damage is applied
 	float			damage;													// maximum damage applied from area effect explosion
 	float			blast;													// maximum blast impulse from area effect explosion									
-	float			initial_hull_strength;								// starting strength of asteroid
+	float			initial_asteroid_strength;								// starting strength of asteroid
 	polymodel	*modelp[MAX_ASTEROID_POFS];
 	int			model_num[MAX_ASTEROID_POFS];
 } asteroid_info;

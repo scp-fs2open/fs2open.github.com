@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-24 03:48:11 $
+ * $Revision: 2.5 $
+ * $Date: 2003-04-29 01:03:22 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/24 03:48:11  Goober5000
+ * aw, nuts - fixed a dumb bug with my new don't-collide-invisible code :p
+ * --Goober5000
+ *
  * Revision 2.3  2003/01/18 09:25:42  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -1707,7 +1711,7 @@ int collide_ship_ship( obj_pair * pair )
 //
 //						vm_vec_normalized_dir(&v2h, &ship_ship_hit_info.hit_pos, &Player_obj->pos);
 //						dot = vm_vec_dot(&Player_obj->orient.fvec, &v2h);
-//					//	HUD_printf("Collision %s: %i%%. (dot=%5.2f), dist ratio=%5.2f", Ships[other_objp->instance].ship_name, (int) (100.0f * damage/Ship_info[Ships[Player_obj->instance].ship_info_index].initial_hull_strength), dot,
+//					//	HUD_printf("Collision %s: %i%%. (dot=%5.2f), dist ratio=%5.2f", Ships[other_objp->instance].ship_name, (int) (100.0f * damage/Ships[Player_obj->instance].ship_initial_hull_strength), dot,
 //					//		vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) / (Player_obj->radius + other_objp->radius));
 //					}
 //				}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-03-30 04:34:37 $
+ * $Revision: 2.30 $
+ * $Date: 2003-04-29 01:03:21 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/03/30 04:34:37  Goober5000
+ * preliminary work on ai facing sexp
+ * --Goober5000
+ *
  * Revision 2.28  2003/03/19 09:05:25  Goober5000
  * more housecleaning, this time for debug warnings
  * --Goober5000
@@ -5663,7 +5667,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	float enemytotalshield = 0.0f;
 	if (!(other_objp->flags & OF_NO_SHIELDS))
 	{
-		enemytotalshield += Ship_info[other_objp->instance].shields;
+		enemytotalshield += Ships[other_objp->instance].ship_initial_shield_strength;
 	}
 
 	float enemy_remaining_shield = (get_shield_strength(other_objp))/enemytotalshield;
@@ -5867,7 +5871,7 @@ void set_primary_weapon_linkage(object *objp)
 	if (shipp->weapon_energy > Link_energy_levels_always[Game_skill_level]) {
 		shipp->flags |= SF_PRIMARY_LINKED;
 	} else if (shipp->weapon_energy > Link_energy_levels_maybe[Game_skill_level]) {
-		if (objp->hull_strength < Ship_info[shipp->ship_info_index].initial_hull_strength/3.0f)
+		if (objp->hull_strength < shipp->ship_initial_hull_strength/3.0f)
 			shipp->flags |= SF_PRIMARY_LINKED;
 	}
 
@@ -5902,7 +5906,7 @@ void set_primary_weapon_linkage(object *objp)
 		}
 		else if (ammo_pct > Link_ammo_levels_maybe[Game_skill_level])
 		{
-			if (objp->hull_strength < Ship_info[shipp->ship_info_index].initial_hull_strength/3.0f)
+			if (objp->hull_strength < shipp->ship_initial_hull_strength/3.0f)
 			{
 				shipp->flags |= SF_PRIMARY_LINKED;
 			}
@@ -6843,9 +6847,9 @@ float ai_endangered_by_weapon(ai_info *aip)
 }
 
 //	Return true if this ship is near full strength.
-int ai_near_full_strength(object *objp, ship_info *sip)
+int ai_near_full_strength(object *objp)
 {
-	return (objp->hull_strength/sip->initial_hull_strength > 0.9f) || (get_shield_strength(objp)/sip->shields > 0.8f);
+	return (objp->hull_strength/Ships[objp->instance].ship_initial_hull_strength > 0.9f) || (get_shield_strength(objp)/Ships[objp->instance].ship_initial_shield_strength > 0.8f);
 }
 				
 //	Set acceleration while in attack mode.
@@ -6861,7 +6865,7 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 	//	Sometimes, told to attack slowly.  Allows to get in more hits.
 	if (aip->ai_flags & AIF_ATTACK_SLOWLY) {
 		if ((dist_to_enemy > 200.0f) && (dist_to_enemy < 800.0f)) {
-			if ((dot_from_enemy < 0.9f) || ai_near_full_strength(Pl_objp, &Ship_info[Ships[Pl_objp->instance].ship_info_index])) {
+			if ((dot_from_enemy < 0.9f) || ai_near_full_strength(Pl_objp)) {
 				//nprintf(("AI", " slowly "));
 				accelerate_ship(aip, max(1.0f - (dist_to_enemy-200.0f)/600.0f, 0.1f));
 				return;
@@ -8362,8 +8366,7 @@ void ai_chase()
 		//	See if attacking a subsystem.
 		if (aip->targeted_subsys != NULL) {
 			Assert(En_objp->type == OBJ_SHIP);
-			ship_info	*esip = &Ship_info[Ships[En_objp->instance].ship_info_index];
-			if (get_shield_strength(En_objp)/esip->shields < HULL_DAMAGE_THRESHOLD_PERCENT) {
+			if (get_shield_strength(En_objp)/Ships[En_objp->instance].ship_initial_shield_strength < HULL_DAMAGE_THRESHOLD_PERCENT) {
 				//int	rval;
 
 				if (aip->targeted_subsys != NULL) {
@@ -8496,7 +8499,7 @@ void ai_chase()
 			aip->submode = SM_STEALTH_FIND;
 			aip->submode_start_time = Missiontime;
 			aip->submode_parm0 = SM_SF_AHEAD;
-		} else if (ai_near_full_strength(Pl_objp, sip) && (Missiontime - aip->last_hit_target_time > i2f(3)) && (dist_to_enemy < 500.0f) && (dot_to_enemy < 0.5f)) {
+		} else if (ai_near_full_strength(Pl_objp) && (Missiontime - aip->last_hit_target_time > i2f(3)) && (dist_to_enemy < 500.0f) && (dot_to_enemy < 0.5f)) {
 			aip->submode = SM_SUPER_ATTACK;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;
@@ -8809,7 +8812,7 @@ void ai_chase()
 										if (count > 3)
 											spawn_fire = 1;
 										else if (count >= 1) {
-											float hull_percent = Pl_objp->hull_strength/sip->initial_hull_strength;
+											float hull_percent = Pl_objp->hull_strength/temp_shipp->ship_initial_hull_strength;
 
 											if (hull_percent < 0.01f)
 												hull_percent = 0.01f;
@@ -12552,30 +12555,28 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 	int	i;
 	float	transfer_amount;
 	float	transfer_delta;
-	ship_info	*sip;
 	float	max_quadrant_strength;
 
-	sip = &Ship_info[Ships[objp->instance].ship_info_index];
-	max_quadrant_strength = sip->shields/MAX_SHIELD_SECTIONS;
+	max_quadrant_strength = Ships[objp->instance].ship_initial_shield_strength/MAX_SHIELD_SECTIONS;
 
 	transfer_amount = 0.0f;
 	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
 
-	if (objp->shields[quadrant_num] + (MAX_SHIELD_SECTIONS-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shields[quadrant_num])/(MAX_SHIELD_SECTIONS-1);
+	if (objp->shield_quadrant[quadrant_num] + (MAX_SHIELD_SECTIONS-1)*transfer_delta > max_quadrant_strength)
+		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(MAX_SHIELD_SECTIONS-1);
 
 	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
 		if (i != quadrant_num) {
-			if (objp->shields[i] >= transfer_delta) {
-				objp->shields[i] -= transfer_delta;
+			if (objp->shield_quadrant[i] >= transfer_delta) {
+				objp->shield_quadrant[i] -= transfer_delta;
 				transfer_amount += transfer_delta;
 			} else {
-				transfer_amount += objp->shields[i];
-				objp->shields[i] = 0.0f;
+				transfer_amount += objp->shield_quadrant[i];
+				objp->shield_quadrant[i] = 0.0f;
 			}
 		}
 
-	objp->shields[quadrant_num] += transfer_amount;
+	objp->shield_quadrant[quadrant_num] += transfer_amount;
 }
 
 void ai_balance_shield(object *objp)
@@ -12590,14 +12591,14 @@ void ai_balance_shield(object *objp)
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
 	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
-		if (objp->shields[i] < shield_strength_avg) {
+		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			add_shield_strength(objp, delta);
-			if (objp->shields[i] > shield_strength_avg)
-				objp->shields[i] = shield_strength_avg;
+			if (objp->shield_quadrant[i] > shield_strength_avg)
+				objp->shield_quadrant[i] = shield_strength_avg;
 		} else {
 			add_shield_strength(objp, -delta);
-			if (objp->shields[i] < shield_strength_avg)
-				objp->shields[i] = shield_strength_avg;
+			if (objp->shield_quadrant[i] < shield_strength_avg)
+				objp->shield_quadrant[i] = shield_strength_avg;
 		}
 }
 /*
@@ -12638,7 +12639,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 				ai_balance_shield(objp);
 		}
 
-		// nprintf(("AI", "Time: %7.3f Next: %7.3f, Shields: %7.3f %7.3f %7.3f %7.3f\n", f2fl(Missiontime), f2fl(Missiontime) + delay, objp->shields[0], objp->shields[1], objp->shields[2], objp->shields[3]));
+		// nprintf(("AI", "Time: %7.3f Next: %7.3f, Shields: %7.3f %7.3f %7.3f %7.3f\n", f2fl(Missiontime), f2fl(Missiontime) + delay, objp->shield_quadrant[0], objp->shield_quadrant[1], objp->shield_quadrant[2], objp->shield_quadrant[3]));
 	}
 }
 
@@ -12814,7 +12815,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 			case SM_EVADE_WEAPON:
 				break;
 			default:
-				if (ai_near_full_strength(Pl_objp, &Ship_info[Ships[Pl_objp->instance].ship_info_index])) {
+				if (ai_near_full_strength(Pl_objp)) {
 					//mprintf(("Ship %s entered super mode at %7.3f\n", Ships[Pl_objp->instance].ship_name, 1.0f * Missiontime / (1<<16)));
 					aip->submode = SM_SUPER_ATTACK;
 					aip->submode_start_time = Missiontime;
@@ -13402,7 +13403,7 @@ int maybe_request_support(object *objp)
 	// Added back in upon mission flag condition - Goober5000
 	if (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
-		desire += 6 - (int) ((objp->hull_strength/sip->initial_hull_strength) * 6.0f);
+		desire += 6 - (int) ((objp->hull_strength/shipp->ship_initial_hull_strength) * 6.0f);
 	}
 
 	//	Set desire based on key subsystems.
@@ -13504,7 +13505,7 @@ void ai_maybe_depart(object *objp)
 	if (sip->flags & SIF_SUPPORT) {
 		if ( timestamp_elapsed(aip->warp_out_timestamp) ) {
 			ai_process_mission_orders( OBJ_INDEX(objp), aip );
-			if ( (aip->dock_objnum == -1) && (objp->hull_strength/sip->initial_hull_strength < 0.25f) ) {
+			if ( (aip->dock_objnum == -1) && (objp->hull_strength/shipp->ship_initial_hull_strength < 0.25f) ) {
 				if (!(shipp->flags & SF_DEPARTING))
 					mission_do_departure(objp);
 			}
@@ -14862,8 +14863,8 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 		
 		// wacky stuff here
 		ship_info *sip = &Ship_info[Ships[objp_hit->instance].ship_info_index];
-		if (sip->initial_hull_strength > 1000.0f) {
-			float factor = sip->initial_hull_strength / 1000.0f;
+		if (shipp_hit->ship_initial_hull_strength > 1000.0f) {
+			float factor = shipp_hit->ship_initial_hull_strength / 1000.0f;
 			factor = min(100.0f, factor);
 			damage /= factor;
 		}
@@ -14902,7 +14903,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 				mission_do_departure(objp_hit);
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
 
-				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(get_shield_strength(objp_hitter) + Ship_info[shipp_hitter->ship_info_index].initial_hull_strength) );
+				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(get_shield_strength(objp_hitter) + shipp_hitter->ship_initial_hull_strength) );
 				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 1.0f );
 			} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
 				// warning every 4 sec
@@ -15192,9 +15193,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vector *hitpos, int shield
 
 	//	If this ship is awaiting repair, abort!
 	if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED)) {
-		ship_info	*sip = &Ship_info[shipp->ship_info_index];
-
-		if (objp_ship->hull_strength/sip->initial_hull_strength < 0.3f) {
+		if (objp_ship->hull_strength/shipp->ship_initial_hull_strength < 0.3f) {
 			//	No, only abort if hull below a certain level.
 			aip->next_rearm_request_timestamp = timestamp(NEXT_REARM_TIMESTAMP/2);	//	Might request again after 15 seconds.
 			if ( !(objp_ship->flags & OF_PLAYER_SHIP) )						// mwa -- don't abort rearm for a player
@@ -15318,7 +15317,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vector *hitpos, int shield
 			maybe_set_dynamic_chase(aip, hitter_objnum);
 			maybe_afterburner_after_ship_hit(objp_ship, aip, &Objects[hitter_objnum]);
 		} else {
-			if ((aip->mode == AIM_CHASE) && ((objp_ship->hull_strength/sip->initial_hull_strength > 0.9f) || (get_shield_strength(objp_ship)/sip->shields > 0.8f))) {
+			if ((aip->mode == AIM_CHASE) && ((objp_ship->hull_strength/shipp->ship_initial_hull_strength > 0.9f) || (get_shield_strength(objp_ship)/shipp->ship_initial_shield_strength > 0.8f))) {
 				switch (aip->submode) {
 				case SM_ATTACK:
 				case SM_SUPER_ATTACK:
