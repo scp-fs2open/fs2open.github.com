@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-12-14 17:09:28 $
+ * $Revision: 2.7 $
+ * $Date: 2003-01-15 07:09:09 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/14 17:09:28  Goober5000
+ * removed mission flag for fighterbay damage; instead made damage display contingent on whether the fighterbay subsystem is assigned a damage percentage in ships.tbl
+ * --Goober5000
+ *
  * Revision 2.5  2002/12/14 01:55:04  Goober5000
  * added mission flag to show subsystem damage for fighterbays
  * ~Goober5000~
@@ -1309,7 +1313,7 @@ void hud_render_target_ship(object *target_objp)
 	//	hud_targetbox_get_eye(&camera_eye, &camera_orient, Player_obj->instance);
 
 		hud_render_target_setup(&camera_eye, &camera_orient, target_sip->closeup_zoom);
-		// model_clear_instance(target_sip->modelnum);
+		// model_clear_instance(target_shipp->modelnum);
 		ship_model_start( target_objp );
 
 		if (Targetbox_wire!=0)
@@ -1346,7 +1350,7 @@ void hud_render_target_ship(object *target_objp)
 		if(target_sip->modelnum_hud >= 0){
 			model_render( target_sip->modelnum_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
 		} else {
-			model_render( target_sip->modelnum, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
+			model_render( target_shipp->modelnum, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
 		}
 		ship_model_stop( target_objp );
 

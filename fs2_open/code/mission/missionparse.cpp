@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-01-15 05:24:23 $
+ * $Revision: 2.20 $
+ * $Date: 2003-01-15 07:09:09 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/01/15 05:24:23  Goober5000
+ * added texture replacement parse - will be implemented later
+ * --Goober5000
+ *
  * Revision 2.18  2003/01/14 06:13:23  Goober5000
  * argh - fixed the stupid message persona bug with <any wingman>
  * Bobboau, please check your code!
@@ -1490,7 +1494,7 @@ void position_ship_for_knossos_warpin(p_object *objp, int shipnum, int objnum)
 		// position self for warp on plane of device
 		vector new_point;
 		float dist = fvi_ray_plane(&new_point, &Objects[knossos_num].pos, &Objects[knossos_num].orient.vec.fvec, &objp->pos, &objp->orient.vec.fvec, 0.0f);
-		polymodel *pm = model_get(Ship_info[Ships[shipnum].ship_info_index].modelnum);
+		polymodel *pm = model_get(Ships[shipnum].modelnum);
 		float desired_dist = -pm->mins.xyz.z;
 		vm_vec_scale_add2(&Objects[objnum].pos, &Objects[objnum].orient.vec.fvec, (dist - desired_dist));
 		// if ship is BIG or HUGE, make it go through the center of the knossos
@@ -1509,6 +1513,7 @@ int parse_create_object(p_object *objp)
 	int	i, j, k, objnum, shipnum;
 	ai_info *aip;
 	ship_subsys *ptr;
+	ship *shipp;
 	ship_info *sip;
 	subsys_status *sssp;
 	ship_weapon *wp;
@@ -1544,6 +1549,7 @@ int parse_create_object(p_object *objp)
 #endif
 
 	sip = &Ship_info[Ships[shipnum].ship_info_index];
+	shipp = &Ships[shipnum];
 
 	if ( !Fred_running ) {
 		ship_assign_sound(&Ships[shipnum]);
@@ -1895,7 +1901,7 @@ int parse_create_object(p_object *objp)
 		// create sparks on a ship whose hull is damaged.  We will create two sparks for every 20%
 		// of hull damage done.  100 means no sparks.  between 80 and 100 do two sparks.  60 and 80 is
 		// four, etc.
-		pm = model_get( sip->modelnum );
+		pm = model_get( Ships[shipnum].modelnum );	// changed from sip to Ships[] by Goober5000
 		max_allowed_sparks = get_max_sparks(&Objects[objnum]);
 		num_sparks = (int)((100.0f - objp->initial_hull) / 5.0f);
 		if (num_sparks > max_allowed_sparks) {
@@ -1906,7 +1912,7 @@ int parse_create_object(p_object *objp)
 			vector v1, v2;
 
 			// DA 10/20/98 - sparks must be chosen on the hull and not any submodel
-			submodel_get_two_random_points(sip->modelnum, pm->detail[0], &v1, &v2);
+			submodel_get_two_random_points(shipp->modelnum, pm->detail[0], &v1, &v2);
 			ship_hit_sparks_no_rotate(&Objects[objnum], &v1);
 //			ship_hit_sparks_no_rotate(&Objects[objnum], &v2);
 		}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-01-07 20:06:44 $
+ * $Revision: 2.15 $
+ * $Date: 2003-01-15 07:09:09 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/01/07 20:06:44  Goober5000
+ * added ai-chase-any-except sexp
+ * --Goober5000
+ *
  * Revision 2.13  2003/01/06 22:57:23  Goober5000
  * implemented keep-safe-distance
  * --Goober5000
@@ -2300,7 +2304,7 @@ int get_nearest_bbox_point(object *ship_obj, vector *start, vector *box_pt)
 {
 	vector temp, rf_start;
 	polymodel *pm;
-	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].modelnum);
+	pm = model_get(Ships[ship_obj->instance].modelnum);
 
 	// get start in ship rf
 	vm_vec_sub(&temp, start, &ship_obj->pos);
@@ -3468,8 +3472,8 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	ship			*shipp = &Ships[pl_objp->instance];
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
-	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
-	polymodel	*pm = model_get(osip->modelnum);
+//	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
+	polymodel	*pm = model_get(Ships[mobjp->instance].modelnum);
 	int			num_points;
 	model_path	*mp;
 	pnode			*ppfp_start = Ppfp;
@@ -3551,8 +3555,8 @@ void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int co
 	ship			*shipp = &Ships[pl_objp->instance];
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
-	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
-	polymodel	*pm = model_get(osip->modelnum);
+//	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
+	polymodel	*pm = model_get(Ships[mobjp->instance].modelnum);
 	int			num_points;
 	model_path	*mp;
 	pnode			*ppfp_start = Ppfp;
@@ -4228,8 +4232,9 @@ int find_nearest_waypoint(object *objp)
 int get_base_path_info(int path_cur, int goal_objnum, model_path **pmp, mp_vert **pmpv)
 {
 	pnode			*pn = &Path_points[path_cur];
-	ship_info	*sip = &Ship_info[Ships[Objects[goal_objnum].instance].ship_info_index];
-	polymodel	*pm = model_get(sip->modelnum);
+	ship *shipp = &Ships[Objects[goal_objnum].instance];
+//	ship_info	*sip = &Ship_info[shipp->ship_info_index];
+	polymodel	*pm = model_get(shipp->modelnum);
 	static		int	debug_last_index = -1;
 	*pmpv = NULL;
 	*pmp = NULL;
@@ -4262,8 +4267,8 @@ void modify_model_path_points(object *objp)
 {	
 	ai_info		*aip = &Ai_info[Ships[objp->instance].ai_index];
 	object		*mobjp = &Objects[aip->path_objnum];
-	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
-	polymodel	*pm = model_get(osip->modelnum);
+//	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
+	polymodel	*pm = model_get(Ships[mobjp->instance].modelnum);
 	pnode			*pnp;
 	int			path_num, dir;
 
@@ -6577,7 +6582,7 @@ void set_predicted_enemy_pos(vector *predicted_enemy_pos, object *pobjp, object 
 	} else {
 		float	collision_time;
 		vector	gun_pos, pnt;
-		polymodel *po = model_get( Ship_info[shipp->ship_info_index].modelnum );
+		polymodel *po = model_get( shipp->modelnum );
 
 		//	Compute position of gun in absolute space and use that as fire position.
 		if(po->gun_banks != NULL){
@@ -7278,7 +7283,7 @@ void ai_stealth_sweep()
 }
 
 //	ATTACK submode handler for chase mode.
-void ai_chase_attack(ai_info *aip, ship_info *sip, vector *predicted_enemy_pos, float dist_to_enemy)
+void ai_chase_attack(ai_info *aip, ship_info *sip, vector *predicted_enemy_pos, float dist_to_enemy, int modelnum)
 {
 	int		start_bank;
 	float		dot_to_enemy, dot_from_enemy; //, time_to_hit;
@@ -7289,7 +7294,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vector *predicted_enemy_pos, 
 
 	compute_dots(Pl_objp, En_objp, &dot_to_enemy, &dot_from_enemy);
 
-	polymodel *po = model_get( sip->modelnum );
+	polymodel *po = model_get( modelnum );
 
 	vector	*rel_pos;
 	float		scale;
@@ -8305,7 +8310,7 @@ void ai_chase()
 				return;
 		}
 
-		ai_chase_attack(aip, sip, &predicted_enemy_pos, dist_to_enemy);
+		ai_chase_attack(aip, sip, &predicted_enemy_pos, dist_to_enemy, shipp->modelnum);
 		break;
 
 	case SM_EVADE_SQUIGGLE:
