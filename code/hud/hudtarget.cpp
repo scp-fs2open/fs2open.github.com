@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-12-19 10:54:37 $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-21 18:03:49 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/19 10:54:37  Goober5000
+ * oops - squashed a bug :)
+ * --Goober5000
+ *
  * Revision 2.5  2002/12/19 10:46:14  Goober5000
  * implemented the revised HUD weapon display for ballistic primaries
  * --Goober5000
@@ -1284,7 +1288,8 @@ void hud_weapons_init()
 						// give a single warning
 						if (!hud_warned)
 						{
-							Warning(LOCATION, "Warning: Ballistic HUD graphics not found.  Defaulting to original graphics.\n");
+							// commented because it gets annoying, and the warning really isn't needed anyway - Goober5000
+							//Warning(LOCATION, "Warning: Ballistic HUD graphics not found.  Defaulting to original graphics.\n");
 							hud_warned = 1;
 						}
 
