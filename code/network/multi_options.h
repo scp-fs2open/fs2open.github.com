@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2003/09/23 02:42:54  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -97,6 +101,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _MULTI_NETGAME_OPTIONS_HEADER_FILE
 #define _MULTI_NETGAME_OPTIONS_HEADER_FILE
 

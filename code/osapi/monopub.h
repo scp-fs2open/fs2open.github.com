@@ -29,6 +29,7 @@ Revision History:
 // by customers.
 //
 
+#include "PreProcDefines.h"
 #define FILE_DEVICE_MONO  0x00008100
 
 

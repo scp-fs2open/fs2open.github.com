@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.h $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -67,6 +70,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _TIMER_H
 #define _TIMER_H
 

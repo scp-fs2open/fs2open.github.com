@@ -7,6 +7,7 @@
  *
 */ 
 
+#include "PreProcDefines.h"
 #ifndef _MODELSINC_H
 #define _MODELSINC_H
 

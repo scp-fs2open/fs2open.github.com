@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.5 $
- * $Date: 2004-07-17 18:46:08 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/17 18:46:08  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.4  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -138,7 +141,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef __MISSION_WEAPON_CHOICE_H__
 #define __MISSION_WEAPON_CHOICE_H__
 

@@ -10,12 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
- * $Revision: 1.4 $
- * $Date: 2004-03-31 05:42:26 $
- * $Author: Goober5000 $
+ * $Revision: 1.5 $
+ * $Date: 2004-08-11 05:06:23 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/03/31 05:42:26  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 1.3  2004/02/21 00:59:43  Kazan
  * FS2NETD License Comments
  *
@@ -26,6 +31,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #if !defined(__protocol_h_)
 #define __protocol_h_
 

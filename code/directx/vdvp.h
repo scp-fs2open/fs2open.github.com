@@ -7,6 +7,8 @@
  *
  ***************************************************************************/
 
+#include "PreProcDefines.h"
+
 #ifndef __DVP_INCLUDED__
 #define __DVP_INCLUDED__
 #if defined( _WIN32 )  && !defined( _NO_COM )

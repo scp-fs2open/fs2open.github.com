@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDgauges.h $
- * $Revision: 2.1 $
- * $Date: 2003-01-15 21:29:04 $
- * $Author: anonymous $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * HUD data common to FRED and FreeSpace
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/01/15 21:29:04  anonymous
+ * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -79,6 +82,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __HUD_COMMON_H__
 #define __HUD_COMMON_H__
 

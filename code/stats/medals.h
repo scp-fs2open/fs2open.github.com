@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:35 $
+ * $Author: Kazan $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -62,6 +66,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef FREESPACE_MEDAL_HEADER_FILE
 #define FREESPACE_MEDAL_HEADER_FILE
 

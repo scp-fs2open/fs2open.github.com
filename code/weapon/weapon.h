@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/07/31 08:57:22  et1
+ * Implemented "+SwarmWait:"-token
+ *
  * Revision 2.31  2004/07/14 01:27:01  wmcoolmon
  * Better -load_only_used handling; added mark_weapon_used(weapon ID), which does check for IDs of -1.
  *
@@ -399,6 +402,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _WEAPON_H
 #define _WEAPON_H
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-08-11 05:06:27 $
+ * $Author: Kazan $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2003/09/05 04:25:29  Goober5000
  * well, let's see here...
  *
@@ -281,6 +285,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _MISSION_CAMPAIGN_H
 #define _MISSION_CAMPAIGN_H
 

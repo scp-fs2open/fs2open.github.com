@@ -5,16 +5,20 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.1 $
- * $Date: 2003-10-15 22:03:27 $
+ * $Revision: 1.2 $
+ * $Date: 2004-08-11 05:06:34 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2003/10/15 22:03:27  Kazan
+ * Da Species Update :D
+ *
  *
  *
  *
  */
 
+#include "PreProcDefines.h"
 #if !defined(_species_defs_h_)
 #define _species_defs_h_
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.6 $
- * $Date: 2003-11-16 04:09:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-08-11 05:06:33 $
+ * $Author: Kazan $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/11/16 04:09:27  Goober5000
+ * language
+ *
  * Revision 2.5  2003/11/11 18:04:06  phreak
  * made g3_done_instance take a parameter that decides wether to pop the matrix stack.
  * without it, underflows would have been caused
@@ -127,6 +130,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _3D_H
 #define _3D_H
 

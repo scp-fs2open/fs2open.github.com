@@ -1,5 +1,7 @@
-//header file for makeing decals-Bobboau
+//header file for making decals-Bobboau
  
+#include "PreProcDefines.h"
+
 #ifndef _DECAL_H
 #define _DECAL_H
 

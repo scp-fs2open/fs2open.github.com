@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.h $
- * $Revision: 2.1 $
- * $Date: 2004-03-05 09:01:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * Header file for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/03/05 09:01:51  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -70,7 +74,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef __AIBIG_H__
 #define __AIBIG_H__
 

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.2 $
- * $Date: 2002-12-07 01:37:42 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:27 $
+ * $Author: Kazan $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/07 01:37:42  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -179,6 +185,7 @@
  *
 */
 
+#include "PreProcDefines.h"
 #ifndef _VECMAT_H
 #define _VECMAT_H
 

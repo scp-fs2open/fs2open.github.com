@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.h $
- * $Revision: 2.1 $
- * $Date: 2002-07-07 19:55:58 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:19 $
+ * $Author: Kazan $
  *
  * External def's for CfileArchive.cpp.  This should only be used 
  * internally by cfile stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/07 19:55:58  penguin
+ * Back-port to MSVC
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -48,6 +51,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _CFILEARCHIVE_H
 #define _CFILEARCHIVE_H
 

@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.15 $
- * $Author: wmcoolmon $
- * $Date: 2004-05-31 08:32:25 $
+ * $Revision: 2.16 $
+ * $Author: Kazan $
+ * $Date: 2004-08-11 05:06:31 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/05/31 08:32:25  wmcoolmon
+ * Custom HUD support, better loading, etc etc.
+ *
  * Revision 2.14  2004/05/29 02:52:17  wmcoolmon
  * Added stuff_float_list
  *
@@ -290,6 +293,7 @@
  * 
  */
 
+#include "PreProcDefines.h"
 #ifndef _PARSELO_H
 #define _PARSELO_H
 

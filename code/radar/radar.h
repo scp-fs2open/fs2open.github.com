@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-02 22:43:03 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:33 $
+ * $Author: Kazan $
  *
  * Prototypes for radar code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/02 22:43:03  phreak
+ * orb radar rendering style
+ *
  * Revision 2.2  2004/07/01 01:51:54  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -59,6 +62,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _RADAR_H
 #define _RADAR_H
 

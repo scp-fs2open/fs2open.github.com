@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.h $
- * $Revision: 2.2 $
- * $Date: 2004-06-26 03:19:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * Header file for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/06/26 03:19:53  wmcoolmon
+ * Displayed escorts now settable up to MAX_COMPLETE_ESCORT_LIST via "$Max Escort Ships:" in hud_gauges.tbl
+ * Escort list is now hud_gauges.tbl compatible.
+ *
  * Revision 2.1  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -74,6 +78,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __FREESPACE_HUDESCORT_VIEW_H__
 #define __FREESPACE_HUDESCORT_VIEW_H__
 

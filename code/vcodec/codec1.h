@@ -29,7 +29,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 
-
+#include "PreProcDefines.h"
 // VoiCTech is only intended to work with 8-bit samples recorded at 11KHz.
 // 8KHz should also work.
 typedef unsigned char t_Sample;

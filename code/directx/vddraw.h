@@ -7,6 +7,7 @@
  *
  ***************************************************************************/
 
+#include "PreProcDefines.h"
 #ifndef __DDRAW_INCLUDED__
 #define __DDRAW_INCLUDED__
 

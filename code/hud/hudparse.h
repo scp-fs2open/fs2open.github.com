@@ -1,3 +1,4 @@
+#include "PreProcDefines.h"
 #pragma once
 #include "globalincs/globals.h"
 #include "hud/hudescort.h"

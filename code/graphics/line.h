@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Line.h $
- * $Revision: 2.1 $
- * $Date: 2004-03-08 15:03:27 $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:24 $
  * $Author: Kazan $
  *
  * Header file for line.cpp
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/03/08 15:03:27  Kazan
+ * *crosses fingers*
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -61,6 +64,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _LINE_H
 #define _LINE_H
 

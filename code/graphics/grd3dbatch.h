@@ -1,3 +1,5 @@
+#include "PreProcDefines.h"
+
 #ifndef _GRD3DBATCH_H_
 #define _GRD3DBATCH_H_
 

@@ -9,16 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Corkscrew.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:36 $
+ * $Author: Kazan $
  *
  * Header file for managing corkscrew missiles
  *
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef __FREESPACE_CORKSCREW_H__
 #define __FREESPACE_CORKSCREW_H__
 

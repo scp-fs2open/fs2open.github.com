@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.h $
- * $Revision: 2.2 $
- * $Date: 2003-08-22 07:24:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:27 $
+ * $Author: Kazan $
  *
  * Header file for code that controls the Tech Room menu
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/08/22 07:24:07  Goober5000
+ * bumped max intel entries to 30
+ * --Goober5000
+ *
  * Revision 2.1  2003/03/03 04:28:37  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -75,7 +79,7 @@
  *
 */
 
-
+#include "PreProcDefines.h"
 #ifndef _TECHMENU_H
 #define _TECHMENU_H
 

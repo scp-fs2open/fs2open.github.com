@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.4 $
- * $Date: 2004-07-11 03:22:49 $
- * $Author: bobboau $
+ * $Revision: 1.5 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/11 03:22:49  bobboau
+ * added the working decal code
+ *
  * Revision 1.3  2004/07/05 05:09:19  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -38,6 +41,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _GROPENGLTNL_H
 #define _GROPENGLTNL_H
 

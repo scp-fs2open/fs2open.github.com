@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:25:32 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/24 07:25:32  taylor
+ * filename case change
+ *
  * Revision 2.4  2004/04/26 13:02:27  taylor
  * light setup changes, support cmdline ambient value
  *
@@ -28,6 +31,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _GROPENGLLIGHT_H
 #define _GROPENGLLIGHT_H
 

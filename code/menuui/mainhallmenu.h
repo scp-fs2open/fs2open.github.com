@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.h $
- * $Revision: 2.2 $
- * $Date: 2003-01-15 05:19:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:27 $
+ * $Author: Kazan $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/15 05:19:07  Goober5000
+ * bumped main halls down to 10
+ * --Goober5000
+ *
  * Revision 2.1  2003/01/14 04:00:15  Goober5000
  * allowed for up to 256 main halls
  * --Goober5000
@@ -66,6 +70,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #ifndef _MAIN_HALL_MENU_HEADER_FILE
 #define _MAIN_HALL_MENU_HEADER_FILE
 

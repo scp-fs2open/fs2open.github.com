@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.4 $
- * $Date: 2004-06-18 04:59:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/06/18 04:59:55  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
  * Revision 2.3  2004/03/12 16:26:39  phreak
  * bumped MAX_SOUNDS to 450 if INF_BUILD is defined
  *
@@ -217,6 +220,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __SOUND_H__
 #define __SOUND_H__
 

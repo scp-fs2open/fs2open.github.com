@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.13 $
- * $Date: 2004-05-06 22:35:26 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2004-08-11 05:06:18 $
+ * $Author: Kazan $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/05/06 22:35:26  taylor
+ * DDS mipmap reading, remove unneeded bm_unlock() during page in
+ *
  * Revision 2.12  2004/04/01 15:31:20  taylor
  * don't use interface anis as ship textures
  *
@@ -280,6 +283,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _BMPMAN_H
 #define _BMPMAN_H
 

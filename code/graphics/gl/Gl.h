@@ -13,6 +13,7 @@ Abstract:
 
 --*/
 
+#include "PreProcDefines.h"
 #ifndef __gl_h_
 #ifndef __GL_H__
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.h $
- * $Revision: 2.5 $
- * $Date: 2004-05-27 00:49:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * Header file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/05/27 00:49:26  wmcoolmon
+ * Made HUD.tbl obsolete. Info is now taken directly from $Shield_icon in ships.tbl
+ * Now this table can be used for something more useful...say, hud gauge positions?
+ *
  * Revision 2.4  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -72,6 +76,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __FREESPACE_HUDSHIELD_H__
 #define __FREESPACE_HUDSHIELD_H__
 

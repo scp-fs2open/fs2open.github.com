@@ -7,13 +7,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.3 $
- * $Date: 2004-05-10 10:51:54 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2004-08-11 05:06:23 $
+ * $Author: Kazan $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/05/10 10:51:54  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 1.2  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -27,6 +32,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #ifndef _GLOBALS_H
 #define _GLOBALS_H
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:35 $
+ * $Author: Kazan $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -77,6 +81,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _FS_STATISTICS_STATE_HEADER
 #define _FS_STATISTICS_STATE_HEADER
 

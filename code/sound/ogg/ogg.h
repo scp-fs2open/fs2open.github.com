@@ -1,3 +1,4 @@
+#include "PreProcDefines.h"
 #include <vorbis/vorbisfile.h>
 
 //Setup the OGG stuff to use cfile

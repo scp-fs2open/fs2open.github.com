@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:33 $
+ * $Author: Kazan $
  *
  * Header file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:51  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -56,6 +60,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __AFTERBURNER_H__
 #define __AFTERBURNER_H__
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.7 $
- * $Date: 2004-05-12 22:49:13 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2004-08-11 05:06:22 $
+ * $Author: Kazan $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/05/12 22:49:13  phreak
+ * renamed the warp model variable from 'wm' to 'Warp_model'
+ *
  * Revision 2.6  2004/03/17 04:07:29  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -184,6 +187,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _FIREBALLS_H
 #define _FIREBALLS_H
 

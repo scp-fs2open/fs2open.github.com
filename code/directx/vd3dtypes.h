@@ -7,6 +7,7 @@
  *
  ***************************************************************************/
 
+#include "PreProcDefines.h"
 #ifndef _D3DTYPES_H_
 #define _D3DTYPES_H_
 

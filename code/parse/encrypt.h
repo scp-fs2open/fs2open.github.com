@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.h $
- * $Revision: 2.1 $
- * $Date: 2003-09-28 21:22:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:31 $
+ * $Author: Kazan $
  *
  * Header for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2003/09/28 21:22:58  Goober5000
+ * added the option to import FSM missions, added a replace function, spruced
+ * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -46,6 +51,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __ENCRYPT_H__
 #define __ENCRYPT_H__
 

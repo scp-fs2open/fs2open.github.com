@@ -9,14 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  *
  * $NoKeywords: $
  *
  */
 
+#include "PreProcDefines.h"
 #ifndef _HUD_OBSERVER_FILE
 #define _HUD_OBSERVER_FILE
 

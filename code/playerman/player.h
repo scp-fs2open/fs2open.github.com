@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:32 $
+ * $Author: Kazan $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/09/05 04:25:28  Goober5000
  * well, let's see here...
  *
@@ -175,6 +179,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _PLAYER_H
 #define _PLAYER_H
 

@@ -9,13 +9,16 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/inetgetfile.h $
-* $Revision: 2.1 $
-* $Date: 2002-08-01 01:41:06 $
-* $Author: penguin $
+* $Revision: 2.2 $
+* $Date: 2004-08-11 05:06:25 $
+* $Author: Kazan $
 *
 * InternetGetFile Class header
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.1  2002/08/01 01:41:06  penguin
+* The big include file move
+*
 * Revision 2.0  2002/06/03 04:02:24  penguin
 * Warpcore CVS sync
 *
@@ -33,6 +36,7 @@
 *
 * $NoKeywords: $
 */
+#include "PreProcDefines.h"
 #ifndef _INET_GETFILE_HEADER_
 #define _INET_GETFILE_HEADER_
 

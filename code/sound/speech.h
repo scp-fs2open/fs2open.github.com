@@ -6,6 +6,7 @@
  *
 */ 
 
+#include "PreProcDefines.h"
 #ifndef _SPEECH_H_
 #define _SPEECH_H_
 

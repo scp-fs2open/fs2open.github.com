@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.h $
- * $Revision: 2.1 $
- * $Date: 2004-03-05 09:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  *
  * Header file to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/03/05 09:02:06  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -113,6 +117,7 @@
  * 
 */
 
+#include "PreProcDefines.h"
 #ifndef _MISSIONLOG_H
 #define _MISSIONLOG_H
 

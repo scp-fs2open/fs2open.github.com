@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-09 00:02:16 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:29 $
  * $Author: Kazan $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/09 00:02:16  Kazan
+ * more fs2netd stuff
+ *
  * Revision 2.2  2003/11/14 22:47:37  Kazan
  * *WARNING* Multi Compatability with previous versions now in question *WARNING*
  * [But that's ok, i incremented the multi version number the other day so that it will say "you don't have a compatable version"]
@@ -180,6 +183,7 @@
  */
 
 
+#include "PreProcDefines.h"
 #ifndef _PSNET_H
 #define _PSNET_H
 

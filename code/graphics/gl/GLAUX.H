@@ -13,6 +13,7 @@ Abstract:
 
 --*/
 
+#include "PreProcDefines.h"
 #ifndef __GLAUX_H__
 #define __GLAUX_H__
 

@@ -7,6 +7,7 @@
  *
 */
 
+#include "PreProcDefines.h"
 #ifndef _AILOCAL_H
 #define _AILOCAL_H
 

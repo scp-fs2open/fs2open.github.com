@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/acm.h $
- * $Revision: 2.2 $
- * $Date: 2003-03-02 06:37:24 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * Header file for interface to Audio Compression Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/02 06:37:24  penguin
+ * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
+ *  - penguin
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -48,6 +52,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __FREESPACE_ACM_H__
 #define __FREESPACE_ACM_H__
 

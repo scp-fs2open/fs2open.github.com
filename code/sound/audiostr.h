@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/24 15:38:55  mharris
  * Fixed boneheaded mistake in #defines for NO_JOYSTICK and NO_SOUND
  *
@@ -88,6 +91,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _AUDIOSTR_H
 #define _AUDIOSTR_H
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/24 07:42:29  Goober5000
  * added change-ai-class and is-ai-class, and I think I may also have nailed the
  * is-iff bug; did some other bug hunting as well
@@ -223,7 +227,7 @@
  */
 
 
-
+#include "PreProcDefines.h"
 #ifndef MULTI_MSGS_H
 #define MULTI_MSGS_H
 

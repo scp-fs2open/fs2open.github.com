@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:24 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-08-11 05:06:27 $
+ * $Author: Kazan $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:24  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:09  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -42,6 +45,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 void sim_room_init();
 void sim_room_close();
 void sim_room_do_frame(float frametime);

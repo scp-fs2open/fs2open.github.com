@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.13 $
- * $Date: 2004-07-09 22:05:32 $
+ * $Revision: 1.14 $
+ * $Date: 2004-08-11 05:06:23 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2004/07/09 22:05:32  Kazan
+ * fs2netd 1.0 RC5 full support - Rank and Medal updates
+ *
  * Revision 1.12  2004/07/07 21:00:06  Kazan
  * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
  *
@@ -44,6 +47,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #if !defined(__pxo_protocol_h_)
 #define __pxo_protocol_h_
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.h $
- * $Revision: 2.2 $
- * $Date: 2003-03-30 21:16:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  *
  * Header file for code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/30 21:16:21  Goober5000
+ * fixed stupid spelling mistake
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -135,6 +139,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #ifndef _MISSIONBRIEF_H
 #define _MISSIONBRIEF_H
 

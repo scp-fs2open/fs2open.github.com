@@ -1,3 +1,5 @@
+#include "PreProcDefines.h"
+
 #ifndef _DBUGFILE_HEADER_
 #define _DBUGFILE_HEADER_
 

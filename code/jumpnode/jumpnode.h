@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.4 $
- * $Date: 2004-07-01 01:12:32 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:26 $
+ * $Author: Kazan $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/01 01:12:32  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.3  2004/03/05 09:02:04  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -46,6 +50,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __JUMPNODE_H__
 #define __JUMPNODE_H__
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.h $
- * $Revision: 2.1 $
- * $Date: 2004-06-05 19:14:42 $
- * $Author: phreak $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:27 $
+ * $Author: Kazan $
  *
  * header for Static Random functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/06/05 19:14:42  phreak
+ * added static_random_cone which is used for spawn angle features in multi
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -41,6 +44,7 @@
  * 
 */
 
+#include "PreProcDefines.h"
 #ifndef _STATIC_RAND_H
 
 #define	SEMIRAND_MAX_LOG	4

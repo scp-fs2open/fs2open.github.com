@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.4 $
- * $Date: 2004-02-20 04:29:54 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/02/20 04:29:54  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.3  2003/09/26 14:37:14  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -211,6 +216,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _SYSTEMVARS_H
 #define _SYSTEMVARS_H
 

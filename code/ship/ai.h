@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.15 $
- * $Date: 2004-07-25 00:31:30 $
+ * $Revision: 2.16 $
+ * $Date: 2004-08-11 05:06:33 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/07/25 00:31:30  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.14  2004/03/05 09:01:51  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -211,6 +214,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _AI_H
 #define _AI_H
 

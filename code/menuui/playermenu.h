@@ -9,10 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.h $
- * $Revision: 2.1 $Date: 2002/06/03 04:02:24 $
- * $Author: taylor $
+ * $Revision: 2.2 $Date: 2004/07/17 18:46:07 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/07/17 18:46:07  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -53,6 +56,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #ifndef _PLAYER_SELECT_MENU_HEADER_FILE
 #define _PLAYER_SELECT_MENU_HEADER_FILE
 

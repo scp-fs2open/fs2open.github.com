@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.15 $
- * $Date: 2004-07-07 21:00:06 $
+ * $Revision: 1.16 $
+ * $Date: 2004-08-11 05:06:23 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2004/07/07 21:00:06  Kazan
+ * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
+ *
  * Revision 1.14  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -54,6 +57,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 #pragma warning(disable:4018)	// signed/unsigned mismatch
 #pragma warning(disable:4100)	// unreferenced formal parameter
 #pragma warning(disable:4511)	// copy constructor could not be generated

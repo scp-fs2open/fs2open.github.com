@@ -8,11 +8,18 @@
 
 /*
  * $Logfile: /Freespace2/code/debugconsole/timerbar.h $
- * $Revision: 1.8 $
- * $Date: 2004-02-16 11:47:31 $
- * $Author: randomtiger $
+ * $Revision: 1.9 $
+ * $Date: 2004-08-11 05:06:20 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/02/16 11:47:31  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 1.7  2003/11/19 20:37:23  randomtiger
  * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
  * Made some commandline variables fit the naming standard.
@@ -43,6 +50,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _TIMERBAR_HEADER_
 #define _TIMERBAR_HEADER_
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/rtvoice.h $
- * $Revision: 2.1 $
- * $Date: 2002-07-22 01:37:24 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * Header file for real-time voice code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/22 01:37:24  penguin
+ * Stub defines for NO_SOUND
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -66,6 +69,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __RTVOICE_H__
 #define __RTVOICE_H__
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.h $
- * $Revision: 2.5 $
- * $Date: 2004-07-25 00:31:31 $
+ * $Revision: 2.6 $
+ * $Date: 2004-08-11 05:06:34 $
  * $Author: Kazan $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/25 00:31:31  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.4  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -155,6 +158,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _AIGOALS_H
 #define _AIGOALS_H
 

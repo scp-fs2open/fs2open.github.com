@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.8 $
- * $Date: 2004-07-25 00:31:28 $
+ * $Revision: 2.9 $
+ * $Date: 2004-08-11 05:06:19 $
  * $Author: Kazan $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/25 00:31:28  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.7  2004/05/03 21:22:19  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -291,6 +294,7 @@
  *
 */
 
+#include "PreProcDefines.h"
 #ifndef CONTROLS_CONFIG_H
 #define CONTROLS_CONFIG_H
 

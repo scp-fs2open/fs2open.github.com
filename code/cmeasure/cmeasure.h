@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:19 $
+ * $Author: Kazan $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -115,6 +119,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _CMEASURE_H
 #define _CMEASURE_H
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.h $
- * $Revision: 2.2 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  *
  * Header file for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -58,6 +62,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __REDALERT_H__
 #define __REDALERT_H__
 

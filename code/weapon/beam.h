@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.7 $
- * $Date: 2004-03-17 04:07:32 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2004-08-11 05:06:36 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.6  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -125,6 +132,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef __FS2_BEAM_WEAPON_HEADER_FILE
 #define __FS2_BEAM_WEAPON_HEADER_FILE
 

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-17 04:07:32 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:36 $
+ * $Author: Kazan $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.2  2003/11/02 05:50:08  bobboau
  * modified trails to render with tristrips now rather than with stinky old trifans,
  * MUCH faster now, at least one order of magnatude.
@@ -51,6 +58,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _TRAILS_H
 #define _TRAILS_H
 

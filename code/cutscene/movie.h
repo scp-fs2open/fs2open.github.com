@@ -1,3 +1,5 @@
+#include "PreProcDefines.h"
+
 #ifndef _MOVIE_HEADER_FILE
 #define _MOVIE_HEADER_FILE
 

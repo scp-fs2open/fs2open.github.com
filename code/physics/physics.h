@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.6 $
- * $Date: 2003-11-11 02:15:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-08-11 05:06:32 $
+ * $Author: Kazan $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/11/11 02:15:46  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.5  2003/09/13 06:02:07  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -151,6 +156,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _PHYSICS_H
 #define _PHYSICS_H
 

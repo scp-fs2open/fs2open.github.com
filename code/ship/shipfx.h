@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/08/06 17:37:08  phreak
  * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
  *
@@ -137,7 +141,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef _SHIPFX_H
 #define _SHIPFX_H
 

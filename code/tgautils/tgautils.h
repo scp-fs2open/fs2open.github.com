@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.h $
- * $Revision: 2.1 $
- * $Date: 2004-04-26 02:14:38 $
- * $Author: taylor $
+ * $Revision: 2.2 $
+ * $Date: 2004-08-11 05:06:35 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/04/26 02:14:38  taylor
+ * 32-bit support with DevIL
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -32,7 +35,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef __TARGA_H
 #define __TARGA_H
 

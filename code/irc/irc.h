@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.5 $
- * $Date: 2004-05-25 00:24:00 $
- * $Author: wmcoolmon $
+ * $Revision: 1.6 $
+ * $Date: 2004-08-11 05:06:25 $
+ * $Author: Kazan $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/05/25 00:24:00  wmcoolmon
+ * Updated to use <fstream> instead of <fstream.h> and fixed an un/signed disagreement
+ *
  * Revision 1.4  2004/04/03 18:11:21  Kazan
  * FRED fixes
  *
@@ -34,7 +37,7 @@
  */
 
 
-
+#include "PreProcDefines.h"
 #if !defined(_IRC_H_)
 #define _IRC_H_
 

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.29 $
- * $Date: 2004-07-05 05:09:19 $
- * $Author: bobboau $
+ * $Revision: 2.30 $
+ * $Date: 2004-08-11 05:06:24 $
+ * $Author: Kazan $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/07/05 05:09:19  bobboau
+ * FVF code, only the data that is needed is sent off to the card,,
+ * OGL can take advantage of this if they want but it won't break
+ * anything if they don't. also state block code has been implemented,
+ * that's totaly internal to D3D no high level code is involved.
+ *
  * Revision 2.28  2004/06/28 02:13:07  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -330,7 +336,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef _GRD3DINTERNAL_H
 #define _GRD3DINTERNAL_H
 

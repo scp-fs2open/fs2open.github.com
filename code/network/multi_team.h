@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_team.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:26 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:26  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:11  mharris
  * Initial checkin - converted filenames and includes to lower case
  *  
@@ -67,6 +70,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _MULTI_TEAMPLAY_HEADER_FILE
 #define _MULTI_TEAMPLAY_HEADER_FILE
 

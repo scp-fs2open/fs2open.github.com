@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.64 $
- * $Date: 2004-07-11 03:22:53 $
- * $Author: bobboau $
+ * $Revision: 2.65 $
+ * $Date: 2004-08-11 05:06:34 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/07/11 03:22:53  bobboau
+ * added the working decal code
+ *
  * Revision 2.63  2004/05/10 10:51:51  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -507,6 +510,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _SHIP_H
 #define _SHIP_H
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.h $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  *
  * Header file to support functions that allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/09/16 13:30:16  unknownplayer
  * Minor bugfix to the 3D ship code. There still may be some cases where it will
  * fail to load the model file it needs, but I'm at present mystified as to why.
@@ -224,6 +228,7 @@
  *
 */
 
+#include "PreProcDefines.h"
 #ifndef __MISSIONSHIPCHOICE_H__
 #define __MISSIONSHIPCHOICE_H__
 

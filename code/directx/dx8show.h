@@ -1,3 +1,5 @@
+#include "PreProcDefines.h"
+
 #ifndef _DX8SHOW_HEADER_FILE
 #define _DX8SHOW_HEADER_FILE
 

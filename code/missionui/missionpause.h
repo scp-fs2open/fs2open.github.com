@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.h $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 03:50:29 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2004-08-11 05:06:28 $
+ * $Author: Kazan $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 03:50:29  randomtiger
+ * Added special pause mode for easier action screenshots.
+ * Added new command line parameter for accessing all single missions in tech room. - RT
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -32,6 +36,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _MISSION_PAUSE_HEADER_FILE
 #define _MISSION_PAUSE_HEADER_FILE
 

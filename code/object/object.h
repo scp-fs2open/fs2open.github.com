@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.6 $
- * $Date: 2004-05-10 08:03:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2004-08-11 05:06:29 $
+ * $Author: Kazan $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/05/10 08:03:30  Goober5000
+ * fixored the handling of no lasers and no engines... the tests should check the ship,
+ * not the object
+ * --Goober5000
+ *
  * Revision 2.5  2004/03/05 09:01:57  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -332,6 +337,7 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
 #ifndef _OBJECT_H
 #define _OBJECT_H
 

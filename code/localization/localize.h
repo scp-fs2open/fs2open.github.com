@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-08-11 05:06:27 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:05  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2003/09/28 21:22:59  Goober5000
  * added the option to import FSM missions, added a replace function, spruced
  * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
@@ -61,7 +65,7 @@
  * $NoKeywords: $
  */
 
-
+#include "PreProcDefines.h"
 #ifndef __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
 #define __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
 
