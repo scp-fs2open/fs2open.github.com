@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-03-05 09:02:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2004-03-06 23:28:23 $
+ * $Author: bobboau $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/03/05 09:02:08  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.7  2004/02/14 00:18:35  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -495,6 +499,7 @@ void mono_print( char * text, int len )
 	}
 	mono_flush();
 }
+
 
 void outwnd_printf(char *id, char *format, ...)
 {
@@ -1420,3 +1425,30 @@ void outwnd_close()
 
 
 #endif //NDEBUG
+
+
+#include "debugconsole/dbugfile.h"
+#include <stdarg.h>
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+char safe_string[512] = {0};
+
+void safe_point_print(char *format, ...){
+	char tmp[512];
+	va_list args;
+	
+	va_start(args, format);
+	vsprintf(tmp, format, args);
+	va_end(args);
+	strcpy(safe_string, tmp);
+}
+
+void safe_point(char *file, int line, char *format, ...)
+{
+	safe_point_print("last safepoint: %s, %d; [%s]", file, line, format);
+}
+
+
