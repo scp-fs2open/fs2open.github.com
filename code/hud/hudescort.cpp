@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-31 05:17:13 $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-31 07:26:40 $
  * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/31 05:17:13  Goober5000
+ * fixed escort list behavior for stealthy ships
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -127,9 +131,6 @@ typedef struct escort_info
 escort_info		Escort_ships[MAX_ESCORT_SHIPS];
 int				Num_escort_ships;
 
-
-// size of complete escort list, including all those wanting to get onto list but without space
-#define MAX_COMPLETE_ESCORT_LIST	20
 
 
 #define NUM_ESCORT_FRAMES 3
