@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.28 $
- * $Date: 2003-01-19 08:37:52 $
+ * $Revision: 2.29 $
+ * $Date: 2003-01-19 09:10:40 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/01/19 08:37:52  Goober5000
+ * fixed two dumb bugs in the set-support-ship code
+ * --Goober5000
+ *
  * Revision 2.27  2003/01/19 07:45:38  Goober5000
  * actually added the set-support-ship sexp; much of the other commit was
  * groundwork (data types and stuff)
@@ -5136,21 +5140,25 @@ int mission_do_departure( object *objp )
 			if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
 				goto do_departure_warp;
 
-		if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
+		// if ship is not dying, we're good
+		if (!( (Ships[Objects[aip->goal_objnum].instance].flags & (SF_DYING | SF_DEPARTING)) || ( aip->goal_signature != Objects[aip->goal_objnum].signature) ) )
 		{
-			return 1;
-		}
-		else
-		{
-			// if we have no subspace drive, do something else
-			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+			if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
 			{
-				shipp->flags &= ~SF_DEPARTING;
-				aigp->ai_mode = AI_GOAL_NONE;
-				aigp->ai_submode = 0;
-				aip->mode = AIM_NONE;
-				return 0;
+				return 1;
 			}
+		}
+		
+		// if we reached this point, we can't depart via dockbay
+
+		// if we have no subspace drive, do something else
+		if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+		{
+			shipp->flags &= ~SF_DEPARTING;
+			aigp->ai_mode = AI_GOAL_NONE;
+			aigp->ai_submode = 0;
+			aip->mode = AIM_NONE;
+			return 0;
 		}
 	}
 
