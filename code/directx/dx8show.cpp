@@ -9,7 +9,7 @@
 #include <commctrl.h>
 #include <commdlg.h>
 #include <tchar.h>
-#include <atlbase.h>
+//#include <atlbase.h> // No dependecy on ATL!!!
 
 
 
@@ -94,7 +94,7 @@ BOOL IsAudioOnly()
 
 HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
 {
-    USES_CONVERSION;
+//    USES_CONVERSION;
     WCHAR wFile[MAX_PATH];
     HRESULT hr;
 
@@ -102,7 +102,8 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
     UpdateWindow(ghApp);
 
     // Convert filename to wide character string
-    wcscpy(wFile, T2W(szFile));
+//    wcscpy(wFile, T2W(szFile)); // requires ATL
+	swprintf(wFile, L"%s", szFile); // Uses libc to convert instead
 
     // Get the interface for DirectShow's GraphBuilder
     JIF(CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER, 
