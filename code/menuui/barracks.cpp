@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-02-04 23:29:32 $
+ * $Revision: 2.16 $
+ * $Date: 2005-02-23 04:51:56 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/02/04 23:29:32  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 2.14  2005/01/29 08:08:24  wmcoolmon
  * Various updates; shader, assert, and clipping
  *
@@ -1735,7 +1738,7 @@ void barracks_do_frame(float frametime)
 				bm_get_info(Pilot_images[Pic_number], &w, &h, NULL);
 				// check for invalid pilot pic file
 				if ((w != PLAYER_PILOT_PIC_W) || (h != PLAYER_PILOT_PIC_H)) {
-					bm_unload(Pilot_images[Pic_number]);
+					bm_release(Pilot_images[Pic_number]);
 					Pilot_images[Pic_number] = -1;
 				}
 			}
@@ -1754,7 +1757,7 @@ void barracks_do_frame(float frametime)
 				bm_get_info(Pilot_squad_images[Pic_squad_number], &w, &h, NULL);
 				// check for invalid pilot pic file
 				if ((w != PLAYER_SQUAD_PIC_W) || (h != PLAYER_SQUAD_PIC_H)) {
-					bm_unload(Pilot_squad_images[Pic_squad_number]);
+					bm_release(Pilot_squad_images[Pic_squad_number]);
 					Pilot_squad_images[Pic_squad_number] = -1;
 				}
 			}
@@ -1806,19 +1809,16 @@ void barracks_close()
 
 	// release background bitmap
 	if (Background_bitmap >= 0) {
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 	}	
 
 	// release rank pip bitmaps
-	int i;
-	for (i=0; i<Rank_pips_count; i++) {
-		bm_release(Rank_pips_bitmaps + i);
-	}	
+	bm_release(Rank_pips_bitmaps);	
 
 	// release pilot pic bitmaps
-	for (i=0; i<Num_pilot_images; i++) {
+	for (int i=0; i<Num_pilot_images; i++) {
 		if (Pilot_images[i] >= 0) {
-			bm_unload(Pilot_images[i]);
+			bm_release(Pilot_images[i]);
 		}
 	}
 

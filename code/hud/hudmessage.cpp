@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-13 08:37:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-02-23 04:51:56 $
+ * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/13 08:37:57  wmcoolmon
+ * Made messages display properly in nonstandard resolutions
+ *
  * Revision 2.6  2005/01/31 10:34:38  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -1409,7 +1412,7 @@ void hud_scrollback_close()
 	ML_objectives_close();
 	message_log_shutdown_scrollback();
 	if (Background_bitmap >= 0)
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 	//if (Status_bitmap >= 0)
 	//	bm_unload(Status_bitmap);
 

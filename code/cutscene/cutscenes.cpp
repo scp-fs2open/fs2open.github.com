@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-01-31 23:27:51 $
+ * $Revision: 2.15 $
+ * $Date: 2005-02-23 04:51:55 $
  * $Author: taylor $
- * $Revision: 2.14 $
- * $Date: 2005-01-31 23:27:51 $
+ * $Revision: 2.15 $
+ * $Date: 2005-02-23 04:51:55 $
  * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/01/31 23:27:51  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.13  2004/07/26 20:47:26  Kazan
  * remove MCD complete
  *
@@ -705,7 +708,7 @@ void cutscenes_screen_init()
 void cutscenes_screen_close()
 {
 	if (Background_bitmap)
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 
 	Ui_window.destroy();
 }

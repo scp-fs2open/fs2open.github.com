@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-02-14 23:54:11 $
+ * $Revision: 2.23 $
+ * $Date: 2005-02-23 04:51:56 $
  * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/02/14 23:54:11  taylor
+ * make loading screen shader a bit taller
+ * add i.o to credits for Linux and OSX code
+ * add libjpeg and ogg stuff to credits for license compliance
+ * replace an Int3() with a debug message in the hud code
+ *
  * Revision 2.21  2005/01/31 23:27:53  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -767,7 +773,7 @@ void credits_close()
 
 	for (i=0; i<NUM_IMAGES; i++){
 		if (Credits_bmps[i] >= 0){
-			bm_unload(Credits_bmps[i]);
+			bm_release(Credits_bmps[i]);
 			Credits_bmps[i] = -1;
 		}
 	}	
@@ -783,7 +789,7 @@ void credits_close()
 	}
 
 	if (Background_bitmap){
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 	}
 
 	Ui_window.destroy();

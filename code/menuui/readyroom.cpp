@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-02-18 20:50:40 $
- * $Author: wmcoolmon $
+ * $Revision: 2.14 $
+ * $Date: 2005-02-23 04:51:56 $
+ * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/02/18 20:50:40  wmcoolmon
+ * Fixed line misalignment at nonstandard res in the campaign room
+ *
  * Revision 2.12  2004/10/31 21:53:24  taylor
  * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
  *
@@ -1226,7 +1229,7 @@ void sim_room_close()
 			free(Campaign_missions[i]);
 
 	if (Background_bitmap >= 0)
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 
 	if (Standalone_mission_names_inited){
 		for (i=0; i<Num_standalone_missions; i++){
@@ -1861,7 +1864,7 @@ void campaign_room_close()
 			free(Campaign_descs[i]);
 
 	if (Background_bitmap >= 0)
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 
 	if (Campaign_names_inited)
 		for (i=0; i<Num_campaigns; i++)
@@ -2041,6 +2044,7 @@ void sim_room_unload_mission_icons()
 	// unload all bitmaps
 	for(idx=0; idx<NUM_MISSION_ICONS; idx++){
 		if(Mission_icon_bitmaps[idx] >= 0){
+			// don't bm_release() here, used in multiple places - taylor
 			bm_unload(Mission_icon_bitmaps[idx]);
 			Mission_icon_bitmaps[idx] = -1;
 		}

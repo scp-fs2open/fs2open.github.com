@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-01-29 08:08:24 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2005-02-23 04:51:56 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/01/29 08:08:24  wmcoolmon
+ * Various updates; shader, assert, and clipping
+ *
  * Revision 2.24  2005/01/28 13:26:14  taylor
  * less hacky and faster version... *hopes no one noticed the stupid mistake*
  *
@@ -1654,7 +1657,7 @@ void techroom_close()
 			Weapon_list[i].animation = NULL;
 		}
 		if( Weapon_list[i].bitmap >= 0 ){
-			bm_unload(Weapon_list[i].bitmap);
+			bm_release(Weapon_list[i].bitmap);
 			Weapon_list[i].bitmap = -1;
 		}
 	}
@@ -1665,7 +1668,7 @@ void techroom_close()
 			Intel_list[i].animation = NULL;
 		}
 		if( Intel_list[i].bitmap >= 0 ){
-			bm_unload(Intel_list[i].bitmap);
+			bm_release(Intel_list[i].bitmap);
 			Intel_list[i].bitmap = -1;
 		}
 	}
@@ -1701,13 +1704,13 @@ void techroom_close()
 	*/
 
 	if (Tech_background_bitmap) {
-		bm_unload(Tech_background_bitmap);
+		bm_release(Tech_background_bitmap);
 	}
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
 	if (Palette_bmp){
-		bm_unload(Palette_bmp);
+		bm_release(Palette_bmp);
 	}
 
 	// restore detail settings

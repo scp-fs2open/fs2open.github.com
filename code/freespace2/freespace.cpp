@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.123 $
- * $Date: 2005-02-14 23:54:10 $
+ * $Revision: 2.124 $
+ * $Date: 2005-02-23 04:51:55 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2005/02/14 23:54:10  taylor
+ * make loading screen shader a bit taller
+ * add i.o to credits for Linux and OSX code
+ * add libjpeg and ogg stuff to credits for license compliance
+ * replace an Int3() with a debug message in the hud code
+ *
  * Revision 2.122  2005/02/04 10:12:29  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -8382,9 +8388,11 @@ void unload_animating_pointer()
 
 		// if we are the current cursor then reset to avoid gr_close() issues - taylor
 		gr_unset_cursor_bitmap(am->first_frame + i);
-
-		bm_release(am->first_frame + i);
 	}
+
+	// this will release all of the frames at once
+	if (am->first_frame >= 0)
+		bm_release(am->first_frame);
 
 	am->first_frame	= -1;
 	am->num_frames		= 0;
@@ -9033,7 +9041,7 @@ void oem_upsell_unload_bitmaps()
 
 	for ( i = 0; i < NUM_OEM_UPSELL_SCREENS; i++ ) {
 		if(Oem_upsell_bitmaps[gr_screen.res][i] >= 0){
-			bm_unload(Oem_upsell_bitmaps[gr_screen.res][i]);
+			bm_release(Oem_upsell_bitmaps[gr_screen.res][i]);
 		}
 	}
 
@@ -9223,7 +9231,7 @@ void demo_upsell_unload_bitmaps()
 
 	for ( i = 0; i < NUM_DEMO_UPSELL_SCREENS; i++ ) {
 		if(Demo_upsell_bitmaps[gr_screen.res][i] >= 0){
-			bm_unload(Demo_upsell_bitmaps[gr_screen.res][i]);
+			bm_release(Demo_upsell_bitmaps[gr_screen.res][i]);
 		}
 	}
 
