@@ -119,14 +119,14 @@ void camera::set_rotation(matrix *in_orientation, float in_rotation_time, float 
 			vm_set_identity(desired_orientation);
 		
 		//Calculate the maximum acceleration speed
-		rotation_acc_limit.xyz.z = abs(d.p / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
-		rotation_acc_limit.xyz.x = abs(d.b / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
-		rotation_acc_limit.xyz.y = abs(d.h / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
+		rotation_acc_limit.xyz.z = fabsf(d.p / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
+		rotation_acc_limit.xyz.x = fabsf(d.b / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
+		rotation_acc_limit.xyz.y = fabsf(d.h / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
 
 		//Calculate the maximum velocity
-		rotation_vel_limit.xyz.x = abs(rotation_acc_limit.xyz.x * in_rotation_acceleration_time);
-		rotation_vel_limit.xyz.y = abs(rotation_acc_limit.xyz.y * in_rotation_acceleration_time);
-		rotation_vel_limit.xyz.z = abs(rotation_acc_limit.xyz.z * in_rotation_acceleration_time);
+		rotation_vel_limit.xyz.x = fabsf(rotation_acc_limit.xyz.x * in_rotation_acceleration_time);
+		rotation_vel_limit.xyz.y = fabsf(rotation_acc_limit.xyz.y * in_rotation_acceleration_time);
+		rotation_vel_limit.xyz.z = fabsf(rotation_acc_limit.xyz.z * in_rotation_acceleration_time);
 
 		//rotation_rate_delta_time = rotation_rate_delta_time_left = in_rotation_acceleration_time;
 		//rotation_rate_decel_time_til = in_rotation_time - in_rotation_acceleration_time;

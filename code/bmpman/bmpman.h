@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.18 $
- * $Date: 2004-11-23 00:10:06 $
+ * $Revision: 2.19 $
+ * $Date: 2005-02-10 14:38:50 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/11/23 00:10:06  taylor
+ * try and protect the bitmap_entry stuff a bit better
+ * fix the transparent support ship, again, but correctly this time
+ *
  * Revision 2.17  2004/11/21 15:59:45  Kazan
  * conflict res
  *
@@ -504,6 +508,7 @@ void BM_SELECT_ALPHA_TEX_FORMAT();
 
 // set the rgba components of a pixel, any of the parameters can be NULL
 extern void (*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
+extern void (*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 void bm_set_components_argb(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 void bm_set_components_d3d(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 void bm_set_components_argb_d3d_16_screen(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
