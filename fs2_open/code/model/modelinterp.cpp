@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.92 $
- * $Date: 2005-01-01 19:45:32 $
+ * $Revision: 2.93 $
+ * $Date: 2005-01-28 09:56:44 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2005/01/01 19:45:32  taylor
+ * add MR_NO_FOGGING flag to easily render models without fog (warp model, targetbox models)
+ *
  * Revision 2.91  2004/12/05 22:01:11  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -4674,7 +4677,7 @@ void model_set_fog_level(float l)
 // given a newly loaded model, page in all textures
 void model_page_in_textures(int modelnum, int ship_info_index)
 {
-	int idx;
+	int i, idx;
 	ship_info *sip;
 
 	// valid ship type?
@@ -4698,13 +4701,79 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 	else {		
 		palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
 	}
-								
-	for (idx=0; idx<pm->n_textures; idx++ ){
-		int bitmap_num = pm->original_textures[idx];
 
-		if ( bitmap_num > -1 )	{
-			bm_lock(bitmap_num, 16, BMP_TEX_OTHER);
-			bm_unlock(bitmap_num);
+	for (idx=0; idx<pm->n_textures; idx++ ){
+		if ( pm->original_textures[idx] > -1 )	{
+			bm_lock(pm->original_textures[idx], 16, BMP_TEX_OTHER);
+			bm_unlock(pm->original_textures[idx]);
+		}
+
+		if ( pm->glow_original_textures[idx] > -1 ) {
+			bm_lock(pm->glow_original_textures[idx], 16, BMP_TEX_OTHER);
+			bm_unlock(pm->glow_original_textures[idx]);
+		}
+
+		if ( pm->specular_original_textures[idx] > -1 ) {
+			bm_lock(pm->specular_original_textures[idx], 16, BMP_TEX_OTHER);
+			bm_unlock(pm->specular_original_textures[idx]);
+		}
+
+		if (pm->n_glows) {
+			for (i=0; i<pm->n_glows; i++) {
+				glow_bank *bank = &pm->glows[i];
+
+				if (bank->glow_bitmap > -1) {
+					bm_lock(bank->glow_bitmap, 16, BMP_TEX_OTHER);
+					bm_unlock(bank->glow_bitmap);
+				}
+
+				if (bank->glow_neb_bitmap > -1) {
+					bm_lock(bank->glow_neb_bitmap, 16, BMP_TEX_OTHER);
+					bm_unlock(bank->glow_neb_bitmap);
+				}
+			}
+		}
+	}
+}
+
+// unload all textures for a given model
+void model_page_out_textures(int model_num)
+{
+	int i, j;
+
+	if (model_num < 0)
+		return;
+
+	polymodel *pm = model_get( model_num );
+
+	if (pm == NULL)
+		return;
+
+	for (i=0; i<pm->n_textures; i++) {
+		if ( pm->original_textures[i] > -1 ) {
+			bm_unload( pm->original_textures[i] );
+		}
+
+		if ( pm->glow_original_textures[i] > -1 ) {
+			bm_unload( pm->glow_original_textures[i] );
+		}
+
+		if ( pm->specular_original_textures[i] > -1 ) {
+			bm_unload( pm->specular_original_textures[i] );
+		}
+
+		if (pm->n_glows) {
+			for (j=0; j<pm->n_glows; j++) {
+				glow_bank *bank = &pm->glows[j];
+
+				if (bank->glow_bitmap > -1) {
+					bm_unload( bank->glow_bitmap );
+				}
+
+				if (bank->glow_neb_bitmap > -1) {
+					bm_unload( bank->glow_neb_bitmap );
+				}
+			}
 		}
 	}
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.49 $
- * $Date: 2005-01-27 11:26:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2005-01-28 09:56:44 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/01/27 11:26:23  Goober5000
+ * dock points on rotating submodels is *almost* working
+ * --Goober5000
+ *
  * Revision 2.48  2005/01/11 21:38:50  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -1495,6 +1499,9 @@ float get_world_closest_box_point_with_delta(vector *closest_box_point, object *
 
 // given a newly loaded model, page in all textures
 void model_page_in_textures(int modelnum, int ship_info_index);
+
+// given a model, unload all of its textures
+void model_page_out_textures( int model_num );
 
 // is the given model a pirate ship?
 int model_is_pirate_ship(int modelnum);
