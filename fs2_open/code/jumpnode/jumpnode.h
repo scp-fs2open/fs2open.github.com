@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.6 $
- * $Date: 2005-03-03 06:05:28 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-11 01:28:23 $
  * $Author: wmcoolmon $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.5  2004/08/11 05:06:26  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -66,7 +69,8 @@
 struct vector;
 struct object;
 
-#define MAX_JUMP_NODES	50
+//#define MAX_JUMP_NODES	50
+//No max anymore. Why you'd want more than 50 is anybody's guess though.
 
 //Jump node flags
 #define JN_USE_DISPLAY_COLOR		(1<<0)		//Use display_color instead of HUD color
@@ -89,6 +93,7 @@ public:
 	
 	//Getting
 	int get_modelnum(){return m_modelnum;}
+	int get_objnum(){return m_objnum;}
 	object *get_obj(){return &Objects[m_objnum];}
 	char *get_name_ptr(){return m_name;}
 	bool is_hidden(){if(m_flags & JN_HIDE){return true;}else{return false;}}
@@ -102,6 +107,12 @@ public:
 	void render(vector *pos, vector *view_pos = NULL);
 };
 
+//-----Globals------
+extern int Num_jump_nodes;
+extern linked_list Jump_nodes;
+
+//-----Functions-----
+//Given a name, returns pointer to the jump node object
 jump_node *jumpnode_get_by_name(char *name);
 
 //Given an object, returns which jump node it's in
