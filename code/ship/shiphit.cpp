@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-02-25 06:22:49 $
+ * $Revision: 2.12 $
+ * $Date: 2003-02-26 02:56:55 $
  * $Author: bobboau $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/02/25 06:22:49  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.10  2003/02/16 05:14:29  bobboau
  * added glow map nebula bug fix for d3d, someone should add a fix for glide too
  * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
@@ -2359,8 +2365,8 @@ mprintf(("aplying damage to hull\n"));
 				}
 				break;
 			case OBJ_BEAM://give kills for fighter beams-Bobboau
-				object beam_obj = Objects[beam_get_parent(other_obj)];
-				if((beam_obj.instance < 0) || (beam_obj.instance >= MAX_OBJECTS)){
+//				object beam_obj = Objects[beam_get_parent(other_obj)];
+				if((other_obj->parent < 0) || (other_obj->parent >= MAX_OBJECTS)){
 					scoring_add_damage(ship_obj, NULL, damage);
 				} else {
 					scoring_add_damage(ship_obj, &Objects[other_obj->parent], damage);
