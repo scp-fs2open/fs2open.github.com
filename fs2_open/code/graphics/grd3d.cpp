@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-09-23 02:42:53 $
- * $Author: Kazan $
+ * $Revision: 2.23 $
+ * $Date: 2003-09-26 14:37:14 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/09/23 02:42:53  Kazan
+ * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
+ *
  * Revision 2.21  2003/09/07 18:14:53  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -484,6 +487,7 @@
 #include "debugconsole/dbugfile.h"
 #include "graphics/grd3dbmpman.h"
 #include "freespace2/freespaceresource.h"   
+#include "model/model.h"   
 
 // The main direct3D interface that devices are create from
 IDirect3D8 *lpD3D = NULL;
@@ -554,6 +558,8 @@ DCF(zbias, "")
 {
 	D3D_zbias = !D3D_zbias;
 }
+
+D3DLIGHT8 empty_light;
 
 LPVOID lpBufStart, lpPointer, lpInsStart;
 int Exb_size;
@@ -930,7 +936,7 @@ void d3d_release_rendering_objects()
 	DBUGFILE_OUTPUT_COUNTER(0, "Number of unfreed textures");
 }
 
-enum stage_state{NONE = -1, INITAL = 0, DEFUSE = 1, GLOW_MAPPED_DEFUSE = 2, NONMAPPED_SPECULAR = 3, GLOWMAPPED_NONMAPPED_SPECULAR = 4, MAPPED_SPECULAR = 5, CELL = 6, GLOWMAPPED_CELL = 7, ADDITIVE_GLOWMAPPING = 8};
+enum stage_state{NONE = -1, INITAL = 0, DEFUSE = 1, GLOW_MAPPED_DEFUSE = 2, NONMAPPED_SPECULAR = 3, GLOWMAPPED_NONMAPPED_SPECULAR = 4, MAPPED_SPECULAR = 5, CELL = 6, GLOWMAPPED_CELL = 7, ADDITIVE_GLOWMAPPING = 8, GLOW_MAPPED_SPECULAR_MAPPED = 9, GLOW_SPEC_NO_SPEC = 10, GLOW_SPEC_NO_GLOW = 11};
 stage_state current_render_state = NONE;
 
 // This function calls these render state one when the device is initialised and when the device is lost.
@@ -1131,6 +1137,42 @@ bool set_stage_for_spec_mapped(){
 	return true;
 }
 
+
+bool set_stage_for_spec_glow_mapped(){
+	if(current_render_state == GLOW_MAPPED_SPECULAR_MAPPED)return true;
+	if((SPECMAP < 0)&&(GLOWMAP < 0)){
+		return false;
+	}
+
+	if(SPECMAP < 0){
+		if(current_render_state == GLOW_SPEC_NO_SPEC)return true;
+		d3d_SetTexture(0, NULL);
+		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_DISABLE);
+		current_render_state = GLOW_SPEC_NO_SPEC;
+	}else{
+		d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_SPECULAR);
+		d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE4X);
+//		d3d_SetTexture(0, SPECMAP);
+	}
+
+	if(GLOWMAP < 0){
+		if(current_render_state == GLOW_SPEC_NO_GLOW)return true;
+		d3d_SetTexture(1, NULL);
+		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+		current_render_state = GLOW_SPEC_NO_GLOW;
+	}else{
+		d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
+		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTA_TEXTURE);
+		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+	}
+
+
+	if((SPECMAP > 0)&&(GLOWMAP > 0))
+		current_render_state = GLOW_MAPPED_SPECULAR_MAPPED;
+	return true;
+}
+
 void set_stage_for_mapped_environment_mapping(){
 /*	if(ENVMAP > 0 && env_enabled){
 		d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 1);
@@ -1193,6 +1235,10 @@ void d3d_setup_format_components(
 		a_gun->scale = 256;
 	}
 }
+#ifdef HTL
+
+D3DMATERIAL8 material;
+#endif
 
 // This is what remains of the old d3d5 init function
 bool d3d_init_device(int screen_width, int screen_height)
@@ -1324,6 +1370,35 @@ bool d3d_init_device(int screen_width, int screen_height)
 
 	// setup proper render state
 	d3d_set_initial_render_state();	
+
+#ifdef HTL
+
+	ZeroMemory(&material,sizeof(D3DMATERIAL8));
+	material.Diffuse.r = 1.0f;
+	material.Diffuse.g = 1.0f;
+	material.Diffuse.b = 1.0f;
+	material.Diffuse.a = 1.0f;
+
+	material.Ambient.r = 1.0f;
+	material.Ambient.g = 1.0f;
+	material.Ambient.b = 1.0f;
+	material.Ambient.a = 1.0f;
+
+	material.Emissive.r = 0.0f;
+	material.Emissive.g = 0.0f;
+	material.Emissive.b = 0.0f;
+	material.Emissive.a = 0.0f;
+
+ 	material.Specular.r = 1.0f;
+	material.Specular.g = 1.0f;
+	material.Specular.b = 1.0f;
+	material.Specular.a = 1.0f;
+
+	material.Power = 16.0f;
+
+	lpD3DDevice->SetMaterial(&material);
+
+#endif
 
 	mprintf(( "Direct3D Initialized OK!\n" ));
 
@@ -2435,7 +2510,503 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 
 	DBUGFILE_OUTPUT_1("default_32_alpha_tformat %d",default_32_alpha_tformat);
 }
+#ifdef HTL
+//*******Vertex buffer stuff*******//
+//-Bobboau
+struct Vertex_buffer{
+	Vertex_buffer(): ocupied(false), n_prim(0){};
+	bool ocupied;
+	short int n_prim;
+	IDirect3DVertexBuffer8 *buffer;
+};
 
+#define MAX_SUBOBJECTS 64
+#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*(MAX_MODEL_TEXTURES/4)
+void shift_active_lights(int pos);
+void pre_render_lights_init();
+
+Vertex_buffer vertex_buffer[MAX_BUFFERS];
+extern matrix View_matrix;
+extern vector View_position;
+extern matrix Eye_matrix;
+extern vector Eye_position;
+extern vector Object_position;
+extern matrix Object_matrix;
+extern float	Canv_w2;				// Canvas_width / 2
+extern float	Canv_h2;				// Canvas_height / 2
+extern float	View_zoom;
+int n_active_lights = 0;
+
+//finds the first unocupyed buffer
+int find_first_empty_buffer(){
+	for(int i = 0; i<MAX_BUFFERS; i++)if(!vertex_buffer[i].ocupied)return i;
+	return -1;
+}
+
+//makes the vertex buffer, returns an index to it
+int gr_d3d_make_buffer(poly_list *list){
+	int idx = find_first_empty_buffer();
+
+	if(idx > -1){
+		IDirect3DVertexBuffer8 **buffer = &vertex_buffer[idx].buffer;
+
+		lpD3DDevice->CreateVertexBuffer(sizeof(D3DVERTEX)*(list->n_poly*3), NULL, (D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2), D3DPOOL_MANAGED,	buffer);
+
+		D3DVERTEX *v, *V;
+		vertex *L;
+		vector *N;
+
+		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
+	int p = 0;
+		for(int k = 0; k<list->n_poly; k++){
+			for(int j = 0; j < 3; j++){
+				V = &v[(k*3)+j];
+				L = &list->vert[k][j];
+				N = &list->norm[k][j];
+
+				V->sx = L->x;
+				V->sy = L->y;
+				V->sz = L->z;
+
+				V->tu = L->u;
+				V->tv = L->v;
+				V->tu2 = L->u;
+				V->tv2 = L->v;
+	
+				V->nx = N->xyz.x;
+				V->ny = N->xyz.y;
+				V->nz = N->xyz.z;
+			}
+		}
+
+		vertex_buffer[idx].buffer->Unlock();
+
+		vertex_buffer[idx].ocupied = true;
+		vertex_buffer[idx].n_prim = list->n_poly;
+	}
+	return idx;
+}
+	
+//kills buffers dead!
+void gr_d3d_destroy_buffer(int idx){
+	vertex_buffer[idx].buffer->Release();
+	vertex_buffer[idx].ocupied = false;
+}
+
+//renders a buffer	
+/*void gr_d3d_render_buffer(int idx){
+
+	if(!vertex_buffer[idx].ocupied)return;
+	float u_scale = 1.0f, v_scale = 1.0f;
+
+	gr_alpha_blend ab;
+	if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_NONE)	ab = ALPHA_BLEND_NONE;
+	else if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER)	ab = ALPHA_BLEND_ALPHA_ADDITIVE;
+
+	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
+	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
+
+
+//	set_stage_for_defuse();
+	if(GLOWMAP > -1){
+		//glowmapped
+		gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
+		set_stage_for_glow_mapped_defuse();
+	}else{
+		//non glowmapped
+		d3d_SetTexture(1, NULL);
+		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+		set_stage_for_defuse();
+	}
+
+	lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
+
+	lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+
+	//spec mapping
+	if(SPECMAP > 0){
+		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
+				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
+			//	Error(LOCATION, "Not rendering specmap texture because it didn't fit in VRAM!");
+	//			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
+				return;
+			}
+
+		if(set_stage_for_spec_mapped()){
+			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+//			lpD3DDevice->SetRenderState(D3DRS_SPECULARENABLE, TRUE );
+			lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
+		}
+	}
+
+//	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
+
+}*/
+//set_stage_for_spec_glow_mapped
+void gr_d3d_render_buffer(int idx){
+
+	if(!vertex_buffer[idx].ocupied)return;
+	float u_scale = 1.0f, v_scale = 1.0f;
+
+	gr_alpha_blend ab;
+	if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_NONE)	ab = ALPHA_BLEND_NONE;
+	else if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER)	ab = ALPHA_BLEND_ALPHA_ADDITIVE;
+
+	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
+	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
+
+	pre_render_lights_init();
+	shift_active_lights(0);
+
+//	set_stage_for_defuse();
+	if(GLOWMAP > -1){
+		//glowmapped
+		gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
+		set_stage_for_glow_mapped_defuse();
+	}else{
+		//non glowmapped
+		d3d_SetTexture(1, NULL);
+		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+		set_stage_for_defuse();
+	}
+
+	int passes = (n_active_lights/d3d_caps.MaxActiveLights);
+	lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
+
+	lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+	gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+
+	set_stage_for_defuse();
+	for(int i = 1; i<passes+1; i++){
+		shift_active_lights(i);
+		lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+	}
+
+	pre_render_lights_init();
+	shift_active_lights(0);
+	//spec mapping
+	if(SPECMAP > 0){
+		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
+				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
+			//	Error(LOCATION, "Not rendering specmap texture because it didn't fit in VRAM!");
+	//			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
+				return;
+			}
+
+		if(set_stage_for_spec_mapped()){
+			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+//			lpD3DDevice->SetRenderState(D3DRS_SPECULARENABLE, TRUE );
+			lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+			for(int i = 1; i<passes+1; i++){
+				shift_active_lights(i);
+				lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+			}
+			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
+		}
+	}
+
+//	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
+
+}
+
+
+//D3DXMATRIX old_p, old_w, old_v;
+unsigned long old_shader;
+
+//D3DLIGHT8 I_light;
+extern float Model_Interp_scale_x;	//added these three for warpin stuff-Bobbau
+extern float Model_Interp_scale_y;
+extern float Model_Interp_scale_z;
+
+void gr_d3d_start_instance_matrix(){
+	lpD3DDevice->GetVertexShader(&old_shader);
+	D3DXMATRIX mat, scale;
+
+/*	lpD3DDevice->GetTransform(D3DTS_PROJECTION, &old_p);
+	lpD3DDevice->GetTransform(D3DTS_WORLD, &old_w);
+	lpD3DDevice->GetTransform(D3DTS_VIEW, &old_v);
+*/
+	//hmm... seems I don't need these
+	D3DXMatrixPerspectiveFovLH(&mat, (4.0/9.0)*(D3DX_PI)*View_zoom, Canv_w2/Canv_h2, 0.2f, 30000);
+	lpD3DDevice->SetTransform(D3DTS_PROJECTION, &mat);
+
+	D3DXMATRIX world(
+		Object_matrix.vec.rvec.xyz.x, Object_matrix.vec.rvec.xyz.y, Object_matrix.vec.rvec.xyz.z, 0,
+		Object_matrix.vec.uvec.xyz.x, Object_matrix.vec.uvec.xyz.y, Object_matrix.vec.uvec.xyz.z, 0,
+		Object_matrix.vec.fvec.xyz.x, Object_matrix.vec.fvec.xyz.y, Object_matrix.vec.fvec.xyz.z, 0,
+		Object_position.xyz.x, Object_position.xyz.y, Object_position.xyz.z, 1);
+	D3DXMatrixScaling(&scale, Model_Interp_scale_x, Model_Interp_scale_y, Model_Interp_scale_z);
+	D3DXMatrixMultiply(&mat, &scale, &world);
+	lpD3DDevice->SetTransform(D3DTS_WORLD, &mat);
+
+	D3DXMATRIX view(
+		Eye_matrix.vec.rvec.xyz.x, Eye_matrix.vec.rvec.xyz.y, Eye_matrix.vec.rvec.xyz.z, 0,
+		Eye_matrix.vec.uvec.xyz.x, Eye_matrix.vec.uvec.xyz.y, Eye_matrix.vec.uvec.xyz.z, 0,
+		Eye_matrix.vec.fvec.xyz.x, Eye_matrix.vec.fvec.xyz.y, Eye_matrix.vec.fvec.xyz.z, 0,
+		Eye_position.xyz.x, Eye_position.xyz.y, Eye_position.xyz.z, 1);
+
+
+	D3DXMatrixIdentity(&mat);
+	D3DXMatrixInverse(&mat, NULL, &view);
+	lpD3DDevice->SetTransform(D3DTS_VIEW, &mat);
+/*
+	ZeroMemory(&I_light, sizeof(D3DLIGHT8));
+	I_light.Type = D3DLIGHT_DIRECTIONAL;
+	I_light.Diffuse.r = 0.5f;
+	I_light.Diffuse.g = 0.5f;
+	I_light.Diffuse.b = 0.5f;
+	I_light.Diffuse.a = 1.0f;
+	I_light.Ambient.r = 0.25f;
+	I_light.Ambient.g = 0.25f;
+	I_light.Ambient.b = 0.25f;
+	I_light.Ambient.a = 1.0f;
+	I_light.Specular.r = 0.5f;
+	I_light.Specular.g = 0.5f;
+	I_light.Specular.b = 0.5f;
+	I_light.Specular.a = 1.0f;
+	I_light.Position = D3DXVECTOR3(0,1,0);
+	I_light.Direction = D3DXVECTOR3(0,-1,0);
+	I_light.Range = 1000.0f;
+*/
+//	material.Power = 16;
+
+//	lpD3DDevice->SetLight(0,&I_light);
+//	lpD3DDevice->LightEnable(0,TRUE);
+
+//	lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_XRGB(16,16,16));
+	lpD3DDevice->SetVertexShader((D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2));
+
+	if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER){
+		material.Ambient.a = gr_screen.current_alpha;
+		material.Diffuse.a = gr_screen.current_alpha;
+		material.Specular.a = gr_screen.current_alpha;
+		material.Emissive.a = gr_screen.current_alpha;
+	}else{
+		material.Ambient.a = 1.0;
+		material.Diffuse.a = 1.0;
+		material.Specular.a = 1.0;
+		material.Emissive.a = 1.0f;
+	}
+	lpD3DDevice->SetMaterial(&material);
+	d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
+}
+
+void gr_d3d_end_instance_matrix(){
+	lpD3DDevice->SetVertexShader(old_shader);
+	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
+	d3d_SetTexture(1, NULL);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_set_initial_render_state();
+}
+
+//*****Lighting Stuff*****
+//-Bobboau
+#define MAX_LIGHTS 256
+int hardware_slot[8];
+bool lighting_enabled = true;
+
+struct d3d_light{
+	d3d_light():occupied(false), priority(1){};
+	D3DLIGHT8 light;
+	bool occupied;
+	int priority;
+};
+
+d3d_light d3d_lights[MAX_LIGHTS];
+int total_lights = 0;
+bool active_list[MAX_LIGHTS];
+//finds the first unocupyed light
+int find_first_empty_light(){
+	for(int i = 0; i<MAX_LIGHTS; i++)if(!d3d_lights[i].occupied)return i;
+	return -1;
+}
+
+int currently_enabled[8] = {-1};
+
+void pre_render_lights_init(){
+	if(lighting_enabled)	lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
+	else 	lpD3DDevice->SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(byte(255.0f * gr_screen.current_alpha),byte(255.0f * gr_screen.current_alpha),byte(255.0f * gr_screen.current_alpha),byte(255.0f * gr_screen.current_alpha)));
+	for(int i = 0; i<8; i++){
+		if(currently_enabled[i] > -1)lpD3DDevice->LightEnable(currently_enabled[i],false);
+		currently_enabled[i] = -1;
+	}
+}
+
+void shift_active_lights(int pos){
+	int k = 0;
+	if(!lighting_enabled)return;
+	bool move = false;
+	for(unsigned int i = 0; (i < d3d_caps.MaxActiveLights) && ((pos * d3d_caps.MaxActiveLights)+i < (unsigned int)n_active_lights); i++){
+		if(currently_enabled[i] > -1)lpD3DDevice->LightEnable(currently_enabled[i],false);
+//		lpD3DDevice->SetLight(idx,&d3d_lights[idx].light);
+		move = false;
+		for(k; k<MAX_LIGHTS && !move; k++){
+			int slot = (pos * d3d_caps.MaxActiveLights)+i+k;
+			if(active_list[slot]){
+				if(d3d_lights[slot].occupied){
+			//		lpD3DDevice->SetLight(slot,&d3d_lights[slot].light);
+					lpD3DDevice->LightEnable(slot,true);
+					currently_enabled[i] = slot;
+					move = true;
+				}
+			}
+		}
+	}
+}
+
+int find_first_empty_hardware_slot(){
+	int l;
+	for(unsigned int i = 0; i<d3d_caps.MaxActiveLights; i++){
+		lpD3DDevice->GetLightEnable(i,&l);
+		if(!l)return i;
+	}
+	return -1;
+}
+
+
+#define LT_DIRECTIONAL	0		// A light like a sun
+#define LT_POINT		1		// A point light, like an explosion
+#define LT_TUBE			2		// A tube light, like a fluorescent light
+
+int	 gr_d3d_make_light(light_data* light, int idx, int priority){
+//	int slot = find_first_empty_hardware_slot();
+//	if(slot == -1)return -1;
+//	int idx = find_first_empty_light();
+	if(idx == -1)return -1;
+	D3DLIGHT8 *l = &d3d_lights[idx].light;
+	l->Diffuse.r = light->r * light->intensity;
+	l->Diffuse.g = light->g * light->intensity;
+	l->Diffuse.b = light->b * light->intensity;
+	l->Diffuse.a = 1.0;
+	l->Ambient.r = 0.0f;
+	l->Ambient.g = 0.0f;
+	l->Ambient.b = 0.0f;
+	l->Ambient.a = 1.0f;
+	l->Specular.r = light->spec_r * light->intensity;
+	l->Specular.g = light->spec_g * light->intensity;
+	l->Specular.b = light->spec_b * light->intensity;
+	l->Specular.a = 1.0;
+	switch(light->type){
+	case LT_DIRECTIONAL:
+		l->Type = D3DLIGHT_DIRECTIONAL;
+		l->Direction = D3DXVECTOR3(light->vec.xyz.x,light->vec.xyz.y,light->vec.xyz.z);
+	//	l->Position = D3DXVECTOR3(light->vec.xyz.x,light->vec.xyz.y,light->vec.xyz.z);
+		l->Range = 0.0f;
+		break;
+	case LT_POINT:
+	case LT_TUBE:
+//were going to treat tube lights as if they were point for now, 
+//and move them on a per model basis to the position closest to the model center
+//we will need a vertex shader to do it corectly
+		l->Type = D3DLIGHT_POINT;
+		l->Position = D3DXVECTOR3(light->vec.xyz.x, light->vec.xyz.y,light->vec.xyz.z);
+		l->Range = light->rada;
+		l->Attenuation0 = 0.0f;
+		l->Attenuation2 = 1.0f;
+		break;
+	}
+	d3d_lights[idx].occupied = true;
+	d3d_lights[idx].priority = priority;
+	lpD3DDevice->SetLight(idx,&d3d_lights[idx].light);
+	lpD3DDevice->LightEnable(idx,false);
+	active_list[idx] = false;
+	return idx;
+}
+
+void gr_d3d_modify_light(light_data* light, int idx, int priority){
+//	int slot = find_first_empty_hardware_slot();
+//	if(slot == -1)return;
+	if(!d3d_lights[idx].occupied)return;
+	D3DLIGHT8 *l = &d3d_lights[idx].light;
+	l->Diffuse.r = light->r * light->intensity;
+	l->Diffuse.g = light->g * light->intensity;
+	l->Diffuse.b = light->b * light->intensity;
+	l->Diffuse.a = 1.0;
+	l->Ambient.r = 0.0f;
+	l->Ambient.g = 0.0f;
+	l->Ambient.b = 0.0f;
+	l->Ambient.a = 1.0f;
+	l->Specular.r = light->spec_r * light->intensity;
+	l->Specular.g = light->spec_g * light->intensity;
+	l->Specular.b = light->spec_b * light->intensity;
+	l->Specular.a = 1.0;
+	switch(light->type){
+	case LT_DIRECTIONAL:
+		l->Type = D3DLIGHT_DIRECTIONAL;
+		l->Direction = D3DXVECTOR3(light->vec.xyz.x,light->vec.xyz.y,light->vec.xyz.z);
+		l->Position = D3DXVECTOR3(light->vec.xyz.x,light->vec.xyz.y,light->vec.xyz.z);
+		break;
+	case LT_POINT:
+	case LT_TUBE:
+//were going to treat tube lights as if they were point for now, 
+//and move them on a per model basis to the position closest to the model center
+//we will need a vertex shader to do it corectly
+		l->Type = D3DLIGHT_POINT ;
+		l->Position = D3DXVECTOR3(light->local_vec.xyz.x,light->local_vec.xyz.y,light->local_vec.xyz.z);
+		l->Range = light->rada;
+		l->Attenuation0 = 1.0f;
+		l->Attenuation2 = 1.0f;
+		break;
+	}
+	d3d_lights[idx].occupied = true;
+	d3d_lights[idx].priority = priority;
+	lpD3DDevice->SetLight(idx,&d3d_lights[idx].light);
+//	lpD3DDevice->LightEnable(idx,false);
+//	active_list[idx] = false;
+//	return idx;
+}
+
+void gr_d3d_destroy_light(int idx){
+//	if(d3d_lights[idx].hardware == -1) return;
+	d3d_lights[idx].occupied = false;
+	if(active_list[idx]) lpD3DDevice->LightEnable(idx,false);
+	if(active_list[idx]) n_active_lights--;
+	active_list[idx] = false;
+//	lpD3DDevice->SetLight(d3d_lights[idx].hardware,&empty_light);
+//	d3d_lights[idx].hardware = -1;
+}
+
+void gr_d3d_set_light(int idx, bool set){
+	if(!d3d_lights[idx].occupied)return;
+//	if(d3d_lights[idx].hardware == -1) return;
+/*	int slot = find_first_empty_hardware_slot();
+	lpD3DDevice->LightEnable(d3d_lights[idx].hardware,false);
+	lpD3DDevice->SetLight(d3d_lights[idx].hardware,&empty_light);
+	lpD3DDevice->SetLight(slot,&d3d_lights[idx].light);
+	lpD3DDevice->LightEnable(slot,set);
+	d3d_lights[idx].hardware = slot;*/
+	active_list[idx] = set;
+	if(set)n_active_lights++; else if(n_active_lights > 0) n_active_lights--;
+}
+
+void gr_d3d_lighting(bool set){
+	lighting_enabled = set;
+//	d3d_SetRenderState(D3DRS_LIGHTING , set);
+}
+
+//**********clip plane**********/
+extern int G3_user_clip;
+extern vector G3_user_clip_normal;
+extern vector G3_user_clip_point;
+
+D3DXPLANE d3d_user_clip_plane;
+
+void d3d_start_clip(){
+	D3DXPlaneFromPointNormal(&d3d_user_clip_plane, &VEC2DVEC(G3_user_clip_point), &VEC2DVEC(G3_user_clip_normal));
+	lpD3DDevice->SetClipPlane(0, d3d_user_clip_plane);
+	d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , D3DCLIPPLANE0);
+}
+
+void d3d_end_clip(){
+	d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , FALSE);
+}
+
+#endif
 /**
  * Sets up all the graphics function pointers to the relevent d3d functions
  *
@@ -2560,6 +3131,25 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_push_texture_matrix = gr_d3d_push_texture_matrix;
 	gr_screen.gf_pop_texture_matrix = gr_d3d_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_d3d_translate_texture_matrix;
+
+#ifdef HTL
+	gr_screen.gf_make_buffer = gr_d3d_make_buffer;
+	gr_screen.gf_destroy_buffer = gr_d3d_destroy_buffer;
+	gr_screen.gf_render_buffer = gr_d3d_render_buffer;
+
+	gr_screen.gf_start_instance_matrix = gr_d3d_start_instance_matrix;
+	gr_screen.gf_end_instance_matrix = gr_d3d_end_instance_matrix;
+
+	gr_screen.gf_make_light = gr_d3d_make_light;
+	gr_screen.gf_modify_light = gr_d3d_modify_light;
+	gr_screen.gf_destroy_light = gr_d3d_destroy_light;
+	gr_screen.gf_set_light = gr_d3d_set_light;
+
+	gr_screen.gf_lighting = gr_d3d_lighting;
+
+	gr_screen.start_clip_plane = d3d_start_clip;
+	gr_screen.end_clip_plane = d3d_end_clip;
+#endif
 
 }
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-08-28 20:42:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2003-09-26 14:37:15 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/08/28 20:42:18  Goober5000
+ * implemented rotating barrels for firing primary weapons
+ * --Goober5000
+ *
  * Revision 2.20  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -800,6 +804,7 @@
 #include "freespace2/freespace.h"		// For flFrameTime
 #include "math/fvi.h"
 
+
 #define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
 
 // info for special polygon lists
@@ -829,6 +834,10 @@ texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
 #define PM_OBJFILE_MAJOR_VERSION 30
 
 static int Model_signature = 0;
+
+#ifdef HTL
+void generate_vertex_buffers(bsp_info*, polymodel*);
+#endif
 
 // Free up a model, getting rid of all its memory
 // Can't be called from outside of model code because more
@@ -906,6 +915,12 @@ static void model_unload(int modelnum)
 
 	if (pm->submodel)	{
 		for (i=0; i<pm->n_models; i++ )	{
+#ifdef HTL
+			for (int k=0; k<pm->submodel[i].n_buffers; k++ ){
+				gr_destroy_buffer(pm->submodel[i].buffer[k].vertex_buffer);
+			}
+#endif
+			
 			if ( pm->submodel[i].bsp_data )	{
 				free(pm->submodel[i].bsp_data);
 			}
@@ -1679,7 +1694,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		//mprintf(( "Submodel %d, data offset %d\n", n, pm->submodel[n].data_offset ));
 		//key_getch();
 
-
+#ifdef HTL
+				generate_vertex_buffers(&pm->submodel[n], pm);
+#endif
 				break;
 
 			}

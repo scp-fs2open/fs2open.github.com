@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-09-13 08:27:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2003-09-26 14:37:16 $
+ * $Author: bobboau $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/09/13 08:27:28  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.19  2003/09/13 06:02:03  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -326,6 +336,8 @@ extern int Framecount;
 int Ship_cannon_bitmap = -1;
 
 int Player_engine_wash_loop = -1;
+
+extern float splode_level;
 
 void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
 {

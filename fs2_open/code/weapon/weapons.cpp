@@ -20,6 +20,16 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/09/13 08:27:27  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.38  2003/09/13 06:02:04  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -1097,10 +1107,9 @@ int parse_weapon()
 		diag_printf ("Shockwave speed -- %7.3f\n", wip->shockwave_speed);
 
 		wip->shockwave_model = -1;
+		strcpy(wip->shockwave_pof_name,"");
 		if(optional_string("$Shockwave_model:")){
-			char shockwave_model_filename[32];
-			stuff_string( shockwave_model_filename, F_NAME, NULL);
-			wip->shockwave_model = model_load(shockwave_model_filename, 0, NULL, 0);
+			stuff_string( wip->shockwave_pof_name, F_NAME, NULL);
 		}
 
 	} 
@@ -1136,10 +1145,9 @@ int parse_weapon()
 		}
 
 		wip->shockwave_model = -1;
+		strcpy(wip->shockwave_pof_name,"");
 		if(optional_string("$Shockwave_model:")){
-			char shockwave_model_filename[32];
-			stuff_string( shockwave_model_filename, F_NAME, NULL);
-			wip->shockwave_model = model_load("shockwave_model_filename", 0, NULL, 0);
+			stuff_string( wip->shockwave_pof_name, F_NAME, NULL);
 		}
 	}
 
@@ -4172,6 +4180,11 @@ void weapons_page_in()
 //			bm_get_info( wip->impact_explosion_ani, NULL, NULL, NULL, &nframes, &fps );
 //			bm_page_in_xparent_texture( wip->impact_explosion_ani, nframes );
 //		}
+
+
+		if(strcmp(wip->shockwave_pof_name,""))
+		wip->shockwave_model = model_load(wip->shockwave_pof_name, 0, NULL);
+		else wip->shockwave_model = -1;
 
 		// trail bitmaps
 		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.bitmap > -1) )	{

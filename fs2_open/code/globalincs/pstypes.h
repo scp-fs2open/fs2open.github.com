@@ -9,16 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.12 $
- * $Date: 2003-08-16 03:52:23 $
+ * $Revision: 2.13 $
+ * $Date: 2003-09-26 14:37:13 $
  * $Author: bobboau $
- * $Revision: 2.12 $
- * $Date: 2003-08-16 03:52:23 $
+ * $Revision: 2.13 $
+ * $Date: 2003-09-26 14:37:13 $
  * $Author: bobboau $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.11  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -808,6 +817,8 @@ template <class T> void CAP( T& v, T mn, T mx )
 	#define malloc(size) vm_malloc(size)
 	#define free(ptr) vm_free(ptr)
 	#define strdup(ptr) vm_strdup(ptr)
+
+
 #endif
 
 

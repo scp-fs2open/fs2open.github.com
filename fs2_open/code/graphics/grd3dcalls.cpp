@@ -18,7 +18,7 @@ VertexTypeInfo vertex_types[D3DVT_MAX] =
 {
 	(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX2),	sizeof(D3DTLVERTEX),   
 	(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX1),		sizeof(D3DLVERTEX),	 
-	(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1),							sizeof(D3DVERTEX),	 
+	(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2),							sizeof(D3DVERTEX),	 
 };
 
 // This is all stuff needed for set render state calls

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-07 18:14:53 $
- * $Author: randomtiger $
+ * $Revision: 2.9 $
+ * $Date: 2003-09-26 14:37:15 $
+ * $Author: bobboau $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/07 18:14:53  randomtiger
+ * Checked in new speech code and calls from relevent modules to make it play.
+ * Should all work now if setup properly with version 2.4 of the launcher.
+ * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
+ * Otherwise the compile flag should not be set and it should all compile OK.
+ *
+ * - RT
+ *
  * Revision 2.7  2003/08/25 04:45:57  Goober5000
  * added replacement of $rank with the player's rank in any string that appears
  * in-game (same as with $callsign); also bumped the limit on the length of text
@@ -811,7 +819,6 @@ void techroom_ships_render(float frametime)
 	vector light_dir = vmd_zero_vector;
 	light_dir.xyz.y = 1.0f;	
 	light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
-	// light_filter_reset();
 	light_rotate_all();
 	// lighting for techroom
 

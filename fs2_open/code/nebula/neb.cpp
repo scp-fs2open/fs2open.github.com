@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-03-19 23:06:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-26 14:37:15 $
+ * $Author: bobboau $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/19 23:06:40  Goober5000
+ * bit o' housecleaning
+ * --Goober5000
+ *
  * Revision 2.5  2003/03/19 09:05:26  Goober5000
  * more housecleaning, this time for debug warnings
  * --Goober5000
@@ -1144,7 +1148,8 @@ void neb2_eye_changed()
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 {
-	int fog_index;
+
+	int nNfog_index;	
 
 	// default values in case something truly nasty happens
 	*fnear = 10.0f;
@@ -1154,35 +1159,35 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 	if(objp->type == OBJ_SHIP){
 		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
 		if((objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
-			fog_index = SHIP_TYPE_FIGHTER_BOMBER;
+			nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
 		} else {
-			fog_index = ship_query_general_type(objp->instance);
-			Assert(fog_index >= 0);
-			if(fog_index < 0){
-				fog_index = SHIP_TYPE_FIGHTER_BOMBER;
+			nNfog_index = ship_query_general_type(objp->instance);
+			Assert(nNfog_index >= 0);
+			if(nNfog_index < 0){
+				nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
 			}
 		}
 	}
 	// fog everything else like a fighter
 	else {
-		fog_index = SHIP_TYPE_FIGHTER_BOMBER;
+		nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
 	}
 
 	// get the values
 	switch(gr_screen.mode){
 	case GR_GLIDE:
-		*fnear = Neb_ship_fog_vals_glide[fog_index][0];
-		*ffar = Neb_ship_fog_vals_glide[fog_index][1];
+		*fnear = Neb_ship_fog_vals_glide[nNfog_index][0];
+		*ffar = Neb_ship_fog_vals_glide[nNfog_index][1];
 		break;
 
 	case GR_DIRECT3D:
-		*fnear = Neb_ship_fog_vals_d3d[fog_index][0];
-		*ffar = Neb_ship_fog_vals_d3d[fog_index][1];
+		*fnear = Neb_ship_fog_vals_d3d[nNfog_index][0];
+		*ffar = Neb_ship_fog_vals_d3d[nNfog_index][1];
 		break;
 
 	case GR_OPENGL:
-		*fnear = Neb_ship_fog_vals_d3d[fog_index][0];
-		*ffar = Neb_ship_fog_vals_d3d[fog_index][1];
+		*fnear = Neb_ship_fog_vals_d3d[nNfog_index][0];
+		*ffar = Neb_ship_fog_vals_d3d[nNfog_index][1];
 		break;
 
 	default:
@@ -1190,16 +1195,37 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 	}
 }
 
+float nNf_near, nNf_far;
 // given a position in space, return a value from 0.0 to 1.0 representing the fog level 
 float neb2_get_fog_intensity(object *obj)
 {
-	float f_near, f_far, pct;
+	float pct;
 
 	// get near and far fog values based upon object type and rendering mode
-	neb2_get_fog_values(&f_near, &f_far, obj);
+	neb2_get_fog_values(&nNf_near, &nNf_far, obj);
 
 	// get the fog pct
-	pct = vm_vec_dist_quick(&Eye_position, &obj->pos) / (f_far - f_near);
+	pct = vm_vec_dist_quick(&Eye_position, &obj->pos) / (nNf_far - nNf_near);
+	if(pct < 0.0f){
+		return 0.0f;
+	} else if(pct > 1.0f){
+		return 1.0f;
+	}
+
+	return pct;
+}
+
+//this only gets called after the one above has been called as it assumes you have set the near and far planes properly
+//doun't use this outside of ship rendering
+float neb2_get_fog_intensity(vector *pos)
+{
+	float pct;
+
+	// get near and far fog values based upon object type and rendering mode
+//	neb2_get_fog_values(&f_near, &f_far, pos);
+
+	// get the fog pct
+	pct = vm_vec_dist_quick(&Eye_position, pos) / ((nNf_far*2) - nNf_near);
 	if(pct < 0.0f){
 		return 0.0f;
 	} else if(pct > 1.0f){

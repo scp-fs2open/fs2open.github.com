@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.45 $
- * $Date: 2003-09-25 21:12:23 $
- * $Author: Kazan $
+ * $Revision: 2.46 $
+ * $Date: 2003-09-26 14:37:13 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2003/09/25 21:12:23  Kazan
+ * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
+ * Also D3D8 Screenshots work now.
+ *
  * Revision 2.44  2003/09/24 19:35:57  Kazan
  * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
  *
@@ -1010,11 +1014,11 @@ int Game_ships_tbl_valid = 0;
 // if the weapons.tbl the player has is valid
 int Game_weapons_tbl_valid = 0;
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 int Test_begin = 0;
 extern int	Player_attacking_enabled;
 int Show_net_stats;
-#endif
+//#endif
 
 int Pre_player_entry;
 
@@ -3452,7 +3456,7 @@ void player_repair_frame(float frametime)
 }
 
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 #define NUM_FRAMES_TEST		300
 #define NUM_MIXED_SOUNDS	16
 void do_timing_test(float flFrametime)
@@ -3491,7 +3495,7 @@ void do_timing_test(float flFrametime)
 	
 
 }
-#endif
+//#endif
 
 DCF(dcf_fov, "Change the field of view")
 {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:25 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-09-26 14:37:15 $
+ * $Author: bobboau $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:25  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:10  mharris
  * Initial checkin - converted filenames and includes to lower case
  * 
@@ -140,6 +143,7 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *obj);
 
 // given a position in space, return a value from 0.0 to 1.0 representing the fog level 
 float neb2_get_fog_intensity(object *obj);
+float neb2_get_fog_intensity(vector *pos);
 
 // should we not render this object because its obscured by the nebula?
 int neb2_skip_render(object *objp, float z_depth);

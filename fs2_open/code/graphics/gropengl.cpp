@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.28 $
- * $Date: 2003-08-21 15:07:45 $
- * $Author: phreak $
+ * $Revision: 2.29 $
+ * $Date: 2003-09-26 14:37:14 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/08/21 15:07:45  phreak
+ * added specular highlights. still needs shine mapping
+ *
  * Revision 2.27  2003/08/06 17:26:20  phreak
  * changed default texture filtering to GL_LINEAR
  *
@@ -3943,7 +3946,47 @@ void gr_opengl_translate_texture_matrix(int unit, vector *shift)
 	tex_shift=vmd_zero_vector;
 }
 
+#ifdef HTL
+
+int gr_opengl_make_buffer(poly_list *list){
+	//stubb
+	return -1;
+}
 	
+void gr_opengl_destroy_buffer(int idx){
+	//stubb
+}
+	
+void gr_opengl_render_buffer(int idx){
+	//stubb
+}
+
+void gr_opengl_start_instance_matrix(){
+	//stubb
+}
+
+void gr_opengl_end_instance_matrix(){
+	//stubb
+}
+
+int	 gr_opengl_make_light(light_data* light, int idx, int priority){
+	//stubb
+	return-1;
+}
+
+void gr_opengl_modify_light(light_data* light, int idx, int priority){
+	//stubb
+}
+
+void gr_opengl_destroy_light(int idx){
+	//stubb
+}
+
+void gr_opengl_set_light(int idx, bool){
+	//stubb
+}
+
+#endif
 
 extern char *Osreg_title;
 void gr_opengl_init(int reinit)
@@ -4314,7 +4357,20 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_pop_texture_matrix = gr_opengl_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
 
-	
+#ifdef HTL
+	gr_screen.gf_make_buffer = gr_opengl_make_buffer;
+	gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
+	gr_screen.gf_render_buffer = gr_opengl_render_buffer;
+
+	gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
+	gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;
+
+	gr_screen.gf_make_light = gr_opengl_make_light;
+	gr_screen.gf_modify_light = gr_opengl_modify_light;
+	gr_screen.gf_destroy_light = gr_opengl_destroy_light;
+	gr_screen.gf_set_light = gr_opengl_set_light;
+#endif
+
 	Mouse_hidden++;
 	gr_reset_clip();
 	gr_clear();

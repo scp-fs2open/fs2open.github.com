@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-26 14:37:14 $
+ * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.5  2003/03/02 05:41:52  penguin
  * Added some #ifndef NO_SOFTWARE_RENDERING
  *  - penguin
@@ -1517,3 +1520,14 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 	// restore culling
 	gr_set_cull(1);		
 }
+
+#ifndef _HTL_WARNING
+#define _HTL_WARNING
+#ifdef HTL
+#pragma message( "WARNING: You have enabled the experemental Hardware Transform and Lighting code" )
+#else
+#pragma message( "WARNING: You have not compiled Hardware Transform and Lighting, use compile flag HTL to enable" )
+#endif
+#endif
+
+

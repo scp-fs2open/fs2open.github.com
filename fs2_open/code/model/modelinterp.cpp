@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-09-14 19:02:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.32 $
+ * $Date: 2003-09-26 14:37:15 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/09/14 19:02:06  wmcoolmon
+ * Changed "cell" to "Cmdline_cell" -C
+ *
  * Revision 2.30  2003/08/31 06:00:41  bobboau
  * an asortment of bugfixes, mostly with the specular code,
  * HUD flickering should be completly gone now
@@ -388,9 +391,13 @@
 #include "nebula/neb.h"
 #include "math/staticrand.h"
 #include "globalincs/alphacolors.h"
+#include "particle/particle.h"
 //#include "weapon/beam.h" //I don't need this after all:\ -Bobboau
 #include "debugconsole/dbugfile.h"
 #include "cmdline/cmdline.h"
+
+
+float model_radius = 0;
 
 // Some debug variables used externally for displaying stats
 #ifndef NDEBUG
@@ -425,7 +432,9 @@ typedef struct model_light_object {
 
 // Vertices used internally to rotate model points
 static vertex Interp_points[MAX_POLYGON_VECS];
+static vertex Interp_splode_points[MAX_POLYGON_VECS];
 vector *Interp_verts[MAX_POLYGON_VECS];
+vector Interp_splode_verts[MAX_POLYGON_VECS];
 static int Interp_num_verts;
 
 
@@ -467,6 +476,14 @@ static int Interp_thrust_scale_subobj=0;
 static float Interp_thrust_scale = 0.1f;
 static int Interp_thrust_bitmap = -1;
 static int Interp_thrust_glow_bitmap = -1;
+static int Interp_secondary_thrust_glow_bitmap = -1;
+static int Interp_tertiary_thrust_glow_bitmap = -1;
+static bool Interp_AB=false;
+static float Interp_thrust_glow_rad_factor = 1.0f;
+static float Interp_secondary_thrust_glow_rad_factor = 1.0f;
+static float Interp_secondary_thrust_glow_len_factor = 1.0f;
+static float Interp_tertiary_thrust_glow_rad_factor = 1.0f;
+static vector controle_rotval = ZERO_VECTOR;
 static float Interp_thrust_glow_noise = 1.0f;
 static float Interp_thrust_scale_x = 0.0f;//added -bobboau
 static float Interp_thrust_scale_y = 0.0f;//added -bobboau
@@ -512,6 +529,10 @@ static int FULLCLOAK=-1;
 void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
 void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
 
+#ifdef HTL
+void model_render_buffers(bsp_info* model, polymodel * pm);
+void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level);
+#endif
 
 void (*model_interp_sortnorm)(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check) = model_interp_sortnorm_b2f;
 
@@ -667,19 +688,39 @@ void interp_clear_instance()
 	Interp_thrust_scale_y = 0.0f;//added-Bobboau
 	Interp_thrust_bitmap = -1;
 	Interp_thrust_glow_bitmap = -1;
+	Interp_secondary_thrust_glow_bitmap = -1;
+	Interp_tertiary_thrust_glow_bitmap = -1;
 	Interp_thrust_glow_noise = 1.0f;
 	Interp_insignia_bitmap = -1;
+	Interp_thrust_glow_rad_factor = 1.0f;
+	Interp_secondary_thrust_glow_rad_factor = 1.0f;
+	Interp_secondary_thrust_glow_len_factor = 1.0f;
+	Interp_tertiary_thrust_glow_rad_factor = 1.0f;
+	Interp_AB=false;
+	vm_vec_zero(&controle_rotval);
 }
 
 // Scales the engines thrusters by this much
-void model_set_thrust( int model_num, vector *length /*<-I did that-Bobboau*/, int bitmap, int glow_bitmap, float glow_noise )
+void model_set_thrust( int model_num, vector *length /*<-I did that-Bobboau*/, int bitmap, int glow_bitmap, float glow_noise, bool AB, int secondary_bitmap, int tertiary_bitmap, vector *rovel, float trf1, float trf2, float trf3, float tlf)
 {
+	Interp_AB = AB;
+
+	Interp_thrust_glow_rad_factor = trf1;
+	Interp_secondary_thrust_glow_rad_factor = trf2;
+	Interp_secondary_thrust_glow_len_factor = tlf;
+	Interp_tertiary_thrust_glow_rad_factor = trf3;
+
 	Interp_thrust_scale = length->xyz.z;
 	Interp_thrust_scale_x = length->xyz.x;
 	Interp_thrust_scale_y = length->xyz.y;
 	Interp_thrust_bitmap = bitmap;
 	Interp_thrust_glow_bitmap = glow_bitmap;
 	Interp_thrust_glow_noise = glow_noise;
+	Interp_secondary_thrust_glow_bitmap = secondary_bitmap;
+	Interp_tertiary_thrust_glow_bitmap = tertiary_bitmap;
+	if(rovel != NULL)controle_rotval = *rovel;
+	else 	vm_vec_zero(&controle_rotval);
+
 
 	if ( Interp_thrust_scale < 0.1f ) {
 		Interp_thrust_scale = 0.1f;
@@ -700,7 +741,62 @@ void model_set_thrust( int model_num, vector *length /*<-I did that-Bobboau*/, i
 	}
 }
 
+extern int spec;
+extern int Cmdline_cell;
+extern bool cell_enabled;
+
+
+bool splodeing = false;
+int splodeingtexture = -1;
+float splode_level = 0.0f;
+
 float GEOMETRY_NOISE = 0.0f;
+
+// Point list
+// +0      int         id
+// +4      int         size
+// +8      int         n_verts
+// +12     int         n_norms
+// +16     int         offset from start of chunk to vertex data
+// +20     n_verts*char    norm_counts
+// +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
+void model_interp_splode_defpoints(ubyte * p, polymodel *pm, bsp_info *sm, float dist)
+{
+	if(dist==0.0f)return;
+
+	if(dist<0.0f)dist*=-1.0f;
+
+	int n;
+	int nverts = w(p+8);	
+	int offset = w(p+16);
+
+	ubyte * normcount = p+20;
+	vertex *dest = Interp_splode_points;
+	vector *src = vp(p+offset);
+
+	Assert( nverts < MAX_POLYGON_VECS );
+
+	vector dir;
+
+	for (n=0; n<nverts; n++ )	{	
+		Interp_splode_verts[n] = *src;		
+			
+		src++;
+
+		vm_vec_avg_n(&dir, normcount[n], src);
+		vm_vec_normalize(&dir);
+
+		for(int i=0; i<normcount[n]; i++)src++;
+
+		vm_vec_scale_add2(&Interp_splode_verts[n], &dir, dist);
+
+		g3_rotate_vertex(dest, &Interp_splode_verts[n]);
+		
+		dest++;
+
+	}
+
+}
 
 // Point list
 // +0      int         id
@@ -712,6 +808,9 @@ float GEOMETRY_NOISE = 0.0f;
 // +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
 void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 {
+	if(Cmdline_cell)model_interp_splode_defpoints(p, pm, sm, model_radius/100);
+	if(splodeing)model_interp_splode_defpoints(p, pm, sm, splode_level*model_radius);
+
 	int i, n;
 	int nverts = w(p+8);	
 	int offset = w(p+16);
@@ -762,6 +861,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 		for (n=0; n<nverts; n++ )	{
 			vector tmp;
+			if(nverts >= MAX_POLYGON_VECS)Error( LOCATION, "model has too many points %d needs to be less than %d\n", nverts ,MAX_POLYGON_VECS );
 
 			Interp_verts[n] = src;
 
@@ -781,6 +881,8 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 			src++;		// move to normal
 
 			for (i=0; i<normcount[n]; i++ )	{
+				if(next_norm >= MAX_POLYGON_NORMS)Error( LOCATION, "model has too many normals %d needs to be less than %d\n", next_norm ,MAX_POLYGON_NORMS );
+
 				Interp_light_applied[next_norm] = 0;
 				Interp_norms[next_norm] = src;
 
@@ -817,33 +919,24 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 		} 
 	}else{
 
+
+		vector point;
+
 		for (n=0; n<nverts; n++ )	{	
-			Interp_verts[n] = src;	
-			
-			/*
-			vector tmp = *src;
-			// TEST
-			if(Interp_thrust_twist > 0.0f){
-				float theta;
-				float st, ct;
 
-				// determine theta for this vertex				
-				theta = fl_radian(20.0f + Interp_thrust_twist2);				
-				st = sin(theta);
-				ct = cos(theta);
+			if(GEOMETRY_NOISE!=0.0f){
+				GEOMETRY_NOISE = model_radius / 50;
 
-				// twist
-				tmp.xyz.z = (src->xyz.z * ct) - (src->xyz.y * st);
-				tmp.xyz.y = (src->xyz.z * st) + (src->xyz.y * ct);
-
-				// scale the z a bit
-				tmp.xyz.z += Interp_thrust_twist;
-			}			
-	
-			g3_rotate_vertex(dest, &tmp);
-			*/
-			
-			g3_rotate_vertex(dest, src);
+				Interp_verts[n] = src;	
+				point.xyz.x = src->xyz.x + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+				point.xyz.y = src->xyz.y + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+				point.xyz.z = src->xyz.z + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+						
+				g3_rotate_vertex(dest, &point);
+			}else{
+				Interp_verts[n] = src;	
+				g3_rotate_vertex(dest, src);
+			}
 		
 			src++;		// move to normal
 
@@ -1057,14 +1150,50 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	modelstats_num_polys++;
 	#endif
 
-	if((Warp_Map < 0)){
-		if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)) return;
-	}
-
 	if ( nv < 0 ) return;
 
 	verts = (model_tmap_vert *)(p+44);
 
+	if((Warp_Map < 0)){
+		if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
+			if(Cmdline_cell){
+				for (i=0;i<nv;i++){
+					Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
+					Interp_list[i]->u = verts[i].u;
+					Interp_list[i]->v = verts[i].v;
+					Interp_list[i]->r = 250;
+					Interp_list[i]->g = 250;
+					Interp_list[i]->b = 250;
+	
+				}
+				gr_set_cull(0);
+				gr_set_color( 0, 0, 0 );
+				g3_draw_poly( nv, Interp_list, 0 );
+				gr_set_cull(1);
+			}
+			if(!splodeing)return;
+		}
+	}
+
+	if(splodeing){
+		float salpha = 1.0f - splode_level;
+		for (i=0;i<nv;i++){
+			Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
+			Interp_list[i]->u = verts[i].u*2;
+			Interp_list[i]->v = verts[i].v*2;
+			Interp_list[i]->r = 255*salpha;
+			Interp_list[i]->g = 250*salpha;
+			Interp_list[i]->b = 200*salpha;
+			model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], salpha, false);
+		}
+		gr_set_cull(0);
+		gr_set_bitmap( splodeingtexture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, salpha );
+	//	gr_set_color( 255, 250, 200 );
+	//	g3_draw_poly( nv, Interp_list, 0 );
+		g3_draw_poly( nv, Interp_list,  TMAP_FLAG_TEXTURED|TMAP_FLAG_GOURAUD);
+		gr_set_cull(1);
+		return;
+	}
 
 	for (i=0;i<nv;i++)	{
 		Interp_list[i] = &Interp_points[verts[i].vertnum];
@@ -2970,6 +3099,7 @@ void moldel_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos
 
 	temp = *pos;
 
+//	vm_vec_sub( &rvec, &Eye_position, &temp );
 	vm_vec_sub( &rvec, Eyeposition, &temp );
 	vm_vec_normalize( &rvec );	
 
@@ -2981,7 +3111,10 @@ void moldel_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos
 
 //	Int3();
 }
-
+ 
+#ifdef HTL
+void light_set_all_relevent();
+#endif
 
 #define mSTUFF_VERTICES()	do { verts[0]->u = 0.0f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.0f; verts[3]->v = 1.0f; } while(0);
 #define mR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
@@ -3174,7 +3307,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		d3d_zbias(1);
 	}
 #endif
-
+#ifdef HTL
+	light_set_all_relevent();
+#endif
 	// Draw the subobjects	
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 
@@ -3186,10 +3321,15 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
 			}
+#ifdef HTL
 
 			gr_zbuffer_set(zbuf_mode);
-
+			{
+				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
+			}
+#else
 			model_interp_subcall( pm, i, detail_level );
+#endif
 		} 
 		i = pm->submodel[i].next_sibling;
 	}	
@@ -3217,10 +3357,15 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 #endif
 
-		
-	// draw the hull of the ship
-	model_interp_sub( (ubyte *)pm->submodel[pm->detail[detail_level]].bsp_data, pm, &pm->submodel[pm->detail[detail_level]], 0 );
 
+	model_radius = pm->submodel[pm->detail[detail_level]].rad;
+
+	// draw the hull of the ship
+#ifdef HTL
+	model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
+#else
+	model_interp_sub( (ubyte *)pm->submodel[pm->detail[detail_level]].bsp_data, pm, &pm->submodel[pm->detail[detail_level]], 0 );
+#endif
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
 		model_draw_debug_points( pm, &pm->submodel[pm->detail[detail_level]] );
@@ -3230,6 +3375,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			g3_draw_sphere_ez(&pm->autocenter, pm->rad / 4.5f);
 		}
 	}
+
+	model_radius = 0.0f;
 
 	if (FULLCLOAK != -1)	model_finish_cloak(FULLCLOAK);
 
@@ -3258,47 +3405,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 #endif
 //	object *obj = &Objects[objnum];
 	decal_render_all(&Objects[objnum]);
-//		decal_render_all(&Objects[objnum]);//render decals-Bobboau
-//		mprintf(("out of the decal stuff\n"));
-/*	if(obj->type == OBJ_SHIP){
-
-		vertex vecs[3];
-		vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
-	
-			mprintf(("about to render all decals\n"));
-
-	//	ship *shipp = &Ships[obj->instance];
-
-		for(int h = 0; h < MAX_SHIP_DECALS; h++){
-			decal *dec = &shipp->decals[h];
-			if(dec->is_valid){
-				mprintf(("decal %d is valid, and has %d polys\n",h,dec->n_poly));
-				for(int i = 0; i<dec->n_poly; i++){
-
-	mprintf(("drawing decal poly %d, with bitmap %d\n", i, dec->texture));
-						gr_set_bitmap(dec->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-	
-						vecs[0] = dec->vert[i][0];
-						vecs[1] = dec->vert[i][1];
-						vecs[2] = dec->vert[i][2];
-						g3_rotate_vertex(&vecs[0], &obj->pos);
-						g3_rotate_vertex(&vecs[1], &obj->pos);
-						g3_rotate_vertex(&vecs[2], &obj->pos);
-						g3_project_vertex(&vecs[0]);
-						g3_project_vertex(&vecs[1]);
-						g3_project_vertex(&vecs[2]);
-	mprintf(("vert 1 at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", vecs[0].x, vecs[0].y, vecs[0].z, vecs[0].u, vecs[0].v));
-	mprintf(("vert 2 at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", vecs[1].x, vecs[1].y, vecs[1].z, vecs[1].u, vecs[1].v));
-	mprintf(("vert 3 at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", vecs[2].x, vecs[2].y, vecs[2].z, vecs[2].u, vecs[2].v));
-						gr_set_cull(0);
-						g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT );
-						gr_set_cull(1);
-				}
-			}
-		}
-		mprintf(("decals rendered\n"));
-	}
-*/
 
 //start rendering glow points -Bobboau
 
@@ -3370,7 +3476,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		
 								// fade them in the nebula as well
 								if(The_mission.flags & MISSION_FLAG_FULLNEB){
-									d *= (1.0f - Interp_fog_level);
+									vector npnt;
+									vm_vec_add(&npnt, &pnt, pos);
+									d *= (1.0f - neb2_get_fog_intensity(&npnt));
 									w *= 1.5;	//make it bigger in a nebula
 								}
 					
@@ -3406,8 +3514,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 								vm_vec_normalize(&fvec);
 
-								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, 1.0f, 1.0f, &Eye_position);	
-								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, 1.0f, 1.0f, &Eye_position);	
+								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, bank->radius[j], 1.0f, &Eye_position);	
+								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, bank->radius[j], 1.0f, &Eye_position);	
 
 								int idx = 0;
 
@@ -3453,6 +3561,18 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// Draw the thruster glow
 	if ( (Interp_thrust_glow_bitmap != -1) && (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
 
+		//this is used for the secondary thruster glows 
+		//it only needs to be calculated once so I'm doing it here -Bobboau
+				vector norm /*= bank->norm[j]*/;
+				norm.xyz.z = -1.0f;
+				norm.xyz.x = 1.0f;
+				norm.xyz.y = -1.0f;
+
+				norm.xyz.x *= controle_rotval.xyz.y/2;
+				norm.xyz.y *= controle_rotval.xyz.x/2;
+
+				vm_vec_normalize(&norm);
+
 		for (i = 0; i < pm->n_thrusters; i++ ) {
 			thruster_bank *bank = &pm->thrusters[i];
 			int j;
@@ -3464,18 +3584,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				vm_vec_normalize(&tempv);
 
 				d = vm_vec_dot(&tempv,&bank->norm[j]);
-
-				if ( d > 0.0f)	{
-					vertex p;					
-
-					// Make glow bitmap fade in/out quicker from sides.
-					d *= 3.0f;
-					if ( d > 1.0f ) d = 1.0f;
-
-					// fade them in the nebula as well
-					if(The_mission.flags & MISSION_FLAG_FULLNEB){
-						d *= (1.0f - Interp_fog_level);
-					}
 
 					//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
 					#define NOISE_SCALE 0.5f
@@ -3537,78 +3645,202 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					scale = ((bank->norm[j].xyz.x * x)+(bank->norm[j].xyz.y * y)+(bank->norm[j].xyz.z * z))*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 					//getting thruster glows to grow baised on witch direction they are pointing -Bobboau
 */
+				// disable fogging
+				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+
+				vertex p;					
+				if ( d > 0.0f)	{
+
+					// Make glow bitmap fade in/out quicker from sides.
+					d *= 3.0f;
+					if ( d > 1.0f ) d = 1.0f;
+				}
+				// fade them in the nebula as well
+				if(The_mission.flags & MISSION_FLAG_FULLNEB){
+					vector npnt;
+					vm_vec_add(&npnt, &bank->pnt[j], pos);
+					d *= (1.0f - neb2_get_fog_intensity(&npnt));
+				}
+
 
 // this is the original scaling code - Goober5000
 //					scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 					float w = bank->radius[j]*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
 
-					// disable fogging
-					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-
 					g3_rotate_vertex( &p, &bank->pnt[j] );
+					//these two lines are used by the tertiary glows, thus we will need to project this all of the time
+				if ( d > 0.0f){
 					gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 					{
+						//primary thruster glows, sort of a lens flare/engine wash thing
 						Gr_scaler_zbuffering = 1;
-						g3_draw_bitmap(&p,0,w*0.5f, TMAP_FLAG_TEXTURED );
+						g3_draw_bitmap(&p,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
 						Gr_scaler_zbuffering = 0;
 					}
+				}//d>0
+
+				gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
+				{
+					//tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
+					//thus is imostly for haveing a glow that is visable from the front
+					Gr_scaler_zbuffering = 1;
+					p.sw -= w;
+					//g3_draw_bitmap(&p,0,w, TMAP_FLAG_TEXTURED );
+					g3_draw_rotated_bitmap(&p,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED );
+					Gr_scaler_zbuffering = 0;
 				}
+				
 
 /*begin secondary glows*/
-/*				vertex h1[4];				// halves of a beam section	
+				//secondary thruster glows, they are based on the beam rendering code
+				//they are suposed to simulate... an ion wake... or... something
+				//ok, how's this there suposed to look cool! hows that, 
+				//it that scientific enough for you!! you anti-asthetic basturds!!!
+				///AAAHHhhhh!!!!
+				vector pnt = bank->pnt[j];
+
+				scale = magnitude*(MAX_SCALE-(MIN_SCALE/2))+(MIN_SCALE/2);
+
+				vertex h1[4];				// halves of a beam section	
 				vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-				vector fvec, top1, bottom1, top2, bottom2, start, end, s, e;
+				vector fvec, top1, bottom1, top2, bottom2, norm2;
 
-				vm_vec_scale_add(&e, &bank->pnt[j], &bank->norm[j], &bank->radius[j]);
+				d = vm_vec_dot(&tempv,&norm);
+				d += 0.75f;
+				d *=3;
+				if(d> 1.0f)d = 1.0f;
+				if(d > 0)
+				{
+					vm_vec_add(&norm2, &norm, &pnt);
 
-				vm_vec_rotate(&start, &bank->pnt[j], orient);
-				vm_vec_rotate(&end, &e, orient);
-				vm_vec_sub(&fvec, &end, &start);
+			//	vm_vec_rotate(&start, &pnt, orient);
+			//	vm_vec_rotate(&end, &norm, orient);
+			//	vm_vec_sub(&fvec, &end, &start);
+					vm_vec_sub(&fvec, &norm2, &pnt);
 
-				vm_vec_normalize(&fvec);
+					vm_vec_normalize(&fvec);
 
-				moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, 1.0f, 1.0f, &Eye_position);	
-				moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, 1.0f, 1.0f, &Eye_position);	
+					float w = bank->radius[j]*scale*2;
 
-				int idx = 0;
+			//		vm_vec_scale_add(&pnt, &pnt, &fvec, -0.25f * w*2*);
+			//	vm_vec_scale_add(&norm, &pnt, &fvec, 0.75f);
 
-				do { 
+					vm_vec_scale_add(&norm2, &pnt, &fvec, w*2*Interp_secondary_thrust_glow_len_factor);
+
+/*				vector eyepos;
+				eyepos = Eye_position;
+				vm_vec_add2(&eyepos, pos);
+*/
+					moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, w*Interp_secondary_thrust_glow_rad_factor, 1.0f, &View_position);	
+					moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm2, w*Interp_secondary_thrust_glow_rad_factor, 1.0f, &View_position);	
+	
+					int idx = 0;
+
+
 					g3_rotate_vertex(verts[0], &bottom1); 
 					g3_rotate_vertex(verts[1], &bottom2);	
 					g3_rotate_vertex(verts[2], &top2); 
-					g3_rotate_vertex(verts[3], &top1); } while(0);
-				do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
-				do { 
+					g3_rotate_vertex(verts[3], &top1); 
+					for(idx=0; idx<4; idx++) g3_project_vertex(verts[idx]);
 					verts[0]->u = 0.0f; verts[0]->v = 0.0f;	
 					verts[1]->u = 1.0f; verts[1]->v = 0.0f; 
 					verts[2]->u = 1.0f;	verts[2]->v = 1.0f; 
 					verts[3]->u = 0.0f; verts[3]->v = 1.0f; 
-				} while(0);
-//						mR_VERTICES();																// rotate and project the vertices
-//						mP_VERTICES();						
-//						mSTUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
+					/*
+					verts[0]->sw += w*0.5f;
+					verts[1]->sw += w*0.5f; 
+					verts[2]->sw += w*0.5f;
+					verts[3]->sw += w*0.5f; 
+			*/
 
-				vm_vec_sub(&tempv,&View_position,&pnt);
-				vm_vec_normalize(&tempv);
-								
+					vm_vec_sub(&tempv,&View_position,&pnt);
+					vm_vec_normalize(&tempv);
 
-				gr_set_cull(0);
-				if(The_mission.flags & MISSION_FLAG_FULLNEB){
-					gr_set_bitmap(bank->glow_neb_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
-				}else{
-					gr_set_bitmap(bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
-				}
+					if(The_mission.flags & MISSION_FLAG_FULLNEB){
+						vector npnt;
+						vm_vec_add(&npnt, &pnt, pos);
+						d *= (1.0f - neb2_get_fog_intensity(&npnt));
+					}
+
+					gr_set_cull(0);
+					gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d);		
 					g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
 					gr_set_cull(1);
 				}
-*/
+
+//end secondary glows
+//begin particles
+				if(is_ship){
+					ship_info* sip = &Ship_info[shipp->ship_info_index];
+/*					particle_emitter pe;
+					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
+					pe.max_life = v;
+					pe.max_rad = bank->radius[j]*0.75f;
+					pe.max_vel = v;
+					pe.min_life = v*0.5f;
+					pe.min_rad = bank->radius[j]*0.5f;
+					pe.min_vel = v*0.75f;
+					pe.normal = bank->norm[j];
+					pe.normal_variance = 0.2f;
+					pe.num_high = 5;
+					pe.num_low = 1;
+						vector npnt;
+						vm_vec_add(&npnt, &pnt, pos);
+					pe.pos = npnt;
+					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;
+					particle_emit( &pe, PARTICLE_BITMAP, Interp_thruster_particle_bitmap );
+					*/
+				particle_emitter	pe;
+				thruster_particles* tp;
+
+				for(int P = 0; P < sip->n_thruster_particles; P++){
+					if(Interp_AB)
+						tp = &sip->afterburner_thruster_particles[P];
+					else
+						tp = &sip->normal_thruster_particles[P];
+
+					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
+						vector npnt = pnt;
+						vm_vec_unrotate(&npnt, &pnt, orient);
+						vm_vec_add(&npnt, &npnt, pos);
+
+					pe.pos = npnt;				// Where the particles emit from
+					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
+	
+					vector nn = orient->vec.fvec;
+					vm_vec_negate(&nn);
+				//	vm_vec_unrotate(&nn, &bank->norm[j], orient);
+
+					pe.normal = nn;	// What normal the particle emit around
+					pe.min_vel = v*0.75f;
+					pe.max_vel =  v*1.25f;
+
+					pe.num_low = tp->n_low;					// Lowest number of particles to create
+					pe.num_high = tp->n_high;				// Highest number of particles to create
+					pe.min_rad = bank->radius[j]*tp->min_rad;	// * objp->radius;
+					pe.max_rad = bank->radius[j]*tp->max_rad; // * objp->radius;
+					pe.normal_variance = tp->variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+
+					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);
+				}
+
+				// do sound - maybe start a random sound, if it has played far enough.
+				}
 			}
 		}
 	}
-
+/*
+	Interp_thrust_glow_rad_factor = trf1;
+	Interp_secondary_thrust_glow_rad_factor = trf2;
+	Interp_secondary_thrust_glow_len_factor = tlf;
+	Interp_tertiary_thrust_glow_rad_factor = trf3;
+*/
 	Interp_thrust_glow_bitmap = -1;	
+	Interp_secondary_thrust_glow_bitmap = -1;
+	Interp_tertiary_thrust_glow_bitmap = -1;
+	vm_vec_zero(&controle_rotval);
 
 	gr_set_cull(0);	
 
@@ -3626,6 +3858,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			gr_zbuffer_set(zbuf_mode);
 
 			model_interp_subcall( pm, i, detail_level );
+	//		model_render_buffers(&pm->submodel[i], pm);
 		}
 		i = pm->submodel[i].next_sibling;
 	}	
@@ -4143,42 +4376,310 @@ int model_is_pirate_ship(int modelnum)
 {
 	return 0;
 }
-/*
-void render_all_decal(object * obj){
-	vertex vecs[3];
-	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
-	
-		mprintf(("about to render all decals\n"));
 
-	ship *shipp = &Ships[obj->instance];
+#ifdef HTL
 
-	for(int h = 0; h < MAX_SHIP_DECALS; h++){
-		decal *dec = &shipp->decals[h];
-		if(dec->is_valid){
-			mprintf(("decal %d is valid, and has %d polys\n",h,dec->n_poly));
-			for(int i = 0; i<dec->n_poly; i++){
+//**********verrtex buffer stuff**********//
 
-mprintf(("drawing decal poly %d, with bitmap %d\n", i, dec->texture));
-					gr_set_bitmap(dec->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+poly_list list[MAX_MODEL_TEXTURES];
 
-					for( int j = 0; j < 3; j++){
-						vecs[j] = dec->vert[i][j];
-						vector pos;
-						vm_vert2vec(&vecs[j], &pos);
-						vm_vec_add2(&pos, &obj->pos);
-						g3_rotate_vertex(&vecs[j], &pos);
-						g3_project_vertex(&vecs[j]);
-mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, vecs[j].y, vecs[j].z, vecs[j].u, vecs[j].v));
+#define parseF(dest, f, off)	{memcpy(&dest, &f[off], sizeof(float)); off += sizeof(float);}
+#define parseI(dest, f, off)	{memcpy(&dest, &f[off], sizeof(int)); off += sizeof(int);}
+#define parseV(dest, f, off)	{parseF(dest.x, f, off); parseF(dest.y, f, off); parseF(dest.z, f, off); }
+#define parseS(dest, f, off)	{memset(dest.str, 0, STRLEN); memcpy(&dest.n_char, &f[off], sizeof(int)); off += sizeof(int); memcpy(&dest.str, &f[off], dest.n_char); off += dest.n_char;}
 
-					}
 
-					gr_set_cull(0);
-					g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT );
-					gr_set_cull(1);
+void parse_defpoint(int off, ubyte *bsp_data){
+
+	int i, n;
+//	off+=4;
+	int nverts = w(off+bsp_data+8);	
+	int offset = w(off+bsp_data+16);
+	int next_norm = 0;
+
+	ubyte * normcount = off+bsp_data+20;
+	vertex *dest = Interp_points;
+	vector *src = vp(off+bsp_data+offset);
+
+	// Get pointer to lights
+	Interp_lights = off+bsp_data+20+nverts;
+
+	Assert( nverts < MAX_POLYGON_VECS );
+	// Assert( nnorms < MAX_POLYGON_NORMS );
+
+	Interp_num_verts = nverts;
+	#ifndef NDEBUG
+	modelstats_num_verts += nverts;
+	#endif
+
+	{
+
+
+		for (n=0; n<nverts; n++ )	{	
+
+			Interp_verts[n] = src;	
+		
+			src++;		// move to normal
+
+			for (i=0; i<normcount[n]; i++ )	{
+				Interp_norms[next_norm] = src;
+
+				next_norm++;
+				src++;
 			}
+			dest++;
 		}
 	}
-	mprintf(("decals rendered\n"));
+
+	Interp_num_norms = next_norm;
+
+
 
 }
-*/
+
+void parse_tmap(int offset, ubyte *bsp_data){
+	int pof_tex = bsp_data[offset+40];
+	int n_vert = bsp_data[offset+36];
+	int n_tri = n_vert - 2;
+	ubyte *temp_verts;
+
+	model_tmap_vert *tverts;
+	tverts = (model_tmap_vert *)&bsp_data[offset+44];
+	temp_verts = &bsp_data[offset+44];
+
+	vertex *V;
+	vector *v;
+	vector *N;
+
+	for(int i = 1; i<n_vert-1; i++){
+		V = &list[pof_tex].vert[list[pof_tex].n_poly][0];
+		N = &list[pof_tex].norm[list[pof_tex].n_poly][0];
+		v = Interp_verts[(int)tverts[0].vertnum];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = tverts[0].u;
+		V->v = tverts[0].v;
+		*N = *Interp_norms[(int)tverts[0].normnum];
+		vm_vec_normalize(N);
+
+		V = &list[pof_tex].vert[list[pof_tex].n_poly][1];
+		N = &list[pof_tex].norm[list[pof_tex].n_poly][1];
+		v = Interp_verts[(int)tverts[i].vertnum];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = tverts[i].u;
+		V->v = tverts[i].v;
+		*N = *Interp_norms[(int)tverts[i].normnum];
+		vm_vec_normalize(N);
+
+		V = &list[pof_tex].vert[list[pof_tex].n_poly][2];
+		N = &list[pof_tex].norm[list[pof_tex].n_poly][2];
+		v = Interp_verts[(int)tverts[i+1].vertnum];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = tverts[i+1].u;
+		V->v = tverts[i+1].v;
+		*N = *Interp_norms[(int)tverts[i+1].normnum];
+		vm_vec_normalize(N);
+
+		list[pof_tex].n_poly++;
+	
+	}
+
+}
+
+void parse_sortnorm(int offset, ubyte *bsp_data);
+
+
+void parse_bsp(int offset, ubyte *bsp_data){
+	int ID, SIZE;
+
+	memcpy(&ID, &bsp_data[offset], sizeof(int));
+	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+	while(ID!=0){
+		switch(ID){
+		case OP_EOF:	
+			return;
+			break;
+		case OP_DEFPOINTS:	parse_defpoint(offset, bsp_data);
+			break;
+		case OP_SORTNORM:	parse_sortnorm(offset, bsp_data);
+			break;
+		case OP_FLATPOLY:
+			break;
+		case OP_TMAPPOLY:	parse_tmap(offset, bsp_data);
+			break;
+		case OP_BOUNDBOX:
+			break;
+		default:
+			return;
+		}
+			offset += SIZE;
+		memcpy(&ID, &bsp_data[offset], sizeof(int));
+		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+		if(SIZE < 1)ID=OP_EOF;
+	}
+}
+
+
+void parse_sortnorm(int offset, ubyte *bsp_data){
+
+	int frontlist, backlist, prelist, postlist, onlist;
+	memcpy(&frontlist, &bsp_data[offset+36], sizeof(int));
+	memcpy(&backlist, &bsp_data[offset+40], sizeof(int));
+	memcpy(&prelist, &bsp_data[offset+44], sizeof(int));
+	memcpy(&postlist, &bsp_data[offset+48], sizeof(int));
+	memcpy(&onlist, &bsp_data[offset+52], sizeof(int));
+
+	if (prelist) parse_bsp(offset+prelist,bsp_data);
+	if (backlist) parse_bsp(offset+backlist, bsp_data);
+	if (onlist) parse_bsp(offset+onlist, bsp_data);
+	if (frontlist) parse_bsp(offset+frontlist, bsp_data);
+	if (postlist) parse_bsp(offset+postlist, bsp_data);
+}
+
+void generate_vertex_buffers(bsp_info* model, polymodel * pm){
+	for(int i =0; i<MAX_MODEL_TEXTURES; i++)
+		list[i].n_poly=0;
+
+	parse_bsp(0, model->bsp_data);
+	model->n_buffers = 0;
+	for(i=0; i<MAX_MODEL_TEXTURES; i++){
+		if(model->n_buffers>=MAX_MODEL_TEXTURES)Error(LOCATION, "BSP buffer generation overflow, there are %d buffers",model->n_buffers);
+		if(!list[i].n_poly)continue;
+		model->buffer[model->n_buffers].vertex_buffer = gr_make_buffer(&list[i]);
+		model->buffer[model->n_buffers].texture = i;
+		model->n_buffers++;
+	}
+}
+void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level){
+	int i;
+	int zbuf_mode = gr_zbuffering_mode;
+
+	if ( (mn < 0) || (mn>=pm->n_models) )
+		return;
+
+	Assert( mn >= 0 );
+	Assert( mn < pm->n_models );
+
+//	mprintf(( "Name = '%s'\n", pm->submodel[mn].name ));
+//	char * p = pm->submodel[mn].name;
+
+
+
+//	mprintf(("model =%s, submodel=%s, interp offset=%f %f %f\n",pm->filename, pm->submodel[mn].name,Interp_offset.xyz.x,
+//															Interp_offset.xyz.y,Interp_offset.xyz.z));
+	
+	if (pm->submodel[mn].blown_off){
+		return;
+	}
+
+	if (pm->submodel[mn].is_thruster )	{
+		if ( !(Interp_flags & MR_SHOW_THRUSTERS) ){
+			return;
+		}
+		Interp_thrust_scale_subobj=1;
+	} else {
+		Interp_thrust_scale_subobj=0;
+	}
+
+	vm_vec_add2(&Interp_offset,&pm->submodel[mn].offset);
+
+	g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
+	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
+		light_rotate_all();
+	}
+
+	model_render_buffers( model, pm );
+
+	if (Interp_flags & MR_SHOW_PIVOTS )
+		model_draw_debug_points( pm, &pm->submodel[mn] );
+
+	if ( pm->submodel[mn].num_arcs )	{
+		interp_render_lightning( pm, &pm->submodel[mn]);
+	}
+
+	i = pm->submodel[mn].first_child;
+	while( i>-1 )	{
+		if (!pm->submodel[i].is_thruster )	{
+			if(Interp_flags & MR_NO_ZBUFFER){
+				zbuf_mode = GR_ZBUFF_NONE;
+			} else {
+				zbuf_mode = GR_ZBUFF_FULL;		// read only
+			}
+
+			gr_zbuffer_set(zbuf_mode);
+
+			model_render_childeren_buffers( &pm->submodel[i], pm, i, detail_level );
+		}
+		i = pm->submodel[i].next_sibling;
+	}
+
+	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
+
+
+	g3_done_instance();
+}
+
+void model_render_buffers(bsp_info* model, polymodel * pm){
+	gr_start_instance_matrix();
+	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING) );
+	gr_set_cull(1);
+
+	for(int i = 0; i<model->n_buffers; i++){
+		int texture = -1;
+
+					if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)){
+						texture = Interp_forced_bitmap;
+					}else if(Warp_Map > -1){
+						texture = Warp_Map;
+					}else if(Interp_replacement_bitmap >= 0){
+						texture = Interp_replacement_bitmap;
+					} else {
+						if (pm->is_ani[model->buffer[i].texture]){
+							texture = pm->textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->fps[model->buffer[i].texture])) % pm->num_frames[model->buffer[i].texture]);//here is were it picks the texture to render for ani-Bobboau
+						}else{
+							texture = pm->textures[model->buffer[i].texture];//here is were it picks the texture to render for normal-Bobboau
+						}
+
+						if((Detail.lighting > 2)  && (model_current_LOD < 1))SPECMAP = pm->specular_textures[model->buffer[i].texture];
+
+						if(glow_maps_active)
+						{
+							if (pm->glow_is_ani[model->buffer[i].texture])
+							{
+								GLOWMAP = pm->glow_textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->glow_fps[model->buffer[i].texture])) % pm->glow_numframes[model->buffer[i].texture]);
+							}
+							else
+							{
+								GLOWMAP = pm->glow_textures[model->buffer[i].texture];
+							}
+						}
+					}
+
+					if(texture == -1)continue;
+		if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
+			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
+			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
+		}else if(Warp_Map > -1){	//trying to get transperent textures-Bobboau
+			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
+		}else{
+//	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
+			gr_set_bitmap( texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0 );
+		}
+
+		gr_render_buffer(model->buffer[i].vertex_buffer);		
+	}
+	GLOWMAP = -1;
+	SPECMAP = -1;
+	gr_end_instance_matrix();
+	gr_set_lighting( false );
+
+}
+
+#endif

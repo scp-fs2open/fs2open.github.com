@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.2 $
- * $Date: 2002-10-05 16:46:09 $
- * $Author: randomtiger $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-26 14:37:14 $
+ * $Author: bobboau $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/05 16:46:09  randomtiger
+ * Added us fs2_open people to the credits. Worth looking at just for that.
+ * Added timer bar code, by default its not compiled in.
+ * Use TIMEBAR_ACTIVE in project and dependancy code settings to activate.
+ * Added the new timebar files with the new code.
+ *
  * Revision 2.1  2002/08/15 04:41:17  penguin
  * Added #include, needed for FRED
  *
@@ -358,5 +364,9 @@ enum
 	TIMERBAR_DEFAULT,
 	TIMERBAR_D3DCODE,
 };
+
+#define MAX_LIGHTS 256
+#define MAX_LIGHT_LEVELS 16
+
 
 #endif
