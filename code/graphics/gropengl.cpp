@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.101 $
- * $Date: 2005-02-27 10:38:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.102 $
+ * $Date: 2005-03-03 00:33:41 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2005/02/27 10:38:06  wmcoolmon
+ * Nonstandard res stuff
+ *
  * Revision 2.100  2005/02/23 05:11:13  taylor
  * more consolidation of various graphics variables
  * some header cleaning
@@ -2963,12 +2966,7 @@ int gr_opengl_save_screen()
  		return -1;
  	}
 	
-#ifdef _WIN32
-	glReadBuffer(GL_FRONT);
-#else
-	// we need to save BACK here to get a valid shot in-mission under Linux
 	glReadBuffer(GL_BACK);
-#endif
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, fmt, opengl_screen_tmp);
         
    
