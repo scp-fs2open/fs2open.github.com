@@ -809,20 +809,22 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	if( oo_flags & OO_SHIELD_NEW ){
 		// pack 2 shield values into each byte
 
+		float quad = get_max_shield_quad(objp);
+
 		// pack quadrant 1
-		temp = (objp->shield_quadrant[0] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS));		
+		temp = (objp->shield_quadrant[0] / quad);
 		PACK_PERCENT(temp);
 				
 		// pack quadrant 2
-		temp = (objp->shield_quadrant[1] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS));		
+		temp = (objp->shield_quadrant[1] / quad);
 		PACK_PERCENT(temp);				
 
 		// pack quadrant 3
-		temp = (objp->shield_quadrant[2] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS));		
+		temp = (objp->shield_quadrant[2] / quad);
 		PACK_PERCENT(temp);
 				
 		// pack quadrant 2
-		temp = (objp->shield_quadrant[3] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS));				
+		temp = (objp->shield_quadrant[3] / quad);
 		PACK_PERCENT(temp);				
 
 		OO_shield_total += 4;
@@ -1141,10 +1143,12 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data, ushort packet_sequence_num
 		UNPACK_PERCENT(shield_2);
 		UNPACK_PERCENT(shield_3);
 
-		pobjp->shield_quadrant[0] = (shield_0 * Ships[pobjp->instance].ship_initial_shield_strength) / MAX_SHIELD_SECTIONS;				
-		pobjp->shield_quadrant[1] = (shield_1 * Ships[pobjp->instance].ship_initial_shield_strength) / MAX_SHIELD_SECTIONS;				
-		pobjp->shield_quadrant[2] = (shield_2 * Ships[pobjp->instance].ship_initial_shield_strength) / MAX_SHIELD_SECTIONS;				
-		pobjp->shield_quadrant[3] = (shield_3 * Ships[pobjp->instance].ship_initial_shield_strength) / MAX_SHIELD_SECTIONS;				
+		float quad = get_max_shield_quad(pobjp);
+
+		pobjp->shield_quadrant[0] = (shield_0 * quad);
+		pobjp->shield_quadrant[1] = (shield_1 * quad);
+		pobjp->shield_quadrant[2] = (shield_2 * quad);
+		pobjp->shield_quadrant[3] = (shield_3 * quad);
 
 		// TEST code
 #ifndef NDEBUG

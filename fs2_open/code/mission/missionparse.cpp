@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.51 $
- * $Date: 2004-01-30 07:39:08 $
+ * $Revision: 2.52 $
+ * $Date: 2004-02-04 08:41:04 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2004/01/30 07:39:08  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.50  2004/01/14 06:34:07  Goober5000
  * made set-support-ship number align with general FS convention
  * --Goober5000
@@ -2158,7 +2164,7 @@ int parse_create_object(p_object *objp)
 		// Ships[shipnum].hull_hit_points_taken = (float)objp->initial_hull * sip->max_hull_hit_points / 100.0f;
 		Objects[objnum].hull_strength = objp->initial_hull * Ships[shipnum].ship_initial_hull_strength / 100.0f;
 		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
-			Objects[objnum].shield_quadrant[i] = (float)(objp->initial_shields * Ships[shipnum].ship_initial_shield_strength / 100.0f) / MAX_SHIELD_SECTIONS;
+			Objects[objnum].shield_quadrant[i] = (float)(objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		if ( !(Game_mode & GM_IN_MISSION) ) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-11-13 03:59:54 $
- * $Author: Kazan $
+ * $Revision: 2.14 $
+ * $Date: 2004-02-04 08:41:03 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/11/13 03:59:54  Kazan
+ * PXO_SID changed from unsigned to signed
+ *
  * Revision 2.12  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -6970,7 +6973,7 @@ void send_client_update_packet(net_player *pl)
 		ADD_DATA( percent );
 
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-			percent = (ubyte)(objp->shield_quadrant[i] / (shipp->ship_initial_shield_strength / MAX_SHIELD_SECTIONS) * 100.0f);
+			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
 			ADD_DATA( percent );
 		}
 
@@ -7089,7 +7092,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			objp->hull_strength = val;
 
 			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				val = (shield_percent[i] * shipp->ship_initial_shield_strength / 100.0f) / MAX_SHIELD_SECTIONS;
+				val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
 				objp->shield_quadrant[i] = val;
 			}
 

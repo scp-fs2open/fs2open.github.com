@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-12-16 21:01:54 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2004-02-04 08:41:04 $
+ * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/12/16 21:01:54  phreak
+ * disabled tertiary weapons support pending a rewrite of critical code
+ *
  * Revision 2.6  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -462,7 +465,11 @@ void ai_manage_ets(object* obj)
 	if ( !ship_p->ship_initial_shield_strength || !ship_info_p->max_speed || !ship_info_p->max_weapon_reserve)
 		return;
 
-	float shield_left_percent = get_shield_strength(obj)/ship_p->ship_initial_shield_strength;
+	// Goober5000: also check flags
+	if (obj->flags & (OF_NO_SHIELDS | OF_NO_ENGINES | OF_NO_LASERS) || !(ship_info_p->flags & SIF_AFTERBURNER))
+		return;
+
+	float shield_left_percent = get_shield_pct(obj);
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
 
 	// maximum level check

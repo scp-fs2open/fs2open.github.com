@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.81 $
- * $Date: 2004-01-30 07:39:09 $
+ * $Revision: 2.82 $
+ * $Date: 2004-02-04 08:41:02 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2004/01/30 07:39:09  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.80  2003/11/24 18:18:00  Goober5000
  * fixed bug in tech-reset-to-default
  * --Goober5000
@@ -4233,8 +4239,14 @@ int sexp_shields_left(int n)
 		return SEXP_NAN;
 	}
 
+	// Goober5000: in case ship has no shields
+	if (Ships[shipnum].ship_initial_shield_strength == 0.0f)
+	{
+		return 0;
+	}
+
 	// now return the amount of shields left as a percentage of the whole.
-	percent = (int)(get_shield_strength(&Objects[Ships[shipnum].objnum]) / Ships[shipnum].ship_initial_shield_strength * 100.0f);
+	percent = (int)(get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f);
 	return percent;
 }
 
@@ -9097,7 +9109,7 @@ int sexp_shield_quad_low(int node)
 	if(!(sip->flags & SIF_SMALL_SHIP)){
 		return 0;
 	}
-	max_quad = Ships[sindex].ship_initial_shield_strength / (float)MAX_SHIELD_SECTIONS;	
+	max_quad = get_max_shield_quad(objp);	
 
 	// shield pct
 	check = (float)sexp_get_val(CDR(node));
@@ -10497,7 +10509,7 @@ int shield_quad_near_max(int quadnum)
 		remaining += Player_obj->shield_quadrant[i];
 	}
 
-	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > Player_ship->ship_initial_shield_strength/MAX_SHIELD_SECTIONS - 5.0f)) {
+	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > get_max_shield_quad(Player_obj) - 5.0f)) {
 		return SEXP_TRUE;
 	} else {
 		return SEXP_FALSE;
@@ -10565,11 +10577,11 @@ int process_special_sexps(int index)
 
 		apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
-		if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_ship->ship_initial_shield_strength/4.0f)
-			Player_obj->shield_quadrant[FRONT_QUAD] = Player_ship->ship_initial_shield_strength/4.0f;
+		if (Player_obj->shield_quadrant[FRONT_QUAD] > get_max_shield_quad(Player_obj))
+			Player_obj->shield_quadrant[FRONT_QUAD] = get_max_shield_quad(Player_obj);
 
 		//hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
-		if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%4] - 2.0f)
+		if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%MAX_SHIELD_SECTIONS] - 2.0f)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;

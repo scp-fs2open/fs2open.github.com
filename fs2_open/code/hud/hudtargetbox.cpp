@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-01-30 07:39:07 $
+ * $Revision: 2.27 $
+ * $Date: 2004-02-04 08:41:04 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/01/30 07:39:07  Goober5000
+ * whew - I just went through all the code I ever added (or at least, that I could
+ * find that I commented with a Goober5000 tag) and added a bunch of Asserts
+ * and error-checking
+ * --Goober5000
+ *
  * Revision 2.25  2003/12/16 20:46:37  phreak
  * made gr_set_proj_matrix use the MIN/MAX_DRAW_DISTANCE constants
  *
@@ -763,36 +769,11 @@ void hud_blit_target_foreground()
 //				shields	=>		OUTPUT parameter:	percentage value of shields (0->1.0)
 //				integrity =>	OUTPUT parameter: percentage value of integrity (0->1.0)
 //
+// Goober5000 - simplified
 void hud_get_target_strength(object *objp, float *shields, float *integrity)
 {
-	ship	*shipp;
-	
-	if ( objp->type != OBJ_SHIP ) {
-		Int3();
-		return;
-	}
-
-	shipp = &Ships[objp->instance];
-
-	if (!( shipp->ship_initial_shield_strength == 0.0f )){
-		*shields = get_shield_strength(objp) / shipp->ship_initial_shield_strength;
-	} else {
-		*shields = 0.0f;
-	}
-
-	if (*shields < 0.0f){
-		*shields = 0.0f;
-	}
-
-	if ( shipp->ship_initial_hull_strength == 0.0f ) {
-		Int3(); // illegal initial hull strength
-		*integrity = 0.0f;
-		return;
-	}
-
-	*integrity = objp->hull_strength / shipp->ship_initial_hull_strength;
-	if (*integrity < 0)
-		*integrity = 0.0f;
+	*shields = get_shield_pct(objp);
+	*integrity = get_hull_pct(objp);
 }
 
 // maybe draw the extra targeted ship information above the target monitor

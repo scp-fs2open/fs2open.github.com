@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.102 $
- * $Date: 2004-02-04 04:28:15 $
+ * $Revision: 2.103 $
+ * $Date: 2004-02-04 08:41:01 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2004/02/04 04:28:15  Goober5000
+ * fixed Asserts in two places and commented out an unneeded variable
+ * --Goober5000
+ *
  * Revision 2.101  2004/01/31 04:06:29  phreak
  * commented out decal references
  *
@@ -10207,7 +10211,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vector *hitpos)
 	if ( quadrant_num < 0 )
 		quadrant_num = 0;
 
-	max_quadrant = Ships[hit_objp->instance].ship_initial_shield_strength / 4.0f;
+	max_quadrant = get_max_shield_quad(hit_objp);
 	if ( max_quadrant <= 0 ) {
 		return 0.0f;
 	}
