@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.151 $
- * $Date: 2005-01-16 22:39:10 $
+ * $Revision: 2.152 $
+ * $Date: 2005-01-16 23:18:03 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2005/01/16 22:39:10  wmcoolmon
+ * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
+ *
  * Revision 2.150  2005/01/12 04:45:33  Goober5000
  * fixed a nasty bug where dock pointers would run off a cliff and crash
  * --Goober5000
@@ -2405,6 +2408,8 @@ strcpy(parse_error_text, temp_error);
 			sip->flags |= SIF_BALLISTIC_PRIMARIES;
 		else if( !stricmp( NOX("flash"), ship_strings[i]))
 			sip->flags2 |= SIF2_FLASH;
+		else if( !stricmp( NOX("show ship"), ship_strings[i]))
+			sip->flags2 |= SIF2_SHOW_SHIP_MODEL;
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
@@ -4035,13 +4040,11 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 
 void ship_render(object * obj)
 {
-	int num;
-	ship_info * si;
-	ship * shipp;
-
-	num = obj->instance;
-
-	Assert( num >= 0);	
+	int num = obj->instance;
+	Assert( num >= 0);
+	ship *shipp = &Ships[num];
+	ship_info *si = &Ship_info[Ships[num].ship_info_index];
+	
 
 #if 0
 	// show target when attacking big ship
@@ -4093,13 +4096,13 @@ void ship_render(object * obj)
 			}
 		}		
 
-		return;
+		if(!(si->flags2 & SIF2_SHOW_SHIP_MODEL))
+		{
+			return;
+		}
 	}
 
 	MONITOR_INC( NumShipsRend, 1 );	
-
-	shipp = &Ships[num];
-	si = &Ship_info[Ships[num].ship_info_index];
 
 	// Make ships that are warping in not render during stage 1
 	if ( shipp->flags & SF_ARRIVING_STAGE_1 ){				
