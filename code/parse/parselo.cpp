@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.26 $
- * $Author: wmcoolmon $
- * $Date: 2004-12-25 09:25:18 $
+ * $Revision: 2.27 $
+ * $Author: Goober5000 $
+ * $Date: 2005-01-25 21:28:58 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/12/25 09:25:18  wmcoolmon
+ * Fix to modular tables workaround with Fs2NetD
+ *
  * Revision 2.25  2004/12/14 17:23:52  Goober5000
  * new version of stristr that doesn't need to allocate memory
  * --Goober5000
@@ -1195,32 +1198,113 @@ void compact_multitext_string(char *str)
 			str[i] = ' ';
 }
 
-// Strip comments from a line of input.
-int strip_comments_fred(char *readp, int in_comment)
-{	
-	int	ch;
-	char	*writep = readp;
+int maybe_convert_foreign_character(int ch)
+{
+	// time to do some special foreign character conversion			
+	switch (ch) {
+		case -4:
+			ch = 129;
+			break;
 
-	while ((ch = *readp) != COMMENT_CHAR) {
-		if (*readp == 0) {
-			*writep = 0;
-			return in_comment;
-		}
+		case -28:
+			ch = 132;
+			break;
 
-		if (!in_comment) {				
-			*writep = (char)ch;
-			writep++;
-		}
-		
-		readp++;		
+		case -10:
+			ch = 148;
+			break;
+
+		case -23:
+			ch = 130;
+			break;
+
+		case -30:
+			ch = 131;
+			break;
+
+		case -25:
+			ch = 135;
+			break;
+
+		case -21:
+			ch = 137;
+			break;
+
+		case -24:
+			ch = 138;
+			break;
+
+		case -17:
+			ch = 139;
+			break;
+
+		case -18:
+			ch = 140;
+			break;
+
+		case -60:
+			ch = 142;
+			break;
+
+		case -55:
+			ch = 144;
+			break;
+
+		case -12:
+			ch = 147;
+			break;
+
+		case -14:
+			ch = 149;
+			break;
+
+		case -5:
+			ch = 150;
+			break;
+
+		case -7:
+			ch = 151;
+			break;
+
+		case -42:
+			ch = 153;
+			break;
+
+		case -36:
+			ch = 154;
+			break;
+
+		case -31:
+			ch = 160;
+			break;
+
+		case -19:
+			ch = 161;
+			break;
+
+		case -13:
+			ch = 162;
+			break;
+
+		case -6:
+			ch = 163;
+			break;
+
+		case -32:
+			ch = 133;
+			break;
+
+		case -22:
+			ch = 136;
+			break;
+
+		case -20:
+			ch = 141;
+			break;
 	}
-
-	*writep = EOLN;
-	writep[1] = 0;
 	
-	return in_comment;	
+	return ch;
 }
-
 
 // Strip comments from a line of input.
 int strip_comments(char *readp, int in_comment)
@@ -1235,110 +1319,11 @@ int strip_comments(char *readp, int in_comment)
 		}
 
 		if (!in_comment) {
-			// time to do some special foreign character conversion			
-			switch (ch) {
-				case -4:
-					ch = 129;
-					break;
+			if (Fred_running)
+				*writep = (char) ch;
+			else
+				*writep = (char) maybe_convert_foreign_character(ch);
 
-				case -28:
-					ch = 132;
-					break;
-
-				case -10:
-					ch = 148;
-					break;
-
-				case -23:
-					ch = 130;
-					break;
-
-				case -30:
-					ch = 131;
-					break;
-
-				case -25:
-					ch = 135;
-					break;
-
-				case -21:
-					ch = 137;
-					break;
-
-				case -24:
-					ch = 138;
-					break;
-
-				case -17:
-					ch = 139;
-					break;
-
-				case -18:
-					ch = 140;
-					break;
-
-				case -60:
-					ch = 142;
-					break;
-
-				case -55:
-					ch = 144;
-					break;
-
-				case -12:
-					ch = 147;
-					break;
-
-				case -14:
-					ch = 149;
-					break;
-
-				case -5:
-					ch = 150;
-					break;
-
-				case -7:
-					ch = 151;
-					break;
-
-				case -42:
-					ch = 153;
-					break;
-
-				case -36:
-					ch = 154;
-					break;
-
-				case -31:
-					ch = 160;
-					break;
-
-				case -19:
-					ch = 161;
-					break;
-
-				case -13:
-					ch = 162;
-					break;
-
-				case -6:
-					ch = 163;
-					break;
-
-				case -32:
-					ch = 133;
-					break;
-
-				case -22:
-					ch = 136;
-					break;
-
-				case -20:
-					ch = 141;
-					break;
-			}			
-
-			*writep = (char)ch;
 			writep++;
 		}
 		
@@ -1494,11 +1479,8 @@ void read_file_text(char *filename, int mode, char *specified_file_text, char *s
 	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, file_text_raw, file_len, mp2)) != 0 ) {
 		mp2 += num_chars_read;
 
-		if(Fred_running){
-			in_comment = strip_comments_fred(outbuf, in_comment);
-		} else {
-			in_comment = strip_comments(outbuf, in_comment);
-		}
+		in_comment = strip_comments(outbuf, in_comment);
+
 		str = outbuf;
 		while (*str) {
 			if (*str == -33) {
