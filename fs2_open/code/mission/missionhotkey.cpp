@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-02 23:24:35 $
+ * $Author: Goober5000 $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -73,7 +76,7 @@
  * to hide the ship/wing until the mission is entered.
  * 
  * 45    3/11/98 11:20a Hoffoss
- * Changed hotkey screen to only show friendly and hostile  catagories
+ * Changed hotkey screen to only show friendly and hostile  categories
  * (everything non-friendly is hostile).
  * 
  * 44    3/10/98 9:51a Allender
