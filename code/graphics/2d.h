@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.7 $
- * $Date: 2003-10-17 17:18:42 $
- * $Author: randomtiger $
+ * $Revision: 2.8 $
+ * $Date: 2003-10-18 02:46:45 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/10/17 17:18:42  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.6  2003/10/13 19:39:19  matt
  * prelim reworking of lighting code, dynamic lights work properly now
  * albeit at only 8 lights per object, although it looks just as good as
@@ -692,7 +695,7 @@ typedef struct screen {
 	void (*gf_destroy_buffer)(int);
 	void (*gf_render_buffer)(int);
 
-	void (*gf_start_instance_matrix)();
+	void (*gf_start_instance_matrix)(vector *, matrix*);
 	void (*gf_end_instance_matrix)();
 
 	int	 (*gf_make_light)(light_data*, int, int );
