@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-09-22 03:50:13 $
- * $Author: tbird $
+ * $Revision: 2.8 $
+ * $Date: 2004-09-28 19:54:32 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/09/22 03:50:13  tbird
+ * Modified the image loading to accept 24 and 32 bit images
+ *
  * Revision 2.6  2004/07/26 20:47:53  Kazan
  * remove MCD complete
  *
@@ -463,7 +466,7 @@ int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *pale
 	*h = header.height;
 	*bpp = header.pixel_depth;
 
-	Assert(*bpp == 16 | *bpp == 32 | *bpp == 24);
+	Assert(*bpp == 16 || *bpp == 32 || *bpp == 24);
 	if(*bpp != 16 && *bpp != 32 && *bpp != 24)
 		return TARGA_ERROR_READING;
 
