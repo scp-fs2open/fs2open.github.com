@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:22 $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-15 04:41:17 $
  * $Author: penguin $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:22  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.2  2002/05/03 22:07:08  mharris
  * got some stuff to compile
  *
@@ -192,6 +195,7 @@
 #ifndef _SYSTEMVARS_H
 #define _SYSTEMVARS_H
 
+#include "globalincs/pstypes.h"
 #include "math.h"
 
 #define	GM_MULTIPLAYER					(1 << 0)
