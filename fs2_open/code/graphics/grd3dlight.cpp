@@ -3,6 +3,7 @@
 #include <d3d8.h>
 
 #include "2d.h"
+#include "math/vecmat.h"
 #include "graphics/grd3dinternal.h"
 
 // Constants
@@ -233,4 +234,93 @@ void gr_d3d_lighting(bool set, bool state)
 	GlobalD3DVars::lpD3DDevice->SetMaterial(&material);
 	d3d_SetRenderState(D3DRS_LIGHTING , state);
 
+}
+
+
+
+//this sets up a light to be pointinf from the eye to the object, 
+//the point being to make the object ether center or edge alphaed with THL
+//this effect is used mostly on shockwave models
+//-1 == edge
+//1 == center
+//0 == none
+//should be called after lighting has been set up, 
+//currently not designed for use with lit models
+extern vector Eye_position, Object_position;
+int GR_center_alpha = false;
+/**** !!!>>>---yes this fixes a bug---<<<!!! ****/
+void gr_d3d_center_alpha(int type){
+	GR_center_alpha = type;
+}
+void gr_d3d_center_alpha_int(int type){
+	if(!type){
+		GlobalD3DVars::lpD3DDevice->LightEnable(0,false);
+		GlobalD3DVars::lpD3DDevice->LightEnable(1,false);
+		return;
+	}
+//	pre_render_lights_init();
+//	type*=-1;
+	vector dir;
+	vm_vec_sub(&dir, &Eye_position, &Object_position);
+	vm_vec_normalize(&dir);
+
+//	if(type == -1)d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,255,255,255));
+//	if(type == 1)d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(0,0,0,0));
+	d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(0,0,0,0));
+
+	D3DLIGHT8 XLight;
+	D3DLIGHT8 *DXLight = &XLight;
+
+	if(type == 1){
+	DXLight->Diffuse.r = -1;
+	DXLight->Diffuse.g = -1;
+	DXLight->Diffuse.b = -1;
+	}else{
+	DXLight->Diffuse.r = gr_screen.current_alpha;
+	DXLight->Diffuse.g = gr_screen.current_alpha;
+	DXLight->Diffuse.b = gr_screen.current_alpha;
+	}
+	DXLight->Specular.r = 0;
+	DXLight->Specular.g = 0;
+	DXLight->Specular.b = 0;
+	DXLight->Diffuse.a = 1;
+	DXLight->Specular.a = 0.0f;
+	if(type == 1){
+	DXLight->Ambient.r = gr_screen.current_alpha;
+	DXLight->Ambient.g = gr_screen.current_alpha;
+	DXLight->Ambient.b = gr_screen.current_alpha;
+	}else{
+	DXLight->Ambient.r = 0.0f;
+	DXLight->Ambient.g = 0.0f;
+	DXLight->Ambient.b = 0.0f;
+	}
+	DXLight->Ambient.a = 1.0f;
+
+		DXLight->Type = D3DLIGHT_DIRECTIONAL;
+
+		DXLight->Direction.x = dir.xyz.x;
+		DXLight->Direction.y = dir.xyz.y;
+		DXLight->Direction.z = dir.xyz.z;
+
+			GlobalD3DVars::lpD3DDevice->SetLight(0,DXLight);
+			GlobalD3DVars::lpD3DDevice->LightEnable(0,true);
+
+		DXLight->Direction.x = -dir.xyz.x;
+		DXLight->Direction.y = -dir.xyz.y;
+		DXLight->Direction.z = -dir.xyz.z;
+
+			GlobalD3DVars::lpD3DDevice->SetLight(1,DXLight);
+			GlobalD3DVars::lpD3DDevice->LightEnable(1,true);
+
+/*		D3DCOLORVALUE col;
+		col.r = gr_screen.current_alpha*type;col.g = gr_screen.current_alpha*type;col.b = gr_screen.current_alpha*type;col.a = gr_screen.current_alpha*type;
+		material.Diffuse = col;
+		col.r = 0.0;col.g = 0.0;col.b = 0.0;col.a = 0.0;
+		material.Specular = col;
+		material.Emissive = col;
+		col.r = 1.0;col.g = 1.0;col.b = 1.0;col.a = 10.0;
+		material.Ambient = col;
+		GlobalD3DVars::lpD3DDevice->SetMaterial(&material);*/
+		GR_center_alpha = 0;
+		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
 }
