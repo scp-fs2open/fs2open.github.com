@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.97 $
- * $Date: 2005-03-10 08:00:14 $
- * $Author: taylor $
+ * $Revision: 2.98 $
+ * $Date: 2005-03-12 23:53:27 $
+ * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2005/03/10 08:00:14  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.96  2005/03/07 20:12:36  Goober5000
  * rolled back my original code on the support ship CTD; thanks taylor :)
  * --Goober5000
@@ -9930,13 +9939,13 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 	path_num = pm->docking_bays[dock_index].splines[0];
 
 	// path must exist
-	if (path_num >= 0)
+	if ((path_num >= 0) && (path_num < pm->n_paths))
 	{
 		// find the submodel for the path for this dockpoint
 		submodel = pm->paths[path_num].parent_submodel;
 
 		// submodel must exist and must move
-		if ((submodel >= 0) && (pm->submodel[submodel].movement_type >= 0))
+		if ((submodel >= 0) && (submodel < pm->n_models) && (pm->submodel[submodel].movement_type >= 0))
 		{
 			return submodel;
 		}
