@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-04-14 10:25:50 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2004-04-18 19:39:13 $
+ * $Author: randomtiger $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/04/14 10:25:50  taylor
+ * don't page in neb poofs unless in a neb2 mission, fix OGL whiteout issue
+ *
  * Revision 2.23  2004/04/11 13:56:33  randomtiger
  * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
  *
@@ -236,8 +239,7 @@
 #include "pcxutils/pcxutils.h"
 #include "mission/missionparse.h"
 #include "ship/ship.h"
-
-extern int Cmdline_nohtl;
+#include "cmdline/cmdline.h"
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS
@@ -539,7 +541,6 @@ void neb2_level_init()
 		return;
 	}
 
-	extern int Cmdline_nohtl;
 	if(Cmdline_nohtl || Fred_running) {
 		// by default we'll use pof rendering
 		Neb2_render_mode = NEB2_RENDER_POF;
@@ -1297,7 +1298,7 @@ void neb2_render_player()
 				// have lighting enabled but not set to fix whiteout in OGL
 				if(!Cmdline_nohtl)gr_set_lighting(false,(gr_screen.mode == GR_OPENGL));
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-		 	  	if(Cmdline_nohtl)
+		 	  	if(Cmdline_nohtl || Cmdline_2d_poof)
 	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 		 	  	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 				// turn lighting back off if in OGL to not mess up HUD
