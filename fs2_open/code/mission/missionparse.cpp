@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-01-18 09:25:41 $
+ * $Revision: 2.25 $
+ * $Date: 2003-01-18 23:25:39 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/01/18 09:25:41  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.23  2003/01/17 04:57:17  Goober5000
  * Allowed selection of either $Texture Replace, which keeps track of individual
  * replacement textures for a ship, or $Duplicate Model Texture Replace, which
@@ -718,7 +723,7 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 };
 
 char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
-	"primitive-sensors"
+	"primitive-sensors",
 	"no-subspace-drive"
 };
 
@@ -5016,15 +5021,15 @@ void mission_eval_arrivals()
 MONITOR(NumShipDepartures);
 
 // called to make object objp depart.
-void mission_do_departure( object *objp )
+int mission_do_departure( object *objp )
 {
 	ship *shipp;
 //	vector v;
 
-	MONITOR_INC(NumShipDepartures,1);
-
 	Assert ( objp->type == OBJ_SHIP );
 	shipp = &Ships[objp->instance];
+
+	MONITOR_INC(NumShipDepartures,1);
 
 	// if departing to a docking bay, try to find the anchor ship to depart to.  If not found, then
 	// just make it warp out like anything else.
@@ -5036,22 +5041,26 @@ void mission_do_departure( object *objp )
 		name = Parse_names[shipp->departure_anchor];
 
 		// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
+		// Goober5000 - ships which have no warp drives MUST not warp
 		if ( mission_parse_get_arrival_ship( name ) )
-			goto do_departure_warp;
+			if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
+				goto do_departure_warp;
 
 		// see if ship is in mission.  If not, then we can assume it was destroyed or departed since
 		// it is not on the arrival list (as shown by above if statement).
 		anchor_shipnum = ship_name_lookup( name );
-		if ( anchor_shipnum == -1 )
-			goto do_departure_warp;
 
-		ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum);
-		return;
+		// Goober5000 - ships which have no warp drives MUST not warp
+		if ( anchor_shipnum == -1 )
+			if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
+				goto do_departure_warp;
+
+		return ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1;
 	}
 
 do_departure_warp:
 	ai_set_mode_warp_out( objp, &Ai_info[Ships[objp->instance].ai_index] );
-
+	return 1;
 }
 
 // put here because mission_eval_arrivals is here.  Might move these to a better location
@@ -5078,7 +5087,8 @@ void mission_eval_departures()
 			
 			// don't process a ship that is already departing or dying or disabled
 			// AL 12-30-97: Added SF_CANNOT_WARP to check
-			if ( (shipp->flags & (SF_DEPARTING | SF_DYING | SF_CANNOT_WARP )) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			// Goober5000 - fixed so that it WILL eval when SF_CANNOT_WARP if departing to dockbay
+			if ( (shipp->flags & (SF_DEPARTING | SF_DYING)) || ((shipp->flags & SF_CANNOT_WARP) && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				continue;
 			}
 
