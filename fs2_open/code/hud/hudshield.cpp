@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-05-27 00:49:26 $
+ * $Revision: 2.14 $
+ * $Date: 2004-05-29 03:02:53 $
  * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/05/27 00:49:26  wmcoolmon
+ * Made HUD.tbl obsolete. Info is now taken directly from $Shield_icon in ships.tbl
+ * Now this table can be used for something more useful...say, hud gauge positions?
+ *
  * Revision 2.12  2004/05/25 00:37:49  wmcoolmon
  * Updated function calls for VC7 use
  *
@@ -248,14 +252,20 @@
 int Hud_shield_filename_count = 0;
 char Hud_shield_filenames[MAX_SHIELD_ICONS][MAX_FILENAME_LEN];
 
-char Shield_mini_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"targhit1",
-	"targhit1"
-};
+extern char Shield_mini_fname[MAX_FILENAME_LEN];
 
 hud_frames Shield_gauges[MAX_SHIELD_ICONS];
 
-static int Player_shield_coords[GR_NUM_RESOLUTIONS][2] = 
+//Externs, so look in hud parse
+extern int Player_shield_coords[2];
+extern int Shield_mini_coords[2];
+extern int Target_shield_coords[2];
+extern int Hud_mini_3digit[2];
+extern int Hud_mini_2digit[2];
+extern int Hud_mini_1digit[2];
+
+static int Hud_shield_inited = 0;
+/*static int Player_shield_coords[GR_NUM_RESOLUTIONS][2] = 
 {
 	{ // GR_640
 		396, 379
@@ -275,7 +285,6 @@ static int Target_shield_coords[GR_NUM_RESOLUTIONS][2] =
 	}
 };
 
-static int Hud_shield_inited = 0;
 
 int Shield_mini_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
@@ -318,7 +327,7 @@ int Hud_mini_base[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_1024
 		502, 477
 	}
-};
+};*/
 	
 int Shield_mini_loaded = 0;
 hud_frames Shield_mini_gauge;
@@ -372,9 +381,9 @@ void hud_shield_level_init()
 	Hud_shield_inited = 1;
 
 	if ( !Shield_mini_loaded ) {
-		Shield_mini_gauge.first_frame = bm_load_animation(Shield_mini_fname[gr_screen.res], &Shield_mini_gauge.num_frames);
+		Shield_mini_gauge.first_frame = bm_load_animation(Shield_mini_fname, &Shield_mini_gauge.num_frames);
 		if ( Shield_mini_gauge.first_frame == -1 ) {
-			Warning(LOCATION, "Could not load in the HUD shield ani: Shield_mini_fname[gr_screen.res]\n");
+			Warning(LOCATION, "Could not load in the HUD shield ani: Shield_mini_fname\n");
 			return;
 		}
 		Shield_mini_loaded = 1;
@@ -454,11 +463,11 @@ void hud_shield_show(object *objp)
 	}
 
 	if ( objp == Player_obj ) {
-		sx = Player_shield_coords[gr_screen.res][0];
-		sy = Player_shield_coords[gr_screen.res][1];
+		sx = Player_shield_coords[0];
+		sy = Player_shield_coords[1];
 	} else {
-		sx = Target_shield_coords[gr_screen.res][0];
-		sy = Target_shield_coords[gr_screen.res][1];
+		sx = Target_shield_coords[0];
+		sy = Target_shield_coords[1];
 	}
 
 	sx += fl2i(HUD_offset_x);
@@ -704,7 +713,7 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 	char	text_integrity[64];
 	int	numeric_integrity;
 	float p_target_integrity,initial_hull;
-	int	nx, ny;
+	int	final_pos[2];
 
 	initial_hull = Ships[objp->instance].ship_initial_hull_strength;
 	if (  initial_hull <= 0 ) {
@@ -723,21 +732,17 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 	}
 	// Assert(numeric_integrity <= 100);
 
-	// base coords
-	nx = (x_force == -1) ? Hud_mini_base[gr_screen.res][0] : x_force;
-	ny = (y_force == -1) ? Hud_mini_base[gr_screen.res][1] : y_force;
-
 	// 3 digit hull strength
 	if ( numeric_integrity == 100 ) {
-		nx += Hud_mini_3digit[gr_screen.res][2];
+		memcpy(final_pos, Hud_mini_3digit, sizeof(final_pos));
 	} 
-	// 2 digit hull strength
-	else if ( numeric_integrity < 10 ) {
-		nx += Hud_mini_1digit[gr_screen.res][2];		
-	}
 	// 1 digit hull strength
+	else if ( numeric_integrity < 10 ) {
+		memcpy(final_pos, Hud_mini_1digit, sizeof(final_pos));		
+	}
+	// 2 digit hull strength
 	else {
-		nx += Hud_mini_2digit[gr_screen.res][2];		
+		memcpy(final_pos, Hud_mini_2digit, sizeof(final_pos));
 	}	
 
 	if ( numeric_integrity == 0 ) {
@@ -746,15 +751,15 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 		}
 	}
 
-	nx += fl2i( HUD_offset_x );
-	ny += fl2i( HUD_offset_y );
+	final_pos[0] += fl2i( HUD_offset_x );
+	final_pos[1] += fl2i( HUD_offset_y );
 
 	sprintf(text_integrity, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {
 		hud_num_make_mono(text_integrity);
 	}	
 
-	gr_string(nx, ny, text_integrity);
+	gr_string(final_pos[0], final_pos[1], text_integrity);
 }
 
 // Draw the miniature shield icon that is drawn near the reticle
@@ -776,8 +781,8 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	if (!Shield_mini_loaded)
 		return;
 
-	sx = (x_force == -1) ? Shield_mini_coords[gr_screen.res][0]+fl2i(HUD_offset_x) : x_force;
-	sy = (y_force == -1) ? Shield_mini_coords[gr_screen.res][1]+fl2i(HUD_offset_y) : y_force;
+	sx = (x_force == -1) ? Shield_mini_coords[0]+fl2i(HUD_offset_x) : x_force;
+	sy = (y_force == -1) ? Shield_mini_coords[1]+fl2i(HUD_offset_y) : y_force;
 
 	// draw the ship first
 	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, HULL_HIT_OFFSET);
