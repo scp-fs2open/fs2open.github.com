@@ -141,7 +141,7 @@ bool play_media(LPTSTR movie_filename)
     //	
 	RUN_FUNCTION(pVW->put_MessageDrain((OAHWND) internal_hwnd));
 
-    if(set_fullscreen() == false)
+	if(set_fullscreen() == false)
 	{
 		return false;
 	}

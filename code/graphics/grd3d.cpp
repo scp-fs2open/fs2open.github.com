@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-03-19 06:22:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2003-03-19 07:17:05 $
+ * $Author: unknownplayer $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/03/19 06:22:58  Goober5000
+ * added typecasting to get rid of some build warnings
+ * --Goober5000
+ *
  * Revision 2.6  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -2073,7 +2077,39 @@ void d3d_update_adapter_mode_list(HWND hwnd)
 		SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_ADDSTRING, 0, (long) buffer);
 	}
 
-	// Select the first by default
+	// UP: Don't select the first by default, check what options were used to initialize the
+	// the game from the users registry and pick a size accordingly, so a 640x480 window won't
+	// be forced to run a 1024x768 image by default
+	
+	// Setup a variable to do bit depth comparions between modes against
+	int askedbitdepth;
+	
+	if (Cmdline_force_32bit == 1)
+	{
+		askedbitdepth = 32;
+	}
+	else
+	{
+		askedbitdepth = 16;
+	}
+
+	// Try and find a mode that matches what we're looking for
+	for (i = 0; i < num_in_list; i++)
+	{
+		if ((adapter_mode_details[i].Width == gr_screen.max_w) && (adapter_mode_details[i].Height == gr_screen.max_h))
+		{
+			// We have a candidate
+			if ((d3d_get_mode_bit((&adapter_mode_details[i])->Format)) == askedbitdepth)
+			{
+				// We have a winner!
+				SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_SETCURSEL, i, 0);
+				EnableWindow(GetDlgItem(hwnd, ID_OK), TRUE);
+				return;
+			}
+		}
+	}
+
+	// If all else has failed, just pick the first mode in the list
 	SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_SETCURSEL, 0, 0);
 	EnableWindow(GetDlgItem(hwnd, ID_OK), TRUE);
 }
@@ -2672,9 +2708,9 @@ bool gr_d3d_init()
 			return false;
 		}
 
-		d3dpp.MultiSampleType  = D3DMULTISAMPLE_NONE;
-		d3dpp.BackBufferWidth  = 1024;
-		d3dpp.BackBufferHeight = 768;
+		d3dpp.MultiSampleType  = multisample_types[final_aatype_choice];
+		d3dpp.BackBufferWidth  = adapter_mode_details[final_mode_choice].Width;
+		d3dpp.BackBufferHeight = adapter_mode_details[final_mode_choice].Height;
 
 		d3dpp.FullScreen_RefreshRateInHz      = 0;
 		d3dpp.FullScreen_PresentationInterval = 0;
