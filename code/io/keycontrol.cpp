@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-04-25 06:31:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2004-04-26 17:27:17 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/04/25 06:31:53  Goober5000
+ * made time dilation only available in cheat mode; also fixed an obscure CTD
+ * --Goober5000
+ *
  * Revision 2.24  2004/04/24 15:44:21  Kazan
  * Fixed Lobby screen showing up while exiting from non-tracker games
  * Time dialiation up to 1/4
@@ -969,6 +973,7 @@ void process_debug_keys(int k)
 			break;
 #endif
 
+		/*
 		// Goober5000: handle time dilation in cheat section
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_COMMA:
 		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_COMMA:
@@ -995,7 +1000,7 @@ void process_debug_keys(int k)
 			} else {
 				gamesnd_play_error_beep();
 			}
-			break;
+			break;*/
 
 		//	Kill! the currently targeted ship.
 		case KEY_DEBUGGED + KEY_K:
@@ -2454,16 +2459,17 @@ int button_function_demo_valid(int n)
 		break;
 
 	case TIME_SLOW_DOWN:
-		if ( Game_mode & GM_NORMAL ) {
-			// Goober5000 - time dilation only available in cheat mode (see above)
-			if ( Game_time_compression > F1_0) {
-				Game_time_compression /= 2;
-			} else {
-				gamesnd_play_error_beep();
-			}
+
+		// Goober5000 - time dilation only available in cheat mode (see above)
+		// Kazan - Fix what goober busted
+		if ( Game_time_compression > F1_0 ||
+			(Cheats_enabled && (Game_time_compression > F1_0/MAX_TIME_DIVIDER)) )
+		{
+			Game_time_compression /= 2;
 		} else {
 			gamesnd_play_error_beep();
 		}
+
 		ret = 1;
 		break;
 
