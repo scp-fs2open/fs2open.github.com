@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-05-01 19:33:20 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2004-05-01 19:49:31 $
+ * $Author: Kazan $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/05/01 19:33:20  taylor
+ * add CF_TYPE_MISSIONS to physical check to avoid network transfer problems
+ *
  * Revision 2.12  2004/05/01 17:10:37  Kazan
  * Multiple -mod - "-mod ModA,ModB,ModC" in order of priority
  * Giving you:
@@ -498,6 +501,7 @@ void cf_build_root_list(char *cdrom_dir)
 			strcat(root->path, str_temp);
 			root->roottype = CF_ROOTTYPE_PATH;
 			cf_build_pack_list(root);
+			delete[] str_temp;
 		}
 	}
 
