@@ -55,7 +55,6 @@ typedef struct gauge_info
 	size_t image_dest;	//offset of image string in hud_info; init in load_hud_defaults() (Can be NULL)
 	size_t frame_dest;	//Storage spot for frame info
 	size_t text_dest;	//Text value
-	gauge_info* addparent;	//If not NULL, coordinates are added to this
 	int show_outside;	//Show outside ship?
 } gauge_info;
 
