@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.60 $
- * $Date: 2003-05-09 23:53:32 $
+ * $Revision: 2.61 $
+ * $Date: 2003-05-15 19:08:24 $
  * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2003/05/09 23:53:32  phreak
+ * possible fix to ships with no mass values
+ *
  * Revision 2.59  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -2910,7 +2913,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		if ( sp->model_num == -1 ) {
-			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem %s on ship type %s.\nNot linking into ship!\n\n(This warning means that a subsystem was present in ships.tbl and not present in the model\nit should probably be removed from the model.)\n", sp->subobj_name, sinfo->name );
+			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem %s on ship type %s.\nNot linking into ship!\n\n(This warning means that a subsystem was present in ships.tbl and not present in the model\nit should probably be removed from the table or added to the model.)\n", sp->subobj_name, sinfo->name );
 			continue;
 		}
 
