@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.71 $
- * $Date: 2004-12-14 14:46:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.72 $
+ * $Date: 2004-12-25 09:28:09 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/12/14 14:46:12  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.70  2004/12/05 22:01:12  bobboau
  * sevral feature additions that WCS wanted,
  * and the foundations of a submodel animation system,
@@ -550,6 +554,7 @@
 #ifndef NO_NETWORK
 #include "network/multi_oo.h"
 #endif
+#include "hud/hudparse.h"
 
 struct object;
 
@@ -1044,6 +1049,10 @@ typedef struct ship {
 
 #ifdef DECALS_ENABLED
 	decal_system ship_decal_system;
+#endif
+
+#ifdef NEW_HUD
+	struct hud_info ship_hud;
 #endif
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
