@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-05-07 00:52:36 $
+ * $Revision: 2.21 $
+ * $Date: 2003-05-21 20:23:00 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/05/07 00:52:36  phreak
+ * fixed old bug that created "mouse trails" during a popup screen
+ * a result of doing something a long time ago that i thought was right, but wasn't
+ *
  * Revision 2.19  2003/05/04 23:52:40  phreak
  * added additional error info incase gr_opengl_flip() fails for some unknown reason
  *
@@ -523,17 +527,61 @@ extern int Cmdline_window;
 
 static const char* OGL_extensions;
 
-//tries to find a certain extension
-int opengl_find_extension(const char* ext_to_find)
-{
+static int arb0_enabled=0;
+static int arb1_enabled=0;
 
+inline static void opengl_switch_arb0(int state)
+{
+	if (state)
+	{
+		if (arb0_enabled)	return;
+
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glEnable(GL_TEXTURE_2D);
+		arb0_enabled=1;
+	}
+
+	else
+	{
+		if (!arb0_enabled)	return;
+
+		glActiveTextureARB(GL_TEXTURE0_ARB);
+		glDisable(GL_TEXTURE_2D);
+		arb0_enabled=0;
+	}
+}
+
+inline static void opengl_switch_arb1(int state)
+{
+	if (state)
+	{
+		if (arb1_enabled)	return;
+
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glEnable(GL_TEXTURE_2D);
+		arb1_enabled=1;
+	}
+
+	else
+	{
+		if (!arb1_enabled)	return;
+
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glDisable(GL_TEXTURE_2D);
+		arb1_enabled=0;
+	}
+}
+
+//tries to find a certain extension
+inline static int opengl_find_extension(const char* ext_to_find)
+{
 	return (strstr(OGL_extensions,ext_to_find)!=NULL);
 }
 
+
 //finds OGL extension functions
 //returns number found
-
-int opengl_get_extensions()
+static int opengl_get_extensions()
 {
 	int num_found=0;
 	ogl_extension *cur=NULL;
@@ -1391,13 +1439,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 {
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
-#ifndef NDEBUG
-//	int bitmapidx=gr_screen.current_bitmap % MAX_BITMAPS;
-#endif
-	int do_glow=(GLOWMAP > 0);
 
-//	if (do_glow)
-//		Int3();
 	// Make nebula use the texture mapper... this blends the colors better.
 	if ( flags & TMAP_FLAG_NEBULA ){
 		Int3 ();
@@ -1429,6 +1471,8 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		r = gr_screen.current_color.red;
 		g = gr_screen.current_color.green;
 		b = gr_screen.current_color.blue;
+//		opengl_switch_arb0(0);
+//		opengl_switch_arb1(0);
 	}
 
 	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )        
@@ -1478,59 +1522,28 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 	texture_source = TEXTURE_SOURCE_NONE;
 	
 	if ( flags & TMAP_FLAG_TEXTURED )       {
-		if (do_glow)
-		{
-#ifdef _DEBUG
-//			mprintf(("rendering a glow texture %s\n", bm_get_filename(GLOWMAP[bitmapidx])));
-#endif
-			glPushAttrib(GL_TEXTURE_BIT);
-			glActiveTextureARB(GL_TEXTURE0_ARB);		//texture is bound in gr_opengl_tcache_set
-			glEnable(GL_TEXTURE_2D);
-			texture_source=TEXTURE_SOURCE_DECAL;
-		}
-
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-		{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-
-		if (do_glow)
-		{
-			gr_opengl_set_state(texture_source, alpha_blend, zbuffer_type);
-			gr_set_bitmap(GLOWMAP, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
-			glActiveTextureARB(GL_TEXTURE1_ARB);
-			glEnable(GL_TEXTURE_2D);
-			texture_source=TEXTURE_SOURCE_ADD;
-			//texture is bound in gr_opengl_tcache_set
-			if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-			{
-				mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-				return;
-			}
-			gr_opengl_set_state(texture_source, alpha_blend, zbuffer_type);
-		}				
-
-
-
+		texture_source=TEXTURE_SOURCE_DECAL;
+			
 		// use nonfiltered textures for bitmap sections
 		if(flags & TMAP_FLAG_BITMAP_SECTION){
 			texture_source = TEXTURE_SOURCE_NO_FILTERING;
 		} else {
 			texture_source = TEXTURE_SOURCE_DECAL;
 		}
-	}
 
-
-	if (!do_glow)
 		gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
-	
-	if ( flags & TMAP_FLAG_TEXTURED )
-	{
-		// rendition junk
-		// STUB_FUNCTION;
-	}
 
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+		{
+			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
+	}
+	else
+	{
+		gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
+	}
+	
 	if (flags & TMAP_FLAG_PIXEL_FOG) {
 		int r, g, b;
 		int ra, ga, ba;
@@ -1639,26 +1652,17 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		if ( flags & TMAP_FLAG_TEXTURED )       {
 			tu = va->u*u_scale;
 			tv = va->v*v_scale;
-			if (do_glow)
-			{
-				//use opengl hardware multitexturing
-				glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
-				glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
-			}
-			else
-			{
-				glTexCoord2f(tu, tv);
-			}
+
+			//use opengl hardware multitexturing
+			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
+			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
+			
 		}
 		
 		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
 	}
 	glEnd();
 
-	if (do_glow)
-	{
-		glPopAttrib();
-	}
 }
 
 
@@ -2670,9 +2674,7 @@ int opengl_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_s
 	return ret_val;
 }
 
-		
-//extern int bm_get_cache_slot( int bitmap_id, int separate_ani_frames );
-int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0)
+int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int is_glowmap = 0)
 {
 	bitmap *bmp = NULL;
 
@@ -2714,6 +2716,18 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 		return 1;
+	}
+
+	if (is_glowmap)
+	{
+		Assert(arb1_enabled);
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+		
+	}
+	else
+	{
+		glActiveTextureARB(GL_TEXTURE0_ARB);
 	}
 
 	if (bitmap_type == TCACHE_TYPE_BITMAP_SECTION){
@@ -2776,6 +2790,7 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 
+		
 		glBindTexture (GL_TEXTURE_2D, t->texture_handle );
 
 		GL_last_bitmap_id = t->bitmap_id;
@@ -2791,6 +2806,29 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 	}
 
 	return 1;
+}
+//extern int bm_get_cache_slot( int bitmap_id, int separate_ani_frames );
+int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0)
+{
+	int r1,r2;
+
+	//make sure textuing is on
+//	opengl_switch_arb0(1);
+	if (GLOWMAP>-1)
+	{
+		opengl_switch_arb1(1);
+		r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
+		r2=gr_opengl_tcache_set_internal(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
+	}
+	else
+	{
+		opengl_switch_arb1(0);
+		r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
+		r2=1;
+	}
+
+	return ((r1) && (r2));
+
 }
 
 void gr_opengl_set_clear_color(int r, int g, int b)
@@ -3633,6 +3671,11 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_ansio);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_ansio);
 	}
+
+	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glEnable(GL_TEXTURE_2D);
+	arb0_enabled=1;
 }
 #endif
+
 
