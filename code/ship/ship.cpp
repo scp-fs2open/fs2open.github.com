@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-07-25 04:50:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2002-07-29 08:22:42 $
+ * $Author: DTP $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/07/25 04:50:07  wmcoolmon
+ * Added Bobboau's fighter-beam code.
+ *
  * Revision 2.1  2002/07/20 23:49:46  DTP
  * Fixed Secondary bank bug, where next valid secondary bank inherits current
  * valid banks FULL fire delay
@@ -745,7 +748,7 @@
 #ifdef FS2_DEMO
 	#define MAX_SHIP_SUBOBJECTS		360
 #else
-	#define MAX_SHIP_SUBOBJECTS		700			//	Reduced from 1000 to 400 by MK on 4/1/98.  
+	#define MAX_SHIP_SUBOBJECTS		2100 			//Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
 																// Highest I saw was 164 in sm2-03a which Sandeep says has a lot of ships.
 																// JAS: sm3-01 needs 460.   You cannot know this number until *all* ships
 																// have warped in.   So I put code in the paging code which knows all ships
