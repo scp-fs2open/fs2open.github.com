@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-14 04:00:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-02-16 18:55:12 $
+ * $Author: phreak $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/14 04:00:15  Goober5000
+ * allowed for up to 256 main halls
+ * --Goober5000
+ *
  * Revision 2.2  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -1123,7 +1127,7 @@ void write_stats_block(CFILE *file,scoring_struct *stats)
 
 	cfwrite_int(total, file);
 	for (i=0; i<total; i++){
-		cfwrite_ushort(stats->kills[i], file);
+		cfwrite_ushort((ushort)stats->kills[i], file);
 	}
 
 	cfwrite_int(stats->kill_count,file);

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-01-19 07:02:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-02-16 18:55:35 $
+ * $Author: phreak $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/19 07:02:16  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.5  2002/12/24 07:42:29  Goober5000
  * added change-ai-class and is-ai-class, and I think I may also have nailed the
  * is-iff bug; did some other bug hunting as well
@@ -6351,7 +6357,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	case STATS_ALLTIME:	
 		// alltime kills
 		for(idx=0;idx<MAX_SHIP_TYPES;idx++){
-			u_tmp = sc->kills[idx];
+			u_tmp = (ushort)sc->kills[idx];
 			ADD_DATA(u_tmp);
 		}
 		// medal information
@@ -6382,7 +6388,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	case STATS_MISSION:	
 		// mission OKkills		
 		for(idx=0;idx<MAX_SHIP_TYPES;idx++){
-			u_tmp = sc->m_okKills[idx];
+			u_tmp = (ushort)sc->m_okKills[idx];
 			ADD_DATA(u_tmp);			
 		}
 	
@@ -6409,7 +6415,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 
 	case STATS_DOGFIGHT_KILLS:
 		for(idx=0; idx<MAX_PLAYERS; idx++){
-			u_tmp = sc->m_dogfight_kills[idx];
+			u_tmp = (ushort)sc->m_dogfight_kills[idx];
 			ADD_DATA(u_tmp);
 		}
 		ADD_DATA(sc->m_kill_count);
