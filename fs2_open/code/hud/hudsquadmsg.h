@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.4 $
- * $Date: 2003-09-13 08:27:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.4.2.1 $
+ * $Date: 2003-09-19 00:15:26 $
+ * $Author: argv $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/13 08:27:29  Goober5000
+ * added some minor things, such as code cleanup and the following:
+ * --turrets will not fire at cargo
+ * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
+ * --supercaps have their own default message bitfields (distinguished from capships)
+ * --turrets are allowed on fighters
+ * --jump speed capped at 65m/s, to avoid ship travelling too far
+ * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
+ * ----Goober5000
+ *
  * Revision 2.3  2003/09/13 06:02:05  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -175,11 +185,13 @@
 #define TRANSPORT_MESSAGES	(ATTACK_TARGET_ITEM | CAPTURE_TARGET_ITEM | DEPART_ITEM )
 #define FREIGHTER_MESSAGES	TRANSPORT_MESSAGES		// freighters can do the same things as transports
 
-#define CRUISER_MESSAGES	(ATTACK_TARGET_ITEM | DEPART_ITEM)
+// _argv[-1] - big ship AI can do protect, and (super)cap ships have the same AI as cruisers.
+// So let the player give any orders the AI can do if mission says so!
+#define CRUISER_MESSAGES	(ATTACK_TARGET_ITEM | DEPART_ITEM | PROTECT_TARGET_ITEM)
 
-#define CAPITAL_MESSAGES	(DEPART_ITEM)				// can't order capitals to do much!!!!
+#define CAPITAL_MESSAGES	CRUISER_MESSAGES			// can't order capitals to do much!!!!
 
-#define SUPERCAP_MESSAGES	(0)							// supercaps ignore you :p
+#define SUPERCAP_MESSAGES	CRUISER_MESSAGES			// supercaps ignore you :p
 
 #define SUPPORT_MESSAGES	(REARM_REPAIR_ME_ITEM | ABORT_REARM_REPAIR_ITEM | STAY_NEAR_ME_ITEM | STAY_NEAR_TARGET_ITEM | KEEP_SAFE_DIST_ITEM | DEPART_ITEM )
 
