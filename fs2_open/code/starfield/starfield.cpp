@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-03-10 21:16:16 $
+ * $Revision: 2.48 $
+ * $Date: 2005-03-12 19:28:47 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/03/10 21:16:16  taylor
+ * fix screwed up stars coloring in OGL
+ *
  * Revision 2.46  2005/03/10 08:00:17  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -1626,7 +1629,7 @@ void subspace_render(int env)
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
-	if ( !D3D_enabled || !OGL_enabled )	{
+	if ( !D3D_enabled && !OGL_enabled )	{
 
 		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW;
 
