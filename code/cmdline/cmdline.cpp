@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.59 $
- * $Date: 2004-03-16 18:37:01 $
+ * $Revision: 2.60 $
+ * $Date: 2004-03-19 11:44:04 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/03/16 18:37:01  randomtiger
+ * Added new launcher flag construction code.
+ *
  * Revision 2.58  2004/03/05 09:01:57  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -649,7 +652,6 @@ cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);
 cmdline_parm dxt_arg("-dxt",NULL);
 cmdline_parm d3d_particle_arg("-d3d_particle",NULL);
 cmdline_parm show_mem_usage_arg("-show_mem_usage",NULL);
-cmdline_parm d3d_notmanaged_arg("-d3d_notmanaged",NULL);
 cmdline_parm rt_arg("-rt",NULL);
 cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
@@ -698,7 +700,6 @@ int Cmdline_dxt = 0;
 
 int Cmdline_cache_ani = 0;
 int Cmdline_d3dmipmap = 0;
-int Cmdline_d3d_notmanaged = 0;
 int Cmdline_rt = 0;
 char *Cmdline_start_mission = NULL;
 int Cmdline_ambient_factor  = 128;
@@ -1201,11 +1202,6 @@ bool SetCmdlineParams()
 
 	if(show_mem_usage_arg.found()) {
 		Cmdline_show_mem_usage = 1;
-	}
-
-	if(d3d_notmanaged_arg.found())
-	{
-		Cmdline_d3d_notmanaged	= 1;
 	}
 
 	if(rt_arg.found())

@@ -884,6 +884,24 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 			} 
 		}
 	}
+	/*
+	else if (be->type == BM_TYPE_PCX)
+	{
+		if(d3d_bitmap_entry[bitmapnum].tinterface == NULL)
+		{
+			// select proper format
+			if(flags & BMP_AABITMAP){
+				BM_SELECT_ALPHA_TEX_FORMAT();
+			} else if(flags & BMP_TEX_ANY){
+				BM_SELECT_TEX_FORMAT();					
+			} else {
+			   	BM_SELECT_SCREEN_FORMAT();
+			}
+
+			bm_d3d_lock_pcx( handle, bitmapnum, be, bmp, bpp, flags );
+		}
+	}
+	*/
 	else if ( (bmp->data == 0) || (bpp != bmp->bpp && bmp->bpp != 32)) {
 		Assert(be->ref_count == 1);
 
