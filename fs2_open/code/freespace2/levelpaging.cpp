@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-06-18 04:59:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-01 01:53:00 $
+ * $Author: phreak $
  *
  * Code to page in all the bitmaps at the beginning of a level.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/06/18 04:59:53  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
  * Revision 2.2  2004/03/05 09:02:01  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -72,7 +75,7 @@ extern void debris_page_in();
 extern void particle_page_in();
 extern void stars_page_in();
 extern void hud_page_in();
-extern void radar_page_in();
+extern void (*radar_page_in)();
 extern void weapons_page_in();
 extern void fireballs_page_in();
 extern void shockwave_page_in();

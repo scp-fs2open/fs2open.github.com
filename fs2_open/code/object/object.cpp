@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-03-05 09:01:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2004-07-01 01:53:51 $
+ * $Author: phreak $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.19  2004/02/14 00:18:35  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -520,6 +524,7 @@
 #include "weapon/beam.h"
 #include "weapon/swarm.h"
 #include "demo/demo.h"
+#include "radar/radarsetup.h"
 
 /*
  *  Global variables

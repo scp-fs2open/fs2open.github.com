@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.126 $
- * $Date: 2004-06-18 04:59:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.127 $
+ * $Date: 2004-07-01 01:54:32 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2004/06/18 04:59:54  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
  * Revision 2.125  2004/06/07 07:36:08  wmcoolmon
  * Warpout failure bug fixingness
  *
@@ -1276,6 +1279,7 @@
 #include "species_defs/species_defs.h"
 #include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
 #include "mission/missioncampaign.h"
+#include "radar/radarsetup.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
