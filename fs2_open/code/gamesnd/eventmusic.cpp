@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-12-11 09:03:08 $
+ * $Revision: 2.16 $
+ * $Date: 2004-12-25 16:42:59 $
  * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/12/11 09:03:08  wmcoolmon
+ * Changed music modular table ending to *-mus.tbm, in case a miscellaneous modular table is needed.
+ *
  * Revision 2.14  2004/07/26 20:47:30  Kazan
  * remove MCD complete
  *
@@ -432,6 +435,7 @@ void event_music_init()
 	for(int i = 0; i < num_files; i++)
 	{
 		//HACK HACK HACK
+		modular_tables_loaded = true;
 		strcat(tbl_file_names[i], ".tbm");
 		event_music_parse_musictbl(tbl_file_names[i], true);
 	}
