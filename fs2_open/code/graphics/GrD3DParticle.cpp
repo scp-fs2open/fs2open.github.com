@@ -67,11 +67,6 @@ int qsort_texture_compare_func(const void *elem1, const void *elem2 )
 		return 0;
 }
 
-float rt_pointsize   = 2.0f;
-float rt_pointsize_A = 1.0f;
-float rt_pointsize_B = 0.9f;
-float rt_pointsize_C = 0.8f;  
-
 inline DWORD FtoDW( float f ) { return *((DWORD*)&f); }
 
 bool gr_d3d_particle_render_list()

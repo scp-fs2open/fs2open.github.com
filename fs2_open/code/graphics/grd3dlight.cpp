@@ -226,7 +226,7 @@ void gr_d3d_lighting(bool set, bool state)
 		material.Specular = col;
 		col.r = 0.0;col.g = 0.0;col.b = 0.0;col.a = 0.0;
 		material.Emissive = col;
-		d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(255,16,16,16));
+		d3d_SetRenderState(D3DRS_AMBIENT, ambient_light);
 	}
 	if(!state)d3d_set_initial_render_state();
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-01-19 00:56:10 $
+ * $Revision: 2.13 $
+ * $Date: 2004-01-24 14:31:27 $
  * $Author: randomtiger $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/01/19 00:56:10  randomtiger
+ * Some more small changes for Fred OGL
+ *
  * Revision 2.11  2003/11/25 15:04:46  fryday
  * Got lasers to work in HT&L OpenGL
  * Messed a bit with opengl_tmapper_internal3d, draw_laser functions, and added draw_laser_htl
@@ -688,10 +691,17 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 // Orient
 int g3_draw_bitmap(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
 {
-	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
-		return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
+	if(!Cmdline_nohtl) 
+	{
+		bool gr_d3d_particle_set(vertex *pos, int bitmap_id, float size);
+
+		if((tmap_flags & TMAP_HTL_PARTICLE) && gr_screen.mode == GR_DIRECT3D && Cmdline_d3d_particle)
+			if(gr_d3d_particle_set(pnt, gr_screen.current_bitmap, rad) == true)
+				return 0;
+
+		if(tmap_flags & TMAP_HTL_3D_UNLIT)
+			return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
 	}
-//	return 0;
 
 	vertex va, vb;
 	float t,w,h;

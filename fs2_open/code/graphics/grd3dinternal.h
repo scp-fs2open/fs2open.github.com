@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.18 $
- * $Date: 2003-12-08 22:30:02 $
+ * $Revision: 2.19 $
+ * $Date: 2004-01-24 14:31:27 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.17  2003/12/05 18:17:06  randomtiger
  * D3D now supports loading for DXT1-5 into the texture itself, defaults to on same as OGL.
  * Fixed bug in old ship choice screen that stopped ani repeating.
@@ -360,6 +365,13 @@ typedef struct {
 } D3DVERTEX;
 
 typedef struct {
+	float x, y, z;
+	float size;
+	// Warning this custom value is not in use by D3D
+	DWORD custom;
+} D3DPOINTVERTEX;
+
+typedef struct {
 	int fvf;
 	int size;
 
@@ -372,6 +384,7 @@ enum
 	D3DVT_TLVERTEX,
 	D3DVT_LVERTEX,
 	D3DVT_VERTEX,
+	D3DVT_PVERTEX,
 	D3DVT_MAX
 };
 
@@ -493,5 +506,9 @@ int d3d_get_num_prims(int vertex_count, D3DPRIMITIVETYPE prim_type);
 void *d3d_lock_32_pcx(char *real_filename, int type, float *u, float *v);
 bool d3d_read_header_d3dx(char *file, int type, int *w, int *h);
 void *d3d_lock_d3dx_types(char *file, int type, ubyte flags );
+
+const D3DCOLOR ambient_dark  = D3DCOLOR_ARGB(255,16,16,16);
+const D3DCOLOR ambient_light = 
+	D3DCOLOR_ARGB(255,125,125,125);
 
 #endif //_GRD3DINTERNAL_H

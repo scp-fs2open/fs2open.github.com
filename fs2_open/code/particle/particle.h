@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:27 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2004-01-24 14:31:27 $
+ * $Author: randomtiger $
  *
  * Includes for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:27  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -71,6 +74,11 @@
 
 #ifndef _PARTICLE_H
 #define _PARTICLE_H
+
+#define MAX_PARTICLES	2000	//	Reduced from 2000 to 800 by MK on 4/1/98.  Most I ever saw was 400 and the system recovers
+											//	gracefully from running out of slots.
+											// AP: Put it to 1500 on 4/15/98.  Primary hit sparks weren't finding open slots.  
+											// Made todo item for John to force oldest smoke particles to give up their slots.
 
 //============================================================================
 //==================== PARTICLE SYSTEM GAME SEQUENCING CODE ==================

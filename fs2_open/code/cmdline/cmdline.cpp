@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.50 $
- * $Date: 2003-12-08 22:30:02 $
+ * $Revision: 2.51 $
+ * $Date: 2004-01-24 14:31:26 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2003/12/08 22:30:02  randomtiger
+ * Put render state and other direct D3D calls repetition check back in, provides speed boost.
+ * Fixed bug that caused fullscreen only crash with DXT textures
+ * Put dithering back in for tgas and jpgs
+ *
  * Revision 2.49  2003/12/04 20:39:09  randomtiger
  * Added DDS image support for D3D
  * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
@@ -517,6 +522,7 @@ cmdline_parm stats_arg("-stats", NULL);
 cmdline_parm query_speech_arg("-query_speech", NULL);
 cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);
 cmdline_parm dxt_arg("-dxt",NULL);
+cmdline_parm d3d_particle_arg("-d3d_particle",NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -547,6 +553,7 @@ int Cmdline_timeout = -1;
 int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
 int Cmdline_SpewTable_CRCs = 0;
 int Cmdline_ship_choice_3d = 0;
+int Cmdline_d3d_particle = 0;
 
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
@@ -1045,6 +1052,10 @@ void SetCmdlineParams()
 		{
 			Cmdline_dxt = 0;
 		}
+	}
+
+	if(d3d_particle_arg.found()) {
+		Cmdline_d3d_particle = 1;
 	}
 }
 

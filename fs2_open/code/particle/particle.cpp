@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-10-23 18:03:24 $
+ * $Revision: 2.3 $
+ * $Date: 2004-01-24 14:31:27 $
  * $Author: randomtiger $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/23 18:03:24  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -181,6 +184,7 @@
 #include "osapi/osapi.h"
 #include "object/object.h"
 #include "io/timer.h"
+#include "cmdline/cmdline.h"
 
 typedef struct particle {
 	// old style data
@@ -199,15 +203,6 @@ typedef struct particle {
 	int		attached_sig;		// to check for dead/nonexistent objects
 	ubyte		reverse;				// play any animations in reverse
 } particle;
-
-#ifdef FS2_DEMO
-	#define MAX_PARTICLES	500
-#else
-	#define MAX_PARTICLES	2000	//	Reduced from 2000 to 800 by MK on 4/1/98.  Most I ever saw was 400 and the system recovers
-											//	gracefully from running out of slots.
-											// AP: Put it to 1500 on 4/15/98.  Primary hit sparks weren't finding open slots.  
-											// Made todo item for John to force oldest smoke particles to give up their slots.
-#endif
 
 int Num_particles = 0;
 particle Particles[MAX_PARTICLES];
@@ -525,8 +520,13 @@ void particle_render_all()
 
 	p = Particles;
 
-	int i;
-	for ( i=0; i<MAX_PARTICLES; i++, p++ )	{
+	if(gr_screen.mode == GR_DIRECT3D && Cmdline_d3d_particle)
+	{
+		void gr_d3d_particle_reset_list();
+		gr_d3d_particle_reset_list();
+	}
+
+	for (int i=0; i<MAX_PARTICLES; i++, p++ )	{
 		
 		if ( p->type == -1 )	{
 			continue;
@@ -609,7 +609,7 @@ void particle_render_all()
 					}
 					// draw as a regular bitmap
 					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
@@ -639,7 +639,7 @@ void particle_render_all()
 					}
 					// draw as a regular bitmap
 					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
@@ -669,7 +669,7 @@ void particle_render_all()
 					}
 					// draw as a regular bitmap
 					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
@@ -699,13 +699,20 @@ void particle_render_all()
 					}
 					// draw as a regular bitmap
 					else {						
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE);
 						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
 					}
 					break;
 				}
 		}
 	}
+
+	if(gr_screen.mode == GR_DIRECT3D && Cmdline_d3d_particle)
+	{
+		bool gr_d3d_particle_render_list();
+		gr_d3d_particle_render_list();
+	}
+
 //	mprintf(( "NP=%d, NCP=%d\n", n, nclipped ));
 }
 
