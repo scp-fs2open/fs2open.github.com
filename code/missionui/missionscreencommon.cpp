@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-09-11 19:11:36 $
+ * $Author: argv $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -1317,6 +1320,10 @@ void wss_direct_restore_loadout()
 	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
 		return;
 	}
+
+	// only restore if mission isn't scramble
+	if (The_mission.scramble)
+		return;
 
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 
