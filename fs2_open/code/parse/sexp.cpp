@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.137 $
- * $Date: 2005-03-12 20:48:33 $
- * $Author: phreak $
+ * $Revision: 2.138 $
+ * $Date: 2005-03-14 23:33:22 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
@@ -11393,14 +11393,10 @@ void sexp_damage_escort_list_all(int n)
 
 	// build list of priorities
 	num_priorities = 0;
-	memset(priority,0,MAX_COMPLETE_ESCORT_LIST*sizeof(int));
 	for ( ; n != 1; n = CDR(n) )
 	{
 		priority[num_priorities] = eval_num(n);
-		if (priority[num_priorities]==0)
-			break;
-		else 
-			num_priorities++;
+		num_priorities++;
 	}
 
 	// build custom list of escort ships
