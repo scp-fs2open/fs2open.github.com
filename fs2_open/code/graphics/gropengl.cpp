@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.65 $
- * $Date: 2004-02-20 21:45:41 $
- * $Author: randomtiger $
+ * $Revision: 2.66 $
+ * $Date: 2004-03-05 04:33:09 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/02/20 21:45:41  randomtiger
+ * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
+ * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
+ * Fixed setup of center_alpha in OGL which was causing crash.
+ *
  * Revision 2.64  2004/02/15 06:02:31  bobboau
  * fixed sevral asorted matrix errors,
  * OGL people make sure I didn't break anything,
@@ -1600,6 +1605,9 @@ void gr_opengl_set_clip(int x,int y,int w,int h)
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(x, gr_screen.max_h-y-h, w, h);
 
+	if (!Cmdline_nohtl)
+		glViewport(x, gr_screen.max_h-y-h, w, h);
+
 }
 
 void gr_opengl_reset_clip()
@@ -1614,6 +1622,10 @@ void gr_opengl_reset_clip()
 	gr_screen.clip_height = gr_screen.max_h;
 
 	glDisable(GL_SCISSOR_TEST);
+
+	
+	if (!Cmdline_nohtl)
+		glViewport(0,0, gr_screen.max_w, gr_screen.max_h);
 }
 
 void gr_opengl_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx, int sy )
@@ -4635,7 +4647,7 @@ void gr_opengl_render_buffer(int idx)
 
 	if (glIsEnabled(GL_CULL_FACE))	glFrontFace(GL_CW);
 	
-//	glColor3ub(191,191,191);
+	glColor3ub(255,255,255);
 	
 	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
 
