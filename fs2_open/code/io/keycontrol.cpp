@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-05-10 10:51:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2004-07-12 03:19:16 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/05/10 10:51:53  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.30  2004/05/10 06:11:47  Goober5000
  * fixed warp decision
  * --Goober5000
@@ -2026,8 +2031,8 @@ void game_process_keys()
    do {
 		k = game_poll();		
 
-		if (k)
-			mprintf(("got key %d at %s:%d\n", k, __FILE__, __LINE__));
+		//if (k)
+		//	mprintf(("got key %d at %s:%d\n", k, __FILE__, __LINE__));
 	
 		// AL 12-10-97: Scan for keys used to leave the dead state	(don't process any)
 		// DB 1-13-98 : New popup code will run the game do state, so we must skip 
@@ -2532,7 +2537,7 @@ int button_function(int n)
 {
 	Assert(n >= 0);
 
-	mprintf(("got button %d at %s:%d\n", n, __FILE__, __LINE__));
+	//mprintf(("got button %d at %s:%d\n", n, __FILE__, __LINE__));
 
 	if ( !button_allowed(n) ) {
 		return 0;

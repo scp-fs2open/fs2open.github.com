@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-12 03:19:16 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.10  2004/02/04 09:02:44  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -371,6 +375,7 @@
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
 #include "playerman/player.h"
+#include "network/multi_log.h"
 
 #ifndef NDEBUG
 #include <limits.h>
@@ -1437,6 +1442,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 void send_ingame_ships_packet(net_player *player)
 {
+	ml_printf("Sending SHIPS_INGAME_PACKET");
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte p_type;
 	ship_obj *so;
@@ -2123,6 +2129,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 void multi_ingame_send_ship_update(net_player *p)
 {
+	ml_printf("Sending ship update -> ");
 	ship_obj *moveup;
 	
 	// get the first object on the list
@@ -2143,6 +2150,7 @@ void multi_ingame_send_ship_update(net_player *p)
 // for now, I guess we'll just send hull and shield % values
 void send_ingame_ship_update_packet(net_player *p,ship *sp)
 {
+	ml_printf("Sending INGAME_SHIP_UPDATE");
 	ubyte data[MAX_PACKET_SIZE];
 	object *objp;
 	int idx;
