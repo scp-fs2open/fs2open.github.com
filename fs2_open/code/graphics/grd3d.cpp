@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-10-10 03:59:40 $
+ * $Revision: 2.25 $
+ * $Date: 2003-10-13 19:39:19 $
  * $Author: matt $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/10/10 03:59:40  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.23  2003/09/26 14:37:14  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -2699,7 +2703,7 @@ void gr_d3d_render_buffer(int idx){
 		set_stage_for_defuse();
 	}
 
-	int passes = (n_active_lights/d3d_caps.MaxActiveLights);
+	int passes = 1;
 	lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
 
 	lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
@@ -2828,7 +2832,6 @@ void gr_d3d_end_instance_matrix(){
 	lpD3DDevice->SetTransform(D3DTS_PROJECTION, &mat);
 	lpD3DDevice->SetTransform(D3DTS_WORLD, &mat);
 
-
 	lpD3DDevice->SetVertexShader(old_shader);
 	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
 	d3d_SetTexture(1, NULL);
@@ -2841,6 +2844,66 @@ void gr_d3d_end_instance_matrix(){
 #define MAX_LIGHTS 256
 int hardware_slot[8];
 bool lighting_enabled = true;
+int HWLightSlot = 0;
+
+#define LT_DIRECTIONAL	0		// A light like a sun
+#define LT_POINT		1		// A point light, like an explosion
+#define LT_TUBE			2		// A tube light, like a fluorescent light
+
+void FSLight2DXLight(D3DLIGHT8 *DXLight,light_data *FSLight) {
+
+	//Copy the vars into a dx compatible struct
+	DXLight->Diffuse.r = FSLight->r * FSLight->intensity;
+	DXLight->Diffuse.g = FSLight->g * FSLight->intensity;
+	DXLight->Diffuse.b = FSLight->b * FSLight->intensity;
+	DXLight->Specular.r = FSLight->spec_r * FSLight->intensity;
+	DXLight->Specular.g = FSLight->spec_g * FSLight->intensity;
+	DXLight->Specular.b = FSLight->spec_b * FSLight->intensity;
+	DXLight->Diffuse.a = 1.0f;
+	DXLight->Specular.a = 1.0f;
+	DXLight->Ambient.r = 0.0f;
+	DXLight->Ambient.g = 0.0f;
+	DXLight->Ambient.b = 0.0f;
+	DXLight->Ambient.a = 1.0f;
+
+
+	//If the light is a directional light
+	if(FSLight->type == LT_DIRECTIONAL) {
+		DXLight->Type = D3DLIGHT_DIRECTIONAL;
+		DXLight->Position.x = 0.0f;
+		DXLight->Position.y = 0.0f;
+		DXLight->Position.z = 0.0f;
+
+		DXLight->Direction.x = FSLight->vec.xyz.x;
+		DXLight->Direction.y = FSLight->vec.xyz.y;
+		DXLight->Direction.z = FSLight->vec.xyz.z;
+	}
+
+	//If the light is a point or tube type
+	if((FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE)) {
+		DXLight->Type = D3DLIGHT_POINT;
+		DXLight->Position.x = FSLight->vec.xyz.x;
+		DXLight->Position.y = FSLight->vec.xyz.y;
+		DXLight->Position.z = FSLight->vec.xyz.z;
+		
+		//Increase the brightness of point and beam lights, as they seem to be too dark
+		DXLight->Diffuse.r *= 2;
+		DXLight->Diffuse.g *= 2;
+		DXLight->Diffuse.b *= 2;
+		DXLight->Specular.r *= 2;
+		DXLight->Specular.g *= 2;
+		DXLight->Specular.b *= 2;
+
+		//They also have almost no radius...
+		DXLight->Range = FSLight->rada * 64;
+		DXLight->Attenuation0 = 0.0f;
+		DXLight->Attenuation1 = 1.0f;
+		DXLight->Attenuation2 = 0.0f;
+	}
+
+}
+
+
 
 struct d3d_light{
 	d3d_light():occupied(false), priority(1){};
@@ -2870,25 +2933,7 @@ void pre_render_lights_init(){
 }
 
 void shift_active_lights(int pos){
-	int k = 0;
-	if(!lighting_enabled)return;
-	bool move = false;
-	for(unsigned int i = 0; (i < d3d_caps.MaxActiveLights) && ((pos * d3d_caps.MaxActiveLights)+i < (unsigned int)n_active_lights); i++){
-		if(currently_enabled[i] > -1)lpD3DDevice->LightEnable(currently_enabled[i],false);
-//		lpD3DDevice->SetLight(idx,&d3d_lights[idx].light);
-		move = false;
-		for(k; k<MAX_LIGHTS && !move; k++){
-			int slot = (pos * d3d_caps.MaxActiveLights)+i+k;
-			if(active_list[slot]){
-				if(d3d_lights[slot].occupied){
-			//		lpD3DDevice->SetLight(slot,&d3d_lights[slot].light);
-					lpD3DDevice->LightEnable(slot,true);
-					currently_enabled[i] = slot;
-					move = true;
-				}
-			}
-		}
-	}
+//Stub
 }
 
 int find_first_empty_hardware_slot(){
@@ -2901,119 +2946,43 @@ int find_first_empty_hardware_slot(){
 }
 
 
-#define LT_DIRECTIONAL	0		// A light like a sun
-#define LT_POINT		1		// A point light, like an explosion
-#define LT_TUBE			2		// A tube light, like a fluorescent light
-
 int	 gr_d3d_make_light(light_data* light, int idx, int priority){
-//	int slot = find_first_empty_hardware_slot();
-//	if(slot == -1)return -1;
-//	int idx = find_first_empty_light();
-	if(idx == -1)return -1;
-	D3DLIGHT8 *l = &d3d_lights[idx].light;
-	l->Diffuse.r = light->r * light->intensity;
-	l->Diffuse.g = light->g * light->intensity;
-	l->Diffuse.b = light->b * light->intensity;
-	l->Diffuse.a = 1.0;
-	l->Ambient.r = 0.0f;
-	l->Ambient.g = 0.0f;
-	l->Ambient.b = 0.0f;
-	l->Ambient.a = 1.0f;
-	l->Specular.r = light->spec_r * light->intensity;
-	l->Specular.g = light->spec_g * light->intensity;
-	l->Specular.b = light->spec_b * light->intensity;
-	l->Specular.a = 1.0;
-	switch(light->type){
-	case LT_DIRECTIONAL:
-		l->Type = D3DLIGHT_DIRECTIONAL;
-		l->Direction = D3DXVECTOR3(light->vec.xyz.x,light->vec.xyz.y,light->vec.xyz.z);
-	//	l->Position = D3DXVECTOR3(light->vec.xyz.x,light->vec.xyz.y,light->vec.xyz.z);
-		l->Range = 0.0f;
-		break;
-	case LT_POINT:
-	case LT_TUBE:
-//were going to treat tube lights as if they were point for now, 
-//and move them on a per model basis to the position closest to the model center
-//we will need a vertex shader to do it corectly
-		l->Type = D3DLIGHT_POINT;
-		l->Position = D3DXVECTOR3(light->vec.xyz.x, light->vec.xyz.y,light->vec.xyz.z);
-		l->Range = light->rada;
-		l->Attenuation0 = 0.0f;
-		l->Attenuation2 = 1.0f;
-		break;
-	}
-	d3d_lights[idx].occupied = true;
-	d3d_lights[idx].priority = priority;
-	lpD3DDevice->SetLight(idx,&d3d_lights[idx].light);
-	lpD3DDevice->LightEnable(idx,false);
-	active_list[idx] = false;
+//Stub
 	return idx;
 }
 
 void gr_d3d_modify_light(light_data* light, int idx, int priority){
-//	int slot = find_first_empty_hardware_slot();
-//	if(slot == -1)return;
-	if(!d3d_lights[idx].occupied)return;
-	D3DLIGHT8 *l = &d3d_lights[idx].light;
-	l->Diffuse.r = light->r * light->intensity;
-	l->Diffuse.g = light->g * light->intensity;
-	l->Diffuse.b = light->b * light->intensity;
-	l->Diffuse.a = 1.0;
-	l->Ambient.r = 0.0f;
-	l->Ambient.g = 0.0f;
-	l->Ambient.b = 0.0f;
-	l->Ambient.a = 1.0f;
-	l->Specular.r = light->spec_r * light->intensity;
-	l->Specular.g = light->spec_g * light->intensity;
-	l->Specular.b = light->spec_b * light->intensity;
-	l->Specular.a = 1.0;
-	switch(light->type){
-	case LT_DIRECTIONAL:
-		l->Type = D3DLIGHT_DIRECTIONAL;
-		l->Direction = D3DXVECTOR3(light->vec.xyz.x,light->vec.xyz.y,light->vec.xyz.z);
-		l->Position = D3DXVECTOR3(light->vec.xyz.x,light->vec.xyz.y,light->vec.xyz.z);
-		break;
-	case LT_POINT:
-	case LT_TUBE:
-//were going to treat tube lights as if they were point for now, 
-//and move them on a per model basis to the position closest to the model center
-//we will need a vertex shader to do it corectly
-		l->Type = D3DLIGHT_POINT ;
-		l->Position = D3DXVECTOR3(light->local_vec.xyz.x,light->local_vec.xyz.y,light->local_vec.xyz.z);
-		l->Range = light->rada;
-		l->Attenuation0 = 1.0f;
-		l->Attenuation2 = 1.0f;
-		break;
-	}
-	d3d_lights[idx].occupied = true;
-	d3d_lights[idx].priority = priority;
-	lpD3DDevice->SetLight(idx,&d3d_lights[idx].light);
-//	lpD3DDevice->LightEnable(idx,false);
-//	active_list[idx] = false;
-//	return idx;
+//Stub
 }
 
 void gr_d3d_destroy_light(int idx){
-//	if(d3d_lights[idx].hardware == -1) return;
-	d3d_lights[idx].occupied = false;
-	if(active_list[idx]) lpD3DDevice->LightEnable(idx,false);
-	if(active_list[idx]) n_active_lights--;
-	active_list[idx] = false;
-//	lpD3DDevice->SetLight(d3d_lights[idx].hardware,&empty_light);
-//	d3d_lights[idx].hardware = -1;
+//Stub
 }
 
-void gr_d3d_set_light(int idx, bool set){
-	if(!d3d_lights[idx].occupied)return;
-//	if(d3d_lights[idx].hardware == -1) return;
-/*	int slot = find_first_empty_hardware_slot();
-	lpD3DDevice->LightEnable(d3d_lights[idx].hardware,false);
-	lpD3DDevice->SetLight(d3d_lights[idx].hardware,&empty_light);
-	lpD3DDevice->SetLight(slot,&d3d_lights[idx].light);
-	lpD3DDevice->LightEnable(slot,set);
-	d3d_lights[idx].hardware = slot;*/
-	active_list[idx] = set;
-	if(set)n_active_lights++; else if(n_active_lights > 0) n_active_lights--;
+void gr_d3d_set_light(light_data *light){
+
+	//Init the light
+	D3DLIGHT8 DXLight;
+	FSLight2DXLight(&DXLight,light);
+
+	//Increment the hw light and set it up in d3d
+	HWLightSlot++;
+	if(HWLightSlot <= d3d_caps.MaxActiveLights) {
+
+		lpD3DDevice->SetLight(HWLightSlot,&DXLight);
+		lpD3DDevice->LightEnable(HWLightSlot,TRUE);
+	
+	}
+}
+
+void gr_d3d_reset_lighting(){
+	//Reset the light counter
+	HWLightSlot = 0;
+
+	//Disable all the HW lights
+	for(unsigned int i = 0; i<d3d_caps.MaxActiveLights; i++){
+		lpD3DDevice->LightEnable(i,FALSE);
+	}
 }
 
 void gr_d3d_lighting(bool set){
@@ -3175,6 +3144,7 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_modify_light = gr_d3d_modify_light;
 		gr_screen.gf_destroy_light = gr_d3d_destroy_light;
 		gr_screen.gf_set_light = gr_d3d_set_light;
+		gr_screen.gf_reset_lighting = gr_d3d_reset_lighting;
 
 		gr_screen.gf_lighting = gr_d3d_lighting;
 
