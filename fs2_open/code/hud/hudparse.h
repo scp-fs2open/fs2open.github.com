@@ -6,7 +6,6 @@
 #include "globalincs/globals.h"
 #include "hud/hudescort.h"
 #include "ship/ai.h"
-#include "ship/ship.h"
 
 //Teh hud_info struct...maybe class
 #define MAX_CUSTOM_HUD_GAUGES 32
@@ -34,6 +33,7 @@
 #define HG_ALWAYSUPDATE		(1<<1)
 #define HG_PRIORITYCOLOR	(1<<2)
 
+struct ship;
 class gauge_data;
 
 class gauge_data
@@ -56,7 +56,6 @@ private:
 	char model[MAX_FILENAME_LEN];						//Name of model to draw
 	int model_id;										//Model id
 public:
-
 	int type;											//Basically, main gauge or child gauge?
 	int coords[2];										//Coordinates of the gauge
 	gauge_data *children[MAX_GAUGE_CHILDREN];				//Children of the gauge
@@ -198,7 +197,8 @@ int hud_get_gauge_index(char* name);
 gauge_info* hud_get_gauge(char* name);
 void hud_positions_init();
 #ifdef NEW_HUD
-void set_current_hud(int player_ship_num, ship* owner = Player_ship);
+extern ship* Player_ship;
+void set_current_hud(ship* owner = Player_ship);
 #else
 void set_current_hud(int player_ship_num);
 #endif

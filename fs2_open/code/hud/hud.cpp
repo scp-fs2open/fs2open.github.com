@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-12-24 05:07:05 $
+ * $Revision: 2.29 $
+ * $Date: 2004-12-25 09:27:41 $
  * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/12/24 05:07:05  wmcoolmon
+ * NEW_HUD compiles now. :)
+ *
  * Revision 2.27  2004/12/23 23:08:21  wmcoolmon
  * Proposed HUD system stuffs - within NEW_HUD defines.
  *
@@ -3429,15 +3432,16 @@ void hud_page_in()
 {
 	int i;
 #ifdef NEW_HUD
-	//Page in new hud stuff
-	for(i = 0; i < current_hud->num_gauges; i++)
+	/*
+	//Page in default hud stuff
+	for(i = 0; i < default_hud.num_gauges; i++)
 	{
-		if(current_hud->gauges[i].type != HG_UNUSED)
+		if(default_hud.gauges[i].type != HG_UNUSED)
 		{
-			current_hud->gauges[i].reset();
-			current_hud->gauges[i].page_in();
+			default_hud.gauges[i].reset();
+			default_hud.gauges[i].page_in();
 		}
-	}
+	}*/
 #endif
 
 	bm_page_in_aabitmap( Kills_gauge.first_frame, Kills_gauge.num_frames );
