@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-09-17 07:11:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-02 21:24:44 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/09/17 07:11:02  Goober5000
+ * moved ssm stuff to header file so it would work in FRED
+ * --Goober5000
+ *
  * Revision 2.6  2004/08/23 04:00:15  Goober5000
  * ship-tag and ship-untag
  * --Goober5000
@@ -69,18 +73,22 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
+
 #include "hud/hudartillery.h"
 #include "parse/parselo.h"
 #include "weapon/weapon.h"
 #include "math/vecmat.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
-#include "network/multi.h"
 #include "fireball/fireballs.h"
 #include "object/object.h"
 #include "ship/ai.h"
 #include "globalincs/alphacolors.h"
 
+#ifndef NO_NETWORK
+#include "network/multi.h"
+#endif
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS

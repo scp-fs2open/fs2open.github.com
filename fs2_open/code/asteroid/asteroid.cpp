@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-26 20:47:23 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-02 21:24:43 $
+ * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/26 20:47:23  Kazan
+ * remove MCD complete
+ *
  * Revision 2.8  2004/07/12 16:32:41  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -301,6 +304,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "asteroid/asteroid.h"
 #include "object/object.h"

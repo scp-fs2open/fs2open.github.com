@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-01-31 23:27:55 $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-02 21:24:48 $
  * $Author: taylor $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/01/31 23:27:55  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.8  2004/07/26 20:47:56  Kazan
  * remove MCD complete
  *
@@ -98,6 +101,8 @@
  */
 
 #include <stdarg.h>
+
+#include "PreProcDefines.h"
 
 #include "weapon/emp.h"
 #include "io/timer.h"

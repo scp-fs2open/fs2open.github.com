@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-01-30 09:27:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-02 21:24:43 $
+ * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/30 09:27:39  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.9  2004/07/26 20:47:26  Kazan
  * remove MCD complete
  *
@@ -252,6 +256,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "debris/debris.h"
 #include "render/3d.h"

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:38 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-02 21:24:45 $
+ * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:38  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -277,6 +280,8 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
+
 #include "mission/missiontraining.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
@@ -294,9 +299,11 @@
 #include "gamesequence/gamesequence.h"
 #include "weapon/emp.h"
 #include "globalincs/alphacolors.h"
-#include "network/multi.h"
 #include "ship/ship.h"
 
+#ifndef NO_NETWORK
+#include "network/multi.h"
+#endif
 
 
 

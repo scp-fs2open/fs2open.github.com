@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-01-17 23:35:45 $
- * $Author: argv $
+ * $Revision: 2.46 $
+ * $Date: 2005-03-02 21:24:48 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/01/17 23:35:45  argv
+ * Surface shields.
+ *
+ * See forum thread:
+ * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.44  2005/01/14 23:08:17  argv
  * Revision 2.42 (Goober's fixes) broke "no pierce shields". Fixed.
  *
@@ -441,6 +449,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "weapon/beam.h"
 #include "globalincs/linklist.h"

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.125 $
- * $Date: 2005-03-01 06:55:40 $
- * $Author: bobboau $
+ * $Revision: 2.126 $
+ * $Date: 2005-03-02 21:24:43 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.125  2005/03/01 06:55:40  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.124  2005/02/23 04:51:55  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -1068,6 +1072,8 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
  #include <unistd.h>
  #include <sys/stat.h>
 #endif
+
+#include "PreProcDefines.h"
 
 #include "anim/animplay.h"
 #include "asteroid/asteroid.h"
@@ -5460,7 +5466,7 @@ void game_frame(int paused)
 #endif		
 		} else {
 
-#ifndef NO_STANDALONE
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 			game_show_standalone_framerate();
 #endif
 		}
@@ -6876,7 +6882,7 @@ void game_leave_state( int old_state, int new_state )
 			cutscenes_screen_close();
 			break;
 
-#ifndef NO_STANDALONE
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_close();
 	  		break;
@@ -7351,7 +7357,7 @@ void mouse_force_pos(int x, int y);
 			cutscenes_screen_init();
 			break;
 
-#ifndef NO_STANDALONE
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_init();
 			break;
@@ -7641,7 +7647,7 @@ void game_do_state(int state)
 			cutscenes_screen_do_frame();
 			break;
 
-#ifndef NO_STANDALONE
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			game_set_frametime(GS_STATE_STANDALONE_MAIN);
 			multi_standalone_wait_do();
@@ -7677,7 +7683,7 @@ void game_do_state(int state)
 	#endif
 			break;
 
-#ifndef NO_STANDALONE
+#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
 		case GS_STATE_STANDALONE_POSTGAME:
 			game_set_frametime(GS_STATE_STANDALONE_POSTGAME);
 			multi_standalone_postgame_do();

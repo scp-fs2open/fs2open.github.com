@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.81 $
- * $Date: 2005-03-01 06:55:41 $
- * $Author: bobboau $
+ * $Revision: 2.82 $
+ * $Date: 2005-03-02 21:24:45 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/03/01 06:55:41  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.80  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -665,12 +669,18 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <setjmp.h>
+
+#include "PreProcDefines.h"
 
 #include "mission/missionparse.h"
 #include "parse/parselo.h"

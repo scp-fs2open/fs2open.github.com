@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-01-30 03:26:11 $
- * $Author: wmcoolmon $
+ * $Revision: 2.22 $
+ * $Date: 2005-03-02 21:24:44 $
+ * $Author: taylor $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/01/30 03:26:11  wmcoolmon
+ * HUD updates
+ *
  * Revision 2.20  2004/12/24 01:07:19  wmcoolmon
  * Proposed HUD system stuffs - within NEW_HUD defines.
  *
@@ -248,6 +251,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "hud/hudshield.h"
 #include "graphics/2d.h"

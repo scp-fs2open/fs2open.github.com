@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-01-26 03:40:43 $
- * $Author: argv $
+ * $Revision: 2.16 $
+ * $Date: 2005-03-02 21:24:46 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/01/26 03:40:43  argv
+ * Removed the implicit surface shield on mesh-shielded ships.
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.14  2005/01/17 23:35:44  argv
  * Surface shields.
  *
@@ -206,6 +211,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "object/objcollide.h"
 #include "object/object.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-02-23 04:51:56 $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-02 21:24:44 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/02/23 04:51:56  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.11  2005/01/31 23:27:53  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -276,6 +279,8 @@
  * $NoKeywords: $
  *
 */
+
+#include "PreProcDefines.h"
 
 #include "menuui/optionsmenu.h"
 #include "missionui/missionscreencommon.h"

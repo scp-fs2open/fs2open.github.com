@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-01-31 10:34:38 $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-02 21:24:44 $
  * $Author: taylor $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/01/31 10:34:38  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.8  2004/12/14 14:46:12  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -135,6 +138,8 @@
 
 #include <ctype.h> // for 'tolower'
 
+#include "PreProcDefines.h"
+
 #include "hud/hud.h"
 #include "hud/hudwingmanstatus.h"
 #include "ship/ship.h"
@@ -142,11 +147,13 @@
 #include "io/timer.h"
 #include "hud/hudtargetbox.h"
 #include "globalincs/linklist.h"
-#include "network/multi.h"
 #include "weapon/emp.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
 
+#ifndef NO_NETWORK
+#include "network/multi.h"
+#endif
 
 
 #define HUD_WINGMAN_STATUS_NUM_FRAMES	5

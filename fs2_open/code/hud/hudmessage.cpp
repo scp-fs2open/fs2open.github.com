@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-02-23 04:51:56 $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-02 21:24:44 $
  * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/02/23 04:51:56  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.7  2005/02/13 08:37:57  wmcoolmon
  * Made messages display properly in nonstandard resolutions
  *
@@ -427,6 +430,8 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
+
+#include "PreProcDefines.h"
 
 #include "hud/hud.h"
 #include "hud/hudmessage.h"

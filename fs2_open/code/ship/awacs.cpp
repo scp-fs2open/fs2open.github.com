@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-26 20:47:51 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-02 21:24:47 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/26 20:47:51  Kazan
+ * remove MCD complete
+ *
  * Revision 2.9  2004/07/12 16:33:05  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -125,6 +128,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "ship/awacs.h"
 #include "io/timer.h"

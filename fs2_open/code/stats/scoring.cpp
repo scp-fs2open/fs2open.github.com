@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-04 20:06:09 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-02 21:24:47 $
  * $Author: taylor $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/04 20:06:09  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.6  2004/07/26 20:47:53  Kazan
  * remove MCD complete
  *
@@ -214,6 +217,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "stats/scoring.h"
 #include "freespace2/freespace.h"
@@ -596,9 +601,6 @@ void scoring_backout_accept( scoring_struct *score )
 // merge any mission stats accumulated into the alltime stats (as well as updating per campaign stats)
 void scoring_level_close(int accepted)
 {
-	int idx;
-	scoring_struct *sc;
-
 	// want to calculate any other statistics.
 	if (The_mission.game_type == MISSION_TYPE_TRAINING){
 		// call scoring_do_accept
@@ -611,6 +613,9 @@ void scoring_level_close(int accepted)
 	if(accepted){
 		// apply mission stats for all players in the game
 #ifndef NO_NETWORK
+		int idx;
+		scoring_struct *sc;
+
 		if(Game_mode & GM_MULTIPLAYER){
 			nprintf(("Network","Storing stats for all players now\n"));
 			for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -758,7 +763,6 @@ void scoring_eval_kill(object *ship_obj)
 	net_player *net_plr = NULL;
 	ship *dead_ship;				// the ship which was killed
 	net_player *dead_plr = NULL;
-	int i;
 
 #ifndef NO_NETWORK
 	// multiplayer clients bail here
@@ -932,16 +936,16 @@ void scoring_eval_kill(object *ship_obj)
 						// award teammates 50% of score value for big ship kills
 						// not in dogfight tho
 						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
-							for (i=0; i<MAX_PLAYERS; i++) {
-								if (MULTI_CONNECTED(Net_players[i]) && (Net_players[i].p_info.team == net_plr->p_info.team) && (&Net_players[i] != net_plr)) {
-									Net_players[i].m_player->stats.m_score += (int)(dead_ship->score * scoring_get_scale_factor() * 0.5f);
+							for (idx=0; idx<MAX_PLAYERS; idx++) {
+								if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == net_plr->p_info.team) && (&Net_players[idx] != net_plr)) {
+									Net_players[idx].m_player->stats.m_score += (int)(dead_ship->score * scoring_get_scale_factor() * 0.5f);
 /*
 #if !defined(RELEASE_REAL)
 									// DEBUG CODE TO TEST NEW SCORING
 									char score_text[1024] = "";
 									sprintf(score_text, "You get %d pts for the helping kill the big ship", (int)(dead_ship->score * scoring_get_scale_factor() * 0.5f));							
-									if (Net_players[i].player != Net_player->player) {			// check if its me
-										send_game_chat_packet(Net_player, score_text, MULTI_MSG_TARGET, &Net_players[i], NULL, 2);								
+									if (Net_players[idx].player != Net_player->player) {			// check if its me
+										send_game_chat_packet(Net_player, score_text, MULTI_MSG_TARGET, &Net_players[idx], NULL, 2);								
 									} else {
 										HUD_printf(score_text);
 									}

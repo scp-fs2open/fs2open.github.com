@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2005/03/01 06:55:45  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.90  2005/02/20 23:11:51  wmcoolmon
  * Fix0r3d trails
  *
@@ -660,6 +664,8 @@
  */
 
 //#include <stdlib.h>
+
+#include "PreProcDefines.h"
 
 #include "weapon/weapon.h"
 #include "render/3d.h"

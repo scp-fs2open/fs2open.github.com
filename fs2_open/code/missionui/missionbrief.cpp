@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.23 $
+ * $Date: 2005-03-02 21:24:45 $
  * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.21  2005/02/21 09:00:58  wmcoolmon
  * Multi-res support
  *
@@ -364,6 +367,8 @@
  * $NoKeywords: $
  *
 */
+
+#include "PreProcDefines.h"
 
 #include "freespace2/freespace.h"
 #include "missionui/missionscreencommon.h"

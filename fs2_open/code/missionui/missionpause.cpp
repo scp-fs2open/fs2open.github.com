@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-02 21:24:45 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.8  2005/02/21 09:00:58  wmcoolmon
  * Multi-res support
  *
@@ -69,6 +72,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "missionui/missionpause.h"
 #include "ui/ui.h"

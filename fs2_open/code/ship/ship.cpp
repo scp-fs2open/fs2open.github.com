@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.165 $
- * $Date: 2005-03-01 23:05:38 $
+ * $Revision: 2.166 $
+ * $Date: 2005-03-02 21:24:47 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.165  2005/03/01 23:05:38  taylor
+ * unbreak Linux build (not valid C/C++ anyway, block scope)
+ *
  * Revision 2.164  2005/03/01 06:55:45  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -5987,9 +5990,9 @@ void ship_check_player_distance_sub(player *p, int multi_target=-1)
 
 void ship_check_player_distance()
 {
+#ifndef NO_NETWORK
 	int idx;
 
-#ifndef NO_NETWORK
 	// multiplayer
 	if (Game_mode & GM_MULTIPLAYER) {
 		// if I'm the server, check all non-observer players including myself
@@ -12961,6 +12964,7 @@ int is_support_allowed(object *objp)
 #endif
 	}
 
+	return 0;
 }
 
 // return ship index

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-02-04 20:06:07 $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-02 21:24:46 $
  * $Author: taylor $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/02/04 20:06:07  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.11  2004/08/02 22:54:07  phreak
  * orb radar rendering style
  *
@@ -193,6 +196,8 @@
  *
  */
 
+
+#include "PreProcDefines.h"
 
 #include "radar/radar.h"
 #include "graphics/font.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.30 $
+ * $Date: 2005-03-02 21:24:45 $
  * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.28  2005/02/18 21:14:03  wmcoolmon
  * Fixes for debriefing window in nonstandard res
  *
@@ -436,6 +439,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "missionui/missiondebrief.h"
 #include "missionui/missionscreencommon.h"
@@ -2251,7 +2256,7 @@ void debrief_setup_ship_kill_stats(int stage_num)
 // Iterate through the debriefing buttons, checking if they are pressed
 void debrief_check_buttons()
 {
-	int i, y, z;
+	int i;
 
 	for ( i=0; i<NUM_BUTTONS; i++ ) {
 		if ( Buttons[gr_screen.res][i].button.pressed() ) {
@@ -2260,6 +2265,8 @@ void debrief_check_buttons()
 	}
 
 #ifndef NO_NETWORK
+	int y, z;
+
 	if ( !(Game_mode & GM_MULTIPLAYER) ) 
 		return;
 
@@ -2668,7 +2675,7 @@ void debrief_init()
 //	debrief_close()
 void debrief_close()
 {
-	int i, idx;
+	int i;
 
 	Assert(Debrief_inited);
 
@@ -2680,9 +2687,9 @@ void debrief_close()
 		// if stats weren't accepted, backout my own stats
 		if (multi_debrief_stats_accept_code() != 1) {
 			if(MULTIPLAYER_MASTER){
-				for(idx=0; idx<MAX_PLAYERS; idx++){
-					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL)){
-						scoring_backout_accept(&Net_players[idx].m_player->stats);
+				for(i=0; i<MAX_PLAYERS; i++){
+					if(MULTI_CONNECTED(Net_players[i]) && !MULTI_STANDALONE(Net_players[i]) && !MULTI_PERM_OBSERVER(Net_players[i]) && (Net_players[i].m_player != NULL)){
+						scoring_backout_accept(&Net_players[i].m_player->stats);
 					}
 				}
 			} else {
@@ -2906,7 +2913,6 @@ void debrief_do_frame(float frametime)
 {
 	int k=0, new_k=0;
 	char *please_wait_str = XSTR("Please Wait", 1242);
-	int str_w, str_h;
 	char buf[256];
 
 	Assert(Debrief_inited);	
@@ -2923,6 +2929,8 @@ void debrief_do_frame(float frametime)
 	}
 
 #ifndef NO_NETWORK
+	int str_w, str_h;
+
 	// first thing is to load the files
 	if ( MULTIPLAYER_CLIENT && !Debrief_multi_stages_loaded ) {
 		// draw the background, etc
@@ -2948,12 +2956,10 @@ void debrief_do_frame(float frametime)
 
 		gr_flip();
 
-#ifndef NO_NETWORK
 		// make sure we run the debrief do frame
 		if (Game_mode & GM_MULTIPLAYER) {
 			multi_debrief_do_frame();
 		}
-#endif
 
 		// esc pressed?		
 		os_poll();	

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.91 $
- * $Date: 2005-03-01 06:55:43 $
- * $Author: bobboau $
+ * $Revision: 2.92 $
+ * $Date: 2005-03-02 21:24:46 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2005/03/01 06:55:43  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.90  2005/02/28 00:29:52  wmcoolmon
  * Removed unneccessary variable
  *
@@ -777,6 +781,8 @@
 // This module contains the actual AI code that does interesting stuff
 // to objects.   The code in Ai.cpp is just for bookeeping, allocating
 // ai slots and linking them to ships.
+
+#include "PreProcDefines.h"
 
 #include "ship/ai.h"
 #include "globalincs/linklist.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-29 19:37:50 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-02 21:24:43 $
+ * $Author: taylor $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/29 19:37:50  Kazan
+ * unbug the JS bug i caused --- kazan
+ *
  * Revision 2.8  2004/07/26 20:47:26  Kazan
  * remove MCD complete
  *
@@ -336,6 +339,8 @@
  * $NoKeywords: $
  *
 */
+
+#include "PreProcDefines.h"
 
 #include "freespace2/freespace.h"
 #include "controlconfig/controlsconfig.h"

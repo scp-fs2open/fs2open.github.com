@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-02-13 08:36:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-02 21:24:44 $
+ * $Author: taylor $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/02/13 08:36:51  wmcoolmon
+ * Lockon should now work properly in nonstandard resolutions
+ *
  * Revision 2.9  2004/11/27 10:45:36  taylor
  * some fixes for position problems on the HUD in non-standard resolutions
  * few compiler warning fixes
@@ -307,6 +310,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "hud/hud.h"
 #include "hud/hudlock.h"

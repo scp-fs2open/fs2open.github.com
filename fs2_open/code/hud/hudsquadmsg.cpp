@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-02-04 10:12:30 $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-02 21:24:44 $
  * $Author: taylor $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.8  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -266,6 +269,8 @@
  * $NoKeywords: $
 */
  
+
+#include "PreProcDefines.h"
 
 #include "graphics/2d.h"
 #include "hud/hud.h"

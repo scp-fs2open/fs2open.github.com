@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-02-04 10:12:33 $
+ * $Revision: 2.36 $
+ * $Date: 2005-03-02 21:24:47 $
  * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/02/04 10:12:33  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.34  2005/01/28 11:06:23  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -561,6 +564,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "ship/shiphit.h"
 #include "object/object.h"
@@ -1269,7 +1274,6 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 //	Say dead stuff.
 void show_dead_message(object *ship_obj, object *other_obj)
 {
-	int pnum;
 	player *player_p;
 
 	// not doing anything when a non player dies.
@@ -1287,7 +1291,7 @@ void show_dead_message(object *ship_obj, object *other_obj)
 #ifndef NO_NETWORK
 	} else {
 		// in multiplayer, get a pointer to the player that died.
-		pnum = multi_find_player_by_object( ship_obj );
+		int pnum = multi_find_player_by_object( ship_obj );
 		if ( pnum == -1 ) {
 			//Int3();				// this condition is bad bad bad -- get Allender
 			return;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.134 $
- * $Date: 2005-02-04 23:29:32 $
+ * $Revision: 2.135 $
+ * $Date: 2005-03-02 21:24:42 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2005/02/04 23:29:32  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 2.133  2005/01/26 06:58:37  Goober5000
  * hm... added a necessary bugfix for something very badly designed
  * --Goober5000
@@ -878,6 +881,8 @@
 #include <ctype.h>
 #include <assert.h>
 #include <limits.h>
+
+#include "PreProcDefines.h"
 
 #include "parse/parselo.h"
 #include "parse/sexp.h"
@@ -8556,7 +8561,7 @@ void sexp_grant_promotion()
 // function which gives the named medal to the players in the mission
 void sexp_grant_medal( int n )
 {
-	int i, j;
+	int i;
 	char *medal_name;
 
 	// don't give medals in normal gameplay when not in campaign mode
@@ -8574,7 +8579,7 @@ void sexp_grant_medal( int n )
 		Player->stats.m_medal_earned = i;
 #ifndef NO_NETWORK
 		if ( Game_mode & GM_MULTIPLAYER ) {
-			for ( j = 0; j < MAX_PLAYERS; j++ ) {
+			for ( int j = 0; j < MAX_PLAYERS; j++ ) {
 				if ( MULTI_CONNECTED(Net_players[j]) ) {
 					Net_players[j].m_player->stats.m_medal_earned = i;
 				}
@@ -11637,7 +11642,7 @@ int sexp_missile_locked(int node)
 
 int sexp_num_kills(int node)
 {
-	int sindex, np_index;
+	int sindex;
 	player *p = NULL;
 
 	// get the ship we're interested in
@@ -11650,6 +11655,8 @@ int sexp_num_kills(int node)
 	}
 	
 #ifndef NO_NETWORK
+	int np_index;
+
 	// in multiplayer, search through all players
 	if(Game_mode & GM_MULTIPLAYER){
 		// try and find the player
@@ -11679,7 +11686,7 @@ int sexp_num_kills(int node)
 
 int sexp_num_type_kills(int node)
 {
-	int sindex, np_index, st_index;
+	int sindex, st_index;
 	int idx, total;
 	player *p = NULL;
 
@@ -11693,6 +11700,8 @@ int sexp_num_type_kills(int node)
 	}
 	
 #ifndef NO_NETWORK
+	int np_index;
+
 	// in multiplayer, search through all players
 	if(Game_mode & GM_MULTIPLAYER){
 		// try and find the player
@@ -11736,7 +11745,7 @@ int sexp_num_type_kills(int node)
 
 int sexp_num_class_kills(int node)
 {
-	int sindex, np_index, si_index;
+	int sindex, si_index;
 	player *p = NULL;
 
 	// get the ship we're interested in
@@ -11749,6 +11758,8 @@ int sexp_num_class_kills(int node)
 	}
 	
 #ifndef NO_NETWORK
+	int np_index;
+
 	// in multiplayer, search through all players
 	if(Game_mode & GM_MULTIPLAYER){
 		// try and find the player

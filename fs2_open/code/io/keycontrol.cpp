@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-02-21 05:40:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.43 $
+ * $Date: 2005-03-02 21:24:41 $
+ * $Author: taylor $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/02/21 05:40:16  Goober5000
+ * restored release version of some cheat codes; removed a cheat for cloaking
+ * --Goober5000
+ *
  * Revision 2.41  2005/02/20 05:22:44  Goober5000
  * restored original behavior for cheat code time dilation
  * --Goober5000
@@ -452,6 +456,8 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
+
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "globalincs/linklist.h"
@@ -465,8 +471,6 @@
 #include "gamesequence/gamesequence.h"
 #include "mission/missiongoals.h"
 #include "hud/hudets.h"
-#include "network/multi.h"
-#include "network/multiutil.h"
 #include "gamesnd/gamesnd.h"
 #include "hud/hudsquadmsg.h"
 #include "gamesnd/eventmusic.h"
@@ -474,7 +478,6 @@
 #include "mission/missionhotkey.h"
 #include "hud/hudescort.h"
 #include "hud/hudshield.h"
-#include "network/multimsgs.h"
 #include "io/keycontrol.h"
 #include "ship/shiphit.h"
 #include "ship/shipfx.h"
@@ -487,14 +490,20 @@
 #include "hud/hudmessage.h"
 #include "network/multi_pmsg.h"
 #include "globalincs/crypt.h"
-#include "network/multi_pause.h"
-#include "network/multi_observer.h"
-#include "network/multi_endgame.h"
 #include "starfield/supernova.h"
 #include "mission/missionmessage.h"
 #include "menuui/mainhallmenu.h"
 #include "missionui/missionpause.h"
 #include "hud/hudgauges.h"
+
+#ifndef NO_NETWORK
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multi_pause.h"
+#include "network/multi_observer.h"
+#include "network/multi_endgame.h"
+#endif
 
 #if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-12-23 15:58:55 $
- * $Author: phreak $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-02 21:24:45 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/12/23 15:58:55  phreak
+ * commits for scramble-messages and unscramble-messages
+ * -phreak
+ *
  * Revision 2.23  2004/12/17 06:43:01  taylor
  * fix crash from dynamically allocated Personas
  *
@@ -466,6 +470,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-02 21:24:45 $
  * $Author: taylor $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.10  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -374,6 +377,8 @@
  * on event chaining code.
  *
 */
+
+#include "PreProcDefines.h"
 
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"

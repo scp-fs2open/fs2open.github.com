@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-01-30 03:26:11 $
- * $Author: wmcoolmon $
+ * $Revision: 2.44 $
+ * $Date: 2005-03-02 21:24:44 $
+ * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/01/30 03:26:11  wmcoolmon
+ * HUD updates
+ *
  * Revision 2.42  2005/01/29 09:19:45  argv
  * Fixed compile errors due to several source files not having been updated to
  * reference "Min/Max_draw_distance" instead of "MIN/MAX_DRAW_DISTANCE".
@@ -386,6 +389,8 @@
  * $NoKeywords: $
  */
 
+#include "PreProcDefines.h"
+
 #include "hud/hudtargetbox.h"
 #include "render/3dinternal.h"
 #include "object/object.h"
@@ -402,7 +407,6 @@
 #include "graphics/font.h"
 #include "asteroid/asteroid.h"
 #include "jumpnode/jumpnode.h"
-#include "network/multi.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"
 #include "cmdline/cmdline.h"
@@ -410,6 +414,10 @@
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
 #include "object/objectdock.h"
+
+#ifndef NO_NETWORK
+#include "network/multi.h"
+#endif
 
 #ifndef NDEBUG
 #include "hud/hudets.h"

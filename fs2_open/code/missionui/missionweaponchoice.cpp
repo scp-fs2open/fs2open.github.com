@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-02-27 14:09:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2005-03-02 21:24:45 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/02/27 14:09:27  Goober5000
+ * First stage of "apply to all ships in this wing" weapon loadout button code.
+ * Button hooks only, pending interface art.  The "apply-to-all" code itself
+ * still has to be written.
+ * --Goober5000
+ *
  * Revision 2.37  2005/02/18 09:03:34  Goober5000
  * really fixed the build warning
  * --Goober5000
@@ -581,6 +587,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionweaponchoice.h"
@@ -2579,9 +2587,9 @@ void weapon_select_close_team()
 // briefing state is entered.
 void weapon_select_common_init()
 {
-	int idx;
-	
 #ifndef NO_NETWORK
+	int idx;
+
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		// initialize for all teams
 		for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
