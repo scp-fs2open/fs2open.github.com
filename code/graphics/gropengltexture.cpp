@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-01-21 08:54:53 $
- * $Author: taylor $
+ * $Revision: 1.16 $
+ * $Date: 2005-01-30 09:27:40 $
+ * $Author: Goober5000 $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/01/21 08:54:53  taylor
+ * slightly better memory management
+ *
  * Revision 1.14  2005/01/21 08:25:14  taylor
  * fill in gr_opengl_set_texture_addressing()
  * add support for non-power-of-two textures for cards that have it
@@ -1208,7 +1211,7 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 		opengl_switch_arb(2,0);
 	}
 
-	if ((GLOWMAP>-1) && !Cmdline_noglow)
+	if ((GLOWMAP >= 0) && !Cmdline_noglow)
 	{
 		opengl_switch_arb(1,1);
 	

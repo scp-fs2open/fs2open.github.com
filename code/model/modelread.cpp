@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-01-28 11:06:23 $
+ * $Revision: 2.52 $
+ * $Date: 2005-01-30 09:27:40 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/01/28 11:06:23  Goober5000
+ * changed a bunch of transpose-rotate sequences to use unrotate instead
+ * --Goober5000
+ *
  * Revision 2.50  2005/01/27 11:26:23  Goober5000
  * dock points on rotating submodels is *almost* working
  * --Goober5000
@@ -3889,7 +3893,7 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 	child_submodel = &pm->submodel[pm->detail[0]];
 
 	int i = child_submodel->first_child;
-	while ( i>-1 )	{
+	while ( i >= 0 )	{
 		child_submodel = &pm->submodel[i];
 
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)

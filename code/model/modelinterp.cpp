@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.97 $
- * $Date: 2005-01-30 03:23:22 $
- * $Author: wmcoolmon $
+ * $Revision: 2.98 $
+ * $Date: 2005-01-30 09:27:40 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2005/01/30 03:23:22  wmcoolmon
+ * Improved user-friendliness - give an Error instead of a CTD
+ *
  * Revision 2.96  2005/01/29 15:40:22  phreak
  * fixed error message again :)
  * -p
@@ -1587,7 +1590,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			gr_set_color( 0, 255, 0 );
 			g3_draw_poly( nv, Interp_list, 0 );		
 		} else if (Interp_thrust_scale_subobj)	{
-			if ((Interp_thrust_bitmap>-1)	&& (Interp_thrust_scale > 0.0f) && !Pofview_running) {
+			if ((Interp_thrust_bitmap >= 0)	&& (Interp_thrust_scale > 0.0f) && !Pofview_running) {
 				gr_set_bitmap( Interp_thrust_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );
 				g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );		
 			} else if(!Pofview_running){
@@ -2185,7 +2188,7 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 	}
 
 	i = pm->submodel[mn].first_child;
-	while( i>-1 )	{
+	while( i >= 0 )	{
 		if (!pm->submodel[i].is_thruster )	{
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
@@ -2899,7 +2902,7 @@ void model_try_cache_render(int model_num, matrix *orient, vector * pos, uint fl
 
 	model_cache *mc = NULL;
 	
-	if ( (objnum>-1) && (objnum<MAX_MODEL_CACHE) )	{
+	if ( (objnum >= 0) && (objnum<MAX_MODEL_CACHE) )	{
 		mc = &Model_cache[objnum];
 	}
 	
@@ -3594,7 +3597,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 
 	//gr_set_fill_mode((is_outlines_only == true)?GR_FILL_MODE_WIRE:GR_FILL_MODE_SOLID);
-	while( i>-1 )	{
+	while( i >= 0 )	{
 		if (!pm->submodel[i].is_thruster )	{
 			zbuf_mode = GR_ZBUFF_FULL;
 
@@ -4182,7 +4185,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// Draw the thruster subobjects	
 	gr_set_fill_mode((is_outlines_only == true)?GR_FILL_MODE_WIRE:GR_FILL_MODE_SOLID);
 	i = pm->submodel[pm->detail[detail_level]].first_child;
-	while( i>-1 )	{
+	while( i >= 0 )	{
 		if (pm->submodel[i].is_thruster )	{
 			zbuf_mode = GR_ZBUFF_READ;
 
@@ -5443,7 +5446,7 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 	}
 
 	i = pm->submodel[mn].first_child;
-	while( i>-1 )	{
+	while( i >= 0 )	{
 		if (!pm->submodel[i].is_thruster )	{
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
@@ -5504,8 +5507,9 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			texture = Interp_forced_bitmap;
 		}else if(Warp_Map > -1){
 			texture = Warp_Map;
-		}else if(Interp_replacement_bitmap >= 0){
-			texture = Interp_replacement_bitmap;
+// Goober5000 - see below
+//		}else if(Interp_replacement_bitmap >= 0){
+//			texture = Interp_replacement_bitmap;
 		}else if(Interp_thrust_scale_subobj){
 			texture = Interp_thrust_bitmap;
 		} else {
@@ -5532,9 +5536,13 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 
 		if(texture == -1)continue;
 
+		// Goober5000 - this should fix replacement textures under HTL
+		if (Interp_replacement_textures != NULL)
+			texture = Interp_replacement_textures[texture];
+
 		if(Interp_thrust_scale_subobj) {
 
-			if((Interp_thrust_bitmap>-1) && (Interp_thrust_scale > 0.0f)) {
+			if((Interp_thrust_bitmap >= 0) && (Interp_thrust_scale > 0.0f)) {
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f);
 			}
 			gr_zbuffer_set(GR_ZBUFF_READ);

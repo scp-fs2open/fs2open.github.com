@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.2 $
- * $Date: 2005-01-29 05:34:30 $
+ * $Revision: 2.3 $
+ * $Date: 2005-01-30 09:27:40 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/01/29 05:34:30  Goober5000
+ * docking fixes for FRED
+ * --Goober5000
+ *
  * Revision 2.1  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -337,7 +341,8 @@ void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function
 
 void dock_move_docked_objects(object *objp)
 {
-	Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
+	if ((objp->type != OBJ_SHIP) && (objp->type != OBJ_START))
+		return;
 
 	if (!object_is_docked(objp))
 		return;

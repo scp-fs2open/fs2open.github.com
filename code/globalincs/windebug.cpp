@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-10-31 21:34:39 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-01-30 09:27:41 $
+ * $Author: Goober5000 $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/10/31 21:34:39  taylor
+ * rename __ASSERT check to _ASSERT to fix constant warning message - why did no one else fix this?
+ *
  * Revision 2.13  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -559,7 +562,7 @@ void PE_Debug::DumpSymbolInfo( DumpBuffer& dumpBuffer, DWORD relativeAddress )
 		}
 
 	#ifdef DUMPRAM
-		if ( !isFunction && (currentSym->SectionNumber>-1) )	{
+		if ( !isFunction && (currentSym->SectionNumber >= 0) )	{
 			if ( (symName[0]=='_' && symName[1]!='$') || (symName[0]=='?') ) {
 
 				char pretty_module[1024];
