@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.52 $
- * $Date: 2004-02-04 08:41:04 $
+ * $Revision: 2.53 $
+ * $Date: 2004-02-05 14:31:44 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2004/02/04 08:41:04  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.51  2004/01/30 07:39:08  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -4507,7 +4512,7 @@ int parse_main(char *mission_name, int flags, int importFSM)
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;
 	Mission_all_attack = 0;	//	Might get set in mission load.
-	Assert(Num_ship_types < MAX_SHIP_TYPES);
+	Assert(Num_ship_types <= MAX_SHIP_TYPES);	// Goober5000 - should be <=
 
 	for (i = 0; i < Num_ship_types; i++)
 		Ship_class_names[i] = Ship_info[i].name;
@@ -6150,6 +6155,7 @@ void conv_fix_briefing_stuff()
 	// replace ; with ,
 
 	// fix the mismatched briefing icons
+	// jump node: 26 --> 33
 }
 
 // Goober5000

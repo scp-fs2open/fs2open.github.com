@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.103 $
- * $Date: 2004-02-04 08:41:01 $
+ * $Revision: 2.104 $
+ * $Date: 2004-02-05 14:31:44 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2004/02/04 08:41:01  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.102  2004/02/04 04:28:15  Goober5000
  * fixed Asserts in two places and commented out an unneeded variable
  * --Goober5000
@@ -2649,7 +2654,7 @@ void parse_shiptbl()
 	required_string("#Ship Classes");
 
 	while (required_string_either("#End","$Name:")) {
-		Assert( Num_ship_types < MAX_SHIP_TYPES );
+		Assert( Num_ship_types <= MAX_SHIP_TYPES );	// Goober5000 - should be <=
 
 		if ( parse_ship() ) {
 			continue;
