@@ -9,12 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-28 21:22:59 $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-07 03:43:22 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/28 21:22:59  Goober5000
+ * added the option to import FSM missions, added a replace function, spruced
+ * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
+ * --Goober5000
+ *
  * Revision 2.4  2003/09/05 04:25:29  Goober5000
  * well, let's see here...
  *
@@ -800,7 +805,6 @@ void lcl_replace_stuff(char *text, unsigned int max_len)
 		return;
 
 	int i;
-	char *replace_pos;
 	char replace[LCL_NUM_REPLACEMENTS][2][NAME_LENGTH];
 
 	// fill replacements array (this is if we want to add more in the future)
