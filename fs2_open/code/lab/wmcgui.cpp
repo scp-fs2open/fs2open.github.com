@@ -2492,13 +2492,13 @@ void ImageAnim::DoDraw(float frametime)
 		Progress = ElapsedTime/TotalTime;
 	}
 
-	int CurrentFrame = fl2i(Progress * NumFrames);
+	int CurrentFrame = fl2i(Progress * TotalFrames);
 	if(Progress > 1.0f)
 	{
 		if(ImageFlags & IF_BOUNCE)
 		{
 			Progress = 1.0f;
-			CurrentFrame = NumFrames;
+			CurrentFrame = TotalFrames;
 			PlayType = PT_PLAYING_REVERSE;
 		}
 		else if(ImageFlags & IF_REPEAT)
@@ -2510,7 +2510,7 @@ void ImageAnim::DoDraw(float frametime)
 		else
 		{
 			Progress = 1.0f;
-			CurrentFrame = NumFrames;
+			CurrentFrame = TotalFrames;
 			PlayType = PT_STOPPED;
 		}
 	}
@@ -2525,7 +2525,7 @@ void ImageAnim::DoDraw(float frametime)
 		else if(ImageFlags & IF_REPEAT && ImageFlags & (IF_REVERSED))
 		{
 			Progress = 1.0f;
-			CurrentFrame = NumFrames;
+			CurrentFrame = TotalFrames;
 			PlayType = PT_PLAYING_REVERSE;
 		}
 		else
@@ -2553,15 +2553,15 @@ void ImageAnim::SetImage(std::string in_imagename)
 {
 	if(in_imagename.size())
 	{
-		ImageHandle = IMG_LOAD_ANIM((char*)in_imagename.c_str(), &NumFrames, &FPS);
-		TotalTime = (float) (NumFrames/FPS);
+		ImageHandle = IMG_LOAD_ANIM((char*)in_imagename.c_str(), &TotalFrames, &FPS);
+		TotalTime = (float) (TotalFrames/FPS);
 		if(IMG_HANDLE_IS_INVALID(ImageHandle))
 		{
 			ImageHandle = IMG_LOAD((char*)in_imagename.c_str());
 			if(IMG_HANDLE_IS_VALID(ImageHandle))
-				NumFrames = 1;
+				TotalFrames = 1;
 			else
-				NumFrames = 0;
+				TotalFrames = 0;
 			FPS = 0;
 			TotalTime = 0.0f;
 		}
