@@ -2,13 +2,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.68 $
- * $Date: 2004-03-17 04:07:29 $
- * $Author: bobboau $
+ * $Revision: 2.69 $
+ * $Date: 2004-03-20 14:47:13 $
+ * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2004/03/17 04:07:29  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.67  2004/03/08 21:57:04  phreak
  * made a minor logical fix to gr_opengl_tmapper_internal
  *
@@ -5010,8 +5017,9 @@ void gr_opengl_init(int reinit)
 	}
 
 	//shut these command line parameters down if they are in use
-	Cmdline_jpgtga = 0;
-	Cmdline_pcx32 = 0;
+	Cmdline_jpgtga		  = 0;
+	Cmdline_pcx32		  = 0;
+	Cmdline_batch_3dunlit = 0;
 
 	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 

@@ -25,9 +25,14 @@ void process_messages()
 // Play one movie
 bool movie_play(char *name)
 {
+#ifdef NO_DSHOW_CODE
+	return false;
+#endif
+
 	extern int Is_standalone;
 	if(Is_standalone) return false;
  	if(Cmdline_dnoshowvid) return false;
+ 	if(Cmdline_window) return false;
 
 	char full_name[MAX_PATH];
 	GetCurrentDirectory(MAX_PATH, full_name);
@@ -120,7 +125,6 @@ bool movie_play(char *name)
 	CloseClip((HWND) os_get_window());
  	GlobalD3DVars::D3D_activate = 1;
 
-	gr_flip();
 	return true;
 }
 

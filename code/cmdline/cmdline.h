@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.49 $
- * $Date: 2004-03-19 14:51:54 $
+ * $Revision: 2.50 $
+ * $Date: 2004-03-20 14:47:12 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2004/03/19 14:51:54  randomtiger
+ * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
+ *
  * Revision 2.48  2004/03/19 11:44:04  randomtiger
  * Removed -d3d_notmanaged param.
  * Tided D3D texture code. Merged remaining section code into the rest of the system.
@@ -476,5 +479,6 @@ extern int Cmdline_rt;
 extern char *Cmdline_start_mission;
 
 extern int Cmdline_d3d_lesstmem;
+extern int Cmdline_batch_3dunlit;
 
 #endif

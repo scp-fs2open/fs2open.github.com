@@ -9,6 +9,13 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/02/16 11:47:33  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.11  2004/02/14 00:18:31  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -59,6 +66,8 @@
  */
 
 #include "globalincs/pstypes.h"
+#include "graphics/grbatch.h"
+
 #include "grd3dbatch.h"
 
 #include <d3d8.h>
@@ -328,7 +337,7 @@ bool d3d_batch_draw_vbuffer(int batch_id)
 		d3d_batch_unlock_vbuffer(batch_id);
 	}
 
-	Assert(batch_array[batch_id].lock != 0);
+	Assert(batch_array[batch_id].lock == 0);
 
 	int prim_count = d3d_get_num_prims(vertex_count, (D3DPRIMITIVETYPE) ptype);
 

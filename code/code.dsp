@@ -558,6 +558,14 @@ SOURCE=.\Graphics\2d.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\graphics\grbatch.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\grbatch.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Graphics\GrInternal.h
 # End Source File
 # Begin Source File

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.81 $
- * $Date: 2004-03-19 14:51:55 $
+ * $Revision: 2.82 $
+ * $Date: 2004-03-20 14:47:13 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2004/03/19 14:51:55  randomtiger
+ * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
+ *
  * Revision 2.80  2004/03/16 18:37:02  randomtiger
  * Added new launcher flag construction code.
  *
@@ -2652,6 +2655,11 @@ void game_init()
 			use_eax = 1;
 		}
 	}
+	else
+	{
+		run_launcher();
+		exit(0);
+	}
 
 	if (!Is_standalone) {
 
@@ -2678,17 +2686,6 @@ void game_init()
 /////////////////////////////
 // SOUND INIT END
 /////////////////////////////
-
-
-#ifdef _WIN32
-	// Only check for 3d-accel in Win32
-	if(!Is_standalone){
-		if(!stricmp(ptr, "Aucune accélération 3D") || !stricmp(ptr, "Keine 3D-Beschleunigerkarte") || !stricmp(ptr, "No 3D acceleration")){
-			MessageBox((HWND)os_get_window(), XSTR("Warning, Freespace 2 requires OpenGL or Direct3D hardware accleration. You will not be able to run Freespace 2 without it.", 1448), XSTR("Warning", 1449), MB_OK);		
-			exit(1);
-		}
-	}
-#endif
 
 	// check for hi res pack file 
 	int has_sparky_hi = 0;

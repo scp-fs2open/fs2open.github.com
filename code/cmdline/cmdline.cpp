@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.61 $
- * $Date: 2004-03-19 14:51:54 $
+ * $Revision: 2.62 $
+ * $Date: 2004-03-20 14:47:12 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/03/19 14:51:54  randomtiger
+ * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
+ *
  * Revision 2.60  2004/03/19 11:44:04  randomtiger
  * Removed -d3d_notmanaged param.
  * Tided D3D texture code. Merged remaining section code into the rest of the system.
@@ -605,6 +608,7 @@ Flag exe_params[] =
 	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
 	
 	"-d3d_lesstmem",  "Remove secondry texture system",	false,	0,				 EASY_DEFAULT,		"Experimental",	"",	
+	"-batch_3dunlit", "Batch dynamic data (in dev)",	false,	0,				 EASY_DEFAULT,		"Experimental",	"",	
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -664,6 +668,7 @@ cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 cmdline_parm get_flags_arg("-get_flags",NULL);
 cmdline_parm d3d_lesstmem_arg("-d3d_lesstmem",NULL);
+cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -733,6 +738,7 @@ extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
 
 int Cmdline_cell = 0;
+int Cmdline_batch_3dunlit = 0;
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -1275,7 +1281,12 @@ bool SetCmdlineParams()
 	{
 		Cmdline_d3d_lesstmem = 1;
 	}
-		
+
+	if(batch_3dunlit_arg.found())
+	{
+		Cmdline_batch_3dunlit = 1;
+	}
+
 	return true; 
 }
 

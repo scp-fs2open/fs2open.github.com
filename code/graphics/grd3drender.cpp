@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.45 $
- * $Date: 2004-03-17 04:07:29 $
- * $Author: bobboau $
+ * $Revision: 2.46 $
+ * $Date: 2004-03-20 14:47:13 $
+ * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2004/03/17 04:07:29  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.44  2004/03/05 09:02:00  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -677,6 +684,7 @@
 
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
+#include "graphics/grbatch.h"
 #include "graphics/grd3dbatch.h"
 #include "graphics/2d.h"
 #include "globalincs/pstypes.h"
@@ -1106,6 +1114,214 @@ static float Interp_fog_level;
 int w_factor = 256;
 
 #define MAX_INTERNAL_POLY_VERTS 1024
+
+/**
+ * This will be used to render the 3D parts the of FS2 engine
+ *
+ * @param int nverts
+ * @param  vertex **verts
+ * @param  uint flags
+ * @param  int is_scaler
+ *
+ * @return void
+ */
+//this is all RT's stuff
+void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint flags)	
+{
+	// Some checks to make sure this function isnt used when it shouldnt be
+	Assert(flags & TMAP_HTL_3D_UNLIT);
+
+	float u_scale = 1.0f, v_scale = 1.0f;
+	int bw = 1, bh = 1;		
+
+	gr_texture_source texture_source = (gr_texture_source)-1;
+	gr_alpha_blend alpha_blend = (gr_alpha_blend)-1;
+	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)-1;
+
+	if ( gr_zbuffering )	{
+		zbuffer_type = ZBUFFER_TYPE_FULL;
+	} else {
+		zbuffer_type = ZBUFFER_TYPE_NONE;
+	}
+
+	int alpha;
+
+	int tmap_type = TCACHE_TYPE_NORMAL;
+
+	int r, g, b;
+
+	if ( flags & TMAP_FLAG_TEXTURED )	{
+		r = 255;
+		g = 255;
+		b = 255;
+	} else {
+		r = gr_screen.current_color.red;
+		g = gr_screen.current_color.green;
+		b = gr_screen.current_color.blue;
+	}
+
+	// want to be in here!
+	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )	{
+
+		if (GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE )	{
+			tmap_type   = TCACHE_TYPE_NORMAL;
+			alpha_blend = ALPHA_BLEND_ALPHA_ADDITIVE;
+
+			// Blend with screen pixel using src*alpha+dst
+			float factor = gr_screen.current_alpha;
+
+			alpha = 255;
+
+			if ( factor <= 1.0f )	{
+				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
+				r = (r*tmp_alpha)/255;
+				g = (g*tmp_alpha)/255;
+				b = (b*tmp_alpha)/255;
+			}
+		} else {
+
+			tmap_type = TCACHE_TYPE_XPARENT;
+
+			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
+
+			// Blend with screen pixel using src*alpha+dst
+			float factor = gr_screen.current_alpha;
+
+			if ( factor > 1.0f )	{
+				alpha = 255;
+			} else {
+				alpha = fl2i(gr_screen.current_alpha*255.0f);
+			}
+		}
+	} else {
+		alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
+		alpha = 255;
+	}
+
+	Assert(!(flags & TMAP_FLAG_BITMAP_SECTION));
+
+	texture_source = TEXTURE_SOURCE_NONE;
+ 
+	if ( flags & TMAP_FLAG_TEXTURED )	{
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale))	{
+//			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
+
+		// use nonfiltered textures for bitmap sections
+		texture_source = TEXTURE_SOURCE_DECAL;
+	}
+	
+ //	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
+	
+	BatchInfo batch_info;
+	batch_info.alpha_blend_type = alpha_blend;
+	batch_info.bitmap_type      = tmap_type;
+	batch_info.filter_type      = texture_source;
+	batch_info.is_set           = true;
+	batch_info.state_set_func   = NULL;
+	batch_info.texture_id       = gr_screen.current_bitmap;
+	batch_info.zbuffer_type     = zbuffer_type;
+
+	D3DLVERTEX *d3d_verts	= (D3DLVERTEX *) d3d_batch_lock_vbuffer(GlobalD3DVars::unlit_3D_batch, nverts, batch_info);
+	D3DLVERTEX *src_v		= d3d_verts;
+
+	float uoffset = 0.0f;
+	float voffset = 0.0f;
+
+	float minu=0.0f, minv=0.0f, maxu=1.0f, maxv=1.0f;
+
+	if ( flags & TMAP_FLAG_TEXTURED )	{								
+		if ( GlobalD3DVars::D3D_rendition_uvs )	{				
+			bm_get_info(gr_screen.current_bitmap, &bw, &bh);			
+				
+			uoffset = 2.0f/i2fl(bw);
+			voffset = 2.0f/i2fl(bh);
+
+			minu = uoffset;
+			minv = voffset;
+
+			maxu = 1.0f - uoffset;
+			maxv = 1.0f - voffset;
+		}				
+	}	
+
+	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
+	if(nverts > MAX_INTERNAL_POLY_VERTS-1)Error( LOCATION, "too many verts in gr_d3d_tmapper_internal_3d_unlit\n" );
+	if(nverts < 3)Error( LOCATION, "too few verts in gr_d3d_tmapper_internal_3d_unlit\n" );
+
+	for (int i=0; i<nverts; i++ )	{
+		vertex * va = &verts[i];		
+			  
+		int a      = ( flags & TMAP_FLAG_ALPHA )   ? verts[i].a : alpha;
+	
+		if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )	{
+			// Make 0.75 be 256.0f
+			r = verts[i].r;
+			g = verts[i].g;
+			b = verts[i].b;
+		} else {
+			// use constant RGB values...
+		}
+		
+		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
+		src_v->specular = D3DCOLOR_ARGB(a, r, g, b);
+
+		src_v->sx = va->x; 
+		src_v->sy = va->y; 
+		src_v->sz = va->z;
+
+		if ( flags & TMAP_FLAG_TEXTURED )	{
+			// argh. rendition
+			if ( GlobalD3DVars::D3D_rendition_uvs ){				
+				// tiled texture (ships, etc), bitmap sections
+				if(flags & TMAP_FLAG_TILED){					
+					src_v->tu = va->u*u_scale;
+					src_v->tv = va->v*v_scale;
+				}
+				// sectioned
+				else if(flags & TMAP_FLAG_BITMAP_SECTION){
+					int sw, sh;
+					bm_get_info(gr_screen.current_bitmap, &sw, &sh, NULL, NULL, NULL);
+
+
+				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
+					src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
+					src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
+				}										   
+
+				// all else.
+				else {				
+					src_v->tu = flCAP(va->u, minu, maxu);
+					src_v->tv = flCAP(va->v, minv, maxv);
+				}				
+			}
+			// yay. non-rendition
+			else {
+				src_v->tu = va->u*u_scale;
+				src_v->tv = va->v*v_scale;
+			}							
+		} else {
+			src_v->tu = 0.0f;
+			src_v->tv = 0.0f;
+		}
+		src_v++;
+	}
+
+	// None of these objects are set to be fogged, but perhaps they should be
+	if(flags & TMAP_FLAG_PIXEL_FOG) {
+		Assert(0); // Shouldnt be here
+	//  	gr_fog_set(GR_FOGMODE_FOG, 255, 0, 0, 1.0f, 750.0f);
+	} else {
+		gr_fog_set(GR_FOGMODE_NONE,0,0,0);
+	}
+
+	d3d_batch_unlock_vbuffer(GlobalD3DVars::unlit_3D_batch);
+	d3d_batch_draw_vbuffer(GlobalD3DVars::unlit_3D_batch);
+
+
+// 	d3d_DrawPrimitive(D3DVT_LVERTEX, D3DPT_TRIANGLELIST, (LPVOID)d3d_verts, nverts);
+}
 
 /**
  * This will be used to render the 3D parts the of FS2 engine
