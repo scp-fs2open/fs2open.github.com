@@ -117,15 +117,15 @@ SOURCE=.\Asteroid\Asteroid.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\bmpman\bm_internal.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Bmpman\BmpMan.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\Bmpman\BmpMan.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\bmpman\bm_internal.h
 # End Source File
 # End Group
 # Begin Group "CFile"
@@ -1360,6 +1360,14 @@ SOURCE=.\Object\Object.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\object\objectdock.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\object\objectdock.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Object\ObjectSnd.cpp
 # End Source File
 # Begin Source File
@@ -1785,6 +1793,18 @@ SOURCE=.\Ship\SubsysDamage.h
 # Begin Group "Sound"
 
 # PROP Default_Filter ""
+# Begin Group "ogg"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\sound\ogg\ogg.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\sound\ogg\ogg.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=.\Sound\acm.cpp
