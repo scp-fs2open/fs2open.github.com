@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.91 $
- * $Date: 2004-12-05 22:01:11 $
- * $Author: bobboau $
+ * $Revision: 2.92 $
+ * $Date: 2005-01-01 19:45:32 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2004/12/05 22:01:11  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.90  2004/10/31 21:55:00  taylor
  * s/fisrt/first/g
  *
@@ -3420,8 +3427,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// Set the flags we will pass to the tmapper
 	Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
-	// if we're in nebula mode, fog everything except for the warp holes
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && (model_num != Warp_model)){
+	// if we're in nebula mode, fog everything except for the warp holes and other non-fogged models
+	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(flags & MR_NO_FOGGING)){
 		Interp_tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
