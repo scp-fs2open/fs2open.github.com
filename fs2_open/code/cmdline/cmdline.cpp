@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.80 $
- * $Date: 2004-08-01 02:31:18 $
+ * $Revision: 2.81 $
+ * $Date: 2004-08-02 22:40:59 $
  * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2004/08/01 02:31:18  phreak
+ * -phreak command line changed to -dualscanlines
+ *
  * Revision 2.79  2004/07/29 03:49:44  Kazan
  * fs2_open.exe was suffering the same problem as fred2 -- it was just a little less obvious
  *
@@ -662,6 +665,7 @@ Flag exe_params[] =
 	"-targetinfo",	  "Enable info next to target",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-targetinfo",
 	"-nomotiondebris","Disable motion debris",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-nomotiondebris",
 	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
+	"-orb_radar",	  "Enables 3d radar",				true,   EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"",
 
 	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"", 
 
@@ -773,6 +777,7 @@ cmdline_parm max_subdivide_arg("-max_subdivide", NULL);	// comand line maximum l
 cmdline_parm env("-env", NULL);	
 cmdline_parm alpha_env("-alpha_env", NULL);	
 cmdline_parm decals("-decals", NULL);	
+cmdline_parm orb_radar("-orbradar",NULL);
 
 //Experimental
 cmdline_parm load_only_used("-loadonlyused", NULL);
@@ -815,6 +820,7 @@ int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
 int Cmdline_SpewTable_CRCs = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_d3d_particle = 0;
+int Cmdline_orb_radar = 0;
 
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
@@ -1328,6 +1334,11 @@ bool SetCmdlineParams()
 
 	if ( fov_arg.found() ) {
 		Viewer_zoom = VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
+	}
+
+	if (orb_radar.found())
+	{
+		Cmdline_orb_radar = 1;
 	}
 
 
