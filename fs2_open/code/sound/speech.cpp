@@ -139,20 +139,4 @@ bool speech_set_voice(int voice)
 	return false;
 }
 
-#else
-
-// Stubs
-
-// Goober5000: see, the *real* way to do stubs (avoiding the warnings)
-// is to just use #defines (c.f. NO_SOUND)
-#define speech_init() (false)
-#define speech_deinit()
-#define speech_play(text) ((void) text)
-#define speech_play(text) ((void) text)
-#define speech_pause() (false)
-#define speech_resume() (false)
-#define speech_stop() (false)
-#define speech_set_volume(volume) ((void) volume)
-#define speech_set_voice(voice) ((void voice)
-
 #endif

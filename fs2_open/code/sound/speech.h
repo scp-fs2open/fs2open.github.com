@@ -9,7 +9,10 @@
 #ifndef _SPEECH_H_
 #define _SPEECH_H_
 
-const int MAX_SPEECH_CHAR_LEN = 10000;
+
+#if FS2_SPEECH
+
+#define MAX_SPEECH_CHAR_LEN 10000;
 
 bool speech_init();
 void speech_deinit();
@@ -21,5 +24,21 @@ bool speech_stop();
 
 bool speech_set_volume(int volume);
 bool speech_set_voice(int voice);
+
+#else
+
+// Goober5000: see, the *real* way to do stubs (avoiding the warnings)
+// is to just use #defines (c.f. NO_SOUND)
+#define speech_init() (false)
+#define speech_deinit()
+#define speech_play(text) ((void) text)
+#define speech_play(text) ((void) text)
+#define speech_pause() (false)
+#define speech_resume() (false)
+#define speech_stop() (false)
+#define speech_set_volume(volume) ((void) volume)
+#define speech_set_voice(voice) ((void) voice)
+
+#endif
 
 #endif
