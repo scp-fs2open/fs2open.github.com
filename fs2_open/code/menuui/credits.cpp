@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-11-02 22:25:26 $
- * $Author: inquisitor $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-03 22:14:06 $
+ * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/11/02 22:25:26  inquisitor
+ * Cleaned up the presentation a little, added HLP and VW, and, no offense to Kazan, removed Kazan.
+ *
  * Revision 2.5  2002/11/02 22:11:35  DTP
  * DOH forgot \n
  *
@@ -199,6 +202,7 @@ char *fs2_open_credit_text =
 	"\n"
 	"\"Bobboau\"\n"
 	"Dennis \"DTP\" Pedersen\n"
+	"Ian \"Goober5000\" Warfield\n"
 	"Joe \"Righteous1\" Dowd\n"
 	"Mike \"penguin\" Harris\n"
 	"\"Mysterial\"\n"
