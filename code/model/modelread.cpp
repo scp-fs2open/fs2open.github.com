@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.45 $
- * $Date: 2004-07-26 20:47:41 $
- * $Author: Kazan $
+ * $Revision: 2.46 $
+ * $Date: 2004-10-09 17:45:45 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2004/07/26 20:47:41  Kazan
+ * remove MCD complete
+ *
  * Revision 2.44  2004/07/12 16:32:56  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1499,6 +1502,8 @@ void model_calc_bound_box( vector *box, vector *big_mn, vector *big_mx)
 int Bogus_warning_flag_1903 = 0;
 #endif
 
+IBX ibuffer_info;
+
 //reads a binary file containing a 3d model
 int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
 {
@@ -1520,6 +1525,75 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		if(ferror == 1)Error( LOCATION, "Can't open file <%s>",filename);
 		return -1;
 	}		
+
+	// Begin IBX code - taylor
+	if ( !Cmdline_nohtl ) {
+		// generate checksum for the POF
+		uint pof_checksum = 0;
+		cfseek(fp, 0, SEEK_SET);	
+		cf_chksum_long(fp, &pof_checksum);
+		cfseek(fp, 0, SEEK_SET);
+
+		// set all of the defaults
+		ibuffer_info.read = NULL;
+		ibuffer_info.write = NULL;
+		ibuffer_info.size = 0;
+		ibuffer_info.name[0] = '\0';
+
+		// use the same filename as the POF but with an .ibx extension
+		strcpy( ibuffer_info.name, filename );
+		char *pb = strchr( ibuffer_info.name, '.' );
+		if ( pb ) *pb = 0;
+		strcat( ibuffer_info.name, NOX(".ibx") );
+
+		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+		if ( ibuffer_info.read != NULL ) {
+			// get the file size that we use to safety check with.
+			// be sure to subtract from this when we read something out
+			ibuffer_info.size = cfilelength( ibuffer_info.read );
+
+			// file id
+			int ibx = cfread_int( ibuffer_info.read );
+			ibuffer_info.size -= sizeof(int); // subtract
+
+			// make sure the file is valid
+			if ( ibx != 0x58424920 ) { // "XBI " - (" IBX" in file)
+				cfclose( ibuffer_info.read );
+				ibuffer_info.read = NULL;
+				ibuffer_info.size = 0;
+			} else {
+				// file is valid so grab the checksum out of the .ibx and verify it matches the POF
+				uint ibx_sum = cfread_uint( ibuffer_info.read );
+				ibuffer_info.size -= sizeof(uint); // subtract
+
+				if ( ibx_sum != pof_checksum ) {
+					// bah, it's invalid for this POF
+					// reset and a write file will be used instead
+					cfclose( ibuffer_info.read );
+					ibuffer_info.read = NULL;
+					ibuffer_info.size = 0;
+				} else {
+					mprintf(("IBX: Found a good IBX to read for '%s'.\n", filename));
+				}
+			}
+		}
+
+		// if the read file is absent or invalid then write out the new info
+		if ( ibuffer_info.read == NULL ) {
+			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
+
+			if (ibuffer_info.write != NULL) {
+				mprintf(("IBX: Starting a new IBX for '%s'.\n", filename));
+
+				// file id
+				cfwrite_int( 0x58424920, ibuffer_info.write ); // "XBI " - (" IBX" in file)
+
+				// POF checksum
+				cfwrite_uint( pof_checksum, ibuffer_info.write );
+			}
+		}
+	} // End IBX code
 
 	// code to get a filename to write out subsystem information for each model that
 	// is read.  This info is essentially debug stuff that is used to help get models
@@ -2378,6 +2452,22 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 #endif
 
 	cfclose(fp);
+
+	// these must be reset to NULL for the tests to work correctly later
+	if ( ibuffer_info.read != NULL ) {
+		cfclose( ibuffer_info.read );
+		ibuffer_info.read = NULL;
+		ibuffer_info.size = 0;
+		ibuffer_info.name[0] = '\0';
+	}
+
+	if ( ibuffer_info.write != NULL ) {
+		cfclose( ibuffer_info.write );
+		ibuffer_info.write = NULL;
+		ibuffer_info.size = 0;
+		ibuffer_info.name[0] = '\0';
+	}
+
 	// mprintf(("Done processing chunks\n"));
 	return 1;
 }

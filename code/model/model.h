@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.44 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.45 $
+ * $Date: 2004-10-09 17:45:08 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.43  2004/07/11 03:22:50  bobboau
  * added the working decal code
  *
@@ -627,6 +630,14 @@ struct buffer_data{
 	index_list index_buffer;
 //other things we may want to keep track of for vertex buffers, like material settings
 };
+
+// IBX stuff
+typedef struct IBX {
+	CFILE *read;	// reads, if a IBX file already exists
+	CFILE *write;	// writes, if new file created
+	int size;		// file size used to make sure an IBX contains enough data for the whole model
+	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
+} IBX;
 
 #ifdef INF_BUILD
 #define MAX_BUFFERS_PER_SUBMODEL 24
