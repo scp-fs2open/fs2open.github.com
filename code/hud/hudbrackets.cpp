@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2004-10-15 13:10:06 $
+ * $Author: phreak $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.9  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -259,6 +262,7 @@
 #include "weapon/emp.h"
 #include "ship/ship.h"
 #include "object/object.h"
+#include "mission/missionparse.h"
 
 //For target info ONLY
 #include "asteroid/asteroid.h"
@@ -818,6 +822,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 			x2 += 7;
 		}
 	}
+
 	if(Cmdline_targetinfo)
 	{
 		object* t_objp = &Objects[target_objnum];
@@ -830,7 +835,20 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 			case OBJ_SHIP:
 				tinfo_name = Ships[t_objp->instance].ship_name;
 				tinfo_class = Ship_info[Ships[t_objp->instance].ship_info_index].name;
+				
+				// if this ship has an alternate type name
+				if(Ships[t_objp->instance].alt_type_index >= 0){
+					mission_parse_lookup_alt_index(Ships[t_objp->instance].alt_type_index, buffer);
+				} else {
+					strcpy(buffer, Ship_info[Ships[t_objp->instance].ship_info_index].name);	
+					end_string_at_first_hash_symbol(buffer);
+				}
+
+				end_string_at_first_hash_symbol(buffer);
+				tinfo_class = buffer;
+
 				break;
+
 			case OBJ_DEBRIS:
 				tinfo_name = XSTR( "Debris", 348);
 				break;
