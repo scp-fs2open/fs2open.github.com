@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapon.h $
- * $Revision: 2.2 $
- * $Date: 2002-10-19 19:29:29 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2002-11-11 20:11:02 $
+ * $Author: phreak $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -534,7 +537,16 @@ typedef struct weapon_info {
 
 	// muzzle flash
 	int muzzle_flash;						// muzzle flash stuff
+	
+	// SSM
 	int SSM_index;							// wich entry in the SSM,tbl it uses -Bobboau
+
+	// Corkscrew info - phreak 11/9/02
+	int cs_num_fired;
+	float cs_radius;
+	float cs_twist;
+	int cs_crotate;
+	int cs_delay;
 } weapon_info;
 
 // Data structure to track the active missiles
