@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.61 $
+ * $Revision: 2.62 $
  * $Author: wmcoolmon $
- * $Date: 2004-06-01 07:31:57 $
+ * $Date: 2004-06-09 00:18:50 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/06/01 07:31:57  wmcoolmon
+ * Lotsa stuff. Custom gauges w/ ANIs support added, SEXPs to set gauge text, gauge image frames, and gauge coords. These SEXPs and toggle-hud reside in the Hud/change category.
+ *
  * Revision 2.60  2004/05/10 10:51:52  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -929,12 +932,12 @@ struct ship_subsys;
 #define OP_PLAYER_USE_AI					(0x008c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_PLAYER_NOT_USE_AI				(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FORCE_JUMP						(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-
 //Hud stuff
 #define OP_HUD_SET_TEXT						(0x008f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_TEXT_NUM					(0x0090 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_COORDS					(0x0091 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_FRAME					(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_COLOR					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 
 /* made obsolete by Goober5000
 // debugging sexpressions
