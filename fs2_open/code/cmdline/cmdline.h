@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.27 $
- * $Date: 2003-09-14 19:00:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.27.2.1 $
+ * $Date: 2003-09-18 23:40:16 $
+ * $Author: argv $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/09/14 19:00:02  wmcoolmon
+ * Changed "nospec" and "cell" to "Cmdline_nospec" and "Cmdline_cell"
+ *
  * Revision 2.26  2003/09/14 18:32:24  wmcoolmon
  * Added "-safeloading" command line parameter, which uses old fs2_retail-style loading code -C
  *
@@ -332,5 +335,18 @@ extern float static_point_factor;
 extern double specular_exponent_value;
 
 extern int Cmdline_cell;
+
+// _argv[-1] - use a struct with bitfields to avoid wasting memory.
+// Yes, I know this deviates from the usual Volition #define flags.
+// This is intentional. Structs with bitfields waste less memory and are easier to understand.
+// Also, the ':1' etc is not an initializer; it is a specification of how many bits to use.
+struct argv_options {
+	int auto_ets:1;
+	int no_implicit_disable_auto_target:1;
+	int no_auto_target_turret:1;
+	int sound_from_own_turrets:1;
+	int singular_shields:1;
+};
+extern struct argv_options Argv_options;
 
 #endif
