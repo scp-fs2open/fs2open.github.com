@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.6 $
- * $Date: 2002-11-14 04:18:16 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-02 23:14:17 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/11/14 04:18:16  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.5  2002/10/19 19:29:27  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -632,7 +637,7 @@ typedef struct bsp_light {
 	float				value;	// How much to light up this light.  0-1.
 } bsp_light;
 
-// model_octant - There are 8 of these per model.  They are a handy way to catagorize
+// model_octant - There are 8 of these per model.  They are a handy way to categorize
 // a lot of model properties to get some easy 8x optimizations for model stuff.
 typedef struct model_octant {
 	vector		min, max;				// The bounding box that makes up this octant defined as 2 points.
