@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-12 16:33:03 $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-25 00:31:30 $
  * $Author: Kazan $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/12 16:33:03  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.13  2004/03/05 09:02:05  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -509,6 +512,10 @@
 
 #ifndef NDEBUG
 #include "io/key.h"
+#endif
+
+#if defined(ENABLE_AUTO_PILOT)
+#include "autopilot/autopilot.h"
 #endif
 
 // memory tracking - ALWAYS INCLUDE LAST
@@ -1123,6 +1130,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			}
 #endif
 		}
+
 
 		// keyboard: launch countermeasures
 		if ( button_info_query(&Player->bi, LAUNCH_COUNTERMEASURE) ) {

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.14 $
- * $Date: 2004-03-05 09:01:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-25 00:31:30 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/03/05 09:01:51  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.13  2004/01/26 23:07:43  phreak
  * bumped MAX_AI_CLASSES to 30 if INF_BUILD is defined
  *
@@ -366,8 +370,9 @@ typedef struct ai_goal {
 #define	AIM_BAY_DEPART			18		// Departing to a fighter bay, following path to do so
 #define	AIM_SENTRYGUN			19		// AI mode for sentry guns only (floating turrets)
 #define	AIM_WARP_OUT			20		//	Commence warp out sequence.  Point in legal direction.  Then call John's code.
+#define AIM_FLY_TO_SHIP			21		// [Kazan] Fly to a ship, doesn't matter if it's hostile or friendly -- for Autopilot usage
 
-#define	MAX_AI_BEHAVIORS		21	//	Number of AIM_xxxx types
+#define	MAX_AI_BEHAVIORS		22	//	Number of AIM_xxxx types
 
 #define	MAX_WAYPOINTS_PER_LIST	20
 #define	MAX_WAYPOINT_LISTS		32
@@ -805,5 +810,9 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 
 // moved to header file by Goober5000
 void ai_announce_ship_dying(object *dying_objp);
+
+// added by kazan
+void ai_start_fly_to_ship(object *objp, char *target_obj);
+void ai_fly_to_ship();
 
 #endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-12 16:32:47 $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-25 00:31:28 $
  * $Author: Kazan $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/12 16:32:47  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.9  2004/05/01 21:53:39  taylor
  * add some error handling to vm_strdup()
  *
@@ -892,10 +895,8 @@ void dump_text_to_clipboard(char *text)
 
 void _cdecl WinAssert(char * text, char * filename, int linenum )
 {
-#ifdef FRED
 	if (CmdLine_FRED2_NoWarn)
 		return;
-#endif
 
 	int val;
 
@@ -1005,6 +1006,9 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 
 #ifndef NDEBUG
 #ifndef DONT_SHOW_WARNINGS	// Goober5000
+
+	if (CmdLine_FRED2_NoWarn)
+		return;
 
 	va_list args;
 	int id;

@@ -117,7 +117,7 @@ void d3d_dump_format(PIXELFORMAT *pf)
 
 void gr_d3d_activate(int active)
 {
-	mprintf(( "Direct3D activate: %d\n", active ));
+	//mprintf(( "Direct3D activate: %d\n", active ));
 
 	HWND hwnd = (HWND)os_get_window();
 	

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-12 16:32:43 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-25 00:31:28 $
  * $Author: Kazan $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/12 16:32:43  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.5  2004/03/05 09:01:58  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -838,7 +841,13 @@ void control_config_list_prepare()
 		if ((Control_config[z].tab == Tab) && control_config_valid_action(z)) {
 			k = Control_config[z].key_id;
 			j = Control_config[z].joy_id;
-			Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, CONTROL_CONFIG_XSTR + z);
+
+			if (Control_config[z].hasXSTR)
+				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, CONTROL_CONFIG_XSTR + z);
+			else
+				Cc_lines[Num_cc_lines].label = Control_config[z].text;
+
+
 			Cc_lines[Num_cc_lines].cc_index = z;
 			Cc_lines[Num_cc_lines++].y = y;
 			y += font_height + 2;
@@ -2201,7 +2210,11 @@ void control_config_do_frame(float frametime)
 		gr_get_string_size(&w, NULL, str);
 		gr_printf(x - w / 2, y - font_height, str);
 
-		strcpy(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
+		if (Control_config[i].hasXSTR)
+			strcpy(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
+		else
+			strcpy(buf, Control_config[i].text);
+
 		gr_force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_get_string_size(&w, NULL, buf);
 		gr_printf(x - w / 2, y, buf);
@@ -2473,6 +2486,7 @@ int check_control(int id, int key)
 	}
 
 	if ((Control_config[id].key_id == key) || joy_down_count(Control_config[id].joy_id, 1) || mouse_down_count(1 << Control_config[id].joy_id)) {
+		mprintf(("Key used %d", key));
 		control_used(id);
 		return 1;
 	}

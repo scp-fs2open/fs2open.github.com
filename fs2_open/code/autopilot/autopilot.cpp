@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.3 $
- * $Date: 2004-07-12 16:32:42 $
+ * $Revision: 1.4 $
+ * $Date: 2004-07-25 00:31:27 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/07/12 16:32:42  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.2  2004/07/01 16:38:18  Kazan
  * working on autonav
  *
@@ -105,13 +108,18 @@ char* NavPoint::GetInteralName()
 
 	if (flags & NP_WAYPOINT)
 	{
-		NavName = strdup(((waypoint_list*)target_obj)->name);
+		NavName = new char[strlen(((waypoint_list*)target_obj)->name)+5];
+		memset(NavName, 0, strlen(((waypoint_list*)target_obj)->name)+5);
+		strcpy(NavName, ((waypoint_list*)target_obj)->name);
+
 		strcat(NavName, ":");
 		strcat(NavName, itoa(waypoint_num, strtmp, 10));
 	}
 	else
-	{
-		NavName = strdup(((ship*)target_obj)->ship_name);
+	{		
+		NavName = new char[strlen(((ship*)target_obj)->ship_name)+1];
+		memset(NavName, 0, strlen(((ship*)target_obj)->ship_name)+1);
+		strcpy(NavName, ((ship*)target_obj)->ship_name);
 	}
 
 	return NavName;
@@ -122,7 +130,7 @@ char* NavPoint::GetInteralName()
 // This needs:
 //        * Nav point selected
 //        * No enemies within X distance
-//        * Destination > 10,000 meters away
+//        * Destination > 1,000 meters away
 bool CanAutopilot()
 {
 	bool CanAuto = true;
@@ -135,7 +143,9 @@ bool CanAutopilot()
 
 	if (CanAuto) // protect against no currentNav
 	{
-		CanAuto = CanAuto && (10000 <= sexp_distance2(Player_ship->objnum, Navs[CurrentNav].GetInteralName()));
+		char *name = Navs[CurrentNav].GetInteralName();
+		CanAuto = CanAuto && (1000 <= sexp_distance2(Player_ship->objnum, name));
+		delete[] name;
 	}
 
 	return CanAuto;
@@ -192,7 +202,7 @@ void StartAutopilot()
 
 			// clear the ship goals and cap the waypoint speed
 			ai_clear_ship_goals(&Ai_info[Ships[i].ai_index]);
-			Ai_info[Ships[i].ai_index].waypoint_speed_cap = speed_cap;
+			Ai_info[Ships[i].ai_index].waypoint_speed_cap = (int)speed_cap;
 
 			
 			// if they're not part of a wing set their goal
@@ -207,7 +217,7 @@ void StartAutopilot()
 				}
 				else
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_CHASE, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
 				}
 			}
 		}
@@ -234,7 +244,7 @@ void StartAutopilot()
 			}
 			else
 			{
-				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_CHASE, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, i );
+				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, i );
 			}
 		}
 	}
@@ -273,7 +283,7 @@ void EndAutoPilot()
 	for (i = 0; i < MAX_SHIPS; i++)
 
 	{
-		if (Ships[i].objnum != -1 && Ships[i].flags2 & SF2_NAVPOINT_CARRY && Ships[i].wingnum != -1 )
+		if (Ships[i].objnum != -1 && Ships[i].flags2 & SF2_NAVPOINT_CARRY && Ships[i].wingnum == -1 )
 		{
 			ai_clear_ship_goals( &(Ai_info[Ships[i].ai_index]) );
 		}
@@ -596,7 +606,9 @@ int DistanceTo(int nav)
 	if (nav > MAX_NAVPOINTS && nav < 0)
 		return 0xFFFFFFFF;
 
-	int distance = sexp_distance2(Player_ship->objnum, Navs[nav].GetInteralName());
+	char *name = Navs[nav].GetInteralName();
+	int distance = sexp_distance2(Player_ship->objnum, name);
+	delete[] name;
 
 	return distance;
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.133 $
- * $Date: 2004-07-17 18:46:09 $
- * $Author: taylor $
+ * $Revision: 2.134 $
+ * $Date: 2004-07-25 00:31:31 $
+ * $Author: Kazan $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2004/07/17 18:46:09  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.132  2004/07/17 09:25:59  taylor
  * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
  *
@@ -10708,6 +10711,11 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_WAYPOINTS_ONCE:
 			// don't do anything, all info is in order_text
 			break;
+
+		case AI_GOAL_FLY_TO_SHIP:
+			strcpy(outbuf, "Flying to ship");
+			break;
+
 
 		default:
 			return NULL;
