@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-30 21:16:21 $
+ * $Author: Goober5000 $
  *
  * Header file for code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -155,7 +158,7 @@
 #define BRIEF_BUTTON_EXIT_LOOP		9
 
 
-#define NUM_BREIFING_REGIONS	(NUM_COMMON_REGIONS + 8)
+#define NUM_BRIEFING_REGIONS	(NUM_COMMON_REGIONS + 8)
 
 extern int	Brief_multitext_bitmap;	// bitmap for multiplayer chat window
 extern int	Brief_background_bitmap;
