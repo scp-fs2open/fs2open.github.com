@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.59 $
- * $Date: 2004-05-10 10:51:53 $
+ * $Revision: 2.60 $
+ * $Date: 2004-05-11 02:52:12 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/05/10 10:51:53  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.58  2004/05/10 08:03:30  Goober5000
  * fixored the handling of no lasers and no engines... the tests should check the ship,
  * not the object
@@ -6090,6 +6095,9 @@ void convertFSMtoFS2()
 
 	// fix icons
 	conv_fix_briefing_stuff();
+
+	// fix punctuation
+	conv_fix_punctuation();
 }
 
 // Goober5000 - replacement rules according to the Freespace Port
@@ -6207,12 +6215,55 @@ void conv_add_alt_names()
 // Goober5000
 void conv_fix_briefing_stuff()
 {
-	// replace " with ''
+	char *pos1, *pos2;
 
-	// replace ; with ,
+	pos1 = strstr(Mission_text, "#Briefing");
+	pos2 = strstr(pos1, "#Debriefing_info");
 
-	// fix the mismatched briefing icons
+	// fix the mismatched briefing icon (there's only one)
 	// jump node: 26 --> 33
+	replace_all(pos1, "$type: 26", "$type: 33", MISSION_TEXT_SIZE, (pos2 - pos1));
+}
+
+// Goober5000
+// go through all the displayed text in one section and fix " and ;
+// the section and text delimiters should all be different
+void conv_fix_punctuation_section(char *str, char *section_start, char *section_end, char *text_start, char *text_end)
+{
+	char *s1, *s2, *t1, *t2;
+
+	s1 = strstr(str, section_start);
+	s2 = strstr(s1, section_end);
+
+	t1 = s1;
+	
+	while (1)
+	{
+		t1 = strstr(t1+1, text_start);
+		if (!t1 || t1 > s2) return;
+
+		t2 = strstr(t1, text_end);
+		if (!t2 || t2 > s2) return;
+
+		replace_all(t1, "\"", "$quote", MISSION_TEXT_SIZE, (t2 - t1));
+		replace_all(t1, ";", "$semicolon", MISSION_TEXT_SIZE, (t2 - t1));
+	}	
+}
+
+// Goober5000
+void conv_fix_punctuation()
+{
+	// command briefings
+	conv_fix_punctuation_section(Mission_text, "#Command Briefing", "#Briefing", "$Stage Text:", "$end_multi_text");
+
+	// briefings
+	conv_fix_punctuation_section(Mission_text, "#Briefing", "#Debriefing_info", "$multi_text", "$end_multi_text");
+
+	// debriefings
+	conv_fix_punctuation_section(Mission_text, "#Debriefing_info", "#Players", "$Multi text", "$end_multi_text");
+
+	// messages
+	conv_fix_punctuation_section(Mission_text, "#Messages", "#Reinforcements", "$Message:", "\n");
 }
 
 // Goober5000

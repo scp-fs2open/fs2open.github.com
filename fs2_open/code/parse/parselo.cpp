@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.16 $
+ * $Revision: 2.17 $
  * $Author: Goober5000 $
- * $Date: 2004-03-05 09:02:08 $
+ * $Date: 2004-05-11 02:52:11 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/03/05 09:02:08  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.15  2004/02/07 01:25:14  Goober5000
  * hehe, fixed the subsystem compare so it's not destructive :-p
  * and also fixed the model checking routine
@@ -2062,17 +2066,23 @@ char *get_pointer_to_first_hash_symbol(char *src)
 }
 
 // Goober5000
-int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int start)
+int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int range)
 {
 	Assert(max_len <= MISSION_TEXT_SIZE);
 	Assert(str && oldstr && newstr);
 
 	// search
-	char *ch = stristr(str + start, oldstr);
+	char *ch = stristr(str, oldstr);
 
 	// found?
 	if (ch)
 	{
+		// not found within bounds?
+		if ((range > 0) && ((ch - str) > range))
+		{
+			return 0;
+		}
+
 		// determine if replacement will exceed max len
 		if (strlen(str) + strlen(newstr) - strlen(oldstr) > max_len)
 		{
@@ -2109,13 +2119,16 @@ int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int
 }
 
 // Goober5000
-int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int start)
+int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range)
 {
 	int val, tally(0);
 
-	while ((val = replace_one(str, oldstr, newstr, max_len)) > 0)
+	while ((val = replace_one(str, oldstr, newstr, max_len, range)) > 0)
 	{
 		tally++;
+
+		// adjust range, because the text length might have changed
+		range += strlen(newstr) - strlen(oldstr);
 	}
 
 	return (val < 0) ? val : tally;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-05-10 13:07:22 $
+ * $Revision: 2.16 $
+ * $Date: 2004-05-11 02:52:12 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/05/10 13:07:22  Goober5000
+ * fixed the AWACS help message
+ * --Goober5000
+ *
  * Revision 2.14  2004/05/02 01:26:52  taylor
  * comment out avi free code for now
  *
@@ -838,7 +842,7 @@ void parse_msgtbl()
 		p3 = strstr(p1, "$Name");
 		if (p2 && p3 && (p2 < p3))
 		{
-			replace_one(p2, "Vawacs25.wav", "Awacs25.wav", 500, 0);
+			replace_one(p2, "Vawacs25.wav", "Awacs25.wav", 500);
 		}
 	}
 	p1 = strstr(Mp, "2927");
@@ -848,7 +852,7 @@ void parse_msgtbl()
 		p3 = strstr(p1, "$Name");
 		if (p2 && p3 && (p2 < p3))
 		{
-			replace_one(p2, "Awacs75.wav", "Vawacs75.wav", 500, 0);
+			replace_one(p2, "Awacs75.wav", "Vawacs75.wav", 500);
 		}
 	}
 
