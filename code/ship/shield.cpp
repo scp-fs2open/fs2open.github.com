@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-31 08:51:47 $
- * $Author: et1 $
+ * $Revision: 2.21 $
+ * $Date: 2004-08-20 05:13:08 $
+ * $Author: Kazan $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/31 08:51:47  et1
+ * Disabled ship shield load check for TBP
+ *
  * Revision 2.19  2004/07/26 20:47:51  Kazan
  * remove MCD complete
  *
@@ -354,11 +357,13 @@ void load_shield_hit_bitmap()
 		Shield_ani[i].first_frame = bm_load_animation(Shield_ani[i].filename, &Shield_ani[i].nframes,NULL, 1);
 
         // *This is disabled for TBP    -Et1
+		// Changed to an assert by kazan
 
         /*
 		if ( Shield_ani[i].first_frame < 0 )
 			Int3();
         */
+		Assert(Shield_ani[i].first_frame >= 0);
 	}
 
 	#endif

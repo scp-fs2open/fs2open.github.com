@@ -517,7 +517,7 @@ void bm_d3d_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, 
 	if (sections != NULL) *sections = NULL;
 
 	int bitmapnum = handle % MAX_BITMAPS;
-	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
+	//Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
 	
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_NONE) || (bm_bitmaps[bitmapnum].handle != handle) ) {
 		if (w) *w = 0;
