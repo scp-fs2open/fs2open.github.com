@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.86 $
- * $Date: 2004-10-31 21:42:31 $
+ * $Revision: 2.87 $
+ * $Date: 2004-11-04 22:49:13 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2004/10/31 21:42:31  taylor
+ * Linux tree merge, use linear mag filter, small FRED fix, AA lines (disabled), use rgba colors for 3dunlit, proper gamma adjustment, bmpman merge
+ *
  * Revision 2.85  2004/09/24 22:40:23  taylor
  * proper OGL line drawing in HTL... hopefully
  *
@@ -2709,20 +2712,22 @@ void gr_opengl_set_gamma(float gamma)
 		Gr_gamma_lookup[i] = v;
 	}
 
-	// new way
-	// Create the Gamma lookup table
-	for (i = 0; i < 256; i++) {
-		g = ogl_ramp_val(i, gamma);
-	  	gamma_ramp[0][i] = gamma_ramp[1][i] = gamma_ramp[2][i] = g;
-	}
+	// new way - but not while running FRED
+	if (!Fred_running) {
+		// Create the Gamma lookup table
+		for (i = 0; i < 256; i++) {
+			g = ogl_ramp_val(i, gamma);
+		  	gamma_ramp[0][i] = gamma_ramp[1][i] = gamma_ramp[2][i] = g;
+		}
 
 #ifdef _WIN32
-	HDC hdc = GetDC( (HWND)os_get_window() );
+		HDC hdc = GetDC( (HWND)os_get_window() );
 
-	SetDeviceGammaRamp( hdc, gamma_ramp );
+		SetDeviceGammaRamp( hdc, gamma_ramp );
 #else
-	SDL_SetGammaRamp( gamma_ramp[0], gamma_ramp[1], gamma_ramp[2] );
+		SDL_SetGammaRamp( gamma_ramp[0], gamma_ramp[1], gamma_ramp[2] );
 #endif
+	}
 
 	// Flush any existing textures
 	opengl_tcache_flush();
