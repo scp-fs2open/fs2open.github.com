@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-03-16 11:52:17 $
- * $Author: randomtiger $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-16 17:41:12 $
+ * $Author: phreak $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/03/16 11:52:17  randomtiger
+ * Commented out shield fix that broke shield rendering for D3D.
+ * Fix didnt appear to work for OGL so I didnt bother to if(OGL) it.
+ *
  * Revision 2.15  2004/03/08 22:01:29  phreak
  * fixed a bug so that shields now render in Opengl HT&L
  *
@@ -584,12 +588,9 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vector *pos, ubyt
 		// Pnt is now the x,y,z world coordinates of this vert.
 		// For this example, I am just drawing a sphere at that point.
 
-		// (*&%£(*£"&(%)(&! This broke shields!
-
-	 //	if (!Cmdline_nohtl) g3_transfer_vertex(&points[j],&pnt);
-	 //	else 
+	 	if (!Cmdline_nohtl) g3_transfer_vertex(&points[j],&pnt);
+	 	else g3_rotate_vertex(&points[j], &pnt);
 			
-		g3_rotate_vertex(&points[j], &pnt);
 		points[j].u = trip->verts[j].u;
 		points[j].v = trip->verts[j].v;
 		Assert((trip->verts[j].u >= 0.0f) && (trip->verts[j].u <= UV_MAX));
@@ -610,14 +611,18 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vector *pos, ubyt
 	vector	norm;
 	Poly_count++;
 	vm_vec_perp(&norm,(vector *)&verts[0]->x,(vector *)&verts[1]->x,(vector*)&verts[2]->x);
+
+	int flags=TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD;
+	if (!Cmdline_nohtl) flags |= TMAP_HTL_3D_UNLIT;
+
 	if ( vm_vec_dot(&norm,(vector *)&verts[1]->x ) >= 0.0 )	{
 		vertex	*vertlist[3];
 		vertlist[0] = verts[2]; 
 		vertlist[1] = verts[1]; 
 		vertlist[2] = verts[0]; 
-		g3_draw_poly( 3, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
+		g3_draw_poly( 3, vertlist, flags);
 	} else {
-		g3_draw_poly( 3, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
+		g3_draw_poly( 3, verts, flags);
 	}
 }
 
