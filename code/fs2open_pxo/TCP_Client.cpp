@@ -6,11 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.6 $
- * $Date: 2003-11-11 02:15:42 $
- * $Author: Goober5000 $
+ * $Revision: 1.7 $
+ * $Date: 2003-11-13 03:59:52 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2003/11/11 02:15:42  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 1.5  2003/11/09 04:09:17  Goober5000
  * edited for language
  * --Goober5000
@@ -505,6 +510,7 @@ int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Soc
 	if (Socket.SendData((char *) &loginpckt, sizeof(loginpckt)) == -1)
 	{
 		cout << "Error Sending Packet" << endl;
+		return -1;
 	}
 	
 	// await reply
