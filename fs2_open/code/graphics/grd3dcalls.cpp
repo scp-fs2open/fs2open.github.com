@@ -338,7 +338,9 @@ HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr)
 	}
 #endif
 
-	HRESULT hr = lpD3DDevice->SetTexture(0, texture_ptr);
+	HRESULT hr = lpD3DDevice->SetTexture(stage, texture_ptr);
+		//changed from this -Bobboau
+//	HRESULT hr = lpD3DDevice->SetTexture(0, texture_ptr);
 
 	if(FAILED(hr)) {
 		mprintf(("Failed to set texture"));

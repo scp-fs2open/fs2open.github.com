@@ -9,13 +9,30 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.13 $
- * $Date: 2003-07-06 00:19:25 $
- * $Author: randomtiger $
+ * $Revision: 2.14 $
+ * $Date: 2003-08-05 23:45:18 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/07/06 00:19:25  randomtiger
+ * Random Tiger 6/7/2003
+ *
+ * fs2_open now uses the registry entry 'VideocardFs2open' instead of 'Videocard' to store its video settings. To run fs2_open now you MUST use the launcher I have provided.
+ *
+ * Launcher binary:      http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar
+ * Launcher source code: http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher_code.rar
+ *
+ * I have also taken the opertunity to fix a few bugs in the launcher and add a new feature to make selecting mods a bit easier.
+ *
+ * The launcher now uses some files in the freespace project so it should be put into CVS with the rest of the code inside the 'code' directory (still in its 'Launcher' dir of course). Currently the launcher wont compile since speech.cpp and speech.h arent in cvs yet. But once Roee has checked in that will be sorted.
+ *
+ * I have also removed the internal launcher from the D3D8 module.
+ * Please contact me if you have any problems.
+ *
+ * When trying to run the exe after updating I get an error parsing 'rank.tbl' but im fairly sure thats nothing to do with me so I'll just have to leave it for now because I'm still using a 56K modem and cant afford to find out.
+ *
  * Revision 2.12  2003/07/04 02:27:48  phreak
  * added support for cloaking.
  * i will need to contact someone who knows d3d to get this to work
@@ -872,7 +889,21 @@ void d3d_set_initial_render_state()
 
 	// Turn lighting off here, its on by default!
 	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
+
+	//new glowmapping code,yay!!!-Bobboau
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+	
+	d3d_SetTexture(1, NULL);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
+
+	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
+	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
 }
+
+
 
 void d3d_setup_format_components(
 	DDPIXELFORMAT *surface, color_gun *r_gun, color_gun *g_gun, color_gun *b_gun, color_gun *a_gun)
@@ -2349,6 +2380,11 @@ int d3d_match_mode(int adapter)
  *
  * @return bool
  */
+
+//trying to use a higher bit depth in the back buffer, the deepest one posale -Bobboau
+enum _D3DFORMAT format_type[5] = {D3DFMT_D32, D3DFMT_D24X8, D3DFMT_D24S8, D3DFMT_D24X4S4, D3DFMT_D16};
+char formatnames[5][16] = {"D3DFMT_D32", "D3DFMT_D24X8", "D3DFMT_D24S8", "D3DFMT_D24X4S4" , "D3DFMT_D16"};
+
 bool gr_d3d_init()
 {
 	int adapter_choice = D3DADAPTER_DEFAULT;
@@ -2372,7 +2408,8 @@ bool gr_d3d_init()
 	d3dpp.BackBufferCount		 = 1;
 	d3dpp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
     d3dpp.EnableAutoDepthStencil = TRUE;
-    d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
+	//this right here used to be just D3DFMT_D16, but it's now part of the format_type array -Bobboau
+    d3dpp.AutoDepthStencilFormat = format_type[0];
 
 	// Sadly we need this until we implement hardware fog
 	d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
@@ -2438,26 +2475,35 @@ bool gr_d3d_init()
 		
 	// NOTE from UP: Maybe we should also try for pure devices here?
 	// Try to create hardware vertex processing device first
-	if( FAILED( lpD3D->CreateDevice(adapter_choice, D3DDEVTYPE_HAL, 
+
+	//it trys to use the highest suported back buffer through trial and error, I wraped the existing code in a for loop to cycle through the diferent formats
+	//-Bobboau
+	for(int t = 0; t > -1 && t < 5; t++){
+		d3dpp.AutoDepthStencilFormat = format_type[t];
+		if( FAILED( lpD3D->CreateDevice(adapter_choice, D3DDEVTYPE_HAL, 
 								(HWND) os_get_window(),
                                 D3DCREATE_HARDWARE_VERTEXPROCESSING,
                                 &d3dpp, &lpD3DDevice) ) ) {
 
-		DBUGFILE_OUTPUT_0("Failed to create hardware vertex processing device, trying software");
+			DBUGFILE_OUTPUT_0("Failed to create hardware vertex processing device, trying software");
 
-		if( FAILED( lpD3D->CreateDevice(adapter_choice, D3DDEVTYPE_HAL, 
-								(HWND) os_get_window(),
-                                D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                                &d3dpp, &lpD3DDevice) ) ) {
+			if( FAILED( lpD3D->CreateDevice(adapter_choice, D3DDEVTYPE_HAL, 
+									(HWND) os_get_window(),
+					                D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+						            &d3dpp, &lpD3DDevice) ) ) {
 
-			DBUGFILE_OUTPUT_0("Failed to create software vertex processing device");
-			strcpy(Device_init_error, "Failed to create device!");
-			return false;
+				DBUGFILE_OUTPUT_0("Failed to create software vertex processing device");
+				if(t>5)strcpy(Device_init_error, "Failed to create device!");
+			} else {
+				t=-2;
+			}
+		} else {
+			t=-2;
+			DBUGFILE_OUTPUT_0("Using hardware vertex processing");
 		}
-	} else {
-		DBUGFILE_OUTPUT_0("Using hardware vertex processing");
 	}
 
+	if (t != -1) return false;
 	// determine 32 bit status
 	gr_screen.bits_per_pixel  = d3d_get_mode_bit(d3dpp.BackBufferFormat);
 	gr_screen.bytes_per_pixel = gr_screen.bits_per_pixel / 8;

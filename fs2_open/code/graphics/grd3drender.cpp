@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-07-04 02:27:48 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2003-08-05 23:45:18 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/07/04 02:27:48  phreak
+ * added support for cloaking.
+ * i will need to contact someone who knows d3d to get this to work
+ *
  * Revision 2.11  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -610,6 +614,7 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 
 	switch( zt )	{
 
+//	d3d_SetRenderState(D3DRS_ZENABLE, D3DZB_USEW);
 	case ZBUFFER_TYPE_NONE:
 		d3d_SetRenderState(D3DRS_ZENABLE,FALSE);
 		d3d_SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
