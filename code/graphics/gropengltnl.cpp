@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.9 $
- * $Date: 2004-07-29 09:35:29 $
+ * $Revision: 1.10 $
+ * $Date: 2004-10-31 21:45:13 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/07/29 09:35:29  taylor
+ * fix NULL pointer and try to prevent in future, remove excess commands in opengl_cleanup()
+ *
  * Revision 1.8  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -56,16 +59,13 @@
  * $NoKeywords: $
  */
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #include "globalincs/pstypes.h"
 
 #include "model/model.h"
-
-
-#include "graphics/gl/gl.h"
-#include "graphics/gl/glu.h"
-#include "graphics/gl/glext.h"
 
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
@@ -97,18 +97,14 @@ int GL_htl_view_matrix_set = 0;
 
 struct opengl_vertex_buffer
 {
+	int used;
+	int stride;			// the current stride
+	GLenum format;		// the format passed to glInterleavedArrays()
 	int n_prim;
 	int n_verts;
-	vector *vertex_array;
-	uv_pair *texcoord_array;
-	vector *normal_array;
-
-	int used;
-
-	uint vbo_vert;
-	uint vbo_norm;
-	uint vbo_tex;
-
+	float *array_list;	// interleaved array
+	uint vbo;			// buffer for VBO
+	uint flags;			// FVF
 };
 
 #define MAX_SUBOBJECTS 64
@@ -143,14 +139,13 @@ int opengl_find_first_free_buffer()
 
 int opengl_check_for_errors()
 {
-#ifdef _DEBUG
-	int error=0;
-	if ((error=glGetError()) != GL_NO_ERROR)
-	{
+	int error = 0;
+
+	if ((error=glGetError()) != GL_NO_ERROR) {
 		mprintf(("!!ERROR!!: %s\n", gluErrorString(error)));
 		return 1;
 	}
-#endif
+
 	return 0;
 }
 
@@ -161,7 +156,15 @@ int opengl_mod_depth()
 	return mv;
 }
 
-uint opengl_create_vbo(uint size, void** data)
+void gr_opengl_set_buffer(int idx)
+{
+	if (Cmdline_nohtl)
+		return;
+
+	g_vbp = &vertex_buffers[idx];
+}
+
+uint opengl_create_vbo(uint size, GLfloat *data)
 {
 	if (!data)
 		return 0;
@@ -178,26 +181,23 @@ uint opengl_create_vbo(uint size, void** data)
 	//        B) It shuts up MSVC about may be used without been initalized
 	uint buffer_name=0;
 
+#ifndef GL_NO_HTL
+
 	glGenBuffersARB(1, &buffer_name);
 	
 	//make sure we have one
 	if (buffer_name)
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer_name);
-		glBufferDataARB(GL_ARRAY_BUFFER_ARB, size, *data, GL_STATIC_DRAW_ARB );
+		glBufferDataARB(GL_ARRAY_BUFFER_ARB, size, data, GL_STATIC_DRAW_ARB );
 				
-		//just in case
-		if (opengl_check_for_errors())
-		{
+		// just in case
+		if (opengl_check_for_errors()) {
 			return 0;
 		}
-		else
-		{
-			free(*data);
-			*data = NULL;
-		//	mprintf(("VBO Created: %d\n", buffer_name));
-		}
 	}
+
+#endif // GL_NO_HTL
 
 	return buffer_name;
 }
@@ -207,66 +207,108 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	if (Cmdline_nohtl)
 		return -1;
 
-	int buffer_num=opengl_find_first_free_buffer();
+	int buffer_num = -1;
+
+#ifndef GL_NO_HTL
+
+	buffer_num = opengl_find_first_free_buffer();
 
 	//we have a valid buffer
-	if (buffer_num > -1)
-	{
-		opengl_vertex_buffer *vbp=&vertex_buffers[buffer_num];
+	if (buffer_num > -1) {
+		int arsize = 0;
+		int list_size, i;
 
-		vbp->texcoord_array=(uv_pair*)malloc(list->n_verts * sizeof(uv_pair));	
-		memset(vbp->texcoord_array,0,list->n_verts*sizeof(uv_pair));
+		gr_opengl_set_buffer( buffer_num );
 
-		vbp->normal_array=(vector*)malloc(list->n_verts * sizeof(vector));
-		memset(vbp->normal_array,0,list->n_verts*sizeof(vector));
+		opengl_vertex_buffer *vbp = g_vbp;
 
-		vbp->vertex_array=(vector*)malloc(list->n_verts * sizeof(vector));
-		memset(vbp->vertex_array,0,list->n_verts*sizeof(vector));
+		// defaults
+		vbp->format = 0;
+		vbp->vbo = 0;
 
-		vector *n=vbp->normal_array;
-		vector *v=vbp->vertex_array;
-		uv_pair *t=vbp->texcoord_array;
-	
-		vertex *vl;
+		// setup using flags
+		if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_NORMAL) && (flags & VERTEX_FLAG_POSITION) ) {
+			vbp->stride = (8 * sizeof(float));
+			vbp->format = GL_T2F_N3F_V3F;
+		} else if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_POSITION) ) {
+			vbp->stride = (5 * sizeof(float));
+			vbp->format = GL_T2F_V3F;
+		} else if ( (flags & VERTEX_FLAG_POSITION) ) {
+			vbp->stride = (3 * sizeof(float));
+			vbp->format = GL_V3F;
+		} else {
+			Assert( 0 );
+		}
 
-		memcpy(n,list->norm,list->n_verts*sizeof(vector));
-				
+		// total size of data
+		list_size = vbp->stride * list->n_verts;
 
-		for (int i=0; i < list->n_verts; i++)
-		{
-				vl=&list->vert[i];
-				v->xyz.x=vl->x; 
-				v->xyz.y=vl->y;
-				v->xyz.z=vl->z;
-				v++;
-				
-				t->u=vl->u;
-				t->v=vl->v;
-				t++;
+		// allocate the storage list
+		vbp->array_list = (float*)malloc(list_size);
 
+		// return invalid if we don't have the memory
+		if (vbp->array_list == NULL)
+			return -1;
+		
+		memset(vbp->array_list, 0, list_size);
+
+		// generate the array
+		for (i=0; i<list->n_verts; i++) {
+			vertex *vl = &list->vert[i];
+			vector *nl = &list->norm[i];
+
+			// don't try to generate more data than what's available
+			Assert( int((arsize * sizeof(float)) + vbp->stride) <= list_size );
+
+			// NOTE: TEX->NORM->VERT, This array order *must* be preserved!!
+
+			// tex coords
+			if (flags & VERTEX_FLAG_UV1) {
+				vbp->array_list[arsize++] = vl->u;
+				vbp->array_list[arsize++] = vl->v;
+			}
+
+			// normals
+			if (flags & VERTEX_FLAG_NORMAL) {
+				vbp->array_list[arsize++] = nl->xyz.x;
+				vbp->array_list[arsize++] = nl->xyz.y;
+				vbp->array_list[arsize++] = nl->xyz.z;
+			}
+
+			// verts
+			if (flags & VERTEX_FLAG_POSITION) {
+				vbp->array_list[arsize++] = vl->x;
+				vbp->array_list[arsize++] = vl->y;
+				vbp->array_list[arsize++] = vl->z;
+			}
 		}
 
 		vbp->used = 1;
+		vbp->flags = flags;
 
 		vbp->n_prim = list->n_verts;
 		vbp->n_verts = list->n_verts;
 
-		//maybe load it into a vertex buffer object
-		if (VBO_ENABLED)
-		{
-			vbp->vbo_vert=opengl_create_vbo(vbp->n_verts*3*sizeof(float),(void**)&vbp->vertex_array);
-			vbp->vbo_norm=opengl_create_vbo(vbp->n_verts*3*sizeof(float),(void**)&vbp->normal_array);
-			vbp->vbo_tex=opengl_create_vbo(vbp->n_verts*2*sizeof(float),(void**)&vbp->texcoord_array);
-		}
+		// maybe load it into a vertex buffer object
+		if (VBO_ENABLED) {
+			vbp->vbo = opengl_create_vbo( list_size, vbp->array_list );
 
+			if (vbp->vbo) {
+				free(vbp->array_list);
+				vbp->array_list = NULL;
+			}
+		}
 	}
 	
+#endif // GL_NO_HTL
 
 	return buffer_num;
 }
 	
 void gr_opengl_destroy_buffer(int idx)
 {
+#ifndef GL_NO_HTL
+
 	if (Cmdline_nohtl)
 		return;
 
@@ -275,34 +317,15 @@ void gr_opengl_destroy_buffer(int idx)
 
 	opengl_vertex_buffer *vbp = g_vbp;
 
-	if (vbp->normal_array)
-		free(vbp->normal_array);
+	if (vbp->array_list)
+		free(vbp->array_list);
 
-	if (vbp->texcoord_array)
-		free(vbp->texcoord_array);
+	if (vbp->vbo)
+		glDeleteBuffersARB(1, &vbp->vbo);
 
-	if (vbp->vertex_array)
-		free(vbp->vertex_array);
+	memset(vbp, 0, sizeof(opengl_vertex_buffer));
 
-	if (vbp->vbo_norm)
-		glDeleteBuffersARB(1,&vbp->vbo_norm);
-
-	if (vbp->vbo_vert)
-		glDeleteBuffersARB(1,&vbp->vbo_vert);
-
-	if (vbp->vbo_tex)
-		glDeleteBuffersARB(1,&vbp->vbo_tex);
-
-	memset(vbp,0,sizeof(opengl_vertex_buffer));
-}
-
-
-void gr_opengl_set_buffer(int idx)
-{
-	if (Cmdline_nohtl)
-		return;
-
-	g_vbp=&vertex_buffers[idx];
+#endif // GL_NO_HTL
 }
 
 
@@ -319,102 +342,60 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	Assert(GL_htl_view_matrix_set);
 
 	TIMERBAR_PUSH(2);
-	float u_scale,v_scale;
 
-	if (glIsEnabled(GL_CULL_FACE))	glFrontFace(GL_CW);
-	
-	glColor3ub(255,255,255);
-	
+	float u_scale, v_scale;
+	int r, g, b, a, tmap_type;
+
 	opengl_vertex_buffer *vbp = g_vbp;
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-	if (vbp->vbo_vert)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_vert);
-		glVertexPointer(3,GL_FLOAT,0, (void*)NULL);
-	}
-	else
-	{
-		glVertexPointer(3,GL_FLOAT,0,vbp->vertex_array);
-	}
-
-	glEnableClientState(GL_NORMAL_ARRAY);
-	if (vbp->vbo_norm)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_norm);
-		glNormalPointer(GL_FLOAT,0, (void*)NULL);
-	}
-	else
-	{
-	//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		glNormalPointer(GL_FLOAT,0,vbp->normal_array);
-	}
+	if (glIsEnabled(GL_CULL_FACE))
+		glFrontFace(GL_CW);
+	
+	glColor3ub(255,255,255);
 
 	glClientActiveTextureARB(GL_TEXTURE0_ARB);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	if (vbp->vbo_tex)
-	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
-		glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
-	}
-	else
-	{
-	//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+	if (vbp->vbo) {
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+		glInterleavedArrays(vbp->format, 0, (void*)NULL);
+	} else {
+		glInterleavedArrays(vbp->format, 0, vbp->array_list);
 	}
 
-	if (Interp_multitex_cloakmap > 0)
-	{
+	if ( (Interp_multitex_cloakmap > 0) && (vbp->flags & VERTEX_FLAG_UV1) ) {
 		SPECMAP = -1;	// don't add a spec map if we are cloaked
 		GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
 
 		glClientActiveTextureARB(GL_TEXTURE1_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo_tex)
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
-			glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
-		}
-		else
-		{
-		//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+		if (vbp->vbo) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)0 );
+		} else {
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
 	}
 
-	if ( (GLOWMAP > -1) && !Cmdline_noglow )
-	{
+	if ( (GLOWMAP > -1) && !Cmdline_noglow && (vbp->flags & VERTEX_FLAG_UV1) ) {
 		glClientActiveTextureARB(GL_TEXTURE1_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo_tex)
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
-			glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
-		}
-		else
-		{
-		//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+		if (vbp->vbo) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)0 );
+		} else {
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
 	}
 
-	if ((SPECMAP > -1) && !Cmdline_nospec && (GL_supported_texture_units > 2))
-	{
+	if ( (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) && (GL_supported_texture_units > 2) ) {
 		glClientActiveTextureARB(GL_TEXTURE2_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo_tex)
-		{
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo_tex);
-			glTexCoordPointer(2,GL_FLOAT,0,(void*)NULL);
-		}
-		else
-		{
-		//	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+		if (vbp->vbo) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
+		} else {
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
 	}
-
-	int r,g,b,a,tmap_type;
 
 	opengl_setup_render_states(r,g,b,a,tmap_type,TMAP_FLAG_TEXTURED,0);
 
@@ -426,17 +407,19 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	}
 
 	gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
-	
-//	glLockArraysEXT(0,vbp->n_poly*3);
-	
+
 	opengl_pre_render_init_lights();
 	opengl_change_active_lights(0);
 
+	glLockArraysEXT( 0, vbp->n_verts);
+
 	if (index_list != NULL) {
-		glDrawElements(GL_TRIANGLES, n_prim * 3, GL_UNSIGNED_SHORT, (ushort*)index_list);
+		glDrawRangeElements(GL_TRIANGLES, start, (n_prim * 3), (n_prim * 3), GL_UNSIGNED_SHORT, (ushort*)index_list);
 	} else {
 		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
 	}
+
+	glUnlockArraysEXT();
 
 	if((lighting_is_enabled)&&((n_active_gl_lights-1)/max_gl_lights > 0)) {
 		gr_opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
@@ -447,23 +430,22 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 			opengl_change_active_lights(i);
 
 			if (index_list != NULL) {
-				glDrawElements(GL_TRIANGLES, n_prim * 3, GL_UNSIGNED_SHORT, (ushort*)index_list);
+				glDrawRangeElements(GL_TRIANGLES, start, (n_prim * 3), (n_prim * 3), GL_UNSIGNED_SHORT, (ushort*)index_list);
 			} else {
 				glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
 			}
 		}
 	}
 
-//	glUnlockArraysEXT();
-
-
 	TIMERBAR_POP();
 
-	if (VBO_ENABLED)
-	{
+	if (VBO_ENABLED) {
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB,0);
 	}
 
+	glDisableClientState( GL_VERTEX_ARRAY );
+	glDisableClientState( GL_NORMAL_ARRAY );
+	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 
 #if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
 	glBegin(GL_LINES);
