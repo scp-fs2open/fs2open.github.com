@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.9 $
- * $Date: 2004-08-23 04:32:39 $
+ * $Revision: 2.10 $
+ * $Date: 2004-09-17 07:12:22 $
  * $Author: Goober5000 $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/08/23 04:32:39  Goober5000
+ * warp effect is back to FS2 default
+ * --Goober5000
+ *
  * Revision 2.8  2004/08/11 05:06:22  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -227,7 +231,7 @@ typedef struct fireball_info	{
 #define	FBF_WARP_CLOSE_SOUND_PLAYED		(1<<0)
 #define	FBF_WARP_CAPITAL_SIZE			(1<<1)
 #define	FBF_WARP_CRUISER_SIZE			(1<<2)
-#define FBF_WARP_BOBBOAU				(1<<3)	// Goober5000
+#define FBF_WARP_3D						(1<<3)	// Goober5000
 #define FBF_WARP_VIA_SEXP				(1<<4)	// Goober5000
 
 typedef struct fireball {					
@@ -272,7 +276,7 @@ float fireball_lifeleft( object *obj );
 float fireball_lifeleft_percent( object *obj );
 
 // internal function to draw warp grid.
-extern void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int bobboau_effect = 0 );
+extern void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );
 extern int Warp_glow_bitmap;			// Internal
 
 extern int Warp_model;
