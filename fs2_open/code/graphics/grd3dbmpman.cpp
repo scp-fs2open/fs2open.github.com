@@ -903,7 +903,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 			} 
 		}
 	}
-	/*
+	
 	else if (be->type == BM_TYPE_PCX)
 	{
 		if(d3d_bitmap_entry[bitmapnum].tinterface == NULL)
@@ -920,15 +920,15 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 			bm_d3d_lock_pcx( handle, bitmapnum, be, bmp, bpp, flags );
 		}
 	}
-	*/
+	
 	else if ( (bmp->data == 0) || (bpp != bmp->bpp && bmp->bpp != 32)) {
 		Assert(be->ref_count == 1);
 
 		if ( be->type != BM_TYPE_USER ) {
 			if ( bmp->data == 0 ) {
-				nprintf (("BmpMan","Loading %s for the first time.\n", be->filename));
+				mprintf (("Loading %s for the first time.\n", be->filename));
 			} else if ( bpp != bmp->bpp ) {
-				nprintf (("BmpMan","Reloading %s from bitdepth %d to bitdepth %d\n", be->filename, bmp->bpp, bpp));
+				mprintf (("Reloading %s from bitdepth %d to bitdepth %d\n", be->filename, bmp->bpp, bpp));
 			} 
 		}
 
@@ -943,6 +943,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 
 		switch ( be->type ) {
 		case BM_TYPE_PCX:
+			mprintf(("MEMLEAK DEBUG: lock pcx\n"));
 		  	bm_d3d_lock_pcx( handle, bitmapnum, be, bmp, bpp, flags );
 			break;
 
