@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-02-04 10:12:30 $
- * $Author: taylor $
+ * $Revision: 2.41 $
+ * $Date: 2005-02-20 05:22:44 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.39  2005/01/16 22:39:09  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -2561,7 +2564,9 @@ int button_function_demo_valid(int n)
 		if ( Game_mode & GM_NORMAL ) {
 			// Goober5000 - time dilation only available in cheat mode (see above);
 			// now you can do it with or without pressing the tilde, per Kazan's request
-			if ( (Game_time_compression > F1_0) || (Cheats_enabled && (Game_time_compression > (F1_0/MAX_TIME_DIVIDER))) ) {
+			// Goober5000 02/20/2005: restored original behavior: time dilation is handled
+			// in cheat mode only when you explicitly press the tilde
+			if ( (Game_time_compression > F1_0) ) {//|| (Cheats_enabled && (Game_time_compression > (F1_0/MAX_TIME_DIVIDER))) ) {
 				Game_time_compression /= 2;
 			} else {
 				gamesnd_play_error_beep();
