@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-03-18 10:07:00 $
+ * $Revision: 2.19 $
+ * $Date: 2003-03-20 08:24:45 $
  * $Author: unknownplayer $
- * $Revision: 2.18 $
- * $Date: 2003-03-18 10:07:00 $
+ * $Revision: 2.19 $
+ * $Date: 2003-03-20 08:24:45 $
  * $Author: unknownplayer $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/03/18 10:07:00  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.17  2003/02/22 04:13:17  wmcoolmon
  * Added "-dshowvid" command-line option, which must be set in order for movies to play.
  *
@@ -326,8 +329,8 @@ cmdline_parm mouse_coords("-coords", NULL);
 cmdline_parm timeout("-timeout", NULL);
 cmdline_parm d3d_window("-window", NULL);
 cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
-cmdline_parm gf4fix_arg("-GF4FIX", NULL); //DTP for random tigers GF4fix
-cmdline_parm allslev_arg("-ALLSLEV", NULL); //Give access to all single player missions
+cmdline_parm gf4fix_arg("-gf4fix", NULL); //DTP for random tigers GF4fix
+cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player missions
 cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
 cmdline_parm dshowvid_arg("-dshowvid", NULL); // Allows video streaming
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
