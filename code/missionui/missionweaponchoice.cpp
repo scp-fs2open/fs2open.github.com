@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-02-18 05:24:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.37 $
+ * $Date: 2005-02-18 09:03:34 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/02/18 05:24:26  wmcoolmon
+ * Attempt to get rid of compiler warnings
+ *
  * Revision 2.35  2005/02/13 08:41:25  wmcoolmon
  * 3D models in weapons selection screen and nonstandard resolution fixes for ship selection screen.
  *
@@ -3387,9 +3390,9 @@ void weapon_select_do(float frametime)
 		//Find the center of teh submodel
 		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
 		weap_closeup.xyz.y = bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f;
-		weap_closeup.xyz.z = (weap_closeup.xyz.x/tan((float)(zoom / 2.0f)));
+		weap_closeup.xyz.z = (float) (weap_closeup.xyz.x/tan(zoom / 2.0f));
 
-		y_closeup = -(weap_closeup.xyz.y/tan((float)(zoom / 2.0f)));
+		y_closeup = (float) -(weap_closeup.xyz.y/tan(zoom / 2.0f));
 		if(y_closeup < weap_closeup.xyz.z)
 		{
 			weap_closeup.xyz.z = y_closeup;
