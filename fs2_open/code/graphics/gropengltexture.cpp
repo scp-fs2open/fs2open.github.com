@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.9 $
- * $Date: 2004-10-31 21:46:10 $
+ * $Revision: 1.10 $
+ * $Date: 2004-11-29 18:02:01 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/10/31 21:46:10  taylor
+ * Linux tree merge, better DDS support, texture panning
+ *
  * Revision 1.8  2004/09/05 19:23:24  Goober5000
  * fixed a few warnings
  * --Goober5000
@@ -1000,7 +1003,7 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 	// all other "normal" textures
 	else
 #endif // GL_SECTIONS
-		 if((bitmap_id < 0) || (bitmap_id != t->bitmap_id)){
+		 if((t->bitmap_id < 0) || (bitmap_id != t->bitmap_id)){
 		ret_val = opengl_create_texture( bitmap_id, bitmap_type, t, fail_on_full );
 	}
 
