@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-11-27 10:45:36 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2004-12-14 14:46:12 $
+ * $Author: Goober5000 $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/11/27 10:45:36  taylor
+ * some fixes for position problems on the HUD in non-standard resolutions
+ * few compiler warning fixes
+ *
  * Revision 2.6  2004/07/26 20:47:33  Kazan
  * remove MCD complete
  *
@@ -112,7 +116,7 @@
  * correctly
  * 
  * 4     3/20/98 10:26a Lawrance
- * Don't display gauge if Alpha1 is only ship
+ * Don't display gauge if player is only ship
  * 
  * 3     3/18/98 12:03p John
  * Marked all the new strings as externalized or not.
@@ -174,31 +178,22 @@ static int Wingman_status_gauge_loaded=0;
 #define HUD_WINGMAN_STATUS_ALIVE			2		// wingman is in the mission
 #define HUD_WINGMAN_STATUS_NOT_HERE		3		// wingman hasn't arrived, or has departed
 
-#define HUD_WINGMAN_MAX_WINGS						6		// upped to 6 to hold room for Zeta in team v team.
-#define HUD_WINGMAN_MAX_SHIPS_PER_WINGS		6
-
 typedef struct Wingman_status
 {
 	int	ignore;													// set to 1 when we should ignore this item -- used in team v. team
 	int	used;
-	float hull[HUD_WINGMAN_MAX_SHIPS_PER_WINGS];			// 0.0 -> 1.0
-	int	status[HUD_WINGMAN_MAX_SHIPS_PER_WINGS];		// HUD_WINGMAN_STATUS_* 
+	float hull[MAX_SHIPS_PER_WING];			// 0.0 -> 1.0
+	int	status[MAX_SHIPS_PER_WING];		// HUD_WINGMAN_STATUS_* 
 } wingman_status;
 
-wingman_status HUD_wingman_status[HUD_WINGMAN_MAX_WINGS];
+wingman_status HUD_wingman_status[MAX_SQUADRON_WINGS];
 
 #define HUD_WINGMAN_UPDATE_STATUS_INTERVAL	200
 static int HUD_wingman_update_timer;
 
-static int HUD_wingman_flash_duration[HUD_WINGMAN_MAX_WINGS][HUD_WINGMAN_MAX_SHIPS_PER_WINGS];
-static int HUD_wingman_flash_next[HUD_WINGMAN_MAX_WINGS][HUD_WINGMAN_MAX_SHIPS_PER_WINGS];
+static int HUD_wingman_flash_duration[MAX_SQUADRON_WINGS][MAX_SHIPS_PER_WING];
+static int HUD_wingman_flash_next[MAX_SQUADRON_WINGS][MAX_SHIPS_PER_WING];
 static int HUD_wingman_flash_is_bright;
-
-
-//XSTR:OFF
-// Text versions of wingman names (instead of bitmaps in winman5.ani)
-static char *Wingman_status_name_abbr[6] = { "alp", "bet", "gam", "del", "eps", "zet" };
-//XSTR:ON
 
 
 // coords to draw wingman status icons, for 1-5 wings (0-4)
@@ -268,10 +263,9 @@ int HUD_wingman_status_single_coords[GR_NUM_RESOLUTIONS][4][2] =
 	}
 };
 
-int HUD_wingman_status_name_coords[GR_NUM_RESOLUTIONS][HUD_WINGMAN_MAX_WINGS][2] =
+int HUD_wingman_status_name_coords[GR_NUM_RESOLUTIONS][MAX_SQUADRON_WINGS][2] =
 {
 	{ // GR_640
-		{459,185},				// duplicated the first item because we only ever display 5 items
 		{459,185},
 		{494,185},
 		{529,185},
@@ -279,7 +273,6 @@ int HUD_wingman_status_name_coords[GR_NUM_RESOLUTIONS][HUD_WINGMAN_MAX_WINGS][2]
 		{599,185},
 	},
 	{ // GR_1024
-		{841,185},				// duplicated the first item because we only ever display 5 items
 		{841,185},
 		{876,185},
 		{911,185},
@@ -288,9 +281,9 @@ int HUD_wingman_status_name_coords[GR_NUM_RESOLUTIONS][HUD_WINGMAN_MAX_WINGS][2]
 	}
 };
 
-int HUD_wingman_status_coords[GR_NUM_RESOLUTIONS][HUD_WINGMAN_MAX_WINGS][HUD_WINGMAN_MAX_SHIPS_PER_WINGS][2] = 
+int HUD_wingman_status_coords[GR_NUM_RESOLUTIONS][MAX_SQUADRON_WINGS][MAX_SHIPS_PER_WING][2] = 
 {
-	// duplicated first set of data because we will only ever display up to 5 wings
+	// we will only ever display up to 5 wings
 	{	// GR_640
 		// 1 wing present
 		{{467,159},						// ship 1
@@ -299,14 +292,6 @@ int HUD_wingman_status_coords[GR_NUM_RESOLUTIONS][HUD_WINGMAN_MAX_WINGS][HUD_WIN
 		{467,175},						// ship 4
 		{456,175},						// ship 5
 		{478,175}},						// ship 6
-
-		// 1 wing present
-		{{467,159},
-		{460,167},
-		{474,167},
-		{467,175},
-		{456,175},
-		{478,175}},
 
 		// 2 wings present
 		{{502,159},
@@ -348,13 +333,6 @@ int HUD_wingman_status_coords[GR_NUM_RESOLUTIONS][HUD_WINGMAN_MAX_WINGS][HUD_WIN
 		{838,175},
 		{860,175}},
 
-		{{849,159},
-		{842,167},
-		{856,167},
-		{849,175},
-		{838,175},
-		{860,175}},
-
 		{{884,159},
 		{877,167},
 		{891,167},
@@ -385,32 +363,11 @@ int HUD_wingman_status_coords[GR_NUM_RESOLUTIONS][HUD_WINGMAN_MAX_WINGS][HUD_WIN
 	} 
 };
 
-int hud_wingman_status_wing_index(char *wing_name)
-{
-//XSTR:OFF
-	if ( !stricmp("alpha", wing_name) ) {
-		return 0;
-	} else if ( !stricmp("beta", wing_name) ) {
-		return 1;
-	} else if ( !stricmp("gamma", wing_name) ) {
-		return 2;
-	} else if ( !stricmp("delta", wing_name) ) {
-		return 3;
-	} else if ( !stricmp("epsilon", wing_name) ) {
-		return 4;
-	} else if ( (Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_TEAMS && !stricmp("zeta", wing_name) ) {
-		return 5;
-	} else {
-		return -1;
-	}
-//XSTR:ON
-}
-
 // flag a player wing ship as destroyed
 void hud_set_wingman_status_dead(int wing_index, int wing_pos)
 {
-	Assert(wing_index >= 0 && wing_index < HUD_WINGMAN_MAX_WINGS);
-	Assert(wing_pos >= 0 && wing_index < HUD_WINGMAN_MAX_SHIPS_PER_WINGS);
+	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
+	Assert(wing_pos >= 0 && wing_index < MAX_SHIPS_PER_WING);
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_DEAD;
 }
@@ -418,8 +375,8 @@ void hud_set_wingman_status_dead(int wing_index, int wing_pos)
 // flags a given player wing ship as departed
 void hud_set_wingman_status_departed(int wing_index, int wing_pos)
 {
-	Assert(wing_index >= 0 && wing_index < HUD_WINGMAN_MAX_WINGS);
-	Assert(wing_pos >= 0 && wing_index < HUD_WINGMAN_MAX_SHIPS_PER_WINGS);
+	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
+	Assert(wing_pos >= 0 && wing_index < MAX_SHIPS_PER_WING);
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_NOT_HERE;
 }
@@ -429,13 +386,13 @@ void hud_set_wingman_status_none( int wing_index, int wing_pos)
 {
 	int i;
 
-	Assert(wing_index >= 0 && wing_index < HUD_WINGMAN_MAX_WINGS);
-	Assert(wing_pos >= 0 && wing_index < HUD_WINGMAN_MAX_SHIPS_PER_WINGS);
+	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
+	Assert(wing_pos >= 0 && wing_index < MAX_SHIPS_PER_WING);
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_NONE;
 
 	int used = 0;
-	for ( i = 0; i < HUD_WINGMAN_MAX_SHIPS_PER_WINGS; i++ ) {
+	for ( i = 0; i < MAX_SHIPS_PER_WING; i++ ) {
 		if ( HUD_wingman_status[wing_index].status[i] != HUD_WINGMAN_STATUS_NONE ) {
 			used = 1;
 			break;
@@ -448,8 +405,8 @@ void hud_set_wingman_status_none( int wing_index, int wing_pos)
 // flags a given player wing ship as "alive" (for multiplayer respawns )
 void hud_set_wingman_status_alive( int wing_index, int wing_pos)
 {
-	Assert(wing_index >= 0 && wing_index < HUD_WINGMAN_MAX_WINGS);
-	Assert(wing_pos >= 0 && wing_index < HUD_WINGMAN_MAX_SHIPS_PER_WINGS);
+	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
+	Assert(wing_pos >= 0 && wing_index < MAX_SHIPS_PER_WING);
 
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_ALIVE;
 }
@@ -470,7 +427,7 @@ void hud_wingman_status_init_late_wings()
 	int i, j, wing_index;
 
 	for ( i = 0; i < num_wings; i++ ) {
-		wing_index = hud_wingman_status_wing_index(Wings[i].name);
+		wing_index = ship_squadron_wing_lookup(Wings[i].name);
 
 		if ( (wing_index >= 0) && (Wings[i].total_arrived_count == 0) ) {
 			HUD_wingman_status[wing_index].used = 1;
@@ -495,11 +452,13 @@ void hud_wingman_kill_multi_teams()
 	if ( !IS_MISSION_MULTI_TEAMS )
 		return;
 
+	Assert(MAX_TVT_WINGS == 2);	// Goober5000
+
 	wing_index = -1;
 	if ( Net_player->p_info.team == 0 )
-		wing_index = hud_wingman_status_wing_index(NOX("zeta"));
+		wing_index = 1;
 	else if ( Net_player->p_info.team == 1 )
-		wing_index = hud_wingman_status_wing_index(NOX("alpha"));
+		wing_index = 0;
 
 	if ( wing_index == -1 )
 		return;
@@ -530,10 +489,10 @@ void hud_init_wingman_status_gauge()
 
 	HUD_wingman_update_timer=timestamp(0);	// update status right away
 
-	for (i = 0; i < HUD_WINGMAN_MAX_WINGS; i++) {
+	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
 		HUD_wingman_status[i].ignore = 0;
 		HUD_wingman_status[i].used = 0;
-		for ( j = 0; j < HUD_WINGMAN_MAX_SHIPS_PER_WINGS; j++ ) {
+		for ( j = 0; j < MAX_SHIPS_PER_WING; j++ ) {
 			HUD_wingman_status[i].status[j] = HUD_WINGMAN_STATUS_NONE;
 		}
 	}
@@ -664,10 +623,10 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 		return;
 	}
 
-	screen_pos = screen_index + (HUD_WINGMAN_MAX_WINGS - num_wings_to_draw);
+	screen_pos = screen_index + (MAX_SQUADRON_WINGS - num_wings_to_draw);
 	
 	// draw wingman dots
-	for ( i = 0; i < HUD_WINGMAN_MAX_SHIPS_PER_WINGS; i++ ) {
+	for ( i = 0; i < MAX_SHIPS_PER_WING; i++ ) {
 
 		if ( hud_wingman_status_maybe_flash(wing_index, i) ) {
 			is_bright=1;
@@ -719,15 +678,27 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 	}
 
 	// draw wing name
+	// Goober5000 - add 12 to now make these coordinates specify the center rather than the left side
 	if ( num_wings_to_draw == 1 ) {
-		sx = HUD_wingman_status_single_coords[gr_screen.res][0][0] - 8;
-		sy = HUD_wingman_status_single_coords[gr_screen.res][0][1] + 26; 
+		sx = HUD_wingman_status_single_coords[gr_screen.res][0][0] - 8 + 12;
+		sy = HUD_wingman_status_single_coords[gr_screen.res][0][1] + 26;
 	} else {
-		sx = HUD_wingman_status_name_coords[gr_screen.res][screen_pos][0];
+		sx = HUD_wingman_status_name_coords[gr_screen.res][screen_pos][0] + 12;
 		sy = HUD_wingman_status_name_coords[gr_screen.res][screen_pos][1]; 
 	}
 	hud_set_gauge_color(HUD_WINGMEN_STATUS);
-	gr_string(sx, sy, Wingman_status_name_abbr[wing_index]);
+
+	// Goober5000 - get the lowercase abbreviation
+	char abbrev[4];
+	abbrev[0] = (char) tolower(Squadron_wing_names[wing_index][0]);
+	abbrev[1] = (char) tolower(Squadron_wing_names[wing_index][1]);
+	abbrev[2] = (char) tolower(Squadron_wing_names[wing_index][2]);
+	abbrev[3] = '\0';
+
+	// Goober5000 - center it (round the offset rather than truncate it)
+	int abbrev_width;
+	gr_get_string_size(&abbrev_width, NULL, abbrev);
+	gr_string(sx - (int)((float)abbrev_width/2.0f+0.5f), sy, abbrev);
 }
 
 int hud_wingman_status_wingmen_exist(int num_wings_to_draw)
@@ -739,9 +710,9 @@ int hud_wingman_status_wingmen_exist(int num_wings_to_draw)
 		count = 0;
 		break;
 	case 1:
-		for (i = 0; i < HUD_WINGMAN_MAX_WINGS; i++) {
+		for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
 			if ( HUD_wingman_status[i].used > 0 ) {
-				for ( j = 0; j < HUD_WINGMAN_MAX_SHIPS_PER_WINGS; j++ ) {
+				for ( j = 0; j < MAX_SHIPS_PER_WING; j++ ) {
 					if ( HUD_wingman_status[i].status[j] != HUD_WINGMAN_STATUS_NONE ) {
 						count++;
 					}
@@ -767,7 +738,7 @@ void hud_wingman_status_render()
 {
 	int i, count, num_wings_to_draw = 0;
 
-	for (i = 0; i < HUD_WINGMAN_MAX_WINGS; i++) {
+	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
 		if ( (HUD_wingman_status[i].used > 0) && (HUD_wingman_status[i].ignore == 0) ) {
 			num_wings_to_draw++;
 		}
@@ -786,7 +757,7 @@ void hud_wingman_status_render()
 	hud_wingman_status_blit_right_frame(num_wings_to_draw);
 
 	count = 0;
-	for (i = 0; i < HUD_WINGMAN_MAX_WINGS; i++) {
+	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
 		if ( (HUD_wingman_status[i].used <= 0) || (HUD_wingman_status[i].ignore == 1) ) {
 			continue;
 		}
@@ -801,8 +772,8 @@ void hud_wingman_status_init_flash()
 {
 	int i, j;
 
-	for ( i = 0; i < HUD_WINGMAN_MAX_WINGS; i++ ) {
-		for ( j = 0; j < HUD_WINGMAN_MAX_SHIPS_PER_WINGS; j++ ) {
+	for ( i = 0; i < MAX_SQUADRON_WINGS; i++ ) {
+		for ( j = 0; j < MAX_SHIPS_PER_WING; j++ ) {
 			HUD_wingman_flash_duration[i][j] = timestamp(0);
 			HUD_wingman_flash_next[i][j] = timestamp(0);
 		}
@@ -824,7 +795,7 @@ int hud_wingman_status_maybe_flash(int wing_index, int wing_pos)
 {
 	int index, draw_bright=0;
 
-	index = wing_index*HUD_WINGMAN_MAX_SHIPS_PER_WINGS + wing_pos;
+	index = wing_index*MAX_SHIPS_PER_WING + wing_pos;
 
 	if ( !timestamp_elapsed(HUD_wingman_flash_duration[wing_index][wing_pos]) ) {
 		if ( timestamp_elapsed(HUD_wingman_flash_next[wing_index][wing_pos]) ) {
@@ -872,8 +843,8 @@ void hud_wingman_status_set_index(int shipnum)
 
 	wingp = &Wings[shipp->wingnum];
 
-	// Check for Alpha, Beta, Gamma, Delta or Epsilon wings
-	wing_index = hud_wingman_status_wing_index(wingp->name);
+	// Check for squadron wings
+	wing_index = ship_squadron_wing_lookup(wingp->name);
 	if ( wing_index < 0 ) {
 		return;
 	}

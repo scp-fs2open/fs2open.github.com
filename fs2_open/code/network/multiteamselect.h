@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code header
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -192,7 +195,7 @@ int multi_ts_get_team(char *ship_name);
 void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index);
 
 // function to return the shipname of the ship belonging in slot N
-char *multi_ts_get_shipname( int team, int slot_index );
+void multi_ts_get_shipname( char *ship_name, int team, int slot_index );
 
 // blit the proper "locked" button - used for weapon select and briefing screens
 void multi_ts_blit_locked_button();

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.70 $
- * $Date: 2004-12-05 22:01:12 $
- * $Author: bobboau $
+ * $Revision: 2.71 $
+ * $Date: 2004-12-14 14:46:12 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/12/05 22:01:12  bobboau
+ * sevral feature additions that WCS wanted,
+ * and the foundations of a submodel animation system,
+ * the calls to the animation triggering code (exept the procesing code,
+ * wich shouldn't do anything without the triggering code)
+ * have been commented out.
+ *
  * Revision 2.69  2004/11/21 11:35:17  taylor
  * some weapon-only-used loading fixes and general page-in cleanup
  * page in all ship textures from one function rather than two
@@ -1342,10 +1349,6 @@ typedef struct engine_wash_info
 #define MAX_ENGINE_WASH_TYPES	20
 extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 
-#define MAX_SHIPS_PER_WING	6
-
-#define MAX_PLAYER_WINGS	3  // number of wings player can start a mission with
-
 // flags defined for wings
 #define MAX_WING_FLAGS				8				// total number of flags in the wing structure -- used for parsing wing flags
 #define WF_WING_GONE					(1<<0)		// all ships were either destroyed or departed
@@ -1416,13 +1419,16 @@ typedef struct wing {
 	int wing_insignia_texture;
 } wing;
 
-#define STARTING_WING_ALPHA		0
-#define STARTING_WING_BETA			1
-#define STARTING_WING_GAMMA		2
-#define STARTING_WING_ZETA			3
-
 extern wing Wings[MAX_WINGS];
-extern int Starting_wings[MAX_PLAYER_WINGS];
+
+extern int Starting_wings[MAX_STARTING_WINGS];
+extern int Squadron_wings[MAX_SQUADRON_WINGS];
+extern int TVT_wings[MAX_TVT_WINGS];
+
+extern char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
+extern char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
+extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
+
 extern int ai_paused;
 extern int CLOAKMAP;
 
@@ -1790,5 +1796,10 @@ extern int ship_has_engine_power(ship *shipp);
 void ship_start_animation_type(ship *shipp, int animation_type, int direction);
 //how long untill the animation is done
 int ship_get_animation_time_type(ship *shipp, int animation_type);
+
+// Goober5000
+int ship_starting_wing_lookup(char *wing_name);
+int ship_squadron_wing_lookup(char *wing_name);
+int ship_tvt_wing_lookup(char *wing_name);
 
 #endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.26 $
- * $Date: 2004-10-10 22:12:57 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/10/10 22:12:57  taylor
+ * warp mouse to center screen on mission start
+ *
  * Revision 2.25  2004/07/26 20:47:40  Kazan
  * remove MCD complete
  *
@@ -2968,7 +2971,7 @@ int ss_fixup_team_data(team_data *tdata)
 	ship_in_parse_player = 0;
 	list_size = p_team_data->number_choices;
 
-	for ( i = 0; i < MAX_PLAYER_WINGS; i++ ) {
+	for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {
 		wing *wp;
 		if ( Starting_wings[i] == -1 )
 			continue;
@@ -3173,7 +3176,7 @@ void ss_clear_wings()
 {
 	int idx;
 
-	for(idx=0;idx<MAX_PLAYER_WINGS;idx++){
+	for(idx=0;idx<MAX_STARTING_WINGS;idx++){
 		Ss_wings[idx].wingnum = -1;
 		Ss_wings[idx].num_slots = 0;
 		Ss_wings[idx].is_late = 0;
@@ -3356,7 +3359,7 @@ void ship_select_init_team_data(int team_num)
 #endif
 	{			
 		// now setup wings for easy reference
-		for(idx=0;idx<MAX_PLAYER_WINGS;idx++){
+		for(idx=0;idx<MAX_STARTING_WINGS;idx++){
 			ss_init_wing_info(idx,idx);	
 		}
 	}

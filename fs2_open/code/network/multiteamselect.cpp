@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:43 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:43  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:58  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -346,15 +349,6 @@ UI_WINDOW Multi_ts_window;
 #define MULTI_TS_NUM_SHIP_SLOTS_TEAM	4														// # of ship slots in team v team
 #define MULTI_TS_FLAG_NONE					-2														// never has any ships
 #define MULTI_TS_FLAG_EMPTY				-1														// currently empty
-char *Multi_ts_slot_names[MULTI_TS_NUM_SHIP_SLOTS] = {									// 
-	"alpha 1", "alpha 2", "alpha 3", "alpha 4",
-	"beta 1", "beta 2", "beta 3", "beta 4",
-	"gamma 1", "gamma 2", "gamma 3", "gamma 4"
-};
-char *Multi_ts_slot_team_names[MULTI_TS_MAX_TEAMS][MULTI_TS_NUM_SHIP_SLOTS_TEAM] = {
-	{"alpha 1", "alpha 2", "alpha 3", "alpha 4"},
-	{"zeta 1", "zeta 2", "zeta 3", "zeta 4"}
-};
 
 static int Multi_ts_slot_icon_coords[MULTI_TS_NUM_SHIP_SLOTS][GR_NUM_RESOLUTIONS][2] = {							// x,y
 	{		// 	
@@ -1016,19 +1010,14 @@ void multi_ts_assign_players_all()
 	// get the # of players currently in the game
 	player_count = multi_num_players();
 
-	// always assign the host to Alpha 1 (or Zeta 1 in team vs. team - as appropriate)
+	// always assign the host to the wing leader of one of the TVT wings
+	// this is valid for coop games as well because the first starting wing
+	// and the first tvt wing must have the same name
 	memset(name_lookup,0,100);
 	if(Netgame.type_flags & NG_TYPE_TEAM){
-		switch(Netgame.host->p_info.team){
-		case 0 :
-			strcpy(name_lookup,NOX("alpha 1"));
-			break;
-		case 1 :
-			strcpy(name_lookup,NOX("zeta 1"));
-			break;
-		}
+		sprintf(name_lookup, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
 	} else {
-		strcpy(name_lookup,NOX("alpha 1"));
+		sprintf(name_lookup, "%s 1", TVT_wing_names[0]);
 	}
 	shipnum = ship_name_lookup(name_lookup);
 	
@@ -1861,7 +1850,7 @@ void multi_ts_init_objnums()
 // get the proper team and slot index for the given ship name
 void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 {
-	int idx,s_idx;
+	int idx;//,s_idx;
 
 	// set the return values to default values
 	*team_index = -1;
@@ -1869,23 +1858,33 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
-		for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
-			for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS_TEAM;s_idx++){
-				if(!stricmp(ship_name,Multi_ts_slot_team_names[idx][s_idx])){
-					*team_index = idx;
-					*slot_index = s_idx;
-					return;
-				}
+		Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TEAMS);
+		for(idx=0;idx<MAX_TVT_WINGS;idx++)
+		{
+			// get team (wing)
+			if (!strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])))
+			{
+				*team_index = idx;
+
+				// get slot (ship in wing)
+				*slot_index = (ship_name[strlen(ship_name)-1] - '1');
 			}
 		}
 	} 
 	// if we're _not_ in team vs. team mode
 	else {
-		for(idx=0;idx<MULTI_TS_NUM_SHIP_SLOTS;idx++){
-			if(!stricmp(ship_name,Multi_ts_slot_names[idx])){
+		int wing, ship;
+		for(idx=0;idx<MAX_STARTING_WINGS;idx++)
+		{
+			// get wing
+			if (!strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])))
+			{
+				wing = idx;
+				ship = (ship_name[strlen(ship_name)-1] - '1');
+
+				// team is 0, slot is the starting slot for all ships
 				*team_index = 0;
-				*slot_index = idx;
-				return;
+				*slot_index = wing * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
 			}
 		}
 	}
@@ -1893,14 +1892,14 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 
 // function to return the shipname of the ship in the slot designated by the team and slot
 // parameters
-char *multi_ts_get_shipname( int team, int slot_index )
+void multi_ts_get_shipname( char *ship_name, int team, int slot_index )
 {
 	if ( Netgame.type_flags & NG_TYPE_TEAM ) {
 		Assert( (team >= 0) && (team < MULTI_TS_MAX_TEAMS) );
-		return Multi_ts_slot_team_names[team][slot_index];
+		sprintf(ship_name, "%s %d", TVT_wing_names[team], slot_index);
 	} else {
 		Assert( team == 0 );
-		return Multi_ts_slot_names[slot_index];
+		sprintf(ship_name, "%s %d", Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM);
 	}
 }
 
@@ -2675,15 +2674,14 @@ int multi_ts_can_grab_player(int slot_index, int player_index)
 // get the team # of the given ship
 int multi_ts_get_team(char *ship_name)
 {
-	int idx,s_idx;
+	int idx;//,s_idx;
 
 	// lookup through all team ship names
-	for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
-		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS_TEAM;s_idx++){
-			if(!stricmp(ship_name,Multi_ts_slot_team_names[idx][s_idx])){
-				return idx;
-			}
-		}
+	Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TEAMS);
+	for(idx=0;idx<MAX_TVT_WINGS;idx++)
+	{
+		if (!strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])))
+			return idx;
 	}
 
 	// always on team 0 if not found otherwise

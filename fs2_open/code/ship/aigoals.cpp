@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-07-26 20:47:51 $
- * $Author: Kazan $
+ * $Revision: 2.16 $
+ * $Date: 2004-12-14 14:46:12 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/07/26 20:47:51  Kazan
+ * remove MCD complete
+ *
  * Revision 2.14  2004/07/25 18:46:30  Kazan
  * -fred_no_warn has become -no_warn and applies to both fred and fs2
  * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
@@ -111,8 +114,8 @@
  * subsystem as model_read.
  * 
  * 9     6/03/99 8:58p Andsager
- * Fix bug where player's target is lost.  Alpha wing had clear wing
- * goals, and this was applied to alpha1.
+ * Fix bug where player's target is lost.  Player wing had clear wing
+ * goals, and this was applied to player.
  * 
  * 8     5/27/99 12:14p Andsager
  * Some fixes for live debris when more than one subsys on ship with live
@@ -161,7 +164,7 @@
  * 169   5/11/98 11:20a Sandeep
  * 
  * 168   5/10/98 12:02a Mike
- * Only Alpha wing will form on player's wing, not any player wing.
+ * Only player's wing will form on player's wing, not any wing in player's squadron.
  * 
  * 167   4/23/98 1:49a Allender
  * major rearm/repair fixes for multiplayer.  Fixed respawning of AI ships
@@ -649,7 +652,7 @@ void ai_post_process_mission()
 	//
 	// So basically, we are checking for (1)
 	if ( !Fred_running ) {
-		for ( i = 0; i < 1; i++ ) {	//	MK, 5/9/98: Used to iterate through MAX_PLAYER_WINGS, but this was too many ships forming on player.
+		for ( i = 0; i < 1; i++ ) {	//	MK, 5/9/98: Used to iterate through MAX_STARTING_WINGS, but this was too many ships forming on player.
 			if ( Starting_wings[i] != -1 ) {
 				wing *wingp;
 

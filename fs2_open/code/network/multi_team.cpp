@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_team.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -175,13 +178,6 @@
 #define MT_CODE_TEAM_REQUEST			1							// a request sent to the host to be be on a given team
 
 //XSTR:OFF
-
-char *Multi_team0_names[4] = {									// ships on team 0 (TEAM_FRIENDLY)
-	"alpha 1", "alpha 2", "alpha 3", "alpha 4"
-};
-char *Multi_team1_names[4] = {									// ships on team 1 (TEAM_HOSTILE)
-	"zeta 1", "zeta 2", "zeta 3", "zeta 4"
-};
 
 // score for teams 0 and 1 for this mission
 int Multi_team0_score = 0;
@@ -660,29 +656,18 @@ void multi_team_mark_all_ships()
 // set the proper team for the passed in ship
 void multi_team_mark_ship(ship *sp)
 {	
-	int idx;
 	int team_num;
 
 	// no team found yet
 	team_num = -1;
 		
 	// look through team 0
-	for(idx=0;idx<4;idx++){
-		if(!stricmp(sp->ship_name,Multi_team0_names[idx])){
-			team_num = 0;
-			break;
-		}
-	}
+	if (sp->wingnum == TVT_wings[0])
+		team_num = 0;
 
 	// look through team 1 if necessary
-	if(team_num < 0){
-		for(idx=0;idx<4;idx++){
-			if(!stricmp(sp->ship_name,Multi_team1_names[idx])){
-				team_num = 1;
-				break;
-			}
-		}
-	}
+	if (sp->wingnum == TVT_wings[1])
+		team_num = 1;
 
 	// if we found a team
 	switch(team_num){

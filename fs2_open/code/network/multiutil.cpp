@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-11-26 08:41:11 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/11/26 08:41:11  taylor
+ * couple of LAN game vs. FS2NetD fixes
+ *
  * Revision 2.24  2004/08/26 18:19:36  Kazan
  * small standalone-related multibug fix
  * prohibited execution of process_debug_keys(int) while Game_mode & GM_MULTIPLAYER
@@ -2159,8 +2162,9 @@ int multi_can_message(net_player *p)
 		}
 
 		// check to see if he's a wingleader
-		sp = &Ships[Objects[p->player->objnum].instance];		
-		if(stricmp(sp->ship_name,NOX("alpha 1")) && stricmp(sp->ship_name,NOX("beta 1")) && stricmp(sp->ship_name,NOX("gamma 1")) && stricmp(sp->ship_name,NOX("zeta 1")) ){
+		sp = &Ships[Objects[p->player->objnum].instance];
+		if (sp->ship_name[strlen(sp->ship_name)-1] == '1') 
+		{
 			return 0;
 		}	
 		break;
@@ -2208,7 +2212,8 @@ int multi_can_end_mission(net_player *p)
 
 		// check to see if he's a wingleader
 		sp = &Ships[Objects[p->player->objnum].instance];
-		if(stricmp(sp->ship_name,NOX("alpha 1")) && stricmp(sp->ship_name,NOX("beta 1")) && stricmp(sp->ship_name,NOX("gamma 1")) && stricmp(sp->ship_name,NOX("zeta 1")) ){
+		if (sp->ship_name[strlen(sp->ship_name)-1] == '1') 
+		{
 			return 0;
 		}	
 		break;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-12-10 17:21:00 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2004-12-14 14:46:13 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/12/10 17:21:00  taylor
+ * dymanic allocation of Personas
+ *
  * Revision 2.20  2004/10/09 17:58:48  taylor
  * one more try to fix the memory leak and end-of-mission crash for talking head anis
  *
@@ -669,12 +672,13 @@ void persona_parse()
 
 	Personas[Num_personas].flags = 0;
 */
+	Personas = (Persona*)malloc(sizeof(Persona)*14);
 	// this way should cause the least amount of problems on the various platforms - taylor
-	if (Personas == NULL) {
-		Personas = (Persona*)malloc( sizeof(Persona) );
-	} else {
-		Personas = (Persona*)realloc( Personas, sizeof(Persona) * (Num_personas + 1) );
-	}
+//	if (Personas == NULL) {
+//		Personas = (Persona*)malloc( sizeof(Persona) );
+//	} else {
+//		Personas = (Persona*)realloc( Personas, sizeof(Persona) * (Num_personas + 1) );
+//	}
 
 	if (Personas == NULL)
 		Error(LOCATION, "Not enough memory to allocate Personas!" );
