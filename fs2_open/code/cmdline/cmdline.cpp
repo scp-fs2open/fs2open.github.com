@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.74 $
- * $Date: 2004-06-29 06:00:45 $
- * $Author: wmcoolmon $
+ * $Revision: 2.75 $
+ * $Date: 2004-07-05 05:09:15 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2004/06/29 06:00:45  wmcoolmon
+ * Added "-load_only_used", which makes FS2 load only used weapon data
+ *
  * Revision 2.73  2004/06/26 00:28:05  wmcoolmon
  * Added "-targetinfo" to toggle info next to targeted object.
  *
@@ -572,6 +575,12 @@ public:
 	char *str();
 };
 
+float Cmdline_max_subdivide = 0.0f;
+
+int Cmdline_env = 0;
+int Cmdline_decals = 0;
+int Cmdline_alpha_env = 0;
+
 enum
 {
 	// DO NOT CHANGE ANYTHING ABOUT THESE FIRST TWO OR WILL MESS UP THE LAUNCHER
@@ -669,6 +678,10 @@ Flag exe_params[] =
 	"-pofspew",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-tablecrcs",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-max_subdivide", "uses truform to improve lighting",true,	0,				 EASY_DEFAULT,		"Experimental",		"", 
+	"-env",				"environment mapping maping",	true,	0,				 EASY_DEFAULT,		"Experimental",		"", 
+	"-alpha_env",		"uses uses alpha for env maping",true,	0,				 EASY_DEFAULT,		"Experimental",		"", 
+	"-decals",			"impact decals",				true,	0,				 EASY_DEFAULT,		"Experimental",		"", 
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -734,6 +747,10 @@ cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 cmdline_parm fred2_htl_arg("-fredhtl",NULL);
 cmdline_parm fred2_nowarn_arg("-fred_no_warn", NULL);
+cmdline_parm max_subdivide_arg("-max_subdivide", NULL);	// comand line maximum level of tesleation for n-patches -Bobboau
+cmdline_parm env("-env", NULL);	
+cmdline_parm alpha_env("-alpha_env", NULL);	
+cmdline_parm decals("-decals", NULL);	
 
 //Experimental
 cmdline_parm load_only_used("-loadonlyused", NULL);
@@ -1458,6 +1475,30 @@ bool SetCmdlineParams()
 	if ( snd_preload_arg.found() )
 	{
 		Cmdline_snd_preload = 1;
+	}
+
+	if ( max_subdivide_arg.found() ) {
+		Cmdline_max_subdivide = max_subdivide_arg.get_float();
+	}else{
+		Cmdline_max_subdivide = 0;
+	}
+
+	if ( alpha_env.found() ) {
+		Cmdline_alpha_env = 1;
+	}else{
+		Cmdline_alpha_env = 0;
+	}
+
+	if ( env.found() ) {
+		Cmdline_env = 1;
+	}else{
+		Cmdline_env = 0;
+	}
+
+	if ( decals.found() ) {
+		Cmdline_decals = 1;
+	}else{
+		Cmdline_decals = 0;
 	}
 
 	return true; 

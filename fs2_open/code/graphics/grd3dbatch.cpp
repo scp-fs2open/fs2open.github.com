@@ -9,6 +9,10 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/03/20 14:47:13  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.12  2004/02/16 11:47:33  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -344,7 +348,7 @@ bool d3d_batch_draw_vbuffer(int batch_id)
 	d3d_set_render_states(batch_array[batch_id].current_info);
 
 	HRESULT hr;
-	hr = d3d_SetVertexShader(vtype);
+	hr = d3d_SetVertexShader(vertex_types[vtype].fvf );
 	Assert(SUCCEEDED(hr));
 
 	hr = GlobalD3DVars::lpD3DDevice->SetStreamSource(
@@ -690,7 +694,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 
 			extern VertexTypeInfo vertex_types[D3DVT_MAX];
 
-			d3d_SetVertexShader(FONT_VTYPE);
+			d3d_SetVertexShader(vertex_types[FONT_VTYPE].fvf );
 			hr = GlobalD3DVars::lpD3DDevice->SetStreamSource(
 				0, array[index].vbuffer, vertex_types[FONT_VTYPE].size);
 			
@@ -816,7 +820,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 			continue;
 		}
 
-		hr = d3d_SetVertexShader(FONT_VTYPE);
+		hr = d3d_SetVertexShader(vertex_types[FONT_VTYPE].fvf );
 		Assert(SUCCEEDED(hr));
 		hr = GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vbuffer, vertex_types[FONT_VTYPE].size); 
 		Assert(SUCCEEDED(hr));

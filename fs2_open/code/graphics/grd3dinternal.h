@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.28 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 2.29 $
+ * $Date: 2004-07-05 05:09:19 $
  * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.27  2004/04/26 12:41:46  taylor
  * gr_preload() pointer for use in bmpman.cpp
  *
@@ -498,7 +502,7 @@ extern PIXELFORMAT AlphaTextureFormat;
 extern PIXELFORMAT NonAlphaTextureFormat;
 
 /* Functions */
-
+/*
 void set_stage_for_defuse();
 void set_stage_for_glow_mapped_defuse();
 void set_stage_for_defuse_and_non_mapped_spec();
@@ -507,7 +511,7 @@ bool set_stage_for_spec_mapped();
 void set_stage_for_cell_shaded();
 void set_stage_for_cell_glowmapped_shaded();
 void set_stage_for_additive_glowmapped();
-
+*/
 void d3d_tcache_init();
 void d3d_tcache_cleanup();
 void d3d_tcache_flush();
@@ -567,13 +571,13 @@ void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint fla
 
 // GrD3DCall functions
 void d3d_reset_render_states();
-HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_state );
+HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_state, bool set = true, bool init = false );
 HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pvertices, DWORD vertex_count);
 void d3d_reset_texture_stage_states();
-HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value);
+HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value, bool set = true, bool init = false);
 void d3d_lost_device();
 HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
-HRESULT d3d_SetVertexShader(int vertex_type);
+HRESULT d3d_SetVertexShader(uint vertex_type);
 HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer);
 int d3d_get_num_prims(int vertex_count, D3DPRIMITIVETYPE prim_type);
 
@@ -588,5 +592,6 @@ bool d3d_init_light();
 int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslot, int fail_on_full);
 
 extern D3DCOLOR ambient_light;
+extern VertexTypeInfo vertex_types[];
 
 #endif //_GRD3DINTERNAL_H

@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-07-01 01:12:33 $
+ * $Revision: 2.32 $
+ * $Date: 2004-07-05 05:09:21 $
  * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/07/01 01:12:33  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.30  2004/06/19 22:16:20  wmcoolmon
  * Added support for -nomotiondebris
  *
@@ -662,7 +666,7 @@ void stars_generate_bitmap_instance_vertex_buffers(){
 	if(perspective_bitmap_list.n_verts == 0)return;
 
 	if(perspective_bitmap_buffer != -1)gr_destroy_buffer(perspective_bitmap_buffer);
-	perspective_bitmap_buffer = gr_make_buffer(&perspective_bitmap_list);
+	perspective_bitmap_buffer = gr_make_buffer(&perspective_bitmap_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_UV1);
 	SAFEPOINT("leaveing stars_generate_bitmap_instance_vertex_buffers");
 }
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.32 $
- * $Date: 2004-07-01 01:12:31 $
+ * $Revision: 2.33 $
+ * $Date: 2004-07-05 05:09:19 $
  * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2004/07/01 01:12:31  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.31  2004/06/28 02:13:07  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -836,7 +840,7 @@ typedef struct screen {
 
 	void (*gf_set_texture_addressing)(int);
 
-	int	 (*gf_make_buffer)(poly_list*);
+	int	 (*gf_make_buffer)(poly_list*, uint flags);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_set_buffer)(int);
 	void (*gf_render_buffer)(int, int, short*);
@@ -1166,6 +1170,16 @@ void gr_bitmap(int x, int y, bool resize = true);
 // polylines where each section is no more than 90 degrees away from a previous section.
 // Moreover, it is _really_ intended for use with 45 degree angles. 
 void gr_pline_special(vector **pts, int num_pts, int thickness);
+
+#define VERTEX_FLAG_POSITION	 (1<<0)	
+#define VERTEX_FLAG_RHW			 (1<<1)	//incompatable with the next normal
+#define VERTEX_FLAG_NORMAL		 (1<<2)	
+#define VERTEX_FLAG_DIFUSE		 (1<<3)	
+#define VERTEX_FLAG_SPECULAR	 (1<<4)	
+#define VERTEX_FLAG_UV1			 (1<<5)	//how many UV coords, only use one of these
+#define VERTEX_FLAG_UV2			 (1<<6)	
+#define VERTEX_FLAG_UV3			 (1<<7)	
+#define VERTEX_FLAG_UV4			 (1<<8)	
 
 #endif
 

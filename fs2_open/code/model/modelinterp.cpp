@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.83 $
- * $Date: 2004-07-01 01:12:32 $
+ * $Revision: 2.84 $
+ * $Date: 2004-07-05 05:09:20 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2004/07/01 01:12:32  bobboau
+ * implemented index buffered background bitmaps,
+ * OGL people you realy should get this implemented
+ *
  * Revision 2.82  2004/06/28 02:13:08  bobboau
  * high level index buffer suport and d3d implementation,
  * OGL people need to get this working on your end as it's broke now
@@ -1243,9 +1247,9 @@ void interp_compute_environment_mapping( vector *nrm, vertex * pnt)
 	R.xyz.z = a * R.xyz.z;
 	vm_vec_normalize(&R);
 	a = (float)fl_sqrt( 1.0f - R.xyz.y * R.xyz.y);
-	pnt->env_u = (float)atan2( R.xyz.x, -R.xyz.z) / (2.0f * 3.14159f);
-	if (pnt->env_u < 0.0) pnt->env_u += 1.0f;
-	pnt->env_v = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
+	pnt->u2 = (float)atan2( R.xyz.x, -R.xyz.z) / (2.0f * 3.14159f);
+	if (pnt->u2 < 0.0) pnt->u2 += 1.0f;
+	pnt->v2 = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
 }
 
 extern int spec;
@@ -3725,8 +3729,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		
 								vertex pt;
-								g3_rotate_vertex( &p, &bank->point[j].pnt );
-								if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &bank->point[j].pnt);
+								g3_rotate_vertex( &p, &pnt );
+								if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &pnt);
 								else pt = p;
 								
 	
@@ -5011,7 +5015,10 @@ void alocate_poly_list(){
 		alocate_poly_list_a = false;
 	}
 }
+int recode_check = 0;
 
+void recode_bsp(int offset, ubyte *bsp_data);
+void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer);
 poly_list model_list;
 void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	for(int i =0; i<MAX_MODEL_TEXTURES; i++){
@@ -5056,7 +5063,9 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 
 	model_list.make_index_buffer();
 
-	model->indexed_vertex_buffer = gr_make_buffer(&model_list);
+	model->indexed_vertex_buffer = gr_make_buffer(&model_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_NORMAL | VERTEX_FLAG_UV1);
+	recode_check = 0;
+//	recode_bsp(0, model->bsp_data);
 
 	for(i=0; i<MAX_MODEL_TEXTURES; i++){
 		if(model->n_buffers>=MAX_MODEL_TEXTURES)Error(LOCATION, "BSP buffer generation overflow, there are %d buffers",model->n_buffers);
@@ -5072,6 +5081,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model->buffer[model->n_buffers].texture = i;
 		model->n_buffers++;
 	}
+
 }
 
 
@@ -5334,6 +5344,8 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 		if((Interp_flags & MR_EDGE_ALPHA))gr_center_alpha(-1);
 		else if((Interp_flags & MR_CENTER_ALPHA))gr_center_alpha(1);
 		else gr_center_alpha(0);
+
+	//	model_resort_index_buffer(model->bsp_data, 1, model->buffer[i].texture, model->buffer[i].index_buffer.index_buffer);
 		
 		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.index_buffer);		
 	}
@@ -5351,3 +5363,288 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 }
 
 
+//int recode_check = 0;
+void recode_tmap(int offset, ubyte *bsp_data){
+
+	int pof_tex = bsp_data[offset+40];
+	int n_vert = bsp_data[offset+36];
+	if(pof_tex == 4){
+		1;
+	}
+	//int n_tri = n_vert - 2;
+	ubyte *temp_verts;
+	ubyte *p = &bsp_data[offset];
+
+	model_tmap_vert *tverts;
+	tverts = (model_tmap_vert *)&bsp_data[offset+44];
+	temp_verts = &bsp_data[offset+44];
+
+	int problem_count = 0;
+
+	for(int i = 0; i<n_vert; i++){	
+		vertex vert;
+		vm_vec2vert(htl_verts[(int)tverts[i].vertnum], &vert);
+		vector norm = *htl_norms[(int)tverts[i].normnum];
+		vm_vec_normalize(&norm);
+
+		vert.u = tverts[i].u;
+		vert.v = tverts[i].v;
+
+		for(int k = 0; k<model_list.n_verts; k++){
+			if(same_vert(&model_list.vert[k], &vert, &model_list.norm[k], &norm)){
+				tverts[i].normnum = (short)k;
+				recode_check++;
+				break;
+			}
+			if(k == model_list.n_verts -1){
+				Warning(LOCATION, "recode error");
+			//	tverts[i].normnum = (short)0;
+			}
+		}
+	}
+
+}
+
+void recode_sortnorm(int offset, ubyte *bsp_data);
+
+void recode_bsp(int offset, ubyte *bsp_data){
+	int ID, SIZE;
+
+	memcpy(&ID, &bsp_data[offset], sizeof(int));
+	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+	while(ID!=0){
+		switch(ID){
+		case OP_EOF:	
+			return;
+			break;
+		case OP_DEFPOINTS: parse_defpoint(offset, bsp_data);
+			break;
+		case OP_SORTNORM:	recode_sortnorm(offset, bsp_data);
+			break;
+		case OP_FLATPOLY:
+			break;
+		case OP_TMAPPOLY:	recode_tmap(offset, bsp_data);
+			break;
+		case OP_BOUNDBOX:
+			break;
+		default:
+			return;
+		}
+			offset += SIZE;
+		memcpy(&ID, &bsp_data[offset], sizeof(int));
+		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+		if(SIZE < 1)ID=OP_EOF;
+	}
+}
+
+int model_resort_index_buffer_n_verts = 0;
+void recode_sortnorm(int offset, ubyte *bsp_data){
+
+	int frontlist, backlist, prelist, postlist, onlist;
+	memcpy(&frontlist, &bsp_data[offset+36], sizeof(int));
+	memcpy(&backlist, &bsp_data[offset+40], sizeof(int));
+	memcpy(&prelist, &bsp_data[offset+44], sizeof(int));
+	memcpy(&postlist, &bsp_data[offset+48], sizeof(int));
+	memcpy(&onlist, &bsp_data[offset+52], sizeof(int));
+
+	if (prelist) recode_bsp(offset+prelist,bsp_data);
+	if (backlist) recode_bsp(offset+backlist, bsp_data);
+	if (onlist) recode_bsp(offset+onlist, bsp_data);
+	if (frontlist) recode_bsp(offset+frontlist, bsp_data);
+	if (postlist) recode_bsp(offset+postlist, bsp_data);
+}
+
+/*
+buffer[j] = find_fisrt_index_vb(list, j, model_list)
+short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v){
+	for(short i = 0; i<v->n_verts; i++){
+		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
+			return i;
+		}
+	}
+	return -1;
+}
+*/
+void model_resort_index_buffer_tmap(int offset, ubyte *bsp_data, short* index_buffer, int texture){
+	if(texture != bsp_data[offset+40])return;
+
+	int n_vert = bsp_data[offset+36];
+	//int n_tri = n_vert - 2;
+	ubyte *temp_verts;
+	ubyte *p = &bsp_data[offset];
+
+	model_tmap_vert *tverts;
+	tverts = (model_tmap_vert *)&bsp_data[offset+44];
+	temp_verts = &bsp_data[offset+44];
+	for(int i = 1; i<n_vert-1; i++){	
+		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[0].normnum;
+		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[i].normnum;
+		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[(i+1)%n_vert].normnum;
+	}
+
+}
+
+void model_resort_index_buffer_bsp(int offset, ubyte *bsp_data, bool f2b, int texture, short* index_buffer);
+
+void model_resort_index_buffer_sortnorm_nonsorted(int offset, ubyte *bsp_info, int texture, short* index_buffer){
+
+	int frontlist, backlist, prelist, postlist, onlist;
+	memcpy(&frontlist, &bsp_info[offset+36], sizeof(int));
+	memcpy(&backlist, &bsp_info[offset+40], sizeof(int));
+	memcpy(&prelist, &bsp_info[offset+44], sizeof(int));
+	memcpy(&postlist, &bsp_info[offset+48], sizeof(int));
+	memcpy(&onlist, &bsp_info[offset+52], sizeof(int));
+
+	if (prelist) model_resort_index_buffer_bsp(offset+prelist,bsp_info, false, texture, index_buffer);
+	if (backlist) model_resort_index_buffer_bsp(offset+backlist, bsp_info, false, texture, index_buffer);
+	if (onlist) model_resort_index_buffer_bsp(offset+onlist, bsp_info, false, texture, index_buffer);
+	if (frontlist) model_resort_index_buffer_bsp(offset+frontlist, bsp_info, false, texture, index_buffer);
+	if (postlist) model_resort_index_buffer_bsp(offset+postlist, bsp_info, false, texture, index_buffer);
+}
+
+// Sortnorms
+// +0      int         id
+// +4      int         size 
+// +8      vector      normal
+// +20     vector      normal_point
+// +32     int         tmp=0
+// 36     int     front offset
+// 40     int     back offset
+// 44     int     prelist offset
+// 48     int     postlist offset
+// 52     int     online offset
+void model_resort_index_buffer_sortnorm_b2f(int offset, ubyte *bsp_info, int texture, short* index_buffer)
+{
+	#ifndef NDEBUG
+	modelstats_num_sortnorms++;
+	#endif
+
+//	Assert( w(p+4) == 56 );
+
+	int frontlist, backlist, prelist, postlist, onlist;
+	memcpy(&frontlist, &bsp_info[offset+36], sizeof(int));
+	memcpy(&backlist, &bsp_info[offset+40], sizeof(int));
+	memcpy(&prelist, &bsp_info[offset+44], sizeof(int));
+	memcpy(&postlist, &bsp_info[offset+48], sizeof(int));
+	memcpy(&onlist, &bsp_info[offset+52], sizeof(int));
+
+	if (prelist) model_resort_index_buffer_bsp(offset+prelist,bsp_info, false, texture, index_buffer);		// prelist
+
+	if (g3_check_normal_facing(vp(bsp_info[offset+20]),vp(bsp_info[offset+8]))) {		//facing
+
+		//draw back then front
+
+		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, false, texture, index_buffer);
+
+		if (onlist) model_resort_index_buffer_bsp(offset+onlist,bsp_info, false, texture, index_buffer);			//onlist
+
+		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, false, texture, index_buffer);
+
+	}	else {			//not facing.  draw front then back
+
+		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, false, texture, index_buffer);
+
+		if (onlist) model_resort_index_buffer_bsp(offset+onlist,bsp_info, false, texture, index_buffer);			//onlist
+
+		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, false, texture, index_buffer);
+	}
+
+	if (postlist) model_resort_index_buffer_bsp(offset+postlist,bsp_info, false, texture, index_buffer);		// postlist
+
+}
+
+
+// Sortnorms
+// +0      int         id
+// +4      int         size 
+// +8      vector      normal
+// +20     vector      normal_point
+// +32     int         tmp=0
+// 36     int     front offset
+// 40     int     back offset
+// 44     int     prelist offset
+// 48     int     postlist offset
+// 52     int     online offset
+void model_resort_index_buffer_sortnorm_f2b(int offset, ubyte *bsp_info, int texture, short* index_buffer)
+{
+	#ifndef NDEBUG
+	modelstats_num_sortnorms++;
+	#endif
+
+//	Assert( w(p+4) == 56 );
+
+	int frontlist, backlist, prelist, postlist, onlist;
+	memcpy(&frontlist, &bsp_info[offset+36], sizeof(int));
+	memcpy(&backlist, &bsp_info[offset+40], sizeof(int));
+	memcpy(&prelist, &bsp_info[offset+44], sizeof(int));
+	memcpy(&postlist, &bsp_info[offset+48], sizeof(int));
+	memcpy(&onlist, &bsp_info[offset+52], sizeof(int));
+
+	if (postlist) model_resort_index_buffer_bsp(offset+postlist,bsp_info, true, texture, index_buffer);		// postlist
+
+	if (g3_check_normal_facing((vector*)&bsp_info[offset+20],(vector*)&bsp_info[offset+8])) {		//facing
+
+		// 
+
+		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, true, texture, index_buffer);
+
+		if (onlist) model_resort_index_buffer_bsp(offset+onlist,bsp_info, true, texture, index_buffer);			//onlist
+
+		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, true, texture, index_buffer);
+
+	}	else {			//not facing.  draw front then back
+
+		//draw back then front
+
+		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, true, texture, index_buffer);
+
+		if (onlist) model_resort_index_buffer_bsp(offset+onlist,bsp_info, true, texture, index_buffer);			//onlist
+
+		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, true, texture, index_buffer);
+
+	}
+
+	if (prelist) model_resort_index_buffer_bsp(offset+prelist,bsp_info, true, texture, index_buffer);		// prelist
+}
+
+
+void model_resort_index_buffer_bsp(int offset, ubyte *bsp_data, bool f2b, int texture, short* index_buffer){
+	int ID, SIZE;
+
+	memcpy(&ID, &bsp_data[offset], sizeof(int));
+	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+	while(ID!=0){
+		switch(ID){
+		case OP_EOF:	
+			return;
+			break;
+		case OP_DEFPOINTS:
+			break;
+		case OP_SORTNORM:	if(f2b)model_resort_index_buffer_sortnorm_f2b(offset, bsp_data, texture, index_buffer); else model_resort_index_buffer_sortnorm_b2f(offset, bsp_data, texture, index_buffer);
+//			model_resort_index_buffer_sortnorm_nonsorted(offset, bsp_data, texture, index_buffer);
+			break;
+		case OP_FLATPOLY:
+			break;
+		case OP_TMAPPOLY:	model_resort_index_buffer_tmap(offset, bsp_data, index_buffer, texture);
+			break;
+		case OP_BOUNDBOX:
+			break;
+		default:
+			return;
+		}
+			offset += SIZE;
+		memcpy(&ID, &bsp_data[offset], sizeof(int));
+		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+		if(SIZE < 1)ID=OP_EOF;
+	}
+}
+
+
+void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer){
+	model_resort_index_buffer_n_verts = 0;
+	model_resort_index_buffer_bsp(0, bsp_data, f2b, texture, index_buffer);
+}

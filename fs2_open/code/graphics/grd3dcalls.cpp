@@ -160,19 +160,21 @@ void d3d_reset_render_states()
  *
  * @return HRESULT - directx error code
  */
-HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_state )
+HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_state, bool set, bool initaliseing )
 {
 	Assert(render_state_type < NUM_STATES);
 
 #ifdef D3D_CALLS_CHECK
 	// If the state is already set to that parameter
-	if(current_render_states[render_state_type] == render_state) {
+	if(!initaliseing && current_render_states[render_state_type] == render_state) {
 		// Leave without setting
 		return S_OK;
 	}
 #endif
 
-	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetRenderState(render_state_type, render_state );
+	HRESULT hr = D3D_OK;
+	if(set)
+	hr = GlobalD3DVars::lpD3DDevice->SetRenderState(render_state_type, render_state );
 
 	// A set render state should never fail because we should always know the caps.
 	if(FAILED(hr)) {
@@ -186,7 +188,7 @@ HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_
 
 
 // This is all stuff needed for draw primitive call
-int D3D_vertex_type = -1;
+uint D3D_vertex_type = 0;
 
 HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer)
 {
@@ -275,7 +277,7 @@ HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pv
 		return !S_OK;
 	}
 
-	hr = d3d_SetVertexShader(vertex_type);
+	hr = d3d_SetVertexShader(vertex_types[vertex_type].fvf );
 	
 	if(FAILED(hr))
 	{
@@ -292,20 +294,21 @@ HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pv
 	return hr;
 }
 
-HRESULT d3d_SetVertexShader(int vertex_type)
+HRESULT d3d_SetVertexShader(uint fvf)
 {
 #ifdef D3D_CALLS_CHECK
-	if(D3D_vertex_type != vertex_type) 
+	if(D3D_vertex_type != fvf) 
 #endif
 	{
-		HRESULT hr = GlobalD3DVars::lpD3DDevice->SetVertexShader(	vertex_types[vertex_type].fvf );
+		HRESULT hr = GlobalD3DVars::lpD3DDevice->SetVertexShader(fvf);
 		
 		if(FAILED(hr)) {
 			mprintf(("Failed to set vertex shader"));
+			Error( LOCATION, "Failed to set vertex shader: %d\n", fvf );
 			return hr;
 		}
 
-		D3D_vertex_type = vertex_type;
+		D3D_vertex_type = fvf;
 	}
 
 	return S_OK;
@@ -366,17 +369,19 @@ void d3d_reset_texture_stage_states()
  *
  * @return HRESULT - DirectX error code
  */
-HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value)
+HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value, bool set, bool initaliseing)
 {
 	// Only for first stage because it has different default properties to the others but
 	// since they are not even in use, who cares!
 #ifdef D3D_CALLS_CHECK
-	if(stage == 0 && current_stages_zero[type] == value) {
+	if(!initaliseing && stage == 0 && current_stages_zero[type] == value) {
 		return S_OK;
 	}
 #endif
 
-	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetTextureStageState(stage, type, value);
+	HRESULT hr = D3D_OK;
+	if(set)
+	hr = GlobalD3DVars::lpD3DDevice->SetTextureStageState(stage, type, value);
 
 	if(FAILED(hr)) {
 		mprintf(("Failed to set TextureStageState %d for stage %d", type, stage));
@@ -446,5 +451,5 @@ void d3d_lost_device()
 	memset(tinterfaces, 0, sizeof(IDirect3DBaseTexture8 *) * MAX_TSTAGES);
 	d3d_set_initial_render_state();
 
-	D3D_vertex_type = -1;
+	D3D_vertex_type = 0;
 }

@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.2 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 1.3 $
+ * $Date: 2004-07-05 05:09:19 $
  * $Author: bobboau $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 1.1  2004/05/24 07:25:32  taylor
  * filename case change
  *
@@ -173,7 +177,7 @@ uint opengl_create_vbo(uint size, void** data)
 	return buffer_name;
 }
 
-int gr_opengl_make_buffer(poly_list *list)
+int gr_opengl_make_buffer(poly_list *list, uint flags)
 {
 	int buffer_num=opengl_find_first_free_buffer();
 

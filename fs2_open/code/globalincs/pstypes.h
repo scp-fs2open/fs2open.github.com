@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.17 $
- * $Date: 2004-04-03 18:11:20 $
- * $Author: Kazan $
- * $Revision: 2.17 $
- * $Date: 2004-04-03 18:11:20 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-07-05 05:09:18 $
+ * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2004-07-05 05:09:18 $
+ * $Author: bobboau $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/04/03 18:11:20  Kazan
+ * FRED fixes
+ *
  * Revision 2.16  2004/03/05 09:01:52  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -410,20 +413,11 @@ typedef struct uv_pair {
 // Used to store rotated points for mines.
 // Has flag to indicate if projected.
 typedef struct vertex {
-	vertex(){
-		x=0.0f;y=0.0f;z=0.0f;
-		u=0.0f;v=0.0f;
-		sx=0.0f;sy=0.0f;sw=0.0f;
-		env_u=0.0f;env_v=0.0f;
-		spec_r=0;spec_g=0;spec_b=0;
-		r=0;g=0;b=0;a=0;
-	}
 	float		x, y, z;				// world space position
 	float		sx, sy, sw;			// screen space position (sw == 1/z)
-	float		u, v;					// texture position
+	float		u, v, u2, v2, u3, v3, u4, v4;					// texture position
 	vector		real_pos;			// _real_ world position
-	ubyte spec_r, spec_b, spec_g;	//specular highlights -Bobboau
-	float		env_u, env_v;
+	ubyte spec_a, spec_r, spec_b, spec_g;	//specular highlights -Bobboau
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.

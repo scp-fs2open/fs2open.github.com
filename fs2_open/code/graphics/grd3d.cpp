@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.66 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 2.67 $
+ * $Date: 2004-07-05 05:09:19 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.65  2004/05/25 00:37:26  wmcoolmon
  * Updated function calls for VC7 use
  *
@@ -723,6 +727,8 @@ struct Vertex_buffer{
 	int n_prim;
 	int n_verts;
 	vertex_buffer_type type;
+	uint FVF;
+	int size;
 	IDirect3DVertexBuffer8 *buffer;
 };
 
@@ -738,9 +744,11 @@ enum stage_state{
 	ADDITIVE_GLOWMAPPING = 8, 
 	SINGLE_PASS_SPECMAPPING = 9, 
 	SINGLE_PASS_GLOW_SPEC_MAPPING = 10,
-	BACKGROUND_FOG = 11
-	};
+	BACKGROUND_FOG = 11,
+	ENV = 12
+};
 
+LPDIRECT3DCUBETEXTURE8 cube_map;
 
 // Defines and constants
 #define MAX_SUBOBJECTS 64
@@ -965,8 +973,9 @@ void d3d_stop_frame()
 }
 
 
+
 // This function calls these render state one when the device is initialised and when the device is lost.
-void d3d_set_initial_render_state()
+void d3d_set_initial_render_state(bool set)
 {
 	if(current_render_state == INITAL)return;
 
@@ -980,305 +989,345 @@ void d3d_set_initial_render_state()
 	}
 
 
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-	d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
-	d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
-	d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 0);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE), set, set;
+	d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR , set, set);
+	d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR , set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 0, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
-	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
-	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0, set, set);
+	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_LINEAR , set, set);
+	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_LINEAR , set, set);
 	d3d_SetTexture(1, NULL);
 
-	d3d_SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0);
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	d3d_SetTextureStageState( 4, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+	d3d_SetTextureStageState( 4, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(inital_state_block);
 	current_render_state = INITAL;
 }
 
 //BACKGROUND_FOG
-void set_stage_for_background_fog(){
+void set_stage_for_background_fog(bool set){
 	if(current_render_state == BACKGROUND_FOG)return;
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+/*
+	if(!set){
+		//d3d_proj_fov
+		//d3d_proj_ratio;
+		float fov = (1.0/d3d_proj_fov) * 0.65; // I don't know whay this needs to be 0.65 ???
+//		int timestamp();
+//		float distort = sin(float(timestamp()) / 1000.0);
+		float distort = 0.0;
 
-	d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEPOSITION);
+		D3DXMATRIX world;
+		D3DXMATRIX cloak(
+			fov,		0,						0,		0,
+			0,			-fov * d3d_proj_ratio,	0,		0,
+			0.5,		0.5,					1,		0,
+			0,			0,						0,		1);
+		D3DXMATRIX corection(
+			1,	0,	0,	0,
+			0,	1,	0,	0,
+			0,	0,	1,	0,
+			0,	0,	-1,	1);
+		D3DXMatrixMultiply(&world, &corection, &cloak);
+
+		GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_TEXTURE0, &world);
+		
+	}
+
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1, set, set);
+
+	d3d_SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEPOSITION, set, set);
+
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+
 	d3d_SetTexture(0, background_render_target);
-
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-
+*/	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(background_fog_state_block);
 	current_render_state = BACKGROUND_FOG;
 }
 
 extern bool env_enabled;
 
-void set_stage_for_cell_shaded(){
+void set_stage_for_cell_shaded(bool set){
 	if(current_render_state == CELL)return;
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
-	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_POINT );
-	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_POINT );
+	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_POINT , set, set);
+	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_POINT , set, set);
 
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 1);
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 1, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE, set, set);
 
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(cell_state_block);
 	current_render_state = CELL;
 		
 }
 
-void set_stage_for_cell_glowmapped_shaded(){
+void set_stage_for_cell_glowmapped_shaded(bool set){
 	if(current_render_state == GLOWMAPPED_CELL)return;
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
-	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_POINT );
-	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_POINT );
+	d3d_SetTextureStageState(1, D3DTSS_MINFILTER, D3DTEXF_POINT, set, set );
+	d3d_SetTextureStageState(1, D3DTSS_MAGFILTER, D3DTEXF_POINT, set, set );
 
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 1);
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 1, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE, set, set);
 
-	d3d_SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0);
-	d3d_SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_ADD);
+	d3d_SetTextureStageState( 2, D3DTSS_TEXCOORDINDEX, 0, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_ADD, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(glow_mapped_cell_state_block);
 	current_render_state = GLOWMAPPED_CELL;
 		
 }
 
-void set_stage_for_additive_glowmapped(){
+void set_stage_for_additive_glowmapped(bool set){
 	if(current_render_state == ADDITIVE_GLOWMAPPING)return;
 
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 	
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(additive_glow_mapping_state_block);
 	current_render_state = ADDITIVE_GLOWMAPPING;
 }
 
-void set_stage_for_defuse(){
+void set_stage_for_defuse(bool set){
 	if(current_render_state == DEFUSE)return;
 
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0, set, set);
 
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE, set, set);
 
 	d3d_SetTexture(1, NULL);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(defuse_state_block);
 	current_render_state = DEFUSE;
 		
 }
 
-void set_stage_for_glow_mapped_defuse(){
+void set_stage_for_glow_mapped_defuse(bool set){
 	if(current_render_state == GLOW_MAPPED_DEFUSE)return;
-	if(GLOWMAP < 0){
+	if(!set && GLOWMAP < 0){
 		set_stage_for_defuse();
 		return;
 	}
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
-		d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
+		d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0, set, set);
 
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0, set, set);
 		
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD, set, set);
 //	d3d_SetTexture(1, GLOWMAP);
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(glow_mapped_defuse_state_block);
 	current_render_state = GLOW_MAPPED_DEFUSE;
 }
 
-void set_stage_for_defuse_and_non_mapped_spec(){
+void set_stage_for_defuse_and_non_mapped_spec(bool set){
 	if(current_render_state == NONMAPPED_SPECULAR)return;
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_SPECULAR);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_SPECULAR, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD, set, set);
 
 	d3d_SetTexture(1, NULL);
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(nonmapped_specular_state_block);
 	current_render_state = NONMAPPED_SPECULAR;
 }
 
-void set_stage_for_glow_mapped_defuse_and_non_mapped_spec(){
+void set_stage_for_glow_mapped_defuse_and_non_mapped_spec(bool set){
 	if(current_render_state == GLOWMAPPED_NONMAPPED_SPECULAR)return;
-	if(GLOWMAP < 0){
+	if(!set && GLOWMAP < 0){
 		set_stage_for_defuse_and_non_mapped_spec();
 		return;
 	}
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE, set, set);
 
-	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0, set, set);
 		
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD, set, set);
 //	d3d_SetTexture(1, GLOWMAP);
 
-	d3d_SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_SPECULAR);
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_ADD);
+	d3d_SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_SPECULAR, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_ADD, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(glow_mapped_nonmapped_specular_state_block);
 	current_render_state = GLOWMAPPED_NONMAPPED_SPECULAR;
 }
 
-bool set_stage_for_spec_mapped(){
+bool set_stage_for_spec_mapped(bool set){
 	if(current_render_state == MAPPED_SPECULAR)return true;
-	if(SPECMAP < 0){
+	if(!set && SPECMAP < 0){
 	//	Error(LOCATION, "trying to set stage when there is no specmap");
 		return false;
 	}
-	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT);
-	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
 
 
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_SPECULAR);
-	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE4X);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_SPECULAR, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE4X, set, set);
 //	d3d_SetTexture(0, SPECMAP);
 
 	d3d_SetTexture(1, NULL);
-	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0);
-	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
-	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
-	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
 
 	current_render_state = MAPPED_SPECULAR;
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(mapped_specular_state_block);
 	return true;
 }
 
-//set the base texture for stage 0 and the spec texture for stage 1
-void set_stage_for_single_pass_specmapping(int SAME){
-	//D3DPMISCCAPS_TSSARGTEMP
-	static int same = -1;
-//	if((current_render_state == SINGLE_PASS_SPECMAPPING) && (same == SAME))return;
-	if(SPECMAP < 0)return;
-	if(!SAME){		
-		d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
-		d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+extern bool texture_has_alpha(int t_idx);
 
-		d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_SPECULAR);
-		d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE4X);
-	
-		d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_TEMP );
-	
-		d3d_SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_CURRENT);
-		d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_TEMP);
-		d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_ADD);
-
-		d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
-
-		d3d_SetTextureStageState( 3, D3DTSS_RESULTARG, D3DTA_CURRENT);
-
-		same = SAME;
-	}else{
-	//	d3d_SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_ARGB(255,64,64,64));
-		
-		d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_SPECULAR);
-		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
-
-		d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_TEMP);
-
-		d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
-
-		d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT);
-
-		d3d_SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_TEMP);
-		d3d_SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_CURRENT);
-		d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_MODULATE4X);
-
-		d3d_SetTextureStageState( 3, D3DTSS_RESULTARG, D3DTA_TEMP);
-
-		d3d_SetTextureStageState( 3, D3DTSS_COLORARG1, D3DTA_TEMP);
-		d3d_SetTextureStageState( 3, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-		d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_MODULATE);
-
-		d3d_SetTextureStageState( 4, D3DTSS_COLORARG1, D3DTA_TEMP);
-		d3d_SetTextureStageState( 4, D3DTSS_COLORARG2, D3DTA_CURRENT);
-		d3d_SetTextureStageState( 4, D3DTSS_COLOROP, D3DTOP_ADD);
-
-		same = SAME;
+bool set_stage_for_env_mapped(bool set){
+	if(current_render_state == ENV)return true;
+	if(!set && SPECMAP < 0){
+	//	Error(LOCATION, "trying to set stage when there is no specmap");
+		return false;
 	}
-	current_render_state = SINGLE_PASS_SPECMAPPING;
+
+//	D3DXMATRIX world;
+
+	if(!set){
+		D3DXMATRIX world(
+			Eye_matrix.vec.rvec.xyz.x, Eye_matrix.vec.rvec.xyz.y, Eye_matrix.vec.rvec.xyz.z, 0,
+			Eye_matrix.vec.uvec.xyz.x, Eye_matrix.vec.uvec.xyz.y, Eye_matrix.vec.uvec.xyz.z, 0,
+			Eye_matrix.vec.fvec.xyz.x, Eye_matrix.vec.fvec.xyz.y, Eye_matrix.vec.fvec.xyz.z, 0,
+			0, 0, 0, 1);
+
+		GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_TEXTURE1, &world);
+	}
+
+	d3d_SetTextureStageState( 2, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 0, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+
+
+//	d3d_SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_SPECULAR);
+//	if(texture_has_alpha(SPECMAP))
+	if(Cmdline_alpha_env)
+		d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE | D3DTA_ALPHAREPLICATE, set, set);
+	else
+		d3d_SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE, set, set);
+
+	d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1, set, set);
+//	d3d_SetTexture(0, SPECMAP);
+
+	d3d_SetTexture(1, cube_map);
+	d3d_SetTextureStageState( 1, D3DTSS_RESULTARG, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR, set, set);
+
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TEXTURE, set, set);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE, set, set);
+//	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_PREMODULATE, set, set);
+
+	d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
+//D3DTOP_BLENDTEXTUREALPHA
+
+	current_render_state = ENV;
+
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(env_state_block);
+	return true;
 }
 
 //glow texture stage 3
@@ -1288,7 +1337,7 @@ void set_stage_for_single_pass_glow_specmapping(int SAME){
 //	if((current_render_state == SINGLE_PASS_GLOW_SPEC_MAPPING) && (same == SAME))return;
 	if(SPECMAP < 0)return;
 	if(GLOWMAP < 0){
-		set_stage_for_single_pass_specmapping(SAME);
+	//	set_stage_for_single_pass_specmapping(SAME);
 		return;
 	}
 	float u_scale = 1.0f, v_scale = 1.0f;
@@ -1927,6 +1976,111 @@ void gr_d3d_get_region(int front, int w, int h, ubyte *data)
 }
 
 //*******Vertex buffer stuff*******//
+int vertex_size(uint flags){
+	int size = 0;
+	Assert(! ((flags & VERTEX_FLAG_RHW) && (flags & VERTEX_FLAG_NORMAL)));
+	if(flags & VERTEX_FLAG_UV1)Assert(! ((flags & VERTEX_FLAG_UV2) || (flags & VERTEX_FLAG_UV3) || (flags & VERTEX_FLAG_UV4)));
+	if(flags & VERTEX_FLAG_UV2)Assert(! ((flags & VERTEX_FLAG_UV1) || (flags & VERTEX_FLAG_UV3) || (flags & VERTEX_FLAG_UV4)));
+	if(flags & VERTEX_FLAG_UV3)Assert(! ((flags & VERTEX_FLAG_UV2) || (flags & VERTEX_FLAG_UV1) || (flags & VERTEX_FLAG_UV4)));
+	if(flags & VERTEX_FLAG_UV4)Assert(! ((flags & VERTEX_FLAG_UV2) || (flags & VERTEX_FLAG_UV3) || (flags & VERTEX_FLAG_UV1)));
+
+	if(flags & VERTEX_FLAG_POSITION)size	+= sizeof(vector);
+	if(flags & VERTEX_FLAG_RHW)size			+= sizeof(float);
+	if(flags & VERTEX_FLAG_NORMAL)size		+= sizeof(vector);
+	if(flags & VERTEX_FLAG_DIFUSE)size		+= sizeof(DWORD);
+	if(flags & VERTEX_FLAG_SPECULAR)size	+= sizeof(DWORD);
+	if(flags & VERTEX_FLAG_UV1)size			+= sizeof(float)*2;
+	else if(flags & VERTEX_FLAG_UV2)size	+= sizeof(float)*4;
+	else if(flags & VERTEX_FLAG_UV3)size	+= sizeof(float)*6;
+	else if(flags & VERTEX_FLAG_UV4)size	+= sizeof(float)*8;
+
+	return size;
+}
+
+//D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX1
+int convert_to_fvf(uint flags){
+	int fvf = 0;
+	Assert(! ((flags & VERTEX_FLAG_RHW) && (flags & VERTEX_FLAG_NORMAL)));
+	if(flags & VERTEX_FLAG_UV1)Assert(! ((flags & VERTEX_FLAG_UV2) || (flags & VERTEX_FLAG_UV3) || (flags & VERTEX_FLAG_UV4)));
+	if(flags & VERTEX_FLAG_UV2)Assert(! ((flags & VERTEX_FLAG_UV1) || (flags & VERTEX_FLAG_UV3) || (flags & VERTEX_FLAG_UV4)));
+	if(flags & VERTEX_FLAG_UV3)Assert(! ((flags & VERTEX_FLAG_UV2) || (flags & VERTEX_FLAG_UV1) || (flags & VERTEX_FLAG_UV4)));
+	if(flags & VERTEX_FLAG_UV4)Assert(! ((flags & VERTEX_FLAG_UV2) || (flags & VERTEX_FLAG_UV3) || (flags & VERTEX_FLAG_UV1)));
+
+	if(flags & VERTEX_FLAG_POSITION)	fvf |= D3DFVF_XYZ;
+	if(flags & VERTEX_FLAG_RHW)			fvf |= D3DFVF_XYZRHW;
+	if(flags & VERTEX_FLAG_NORMAL)		fvf |= D3DFVF_NORMAL;
+	if(flags & VERTEX_FLAG_DIFUSE)		fvf |= D3DFVF_DIFFUSE;
+	if(flags & VERTEX_FLAG_SPECULAR)	fvf |= D3DFVF_SPECULAR;
+	if(flags & VERTEX_FLAG_UV1)			fvf |= D3DFVF_TEX1;
+	else if(flags & VERTEX_FLAG_UV2)	fvf |= D3DFVF_TEX2;
+	else if(flags & VERTEX_FLAG_UV3)	fvf |= D3DFVF_TEX3;
+	else if(flags & VERTEX_FLAG_UV4)	fvf |= D3DFVF_TEX4;
+	return fvf;
+}
+
+#define fill_v(V,v) {(*((float *) (V))) = v; V = ((byte*)(V)) + sizeof(float);}
+
+vector *check_vec1, *check_vec2;
+void fill_vert(void *V, vertex *L, vector* N, uint flags){
+				if(flags & VERTEX_FLAG_RHW){
+					fill_v(V, L->sx);
+					fill_v(V, L->sy);
+					fill_v(V, L->sw);
+					fill_v(V, L->sw);
+				}else
+				if(flags & VERTEX_FLAG_POSITION){
+					check_vec1 = (vector*)V;
+					fill_v(V, L->x);
+					fill_v(V, L->y);
+					fill_v(V, L->z);
+				}
+				if(flags & VERTEX_FLAG_NORMAL){
+					check_vec2 = (vector*)V;
+					fill_v(V, N->xyz.x);
+					fill_v(V, N->xyz.y);
+					fill_v(V, N->xyz.z);
+				}
+				if(flags & VERTEX_FLAG_DIFUSE){
+					*(byte*)(V = ((byte*)V)+1 ) = L->a;
+					*(byte*)(V = ((byte*)V)+1 ) = L->r;
+					*(byte*)(V = ((byte*)V)+1 ) = L->g;
+					*(byte*)(V = ((byte*)V)+1 ) = L->b;
+				}
+				if(flags & VERTEX_FLAG_SPECULAR){
+					*(byte*)(V = ((byte*)V)+1 ) = L->spec_a;
+					*(byte*)(V = ((byte*)V)+1 ) = L->spec_r;
+					*(byte*)(V = ((byte*)V)+1 ) = L->spec_g;
+					*(byte*)(V = ((byte*)V)+1 ) = L->spec_b;
+				}
+				if(flags & VERTEX_FLAG_UV1){
+					fill_v(V, L->u);
+					fill_v(V, L->v);
+				}else
+				if(flags & VERTEX_FLAG_UV2){
+					fill_v(V, L->u);
+					fill_v(V, L->v);
+					fill_v(V, L->u2);
+					fill_v(V, L->v2);
+				}else
+				if(flags & VERTEX_FLAG_UV3){
+					fill_v(V, L->u);
+					fill_v(V, L->v);
+					fill_v(V, L->u2);
+					fill_v(V, L->v2);
+					fill_v(V, L->u3);
+					fill_v(V, L->v3);
+				}else
+				if(flags & VERTEX_FLAG_UV4){
+					fill_v(V, L->u);
+					fill_v(V, L->v);
+					fill_v(V, L->u2);
+					fill_v(V, L->v2);
+					fill_v(V, L->u3);
+					fill_v(V, L->v3);
+					fill_v(V, L->u4);
+					fill_v(V, L->v4);
+				}
+}
 
 //finds the first unocupyed buffer
 int find_first_empty_buffer(){
@@ -1935,36 +2089,28 @@ int find_first_empty_buffer(){
 }
 
 //makes the vertex buffer, returns an index to it
-int gr_d3d_make_buffer(poly_list *list){
+int gr_d3d_make_buffer(poly_list *list, uint flags){
 	int idx = find_first_empty_buffer();
 
 	if(idx > -1){
-		IDirect3DVertexBuffer8 **buffer = &vertex_buffer[idx].buffer;
+		vertex_buffer[idx].size = vertex_size(flags);
+		vertex_buffer[idx].FVF = convert_to_fvf(flags);
 
-		d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_verts), NULL, (void**)buffer);
+//		d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_verts), NULL, (void**)buffer);
+		
+		GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
+			vertex_buffer[idx].size * list->n_verts, 
+			D3DUSAGE_WRITEONLY, 
+			vertex_buffer[idx].FVF,
+			D3DPOOL_MANAGED,
+			&vertex_buffer[idx].buffer);
 
-		D3DVERTEX *v, *V;
-		vertex *L;
-		vector *N;
+		byte* v;
 
-		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
+		vertex_buffer[idx].buffer->Lock(0, 0, &v, D3DLOCK_DISCARD);
 		for(int k = 0; k<list->n_verts; k++){
-				V = &v[k];
-				L = &list->vert[k];
-				N = &list->norm[k];
-
-				V->sx = L->x;
-				V->sy = L->y;
-				V->sz = L->z;
-
-				V->tu = L->u;
-				V->tv = L->v;
-				V->tu2 = L->u;
-				V->tv2 = L->v;
-	
-				V->nx = N->xyz.x;
-				V->ny = N->xyz.y;
-				V->nz = N->xyz.z;
+				fill_vert(&v[k*vertex_buffer[idx].size],  &list->vert[k], &list->norm[k], flags);
+				vertex_buffer[idx].n_verts++;
 		}
 
 		vertex_buffer[idx].buffer->Unlock();
@@ -1976,6 +2122,7 @@ int gr_d3d_make_buffer(poly_list *list){
 	}
 	return idx;
 }
+
 //makes the vertex buffer, returns an index to it
 int gr_d3d_make_flat_buffer(poly_list *list){
 	int idx = find_first_empty_buffer();
@@ -2066,6 +2213,10 @@ void gr_d3d_destroy_buffer(int idx){
 	if(idx < 0)return;
 	vertex_buffer[idx].buffer->Release();
 	vertex_buffer[idx].ocupied = false;
+	vertex_buffer[idx].FVF = 0;
+	vertex_buffer[idx].n_verts = 0;
+	vertex_buffer[idx].n_prim = 0;
+	vertex_buffer[idx].buffer = NULL;
 }
 
 //enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
@@ -2073,7 +2224,7 @@ void gr_d3d_destroy_buffer(int idx){
 void gr_d3d_render_line_buffer(int idx){
 	if(idx<0)return;
 	if(!vertex_buffer[idx].ocupied)return;
-	d3d_SetVertexShader(D3DVT_LVERTEX);
+	d3d_SetVertexShader(vertex_types[D3DVT_LVERTEX].fvf);
 
 	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DLVERTEX));
 	
@@ -2094,7 +2245,8 @@ Vertex_buffer *set_buffer;
 
 void gr_d3d_set_buffer(int idx){
 	set_buffer = &vertex_buffer[idx];
-	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, set_buffer->buffer, sizeof(D3DVERTEX));
+	d3d_SetVertexShader(set_buffer->FVF);
+	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, set_buffer->buffer, set_buffer->size);
 }
 
 IDirect3DIndexBuffer8 *global_index_buffer = NULL;
@@ -2201,7 +2353,7 @@ void gr_d3d_render_buffer(int start, int n_prim, short* index_buffer)
 	}
 
 	int passes = (n_active_lights / GlobalD3DVars::d3d_caps.MaxActiveLights);
-	d3d_SetVertexShader(D3DVT_VERTEX);
+//	d3d_SetVertexShader(D3DVT_VERTEX);
 
 	gr_d3d_center_alpha_int(GR_center_alpha);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
