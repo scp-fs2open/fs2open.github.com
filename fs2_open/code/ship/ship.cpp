@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.12 $
- * $Date: 2002-12-07 01:37:42 $
- * $Author: bobboau $
+ * $Revision: 2.13 $
+ * $Date: 2002-12-10 05:41:38 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2002/12/07 01:37:42  bobboau
+ * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
+ * it needs a better renderer, but is in prety good shape for now,
+ * I also (think) I squashed a bug in the warpmodel code
+ *
  * Revision 2.11  2002/11/14 06:15:03  bobboau
  * added nameplate code
  *
@@ -1089,6 +1095,7 @@ int parse_ship()
 	}
 	int i, num_allowed, rtn = 0;
 	int allowed_weapons[MAX_WEAPON_TYPES];
+	int pbank_capacity_specified, pbank_capacity_count, sbank_capacity_count;
 
 	sip = &Ship_info[Num_ship_types];
 
@@ -1331,6 +1338,19 @@ int parse_ship()
 		Assert(sip->primary_bank_weapons[i] >= 0);
 	}
 
+	// optional ballistic primary imformation (Goober5000)......
+	pbank_capacity_specified = 0;
+	if(optional_string("+Pbank Capacity:"))
+	{
+		pbank_capacity_specified = 1;
+		// get the capacity of each primary bank
+		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
+		if ( pbank_capacity_count != sip->num_primary_banks )
+		{
+			Warning(LOCATION, "Primary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
+		}
+	}
+	
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
 	if (optional_string("$Allowed SBanks:")) {
 		num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
@@ -1369,10 +1389,9 @@ int parse_ship()
 
 	// Get the capacity of each secondary bank
 	required_string("$Sbank Capacity:");
-	int capacity_count;
-	capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
-	if ( capacity_count != sip->num_secondary_banks ) {
-		Warning(LOCATION, "Secondary bank capacities have not been specified for ship class %s... fix this!!", sip->name);
+	sbank_capacity_count = stuff_int_list(sip->secondary_bank_ammo_capacity, MAX_SECONDARY_BANKS, RAW_INTEGER_TYPE);
+	if ( sbank_capacity_count != sip->num_secondary_banks ) {
+		Warning(LOCATION, "Secondary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
 	}
 
 	required_string("$Shields:");
@@ -1405,7 +1424,8 @@ int parse_ship()
 	char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
 	int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
 	sip->flags = SIF_DEFAULT_VALUE;
-	for ( i=0; i<num_strings; i++ ) {
+	for ( i=0; i<num_strings; i++ )
+	{
 		if (!stricmp(NOX("no_collide"), ship_strings[i]))
 			sip->flags &= ~SIF_DO_COLLISION_CHECK;
 		else if (!stricmp(NOX("player_ship"), ship_strings[i]))
@@ -1460,8 +1480,35 @@ int parse_ship()
 			sip->flags |= SIF_KNOSSOS_DEVICE;
 		else if ( !stricmp( NOX("no_fred"), ship_strings[i]))
 			sip->flags |= SIF_NO_FRED;
+		else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
+			sip->flags |= SIF_BALLISTIC_PRIMARIES;
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
+	}
+
+	// be friendly; ensure ballistic flags check out
+	if (pbank_capacity_specified)
+	{
+		if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
+		{
+			Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\n", sip->name);
+
+			for (i = 0; i < MAX_PRIMARY_BANKS; i++)
+			{
+				sip->primary_bank_ammo_capacity[i] = 0;
+			}
+		}
+	}
+	else
+	{
+		if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+		{
+			Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
+			for (i = 0; i < MAX_PRIMARY_BANKS; i++)
+			{
+				sip->primary_bank_ammo_capacity[i] = 1;
+			}
+		}
 	}
 
 	find_and_stuff("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names, Num_ai_classes, "AI class names");
@@ -2111,17 +2158,46 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->cmeasure_count = sip->cmeasure_max;
 
-	for ( i = 0; i < MAX_PRIMARY_BANKS; i++ ){
-		swp->next_primary_fire_stamp[i] = timestamp(0);		
+	for ( i = 0; i < MAX_PRIMARY_BANKS; i++ )
+	{
+		swp->primary_bank_ammo[i] = 0;						// added by Goober5000
+		swp->next_primary_fire_stamp[i] = timestamp(0);	
+		swp->primary_bank_rearm_time[i] = timestamp(0);		// added by Goober5000
 	}
 
 	shipp->cmeasure_fire_stamp = timestamp(0);
 
-	for ( i = 0; i < MAX_SECONDARY_BANKS; i++ ) {
-		if (Fred_running){
-			shipp->weapons.secondary_bank_ammo[i] = 100;
-		} else {
-			shipp->weapons.secondary_bank_ammo[i] = 0;
+	// handle ballistic primaries - kinda hackish; is this actually necessary?
+	// because I think it's not needed - when I accidentally left this unreachable
+	// it didn't cause any problems - Goober5000
+	for ( i = 0; i < sip->num_primary_banks; i++ )
+	{
+		float weapon_size;
+		weapon_size = Weapon_info[sip->primary_bank_weapons[i]].cargo_size;
+
+		if ( weapon_size > 0.0f )
+		{
+			if (Fred_running)
+			{
+				swp->primary_bank_ammo[i] = 100;
+			}
+			else
+			{
+				swp->primary_bank_ammo[i] = fl2i(sip->primary_bank_ammo_capacity[i] / weapon_size + 0.5f );
+			}
+		}
+	}
+
+	// conventional secondary banks
+	for ( i = 0; i < MAX_SECONDARY_BANKS; i++ )
+	{
+		if (Fred_running)
+		{
+			swp->secondary_bank_ammo[i] = 100;
+		}
+		else
+		{
+			swp->secondary_bank_ammo[i] = 0;
 		}
 			
 		swp->secondary_bank_ammo[i] = 0;
@@ -2130,13 +2206,17 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		swp->secondary_bank_rearm_time[i] = timestamp(0);		// will be able to rearm this bank immediately
 	}
 
-	for ( i = 0; i < sip->num_secondary_banks; i++ ) {
+	for ( i = 0; i < sip->num_secondary_banks; i++ )
+	{
 		float weapon_size;
 		weapon_size = Weapon_info[sip->secondary_bank_weapons[i]].cargo_size;
 		Assert( weapon_size > 0.0f );
-		if (Fred_running){
+		if (Fred_running)
+		{
 			swp->secondary_bank_ammo[i] = 100;
-		} else {
+		}
+		else
+		{
 			swp->secondary_bank_ammo[i] = fl2i(sip->secondary_bank_ammo_capacity[i] / weapon_size + 0.5f );
 		}
 	}
@@ -2386,6 +2466,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		for (k=0; k<MAX_PRIMARY_BANKS; k++){
 			if (sp->primary_banks[k] != -1) {
 				ship_system->weapons.primary_bank_weapons[j] = sp->primary_banks[k];
+				ship_system->weapons.primary_bank_capacity[j] = sp->primary_bank_capacity[k];	// added by Goober5000
 				ship_system->weapons.next_primary_fire_stamp[j++] = 0;
 			}
 		}
@@ -2409,6 +2490,12 @@ void subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.secondary_bank_capacity[k]);
 
 			ship_system->weapons.secondary_next_slot[k] = 0;
+		}
+
+		// Goober5000
+		for (k=0; k<MAX_PRIMARY_BANKS; k++)
+		{
+			ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.primary_bank_capacity[k]);
 		}
 
 		ship_system->weapons.last_fired_weapon_index = -1;
@@ -2794,7 +2881,7 @@ void ship_render(object * obj)
 		}
 	}
 #endif
-	mprintf(("ship rendered\n"));
+//	mprintf(("ship rendered\n"));
 }
 
 void ship_subsystem_delete(ship *shipp)
@@ -2937,15 +3024,30 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 void ship_destroyed( int num )
 {
 	ship		*shipp;
+	ship_subsys *temp_subsys;
 	object	*objp;
 
 	shipp = &Ships[num];
 	objp = &Objects[shipp->objnum];
 
+	// anti-frustration: beam-lock the ship - Goober5000 :)
+	temp_subsys = GET_FIRST(&shipp->subsys_list);
+	while(temp_subsys != END_OF_LIST(&shipp->subsys_list))
+	{
+		// mark all turrets as beam locked
+		if(temp_subsys->system_info->type == SUBSYSTEM_TURRET)
+		{
+			temp_subsys->weapons.flags &= ~SW_FLAG_BEAM_FREE;
+		}
+
+		// next item
+		temp_subsys = GET_NEXT(temp_subsys);
+	}
+
 	// add the information to the exited ship list
 	ship_add_exited_ship( shipp, SEF_DESTROYED );
 
-	// determine if we need to count this ship as a klll in counting number of kills per ship type
+	// determine if we need to count this ship as a kill in counting number of kills per ship type
 	// look at the ignore flag for the ship (if not in a wing), or the ignore flag for the wing
 	// (if the ship is in a wing), and add to the kill count if the flags are not set
 	if ( !(shipp->flags & SF_IGNORE_COUNT) ||  ((shipp->wingnum != -1) && !(Wings[shipp->wingnum].flags & WF_IGNORE_COUNT)) )
@@ -4179,6 +4281,7 @@ void ship_process_post(object * obj, float frametime)
 {
 	int	num;
 	ship	*shipp;
+	ship_info *sip;
 
 	if(obj->type != OBJ_SHIP){
 		nprintf(("Network","Ignoring non-ship object in ship_process_post()\n"));
@@ -4194,6 +4297,8 @@ void ship_process_post(object * obj, float frametime)
 
 	shipp = &Ships[num];
 
+	sip = &Ship_info[shipp->ship_info_index];
+
 	shipp->shield_hits = 0;
 
 	update_ets(obj, frametime);
@@ -4207,15 +4312,38 @@ void ship_process_post(object * obj, float frametime)
 	ship_chase_shield_energy_targets(shipp, obj, frametime);
 
 	// AL 1-6-98: record the initial ammo counts for ships, which is used as the max limit for rearming
-	if ( !(shipp->flags & SF_AMMO_COUNT_RECORDED) ) {
+	// Goober5000 - added ballistics support
+	if ( !(shipp->flags & SF_AMMO_COUNT_RECORDED) )
+	{
+		int max_missiles;
 		for ( int i=0; i<MAX_SECONDARY_BANKS; i++ ) {
-			if ( red_alert_mission() ) {
-				int max_missiles = get_max_ammo_count_for_bank(shipp->ship_info_index, i, shipp->weapons.secondary_bank_weapons[i]);
+			if ( red_alert_mission() )
+			{
+				max_missiles = get_max_ammo_count_for_bank(shipp->ship_info_index, i, shipp->weapons.secondary_bank_weapons[i]);
 				shipp->weapons.secondary_bank_start_ammo[i] = max_missiles;
-			} else {
+			}
+			else
+			{
 				shipp->weapons.secondary_bank_start_ammo[i] = shipp->weapons.secondary_bank_ammo[i];
 			}
 		}
+
+		if ( sip->flags & SIF_BALLISTIC_PRIMARIES )
+		{
+			for ( int i=0; i<MAX_PRIMARY_BANKS; i++ )
+			{
+				if ( red_alert_mission() )
+				{
+					max_missiles = get_max_ammo_count_for_primary_bank(shipp->ship_info_index, i, shipp->weapons.primary_bank_weapons[i]);
+					shipp->weapons.primary_bank_start_ammo[i] = max_missiles;
+				}
+				else
+				{
+					shipp->weapons.primary_bank_start_ammo[i] = shipp->weapons.primary_bank_ammo[i];
+				}
+			}
+		}
+		
 		shipp->flags |= SF_AMMO_COUNT_RECORDED;
 	}
 
@@ -4361,6 +4489,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 	int			i;
 	polymodel	*po;
 	ship_weapon *swp = &shipp->weapons;
+	weapon_info *wip;
 
 	//	Copy primary and secondary weapons from ship_info to ship.
 	//	Later, this will happen in the weapon loadout screen.
@@ -4408,7 +4537,26 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		sip->num_secondary_banks = po->n_missiles;
 	}
 
+	// added ballistic primary support - Goober5000
 	swp->num_primary_banks = sip->num_primary_banks;
+	for ( i = 0; i < swp->num_primary_banks; i++ )
+	{
+		wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+		if ( wip->wi_flags2 & WIF2_BALLISTIC )
+		{
+			if (Fred_running){
+				swp->primary_bank_ammo[i] = 100;
+			}
+			else
+			{
+				swp->primary_bank_ammo[i] = sip->primary_bank_ammo_capacity[i];
+			}
+
+			swp->primary_bank_capacity[i] = sip->primary_bank_ammo_capacity[i];
+		}
+	}
+
 	swp->num_secondary_banks = sip->num_secondary_banks;
 	for ( i = 0; i < swp->num_secondary_banks; i++ ) {
 		if (Fred_running){
@@ -5077,10 +5225,23 @@ send_countermeasure_fired:
 // internal function.. see if enough time has elapsed to play fail sound again
 int ship_maybe_play_primary_fail_sound()
 {
-	hud_start_flash_weapon(Player_ship->weapons.current_primary_bank);
+	ship_weapon *swp = &Player_ship->weapons;
+	int stampval;
 
-	if ( timestamp_elapsed(Laser_energy_out_snd_timer) ) {
-		Laser_energy_out_snd_timer = timestamp(50);
+	hud_start_flash_weapon(swp->current_primary_bank);
+
+	if ( timestamp_elapsed(Laser_energy_out_snd_timer) )
+	{
+		// check timestamp according to ballistics
+		if (Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			stampval = 500;
+		}
+		else
+		{
+			stampval = 50;
+		}
+		Laser_energy_out_snd_timer = timestamp(stampval);
 		snd_play( &Snds[SND_OUT_OF_WEAPON_ENERGY]);
 		return 1;
 	}
@@ -5258,7 +5419,7 @@ int ship_stop_fire_primary(object * obj){	//stuff to do when the ship has stoped
 
 	shipp = &Ships[obj->instance];
 
-	mprintf(("stoping weapon on ship %s\n", shipp->ship_name));
+//	mprintf(("stoping weapon on ship %s\n", shipp->ship_name));
 
 //	if(shipp->was_firing_last_frame[bank_to_stop] == 0)return 0;
 
@@ -5634,27 +5795,91 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 //mprintf(("I have fired a fighter beam, type %d\n", winfo_p->b_info.beam_type));
 
 			}
-			else{ //if this insn't a fighter beam, do it normaly -Bobboau
+			else	//if this insn't a fighter beam, do it normaly -Bobboau
+			{
 //Assert (!(winfo_p->wi_flags & WIF_BEAM))
+
+
+				// The energy-consumption code executes even for ballistic primaries, because
+				// there may be a reason why you want to have ballistics consume energy.  Perhaps
+				// you can't fire too many too quickly or they'll overheat.  If not, just set
+				// the weapon's energy_consumed to 0 and it'll work just fine. - Goober5000
+
 				// fail unless we're forcing (energy based primaries)
-				if ( (shipp->weapon_energy < num_slots*winfo_p->energy_consumed) && !force) {
+				if ( (shipp->weapon_energy < num_slots*winfo_p->energy_consumed) && !force)
+				{
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp(swp->next_primary_fire_stamp[bank_to_fire]);
-					if ( obj == Player_obj ) {
-						if ( ship_maybe_play_primary_fail_sound() ) {
+					if ( obj == Player_obj )
+					{
+						if ( ship_maybe_play_primary_fail_sound() )
+						{
+							// I guess they just deleted the commented HUD message here (they left
+							// it in in other routines)
 						}
 					}
 					ship_stop_fire_primary_bank(obj, bank_to_fire);
 					continue;
 				}			
 
+				// ballistics support for primaries - Goober5000
+				if ( winfo_p->wi_flags2 & WIF2_BALLISTIC )
+				{
+					// Make sure this ship is set up for ballistics.
+					// If you get this error, add the ballistic primaries tags to ships.tbl.
+					Assert ( sip->flags & SIF_BALLISTIC_PRIMARIES );
 
+					// If ship is being repaired/rearmed, it cannot fire ballistics
+					if ( aip->ai_flags & AIF_BEING_REPAIRED )
+					{
+						continue;
+					}
+
+					// duplicated from the secondaries firing routine...
+					// determine if there is enough ammo left to fire weapons on this bank.  As with primary
+					// weapons, we might or might not check ammo counts depending on game mode, who is firing,
+					// and if I am a client in multiplayer
+					int check_ammo = 1;
+
+#ifndef NO_NETWORK
+					if ( MULTIPLAYER_CLIENT && (obj != Player_obj) )
+					{
+						check_ammo = 0;
+					}
+#endif
+
+					// not enough ammo
+					if ( check_ammo && ( swp->primary_bank_ammo[bank_to_fire] <= 0) )
+					{
+						if ( obj == Player_obj )
+						{
+							if ( ship_maybe_play_primary_fail_sound() )
+							{
+//								HUD_sourced_printf(HUD_SOURCE_HIDDEN, "No %s ammunition left in bank", Weapon_info[swp->primary_bank_weapons[bank_to_fire]].name);
+							}
+						}
+						else
+						{
+							// TODO:  AI switch primary weapon / re-arm?
+						}
+						continue;
+					}
+					
+					// deplete ammo
+					if ( Weapon_energy_cheat == 0 )
+					{
+						swp->primary_bank_ammo[bank_to_fire]--;
+					}
+				}
+
+				// now handle the energy as usual
 				// deplete the weapon reserve energy by the amount of energy used to fire the weapon				
 				shipp->weapon_energy -= num_slots*winfo_p->energy_consumed;
-
+				
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
 
-				for ( j = 0; j < num_slots; j++ ) {
+				for ( j = 0; j < num_slots; j++ )
+				{
 					pnt = po->gun_banks[bank_to_fire].pnt[j];
 					vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 					vm_vec_add(&firing_pos, &gun_point, &obj->pos);
@@ -6386,8 +6611,23 @@ done_secondary:
 	return num_fired;
 }
 
+// Goober5000
+int primary_out_of_ammo(ship_weapon *swp, int bank)
+{
+	// true if both ballistic and ammo <= 0,
+	// false if not ballistic or if ballistic and ammo > 0
+			
+	if ( Weapon_info[swp->primary_bank_weapons[bank]].wi_flags2 & WIF2_BALLISTIC )
+	{
+		if (swp->primary_bank_ammo[bank] <= 0)
+		{
+			return 1;
+		}
+	}
 
-
+	// note: never out of ammo if not ballistic
+	return 0;
+}
 
 // ------------------------------------------------------------------------------
 // ship_select_next_primary()
@@ -6402,76 +6642,174 @@ done_secondary:
 int ship_select_next_primary(object *objp, int direction)
 {
 	ship	*shipp;
+	ship_info *sip;
 	ship_weapon *swp;
+	int new_bank;
+	int original_bank;
+	unsigned int original_link_flag;
+	int i;
 
 	Assert(objp != NULL);
 	Assert(objp->type == OBJ_SHIP);
 	Assert(objp->instance >= 0 && objp->instance < MAX_SHIPS);
 
 	shipp = &Ships[objp->instance];
+	sip = &Ship_info[shipp->ship_info_index];
 	swp = &shipp->weapons;
 
 	Assert(direction == CYCLE_PRIMARY_NEXT || direction == CYCLE_PRIMARY_PREV);
 
-	switch ( swp->num_primary_banks ) {
+	original_bank = swp->current_primary_bank;
+	original_link_flag = shipp->flags & SF_PRIMARY_LINKED;
 
-		case 0:
-			if ( objp == Player_obj ) {
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has no primary weapons", 490));
-				gamesnd_play_error_beep();
+	// redid case structure to possibly add more primaries in the future - Goober5000
+	if ( swp->num_primary_banks == 0 )
+	{
+		if ( objp == Player_obj )
+		{
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has no primary weapons", 490));
+			gamesnd_play_error_beep();
+		}
+		return 0;
+	}
+	else if ( swp->num_primary_banks == 1 )
+	{
+		if ( objp == Player_obj )
+		{
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one primary weapon: %s", 491),Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].name, swp->current_primary_bank + 1);
+			gamesnd_play_error_beep();
+		}
+		return 0;
+	}
+	else if ( swp->num_primary_banks > MAX_SUPPORTED_PRIMARY_BANKS )
+	{
+		Error (LOCATION, "Exceeded supported number of primary banks.\n");
+	}
+	else
+	{
+		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK));
+
+		// first check if linked
+		if ( shipp->flags & SF_PRIMARY_LINKED )
+		{
+			shipp->flags &= ~SF_PRIMARY_LINKED;
+			if ( direction == CYCLE_PRIMARY_NEXT )
+			{
+				swp->current_primary_bank = 0;
 			}
-			return 0;
-			break;		
-
-		case 1:
-			if ( objp == Player_obj ) {
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one primary weapon: %s", 491),Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].name, swp->current_primary_bank + 1);
-				gamesnd_play_error_beep();
+			else
+			{
+				swp->current_primary_bank = UPPER_BOUND_PRIMARY_BANK;
 			}
-			return 0;
-			break;		
-
-		case 2:
-			if ( shipp->flags & SF_PRIMARY_LINKED ) {
-				shipp->flags &= ~SF_PRIMARY_LINKED;
-				if ( direction == CYCLE_PRIMARY_NEXT ) {
-					swp->current_primary_bank = 0;
-				} else {
-					swp->current_primary_bank = 1;
+		}
+		// now handle when not linked: cycle and constrain
+		else
+		{
+			if ( direction == CYCLE_PRIMARY_NEXT )
+			{
+				if ( swp->current_primary_bank < UPPER_BOUND_PRIMARY_BANK )
+				{
+					swp->current_primary_bank++;
 				}
-			} else {
-				switch ( swp->current_primary_bank ) {
-					case 0:
-						if ( direction == CYCLE_PRIMARY_NEXT ) {
-							swp->current_primary_bank = 1;
-						} else {
-							shipp->flags |= SF_PRIMARY_LINKED;
-						}
-						break;
-
-					case 1:
-						if ( direction == CYCLE_PRIMARY_NEXT ) {
-							shipp->flags |= SF_PRIMARY_LINKED;
-						} else {
-							swp->current_primary_bank = 0;
-						}
-						break;
-
-					default:
-						Int3();	// should never happen, get Alan if it does
-						return 0;
-						break;
+				else
+				{
+					shipp->flags |= SF_PRIMARY_LINKED;
 				}
 			}
-			break;
-					
-		default:
-			Int3();				// should never happen, get Alan if it does
-			return 0;
-			break;
+			else
+			{
+				if ( swp->current_primary_bank > 0 )
+				{
+					swp->current_primary_bank--;
+				}
+				else
+				{
+					shipp->flags |= SF_PRIMARY_LINKED;
+				}
+			}
+		}
 	}
 
-	if ( objp == Player_obj ) {
+	// test for ballistics - Goober5000
+	if ( sip->flags & SIF_BALLISTIC_PRIMARIES )
+	{
+		// if we can't link, disengage primary linking and change to next available bank
+		if (shipp->flags & SF_PRIMARY_LINKED)
+		{
+			for (i = 0; i < swp->num_primary_banks; i++)
+			{
+				if (primary_out_of_ammo(swp, i))
+				{
+					shipp->flags &= ~SF_PRIMARY_LINKED;
+					
+					if (direction == CYCLE_PRIMARY_NEXT)
+					{
+						swp->current_primary_bank = 0;
+					}
+					else
+					{
+						swp->current_primary_bank = UPPER_BOUND_PRIMARY_BANK;
+					}
+					break;
+				}
+			}
+		}
+
+		// check to see if we keep cycling...we have to if we're out of ammo in the current bank
+		if ( primary_out_of_ammo(swp, swp->current_primary_bank) )
+		{
+			// cycle around until we find ammunition...
+			// we land on the original bank if all banks fail
+			Assert(swp->current_primary_bank < swp->num_primary_banks);
+			new_bank = swp->current_primary_bank;
+
+			for (i = 1; i < swp->num_primary_banks; i++)
+			{
+				// cycle in the proper direction
+				if ( direction == CYCLE_PRIMARY_NEXT )
+				{
+					new_bank = (swp->current_primary_bank + i) % swp->num_primary_banks;
+				}
+				else
+				{
+					new_bank = (swp->current_primary_bank + swp->num_primary_banks - i) % swp->num_primary_banks;
+				}
+
+				// check to see if this is a valid bank
+				if (!primary_out_of_ammo(swp, new_bank))
+				{
+					break;
+				}
+			}
+			// set the new bank; defaults to resetting to the old bank if we completed a full iteration
+			swp->current_primary_bank = new_bank;
+		}
+		
+		// make sure we're okay
+		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK));
+
+		// if this ship is ballistics-equipped, and we cycled, then we had to verify some stuff,
+		// so we should check if we actually changed banks
+		if ( (swp->current_primary_bank != original_bank) || ((shipp->flags & SF_PRIMARY_LINKED) != original_link_flag) )
+		{
+			if ( objp == Player_obj )
+			{
+				snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
+			}
+			ship_primary_changed(shipp);
+			return 1;
+		}
+
+		// could not select new weapon:
+		if ( objp == Player_obj )
+		{
+			gamesnd_play_error_beep();
+		}
+		return 0;
+	}	// end of ballistics implementation
+
+	if ( objp == Player_obj )
+	{
 		snd_play( &Snds[SND_PRIMARY_CYCLE], 0.0f );
 	}
 
@@ -6502,54 +6840,84 @@ int ship_select_next_secondary(object *objp)
 	shipp = &Ships[objp->instance];
 	swp = &shipp->weapons;
 
-	switch ( swp->num_secondary_banks ) {
-		case 0:
-			if ( objp == Player_obj ) {
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has no secondary weapons", 492));
-				gamesnd_play_error_beep();
-			}
-			return 0;
+	// redid the switch structure to allow additional seconary banks if added later - Goober5000
+	if ( swp->num_secondary_banks == 0 )
+	{
+		if ( objp == Player_obj )
+		{
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has no secondary weapons", 492));
+			gamesnd_play_error_beep();
+		}
+		return 0;
+	}
+	else if ( swp->num_secondary_banks == 1 )
+	{
+		if ( objp == Player_obj )
+		{
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one secondary weapon: %s", 493), Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].name, swp->current_secondary_bank + 1);
+			gamesnd_play_error_beep();
+		}
+		return 0;
+	}
+	else if ( swp->num_secondary_banks > MAX_SUPPORTED_SECONDARY_BANKS )
+	{
+		Error (LOCATION, "Exceeded supported number of secondary banks.\n");
+	}
+	else
+	{
+		Assert(swp->current_secondary_bank < swp->num_secondary_banks);
+		original_bank = swp->current_secondary_bank;
+
+		for ( i = 1; i < swp->num_secondary_banks; i++ ) {
+			new_bank = (swp->current_secondary_bank+i) % swp->num_secondary_banks;
+			if ( swp->secondary_bank_ammo[new_bank] <= 0 )
+				continue;
+			swp->current_secondary_bank = new_bank;
 			break;
+		}
 
-		case 1:
-			if ( objp == Player_obj ) {
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one secondary weapon: %s", 493), Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].name, swp->current_secondary_bank + 1);
-				gamesnd_play_error_beep();
+		if ( swp->current_secondary_bank != original_bank )
+		{
+			if ( objp == Player_obj )
+			{
+				snd_play( &Snds[SND_SECONDARY_CYCLE], 0.0f );
 			}
-			return 0;
-			break;
-
-		case 2:
-		case 3:
-			Assert(swp->current_secondary_bank < swp->num_secondary_banks);
-			original_bank = swp->current_secondary_bank;
-
-			for ( i = 1; i < swp->num_secondary_banks; i++ ) {
-				new_bank = (swp->current_secondary_bank+i) % swp->num_secondary_banks;
-				if ( swp->secondary_bank_ammo[new_bank] <= 0 )
-					continue;
-				swp->current_secondary_bank = new_bank;
-				break;
-			}
-
-			if ( swp->current_secondary_bank != original_bank ) {
-				if ( objp == Player_obj ) {
-					snd_play( &Snds[SND_SECONDARY_CYCLE], 0.0f );
-				}
-				ship_secondary_changed(shipp);
-				return 1;
-			}
-
-			break;
-
-		default:
-			Int3();	// should never happen, get Alan if it does
-			return 0;
-			break;
-	} // end switch
+			ship_secondary_changed(shipp);
+			return 1;
+		}
+	} // end if
 
 	// If we've reached this point, must have failed
+	if ( objp == Player_obj )
+	{
+		gamesnd_play_error_beep();
+	}
 	return 0;
+}
+
+// Goober5000 - copied from secondary routine
+//	Stuff list of weapon indices for object *objp in list *outlist.
+//	Return number of weapons in list.
+int get_available_primary_weapons(object *objp, int *outlist, int *outbanklist)
+{
+	int	count = 0;
+	int	i;
+	ship	*shipp;
+
+	Assert(objp->type == OBJ_SHIP);
+	Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
+	shipp = &Ships[objp->instance];
+
+	for (i=0; i<shipp->weapons.num_primary_banks; i++)
+	{
+		if (!primary_out_of_ammo(&(shipp->weapons), i))
+		{
+			outbanklist[count] = i;
+			outlist[count++] = shipp->weapons.primary_bank_weapons[i];
+		}
+	}
+
+	return count;
 }
 
 //	Stuff list of weapon indices for object *objp in list *outlist.
@@ -7215,16 +7583,18 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 //
 
 #define REARM_NUM_MISSILES_PER_BATCH 4		// how many missiles are dropped in per load sound
+#define REARM_NUM_PRIMARY_BALLISTICS_PER_BATCH	100	// how many bullets are dropped in per load sound
 
 int ship_do_rearm_frame( object *objp, float frametime )
 {
-	int			i, banks_full, subsys_type, subsys_all_ok;
+	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok;
 	float			shield_str, repair_delta, repair_allocated;
 	ship			*shipp;
 	ship_weapon	*swp;
 	ship_info	*sip;
 	ship_subsys	*ssp;
 	ai_info		*aip;
+	weapon_info *wip;
 
 	shipp = &Ships[objp->instance];
 	swp = &shipp->weapons;
@@ -7251,7 +7621,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	shipp->cmeasure_count = sip->cmeasure_max;
 
 	// Do shield repair here
-	if ( !(objp->flags & OF_NO_SHIELDS) ) {
+	if ( !(objp->flags & OF_NO_SHIELDS) )
+	{
 		shield_str = get_shield_strength(objp);
 		if ( shield_str < sip->shields ) {
 			if ( objp == Player_obj ) {
@@ -7331,23 +7702,29 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// now deal with rearming the player.  All secondary weapons have a certain rate at which
 	// they can be rearmed.  We can rearm multiple banks at once.
 	banks_full = 0;
-	if ( subsys_all_ok ) {
-		for (i = 0; i < swp->num_secondary_banks; i++ ) {
-			if ( swp->secondary_bank_ammo[i] < swp->secondary_bank_start_ammo[i] ) {
+	primary_banks_full = 0;
+	if ( subsys_all_ok )
+	{
+		for (i = 0; i < swp->num_secondary_banks; i++ )
+		{
+			if ( swp->secondary_bank_ammo[i] < swp->secondary_bank_start_ammo[i] )
+			{
 				float rearm_time;
 
-				if ( objp == Player_obj ) {
+				if ( objp == Player_obj )
+				{
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 
-				if ( timestamp_elapsed(swp->secondary_bank_rearm_time[i]) ) {
-
+				if ( timestamp_elapsed(swp->secondary_bank_rearm_time[i]) )
+				{
 					// Have to do some gymnastics to play the sound effects properly.  There is a
 					// one time sound effect which is the missile loading start, then for each missile
 					// loaded there is a sound effect.  These are only played for the player.
 					//
 					rearm_time = Weapon_info[swp->secondary_bank_weapons[i]].rearm_rate;
-					if ( aip->rearm_first_missile == TRUE ) {
+					if ( aip->rearm_first_missile == TRUE )
+					{
 						rearm_time *= 3;
 					}
 
@@ -7355,11 +7732,13 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 					// Acutal loading of missiles is preceded by a sound effect which is the missile
 					// loading equipment moving into place
-					if ( aip->rearm_first_missile == TRUE ) {
+					if ( aip->rearm_first_missile == TRUE )
+					{
 						snd_play_3d( &Snds[SND_MISSILE_START_LOAD], &objp->pos, &View_position );
 						aip->rearm_first_missile = FALSE;
-
-					} else {
+					}
+					else
+					{
 						snd_play_3d( &Snds[SND_MISSILE_LOAD], &objp->pos, &View_position );
 						if (objp == Player_obj)
 							joy_ff_play_reload_effect();
@@ -7372,11 +7751,86 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 			} else
 				banks_full++;
-		}
+		}	// end for
+
+		// rearm ballistic primaries - Goober5000
+		if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+		{
+			for (i = 0; i < swp->num_primary_banks; i++ )
+			{
+				wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+				if ( wip->wi_flags2 & WIF2_BALLISTIC )
+				{
+					if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
+					{
+						float rearm_time;
+	
+						if ( objp == Player_obj )
+						{
+							hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
+						}
+
+						if ( timestamp_elapsed(swp->primary_bank_rearm_time[i]) )
+						{
+							// Have to do some gymnastics to play the sound effects properly.  There is a
+							// one time sound effect which is the ballistic loading start, then for each ballistic
+							// loaded there is a sound effect.  These are only played for the player.
+							//
+							rearm_time = Weapon_info[swp->primary_bank_weapons[i]].rearm_rate;
+							if ( aip->rearm_first_ballistic_primary == TRUE )
+							{
+								rearm_time *= 3;
+							}
+
+							swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
+	
+							// Acutal loading of ballistics is preceded by a sound effect which is the ballistic
+							// loading equipment moving into place
+							if ( aip->rearm_first_ballistic_primary == TRUE )
+							{
+								snd_play_3d( &Snds[SND_BALLISTIC_START_LOAD], &objp->pos, &View_position );
+								aip->rearm_first_ballistic_primary = FALSE;
+							}
+							else
+							{
+								snd_play_3d( &Snds[SND_BALLISTIC_LOAD], &objp->pos, &View_position );
+
+								/* don't provide force feedback for primary ballistics loading
+								if (objp == Player_obj)
+									joy_ff_play_reload_effect();
+								*/
+	
+								swp->primary_bank_ammo[i] += REARM_NUM_PRIMARY_BALLISTICS_PER_BATCH;
+								if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
+								{
+									swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
+								}
+							}
+						}
+					}
+					else
+					{
+						primary_banks_full++;
+					}
+				}
+				// if the bank is not a ballistic
+				else
+				{
+					primary_banks_full++;
+				}
+			}	// end for
+		}	// end if - rearm ballistic primaries
 	} // end if (subsys_all_ok)
 
-	if ( banks_full == swp->num_secondary_banks ) {
+	if ( banks_full == swp->num_secondary_banks )
+	{
 		aip->rearm_first_missile = TRUE;
+	}
+
+	if ( primary_banks_full == swp->num_primary_banks )
+	{
+		aip->rearm_first_ballistic_primary = TRUE;
 	}
 
 	int shields_full = 0;
@@ -7389,8 +7843,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
 //	if ( ((ssp = END_OF_LIST(&shipp->subsys_list)) != NULL )&&(objp->hull_strength == sip->initial_hull_strength)&&(shields_full) ) {
-	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == sip->initial_hull_strength) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) ) {
-
+	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (objp->hull_strength == sip->initial_hull_strength) ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
+	{
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();
 		}
@@ -7398,12 +7852,15 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		if (!aip->rearm_release_delay)
 			aip->rearm_release_delay = timestamp(1200);
 
-		if ( banks_full == swp->num_secondary_banks ) {
-
+		// check both primary and secondary banks are full
+		if ( (banks_full == swp->num_secondary_banks) &&
+			( !(sip->flags & SIF_BALLISTIC_PRIMARIES) || ((sip->flags & SIF_BALLISTIC_PRIMARIES) && (primary_banks_full == swp->num_primary_banks)) )	)
+		{
 			if ( timestamp_elapsed(aip->rearm_release_delay) )
 				return 1;
 		}
-		else {
+		else
+		{
 			aip->rearm_release_delay = timestamp(1200);
 		}
 	}
@@ -7929,11 +8386,16 @@ int ship_docking_valid(int docker, int dockee)
 		}
 	}
 
+	// Transports can now dock with fighter-bomber and stealth - Goober5000
 	if (docker_type == SHIP_TYPE_TRANSPORT) {
 		if ( (dockee_type == SHIP_TYPE_CARGO) || (dockee_type == SHIP_TYPE_CRUISER)
 			|| (dockee_type == SHIP_TYPE_FREIGHTER) || (dockee_type == SHIP_TYPE_TRANSPORT)
 			|| (dockee_type == SHIP_TYPE_CAPITAL) || (dockee_type == SHIP_TYPE_ESCAPEPOD) 
-			|| (dockee_type == SHIP_TYPE_SUPERCAP) || (dockee_type == SHIP_TYPE_DRYDOCK) || (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER) || (dockee_type == SHIP_TYPE_AWACS)){
+			|| (dockee_type == SHIP_TYPE_SUPERCAP) || (dockee_type == SHIP_TYPE_DRYDOCK)
+			|| (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER)
+			|| (dockee_type == SHIP_TYPE_AWACS) || (dockee_type == SHIP_TYPE_FIGHTER_BOMBER)
+			|| (dockee_type == SHIP_TYPE_STEALTH) )
+		{
 				return 1;
 		}
 	}
@@ -8181,6 +8643,29 @@ int ship_secondary_bank_has_ammo(int shipnum)
 		return 0;
 
 	return 1;
+}
+
+// ship_primary_bank_has_ammo()
+//
+// check if currently selected primary bank has ammo
+//
+// input:	shipnum	=>	index into Ships[] array for ship to check
+//
+int ship_primary_bank_has_ammo(int shipnum)
+{
+	ship_weapon	*swp;
+
+	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
+	swp = &Ships[shipnum].weapons;
+	
+	if ( swp->current_primary_bank == -1 )
+	{
+		return 0;
+	}
+
+	Assert(swp->current_primary_bank >= 0 && swp->current_primary_bank < MAX_PRIMARY_BANKS );
+	
+	return ( primary_out_of_ammo(swp, swp->current_primary_bank) == 0 );
 }
 
 // see if there is enough engine power to allow the ship to warp
@@ -9104,6 +9589,8 @@ void ship_maybe_scream(ship *sp)
 #define PLAYER_REQUEST_REPAIR_MSG_INTERVAL	240000
 void ship_maybe_tell_about_rearm(ship *sp)
 {
+	weapon_info *wip;
+
 	if ( !timestamp_elapsed(Player->request_repair_timestamp) ) {
 		return;
 	}
@@ -9128,11 +9615,35 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		ship_weapon *swp;
 
 		swp = &sp->weapons;
-		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-			if (swp->secondary_bank_start_ammo[i] > 0) {
-				if ( swp->secondary_bank_ammo[i]/swp->secondary_bank_start_ammo[i] < 0.5f ) {
+		for ( i = 0; i < swp->num_secondary_banks; i++ )
+		{
+			if (swp->secondary_bank_start_ammo[i] > 0)
+			{
+				if ( swp->secondary_bank_ammo[i]/swp->secondary_bank_start_ammo[i] < 0.5f )
+				{
 					message_type = MESSAGE_REARM_REQUEST;
 					break;
+				}
+			}
+		}
+
+		// also check ballistic primaries - Goober5000
+		if (sp->flags & SIF_BALLISTIC_PRIMARIES)
+		{
+			for ( i = 0; i < swp->num_primary_banks; i++ )
+			{
+				wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+				if (wip->wi_flags2 & WIF2_BALLISTIC)
+				{
+					if (swp->primary_bank_start_ammo[i] > 0)
+					{
+						if ( swp->primary_bank_ammo[i]/swp->primary_bank_start_ammo[i] < 0.3f )
+						{
+							message_type = MESSAGE_REARM_REQUEST;
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -9300,8 +9811,23 @@ float ship_get_secondary_weapon_range(ship *shipp)
 	return srange;
 }
 
+// Goober5000 - added for ballistic primaries
+// Determine the number of primary ammo units allowed max for a ship
+int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
+{
+	float capacity, size;
+	
+	if (!(Ship_info[ship_class].flags & SIF_BALLISTIC_PRIMARIES))
+	{
+		return 0;
+	}
+
+	capacity = (float) Ship_info[ship_class].primary_bank_ammo_capacity[bank];
+	size = (float) Weapon_info[ammo_type].cargo_size;
+	return (int) (capacity / size);
+}
+
 // Determine the number of secondary ammo units (missile/bomb) allowed max for a ship
-//
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
@@ -9957,7 +10483,7 @@ float ship_get_max_speed(ship *shipp)
 
 	int ship_info_index = shipp->ship_info_index;
 
-	// max overclodk
+	// max overclock
 	max_speed = Ship_info[ship_info_index].max_overclocked_speed;
 
 	// normal max speed
