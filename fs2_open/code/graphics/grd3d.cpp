@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-03-19 07:17:05 $
- * $Author: unknownplayer $
+ * $Revision: 2.9 $
+ * $Date: 2003-03-19 09:05:26 $
+ * $Author: Goober5000 $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/03/19 07:17:05  unknownplayer
+ * Updated the DX8 code to allow it to be run in 640x480 windowed mode. The game will only procede to do so if your registry settings are set to 640x480 to begin with, but this is accomplished simply enough.
+ *
  * Revision 2.7  2003/03/19 06:22:58  Goober5000
  * added typecasting to get rid of some build warnings
  * --Goober5000
@@ -2096,7 +2099,7 @@ void d3d_update_adapter_mode_list(HWND hwnd)
 	// Try and find a mode that matches what we're looking for
 	for (i = 0; i < num_in_list; i++)
 	{
-		if ((adapter_mode_details[i].Width == gr_screen.max_w) && (adapter_mode_details[i].Height == gr_screen.max_h))
+		if ((adapter_mode_details[i].Width == (uint)gr_screen.max_w) && (adapter_mode_details[i].Height == (uint)gr_screen.max_h))
 		{
 			// We have a candidate
 			if ((d3d_get_mode_bit((&adapter_mode_details[i])->Format)) == askedbitdepth)

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-03-18 01:44:30 $
+ * $Revision: 2.28 $
+ * $Date: 2003-03-19 09:05:25 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/03/18 01:44:30  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.26  2003/02/25 06:22:49  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -2033,7 +2037,8 @@ float turn_toward_tangent_with_axis(object *objp, object *center_objp, float rad
 	vm_vec_crossprod(&theta_vec, &center_objp->orient.vec.fvec, &r_vec);
 
 #ifndef NDEBUG
-	float mag = vm_vec_normalize(&theta_vec);
+	float mag;
+	mag = vm_vec_normalize(&theta_vec);
 	Assert(mag > 0.9999 && mag < 1.0001);
 #endif
 
@@ -2041,7 +2046,8 @@ float turn_toward_tangent_with_axis(object *objp, object *center_objp, float rad
 	vm_vec_crossprod(&temp, &r_vec, &theta_vec);
 
 #ifndef NDEBUG
-	float dot = vm_vec_dotprod(&temp, &center_objp->orient.vec.fvec);
+	float dot;
+	dot = vm_vec_dotprod(&temp, &center_objp->orient.vec.fvec);
 	Assert( dot >0.9999 && dot < 1.0001);
 #endif
 

@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/03/18 10:07:06  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.2  2002/09/28 22:13:43  randomtiger
  * Sorted out some bits and pieces. The background nebula blends now which is nice. – RT
  *
@@ -2607,7 +2610,8 @@ void weapon_process_post(object * obj, float frame_time)
 	num = obj->instance;
 
 #ifndef NDEBUG
-	int objnum = OBJ_INDEX(obj);
+	int objnum;
+	objnum = OBJ_INDEX(obj);
 	Assert( Weapons[num].objnum == objnum );
 #endif
 
