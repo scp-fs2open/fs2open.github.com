@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/01/05 23:17:38  taylor
+ * make sure we're not loading weapons that are left over from larger missions
+ *
  * Revision 2.80  2005/01/03 18:46:03  taylor
  * stupid mistake
  *
@@ -715,6 +718,9 @@ int missile_model = -1;
 char	*Weapon_names[MAX_WEAPON_TYPES];
 
 int	First_secondary_index = -1;
+
+extern int Cmdline_load_only_used;
+static int *used_weapons = NULL;
 
 #define	MAX_SPAWN_WEAPONS	10			//	Up to 10 weapons can spawn weapons.
 
@@ -2463,6 +2469,17 @@ void weapon_level_init()
 
 	// emp effect
 	emp_level_init();
+
+	if (Cmdline_load_only_used) {
+		if (used_weapons == NULL)
+			used_weapons = new int[Num_weapon_types];
+
+		Assert( used_weapons != NULL );
+
+		// clear out used_weapons between missions
+		if (used_weapons != NULL)
+			memset(used_weapons, 0, Num_weapon_types * sizeof(int));
+	}
 
 	Weapon_flyby_sound_timer = timestamp(0);
 	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
@@ -4536,18 +4553,18 @@ int weapon_create_group_id()
 	return n;
 }
 
-extern int Cmdline_load_only_used;
-unsigned int used_weapons[MAX_WEAPON_TYPES] = {0};
-
 //Call before weapons_page_in to mark a weapon as used
 void weapon_mark_as_used(int weapon_id)
 {
 	if (weapon_id < 0)
 		return;
 
+	if ( used_weapons == NULL )
+		return;
+
 	Assert( weapon_id < MAX_WEAPON_TYPES );
 
-	if (weapon_id <= Num_weapon_types) {
+	if (weapon_id < Num_weapon_types) {
 		used_weapons[weapon_id]++;
 	}
 }
@@ -4557,6 +4574,8 @@ void weapons_page_in()
 	int i, j, idx;
 
 	if (Cmdline_load_only_used) {
+		Assert( used_weapons != NULL );
+
 		// for weapons in weaponry pool
 		for (i = 0; i < Num_teams; i++) {
 			for (j = 0; j < Num_weapon_types; j++) {
@@ -4567,31 +4586,25 @@ void weapons_page_in()
 		// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
 		// assigned directly to a ship
 		for (i = 0; i < Num_weapon_types; i++) {
+			// we only want entries that already exist
+			if (!used_weapons[i])
+				continue;
+
+			// if it's got a spawn type then grab it
 			if (Weapon_info[i].spawn_type > -1)
 				used_weapons[(int)Weapon_info[i].spawn_type]++;
-		}
-
-		// shouldn't have to do this but some weapons here can be different than the ship
-		// weapons for some reason so this is here mainly as a double check
-		for (i = 0; i < Subsys_index; i++) {
-			for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-				if (Subsys_status[i].primary_banks[j] > -1)
-					weapon_mark_as_used(Subsys_status[i].primary_banks[j]);
-			}
-
-			for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
-				if (Subsys_status[i].secondary_banks[j] > -1)
-					weapon_mark_as_used(Subsys_status[i].secondary_banks[j]);
-			}
 		}
 	}
 
 	// Page in bitmaps for all used weapons
 	for (i=0; i<Num_weapon_types; i++ )	{
-		if(!used_weapons[i] && Cmdline_load_only_used)
-		{
-			continue;
+		if (Cmdline_load_only_used) {
+			if (!used_weapons[i]) {
+				printf("not loading weapon %d (%s)\n", i, Weapon_info[i].name);
+				continue;
+			}
 		}
+
 		weapon_info *wip = &Weapon_info[i];
 
 		wip->wi_flags &= (~WIF_THRUSTER);		// Assume no thrusters
@@ -5105,5 +5118,10 @@ void weapons_info_close(){
 	for(int i = 0; i<MAX_WEAPON_TYPES; i++){
 		if(Weapon_info[i].desc)free(Weapon_info[i].desc);
 		if(Weapon_info[i].tech_desc)free(Weapon_info[i].tech_desc);
+	}
+
+	if (used_weapons != NULL) {
+		delete[] used_weapons;
+		used_weapons = NULL;
 	}
 }
