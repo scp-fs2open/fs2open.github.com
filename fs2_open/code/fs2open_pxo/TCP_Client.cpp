@@ -6,11 +6,19 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.4 $
- * $Date: 2003-11-06 20:22:05 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2003-11-09 04:09:17 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2003/11/06 20:22:05  Kazan
+ * slight change to .dsp - leave the damn release target as fs2_open_r.exe already
+ * added myself to credit
+ * killed some of the stupid fscking warnings (including doing some casting and commenting out unused vars in the graphics modules)
+ * Release builds should have warning level set no higher than 2 (default is 1)
+ * Why the hell are we getting warning's about function selected for inline expansion... (killing them with warning disables)
+ * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
+ *
  * Revision 1.3  2003/10/13 05:57:47  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -202,7 +210,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	memset(PacketBuffer, 0, 16384);
 	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *));;
 
-	int CheckSize =  sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *) - 2; //2 for the weird stinking msvc shit
+	int CheckSize =  sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *) - 2; //2 for the weird stinking msvc stuff
 	int recvsize = 0, rs2;
 	Sleep(2); // give them a second
 	int starttime = clock();
@@ -354,7 +362,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 			/*
 			if ((misreply_ptr->num_files * sizeof(file_record)) + (sizeof(int) * 2) > 16384)
 			{
-				// WE"RE IN DEAP SHIT!
+				// WE'RE IN TROUBLE!
 
 				ml_printf("Network (FS2OpenPXO): PCKT_TABLES_REPLY was larger than 16k!!!\n");
 				return NULL;
@@ -444,7 +452,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 			/*
 			if ((misreply_ptr->num_files * sizeof(file_record)) + (sizeof(int) * 2) > 16384)
 			{
-				// WE"RE IN DEEP SHIT!
+				// WE'RE IN TROUBLE!
 
 				ml_printf("Network (FS2OpenPXO): PCKT_MISSIONS_REPLY was larger than 16k!!!\n");
 				return NULL;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-11-09 04:09:18 $
+ * $Author: Goober5000 $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/22 01:22:26  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -1636,7 +1639,7 @@ int psnet_send( net_addr * who_to, void * data, int len, int flags, int reliable
 
 	// determine from the flags whether or not this packet should have a checksum.
 	if ( flags & PSNET_FLAG_CHECKSUM ) {      
-		// can't send raw data with a checksum, dumbass!
+		// can't send raw data with a checksum!
 		Assert(!(flags & PSNET_FLAG_RAW));
 
 		Send_network_checksum_packet.sequence_number = Next_packet_id++;

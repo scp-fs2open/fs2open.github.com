@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.40 $
- * $Date: 2003-11-08 22:25:47 $
- * $Author: Kazan $
- * $Revision: 2.40 $
- * $Date: 2003-11-08 22:25:47 $
- * $Author: Kazan $
+ * $Revision: 2.41 $
+ * $Date: 2003-11-09 04:09:18 $
+ * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2003-11-09 04:09:18 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/11/08 22:25:47  Kazan
+ * Timerbar was enabled in both release and debug - so i made it a command line option "-timerbar"
+ * DONT MESS WITH OTHER PEOPLES INCLUDE PATHS
+ * DONT MESS WITH EXEC NAMES (leave it fs2_open_r and fs2_open_d) or paths!
+ *
  * Revision 2.39  2003/11/03 18:07:26  randomtiger
  * Added -d3d_no_vsync command to make turning off vsync optional.
  * Removed 32bit command, it doesnt do anything.
