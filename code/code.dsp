@@ -2503,5 +2503,17 @@ SOURCE=.\decals\decals.cpp
 SOURCE=.\decals\decals.h
 # End Source File
 # End Group
+# Begin Group "ddsutils"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\ddsutils\ddsutils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ddsutils\ddsutils.h
+# End Source File
+# End Group
 # End Target
 # End Project
