@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/10/13 05:57:50  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.21  2003/09/26 14:37:16  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -432,6 +438,7 @@
 #define WIF2_LOCAL_SSM					(1 << 3)	// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 #define WIF2_TAGGED_ONLY				(1 << 4)	// can only fire if target is tagged
 #define WIG2_BEAM_NO_WHACK				(1 << 5)	// this beam doesn't "whack" -- Kazan
+#define WIF2_CYCLE						(1 << 6)	// will only fire from (shots (defalts to 1)) points at a time
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
@@ -686,6 +693,10 @@ typedef struct weapon_info {
 	float lssm_warpin_radius;
 	float lssm_lock_range;
 
+	float			field_of_fire;	//cone the weapon will fire in, 0 is strait all the time-Bobboau
+	int				shots;			//the number of shots that will be fired at a time, 
+									//only realy usefull when used with FOF to make a shot gun effect
+									//now also used for weapon point cycleing
 
 } weapon_info;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.51 $
- * $Date: 2003-10-15 22:03:26 $
- * $Author: Kazan $
+ * $Revision: 2.52 $
+ * $Date: 2003-10-25 06:56:06 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2003/10/15 22:03:26  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.50  2003/09/26 14:37:16  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -987,6 +990,7 @@ typedef struct ship {
 
 	int jammer_engaged;
 
+	int last_fired_point[MAX_PRIMARY_BANKS]; //for fire point cylceing
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful

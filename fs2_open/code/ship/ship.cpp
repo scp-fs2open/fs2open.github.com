@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.86 $
- * $Date: 2003-10-23 18:03:25 $
- * $Author: randomtiger $
+ * $Revision: 2.87 $
+ * $Date: 2003-10-25 06:56:06 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2003/10/23 18:03:25  randomtiger
+ * Bobs changes (take 2)
+ *
  * Revision 2.85  2003/10/15 22:03:26  Kazan
  * Da Species Update :D
  *
@@ -6668,6 +6671,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				next_fire_delay *= Ship_fire_delay_scale_hostile[Game_skill_level];
 			}
 		}
+
+		polymodel *po = model_get( shipp->modelnum );
 		
 		next_fire_delay *= 1.0f + (num_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
 
@@ -6698,6 +6703,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
 
+		if (winfo_p->wi_flags2 & WIF2_CYCLE){
+			Assert(po->gun_banks[bank_to_fire].num_slots != 0);
+			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay / po->gun_banks[bank_to_fire].num_slots));
+			//to maintain balence of fighters with more fire points they will fire faster that ships with fewer points
+		}else{
+			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
+		}
 		// Here is where we check if weapons subsystem is capable of firing the weapon.
 		// Note that we can have partial bank firing, if the weapons subsystem is partially
 		// functional, which should be cool.  		
@@ -6709,8 +6721,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			ship_stop_fire_primary_bank(obj, bank_to_fire);
 			continue;
 		}		
-
-		polymodel *po = model_get( shipp->modelnum );
 		
 		if (winfo_p->wi_flags & WIF_BEAM){	// beam weapon?
 			if ( obj == Player_obj ) {//beam sounds for the player
@@ -6974,15 +6984,46 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
 
-				for ( j = 0; j < num_slots; j++ )
+				int points = 0, numtimes = 1;
+
+				//ok if this is a cycleing weapon use shots as the number of points to fire from at a time
+				//otherwise shots is the number of times all points will be fired (used mostly for the 'shotgun' effect)
+				if (winfo_p->wi_flags2 & WIF2_CYCLE){
+					if (winfo_p->shots > num_slots){
+						points = num_slots;
+					}else{
+						points = winfo_p->shots;
+					}
+				}else{
+					numtimes = winfo_p->shots;
+					points = num_slots;
+				}
+
+
+//mprintf(("I am going to fire a weapon %d times, from %d points, the last point fired was %d, and that will be point %d\n",numtimes,points,shipp->last_fired_point[bank_to_fire],shipp->last_fired_point[bank_to_fire]%num_slots));
+				for(int w = 0; w<numtimes; w++){
+				for ( j = 0; j < points; j++ )
 				{
-					pnt = po->gun_banks[bank_to_fire].pnt[j];
+					int pt; //point
+					if (winfo_p->wi_flags2 & WIF2_CYCLE){
+						//pnt = po->gun_banks[bank_to_fire].pnt[shipp->last_fired_point[bank_to_fire]+j%num_slots];
+						pt = shipp->last_fired_point[bank_to_fire]+j%num_slots;
+//mprintf(("fireing from %d\n",shipp->last_fired_point[bank_to_fire]+j%num_slots));
+					}else{
+						//pnt = po->gun_banks[bank_to_fire].pnt[j];
+						pt = j;
+//mprintf(("fireing from %d\n",j));
+					}
+
+					pnt = po->gun_banks[bank_to_fire].pnt[pt];
+
 					vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 					vm_vec_add(&firing_pos, &gun_point, &obj->pos);
 			
 					// create the weapon -- the network signature for multiplayer is created inside
 					// of weapon_create
 					weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj),0, new_group_id );
+
 					weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 
 					if (winfo_p->wi_flags & WIF_FLAK)
@@ -7024,13 +7065,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}
 
 					num_fired++;
-
-					if (shipp->cloak_stage ==2)
-					{
-						shipfx_start_cloak(shipp,500);
-					}
 				}
-			}						
+				}
+			}
+			
+			shipp->last_fired_point[bank_to_fire] = (shipp->last_fired_point[bank_to_fire] + 1) % num_slots;
 
 			if(shipp->weapon_energy < 0.0f){
 				shipp->weapon_energy = 0.0f;
@@ -7039,6 +7078,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 			banks_fired |= (1<<bank_to_fire);				// mark this bank as fired.
 		}		
+		
 		
 		// Only play the weapon fired sound if it hasn't been played yet.  This is to 
 		// avoid playing the same sound multiple times when banks are linked with the
