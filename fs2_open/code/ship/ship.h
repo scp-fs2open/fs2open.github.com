@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.33 $
- * $Date: 2003-03-01 01:15:38 $
+ * $Revision: 2.34 $
+ * $Date: 2003-03-03 04:28:37 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/03/01 01:15:38  Goober5000
+ * fixed the initial status bug
+ *
  * Revision 2.32  2003/02/25 06:22:49  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -952,8 +955,9 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_NO_FRED					(1 << 31)	// not available in fred
 
 // flags2 -- added by Goober5000
-//#define SIF2_ [whatever]		(1 << 0)
-//etc.
+#define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
+#define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
+
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.50 $
- * $Date: 2003-03-01 01:15:38 $
+ * $Revision: 2.51 $
+ * $Date: 2003-03-03 04:28:37 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2003/03/01 01:15:38  Goober5000
+ * fixed the initial status bug
+ *
  * Revision 2.49  2003/02/25 06:22:49  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -1767,6 +1770,12 @@ strcpy(parse_error_text, temp_error);
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
 	sip->flags2 = SIF2_DEFAULT_VALUE;
+
+	// set original status of tech database flags - Goober5000
+	if (sip->flags & SIF_IN_TECH_DATABASE)
+		sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE;
+	if (sip->flags & SIF_IN_TECH_DATABASE_M)
+		sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE_M;
 
 	// be friendly; ensure ballistic flags check out
 	if (pbank_capacity_specified)

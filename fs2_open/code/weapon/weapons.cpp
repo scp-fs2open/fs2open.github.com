@@ -653,6 +653,10 @@ int weapon_info_lookup(char *name)
 {
 	int	i;
 
+	// bogus
+	if (!name)
+		return -1;
+
 	for (i=0; i<Num_weapon_types; i++)
 		if (!stricmp(name, Weapon_info[i].name))
 			return i;
@@ -747,6 +751,10 @@ void parse_wi_flags(weapon_info *weaponp)
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
 
+	// set default tech room status - Goober5000
+	if (weaponp->wi_flags & WIF_IN_TECH_DATABASE)
+		weaponp->wi_flags2 |= WIF2_DEFAULT_IN_TECH_DATABASE;
+
 	// SWARM, CORKSCREW and FLAK should be mutually exclusive
 	if(weaponp->wi_flags & WIF_FLAK){
 		Assert(!(weaponp->wi_flags & WIF_CORKSCREW) && !(weaponp->wi_flags & WIF_SWARM));
@@ -778,7 +786,8 @@ int parse_weapon()
 
 	wip = &Weapon_info[Num_weapon_types];
 
-	wip->wi_flags = 0;
+	wip->wi_flags = WIF_DEFAULT_VALUE;
+	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
 
 	required_string("$Name:");
 	stuff_string(wip->name, F_NAME, NULL);

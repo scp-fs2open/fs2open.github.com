@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-02-16 18:55:12 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-03 04:28:36 $
+ * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/02/16 18:55:12  phreak
+ * fixed typecasting warnings
+ *
  * Revision 2.3  2003/01/14 04:00:15  Goober5000
  * allowed for up to 256 main halls
  * --Goober5000
@@ -411,7 +414,8 @@ void pilot_write_techroom_data(CFILE *file)
 
 	// write all intel entry flags out
 	for (idx=0; idx<Intel_info_size; idx++) {
-		cfwrite_ubyte((ubyte)Intel_info[idx].in_tech_db, file);
+		out = (Intel_info[idx].flags & IIF_IN_TECH_DATABASE) ? (ubyte)1 : (ubyte)0;
+		cfwrite_ubyte(out, file);
 	}
 }
 
@@ -465,9 +469,9 @@ void pilot_read_techroom_data(CFILE *file)
 		for (idx=0; idx<intel_count; idx++) {
 			in = cfread_ubyte(file);
 			if (in) {
-				Intel_info[idx].in_tech_db = 1;
+				Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
 			} else {
-				Intel_info[idx].in_tech_db = 0;
+				Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
 			}
 		}
 	}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.2 $
- * $Date: 2003-01-14 04:00:16 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-03 04:28:36 $
  * $Author: Goober5000 $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/14 04:00:16  Goober5000
+ * allowed for up to 256 main halls
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -320,6 +324,11 @@
 
 extern char *campaign_types[MAX_CAMPAIGN_TYPES];
 
+
+// campaign flags - Goober5000
+#define CF_DEFAULT_VALUE			0
+#define CF_CUSTOM_TECH_DATABASE		(1 << 0)	// Goober5000
+
 // structure for a campaign definition.  It contains the mission names and other interesting
 // information about a campaign and the mission strucuture within.
 
@@ -360,6 +369,7 @@ typedef struct campaign {
 	char		filename[MAX_FILENAME_LEN];			// filename the campaign info is in
 	char		*desc;										// description of campaign
 	int		type;											// type of campaign
+	int		flags;										// flags - Goober5000
 	int		num_missions;								// number of missions in the campaign
 	int		num_missions_completed;					// number of missions in the campaign that have been flown
 	int		current_mission;							// the current mission that the player is playing.  Only valid during the mission

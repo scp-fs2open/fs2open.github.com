@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-02-23 03:13:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2003-03-03 04:28:36 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/02/23 03:13:03  wmcoolmon
+ * Uncommented the sections of code that actually played a movie for a given mission. (Removed when daveb cleaned out the movie code for the release)
+ *
  * Revision 2.6  2003/01/14 04:00:16  Goober5000
  * allowed for up to 256 main halls
  * --Goober5000
@@ -586,6 +589,13 @@ int mission_campaign_load( char *filename, int load_savefile )
 			required_string("+Num players:");
 			stuff_int( &(Campaign.num_players) );
 		}		
+
+		// parse flags - Goober5000
+		Campaign.flags = CF_DEFAULT_VALUE;
+		if (optional_string("$Flags:"))
+		{
+			stuff_int( &(Campaign.flags) );
+		}
 
 		// parse the optional ship/weapon information
 		mission_campaign_get_sw_info();

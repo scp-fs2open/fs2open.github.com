@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/02/25 06:22:50  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.7  2003/02/16 05:14:29  bobboau
  * added glow map nebula bug fix for d3d, someone should add a fix for glide too
  * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
@@ -333,6 +339,9 @@
 //	Bitflags controlling weapon behavior
 #define	MAX_WEAPON_FLAGS	18						//	Maximum number of different bit flags legal to specify in a single weapons.tbl Flags line
 
+#define WIF_DEFAULT_VALUE	0
+#define WIF2_DEFAULT_VALUE	0
+
 #define	WIF_HOMING_HEAT	(1 << 0)				//	if set, this weapon homes via seeking heat
 #define	WIF_HOMING_ASPECT	(1 << 1)				//	if set, this weapon homes via chasing aspect
 #define	WIF_ELECTRONICS	(1 << 2)				//	Takes out electronics systems.
@@ -369,8 +378,9 @@
 #define	WIF_LOCKARM			(1 << 30)			// if the missile was fired without a lock, it does significanlty less damage on impact
 #define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 
-#define WIF2_BALLISTIC		(1 << 0)			// ballistic primaries - Goober5000
-#define WIF2_PIERCE		(1 << 1)			//shield pierceing -Bobboau
+#define WIF2_BALLISTIC					(1 << 0)	// ballistic primaries - Goober5000
+#define WIF2_PIERCE						(1 << 1)	// shield pierceing -Bobboau
+#define WIF2_DEFAULT_IN_TECH_DATABASE	(1 << 2)	// default in tech database - Goober5000
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
