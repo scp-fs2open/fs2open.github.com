@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.2 $
- * $Date: 2003-02-25 06:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-05 09:17:14 $
+ * $Author: Goober5000 $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/02/25 06:22:49  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -174,7 +180,7 @@ void wl_reset_to_defaults();
 // Set selected slot to first placed ship
 void wl_reset_selected_slot();
 
-void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class, int bank);
+void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class);
 void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count);
 void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_count);
 

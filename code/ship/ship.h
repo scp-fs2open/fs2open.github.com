@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.34 $
- * $Date: 2003-03-03 04:28:37 $
+ * $Revision: 2.35 $
+ * $Date: 2003-03-05 09:17:15 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/03/03 04:28:37  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.33  2003/03/01 01:15:38  Goober5000
  * fixed the initial status bug
  *
@@ -1080,11 +1084,9 @@ typedef struct ship_info {
 	vector	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
 	float		closeup_zoom;					// zoom when using ship in closeup view (eg briefing and hud target monitor)
 
-	int		allowed_weapons[MAX_WEAPON_TYPES][MAX_SECONDARY_BANKS];
+	int		allowed_weapons[MAX_WEAPON_TYPES];
 	// array which specifies which weapons can be loaded out by the
 	// player during weapons loadout.
-	// at this time secondary banks are larger than primary
-	// now has bank specific loadout-Bobboau
 
 	ubyte	shield_icon_index;				// index to locate ship-specific animation frames for the shield on HUD
 	char	icon_filename[NAME_LENGTH];	// filename for icon that is displayed in ship selection

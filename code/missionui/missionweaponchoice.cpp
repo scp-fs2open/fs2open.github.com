@@ -9,22 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-03-03 16:50:14 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-03-05 09:17:14 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
- *
- * Revision 2.8  2003/03/03 10:21:08  bobboau
- * fixed a bug in the bank specific loadout relaiting to secondaries
- *
- * Revision 2.7  2003/02/25 06:22:48  bobboau
- * fixed a bunch of fighter beam bugs,
- * most notabley the sound now works corectly,
- * and they have limeted range with atenuated damage (table option)
- * added bank specific compatabilities
- *
+ * $Log: not supported by cvs2svn $
  * Revision 2.6  2003/01/15 21:29:05  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
  *
@@ -1284,20 +1275,16 @@ void wl_set_disabled_weapons(int ship_class)
 	{
 		//	Determine whether weapon #i is allowed on this ship class in the current type of mission.
 		//	As of 9/6/99, the only difference is dogfight missions have a different list of legal weapons.
-		for ( int k = 0; k < MAX_SECONDARY_BANKS; k++ ){//bank specific loadouts-Bobboau
-			Wl_icons[i].can_use = weapon_allowed_for_game_type(sip->allowed_weapons[i][k]);
+		Wl_icons[i].can_use = weapon_allowed_for_game_type(sip->allowed_weapons[i]);
 
-			// Goober5000: ballistic primaries
-			if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
+		// Goober5000: ballistic primaries
+		if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
+		{
+			// not allowed if this ship is not ballistic
+			if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
 			{
-				// not allowed if this ship is not ballistic
-				if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
-				{
-					Wl_icons[i].can_use = 0;
-				}
+				Wl_icons[i].can_use = 0;
 			}
-
-			if(Wl_icons[i].can_use != 0)break;
 		}
 	}
 }
@@ -1919,22 +1906,10 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 			continue;
 		}
 
-//		for ( int k = 0; k < MAX_SECONDARY_BANKS; k++ ){//bank specific loadouts-Bobboau
-
-		int tobank = i;
-		if(IS_BANK_SECONDARY(tobank))tobank -=3;
-		//ensure that the two banks are both compatable types-Bobboau
-		if(!weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]][tobank])){
-//			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[slot->wep[from_bank]].name, tobank+1);
-			wep_count[i] = 0;
-			return;
-		}
-	
-//		if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]][k]) ) {
+		if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep[i]]) ) {
 //			wep[i] = -1;
-//			wep_count[i] = 0;
-//		}
-//		}
+			wep_count[i] = 0;
+		}
 	}
 }
 
@@ -2007,7 +1982,7 @@ void wl_add_index_to_list(int wi_index)
 }
 
 // remove the weapons specified by wep[] and wep_count[] from Wl_pool[].
-void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class, int bank)
+void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 {
 	int i, wi_index;
 
@@ -2038,7 +2013,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class, int bank
 								continue;
 							}
 
-							if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep_pool_index][bank]) ) {
+							if ( !weapon_allowed_for_game_type(Ship_info[ship_class].allowed_weapons[wep_pool_index]) ) {
 								continue;
 							}
 
@@ -2100,7 +2075,7 @@ void wl_fill_slots()
 
 		// get the weapons info that should be on ship by default
 		wl_get_default_weapons(Wss_slots[i].ship_class, i, wep, wep_count);
-		wl_remove_weps_from_pool(wep, wep_count, Wss_slots[i].ship_class, i);
+		wl_remove_weps_from_pool(wep, wep_count, Wss_slots[i].ship_class);
 
 		// copy to Wss_slots[]
 		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
@@ -3702,19 +3677,6 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 	if ( slot->wep_count[to_bank] < 0 ) {
 		return 0;
 	}
-	int tobank = to_bank, frombank = from_bank;
-	if(IS_BANK_SECONDARY(tobank))tobank -= 3;
-	if(IS_BANK_SECONDARY(frombank))frombank -=3;
-	//ensure that the two banks are both compatable types-Bobboau
-	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[slot->wep[from_bank]][tobank])){
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[slot->wep[from_bank]].name, tobank+1);
-		return 0;
-	}
-	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[slot->wep[to_bank]][frombank])){
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[slot->wep[to_bank]].name, frombank+1);
-		return 0;
-	}
-//Warning(LOCATION,"slot slot");
 
 	// ensure that the banks are both of the same class
 	if ( (IS_BANK_PRIMARY(from_bank) && IS_BANK_SECONDARY(to_bank)) || (IS_BANK_SECONDARY(from_bank) && IS_BANK_PRIMARY(to_bank)) ) {
@@ -3834,14 +3796,6 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 		return 0;
 	}
 
-	int tobank = to_bank;
-	if(IS_BANK_SECONDARY(tobank))tobank -= 3;
-	//ensure that this bank can have this weapon-Bobboau
-	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][tobank])){
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, tobank+1);
-		return 0;
-	}
-//Warning(LOCATION,"list");
 	// find how much dest bank can fit
 	if ( to_bank < MAX_WL_PRIMARY )
 	{
@@ -3896,14 +3850,6 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 		return 0;
 	}
 
-	//ensure that this bank can have this weapon-Bobboau
-	int tobank = to_bank;
-	if(IS_BANK_SECONDARY(tobank))tobank -= 3;
-	if(!weapon_allowed_for_game_type(Ship_info[slot->ship_class].allowed_weapons[Carried_wl_icon.weapon_class][tobank])){
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "A %s can not carry %s weaponry in bank %d", Ship_info[slot->ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].name, tobank+1);
-		return 0;
-	}
-//Warning(LOCATION,"list slot");
 	// dump slot weapon back into list
 	Wl_pool[slot->wep[to_bank]] += slot->wep_count[to_bank];
 	slot->wep_count[to_bank] = 0;

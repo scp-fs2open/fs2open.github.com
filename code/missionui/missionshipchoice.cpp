@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-02-25 06:22:48 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-05 09:17:14 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/02/25 06:22:48  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.2  2002/12/15 06:50:49  DTP
  * FIX; player can now have all ships set in FRED2 as allowed playerships in singleplayer
  *
@@ -3270,13 +3276,14 @@ int ss_dump_to_list(int from_slot, int to_list, int *sound)
 // exit: data changed flag
 int ss_grab_from_list(int from_list, int to_slot, int *sound)
 {
-	wss_unit	*slot;
+	wss_unit        *slot;
 	int i, wep[MAX_WL_WEAPONS], wep_count[MAX_WL_WEAPONS];
 
 	slot = &Wss_slots[to_slot];
 
 	// ensure that pool has ship
-	if ( Ss_pool[from_list] <= 0 ) {
+	if ( Ss_pool[from_list] <= 0 )
+	{
 		*sound=SND_ICON_DROP;
 		return 0;
 	}
@@ -3289,8 +3296,9 @@ int ss_grab_from_list(int from_list, int to_slot, int *sound)
 
 	// take weapons from list->slot
 	wl_get_default_weapons(from_list, to_slot, wep, wep_count);
-	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class, to_slot);
-	for ( i = 0; i < MAX_WL_WEAPONS; i++ ) {
+	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class);
+	for ( i = 0; i < MAX_WL_WEAPONS; i++ )
+	{
 		slot->wep[i] = wep[i];
 		slot->wep_count[i] = wep_count[i];
 	}
@@ -3298,28 +3306,31 @@ int ss_grab_from_list(int from_list, int to_slot, int *sound)
 	*sound=SND_ICON_DROP_ON_WING;
 	return 1;
 }
-
+                        
 // exit: data changed flag
 int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 {
 	int i, wep[MAX_WL_WEAPONS], wep_count[MAX_WL_WEAPONS];
-	wss_unit	*slot;
+	wss_unit        *slot;
 
 	// ensure that pool has ship
-	if ( Ss_pool[from_list] <= 0 ) {
+	if ( Ss_pool[from_list] <= 0 )
+	{
 		*sound=SND_ICON_DROP;
 		return 0;
 	}
 
 	slot = &Wss_slots[to_slot];
-	Assert(slot->ship_class >= 0 );	// slot should be filled
+	Assert(slot->ship_class >= 0 );        // slot should be filled
 
 	// put ship from slot->list
 	Ss_pool[Wss_slots[to_slot].ship_class]++;
 
 	// put weapons from slot->list
-	for ( i = 0; i < MAX_WL_WEAPONS; i++ ) {
-		if ( (slot->wep[i] >= 0) && (slot->wep_count[i] > 0) ) {
+	for ( i = 0; i < MAX_WL_WEAPONS; i++ )
+	{
+		if ( (slot->wep[i] >= 0) && (slot->wep_count[i] > 0) )
+		{
 			Wl_pool[slot->wep[i]] += slot->wep_count[i];
 			slot->wep[i] = -1;
 			slot->wep_count[i] = 0;
@@ -3332,8 +3343,9 @@ int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 
 	// take weapons from list->slot
 	wl_get_default_weapons(from_list, to_slot, wep, wep_count);
-	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class, to_slot);
-	for ( i = 0; i < MAX_WL_WEAPONS; i++ ) {
+	wl_remove_weps_from_pool(wep, wep_count, slot->ship_class);
+	for ( i = 0; i < MAX_WL_WEAPONS; i++ )
+	{
 		slot->wep[i] = wep[i];
 		slot->wep_count[i] = wep_count[i];
 	}
@@ -3341,7 +3353,7 @@ int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 	*sound=SND_ICON_DROP_ON_WING;
 	return 1;
 }
-
+                        
 void ss_apply(int mode, int from_slot, int from_list, int to_slot, int to_list,int player_index)
 {
 	int update=0;
