@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-09-20 20:02:00 $
+ * $Author: phreak $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -3912,6 +3915,7 @@ void hud_show_lead_indicator(vector *target_world_pos)
 	polymodel	*po;
 	ship_weapon	*swp;
 	weapon_info	*wip;
+	weapon_info	*tmp=NULL;
 	float			dist_to_target, time_to_target, target_moved_dist, prange, srange;
 	int			bank_to_fire, indicator_frame, frame_offset;
 
@@ -3972,17 +3976,41 @@ void hud_show_lead_indicator(vector *target_world_pos)
 	srange = ship_get_secondary_weapon_range(Player_ship);
 
 	if ( swp->current_secondary_bank >= 0 ) {
-		weapon_info	*wip;
 		int bank = swp->current_secondary_bank;
-		wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( wip->wi_flags & WIF_HOMING_ASPECT ) {
+		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
+		if ( tmp->wi_flags & WIF_HOMING_ASPECT ) {
 			if ( !Player->target_in_lock_cone ) {
 				srange = -1.0f;
 			}
 		}
 	}
 
-	frame_offset=hudtarget_lead_indicator_pick_frame(prange, srange, dist_to_target);
+	//frame_offset=hudtarget_lead_indicator_pick_frame(prange, srange, dist_to_target);
+	if (dist_to_target < prange)
+	{
+		frame_offset=2;
+		
+		if (tmp)
+		{
+			if ((dist_to_target < srange) && (tmp->wi_flags & WIF_HOMING_HEAT))
+			{
+				frame_offset=1;
+			}
+		}
+	}
+	else
+	{
+		frame_offset=-1;
+
+		if (tmp)
+		{
+			if((dist_to_target < srange) && (tmp->wi_flags & WIF_HOMING_HEAT))
+			{
+				frame_offset=0;
+			}
+		}
+	}
+	
 	if ( frame_offset < 0 ) {
 		return;
 	}
@@ -4027,6 +4055,66 @@ void hud_show_lead_indicator(vector *target_world_pos)
 			}
 		}
 	}
+
+	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
+	//phreak changed 9/01/02
+	
+	if(swp->current_secondary_bank>=0)
+	{
+		int bank=swp->current_secondary_bank;
+		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
+
+		//get out of here if the secondary weapon is a homer or if its out of range
+		if ( (wip->wi_flags & WIF_HOMING_HEAT) || (wip->wi_flags & WIF_HOMING_ASPECT))
+			return;
+
+		double  max_dist=wip->lifetime*wip->max_speed;
+		if (dist_to_target > max_dist)
+			return;
+	}
+		
+	//give it the "in secondary range frame
+	indicator_frame = Lead_indicator_gauge.first_frame;
+
+	Assert(wip->max_speed != 0);
+	time_to_target = dist_to_target / wip->max_speed;
+
+	target_moved_dist = targetp->phys_info.speed * time_to_target;
+
+	target_moving_direction = targetp->phys_info.vel;
+
+	// if we've reached here, the lead target indicator will be displayed
+	Players[Player_num].lead_indicator_active = 1;
+
+	// test if the target is moving at all
+	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f)		// Find distance!
+		Players[Player_num].lead_target_pos =  *target_world_pos;
+	else {
+		vm_vec_normalize(&target_moving_direction);
+		vm_vec_scale(&target_moving_direction,target_moved_dist);
+		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
+		polish_predicted_target_pos(target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+	}
+
+	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
+
+	if (lead_target_vertex.codes == 0) { // on screen
+
+		g3_project_vertex(&lead_target_vertex);
+		if (!(lead_target_vertex.flags & PF_OVERFLOW)) {
+
+			if ( hud_gauge_maybe_flash(HUD_LEAD_INDICATOR) == 1 ) {
+				hud_set_iff_color(targetp, 0);
+			} else {
+				hud_set_iff_color(targetp, 1);
+			}
+
+			if ( indicator_frame >= 0 ) {
+				GR_AABITMAP(indicator_frame, fl2i(lead_target_vertex.sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(lead_target_vertex.sy - Lead_indicator_half[gr_screen.res][1]));				
+			}
+		}
+	}
+
 }
 
 // hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
