@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-03-10 08:00:06 $
- * $Author: taylor $
+ * $Revision: 2.55 $
+ * $Date: 2005-03-13 08:32:28 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/03/10 08:00:06  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.53  2005/03/06 11:23:45  wmcoolmon
  * RE-fixed stuff. Ogg support. Briefings.
  *
@@ -2148,6 +2157,8 @@ int sort_turret_func(const void *e1, const void *e2)
 	}
 }
 
+extern bool turret_weapon_has_flags(model_subsystem* tp, int flags);
+extern bool turret_weapon_has_subtype(model_subsystem* tp, int subtype);
 // target the next/prev live turret on the current target
 // auto_advance from hud_update_closest_turret
 void hud_target_live_turret(int next_flag, int auto_advance, int only_player_target)
@@ -2186,7 +2197,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 	int last_subsys_turret = FALSE;
 	if (Player_ai->targeted_subsys != NULL) {
 		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET) {
-			if (Player_ai->targeted_subsys->system_info->turret_weapon_type >= 0) {
+			if (Player_ai->targeted_subsys->system_info->primary_banks[0] >= 0 || Player_ai->targeted_subsys->system_info->secondary_banks[0] >= 0) {
 				last_subsys_turret = TRUE;
 			}
 		}
@@ -2204,7 +2215,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 		// get a turret
 		if (A->system_info->type == SUBSYSTEM_TURRET) {
 			// check turret has hit points and has a weapon
-			if ( (A->current_hits > 0) && (A->system_info->turret_weapon_type >= 0) ) {
+			if ( (A->current_hits > 0) && (A->system_info->primary_banks[0] >= 0 || A->system_info->secondary_banks[0] >= 0) ) {
 				if ( !only_player_target || (A->turret_enemy_objnum == OBJ_INDEX(Player_obj)) ) {
 					vector gsubpos, vec_to_subsys;
 					float distance, dot;
@@ -2225,14 +2236,14 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 					}
 
 					// set weapon_type to allow sort of ent on type
-					if (Weapon_info[A->system_info->turret_weapon_type].wi_flags & WIF_BEAM) {
+					if (turret_weapon_has_flags(A->system_info, WIF_BEAM)) {
 						ent[num_live_turrets].type = TYPE_FACING_BEAM;
-					} else  if (Weapon_info[A->system_info->turret_weapon_type].wi_flags & WIF_FLAK) {
+					} else  if (turret_weapon_has_flags(A->system_info, WIF_FLAK)) {
 						ent[num_live_turrets].type = TYPE_FACING_FLAK;
 					} else {
-						if (Weapon_info[A->system_info->turret_weapon_type].subtype == WP_MISSILE) {
+						if (turret_weapon_has_subtype(A->system_info, WP_MISSILE)) {
 							ent[num_live_turrets].type = TYPE_FACING_MISSILE;
-						} else if (Weapon_info[A->system_info->turret_weapon_type].subtype == WP_LASER) {
+						} else if (turret_weapon_has_subtype(A->system_info, WP_LASER)) {
 							ent[num_live_turrets].type = TYPE_FACING_LASER;
 						} else {
 							Int3();
@@ -5257,103 +5268,6 @@ void hud_show_target_triangle_indicator(vertex *projected_v)
 	}
 }
 
-// called from hud_show_weapons() to plot out the secondary weapon name and ammo
-void hud_show_secondary_weapon(int count, ship_weapon *sw, int dual_fire)
-{
-	char	ammo_str[32];
-	char	weapon_name[NAME_LENGTH + 10];
-	int	i, w, h, np;
-	weapon_info	*wip;
-
-	np = 1;
-	if ( sw->num_primary_banks == 2 ) {
-		np = 0;
-	} 
-
-	for ( i = 0; i < count; i++ ) {
-		hud_maybe_flash_weapon(sw->num_primary_banks+i);
-		wip = &Weapon_info[sw->secondary_bank_weapons[i]];
-		
-		// HACK - make Cluster Bomb fit on the HUD.
-		if(!stricmp(wip->name,"cluster bomb")){
-			strcpy(weapon_name, NOX("Cluster"));
-		} else {
-			strcpy(weapon_name, wip->name);
-		}
-
-		// get rid of #
-		end_string_at_first_hash_symbol(weapon_name);
-		
-		if ( sw->current_secondary_bank == i ) {
-			emp_hud_printf(Weapon_sunlinked_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, EG_NULL, "%c", Lcl_special_chars + 2);			
-
-			if ( dual_fire ) {
-				emp_hud_printf(Weapon_slinked_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, EG_NULL, "%c", Lcl_special_chars + 2);				
-			}
-
-			if(wip->hud_image_index != -1)
-			{
-				GR_AABITMAP(wip->hud_image_index, Weapon_secondary_name_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12);
-			}
-			else
-			{
-				emp_hud_string(Weapon_secondary_name_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
-			}
-
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
-				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
-				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					emp_hud_printf(Weapon_secondary_reload_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));					
-				}
-			}
-		} else {
-			emp_hud_string(Weapon_secondary_name_x[gr_screen.res], Weapon_secondary_y[gr_screen.res][i] - np*12, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);			
-		}
-
-		int ammo=sw->secondary_bank_ammo[i];
-		/*if ((Tertiary_weapon_info[Player_ship->tertiary_weapon_info_idx].type == TWT_AMMO_POD) && (i == Player_ship->ammopod_current_secondary))
-		{
-			ammo+=Player_ship->ammopod_current_ammo;
-		}*/
-
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str);
-		gr_get_string_size(&w, &h, ammo_str);
-
-		emp_hud_string(Weapon_secondary_ammo_x[gr_screen.res] - w, Weapon_secondary_y[gr_screen.res][i] - np*12, EG_NULL, ammo_str);		
-
-		hud_set_gauge_color(HUD_WEAPONS_GAUGE);
-	}
-}
-
-// called from hud_show_weapons() to plot out the primary weapon ammo - Goober5000
-void hud_show_primary_weapon_ammo(int count, ship_weapon *sw)
-{
-	char ammo_str[32];
-	int	i, w, h;
-
-	for ( i = 0; i < count; i++ )
-	{
-		// for all ballistic weapons
-		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC)
-		{
-			// print out the ammo right justified
-			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
-
-			// get rid of #
-			end_string_at_first_hash_symbol(ammo_str);
-
-			hud_num_make_mono(ammo_str);
-			gr_get_string_size(&w, &h, ammo_str);
-
-			emp_hud_string(Weapon_primary_ammo_x[gr_screen.res] - w, Weapon_primary_y[gr_screen.res][i], EG_NULL, ammo_str);
-
-			hud_set_gauge_color(HUD_WEAPONS_GAUGE);
-		}
-	}
-}
-
 // start the weapon line (on the HUD) flashing
 void hud_start_flash_weapon(int index)
 {
@@ -5483,9 +5397,6 @@ void hud_show_weapons()
 				GR_AABITMAP(New_weapon.first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
 		}
 
-		if(i!=0)
-			y+=res_diff;
-
 		strcpy(name, Weapon_info[sw->primary_bank_weapons[i]].name);
 		if (Lcl_gr) {
 			lcl_translate_wep_name(name);
@@ -5509,7 +5420,6 @@ void hud_show_weapons()
 		{
 			emp_hud_printf(Weapon_pname_coords[gr_screen.res][0][0], name_y, EG_WEAPON_P2, "%s", name);					
 		}
-		name_y += res_diff;
 
 		if (Weapon_info[sw->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC)
 		{
@@ -5522,8 +5432,11 @@ void hud_show_weapons()
 			hud_num_make_mono(ammo_str);
 			gr_get_string_size(&w, &h, ammo_str);
 
-			emp_hud_string(Weapon_primary_ammo_x[gr_screen.res] - w, y, EG_NULL, ammo_str);
+			emp_hud_string(Weapon_primary_ammo_x[gr_screen.res] - w, name_y, EG_NULL, ammo_str);
 		}
+		if(i!=0)
+			y+=res_diff;
+		name_y += res_diff;
 	}
 
 	//name_y = gr_screen.res==0 ? 309 : 561;
@@ -5533,7 +5446,7 @@ void hud_show_weapons()
 	char	weapon_name[NAME_LENGTH + 10];
 
 	GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
-	y+=res_diff;
+	y+=3;	//Unfortunately, the top gauge is a different size than the others
 
 	res_diff=9;
 	name_res_diff=9;
@@ -5541,12 +5454,12 @@ void hud_show_weapons()
 	for(i = 0; i < ns; i++)
 	{
 		hud_set_gauge_color(HUD_WEAPONS_GAUGE);
-
-		hud_maybe_flash_weapon(np+i);
 		wip = &Weapon_info[sw->secondary_bank_weapons[i]];
 
 		if(i!=0)
-			GR_AABITMAP(Weapon_gauges[ballistic_hud_index][3].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][2][0], y);
+			GR_AABITMAP(Weapon_gauges[ballistic_hud_index][3].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][3][0], y);
+
+		hud_maybe_flash_weapon(np+i);
 		
 		// HACK - make Cluster Bomb fit on the HUD.
 		if(!stricmp(wip->name,"cluster bomb")){
@@ -5604,7 +5517,7 @@ void hud_show_weapons()
 	if(ns==0)
 		emp_hud_string(Weapon_pname_coords[gr_screen.res][0][0], name_y, EG_WEAPON_S1, XSTR( "<none>", 329));	
 
-	y -= res_diff;
+	y -= 0;
 	GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][0][0], y);
 
 	//GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);

@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-01-30 03:28:17 $
+ * $Revision: 1.11 $
+ * $Date: 2005-03-13 08:32:28 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/01/30 03:28:17  wmcoolmon
+ * Make sure hudnavigation uses the correct draw_brackets_Square
+ *
  * Revision 1.9  2004/11/27 10:51:01  taylor
  * Linux tree merge
  *
@@ -64,7 +67,6 @@
 extern int sexp_distance2(int obj1, char *subj);
 extern void hud_target_show_dist_on_bracket(int x, int y, float distance);
 extern void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick);
-extern float Cmdline_fov;
 // Draws the Navigation stuff on the HUD
 void HUD_Draw_Navigation()
 {
