@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.20 $
+ * $Date: 2004-10-09 17:58:48 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.18  2004/07/17 18:46:08  taylor
  * various OGL and memory leak fixes
  *
@@ -959,24 +962,31 @@ void messages_init()
 // free a loaded avi
 void message_mission_free_avi(int m_index)
 {
-	int count = 0;
-	int i;
+	int rc = 0, try_count = 0;
 
 	// check for bogus index
 	if ( (m_index < 0) || (m_index > Num_message_avis) )
 		return;
 
-	if (Message_avis[m_index].anim_data != NULL) {
-		// how may tries do we need to make
-		count = Message_avis[m_index].anim_data->ref_count;
+	// Make sure this code doesn't get run if the talking head guage is off
+	// helps prevent a crash on jump out if this code doesn't work right
+	if ( !hud_gauge_active(HUD_TALKING_HEAD) )
+		return;
 
-		for (i=0; i<count; i++) {
-			if ( anim_free(Message_avis[m_index].anim_data) == 0 ) {
-				// successfully free'd so reset to NULL and get out
-				Message_avis[m_index].anim_data = NULL;
+	if (Message_avis[m_index].anim_data != NULL) {
+		do {
+			rc = anim_free( Message_avis[m_index].anim_data );
+			try_count++;
+
+			// -2 is to catch a point where the data isn't valid and we want
+			// to just abort right now rather than to keep trying
+			if (rc == -2)
 				break;
-			}
-		}
+
+			// stop at 25 tries to avoid a possible endless loop
+		} while ( rc && (try_count < 25) );
+
+		Message_avis[m_index].anim_data = NULL;
 	}
 }
 

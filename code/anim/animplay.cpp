@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-26 20:47:23 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2004-10-09 17:58:48 $
+ * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/26 20:47:23  Kazan
+ * remove MCD complete
+ *
  * Revision 2.10  2004/07/17 18:46:06  taylor
  * various OGL and memory leak fixes
  *
@@ -1107,7 +1110,7 @@ int anim_free(anim *ptr)
 	}
 
 	if ( !list )
-		return -1;
+		return -2;
 
 	// only free when ref_count is 0
 	ptr->ref_count--;
