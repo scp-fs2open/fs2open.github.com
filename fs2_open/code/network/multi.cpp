@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-03-31 05:42:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-06 19:59:37 $
+ * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/03/31 05:42:27  Goober5000
+ * got rid of all those nasty warnings from xlocale and so forth; also added comments
+ * for #pragma warning disable to indicate the message being disabled
+ * --Goober5000
+ *
  * Revision 2.17  2004/03/09 17:59:01  Kazan
  * Disabled multithreaded TCP_Socket in favor of safer single threaded
  * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
@@ -1389,7 +1394,7 @@ void multi_do_frame()
 			if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
 			{
 	
-				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, Netgame.mission_name, Netgame.title, Netgame.flags, Netgame.server_addr.port, Netgame.max_players);
+				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, Netgame.mission_name, Netgame.title, Netgame.type_flags, Netgame.server_addr.port, multi_num_players());
 			}
 			Ping(PXO_Server, FS2OpenPXO_Socket);
 			ml_printf("Network FS2netD sent PING\n");
