@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.164 $
- * $Date: 2005-03-01 06:55:45 $
- * $Author: bobboau $
+ * $Revision: 2.165 $
+ * $Date: 2005-03-01 23:05:38 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.164  2005/03/01 06:55:45  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.163  2005/02/19 07:57:02  wmcoolmon
  * Removed trails limit
  *
@@ -4601,9 +4605,9 @@ void ship_render(object * obj)
 	
 				bool clipping = false;
 	
-				extern int G3_user_clip;
+			/*	extern int G3_user_clip;
 	
-			/*	if(!G3_user_clip){
+				if(!G3_user_clip){
 					vector clip_pnt;
 					vm_vec_rotate(&clip_pnt, &model_get(shipp->modelnum)->missile_banks[i].pnt[k], &obj->orient);
 					vm_vec_add2(&clip_pnt, &obj->pos);
@@ -7259,8 +7263,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	ship_weapon	*swp;
 	swp = &sp->weapons;
+	int i;
 
-	for(int i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
+	for( i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
 			swp->primary_animation_position[i] = false;
 	}
 	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
@@ -7581,7 +7586,7 @@ int ship_stop_fire_primary(object * obj)
 {
 //	gr_set_color( 250, 50, 75 );
 
-	int num_primary_banks = 0, bank_to_stop = 0;
+	int i, num_primary_banks = 0, bank_to_stop = 0;
 	ship			*shipp;
 	ship_weapon	*swp;
 
@@ -7609,13 +7614,13 @@ int ship_stop_fire_primary(object * obj)
 		num_primary_banks = min(1, swp->num_primary_banks);
 	}
 
-	for ( int i = 0; i < num_primary_banks; i++ ) {	
+	for ( i = 0; i < num_primary_banks; i++ ) {	
 		// Goober5000 - allow more than two banks
 		bank_to_stop = (swp->current_primary_bank+i) % swp->num_primary_banks;
 		//only stop if it was fireing last frame
 		ship_stop_fire_primary_bank(obj, bank_to_stop);
 	}
-	for(i; i<swp->num_primary_banks+num_primary_banks;i++)
+	for(i = 0; i<swp->num_primary_banks+num_primary_banks;i++)
 		ship_stop_fire_primary_bank(obj, i%swp->num_primary_banks);
 
 /*	if ( obj == Player_obj ){
@@ -13837,7 +13842,9 @@ int ship_get_animation_time_type(ship *shipp, int animation_type, int subtype){
 void ship_animation_set_inital_states(ship *shipp){
 
 	ship_weapon	*swp = &shipp->weapons;
-	for(int i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
+	int i;
+
+	for(i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
 		swp->primary_animation_done_time[i] = 0;
 	}
 	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
