@@ -2,13 +2,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.35 $
- * $Date: 2003-10-14 17:39:13 $
- * $Author: randomtiger $
+ * $Revision: 2.36 $
+ * $Date: 2003-10-18 01:22:39 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/10/14 17:39:13  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.34  2003/10/13 19:39:19  matt
  * prelim reworking of lighting code, dynamic lights work properly now
  * albeit at only 8 lights per object, although it looks just as good as
@@ -513,6 +523,7 @@ typedef struct ogl_extension
 #define GL_UNLOCK_ARRAYS				14			// HTL
 #define GL_LOAD_TRANSPOSE				15			
 #define GL_MULT_TRANSPOSE				16
+#define GL_CLIENT_ACTIVE_TEX			17
 
 
 //GL_ARB_vertex_buffer_object FUNCTIONS
@@ -524,7 +535,7 @@ typedef struct ogl_extension
 #define GL_ARB_VBO_UNMAP_BUFFER			20*/
 
 
-#define GL_NUM_EXTENSIONS				17
+#define GL_NUM_EXTENSIONS				18
 
 /*
 Assorted Functions for GL_ARB_vertex_buffer_object
@@ -567,8 +578,8 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, NULL, "glLockArraysEXT", "GL_EXT_compiled_vertex_array",0},
 	{0, NULL, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array",0},
 	{0, NULL,"glLoadTransposeMatrixfARB","GL_ARB_transpose_matrix",	1},
-	{0, NULL, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1}		
-
+	{0, NULL, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1},
+	{0, NULL, "glClientActiveTextureARB", "GL_ARB_multitexture",1}
 };
 
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
@@ -595,6 +606,8 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 #define glLoadTransposeMatrixfARB GLEXT_CALL(PFNGLLOADTRANSPOSEMATRIXFARBPROC, GL_LOAD_TRANSPOSE)
 
 #define glMultTransposeMatrixfARB GLEXT_CALL(PFNGLMULTTRANSPOSEMATRIXFARBPROC, GL_MULT_TRANSPOSE)
+
+#define glClientActiveTextureARB GLEXT_CALL(PFNGLCLIENTACTIVETEXTUREARBPROC, GL_CLIENT_ACTIVE_TEX)
 
 extern int Texture_compression_enabled;
 
@@ -1155,6 +1168,7 @@ void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
 
 void gr_opengl_set_clip(int x,int y,int w,int h)
 {
+
 	// check for sanity of parameters
 	if (x < 0)
 		x = 0;
@@ -1187,6 +1201,7 @@ void gr_opengl_set_clip(int x,int y,int w,int h)
 	
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(x, gr_screen.max_h-y-h, w, h);
+
 }
 
 void gr_opengl_reset_clip()
@@ -1199,9 +1214,8 @@ void gr_opengl_reset_clip()
 	gr_screen.clip_bottom = gr_screen.max_h - 1;
 	gr_screen.clip_width = gr_screen.max_w;
 	gr_screen.clip_height = gr_screen.max_h;
-	
+
 	glDisable(GL_SCISSOR_TEST);
-//	glScissor(0, 0, gr_screen.max_w, gr_screen.max_h);
 }
 
 void gr_opengl_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx, int sy )
@@ -1890,6 +1904,32 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 	glEnd();
 }
 
+void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale )
+{
+	gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+	GLOWMAP=-1;
+
+	if ( !gr_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+	{
+		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+		return;
+	}
+
+	glBlendFunc(GL_ONE,GL_ONE);
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_EQUAL);
+	gr_opengl_set_tex_env_scale(4.0f);
+	
+}
+
+void opengl_reset_spec_mapping()
+{
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+}
+
 void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, int is_scaler )
 {
 	int i;
@@ -1990,7 +2030,6 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
-			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
@@ -2057,7 +2096,6 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 		//maybe draw a cloakmap, using a multipass technique
 		if ( !gr_tcache_set(CLOAKMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
-			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
@@ -2091,7 +2129,6 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 
 			if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 			{
-				// SHUT UP! -- Kazan -- This is massively slowing debug builds down
 				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 				return;
 			}
@@ -2207,7 +2244,6 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
-			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
@@ -2264,26 +2300,9 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 
 	if ((SPECMAP > -1) && (flags & TMAP_FLAG_TEXTURED))
 	{
-			gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
-			GLOWMAP=-1;
-
-			if ( !gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
-			{
-				// SHUT UP! -- Kazan -- This is massively slowing debug builds down
-				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-				return;
-			}
-
-			glBlendFunc(GL_ONE,GL_ONE);
-			glDepthMask(GL_FALSE);
-			glDepthFunc(GL_EQUAL);
-			gr_opengl_set_tex_env_scale(4.0f);
+			opengl_set_spec_mapping(tmap_type,&u_scale,&v_scale);
 			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha,1);
-			
-			glDepthMask(GL_TRUE);
-			glDepthFunc(GL_LESS);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+			opengl_reset_spec_mapping();
 	}
 
 }
@@ -4026,18 +4045,6 @@ struct opengl_vertex_buffer
 
 opengl_vertex_buffer vertex_buffers[MAX_BUFFERS];
 
-//some globals
-extern matrix View_matrix;
-extern vector View_position;
-extern matrix Eye_matrix;
-extern vector Eye_position;
-extern vector Object_position;
-extern matrix Object_matrix;
-extern float	Canv_w2;				// Canvas_width / 2
-extern float	Canv_h2;				// Canvas_height / 2
-extern float	View_zoom;
-static int n_active_lights = 0;
-
 //zeros everything out
 void opengl_init_vertex_buffers()
 {
@@ -4118,12 +4125,16 @@ void gr_opengl_destroy_buffer(int idx)
 
 	memset(vbp,0,sizeof(opengl_vertex_buffer));
 }
+
+//#define DRAW_DEBUG_LINES
 	
 void gr_opengl_render_buffer(int idx)
 {
 	float u_scale,v_scale;
 
 	glFrontFace(GL_CW);
+	glColor3ub(128,128,128);
+	
 	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
 
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -4132,95 +4143,120 @@ void gr_opengl_render_buffer(int idx)
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glNormalPointer(GL_FLOAT,0,vbp->normal_array);
 
-	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glClientActiveTextureARB(GL_TEXTURE0_ARB);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 	
 	if (GLOWMAP > -1)
 	{
-		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glClientActiveTextureARB(GL_TEXTURE1_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
 	}
-//	else
-//	{
-//		glActiveTextureARB(GL_TEXTURE1_ARB);
-//		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-//		glDisable(GL_TEXTURE_2D);
-//	}
 
 	gr_opengl_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
-	glColor3ub(255,255,255);
+
 	gr_tcache_set(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
 	
 	glLockArraysEXT(0,vbp->n_poly*3);
+
 	glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3);
+
 	glUnlockArraysEXT();
 
+#if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
+	glBegin(GL_LINES);
+		glColor3ub(255,0,0);
+		glVertex3d(0,0,0);
+		glVertex3d(20,0,0);
 
+		glColor3ub(0,255,0);
+		glVertex3d(0,0,0);
+		glVertex3d(0,20,0);
+
+		glColor3ub(0,0,255);
+		glVertex3d(0,0,0);
+		glVertex3d(0,0,20);
+	glEnd();
+#endif
+	
 }
 
 
 extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
+extern vector G3_user_clip_normal;
+extern vector G3_user_clip_point;
 
-int depth =0;
+int depth = 0;
+const double ZFAR=100000.0;
+const double ZNEAR=0.1;
 //set camera and shiz
-void gr_opengl_start_instance_matrix()
+
+//some globals
+extern matrix View_matrix;
+extern vector View_position;
+extern matrix Eye_matrix;
+extern vector Eye_position;
+extern vector Object_position;
+extern matrix Object_matrix;
+extern float	Canv_w2;				// Canvas_width / 2
+extern float	Canv_h2;				// Canvas_height / 2
+extern float	View_zoom;
+static int n_active_lights = 0;
+void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
 {
-	if (depth==0){
-		//change the viewport
+	if (!offset)
+		offset = &vmd_zero_vector;
+	if (!rotation)
+		rotation = &vmd_identity_matrix;
+
+
+	if (depth == 0)
+	{
+		//change the projection matrix
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
 		glLoadIdentity();
 
 		//fov, aspect ratio, z_near, z_far
-		gluPerspective(45.0, (float)gr_screen.max_w/(float)gr_screen.max_h, 0.1, 100000.0);
+		//gluPerspective(fl_degrees(View_zoom), (float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1, z_far);
+		gluPerspective( fl_degrees( (4.0f/9.0f)*3.14159*View_zoom ), Canv_w2/Canv_h2, ZNEAR, ZFAR);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
+		glViewport(gr_screen.offset_x,gr_screen.max_h-gr_screen.offset_y-gr_screen.clip_height,gr_screen.clip_width,gr_screen.clip_height);
 
+		vector fwd;
+		vector *uvec=&Eye_matrix.vec.uvec;
+
+		vm_vec_scale_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec,(float)ZFAR);
+
+		gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,-Eye_position.xyz.z,
+		fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
+		uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
+		glScalef(1,1,-1);
 	}
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	glLoadIdentity();
-
-	vector fwd;
-	vector *uvec=&Eye_matrix.vec.uvec;
-
-	vm_vec_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec);
-
-	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,Eye_position.xyz.z,
-			fwd.xyz.x,fwd.xyz.y,fwd.xyz.z,
-			uvec->xyz.x, uvec->xyz.y,uvec->xyz.z);
-
-	glTranslatef(Object_position.xyz.x,Object_position.xyz.y,Object_position.xyz.z);
 
 	vector axis;
 	float ang;
+	vm_matrix_to_rot_axis_and_angle(rotation,&ang,&axis);
+	glTranslatef(offset->xyz.x,offset->xyz.y,offset->xyz.z);
+	glRotatef(fl_degrees(ang),axis.xyz.x,axis.xyz.y,axis.xyz.z);
 
-	vm_matrix_to_rot_axis_and_angle(&Object_matrix,&ang,&axis);
-
-	glRotatef(fl_degrees(ang),axis.xyz.x,-axis.xyz.y,-axis.xyz.z);
-
-	glScalef(-Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z);
-
-/*	vector fwd;
-	vector *uvec=&Eye_matrix.vec.uvec;
-
-	vm_vec_scale_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec,30000);
-
-	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,Eye_position.xyz.z,
-			fwd.xyz.x,fwd.xyz.y,fwd.xyz.z,
-			uvec->xyz.x, uvec->xyz.y,uvec->xyz.z);
-*/
-
+	glScalef(Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z);
 
 	depth++;
 
 }
 
-void gr_opengl_end_instance_matrix(){
+void gr_opengl_end_instance_matrix()
+{
+
+	if (depth == 0)
+		return;
 	
 	depth--;
 
@@ -4231,7 +4267,11 @@ void gr_opengl_end_instance_matrix(){
 	{
 		glMatrixMode(GL_PROJECTION);
 		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glViewport(0,0,gr_screen.max_w,gr_screen.max_h);
 	}
+
 }
 
 int	 gr_opengl_make_light(light_data* light, int idx, int priority){
@@ -4251,12 +4291,30 @@ void gr_opengl_set_light(light_data *light){
 	//stubb
 }
 
-void gr_opengl_end_clip()
+void gr_opengl_end_clip_plane()
 {
+	glDisable(GL_CLIP_PLANE0);
+	gr_opengl_end_instance_matrix();
 }
 
-void gr_opengl_start_clip()
+void gr_opengl_start_clip_plane()
 {
+	vector n=G3_user_clip_normal;
+//	n.xyz.z*=-1;
+
+	vector p=G3_user_clip_point;
+	p.xyz.z*=-1;
+
+	gr_opengl_start_instance_matrix(&vmd_zero_vector,&vmd_identity_matrix);
+
+	double equation[4]={n.xyz.x,
+						n.xyz.y,
+						n.xyz.z,
+						vm_vec_dot(&p,&n)};
+
+	glClipPlane(GL_CLIP_PLANE0,equation);
+	glEnable(GL_CLIP_PLANE0);
+
 }
 
 void gr_opengl_set_lighting(bool state)
@@ -4653,10 +4711,12 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_screen.gf_set_light = gr_opengl_set_light;
 		gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
 
-		gr_screen.start_clip_plane = gr_opengl_end_clip;
-		gr_screen.end_clip_plane = gr_opengl_start_clip;
+		gr_screen.start_clip_plane = gr_opengl_start_clip_plane;
+		gr_screen.end_clip_plane = gr_opengl_end_clip_plane;
 
 		gr_screen.gf_lighting = gr_opengl_set_lighting;
+
+		glEnable(GL_NORMALIZE);
 	}
 
 	Mouse_hidden++;
