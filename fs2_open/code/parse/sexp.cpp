@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.77 $
- * $Date: 2003-10-28 23:59:02 $
+ * $Revision: 2.78 $
+ * $Date: 2003-11-08 04:31:02 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2003/10/28 23:59:02  Goober5000
+ * tweakage
+ * --Goober5000
+ *
  * Revision 2.76  2003/10/20 11:49:18  Goober5000
  * added min, max, and avg sexps
  * --Goober5000
@@ -1493,16 +1497,16 @@ int find_argnum(int parent, int arg)
 {
 	int n, tally;
 
-	n = Sexp_nodes[parent].rest;
+	n = CDR(parent);
 	tally = 0;
 	
-	while (n != arg)
+	while (CAR(n) != arg)
 	{
 		if (n == -1)
 			return -1;
 
 		tally++;
-		n = CADR(n);
+		n = CDR(n);
 	}
 
 	return tally;
@@ -11777,7 +11781,9 @@ int eval_sexp(int cur_node)
 			// make sure everything works okay
 			if (arg == -1)
 			{
-				Error(LOCATION, "Error finding sexp argument.");
+				char sexp_text[8192];
+				convert_sexp_to_string(cur_node, sexp_text, SEXP_ERROR_CHECK_MODE);
+				Error(LOCATION, "Error finding sexp argument.  Received value %d for sexp:\n%s", sexp_val, sexp_text);
 			}
 
 			// if we need a positive value, make it positive
