@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/03/29 09:42:05  Goober5000
+ * made beams default shield piercing again
+ * also added a beam no pierce command line flag
+ * and fixed something else which I forgot :P
+ * --Goober5000
+ *
  * Revision 2.9  2003/03/03 04:28:37  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -609,6 +615,13 @@ typedef struct weapon_info {
 	int decal_texture;
 	int decal_backface_texture;
 	float decal_rad;
+
+	//electronics info - phreak 5/3/03
+	float elec_intensity;		//intensity detirmines how well it works on different ship classes
+	int elec_time;				//how long it lasts
+	float elec_eng_mult;		//multiplier on engine subsystem
+	float elec_weap_mult;		//multiplier on weapon subsystem and turrets
+
 
 } weapon_info;
 
