@@ -539,14 +539,54 @@ SOURCE=.\Graphics\GrD3DTexture.cpp
 # Begin Group "OpenGLGr"
 
 # PROP Default_Filter ""
+# Begin Group "OpenGL Headers"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\Graphics\GrOpenGL.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrOpenglExtension.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrOpenGLlight.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrOpenglTexture.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrOpenGLTNL.h
+# End Source File
+# End Group
+# Begin Group "OpenGL CPPs"
+
+# PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=.\Graphics\GrOpenGL.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\Graphics\GrOpenGL.h
+SOURCE=.\graphics\GrOpenglExtension.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrOpenGLlight.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrOpenglTexture.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrOpenGLTNL.cpp
+# End Source File
+# End Group
 # End Group
 # Begin Source File
 
