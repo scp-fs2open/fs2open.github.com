@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-08-18 19:48:29 $
- * $Author: randomtiger $
+ * $Revision: 2.5 $
+ * $Date: 2002-08-27 13:38:58 $
+ * $Author: penguin $
  *
  * Header file for main-hall menu code
  *
@@ -1058,11 +1058,11 @@ void main_hall_do(float frametime)
 #ifndef NDEBUG	
 	case KEY_1:		
 		// no soup for you!
-		movie_play("endprt2b.mve", 0);
+		// movie_play("endprt2b.mve", 0);
 		break;
 	case KEY_2:		
 		// no soup for you!
-		movie_play_two("endprt2a.mve", "endprt2b.mve", 0);
+		// movie_play_two("endprt2a.mve", "endprt2b.mve", 0);
 		break;
 	case KEY_3:		
 		main_hall_campaign_cheat();	

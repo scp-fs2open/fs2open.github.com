@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.4 $
- * $Date: 2002-08-18 19:48:28 $
- * $Author: randomtiger $
+ * $Revision: 2.5 $
+ * $Date: 2002-08-27 13:38:57 $
+ * $Author: penguin $
  *
  * $Log: not supported by cvs2svn $
  * Revision 2.3  2002/08/07 00:44:13  DTP
@@ -205,6 +205,6 @@ extern int Cmdline_timeout;
 extern int Cmdline_window;
 extern char *Cmdline_almission;	//DTP for autoload mission
 extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
-extern int Cmdline_dshowvid;
+
 
 #endif
