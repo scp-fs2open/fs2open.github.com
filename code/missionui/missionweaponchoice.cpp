@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-01-31 23:27:54 $
+ * $Revision: 2.33 $
+ * $Date: 2005-02-02 15:09:06 $
  * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.31  2005/01/29 09:19:45  argv
  * Fixed compile errors due to several source files not having been updated to
  * reference "Min/Max_draw_distance" instead of "MIN/MAX_DRAW_DISTANCE".
@@ -1287,6 +1290,7 @@ void wl_render_overhead_view(float frametime)
 			gamesnd_play_iface(SND_ICON_DROP);
 		}
 		Last_wl_ship_class = ship_class;
+		WeapSelectModelNum = -1;
 	}
 
 	wl_ship = &Wl_ships[ship_class];
@@ -1304,7 +1308,7 @@ void wl_render_overhead_view(float frametime)
 		}
 		
 		// Load the necessary model file, if necessary
-		if(WeapSelectModelNum)
+		if(WeapSelectModelNum < 0)
 		{
 			WeapSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 			
