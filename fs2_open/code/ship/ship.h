@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.81 $
- * $Date: 2005-03-01 06:55:45 $
- * $Author: bobboau $
+ * $Revision: 2.82 $
+ * $Date: 2005-03-03 07:13:17 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/03/01 06:55:45  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.80  2005/02/19 07:57:03  wmcoolmon
  * Removed trails limit
  *
@@ -1191,6 +1195,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_FLASH							(1 << 2)	// makes a flash when it explodes
 #define SIF2_SHOW_SHIP_MODEL				(1 << 3)	// Show ship model even in first person view
 #define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
+#define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
