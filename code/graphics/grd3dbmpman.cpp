@@ -374,15 +374,15 @@ int bm_d3d_load( char * real_filename )
 	if(type == BM_TYPE_PCX) {
 		int pcx_error=pcx_read_header( filename, &w, &h, NULL );		
 		if ( pcx_error != PCX_ERROR_NONE )	{
-			DBUGFILE_OUTPUT_1("Cant load %s",filename);
-			mprintf(( "Couldn't open '%s'\n", filename ));
+			DBUGFILE_OUTPUT_1("bm_pcx: Cant load %s",filename);
+			mprintf(( "bm_pcx: Couldn't open '%s'\n", filename ));
 			return -1;
 		}
 	} else {
 		// Let D3DX handle this
 		if(d3d_read_header_d3dx( filename, type, &w, &h) == false) {
-			DBUGFILE_OUTPUT_1("Cant load %s",filename);
-			mprintf(( "Couldn't open '%s'\n", filename ));
+			DBUGFILE_OUTPUT_1("not bm_pcx: Cant load %s",filename);
+			mprintf(( "not bm_pcx: Couldn't open '%s'\n", filename ));
 			return -1;
 		}
 	}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cfilearchiver/CfileArchiver.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-11-16 09:42:37 $
+ * $Author: Goober5000 $
  *
  * Program to create an archive file for use with cfile stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -245,7 +248,7 @@ int main(int argc, char *argv[] )
 
 	fp_out = fopen( archive_dat, "wb" );
 	if ( !fp_out )	{
-		printf( "Couldn't open '%s'!\n", archive_dat );
+		printf( "out1: Couldn't open '%s'!\n", archive_dat );
 		printf( "Press any key to exit...\n" );
 		getch();
 		return 1;
@@ -253,7 +256,7 @@ int main(int argc, char *argv[] )
 
 	fp_out_hdr = fopen( archive_hdr, "wb" );
 	if ( !fp_out_hdr )	{
-		printf( "Couldn't open '%s'!\n", archive_hdr );
+		printf( "out2: Couldn't open '%s'!\n", archive_hdr );
 		printf( "Press any key to exit...\n" );
 		getch();
 		return 1;
