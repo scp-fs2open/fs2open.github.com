@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.2 $
- * $Date: 2003-10-16 16:38:16 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2004-01-21 17:34:31 $
+ * $Author: phreak $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/16 16:38:16  Kazan
+ * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -337,7 +340,11 @@ extern int Num_builtin_messages;				// from messages.tbl -- index of message loc
 extern int Message_shipnum;					// used to display info on hud when message is sent
 
 // variable, etc for persona information
+#ifdef INF_BUILD
 #define MAX_PERSONAS		13
+#else
+#define MAX_PERSONAS		25
+#endif
 #define MAX_PERSONA_TYPES		4
 
 // flags for personas.  the type flags must be sequential starting from 0, and must match
