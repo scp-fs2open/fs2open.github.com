@@ -9,13 +9,23 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.16 $
- * $Author: Goober5000 $
- * $Date: 2002-12-27 02:57:51 $
+ * $Revision: 2.17 $
+ * $Author: phreak $
+ * $Date: 2002-12-27 20:16:18 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2002/12/27 02:57:51  Goober5000
+ * removed the existing stealth sexps and replaced them with the following...
+ * ship-stealthy
+ * ship-unstealthy
+ * is-ship-stealthy
+ * friendly-stealth-invisible
+ * friendly-stealth-visible
+ * is-friendly-stealth-visible
+ * --Goober5000
+ *
  * Revision 2.15  2002/12/25 01:22:23  Goober5000
  * meh - changed is-cargo-x to is-cargo
  * --Goober5000
@@ -384,7 +394,7 @@
 #define MAX_SEXP_VARIABLES 100
 
 #define	MAX_SEXP_TEXT	2000
-#define	MAX_OPERATORS	200  // Yes, this is used, but not by the Sexp code.
+#define	MAX_OPERATORS	256  // Yes, this is used, but not by the Sexp code.
 
 // Operator argument formats (data types of an argument)
 #define	OPF_NONE				1		// argument cannot exist at this position if it's this
@@ -640,6 +650,7 @@
 #define OP_CHANGE_AI_CLASS				(0x0067 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FRIENDLY_STEALTH_INVISIBLE	(0x0068	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FRIENDLY_STEALTH_VISIBLE		(0x0069	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_DAMAGED_ESCORT_LIST		(0x006a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 
 
 // debugging sexpressions

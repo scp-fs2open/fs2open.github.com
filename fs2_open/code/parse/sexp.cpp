@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.18 $
- * $Date: 2002-12-27 02:57:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2002-12-27 20:16:18 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2002/12/27 02:57:51  Goober5000
+ * removed the existing stealth sexps and replaced them with the following...
+ * ship-stealthy
+ * ship-unstealthy
+ * is-ship-stealthy
+ * friendly-stealth-invisible
+ * friendly-stealth-visible
+ * is-friendly-stealth-visible
+ * --Goober5000
+ *
  * Revision 2.17  2002/12/25 01:22:23  Goober5000
  * meh - changed is-cargo-x to is-cargo
  * --Goober5000
@@ -626,6 +636,7 @@ sexp_oper Operators[] = {
 
 	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
+	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3,INT_MAX},					//phreak
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
@@ -7788,6 +7799,68 @@ void sexp_add_remove_escort(int node)
 	}
 }
 
+//given: two escort priorities and a list of ships
+//do:    sets the most damaged one to the first priority and the rest to the second.
+void sexp_damage_escort_list(int node)
+{
+	int n;
+	int priority1;		//escort priority to set the most damaged ship
+	int priority2;		//""         ""   to set the other ships
+
+	ship* shipp;
+	float smallest_hull_pct=1;		//smallest hull pct found
+	int small_shipnum=-1;		//index in Ships[] of the above
+	float current_hull_pct;			//hull pct of current ship we are evaluating
+	int shipnum=-1;				//index in Ships[] of the above
+
+	priority1=atoi(CTEXT(node));
+	priority2=atoi(CTEXT(CDR(node)));
+
+	//go to start of ship list
+	n=CDR(CDR(node));
+	
+	//loop through the ships
+	while (n!=-1)
+	{
+		shipnum=ship_name_lookup(CTEXT(n));
+		
+		//it may be dead
+		if (shipnum < 0)
+		{
+			n=CDR(n);
+			continue;
+		}
+		if (Ships[shipnum].objnum < 0)
+		{
+			n=CDR(n);
+			continue;
+		}
+
+		//calc hull integrity and compare
+		shipp=&Ships[shipnum];
+		current_hull_pct=Objects[shipp->objnum].hull_strength/Ship_info[shipp->ship_info_index].initial_hull_strength;
+
+		if (current_hull_pct < smallest_hull_pct)
+		{
+			Ships[small_shipnum].escort_priority=priority2;		//give the previous smallest the lower priority
+			
+			smallest_hull_pct=current_hull_pct;
+			small_shipnum=shipnum;
+	
+			shipp->escort_priority=priority1;					//give the new smallest the higher priority
+			hud_add_ship_to_escort(Ships[shipnum].objnum,1);
+		}
+		else														//if its bigger to begin with give it lower priority
+		{
+			shipp->escort_priority=priority2;
+			hud_add_ship_to_escort(Ships[shipnum].objnum,1);
+		}
+
+		//go to next node
+		n=CDR(n);
+	}
+}
+
 void sexp_awacs_set_radius(int node)
 {
 	int sindex;		
@@ -9124,6 +9197,11 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				sexp_add_remove_escort(node);
 				break;
+			
+			case OP_DAMAGED_ESCORT_LIST:
+				sexp_val=1;
+				sexp_damage_escort_list(node);
+				break;
 
 			case OP_AWACS_SET_RADIUS:
 				sexp_val = 1;
@@ -9489,6 +9567,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_LOCK:
 		case OP_TURRET_LOCK_ALL:
 		case OP_ADD_REMOVE_ESCORT:
+		case OP_DAMAGED_ESCORT_LIST:
 		case OP_AWACS_SET_RADIUS:
 		case OP_SEND_MESSAGE_LIST:
 		case OP_CAP_WAYPOINT_SPEED:
@@ -10197,6 +10276,15 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			}
 
+		case OP_DAMAGED_ESCORT_LIST:
+			if (argnum < 2)
+			{
+				return OPF_NUMBER;
+			}
+			else
+			{
+				return OPF_SHIP;
+			}
 		default:
 			Int3();
 	}
@@ -11050,6 +11138,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
+		case OP_DAMAGED_ESCORT_LIST:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 		
 		default:
