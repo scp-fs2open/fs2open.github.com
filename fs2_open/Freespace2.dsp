@@ -53,7 +53,16 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 Dxerr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"c:\games\freespace2\fs2_DX8.exe" /libpath:"release"
+# ADD LINK32 Dxerr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib /nologo /subsystem:windows /map /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /out:"Release/fs2_open_r.exe" /libpath:"release"
+# SUBTRACT LINK32 /debug
+# Begin Custom Build
+InputPath=.\Release\fs2_open_r.exe
+SOURCE="$(InputPath)"
+
+"c:\games\freespace2\fs2_open_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy $(InputPath) c:\games\freespace2
+
+# End Custom Build
 
 !ELSEIF  "$(CFG)" == "Freespace2 - Win32 Debug"
 

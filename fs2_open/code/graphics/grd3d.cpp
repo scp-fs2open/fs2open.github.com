@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-03-19 09:05:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2003-03-19 12:29:02 $
+ * $Author: unknownplayer $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/03/19 09:05:26  Goober5000
+ * more housecleaning, this time for debug warnings
+ * --Goober5000
+ *
  * Revision 2.8  2003/03/19 07:17:05  unknownplayer
  * Updated the DX8 code to allow it to be run in 640x480 windowed mode. The game will only procede to do so if your registry settings are set to 640x480 to begin with, but this is accomplished simply enough.
  *
@@ -899,11 +903,25 @@ void d3d_setup_format_components(
 
 	a_gun->mask = surface->dwRGBAlphaBitMask;
 
-	if (surface->dwFlags & DDPF_ALPHAPIXELS ) {			
-		for (s = 0, m = surface->dwRGBAlphaBitMask; !(m & 1); s++, m >>= 1);
+	// UP: Filter out cases which cause infinite loops
+	if ((surface->dwFlags & DDPF_ALPHAPIXELS) && (( surface->dwFlags != 5956559 ) && (surface->dwRGBAlphaBitMask != 0)) ) 
+	{	
+		// UP: This is the exact line causing problems - it forms an infinite loop
+		// under the right conditions so the above if statement has been modified to filter
+		// out these conditions.
+		for (s = 0, m = surface->dwRGBAlphaBitMask; !(m & 1); s++, m >>= 1); 
+
+		// Friendly debugging loop
+//		for (s = 0, m = surface->dwRGBAlphaBitMask; !(m & 1); s++)
+//		{
+//			m >>= 1;
+//		}
+
 		a_gun->shift = s;
 		a_gun->scale = 255 / (surface->dwRGBAlphaBitMask >> s);			
-	} else {
+	} 
+	else 
+	{
 		a_gun->shift = 0;
 		a_gun->scale = 256;
 	}
@@ -2085,7 +2103,7 @@ void d3d_update_adapter_mode_list(HWND hwnd)
 	// be forced to run a 1024x768 image by default
 	
 	// Setup a variable to do bit depth comparions between modes against
-	int askedbitdepth;
+	uint askedbitdepth;
 	
 	if (Cmdline_force_32bit == 1)
 	{

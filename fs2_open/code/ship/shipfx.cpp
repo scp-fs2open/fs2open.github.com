@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-03-18 01:44:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2003-03-19 12:29:02 $
+ * $Author: unknownplayer $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/03/18 01:44:30  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.6  2003/03/03 09:53:32  Goober5000
  * fixed the warp effect from always being the knossos type
  * --Goober5000
@@ -263,6 +267,7 @@
 #include "nebula/neblightning.h"
 #include "object/objectsnd.h"
 #include "playerman/player.h"
+#include "fireball/fireballs.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
