@@ -112,8 +112,13 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
 
     if(SUCCEEDED(hr))
     {
+        HRESULT load_attempt = pGB->RenderFile(wFile, NULL);
+
         // Have the graph builder construct its the appropriate graph automatically
-        JIF(pGB->RenderFile(wFile, NULL));
+        if(FAILED(load_attempt))
+		{
+			return load_attempt;
+		}
 
         // QueryInterface for DirectShow interfaces
         JIF(pGB->QueryInterface(IID_IMediaControl, (void **)&pMC));

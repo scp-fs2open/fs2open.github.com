@@ -44,10 +44,14 @@ bool movie_play(char *name)
 
 	fclose(fp);
 
+	process_messages();
+
 	// This is a bit of a hack but it works nicely
  	if(gr_screen.mode == GR_DIRECT3D)
 	{
    		GlobalD3DVars::D3D_activate = 0;
+		GlobalD3DVars::lpD3DDevice->BeginScene();
+		GlobalD3DVars::lpD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0,0,0), 0,0);
 		GlobalD3DVars::lpD3DDevice->EndScene();
 	  	GlobalD3DVars::lpD3DDevice->Present(NULL,NULL,NULL,NULL);
 		d3d_lost_device();
@@ -55,7 +59,8 @@ bool movie_play(char *name)
 
 	process_messages();
 
-	OpenClip((HWND) os_get_window(), full_name);
+	if(OpenClip((HWND) os_get_window(), full_name))
+	{
 
 	do
 	{
@@ -107,12 +112,13 @@ bool movie_play(char *name)
 	// Stream bit of the movie then handle windows messages
 	while(dx8show_stream_movie() == false);
 
+	}
+
 	// We finished playing the movie
 	CloseClip((HWND) os_get_window());
  	GlobalD3DVars::D3D_activate = 1;
 
 	gr_flip();
-	gr_set_clear_color(0,0,0);
 	return true;
 }
 
