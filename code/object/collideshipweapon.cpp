@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-03-29 09:42:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-11 19:15:29 $
+ * $Author: argv $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/03/29 09:42:05  Goober5000
+ * made beams default shield piercing again
+ * also added a beam no pierce command line flag
+ * and fixed something else which I forgot :P
+ * --Goober5000
+ *
  * Revision 2.5  2003/02/25 06:22:49  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -389,6 +395,20 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 		if (model_collide(&mc))	{
 			valid_hit_occured = 1;
 		}
+	}
+
+	if (valid_hit_occured && do_model_check && !(ship_obj->flags & OF_NO_SHIELDS) && quadrant_num == -1 && !(Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS)) {
+		// _argv[-1] - there is an incredibly mysterious bug in which shots sometimes go through shields!
+		// This is a fix, and allows for surface shields (ie, shields on a ship without a shield mesh).
+		// It used to be that this assumed singular shields. No longer. Yay!
+
+		// There are many issues with surface shields that need to be resolved. I will catalog them here.
+		// - Looks ugly, with no fancy shield hit effect. This will probably prove difficult to fix, though.
+		//   Note that Descent 3's way of 'fixing' it (by drawing a spherical sprite over the ship) is even uglier!
+		int _quad = get_quadrant(&mc.hit_point);
+
+		if (ship_is_shield_up(ship_obj, _quad))
+			quadrant_num = _quad;
 	}
 
 	//nprintf(("AI", "Frame %i, Hit tri = %i\n", Framecount, mc.shield_hit_tri));
