@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-11-22 20:52:29 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-20 09:48:25 $
+ * $Author: unknownplayer $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/11/22 20:52:29  phreak
+ * added some opengl defines for shield detail -phreak
+ *
  * Revision 2.3  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -649,8 +652,12 @@ void render_shield(int shield_num) //, matrix *orient, vector *centerp)
 		alpha *= 0.85f;
 	}
 	gr_set_bitmap(bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-
-	if (!D3D_enabled || !OGL_inited || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+	
+	// UnknownPlayer : Those foo OGL people ensured this routine would always be executed by making OGL_inited
+	// evaluated via OR. So we fix this problem by evaluating by AND, which means that if we're not using
+	// either THEN do the low detail shield thing.
+	
+	if ( (!D3D_enabled && !OGL_inited) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
 		if ( bitmap_id != - 1 ) {
 			render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
 		}
@@ -949,7 +956,11 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vector *
 
 	//nprintf(("AI", "Frame %i: Creating explosion on %i.\n", Framecount, objnum));
 
-	if (!D3D_enabled || !OGL_inited || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+	// UnknownPlayer : Again with the lack of thought to exactly what was coded by the OGL people!! Gah!
+	// (!D3D_enabled || !OGL_inited) is true if either of them is false. (!D3D_enabled && !OGL_inited) will
+	// be false if either of them is true. See the difference people!
+
+	if ( (!D3D_enabled && !OGL_inited) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
 		create_shield_low_detail(objnum, model_num, orient, centerp, tcp, tr0, shieldp);
 		return;
 	}
