@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-01-19 22:45:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2003-01-26 23:30:53 $
+ * $Author: DTP $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/01/19 22:45:34  Goober5000
+ * cleaned up build output a bit
+ * --Goober5000
+ *
  * Revision 2.11  2003/01/19 01:07:41  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -1337,7 +1341,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
 #ifndef NDEBUG
-	int bitmapidx=gr_screen.current_bitmap % MAX_BITMAPS;
+//	int bitmapidx=gr_screen.current_bitmap % MAX_BITMAPS;
 #endif
 	int do_glow=(GLOWMAP > 0);
 
@@ -1425,8 +1429,8 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 	if ( flags & TMAP_FLAG_TEXTURED )       {
 		if (do_glow)
 		{
-#ifndef NDEBUG
-			mprintf(("rendering a glow texture %s\n", bm_get_filename(GLOWMAP[bitmapidx])));
+#ifdef _DEBUG
+//			mprintf(("rendering a glow texture %s\n", bm_get_filename(GLOWMAP[bitmapidx])));
 #endif
 			glPushAttrib(GL_TEXTURE_BIT);
 			glActiveTextureARB(GL_TEXTURE0_ARB);		//texture is bound in gr_opengl_tcache_set
