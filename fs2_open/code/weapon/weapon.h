@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2004/11/21 11:38:17  taylor
+ * support for animated beam sections
+ * various weapon-only-used fixes
+ * remove the -1 frame fix since it was fixed elsewhere
+ *
  * Revision 2.34  2004/09/10 13:50:09  et1
  * Implemented "+WeaponMinRange" token
  *
@@ -610,6 +615,9 @@ typedef struct weapon_info {
 	char	*tech_desc;								// weapon's description (in tech database)
 	char	tech_anim_filename[NAME_LENGTH];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
+
+	char hud_filename[NAME_LENGTH];			//Name of image to display on HUD in place of text
+	int hud_image_index;					//teh index of the image
 
 	int	laser_bitmap;						// Which bitmap renders for laser, -1 if none
 	int	laser_bitmap_nframes;						//number of frames, 1 if it is not an ani 

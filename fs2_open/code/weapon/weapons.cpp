@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2004/11/21 11:38:17  taylor
+ * support for animated beam sections
+ * various weapon-only-used fixes
+ * remove the -1 frame fix since it was fixed elsewhere
+ *
  * Revision 2.76  2004/11/02 08:32:38  taylor
  * animate weapon glow/bitmaps properly while in flight, make sure
  * we don't exceed bitmap frame numbers, don't try to calculate
@@ -1144,6 +1149,17 @@ int parse_weapon(int subtype, bool replace)
 		stuff_string(buf, F_MULTITEXT, NULL, WEAPONS_MULTITEXT_LENGTH);
 		wip->tech_desc = strdup(buf);
 	}
+
+	//Check for the HUD image string
+	if(optional_string("+HUD Image:"))
+	{
+		stuff_string(wip->hud_filename, F_NAME, NULL);
+	}
+	else
+	{
+		wip->hud_filename[0] = '\0';
+	}
+	wip->hud_image_index = -1;
 
 	//	Read the model file.  It can be a POF file or none.
 	//	If there is no model file (Model file: = "none") then we use our special
