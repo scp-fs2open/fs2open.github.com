@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:05 $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-02 05:41:52 $
  * $Author: penguin $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/29 20:12:31  penguin
  * added #ifdef _WIN32 around windows-specific system headers
  *
@@ -644,6 +647,7 @@ void gr8_string(int sx, int sy, char *s )
 	gr_unlock();
 }
 
+#ifndef NO_SOFTWARE_RENDERING
 #ifdef _WIN32
 HFONT MyhFont = NULL;
 extern HDC hDibDC;
@@ -733,7 +737,8 @@ void gr_get_string_size_win(int *w, int *h, char *text)
 	if (h)
 		*h += size.cy;
 }
-#endif
+#endif   // ifdef _WIN32
+#endif   // ifndef NO_SOFTWARE_RENDERING
 
 char grx_printf_text[2048];	
 
