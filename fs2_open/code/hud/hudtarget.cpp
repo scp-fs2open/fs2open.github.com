@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-12-19 10:46:14 $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-19 10:54:37 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/19 10:46:14  Goober5000
+ * implemented the revised HUD weapon display for ballistic primaries
+ * --Goober5000
+ *
  * Revision 2.4  2002/12/13 08:13:30  Goober5000
  * small tweaks and bug fixes for the ballistic primary conversion
  * ~Goober5000~
@@ -1291,6 +1295,11 @@ void hud_weapons_init()
 						{
 							Warning(LOCATION,"Cannot load hud ani: %s\n",Weapon_gauge_fnames[hud_index][gr_screen.res][gauge_index]);
 						}
+					}
+					// otherwise, display the regular warning
+					else
+					{
+						Warning(LOCATION,"Cannot load hud ani: %s\n",Weapon_gauge_fnames[hud_index][gr_screen.res][gauge_index]);
 					}
 				}
 			}
