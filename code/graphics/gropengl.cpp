@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.44 $
- * $Date: 2003-11-06 22:36:04 $
+ * $Revision: 2.45 $
+ * $Date: 2003-11-07 20:55:15 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/11/06 22:36:04  phreak
+ * bob's stack functions implemented in opengl
+ *
  * Revision 2.43  2003/11/01 21:59:21  bobboau
  * new matrix handeling code, and fixed some problems with 3D lit verts,
  * several other small fixes
@@ -4375,7 +4378,6 @@ void gr_opengl_start_clip_plane()
 
 void ogl_render_timer_bar(int colour, float x, float y, float w, float h)
 {
-	return;
 	static float pre_set_colours[MAX_NUM_TIMERBARS][3] = 
 	{
 		1.0,0,
@@ -4401,10 +4403,7 @@ void ogl_render_timer_bar(int colour, float x, float y, float w, float h)
 
 	gr_opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 
-	glColor3f(
-		pre_set_colours[colour][0], 
-		pre_set_colours[colour][1], 
-		pre_set_colours[colour][2]);
+	glColor3fv(pre_set_colours[colour]);
 
 	glBegin(GL_QUADS);
 		glVertex2f(x,y);
