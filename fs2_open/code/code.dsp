@@ -861,6 +861,10 @@ SOURCE=.\Lighting\Lighting.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\math\bitarray.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Math\Fix.cpp
 # End Source File
 # Begin Source File
