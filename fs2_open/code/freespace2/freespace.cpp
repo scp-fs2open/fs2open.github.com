@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.64 $
- * $Date: 2003-12-03 19:27:00 $
- * $Author: randomtiger $
+ * $Revision: 2.65 $
+ * $Date: 2004-01-21 17:32:05 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2003/12/03 19:27:00  randomtiger
+ * Changed -t32 flag to -jpgtga
+ * Added -query_flag to identify builds with speech not compiled and other problems
+ * Now loads up launcher if videocard reg entry not found
+ * Now offers to go online to download launcher if its not present
+ * Changed target view not to use lower res texture, hi res one is already chached so might as well use it
+ *
  * Revision 2.63  2003/11/29 10:52:09  randomtiger
  * Turned off D3D file mapping, its using too much memory which may be hurting older systems and doesnt seem to be providing much of a speed benifit.
  * Added stats command for ingame stats on memory usage.
@@ -4189,7 +4196,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 		stars_draw(1,1,1,0);
 	}
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f,30000);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	obj_render_all(obj_render);
@@ -8423,6 +8430,10 @@ if ( FS_VERSION_BUILD == 0 ) {
 } else {
 	sprintf(str,"V%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
 }
+
+#ifdef INF_BUILD
+	strcat(str, " Inferno");
+#endif
 
 #ifdef FS2_DEMO
 	strcat(str, " Demo");
