@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLw32x.cpp $
- * $Revision: 1.7 $
- * $Date: 2002-12-05 00:49:25 $
- * $Author: phreak $
+ * $Revision: 1.8 $
+ * $Date: 2003-10-13 05:57:48 $
+ * $Author: Kazan $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/12/05 00:49:25  phreak
+ * extension framework implemented(no extensions work YET) -phreak
+ *
  * Revision 1.6  2002/11/22 20:54:16  phreak
  * finished off all remaining problems with 32 bit mode, fullscreen mode
  * and colors.  Still needs some tweaking, but works near perfect
@@ -1360,7 +1363,8 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 	if ( flags & TMAP_FLAG_TEXTURED )       {
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
-			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
 

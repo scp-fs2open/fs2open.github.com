@@ -20,6 +20,16 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/09/26 14:37:16  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.39  2003/09/13 08:27:27  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -859,6 +869,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_LOCAL_SSM;
 		else if (!stricmp(NOX("tagged only"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TAGGED_ONLY;
+		else if (!stricmp(NOX("beam no whack"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIG2_BEAM_NO_WHACK;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 

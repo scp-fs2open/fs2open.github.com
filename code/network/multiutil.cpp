@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-10-04 22:42:23 $
+ * $Revision: 2.8 $
+ * $Date: 2003-10-13 05:57:50 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/10/04 22:42:23  Kazan
+ * fs2netd now TCP
+ *
  * Revision 2.6  2003/09/25 21:12:24  Kazan
  * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
  * Also D3D8 Screenshots work now.
@@ -3679,10 +3682,11 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 	char modname[128];
 	memset(modname, 0, 128);
 
-	if (Cmdline_mod[strlen(Cmdline_mod)-1] == '/' || Cmdline_mod[strlen(Cmdline_mod)-1] == '\\')
-		strncpy(modname, Cmdline_mod, strlen(Cmdline_mod)-1);
-	else
-		strcpy(modname, Cmdline_mod);
+	if (Cmdline_mod)
+		if (Cmdline_mod[strlen(Cmdline_mod)-1] == '/' || Cmdline_mod[strlen(Cmdline_mod)-1] == '\\')
+			strncpy(modname, Cmdline_mod, strlen(Cmdline_mod)-1);
+		else
+			strcpy(modname, Cmdline_mod);
 		
 	// allocate filename space	
 	file_names = (char**)malloc(sizeof(char*) * max_files);
@@ -3726,10 +3730,11 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 	char modname[128];
 	memset(modname, 0, 128);
 
-	if (Cmdline_mod[strlen(Cmdline_mod)-1] == '/' || Cmdline_mod[strlen(Cmdline_mod)-1] == '\\')
-		strncpy(modname, Cmdline_mod, strlen(Cmdline_mod)-1);
-	else
-		strcpy(modname, Cmdline_mod);
+	if (Cmdline_mod)
+		if (Cmdline_mod[strlen(Cmdline_mod)-1] == '/' || Cmdline_mod[strlen(Cmdline_mod)-1] == '\\')
+			strncpy(modname, Cmdline_mod, strlen(Cmdline_mod)-1);
+		else
+			strcpy(modname, Cmdline_mod);
 		
 
 	// allocate filename space	

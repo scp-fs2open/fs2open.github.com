@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.34 $
- * $Date: 2003-10-10 03:59:41 $
- * $Author: matt $
+ * $Revision: 2.35 $
+ * $Date: 2003-10-13 05:57:48 $
+ * $Author: Kazan $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/10/10 03:59:41  matt
+ * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
+ * out now. -Sticks
+ *
  * Revision 2.33  2003/10/04 22:42:22  Kazan
  * fs2netd now TCP
  *
@@ -909,7 +913,8 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 	} else if((Model_Interp_scale_x != 1) || (Model_Interp_scale_y != 1) || (Model_Interp_scale_z != 1)) {
 
-		mprintf(("warp model being scaled by %f %f %f\n",Model_Interp_scale_x ,Model_Interp_scale_y, Model_Interp_scale_z));
+		// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+		//mprintf(("warp model being scaled by %f %f %f\n",Model_Interp_scale_x ,Model_Interp_scale_y, Model_Interp_scale_z));
 		for (n=0; n<nverts; n++ )	{
 			vector tmp;
 

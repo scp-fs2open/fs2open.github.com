@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-02 07:39:34 $
- * $Author: penguin $
+ * $Revision: 2.5 $
+ * $Date: 2003-10-13 05:57:48 $
+ * $Author: Kazan $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/02 07:39:34  penguin
+ * Added type for static var
+ *  - penguin
+ *
  * Revision 2.3  2003/02/25 06:22:48  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -672,8 +676,9 @@ float vm_vec_copy_normalize(vector *dest,vector *src)
 	//	Mainly here to trap attempts to normalize a null vector.
 	if (m <= 0.0f) {
 		if(!ben_warned){
-			Warning(LOCATION,	"Null vector in vector normalize.\n"
-								"Trace out of vecmat.cpp and find offending code.\n");
+			// SHUT UP - We Don't fucking care!!! - Kazan
+			//Warning(LOCATION,	"Null vector in vector normalize.\n"
+			//					"Trace out of vecmat.cpp and find offending code.\n");
 			ben_warned = true;
 		}
 		dest->xyz.x = 1.0f;

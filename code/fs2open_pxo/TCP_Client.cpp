@@ -3,6 +3,18 @@
 // Derek Meek
 // 2-14-2003
 
+
+/*
+ * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
+ * $Revision: 1.3 $
+ * $Date: 2003-10-13 05:57:47 $
+ * $Author: Kazan $
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ *
+ */
+
 #include "Client.h"
 #include "protocol.h"
 #include "TCP_Socket.h"
@@ -163,7 +175,6 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	fs2open_get_pilot prq_packet;
 
 	timeout = timeout * CLK_TCK;
-	int starttime = clock();
 
 	memset((char *) &prq_packet, 0, sizeof(fs2open_get_pilot));
 	prq_packet.pid = PCKT_PILOT_GET;
@@ -182,16 +193,46 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	memset(PacketBuffer, 0, 16384);
 	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *));;
 
+	int CheckSize =  sizeof(fs2open_pilot_reply) - sizeof(fs2open_ship_typekill *) - 2; //2 for the weird stinking msvc shit
+	int recvsize = 0, rs2;
+	Sleep(2); // give them a second
+	int starttime = clock();
+
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.MT_DataReady() && Socket.GetData((char *) &PacketBuffer, 16384) != -1)
+
+		if (Socket.MT_DataReady() && (recvsize = Socket.GetData((char *) &PacketBuffer, 16384)) != -1)
 		{
 
 			if (p_reply->pid != PCKT_PILOT_REPLY) // ignore packet
 			{
 				continue;
 			}
+
+			CheckSize += sizeof(fs2open_ship_typekill) * p_reply->ship_types;
+
+			ml_printf("Precompletion Pilot Update: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
+			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
+			{
+				if (Socket.MT_DataReady())
+				{
+					rs2 = Socket.GetData((char *) &PacketBuffer+recvsize, 16384-recvsize);
+					ml_printf("Tables Completetion: Got Additional %u bytes", rs2);
+					recvsize += rs2;
+				}
+			}
+			ml_printf("PostCompletion Tables Get: CheckSize = %u, recvsize = %u", CheckSize, recvsize);
+
+			// if we timed out
+			if ((clock() - starttime) >= timeout)
+			{
+				ml_printf("Pilot Update completetion timed out");
+				break;
+			}
+
+
+
 
 			if (p_reply->replytype > 1)
 				return p_reply->replytype; // don't want to try and access non-existant data
@@ -251,7 +292,6 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 	fc_packet.pid = PCKT_TABLES_RQST;
 
 	timeout = timeout * CLK_TCK;
-	int starttime = clock();
 
 	std::string sender = masterserver;
 
@@ -264,11 +304,17 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 	
 	file_record *frecs = NULL;
 	numTables = 0;
+	Sleep(2); //lets give them a second
+
+	int starttime = clock();
+
+	int recvsize = 0, rs2;
+	int CheckSize = sizeof(int) * 2;
 
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.MT_DataReady() && Socket.GetData(PacketBuffer, 16384) != -1)
+		if (Socket.MT_DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
 		{
 			if (misreply_ptr->pid != PCKT_TABLES_REPLY)
 			{
@@ -276,16 +322,43 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 			}
 			
 
+			CheckSize += misreply_ptr->num_files * sizeof(file_record);
+
+			ml_printf("Precompletion Table Get: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
+			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
+			{
+				if (Socket.MT_DataReady())
+				{
+					rs2 = Socket.GetData(PacketBuffer+recvsize, 16384-recvsize);
+					ml_printf("Tables Completetion: Got Additional %u bytes", rs2);
+					recvsize += rs2;
+				}
+			}
+			ml_printf("PostCompletion Tables Get: CheckSize = %u, recvsize = %u", CheckSize, recvsize);
+
+			if ((clock() - starttime) >= timeout)
+			{
+				ml_printf("Tables Transfer completetion timed out");
+				break;
+			}
+
+			/*
 			if ((misreply_ptr->num_files * sizeof(file_record)) + (sizeof(int) * 2) > 16384)
 			{
 				// WE"RE IN DEAP SHIT!
 
 				ml_printf("Network (FS2OpenPXO): PCKT_TABLES_REPLY was larger than 16k!!!\n");
 				return NULL;
-			}
+			}*/
+
 			frecs = new file_record[misreply_ptr->num_files];
 			memcpy(frecs, PacketBuffer + 8, sizeof(file_record) * misreply_ptr->num_files); // packet buffer will be two ints then the array;
 			numTables = misreply_ptr->num_files;
+			
+			for (int i = 0; i < misreply_ptr->num_files; i++)
+			{
+				ml_printf("Tables[%u] = { \"%s\", %u}", i, frecs[i].name, frecs[i].crc32);
+			}
 			return frecs;
 
 		}
@@ -308,7 +381,6 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 	fc_packet.pid = PCKT_MISSIONS_RQST;
 
 	timeout = timeout * CLK_TCK;
-	int starttime = clock();
 
 	std::string sender = masterserver;
 
@@ -325,39 +397,58 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 	numMissions = 0;
 	//int depth = 0;
 	Sleep(2); // lets give it a second
+	int starttime = clock();
+
+	int recvsize = 0, rs2;
+	int CheckSize = sizeof(int) * 2;
 
 	while ((clock() - starttime) <= timeout)
 	{
 
-		if (Socket.MT_DataReady() && Socket.GetData(PacketBuffer, 16384) != -1)
+		if (Socket.MT_DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
 		{
-			// eliminate leading nullspace - for some reason i've been getting nullspace here
-			/*while (*((char *)misreply_ptr) == 0 && depth < 16384)
-			{
-				depth++;
-
-				misreply_ptr = (fs2open_pxo_missreply *) (PacketBuffer + depth);
-			}
-
-			if (depth >= 16384)
-				return NULL;*/
 
 			if (misreply_ptr->pid != PCKT_MISSIONS_REPLY)
 			{
 				continue; // skip and ignore this packet
 			}
 			
+			CheckSize += misreply_ptr->num_files * sizeof(file_record);
 
+			ml_printf("Precompletion Missions Get: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
+			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
+			{
+				if (Socket.MT_DataReady())
+				{
+					rs2 = Socket.GetData(PacketBuffer+recvsize, 16384-recvsize);
+					ml_printf("Missions Completetion: Got Additional %u bytes", rs2);
+					recvsize += rs2;
+				}
+			}
+			ml_printf("PostCompletion Missions Get: CheckSize = %u, recvsize = %u", CheckSize, recvsize);
+
+			if ((clock() - starttime) >= timeout)
+			{
+				ml_printf("Missions Transfer completetion timed out");
+				break;
+			}
+			/*
 			if ((misreply_ptr->num_files * sizeof(file_record)) + (sizeof(int) * 2) > 16384)
 			{
 				// WE"RE IN DEEP SHIT!
 
 				ml_printf("Network (FS2OpenPXO): PCKT_MISSIONS_REPLY was larger than 16k!!!\n");
 				return NULL;
-			}
+			}*/
+
 			frecs = new file_record[misreply_ptr->num_files];
 			memcpy(frecs, PacketBuffer + 8, sizeof(file_record) * misreply_ptr->num_files); // packet buffer will be two ints then the array;
 			numMissions = misreply_ptr->num_files;
+
+			for (int i = 0; i < misreply_ptr->num_files; i++)
+			{
+				ml_printf("Tables[%u] = { \"%s\", %u}", i, frecs[i].name, frecs[i].crc32);
+			}
 			return frecs;
 
 		}
