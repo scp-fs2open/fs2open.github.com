@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.24 $
- * $Date: 2003-12-04 20:39:09 $
- * $Author: randomtiger $
+ * $Revision: 2.25 $
+ * $Date: 2003-12-16 20:46:37 $
+ * $Author: phreak $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/12/04 20:39:09  randomtiger
+ * Added DDS image support for D3D
+ * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
+ * Hopefully have fixed D3D text batching bug that caused old values to appear
+ * Added Hud_target_object_factor variable to control 3D object sizes of zoom in HUD target
+ * Fixed jump nodes not showing
+ *
  * Revision 2.23  2003/11/16 04:09:23  Goober5000
  * language
  *
@@ -711,7 +718,7 @@ void hud_render_target_setup(vector *camera_eye, matrix *camera_orient, float zo
 	g3_set_view_matrix( camera_eye, camera_orient, zoom);	
 	model_set_detail_level(1);		// use medium detail level
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f,30000.f);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	HUD_set_clip(Target_window_coords[gr_screen.res][0],Target_window_coords[gr_screen.res][1],Target_window_coords[gr_screen.res][2],Target_window_coords[gr_screen.res][3]);
