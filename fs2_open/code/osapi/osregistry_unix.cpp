@@ -17,7 +17,7 @@
 #undef malloc
 #undef free
 #undef strdup
-//#undef realloc
+#undef realloc
 
 #include <stdio.h>
 #include <stdlib.h>

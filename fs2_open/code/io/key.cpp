@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:33 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 10:12:30 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -154,6 +157,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <windowsx.h>
+#else
+#include "SDL.h"
 #endif
 
 #include "globalincs/pstypes.h"
@@ -198,6 +203,10 @@ CRITICAL_SECTION key_lock;
 								// when typing in your pilots callsign.  This global flag is checked before execution
 								// is stopped.
 
+#ifdef SCP_UNIX
+	int SDLtoFS2[SDLK_LAST];
+#endif
+
 int ascii_table[128] = 
 { 255, 255, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',255,255,
   'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 255, 255,
@@ -225,41 +234,188 @@ int shifted_ascii_table[128] =
 int Num_filter_keys;
 int Key_filter[MAX_FILTER_KEYS];
 
-#ifdef _WIN32
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
 static int Key_running_NT = 0;		// NT is the OS
-#endif
 
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
-#ifdef _WIN32
+#ifdef SCP_UNIX
+void FillSDLArray ()
+{
+	SDLtoFS2[SDLK_0] = KEY_0;
+	SDLtoFS2[SDLK_1] = KEY_1;
+	SDLtoFS2[SDLK_2] = KEY_2;
+	SDLtoFS2[SDLK_3] = KEY_3;
+	SDLtoFS2[SDLK_4] = KEY_4;
+	SDLtoFS2[SDLK_5] = KEY_5;
+	SDLtoFS2[SDLK_6] = KEY_6;
+	SDLtoFS2[SDLK_7] = KEY_7;
+	SDLtoFS2[SDLK_8] = KEY_8;
+	SDLtoFS2[SDLK_9] = KEY_9;
+
+	SDLtoFS2[SDLK_a] = KEY_A;
+	SDLtoFS2[SDLK_b] = KEY_B;
+	SDLtoFS2[SDLK_c] = KEY_C;
+	SDLtoFS2[SDLK_d] = KEY_D;
+	SDLtoFS2[SDLK_e] = KEY_E;
+	SDLtoFS2[SDLK_f] = KEY_F;
+	SDLtoFS2[SDLK_g] = KEY_G;
+	SDLtoFS2[SDLK_h] = KEY_H;
+	SDLtoFS2[SDLK_i] = KEY_I;
+	SDLtoFS2[SDLK_j] = KEY_J;
+	SDLtoFS2[SDLK_k] = KEY_K;
+	SDLtoFS2[SDLK_l] = KEY_L;
+	SDLtoFS2[SDLK_m] = KEY_M;
+	SDLtoFS2[SDLK_n] = KEY_N;
+	SDLtoFS2[SDLK_o] = KEY_O;
+	SDLtoFS2[SDLK_p] = KEY_P;
+	SDLtoFS2[SDLK_q] = KEY_Q;
+	SDLtoFS2[SDLK_r] = KEY_R;
+	SDLtoFS2[SDLK_s] = KEY_S;
+	SDLtoFS2[SDLK_t] = KEY_T;
+	SDLtoFS2[SDLK_u] = KEY_U;
+	SDLtoFS2[SDLK_v] = KEY_V;
+	SDLtoFS2[SDLK_w] = KEY_W;
+	SDLtoFS2[SDLK_x] = KEY_X;
+	SDLtoFS2[SDLK_y] = KEY_Y;
+	SDLtoFS2[SDLK_z] = KEY_Z;
+
+	if (Lcl_gr) {
+		SDLtoFS2[SDLK_WORLD_63] = KEY_MINUS;
+		SDLtoFS2[SDLK_WORLD_20] = KEY_EQUAL;
+		SDLtoFS2[SDLK_MINUS] = KEY_DIVIDE;
+		SDLtoFS2[SDLK_HASH] = KEY_SLASH;
+		SDLtoFS2[SDLK_COMMA] = KEY_COMMA;
+		SDLtoFS2[SDLK_PERIOD] = KEY_PERIOD;
+		SDLtoFS2[SDLK_WORLD_86] = KEY_SEMICOL;
+
+		SDLtoFS2[SDLK_WORLD_92] = KEY_LBRACKET;
+		SDLtoFS2[SDLK_PLUS] = KEY_RBRACKET;
+
+		SDLtoFS2[SDLK_CARET] = KEY_LAPOSTRO;
+		SDLtoFS2[SDLK_WORLD_68] = KEY_RAPOSTRO;
+	} else {
+		SDLtoFS2[SDLK_MINUS] = KEY_MINUS;
+		SDLtoFS2[SDLK_EQUALS] = KEY_EQUAL;
+		SDLtoFS2[SDLK_SLASH] = KEY_DIVIDE; // No idea - DDOI
+		SDLtoFS2[SDLK_BACKSLASH] = KEY_SLASH;
+		//SDLtoFS2[SDLK_BACKSLASH] = KEY_SLASH_UK; // ?
+		SDLtoFS2[SDLK_COMMA] = KEY_COMMA;
+		SDLtoFS2[SDLK_PERIOD] = KEY_PERIOD;
+		SDLtoFS2[SDLK_SEMICOLON] = KEY_SEMICOL;
+
+		SDLtoFS2[SDLK_LEFTBRACKET] = KEY_LBRACKET;
+		SDLtoFS2[SDLK_RIGHTBRACKET] = KEY_RBRACKET;
+
+		SDLtoFS2[SDLK_BACKQUOTE] = KEY_LAPOSTRO;
+		SDLtoFS2[SDLK_QUOTE] = KEY_RAPOSTRO;
+	}
+
+	SDLtoFS2[SDLK_ESCAPE] = KEY_ESC;
+	SDLtoFS2[SDLK_RETURN] = KEY_ENTER;
+	SDLtoFS2[SDLK_BACKSPACE] = KEY_BACKSP;
+	SDLtoFS2[SDLK_TAB] = KEY_TAB;
+	SDLtoFS2[SDLK_SPACE] = KEY_SPACEBAR;
+
+	SDLtoFS2[SDLK_NUMLOCK] = KEY_NUMLOCK;
+	SDLtoFS2[SDLK_SCROLLOCK] = KEY_SCROLLOCK;
+	SDLtoFS2[SDLK_CAPSLOCK] = KEY_CAPSLOCK;
+
+	SDLtoFS2[SDLK_LSHIFT] = KEY_LSHIFT;
+	SDLtoFS2[SDLK_RSHIFT] = KEY_RSHIFT;
+
+	SDLtoFS2[SDLK_LALT] = KEY_LALT;
+	SDLtoFS2[SDLK_RALT] = KEY_RALT;
+
+	SDLtoFS2[SDLK_LCTRL] = KEY_LCTRL;
+	SDLtoFS2[SDLK_RCTRL] = KEY_RCTRL;
+
+	SDLtoFS2[SDLK_F1] = KEY_F1;
+	SDLtoFS2[SDLK_F2] = KEY_F2;
+	SDLtoFS2[SDLK_F3] = KEY_F3;
+	SDLtoFS2[SDLK_F4] = KEY_F4;
+	SDLtoFS2[SDLK_F5] = KEY_F5;
+	SDLtoFS2[SDLK_F6] = KEY_F6;
+	SDLtoFS2[SDLK_F7] = KEY_F7;
+	SDLtoFS2[SDLK_F8] = KEY_F8;
+	SDLtoFS2[SDLK_F9] = KEY_F9;
+	SDLtoFS2[SDLK_F10] = KEY_F10;
+	SDLtoFS2[SDLK_F11] = KEY_F11;
+	SDLtoFS2[SDLK_F12] = KEY_F12;
+
+	SDLtoFS2[SDLK_KP0] = KEY_PAD0;
+	SDLtoFS2[SDLK_KP1] = KEY_PAD1;
+	SDLtoFS2[SDLK_KP2] = KEY_PAD2;
+	SDLtoFS2[SDLK_KP3] = KEY_PAD3;
+	SDLtoFS2[SDLK_KP4] = KEY_PAD4;
+	SDLtoFS2[SDLK_KP5] = KEY_PAD5;
+	SDLtoFS2[SDLK_KP6] = KEY_PAD6;
+	SDLtoFS2[SDLK_KP7] = KEY_PAD7;
+	SDLtoFS2[SDLK_KP8] = KEY_PAD8;
+	SDLtoFS2[SDLK_KP9] = KEY_PAD9;
+	SDLtoFS2[SDLK_KP_MINUS] = KEY_PADMINUS;
+	SDLtoFS2[SDLK_KP_PLUS] = KEY_PADPLUS;
+	SDLtoFS2[SDLK_KP_PERIOD] = KEY_PADPERIOD;
+	SDLtoFS2[SDLK_KP_DIVIDE] = KEY_PADDIVIDE;
+	SDLtoFS2[SDLK_KP_MULTIPLY] = KEY_PADMULTIPLY;
+	SDLtoFS2[SDLK_KP_ENTER] = KEY_PADENTER;
+
+	SDLtoFS2[SDLK_INSERT] = KEY_INSERT;
+	SDLtoFS2[SDLK_HOME] = KEY_HOME;
+	SDLtoFS2[SDLK_PAGEUP] = KEY_PAGEUP;
+	SDLtoFS2[SDLK_DELETE] = KEY_DELETE;
+	SDLtoFS2[SDLK_END] = KEY_END;
+	SDLtoFS2[SDLK_PAGEDOWN] = KEY_PAGEDOWN;
+	SDLtoFS2[SDLK_UP] = KEY_UP;
+	SDLtoFS2[SDLK_DOWN] = KEY_DOWN;
+	SDLtoFS2[SDLK_LEFT] = KEY_LEFT;
+	SDLtoFS2[SDLK_RIGHT] = KEY_RIGHT;
+
+	SDLtoFS2[SDLK_PRINT] = KEY_PRINT_SCRN;
+	SDLtoFS2[SDLK_PAUSE] = KEY_PAUSE;
+	SDLtoFS2[SDLK_BREAK] = KEY_BREAK;
+}
+#endif
+
 int key_numlock_is_on()
 {
+#ifdef _WIN32
 	unsigned char keys[256];
 	GetKeyboardState(keys);
 	if ( keys[VK_NUMLOCK]  ) {
 		return 1;
 	}
 	return 0;
+#else
+	int keys[SDLK_LAST];
+	SDL_GetKeyState(keys);
+	if ( keys[SDLK_NUMLOCK] ) {
+		return 1;
+	}
+	return 0;
+#endif
 }
 
 void key_turn_off_numlock()
 {
+#ifdef _WIN32
 	unsigned char keys[256];
 	GetKeyboardState(keys);
 	keys[VK_NUMLOCK] = 0;
 	SetKeyboardState(keys);
+#endif
 }
 
 void key_turn_on_numlock()
 {
+#ifdef _WIN32
 	unsigned char keys[256];
 	GetKeyboardState(keys);
 	keys[VK_NUMLOCK] = 1;
 	SetKeyboardState(keys);
+#endif
 }
-#endif  // ifdef WIN32
 
 //	Convert a BIOS scancode to ASCII.
 //	If scancode >= 127, returns 255, meaning there is no corresponding ASCII code.
@@ -291,7 +447,7 @@ void key_flush()
 
 	if ( !key_inited ) return;
 
-	ENTER_CRITICAL_SECTION(&key_lock);	
+	ENTER_CRITICAL_SECTION( key_lock );	
 
 	key_data.keyhead = key_data.keytail = 0;
 
@@ -315,7 +471,7 @@ void key_flush()
 		key_data.NumUps[i]=0;
 	}
 
-	LEAVE_CRITICAL_SECTION(&key_lock);	
+	LEAVE_CRITICAL_SECTION( key_lock );	
 }
 
 //	A nifty function which performs the function:
@@ -335,13 +491,13 @@ int key_checkch()
 
 	if ( !key_inited ) return 0;
 
-	ENTER_CRITICAL_SECTION(&key_lock);	
+	ENTER_CRITICAL_SECTION( key_lock );	
 
 	if (key_data.keytail != key_data.keyhead){
 		is_one_waiting = 1;
 	}
 
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 
 	return is_one_waiting;
 }
@@ -355,14 +511,14 @@ int key_inkey()
 
 	if ( !key_inited ) return 0;
 
-	ENTER_CRITICAL_SECTION(&key_lock);	
+	ENTER_CRITICAL_SECTION( key_lock );	
 
 	if (key_data.keytail!=key_data.keyhead)	{
 		key = key_data.keybuffer[key_data.keyhead];
 		key_data.keyhead = add_one(key_data.keyhead);
 	}
 
-	LEAVE_CRITICAL_SECTION(&key_lock);	
+	LEAVE_CRITICAL_SECTION( key_lock );	
 
 	return key;
 }
@@ -374,7 +530,7 @@ void key_outkey(int key)
 
 	if ( !key_inited ) return;
 
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );		
 
 	bufp = key_data.keytail+1;
 
@@ -386,7 +542,7 @@ void key_outkey(int key)
 
 	key_data.keytail = bufp;
 
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 }
 
 
@@ -403,7 +559,7 @@ int key_inkey_time(uint * time)
 		return 0;
 	}
 	
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );		
 
 	if (key_data.keytail!=key_data.keyhead)	{
 		key = key_data.keybuffer[key_data.keyhead];
@@ -411,7 +567,7 @@ int key_inkey_time(uint * time)
 		key_data.keyhead = add_one(key_data.keyhead);
 	}
 
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 
 	return key;
 }
@@ -425,12 +581,12 @@ int key_peekkey()
 
 	if ( !key_inited ) return 0;
 
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );		
 
 	if (key_data.keytail!=key_data.keyhead)	{
 		key = key_data.keybuffer[key_data.keyhead];
 	}
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 
 	return key;
 }
@@ -461,7 +617,7 @@ uint key_get_shift_status()
 
 	if ( !key_inited ) return 0;
 
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );		
 
 	if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
 		shift_status |= KEY_SHIFTED;
@@ -484,7 +640,7 @@ uint key_get_shift_status()
 		}
 	}
 #endif
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 
 	return shift_status;
 }
@@ -500,7 +656,7 @@ float key_down_timef(uint scancode)
 
 	if ((scancode<0)|| (scancode>=NUM_KEYS)) return 0.0f;
 
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );		
 
 	time = timer_get_milliseconds();
 	delta_time = time - key_data.TimeKeyDownChecked[scancode];
@@ -509,10 +665,10 @@ float key_down_timef(uint scancode)
 	if ( delta_time <= 1 ) {
 		key_data.TimeKeyWentDown[scancode] = time;
 		if (keyd_pressed[scancode])	{
-			LEAVE_CRITICAL_SECTION(&key_lock);		
+			LEAVE_CRITICAL_SECTION( key_lock );		
 			return 1.0f;
 		} else	{
-			LEAVE_CRITICAL_SECTION(&key_lock);		
+			LEAVE_CRITICAL_SECTION( key_lock );		
 			return 0.0f;
 		}
 	}
@@ -525,7 +681,7 @@ float key_down_timef(uint scancode)
 		key_data.TimeKeyWentDown[scancode] = time;
 	}
 
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 
 	return i2fl(time_down) / i2fl(delta_time);
 }
@@ -579,12 +735,12 @@ int key_down_count(int scancode)
 	if ( !key_inited ) return 0;
 	if ((scancode<0)|| (scancode>=NUM_KEYS)) return 0;
 
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );		
 
 	n = key_data.NumDowns[scancode];
 	key_data.NumDowns[scancode] = 0;
 
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 
 	return n;
 }
@@ -598,12 +754,12 @@ int key_up_count(int scancode)
 	if ( !key_inited ) return 0;
 	if ((scancode<0)|| (scancode>=NUM_KEYS)) return 0;
 
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );		
 
 	n = key_data.NumUps[scancode];
 	key_data.NumUps[scancode] = 0;
 
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 
 	return n;
 }
@@ -623,7 +779,7 @@ void key_mark( uint code, int state, uint latency )
 
 	if ( !key_inited ) return;
 
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );		
 
 	// If running in the UK, need to translate their wacky slash scancode to ours
 	if ( code == KEY_SLASH_UK ) {
@@ -660,6 +816,7 @@ void key_mark( uint code, int state, uint latency )
 			code = KEY_SEMICOL;
 			break;
 		}
+#if defined(SCP_UNIX) && !defined(__APPLE__)
 	} else if(Lcl_gr){
 		switch (code) {
 		case KEY_Y:
@@ -670,14 +827,12 @@ void key_mark( uint code, int state, uint latency )
 			code = KEY_Y;
 			break;
 		}
-		
+#endif
 	}
 
-#ifdef _WIN32
 	if ( (code == 0xc5) && !Key_running_NT ) {
 		key_turn_off_numlock();
 	}
-#endif
 
 	Assert( code < NUM_KEYS );	
 
@@ -785,7 +940,7 @@ void key_mark( uint code, int state, uint latency )
 		}
 	}
 
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );		
 }
 
 #ifdef USE_DIRECTINPUT
@@ -802,15 +957,14 @@ void key_close()
 		di_cleanup();
 	#endif
 
-#ifdef _WIN32
 	if ( Key_numlock_was_on ) {
 		key_turn_on_numlock();
 		Key_numlock_was_on = 0;
 	}
-#endif
 
 	key_inited = 0;
-	DeleteCriticalSection( &key_lock );
+
+	DELETE_CRITICAL_SECTION( key_lock );
 }
 
 void key_init()
@@ -819,9 +973,13 @@ void key_init()
 	if ( key_inited ) return;
 	key_inited = 1;
 
-	InitializeCriticalSection( &key_lock );
+	INITIALIZE_CRITICAL_SECTION( key_lock );
 
-	ENTER_CRITICAL_SECTION(&key_lock);		
+	ENTER_CRITICAL_SECTION( key_lock );
+	
+#ifdef SCP_UNIX
+	FillSDLArray();
+#endif
 
 	keyd_time_when_last_pressed = timer_get_milliseconds();
 	keyd_buffer_type = 1;
@@ -833,13 +991,13 @@ void key_init()
 	// Clear key filter
 	key_clear_filter();
 
-	LEAVE_CRITICAL_SECTION(&key_lock);		
+	LEAVE_CRITICAL_SECTION( key_lock );
 
+#ifdef _WIN32
 	#ifdef USE_DIRECTINPUT
 		di_init();
 	#endif
 
-#ifdef _WIN32
 	OSVERSIONINFO ver;
 	ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 	GetVersionEx(&ver);

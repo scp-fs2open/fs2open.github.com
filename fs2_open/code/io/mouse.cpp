@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-26 20:47:33 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-02-04 10:12:30 $
+ * $Author: taylor $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.6  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -184,7 +187,9 @@ LOCAL int Mouse_mode = MOUSE_MODE_WIN;
 #endif // ifdef USE_DIRECTINPUT
 
 LOCAL int mouse_inited = 0;
+#ifdef USE_DIRECTINPUT
 LOCAL int Di_mouse_inited = 0;
+#endif
 LOCAL int Mouse_x;
 LOCAL int Mouse_y;
 
@@ -230,7 +235,8 @@ void mouse_close()
 	di_cleanup();
 #endif
 	mouse_inited = 0;
-	DeleteCriticalSection( &mouse_lock );
+
+	DELETE_CRITICAL_SECTION( mouse_lock );
 }
 
 void mouse_init()
@@ -239,9 +245,9 @@ void mouse_init()
 	if ( mouse_inited ) return;
 	mouse_inited = 1;
 
-	InitializeCriticalSection( &mouse_lock );
+	INITIALIZE_CRITICAL_SECTION( mouse_lock );
 
-	ENTER_CRITICAL_SECTION(&mouse_lock);
+	ENTER_CRITICAL_SECTION( mouse_lock );
 
 	mouse_flags = 0;
 	Mouse_x = gr_screen.max_w / 2;
@@ -254,7 +260,7 @@ void mouse_init()
 	Mouse_mode = MOUSE_MODE_WIN;
 #endif
 
-	LEAVE_CRITICAL_SECTION(&mouse_lock);	
+	LEAVE_CRITICAL_SECTION( mouse_lock );	
 
 	atexit( mouse_close );
 }
@@ -273,7 +279,7 @@ void mouse_mark_button( uint flags, int set)
 {
 	if ( !mouse_inited ) return;
 
-	ENTER_CRITICAL_SECTION(&mouse_lock);
+	ENTER_CRITICAL_SECTION( mouse_lock );
 
 	if ( !(mouse_flags & MOUSE_LEFT_BUTTON) )	{
 
@@ -333,7 +339,7 @@ void mouse_mark_button( uint flags, int set)
 		mouse_flags &= ~flags;
 	}
 
-	LEAVE_CRITICAL_SECTION(&mouse_lock);	
+	LEAVE_CRITICAL_SECTION( mouse_lock );	
 }
 
 void mouse_flush()
@@ -343,12 +349,12 @@ void mouse_flush()
 
 	mouse_eval_deltas();
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
-	ENTER_CRITICAL_SECTION(&mouse_lock);
+	ENTER_CRITICAL_SECTION( mouse_lock );
 	mouse_left_pressed = 0;
 	mouse_right_pressed = 0;
 	mouse_middle_pressed = 0;
 	mouse_flags = 0;
-	LEAVE_CRITICAL_SECTION(&mouse_lock);	
+	LEAVE_CRITICAL_SECTION( mouse_lock );	
 }
 
 int mouse_down_count(int n, int reset_count)
@@ -358,7 +364,7 @@ int mouse_down_count(int n, int reset_count)
 
 	if ( (n < LOWEST_MOUSE_BUTTON) || (n > HIGHEST_MOUSE_BUTTON)) return 0;
 
-	ENTER_CRITICAL_SECTION(&mouse_lock);
+	ENTER_CRITICAL_SECTION( mouse_lock );
 
 	switch (n) {
 		case MOUSE_LEFT_BUTTON:
@@ -383,7 +389,7 @@ int mouse_down_count(int n, int reset_count)
 			break;
 	} // end switch
 
-	LEAVE_CRITICAL_SECTION(&mouse_lock);	
+	LEAVE_CRITICAL_SECTION( mouse_lock );	
 
 	return tmp;
 }
@@ -400,7 +406,7 @@ int mouse_up_count(int n)
 
 	if ( (n < LOWEST_MOUSE_BUTTON) || (n > HIGHEST_MOUSE_BUTTON)) return 0;
 
-	ENTER_CRITICAL_SECTION(&mouse_lock);
+	ENTER_CRITICAL_SECTION( mouse_lock );
 
 	switch (n) {
 		case MOUSE_LEFT_BUTTON:
@@ -423,7 +429,7 @@ int mouse_up_count(int n)
 			break;
 	} // end switch
 
-	LEAVE_CRITICAL_SECTION(&mouse_lock);	
+	LEAVE_CRITICAL_SECTION( mouse_lock );	
 
 	return tmp;
 }
@@ -438,7 +444,7 @@ int mouse_down(int btn)
 	if ( (btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_BUTTON)) return 0;
 
 
-	ENTER_CRITICAL_SECTION(&mouse_lock);
+	ENTER_CRITICAL_SECTION( mouse_lock );
 
 
 	if ( mouse_flags & btn )
@@ -446,7 +452,7 @@ int mouse_down(int btn)
 	else
 		tmp = 0;
 
-	LEAVE_CRITICAL_SECTION(&mouse_lock);	
+	LEAVE_CRITICAL_SECTION( mouse_lock );	
 
 	return tmp;
 }
@@ -461,14 +467,14 @@ float mouse_down_time(int btn)
 
 	if ( (btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_BUTTON)) return 0.0f;
 
-	ENTER_CRITICAL_SECTION(&mouse_lock);
+	ENTER_CRITICAL_SECTION( mouse_lock );
 
 	if ( mouse_flags & btn )
 		tmp = 1.0f;
 	else
 		tmp = 0.0f;
 
-	LEAVE_CRITICAL_SECTION(&mouse_lock);
+	LEAVE_CRITICAL_SECTION( mouse_lock );
 
 	return tmp;
 }
@@ -518,7 +524,7 @@ void mouse_eval_deltas()
 	cx = gr_screen.max_w / 2;
 	cy = gr_screen.max_h / 2;
 
-	ENTER_CRITICAL_SECTION(&mouse_lock);
+	ENTER_CRITICAL_SECTION( mouse_lock );
 
 	POINT pnt;
 	getWindowMousePos(&pnt);
@@ -541,7 +547,7 @@ void mouse_eval_deltas()
 		old_y = tmp_y;
 	}
 
-	LEAVE_CRITICAL_SECTION(&mouse_lock);
+	LEAVE_CRITICAL_SECTION( mouse_lock );
 }
 
 #ifdef USE_DIRECTINPUT

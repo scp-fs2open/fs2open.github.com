@@ -21,6 +21,7 @@
 
 static int Joy_inited = 0;
 int joy_num_sticks = 0;
+int joy_num_buttons = 0;
 int Dead_zone_size = 10;
 int Cur_joystick = -1;
 int Joy_sensitivity = 9;
@@ -296,17 +297,14 @@ void joy_process(int time_delta)
 	
 	if (!Joy_inited)
 		return;
-	if (sdljoy == NULL)
-		return;
 	
-	int buttons = SDL_JoystickNumButtons(sdljoy);
 	int hat = SDL_JoystickGetHat(sdljoy, 0);
 	
 	for (i=0; i < JOY_TOTAL_BUTTONS; i++) {
 		int state = 0;
 		
 		if (i < JOY_NUM_BUTTONS) {
-			if (i < buttons) {
+			if (i < joy_num_buttons) {
 				state = SDL_JoystickGetButton(sdljoy, i);
 			}
 		} else { 
@@ -356,6 +354,24 @@ void joy_process(int time_delta)
 	}
 }
 
+void joy_poll()
+{
+	if (!Joy_inited)
+		return;
+
+	uint lasttic = 0;
+	uint curtic = SDL_GetTicks();
+	uint delta = curtic - lasttic;
+
+	while (delta >= (uint)joy_pollrate) {
+		joy_process(delta);
+
+		lasttic += joy_pollrate;
+
+		delta = curtic - lasttic;
+	}
+}
+
 int joy_init()
 {
 	int i, n;
@@ -369,7 +385,6 @@ int joy_init()
 		return 0;
 	}
 
-	Joy_inited = 1;
 	n = SDL_NumJoysticks ();
 
 	Cur_joystick = os_config_read_uint (NULL, "CurrentJoystick", JOYSTICKID1);
@@ -382,13 +397,17 @@ int joy_init()
 	}
 
 	sdljoy = SDL_JoystickOpen(Cur_joystick);
+
 	if (sdljoy == NULL) {
 		mprintf(("Unable to init joystick %d\n", Cur_joystick));
+		return 0;
 	}
 	
 	joy_flush ();
 
 	joy_num_sticks = n;
+
+	joy_num_buttons = SDL_JoystickNumButtons(sdljoy);
 
 	// Fake a calibration
 	if (joy_num_sticks > 0) {
@@ -399,6 +418,8 @@ int joy_init()
 			joystick.axis_max[i] = 65536;
 		}
 	}
+
+	Joy_inited = 1;
 
 	return joy_num_sticks;
 }
@@ -413,7 +434,7 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 	int i;
 	int num;
 	
-	if (sdljoy == NULL)
+	if (!Joy_inited)
 		return 0;
 	
 	num = SDL_JoystickNumAxes(sdljoy);

@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-10-31 22:00:57 $
+ * $Revision: 2.11 $
+ * $Date: 2005-02-04 10:12:33 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/10/31 22:00:57  taylor
+ * new bmpman merge support, add PreProcDefines.h a few new places
+ *
  * Revision 2.9  2004/10/09 17:44:10  taylor
  * don't use DevIL to read the header, slightly more sane error checking
  *
@@ -95,7 +98,7 @@
  * $NoKeywords: $
  */
 
-#include <string.h>
+#include <string>
 
 #include "globalincs/pstypes.h"
 #include "tgautils/tgautils.h"
@@ -103,7 +106,6 @@
 #include "bmpman/bmpman.h"
 #include "palman/palman.h"
 #include "graphics/2d.h"
-#include "openil/il_func.h"
 #include "cmdline/cmdline.h"
 
 extern int Cmdline_jpgtga;
@@ -362,36 +364,44 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 	ubyte al = 0;
 
 	for(idx=0; idx<num_pixels; idx++){
-		// stuff the 16 bit pixel
-		memcpy(&pixel, *src, bytes_per_pixel);
-						
-		// if the pixel is transparent, make it so...	
-		if(((pixel & 0x7c00) == 0) && ((pixel & 0x03e0) == 0x03e0) && ((pixel & 0x001f) == 0)){
-			r = b = 0;
-			g = 255;
-			al = 0;
-			bm_set_components((ubyte*)&pixel, &r, &g, &b, &al);
-		} else {
-			// get the 8 bit r, g, and b values
-			r = (ubyte)(((pixel & 0x7c00) >> 10) * 8);
-			g = (ubyte)(((pixel & 0x03e0) >> 5) * 8);
-			b = (ubyte)((pixel & 0x001f) * 8);
-			al = 1;
-
-			// now stuff these back, swizzling properly
-			pixel = 0;
-			bm_set_components((ubyte*)&pixel, &r, &g, &b, &al);
+		// 24 or 32 bit
+		if ( (bytes_per_pixel == 3) || (bytes_per_pixel == 4) ) {
+			// should have it's own alpha settings so just copy it out as is
+			memcpy( *dst, *src, bytes_per_pixel );
 		}
-
-		// 16 bit destination
-		if(dest_size == 2){
-			// stuff the final pixel		
-			memcpy( *dst, &pixel, bytes_per_pixel );			
-		}
-		// 8 bit destination 
+		// 8 or 16 bit
 		else {
-			pal_index = (ubyte)palette_find((int)r, (int)g, (int)b);
-			**dst = pal_index;			
+			// stuff the 16 bit pixel
+			memcpy(&pixel, *src, bytes_per_pixel);
+						
+			// if the pixel is transparent, make it so...	
+			if(((pixel & 0x7c00) == 0) && ((pixel & 0x03e0) == 0x03e0) && ((pixel & 0x001f) == 0)){
+				r = b = 0;
+				g = 255;
+				al = 0;
+				bm_set_components((ubyte*)&pixel, &r, &g, &b, &al);
+			} else {
+				// get the 8 bit r, g, and b values
+				r = (ubyte)(((pixel & 0x7c00) >> 10) * 8);
+				g = (ubyte)(((pixel & 0x03e0) >> 5) * 8);
+				b = (ubyte)((pixel & 0x001f) * 8);
+				al = 1;
+
+				// now stuff these back, swizzling properly
+				pixel = 0;
+				bm_set_components((ubyte*)&pixel, &r, &g, &b, &al);
+			}
+
+			// 16 bit destination
+			if(dest_size == 2){
+				// stuff the final pixel		
+				memcpy( *dst, &pixel, bytes_per_pixel );			
+			}
+			// 8 bit destination 
+			else {
+				pal_index = (ubyte)palette_find((int)r, (int)g, (int)b);
+				**dst = pal_index;			
+			}
 		}
 
 		// next pixel
@@ -619,9 +629,9 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 	int bytes_per_pixel = (header.pixel_depth>>3);
 
-	// we're only allowing 2 bytes per pixel (16 bit compressed)
-	Assert(bytes_per_pixel == 2);
-	if(bytes_per_pixel != 2){
+	// we're only allowing 2 bytes per pixel (16 bit compressed), unless Cmdline_jpgtga is used
+	Assert( (bytes_per_pixel == 2) || (bytes_per_pixel == 3) || (bytes_per_pixel == 4) );
+	if(!Cmdline_jpgtga && (bytes_per_pixel != 2)){
 		cfclose(targa_file);
 		return TARGA_ERROR_READING;
 	}
@@ -639,8 +649,8 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 		yo = 0;
 	}		
 
-	// only accept 16 bit, compressed
-	if(header.pixel_depth!=16) {
+	// only accept 16 bit, compressed, only if Cmdline_jpgtga is not used
+	if(!Cmdline_jpgtga && (header.pixel_depth != 16)) {
 		cfclose(targa_file);
 		return TARGA_ERROR_READING;
 	}
@@ -660,7 +670,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 	// skip the Image ID field -- should not be needed
 	if(header.id_length>0) {
-		if(cfseek(targa_file, header.id_length, CF_SEEK_SET)) {
+		if ( cfseek(targa_file, header.id_length, CF_SEEK_CUR) ) {
 			cfclose(targa_file);
 			return TARGA_ERROR_READING;
 		}
@@ -731,7 +741,6 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 		}
 
 	} else if (header.image_type == 9 || header.image_type == 10 || header.image_type == 11) {
-
 		// the following handles RLE'ed targa data. 
 
 		// targas encoded by the scanline -- loop on the height
@@ -752,50 +761,6 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	free(fileptr);
 	cfclose(targa_file);
 	targa_file = NULL;
-
-	return TARGA_ERROR_NONE;
-}
-
-// Loads a 32-bit Targa bitmap
-// 
-// filename - name of the targa file to load
-// image_data - allocated storage for the bitmap
-//
-// returns - true if succesful, false otherwise
-//
-int targa_read_bitmap_32(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size)
-{
-#ifndef USE_DEVIL_TGA
-	// non-DevIL stuff...
-#else
-	char filename[MAX_FILENAME_LEN];
-	ILuint tgaimage;
-	ILint ilsize;
-		
-	strcpy( filename, real_filename );
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-	strcat( filename, ".tga" );
-
-	ilGenImages(1, &tgaimage);
-	ilBindImage(tgaimage);
-
-	if (ilLoadImage(filename) == IL_FALSE) {
-		mprintf(("Couldn't open '%s' -- some kind of devIL-error: %s\n", filename, iluErrorString(ilGetError()) ));
-		ilDeleteImages(1, &tgaimage);
-		return TARGA_ERROR_READING;
-	}
-
-	// convert to BGRA if not already there, should be though
-	ilConvertImage(IL_BGRA, IL_UNSIGNED_BYTE);
-
-	ilGetIntegerv(IL_IMAGE_SIZE_OF_DATA, &ilsize);
-
-	memcpy(image_data, ilGetData(), ilsize);
-//	image_data = ilGetData();
-
-	ilDeleteImages(1,&tgaimage);
-#endif
 
 	return TARGA_ERROR_NONE;
 }

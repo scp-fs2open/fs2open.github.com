@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * Header file to support misc. multiplayer support functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/07/07 21:00:08  Kazan
  * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
  *
@@ -212,7 +215,7 @@ void multi_pack_orient_matrix(ubyte *data,matrix *m);
 void multi_unpack_orient_matrix(ubyte *data,matrix *m);
 
 // catchall to do any necessary client-side simulation processing or master side process for menu pauses, etc.
-void multi_do_client_warp(float flFrametime);
+void multi_do_client_warp(float frame_time);
 
 void multi_assign_player_ship( int net_player, object *objp, int ship_class );
 

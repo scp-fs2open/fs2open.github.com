@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:30 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -2293,7 +2296,7 @@ void options_multi_vox_process_player_list()
 		if(Om_vox_players[selected_index] != NULL){
 			Om_vox_player_select = Om_vox_players[selected_index];
 
-			nprintf(("Network","Selecting player %s\n",Om_vox_player_select->player->callsign));
+			nprintf(("Network","Selecting player %s\n",Om_vox_player_select->m_player->callsign));
 		}
 	}
 
@@ -2310,7 +2313,7 @@ void options_multi_vox_process_player_list()
 			}
 
 			// force fit his callsign
-			strcpy(str,Om_vox_players[idx]->player->callsign);
+			strcpy(str,Om_vox_players[idx]->m_player->callsign);
 			gr_force_fit_string(str, CALLSIGN_LEN+1, Om_vox_plist_coords[gr_screen.res][2]);
 
 			// blit the callsign

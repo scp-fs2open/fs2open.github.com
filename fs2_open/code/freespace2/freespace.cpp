@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.121 $
- * $Date: 2005-01-30 09:27:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.122 $
+ * $Date: 2005-02-04 10:12:29 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.121  2005/01/30 09:27:39  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.120  2005/01/29 09:19:45  argv
  * Fixed compile errors due to several source files not having been updated to
  * reference "Min/Max_draw_distance" instead of "MIN/MAX_DRAW_DISTANCE".
@@ -1045,7 +1049,9 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #ifdef _WIN32
  #include <direct.h>
  #include <io.h>
+#ifndef _MINGW
  #include <crtdbg.h>
+#endif // !_MINGW
 #else
  #include <unistd.h>
  #include <sys/stat.h>
@@ -1294,12 +1300,16 @@ float flFrametime;
 
 int	Framerate_cap = 120;
 
+// for the model page in system
+extern void model_page_in_start();
 
 int	Show_cpu = 0;
 int	Show_target_debug_info = 0;
 int	Show_target_weapons = 0;
 int	Game_font = -1;
+#ifndef NDEBUG
 static int Show_player_pos = 0;		// debug console command to show player world pos on HUD
+#endif
 
 int Debug_octant = -1;
 
@@ -1307,6 +1317,10 @@ fix Game_time_compression = F1_0;
 
 // auto-lang stuff
 int detect_lang();
+
+// table checksums that will be used for pilot files
+uint Weapon_tbl_checksum = 0;
+uint Ships_tbl_checksum = 0;
 
 // if the ships.tbl the player has is valid
 int Game_ships_tbl_valid = 0;
@@ -1596,11 +1610,9 @@ static char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"2_PreLoadLogo"
 };
 
-#ifdef _WIN32
 // cdrom stuff
 char Game_CDROM_dir[MAX_PATH_LEN];
 int init_cdrom();
-#endif
 
 // How much RAM is on this machine. Set in WinMain
 uint Freespace_total_ram = 0;
@@ -2064,7 +2076,13 @@ void game_level_init(int seed)
 	}
 
 	obj_init();						// Must be inited before the other systems
-	model_free_all();				// Free all existing models
+
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+		model_page_in_start();		// mark any existing models as unused but don't unload them yet
+	} else {
+		model_free_all();			// Free all existing models if standalone server
+	}
+
 	mission_brief_common_init();		// Free all existing briefing/debriefing text
 	weapon_level_init();
 	init_decals();
@@ -2245,6 +2263,11 @@ static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
+#ifndef NDEBUG
+extern char Processing_filename[MAX_PATH_LEN];
+static int busy_shader_created = 0;
+shader busy_shader;
+#endif
 // This gets called 10x per second and count is the number of times 
 // game_busy() has been called since the current callback function
 // was set.
@@ -2256,6 +2279,8 @@ void game_loading_callback(int count)
 
 	Assert( Game_loading_callback_inited==1 );
 	Assert( Game_loading_ani != NULL );
+
+	int do_flip = 0;
 
 	int framenum = ((Game_loading_ani->total_frames*count) / COUNT_ESTIMATE)+1;
 	if ( framenum > Game_loading_ani->total_frames-1 )	{
@@ -2283,6 +2308,32 @@ void game_loading_callback(int count)
 
 		bm_release(cbitmap);
 	
+		do_flip = 1;
+	}
+
+#ifndef NDEBUG
+	// print the current filename being processed by game_busy(), the shader here is a quick hack
+	// since the background isn't always drawn so we can't clear the text away from the previous
+	// filename. the shader is completely opaque to hide the old text. must easier and faster than
+	// redrawing the entire screen every flip - taylor
+	if (!busy_shader_created) {
+		gr_create_shader(&busy_shader, 5, 5, 5, 255);
+		busy_shader_created = 1;
+	}
+
+	if (Processing_filename[0] != '\0') {
+		gr_set_shader(&busy_shader);
+		gr_shade(0, 0, gr_screen.clip_width, 12); // make sure it goes across the entire width
+
+		gr_set_color_fast(&Color_white);
+		gr_string(5, 5, Processing_filename);
+
+		do_flip = 1;
+		memset( Processing_filename, 0, MAX_PATH_LEN );
+	}
+#endif
+
+	if (do_flip) {
 		gr_flip();
 	}
 }
@@ -2394,31 +2445,31 @@ void freespace_mission_load_stuff()
 		game_loading_callback_init();
 		
 		event_music_level_init(-1);	// preloads the first 2 seconds for each event music track
-		game_busy();
+		game_busy(NOX("** even music is set up **"));
 
 		gamesnd_unload_interface_sounds();		// unload interface sounds from memory
-		game_busy();
+		game_busy(NOX("** interface sounds unloaded **"));
 
 		gamesnd_preload_common_sounds();			// load in sounds that are expected to play
-		game_busy();
+		game_busy(NOX("** done loading sounds **"));
 
 		if (Cmdline_snd_preload) {
 			gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
-			game_busy();
+			game_busy(NOX("** finished preloading sounds **"));
 		}
 
 		ship_assign_sound_all();	// assign engine sounds to ships
 		game_assign_sound_environment();	 // assign the sound environment for this mission
-		game_busy();
+		game_busy(NOX("** assigned sound environment for mission **"));
 
 		// call function in missionparse.cpp to fixup player/ai stuff.
 		mission_parse_fixup_players();
-		game_busy();
+		game_busy(NOX("** done fixing up player/ai stuff **"));
 
 		// Load in all the bitmaps for this level
 		level_page_in();
 
-		game_busy();
+		game_busy(NOX("** finished with level_page_in() **"));
 
 		game_loading_callback_close();	
 	} 
@@ -2497,6 +2548,8 @@ int game_start_mission()
 	load_mission_stuff = time(NULL);
 	freespace_mission_load_stuff();
 	load_mission_stuff = time(NULL) - load_mission_stuff;
+
+	bm_print_bitmaps();
 
 	return 1;
 }
@@ -2673,6 +2726,7 @@ DCF(gamma,"Sets Gamma factor")
 
 void run_launcher()
 {
+#ifdef _WIN32
 	const char *launcher_link = "explorer.exe \"http://www.randomtiger.pwp.blueyonder.co.uk/freespace/Launcher5.rar\"";
 
 	int download = MessageBox((HWND)os_get_window(), 
@@ -2723,6 +2777,7 @@ void run_launcher()
 			WinExec(launcher_link, SW_SHOW);
 		}
 	}
+#endif
 }
 
 void game_init()
@@ -2778,7 +2833,6 @@ void game_init()
 #endif
 	{		
 		os_init( Osreg_class_name, Osreg_app_name );
-		os_set_title(Osreg_title);
 	}
 
 	// initialize localization module. Make sure this is down AFTER initialzing OS.
@@ -2827,16 +2881,18 @@ void game_init()
 			use_eax = 1;
 		}
 	}
+#ifndef SCP_UNIX
 	else
 	{
 		run_launcher();
 		exit(0);
 	}
+#endif
 
 	if (!Is_standalone)
 	{
-		UserSampleRate = (unsigned short) os_config_read_uint(NULL, "SoundSampleRate", 22050);
-		UserSampleBits = (unsigned short) os_config_read_uint(NULL, "SoundSampleBits", 16);
+		UserSampleRate = (ushort) os_config_read_uint(NULL, "SoundSampleRate", 22050);
+		UserSampleBits = (ushort) os_config_read_uint(NULL, "SoundSampleBits", 16);
 		snd_init(use_a3d, use_eax, UserSampleRate, UserSampleBits);
 	}
 
@@ -2886,19 +2942,17 @@ void game_init()
 	}
 #endif
 
-#ifdef _WIN32
-
 	if(!Is_standalone)
 	{
 		int width, height, cdepth;
-		extern char Device_init_error[512];		
+		char Device_init_error[512];		
 
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
 
 		if(ptr == NULL)
 		{
-			strcpy(Device_init_error, "Cant get 'videocardFs2open' reg entry.");
+			strcpy(Device_init_error, "Cant get 'VideocardFs2open' reg entry.");
 		}
 		else 
 		{
@@ -2912,7 +2966,7 @@ void game_init()
 				int adapter, aatype;
 
 				if(sscanf(ptr, "D3D9-(%dx%d)x%d bit ad%d aa%d", &width, &height, &cdepth, &adapter, &aatype)  != 5) 
-					strcpy(Device_init_error, "Cant understand 'videocardFs2open' D3D9 reg entry.");
+					strcpy(Device_init_error, "Cant understand 'VideocardFs2open' D3D9 reg entry.");
 				else
 				{
 					sprintf(Device_init_error, 
@@ -2925,14 +2979,14 @@ void game_init()
 			else if (strstr(ptr, NOX("D3D8-") ))	
 			{
 				if(sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
-					strcpy(Device_init_error, "Cant understand 'videocardFs2open' D3D8 reg entry.");
+					strcpy(Device_init_error, "Cant understand 'VideocardFs2open' D3D8 reg entry.");
 				else
 					gr_init(res, GR_DIRECT3D, cdepth, width, height);
 			} 
 			else if (strstr(ptr, NOX("OGL -") ))
 			{
 				if(sscanf(ptr, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
-					strcpy(Device_init_error, "Cant understand 'videocardFs2open' OGL reg entry.");
+					strcpy(Device_init_error, "Cant understand 'VideocardFs2open' OGL reg entry.");
 				else
 					gr_init(res, GR_OPENGL, cdepth, width, height);
 			} 
@@ -2953,11 +3007,23 @@ void game_init()
 		extern int Gr_inited;
 		if(!Gr_inited)
 		{
+#ifdef _WIN32
 			ClipCursor(NULL);
 			ShowCursor(TRUE);
 			ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
 			MessageBox( NULL, Device_init_error, "Error intializing graphics", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
 			run_launcher();
+#elif defined(SCP_UNIX)
+			fprintf(stderr, "Error initializing graphics: %s\n\n", Device_init_error);
+			
+			// the default entry should have been created already if it didn't exist, so if we're here then
+			// the current value is invalid and we need to replace it
+			os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(640x480)x16 bit"));
+			
+			// courtesy
+			fprintf(stderr, "The default video entry is now in place.  Please try running the game again...\n");
+			fprintf(stderr, "(edit ~/.fs2_open/fs2_open.ini to change from default resolution)\n");
+#endif
 			exit(1);
 			return;
 		}
@@ -2967,17 +3033,8 @@ void game_init()
 		gr_init(GR_640, GR_STUB, 16, 640, 480);
 	}
 
-#elif defined unix
-	// initialize the graphics system (unix)
-	extern int Gr_inited;
-	gr_init(GR_640, GR_OPENGL);
-	if (!Gr_inited) {
-		mprintf(("Could not initialize graphics... exiting\n"));
-		exit(1);
-	}
-#else
-#error unknown operating system
-#endif // ifdef WIN32
+	// this has to be set after gr_init() is done on *nix
+	os_set_title(Osreg_title);
 
 //	ENVMAP = bm_load("environment");
 
@@ -3049,7 +3106,11 @@ void game_init()
 #endif  // ifndef NO_NETWORK
 
 	// If less than 48MB of RAM, use low memory model.
-	if ( (Freespace_total_ram < 48*1024*1024) || Use_low_mem )	{
+	if (
+#ifdef _WIN32
+		(Freespace_total_ram < 48*1024*1024) ||
+#endif
+		Use_low_mem )	{
 		mprintf(( "Using normal memory settings...\n" ));
 		bm_set_low_mem(1);		// Use every other frame of bitmaps
 	} else {
@@ -3218,6 +3279,7 @@ void game_get_framerate()
 
 	if(Cmdline_show_stats)
 	{
+#ifdef _WIN32
 		char mem_buffer[50];
 
 		if(gr_screen.mode == GR_DIRECT3D)
@@ -3242,11 +3304,15 @@ void game_get_framerate()
 		gr_string( 20, 170, mem_buffer);
 		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
 		gr_string( 20, 180, mem_buffer);
+#elif defined(SCP_UNIX)
+	STUB_FUNCTION;
+#endif
 	}
 
 #ifndef NDEBUG
 	if(Cmdline_show_mem_usage)
 	{
+#ifdef _WIN32
 		void memblockinfo_sort();
 		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
 
@@ -3274,6 +3340,7 @@ void game_get_framerate()
 		}
 		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
 		gr_string( 20, 230 + (i*10), mem_buffer);
+#endif
 	}
 #endif
 }
@@ -3822,11 +3889,11 @@ void player_repair_frame(float frametime)
 
 			np = &Net_players[idx];
 
-			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != NULL) && (Net_player->player_id != Net_players[idx].player_id) && (Net_players[idx].player != NULL) && (Net_players[idx].player->objnum >= 0) && (Net_players[idx].player->objnum < MAX_OBJECTS)){
+			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != NULL) && (Net_player->player_id != Net_players[idx].player_id) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS)){
 
 				// don't rearm/repair if the player is dead or dying/departing
-				if ( !NETPLAYER_IS_DEAD(np) && !(Ships[Objects[np->player->objnum].instance].flags & (SF_DYING|SF_DEPARTING)) ) {
-					ai_do_repair_frame(&Objects[Net_players[idx].player->objnum],&Ai_info[Ships[Objects[Net_players[idx].player->objnum].instance].ai_index],frametime);
+				if ( !NETPLAYER_IS_DEAD(np) && !(Ships[Objects[np->m_player->objnum].instance].flags & (SF_DYING|SF_DEPARTING)) ) {
+					ai_do_repair_frame(&Objects[Net_players[idx].m_player->objnum],&Ai_info[Ships[Objects[Net_players[idx].m_player->objnum].instance].ai_index],frametime);
 				}
 			}
 		}
@@ -3841,7 +3908,7 @@ void player_repair_frame(float frametime)
 //#ifndef NDEBUG
 #define NUM_FRAMES_TEST		300
 #define NUM_MIXED_SOUNDS	16
-void do_timing_test(float flFrametime)
+void do_timing_test(float frame_time)
 {
 	static int framecount = 0;
 	static int test_running = 0;
@@ -3852,7 +3919,7 @@ void do_timing_test(float flFrametime)
 
 	if ( test_running ) {
 		framecount++;
-		test_time += flFrametime;
+		test_time += frame_time;
 		if ( framecount >= NUM_FRAMES_TEST ) {
 			test_running = 0;
 			nprintf(("General", "%d frames took %.3f seconds\n", NUM_FRAMES_TEST, test_time));
@@ -4110,7 +4177,7 @@ extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code t
 vector	Dead_player_last_vel = {1.0f, 1.0f, 1.0f};
 
 
-#define render_environment 	{gr_set_environment_mapping(i);g3_set_view_matrix( &nv, &new_orient, new_zoom );gr_set_proj_matrix( (PI/2.0f), 1.0f, 1.0f, 30000.0f);if ( Game_subspace_effect ){stars_draw(0,0,0,1,1);} else {stars_draw(1,1,1,0,1);}i++;}
+#define render_environment 	{ gr_set_environment_mapping(i); g3_set_view_matrix( &nv, &new_orient, new_zoom ); gr_set_proj_matrix( (PI/2.0f), 1.0f, Min_draw_distance, 30000.0f); gr_set_view_matrix(&Eye_position, &Eye_matrix); if ( Game_subspace_effect ) { stars_draw(0,0,0,1,1); } else { stars_draw(1,1,1,0,1); } gr_end_view_matrix(); gr_end_proj_matrix(); i++; }
 
 extern float View_zoom, Canv_w2, Canv_h2;
 void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
@@ -4121,9 +4188,9 @@ void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
 		matrix new_orient;
 		float old_zoom = View_zoom, new_zoom = 0.925f;
 		vector nv = ZERO_VECTOR;
+		int i = 0;
 
 		{
-			int i = 0;
 			new_orient.vec.fvec.xyz.x = 1.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 0.0f;
 			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
 			vm_fix_matrix(&new_orient);
@@ -4159,7 +4226,12 @@ void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
 //		View_zoom = old_zoom;
 		g3_set_view_matrix( eye_pos, eye_orient, old_zoom );
 		gr_set_proj_matrix( ((4.0f/9.0f)*(PI)*View_zoom), Canv_w2/Canv_h2, 1.0f, 30000.0f);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 		gr_set_environment_mapping(-1);
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
 //		first_frame = false;
 	}
 //	}
@@ -4449,7 +4521,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 #ifndef NO_NETWORK
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
 #else
-   dont_offset = 0;
+	dont_offset = 0;
 #endif
 	HUD_set_offsets(Viewer_obj, !dont_offset);
 	
@@ -4474,6 +4546,16 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
 		setup_environment_mapping(eye_pos, eye_orient);
 		cube_map_drawen = true;
+	} else {
+		gr_setup_background_fog(true);
+
+		if ( Game_subspace_effect )	{
+			stars_draw(0,0,0,1,0);
+		} else {
+			stars_draw(1,1,1,0,0);
+		}
+
+		gr_setup_background_fog(false);
 	}
 
 	if (!Cmdline_nohtl) {
@@ -4838,13 +4920,15 @@ void game_simulation_frame()
 #else  // NO_NETWORK
 	// mharris FIXME -- this is too fragile - too much of this stuff is
 	// copied from the ifndef block above...
-		if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
-			mission_parse_eval_stuff();
-		}
-		obj_move_all(flFrametime);
-		if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
-			mission_eval_goals();
-		}
+	if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
+		mission_parse_eval_stuff();
+	}
+
+	obj_move_all(flFrametime);
+
+	if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
+		mission_eval_goals();
+	}
 #endif  // ifndef NO_NETWORK
 //mprintf(("arivals\\departures done\n"));
 
@@ -5373,8 +5457,10 @@ void game_frame(int paused)
 fix Last_time = 0;						// The absolute time of game at end of last frame (beginning of this frame)
 fix Last_delta_time = 0;				// While game is paused, this keeps track of how much elapsed in the frame before paused.
 static int timer_paused=0;
+#if defined(TIMER_TEST) && !defined(NDEBUG)
 static int stop_count,start_count;
 static int time_stopped,time_started;
+#endif
 int saved_timestamp_ticker = -1;
 
 void game_reset_time()
@@ -7703,7 +7789,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 	*out_destroyed_total += sub_total_destroyed;
 }
 
-#define BAIL()			do { int idx; for(idx=0; idx<num_files; idx++){ if(pof_list[idx] != NULL){free(pof_list[idx]); pof_list[idx] = NULL;}} return;} while(0);
+#define BAIL()			do { int _idx; for(_idx=0; _idx<num_files; _idx++){ if(pof_list[_idx] != NULL){free(pof_list[_idx]); pof_list[_idx] = NULL;}} return;} while(0);
 void game_spew_pof_info()
 {
 	char *pof_list[1000];
@@ -7807,8 +7893,10 @@ int WinMainSub(int argc, char *argv[])
 
 
 #ifdef _DEBUG
+#ifdef _WIN32
 	void memblockinfo_output_memleak();
 	atexit(memblockinfo_output_memleak);
+#endif
 #endif
 
 	int state;		
@@ -7879,7 +7967,15 @@ int WinMainSub(int argc, char *argv[])
 
 	}
 #else
+	vm_init(0); 
+
    // mharris TODO: how should we determine what the "right" directory is?
+
+	// create user's directory
+	char userdir[MAX_PATH];
+
+	snprintf(userdir, MAX_PATH, "%s/%s", detect_home(), Osreg_user_dir);
+	_mkdir(userdir);
 #endif
 
 	
@@ -7921,20 +8017,24 @@ int WinMainSub(int argc, char *argv[])
 
 	game_stop_time();
 
-   if (Cmdline_SpewMission_CRCs) // -missioncrcs
-   {
-	   multi_spew_pxo_checksums(1024, "FS2MissionsCRCs.txt");
-	   game_shutdown();
-	   return 0;
-   }
+	if (Cmdline_SpewMission_CRCs) // -missioncrcs
+	{
+#ifndef NO_NETWORK
+		multi_spew_pxo_checksums(1024, "FS2MissionsCRCs.txt");
+#endif
+		game_shutdown();
+		return 0;
+	}
 
 
-   if (Cmdline_SpewTable_CRCs)
-   {
-	   multi_spew_table_checksums(50, "FS2TablesCRCs.txt");
-	   game_shutdown();
-	   return 0;
-   }
+	if (Cmdline_SpewTable_CRCs)
+	{
+#ifndef NO_NETWORK
+		multi_spew_table_checksums(50, "FS2TablesCRCs.txt");
+#endif
+		game_shutdown();
+		return 0;
+	}
 	// maybe spew pof stuff
 	if(Cmdline_spew_pof_info){
 		game_spew_pof_info();
@@ -7946,6 +8046,7 @@ int WinMainSub(int argc, char *argv[])
 
 	movie_play( NOX("intro.mve"));
 
+/* not using this anymore, it's not doing anything anyway - taylor
 #ifndef _WIN32
 	// non-demo, non-standalone, play the intro movie
 	if(!Is_standalone){
@@ -7966,7 +8067,8 @@ int WinMainSub(int argc, char *argv[])
 	}
 
 #endif // ifndef DEMO
-#endif
+#endif // !_WIN32
+*/
 
 	if (Is_standalone){
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
@@ -8017,9 +8119,8 @@ int main(int argc, char *argv[])
 	void memblockinfo_output_memleak();
 	atexit(memblockinfo_output_memleak);
 #endif
-#endif
-
 	::CoInitialize(NULL);
+#endif
 
 	DBUGFILE_INIT();
 	int result = -1;
@@ -8050,10 +8151,13 @@ int main(int argc, char *argv[])
 
 	DBUGFILE_DEINIT()
 
-	::CoUninitialize();
 
 #ifdef _WIN32
+	::CoUninitialize();
+
+#ifndef _MINGW
 	_CrtDumpMemoryLeaks();
+#endif // !_MINGW
 #endif
 
 	return result;
@@ -8106,6 +8210,7 @@ void game_shutdown(void)
 #ifdef _WIN32
 	timeEndPeriod(1);
 #endif
+
 
 	fsspeech_deinit();
 
@@ -8271,6 +8376,10 @@ void unload_animating_pointer()
 	am = &Animating_mouse;
 	for ( i = 0; i < am->num_frames; i++ ) {
 		Assert( (am->first_frame+i) >= 0 );
+
+		// if we are the current cursor then reset to avoid gr_close() issues - taylor
+		gr_unset_cursor_bitmap(am->first_frame + i);
+
 		bm_release(am->first_frame + i);
 	}
 
@@ -9236,7 +9345,6 @@ void game_stop_subspace_ambient_sound()
 // ----------------------------------------------------------------
 
 
-#ifdef _WIN32
 // ----------------------------------------------------------------
 //
 // CDROM detection code START
@@ -9247,6 +9355,7 @@ void game_stop_subspace_ambient_sound()
 
 uint game_get_cd_used_space(char *path)
 {
+#ifdef _WIN32
 	uint total = 0;
 	char use_path[512] = "";
 	char sub_path[512] = "";
@@ -9282,12 +9391,24 @@ uint game_get_cd_used_space(char *path)
 
 	// total
 	return total;
+#else
+	if (path == NULL) {
+		// bail
+		mprintf(("NULL path passed to game_get_cd_used_space.\n"));
+		return 0;
+	}
+
+	STUB_FUNCTION;
+
+	return 0;
+#endif // _WIN32
 }
 
 
 // if volume_name is non-null, the CD name must match that
 int find_freespace_cd(char *volume_name)
 {
+#ifdef _WIN32
 	char oldpath[MAX_PATH];
 	char volume[256];
 	int i;
@@ -9397,6 +9518,16 @@ int find_freespace_cd(char *volume_name)
 
 	SetCurrentDirectory(oldpath);
 	return cdrom_drive;
+#else
+	STUB_FUNCTION;
+
+	if (volume_name != NULL) {
+		// volume specific checks
+		STUB_FUNCTION;
+	}
+
+	return 0;
+#endif // _WIN32
 }
 
 int set_cdrom_path(int drive_num)
@@ -9449,6 +9580,7 @@ char Last_cd_label[256];
 
 int game_cd_changed()
 {
+#ifdef _WIN32
 	char label[256];
 	int found;
 	int changed = 0;
@@ -9490,6 +9622,11 @@ int game_cd_changed()
 	}
 
 	return changed;
+#else
+	STUB_FUNCTION;
+
+	return 0;
+#endif // _WIN32
 }
 
 // check if _any_ FreeSpace2 CDs are in the drive
@@ -9596,9 +9733,8 @@ int game_do_cd_check_specific(char *volume_name, int cdnum)
 // only need to do this in RELEASE_REAL
 int game_do_cd_mission_check(char *filename)
 {	
-//#ifdef RELEASE_REAL
-#if 0
-	int cd_num;
+#ifdef RELEASE_REAL
+/*	int cd_num;
 	int cd_present = 0;
 	int cd_drive_num;
 	fs_builtin_mission *m = game_find_builtin_mission(filename);
@@ -9676,9 +9812,13 @@ int game_do_cd_mission_check(char *filename)
 	}	
 
 	return cd_present;
+*/
+
+	return 1;
+
 #else
 	return 1;
-#endif
+#endif // RELEASE_REAL
 }
 
 // ----------------------------------------------------------------
@@ -9686,12 +9826,7 @@ int game_do_cd_mission_check(char *filename)
 // CDROM detection code END
 //
 // ----------------------------------------------------------------
-#else  // !WIN32
-int game_do_cd_mission_check(char *filename)
-{	
-	return 1;
-}
-#endif  // ifdef WIN32
+
 
 // ----------------------------------------------------------------
 // Language autodetection stuff
@@ -9772,40 +9907,42 @@ int Game_ships_tbl_checksums[NUM_SHIPS_TBL_CHECKSUMS] = {
 
 void verify_ships_tbl()
 {	
-	/*
-#ifdef NDEBUG
+#if defined(NDEBUG) || defined(NO_NETWORK)
 	Game_ships_tbl_valid = 1;
 #else
-	*/
-	Game_ships_tbl_valid = 1; // ##Kazan## - This will be dealt with later by Fs2NetD
-	/*uint file_checksum;		
-	int idx;
+	// this is still needed for LAN play but skip it if we are using FS2NetD
+	if (Om_tracker_flag) {
+		Game_weapons_tbl_valid = 1;
+	} else {
+		uint file_checksum;		
+		int idx;
 
-	// detect if the packfile exists
-	CFILE *detect = cfopen("ships.tbl", "rb");
-	Game_ships_tbl_valid = 0;	 
+		// detect if the packfile exists
+		CFILE *detect = cfopen("ships.tbl", "rb");
+		Game_ships_tbl_valid = 0;	 
 	
-	// not mission-disk
-	if(!detect){
-		Game_ships_tbl_valid = 0;
-		return;
-	}	
-
-	// get the long checksum of the file
-	file_checksum = 0;
-	cfseek(detect, 0, SEEK_SET);	
-	cf_chksum_long(detect, &file_checksum);
-	cfclose(detect);
-	detect = NULL;	
-
-	// now compare the checksum/filesize against known #'s
-	for(idx=0; idx<NUM_SHIPS_TBL_CHECKSUMS; idx++){
-		if(Game_ships_tbl_checksums[idx] == (int)file_checksum){
-			Game_ships_tbl_valid = 1;
+		// not mission-disk
+		if(!detect){
+			Game_ships_tbl_valid = 0;
 			return;
+		}	
+
+		// get the long checksum of the file
+		file_checksum = 0;
+		cfseek(detect, 0, SEEK_SET);	
+		cf_chksum_long(detect, &file_checksum);
+		cfclose(detect);
+		detect = NULL;	
+
+		// now compare the checksum/filesize against known #'s
+		for(idx=0; idx<NUM_SHIPS_TBL_CHECKSUMS; idx++){
+			if(Game_ships_tbl_checksums[idx] == (int)file_checksum){
+				Game_ships_tbl_valid = 1;
+				return;
+			}
 		}
-	} */
-// #endif
+	}
+#endif
 }
 
 DCF(shipspew, "display the checksum for the current ships.tbl")
@@ -9841,43 +9978,40 @@ int Game_weapons_tbl_checksums[NUM_WEAPONS_TBL_CHECKSUMS] = {
 #endif
 
 void verify_weapons_tbl()
-{	
-	/*
-#ifdef NDEBUG
-	Game_weapons_tbl_valid = 1;
-#else
-	*/
-
-	Game_weapons_tbl_valid = 1; // ##Kazan## -- Fs2NetD will take care of this later!
-
-	/*uint file_checksum;		
-	int idx;
-
+{
 	// detect if the packfile exists
 	CFILE *detect = cfopen("weapons.tbl", "rb");
-	Game_weapons_tbl_valid = 0;	 
-	
+
 	// not mission-disk
-	if(!detect){
-		Game_weapons_tbl_valid = 0;
+	if (!detect) {
+		// TODO: some error message
+		Weapon_tbl_checksum = 0;
 		return;
-	}	
+	}
 
-	// get the long checksum of the file
-	file_checksum = 0;
-	cfseek(detect, 0, SEEK_SET);	
-	cf_chksum_long(detect, &file_checksum);
+	cfseek(detect, 0, SEEK_SET);
+	cf_chksum_long(detect, &Weapon_tbl_checksum);
 	cfclose(detect);
-	detect = NULL;	
+	detect = NULL;
 
-	// now compare the checksum/filesize against known #'s
-	for(idx=0; idx<NUM_WEAPONS_TBL_CHECKSUMS; idx++){
-		if(Game_weapons_tbl_checksums[idx] == (int)file_checksum){
-			Game_weapons_tbl_valid = 1;
-			return;
+#if defined(NDEBUG) || defined(NO_NETWORK)
+	Game_weapons_tbl_valid = 1;
+#else
+	// this is still needed for LAN play but skip it if we are using FS2NetD
+	if (Om_tracker_flag) {
+		Game_weapons_tbl_valid = 1;
+	} else {
+		int idx;
+
+		// now compare the checksum/filesize against known #'s
+		for(idx=0; idx<NUM_WEAPONS_TBL_CHECKSUMS; idx++){
+			if(Game_weapons_tbl_checksums[idx] == (int)Weapon_tbl_checksum){
+				Game_weapons_tbl_valid = 1;
+				return;
+			}
 		}
-	}*/
-// #endif
+	}
+#endif
 }
 
 DCF(wepspew, "display the checksum for the current weapons.tbl")
@@ -10028,7 +10162,6 @@ void display_title_screen()
 
 		//Draw it in the center of the screen
 		gr_bitmap(0,0);//(gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
-		bm_unload(title_bitmap);
 	}
 
 	if(title_logo != -1)
@@ -10037,7 +10170,6 @@ void display_title_screen()
 
 		gr_bitmap(0,0);
 
-		bm_unload(title_logo);
 	}
 
 #ifndef NO_DIRECT3D
@@ -10050,6 +10182,16 @@ void display_title_screen()
 
 	// flip
 	gr_flip();
+
+	if(title_bitmap != -1)
+	{
+		bm_release(title_bitmap);
+	}
+
+	if(title_logo != -1)
+	{
+		bm_release(title_logo);
+	}
 }
 
 // return true if the game is running with "low memory", which is less than 48MB

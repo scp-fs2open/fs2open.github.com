@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-02-04 10:12:30 $
+ * $Author: taylor $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1357,7 +1360,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 
 #ifndef NO_NETWORK
 	if ( player_num != -1 )
-		aip = &Ai_info[Ships[Objects[Net_players[player_num].player->objnum].instance].ai_index];
+		aip = &Ai_info[Ships[Objects[Net_players[player_num].m_player->objnum].instance].ai_index];
 #endif
 
 	Assert( aip->shipnum != -1 );
@@ -1497,7 +1500,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 #ifndef NO_NETWORK
 	if ( player_num != -1 ){
-		ainfo = &Ai_info[Ships[Objects[Net_players[player_num].player->objnum].instance].ai_index];
+		ainfo = &Ai_info[Ships[Objects[Net_players[player_num].m_player->objnum].instance].ai_index];
 	}
 #endif
 
@@ -1664,7 +1667,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		case REARM_REPAIR_ME_ITEM:		
 #ifndef NO_NETWORK
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (player_num != -1) ){
-				hud_squadmsg_repair_rearm(0,&Objects[Net_players[player_num].player->objnum]);
+				hud_squadmsg_repair_rearm(0,&Objects[Net_players[player_num].m_player->objnum]);
 			}
 			else
 #endif
@@ -1676,7 +1679,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		case ABORT_REARM_REPAIR_ITEM:
 #ifndef NO_NETWORK
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (player_num != -1) ){
-				hud_squadmsg_repair_rearm_abort(0,&Objects[Net_players[player_num].player->objnum]);
+				hud_squadmsg_repair_rearm_abort(0,&Objects[Net_players[player_num].m_player->objnum]);
 			}
 			else
 #endif
@@ -1776,7 +1779,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 #ifndef NO_NETWORK
 	if ( player_num != -1 )
-		ainfo = &Ai_info[Ships[Objects[Net_players[player_num].player->objnum].instance].ai_index];
+		ainfo = &Ai_info[Ships[Objects[Net_players[player_num].m_player->objnum].instance].ai_index];
 #endif
 
 	Assert( ainfo->shipnum != -1 );
@@ -2660,7 +2663,7 @@ int hud_squadmsg_hotkey_select( int k )
 			continue;
 
 		// be sure that this ship can accept this command
-		if ( !(Msg_shortcut_command, Ships[objp->instance].orders_accepted) )
+		if ( !(Ships[objp->instance].orders_accepted & Msg_shortcut_command) )
 			continue;
 
 		hud_squadmsg_send_ship_command( objp->instance, Msg_shortcut_command, send_message );

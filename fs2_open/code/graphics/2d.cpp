@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-01-31 23:27:53 $
+ * $Revision: 2.33 $
+ * $Date: 2005-02-04 10:12:29 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/01/31 23:27:53  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.31  2005/01/29 08:04:15  wmcoolmon
  * Ahh, the sweet smell of optimized code
  *
@@ -611,6 +614,7 @@
 #include <windowsx.h>
 #endif
 
+
 //#include "graphics/GrSoft.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
@@ -629,14 +633,13 @@
 // 3dnow stuff
 // #include "amd3d.h"
 
-
+#if ( SDL_VERSION_ATLEAST(1, 2, 7) )
+#include "SDL_cpuinfo.h"
+#endif
 
 // Includes for different rendering systems
 #include "graphics/grd3dsetup.h"
 #include "graphics/gropengl.h"
-
-// DevIL - has to be inited before it gets used
-#include "openil/il_func.h"
 
 screen gr_screen;
 
@@ -788,8 +791,6 @@ void gr_close()
 
 	palette_flush();
 
-	openil_close();
-
 	switch( gr_screen.mode )	{
 #ifdef _WIN32
 	case GR_DIRECT3D:		
@@ -805,8 +806,6 @@ void gr_close()
 	default:
 		Int3();		// Invalid graphics mode
 	}
-
-	openil_close();
 
 	gr_font_close();
 	batch_deinit();
@@ -1251,9 +1250,6 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 //  	memmove( Gr_current_palette, Gr_original_palette, 768 );
 //  	gr_set_palette_internal(Gr_current_palette_name, Gr_current_palette,0);	
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);	
-
-	// initialize DevIL (after OGL)
-	openil_init();
 
 	bm_init();
 	if ( Gr_cursor == -1 ){

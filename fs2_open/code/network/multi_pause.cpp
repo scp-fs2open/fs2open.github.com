@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pause.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -560,9 +563,9 @@ void multi_pause_render_callsign()
 	char pause_str[100];
 
 	// write out the callsign of the player who paused the game	
-	if((Multi_pause_pauser != NULL) && (Multi_pause_pauser->player != NULL)){
+	if((Multi_pause_pauser != NULL) && (Multi_pause_pauser->m_player != NULL)){
 		memset(pause_str,0,100);
-		strcpy(pause_str,Multi_pause_pauser->player->callsign);
+		strcpy(pause_str,Multi_pause_pauser->m_player->callsign);
 
 		// blit it
 		gr_set_color_fast(&Color_bright);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-10-31 21:33:05 $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:29 $
  * $Author: taylor $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/10/31 21:33:05  taylor
+ * rename OGL_inited to OGL_enabled to match D3D version
+ *
  * Revision 2.4  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -242,6 +245,11 @@ int Rand_count;
 
 int Interface_last_tick = -1;			// last timer tick on flip
 
+#ifndef NDEBUG
+// for debugging, used to print the currently processing filename on the loading screen
+char Processing_filename[MAX_PATH_LEN];
+#endif
+
 // for notifying players of unknown ship types
 int Fred_found_unknown_ship_during_parsing = 0;
 
@@ -326,7 +334,7 @@ int game_busy_callback( void (*callback)(int count), int delta_step )
 }
 
 // Call whenever loading to display cursor
-void game_busy()
+void game_busy(char *filename)
 {
 	if ( cf_in_callback != 0 ) return;	// don't call callback if we're already in it.
 	if ( cf_timestamp < 0 ) return;
@@ -335,6 +343,11 @@ void game_busy()
 	cb_counter++;
 
 //	mprintf(( "CB_COUNTER=%d\n", cb_counter ));
+
+#ifndef NDEBUG
+	if (filename != NULL) 
+		strncpy(Processing_filename, filename, MAX_PATH_LEN);
+#endif
 
 	int t1 = timer_get_milliseconds();
 

@@ -114,8 +114,8 @@ extern "C"
 #define ConvertToLPC10(bufIn, bufOut, size)
 #define ConvertFromLPC10(bufIn, bufOut, size)
 #define lpc10init()
-#define lpc10encode(in, out, inlen) 0
-#define lpc10decode(in, out, inlen) 0
+#define lpc10encode(in, out, inlen)		0
+#define lpc10decode(in, out, inlen)
 #define AssertLPC10Available() assert(0)
 #endif // defined(USE_LPC10)
 
@@ -1551,7 +1551,6 @@ static int ComputeNomData(t_Sample*& in, const int deltas[], int& level)
 // esi in
 // ebp data
 
-#if defined(_WIN32)
 #if defined(CODEC_DEMO)
 static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
                           t_Sample*& levels)
@@ -1559,6 +1558,7 @@ static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
 static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level)
 #endif
 {
+#ifdef _WIN32
     int data;
 #if defined _MSC_VER
     __asm
@@ -1621,15 +1621,11 @@ static int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level)
 #error unknown compiler
 #endif
     return data;
-}
-#else // if defined(_WIN32)
-#if defined(CODEC_DEMO)
-int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level,
-									t_Sample*& levels);
-#else
-int ComputeNomDataF(t_Sample*& inp, const int deltas[], int& level);
+#else // _WIN32
+	STUB_FUNCTION;
+	return 0;
 #endif
-#endif // if defined(_WIN32)
+}
 
 #define VERIFY_ASM
 

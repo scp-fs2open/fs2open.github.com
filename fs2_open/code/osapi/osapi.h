@@ -9,7 +9,7 @@
  
 #include "PreProcDefines.h"
 #include "globalincs/pstypes.h"
-#include "OsRegistry.h"
+#include "osapi/osregistry.h"
 
 #ifndef _OSAPI_H
 #define _OSAPI_H
@@ -22,14 +22,25 @@
 extern int Os_debugger_running;
 
 // game-wide
-// #define THREADED
+//#define THREADED
 
 #ifdef THREADED
-	#define ENTER_CRITICAL_SECTION(csc)		do { EnterCriticalSection(csc); } while(0);
-	#define LEAVE_CRITICAL_SECTION(csc)		do { LeaveCriticalSection(csc); } while(0);
+#ifdef _WIN32
+	#define INITIALIZE_CRITICAL_SECTION(csc)	do { InitializeCriticalSection(&csc); } while(0);
+	#define DELETE_CRITICAL_SECTION(csc)		do { DeleteCriticalSection(&csc); } while(0);
+	#define ENTER_CRITICAL_SECTION(csc)			do { EnterCriticalSection(&csc); } while(0);
+	#define LEAVE_CRITICAL_SECTION(csc)			do { LeaveCriticalSection(&csc); } while(0);
 #else
-	#define ENTER_CRITICAL_SECTION(csc)		do { } while(0);
-	#define LEAVE_CRITICAL_SECTION(csc)		do { } while(0);
+	#define INITIALIZE_CRITICAL_SECTION(csc)	do { csc = SDL_CreateMutex(); } while(0);
+	#define DELETE_CRITICAL_SECTION(csc)		do { SDL_DestroyMutex(csc); } while(0);
+	#define ENTER_CRITICAL_SECTION(csc)			do { SDL_LockMutex(csc); } while(0);
+	#define LEAVE_CRITICAL_SECTION(csc)			do { SDL_UnlockMutex(csc); } while(0);
+#endif // _WIN32
+#else
+	#define INITIALIZE_CRITICAL_SECTION(csc)	do { } while(0);
+	#define DELETE_CRITICAL_SECTION(csc)		do { } while(0);
+	#define ENTER_CRITICAL_SECTION(csc)			do { } while(0);
+	#define LEAVE_CRITICAL_SECTION(csc)			do { } while(0);
 #endif
 
 // --------------------------------------------------------------------------------------------------
@@ -37,6 +48,10 @@ extern int Os_debugger_running;
 //
 
 // initialization/shutdown functions -----------------------------------------------
+
+#ifdef SCP_UNIX
+extern const char *detect_home(void);
+#endif
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
@@ -58,7 +73,11 @@ void os_toggle_fullscreen();
 int os_foreground();
 
 // Returns the handle to the main window
+#ifdef _WIN32
 uint os_get_window(); 
+#else
+#define os_get_window() NULL
+#endif // _WIN32
 
 void os_set_window(uint new_handle);	 
 

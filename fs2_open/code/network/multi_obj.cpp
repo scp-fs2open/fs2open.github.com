@@ -205,10 +205,10 @@ void multi_oo_build_ship_list(net_player *pl)
 	}
 
 	// get the player object
-	if(pl->player->objnum < 0){
+	if(pl->m_player->objnum < 0){
 		return;
 	}
-	player_obj = &Objects[pl->player->objnum];
+	player_obj = &Objects[pl->m_player->objnum];
 	
 	// go through all other relevant objects
 	ship_index = 0;
@@ -566,7 +566,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	// don't add for clients
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){		
 		multi_rate_add(NET_PLAYER_NUM(pl), "sig", 2);
-		ADD_DATA( objp->net_signature );		
+		ADD_USHORT( objp->net_signature );		
 		
 		multi_rate_add(NET_PLAYER_NUM(pl), "flg", 1);
 		ADD_DATA( oo_flags );
@@ -597,28 +597,28 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 
 	// get the player ship
 	shipp = NULL;
-	if((pl->player->objnum >= 0) && (Objects[pl->player->objnum].type == OBJ_SHIP) && (Objects[pl->player->objnum].instance >= 0)){
-		shipp = &Ships[Objects[pl->player->objnum].instance];
+	if((pl->m_player->objnum >= 0) && (Objects[pl->m_player->objnum].type == OBJ_SHIP) && (Objects[pl->m_player->objnum].instance >= 0)){
+		shipp = &Ships[Objects[pl->m_player->objnum].instance];
 	}
 		
 	// if we have a valid netplayer pointer
 	if((pl != NULL) && !(pl->flags & NETINFO_FLAG_RESPAWNING) && !(pl->flags & NETINFO_FLAG_LIMBO)){
 		// primary fired
-		pl->player->ci.fire_primary_count = 0;		
+		pl->m_player->ci.fire_primary_count = 0;		
 
 		// secondary fired
-		pl->player->ci.fire_secondary_count = 0;
+		pl->m_player->ci.fire_secondary_count = 0;
 		if ( in_flags & OOC_FIRE_SECONDARY ){
-			pl->player->ci.fire_secondary_count = 1;
+			pl->m_player->ci.fire_secondary_count = 1;
 		}
 
 		// countermeasure fired		
-		pl->player->ci.fire_countermeasure_count = 0;		
+		pl->m_player->ci.fire_countermeasure_count = 0;		
 
 		// set up aspect locking information
-		pl->player->locking_on_center = 0;
+		pl->m_player->locking_on_center = 0;
 		if ( in_flags & OOC_LOCKING_ON_CENTER ){
-			pl->player->locking_on_center = 1;
+			pl->m_player->locking_on_center = 1;
 		}		
 
 		// trigger down, bank info
@@ -659,7 +659,7 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 	object *tobj;
 
 	// get the data
-	GET_DATA(tnet_sig);
+	GET_USHORT(tnet_sig);
 	GET_DATA(t_subsys);
 	GET_DATA(l_subsys);
 
@@ -669,25 +669,25 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 		tobj = multi_get_network_object( tnet_sig );
 	}
 	// maybe fill in targeted object values
-	if((tobj != NULL) && (pl != NULL) && (pl->player->objnum != -1)){
+	if((tobj != NULL) && (pl != NULL) && (pl->m_player->objnum != -1)){
 		// assign the target object
-		if(Objects[pl->player->objnum].type == OBJ_SHIP){
-			Ai_info[Ships[Objects[pl->player->objnum].instance].ai_index].target_objnum = OBJ_INDEX(tobj);
+		if(Objects[pl->m_player->objnum].type == OBJ_SHIP){
+			Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].target_objnum = OBJ_INDEX(tobj);
 		}
 		pl->s_info.target_objnum = OBJ_INDEX(tobj);
 
 		// assign subsystems if possible					
-		if(Objects[pl->player->objnum].type == OBJ_SHIP){		
-			Ai_info[Ships[Objects[pl->player->objnum].instance].ai_index].targeted_subsys = NULL;
+		if(Objects[pl->m_player->objnum].type == OBJ_SHIP){		
+			Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = NULL;
 			if((t_subsys != -1) && (tobj->type == OBJ_SHIP)){
-				Ai_info[Ships[Objects[pl->player->objnum].instance].ai_index].targeted_subsys = ship_get_indexed_subsys( &Ships[tobj->instance], t_subsys);
+				Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = ship_get_indexed_subsys( &Ships[tobj->instance], t_subsys);
 			}
 		}
 
-		pl->player->locking_subsys = NULL;
-		if(Objects[pl->player->objnum].type == OBJ_SHIP){		
+		pl->m_player->locking_subsys = NULL;
+		if(Objects[pl->m_player->objnum].type == OBJ_SHIP){		
 			if((l_subsys != -1) && (tobj->type == OBJ_SHIP)){
-				pl->player->locking_subsys = ship_get_indexed_subsys( &Ships[tobj->instance], l_subsys);
+				pl->m_player->locking_subsys = ship_get_indexed_subsys( &Ships[tobj->instance], l_subsys);
 			}				
 		}
 	}				
@@ -725,8 +725,8 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 		pobjp = multi_get_network_object(net_sig);	
 	} else {	
-		if((pl != NULL) && (pl->player->objnum != -1)){
-			pobjp = &Objects[pl->player->objnum];
+		if((pl != NULL) && (pl->m_player->objnum != -1)){
+			pobjp = &Objects[pl->m_player->objnum];
 		} else {
 			pobjp = NULL;
 		}
@@ -919,8 +919,8 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		object *target_objp;
 
 		GET_DATA( umode );
-		GET_DATA( submode );
-		GET_DATA( target_signature );		
+		GET_SHORT( submode );
+		GET_USHORT( target_signature );		
 
 		if(shipp->ai_index >= 0){
 			Ai_info[shipp->ai_index].mode = umode;
@@ -949,9 +949,9 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		int ai_flags, ai_mode, ai_submode;
 
 		// flag		
-		GET_DATA(ai_flags);
-		GET_DATA(ai_mode);
-		GET_DATA(ai_submode);
+		GET_INT(ai_flags);
+		GET_INT(ai_mode);
+		GET_INT(ai_submode);
 		GET_DATA(dock_sig);		
 
 		// valid ship?							
@@ -1245,12 +1245,12 @@ void multi_oo_process_all(net_player *pl)
 	object *pobj;	
 
 	// if the player has an invalid objnum..
-	if(pl->player->objnum < 0){
+	if(pl->m_player->objnum < 0){
 		return;
 	}
 
 	// get the player's object
-	pobj = &Objects[pl->player->objnum];
+	pobj = &Objects[pl->m_player->objnum];
 
 	object *targ_obj;	
 
@@ -1348,9 +1348,9 @@ void multi_oo_process()
 			multi_oo_process_all(&Net_players[idx]);
 
 			// do firing stuff for this player
-			if((Net_players[idx].player != NULL) && (Net_players[idx].player->objnum >= 0) && !(Net_players[idx].flags & NETINFO_FLAG_LIMBO) && !(Net_players[idx].flags & NETINFO_FLAG_RESPAWNING)){
-				if((Objects[Net_players[idx].player->objnum].flags & OF_PLAYER_SHIP) && !(Objects[Net_players[idx].player->objnum].flags & OF_SHOULD_BE_DEAD)){
-					obj_player_fire_stuff( &Objects[Net_players[idx].player->objnum], Net_players[idx].player->ci );
+			if((Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && !(Net_players[idx].flags & NETINFO_FLAG_LIMBO) && !(Net_players[idx].flags & NETINFO_FLAG_RESPAWNING)){
+				if((Objects[Net_players[idx].m_player->objnum].flags & OF_PLAYER_SHIP) && !(Objects[Net_players[idx].m_player->objnum].flags & OF_SHOULD_BE_DEAD)){
+					obj_player_fire_stuff( &Objects[Net_players[idx].m_player->objnum], Net_players[idx].m_player->ci );
 				}
 			}
 		}

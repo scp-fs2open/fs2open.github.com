@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-01-31 23:27:54 $
+ * $Revision: 2.32 $
+ * $Date: 2005-02-04 10:12:31 $
  * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.30  2005/01/29 08:09:47  wmcoolmon
  * Various updates; shader, clipping
  *
@@ -3189,7 +3192,7 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 		if(Game_mode & GM_MULTIPLAYER){
 			int player_index = multi_find_player_by_object(&Objects[sp->objnum]);
 			if(player_index != -1){
-				strcpy(name,Net_players[player_index].player->callsign);
+				strcpy(name,Net_players[player_index].m_player->callsign);
 			} else {
 				strcpy(name,sp->ship_name);
 			}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-12-25 17:02:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2005-02-04 10:12:30 $
+ * $Author: taylor $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/12/25 17:02:18  wmcoolmon
+ * Fixed a couple of blonde moments.
+ *
  * Revision 2.18  2004/12/24 05:07:05  wmcoolmon
  * NEW_HUD compiles now. :)
  *
@@ -354,11 +357,11 @@ int escort_compare_func(const void *e1, const void *e2)
 
 		n1 = find_player_id(escort1->np_id);
 		n2 = find_player_id(escort2->np_id);
-		if((n1 < 0) || (n2 < 0) || (Net_players[n1].player == NULL) || (Net_players[n2].player == NULL)){
+		if((n1 < 0) || (n2 < 0) || (Net_players[n1].m_player == NULL) || (Net_players[n2].m_player == NULL)){
 			ret = 0;
 		} else {
 			// player 1 is higher than player 2
-			if(Net_players[n1].player->stats.m_kill_count_ok >= Net_players[n2].player->stats.m_kill_count_ok){
+			if(Net_players[n1].m_player->stats.m_kill_count_ok >= Net_players[n2].m_player->stats.m_kill_count_ok){
 				ret = -1;
 			} else {
 				ret = 1;
@@ -726,19 +729,19 @@ void hud_escort_show_icon_dogfight(int x, int y, int index)
 
 	// netplayer index
 	np_index = find_player_id(Escort_ships[index].np_id);
-	if((np_index < 0) || (np_index >= MAX_PLAYERS) || (Net_players[np_index].player == NULL)){
+	if((np_index < 0) || (np_index >= MAX_PLAYERS) || (Net_players[np_index].m_player == NULL)){
 		return;
 	}
 	
 	// print out player name
-	strcpy(buf, Net_players[np_index].player->callsign);
+	strcpy(buf, Net_players[np_index].m_player->callsign);
 	gr_force_fit_string(buf, 255, 100 - stat_shift);
 	emp_hud_string( x + current_hud->Escort_name[0], y + current_hud->Escort_name[1], EG_ESCORT1 + index, buf);	
 
 	// can we get the player object?
 	objp = NULL;
-	if((Net_players[np_index].player->objnum >= 0) && (Net_players[np_index].player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].player->objnum].type == OBJ_SHIP)){
-		objp = &Objects[Net_players[np_index].player->objnum];
+	if((Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP)){
+		objp = &Objects[Net_players[np_index].m_player->objnum];
 		if((objp->instance >= 0) && (objp->instance < MAX_SHIPS) && (Ships[objp->instance].ship_info_index >= 0) && (Ships[objp->instance].ship_info_index < MAX_SHIPS)){
 			sip = &Ship_info[Ships[objp->instance].ship_info_index];
 		} else {
@@ -753,9 +756,9 @@ void hud_escort_show_icon_dogfight(int x, int y, int index)
 
 	// show ship integrity
 	if(objp == NULL){	
-		emp_hud_printf( x+current_hud->Escort_integrity[0] - stat_shift, y+current_hud->Escort_integrity[1], EG_NULL, "%d", Net_players[np_index].player->stats.m_kill_count_ok);	
+		emp_hud_printf( x+current_hud->Escort_integrity[0] - stat_shift, y+current_hud->Escort_integrity[1], EG_NULL, "%d", Net_players[np_index].m_player->stats.m_kill_count_ok);	
 	} else {
-		emp_hud_printf( x+current_hud->Escort_integrity[0] - stat_shift, y+current_hud->Escort_integrity[1], EG_NULL, "(%d%%) %d", hull_integrity, Net_players[np_index].player->stats.m_kill_count_ok);	
+		emp_hud_printf( x+current_hud->Escort_integrity[0] - stat_shift, y+current_hud->Escort_integrity[1], EG_NULL, "(%d%%) %d", hull_integrity, Net_players[np_index].m_player->stats.m_kill_count_ok);	
 	}
 #endif
 }

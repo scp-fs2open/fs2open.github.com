@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-01-16 22:39:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.40 $
+ * $Date: 2005-02-04 10:12:30 $
+ * $Author: taylor $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/01/16 22:39:09  wmcoolmon
+ * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
+ *
  * Revision 2.38  2004/09/28 19:54:32  Kazan
  * | is binary or, || is boolean or - please use the right one
  * autopilot velocity ramping biasing
@@ -2207,8 +2210,8 @@ int button_function_critical(int n, net_player *p = NULL)
 #endif
 		at_self = 1;
 	} else {
-		objp = &Objects[p->player->objnum];
-		pl = p->player;
+		objp = &Objects[p->m_player->objnum];
+		pl = p->m_player;
 		npl = p;
 		at_self = 0;
 
@@ -3180,16 +3183,16 @@ int button_function(int n)
 			}
 
 			// bogus netplayer
-			if((Net_player == NULL) || (Net_player->player == NULL)){
+			if((Net_player == NULL) || (Net_player->m_player == NULL)){
 				break;
 			}
 
 			// blow myself up, if I'm the server
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-				if((Net_player->player->objnum >= 0) && (Net_player->player->objnum < MAX_OBJECTS) && 
-					(Objects[Net_player->player->objnum].type == OBJ_SHIP) && (Objects[Net_player->player->objnum].instance >= 0) && (Objects[Net_player->player->objnum].instance < MAX_SHIPS)){
+				if((Net_player->m_player->objnum >= 0) && (Net_player->m_player->objnum < MAX_OBJECTS) && 
+					(Objects[Net_player->m_player->objnum].type == OBJ_SHIP) && (Objects[Net_player->m_player->objnum].instance >= 0) && (Objects[Net_player->m_player->objnum].instance < MAX_SHIPS)){
 
-					ship_self_destruct(&Objects[Net_player->player->objnum]);
+					ship_self_destruct(&Objects[Net_player->m_player->objnum]);
 				}
 			}
 			// otherwise send a packet to the server
