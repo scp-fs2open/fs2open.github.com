@@ -1532,6 +1532,14 @@ SOURCE=.\Radar\Radar.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\radar\radarorb.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\radar\radarorb.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\radar\radarsetup.cpp
 # End Source File
 # Begin Source File
