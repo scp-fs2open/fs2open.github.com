@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-03-10 08:00:16 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2005-03-15 01:40:07 $
+ * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/03/10 08:00:16  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.36  2005/03/02 21:24:47  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1023,7 +1032,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	object	*sp_objp = NULL;
 	ship		*shipp;
 	int		valid_reference_ship = FALSE, ref_objnum;
-	vector	facing_normal, vec_to_knossos;
+	vector	facing_normal, vec_to_knossos, center_pos;
 	float		dist_to_plane;
 
 	// knossos warpout only valid in single player
@@ -1035,6 +1044,8 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	// find special warp ship reference
 	valid_reference_ship = FALSE;
 	ref_objnum = Ships[objp->instance].special_warp_objnum;
+
+
 
 	// Validate reference_objnum
 	if ((ref_objnum >= 0) && (ref_objnum < MAX_OBJECTS)) {
@@ -1053,19 +1064,24 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 		return -1;
 	}
 
+	
+	//find the actual center of the model
+	polymodel *pm = model_get(Ships[objp->instance].modelnum);
+	vm_vec_add(&center_pos, &objp->pos, &pm->autocenter);
+
 	// get facing normal from knossos
-	vm_vec_sub(&vec_to_knossos, &sp_objp->pos, &objp->pos);
+	vm_vec_sub(&vec_to_knossos, &sp_objp->pos, &center_pos);
 	facing_normal = sp_objp->orient.vec.fvec;
 	if (vm_vec_dotprod(&vec_to_knossos, &sp_objp->orient.vec.fvec) > 0) {
 		vm_vec_negate(&facing_normal);
 	}
 
 	// find position to play the warp ani..
-	dist_to_plane = fvi_ray_plane(warp_pos, &sp_objp->pos, &facing_normal, &objp->pos, &objp->orient.vec.fvec, 0.0f);
+	dist_to_plane = fvi_ray_plane(warp_pos, &sp_objp->pos, &facing_normal, &center_pos, &objp->orient.vec.fvec, 0.0f);
 
 	// calculate distance to warpout point.
-	polymodel *pm = model_get(Ships[objp->instance].modelnum);
 	dist_to_plane += pm->mins.xyz.z;
+
 
 	if (dist_to_plane < 0) {
 		mprintf(("warpout started too late\n"));
@@ -1129,7 +1145,10 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vector 
 	if (object_is_docked(objp))
 		dock_calc_docked_center(&center_pos, objp);
 	else
-		center_pos = objp->pos;
+	{
+		polymodel *pm = model_get(Ships[objp->instance].modelnum);
+		vm_vec_add(&center_pos,&objp->pos,&pm->autocenter);
+	}
 
 
 	// If this is a huge ship, set the distance to the length of the ship
@@ -1625,7 +1644,11 @@ void shipfx_flash_create(object *objp, ship * shipp, vector *gun_pos, vector *gu
 	// HACK - let the flak guns do this on their own since they fire so quickly
 	if((Weapon_info[weapon_info_index].wi_flags & WIF_MFLASH) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)){
 		// spiffy new flash stuff
-		mflash_create(gun_pos, gun_dir, Weapon_info[weapon_info_index].muzzle_flash);		
+
+		vector real_pos;
+		vm_vec_unrotate(&real_pos, gun_pos,&objp->orient);
+		vm_vec_add2(&real_pos, &objp->pos);			
+		mflash_create(&real_pos, gun_dir, Weapon_info[weapon_info_index].muzzle_flash);		
 	}
 
 	if ( pm->num_lights < 1 ) return;
