@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.89 $
- * $Date: 2004-06-01 07:31:56 $
+ * $Revision: 2.90 $
+ * $Date: 2004-06-09 00:18:50 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2004/06/01 07:31:56  wmcoolmon
+ * Lotsa stuff. Custom gauges w/ ANIs support added, SEXPs to set gauge text, gauge image frames, and gauge coords. These SEXPs and toggle-hud reside in the Hud/change category.
+ *
  * Revision 2.88  2004/05/10 10:51:52  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -1032,6 +1035,7 @@ sexp_oper Operators[] = {
 	{ "hud-set-text-num",			OP_HUD_SET_TEXT_NUM,			2, 2 },	//WMCoolmon
 	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
+	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -6565,6 +6569,22 @@ void sexp_hud_set_frame(int n)
 	return;
 }
 
+void sexp_hud_set_color(int n)
+{
+	char* gaugename = CTEXT(n);
+	ubyte red = (ubyte) sexp_get_val(CDR(n));
+	ubyte green = (ubyte) sexp_get_val(CDR(CDR(n)));
+	ubyte blue = (ubyte) sexp_get_val(CDR(CDR(CDR(n))));
+
+	gauge_info * cg = hud_get_gauge(gaugename);
+	if(cg)
+	{
+		HUD_COLOR(current_hud, cg->color_dest)->red = red;
+		HUD_COLOR(current_hud, cg->color_dest)->green = green;
+		HUD_COLOR(current_hud, cg->color_dest)->blue = blue;
+	}
+}
+
 
 // Goober5000
 // trigger whether player uses the game AI for stuff
@@ -11596,6 +11616,11 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			case OP_HUD_SET_COLOR:
+				sexp_hud_set_color(node);
+				sexp_val = 1;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -12584,6 +12609,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_TEXT_NUM:	//WMC
 		case OP_HUD_SET_COORDS:		//WMC
 		case OP_HUD_SET_FRAME:		//WMC
+		case OP_HUD_SET_COLOR:		//WMC
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -13020,6 +13046,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
+		case OP_HUD_SET_COLOR:
 			if(argnum == 0)
 				return OPF_STRING;
 			else
@@ -14463,6 +14490,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
+		case OP_HUD_SET_COLOR:
 			return CHANGE_SUBCATEGORY_HUD;
 		
 		default:
