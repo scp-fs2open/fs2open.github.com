@@ -9,6 +9,9 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.15  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -399,7 +402,7 @@ void d3d_batch_end_frame()
  *
  * @return void
  */
-void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, int bw, int bh, float u_scale, float v_scale, uint color)
+void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, int bw, int bh, float u_scale, float v_scale, uint color, bool x_resize)
 {
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
@@ -440,7 +443,11 @@ void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, i
 		int nw = x+w+gr_screen.offset_x;
 		int nh = y+h+gr_screen.offset_y;
 
-		gr_resize_screen_pos(&nx, &ny);
+		if(x_resize)
+			gr_resize_screen_pos(&nx, &ny);
+		else
+			gr_resize_screen_pos(NULL, &ny);
+
 		gr_resize_screen_pos(&nw, &nh);
 
 		x1 = i2fl(nx);
@@ -672,12 +679,17 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 {
 	int spacing = 0;
 	int width;
+	bool x_resize;
 
 	int x = sx;
 	int y = sy;
 
 	// centered
 	x =(sx==0x8000) ? get_centered_x(s) : sx;
+	if(sx==0x8000)
+		x_resize = false;
+	else
+		x_resize = true;
 
   	do
 	{
@@ -812,7 +824,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 	  		color2 = 0xff0000ff;
 #endif
 
-	 	d3d_stuff_char(src_v, xc, yc, wc, hc, u+xd, v+yd, bw, bh, u_scale, v_scale, color);
+	 	d3d_stuff_char(src_v, xc, yc, wc, hc, u+xd, v+yd, bw, bh, u_scale, v_scale, color, x_resize);
 
 		char_count++;
 		if(char_count >= MAX_STRING_LEN) {

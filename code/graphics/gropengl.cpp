@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.96 $
- * $Date: 2005-02-05 00:30:49 $
- * $Author: taylor $
+ * $Revision: 2.97 $
+ * $Date: 2005-02-10 04:01:43 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2005/02/05 00:30:49  taylor
+ * fix a few things post merge
+ *
  * Revision 2.95  2005/02/04 23:29:31  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -1133,10 +1136,13 @@ void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
 	// Not used.
 }
 
-void gr_opengl_set_clip(int x,int y,int w,int h)
+void gr_opengl_set_clip(int x,int y,int w,int h, bool resize)
 {
-	gr_resize_screen_pos(&x, &y);
-	gr_resize_screen_pos(&w, &h);
+	if(resize)
+	{
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
+	}
 
 	// check for sanity of parameters
 	if (x < 0)

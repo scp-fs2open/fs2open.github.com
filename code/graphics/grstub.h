@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.12 $
- * $Date: 2005-01-31 10:34:38 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-02-10 04:01:43 $
+ * $Author: wmcoolmon $
  *
  * $NoKeywords: $
  */
@@ -29,7 +29,7 @@ void gr_stub_pixel(int x, int y) {}
 void gr_stub_clear() {}
 void gr_stub_flip() {}
 void gr_stub_flip_window(uint _hdc, int x, int y, int w, int h ) {}
-void gr_stub_set_clip(int x,int y,int w,int h) {}
+void gr_stub_set_clip(int x,int y,int w,int h, bool resize) {}
 void gr_stub_reset_clip() {}
 void gr_stub_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx, int sy ) {}
 void gr_stub_create_shader(shader * shade, float r, float g, float b, float c ) {}

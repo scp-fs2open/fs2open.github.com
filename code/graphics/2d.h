@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.42 $
- * $Date: 2005-02-04 20:06:04 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2005-02-10 04:01:42 $
+ * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.41  2005/01/29 08:04:15  wmcoolmon
  * Ahh, the sweet smell of optimized code
  *
@@ -700,7 +703,7 @@ typedef struct screen {
 	void (*gf_flash)( int r, int g, int b );
 
 	// sets the clipping region
-	void (*gf_set_clip)(int x, int y, int w, int h);
+	void (*gf_set_clip)(int x, int y, int w, int h, bool resize);
 
 	// resets the clipping region to entire screen
 	void (*gf_reset_clip)();
@@ -1004,7 +1007,11 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_flip				GR_CALL(gr_screen.gf_flip)
 #define gr_flip_window		GR_CALL(gr_screen.gf_flip_window)
 
-#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
+//#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
+__inline void gr_set_clip(int x, int y, int w, int h, bool resize=true)
+{
+	(*gr_screen.gf_set_clip)(x,y,w,h,resize);
+}
 #define gr_reset_clip		GR_CALL(gr_screen.gf_reset_clip)
 #define gr_set_font			GR_CALL(gr_screen.gf_set_font)
 
