@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-07-26 20:47:40 $
- * $Author: Kazan $
+ * $Revision: 2.26 $
+ * $Date: 2004-10-10 22:12:57 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/07/26 20:47:40  Kazan
+ * remove MCD complete
+ *
  * Revision 2.24  2004/07/12 16:32:55  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -2258,6 +2261,9 @@ void commit_pressed()
 		strcpy(Player_loadout.last_modified, The_mission.modified);
 		wss_save_loadout();
 	}
+
+	// warp the mouse cursor the the middle of the screen for those who control with a mouse
+	mouse_set_pos( gr_screen.max_w/2, gr_screen.max_h/2 );
 
 	// move to the next stage
 	// in multiplayer this is the final mission sync
