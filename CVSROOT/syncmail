@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#! /usr/bin/python
 
 # NOTE: Until SourceForge installs a modern version of Python on the cvs
 # servers, this script MUST be compatible with Python 1.5.2.
@@ -47,6 +47,10 @@ Where options are:
     -u
         Produce a unified diff (smaller).
 
+    -S TEXT
+    --subject-prefix=TEXT
+        Preprend TEXT to the email subject line.
+
     --quiet / -q
         Don't print as much status to stdout.
 
@@ -71,6 +75,8 @@ The rest of the command line arguments are:
     email-addrs
         At least one email address.
 """
+__version__ = '1.2'
+
 import os
 import sys
 import re
@@ -101,8 +107,8 @@ except ImportError:
 
 from cStringIO import StringIO
 
-# Which SMTP server to do we connect to?  Empty string means localhost.
-MAILHOST = 'mail.warpcore.org'
+# Which SMTP server to do we connect to?
+MAILHOST = 'localhost'
 MAILPORT = 25
 
 # Diff trimming stuff
@@ -220,18 +226,22 @@ def blast_mail(subject, people, filestodiff, contextlines, fromhost):
         conn = smtplib.SMTP()
         conn.connect(MAILHOST, MAILPORT)
         user = pwd.getpwuid(os.getuid())[0]
+        name = string.split(pwd.getpwuid(os.getuid())[4], ',')[0]
         domain = fromhost or getfqdn()
-        author = '%s@%s' % (user, domain)
+        address = '%s@%s' % (user, domain)
         s = StringIO()
         sys.stdout = s
         try:
             print '''\
-From: %(author)s
+From: "%(name)s" <%(address)s>
 To: %(people)s
 Subject: %(subject)s
-''' % {'author' : author,
-       'people' : string.join(people, COMMASPACE),
-       'subject': subject,
+X-Mailer: Python syncmail %(version)s <http://sf.net/projects/cvs-syncmail>
+''' % {'address' : address,
+       'name'    : name,
+       'people'  : string.join(people, COMMASPACE),
+       'subject' : subject,
+       'version' : __version__,
        }
             s.write(sys.stdin.read())
             # append the diffs if available
@@ -240,7 +250,7 @@ Subject: %(subject)s
                 print calculate_diff(file, contextlines)
         finally:
             sys.stdout = sys.__stdout__
-        resp = conn.sendmail(author, people, s.getvalue())
+        resp = conn.sendmail(address, people, s.getvalue())
         conn.close()
         os._exit(0)
 
@@ -250,14 +260,16 @@ Subject: %(subject)s
 def main():
     try:
         opts, args = getopt.getopt(
-            sys.argv[1:], 'hC:cuqf:',
-            ['fromhost=', 'context=', 'cvsroot=', 'help', 'quiet'])
+            sys.argv[1:], 'hC:cuS:qf:',
+            ['fromhost=', 'context=', 'cvsroot=', 'subject-prefix=',
+             'help', 'quiet'])
     except getopt.error, msg:
         usage(1, msg)
 
     # parse the options
     contextlines = 2
     verbose = 1
+    subject_prefix = ""
     fromhost = None
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -271,6 +283,8 @@ def main():
                 contextlines = 2
         elif opt == '-u':
             contextlines = 0
+        elif opt in ('-S', '--subject-prefix'):
+            subject_prefix = arg
         elif opt in ('-q', '--quiet'):
             verbose = 0
         elif opt in ('-f', '--fromhost'):
@@ -282,7 +296,7 @@ def main():
     # $CVSROOT, followed by the list of files that are changing.
     if not args:
         usage(1, 'No CVS module specified')
-    subject = args[0]
+    subject = subject_prefix + args[0]
     specs = string.split(args[0])
     del args[0]
 
@@ -296,7 +310,7 @@ def main():
     if verbose:
         print 'Mailing %s...' % string.join(people, COMMASPACE)
 
-    if specs == ['-', 'Imported', 'sources']:
+    if specs[-3:] == ['-', 'Imported', 'sources']:
         return
     if specs[-3:] == ['-', 'New', 'directory']:
         del specs[-3:]
