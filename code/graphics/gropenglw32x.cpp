@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLw32x.cpp $
- * $Revision: 1.5 $
- * $Date: 2002-11-18 21:31:36 $
+ * $Revision: 1.6 $
+ * $Date: 2002-11-22 20:54:16 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/11/18 21:31:36  phreak
+ * complete overhaul, works in 16 bit mode -phreak
+ *
  * Revision 1.4  2002/10/14 19:49:08  phreak
  * screenshots, yay!
  *
@@ -331,7 +334,7 @@ won't crash due to an integer divide by 0 error in bm_set_components (another TO
 #include "cfile/cfile.h"
 #include "io/timer.h"
 
-int OGL_inited = 0;
+extern int OGL_inited;
 static HDC dev_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
@@ -404,9 +407,9 @@ extern int D3D_zbias;		// grd3d.cpp
 extern int D3d_rendition_uvs ;	// grd3d.cpp
 extern int Cmdline_window;
 
-inline void opengl_go_fullscreen(HWND wnd)
+void opengl_go_fullscreen(HWND wnd)
 {
-	DEVMODE dd;
+	DEVMODE dm;
 
 	if (Cmdline_window)
 		return;
@@ -420,26 +423,21 @@ inline void opengl_go_fullscreen(HWND wnd)
 	SetActiveWindow(wnd);
 	SetForegroundWindow(wnd);
 	
-	dd.dmSize=sizeof(DEVMODE);
-	dd.dmBitsPerPel=gr_screen.bits_per_pixel;
-	dd.dmPelsHeight=gr_screen.max_h;
-	dd.dmPelsWidth=gr_screen.max_w;
-	ChangeDisplaySettings(&dd,CDS_FULLSCREEN);
-
+	memset((void*)&dm,0,sizeof(DEVMODE));
+	dm.dmSize=sizeof(DEVMODE);
+	dm.dmPelsHeight=gr_screen.max_h;
+	dm.dmPelsWidth=gr_screen.max_w;
+	dm.dmBitsPerPel=gr_screen.bits_per_pixel;
+	dm.dmFields=DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+	ChangeDisplaySettings(&dm,CDS_FULLSCREEN);
 }
 
-inline void opengl_minimize()
+void opengl_minimize()
 {
 	HWND wnd=(HWND)os_get_window();
-	os_suspend();
 	mprintf(("opengl_minimize\n"));
 	
 	ShowWindow(wnd, SW_MINIMIZE);
-	
-	if (!Cmdline_window)
-		ChangeDisplaySettings(NULL,0);
-	
-	os_resume();
 }
 
 
@@ -1688,8 +1686,9 @@ void gr_opengl_cleanup()
 		rend_context=NULL;
 	}
 
+	opengl_minimize();
 	if (!Cmdline_window)
-		opengl_minimize();
+		ChangeDisplaySettings(NULL, 0);
 }
 
 void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
@@ -2666,18 +2665,20 @@ int gr_opengl_save_screen()
 {
 	gr_reset_clip();
 
+	int bypp=gr_screen.bytes_per_pixel;
+
 	if ( Gr_saved_screen )  {
 		mprintf(( "Screen alread saved!\n" ));
 		return -1;
 	}
 
-	Gr_saved_screen = (char*)malloc( gr_screen.max_w * gr_screen.max_h * 2 );
+	Gr_saved_screen = (char*)malloc( gr_screen.max_w * gr_screen.max_h * bypp );
 	if (!Gr_saved_screen) {
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
 		return -1;
 	}
 
-	char *Gr_saved_screen_tmp = (char*)malloc( gr_screen.max_w * gr_screen.max_h * 2 );
+	char *Gr_saved_screen_tmp = (char*)malloc( gr_screen.max_w * gr_screen.max_h * bypp );
 	if (!Gr_saved_screen_tmp) {
 		mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
 		return -1;
@@ -2686,17 +2687,17 @@ int gr_opengl_save_screen()
 	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 	
 	glReadBuffer(GL_FRONT);
-	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, Gr_saved_screen_tmp);
 
+	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, Gr_saved_screen_tmp);
 	
 	ubyte *sptr, *dptr;
 	
-	sptr = (ubyte *)&Gr_saved_screen_tmp[gr_screen.max_w*gr_screen.max_h*gr_screen.bytes_per_pixel];
+	sptr = (ubyte *)&Gr_saved_screen_tmp[gr_screen.max_w*gr_screen.max_h*bypp];
 	dptr = (ubyte *)Gr_saved_screen;
 	for (int j = 0; j < gr_screen.max_h; j++) {
-		sptr -= gr_screen.max_w*gr_screen.bytes_per_pixel;
-		memcpy(dptr, sptr, gr_screen.max_w*2);
-		dptr += gr_screen.max_w*gr_screen.bytes_per_pixel;
+		sptr -= gr_screen.max_w*bypp;
+		memcpy(dptr, sptr, gr_screen.max_w*bypp);
+		dptr += gr_screen.max_w*bypp;
 	}
 	
 	free(Gr_saved_screen_tmp);
@@ -2968,62 +2969,51 @@ void gr_opengl_init()
 	char *curext;
 	int bpp = gr_screen.bits_per_pixel;
 
-	/*	Gr_t_red: bits=0, mask=7c00, scale=8, shift=a
-Gr_t_green: bits=0, mask=7c00, scale=8, shift=5
-Gr_t_blue: bits=0, mask=7c00, scale=8, shift=0
-Gr_t_alpha: bits=0, mask=8000, scale=255, shift=f*/
 
 	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 
-		Gr_t_red.bits=0;
-		Gr_t_red.mask = 0x7c00;
-		Gr_t_red.shift = 10;
-		Gr_t_red.scale = 8;
-
-		Gr_t_green.bits=0;
-		Gr_t_green.mask = 0x7c00;
-		Gr_t_green.shift = 5;
-		Gr_t_green.scale = 8;
-	
-		Gr_t_blue.bits=0;
-		Gr_t_blue.mask = 0x7c00;
-		Gr_t_blue.shift = 0;
-		Gr_t_blue.scale = 8;
-
-	
-		Gr_t_alpha.bits=0;
-		Gr_t_alpha.mask=0x8000;
-		Gr_t_alpha.scale=255;
-		Gr_t_alpha.shift=15;
-	
 	switch( bpp )	{
 	case 16:
+	/*
+		Gr_red=Gr_t_red;
+		Gr_green=Gr_t_green;
+		Gr_blue=Gr_t_blue;
+		Gr_alpha=Gr_t_alpha;
+	*/
+		Gr_red.bits = 5;
+		Gr_red.shift = 11;
+		Gr_red.scale = 8;
+		Gr_red.mask = 0xF800;
 
-		Gr_red = Gr_t_red;
-		Gr_green = Gr_t_green;
-		Gr_blue = Gr_t_blue;
-		Gr_alpha= Gr_t_alpha;
+		Gr_green.bits = 6;
+		Gr_green.shift = 5;
+		Gr_green.scale = 4;
+		Gr_green.mask = 0x7E0;
+
+		Gr_blue.bits = 5;
+		Gr_blue.shift = 0;
+		Gr_blue.scale = 8;
+		Gr_blue.mask = 0x1F;		
 
 		break;
 
 	case 32:
-	
-		Gr_red.bits = 0;
+		Gr_red.bits = 8;
 		Gr_red.shift = 16;
 		Gr_red.scale = 1;
-		Gr_red.mask = 0xff0000;
+		Gr_red.mask = 0xff;
 
-		Gr_green.bits = 0;
+		Gr_green.bits = 8;
 		Gr_green.shift = 8;
 		Gr_green.scale = 1;
 		Gr_green.mask = 0xff00;
 
-		Gr_blue.bits = 0;
+		Gr_blue.bits = 8;
 		Gr_blue.shift = 0;
 		Gr_blue.scale = 1;
-		Gr_blue.mask = 0xff;
+		Gr_blue.mask = 0x0000ff;
 
-		Gr_alpha.bits=0;
+		Gr_alpha.bits=8;
 		Gr_alpha.shift=24;
 		Gr_alpha.mask=0xff000000;
 		Gr_alpha.scale=1;
@@ -3036,6 +3026,53 @@ Gr_t_alpha: bits=0, mask=8000, scale=255, shift=f*/
 		Int3();	// Illegal bpp
 	}
 
+		Gr_t_red.bits=5;
+		Gr_t_red.mask = 0x7c00;
+		Gr_t_red.shift = 10;
+		Gr_t_red.scale = 8;
+
+		Gr_t_green.bits=5;
+		Gr_t_green.mask = 0x03e0;
+		Gr_t_green.shift = 5;
+		Gr_t_green.scale = 8;
+	
+		Gr_t_blue.bits=5;
+		Gr_t_blue.mask = 0x001f;
+		Gr_t_blue.shift = 0;
+		Gr_t_blue.scale = 8;
+
+		Gr_t_alpha.bits=1;
+		Gr_t_alpha.mask=0x8000;
+		Gr_t_alpha.scale=255;
+		Gr_t_alpha.shift=15;
+
+	/*
+Gr_ta_red: bits=0, mask=f00, scale=17, shift=8
+Gr_ta_green: bits=0, mask=f00, scale=17, shift=4
+Gr_ta_blue: bits=0, mask=f00, scale=17, shift=0
+Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
+*/
+	// DDOI - set these so no one else does!
+	Gr_ta_red.bits=4;
+	Gr_ta_red.mask = 0x0f00;
+	Gr_ta_red.shift = 8;
+	Gr_ta_red.scale = 17;
+
+	Gr_ta_green.bits=4;
+	Gr_ta_green.mask = 0x00f0;
+	Gr_ta_green.shift = 4;
+	Gr_ta_green.scale = 17;
+	
+	Gr_ta_blue.bits=4;
+	Gr_ta_blue.mask = 0x000f;
+	Gr_ta_blue.shift = 0;
+	Gr_ta_blue.scale = 17;
+
+	Gr_ta_alpha.bits=4;
+	Gr_ta_alpha.mask = 0xf000;
+	Gr_ta_alpha.shift = 12;
+	Gr_ta_alpha.scale = 17;
+
 	if ( OGL_inited )	{
 		gr_opengl_cleanup();
 		OGL_inited = 0;
@@ -3045,11 +3082,16 @@ Gr_t_alpha: bits=0, mask=8000, scale=255, shift=f*/
 
 	pfd.nSize=sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion=1;
-	pfd.dwVisibleMask=Gr_green.mask;
 	pfd.cColorBits=(ubyte)bpp;
 	pfd.dwFlags=PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 	pfd.cDepthBits=16;
 	pfd.iPixelType=PFD_TYPE_RGBA;
+	pfd.cRedBits=(ubyte)Gr_red.bits;
+	pfd.cRedShift=(ubyte)Gr_red.shift;
+	pfd.cBlueBits=(ubyte)Gr_blue.bits;
+	pfd.cBlueShift=(ubyte)Gr_blue.shift;
+	pfd.cGreenBits=(ubyte)Gr_green.bits;
+	pfd.cGreenShift=(ubyte)Gr_green.shift;
 
 
 	int PixelFormat;
@@ -3153,34 +3195,6 @@ Gr_t_alpha: bits=0, mask=8000, scale=255, shift=f*/
 	Gr_bitmap_poly = 1;
 	
 	
-	// DDOI - set these so no one else does!
-
-		/*
-Gr_ta_red: bits=0, mask=f00, scale=17, shift=8
-Gr_ta_green: bits=0, mask=f00, scale=17, shift=4
-Gr_ta_blue: bits=0, mask=f00, scale=17, shift=0
-Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
-*/
-	Gr_ta_red.bits=0;
-	Gr_ta_red.mask = 0x0f00;
-	Gr_ta_red.shift = 8;
-	Gr_ta_red.scale = 17;
-
-	Gr_ta_green.bits=0;
-	Gr_ta_green.mask = 0x0f00;
-	Gr_ta_green.shift = 4;
-	Gr_ta_green.scale = 17;
-	
-	Gr_ta_blue.bits=0;
-	Gr_ta_blue.mask = 0x0f00;
-	Gr_ta_blue.shift = 0;
-	Gr_ta_blue.scale = 17;
-
-	Gr_ta_alpha.bits=0;
-	Gr_ta_alpha.mask = 0xf000;
-	Gr_ta_alpha.shift = 12;
-	Gr_ta_alpha.scale = 17;
-
 	opengl_tcache_init (1);
 	gr_opengl_clear();
 
