@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-10-27 23:04:21 $
- * $Author: randomtiger $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-17 06:52:52 $
+ * $Author: bobboau $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/10/27 23:04:21  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.10  2003/10/17 17:18:42  randomtiger
  * Big restructure for D3D and new modules grd3dlight and grd3dsetup
  *
@@ -1105,6 +1113,7 @@ int gr_init(int res, int mode, int depth, int fred_x, int fred_y)
 //  	gr_set_palette_internal(Gr_current_palette_name, Gr_current_palette,0);	
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);	
 
+	bm_init();
 	if ( Gr_cursor == -1 ){
 		Gr_cursor = bm_load( "cursor" );
 	}

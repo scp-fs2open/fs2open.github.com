@@ -9,16 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.13 $
- * $Date: 2003-09-26 14:37:13 $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-17 06:52:51 $
  * $Author: bobboau $
- * $Revision: 2.13 $
- * $Date: 2003-09-26 14:37:13 $
+ * $Revision: 2.14 $
+ * $Date: 2003-11-17 06:52:51 $
  * $Author: bobboau $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/09/26 14:37:13  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.12  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -469,12 +479,12 @@ extern void _cdecl Warning( char * filename, int line, char * format, ... );
 // or, 
 // Error( LOCATION, "Error opening %s", filename );
 
-//#if defined(NDEBUG)
+#if defined(NDEBUG)
 #define Assert(x) do {} while (0)
-//#else
-//void gr_activate(int);
-//#define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
-//#endif
+#else
+void gr_activate(int);
+#define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
+#endif
 
 //#define Int3() _asm { int 3 }
 

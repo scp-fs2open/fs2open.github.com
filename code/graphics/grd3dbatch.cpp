@@ -94,7 +94,7 @@ bool batch_info_are_equal(const BatchInfo &lhs, const BatchInfo &rhs)
 
 bool d3d_batch_init()
 {
-	Assert(batch_array = NULL);
+	Assert(batch_array == NULL);
 
 	batch_array = (Batch *) malloc(MAX_BATCH_BUFFERS * sizeof(Batch));
 

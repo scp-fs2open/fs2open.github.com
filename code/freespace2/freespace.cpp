@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.60 $
- * $Date: 2003-11-16 04:09:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.61 $
+ * $Date: 2003-11-17 06:52:51 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2003/11/16 04:09:25  Goober5000
+ * language
+ *
  * Revision 2.59  2003/11/11 03:56:10  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -2757,7 +2760,6 @@ void game_init()
 #error unknown operating system
 #endif // ifdef WIN32
 
-	bm_init();
 //	ENVMAP = bm_load("environment");
 
 	// Set the gamma

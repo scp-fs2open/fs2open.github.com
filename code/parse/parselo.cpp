@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.10 $
- * $Author: Goober5000 $
- * $Date: 2003-09-30 04:05:09 $
+ * $Revision: 2.11 $
+ * $Author: bobboau $
+ * $Date: 2003-11-17 06:52:52 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/09/30 04:05:09  Goober5000
+ * updated FRED to import FS1 default weapons loadouts as well as missions
+ * --Goober5000
+ *
  * Revision 2.9  2003/09/28 21:22:58  Goober5000
  * added the option to import FSM missions, added a replace function, spruced
  * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
@@ -2003,7 +2007,7 @@ char *get_pointer_to_first_hash_symbol(char *src)
 // Goober5000
 int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int start)
 {
-	Assert(maxlen <= MISSION_TEXT_SIZE);
+	Assert(max_len <= MISSION_TEXT_SIZE);
 	Assert(str && oldstr && newstr);
 
 	// search
