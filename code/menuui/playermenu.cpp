@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-01-31 23:27:54 $
+ * $Revision: 2.18 $
+ * $Date: 2005-03-02 21:24:44 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.16  2004/12/22 21:49:05  taylor
  * add a popup to make sure people know about pilot upgrade
  *
@@ -239,6 +242,8 @@
  */
 
 #include <ctype.h>
+
+#include "PreProcDefines.h"
 
 #include "menuui/playermenu.h"
 #include "ui/ui.h"

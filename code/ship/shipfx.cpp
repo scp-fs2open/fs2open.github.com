@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-02-23 04:57:28 $
+ * $Revision: 2.36 $
+ * $Date: 2005-03-02 21:24:47 $
  * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/02/23 04:57:28  taylor
+ * even more bm_unload() -> bm_release() changes
+ *
  * Revision 2.34  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -366,6 +369,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "ship/shipfx.h"
 #include "ship/ship.h"

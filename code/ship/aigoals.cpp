@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-01-31 10:34:39 $
+ * $Revision: 2.24 $
+ * $Date: 2005-03-02 21:24:47 $
  * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/01/31 10:34:39  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.22  2005/01/26 05:44:10  Goober5000
  * AHA... squashed another bug
  * --Goober5000
@@ -557,6 +560,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "ship/aigoals.h"
 #include "parse/sexp.h"

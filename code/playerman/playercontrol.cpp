@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-02-04 20:06:06 $
+ * $Revision: 2.22 $
+ * $Date: 2005-03-02 21:24:46 $
  * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/02/04 20:06:06  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.20  2005/01/11 21:38:50  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -509,6 +512,8 @@
  * 
  * $NoKeywords: $
 */
+
+#include "PreProcDefines.h"
 
 #include "playerman/player.h"
 #include "io/joy.h"
@@ -1765,11 +1770,11 @@ int player_inspect_cargo(float frametime, char *outstr)
 				else
 					sprintf(outstr,XSTR( "cargo: %s", 84), cargo_name );
 			} else {
-				int pn;
-
 				Assert( Game_mode & GM_MULTIPLAYER );
 
 #ifndef NO_NETWORK
+				int pn;
+
 				// get a player num from the object, then get a callsign from the player structure.
 				pn = multi_find_player_by_object( cargo_objp );
 				// Assert( pn != -1 );

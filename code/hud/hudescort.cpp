@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-02-04 10:12:30 $
+ * $Revision: 2.21 $
+ * $Date: 2005-03-02 21:24:44 $
  * $Author: taylor $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.19  2004/12/25 17:02:18  wmcoolmon
  * Fixed a couple of blonde moments.
  *
@@ -160,6 +163,8 @@
  */
 
 
+#include "PreProcDefines.h"
+
 #include "object/object.h"
 #include "ship/ship.h"
 #include "globalincs/linklist.h"
@@ -173,12 +178,14 @@
 #include "io/timer.h"
 #include "weapon/emp.h"
 #include "globalincs/alphacolors.h"
-#include "network/multi.h"
-#include "network/multiutil.h"
 #include "globalincs/systemvars.h"
 #include "playerman/player.h"
 #include "hud/hudparse.h"
 
+#ifndef NO_NETWORK
+#include "network/multi.h"
+#include "network/multiutil.h"
+#endif
 
 int Show_escort_view;
 
@@ -395,12 +402,13 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 {
 	ship_obj *so;
 	object *objp;	
-	int idx;
 
 	// start with none on list
 	*num_escorts = 0;
 
 #ifndef NO_NETWORK
+	int idx;
+
 	// multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		for(idx=0; idx<MAX_PLAYERS; idx++){
@@ -633,9 +641,11 @@ void hud_remove_ship_from_escort_index(int dead_index, int objnum)
 // called once per frame to remove dead or departed ships from the escort list
 void hud_escort_cull_list()
 {
-	int i, objnum, np_index;
+	int i, objnum;
 
 #ifndef NO_NETWORK
+	int np_index;
+
 	// multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		for ( i = 0; i < Num_escort_ships; i++ ) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.3 $
- * $Date: 2005-02-04 20:06:07 $
+ * $Revision: 1.4 $
+ * $Date: 2005-03-02 21:24:46 $
  * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/02/04 20:06:07  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.2  2004/08/23 07:48:09  Goober5000
  * fix0red some warnings
  * --Goober5000
@@ -29,6 +32,7 @@
  *
  */
 
+#include "PreProcDefines.h"
 
 #include "radar/radarorb.h"
 #include "graphics/font.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-02-27 07:07:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.40 $
+ * $Date: 2005-03-02 21:24:44 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/02/27 07:07:47  wmcoolmon
+ * nonstandard res HUD stuff
+ *
  * Revision 2.38  2005/02/14 23:54:11  taylor
  * make loading screen shader a bit taller
  * add i.o to credits for Linux and OSX code
@@ -459,6 +462,8 @@
  * $NoKeywords: $
  *
 */
+
+#include "PreProcDefines.h"
 
 #include "hud/hud.h"
 #include "asteroid/asteroid.h"

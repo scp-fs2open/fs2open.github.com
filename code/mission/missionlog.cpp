@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-04 10:12:31 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-02 21:24:45 $
  * $Author: taylor $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/04 10:12:31  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.5  2005/01/11 21:28:24  Goober5000
  * made a capitalization thing consistent
  * --Goober500
@@ -206,6 +209,8 @@
  * temp checkin
  * 
 */
+
+#include "PreProcDefines.h"
 
 #include "mission/missionlog.h"
 #include "playerman/player.h"

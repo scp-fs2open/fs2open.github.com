@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-04 10:12:33 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-02 21:24:47 $
  * $Author: taylor $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/04 10:12:33  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.5  2004/07/26 20:47:53  Kazan
  * remove MCD complete
  *
@@ -201,6 +204,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #ifdef _WIN32
 #include <io.h>

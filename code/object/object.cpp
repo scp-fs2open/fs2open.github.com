@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-03-01 06:55:42 $
- * $Author: bobboau $
+ * $Revision: 2.33 $
+ * $Date: 2005-03-02 21:24:46 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/03/01 06:55:42  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.31  2005/02/04 20:06:06  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -538,6 +542,8 @@
  *
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "object/object.h"
 #include "weapon/weapon.h"
@@ -1333,6 +1339,8 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4102)
 void obj_move_call_physics(object *objp, float frametime)
 {
 	int has_fired = -1;	//stop fireing stuff-Bobboau
@@ -1505,6 +1513,7 @@ obj_maybe_fire:
 		objp->phys_info.desired_vel.xyz.y = 0.0f;
 	}
 }
+#pragma warning(pop)
 
 
 #define IMPORTANT_FLAGS (OF_COLLIDES)

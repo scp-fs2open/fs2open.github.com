@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.35 $
+ * $Date: 2005-03-02 21:24:45 $
  * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.33  2005/02/13 08:41:25  wmcoolmon
  * 3D models in weapons selection screen and nonstandard resolution fixes for ship selection screen.
  *
@@ -499,6 +502,8 @@
  * $NoKeywords: $
  *
 */
+
+#include "PreProcDefines.h"
 
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
@@ -3682,10 +3687,10 @@ void ship_select_init_team_data(int team_num)
 // called when the briefing is entered
 void ship_select_common_init()
 {		
-	int idx;
-
 	// initialize team critical data for all teams
 #ifndef NO_NETWORK
+	int idx;
+
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){		
 		// initialize for all teams in the game
 		for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){	

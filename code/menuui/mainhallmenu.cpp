@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-02-04 10:12:30 $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-02 21:24:44 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.23  2005/01/30 03:27:09  wmcoolmon
  * This isn't needed anymore
  *
@@ -421,6 +424,8 @@
  * $NoKeywords: $
  *
  */
+
+#include "PreProcDefines.h"
 
 #include "menuui/mainhallmenu.h"
 #include "palman/palman.h"

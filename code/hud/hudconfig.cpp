@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-02-23 13:17:05 $
+ * $Revision: 2.13 $
+ * $Date: 2005-03-02 21:24:44 $
  * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/02/23 13:17:05  taylor
+ * few more compiler warning fixes (didn't mean to commit iostream.h change)
+ * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
+ *
  * Revision 2.11  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -289,6 +293,8 @@
  * $NoKeywords: $
  *
 */
+
+#include "PreProcDefines.h"
 
 #include "hud/hudconfig.h"
 #include "gamesequence/gamesequence.h"

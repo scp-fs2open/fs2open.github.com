@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-01-30 03:26:11 $
- * $Author: wmcoolmon $
+ * $Revision: 2.51 $
+ * $Date: 2005-03-02 21:24:44 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/01/30 03:26:11  wmcoolmon
+ * HUD updates
+ *
  * Revision 2.49  2005/01/29 08:06:54  wmcoolmon
  * Update to work with optimized shader func
  *
@@ -393,6 +396,8 @@
  * 
  */
 
+#include "PreProcDefines.h"
+
 #include "hud/hud.h"
 #include "hud/hudparse.h"
 #include "hud/hudartillery.h"
@@ -418,7 +423,6 @@
 #include "mission/missionhotkey.h"
 #include "asteroid/asteroid.h"
 #include "jumpnode/jumpnode.h"
-#include "network/multi.h"
 #include "weapon/emp.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
@@ -426,6 +430,9 @@
 #include "parse/parselo.h"
 #include "cmdline/cmdline.h"
 
+#ifndef NO_NETWORK
+#include "network/multi.h"
+#endif
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);

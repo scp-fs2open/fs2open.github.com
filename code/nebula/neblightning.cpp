@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-04 20:06:04 $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-02 21:24:42 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/04 20:06:04  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.5  2004/07/26 20:47:41  Kazan
  * remove MCD complete
  *
@@ -77,6 +80,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include "PreProcDefines.h"
 
 #include "parse/parselo.h"
 #include "globalincs/linklist.h"

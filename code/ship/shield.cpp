@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-01-28 11:06:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-02 21:24:47 $
+ * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/01/28 11:06:23  Goober5000
+ * changed a bunch of transpose-rotate sequences to use unrotate instead
+ * --Goober5000
+ *
  * Revision 2.23  2004/10/31 22:05:30  taylor
  * s/OGL_inited/OGL_enabled/g
  *
@@ -244,6 +248,8 @@
 //		4		Shrink-wrapped texture.  Lasts full-time.
 
 //#include <math.h>
+
+#include "PreProcDefines.h"
 
 #include "render/3d.h"
 #include "model/model.h"

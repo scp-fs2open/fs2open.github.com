@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.15 $
+ * $Date: 2005-03-02 21:24:45 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.13  2005/02/14 23:56:51  taylor
  * fix mouse click issues in weapon/ship select screen
  * skip real VCR controls for Closeup check rather than using hardcoded values
@@ -327,6 +330,8 @@
  * $NoKeywords: $
  *
  */
+
+#include "PreProcDefines.h"
 
 #include "gamesnd/eventmusic.h"
 #include "io/key.h"

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-02-23 04:57:28 $
+ * $Revision: 2.16 $
+ * $Date: 2005-03-02 21:24:46 $
  * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/02/23 04:57:28  taylor
+ * even more bm_unload() -> bm_release() changes
+ *
  * Revision 2.14  2004/12/30 16:25:22  taylor
  * don't use cfopen() for upgrade check, it was giving strange results
  *
@@ -277,6 +280,8 @@
 */
 
 #include <errno.h>
+
+#include "PreProcDefines.h"
 
 #include "playerman/managepilot.h"
 #include "freespace2/freespace.h"
