@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/03/25 06:57:38  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.44  2005/03/08 03:50:19  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -899,6 +902,7 @@ extern weapon_info Weapon_info[MAX_WEAPON_TYPES];
 
 extern int Num_weapon_types;			// number of weapons in the game
 extern int Num_weapons;
+extern int First_secondary_index;
 
 extern tertiary_weapon_info Tertiary_weapon_info[MAX_TERTIARY_WEAPON_TYPES];
 extern int Num_tertiary_weapon_types;
