@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-03-27 12:28:33 $
+ * $Revision: 2.48 $
+ * $Date: 2005-03-27 13:23:05 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/03/27 12:28:33  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.46  2005/03/27 04:16:19  wmcoolmon
  * Fixed possible infinite loop problem
  * ----------------------------------------------------------------------
@@ -1000,34 +1004,36 @@ extern int Show_cpu;
 
 int get_prev_weapon_looped(int current_weapon, int subtype)
 {
-	for(int i = current_weapon; i >= 0; i--)
+	int i, new_index;
+
+	for (i = 1; i < Num_weapon_types; i++)
 	{
-		if(Weapon_info[i].subtype == subtype)
+		new_index = (Num_weapon_types + current_weapon - i) % Num_weapon_types;
+
+		if(Weapon_info[new_index].subtype == subtype)
 		{
 			return i;
 		}
 	}
-	
-	if(current_weapon != Num_weapon_types)
-		return get_prev_weapon_looped(Num_weapon_types, subtype);
-	else
-		return -1;
+
+	return current_weapon;
 }
 
 int get_next_weapon_looped(int current_weapon, int subtype)
 {
-	for(int i = current_weapon; i < Num_weapon_types; i++)
+	int i, new_index;
+
+	for (i = 1; i < Num_weapon_types; i++)
 	{
-		if(Weapon_info[i].subtype == subtype)
+		new_index = (current_weapon + i) % Num_weapon_types;
+
+		if(Weapon_info[new_index].subtype == subtype)
 		{
 			return i;
 		}
 	}
-	
-	if(current_weapon != 0)
-		return get_next_weapon_looped(0, subtype);
-	else
-		return -1;
+
+	return current_weapon;
 }
 
 void process_debug_keys(int k)
