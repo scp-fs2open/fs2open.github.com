@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-09 08:26:24 $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-17 02:18:40 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/09 08:26:24  Goober5000
+ * fixed misspelling
+ *
  * Revision 2.2  2002/08/01 01:41:08  penguin
  * The big include file move
  *
@@ -2882,6 +2885,58 @@ void process_cargo_revealed_packet( ubyte *data, header *hinfo )
 	}
 }
 
+// packet to tell clients cargo of a ship was hidden to all
+void send_cargo_hidden_packet( ship *shipp )
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size;
+
+	// build the header and add the data
+	BUILD_HEADER(CARGO_HIDDEN);
+	ADD_DATA( Objects[shipp->objnum].net_signature );
+
+	// server sends to all players
+	if(MULTIPLAYER_MASTER){		
+		multi_io_send_to_all_reliable(data, packet_size);
+	} 
+	// clients just send to the server
+	else {
+		multi_io_send_reliable(Net_player, data, packet_size);
+	}
+}
+
+// process a cargo hidden packet
+void process_cargo_hidden_packet( ubyte *data, header *hinfo )
+{
+	int offset;
+	ushort signature;
+	object *objp;
+
+	offset = HEADER_LENGTH;
+	GET_DATA(signature);
+	PACKET_SET_SIZE();
+
+	// get a ship pointer and call the ship function to hide the cargo
+	objp = multi_get_network_object( signature );
+	if ( objp == NULL ) {
+		nprintf(("Network", "Could not find object with net signature %d for cargo hidden\n", signature ));
+		return;
+	}
+
+	// Assert( objp->type == OBJ_SHIP );
+	if((objp->type != OBJ_SHIP) || (objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
+		return;
+	}
+
+	// this will take care of re-routing to all other clients
+	ship_do_cargo_hidden( &Ships[objp->instance], 1);	
+
+	// server should rebroadcast
+	if(MULTIPLAYER_MASTER){
+		send_cargo_hidden_packet(&Ships[objp->instance]);
+	}
+}
+
 // defines used for secondary fire packet
 #define SFPF_ALLOW_SWARM		(1<<7)
 #define SFPF_DUAL_FIRE			(1<<6)
@@ -4514,12 +4569,80 @@ void process_subsystem_cargo_revealed_packet( ubyte *data, header *hinfo )
 	}
 
 	// this will take care of re-routing to all other clients
-	void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int from_network );
 	ship_do_cap_subsys_cargo_revealed( shipp, subsysp, 1 );
 
 	// server should rebroadcast
 	if(MULTIPLAYER_MASTER){
 		send_subsystem_cargo_revealed_packet(&Ships[objp->instance], (int)uindex);
+	}
+}
+
+// packet to tell clients cargo of a ship was hidden to all
+void send_subsystem_cargo_hidden_packet( ship *shipp, int index )
+{
+	ubyte data[MAX_PACKET_SIZE], uindex;
+	int packet_size;
+
+	Assert ( index < UCHAR_MAX );
+	uindex = (ubyte)(index);
+
+	// build the header and add the data
+	BUILD_HEADER(SUBSYS_CARGO_HIDDEN);
+	ADD_DATA( Objects[shipp->objnum].net_signature );
+	ADD_DATA( uindex );
+
+	// server sends to all players
+	if(MULTIPLAYER_MASTER){		
+		multi_io_send_to_all_reliable(data, packet_size);
+	} 
+	// clients just send to the server
+	else {
+		multi_io_send_reliable(Net_player, data, packet_size);
+	}
+}
+
+// process a subsystem cargo hidden packet
+void process_subsystem_cargo_hidden_packet( ubyte *data, header *hinfo )
+{
+	int offset;
+	ushort signature;
+	ubyte uindex;
+	object *objp;
+	ship *shipp;
+	ship_subsys *subsysp;
+
+	offset = HEADER_LENGTH;
+	GET_DATA( signature );
+	GET_DATA( uindex );
+	PACKET_SET_SIZE();
+
+	// get a ship pointer and call the ship function to reveal the cargo
+	objp = multi_get_network_object( signature );
+	if ( objp == NULL ) {
+		nprintf(("Network", "Could not find object with net signature %d for cargo hidden\n", signature ));
+		return;
+	}
+
+	// Assert( objp->type == OBJ_SHIP );
+	if((objp->type != OBJ_SHIP) || (objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
+		return;
+	}
+
+	shipp = &Ships[objp->instance];
+
+	// call to get the pointer to the subsystem we should be working on
+	subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+	if (subsysp == NULL) {
+		nprintf(("Network", "Could not find subsys for ship %s for cargo hidden\n", Ships[objp->instance].ship_name ));
+		return;
+	}
+
+	// this will take care of re-routing to all other clients
+	ship_do_cap_subsys_cargo_hidden( shipp, subsysp, 1 );
+
+	// server should rebroadcast
+	if(MULTIPLAYER_MASTER){
+		send_subsystem_cargo_hidden_packet(&Ships[objp->instance], (int)uindex);
 	}
 }
 

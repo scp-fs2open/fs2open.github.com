@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-17 02:18:40 $
+ * $Author: Goober5000 $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/22 01:22:25  penguin
  * Linux port -- added NO_STANDALONE ifdefs
  *
@@ -913,8 +916,16 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_cargo_revealed_packet( data, header_info);
 			break;		
 
+		case CARGO_HIDDEN:
+			process_cargo_hidden_packet( data, header_info);
+			break;
+
 		case SUBSYS_CARGO_REVEALED:
 			process_subsystem_cargo_revealed_packet( data, header_info);
+			break;		
+
+		case SUBSYS_CARGO_HIDDEN:
+			process_subsystem_cargo_hidden_packet( data, header_info);
 			break;		
 
 		case MISSION_GOAL_INFO:
