@@ -9,11 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.69 $
- * $Date: 2004-05-01 17:10:18 $
- * $Author: Kazan $
+ * $Revision: 2.70 $
+ * $Date: 2004-05-01 22:47:23 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/05/01 17:10:18  Kazan
+ * Multiple -mod - "-mod ModA,ModB,ModC" in order of priority
+ * Giving you:
+ * Root: ModA
+ * Root: ModB
+ * Root: ModC
+ * Root: Fs2Default
+ * Root: CDRom
+ *
  * Revision 2.68  2004/04/26 18:23:47  Kazan
  * -no_fps_capping
  *
@@ -918,7 +927,7 @@ void os_init_cmdline(char *cmdline)
 	// read the cmdline.cfg file from the data folder, and pass the command line arguments to
 	// the the parse_parms and validate_parms line.  Read these first so anything actually on
 	// the command line will take precedence
-	fp = fopen("data\\cmdline.cfg", "rt");
+	fp = fopen("data\\cmdline_fso.cfg", "rt");
 
 	// if the file exists, get a single line, and deal with it
 	if ( fp ) {
