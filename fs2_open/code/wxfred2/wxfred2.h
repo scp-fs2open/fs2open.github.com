@@ -7,15 +7,15 @@
 
 /*
  * $Logfile: /Freespace2/code/wxFRED2/wxFRED2.h $
- * $Revision: 1.1 $
- * $Date: 2005-03-30 01:23:32 $
+ * $Revision: 1.2 $
+ * $Date: 2005-03-30 01:27:49 $
  * $Author: Goober5000 $
  *
  * New cross-platform version of FRED2
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.1  2005/03/29 07:55:19  Goober5000
- * whew... bare-bones "hello world" wxFRED base finally implemented!
+ * Revision 1.1  2005/03/30 01:23:32  Goober5000
+ * added header back in, with a small tweak for the .cpp
  * --Goober5000
  *
  * Revision 1.0  2005/03/28 22:15:00  Goober5000
