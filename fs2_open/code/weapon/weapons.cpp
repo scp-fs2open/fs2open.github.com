@@ -20,6 +20,9 @@
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/06/14 22:56:17  phreak
+ * fixed a bug where local ssms may miss the warphole when entering subspace
+ *
  * Revision 2.31  2003/06/13 15:33:57  phreak
  * added a warning that will display if a modder puts in a local ssm that:
  * is a laser or beam
@@ -819,7 +822,9 @@ void parse_wi_flags(weapon_info *weaponp)
 		else if (!stricmp(NOX("no pierce shields"), weapon_strings[i]))	// only for beams
 			weaponp->wi_flags2 &= ~WIF2_PIERCE_SHIELDS;
 		else if (!stricmp(NOX("local ssm"), weapon_strings[i]))
-			weaponp->wi_flags2 |=WIF2_LOCAL_SSM;
+			weaponp->wi_flags2 |= WIF2_LOCAL_SSM;
+		else if (!stricmp(NOX("tagged only"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_TAGGED_ONLY;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 
@@ -1444,10 +1449,11 @@ int parse_weapon()
 	}
 
 
-	wip->lssm_warpout_delay=2000;			//delay between launch and warpout (ms)
-	wip->lssm_warpin_delay=7000;			//delay between warpout and warpin (ms)
-	wip->lssm_stage5_vel=100.0f;		//velocity during final stage
-	wip->lssm_warpin_radius=500.0f;
+	wip->lssm_warpout_delay=0;			//delay between launch and warpout (ms)
+	wip->lssm_warpin_delay=0;			//delay between warpout and warpin (ms)
+	wip->lssm_stage5_vel=0;		//velocity during final stage
+	wip->lssm_warpin_radius=0;
+	wip->lssm_lock_range=1000000.0f;	//local ssm lock range (optional)
 	if (optional_string("$Local SSM:"))
 	{
 		required_string("+Warpout Delay:");
@@ -1461,6 +1467,9 @@ int parse_weapon()
 
 		required_string("+Warpin Radius:");
 		stuff_float(&wip->lssm_warpin_radius);
+
+		if (optional_string("+Lock Range:"))
+			stuff_float(&wip->lssm_lock_range);
 	}
 
 
@@ -1710,6 +1719,12 @@ int parse_weapon()
 		}
 		required_string("+radius:");
 		stuff_float(&wip->decal_rad);
+	}
+
+	//pretty stupid if a target must be tagged to shoot tag missiles at it
+	if ((wip->wi_flags & WIF_TAG) && (wip->wi_flags2 & WIF2_TAGGED_ONLY))
+	{
+		Warning(LOCATION, "%s is a tag missile, but the target must be tagged to shoot it", wip->name);
 	}
 
 	return 0;

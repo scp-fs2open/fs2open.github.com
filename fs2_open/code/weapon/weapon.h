@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/06/12 17:45:54  phreak
+ * local ssm warpin is now handled better than what i committed earlier
+ *
  * Revision 2.13  2003/06/11 03:06:07  phreak
  * local subspace missiles are now in game. yay
  *
@@ -401,6 +404,7 @@
 #define WIF2_PIERCE_SHIELDS				(1 << 1)	// shield pierceing -Bobboau
 #define WIF2_DEFAULT_IN_TECH_DATABASE	(1 << 2)	// default in tech database - Goober5000
 #define WIF2_LOCAL_SSM					(1 << 3)	// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
+#define WIF2_TAGGED_ONLY				(1 << 4)	// can only fire if target is tagged
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
@@ -649,6 +653,7 @@ typedef struct weapon_info {
 	int lssm_warpin_delay;			//delay between warpout and warpin (ms)
 	float lssm_stage5_vel;			//velocity during final stage
 	float lssm_warpin_radius;
+	float lssm_lock_range;
 
 
 } weapon_info;
