@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.49 $
+ * $Revision: 2.50 $
  * $Author: Goober5000 $
- * $Date: 2004-10-12 07:34:45 $
+ * $Date: 2004-10-12 22:47:14 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2004/10/12 07:34:45  Goober5000
+ * added contrail speed threshold
+ * --Goober5000
+ *
  * Revision 2.48  2004/10/11 22:29:25  Goober5000
  * added the no-bank ship flag (which works) and the affected-by-gravity flag
  * (which won't work until I implement gravity points)
@@ -759,13 +763,14 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	5
+#define MAX_PARSE_OBJECT_FLAGS_2	6
 
-#define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
-#define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
-#define P2_SF2_NAV_CARRY_STATUS			(1<<2)
-#define P2_SF2_NO_BANK					(1<<3)
-#define P2_SF2_AFFECTED_BY_GRAVITY		(1<<4)
+#define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
+#define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
+#define P2_SF2_NAV_CARRY_STATUS				(1<<2)
+#define P2_SF2_NO_BANK						(1<<3)
+#define P2_SF2_AFFECTED_BY_GRAVITY			(1<<4)
+#define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<5)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
