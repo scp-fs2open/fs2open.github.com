@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-12-02 20:46:41 $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-02 23:26:08 $
  * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/02 20:46:41  Goober5000
+ * fixed misspelling of "category" as "catagory"
+ *
  * Revision 2.4  2002/11/22 20:55:27  phreak
  * changed around some page-in functions to work with opengl
  * changed bm_set_components_opengl
