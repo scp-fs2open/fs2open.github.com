@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.33 $
+ * $Revision: 2.34 $
  * $Author: Goober5000 $
- * $Date: 2003-09-28 21:22:59 $
+ * $Date: 2003-09-30 04:05:09 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/09/28 21:22:59  Goober5000
+ * added the option to import FSM missions, added a replace function, spruced
+ * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
+ * --Goober5000
+ *
  * Revision 2.32  2003/09/13 08:27:28  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -768,6 +773,9 @@ void convertFSMtoFS2();
 void conv_replace_ship_classes();
 void conv_add_alt_names();
 void conv_fix_briefing_stuff();
+void restore_default_weapons(char *ships_tbl);
+void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
+void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
 
 #endif
 

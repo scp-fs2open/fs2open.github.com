@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.9 $
+ * $Revision: 2.10 $
  * $Author: Goober5000 $
- * $Date: 2003-09-28 21:22:58 $
+ * $Date: 2003-09-30 04:05:09 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/09/28 21:22:58  Goober5000
+ * added the option to import FSM missions, added a replace function, spruced
+ * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
+ * --Goober5000
+ *
  * Revision 2.8  2003/08/25 04:45:57  Goober5000
  * added replacement of $rank with the player's rank in any string that appears
  * in-game (same as with $callsign); also bumped the limit on the length of text
@@ -1157,13 +1162,33 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 //	Read mission text, stripping comments.
 //	When a comment is found, it is removed.  If an entire line
 //	consisted of a comment, a blank line is left in the input file.
-void read_file_text(char *filename, int mode)
+// Goober5000 - added ability to read somewhere other than Mission_text
+void read_file_text(char *filename, int mode, char *specified_file_text, char *specified_file_text_raw)
 {
 	CFILE	*mf;
 	char	outbuf[PARSE_BUF_SIZE], *str;
-	char	*mp = Mission_text;
-	char	*mp2 = Mission_text_raw;
+	char	*mp;
+	char	*mp2;
 	int	file_is_encrypted = 0, in_comment = 0;
+
+	char *file_text;
+	char *file_text_raw;
+
+	// possibly read file into something other than Mission_text
+	if (specified_file_text && specified_file_text_raw)
+	{
+		file_text = specified_file_text;
+		file_text_raw = specified_file_text_raw;
+	}
+	// otherwise, normal behavior
+	else
+	{
+		file_text = Mission_text;
+		file_text_raw = Mission_text_raw;
+	}
+
+	mp = file_text;
+	mp2 = file_text_raw;
 
 	if (!filename)
 		longjmp(parse_abort, 10);
@@ -1179,10 +1204,9 @@ void read_file_text(char *filename, int mode)
 	int file_len = cfilelength(mf);
 
 	// read first 10 bytes to determine if file is encrypted
-	cfread(Mission_text_raw, min(file_len, 10), 1, mf);
-	file_is_encrypted = is_encrypted(Mission_text_raw);
+	cfread(file_text_raw, min(file_len, 10), 1, mf);
+	file_is_encrypted = is_encrypted(file_text_raw);
 	cfseek(mf, 0, CF_SEEK_SET);
-
 	if ( file_is_encrypted ) {
 		int	unscrambled_len;
 		char	*scrambled_text;
@@ -1190,24 +1214,22 @@ void read_file_text(char *filename, int mode)
 		Assert(scrambled_text);
 		cfread(scrambled_text, file_len, 1, mf);
 		// unscramble text
-		unencrypt(scrambled_text, file_len, Mission_text_raw, &unscrambled_len);
+		unencrypt(scrambled_text, file_len, file_text_raw, &unscrambled_len);
 		file_len = unscrambled_len;
 		free(scrambled_text);
 	} else {
-		cfread(Mission_text_raw, file_len, 1, mf);
+		cfread(file_text_raw, file_len, 1, mf);
 	}
-
 	cfclose(mf);
 
 	//	If you hit this assert, it is probably telling you the obvious.  The file
 	//	you are trying to read is truly too large.  Look at *filename to see the file name.
 	Assert(file_len < MISSION_TEXT_SIZE);
 
-	// strip comments from raw text, reading into Mission_text
+	// strip comments from raw text, reading into file_text
 	int num_chars_read = 0;
-
-	mp2 = Mission_text_raw;
-	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, Mission_text_raw, file_len, mp2)) != 0 ) {
+	mp2 = file_text_raw;
+	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, file_text_raw, file_len, mp2)) != 0 ) {
 		mp2 += num_chars_read;
 
 		if(Fred_running){
@@ -1238,7 +1260,7 @@ void read_file_text(char *filename, int mode)
 
 		//	If you hit this assert, it is probably telling you the obvious.  The file
 		//	you are trying to read is truly too large.  Look at *filename to see the file name.
-		Assert(mp2 - Mission_text_raw + strlen(outbuf) < MISSION_TEXT_SIZE);
+		Assert(mp2 - file_text_raw + strlen(outbuf) < MISSION_TEXT_SIZE);
 		strcpy(mp2, outbuf);
 		mp2 += strlen(outbuf);
 
@@ -1999,14 +2021,18 @@ int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int
 		// allocate temp string to hold extra stuff
 		char *temp = (char *) malloc(sizeof(char) * max_len);
 
-		// save remainder of string
-		strcpy(temp, ch + strlen(oldstr));
+		// ensure allocation was successful
+		if (temp)
+		{
+			// save remainder of string
+			strcpy(temp, ch + strlen(oldstr));
 
-		// replace
-		strcpy(ch, newstr);
+			// replace
+			strcpy(ch, newstr);
 
-		// append rest of string
-		strcpy(ch + strlen(newstr), temp);
+			// append rest of string
+			strcpy(ch + strlen(newstr), temp);
+		}
 
 		// free temp string
 		free(temp);

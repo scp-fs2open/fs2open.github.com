@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.44 $
- * $Date: 2003-09-28 21:22:59 $
+ * $Revision: 2.45 $
+ * $Date: 2003-09-30 04:05:09 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2003/09/28 21:22:59  Goober5000
+ * added the option to import FSM missions, added a replace function, spruced
+ * up my $player, $rank, etc. code, and fixed encrypt being misspelled as 'encrpyt'
+ * --Goober5000
+ *
  * Revision 2.43  2003/09/13 06:02:06  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -6079,5 +6084,152 @@ void conv_add_alt_names()
 // Goober5000
 void conv_fix_briefing_stuff()
 {
-	// replace " with ' and fix the mismatched briefing icons
+	// replace " with '
+
+
+	// fix the mismatched briefing icons
+}
+
+// Goober5000
+void restore_default_weapons(char *ships_tbl)
+{
+	int i, j, si_subsys;
+	char *ch, *subsys;
+	char ship_class[NAME_LENGTH];
+	ship_subsys *ss;
+	ship_info *sip;
+
+	// guesstimate that this actually is a ships.tbl
+	if (!strstr(ships_tbl, "#Ship Classes"))
+	{
+		MessageBox(NULL, "This is not a ships.tbl file.  Aborting conversion...", "Error", MB_OK);
+		return;
+	}
+
+	// for every ship
+	for (i = 0; i < MAX_SHIPS; i++)
+	{
+		// ensure the ship slot is used in this mission
+		if (Ships[i].objnum >= 0)
+		{
+			// get ship_info
+			sip = &Ship_info[Ships[i].ship_info_index];
+
+			// get the ship class and adjust as necessary
+			strcpy(ship_class, sip->name);
+			if (!strnicmp(ship_class, "GV", 2))
+			{
+				*ship_class = 'P';
+			}
+			else if (!stricmp(ship_class, "GTNB Pharos"))
+			{
+				strcpy(ship_class, "Terran NavBuoy");
+			}
+
+			// find the ship class
+			ch = stristr(ships_tbl, ship_class);
+			if (!ch) continue;
+
+			// check pbanks (capital ships have these specified but empty)
+			Mp = strstr(ch, "$Default PBanks");
+			Mp = strchr(Mp, '(');
+			restore_one_primary_bank(Ships[i].weapons.primary_bank_weapons, sip->primary_bank_weapons);
+
+			// check sbanks (capital ships have these specified but empty)
+			Mp = strstr(ch, "$Default SBanks");
+			Mp = strchr(Mp, '(');
+			restore_one_secondary_bank(Ships[i].weapons.secondary_bank_weapons, sip->secondary_bank_weapons);
+
+			// see if we have any turrets
+			ch = strstr(ch, "$Subsystem");
+			for (ss = GET_FIRST(&Ships[i].subsys_list); ss != END_OF_LIST(&Ships[i].subsys_list); ss = GET_NEXT(ss))
+			{
+				// we do
+				if (ss->system_info->type == SUBSYSTEM_TURRET)
+				{
+					// find it in the ship_info subsys list
+					si_subsys = -1;
+					for (j = 0; j < sip->n_subsystems; j++)
+					{
+						if (!stricmp(ss->system_info->subobj_name, sip->subsystems[j].subobj_name))
+						{
+							si_subsys = j;
+							break;
+						}
+					}
+					if (si_subsys < 0) continue;
+
+					// find it in the file - make sure it belongs to *this* ship
+					subsys = stristr(ch, ss->system_info->subobj_name);
+					if (!subsys) continue;
+					if (subsys > strstr(ch, "$Name")) continue;
+
+					// check pbanks - make sure they are *this* subsystem's banks
+					Mp = strstr(subsys, "$Default PBanks");
+					if (Mp < strstr(subsys + 1, "$Subsystem"))
+					{
+						Mp = strchr(Mp, '(');
+						restore_one_primary_bank(ss->weapons.primary_bank_weapons, sip->subsystems[si_subsys].primary_banks);
+					}
+
+					// check sbanks - make sure they are *this* subsystem's banks
+					Mp = strstr(subsys, "$Default SBanks");
+					if (Mp < strstr(subsys + 1, "$Subsystem"))
+					{
+						Mp = strchr(Mp, '(');
+						restore_one_secondary_bank(ss->weapons.secondary_bank_weapons, sip->subsystems[si_subsys].secondary_banks);
+					}
+				}
+			}
+		}
+	}
+}
+
+// Goober5000
+void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons)
+{
+	int i, count, original_weapon;
+	char weapon_list[MAX_PRIMARY_BANKS][NAME_LENGTH];
+
+	// stuff weapon list
+	count = stuff_string_list(weapon_list, MAX_PRIMARY_BANKS);
+
+	// possibly replace Prometheus with Prometheus S
+	for (i = 0; i < count; i++)
+	{
+		if (!stricmp(weapon_list[i], "Prometheus"))
+		{
+			strcpy(weapon_list[i], "Prometheus S");
+		}
+	}
+
+	// check for default weapons - if same as default, overwrite with the one from the table
+	for (i = 0; i < count; i++)
+	{
+		if (ship_primary_weapons[i] == default_primary_weapons[i])
+		{
+			if ((original_weapon = weapon_info_lookup(weapon_list[i])) >= 0)
+			ship_primary_weapons[i] = original_weapon;
+		}
+	}
+}
+
+// Goober5000
+void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons)
+{
+	int i, count, original_weapon;
+	char weapon_list[MAX_SECONDARY_BANKS][NAME_LENGTH];
+
+	// stuff weapon list
+	count = stuff_string_list(weapon_list, MAX_SECONDARY_BANKS);
+
+	// check for default weapons - if same as default, overwrite with the one from the table
+	for (i = 0; i < count; i++)
+	{
+		if (ship_secondary_weapons[i] == default_secondary_weapons[i])
+		{
+			if ((original_weapon = weapon_info_lookup(weapon_list[i])) >= 0)
+			ship_secondary_weapons[i] = original_weapon;
+		}
+	}
 }
