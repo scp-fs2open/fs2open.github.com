@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.87 $
- * $Date: 2004-04-14 23:17:26 $
+ * $Revision: 2.88 $
+ * $Date: 2004-04-26 00:25:08 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2004/04/14 23:17:26  taylor
+ * let language reg setting override auto detection
+ *
  * Revision 2.86  2004/04/08 05:00:13  righteous1
  * Backing out mainhall audio fix attempt.
  *
@@ -2258,6 +2261,11 @@ void freespace_mission_load_stuff()
 
 		gamesnd_preload_common_sounds();			// load in sounds that are expected to play
 		game_busy();
+
+		if (Cmdline_snd_preload) {
+			gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
+			game_busy();
+		}
 
 		ship_assign_sound_all();	// assign engine sounds to ships
 		game_assign_sound_environment();	 // assign the sound environment for this mission

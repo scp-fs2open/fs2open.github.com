@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-04-03 02:55:49 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2004-04-26 00:25:08 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/04/03 02:55:49  bobboau
+ * commiting recent minor bug fixes
+ *
  * Revision 2.3  2004/03/05 09:02:00  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -238,7 +241,9 @@ void gamesnd_load_gameplay_sounds()
 	for ( i = 0; i < MAX_GAME_SOUNDS; i++ ) {
 		gs = &Snds[i];
 		if ( gs->filename[0] != 0 && stricmp(gs->filename, NOX("none.wav")) ) {
-			gs->id = snd_load(gs);
+			if ( !gs->preload ) { // don't try to load anything that's already preloaded
+				gs->id = snd_load(gs);
+			}
 		}
 	}
 }
@@ -327,7 +332,6 @@ void gamesnd_parse_line(game_snd *gs, char *tag)
 		stuff_int(&gs->max);
 	}
 	advance_to_eoln(NULL);
-	gs->id = snd_load(gs, 1);
 }
 
 // -------------------------------------------------------------------------------------------------
