@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-01-03 18:45:22 $
+ * $Revision: 1.13 $
+ * $Date: 2005-01-13 04:55:57 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/01/03 18:45:22  taylor
+ * dynamic allocation of num supported OpenGL lights
+ * add config option for more realistic light settings
+ * don't render spec maps in nebula to address lighting issue
+ *
  * Revision 1.11  2005/01/01 11:24:23  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -345,11 +350,21 @@ void gr_opengl_destroy_buffer(int idx)
 
 	opengl_vertex_buffer *vbp = g_vbp;
 
-	if (vbp->array_list)
+	if (vbp->array_list) {
 		free(vbp->array_list);
+		vbp->array_list = NULL;
+	}
 
 	if (vbp->vbo)
 		glDeleteBuffersARB(1, &vbp->vbo);
+
+	if (vbp->uv_list) {
+		free(vbp->uv_list);
+		vbp->uv_list = NULL;
+	}
+
+	if (vbp->vbo_uv)
+		glDeleteBuffersARB(1, &vbp->vbo_uv);
 
 	memset(vbp, 0, sizeof(opengl_vertex_buffer));
 
