@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.133 $
- * $Date: 2005-03-14 06:36:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.134 $
+ * $Date: 2005-03-16 01:35:58 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2005/03/14 06:36:30  wmcoolmon
+ * Added memory display thingy to loading screen, if command line is specified and build is a debug build. Also made screenshots go up to 9999
+ *
  * Revision 2.132  2005/03/13 08:04:43  taylor
  * fix various compiler warning messages
  * make sure screenshot count doesn't get too high
@@ -4787,6 +4790,7 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	}
 
 	obj_render_all(obj_render);
+
 	beam_render_all();						// render all beam weapons
 	particle_render_all();					// render particles after everything else.
 	trail_render_all();						// render missilie trails after everything else.	

@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2005/03/12 21:08:01  phreak
+ * doubled default spawn angle from 180 to 360 since it seems to track better
+ *
  * Revision 2.96  2005/03/10 08:00:17  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -2595,6 +2598,7 @@ void weapon_level_init()
 }
 
 MONITOR( NumWeaponsRend );	
+float add_laser(int texture, vector *p0,float width1,vector *p1,float width2, int r, int g, int b);
 
 float weapon_glow_scale_f = 2.3f;
 float weapon_glow_scale_r = 2.3f;
@@ -2622,19 +2626,23 @@ void weapon_render(object *obj)
 
 			if (wip->laser_bitmap >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
+				int tex;
 				if(wip->laser_bitmap_nframes > 1){
 					wp->frame = (timestamp() / (int)(wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
 				//	wp->frame = (int)(wp->frame + ((int)(flFrametime * 1000) / wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
 		//			HUD_printf("frame %d", wp->frame);
-					gr_set_bitmap(wip->laser_bitmap + wp->frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+					tex = wip->laser_bitmap + wp->frame;
+				//	gr_set_bitmap(wip->laser_bitmap + wp->frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 				}else{
-					gr_set_bitmap(wip->laser_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+					tex = wip->laser_bitmap;
+				//	gr_set_bitmap(wip->laser_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 				}
 
 				vector headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
-				if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT) ) {
+//				if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT) ) {
+				if(	add_laser(tex, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, 255, 255, 255)){
 					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
 				}
 			}			
@@ -2660,12 +2668,13 @@ void weapon_render(object *obj)
 				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
 					wp->gframe = (timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
 				//	wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
-					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
+			//		gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}else{
-					gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
+			//		gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}
 
-				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+//				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+				add_laser(wip->laser_glow_bitmap, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red*weapon_glow_alpha, c.green*weapon_glow_alpha, c.blue*weapon_glow_alpha);
 			}						
 			break;
 		}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-26 20:47:50 $
- * $Author: Kazan $
+ * $Revision: 2.14 $
+ * $Date: 2005-03-16 01:35:59 $
+ * $Author: bobboau $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/26 20:47:50  Kazan
+ * remove MCD complete
+ *
  * Revision 2.12  2004/07/12 16:33:04  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -351,6 +354,7 @@ float g3_draw_laser_htl_batched(vector *p0,float width1,vector *p1,float width2,
 
 	return center.xyz.z;
 }
+
 
 float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, int g, int b, uint tmap_flags)
 {
