@@ -1,22 +1,34 @@
-//#include "stdafx.h"
+/*
+ * Code created by Thomas Whittaker (RT) for a Freespace 2 source code project
+ *
+ * You may not sell or otherwise commercially exploit the source or things you 
+ * created based on the source.
+ *
+*/ 
+
+#ifdef LAUNCHER
+#include "stdafx.h"
+#endif
 
 #include <windows.h>
-#include <stdio.h>
-#include <string.h>
-#include "globalincs/pstypes.h"
+#include <atlbase.h>
 
 #if FS2_SPEECH
 #include <sapi.h>
+#else
+#if NDEBUG
+#pragma message( "WARNING: You have not compiled speech into this build (use FS2_SPEECH)" )
+#endif
 #endif
 
-#include "sound/speech.h"
+#include "speech.h"
 
 #if FS2_SPEECH
 ISpVoice *Voice_device;
 #endif
 
 bool Speech_init = false;
-
+										   
 unsigned short Conversion_buffer[MAX_SPEECH_CHAR_LEN];
 
 bool speech_init()
@@ -24,12 +36,14 @@ bool speech_init()
 #ifndef FS2_SPEECH
 	return false;
 #else
-    Speech_init = SUCCEEDED(CoCreateInstance(
+    HRESULT hr = CoCreateInstance(
 		CLSID_SpVoice, 
 		NULL, 
 		CLSCTX_ALL, 
 		IID_ISpVoice, 
-		(void **)&Voice_device));
+		(void **)&Voice_device);
+
+	Speech_init = SUCCEEDED(hr);
 
 	return Speech_init;
 #endif
@@ -50,13 +64,7 @@ bool speech_play(char *text)
 	return false;
 #endif
 
-	if(Speech_init == false) {
-		mprintf(("trying to play speech but it is not inited"));
-		return true;
-	}
-	else
-		mprintf(("Should be speaking now"));
-
+	if(Speech_init == false) return true;
 	if(text == NULL) return false;
 
 	int len = strlen(text);
@@ -79,10 +87,7 @@ bool speech_play(unsigned short *text)
 #ifndef FS2_SPEECH
 	return false;
 #else
-	if(Speech_init == false) {
-		mprintf(("trying to play speech but it is not inited"));
-		return true;
-	}
+	if(Speech_init == false) return true;
 	if(text == NULL) return false;
 
 	speech_stop();
@@ -120,3 +125,19 @@ bool speech_stop()
 #endif
 }
 
+bool speech_set_volume(int volume)
+{
+#ifndef FS2_SPEECH
+	return false;
+#else
+    return SUCCEEDED(Voice_device->SetVolume(volume));
+#endif
+}
+
+bool speech_set_voice(void *new_voice)
+{
+#ifdef FS2_SPEECH
+    return SUCCEEDED(Voice_device->SetVoice( (ISpObjectToken *) new_voice ));
+#endif
+	return false;
+}

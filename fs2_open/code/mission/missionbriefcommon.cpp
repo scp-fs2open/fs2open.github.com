@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-04-05 11:09:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-07 18:14:53 $
+ * $Author: randomtiger $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/04/05 11:09:21  Goober5000
+ * fixed some fiddly bits with scrolling and ui stuff
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -179,6 +183,7 @@
 #include "missionui/missiondebrief.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "sound/fsspeech.h"
 
 // --------------------------------------------------------------------------------------
 // briefing icons
@@ -1979,6 +1984,11 @@ void brief_set_new_stage(vector *pos, matrix *orient, int time, int stage_num)
 		// GR_1024
 		Num_brief_text_lines[0] = brief_color_text_init(msg, MAX_BRIEF_LINE_W_1024);		
 	}
+
+	if ( Brief_voices[stage_num] == -1 ) {
+		fsspeech_play(FSSPEECH_FROM_BRIEFING, msg);
+	}
+
 	Top_brief_text_line = 0;
 
 	if (not_objv){

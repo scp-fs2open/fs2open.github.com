@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-09-05 04:25:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2003-09-07 18:14:54 $
+ * $Author: randomtiger $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/09/05 04:25:28  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.9  2003/06/25 03:13:48  phreak
  * weapon energy cheat does not carry over from mission to mission
  *
@@ -392,6 +404,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "osapi/osapi.h"
+#include "sound/fsspeech.h"
 #include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
@@ -989,6 +1002,8 @@ void debrief_voice_stop()
 
 	audiostream_stop(Debrief_voices[Stage_voice], 1, 0);  // stream is automatically rewound
 	Stage_voice = -1;
+
+	fsspeech_stop();
 }
 
 
@@ -2231,12 +2246,23 @@ void debrief_free_text()
 // setup the debriefing text lines for rendering
 void debrief_text_init()
 {
-	int i, r_count = 0;
+	// If no wav files are being used use speech simulation
+	bool use_sim_speech = true;
+	for (int i = 0; i < MAX_DEBRIEF_STAGES; i++) {
+		if(Debrief_voices[i] != -1) {
+		 	use_sim_speech = false;
+			break;
+		}
+	}
+
+	int r_count = 0;
 	char *src;
 
 	// release old text lines first
 	debrief_free_text();
 	Num_text_lines = Text_offset = 0;
+
+	fsspeech_start_buffer();
 
 	if (Current_mode == DEBRIEF_TAB) {
 		for (i=0; i<Num_debrief_stages; i++) {
@@ -2246,6 +2272,10 @@ void debrief_text_init()
 			src = Debrief_stages[i]->new_text;
 			if (src)
 				debrief_text_stage_init(src, TEXT_TYPE_NORMAL);
+
+			if(use_sim_speech) {
+				fsspeech_stuff_buffer(src);
+			}
 
 			if (Recommend_active) {
 				src = Debrief_stages[i]->new_recommendation_text;
@@ -2261,6 +2291,9 @@ void debrief_text_init()
 		}
 
 		Num_debrief_lines = Num_text_lines;
+		if(use_sim_speech) {
+			fsspeech_play_buffer(FSSPEECH_FROM_BRIEFING);
+		}
 		return;
 	}
 

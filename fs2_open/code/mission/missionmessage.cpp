@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-10-17 20:40:51 $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-07 18:14:53 $
  * $Author: randomtiger $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/10/17 20:40:51  randomtiger
+ * Added ability to remove HUD ingame on keypress shift O
+ * So I've added a new key to the bind list and made use of already existing hud removal code.
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -398,6 +402,7 @@
 #include "localization/localize.h"
 #include "demo/demo.h"
 #include "hud/hudconfig.h"
+#include "sound/fsspeech.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -853,6 +858,7 @@ void message_mission_shutdown()
 		}
 	}
 
+	fsspeech_stop();
 }
 
 // functions to deal with queuing messages to the message system.
@@ -907,6 +913,8 @@ void message_kill_all( int kill_all )
 	if ( kill_all ) {
 		Num_messages_playing = 0;
 	}
+
+	fsspeech_stop();
 }
 
 // function to kill nth playing message
@@ -922,6 +930,8 @@ void message_kill_playing( int message_num )
 		snd_stop( Playing_messages[message_num].wave );
 
 	Playing_messages[message_num].shipnum = -1;
+
+	fsspeech_stop();
 }
 
 
@@ -1053,7 +1063,7 @@ void message_load_wave(int index, const char *filename)
 // input: m		=>		pointer to message description
 //
 // note: changes Messave_wave_duration, Playing_messages[].wave, and Message_waves[].num
-void message_play_wave( message_q *q )
+bool message_play_wave( message_q *q )
 {
 	int index;
 	MissionMessage *m;
@@ -1075,7 +1085,7 @@ void message_play_wave( message_q *q )
 		// sanity check
 		Assert( index != -1 );
 		if ( index == -1 ){
-			return;
+			return false;
 		}
 
 		// if we need to bash the wave name because of "conversion" to terran command, do it here
@@ -1090,7 +1100,7 @@ void message_play_wave( message_q *q )
 			p = strchr(filename, '_' );
 			if ( p == NULL ) {
 				mprintf(("Cannot convert %s to terran command wave -- find Sandeep or Allender\n", Message_waves[index].name));
-				return;
+				return false;
 			}
 
 			// prepend the command name, and then the rest of the filename.
@@ -1110,8 +1120,12 @@ void message_play_wave( message_q *q )
 			// this call relies on the fact that snd_play returns -1 if the sound cannot be played
 			Message_wave_duration = snd_get_duration(Message_waves[index].num);
 			Playing_messages[Num_messages_playing].wave = snd_play_raw( Message_waves[index].num, 0.0f );
+
+			return (Playing_messages[Num_messages_playing].wave != -1);
 		}
 	}
+
+	return false;
 }
 
 // Determine the starting frame for the animation
@@ -1522,7 +1536,9 @@ void message_queue_process()
 	}
 
 	// play wave first, since need to know duration for picking anim start frame
-	message_play_wave(q);
+	if(message_play_wave(q) == false) {
+		fsspeech_play(FSSPEECH_FROM_INGAME, buf);
+	}
 
 	// play animation for head
 	#ifndef DEMO // do we want this for FS2_DEMO

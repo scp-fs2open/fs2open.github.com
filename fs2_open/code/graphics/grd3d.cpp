@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-08-31 06:00:41 $
- * $Author: bobboau $
+ * $Revision: 2.21 $
+ * $Date: 2003-09-07 18:14:53 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/08/31 06:00:41  bobboau
+ * an asortment of bugfixes, mostly with the specular code,
+ * HUD flickering should be completly gone now
+ *
  * Revision 2.19  2003/08/22 07:35:08  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -2766,7 +2770,7 @@ bool gr_d3d_init()
 	if(!D3D_inited){
 		DBUGFILE_OUTPUT_0("Failed to initialise device");
 		return false;
-	}
+	}												    
 
 	// RT - Differences between 32 and 16 bit have been considerably reduced, these variables are
 	// Only being kept for the sake of glide.

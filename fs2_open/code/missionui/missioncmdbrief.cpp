@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-04-05 11:09:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-07 18:14:54 $
+ * $Author: randomtiger $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/04/05 11:09:22  Goober5000
+ * fixed some fiddly bits with scrolling and ui stuff
+ * --Goober5000
+ *
  * Revision 2.5  2003/04/05 08:51:04  Goober5000
  * arg - forgot something
  * --Goober5000
@@ -265,6 +269,7 @@
 #include "globalincs/alphacolors.h"
 #include "anim/animplay.h"
 #include "debugconsole/dbugfile.h"
+#include "sound/fsspeech.h"
 
 #define NUM_CMD_SETTINGS	2
 
@@ -533,6 +538,11 @@ void cmd_brief_new_stage(int stage)
 		Anim_playing_id = -1;
 	}
 
+	// If the briefing has no wave to play use simulated speach
+	if(Cur_cmd_brief->stage[stage].wave <= 0) {
+		fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage].text);
+	}
+
 	Cur_stage = stage;
 	brief_color_text_init(Cur_cmd_brief->stage[stage].text, Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]);
 
@@ -631,6 +641,7 @@ void cmd_brief_button_pressed(int n)
 
 		case CMD_BRIEF_BUTTON_PAUSE:
 			gamesnd_play_iface(SND_USER_SELECT);
+			fsspeech_pause(Player->auto_advance != 0);
 			Player->auto_advance ^= 1;
 			break;
 
@@ -833,6 +844,9 @@ void cmd_brief_close()
 		game_flush();
 		Cmd_brief_inited = 0;
 	}
+
+	// Stop any speech from running over
+	fsspeech_stop();
 }
 
 void cmd_brief_do_frame(float frametime)

@@ -1899,6 +1899,14 @@ SOURCE=.\Sound\dscap.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\sound\fsspeech.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\sound\fsspeech.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Sound\midifile.cpp
 # End Source File
 # Begin Source File
@@ -1932,6 +1940,14 @@ SOURCE=.\Sound\Sound.cpp
 # Begin Source File
 
 SOURCE=.\Sound\Sound.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\sound\speech.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\sound\speech.h
 # End Source File
 # Begin Source File
 

@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-09-05 04:25:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-07 18:14:54 $
+ * $Author: randomtiger $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/09/05 04:25:28  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.5  2003/03/30 21:16:21  Goober5000
  * fixed stupid spelling mistake
  * --Goober5000
@@ -335,6 +347,7 @@
 #include "graphics/font.h"
 #include "mission/missionmessage.h"
 #include "playerman/player.h"
+#include "sound/fsspeech.h"
 #include "debugconsole/dbugfile.h"
 
 #ifndef NO_NETWORK
@@ -834,14 +847,17 @@ void brief_button_do(int i)
 
 		case BRIEF_BUTTON_PAUSE:
 			gamesnd_play_iface(SND_USER_SELECT);
+			fsspeech_pause(Player->auto_advance != 0);
 			Player->auto_advance ^= 1;
 			break;
 
 		case BRIEF_BUTTON_SKIP_TRAINING:
+			fsspeech_stop();
 			brief_skip_training_pressed();
 			break;
 
 		case BRIEF_BUTTON_EXIT_LOOP:
+			fsspeech_stop();
 			brief_exit_loop_pressed();
 			break;
 
@@ -2029,6 +2045,7 @@ void brief_do_frame(float frametime)
 			}
 
 			brief_voice_stop(Last_brief_stage);
+			fsspeech_stop();
 
 			if ( Current_brief_stage < 0 ) {
 				Int3();
@@ -2173,6 +2190,7 @@ void brief_close()
 	nprintf(("Alan", "Entering brief_close()\n"));
 
 	ML_objectives_close();
+	fsspeech_stop();
 
 	// unload the audio streams used for voice playback
 	brief_voice_unload_all();

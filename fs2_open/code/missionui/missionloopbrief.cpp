@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-07 18:14:54 $
+ * $Author: randomtiger $
  *
  * Campaign Loop briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
  * DX8 branch commit
  *
@@ -61,6 +64,7 @@
 #include "mission/missioncampaign.h"
 #include "anim/animplay.h"
 #include "freespace2/freespace.h"
+#include "sound/fsspeech.h"
 #include "debugconsole/dbugfile.h"
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -220,13 +224,23 @@ void loop_brief_init()
 		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_loop_desc, Loop_brief_text_coords[gr_screen.res][2]);
 	}
 
+	bool sound_played = false;
+
+
 	// open sound
 	if(Campaign.missions[Campaign.current_mission].mission_loop_brief_sound != NULL){
 		Loop_sound = audiostream_open(Campaign.missions[Campaign.current_mission].mission_loop_brief_sound, ASF_VOICE);
 
 		if(Loop_sound != -1){
 			audiostream_play(Loop_sound, Master_voice_volume, 0);
+			sound_played = true;
 		}
+	}
+
+	if(sound_played == false) {
+		fsspeech_play(FSSPEECH_FROM_BRIEFING, 
+			Campaign.missions[Campaign.current_mission].mission_loop_desc);
+
 	}
 
 	// music
@@ -307,6 +321,8 @@ void loop_brief_close()
 		audiostream_close_file(Loop_sound, 1);
 		Loop_sound = -1;
 	}
+
+	fsspeech_stop();
 
 	// stop music
 	common_music_close();
