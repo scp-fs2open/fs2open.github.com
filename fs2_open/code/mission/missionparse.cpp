@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.29 $
- * $Date: 2003-01-19 09:10:40 $
+ * $Revision: 2.30 $
+ * $Date: 2003-01-19 09:14:05 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/01/19 09:10:40  Goober5000
+ * more tweaky bug fixes
+ * --Goober5000
+ *
  * Revision 2.28  2003/01/19 08:37:52  Goober5000
  * fixed two dumb bugs in the set-support-ship code
  * --Goober5000
@@ -5141,7 +5145,7 @@ int mission_do_departure( object *objp )
 				goto do_departure_warp;
 
 		// if ship is not dying, we're good
-		if (!( (Ships[Objects[aip->goal_objnum].instance].flags & (SF_DYING | SF_DEPARTING)) || ( aip->goal_signature != Objects[aip->goal_objnum].signature) ) )
+		if ( !(Ships[Objects[aip->goal_objnum].instance].flags & (SF_DYING | SF_DEPARTING)) && ( aip->goal_signature == Objects[aip->goal_objnum].signature) ) 
 		{
 			if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
 			{
