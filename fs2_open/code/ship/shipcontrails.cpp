@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-10-19 19:29:29 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-12 00:19:55 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * 
  * 5     4/25/99 3:02p Dave
  * Build defines for the E3 build.
@@ -149,7 +152,7 @@ void ct_ship_process(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	
 	// if not a fullneb mission - do nothing
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags & MISSION_FLAG_SHIP_TRAILS){
 		return;
 	}
 
@@ -217,16 +220,15 @@ void ct_update_contrails(ship *shipp)
 #ifdef MULTIPLAYER_BETA_BUILD
 	return;
 #else
+	// if no ship trails, return
+	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
+		return;
+	}
 	vector v1;
 	matrix m;
 	int idx;
 	ship_info *sip;
 	object *objp;
-
-	// if not a fullneb mission - do nothing
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
-		return;
-	}
 
 	// get object and ship info
 	Assert(shipp != NULL);
@@ -264,17 +266,16 @@ void ct_create_contrails(ship *shipp)
 #ifdef MULTIPLAYER_BETA_BUILD
 	return;
 #else
+	// if no ship trails, return
+	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
+		return;
+	}
+
 	vector v1;
 	int idx;
 	matrix m;
 	ship_info *sip;
 	object *objp;
-
-
-	// if not a fullneb mission - do nothing
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
-		return;
-	}
 
 	// get object and ship info
 	Assert(shipp != NULL);
