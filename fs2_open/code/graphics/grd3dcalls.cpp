@@ -284,7 +284,7 @@ HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pv
 	hr = GlobalD3DVars::lpD3DDevice->DrawPrimitiveUP(prim_type, prim_count, pvertices, vertex_types[vertex_type].size);
 
 	if(FAILED(hr)) {
-		mprintf(("Failed to draw primitive"));
+		mprintf(("Failed to draw primitive %d\n",prim_count));
 	}
 		
 	return hr;

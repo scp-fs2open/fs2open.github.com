@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.66 $
- * $Date: 2004-01-23 00:14:27 $
+ * $Revision: 2.67 $
+ * $Date: 2004-01-24 15:52:25 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/01/23 00:14:27  randomtiger
+ * Fixed serious memory leak causes by use of -pcx32 flag
+ *
  * Revision 2.65  2004/01/21 17:32:05  phreak
  * added version string message if build is an inferno build
  *
@@ -2591,13 +2594,6 @@ void game_init()
 
 #ifndef FS2_DEMO
 	Asteroids_enabled = 1;		
-#endif
-
-#ifdef _WIN32
-	movie_play( NOX("intro.avi"));
-	movie_play( NOX("intro.mve"));
-	movie_set_shutdown_fgx(true);									 
-
 #endif
 
 /////////////////////////////
@@ -7600,12 +7596,12 @@ int WinMainSub(int argc, char *argv[])
 		return 1;
 	}
 
-
 // Windows code now plays the intro movie in game_init
-#ifndef _WIN32
 
-// Intro playing code has been moved above before graphics are set up to
-// avoid switching and other glitches
+	movie_play( NOX("intro.avi"));
+	movie_play( NOX("intro.mve"));
+
+#ifndef _WIN32
 	// non-demo, non-standalone, play the intro movie
 	if(!Is_standalone){
 #ifndef DEMO
@@ -7622,29 +7618,6 @@ int WinMainSub(int argc, char *argv[])
 #endif // ifdef WIN32
 		}
 #endif // ifdef RELEASE_REAL
-	}
-
-	if ( !Is_standalone ) {
-
-		// release -- movies always play
-		#if defined(NDEBUG)
-
-		// in RELEASE_REAL builds make the user stick in CD2 if there are no pilots on disk so that we guarantee he plays the movie
-		// no soup for you!
-		movie_play( NOX("intro.mve"), 0 );
-
-		// debug version, movie will only play with -showmovies
-		#elif !defined(NDEBUG)
-		
-		// no soup for you!
-		movie_play( NOX("intro.mve"), 0);
-/*
-#ifndef NDEBUG
-		if ( Cmdline_show_movies )
-			movie_play( NOX("intro.mve"), 0 );
-#endif
-*/
-		#endif // defined(NDEBUG)
 	}
 
 #endif // ifndef DEMO

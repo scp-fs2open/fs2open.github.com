@@ -8,30 +8,33 @@
 #include "debugconsole/dbugfile.h" 
 #include "graphics/gropengl.h"
 
-bool movie_shutdown_fgx = false;
+// This module links freespace movie calls to the actual API calls the play the movie.
+// This module handles all the different requires of OS and gfx API and finding the file to play
+#ifdef _WIN32
 
-void movie_set_shutdown_fgx(bool state)
+void process_messages()
 {
-	movie_shutdown_fgx = state;
+	MSG msg;
+   	while(PeekMessage(&msg, (HWND) os_get_window(), 0, 0, PM_REMOVE))
+   	{
+   		TranslateMessage(&msg);
+   		DispatchMessage(&msg);
+   	}
 }
 
-bool movie_play(char *name, int unknown_value)
+#include "graphics/grd3dinternal.h"
+
+// Play one movie
+bool movie_play(char *name)
 {
-	// This should not be uncommented
- 	if(Cmdline_dnoshowvid)
-	{
-  		return true;
-	}
+ 	if(Cmdline_dnoshowvid) return false;
 
 	char full_name[MAX_PATH];
 	GetCurrentDirectory(MAX_PATH, full_name);
 	strcat(full_name, "\\");
 	strcat(full_name, name);
 
-	/*
-	** Check file exists
-	*/
-	// Ok - this should be replaced with FS2 cfopen or something - UP
+	// Check file exists, assume its not in a vp file
 	FILE *fp = fopen(full_name,"rb");
 	DBUGFILE_OUTPUT_1("About to play: %s",full_name);
 		
@@ -43,138 +46,86 @@ bool movie_play(char *name, int unknown_value)
 
 	fclose(fp);
 
-	if(movie_shutdown_fgx == true)
+ 	if(gr_screen.mode == GR_DIRECT3D)
+   		GlobalD3DVars::D3D_activate = 0;
+
+	process_messages();
+
+	OpenClip((HWND) os_get_window(), full_name);
+
+	do
 	{
-		gr_activate(0);
+		// Give system threads time to run (and don't sample user input madly)
+		Sleep(100);
+
+		MSG msg;
+		while(PeekMessage(&msg, (HWND) os_get_window(), 0, 0, PM_REMOVE))
+		{
+ 			TranslateMessage(&msg);
+
+
+			if(msg.message == WM_ERASEBKGND)
+			{
+				continue;
+			}
+
+			PassMsgToVideoWindow((HWND) os_get_window(), msg.message, msg.wParam, msg.lParam);
+
+			if(msg.message == WM_PAINT)
+			{
+			}
+
+			if(msg.message != WM_KEYDOWN)
+			{
+			  //	DefWindowProc((HWND) os_get_window(), msg.message, msg.wParam, msg.lParam);
+		   	  	DispatchMessage(&msg);
+				continue;
+			}
 		
-		if (gr_screen.mode==GR_OPENGL)
-		{
-			gr_opengl_cleanup(0);
-		}
+			switch(msg.wParam )
+			{
+				// Quits movie if escape, space or return is pressed
+				case VK_ESCAPE:
+				case VK_SPACE:
+				case VK_RETURN:
+				{
+					// Terminate movie playback early
+					CloseClip((HWND) os_get_window());
+					LockWindowUpdate( NULL);
+			   		GlobalD3DVars::D3D_activate = 1;
+					gr_set_clear_color(0,0,0);
+
+					return true;
+				}
+			}
+ 		}
 	}
+	// Stream bit of the movie then handle windows messages
+	while(dx8show_stream_movie() == false);
 
-#ifdef _WIN32
+	// We finished playing the movie
+	CloseClip((HWND) os_get_window());
+ 	GlobalD3DVars::D3D_activate = 1;
 
-	os_app_activate_set(false);
-
-	dx8show_set_hwnd((void *) os_get_window());
-
- //		ShowWindow((HWND) os_get_window(),SW_HIDE);
- // 	ShowWindow((HWND) os_get_window(),SW_MINIMIZE);
-
-  	dx8show_play_cutscene(name);
-
- //		ShowWindow((HWND) os_get_window(),SW_RESTORE);
- //		ShowWindow((HWND) os_get_window(),SW_SHOW);
-
-	os_app_activate_set(true);
-
-
-	/*
-	// Comment this back in if the freespace window isnt coming back after the movie ends
-
-	if((HWND) os_get_window() != NULL)
-	{
-		if(GetForegroundWindow() != (HWND) os_get_window())
-		{
-			DBUGFILE_OUTPUT_0("Using SetForegroundWindow last");
- 			SetForegroundWindow((HWND) os_get_window());
-		}
-	}
-	*/
- 
-#endif // _WIN32
-
-	if(movie_shutdown_fgx == true)
-	{
-		gr_activate(1);
-		if (gr_screen.mode==GR_OPENGL)
-		{
-			gr_opengl_init(1);
-		}
-	}
-
+	gr_flip();
+	gr_set_clear_color(0,0,0);
 	return true;
 }
 
-bool movie_play_two(char *name1, char *name2, int unknown_value)
+bool movie_play_two(char *name1, char *name2)
 {
-	bool result = true;
+	bool result1 = movie_play(name1);
+	process_messages();
+	bool result2 = movie_play(name2);
 
-	// This should not be uncommented
- 	if(Cmdline_dnoshowvid)
-	{
-  		return true;
-	}
-
-	/*
-	** Check file exists
-	*/
-	FILE *fp = fopen(name1,"rb");
-	DBUGFILE_OUTPUT_1("About to play: %s",name1);
-		
-	if(fp == NULL)
-	{
-		DBUGFILE_OUTPUT_0("MOVIE ERROR: Cant open movie file");
-		
-		/*
-		** Check second file exists
-		*/
-		FILE *fp2 = fopen(name2,"rb");
-		DBUGFILE_OUTPUT_1("About to play: %s",name2);
-		
-		if(fp2 == NULL)
-		{
-			DBUGFILE_OUTPUT_0("MOVIE ERROR: Cant open movie file");
-			return true;
-		}
-
-		fclose(fp2);
-	}
-
-	fclose(fp);
-
-	if(movie_shutdown_fgx == true)
-	{
-		gr_activate(0);
-	}
-
-#ifdef _WIN32
-
-	if (gr_screen.mode==GR_OPENGL)
-	{
-		gr_opengl_cleanup();
-	}
-
-	 os_app_activate_set(false);
-		 
-  	dx8show_play_cutscene(name1);
-
-	{
-		MSG msg;
-   		while(PeekMessage(&msg, (HWND) os_get_window(), 0, 0, PM_REMOVE))
-   		{
-   			TranslateMessage(&msg);
-   			DispatchMessage(&msg);
-   		}
-	}
-
-	dx8show_play_cutscene(name2);
-
-	os_app_activate_set(true);
-
-	if (gr_screen.mode==GR_OPENGL)
-	{
-		gr_opengl_init(1);
-	}
-
-#endif
-
-	if(movie_shutdown_fgx == true)
-	{
-		gr_activate(1);
-	}
-
-	return result;
+	return result1 && result2;
 }
 
+#else
+
+// Stubs, preprocessor calls were making the win32 code more complex for no good reason.
+// Using stubs instead.
+bool movie_play(char *name) {return true;}
+bool movie_play_two(char *name1, char *name2) {return true;}
+
+#endif

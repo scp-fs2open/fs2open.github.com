@@ -1,8 +1,10 @@
 #ifndef _DX8SHOW_HEADER_FILE
 #define _DX8SHOW_HEADER_FILE
 
-bool dx8show_play_cutscene(char *filename);
-void dx8show_set_hwnd(void *hwnd);
+bool OpenClip(HWND ghApp, char *g_szFileName);
+void CloseClip(HWND ghApp);
+bool dx8show_stream_movie(void);
+void PassMsgToVideoWindow(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif
 

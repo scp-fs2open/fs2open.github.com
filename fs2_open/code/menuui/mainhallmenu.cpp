@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-06 21:10:26 $
+ * $Revision: 2.11 $
+ * $Date: 2004-01-24 15:52:26 $
  * $Author: randomtiger $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/06 21:10:26  randomtiger
+ * Added my batching solution for more efficient d3d_string.
+ * Its part of the new grd3dbatch module, most of this isnt in use but it might help out later so I've left it in.
+ *
  * Revision 2.9  2003/10/27 23:04:22  randomtiger
  * Added -no_set_gamma flags
  * Fixed up some more non standard res stuff
@@ -1100,11 +1104,11 @@ void main_hall_do(float frametime)
 #ifndef NDEBUG	
 	case KEY_1:		
 		// no soup for you!
-		movie_play("endprt2b.mve", 0);
+		movie_play("endprt2b.mve");
 		break;
 	case KEY_2:		
 		// no soup for you!
-		movie_play_two("endprt2a.mve", "endprt2b.mve", 0);
+		movie_play_two("endprt2a.mve", "endprt2b.mve");
 		break;
 	case KEY_3:		
 		main_hall_campaign_cheat();	
