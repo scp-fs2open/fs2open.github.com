@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2005-01-14 23:08:17 $
+ * $Author: argv $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.42  2005/01/02 23:22:22  Goober5000
  * got rid of a nasty nasty bug in the beam collision function, and cleaned up some of Bobboau's old comments
  * --Goober5000
@@ -2637,7 +2642,7 @@ int beam_collide_ship(obj_pair *pair)
 	bwi = &Weapon_info[b->weapon_info_index];
 
 	polymodel *pm = model_get(model_num);
-	
+
 	// maybe do a sphere line
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
@@ -3214,7 +3219,7 @@ void beam_handle_collisions(beam *b)
 			case OBJ_SHIP:	
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
-				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), -1);
+				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), b->f_collisions[idx].quadrant);
 
 				// if this is the first hit on the player ship. whack him
 				if(do_damage)
