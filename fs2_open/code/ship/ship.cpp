@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.16 $
- * $Date: 2002-12-17 02:18:39 $
+ * $Revision: 2.17 $
+ * $Date: 2002-12-20 07:09:03 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2002/12/17 02:18:39  Goober5000
+ * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
+ * --Goober5000
+ *
  * Revision 2.15  2002/12/15 06:29:24  DTP
  * Bumped fire_dealy on_empty_secondary to 1000
  *
@@ -2476,8 +2480,10 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->disruption_timestamp=timestamp(0);
 		ship_system->turret_pick_big_attack_point_timestamp = timestamp(0);
 		vm_vec_zero(&ship_system->turret_big_attack_point);
+
 		ship_system->subsys_cargo_name = -1;
 		ship_system->subsys_cargo_revealed = 0;
+		ship_system->time_subsys_cargo_revealed = 0;
 		
 		// zero flags
 		ship_system->weapons.flags = 0;
@@ -9804,6 +9810,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 #endif
 
 	subsys->subsys_cargo_revealed = 1;
+	subsys->time_subsys_cargo_revealed = Missiontime;
 
 	// if the cargo is something other than "nothing", then make a log entry
 	if ( (subsys->subsys_cargo_name > 0) && stricmp(Cargo_names[subsys->subsys_cargo_name], NOX("nothing")) ){
@@ -9856,7 +9863,7 @@ void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from
 
 	subsys->subsys_cargo_revealed = 0;
 
-	// don't log that the cargo was hidden
+	// don't log that the cargo was hidden and don't reset the time cargo revealed
 }
 
 // Return the range of the currently selected secondary weapon
