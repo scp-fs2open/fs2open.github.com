@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.7 $
+ * $Revision: 2.8 $
  * $Author: Goober5000 $
- * $Date: 2002-12-14 01:55:04 $
+ * $Date: 2002-12-14 17:09:28 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2002/12/14 01:55:04  Goober5000
+ * added mission flag to show subsystem damage for fighterbays
+ * ~Goober5000~
+ *
  * Revision 2.6  2002/12/10 05:43:34  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -245,7 +249,6 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define MISSION_FLAG_SHIP_TRAILS			(1<<5)	// Enables ship trails
 #define MISSION_FLAG_SUPPORT_REPAIRS_HULL	(1<<6)	// Toggles support ship repair of ship hulls
 #define MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT	(1<<7)	// Beam-free-all by default - Goober5000
-#define MISSION_FLAG_FIGHTERBAY_SHOW_DAMAGE	(1<<8)	// HUD shows fighterbay damage - Goober5000
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)

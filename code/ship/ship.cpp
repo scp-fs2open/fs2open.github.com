@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.13 $
- * $Date: 2002-12-10 05:41:38 $
+ * $Revision: 2.14 $
+ * $Date: 2002-12-14 17:09:27 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2002/12/10 05:41:38  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
+ * Preliminary support added for selecting additional primaries (more than 2) and secondaries (more than 3) if this is implemented later.
+ * Transports can now dock with fighters, bombers, & stealth ships.
+ *
  * Revision 2.12  2002/12/07 01:37:42  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -1688,8 +1694,10 @@ int parse_ship()
 				sp->turret_turning_rate = 0.0f;		
 			}
 
-			for (i=0; i<MAX_PRIMARY_BANKS; i++)
+			for (i=0; i<MAX_PRIMARY_BANKS; i++) {
 				sp->primary_banks[i] = -1;
+				sp->primary_bank_capacity[i] = 0;
+			}
 			for (i=0; i<MAX_SECONDARY_BANKS; i++) {
 				sp->secondary_banks[i] = -1;
 				sp->secondary_bank_capacity[i] = 0;
@@ -1698,6 +1706,11 @@ int parse_ship()
 			//	Get default primary bank weapons
 			if (optional_string("$Default PBanks:")){
 				stuff_int_list(sp->primary_banks, MAX_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+			}
+
+			// get capacity of each primary bank - Goober5000
+			if (optional_string("+Pbank Capacity:")){
+				stuff_int_list(sp->primary_bank_capacity, MAX_PRIMARY_BANKS, RAW_INTEGER_TYPE);
 			}
 
 			//	Get default secondary bank weapons

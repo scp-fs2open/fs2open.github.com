@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-14 01:55:04 $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-14 17:09:28 $
  * $Author: Goober5000 $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/14 01:55:04  Goober5000
+ * added mission flag to show subsystem damage for fighterbays
+ * ~Goober5000~
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -613,9 +617,9 @@ void draw_bounding_brackets_subobject()
 			Player->subsys_in_view = ship_subsystem_in_sight(targetp, subsys, &View_position, &subobj_pos, 0);
 
 			// AL 29-3-98: If subsystem is destroyed, draw gray brackets
-			// Goober5000: usually, this is not meant to execute for fighterbays; but with the
-			// fighterbay_show_damage mission flag, this will now execute
-			if ( (Player_ai->targeted_subsys->current_hits <= 0) && ( !subsys_is_fighterbay(Player_ai->targeted_subsys) || The_mission.flags & MISSION_FLAG_FIGHTERBAY_SHOW_DAMAGE ) )
+			// Goober5000: this will now execute for fighterbays if the bay has been given a
+			// percentage subsystem strength in ships.tbl
+			if ( (Player_ai->targeted_subsys->current_hits <= 0) && ( !subsys_is_fighterbay(Player_ai->targeted_subsys) || Player_ai->targeted_subsys->system_info->max_hits > FIGHTERBAY_DAMAGE_THRESHOLD ) )
 			{
 				gr_set_color_fast(&IFF_colors[IFF_COLOR_MESSAGE][1]);
 			} else {
