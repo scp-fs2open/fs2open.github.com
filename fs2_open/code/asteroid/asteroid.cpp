@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-10-15 22:03:23 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-17 06:52:51 $
+ * $Author: bobboau $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/10/15 22:03:23  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.2  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -2123,7 +2126,7 @@ void asteroid_parse_section()
 	required_string("$Hitpoints:");
 	stuff_float(&asip->initial_asteroid_strength);
 }
-
+extern int True_NumSpecies;
 // read in data from asteroid.tbl into Asteroid_info[] array
 void asteroid_parse_tbl()
 {
@@ -2149,7 +2152,7 @@ void asteroid_parse_tbl()
 
 	// check all read in
 #if defined(MORE_SPECIES)
-	Assert(Num_asteroid_types == True_NumSpecies * 3);
+	Assert(Num_asteroid_types == (True_NumSpecies + 1) * 3);//the species + normal asteroids
 #else
 	Assert(Num_asteroid_types == MAX_DEBRIS_TYPES);
 #endif

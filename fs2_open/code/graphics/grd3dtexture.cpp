@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-11-16 04:09:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2003-11-17 06:52:52 $
+ * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/11/16 04:09:23  Goober5000
+ * language
+ *
  * Revision 2.17  2003/11/12 00:31:45  Kazan
  * A few multi tweaks - fixed a couple warning-killing collisions between goober and me (kazan)
  *
@@ -629,7 +632,7 @@ void d3d_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h
 // tex_h == height of final texture
 int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_d3d *t, int reload, int fail_on_full)
 {
-	Assert(data != 0xdeadbeef);
+	Assert(*data != 0xdeadbeef);
 	if(t == NULL)
 	{
 		return 0;

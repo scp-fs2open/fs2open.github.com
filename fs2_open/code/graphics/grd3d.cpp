@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.43 $
- * $Date: 2003-11-17 04:25:55 $
+ * $Revision: 2.44 $
+ * $Date: 2003-11-17 06:52:52 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2003/11/17 04:25:55  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.42  2003/11/16 04:09:24  Goober5000
  * language
  *
@@ -2256,9 +2262,9 @@ void d3d_start_clip(){
 	D3DXPlaneFromPointNormal(&d3d_user_clip_plane, &point, &normal);
 
 	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetClipPlane(0, d3d_user_clip_plane);
-	Assert(hr);
+	Assert(hr == D3D_OK);
 	hr = d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , D3DCLIPPLANE0);
-	Assert(hr);
+	Assert(hr == D3D_OK);
 }
 
 /**

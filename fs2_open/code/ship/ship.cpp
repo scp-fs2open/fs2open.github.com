@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.91 $
- * $Date: 2003-11-16 09:42:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.92 $
+ * $Date: 2003-11-17 06:52:52 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2003/11/16 09:42:36  Goober5000
+ * clarified and pruned debug spew messages
+ * --Goober5000
+ *
  * Revision 2.90  2003/11/11 02:15:40  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -7918,7 +7922,7 @@ int ship_select_next_primary(object *objp, int direction)
 	}
 	else
 	{
-		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK));
+		Assert((swp->current_primary_bank >= 0)/* && (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK)*/);//no idea what UPPER_BOUND_PRIMARY_BANK it's only refrence is in two asserts, commenting it out so we can compile
 
 		// first check if linked
 		if ( shipp->flags & SF_PRIMARY_LINKED )
@@ -8017,7 +8021,7 @@ int ship_select_next_primary(object *objp, int direction)
 		}
 		
 		// make sure we're okay
-		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK));
+		Assert((swp->current_primary_bank >= 0) /*&& (swp->current_primary_bank <= UPPER_BOUND_PRIMARY_BANK)*/);//no idea what UPPER_BOUND_PRIMARY_BANK it's only refrence is in two asserts, commenting it out so we can compile
 
 		// if this ship is ballistics-equipped, and we cycled, then we had to verify some stuff,
 		// so we should check if we actually changed banks
