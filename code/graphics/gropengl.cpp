@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.73 $
- * $Date: 2004-04-14 10:24:51 $
+ * $Revision: 2.74 $
+ * $Date: 2004-04-26 12:43:58 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2004/04/14 10:24:51  taylor
+ * fix for lines and shaders - shouldn't be textured
+ *
  * Revision 2.72  2004/04/11 13:56:33  randomtiger
  * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
  *
@@ -653,16 +656,15 @@ extern int Texture_compression_enabled;
 volatile int GL_activate = 0;
 volatile int GL_deactivate = 0;
 
-static char *Gr_saved_screen = NULL;
-static int Gr_saved_screen_bitmap;
+static ubyte *GL_saved_screen = NULL;
+static ubyte *GL_saved_mouse_data = NULL;
+static int GL_mouse_saved_size = 32; // width and height, so they're equal
 
 static int Gr_opengl_mouse_saved = 0;
 static int Gr_opengl_mouse_saved_x1 = 0;
 static int Gr_opengl_mouse_saved_y1 = 0;
 static int Gr_opengl_mouse_saved_x2 = 0;
 static int Gr_opengl_mouse_saved_y2 = 0;
-static int Gr_opengl_mouse_saved_w = 0;
-static int Gr_opengl_mouse_saved_h = 0;
 
 extern int Cmdline_window;
 extern int Interp_multitex_cloakmap;
@@ -729,12 +731,12 @@ void opengl_minimize()
 	ChangeDisplaySettings(NULL,0);
 	os_resume();
 }
-
+/*
 static inline void opengl_set_max_anistropy()
 {
 //	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
 }
-
+*/
 gr_texture_source	GL_current_tex_src=TEXTURE_SOURCE_NONE;
 gr_alpha_blend		GL_current_alpha_blend=ALPHA_BLEND_NONE;
 gr_zbuffer_type		GL_current_ztype=ZBUFFER_TYPE_NONE;
@@ -954,7 +956,7 @@ void gr_opengl_flip()
 	 	gr_reset_clip();
 	 	mouse_get_pos( &mx, &my );
 	 	
-	 	gr_opengl_save_mouse_area(mx,my,24,24);
+	 	gr_opengl_save_mouse_area(mx,my,GL_mouse_saved_size,GL_mouse_saved_size);
 	 	
 	 	if ( Gr_cursor == -1 )  {
 	 		// stuff
@@ -1458,6 +1460,32 @@ void gr_opengl_string( int sx, int sy, char *s )
 	TIMERBAR_POP();
 }
 
+// this is fsckin' stupid but doesn't appear to hurt performance a noticable amount
+// don't use any g3_* stuff here or the framerate will get shot in the head, and die
+void gr_opengl_line_htl(float sx1, float sy1, float sx2, float sy2)
+{
+	ubyte zero[]={0,0,0};
+
+	extern float View_zoom;
+
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+
+	glBegin (GL_LINES);
+		glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+
+		glSecondaryColor3ubvEXT(zero);
+
+		glVertex3f (sx2, sy2, -0.99f);
+		glVertex3f (sx1, sy1, -0.99f);
+	glEnd ();
+
+	// this is the basic call used for everything but HudTargetBox.
+	// HTB ends it's proj matrix just after this is called so it's not bad, just be aware
+	gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+}
+
 void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 {
 	if(resize)
@@ -1466,6 +1494,7 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 		gr_resize_screen_pos(&x2, &y2);
 	}
 
+	ubyte zero[]={0,0,0};
 	int clipped = 0, swapped=0;
 
 	gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
@@ -1484,7 +1513,6 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 		glBegin (GL_POINTS);
 		  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 		 
-		  ubyte zero[]={0,0,0};
 		  glSecondaryColor3ubvEXT(zero);
 
 		  glVertex3f (sx1, sy1, -0.99f);
@@ -1506,11 +1534,17 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 			sx1 += 0.5f;
 		}
 	}
-	
+
+	// prepare to lose brain cells - then find a better fix
+	extern int GL_htl_projection_matrix_set;
+	if (!Cmdline_nohtl && GL_htl_projection_matrix_set) {
+		gr_opengl_line_htl(sx1, sy1, sx2, sy2);
+		return;
+	}
+
 	glBegin (GL_LINES);
 	  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 	  
-	  ubyte zero[]={0,0,0};
 	  glSecondaryColor3ubvEXT(zero);
 
 	  glVertex3f (sx2, sy2, -0.99f);
@@ -1984,7 +2018,7 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 	}
 
 	//maybe do a spec map
-	if (SPECMAP > -1)
+	if ( (SPECMAP > -1) && !Cmdline_nospec && (flags & TMAP_FLAG_TEXTURED) )
 	{
 		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 		GLOWMAP=-1;
@@ -2075,7 +2109,7 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 		ogl_maybe_pop_arb1=0;
 	}
 
-	if ((SPECMAP > -1) && (flags & TMAP_FLAG_TEXTURED))
+	if ((SPECMAP > -1) && !Cmdline_nospec && (flags & TMAP_FLAG_TEXTURED))
 	{
 		opengl_set_spec_mapping(tmap_type,&u_scale,&v_scale);
 		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha,1);
@@ -2622,20 +2656,36 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 	if (gr_screen.bits_per_pixel == 16) {
 		glReadPixels(0, gr_screen.max_h-h, w, h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
 	} else if (gr_screen.bits_per_pixel == 32) {
-		glReadPixels(0, gr_screen.max_h-h, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glReadPixels(0, gr_screen.max_h-h, w, h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
 	}
 
 
 }
 
 
-#define MAX_SAVE_SIZE (32*32)
-static ubyte Gr_opengl_mouse_saved_data[MAX_SAVE_SIZE*2];
-
+#define MAX_MOUSE_SAVE_SIZE (32*32)
 #define CLAMP(x,r1,r2) do { if ( (x) < (r1) ) (x) = (r1); else if ((x) > (r2)) (x) = (r2); } while(0)
 
 void gr_opengl_save_mouse_area(int x, int y, int w, int h)
 {
+	GLenum fmt;
+	int cursor_size;
+
+	if (gr_screen.bits_per_pixel == 32) {
+		fmt = GL_UNSIGNED_INT_8_8_8_8_REV;
+	} else {
+		fmt = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	}
+
+	// lazy - taylor
+	cursor_size = (GL_mouse_saved_size * GL_mouse_saved_size);
+
+	// no reason to be bigger than the cursor, should never be smaller
+	if (w != GL_mouse_saved_size)
+		w = GL_mouse_saved_size;
+	if (h != GL_mouse_saved_size)
+		h = GL_mouse_saved_size;
+
 	Gr_opengl_mouse_saved_x1 = x;
 	Gr_opengl_mouse_saved_y1 = y;
 	Gr_opengl_mouse_saved_x2 = x+w-1;
@@ -2646,111 +2696,112 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h)
 	CLAMP(Gr_opengl_mouse_saved_y1, gr_screen.clip_top, gr_screen.clip_bottom );
 	CLAMP(Gr_opengl_mouse_saved_y2, gr_screen.clip_top, gr_screen.clip_bottom );
         
-	Gr_opengl_mouse_saved_w = Gr_opengl_mouse_saved_x2 - Gr_opengl_mouse_saved_x1 + 1;
-	Gr_opengl_mouse_saved_h = Gr_opengl_mouse_saved_y2 - Gr_opengl_mouse_saved_y1 + 1;
-
-	if ( Gr_opengl_mouse_saved_w < 1 ) return;
-	if ( Gr_opengl_mouse_saved_h < 1 ) return;
-        
-	Assert( (Gr_opengl_mouse_saved_w*Gr_opengl_mouse_saved_h) <= MAX_SAVE_SIZE );
+	Assert( (w * h) <= MAX_MOUSE_SAVE_SIZE );
 
 	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
         
+	// this should really only haved to be malloc'd once
+	if (GL_saved_mouse_data == NULL)
+		GL_saved_mouse_data = (ubyte*)malloc(cursor_size * gr_screen.bytes_per_pixel);
+
+	if (GL_saved_mouse_data == NULL)
+		return;
+
 	glReadBuffer(GL_BACK);
-	glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, Gr_opengl_mouse_saved_data);
+	glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA, fmt, GL_saved_mouse_data);
         
 	Gr_opengl_mouse_saved = 1;
 }
 
-ubyte *opengl_screen=NULL;
-GLenum screen_tex_handle;
-int scr_bm;
-float maxu, maxv;
-
 int gr_opengl_save_screen()
 {
-	GLenum fmt=0;
+	GLenum fmt = 0;
+	int rc = -1;
+	ubyte *sptr, *dptr;
+	ubyte *opengl_screen_tmp = NULL;
+
 	gr_reset_clip();
 
-	if ( opengl_screen )  {
-		mprintf(( "Screen already saved!\n" ));
-		return -1;
+	if (gr_screen.bits_per_pixel == 32) {
+		fmt = GL_UNSIGNED_INT_8_8_8_8_REV;
+	} else {
+		fmt = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	}
 
-	fmt=GL_UNSIGNED_SHORT_1_5_5_5_REV;
-	opengl_screen = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel);
+	if (!GL_saved_screen)
+		GL_saved_screen = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel);
 
-	ubyte *opengl_screen_tmp = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
-	if (!opengl_screen_tmp) 
-	{
-		mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
-		return -1;
-	}
-
-	if (!opengl_screen) 
-	{
+	if (!GL_saved_screen) 
+ 	{
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
-		return -1;
-	}
+ 		return -1;
+ 	}
+
+	opengl_screen_tmp = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
+
+	if (!opengl_screen_tmp) 
+ 	{
+		mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
+ 		return -1;
+ 	}
 	
 
 	glReadBuffer(GL_FRONT);
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, fmt, opengl_screen_tmp);
         
-	ubyte *sptr, *dptr;
-        
-	sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w*gr_screen.max_h*2];
-	dptr = (ubyte *)opengl_screen;
+   
+	sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w*gr_screen.max_h*gr_screen.bytes_per_pixel];
+	dptr = (ubyte *)GL_saved_screen;
+
 	for (int j = 0; j < gr_screen.max_h; j++)
 	{
-		sptr -= gr_screen.max_w*2;
-		memcpy(dptr, sptr, gr_screen.max_w*2);
-		dptr += gr_screen.max_w*2;
+		sptr -= gr_screen.max_w*gr_screen.bytes_per_pixel;
+		memcpy(dptr, sptr, gr_screen.max_w*gr_screen.bytes_per_pixel);
+		dptr += gr_screen.max_w*gr_screen.bytes_per_pixel;
 	}
         
 	free(opengl_screen_tmp);
-        
-	if (Gr_opengl_mouse_saved)
+
+	if (Gr_opengl_mouse_saved && GL_saved_mouse_data)
 	{
-		sptr = (ubyte *)Gr_opengl_mouse_saved_data;
-		dptr = (ubyte *)&opengl_screen[2*(Gr_opengl_mouse_saved_x1+(Gr_opengl_mouse_saved_y2)*gr_screen.max_w)];
-		for (int i = 0; i < Gr_opengl_mouse_saved_h; i++)
+		sptr = (ubyte *)GL_saved_mouse_data;
+		dptr = (ubyte *)&GL_saved_screen[(Gr_opengl_mouse_saved_x1+Gr_opengl_mouse_saved_y2*gr_screen.max_w)*gr_screen.bytes_per_pixel];
+
+		for (int i = 0; i < GL_mouse_saved_size; i++)
 		{
-			memcpy(dptr, sptr, Gr_opengl_mouse_saved_w*2);
-			sptr += 32*2;
-			dptr -= gr_screen.max_w*2;
+			memcpy(dptr, sptr, GL_mouse_saved_size * gr_screen.bytes_per_pixel);
+			sptr += GL_mouse_saved_size * gr_screen.bytes_per_pixel;
+			dptr -= gr_screen.max_w * gr_screen.bytes_per_pixel;
 		}
 	}
 
-	scr_bm=bm_create(16, gr_screen.max_w, gr_screen.max_h, opengl_screen, 0);
+	rc = bm_create(gr_screen.bits_per_pixel, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 
-	return 1;
+	return rc;
 }
 
-void gr_opengl_restore_screen(int id)
+void gr_opengl_restore_screen(int bmp_id)
 {
 	gr_reset_clip();
-	
-	if ( !opengl_screen ) {
+
+	if ( !GL_saved_screen ) {
 		gr_clear();
 		return;
 	}
 
-	gr_set_bitmap(scr_bm);
-	gr_bitmap(0,0);
-
-
+	gr_set_bitmap(bmp_id);
+ 	gr_bitmap(0,0);
 }
 
-void gr_opengl_free_screen(int id)
+void gr_opengl_free_screen(int bmp_id)
 {
-	if (!opengl_screen)
+	if (!GL_saved_screen)
 		return;
 
-	free(opengl_screen);
-	opengl_screen=NULL;
+	free(GL_saved_screen);
+	GL_saved_screen = NULL;
 
-	bm_release(scr_bm);
+	bm_release(bmp_id);
 }
 
 void gr_opengl_dump_frame_start(int first_frame, int frames_between_dumps)
@@ -2832,8 +2883,13 @@ void gr_opengl_bitmap_internal(int x,int y,int w,int h,int sx,int sy)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, 4, wtemp, htemp, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
-	glTexSubImage2D(GL_TEXTURE_2D, 0,0,0,w,h, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, sptr);
+	if (bmp->bpp == 32) {
+		glTexImage2D(GL_TEXTURE_2D, 0, 4, wtemp, htemp, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glTexSubImage2D(GL_TEXTURE_2D, 0,0,0,w,h, GL_BGRA,GL_UNSIGNED_INT_8_8_8_8_REV, sptr);
+	} else {
+		glTexImage2D(GL_TEXTURE_2D, 0, 4, wtemp, htemp, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+		glTexSubImage2D(GL_TEXTURE_2D, 0,0,0,w,h, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, sptr);
+	}
 	
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,0);
@@ -3071,9 +3127,18 @@ void gr_opengl_init(int reinit)
 	}
 
 	//shut these command line parameters down if they are in use
-	Cmdline_jpgtga		  = 0;
-	Cmdline_pcx32		  = 0;
 	Cmdline_batch_3dunlit = 0;
+
+	// why bother
+	if (bpp != 32) {
+		Cmdline_pcx32 = 0;
+		Cmdline_jpgtga = 0;
+	}
+
+#ifndef USE_DEVIL
+	// turn off jpgtga if DevIL isn't used
+	Cmdline_jpgtga = 0;
+#endif
 
 	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 
@@ -3425,6 +3490,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	gr_screen.gf_set_clear_color = gr_opengl_set_clear_color;
 
+	gr_screen.gf_preload = gr_opengl_preload;
+
 	gr_screen.gf_push_texture_matrix = gr_opengl_push_texture_matrix;
 	gr_screen.gf_pop_texture_matrix = gr_opengl_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
@@ -3497,7 +3564,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 
 	//allow VBOs to be used
-	if ( (!Cmdline_nohtl) && (GL_Extensions[GL_ARB_VBO_BIND_BUFFER].enabled))
+	if ( (!Cmdline_nohtl) && (!Cmdline_novbo) && (GL_Extensions[GL_ARB_VBO_BIND_BUFFER].enabled))
 		VBO_ENABLED = 1;
 	
 //	glTexParameteri(GL_TEXTURE_2D,GL_GENERATE_MIPMAP_SGIS,GL_TRUE);
@@ -3525,6 +3592,9 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_ext;
 	else
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_no_combine;
+
+	// setup the lighting stuff that will get used later
+	opengl_init_light();
 
 	glDisable(GL_LIGHTING); //making sure of it
 
