@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.41 $
- * $Date: 2003-01-19 01:07:42 $
- * $Author: bobboau $
+ * $Revision: 2.42 $
+ * $Date: 2003-01-19 07:02:15 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/01/19 01:07:42  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.40  2003/01/18 09:25:40  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -2085,7 +2088,9 @@ void ship_level_init()
 
 	// mwa removed 11/24/97  num_ships = 0;
 	Num_exited_ships = 0;
-	for (i=0; i<MAX_SHIPS; i++ )	{
+	for (i=0; i<MAX_SHIPS; i++ )
+	{
+		Ships[i].ship_name[0] = '\0';
 		Ships[i].objnum = -1;
 	}
 
@@ -7437,6 +7442,28 @@ int ship_name_lookup(char *name, int inc_players)
 	return -1;
 }
 
+// Goober5000: return the ship index of the ship with name *name, without regard to whether
+// the ship is in the mission or not
+int ship_name_lookup_absolute(char *name)
+{
+	int	i;
+
+	// bogus
+	if(name == NULL){
+		return -1;
+	}
+
+	for (i=0; i<MAX_SHIPS; i++)
+	{
+		if (strlen(Ships[i].ship_name) > 0)
+			if (!stricmp(name, Ships[i].ship_name))
+				return i;
+	}
+	
+	// couldn't find it
+	return -1;
+}
+
 int ship_type_name_lookup(char *name)
 {
 	int idx;
@@ -10559,8 +10586,20 @@ void ship_page_in_model_textures(int modelnum)
 //	In multiplayer -- to be coded by Mark Allender after 5/4/98 -- MK, 5/4/98
 int is_support_allowed(object *objp)
 {
-	if (The_mission.disallow_support){
+	// check updated mission conditions to allow support
+	if (!(The_mission.support_ships.max_support_ships) && (The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships))
 		return 0;
+
+	// make sure, if exiting from bay, that parent ship is in the mission!
+	if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
+	{
+		Assert(The_mission.support_ships.arrival_anchor != -1);
+
+		// ensure it's in-mission
+		if (ship_name_lookup(Parse_names[The_mission.support_ships.arrival_anchor]) < 0)
+		{
+			return 0;
+		}
 	}
 
 	if ( Game_mode & GM_NORMAL ) {

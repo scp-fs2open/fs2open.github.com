@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-12-24 07:42:29 $
+ * $Revision: 2.6 $
+ * $Date: 2003-01-19 07:02:16 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/24 07:42:29  Goober5000
+ * added change-ai-class and is-ai-class, and I think I may also have nailed the
+ * is-iff bug; did some other bug hunting as well
+ * --Goober5000
+ *
  * Revision 2.4  2002/12/17 02:18:40  Goober5000
  * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
  * --Goober5000
@@ -4879,7 +4884,7 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 		}
 	} else {
 		if ( code == REPAIR_INFO_WARP_ADD ){
-			mission_warp_in_support_ship( repaired_objp );
+			mission_bring_in_support_ship( repaired_objp );
 		} else {
 			mission_remove_scheduled_repair( repaired_objp );
 		}

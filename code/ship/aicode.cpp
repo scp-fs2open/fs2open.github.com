@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.18 $
- * $Date: 2003-01-19 01:07:42 $
- * $Author: bobboau $
+ * $Revision: 2.19 $
+ * $Date: 2003-01-19 07:02:15 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/01/19 01:07:42  bobboau
+ * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ *
  * Revision 2.17  2003/01/18 23:25:38  Goober5000
  * made "no-subspace-drive" applicable to all ships and fixed a really *STUPID*
  * bug that made FRED keep crashing (missing comma, bleagh!)
@@ -13082,6 +13085,7 @@ void ai_bay_depart()
 	// check if parent ship still exists, if not abort depart 
 	if ( aip->goal_signature != Objects[aip->goal_objnum].signature ) {
 		aip->mode = AIM_NONE;
+		Ships[Pl_objp->instance].flags &= ~SF_DEPART_DOCKBAY;
 		return;
 	}
 
@@ -13500,6 +13504,15 @@ void ai_warp_out(object *objp)
 		break;
 	}
 	case AIS_WARP_5:
+		break;
+	case AIS_DEPART_TO_BAY:	// no warp stuff
+		// check if parent ship still exists; if not, abort depart
+		if ( aip->goal_signature != Objects[aip->goal_objnum].signature )
+		{
+			aip->goals[aip->active_goal].ai_mode = AI_GOAL_NONE;
+			aip->goals[aip->active_goal].ai_submode = 0;
+			aip->mode = AIM_NONE;
+		}
 		break;
 	default:
 		Int3();		//	Illegal submode for warping out.
@@ -15530,7 +15543,7 @@ int ai_issue_rearm_request(object *requester_objp)
 		// call to warp in repair ship!!!!  for now, warp in any number of ships needed.  Should cap it to
 		// some reasonable max (or let support ships warp out).  We should assume here that ship_find_repair_ship()
 		// would have returned a valid object if there are too many support ships already in the mission
-		mission_warp_in_support_ship( requester_objp );
+		mission_bring_in_support_ship( requester_objp );
 
 		return -1;
 	}

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.32 $
- * $Date: 2003-01-18 09:25:41 $
+ * $Revision: 2.33 $
+ * $Date: 2003-01-19 07:02:16 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/01/18 09:25:41  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.31  2003/01/15 21:29:05  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
  *
@@ -1653,6 +1658,141 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				{
 					return SEXP_CHECK_INVALID_AI_CLASS;
 				}
+
+				break;
+
+			case OPF_ARRIVAL_LOCATION:
+				if (type2 != SEXP_ATOM_STRING)
+				{
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				for (i=0; i<MAX_ARRIVAL_NAMES; i++)
+				{
+					if (!stricmp(Arrival_location_names[i], CTEXT(index)))
+					{
+						break;
+					}
+				}
+
+				if (i == MAX_ARRIVAL_NAMES)
+				{
+					return SEXP_CHECK_INVALID_ARRIVAL_LOCATION;
+				}
+
+				break;
+
+			case OPF_DEPARTURE_LOCATION:
+				if (type2 != SEXP_ATOM_STRING)
+				{
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				for (i=0; i<MAX_DEPARTURE_NAMES; i++)
+				{
+					if (!stricmp(Departure_location_names[i], CTEXT(index)))
+					{
+						break;
+					}
+				}
+
+				if (i == MAX_DEPARTURE_NAMES)
+				{
+					return SEXP_CHECK_INVALID_DEPARTURE_LOCATION;
+				}
+
+				break;
+
+			case OPF_ARRIVAL_ANCHOR_ALL:
+				if (type2 != SEXP_ATOM_STRING)
+				{
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+				else
+				{
+					int valid = 0;
+
+					for (i=0; i<MAX_SPECIAL_ARRIVAL_ANCHORS; i++)
+					{
+						if (!stricmp(Special_arrival_anchor_names[i], CTEXT(index)))
+						{
+							valid = 1;
+							break;
+						}
+					}
+
+					if (ship_name_lookup(CTEXT(index), 1) >= 0)
+					{
+						valid = 1;
+					}
+
+					if (!Fred_running && !mission_parse_ship_arrived(CTEXT(index)))	// 0 when on arrival list
+					{
+						valid = 1;
+					}
+
+					if (!valid)
+					{
+						return SEXP_CHECK_INVALID_ARRIVAL_ANCHOR_ALL;
+					}
+				}
+
+				break;
+
+			case OPF_SHIP_WITH_BAY:
+				if (type2 != SEXP_ATOM_STRING){
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (ship_name_lookup(CTEXT(index), 1) < 0)
+				{
+					if (Fred_running || mission_parse_ship_arrived(CTEXT(index)))	// == 0 when still on arrival list
+					{
+						return SEXP_CHECK_INVALID_SHIP;
+					}
+				}
+
+				// ship exists at this point
+
+				// now determine if this ship has a docking bay
+				{
+					polymodel *pm;
+				
+					pm = model_get( Ships[ship_name_lookup_absolute(CTEXT(index))].modelnum );
+					Assert( pm );
+
+					if ( pm->ship_bay && (pm->ship_bay->num_paths > 0) )
+					{
+						// valid
+						break;
+					}
+					else
+					{
+						return SEXP_CHECK_INVALID_SHIP_WITH_BAY;
+					}
+				}
+				break;
+
+			case OPF_SUPPORT_SHIP_CLASS:
+				if (type2 != SEXP_ATOM_STRING){
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (!stricmp(CTEXT(index), "<any support ship class>"))
+					break;
+
+				for (i = 0; i < Num_ship_types; i++ ) {
+					if ( !stricmp(CTEXT(index), Ship_info[i].name) )
+					{
+						if (Ship_info[i].flags & SIF_SUPPORT)
+						{
+							break;
+						}
+					}
+				}
+
+				if ( i == Num_ship_types )
+					return SEXP_CHECK_INVALID_SUPPORT_SHIP_CLASS;
 
 				break;
 
@@ -4418,27 +4558,6 @@ int sexp_special_warpout_name( int node )
 	// set special warpout objnum
 	Ships[shipnum].special_warp_objnum = knossos_num;
 	return 0;
-}
-
-// Goober5000: return the ship index of the ship with name *name, without regard to whether
-// the ship is in the mission or not
-int ship_name_lookup_absolute(char *name)
-{
-	int	i;
-
-	// bogus
-	if(name == NULL){
-		return -1;
-	}
-
-	for (i=0; i<MAX_SHIPS; i++)
-	{
-		if (!stricmp(name, Ships[i].ship_name))
-			return i;
-	}
-	
-	// couldn't find it
-	return -1;
 }
 
 // function which determines if N seconds have elapsed since all discovery of all cargo
@@ -11136,6 +11255,21 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_UNKNOWN_ERROR:
 			return "Unknown error";
+
+		case SEXP_CHECK_INVALID_SUPPORT_SHIP_CLASS:
+			return "Invalid support ship class";
+
+		case SEXP_CHECK_INVALID_SHIP_WITH_BAY:
+			return "Ship does not have a fighter bay";
+
+		case SEXP_CHECK_INVALID_ARRIVAL_LOCATION:
+			return "Invalid arrival location";
+
+		case SEXP_CHECK_INVALID_DEPARTURE_LOCATION:
+			return "Invalid departure location";
+
+		case SEXP_CHECK_INVALID_ARRIVAL_ANCHOR_ALL:
+			return "Invalid universal arrival anchor";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);

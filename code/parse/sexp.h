@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.23 $
+ * $Revision: 2.24 $
  * $Author: Goober5000 $
- * $Date: 2003-01-10 04:14:19 $
+ * $Date: 2003-01-19 07:02:16 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/01/10 04:14:19  Goober5000
+ * I found these two beautiful functions in ship.cpp - ship_change_model
+ * and change_ship_type - so I made them into sexps :)
+ * --Goober5000
+ *
  * Revision 2.22  2003/01/07 20:06:44  Goober5000
  * added ai-chase-any-except sexp
  * --Goober5000
@@ -462,6 +467,12 @@
 #define	OPF_AWACS_SUBSYSTEM		37		// an awacs subsystem
 #define OPF_CARGO				38		// a cargo string (currently used for set-cargo and is-cargo); added by Goober5000
 #define OPF_AI_CLASS			39		// an AI class; added by Goober5000
+#define OPF_SUPPORT_SHIP_CLASS	40		// Goober5000
+#define OPF_ARRIVAL_LOCATION	41		// Goober5000
+#define OPF_ARRIVAL_ANCHOR_ALL	42		// Goober5000
+#define OPF_DEPARTURE_LOCATION	43		// Goober5000
+#define OPF_SHIP_WITH_BAY		44		// Goober5000
+
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
@@ -686,6 +697,7 @@
 #define OP_PRIMITIVE_SENSORS_SET_RANGE	(0x0070	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CHANGE_SHIP_CLASS			(0x0071	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CHANGE_SHIP_MODEL			(0x0072	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_SUPPORT_SHIP				(0x0073 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions
@@ -883,6 +895,11 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_VARIABLE				-128
 #define SEXP_CHECK_INVALID_AI_CLASS				-129
 #define SEXP_CHECK_UNKNOWN_ERROR				-130
+#define SEXP_CHECK_INVALID_SUPPORT_SHIP_CLASS	-131
+#define SEXP_CHECK_INVALID_SHIP_WITH_BAY		-132
+#define SEXP_CHECK_INVALID_ARRIVAL_LOCATION		-133
+#define SEXP_CHECK_INVALID_DEPARTURE_LOCATION	-134
+#define SEXP_CHECK_INVALID_ARRIVAL_ANCHOR_ALL	-135
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.25 $
- * $Date: 2003-01-18 23:25:39 $
+ * $Revision: 2.26 $
+ * $Date: 2003-01-19 07:02:16 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/01/18 23:25:39  Goober5000
+ * made "no-subspace-drive" applicable to all ships and fixed a really *STUPID*
+ * bug that made FRED keep crashing (missing comma, bleagh!)
+ * --Goober5000
+ *
  * Revision 2.24  2003/01/18 09:25:41  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -675,7 +680,7 @@ char *Special_arrival_anchor_names[MAX_SPECIAL_ARRIVAL_ANCHORS] =
 	"<any neutral player>",
 };
 
-char *Departure_location_names[MAX_ARRIVAL_NAMES] = {
+char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
 	{"Hyperspace"}, {"Docking Bay"},
 };
 
@@ -909,9 +914,21 @@ void parse_mission_info(mission *pm)
 		stuff_int(&pm->scramble);
 	}
 
-	pm->disallow_support = 0;
-	if ( optional_string("+Disallow Support:")) {
-		stuff_int(&pm->disallow_support);
+	// set up support ships
+	pm->support_ships.arrival_location = 0;		// ASSUMPTION: hyperspace
+	pm->support_ships.arrival_anchor = -1;
+	pm->support_ships.departure_location = 0;	// ASSUMPTION: hyperspace
+	pm->support_ships.departure_anchor = -1;
+	pm->support_ships.max_support_ships = 0;	// infinite
+	pm->support_ships.ship_class = -1;
+	pm->support_ships.tally = 0;
+
+	if ( optional_string("+Disallow Support:"))
+	{
+		int temp;
+		stuff_int(&temp);
+
+		pm->support_ships.max_support_ships = -1;
 	}
 
 	if (optional_string("+All Teams Attack")){
@@ -1772,6 +1789,13 @@ int parse_create_object(p_object *objp)
 
 	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_DEPARTURE_WARP) )
 		Ships[shipnum].flags |= SF_NO_DEPARTURE_WARP;
+
+	// Goober5000 - arg... if ship is in a wing, copy the wing's depature information to the ship
+	if ( Ships[shipnum].wingnum != -1 )
+	{
+		Ships[shipnum].departure_location = Wings[Ships[shipnum].wingnum].departure_location;
+		Ships[shipnum].departure_anchor = Wings[Ships[shipnum].wingnum].departure_anchor;
+	}
 
 	// mwa -- 1/30/98.  Do both flags.  Fred uses the ship flag, and FreeSpace will use the object
 	// flag. I'm to lazy at this point to deal with consolidating them.
@@ -5028,19 +5052,65 @@ int mission_do_departure( object *objp )
 
 	Assert ( objp->type == OBJ_SHIP );
 	shipp = &Ships[objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
+	ai_goal *aigp = &aip->goals[aip->active_goal];
 
 	MONITOR_INC(NumShipDepartures,1);
 
+	// if ship has no subspace drive but is cued to warp out, find it somewhere to depart
+	if ((shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) && (shipp->departure_location != DEPART_AT_DOCK_BAY))
+	{
+		ship_obj	*so;
+		ship		*sp;
+		int parent_ship = -1;
+
+		// locate a capital ship on the same team:
+		so = GET_FIRST(&Ship_obj_list);
+		while(so != END_OF_LIST(&Ship_obj_list))
+		{
+			sp = &Ships[Objects[so->objnum].instance];
+			if ( (Ship_info[sp->ship_info_index].flags & (SIF_HUGE_SHIP)) && (sp->team == shipp->team) )
+			{
+				parent_ship = Objects[so->objnum].instance;
+				break;
+			}
+			so = GET_NEXT(so);
+		} 
+
+		if (parent_ship != -1)
+		{
+			shipp->departure_location = DEPART_AT_DOCK_BAY;
+			shipp->departure_anchor = parent_ship;
+		}
+		// if we couldn't find anybody, we're doomed! ;)
+		else
+		{
+			shipp->flags &= ~SF_DEPARTING;
+			aigp->ai_mode = AI_GOAL_NONE;
+			aigp->ai_submode = 0;
+			aip->mode = AIM_NONE;
+			return 0;
+		}
+	}
+
 	// if departing to a docking bay, try to find the anchor ship to depart to.  If not found, then
 	// just make it warp out like anything else.
-	if ( shipp->departure_location == DEPART_AT_DOCK_BAY ) {
+	if ( shipp->departure_location == DEPART_AT_DOCK_BAY )
+	{
+		// if told to warp out, depart to ship instead:
+		if (aigp->ai_mode == AI_GOAL_WARP)
+		{
+			aigp->ai_submode = AIS_DEPART_TO_BAY;
+			Ai_info[shipp->ai_index].mode = AIM_BAY_DEPART;
+		}
+
 		int anchor_shipnum;
 		char *name;
 
 		Assert( shipp->departure_anchor >= 0 );
 		name = Parse_names[shipp->departure_anchor];
 
-		// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
+		// see if ship is yet to arrive.  If so, then warp.
 		// Goober5000 - ships which have no warp drives MUST not warp
 		if ( mission_parse_get_arrival_ship( name ) )
 			if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
@@ -5055,7 +5125,22 @@ int mission_do_departure( object *objp )
 			if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
 				goto do_departure_warp;
 
-		return ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1;
+		if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
+		{
+			return 1;
+		}
+		else
+		{
+			// if we have no subspace drive, do something else
+			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+			{
+				shipp->flags &= ~SF_DEPARTING;
+				aigp->ai_mode = AI_GOAL_NONE;
+				aigp->ai_submode = 0;
+				aip->mode = AIM_NONE;
+				return 0;
+			}
+		}
 	}
 
 do_departure_warp:
@@ -5148,11 +5233,7 @@ void mission_eval_departures()
 
 				Assert ( shipp->objnum != -1 );
 				objp = &Objects[shipp->objnum];
-
-				// copy the wing's depature information to the ship
-				shipp->departure_location = wingp->departure_location;
-				shipp->departure_anchor = wingp->departure_anchor;
-
+				
 				mission_do_departure( objp );
 				// don't add to wingp->total_departed here -- this is taken care of in ship code.
 			}
@@ -5323,13 +5404,14 @@ int get_warp_in_pos(vector *pos, object *objp, float x, float y, float z)
 	return pp_collide_any(&objp->pos, pos, objp->radius, objp, NULL, 1);
 }
 
-void mission_warp_in_support_ship( object *requester_objp )
+// modified by Goober5000 to allow more flexibility in support ships
+void mission_bring_in_support_ship( object *requester_objp )
 {
 	vector center, warp_in_pos;
 	//float mag;
 	p_object *pobj;
-	int i, requester_species;
 	ship *requester_shipp;
+	int i, requester_species;
 
 	Assert ( requester_objp->type == OBJ_SHIP );
 	requester_shipp = &Ships[requester_objp->instance];	//	MK, 10/23/97, used to be ->type, bogus, no?
@@ -5340,6 +5422,15 @@ void mission_warp_in_support_ship( object *requester_objp )
 		return;
 	}
 	
+	// create a parse object, and put it onto the ship_arrival_list.  This whole thing kind of sucks.
+	// I want to put it into a parse object since it needs to arrive just a little later than
+	// this function is called.  I have to make some assumptions in the code about values for the parse
+	// object since I'm no longer working with a mission file.  These exceptions will be noted with
+	// comments
+
+	Arriving_support_ship = &Support_ship_pobj;
+	pobj = Arriving_support_ship;
+
 	// get average position of all ships
 	obj_get_average_ship_pos( &center );
 	vm_vec_sub( &warp_in_pos, &center, &(requester_objp->pos) );
@@ -5370,14 +5461,11 @@ void mission_warp_in_support_ship( object *requester_objp )
 				if (!get_warp_in_pos(&warp_in_pos, requester_objp, -1.0f, -0.1f, 1.0f))
 					get_warp_in_pos(&warp_in_pos, requester_objp, 0.1f, 1.0f, 0.2f);
 
-	// create a parse object, and put it onto the ship_arrival_list.  This whole thing kind of sucks.
-	// I want to put it into a parse object since it needs to arrive just a little later than
-	// this function is called.  I have to make some assumptions in the code about values for the parse
-	// object since I'm no longer working with a mission file.  These exceptions will be noted with
-	// comments
+	// position for ship if it warps in
+	pobj->pos = warp_in_pos;
 
-	Arriving_support_ship = &Support_ship_pobj;
-	pobj = Arriving_support_ship;
+	// tally the ship
+	The_mission.support_ships.tally++;
 
 	// create a name for the ship.  use "Support #".  look for collisions until one isn't found anymore
 	i = 1;
@@ -5388,31 +5476,35 @@ void mission_warp_in_support_ship( object *requester_objp )
 		i++;
 	} while(1);
 
-	pobj->pos = warp_in_pos;
 	vm_set_identity( &(pobj->orient) );
 
 	// *sigh*.  Gotta get the ship class.  For now, this will amount to finding a ship in the ship_info
 	// array with the same team as the requester of type SIF_SUPPORT.  Might need to be changed, but who knows
-	// vasudans use the terran support ship.
-	requester_species = Ship_info[requester_shipp->ship_info_index].species;
 
-	// 5/6/98 -- MWA  Don't need to do anything for multiplayer.  I think that we always want to use
-	// the species of the caller ship.
-	Assert( (requester_species == SPECIES_TERRAN) || (requester_species == SPECIES_VASUDAN) );
-//	if ( (Game_mode & GM_NORMAL) && (requester_species == SPECIES_VASUDAN) )	{	// make vasundan's use the terran support ship
-//		requester_species = SPECIES_TERRAN;
-//	}
+	// Goober5000 - who knew of the SCP release? ;) only determine ship class if not set by SEXP
+	pobj->ship_class = The_mission.support_ships.ship_class;
+	if (pobj->ship_class == -1)
+	{
+		requester_species = Ship_info[requester_shipp->ship_info_index].species;
 
-	// get index of correct species support ship
-	for (i=0; i < Num_ship_types; i++) {
-		if ( (Ship_info[i].species == requester_species) && (Ship_info[i].flags & SIF_SUPPORT) )
-			break;
+		// 5/6/98 -- MWA  Don't need to do anything for multiplayer.  I think that we always want to use
+		// the species of the caller ship.
+		Assert( (requester_species == SPECIES_TERRAN) || (requester_species == SPECIES_VASUDAN) );
+	//	if ( (Game_mode & GM_NORMAL) && (requester_species == SPECIES_VASUDAN) )	{	// make vasundan's use the terran support ship
+	//		requester_species = SPECIES_TERRAN;
+	//	}
+
+		// get index of correct species support ship
+		for (i=0; i < Num_ship_types; i++) {
+			if ( (Ship_info[i].species == requester_species) && (Ship_info[i].flags & SIF_SUPPORT) )
+				break;
+		}
+
+		if ( i < Num_ship_types )
+			pobj->ship_class = i;
+		else
+			Int3();				// BOGUS!!!!  gotta figure something out here
 	}
-
-	if ( i < Num_ship_types )
-		pobj->ship_class = i;
-	else
-		Int3();				// BOGUS!!!!  gotta figure something out here
 
 	pobj->team = requester_shipp->team;
 
@@ -5438,9 +5530,15 @@ void mission_warp_in_support_ship( object *requester_objp )
 
 	pobj->status_count = 0;
 
-	pobj->arrival_location = 0;			// ASSUMPTION: this is index to arrival_lcation string array for hyperspace!!!!
+	// Goober5000 - take some stuff from mission flags
+	pobj->arrival_location = The_mission.support_ships.arrival_location;
+	pobj->arrival_anchor = The_mission.support_ships.arrival_anchor;
+	pobj->departure_location = The_mission.support_ships.departure_location;
+	pobj->departure_anchor = The_mission.support_ships.departure_anchor;
+
+//	pobj->arrival_location = 0;			// ASSUMPTION: this is index to arrival_lcation string array for hyperspace!!!!
 	pobj->arrival_distance = 0;
-	pobj->arrival_anchor = -1;
+//	pobj->arrival_anchor = -1;
 	pobj->arrival_cue = Locked_sexp_true;
 	pobj->arrival_delay = timestamp_rand(WARP_IN_TIME_MIN, WARP_IN_TIME_MAX);
 
@@ -5449,8 +5547,8 @@ void mission_warp_in_support_ship( object *requester_objp )
 	pobj->initial_hull = 100;			// start at 100% hull	
 	pobj->initial_shields = 100;		// and 100% shields
 
-	pobj->departure_location = 0;		// ASSUMPTION: this is index to departure_lcation string array for hyperspace!!!!
-	pobj->departure_anchor = -1;
+//	pobj->departure_location = 0;		// ASSUMPTION: this is index to departure_lcation string array for hyperspace!!!!
+//	pobj->departure_anchor = -1;
 	pobj->departure_cue = Locked_sexp_false;
 	pobj->departure_delay = 0;
 
@@ -5460,8 +5558,11 @@ void mission_warp_in_support_ship( object *requester_objp )
 	pobj->flags = 0;
 	pobj->flags2 = 0;
 
-	if ( Player_obj->flags & P_OF_NO_SHIELDS )
+	if ( Player_obj->flags & OF_NO_SHIELDS )
 		pobj->flags |= P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
+
+	if ( Ships[Player_obj->instance].flags2 & SF2_NO_SUBSPACE_DRIVE )
+		pobj->flags2 |= P2_SF2_NO_SUBSPACE_DRIVE;	// support ships have no subspace drive when player has not subspace drive
 
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-17 07:59:09 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-19 07:02:15 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/17 07:59:09  Goober5000
+ * fixed some really strange behavior with strings not being truncated at the
+ * # symbol
+ * --Goober5000
+ *
  * Revision 2.2  2002/10/17 20:40:50  randomtiger
  * Added ability to remove HUD ingame on keypress shift O
  * So I've added a new key to the bind list and made use of already existing hud removal code.
@@ -2476,7 +2481,14 @@ void hud_support_view_blit()
 		gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
 	} else {
 		if ( Hud_support_objnum == -1 ) {
-			sprintf(outstr, XSTR( "warping in", 230));
+			if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
+			{
+				sprintf(outstr, XSTR( "exiting hangar", -1));
+			}
+			else
+			{
+				sprintf(outstr, XSTR( "warping in", 230));
+			}
 			gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
 		} else {
 			ai_info *aip;

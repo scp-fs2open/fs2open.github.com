@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.26 $
- * $Date: 2003-01-18 09:25:40 $
+ * $Revision: 2.27 $
+ * $Date: 2003-01-19 07:02:15 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/01/18 09:25:40  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.25  2003/01/17 01:48:49  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -1250,6 +1255,7 @@ extern int get_subsystem_pos(vector *pos, object *objp, ship_subsys *subsysp);
 extern int ship_info_lookup(char *name);
 extern int ship_info_base_lookup(int si_index);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
+extern int ship_name_lookup_absolute(char *name);
 extern int ship_type_name_lookup(char *name);
 
 extern int wing_lookup(char *name);

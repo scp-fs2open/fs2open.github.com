@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.20 $
+ * $Revision: 2.21 $
  * $Author: Goober5000 $
- * $Date: 2003-01-18 23:25:39 $
+ * $Date: 2003-01-19 07:02:16 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/01/18 23:25:39  Goober5000
+ * made "no-subspace-drive" applicable to all ships and fixed a really *STUPID*
+ * bug that made FRED keep crashing (missing comma, bleagh!)
+ * --Goober5000
+ *
  * Revision 2.19  2003/01/18 09:25:41  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -326,6 +331,17 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 
 #define MISSION_DESC_LENGTH	512
 
+// Goober5000
+typedef struct support_ship_info {
+	int		arrival_location;				// arrival location
+	int		arrival_anchor;					// arrival anchor
+	int		departure_location;				// departure location
+	int		departure_anchor;				// departure anchor
+	int		max_support_ships;				// max number of support ships
+	int		ship_class;						// ship class of support ship
+	int		tally;							// number of support ships so far
+} support_ship_info;
+
 typedef struct mission {
 	char	name[NAME_LENGTH];
 	char	author[NAME_LENGTH];
@@ -340,7 +356,7 @@ typedef struct mission {
 	uint	num_respawns;									// valid in multiplayer missions -- number of respawns allowed
 	int	red_alert;
 	int	scramble;
-	int	disallow_support;								// should support ships be disallowed.
+	support_ship_info	support_ships;		// Goober5000
 	char	tour_name[NAME_LENGTH];
 	char	pre_briefing_cutscene[FILESPEC_LENGTH];
 	char	pre_mission_cutscene[FILESPEC_LENGTH];
@@ -412,7 +428,7 @@ extern char *Status_desc_names[MAX_STATUS_NAMES];
 extern char *Status_type_names[MAX_STATUS_NAMES];
 extern char *Status_target_names[MAX_STATUS_NAMES];
 extern char *Arrival_location_names[MAX_ARRIVAL_NAMES];
-extern char *Departure_location_names[MAX_ARRIVAL_NAMES];
+extern char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 extern char *Species_names[MAX_SPECIES_NAMES];
 extern char *Reinforcement_type_names[];
@@ -664,8 +680,8 @@ void mission_parse_eval_stuff();
 // function to set the ramaing time left in the mission
 void mission_parse_set_end_time( int seconds );
 
-// code to warp in a repair ship.
-void mission_warp_in_support_ship( object *requester_objp );
+// code to bring in a repair ship.
+void mission_bring_in_support_ship( object *requester_objp );
 int mission_is_support_ship_arriving( void );
 void mission_add_to_arriving_support( object *requester_objp );
 int mission_is_repair_scheduled( object *objp );
