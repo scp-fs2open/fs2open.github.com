@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-01-11 21:38:49 $
+ * $Revision: 2.26 $
+ * $Date: 2005-01-12 00:52:42 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.24  2004/10/31 22:02:47  taylor
  * little cleanup
  *
@@ -1008,6 +1013,9 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	}
 	obj->num_pairs = 0;
 	obj->net_signature = 0;			// be sure to reset this value so new objects don't take on old signatures.	
+
+	// Goober5000
+	obj->dock_list = NULL;
 
 	return objnum;
 }
