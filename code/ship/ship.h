@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.13 $
- * $Date: 2002-12-23 05:18:52 $
+ * $Revision: 2.14 $
+ * $Date: 2002-12-24 07:42:28 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2002/12/23 05:18:52  Goober5000
+ * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
+ * one ship would return after only dealing with the first ship.
+ *
+ * Also added the following sexps:
+ * is-ship-stealthed
+ * ship-force-stealth
+ * ship-force-nostealth
+ * ship-remove-stealth-forcing
+ *
+ * They toggle the stealth flag on and off.  If a ship is forced stealthy, it won't even
+ * show up for friendly ships.
+ * --Goober5000
+ *
  * Revision 2.12  2002/12/20 07:09:03  Goober5000
  * added capability of storing time_subsys_cargo_revealed
  * --Goober5000
@@ -1380,6 +1394,10 @@ int ship_get_species_by_type(int ship_info_index);
 
 // return the length of the ship
 float ship_get_length(ship* shipp);
+
+// Goober5000 - used by change-ai-class
+extern void ship_set_new_ai_class(int ship_num, int new_ai_class);
+extern void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class);
 
 
 #endif

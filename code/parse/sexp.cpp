@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.15 $
- * $Date: 2002-12-23 23:01:27 $
+ * $Revision: 2.16 $
+ * $Date: 2002-12-24 07:42:29 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2002/12/23 23:01:27  Goober5000
+ * added set-cargo and is-cargo-x sexps
+ * --Goober5000
+ *
  * Revision 2.14  2002/12/23 05:41:08  Goober5000
  * Bah - Andsager is a moron. :) I see no reason why rand shouldn't work
  * multiple times.  It's been fixed thus.
@@ -449,6 +453,7 @@ sexp_oper Operators[] = {
 	{ ">",								OP_GREATER_THAN,				2,	2,			},
 	{ "<",								OP_LESS_THAN,					2,	2,			},
 	{ "is-iff",							OP_IS_IFF,						2, INT_MAX,	},
+	{ "is-ai-class",					OP_IS_AI_CLASS,					2, INT_MAX,	},
 	{ "has-time-elapsed",			OP_HAS_TIME_ELAPSED,			1,	1,			},
 
 	{ "is-goal-true-delay",					OP_GOAL_TRUE_DELAY,				2, 2,	},
@@ -551,7 +556,8 @@ sexp_oper Operators[] = {
 	{ "good-rearm-time",				OP_GOOD_REARM_TIME,				2,	2,			},
 	{ "good-secondary-time",		OP_GOOD_SECONDARY_TIME,			4, 4,			},
 	{ "change-iff",					OP_CHANGE_IFF,						2,	INT_MAX,	},
-	{ "protect-ship",					OP_PROTECT_SHIP,					1, INT_MAX,	},
+	{ "change-ai-class",			OP_CHANGE_AI_CLASS,				2,	INT_MAX,	},
+	{ "protect-ship",				OP_PROTECT_SHIP,					1, INT_MAX,	},
 	{ "unprotect-ship",				OP_UNPROTECT_SHIP,				1, INT_MAX,	},
 	{ "beam-protect-ship",			OP_BEAM_PROTECT_SHIP,			1, INT_MAX,	},
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
@@ -1208,7 +1214,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 		*bad_index = op_index;
 
 	if (Sexp_nodes[op_index].subtype != SEXP_ATOM_OPERATOR)
-		return SEXP_CHECK_OP_EXPTECTED;  // not an operator, which it should always be
+		return SEXP_CHECK_OP_EXPECTED;  // not an operator, which it should always be
 
 	op = identify_operator(CTEXT(op_index));
 	if (op == -1)
@@ -1412,7 +1418,8 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				break;
 
 			case OPF_AWACS_SUBSYSTEM:
-			case OPF_SUBSYSTEM: {
+			case OPF_SUBSYSTEM:
+			{
 				char *shipname;
 				int shipnum,ship_class, i;
 				int ship_index;				
@@ -1431,6 +1438,8 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 					case OP_DISTANCE_SUBSYSTEM:
 					case OP_SET_CARGO:
 					case OP_IS_CARGO_X:
+					case OP_CHANGE_AI_CLASS:
+					case OP_IS_AI_CLASS:
 						ship_index = Sexp_nodes[Sexp_nodes[op_index].rest].rest;
 						break;
 
@@ -1494,35 +1503,62 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				break;
 			}
+			return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
 
 			case OPF_POINT:
-				if (waypoint_lookup(CTEXT(index)) < 0){
-					if (verify_vector(CTEXT(index))){
-						return SEXP_CHECK_INVALID_POINT;
-					}
+				if (type2 != SEXP_ATOM_STRING)
+				{
+					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (type2 != SEXP_ATOM_STRING){
-					return SEXP_CHECK_TYPE_MISMATCH;
+				if (waypoint_lookup(CTEXT(index)) < 0)
+				{
+					if (verify_vector(CTEXT(index)))
+					{
+						return SEXP_CHECK_INVALID_POINT;
+					}
 				}
 
 				break;
 
 			case OPF_IFF:
-				if (type2 == SEXP_ATOM_STRING){
-					for (i=0; i<Num_team_names; i++){
-						if (!stricmp(Team_names[i], CTEXT(index))){
-							break;
-						}
+				if (type2 != SEXP_ATOM_STRING)
+				{
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				for (i=0; i<Num_team_names; i++)
+				{
+					if (!stricmp(Team_names[i], CTEXT(index)))
+					{
+						break;
 					}
 				}
 
-				if (i == Num_team_names){
+				if (i == Num_team_names)
+				{
 					return SEXP_CHECK_INVALID_IFF;
 				}
 
-				if (type2 != SEXP_ATOM_STRING){
+				break;
+
+			case OPF_AI_CLASS:
+				if (type2 != SEXP_ATOM_STRING)
+				{
 					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				for (i=0; i<Num_ai_classes; i++)
+				{
+					if (!stricmp(Ai_class_names[i], CTEXT(index)))
+					{
+						break;
+					}
+				}
+
+				if (i == Num_ai_classes)
+				{
+					return SEXP_CHECK_INVALID_AI_CLASS;
 				}
 
 				break;
@@ -4790,21 +4826,21 @@ int sexp_is_iff( int n )
 	}
 
 	n = CDR(n);
-	while ( n != -1 ) {
+	for ( ; n != -1; n = CDR(n) )
+	{
 		ship_name = CTEXT(n);
+
 		// find the ship and check to be sure that it is still around.
 		num = ship_name_lookup(ship_name);
 		if ( num < 0 )			// if the ship is gone, can't check it's iff.
 			continue;
 
-		// if the team doesn't match the team specified, return 0 immediately
+		// if the team doesn't match the team specified, return false immediately
 		if ( Ships[num].team != team)
-			return 0;
-
-		n = CDR(n);
+			return SEXP_FALSE;
 	}
 
-	return 1;
+	return SEXP_TRUE;
 }
 
 void sexp_change_iff( int n )
@@ -4831,7 +4867,7 @@ void sexp_change_iff( int n )
 	}
 
 	n = CDR(n);
-	while ( n != -1 ) {
+	for ( ; n != -1; n = CDR(n) ) {
 		ship_name = CTEXT(n);
 
 		// find the ship and check to be sure that it is still around.
@@ -4846,10 +4882,140 @@ void sexp_change_iff( int n )
 			}
 #endif
 		}
-
-		n = CDR(n);
 	}
-	
+}
+
+// Goober5000
+// ai class value is the first parameter, second is a ship, rest are subsystems to check
+int sexp_is_ai_class( int n )
+{
+	char *ship_name, *subsystem;
+	int i, ship_num, ai_class, class_to_test;
+
+	Assert ( n >= 0 );
+
+	// find ai class
+	ai_class = -1;
+	for (i=0; i<Num_ai_classes; i++)
+	{
+		if (!stricmp(Ai_class_names[i], CTEXT(n)))
+			ai_class = i;
+	}
+
+	Assert(ai_class >= 0);
+
+	n = CDR(n);
+	ship_name = CTEXT(n);
+	n = CDR(n);
+
+	// find ship
+	ship_num = ship_name_lookup(ship_name);
+
+	// we can't do anything with ships that aren't present
+	if (ship_num != -1)
+		return SEXP_CANT_EVAL;
+
+	// subsys?
+	if (n != 1)
+	{
+		ship_subsys *ss;
+
+		// loopity-loop
+		for ( ; n != -1; n = CDR(n) )
+		{
+			subsystem = CTEXT(n);
+			class_to_test = -1;
+
+			// find the ship subsystem by searching ship's subsys_list
+			ss = GET_FIRST( &Ships[ship_num].subsys_list );
+			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
+			{
+				// if we found the subsystem
+				if ( !stricmp(ss->system_info->subobj_name, subsystem))
+				{
+					// get ai class
+					class_to_test = ss->weapons.ai_class;
+					break;
+				}
+
+				ss = GET_NEXT( ss );
+			}
+			Assert(class_to_test >= 0);
+
+			// if no match, return false immediately
+			if (ai_class != class_to_test)
+				return SEXP_FALSE;
+		}
+
+		// we've come this far; it must all be true
+		return SEXP_TRUE;
+	}
+	// just the ship
+	else
+	{
+		if (Ship_info[Ships[ship_num].ship_info_index].ai_class == ai_class)
+			return SEXP_TRUE;
+		else
+			return SEXP_FALSE;
+	}
+}
+
+// Goober5000
+void sexp_change_ai_class( int n )
+{
+	int i, ship_num, new_ai_class;
+
+	Assert ( n >= 0 );
+
+	// find ai class
+	new_ai_class = -1;
+	for (i=0; i<Num_ai_classes; i++)
+	{
+		if (!stricmp(Ai_class_names[i], CTEXT(n)))
+			new_ai_class = i;
+	}
+
+	Assert(new_ai_class >= 0);
+
+	// find ship
+	n = CDR(n);
+	ship_num = ship_name_lookup(CTEXT(n));
+	n = CDR(n);
+
+	// we can't do anything with ships that aren't present
+	if (ship_num != -1)
+		return;
+
+	// subsys?
+	if (n != 1)
+	{
+		// loopity-loop
+		for ( ; n != -1; n = CDR(n) )
+		{
+			ship_subsystem_set_new_ai_class(ship_num, CTEXT(n), new_ai_class);
+
+#ifndef NO_NETWORK
+			// send a network packet if we need to
+			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0))
+			{
+				send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, CTEXT(n), new_ai_class);
+			}
+#endif
+		}
+	}
+	// just the one ship
+	else
+	{
+		ship_set_new_ai_class(ship_num, new_ai_class);
+
+#ifndef NO_NETWORK
+		// send a network packet if we need to
+		if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0))
+		{
+			send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, NULL, new_ai_class);
+		}
+#endif
+	}
 }
 
 // following routine adds an ai goal to a ship structure.  The sexpression index
@@ -5394,6 +5560,7 @@ void sexp_change_goal_validity( int n, int flag )
 }
 
 // Goober5000
+// yeesh - be careful of the cargo-no-deplete flag :p
 int sexp_is_cargo_x(int n)
 {
 	char *cargo, *ship, *subsystem;
@@ -5468,13 +5635,14 @@ int sexp_is_cargo_x(int n)
 		return SEXP_FALSE;
 
 	// check cargo
-	if (!stricmp(Cargo_names[cargo_index], cargo))
+	if (!stricmp(Cargo_names[cargo_index & CARGO_INDEX_MASK], cargo))
 		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
 }
 
 // Goober5000
+// yeesh - be careful of the cargo-no-deplete flag :p
 void sexp_set_cargo(int n)
 {
 	char *cargo, *ship, *subsystem;
@@ -5536,7 +5704,7 @@ void sexp_set_cargo(int n)
 				if ( !stricmp(ss->system_info->subobj_name, subsystem))
 				{
 					// set cargo
-					ss->subsys_cargo_name = cargo_index;
+					ss->subsys_cargo_name = cargo_index | (ss->subsys_cargo_name & CARGO_NO_DEPLETE);
 					return;
 				}
 
@@ -5548,7 +5716,7 @@ void sexp_set_cargo(int n)
 		else
 		{
 			// simply set the ship cargo
-			Ships[ship_num].cargo1 = char(cargo_index);
+			Ships[ship_num].cargo1 = char(cargo_index | (Ships[ship_num].cargo1 & CARGO_NO_DEPLETE));
 		}
 	}
 	else
@@ -5560,7 +5728,7 @@ void sexp_set_cargo(int n)
 			// set cargo for the parse object
 			parse_obj = mission_parse_get_arrival_ship( ship );
 			Assert ( parse_obj );
-			parse_obj->cargo1 = char(cargo_index);
+			parse_obj->cargo1 = char(cargo_index | (parse_obj->cargo1 & CARGO_NO_DEPLETE));
 		}
 	}
 }
@@ -8585,6 +8753,15 @@ int eval_sexp(int cur_node)
 				sexp_val = sexp_is_cargo_x(node);
 				break;
 
+			case OP_CHANGE_AI_CLASS:
+				sexp_change_ai_class(node);
+				sexp_val = 1;
+				break;
+
+			case OP_IS_AI_CLASS:
+				sexp_val = sexp_is_ai_class(node);
+				break;
+				
 			case OP_SEND_MESSAGE:
 				sexp_send_message( node );
 				sexp_val = 1;
@@ -9091,6 +9268,7 @@ int query_operator_return_type(int op)
 		case OP_HAS_ARRIVED_DELAY:
 		case OP_HAS_DEPARTED_DELAY:
 		case OP_IS_IFF:
+		case OP_IS_AI_CLASS:
 		case OP_HAS_TIME_ELAPSED:
 		case OP_GOAL_INCOMPLETE:
 		case OP_GOAL_TRUE_DELAY:
@@ -9178,6 +9356,7 @@ int query_operator_return_type(int op)
 		case OP_COND:
 		case OP_WHEN:
 		case OP_CHANGE_IFF:
+		case OP_CHANGE_AI_CLASS:
 		case OP_CLEAR_SHIP_GOALS:
 		case OP_CLEAR_WING_GOALS:
 		case OP_CLEAR_GOALS:
@@ -9589,6 +9768,15 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_CARGO_X:
 			if (argnum == 0)
 				return OPF_CARGO;
+			else if (argnum == 1)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM;
+
+		case OP_CHANGE_AI_CLASS:
+		case OP_IS_AI_CLASS:
+			if (argnum == 0)
+				return OPF_AI_CLASS;
 			else if (argnum == 1)
 				return OPF_SHIP;
 			else
@@ -10261,7 +10449,7 @@ char *sexp_error_message(int num)
 		case SEXP_CHECK_NONOP_ARGS:
 			return "Data shouldn't have arguments";
 
-		case SEXP_CHECK_OP_EXPTECTED:
+		case SEXP_CHECK_OP_EXPECTED:
 			return "Operator expected instead of data";
 
 		case SEXP_CHECK_UNKNOWN_OP:
@@ -10290,6 +10478,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_IFF:
 			return "Invalid team name";
+
+		case SEXP_CHECK_INVALID_AI_CLASS:
+			return "Invalid AI class name";
 
 		case SEXP_CHECK_INVALID_POINT:
 			return "Invalid point";
@@ -10356,6 +10547,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_JUMP_NODE:
 			return "Invalid Jump Node name";
+
+		case SEXP_CHECK_UNKNOWN_ERROR:
+			return "Unknown error";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -10725,6 +10919,7 @@ int get_subcategory(int sexp_id)
 		case OP_GOOD_REARM_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_CHANGE_IFF:
+		case OP_CHANGE_AI_CLASS:
 		case OP_PROTECT_SHIP:
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
