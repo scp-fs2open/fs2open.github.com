@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-04-29 01:03:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2003-07-04 02:26:15 $
+ * $Author: phreak $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.9  2003/01/18 10:00:43  Goober5000
  * added "no-subspace-drive" flag for ships
  * --Goober5000
@@ -874,6 +878,22 @@ void process_debug_keys(int k)
 			HUD_printf(XSTR( "Framerate delay decreased to %i milliseconds per frame.", 5), Framerate_delay);
 			break;
 
+		case KEY_DEBUGGED + KEY_X:
+		case KEY_DEBUGGED1 + KEY_X:
+			if (Player_ship->cloak_stage==0)
+			{
+				shipfx_start_cloak(Player_ship);
+				HUD_printf("Cloaking started");
+			}
+			else
+			{
+				shipfx_stop_cloak(Player_ship);
+				HUD_printf("Cloaking stopped");
+			}
+
+			break;
+
+
 		case KEY_DEBUGGED + KEY_C:
 		case KEY_DEBUGGED1 + KEY_C:
 			// hud_enemymsg_toggle();
@@ -1368,10 +1388,12 @@ void process_debug_keys(int k)
 		}
 
 		case KEY_DEBUGGED + KEY_UP:
+		case KEY_DEBUGGED1 + KEY_UP:
 			debug_change_song(1);
 			break;
 
 		case KEY_DEBUGGED + KEY_DOWN:
+		case KEY_DEBUGGED1 + KEY_DOWN:
 			debug_change_song(-1);
 			break;
 #endif
