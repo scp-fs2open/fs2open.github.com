@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.71 $
- * $Date: 2004-04-03 20:27:57 $
- * $Author: phreak $
+ * $Revision: 2.72 $
+ * $Date: 2004-04-11 13:56:33 $
+ * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/04/03 20:27:57  phreak
+ * OpenGL files spilt up to make developing and finding bugs much easier
+ *
  * Revision 2.70  2004/03/29 02:24:20  phreak
  * fixed a minor bug where the version checker
  * would complain even if the correct version of OpenGL was present
@@ -2117,6 +2120,12 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 
 }
 
+void gr_opengl_tmapper_batch_3d_unlit( int nverts, vertex *verts, uint flags)
+{
+	// Batching code goes here
+	// See D3D code to see what should be happening
+	// This function should only ever be called by batch_render()
+}
 
 void gr_opengl_tmapper( int nverts, vertex **verts, uint flags )
 {
@@ -3330,6 +3339,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_pixel = gr_opengl_pixel;
 	gr_screen.gf_scaler = gr_opengl_scaler;
 	gr_screen.gf_tmapper = gr_opengl_tmapper;
+	gr_screen.gf_tmapper_batch_3d_unlit = gr_opengl_tmapper_batch_3d_unlit;
 
 	gr_screen.gf_gradient = gr_opengl_gradient;
 

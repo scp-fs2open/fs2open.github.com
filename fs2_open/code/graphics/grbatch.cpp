@@ -70,8 +70,7 @@ void batch_render()
 
 		gr_set_bitmap(Batch_array[i].bitmap);
 
-		void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint flags);	
-		gr_d3d_tmapper_internal_batch_3d_unlit(Batch_array[i].length, vlist, Batch_array[i].flags);  
+		gr_tmapper_batch_3d_unlit(Batch_array[i].length, vlist, Batch_array[i].flags);  
 	}
 
 	Batch_current = 0;

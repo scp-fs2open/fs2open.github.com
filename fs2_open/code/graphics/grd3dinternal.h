@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.25 $
- * $Date: 2004-03-20 14:47:13 $
+ * $Revision: 2.26 $
+ * $Date: 2004-04-11 13:56:33 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/03/20 14:47:13  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.24  2004/03/19 14:51:55  randomtiger
  * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
  *
@@ -552,6 +556,7 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
 
 // GrD3DRender functions
 void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt );
+void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint flags);	
 
 // GrD3DCall functions
 void d3d_reset_render_states();

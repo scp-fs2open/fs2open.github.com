@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.62 $
- * $Date: 2004-04-03 06:22:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.63 $
+ * $Date: 2004-04-11 13:56:33 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/04/03 06:22:32  Goober5000
+ * fixed some stub functions and a bunch of compile warnings
+ * --Goober5000
+ *
  * Revision 2.61  2004/03/20 14:47:13  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -1369,7 +1373,7 @@ void gr_d3d_flip()
 	int mx, my;	
 	
 	// Attempt to allow D3D8 to recover from task switching
-	if(GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() != D3D_OK) {
+	if(GlobalD3DVars::lpD3DDevice == NULL || GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() != D3D_OK) {
 		d3d_lost_device();
 	}
 

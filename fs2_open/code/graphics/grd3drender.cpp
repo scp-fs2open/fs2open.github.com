@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.47 $
- * $Date: 2004-03-20 21:17:12 $
- * $Author: bobboau $
+ * $Revision: 2.48 $
+ * $Date: 2004-04-11 13:56:33 $
+ * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2004/03/20 21:17:12  bobboau
+ * fixed -spec comand line option,
+ * probly some other stuf
+ *
  * Revision 2.46  2004/03/20 14:47:13  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -1129,7 +1133,6 @@ int w_factor = 256;
  *
  * @return void
  */
-//this is all RT's stuff
 void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint flags)	
 {
 	// Some checks to make sure this function isnt used when it shouldnt be
@@ -1250,10 +1253,6 @@ void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint fla
 		}				
 	}	
 
-	Assert(nverts < MAX_INTERNAL_POLY_VERTS);
-	if(nverts > MAX_INTERNAL_POLY_VERTS-1)Error( LOCATION, "too many verts in gr_d3d_tmapper_internal_3d_unlit\n" );
-	if(nverts < 3)Error( LOCATION, "too few verts in gr_d3d_tmapper_internal_3d_unlit\n" );
-
 	for (int i=0; i<nverts; i++ )	{
 		vertex * va = &verts[i];		
 			  
@@ -1322,7 +1321,6 @@ void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint fla
 
 	d3d_batch_unlock_vbuffer(GlobalD3DVars::unlit_3D_batch);
 	d3d_batch_draw_vbuffer(GlobalD3DVars::unlit_3D_batch);
-
 
 // 	d3d_DrawPrimitive(D3DVT_LVERTEX, D3DPT_TRIANGLELIST, (LPVOID)d3d_verts, nverts);
 }

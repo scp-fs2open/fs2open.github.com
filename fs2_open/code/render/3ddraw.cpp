@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-04-08 20:13:17 $
- * $Author: phreak $
+ * $Revision: 2.20 $
+ * $Date: 2004-04-11 13:56:33 $
+ * $Author: randomtiger $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/04/08 20:13:17  phreak
+ * got rid of some compile warnings
+ *
  * Revision 2.18  2004/03/06 23:28:24  bobboau
  * fixed motion debris
  * animated laser textures
@@ -260,6 +263,7 @@
 #include "bmpman/bmpman.h"
 #include "globalincs/alphacolors.h"
 #include "cmdline/cmdline.h"
+#include "graphics/grbatch.h"
 
 #include "io/key.h"
 
@@ -690,7 +694,68 @@ int g3_draw_sphere_ez(vector *pnt,float rad)
 1.41421356
 */
 
-int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth){
+int g3_draw_bitmap_3d_batched(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
+{
+
+//return 0;
+	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+	vector PNT;
+	vm_vert2vec(pnt, &PNT);
+	vector p[4];
+	//unused variables that were there for some reason
+//	matrix m;
+//	vm_set_identity(&m);
+
+	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
+
+	p[0].xyz.x = rad * aspect;	p[0].xyz.y = rad;	p[0].xyz.z = -depth;
+	p[1].xyz.x = -rad * aspect;	p[1].xyz.y = rad;	p[1].xyz.z = -depth;
+	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
+	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
+
+	matrix te = View_matrix;
+	vm_transpose_matrix(&te);
+	for(int i = 0; i<4; i++){
+		vector t = p[i];
+	  	vm_vec_rotate(&p[i],&t,&te);//point it at the eye
+	  	vm_vec_add2(&p[i],&PNT);//move it
+	}		
+
+	vertex *P = batch_get_block(6, tmap_flags);
+
+	//move all the data from the vecs into the verts
+	g3_transfer_vertex(&P[0], &p[3]);
+	g3_transfer_vertex(&P[1], &p[2]);
+	g3_transfer_vertex(&P[2], &p[1]);
+	g3_transfer_vertex(&P[3], &p[0]);
+ 
+	//set up the UV coords
+	P[0].u = 0.0f;	P[0].v = 0.0f;
+	P[1].u = 1.0f;	P[1].v = 0.0f;
+	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[3].u = 0.0f;	P[3].v = 1.0f;
+
+	memcpy(&P[4], &P[2], sizeof(vertex)); 
+	memcpy(&P[5], &P[0], sizeof(vertex)); 
+
+	/*
+	gr_set_cull(0);
+	g3_draw_poly(4,ptlist,tmap_flags);
+	gr_set_cull(1);
+	*/
+
+	return 0;
+}
+
+
+int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
+{
+	// Redirect for batching!
+	if(Cmdline_batch_3dunlit && tmap_flags & TMAP_HTL_3DU_BATCH)
+	{
+		return g3_draw_bitmap_3d_batched(pnt,orient, rad,tmap_flags, depth);
+	}
+
 //return 0;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 	vector PNT;
