@@ -4,14 +4,11 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:14:13 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-07-01 16:38:18 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.1  2004/05/24 07:10:03  taylor
- * filename case change
- *
  * Revision 1.1  2004/05/07 23:50:14  Kazan
  * Sorry Guys!
  *

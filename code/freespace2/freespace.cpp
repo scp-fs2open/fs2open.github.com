@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.98 $
- * $Date: 2004-07-01 02:06:31 $
- * $Author: phreak $
+ * $Revision: 2.99 $
+ * $Date: 2004-07-01 16:38:18 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2004/07/01 02:06:31  phreak
+ * function pointer radar update.
+ * will enable us to make different radar styles that we can switch between
+ *
  * Revision 2.97  2004/07/01 01:12:31  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -1983,6 +1987,11 @@ void game_level_init(int seed)
 	model_free_all();				// Free all existing models
 	mission_brief_common_init();		// Free all existing briefing/debriefing text
 	weapon_level_init();
+
+#if defined(ENABLE_AUTO_PILOT)
+	NavSystem_Init();				// zero out the nav system
+#endif
+	
 	ai_level_init();				//	Call this before ship_init() because it reads ai.tbl.
 	ship_level_init();
 	player_level_init();	
@@ -2021,9 +2030,7 @@ void game_level_init(int seed)
 	ssm_level_init();	
 	supernova_level_init();
 
-#if defined(ENABLE_AUTO_PILOT)
-	NavSystem_Init();				// zero out the nav system
-#endif
+
 
 	// multiplayer dogfight hack
 	dogfight_blown = 0;

@@ -4,14 +4,11 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:14:13 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-07-01 16:38:18 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.1  2004/05/24 07:10:03  taylor
- * filename case change
- *
  * Revision 1.1  2004/05/07 23:50:14  Kazan
  * Sorry Guys!
  *
@@ -21,7 +18,7 @@
  */
 
 
-#include "autopilot/autopilot.h"
+#include "Autopilot.h"
 #include "ship/ai.h"
 #include "ship/aigoals.h"
 #include "ship/ship.h"
@@ -68,7 +65,7 @@ bool Sel_NextNav()
 			{
 				if (i != CurrentNav)
 				{
-					CurrentNav=i;
+					CurrentNav=i%MAX_NAVPOINTS;
 					return true;
 				}
 			}
@@ -161,10 +158,14 @@ void StartAutopilot()
 
 	for (i = 0; i < MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum != -1 && Ships[i].flags2 & SF2_NAVPOINT_CARRY)
+		if (Ships[i].objnum != -1 && 
+				(Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)
+				)
+			)
 		{
-			if (speed_cap > Ship_info[Ships[i].ship_info_index].max_vel.xyz.x)
-				speed_cap = Ship_info[Ships[i].ship_info_index].max_vel.xyz.x;
+			if (speed_cap > Ship_info[Ships[i].ship_info_index].max_vel.xyz.z)
+				speed_cap = Ship_info[Ships[i].ship_info_index].max_vel.xyz.z;
 		}
 	}
 
@@ -172,33 +173,36 @@ void StartAutopilot()
 	// assign ship goals
 	// when assigning goals to individual ships only do so if Ships[shipnum].wingnum != -1 
 	// we will assign wing goals below
-	int gindex;
+	
 
 	for (i = 0; i < MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum != -1 && Ships[i].flags2 & SF2_NAVPOINT_CARRY && Ships[i].wingnum != -1 )
+		if (Ships[i].objnum != -1 && 
+				(Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)
+				)
+			)
 		{
-			
-			gindex = ai_goal_find_empty_slot( Ai_info[Ships[i].ai_index].goals );
-			
-			Ai_info[Ships[i].ai_index].goals[gindex].signature = Ai_goal_signature++;
-			Ai_info[Ships[i].ai_index].goals[gindex].time = Missiontime;
-			Ai_info[Ships[i].ai_index].goals[gindex].type = AIG_TYPE_PLAYER_SHIP;
-			Ai_info[Ships[i].ai_index].goals[gindex].flags = 0;
-			Ai_info[Ships[i].ai_index].goals[gindex].priority = 80;
 
-			if (Navs[CurrentNav].flags & NP_WAYPOINT)
-			{
-				
-				Ai_info[Ships[i].ai_index].goals[gindex].ship_name = ai_get_goal_ship_name(((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index].goals[gindex].ship_name_index);  // waypoint path name;
-				Ai_info[Ships[i].ai_index].goals[gindex].wp_index = -1;
-				Ai_info[Ships[i].ai_index].goals[gindex].ai_mode = AI_GOAL_WAYPOINTS_ONCE;
+			// clear the ship goals and cap the waypoint speed
+			ai_clear_ship_goals(&Ai_info[Ships[i].ai_index]);
+			Ai_info[Ships[i].ai_index].waypoint_speed_cap = speed_cap;
 
-			}
-			else
+			
+			// if they're not part of a wing set their goal
+			if (Ships[i].wingnum == -1)
 			{
-				Ai_info[Ships[i].ai_index].goals[gindex].ship_name = ai_get_goal_ship_name(((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index].goals[gindex].ship_name_index );
-				Ai_info[Ships[i].ai_index].goals[gindex].ai_mode = AI_GOAL_STAY_NEAR_SHIP;
+				if (Navs[CurrentNav].flags & NP_WAYPOINT)
+				{
+					
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
+					
+
+				}
+				else
+				{
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_CHASE, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
+				}
 			}
 		}
 	}
@@ -208,27 +212,24 @@ void StartAutopilot()
 	{
 		if (Wings[i].flags & WF_NAV_CARRY )
 		{	
-			gindex = ai_goal_find_empty_slot( Wings[i].ai_goals );
-			
-			Wings[i].ai_goals[gindex].signature = Ai_goal_signature++;
-			Wings[i].ai_goals[gindex].time = Missiontime;
-			Wings[i].ai_goals[gindex].type = AIG_TYPE_PLAYER_WING;
-			Wings[i].ai_goals[gindex].flags = 0;
-			Wings[i].ai_goals[gindex].priority = 80;
+			//ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip );
 
+			//ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_STAY_NEAR_SHIP, 0, target_shipname, wingnum );
+			//ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, target_shipname, wingnum );
+			//ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
+			
+			ai_clear_wing_goals( i );
 			if (Navs[CurrentNav].flags & NP_WAYPOINT)
 			{
 				
-				Wings[i].ai_goals[gindex].ship_name = ai_get_goal_ship_name(((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Wings[i].ai_goals[gindex].ship_name_index);  // waypoint path name;
-				Wings[i].ai_goals[gindex].wp_index = -1;
-				Wings[i].ai_goals[gindex].ai_mode = AI_GOAL_WAYPOINTS_ONCE;
+				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, i );
+				
+
 			}
 			else
 			{
-				Wings[i].ai_goals[gindex].ship_name = ai_get_goal_ship_name(((ship*)Navs[CurrentNav].target_obj)->ship_name, &Wings[i].ai_goals[gindex].ship_name_index );
-				Wings[i].ai_goals[gindex].ai_mode = AI_GOAL_STAY_NEAR_SHIP;
+				ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_CHASE, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, i );
 			}
-		
 		}
 	}
 }
@@ -427,6 +428,9 @@ bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
 	// find an empty nav - should be the end
 
 	int empty = -1;
+
+	if (node == 0)
+		node = 1;
 
 	for (int i = 0; i < MAX_NAVPOINTS && empty == -1; i++)
 	{
