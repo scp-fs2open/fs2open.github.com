@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.9 $
- * $Date: 2005-03-24 23:22:59 $
+ * $Revision: 2.10 $
+ * $Date: 2005-03-27 06:17:54 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/24 23:22:59  taylor
+ * make sure we will get the right error message
+ *
  * Revision 2.8  2005/03/10 08:00:18  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -158,6 +161,79 @@ void Error( char * filename, int line, char * format, ... )
 	fprintf(stderr, "ERROR: \"%s\" at %s:%d\n", buffer, filename, line);
 
 	abort();
+}
+
+
+HMMIO mmioOpen(LPSTR szFilename, LPMMIOINFO lpmmioinfo, DWORD dwOpenFlags)
+{
+	SDL_RWops *handle = NULL;
+
+	char *mode = "rb";
+
+	switch (dwOpenFlags) {
+		case MMIO_READ:
+			mode = "rb";
+			break;
+
+		case MMIO_READWRITE:
+			mode = "r+b";
+			break;
+
+		case MMIO_WRITE:
+			mode = "wb";
+			break;
+
+		default:
+			STUB_FUNCTION;
+	}
+
+	if ( szFilename != NULL ) {
+		Assert( lpmmioinfo == NULL );
+
+		handle = SDL_RWFromFile( szFilename, mode );
+	} else if ( lpmmioinfo != NULL ) {
+		Assert( szFilename == NULL );
+
+		handle = SDL_RWFromMem( lpmmioinfo->pchBuffer, lpmmioinfo->cchBuffer );
+	}
+
+	return handle;
+}
+
+long mmioSeek(HMMIO hmmio, long lOffset, int iOrigin)
+{
+	return (long) SDL_RWseek( hmmio, lOffset, iOrigin );
+}
+
+long mmioRead(HMMIO hmmio, HPSTR pch, long cch)
+{
+	return (long) SDL_RWread( hmmio, pch, 1, cch );
+}
+
+MMRESULT mmioClose(HMMIO hmmio, uint wFlags)
+{
+	if (wFlags != 0)
+		STUB_FUNCTION;
+
+	int rc = 0;
+
+	rc = SDL_RWclose( hmmio );
+
+	if (rc)
+		return MMIOERR_CANNOTWRITE;
+
+	return 0;
+}
+
+// slightly different options and return than the Windows version
+SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, DWORD *lpTimeProc,  DWORD *dwUser, uint fuEvent)
+{
+	return SDL_AddTimer( uDelay, (SDL_NewTimerCallback)lpTimeProc, (void *) dwUser );
+}
+
+SDL_bool timeKillEvent(SDL_TimerID uTimerID)
+{
+	return SDL_RemoveTimer( uTimerID );
 }
 
 // get a filename minus any leading path
