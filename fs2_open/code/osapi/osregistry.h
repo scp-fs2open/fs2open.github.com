@@ -60,3 +60,4 @@ unsigned int  os_config_read_uint( char *section, char *name, unsigned int defau
 char * os_config_read_string_ex( char *keyname, char *name, char *default_value );
 
 #endif
+
