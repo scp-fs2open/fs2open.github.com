@@ -4,13 +4,13 @@
 #include "graphics/grd3dinternal.h"
 
 
-DWORD *state_block = NULL;
-int n_state_blocks = 0;
+static DWORD *state_block = NULL;
+static int n_state_blocks = 0;
 
 //hFFFFFFFF
 //invalid
 
-int get_new_state_block(){
+static int get_new_state_block(){
 	for(int i = 0; i <n_state_blocks; i++)
 		if(state_block[i] == 0xFFFFFFFF)return i;
 

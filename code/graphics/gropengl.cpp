@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.107 $
- * $Date: 2005-03-19 18:02:33 $
- * $Author: bobboau $
+ * $Revision: 2.108 $
+ * $Date: 2005-03-19 21:03:54 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2005/03/19 18:02:33  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.106  2005/03/08 03:50:20  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -4031,4 +4035,3 @@ DCF(aniso, "toggles anisotropic filtering")
 	}
 	if (Dc_help) dc_printf("toggles anisotropic filtering");
 }
-
