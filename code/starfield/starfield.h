@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.7 $
- * $Date: 2004-03-17 04:07:32 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-01 01:12:33 $
  * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/03/17 04:07:32  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.6  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -145,6 +152,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "graphics/2d.h"
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
 #define MAX_STARFIELD_BITMAPS			160
@@ -185,10 +193,13 @@ typedef struct starfield_bitmap {
 
 // starfield bitmap instance
 typedef struct starfield_bitmap_instance {
+	index_list buffer;
+	index_list env_buffer;
 	char filename[MAX_FILENAME_LEN+1];				// used to match up into the starfield_bitmap array	
 	float scale_x, scale_y;								// x and y scale
 	int div_x, div_y;										// # of x and y divisions
-	angles ang;												// angles from fred
+	angles ang;	
+	int n_prim;// angles from fred
 } starfield_bitmap_instance;
 
 // background bitmaps
@@ -212,7 +223,7 @@ void stars_level_init();
 
 // This *must* be called to initialize the lighting.
 // You can turn off all the stars and suns and nebulas, though.
-void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace);
+void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env);
 // void calculate_bitmap_matrix(starfield_bitmaps *bm, vector *v);
 // void calculate_bitmap_points(starfield_bitmaps *bm, float bank = 0.0f);
 

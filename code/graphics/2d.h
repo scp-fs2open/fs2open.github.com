@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.31 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 2.32 $
+ * $Date: 2004-07-01 01:12:31 $
  * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.30  2004/05/25 00:37:26  wmcoolmon
  * Updated function calls for VC7 use
  *
@@ -534,6 +538,13 @@ typedef struct color {
 	int		magic;		
 } color;
 
+struct index_list{
+	index_list():index_buffer(NULL){};
+	~index_list(){if(index_buffer)free(index_buffer);};
+	void allocate_index_buffer(int size){if(index_buffer)free(index_buffer); index_buffer = (short*)malloc(sizeof(short) * size);};
+	short* index_buffer;
+};
+
 //this should be basicly just like it is in the VB
 //a list of triangles and there assosiated normals
 
@@ -541,12 +552,24 @@ struct poly_list{
 	poly_list():currently_allocated(0),n_verts(0), n_prim(0),vert(NULL),norm(NULL){};
 	~poly_list();
 	void allocate(int size);
-	int currently_allocated;
+	void make_index_buffer();
+	poly_list& operator = (poly_list&);
 	int n_prim;
 	int n_verts;
 	vertex *vert;
 	vector *norm;
+private:
+	int currently_allocated;
 };
+
+bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2);
+
+//finds the first occorence of a vertex within a poly list
+short find_fisrt_index(poly_list *plist, int idx);
+
+//given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
+short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v);
+
 
 struct line_list{
 	int n_line;
@@ -851,6 +874,7 @@ typedef struct screen {
 	void (*gf_setup_background_fog)(bool);
 
 	void (*gf_set_fill_mode)(int);
+	void (*gf_set_texture_panning)(float u, float v, bool enable);
 
 /*	void (*gf_begin_sprites)();//does prep work for sprites
 	void (*gf_draw_sprite)(vector*);//draws a sprite
@@ -1123,6 +1147,7 @@ __inline void bm_page_in_xparent_texture( int bitmapnum, int nframes = 1)
 
 #define	gr_zbias GR_CALL				(*gr_screen.gf_zbias)
 #define	gr_set_fill_mode GR_CALL				(*gr_screen.gf_set_fill_mode)
+#define	gr_set_texture_panning GR_CALL				(*gr_screen.gf_set_texture_panning)
 
 
 #define gr_setup_background_fog GR_CALL		(*gr_screen.gf_setup_background_fog)

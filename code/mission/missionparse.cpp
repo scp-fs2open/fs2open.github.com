@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.60 $
- * $Date: 2004-05-11 02:52:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.61 $
+ * $Date: 2004-07-01 01:12:32 $
+ * $Author: bobboau $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/05/11 02:52:12  Goober5000
+ * completed the FRED import conversion stuff that I started ages ago
+ * --Goober5000
+ *
  * Revision 2.59  2004/05/10 10:51:53  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -3751,10 +3755,17 @@ void parse_waypoints(mission *pm)
 	required_string("#Waypoints");
 
 	Num_jump_nodes = 0;
+	char file_name[64] = "subspacenod.pof";
+
 	while (optional_string("$Jump Node:")) {
 		Assert(Num_jump_nodes < MAX_JUMP_NODES);
 		stuff_vector(&pos);
-		z = jumpnode_create(&pos);
+		if(optional_string("$Model File:")){
+			stuff_string(file_name, F_NAME, NULL);
+		}else{
+			strcpy(file_name, "subspacenod.pof");
+		}
+		z = jumpnode_create(&pos, file_name);
 		Assert(z >= 0);
 
 		if (optional_string("$Jump Node Name:")) {

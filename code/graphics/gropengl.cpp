@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.78 $
- * $Date: 2004-06-28 02:13:07 $
+ * $Revision: 2.79 $
+ * $Date: 2004-07-01 01:12:31 $
  * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2004/06/28 02:13:07  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.77  2004/05/25 00:37:26  wmcoolmon
  * Updated function calls for VC7 use
  *
@@ -3516,6 +3520,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_set_texture_addressing = gr_opengl_set_texture_addressing;
 	gr_screen.gf_zbias = gr_opengl_zbias_stub;
 	gr_screen.gf_set_fill_mode = gr_opengl_set_fill_mode;
+	gr_screen.gf_set_texture_panning = gr_opengl_set_texture_panning;
 
 	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_opengl_make_buffer;

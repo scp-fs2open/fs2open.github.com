@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.96 $
- * $Date: 2004-06-22 23:14:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.97 $
+ * $Date: 2004-07-01 01:12:31 $
+ * $Author: bobboau $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2004/06/22 23:14:09  wmcoolmon
+ * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
+ * OGG code has been commented out, so you don't need the SDK yet.
+ *
  * Revision 2.95  2004/06/19 12:45:47  randomtiger
  * Changed startup code to catch D3D9 request from launcher.
  * No actual startup code has been implemented.
@@ -4279,11 +4283,11 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	//fugly hack.  this will make the skybox render in HT&L
 	//i want the stars_draw() function to get ported to HT&L quick
 	int nohtl_save = Cmdline_nohtl;
-	Cmdline_nohtl = 1;
+	Cmdline_nohtl = !(gr_screen.mode == GR_OPENGL) && Cmdline_nohtl;
 	if ( Game_subspace_effect )	{
-		stars_draw(0,0,0,1);
+		stars_draw(0,0,0,1,0);
 	} else {
-		stars_draw(1,1,1,0);
+		stars_draw(1,1,1,0,0);
 	}
 	Cmdline_nohtl = nohtl_save;
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.3 $
- * $Date: 2004-03-05 09:02:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-01 01:12:32 $
+ * $Author: bobboau $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/03/05 09:02:04  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/17 01:56:36  DTP
  * Bumped MAX JUMP-nodes to 50. if anybody wants a Jump-node forest
  *
@@ -63,7 +67,7 @@ typedef struct {
 extern int Num_jump_nodes;
 extern jump_node_struct Jump_nodes[MAX_JUMP_NODES];
 
-int	jumpnode_create(vector *pos);
+int	jumpnode_create(vector *pos, char* file_name);
 void	jumpnode_render(object *jumpnode_objp, vector *pos, vector *view_pos = NULL);
 void	jumpnode_render_all();	// called by FRED
 

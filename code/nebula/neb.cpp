@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-04-18 19:39:13 $
- * $Author: randomtiger $
+ * $Revision: 2.26 $
+ * $Date: 2004-07-01 01:12:33 $
+ * $Author: bobboau $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/04/18 19:39:13  randomtiger
+ * Added -2d_poof command which allows access to 2D poof rendering
+ * Added -radar_reduce to launcher flag description structure
+ *
  * Revision 2.24  2004/04/14 10:25:50  taylor
  * don't page in neb poofs unless in a neb2 mission, fix OGL whiteout issue
  *
@@ -1468,8 +1472,8 @@ void neb2_pre_render(vector *eye_pos, matrix *eye_orient)
 	Neb2_render_mode = NEB2_RENDER_NONE;
 
 	// draw background stuff nebula			
-	extern void stars_draw_background();
-	stars_draw_background();		
+	extern void stars_draw_background(int);
+	stars_draw_background(0);		
 
 	Neb2_render_mode = neb_save;
 	

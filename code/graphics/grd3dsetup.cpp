@@ -868,6 +868,7 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_set_texture_addressing = gr_d3d_set_texture_addressing;
 	gr_screen.gf_zbias = gr_d3d_zbias;
 	gr_screen.gf_set_fill_mode = gr_d3d_set_fill_mode;
+	gr_screen.gf_set_texture_panning = d3d_set_texture_panning;
 
 	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_d3d_make_buffer;

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:25:32 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-07-01 01:12:31 $
+ * $Author: bobboau $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/24 07:25:32  taylor
+ * filename case change
+ *
  * Revision 2.4  2004/04/26 12:43:58  taylor
  * minor fixes, HTL lines, 32-bit texture support
  *
@@ -90,6 +93,7 @@ void gr_opengl_set_tex_env_scale(float scale);
 int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_preload_init();
 void opengl_set_max_anistropy();
+void gr_opengl_set_texture_panning(float u, float v, bool enable);
 
 
 #endif	//_GROPENGLTEXTURE_H

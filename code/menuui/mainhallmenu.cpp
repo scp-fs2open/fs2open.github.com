@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-04-30 18:33:22 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-07-01 01:12:32 $
+ * $Author: bobboau $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/04/30 18:33:22  Kazan
+ * Lobby screen only shows when PXO_LOBBY is defined
+ *
  * Revision 2.16  2004/03/08 22:02:39  Kazan
  * Lobby GUI screen restored
  *
@@ -1091,7 +1094,7 @@ void main_hall_init(int main_hall_num)
 	//	Main_hall_netgame_started = 1;
 	//	main_hall_do_multi_ready();
 	//} DTP commented out to keep original source
-	if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) && (Game_mode == GM_MULTIPLAYER)) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl dont get thrown into Multiplayer with a Singleplayer Pilot.
+	if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl dont get thrown into Multiplayer with a Singleplayer Pilot.
 		Main_hall_netgame_started = 1;
 		main_hall_do_multi_ready();
 	}

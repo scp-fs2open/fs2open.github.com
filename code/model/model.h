@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.41 $
- * $Date: 2004-06-28 02:13:08 $
+ * $Revision: 2.42 $
+ * $Date: 2004-07-01 01:12:32 $
  * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2004/06/28 02:13:08  bobboau
+ * high level index buffer suport and d3d implementation,
+ * OGL people need to get this working on your end as it's broke now
+ *
  * Revision 2.40  2004/05/10 10:51:52  Goober5000
  * made primary and secondary banks quite a bit more friendly... added error-checking
  * and reorganized a bunch of code
@@ -450,6 +454,7 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
+#include "graphics/2d.h"
 
 struct object;
 
@@ -605,13 +610,10 @@ typedef struct model_special {
 #define MAX_LIVE_DEBRIS	7
 
 struct buffer_data{
-	buffer_data():index_buffer(NULL){};
-	~buffer_data(){if(index_buffer)free(index_buffer);};
-	void allocate_index_buffer(int size){if(index_buffer)free(index_buffer); index_buffer = (short*)malloc(sizeof(short) * size);};
 	int vertex_buffer;     //index to a array of pointers to vertex buffers
 	int texture;     //this is the texture the vertex buffer will use
 	int n_prim;
-	short* index_buffer;
+	index_list index_buffer;
 //other things we may want to keep track of for vertex buffers, like material settings
 };
 
