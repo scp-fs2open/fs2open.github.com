@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:04 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-05 04:25:28 $
+ * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:04  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2  2002/12/10 05:43:33  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -984,7 +987,7 @@ int red_alert_check_status()
 		if ( Game_mode & GM_CAMPAIGN_MODE ) {
 			red_alert_store_wingman_status();
 			mission_goal_fail_incomplete();
-			mission_campaign_store_goals_and_events();
+			mission_campaign_store_goals_and_events_and_variables();
 			scoring_level_close();
 			mission_campaign_eval_next_mission();
 			mission_campaign_mission_over();

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-12-24 07:42:29 $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-05 04:25:28 $
  * $Author: Goober5000 $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/24 07:42:29  Goober5000
+ * added change-ai-class and is-ai-class, and I think I may also have nailed the
+ * is-iff bug; did some other bug hunting as well
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/17 02:18:40  Goober5000
  * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
  * --Goober5000
@@ -1881,7 +1886,7 @@ void multi_standalone_postgame_init()
 	if ( Game_mode & GM_CAMPAIGN_MODE ) {
 		// MUST store goals and events first - may be used to evaluate next mission
 		// store goals and events
-		mission_campaign_store_goals_and_events();
+		mission_campaign_store_goals_and_events_and_variables();
 
 		// evaluate next mission
 		mission_campaign_eval_next_mission();

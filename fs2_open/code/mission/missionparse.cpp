@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-05-09 23:52:01 $
- * $Author: phreak $
+ * $Revision: 2.37 $
+ * $Date: 2003-09-05 04:25:29 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/05/09 23:52:01  phreak
+ * changed around code in parse_mission_info() to support user-defined loading screens
+ *
  * Revision 2.35  2003/04/29 01:03:23  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -3999,14 +4002,56 @@ void parse_asteroid_fields(mission *pm)
 
 void parse_variables()
 {
+	int i, j, k, num_variables;
+
 	if (! optional_string("#Sexp_variables") ) {
 		return;
 	} else {
-		int num_variables;
 		num_variables = stuff_sexp_variable_list();
 	}
-}
 
+	// Goober5000 - now set the default value, if it's a campaign-persistent variable
+	// look through all previous missions (by doing it this way, we will continually
+	// overwrite the variable with the most recent information)
+	for (i=0; i<Campaign.num_missions_completed; i++)
+	{
+		// loop through this particular previous mission's variables
+		for (j=0; j<Campaign.missions[i].num_saved_variables; j++)
+		{
+			// loop through the current mission's variables
+			for (k=0; k<num_variables; k++)
+			{
+				// if the current mission has a variable with the same name as a campaign
+				// variable AND it is not a block variable, re-assign its initial value
+				// to the previous mission's value
+				if (!(stricmp(Sexp_variables[k].variable_name, Campaign.missions[i].saved_variables[j].variable_name))
+					&& !(Campaign.missions[i].saved_variables[j].type & SEXP_VARIABLE_BLOCK))
+				{
+					Sexp_variables[k].type = Campaign.missions[i].saved_variables[j].type;
+					strcpy(Sexp_variables[k].text, Campaign.missions[i].saved_variables[j].text);
+				}
+			}
+		}
+	}
+
+	// Goober5000 - next, see if any player-persistent variables are set
+	for (i=0; i<Player->num_variables; i++)
+	{
+		// loop through the current mission's variables
+		for (j=0; j<num_variables; j++)
+		{
+			// if the current mission has a variable with the same name as a player
+			// variable AND it is not a block variable, re-assign its initial value
+			// to the previous mission's value
+			if (!(stricmp(Sexp_variables[j].variable_name, Player->player_variables[i].variable_name))
+				&& !(Player->player_variables[i].type & SEXP_VARIABLE_BLOCK))
+			{
+				Sexp_variables[j].type = Player->player_variables[i].type;
+				strcpy(Sexp_variables[j].text, Player->player_variables[i].text);
+			}
+		}
+	}
+}
 
 void parse_mission(mission *pm, int flag)
 {

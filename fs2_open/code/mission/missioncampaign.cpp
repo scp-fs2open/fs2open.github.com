@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.10 $
+ * $Date: 2003-09-05 04:25:29 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.8  2003/03/03 04:28:36  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -294,7 +297,8 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 campaign Campaign;
 
 // variables with deal with the campaign save file
-#define CAMPAIGN_FILE_VERSION							12
+// bumped to 13 by Goober5000 for persistent variables
+#define CAMPAIGN_FILE_VERSION							13
 //#define CAMPAIGN_FILE_COMPATIBLE_VERSION		CAMPAIGN_INITIAL_RELEASE_FILE_VERSION
 #define CAMPAIGN_FILE_COMPATIBLE_VERSION			CAMPAIGN_FILE_VERSION
 #define CAMPAIGN_FILE_ID								0xbeefcafe
@@ -673,7 +677,7 @@ int mission_campaign_load( char *filename, int load_savefile )
 				}
 			}
 
-			// Do misison looping stuff
+			// Do mission looping stuff
 			cm->has_mission_loop = 0;
 			if ( optional_string("+Mission Loop:") ) {
 				cm->has_mission_loop = 1;
@@ -727,15 +731,18 @@ int mission_campaign_load( char *filename, int load_savefile )
 			if (Fred_running) {
 				cm->num_goals = -1;
 				cm->num_events = -1;
+				cm->num_saved_variables = -1;
 				cm->notes = NULL;
 
 			} else {
 				cm->num_goals = 0;
 				cm->num_events = 0;
+				cm->num_saved_variables = -1;
 			}
 
 			cm->goals = NULL;
 			cm->events = NULL;
+			cm->saved_variables = NULL;
 			Campaign.num_missions++;
 		}
 	}
@@ -892,6 +899,14 @@ int mission_campaign_savefile_save()
 			for ( j = 0; j < Campaign.missions[i].num_events; j++ ) {
 				cfwrite_string_len( Campaign.missions[i].events[j].name, fp );
 				cfwrite_char( Campaign.missions[i].events[j].status, fp );
+			}
+
+			// write out campaign-persistent variables - Goober5000
+			cfwrite_int( Campaign.missions[i].num_saved_variables, fp );
+			for ( j = 0; j < Campaign.missions[i].num_saved_variables; j++ ) {
+				cfwrite_int( Campaign.missions[i].saved_variables[j].type, fp );
+				cfwrite_string_len( Campaign.missions[i].saved_variables[j].text, fp );
+				cfwrite_string_len( Campaign.missions[i].saved_variables[j].variable_name, fp );
 			}
 
 			// write flags
@@ -1161,6 +1176,26 @@ void mission_campaign_savefile_load( char *cfilename )
 			Campaign.missions[num].events[j].status = cfread_char( fp );
 		}
 
+		// Goober5000 - get the variables from the savefile -------------------------
+		Campaign.missions[num].num_saved_variables = cfread_int( fp );
+		
+		// be sure to malloc out space for the variables stuff, then zero the memory!!!  Don't do malloc
+		// if there are no variables
+		Campaign.missions[num].saved_variables = (sexp_variable *)malloc( Campaign.missions[num].num_saved_variables * sizeof(sexp_variable) );
+		if ( Campaign.missions[num].num_saved_variables > 0 ) {
+			memset( Campaign.missions[num].saved_variables, 0, sizeof(sexp_variable) * Campaign.missions[num].num_saved_variables );
+			Assert( Campaign.missions[num].saved_variables != NULL );
+		}
+
+		// now read in the variable information for this mission
+		for ( j = 0; j < Campaign.missions[num].num_saved_variables; j++ ) {
+			Campaign.missions[num].saved_variables[j].type = cfread_int( fp );
+			cfread_string_len( Campaign.missions[num].saved_variables[j].text, TOKEN_LENGTH, fp );
+			cfread_string_len( Campaign.missions[num].saved_variables[j].variable_name, TOKEN_LENGTH, fp );
+		}
+		// done with variables ------------------------------------------------------
+
+
 		// now read flags
 		Campaign.missions[num].flags = cfread_int(fp);
 	}	
@@ -1273,7 +1308,7 @@ int mission_campaign_previous_mission()
 int mission_campaign_eval_next_mission( int store_stats )
 {
 	char *name;
-	int cur, i;
+	int cur, i, j;
 	cmission *mission;
 
 	Campaign.next_mission = -1;
@@ -1345,6 +1380,30 @@ int mission_campaign_eval_next_mission( int store_stats )
 		} else
 			Int3();
 	}
+
+	// Goober5000 - handle campaign-persistent variables -------------------------------------
+	if (mission->num_saved_variables > 0) {
+		free( mission->saved_variables );
+	}
+
+	mission->num_saved_variables = sexp_campaign_persistent_variable_count();
+	if ( mission->num_saved_variables > 0) {
+		mission->saved_variables = (sexp_variable *)malloc( sizeof(sexp_variable) * mission->num_saved_variables);
+		Assert( mission->saved_variables != NULL );
+	}
+
+	// copy the needed variable info
+	j=0;
+	for (i = 0; i < sexp_variable_count(); i++) {
+		if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT)
+		{
+			mission->saved_variables[j].type = Sexp_variables[i].type;
+			strcpy(mission->saved_variables[j].text, Sexp_variables[i].text);
+			strcpy(mission->saved_variables[j].variable_name, Sexp_variables[i].variable_name);
+			j++;
+		}
+	}
+	// --------------------------------------------------------------------------
 
 	// maybe store the alltime stats which would be current at the end of this mission
 	if ( store_stats ) {
@@ -1428,10 +1487,11 @@ void mission_campaign_eval_next_mission()
 }
 
 // Store mission's goals and events in Campaign struct
-void mission_campaign_store_goals_and_events()
+// Goober5000 - added variables
+void mission_campaign_store_goals_and_events_and_variables()
 {
 	char *name;
-	int cur, i;
+	int cur, i, j;
 	cmission *mission;
 
 	cur = Campaign.current_mission;
@@ -1502,6 +1562,30 @@ void mission_campaign_store_goals_and_events()
 		} else
 			Int3();
 	}
+
+	// Goober5000 - handle campaign-persistent variables -------------------------------------
+	if (mission->num_saved_variables > 0) {
+		free( mission->saved_variables );
+	}
+
+	mission->num_saved_variables = sexp_campaign_persistent_variable_count();
+	if ( mission->num_saved_variables > 0) {
+		mission->saved_variables = (sexp_variable *)malloc( sizeof(sexp_variable) * mission->num_saved_variables);
+		Assert( mission->saved_variables != NULL );
+	}
+
+	// copy the needed variable info
+	j=0;
+	for (i = 0; i < sexp_variable_count(); i++) {
+		if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT)
+		{
+			mission->saved_variables[j].type = Sexp_variables[i].type;
+			strcpy(mission->saved_variables[j].text, Sexp_variables[i].text);
+			strcpy(mission->saved_variables[j].variable_name, Sexp_variables[i].variable_name);
+			j++;
+		}
+	}
+	// --------------------------------------------------------------------------
 }
 
 // this function is called when the player's mission is over.  It updates the internal store of goals
@@ -1530,6 +1614,9 @@ void mission_campaign_mission_over()
 	for ( i=0; i<Num_granted_weapons; i++ ){
 		Campaign.weapons_allowed[Granted_weapons[i]] = 1;	
 	}
+
+	// Goober5000 - player-persistent variables are handled when the mission is
+	// over, not necessarily when the mission is accepted
 
 	// DKA 12/11/98 - Unneeded already evaluated and stored
 	// determine what new mission we are moving to.
@@ -1564,6 +1651,10 @@ void mission_campaign_mission_over()
 
 		free( mission->events );
 		mission->num_events = 0;
+
+		// Goober5000
+		free( mission->saved_variables );
+		mission->num_saved_variables = 0;
 
 		Sexp_nodes[mission->formula].value = SEXP_UNKNOWN;
 	}
@@ -1602,12 +1693,18 @@ void mission_campaign_close()
 			free ( Campaign.missions[i].events );
 		}
 
+		// Goober5000
+		if ( Campaign.missions[i].num_saved_variables > 0 ){
+			free ( Campaign.missions[i].saved_variables );
+		}
+
 		if ( !Fred_running ){
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
 		}
 
 		Campaign.missions[i].num_goals = 0;
 		Campaign.missions[i].num_events = 0;
+		Campaign.missions[i].num_saved_variables = 0;	// Goober5000
 	}
 }
 
@@ -1749,6 +1846,8 @@ void read_mission_goal_list(int num)
 			strcpy(Campaign.missions[num].events[i].name, events[i]);
 		}
 	}
+
+	// Goober5000 - variables do not need to be read here
 
 	// close localization
 	lcl_ext_close();
@@ -1921,7 +2020,7 @@ void mission_campaign_skip_to_next(int start_game)
 	Campaign.missions[Campaign.current_mission].flags |= CMISSION_FLAG_SKIPPED;
 
 	// store
-	mission_campaign_store_goals_and_events();
+	mission_campaign_store_goals_and_events_and_variables();
 
 	// now set the next mission
 	mission_campaign_eval_next_mission();
@@ -2000,4 +2099,59 @@ void mission_campaign_jump_to_mission(char *name)
 	// restart the campaign
 	mission_campaign_savefile_delete(Campaign.filename);
 	mission_campaign_load(Campaign.filename);
+}
+
+// Goober5000
+void mission_campaign_save_player_persistent_variables()
+{
+	int i, j, index;
+
+	// make sure we are actually playing a campaign
+	if (!(Game_mode & GM_CAMPAIGN_MODE))
+		return;
+
+	// make sure this is a single-player campaign
+	if (!(Campaign.type == CAMPAIGN_TYPE_SINGLE))
+		return;
+
+	// now save variables
+	for (i=0; i<sexp_variable_count(); i++)
+	{
+		// if we get to save it
+		if (Sexp_variables[i].type & SEXP_VARIABLE_PLAYER_PERSISTENT)
+		{
+			index = -1;
+
+			// search for the previous instance of this variable
+			for (j=0; j<Player->num_variables; j++)
+			{
+				// found
+				if (!(stricmp(Sexp_variables[i].variable_name, Player->player_variables[j].variable_name)))
+				{
+					index = j;
+					break;
+				}
+			}
+
+			// if not found, allocate new variable
+			if (index < 0)
+			{
+				// check first for overflow
+				if (Player->num_variables == MAX_SEXP_VARIABLES)
+				{
+					Error(LOCATION, "Too many player-persistent variables (last valid variable: %s, max number of variables: %d).  The remaining ones will not be saved.  Press OK to continue.", Player->player_variables[Player->num_variables-1].variable_name, Player->num_variables);
+					return;
+				}
+
+				// set index and increment
+				index = Player->num_variables;
+				Player->num_variables++;
+			}
+
+			// finally, save this variable
+			Player->player_variables[index].type = Sexp_variables[i].type;
+			strcpy(Player->player_variables[index].text, Sexp_variables[i].text);
+			strcpy(Player->player_variables[index].variable_name, Sexp_variables[i].variable_name);
+		}
+	}
 }

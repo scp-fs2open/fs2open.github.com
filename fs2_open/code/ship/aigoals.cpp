@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-01-19 22:20:22 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-05 04:25:27 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/01/19 22:20:22  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.5  2003/01/18 23:25:38  Goober5000
  * made "no-subspace-drive" applicable to all ships and fixed a really *STUPID*
  * bug that made FRED keep crashing (missing comma, bleagh!)
@@ -2081,8 +2086,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	// we are safe removing this bit here.
 	aip->ai_flags &= ~AIF_FORMATION_OBJECT;
 
+	// Goober5000 - we may want to use AI for the player
 	// AL 3-7-98: If this is a player ship, and the goal is not a formation goal, then do a quick out
-	if ( (objp->flags & OF_PLAYER_SHIP) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) ) {
+	if ( !(Player_use_ai) && (objp->flags & OF_PLAYER_SHIP) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) ) {
 		return;
 	}	
 

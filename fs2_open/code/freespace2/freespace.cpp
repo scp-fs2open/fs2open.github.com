@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-08-22 07:35:08 $
- * $Author: bobboau $
+ * $Revision: 2.40 $
+ * $Date: 2003-09-05 04:25:29 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/08/22 07:35:08  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.38  2003/08/21 20:54:38  randomtiger
  * Fixed switching - RT
  *
@@ -1686,6 +1691,9 @@ void game_flash_diminish(float frametime)
 
 void game_level_close()
 {
+	// save player-persistent variables
+	mission_campaign_save_player_persistent_variables();	// Goober5000
+
 	// De-Initialize the game subsystems
 	sexp_music_close();	// Goober5000
 	message_mission_shutdown();

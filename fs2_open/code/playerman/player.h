@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.2 $
- * $Date: 2003-01-14 04:00:15 $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-05 04:25:28 $
  * $Author: Goober5000 $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/14 04:00:15  Goober5000
+ * allowed for up to 256 main halls
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -335,6 +339,10 @@ typedef struct player {
 
 	int				failures_this_session;					// number of times dude has failed the mission he is on this session
 	ubyte				show_skip_popup;							// false if dude clicked "don't show this again" -- persists for current mission only
+
+	// player-persistent variables - Goober5000
+	int				num_variables;
+	sexp_variable	player_variables[MAX_SEXP_VARIABLES];
 } player_t;
 
 extern player Players[MAX_PLAYERS];
@@ -342,6 +350,8 @@ extern player Players[MAX_PLAYERS];
 extern int Player_num;								// player num of person playing on this machine
 extern player *Player;								// pointer to my information
 //extern control_info PlayerControls;
+
+extern int Player_use_ai;
 
 extern void player_init();							// initialization per level
 extern void player_level_init();

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-08-20 08:11:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-05 04:25:28 $
+ * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/08/20 08:11:28  wmcoolmon
+ * Added error screens to the barracks and start screens when a pilot file can't be deleted
+ *
  * Revision 2.5  2003/03/03 04:28:36  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -265,9 +268,11 @@
 #endif
 
 // update this when altering data that is read/written to .PLR file
-#define CURRENT_PLAYER_FILE_VERSION					140
+#define CURRENT_PLAYER_FILE_VERSION					141
 #define FS2_DEMO_PLAYER_FILE_VERSION				135
-#define LOWEST_COMPATIBLE_PLAYER_FILE_VERSION	CURRENT_PLAYER_FILE_VERSION			// demo plr files should work in final
+#define LOWEST_COMPATIBLE_PLAYER_FILE_VERSION		140	// compatible with release - Goober5000
+// it used to be "demo plr files should work in final", but I guess this was cleared out
+// when version 140 came along - see below
 
 // keep track of pilot file changes here 
 // version 2	: Added squad logo filename
@@ -283,6 +288,9 @@
 // version 138	: new multiplayer config
 // version 139 : # medals increased - added compatibility with old plr file versions
 // version 140 : ships table reordered. clear out old pilot files
+// HERE ONWARD ARE SCP CHANGES - MAINTAIN COMPATIBILITY WITH RELEASE -- VERSION 140
+// version 141 : player-persistent variables - Goober5000
+
 // search for PLAYER INIT for new pilot initialization stuff. I _think_ its in the right spot for now
 #define PLR_FILE_ID	'FPSF'	// unique signiture to identify a .PLR file (FreeSpace Player File)  // FPSF appears as FSPF in file.
 
@@ -372,12 +380,19 @@ int verify_pilot_file(char *filename, int single, int *rank)
 		return -1;
 	}
 
+
 	// check for compatibility here
 	file_version = cfread_uint(file);
 /*	if (file_version < INITIAL_RELEASE_FILE_VERSION) { */
 //	if (file_version != CURRENT_PLAYER_FILE_VERSION) {
 	if (file_version < LOWEST_COMPATIBLE_PLAYER_FILE_VERSION) {
 		nprintf(("Warning", "WARNING => Player file is outdated and not compatible...\n"));
+
+		// Goober5000 - warn them
+		char warning_text[256];
+		sprintf(warning_text, "ATTENTION: Detected out-of-date player file \"%s\".  If you press OK, this file will be deleted!  Back this file up now if you do not want to lose it.  Contact a coder to resolve this error.", filename);
+		Error(LOCATION, warning_text);
+
 		cfclose(file);
 		delete_pilot_file( filename, single );
 		return -1;
@@ -622,6 +637,12 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	if (Player_file_version < LOWEST_COMPATIBLE_PLAYER_FILE_VERSION) {
 		nprintf(("Warning", "WARNING => Player file is outdated and not compatible...\n"));
+
+		// Goober5000 - warn them
+		char warning_text[256];
+		sprintf(warning_text, "ATTENTION: Detected out-of-date player file \"%s\".  If you press OK, this file will be deleted!  Back this file up now if you do not want to lose it.  Contact a coder to resolve this error.", filename);
+		Error(LOCATION, warning_text);
+
 		cfclose(file);
 		delete_pilot_file( filename, single );
 		return -1;
@@ -815,6 +836,18 @@ int read_pilot_file(char *callsign, int single, player *p)
 	(void) cfread_int(file);
 	(void) cfread_int(file);
 #endif
+
+	// Goober5000 - read in player-persistent variables
+	// maintain compatibility with previous file versions
+	if (Player_file_version >= 141)
+	{
+		Player->num_variables = cfread_int( file );
+		for ( i = 0; i < Player->num_variables; i++ ) {
+			Player->player_variables[i].type = cfread_int( file );
+			cfread_string_len( Player->player_variables[i].text, TOKEN_LENGTH, file );
+			cfread_string_len( Player->player_variables[i].variable_name, TOKEN_LENGTH, file );
+		}
+	}
 
 	if (cfclose(file))
 		return errno;
@@ -1086,6 +1119,14 @@ int write_pilot_file_core(player *p)
 	cfwrite_int(0, file);
 	cfwrite_int(0, file);
 #endif
+
+	// write out player-persistent variables - Goober5000
+	cfwrite_int( Player->num_variables, file );
+	for ( i = 0; i < Player->num_variables; i++ ) {
+		cfwrite_int( Player->player_variables[i].type, file );
+		cfwrite_string_len( Player->player_variables[i].text, file );
+		cfwrite_string_len( Player->player_variables[i].variable_name, file );
+	}
 
 	if (!cfclose(file))
 		return 0;

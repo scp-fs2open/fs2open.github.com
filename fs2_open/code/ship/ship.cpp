@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.71 $
- * $Date: 2003-08-28 20:42:18 $
+ * $Revision: 2.72 $
+ * $Date: 2003-09-05 04:25:27 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2003/08/28 20:42:18  Goober5000
+ * implemented rotating barrels for firing primary weapons
+ * --Goober5000
+ *
  * Revision 2.70  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -5084,7 +5088,8 @@ void ship_process_post(object * obj, float frametime)
 			return;
 		}
 
-		if ( (Ships[num].ai_index >= 0) && (!(obj->flags & OF_PLAYER_SHIP)) ){
+		// Goober5000 - player may want to use AI
+		if ( (Ships[num].ai_index >= 0) && (!(obj->flags & OF_PLAYER_SHIP) || Player_use_ai) ){
 			if (!physics_paused && !ai_paused){
 				ai_process( obj, Ships[num].ai_index, frametime );
 			}
@@ -9250,42 +9255,79 @@ int ship_docking_valid(int docker, int dockee)
 
 	// escape pods can dock with transports, freighters, cruisers.
 	if ( docker_type == SHIP_TYPE_ESCAPEPOD ) {
-		if ( (dockee_type == SHIP_TYPE_TRANSPORT) || (dockee_type == SHIP_TYPE_CRUISER) || (dockee_type == SHIP_TYPE_FREIGHTER) || (dockee_type == SHIP_TYPE_DRYDOCK) || (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER) || (dockee_type == SHIP_TYPE_AWACS)){
+		if ( (dockee_type == SHIP_TYPE_TRANSPORT) || (dockee_type == SHIP_TYPE_CRUISER)
+			|| (dockee_type == SHIP_TYPE_FREIGHTER) || (dockee_type == SHIP_TYPE_DRYDOCK)
+			|| (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER)
+			|| (dockee_type == SHIP_TYPE_AWACS))
+		{
 			return 1;
 		}
 	}
 
-	// docker == freighter
-	if (docker_type == SHIP_TYPE_FREIGHTER) {
-		if ( (dockee_type == SHIP_TYPE_CARGO) || (dockee_type == SHIP_TYPE_CRUISER) || (dockee_type == SHIP_TYPE_CAPITAL) || (dockee_type == SHIP_TYPE_SUPERCAP) || (dockee_type == SHIP_TYPE_DRYDOCK) || (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER) || (dockee_type == SHIP_TYPE_AWACS)){
+	// docker == freighter - navbuoys, sentries, and fighters added by Goober5000
+	if (docker_type == SHIP_TYPE_FREIGHTER)
+	{
+		if ( (dockee_type == SHIP_TYPE_CARGO) || (dockee_type == SHIP_TYPE_CRUISER)
+			|| (dockee_type == SHIP_TYPE_CAPITAL) || (dockee_type == SHIP_TYPE_SUPERCAP)
+			|| (dockee_type == SHIP_TYPE_DRYDOCK) || (dockee_type == SHIP_TYPE_CORVETTE)
+			|| (dockee_type == SHIP_TYPE_GAS_MINER) || (dockee_type == SHIP_TYPE_AWACS)
+			|| (dockee_type == SHIP_TYPE_NAVBUOY) || (dockee_type == SHIP_TYPE_SENTRYGUN)
+			|| (dockee_type == SHIP_TYPE_FIGHTER_BOMBER) || (dockee_type == SHIP_TYPE_STEALTH))
+		{
 			return 1;
 		}
 	}
 
 	// docker == cruiser
-	if ( (docker_type == SHIP_TYPE_CRUISER) || (docker_type == SHIP_TYPE_CORVETTE) || (docker_type == SHIP_TYPE_GAS_MINER) || (docker_type == SHIP_TYPE_AWACS)){
-		if ( (dockee_type == SHIP_TYPE_CARGO) || (dockee_type == SHIP_TYPE_CRUISER) || (dockee_type == SHIP_TYPE_CAPITAL) || (dockee_type == SHIP_TYPE_SUPERCAP) || (dockee_type == SHIP_TYPE_DRYDOCK) || (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER) || (dockee_type == SHIP_TYPE_AWACS)){
+	if ( (docker_type == SHIP_TYPE_CRUISER) || (docker_type == SHIP_TYPE_CORVETTE) ||
+		(docker_type == SHIP_TYPE_GAS_MINER) || (docker_type == SHIP_TYPE_AWACS))
+	{
+		if ( (dockee_type == SHIP_TYPE_CARGO) || (dockee_type == SHIP_TYPE_CRUISER)
+			|| (dockee_type == SHIP_TYPE_CAPITAL) || (dockee_type == SHIP_TYPE_SUPERCAP)
+			|| (dockee_type == SHIP_TYPE_DRYDOCK) || (dockee_type == SHIP_TYPE_CORVETTE)
+			|| (dockee_type == SHIP_TYPE_GAS_MINER) || (dockee_type == SHIP_TYPE_AWACS))
+		{
 			return 1;
 		}
 	}
 
 	// Transports can now dock with fighter-bomber and stealth - Goober5000
-	if (docker_type == SHIP_TYPE_TRANSPORT) {
+	// Goober5000 - navbuoys, sentries, and fighters added
+	if (docker_type == SHIP_TYPE_TRANSPORT)
+	{
 		if ( (dockee_type == SHIP_TYPE_CARGO) || (dockee_type == SHIP_TYPE_CRUISER)
 			|| (dockee_type == SHIP_TYPE_FREIGHTER) || (dockee_type == SHIP_TYPE_TRANSPORT)
 			|| (dockee_type == SHIP_TYPE_CAPITAL) || (dockee_type == SHIP_TYPE_ESCAPEPOD) 
 			|| (dockee_type == SHIP_TYPE_SUPERCAP) || (dockee_type == SHIP_TYPE_DRYDOCK)
 			|| (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_GAS_MINER)
 			|| (dockee_type == SHIP_TYPE_AWACS) || (dockee_type == SHIP_TYPE_FIGHTER_BOMBER)
-			|| (dockee_type == SHIP_TYPE_FIGHTER) || (dockee_type == SHIP_TYPE_BOMBER)
-			|| (dockee_type == SHIP_TYPE_STEALTH) )
+			|| (dockee_type == SHIP_TYPE_STEALTH) || (dockee_type == SHIP_TYPE_NAVBUOY)
+			|| (dockee_type == SHIP_TYPE_SENTRYGUN))
 		{
 				return 1;
 		}
 	}
 
-	if (docker_type == SHIP_TYPE_REPAIR_REARM) {
-		if ((dockee_type == SHIP_TYPE_FIGHTER_BOMBER) || (dockee_type == SHIP_TYPE_STEALTH)){
+	// supply ships
+	if (docker_type == SHIP_TYPE_REPAIR_REARM)
+	{
+		if ((dockee_type == SHIP_TYPE_FIGHTER_BOMBER) || (dockee_type == SHIP_TYPE_STEALTH))
+		{
+			return 1;
+		}
+	}
+
+	// fighters, bombers, and stealth - Goober5000
+	if ((docker_type == SHIP_TYPE_FIGHTER_BOMBER) || (docker_type == SHIP_TYPE_STEALTH))
+	{
+		if ( (dockee_type == SHIP_TYPE_CARGO) || (dockee_type == SHIP_TYPE_TRANSPORT)
+			|| (dockee_type == SHIP_TYPE_FIGHTER_BOMBER) || (dockee_type == SHIP_TYPE_STEALTH)
+			|| (dockee_type == SHIP_TYPE_FREIGHTER) || (dockee_type == SHIP_TYPE_CRUISER)
+			|| (dockee_type == SHIP_TYPE_CORVETTE) || (dockee_type == SHIP_TYPE_CAPITAL)
+			|| (dockee_type == SHIP_TYPE_SUPERCAP) || (dockee_type == SHIP_TYPE_DRYDOCK)
+			|| (dockee_type == SHIP_TYPE_REPAIR_REARM) || (dockee_type == SHIP_TYPE_NAVBUOY)
+			|| (dockee_type == SHIP_TYPE_SENTRYGUN))
+		{
 			return 1;
 		}
 	}
@@ -11834,13 +11876,32 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	// check for rotating artillery
 	if ( psub->flags & MSS_FLAG_ARTILLERY )
 	{
+		ship_weapon *swp = &shipp->weapons;
+
 		// rotate only if trigger is down
 		if ( !(shipp->flags & SF_TRIGGER_DOWN) )
 			return;
 
-		// rotate only if it belongs to the firing bank (or firing is linked)
-		if ( !(psub->weapon_rotation_pbank == shipp->weapons.current_primary_bank) && !(shipp->flags & SF_PRIMARY_LINKED) )
-			return;
+		// check linked
+		if ( shipp->flags & SF_PRIMARY_LINKED )
+		{
+			int i, ammo_tally = 0;
+
+			// calculate ammo
+			for (i=0; i<swp->num_primary_banks; i++)
+				ammo_tally += swp->primary_bank_ammo[i];
+
+			// do not rotate if out of ammo
+			if (ammo_tally <= 0)
+				return;
+		}
+		// check unlinked
+		else
+		{
+			// do not rotate if this is not the firing bank or if we have no ammo in this bank
+			if ((psub->weapon_rotation_pbank != swp->current_primary_bank) || (swp->primary_bank_ammo[swp->current_primary_bank] <= 0))
+				return;
+		}
 	}
 
 	// if we got this far, we can rotate - so choose which method to use
