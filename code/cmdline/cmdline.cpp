@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.10 $
- * $Date: 2002-11-10 16:30:53 $
+ * $Revision: 2.11 $
+ * $Date: 2002-11-10 16:32:42 $
  * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/11/10 16:30:53  DTP
+ * -DTP reworked mod support,
+ *
  * Revision 2.9  2002/10/27 23:55:36  DTP
  * DTP; started basic implementation of mod-support
  * plain files only for now. fs2_open.exe -mod X will look for files in fs2/ X /all-legal-subdirectories. no checking/creating dirs yet. directories must be there.
@@ -307,7 +310,7 @@ int Cmdline_window = 0;
 int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 int Cmdline_allslev = 0;
 int Cmdline_phreak	= 0;
-char *Hold_mod = NULL;
+
 
 
 
