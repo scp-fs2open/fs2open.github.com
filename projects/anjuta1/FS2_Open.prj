@@ -22,7 +22,7 @@ FS2 Open: SCP<PROJECT_DESCRIPTION_END>
 
 props.file.type=project
 
-anjuta.version=1.2.1
+anjuta.version=1.2.3
 anjuta.compatibility.level=1
 
 project.name=FS2_Open
@@ -47,7 +47,7 @@ project.menu.comment=FS2_Open Version 3.6.5
 project.menu.icon=
 project.menu.need.terminal=0
 
-project.configure.options=--enable-debug --enable-gprof
+project.configure.options=
 anjuta.program.arguments=
 preferences.build.option.jobs=0
 preferences.build.option.silent=0
@@ -265,10 +265,6 @@ module.include.files=\
 	code/render/3dinternal.h\
 	code/scramble/scramble.h\
 	code/ship/afterburner.h\
-	code/ship/ai.h\
-	code/ship/aibig.h\
-	code/ship/aigoals.h\
-	code/ship/ailocal.h\
 	code/ship/awacs.h\
 	code/ship/ship.h\
 	code/ship/shipcontrails.h\
@@ -326,14 +322,20 @@ module.include.files=\
 	code/graphics/gropengltexture.h\
 	code/autopilot/autopilot.h\
 	code/hud/hudnavigation.h\
-	code/mcd/mcd.h\
-	code/cutscene/mvelib.h\
 	code/PreProcDefines.h\
 	code/hud/hudparse.h\
 	code/graphics/gropenglbmpman.h\
 	code/object/objectdock.h\
 	code/sound/ogg/ogg.h\
-	code/camera/camera.h
+	code/camera/camera.h\
+	code/lab/lab.h\
+	code/lab/wmcgui.h\
+	code/ai/ai.h\
+	code/ai/aibig.h\
+	code/ai/aigoals.h\
+	code/ai/aiinternal.h\
+	code/ai/ailocal.h\
+	code/menuui/storybook.h
 
 module.source.name=.
 module.source.type=
@@ -535,10 +537,6 @@ module.source.files=\
 	code/render/3dsetup.cpp\
 	code/scramble/scramble.cpp\
 	code/ship/afterburner.cpp\
-	code/ship/ai.cpp\
-	code/ship/aibig.cpp\
-	code/ship/aicode.cpp\
-	code/ship/aigoals.cpp\
 	code/ship/awacs.cpp\
 	code/ship/shield.cpp\
 	code/ship/ship.cpp\
@@ -604,12 +602,8 @@ module.source.files=\
 	code/graphics/gropengllight.cpp\
 	code/graphics/gropenglextension.cpp\
 	code/graphics/gropengltexture.cpp\
-	code/sound/audiostr-unix.cpp\
 	code/autopilot/autopilot.cpp\
 	code/hud/hudnavigation.cpp\
-	code/cutscene/decoder16.cpp\
-	code/cutscene/mvelib.cpp\
-	code/cutscene/mveplayer.cpp\
 	code/hud/hudparse.cpp\
 	code/radar/radarorb.cpp\
 	code/radar/radarsetup.cpp\
@@ -617,7 +611,17 @@ module.source.files=\
 	code/menuui/optionsmenuscp.cpp\
 	code/object/objectdock.cpp\
 	code/sound/ogg/ogg.cpp\
-	code/camera/camera.cpp
+	code/camera/camera.cpp\
+	code/lab/lab.cpp\
+	code/lab/wmcgui.cpp\
+	code/ai/ai.cpp\
+	code/ai/aibig.cpp\
+	code/ai/aicode.cpp\
+	code/ai/aigoals.cpp\
+	code/ai/aiturret.cpp\
+	code/graphics/GrD3DStateBlock.cpp\
+	code/menuui/storybook.cpp\
+	code/sound/audiostr-openal.cpp
 
 module.pixmap.name=.
 module.pixmap.type=

@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.8 2005-03-12 07:42:05 taylor Exp $
+## $Id: Makefile.am,v 1.9 2005-03-27 06:07:00 taylor Exp $
 
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
@@ -13,6 +13,11 @@ EXTRA_PROGRAMS = fs2_open_r fs2_open_d
 ##
 
 FS2_SOURCES =	\
+	ai/ai.cpp	\
+	ai/aibig.cpp	\
+	ai/aicode.cpp	\
+	ai/aigoals.cpp	\
+	ai/aiturret.cpp	\
 	anim/animplay.cpp	\
 	anim/packunpack.cpp	\
 	asteroid/asteroid.cpp	\
@@ -104,6 +109,7 @@ FS2_SOURCES =	\
 	menuui/playermenu.cpp	\
 	menuui/readyroom.cpp	\
 	menuui/snazzyui.cpp	\
+	menuui/storybook.cpp	\
 	menuui/techmenu.cpp	\
 	menuui/trainingmenu.cpp	\
 	mission/missionbriefcommon.cpp	\
@@ -191,10 +197,6 @@ FS2_SOURCES =	\
 	render/3dmath.cpp	\
 	render/3dsetup.cpp	\
 	ship/afterburner.cpp	\
-	ship/ai.cpp	\
-	ship/aibig.cpp	\
-	ship/aicode.cpp	\
-	ship/aigoals.cpp	\
 	ship/awacs.cpp	\
 	ship/shield.cpp	\
 	ship/ship.cpp	\
@@ -291,7 +293,7 @@ endif
 
 if FS2_OS_UNIX
 SOUND_SOURCES +=	\
-	sound/audiostr-unix.cpp	\
+	sound/audiostr-openal.cpp	\
 	sound/acm-unix.cpp
 endif
 
