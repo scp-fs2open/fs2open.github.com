@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.71 $
- * $Date: 2004-06-06 12:25:19 $
- * $Author: randomtiger $
+ * $Revision: 2.72 $
+ * $Date: 2004-06-19 22:15:48 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/06/06 12:25:19  randomtiger
+ * Added new compression option -pcx32dds, build posted in RSB forum.
+ * Changed flag because of launcher bug, have fixed launcher bug, will distribute later.
+ * Also removed experimental flag from launcher flag list, stupid people were reporting bugs on unfinished code.
+ *
  * Revision 2.70  2004/05/01 22:47:23  randomtiger
  * FS2_open will now take flag settings from cmdline_fso.cfg not cmdline.cfg.
  * This means retail FS2 will not crash because of fs2_open flags.
@@ -617,7 +622,10 @@ Flag exe_params[] =
 	"-cell",		  "Enable cell shading",			true,	0,				 EASY_DEFAULT,		"Graphics",		"", 
 	"-phreak", 		  "Enable Phreaks options",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 	"-ship_choice_3d","Enable models instead of ani",	true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
+	"-nomotiondebris","Disable motion debris",			true,	0,				 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-nomotiondebris",
 	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
+
+	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"", 
 
 	"-pcx2dds",	      "Compress pcx",			        true,   0,				 EASY_DEFAULT,		"Game Speed",	"", 
 	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,				 EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Disable%20V-Sync", 
@@ -625,16 +633,13 @@ Flag exe_params[] =
 	"-nobeampierce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"", 
 	"-radar_reduce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"", 
 
-	"-fps",			  "Show frames per seconds",		false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-window",		  "Run in window",					true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-timerbar",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-stats",		  "Show statistics",				true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-coords",		  "Show coordinates",				false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-show_mem_usage","Show memory usage",				true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-pofspew",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-tablecrcs",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-																
+	"-standalone",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-startgame",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-closed",		  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-restricted",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-multilog",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
+
 	"-oldfire",		  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-nohtl",		  "Software mode (very slow)",		true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-nosound",		  "No sound or music",				false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
@@ -645,15 +650,16 @@ Flag exe_params[] =
 	"-query_speech",  "Does this build have speech?",   true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",
 	"-d3d_bad_tsys",  "Enable inefficient textures",	false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",	
 	"-novbo",		  "Disable OpenGL VBO",				true,	0,				 EASY_DEFAULT,		"Troubleshoot", "",	
-																
-	"-standalone",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
-	"-startgame",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
-	"-closed",		  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
-	"-restricted",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
-	"-multilog",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
-	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
-	
-	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"", 
+
+	"-fps",			  "Show frames per seconds",		false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-window",		  "Run in window",					true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-timerbar",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-stats",		  "Show statistics",				true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-coords",		  "Show coordinates",				false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-show_mem_usage","Show memory usage",				true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-pofspew",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-tablecrcs",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -691,6 +697,7 @@ cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
 cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
+cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); //Removes those ugly floating rocks -C
 cmdline_parm spec_arg("-spec", NULL); // use specular highlighting -Sticks
 cmdline_parm glow_arg("-glow", NULL); // use Bobs glow code
 cmdline_parm MissionCRCs("-missioncrcs", NULL);
@@ -781,6 +788,7 @@ int Cmdline_no_set_gamma = 0;
 int Cmdline_d3d_no_vsync = 0;
 int Cmdline_pcx32 = 0;
 int Cmdline_pcx32dds = 0;
+int Cmdline_nomotiondebris = 0;
 int Cmdline_query_speech = 0;
 
 int Cmdline_show_mem_usage = 0;
@@ -1227,6 +1235,10 @@ bool SetCmdlineParams()
 
 	if ( safeloading_arg.found() ) {
 		Cmdline_safeloading = 1;
+	}
+
+	if ( nomotiondebris_arg.found() ) {
+		Cmdline_nomotiondebris = 1;
 	}
 
 	if( cache_ani_arg.found() ) {
