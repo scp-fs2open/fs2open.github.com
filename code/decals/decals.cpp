@@ -129,7 +129,7 @@ texture for the list is set, then a call is made to render the vertex buffer.
 */
 
 #include "object/object.h"
-#include "globalincs\linklist.h"
+#include "globalincs/linklist.h"
 #include "decals/decals.h"
 #include "render/3d.h"
 #include "io/timer.h"
@@ -188,8 +188,10 @@ void decal_realc_pointlist(int n){
 /****init stuff****/
 bool decals_once_init = false;
 void init_decals(){
+	int i;
+
 	//quick find is set to be false everyware because there are no decals, and thus no polys
-	for(int i = 0; i<QUICKFIND_SUBDIVISION; i++)
+	for(i = 0; i<QUICKFIND_SUBDIVISION; i++)
 		quick_find_array[i] = false;
 
 	//every poly has a pointer to it's parent (used for error checking)
@@ -261,14 +263,14 @@ void check_ship_decals(){
 			}
 		}
 	}
-#endif
+#endif // DECAL_DEBUGGING
 }
 
 // make sure this poly is withing the list, and while you'r at it, make sure there are the corect number of polys
 bool check_decal(decal* dec, decal_poly* poly){
 #ifndef DECAL_DEBUGGING	
 	return true;
-#endif
+#else
 #ifndef NDEBUG
 	if(dec == NULL)return (poly->next==NULL)?true:false;
 	decal_poly* p = dec->poly;
@@ -284,6 +286,7 @@ bool check_decal(decal* dec, decal_poly* poly){
 	return false;
 #endif
 	return true;
+#endif // DECAL_DEBUGGING
 }
 
 bool decal_is_in_proper_list(decal* dec){
@@ -315,7 +318,7 @@ bool decal_is_in_proper_list(decal* dec){
 void check_list_decals(){
 #ifndef DECAL_DEBUGGING	
 	return;
-#endif
+#else
 #ifndef NDEBUG
 	for(int i = 0; i<MAX_GLOBAL_DECALS; i++){
 		decal_item* d = &big_ol_decal_array[i];
@@ -336,18 +339,20 @@ void check_list_decals(){
 		}
 	}
 #endif
+#endif // DECAL_DEBUGGING
 }
 
 //looks at all pollys, and the quicklook table, makes sure everything is cosuer
 void check_poly_decals(){
 #ifndef DECAL_DEBUGGING
 	return;
-#endif
+#else
 #ifndef NDEBUG
+	int i;
 
 	for(int q = 0; q<QUICKFIND_SUBDIVISION; q++){
 		//look in each quicklook segment
-		for(int i = q*QUICKFIND_SEGMENT_LENGTH; i<(q+1)*QUICKFIND_SEGMENT_LENGTH; i++){
+		for(i = q*QUICKFIND_SEGMENT_LENGTH; i<(q+1)*QUICKFIND_SEGMENT_LENGTH; i++){
 			//in each poly within the segment make sure everything is as it should be
 			if(!quick_find_array[q]){
 				//make sure there is at least one free
@@ -362,10 +367,11 @@ void check_poly_decals(){
 		//the quicklook should have an empy but it doesn't!!!
 	}
 
-	for(int i = 0; i<MAX_GLOBAL_DECAL_POLYS; i++){
+	for(i = 0; i<MAX_GLOBAL_DECAL_POLYS; i++){
 		Assert(check_decal(big_ol_decal_poly_array[i].parent, &big_ol_decal_poly_array[i]));
 	}
 #endif
+#endif // DECAL_DEBUGGING
 }
 /****end ugly debugging functions****/
 //I feel dirty...
@@ -378,13 +384,15 @@ void check_poly_decals(){
 //finds an available polygon (triangle)
 decal_poly* get_open_poly(){
 
+	int i, j;
+
 	check_list_decals();
 		SAFEPOINT("entering get_open_poly");
 		check_poly_decals();
 		check_ship_decals();
 
 	//look through the quicklook array
-	for(int i = 0; i<QUICKFIND_SUBDIVISION; i++)
+	for(i = 0; i<QUICKFIND_SUBDIVISION; i++)
 		if(!quick_find_array[i]) break;
 		//untill you find a segment that had an empty slot (false)
 
@@ -406,7 +414,7 @@ decal_poly* get_open_poly(){
 			big_ol_decal_poly_array[i].next = NULL;
 			//just to make sure
 
-			for(int j = i+1; j<end; j++){
+			for(j = i+1; j<end; j++){
 				//see if there are any empties left in this segment 
 				//if there aren't mark this segment as full
 				if(big_ol_decal_poly_array[j].parent == NULL)break;
@@ -921,8 +929,9 @@ check_list_decals();
 
 void clear_decals(decal_system	*system){
 #ifdef DECALS_ENABLED
+	int i;
 	if(!system->n_decal_textures)return;
-	for(int i = 0; i<system->n_decal_textures; i++)system->decals[i].clear();
+	for( i = 0; i<system->n_decal_textures; i++)system->decals[i].clear();
 	for( i = 0; i<system->n_decal_textures; i++)Assert(!system->decals[i].n_decals);
 	system->n_decal_textures = 0;
 	free(system->decals);
@@ -1040,13 +1049,13 @@ check_ship_decals();
 
 
 //creates a decal, returns decal index on succes, -1 on failure
-void setup_decal_cube(matrix or, vector cube_point[8]){
+void setup_decal_cube(matrix m, vector cube_point[8]){
 
 //setting up the decal cube
 	vector test_vec, temp1, temp2;
 	for(int i = 0; i<8; i++)decal_cube_point[i] = cube_point[i];
 
-	decal_orient = or;
+	decal_orient = m;
 
 	decal_cube_plane[0][0] = cube_point[5];
 
@@ -1541,8 +1550,9 @@ int decal_clip_tri(vertex in[3], vertex out[20]){
 	memcpy(work, in, sizeof(vertex)*3);
 	int n_verts = 0;
 	int old_n_verts = 3;
+	int i;
 
-	for(int i = 0; i<old_n_verts; i++){
+	for(i = 0; i<old_n_verts; i++){
 		//for each edge, in[i], in[(i+1)%3]
 		if((work[i].u <= 1.0f)){
 			//if the starting point is ok, copy it
@@ -2065,9 +2075,11 @@ void decal_render_all(object * obj){
 extern int GLOWMAP;
 void decal_render_system(decal_system* system){
 //return;
+	int i;
+
 	if(system->decals_modified)rebuild_decal_buffer(system);
 	gr_zbias(4);
-	for(int i = 0; i<system->n_decal_textures; i++){
+	for(i = 0; i<system->n_decal_textures; i++){
 		GLOWMAP = system->decals[i].glow_texture;
 		gr_set_bitmap( system->decals[i].texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0 );
 		if(system->decals[i].buffer != -1){

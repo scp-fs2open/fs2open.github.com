@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-01-31 23:27:54 $
+ * $Author: taylor $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -74,8 +77,8 @@ struct anim_instance;
 typedef struct {
 	char *text;  // text to display
 	char ani_filename[MAX_FILENAME_LEN];  // associated ani file to play
-	anim *anim;
-	anim_instance *anim_instance;
+	anim *cmd_anim;
+	anim_instance *cmd_anim_instance;
 	int anim_ref;  // potential reference to another index (use it's anim instead of this's)
 	char wave_filename[MAX_FILENAME_LEN];
 	int wave;  // instance number of above

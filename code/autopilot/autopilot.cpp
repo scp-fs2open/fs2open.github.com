@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.14 $
- * $Date: 2004-10-03 21:41:10 $
- * $Author: Kazan $
+ * $Revision: 1.15 $
+ * $Date: 2005-01-31 23:27:51 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2004/10/03 21:41:10  Kazan
+ * Autopilot convergence collision fix for ai_fly_to_ship() and ai_waypoints() -- mathematically expensive, only usable by autopilot
+ *
  * Revision 1.13  2004/09/28 22:51:41  Kazan
  * fix autopilot formation bug
  *
@@ -61,7 +64,7 @@
  */
 
 
-#include "Autopilot.h"
+#include "autopilot/autopilot.h"
 #include "ship/ai.h"
 #include "ship/aigoals.h"
 #include "ship/ship.h"
@@ -448,7 +451,7 @@ void NavSystem_Do()
 
 		for (i = 0; i < MAX_NAVPOINTS; i++)
 		{
-			if (Navs[i].flags & NP_SHIP)
+			if ((Navs[i].flags & NP_SHIP) && (Navs[i].target_obj != NULL))
 			{
 				if (((ship*)Navs[i].target_obj)->objnum == -1)
 					DelNavPoint(i);
@@ -458,8 +461,11 @@ void NavSystem_Do()
 		// check if we're reached a Node
 		for (i = 0; i < MAX_NAVPOINTS; i++)
 		{
-			if (Navs[i].flags & NP_VALIDTYPE && DistanceTo(i) < 1000)
-				Navs[i].flags |= NP_VISITED;
+			if (Navs[i].target_obj != NULL)
+			{
+				if (Navs[i].flags & NP_VALIDTYPE && DistanceTo(i) < 1000)
+					Navs[i].flags |= NP_VISITED;
+			}
 		}
 	}
 
@@ -571,8 +577,9 @@ bool AddNav_Ship(char *Nav, char *TargetName, int flags)
 	// find an empty nav - should be the end
 
 	int empty = -1;
+	int i;
 
-	for (int i = 0; i < MAX_NAVPOINTS && empty == -1; i++)
+	for (i = 0; i < MAX_NAVPOINTS && empty == -1; i++)
 	{
 		if (Navs[i].flags == 0)
 			empty = i;
@@ -613,11 +620,12 @@ bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags)
 	// find an empty nav - should be the end
 
 	int empty = -1;
+	int i;
 
 	if (node == 0)
 		node = 1;
 
-	for (int i = 0; i < MAX_NAVPOINTS && empty == -1; i++)
+	for (i = 0; i < MAX_NAVPOINTS && empty == -1; i++)
 	{
 		if (Navs[i].flags == 0)
 			empty = i;
@@ -778,6 +786,10 @@ unsigned int DistanceTo(int nav)
 		return 0xFFFFFFFF;
 
 	char *name = Navs[nav].GetInteralName();
+
+	if (name == NULL)
+		return 0xFFFFFFFF;
+
 	int distance = sexp_distance2(Player_ship->objnum, name);
 	delete[] name;
 

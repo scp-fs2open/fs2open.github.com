@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.6 $
- * $Date: 2004-12-30 21:41:24 $
- * $Author: Goober5000 $
+ * $Revision: 1.7 $
+ * $Date: 2005-01-31 23:27:52 $
+ * $Author: taylor $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/12/30 21:41:24  Goober5000
+ * stupid parenthesis fix
+ * --Goober5000
+ *
  * Revision 1.5  2004/12/14 14:46:12  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000

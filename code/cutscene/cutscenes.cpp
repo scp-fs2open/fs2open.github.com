@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-26 20:47:26 $
- * $Author: Kazan $
- * $Revision: 2.13 $
- * $Date: 2004-07-26 20:47:26 $
- * $Author: Kazan $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-31 23:27:51 $
+ * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-31 23:27:51 $
+ * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/26 20:47:26  Kazan
+ * remove MCD complete
+ *
  * Revision 2.12  2004/07/12 16:32:43  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -296,7 +299,6 @@ void cutscene_init()
 // returns -1 on failure.
 int cutscenes_get_cd_num( char *filename )
 {
-#ifdef _WIN32
 #if defined(OEM_BUILD)
 	return 0;				// only 1 cd for OEM
 #else
@@ -310,9 +312,6 @@ int cutscenes_get_cd_num( char *filename )
 
 	return -1;
 #endif // defined(OEM_BUILD)
-#else  // !WIN32
-   return -1;
-#endif // ifdef WIN32
 }
 
 // marks a cutscene as viewable
@@ -361,7 +360,7 @@ void cutscene_mark_viewable(char *filename)
 
 static int Num_files;
 static int Cutscene_list[MAX_CUTSCENES];
-static int Stats_scroll_offset;
+//static int Stats_scroll_offset;  // not used - taylor
 static int Selected_line = 0;  // line that is currently selected for binding
 static int Scroll_offset;
 static int Background_bitmap;
@@ -449,7 +448,6 @@ static char *Text_lines[MAX_TEXT_LINES];
 
 int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 {
-#ifdef _WIN32
 	int cd_present = 0;
 	int cd_drive_num;
 	int cd_mve_is_on;
@@ -516,10 +514,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 
 	}
 
-	return cd_present;
-#else  // !WIN32
-	return 0;
-#endif // ifdef WIN32	    
+	return cd_present;   
 }
 
 void cutscenes_screen_play()

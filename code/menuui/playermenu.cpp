@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-12-22 21:49:05 $
+ * $Revision: 2.17 $
+ * $Date: 2005-01-31 23:27:54 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/12/22 21:49:05  taylor
+ * add a popup to make sure people know about pilot upgrade
+ *
  * Revision 2.15  2004/12/05 23:47:18  taylor
  * fix old V bug when cancelling the pilot select screen
  *
@@ -965,7 +968,7 @@ void player_select_button_pressed(int n)
 		Player_select_autoaccept = 0;
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 		game_feature_not_in_demo_popup();
-#elif defined(NO_NETWORKING)
+#elif defined(NO_NETWORK)
 		game_feature_disabled_popup();
 #else
 		// switch to multiplayer mode

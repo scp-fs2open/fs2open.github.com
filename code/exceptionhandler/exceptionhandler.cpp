@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-26 20:47:27 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-01-31 23:27:52 $
+ * $Author: taylor $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/26 20:47:27  Kazan
+ * remove MCD complete
+ *
  * Revision 2.6  2004/07/12 16:32:45  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -73,9 +76,9 @@ information after crashes. See exceptionhandler.h for information
 on how to hook it in.
 */
 
+#ifdef _WIN32
 
 #include <windows.h>
-
 
 
 #pragma warning(disable:4711)	// function selected for inlining
@@ -560,3 +563,5 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
+
+#endif // _WIN32

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-01-29 08:09:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.19 $
+ * $Date: 2005-01-31 23:27:54 $
+ * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/01/29 08:09:47  wmcoolmon
+ * Various updates; shader, clipping
+ *
  * Revision 2.17  2004/11/24 20:12:25  taylor
  * fix briefing related crash(es) (forgot I had this)
  *
@@ -446,23 +449,16 @@ static int Closeup_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
+/* no longer used - taylor
 static int Closeup_img_h[GR_NUM_RESOLUTIONS] = {
-	{
-		150	// GR_640
-	},
-	{
-		150	// GR_1024
-	}
+	150,	// GR_640
+	150		// GR_1024
 };
 
 static int Closeup_text_h[GR_NUM_RESOLUTIONS][4] = {
-	{
-		63		// GR_640
-	},
-	{
-		63		// GR_1024
-	}
-};
+	63,		// GR_640
+	63		// GR_1024
+}; */
 
 static int Brief_infobox_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
@@ -1070,9 +1066,10 @@ void brief_buttons_init()
 //	brief_get_closeup_icon()
 //
 //
-uint brief_get_closeup_icon()
+// changed from uint for 64-bit support - taylor
+brief_icon *brief_get_closeup_icon()
 {
-	return (uint)Closeup_icon;
+	return Closeup_icon;
 }
 
 // stop showing the closeup view of an icon
@@ -1178,18 +1175,18 @@ void brief_compact_stages()
 	while ( num < Briefing->num_stages ) {
 		result = eval_sexp( Briefing->stages[num].formula );
 		if ( !result ) {
-			if ( Briefing->stages[num].new_text ) {
+			if ( Briefing->stages[num].new_text != NULL ) {
 				free( Briefing->stages[num].new_text );
 				Briefing->stages[num].new_text = NULL;
 			}
 
-			if ( Briefing->stages[num].icons ) {
+			if ( Briefing->stages[num].icons != NULL ) {
 				free( Briefing->stages[num].icons );
 				Briefing->stages[num].icons = NULL;
 			}
 
 
-			if ( Briefing->stages[num].lines ) {
+			if ( Briefing->stages[num].lines != NULL ) {
 				free( Briefing->stages[num].lines );
 				Briefing->stages[num].lines = NULL;
 			}
@@ -1525,12 +1522,7 @@ void brief_render_closeup(int ship_class, float frametime)
 //	frametime is in seconds
 void brief_render(float frametime)
 {
-	int z;
-	int w;
-
-#ifndef NDEBUG
-	int h;
-#endif
+	int z, w, h;
 
 	if ( Num_brief_stages <= 0 ) {
 		gr_set_color_fast(&Color_white);
@@ -1566,7 +1558,7 @@ void brief_render(float frametime)
 		// can be scrolled down
 		int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
 		int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered
-		int w, h;
+
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h);

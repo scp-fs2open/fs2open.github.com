@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -668,16 +671,16 @@ void UI_INPUTBOX::process(int focus)
 
 							// check to see if we should limit by pixel width
 							if (pixel_limit > -1) {
-								int w;
+								int _w;
 
 								if (flags & UI_INPUTBOX_FLAG_PASSWD) {
-									gr_get_string_size(&w, NULL, passwd_text);									
+									gr_get_string_size(&_w, NULL, passwd_text);									
 
 								} else {
-									gr_get_string_size(&w, NULL, text);								
+									gr_get_string_size(&_w, NULL, text);								
 								}
 
-								if (w > pixel_limit) {
+								if (_w > pixel_limit) {
 									position--;
 									locked = 1;
 									text[position] = 0;

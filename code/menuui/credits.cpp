@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.21 $
+ * $Date: 2005-01-31 23:27:53 $
+ * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.19  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -520,6 +523,11 @@ void credits_init()
 		int size;
 		size = cfilelength(fp);
 		Credit_text = (char *) malloc(size + 200 + strlen(fs2_open_credit_text) + strlen(unmodified_credits));
+		if (Credit_text == NULL) {
+			return;
+		} else {
+			Credit_text_malloced = 1;
+		}
 		cfclose(fp);
 
 		// open localization and parse
@@ -829,9 +837,9 @@ void credits_do_frame(float frametime)
 		char buf[40];
 
 		if (gr_screen.res == GR_1024) {
-			sprintf(buf, NOX("2_CrIm%0.2d"), Credits_artwork_index);
+			sprintf(buf, NOX("2_CrIm%.2d"), Credits_artwork_index);
 		} else {
-			sprintf(buf, NOX("CrIm%0.2d"), Credits_artwork_index);
+			sprintf(buf, NOX("CrIm%.2d"), Credits_artwork_index);
 		}
 		Credits_bmps[Credits_artwork_index] = bm_load(buf);
 	}
@@ -840,9 +848,9 @@ void credits_do_frame(float frametime)
 		char buf[40];
 
 		if (gr_screen.res == GR_1024) {
-			sprintf(buf, NOX("2_CrIm%0.2d"), Credits_artwork_index);
+			sprintf(buf, NOX("2_CrIm%.2d"), Credits_artwork_index);
 		} else {
-			sprintf(buf, NOX("CrIm%0.2d"), next);
+			sprintf(buf, NOX("CrIm%.2d"), next);
 		}
 		Credits_bmps[next] = bm_load(buf);
 	}

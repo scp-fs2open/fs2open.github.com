@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-01-31 23:27:54 $
+ * $Author: taylor $
  *
  * Header file for code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2003/03/30 21:16:21  Goober5000
  * fixed stupid spelling mistake
  * --Goober5000
@@ -174,11 +177,13 @@ extern UI_INPUTBOX	Common_multi_text_inputbox[3];
 extern int	Briefing_music_handle;
 extern int	Briefing_music_begin_timestamp;
 
+struct brief_icon;
+
 void brief_init();
 void brief_close();
 void brief_do_frame(float frametime);
 void brief_unhide_buttons();
-uint brief_get_closeup_icon();
+brief_icon *brief_get_closeup_icon();
 void brief_turn_off_closeup_icon();
 
 void briefing_stop_music();

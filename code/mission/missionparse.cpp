@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.79 $
- * $Date: 2005-01-26 21:42:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.80 $
+ * $Date: 2005-01-31 23:27:54 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2005/01/26 21:42:19  Goober5000
+ * important bugfix
+ * --Goober5000
+ *
  * Revision 2.78  2005/01/21 08:56:50  taylor
  * make Subsys_status dynamic but allocate in blocks for speed and to help prevent memory fragmentation
  *
@@ -708,11 +712,6 @@
 #include "network/multimsgs.h"
 #include "network/multi_respawn.h"
 #include "network/multi_endgame.h"
-#else
-  // mharris FIXME: temp until I figure out if needed...
-  //extern ushort netmisc_calc_checksum( void * vptr, int len );
-  //extern ushort multi_assign_network_signature( int what_kind );
-  #include "network/multiutil.h"
 #endif
 
 
@@ -819,31 +818,31 @@ char *Nebula_colors[NUM_NEBULA_COLORS] = {
 	"Grey Green",
 };
 
-char *Iff_names[MAX_IFF] = { {"IFF 1"}, {"IFF 2"}, {"IFF 3"},
+char *Iff_names[MAX_IFF] = { "IFF 1", "IFF 2", "IFF 3",
 };
 
 char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
-	{"Chase"},
-	{"Evade"},
-	{"Get behind"},
-	{"Stay Near"},
-	{"Still"},
-	{"Guard"},
-	{"Avoid"},
-	{"Waypoints"},
-	{"Dock"},
-	{"None"},
-	{"Big Ship"},
-	{"Path"},
-	{"Be Rearmed"},
-	{"Safety"},
-	{"Evade Weapon"},
-	{"Strafe"},
-	{"Play Dead"},
-	{"Bay Emerge"},
-	{"Bay Depart"},
-	{"Sentry Gun"},
-	{"Warp Out"},
+	"Chase",
+	"Evade",
+	"Get behind",
+	"Stay Near",
+	"Still",
+	"Guard",
+	"Avoid",
+	"Waypoints",
+	"Dock",
+	"None",
+	"Big Ship",
+	"Path",
+	"Be Rearmed",
+	"Safety",
+	"Evade Weapon",
+	"Strafe",
+	"Play Dead",
+	"Bay Emerge",
+	"Bay Depart",
+	"Sentry Gun",
+	"Warp Out",
 };
 
 char *Cargo_names[MAX_CARGO];
@@ -852,13 +851,13 @@ char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 char *Ship_class_names[MAX_SHIP_TYPES];		// to be filled in from Ship_info array
 
 char *Icon_names[MAX_BRIEF_ICONS] = {
-	{"Fighter"}, {"Fighter Wing"}, {"Cargo"}, {"Cargo Wing"}, {"Largeship"},
-	{"Largeship Wing"}, {"Capital"}, {"Planet"}, {"Asteroid Field"}, {"Waypoint"},
-	{"Support Ship"}, {"Freighter(no cargo)"}, {"Freighter(has cargo)"},
-	{"Freighter Wing(no cargo)"}, {"Freighter Wing(has cargo)"}, {"Installation"},
-	{"Bomber"}, {"Bomber Wing"}, {"Cruiser"}, {"Cruiser Wing"}, {"Unknown"}, {"Unknown Wing"},
-	{"Player Fighter"}, {"Player Fighter Wing"}, {"Player Bomber"}, {"Player Bomber Wing"}, 
-	{"Knossos Device"}, {"Transport Wing"}, {"Corvette"}, {"Gas Miner"}, {"Awacs"}, {"Supercap"}, {"Sentry Gun"}, {"Jump Node"}, {"Transport"}
+	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
+	"Largeship Wing", "Capital", "Planet", "Asteroid Field", "Waypoint",
+	"Support Ship", "Freighter(no cargo)", "Freighter(has cargo)",
+	"Freighter Wing(no cargo)", "Freighter Wing(has cargo)", "Installation",
+	"Bomber", "Bomber Wing", "Cruiser", "Cruiser Wing", "Unknown", "Unknown Wing",
+	"Player Fighter", "Player Fighter Wing", "Player Bomber", "Player Bomber Wing",
+	"Knossos Device", "Transport Wing", "Corvette", "Gas Miner", "Awacs", "Supercap", "Sentry Gun", "Jump Node", "Transport"
 };
 
 //	Translate team mask values like TEAM_FRIENDLY to indices in Team_names array.
@@ -866,24 +865,24 @@ char *Icon_names[MAX_BRIEF_ICONS] = {
 int	Team_names_index_xlate[MAX_TEAM_NAMES_INDEX+1] = {-1, 0, 1, -1, 2, -1, -1, -1, 3};
 
 char *Team_names[MAX_TEAM_NAMES] = {
-	{"Hostile"}, {"Friendly"}, {"Neutral"}, {"Unknown"},
+	"Hostile", "Friendly", "Neutral", "Unknown",
 };
 
 char *Status_desc_names[MAX_STATUS_NAMES] = {
-	{"Shields Critical"}, {"Engines Damaged"}, {"Fully Operational"},
+	"Shields Critical", "Engines Damaged", "Fully Operational",
 };
 
 char *Status_type_names[MAX_STATUS_NAMES] = {
-	{"Damaged"}, {"Disabled"}, {"Corroded"},
+	"Damaged", "Disabled", "Corroded",
 };
 
 char *Status_target_names[MAX_STATUS_NAMES] = {
-	{"Weapons"}, {"Engines"}, {"Cable TV"},
+	"Weapons", "Engines", "Cable TV",
 };
 
 // definitions for arrival locations for ships/wings
 char *Arrival_location_names[MAX_ARRIVAL_NAMES] = {
-	{"Hyperspace"}, {"Near Ship"}, {"In front of ship"}, {"Docking Bay"},
+	"Hyperspace", "Near Ship", "In front of ship", "Docking Bay",
 };
 
 char *Special_arrival_anchor_names[MAX_SPECIAL_ARRIVAL_ANCHORS] =
@@ -897,11 +896,11 @@ char *Special_arrival_anchor_names[MAX_SPECIAL_ARRIVAL_ANCHORS] =
 };
 
 char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
-	{"Hyperspace"}, {"Docking Bay"},
+	"Hyperspace", "Docking Bay",
 };
 
 char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
-	{"Primary"}, {"Secondary"}, {"Bonus"},
+	"Primary", "Secondary", "Bonus",
 };
 
 // Species Count upgrade - by kazan
@@ -916,7 +915,7 @@ char Species_names[MAX_SPECIES_NAMES][SPECIES_NAME_MAXLEN+1];
 };*/
 #else
 char *Species_names[MAX_SPECIES_NAMES] = {
-	{"Terran"}, {"Vasudan"}, {"Shivan"}
+	"Terran", "Vasudan", "Shivan"
 
 };
 #endif
@@ -1643,7 +1642,7 @@ void parse_briefing(mission *pm)
 			stuff_int(&bs->num_icons);
 
 			if ( Fred_running )	{
-				Assert(bs->lines!=NULL);
+				Assert(bs->icons!=NULL);
 			} else {
 				if ( bs->num_icons > 0 )	{
 					bs->icons = (brief_icon *)malloc(sizeof(brief_icon)*bs->num_icons);
@@ -2062,6 +2061,7 @@ int parse_create_object(p_object *objp)
 
 	if (objp->flags & P_KNOSSOS_WARP_IN) {
 		Objects[objnum].flags |= OF_SPECIAL_WARP;
+		Knossos_warp_ani_used = 1;
 	}
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
@@ -4394,8 +4394,10 @@ void parse_mission(mission *pm, int flag)
 	Num_texture_replacements = 0;
 	Fred_num_texture_replacements = 0;
 
-	parse_mission_info(pm);	
+	parse_mission_info(pm); 
+#ifndef NO_NETWORK
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
+#endif
 	if ( flag == MISSION_PARSE_MISSION_INFO )
 		return;
 	parse_plot_info(pm);
@@ -6092,7 +6094,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->docked_with[0] = '\0';
 	pobj->group = -1;
 	pobj->persona_index = -1;
+#ifndef NO_NETWORK
 	pobj->net_signature = multi_assign_network_signature(MULTI_SIG_SHIP);
+#endif
 	pobj->wing_status_wing_index = -1;
 	pobj->wing_status_wing_pos = -1;
 	pobj->respawn_count = 0;

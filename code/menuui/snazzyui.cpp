@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/SnazzyUI.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-01-31 23:27:54 $
+ * $Author: taylor $
  *
  *  Code to drive the Snazzy User Interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -262,7 +265,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 {
 	int i, k, x, y, offset;
 	int choice = -1, mouse_on_choice = -1;
-	ubyte pixel_value;
+	ubyte pixel_value = 0;
 
 	Assert(data != NULL);
 	Assert(num_regions > 0);
@@ -272,6 +275,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	mouse_get_pos( &x, &y ); 
 
 	// This keeps mouse position detection correct for non standard modes
+
 	gr_unsize_screen_pos(&x, &y);
 
 	// boundary conditions
@@ -294,16 +298,15 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 
 //	if (mouse_down_count(MOUSE_LEFT_BUTTON) )	{
 	if ( !mouse_down(MOUSE_LEFT_BUTTON) && Snazzy_mouse_left_was_down ) {
-		if (pixel_value >= 0)
-			//nprintf(("Alan", "pixel val: %d\n", pixel_value));
-			for (i=0; i < num_regions; i++) {
-				if (pixel_value == regions[i].mask) {
-					choice = regions[i].mask;
-					if ( regions[i].click_sound != -1 ) {
-						snd_play( &Snds_iface[regions[i].click_sound], 0.0f );
-					}
+		//nprintf(("Alan", "pixel val: %d\n", pixel_value));
+		for (i=0; i < num_regions; i++) {
+			if (pixel_value == regions[i].mask) {
+				choice = regions[i].mask;
+				if ( regions[i].click_sound != -1 ) {
+					snd_play( &Snds_iface[regions[i].click_sound], 0.0f );
 				}
-			}	// end for
+			}
+		}	// end for
 	}
 
 	switch ( k ) {
@@ -328,15 +331,12 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 
 	} // end switch
 
-	i = -1;
-	if (pixel_value >= 0) {
-		for (i=0; i<num_regions; i++) {
-			if (pixel_value == regions[i].mask) {
-				mouse_on_choice = regions[i].mask;	
-				break;
-			}
-		}	// end for
-	}
+	for (i=0; i<num_regions; i++) {
+		if (pixel_value == regions[i].mask) {
+			mouse_on_choice = regions[i].mask;	
+			break;
+		}
+	}	// end for
 
 	gr_set_color_fast(&Color_white);
 	gr_set_font( FONT1 );

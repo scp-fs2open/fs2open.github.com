@@ -10,14 +10,18 @@
 
 #include "PreProcDefines.h"
 
-#include "sound/fsspeech.h"
-
 #ifdef FS2_SPEECH
 
-#include <windows.h>  
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+#include "sound/fsspeech.h"
 #include "sound/speech.h"
 #include "osapi/osregistry.h"
 #include "debugconsole/dbugfile.h"
+#include "globalincs/pstypes.h"
 
 
 

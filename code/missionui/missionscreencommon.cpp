@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-01-29 08:09:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2005-01-31 23:27:54 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/29 08:09:47  wmcoolmon
+ * Various updates; shader, clipping
+ *
  * Revision 2.9  2005/01/15 05:53:18  wmcoolmon
  * Current version of the new techroom code -C
  *
@@ -456,7 +459,7 @@ static anim *Background_anim;	// Ids for the anim data that is loaded
 int	Common_team;
 
 // Ids for the instance of the anim that is playing
-static anim_instance *Background_anim_instance;
+//static anim_instance *Background_anim_instance;
 
 int Wing_slot_empty_bitmap;
 int Wing_slot_disabled_bitmap;
@@ -1020,7 +1023,7 @@ void common_check_keys(int k)
 		case KEY_ESC: {
 
 			if ( Current_screen == ON_BRIEFING_SELECT ) {
-				if ( brief_get_closeup_icon() != 0 ) {
+				if ( brief_get_closeup_icon() != NULL ) {
 					brief_turn_off_closeup_icon();
 					break;
 				}

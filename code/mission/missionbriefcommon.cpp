@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-31 08:53:46 $
- * $Author: et1 $
+ * $Revision: 2.15 $
+ * $Date: 2005-01-31 23:27:54 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/31 08:53:46  et1
+ * Make missing briefing icon message to tell the icon missing
+ *
  * Revision 2.13  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -992,7 +995,7 @@ void brief_init_map()
 #pragma optimize("", off)
 
 // render fade-out anim frame
-static int Fade_frame_count[128];			// for debug
+//static int Fade_frame_count[128];			// for debug
 
 void brief_render_fade_outs(float frametime)
 {
@@ -1174,7 +1177,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		brief_common_get_icon_dimensions(&icon_w, &icon_h, bi->type, bi->ship_class);
 
-		closeup_icon = (brief_icon*)brief_get_closeup_icon();
+		closeup_icon = brief_get_closeup_icon();
 		if ( bi == closeup_icon || selected ) {
 			icon_bitmap=ib->first_frame+1;
 //			gr_set_bitmap(ib->first_frame+1);
@@ -1912,6 +1915,7 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 	brief_stage		*newb, *cb;	
 	icon_move_info	*imi;	
 	int				i,j,k,num_movers,is_gone=0;
+	vector			zero_v = ZERO_VECTOR;
 
 	Assert(new_stage != current_stage);
 	
@@ -1945,7 +1949,7 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 					imi->accel = 4*imi->total_dist/(time*time);
 					imi->last_dist=0.0f;
 					imi->reached_dest=0;
-					imi->direction;
+					imi->direction = zero_v;
 
 					vm_vec_sub(&imi->direction, &imi->finish, &imi->start);
 					if ( !IS_VEC_NULL(&imi->direction) ) {
@@ -2660,7 +2664,7 @@ int brief_time_to_advance(int stage_num, float frametime)
 	int voice_active, advance = 0;
 	brief_icon *closeup_icon;
 
-	closeup_icon = (brief_icon*)brief_get_closeup_icon();
+	closeup_icon = brief_get_closeup_icon();
 	if ( closeup_icon ) {
 		return 0;
 	}

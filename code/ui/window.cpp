@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * Routines to handle UI windows.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -501,10 +504,10 @@ void UI_WINDOW::draw_tooltip()
 
 void UI_WINDOW::render_tooltip(char *str)
 {
-	int w, h;
+	int str_w, str_h;
 
-	gr_get_string_size(&w, &h, str);
-	Assert(w < gr_screen.max_w - 4 && h < gr_screen.max_h - 4);
+	gr_get_string_size(&str_w, &str_h, str);
+	Assert(str_w < gr_screen.max_w - 4 && str_h < gr_screen.max_h - 4);
 
 	if (ttx < 2)
 		ttx = 2;
@@ -512,14 +515,14 @@ void UI_WINDOW::render_tooltip(char *str)
 	if (tty < 2)
 		tty = 2;
 
-	if (ttx + w + 2 > gr_screen.max_w)
-		ttx = gr_screen.max_w - w;
+	if (ttx + str_w + 2 > gr_screen.max_w)
+		ttx = gr_screen.max_w - str_w;
 
-	if (tty + h + 2 > gr_screen.max_h)
-		tty = gr_screen.max_h - h;
+	if (tty + str_h + 2 > gr_screen.max_h)
+		tty = gr_screen.max_h - str_h;
 
 	gr_set_color_fast(&Color_black);
-	gr_rect(ttx - 1, tty - 1, w + 2, h + 1);
+	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1);
 
 	gr_set_color_fast(&Color_bright_white);
 	gr_string(ttx, tty, str);
@@ -605,7 +608,7 @@ void UI_WINDOW::add_XSTR(char *string, int _xstr_id, int _x, int _y, UI_GADGET *
 {
 	int idx;
 	int found = -1;
-	UI_XSTR *x;
+	UI_XSTR *ui_x;
 
 	// try and find a free xstr
 	for(idx=0; idx<MAX_UI_XSTRS; idx++){
@@ -626,24 +629,24 @@ void UI_WINDOW::add_XSTR(char *string, int _xstr_id, int _x, int _y, UI_GADGET *
 	if(xstrs[idx] == NULL){
 		return;
 	}
-	x = xstrs[idx];	
+	ui_x = xstrs[idx];	
 
 	// fill in the data
-	x->xstr = strdup(string);		
-	if(x->xstr == NULL){
-		free(x);
+	ui_x->xstr = strdup(string);		
+	if(ui_x->xstr == NULL){
+		free(ui_x);
 		xstrs[idx] = NULL;
 		return;
 	}
-	x->xstr_id = _xstr_id;
-	x->x = _x;
-	x->y = _y;
-	x->assoc = _assoc;
-	x->font_id = _font_id;	
-	x->clr = _color_type;
-	Assert((x->clr >= 0) && (x->clr < UI_NUM_XSTR_COLORS));
-	if((x->clr < 0) || (x->clr >= UI_NUM_XSTR_COLORS)){
-		x->clr = 0;
+	ui_x->xstr_id = _xstr_id;
+	ui_x->x = _x;
+	ui_x->y = _y;
+	ui_x->assoc = _assoc;
+	ui_x->font_id = _font_id;	
+	ui_x->clr = _color_type;
+	Assert((ui_x->clr >= 0) && (ui_x->clr < UI_NUM_XSTR_COLORS));
+	if((ui_x->clr < 0) || (ui_x->clr >= UI_NUM_XSTR_COLORS)){
+		ui_x->clr = 0;
 	}	
 }
 
@@ -651,7 +654,7 @@ void UI_WINDOW::add_XSTR(UI_XSTR *xstr)
 {
 	int idx;
 	int found = -1;
-	UI_XSTR *x;
+	UI_XSTR *ui_x;
 
 	// try and find a free xstr
 	for(idx=0; idx<MAX_UI_XSTRS; idx++){
@@ -672,24 +675,24 @@ void UI_WINDOW::add_XSTR(UI_XSTR *xstr)
 	if(xstrs[idx] == NULL){
 		return;
 	}
-	x = xstrs[idx];	
+	ui_x = xstrs[idx];	
 
 	// fill in the data
-	x->xstr = strdup(xstr->xstr);
-	if(x->xstr == NULL){
-		free(x);
+	ui_x->xstr = strdup(xstr->xstr);
+	if(ui_x->xstr == NULL){
+		free(ui_x);
 		xstrs[idx] = NULL;
 		return;
 	}
-	x->xstr_id = xstr->xstr_id;
-	x->x = xstr->x;
-	x->y = xstr->y;
-	x->assoc = xstr->assoc;
-	x->font_id = xstr->font_id;	
-	x->clr = xstr->clr;
-	Assert((x->clr >= 0) && (x->clr < UI_NUM_XSTR_COLORS));
-	if((x->clr < 0) || (x->clr >= UI_NUM_XSTR_COLORS)){
-		x->clr = 0;
+	ui_x->xstr_id = xstr->xstr_id;
+	ui_x->x = xstr->x;
+	ui_x->y = xstr->y;
+	ui_x->assoc = xstr->assoc;
+	ui_x->font_id = xstr->font_id;	
+	ui_x->clr = xstr->clr;
+	Assert((ui_x->clr >= 0) && (ui_x->clr < UI_NUM_XSTR_COLORS));
+	if((ui_x->clr < 0) || (ui_x->clr >= UI_NUM_XSTR_COLORS)){
+		ui_x->clr = 0;
 	}	
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-01-29 08:04:15 $
- * $Author: wmcoolmon $
+ * $Revision: 2.32 $
+ * $Date: 2005-01-31 23:27:53 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/01/29 08:04:15  wmcoolmon
+ * Ahh, the sweet smell of optimized code
+ *
  * Revision 2.30  2004/11/27 10:45:35  taylor
  * some fixes for position problems on the HUD in non-standard resolutions
  * few compiler warning fixes
@@ -942,22 +945,21 @@ void gr_set_palette( char *name, ubyte * palette, int restrict_font_to_128 )
 
 //void gr_test();
 
-#if defined( _WIN32 ) && defined( _MSC_VER )
-
 #define CPUID _asm _emit 0fh _asm _emit 0a2h
 
 // -----------------------------------------------------------------------
 // Returns cpu type.
 void gr_detect_cpu(int *cpu, int *mmx, int *amd3d, int *katmai )
 {
-	DWORD RegEDX;
-	DWORD RegEAX;
-
 	// Set defaults
 	*cpu = 0;
 	*mmx = 0;
 	*amd3d = 0;
 	*katmai = 0;
+
+#if defined( _WIN32 ) && defined( _MSC_VER )
+	DWORD RegEDX;
+	DWORD RegEAX;
 
 	char cpu_vender[16];
 	memset( cpu_vender, 0, sizeof(cpu_vender) );
@@ -1098,21 +1100,39 @@ done_checking_cpuid:
 		}		
 	}
 	*/
-}
 #else
-// TEMP mharris FIXME
-void gr_detect_cpu(int *cpu, int *mmx, int *amd3d, int *katmai )
-{
-	if (cpu)
-		*cpu = 0;
-	if (mmx)
-		*mmx = 0;
-	if (amd3d)
-		*amd3d = 0;
-	if (katmai)
-		*katmai = 0;
+
+#if defined( __x86_64__ )
+
+	// FIXME: I'm not sure exactly what would be the base for all models
+	*cpu = 10;
+
+	// 64-bit x86 CPUs have all of these
+	*mmx = 1;
+	*amd3d = 1;
+	*katmai = 1;
+
+#elif ( SDL_VERSION_ATLEAST(1, 2, 7) )
+
+	// can't get CPU family yet
+
+	if ( SDL_HasMMX() )
+		*mmx = 1;
+
+	if ( SDL_Has3DNow() )
+		*amd3d = 1;
+
+	if ( SDL_HasSSE() )
+		*katmai = 1;
+
+#else
+	
+	STUB_FUNCTION;
+
+#endif // Non-Win32 CPU detection
+
+#endif
 }
-#endif // if defined( _WIN32 ) && defined( _MSC_VER )
 
 
 
@@ -1333,6 +1353,11 @@ void gr_set_cursor_bitmap(int n, int lock)
 	Assert(n >= 0);
 
 	if (!locked || (lock == GR_CURSOR_UNLOCK)) {
+		// if we are changing the cursor to something different
+		// then unload the previous cursor's data - taylor
+		if ( (Gr_cursor >= 0) && (Gr_cursor != n) )
+			bm_unload(Gr_cursor);
+
 		Gr_cursor = n;
 	} else {
 		locked = 0;
@@ -1341,6 +1366,15 @@ void gr_set_cursor_bitmap(int n, int lock)
 	if (lock == GR_CURSOR_LOCK) {
 		locked = 1;
 	}
+}
+
+void gr_unset_cursor_bitmap(int n)
+{
+	if (n < 0)
+		return;
+
+	if (Gr_cursor == n)
+		Gr_cursor = -1;
 }
 
 // retrieves the current bitmap

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-26 20:47:56 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/26 20:47:56  Kazan
+ * remove MCD complete
+ *
  * Revision 2.7  2004/07/12 16:33:09  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -93,6 +96,8 @@
  *
  * $NoKeywords: $
  */
+
+#include <stdarg.h>
 
 #include "weapon/emp.h"
 #include "io/timer.h"
