@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.14 $
- * $Date: 2002-12-23 05:41:08 $
+ * $Revision: 2.15 $
+ * $Date: 2002-12-23 23:01:27 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2002/12/23 05:41:08  Goober5000
+ * Bah - Andsager is a moron. :) I see no reason why rand shouldn't work
+ * multiple times.  It's been fixed thus.
+ * --Goober5000
+ *
  * Revision 2.13  2002/12/23 05:18:52  Goober5000
  * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
  * one ship would return after only dealing with the first ship.
@@ -488,6 +493,7 @@ sexp_oper Operators[] = {
 	{ "is-cargo-known",						OP_IS_CARGO_KNOWN,					1, INT_MAX,	},
 	{ "is-cargo-known-delay",				OP_CARGO_KNOWN_DELAY,				2, INT_MAX,	},
 	{ "cap-subsys-cargo-known-delay",	OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,	3, INT_MAX,	},
+	{ "is-cargo-x",						OP_IS_CARGO_X,						2, 3 },
 	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,			1, 1, },
 	{ "is-ship-stealthed",				OP_IS_SHIP_STEALTHED,	1, 1, },
 	{ "is_tagged",								OP_IS_TAGGED,							1, 1			},
@@ -557,6 +563,7 @@ sexp_oper Operators[] = {
 	{ "self-destruct",				OP_SELF_DESTRUCT,					1, INT_MAX,	},
 	{ "transfer-cargo",				OP_TRANSFER_CARGO,				2, 2,			},
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
+	{ "set-cargo",					OP_SET_CARGO,					2, 3,			},
 	{ "jettison-cargo-delay",		OP_JETTISON_CARGO,				2, 2			},
 	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,				1,	2			},
 	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
@@ -1418,26 +1425,26 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				// with that name.  This code assumes by default that the ship is *always* the first name
 				// in the sexpression.  If this is ever not the case, the code here must be changed to
 				// get the correct ship name.
-				switch(Operators[identify_operator(CTEXT(op_index))].value){
-				case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
-					ship_index = Sexp_nodes[Sexp_nodes[op_index].rest].rest;
-					break;
+				switch(Operators[identify_operator(CTEXT(op_index))].value)
+				{
+					case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
+					case OP_DISTANCE_SUBSYSTEM:
+					case OP_SET_CARGO:
+					case OP_IS_CARGO_X:
+						ship_index = Sexp_nodes[Sexp_nodes[op_index].rest].rest;
+						break;
 
-				case OP_BEAM_FIRE:
-					if(argnum == 1){
+					case OP_BEAM_FIRE:
+						if(argnum == 1){
+							ship_index = Sexp_nodes[op_index].rest;
+						} else {
+							ship_index = Sexp_nodes[Sexp_nodes[Sexp_nodes[op_index].rest].rest].rest;
+						}
+						break;
+	
+					default :
 						ship_index = Sexp_nodes[op_index].rest;
-					} else {
-						ship_index = Sexp_nodes[Sexp_nodes[Sexp_nodes[op_index].rest].rest].rest;
-					}
-					break;
-
-				case OP_DISTANCE_SUBSYSTEM:
-					ship_index = Sexp_nodes[Sexp_nodes[op_index].rest].rest;
-					break;
-
-				default :
-					ship_index = Sexp_nodes[op_index].rest;
-					break;
+						break;
 				}
 
 				shipname = CTEXT(ship_index);
@@ -1851,6 +1858,11 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
+				break;
+
+			case OPF_CARGO:
+				if (type2 != SEXP_ATOM_STRING)
+					return SEXP_CHECK_TYPE_MISMATCH;
 				break;
 
 			case OPF_SKILL_LEVEL:
@@ -5381,6 +5393,178 @@ void sexp_change_goal_validity( int n, int flag )
 	}
 }
 
+// Goober5000
+int sexp_is_cargo_x(int n)
+{
+	char *cargo, *ship, *subsystem;
+	int ship_num, cargo_index;
+
+	cargo = CTEXT(n);
+	ship = CTEXT(CDR(n));
+	if (CDR(CDR(n)) != -1)
+		subsystem = CTEXT(CDR(CDR(n)));
+	else
+		subsystem = NULL;
+
+	cargo_index = -1;
+
+	// find ship
+	ship_num = ship_name_lookup_absolute(ship);
+
+	// in-mission?
+	if (ship_name_lookup(ship) != -1)
+	{
+		if (subsystem)
+		{
+			ship_subsys *ss;
+
+			// find the ship subsystem by searching ship's subsys_list
+			ss = GET_FIRST( &Ships[ship_num].subsys_list );
+			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
+			{
+				// if we found the subsystem
+				if ( !stricmp(ss->system_info->subobj_name, subsystem))
+				{
+					// set cargo
+					cargo_index = ss->subsys_cargo_name;
+					break;
+				}
+
+				ss = GET_NEXT( ss );
+			}
+		}
+		else
+		{
+			cargo_index = Ships[ship_num].cargo1;
+		}
+	}
+	else
+	{
+		// can't check subsys of ships not in mission
+		if (subsystem)
+		{
+			return SEXP_CANT_EVAL;
+		}
+
+		// departed?
+		if (ship_find_exited_ship_by_name(ship) != -1)
+		{
+			cargo_index = Ships[ship_num].cargo1;
+		}
+		// not arrived yet
+		else
+		{
+			p_object *parse_obj;
+
+			// find cargo for the parse object
+			parse_obj = mission_parse_get_arrival_ship( ship );
+			Assert ( parse_obj );
+			cargo_index = int(parse_obj->cargo1);
+		}
+	}
+
+	// did we get any cargo
+	if (cargo_index < 0)
+		return SEXP_FALSE;
+
+	// check cargo
+	if (!stricmp(Cargo_names[cargo_index], cargo))
+		return SEXP_TRUE;
+	else
+		return SEXP_FALSE;
+}
+
+// Goober5000
+void sexp_set_cargo(int n)
+{
+	char *cargo, *ship, *subsystem;
+	int ship_num, i, cargo_index;
+
+	cargo = CTEXT(n);
+	ship = CTEXT(CDR(n));
+	if (CDR(CDR(n)) != -1)
+		subsystem = CTEXT(CDR(CDR(n)));
+	else
+		subsystem = NULL;
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, ship, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship, NULL, NULL) )
+		return;
+
+	cargo_index = -1;
+	// find this cargo in the cargo list
+	for (i = 0; i < Num_cargo; i++)
+	{
+		// found it?
+		if (!stricmp(cargo, Cargo_names[i]))
+		{
+			cargo_index = i;
+			break;
+		}
+	}
+
+	// not found
+	if (cargo_index == -1)
+	{
+		// make new entry if possible
+		if (Num_cargo + 1 >= MAX_CARGO)
+			return;
+
+		Assert(strlen(cargo) <= NAME_LENGTH - 1);
+
+		cargo_index = Num_cargo;
+		Num_cargo++;
+
+		strcpy(Cargo_names[cargo_index], cargo);
+	}
+
+	// get the ship
+	ship_num = ship_name_lookup(ship);
+
+	// we can only set subsystems if the ship is in the mission
+	if (ship_num != -1)
+	{
+		if (subsystem)
+		{
+			ship_subsys *ss;
+
+			// find the ship subsystem by searching ship's subsys_list
+			ss = GET_FIRST( &Ships[ship_num].subsys_list );
+			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
+			{
+				// if we found the subsystem
+				if ( !stricmp(ss->system_info->subobj_name, subsystem))
+				{
+					// set cargo
+					ss->subsys_cargo_name = cargo_index;
+					return;
+				}
+
+				ss = GET_NEXT( ss );
+			}
+			// we reached end of ship subsys list without finding subsys_name
+			Int3();
+		}
+		else
+		{
+			// simply set the ship cargo
+			Ships[ship_num].cargo1 = char(cargo_index);
+		}
+	}
+	else
+	{
+		if (!subsystem)
+		{
+			p_object *parse_obj;
+
+			// set cargo for the parse object
+			parse_obj = mission_parse_get_arrival_ship( ship );
+			Assert ( parse_obj );
+			parse_obj->cargo1 = char(cargo_index);
+		}
+	}
+}
+
 // function to transfer cargo from one ship to another
 void sexp_transfer_cargo( int n )
 {
@@ -8376,18 +8560,29 @@ int eval_sexp(int cur_node)
 				break;
 
 			case OP_SHIP_LIGHTS_ON: //-WMCoolmon
-				sexp_val = 1;
 				sexp_ship_lights_on(node);
+				sexp_val = 1;
+				break;
 
 			case OP_SHIP_LIGHTS_OFF: //-WMCoolmon
-				sexp_val = 1;
 				sexp_ship_lights_off(node);
+				sexp_val = 1;
+				break;
 
 			//-Sesquipedalian
 			case OP_SHIELDS_ON: 
 			case OP_SHIELDS_OFF:
 				sexp_shields_off( node, (op_num==OP_SHIELDS_OFF?1:0) );
 				sexp_val = 1;
+				break;
+
+			case OP_SET_CARGO:
+				sexp_set_cargo(node);
+				sexp_val = 1;
+				break;
+
+			case OP_IS_CARGO_X:
+				sexp_val = sexp_is_cargo_x(node);
 				break;
 
 			case OP_SEND_MESSAGE:
@@ -8943,6 +9138,7 @@ int query_operator_return_type(int op)
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_IS_PRIMARY_SELECTED:
 		case OP_IS_SHIP_STEALTHED:
+		case OP_IS_CARGO_X:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -9007,6 +9203,7 @@ int query_operator_return_type(int op)
 		case OP_SEND_RANDOM_MESSAGE:
 		case OP_TRANSFER_CARGO:
 		case OP_EXCHANGE_CARGO:
+		case OP_SET_CARGO:
 		case OP_JETTISON_CARGO:
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SCANNED:
@@ -9387,6 +9584,15 @@ int query_operator_argument_type(int op, int argnum)
 			
 		case OP_GOALS_ID:
 			return OPF_AI_GOAL;
+
+		case OP_SET_CARGO:
+		case OP_IS_CARGO_X:
+			if (argnum == 0)
+				return OPF_CARGO;
+			else if (argnum == 1)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM;
 
 		case OP_SEND_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
@@ -10532,6 +10738,7 @@ int get_subcategory(int sexp_id)
 		case OP_SELF_DESTRUCT:
 		case OP_TRANSFER_CARGO:
 		case OP_EXCHANGE_CARGO:
+		case OP_SET_CARGO:
 		case OP_JETTISON_CARGO:
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SCANNED:

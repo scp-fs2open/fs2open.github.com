@@ -9,13 +9,27 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.12 $
+ * $Revision: 2.13 $
  * $Author: Goober5000 $
- * $Date: 2002-12-23 05:18:52 $
+ * $Date: 2002-12-23 23:01:27 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2002/12/23 05:18:52  Goober5000
+ * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
+ * one ship would return after only dealing with the first ship.
+ *
+ * Also added the following sexps:
+ * is-ship-stealthed
+ * ship-force-stealth
+ * ship-force-nostealth
+ * ship-remove-stealth-forcing
+ *
+ * They toggle the stealth flag on and off.  If a ship is forced stealthy, it won't even
+ * show up for friendly ships.
+ * --Goober5000
+ *
  * Revision 2.11  2002/12/22 21:12:22  Goober5000
  * added primaries-depleted and primary-ammo-pct sexps -- useful for ships with
  * ballistic primaries
@@ -396,6 +410,7 @@
 #define	OPF_VARIABLE_NAME		35		// variable name
 #define	OPF_AMBIGUOUS			36		// type used with variable
 #define	OPF_AWACS_SUBSYSTEM		37		// an awacs subsystem
+#define OPF_CARGO				38		// a cargo string (currently used for set-cargo)
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
@@ -527,6 +542,8 @@
 #define	OP_TEAM_SCORE						(0x001a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define OP_PRIMARY_AMMO_PCT					(0x001b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define OP_IS_SHIP_STEALTHED				(0x001c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define OP_IS_CARGO_X						(0x001d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -604,6 +621,7 @@
 #define OP_SHIP_FORCE_STEALTH			(0x0064	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SHIP_FORCE_NOSTEALTH			(0x0065	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SHIP_REMOVE_STEALTH_FORCING	(0x0066	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_CARGO					(0x0067	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)
