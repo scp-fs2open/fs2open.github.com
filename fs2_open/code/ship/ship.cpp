@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.90 $
- * $Date: 2003-11-11 02:15:40 $
+ * $Revision: 2.91 $
+ * $Date: 2003-11-16 09:42:36 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2003/11/11 02:15:40  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.89  2003/11/09 04:09:17  Goober5000
  * edited for language
  * --Goober5000
@@ -2182,7 +2187,7 @@ strcpy(parse_error_text, temp_error);
 
 	} else {
 	
-		mprintf(("no AB or ABtrails\n"));
+//		mprintf(("no AB or ABtrails\n"));
 		sip->afterburner_max_vel.xyz.x = 0.0f;
 		sip->afterburner_max_vel.xyz.y = 0.0f;
 		sip->afterburner_max_vel.xyz.z = 0.0f;
@@ -2190,7 +2195,7 @@ strcpy(parse_error_text, temp_error);
 	}
 	
 	if(optional_string("$Trails:")){//optional values aplyed to ABtrails -Bobboau
-		mprintf(("ABtrails\n"));
+//		mprintf(("ABtrails\n"));
 		char bitmap_name[MAX_FILENAME_LEN] = "";
 
 		required_string("+Bitmap:");
@@ -2206,7 +2211,7 @@ strcpy(parse_error_text, temp_error);
 		required_string("+Life:");
 		stuff_float(&sip->ABlife);
 	}else{
-		mprintf(("no ABtrails\n"));
+//		mprintf(("no ABtrails\n"));
 		sip->ABbitmap = -1;	//defalts for no ABtrails-Bobboau
 		sip->ABwidth_factor = 1.0f;
 		sip->ABAlpha_factor = 1.0f;

@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.16 $
- * $Date: 2003-10-24 17:35:04 $
- * $Author: randomtiger $
+ * $Revision: 2.17 $
+ * $Date: 2003-11-16 09:42:38 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/10/24 17:35:04  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.15  2003/08/16 03:52:22  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -1067,7 +1072,7 @@ int bm_gfx_load( char * real_filename )
 		int dds_error=dds_read_header ( filename, &w,  &h, &bpp, &ct);
 		if (dds_error != DDS_ERROR_NONE)
 		{
-			mprintf(("Couldn't open '%s -- error description %s\n", filename, dds_error_string(dds_error)));
+			mprintf(("dds: Couldn't open '%s -- error description %s\n", filename, dds_error_string(dds_error)));
 			return -1;
 		}
 		mprintf(("Found a .dds file! %s\n", filename));
@@ -1095,7 +1100,7 @@ int bm_gfx_load( char * real_filename )
 	else if(tga){
 		int tga_error=targa_read_header( filename, &w, &h, &bpp, NULL );
 		if ( tga_error != TARGA_ERROR_NONE )	{
-			mprintf(( "Couldn't open '%s'\n", filename ));
+			mprintf(( "tga: Couldn't open '%s'\n", filename ));
 			return -1;
 		}
 		type = BM_TYPE_TGA;
@@ -1104,7 +1109,7 @@ int bm_gfx_load( char * real_filename )
 	else {
 		int pcx_error=pcx_read_header( filename, &w, &h, NULL );		
 		if ( pcx_error != PCX_ERROR_NONE )	{
-			mprintf(( "Couldn't open '%s'\n", filename ));
+			mprintf(( "pcx: Couldn't open '%s'\n", filename ));
 			return -1;
 		}
 		type=BM_TYPE_PCX;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-02 06:37:24 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2003-11-16 09:42:37 $
+ * $Author: Goober5000 $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/02 06:37:24  penguin
+ * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
+ *  - penguin
+ *
  * Revision 2.2  2003/01/19 22:45:35  Goober5000
  * cleaned up build output a bit
  * --Goober5000
@@ -568,7 +572,7 @@ int ds_parse_wave(char *filename, ubyte **dest, uint *dest_size, WAVEFORMATEX **
 
 	fp = cfopen( filename, "rb" );
 	if ( fp == NULL )	{
-		nprintf(("Error", "Couldn't open '%s'\n", filename ));
+		nprintf(("Error", "ds_parse_wave: Couldn't open '%s'\n", filename ));
 		return -1;
 	}
 	
