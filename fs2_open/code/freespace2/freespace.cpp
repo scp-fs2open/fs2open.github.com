@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.16 $
- * $Date: 2002-12-21 13:39:03 $
- * $Author: DTP $
+ * $Revision: 2.17 $
+ * $Date: 2003-01-14 04:00:16 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2002/12/21 13:39:03  DTP
+ * did bit more house keeping. modfied Phreaks fps cmdline a bit, so that we dont have to specific build code.libs for fred, but can use the same code.lib for both fs2_open.exe and fred2_open.exe
+ *
  * Revision 2.15  2002/12/18 22:21:23  phreak
  * tidied up game_init() a bit.. took out a bunch of unneeded ifdefs like E3_BUILD
  * Added option to access OpenGL from the registry keys.  searches for "OpenGL-"
@@ -6029,11 +6032,7 @@ void game_enter_state( int old_state, int new_state )
 #if defined(PRESS_TOUR_BUILD) || defined(PD_BUILD)
 			mht_init();
 #else
-			if (Player->on_bastion) {
-				main_hall_init(1);
-			} else {
-				main_hall_init(0);
-			}
+			main_hall_init(Player->main_hall);
 #endif
 			break;
 

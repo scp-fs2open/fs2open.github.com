@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.3 $
+ * $Date: 2003-01-14 04:00:15 $
+ * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -616,7 +619,7 @@ int read_pilot_file(char *callsign, int single, player *p)
 	cfread_int(file);  
 
 	// get player location
-	p->on_bastion = cfread_ubyte(file);
+	p->main_hall = cfread_ubyte(file);
 
 	// tips?
 	p->tips = cfread_int(file);
@@ -925,7 +928,7 @@ int write_pilot_file_core(player *p)
 
 	cfwrite_ubyte(is_multi, file);
 	cfwrite_int(p->stats.rank, file);
-	cfwrite_ubyte((ubyte) p->on_bastion, file);
+	cfwrite_ubyte((ubyte) p->main_hall, file);
 
 	cfwrite_int(p->tips, file);
 
@@ -1265,7 +1268,7 @@ void init_new_pilot(player *p, int reset)
 
 	// effectively sets the length return by strlen() to 0	
 	Campaign.filename[0] = 0;
-	p->on_bastion = 0;
+	p->main_hall = 0;
 
 	// pick a random pilot image for this guy
 	if (reset){

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-08 19:49:15 $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-14 04:00:16 $
  * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/08 19:49:15  Goober5000
+ * fixed debriefing music in non-campaign missions
+ * --Goober5000
+ *
  * Revision 2.3  2002/12/09 08:37:31  Goober5000
  * fixed misspelling
  *
@@ -1388,7 +1392,7 @@ void debrief_traitor_init()
 		stuff_string(traitor_voice_file, F_FILESPEC, NULL);
 
 // DKA 9/13/99	Only 1 traitor msg for FS2
-//		if ( Player->on_bastion ) {
+//		if ( Player->main_hall ) {
 //			strcpy(stagep->voice, NOX("3_"));
 //		} else {
 //			strcpy(stagep->voice, NOX("1_"));

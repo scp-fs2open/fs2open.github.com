@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-01-14 04:00:16 $
+ * $Author: Goober5000 $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -307,7 +310,10 @@
 #define CAMPAIGN_PERSISTENT_SHIP			1
 #define CAMPAIGN_PERSISTENT_WEAPON		2
 
+// Goober5000 - Bastion flag is not needed anymore; there can now be more than two main halls;
+// but the flag is kept in order to maintain compatibility with older campaigns
 #define CMISSION_FLAG_BASTION	(1<<0)	// set if stationed on Bastion, else Galatea
+
 #define CMISSION_FLAG_SKIPPED	(1<<1)	// set if skipped, else not
 
 #define CAMPAIGN_LOOP_MISSION_UNINITIALIZED	-2
@@ -345,6 +351,7 @@ typedef struct cmission {
 	int				level;					// what level of the tree it's on (Fred)
 	int				pos;						// what x position on level it's on (Fred)
 	int				flags;
+	ubyte			main_hall;				// which main hall the player is in - Goober5000
 	scoring_struct	stats;
 } cmission;
 
