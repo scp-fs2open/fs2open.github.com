@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.82 $
- * $Date: 2004-02-04 08:41:02 $
+ * $Revision: 2.83 $
+ * $Date: 2004-02-07 00:48:52 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2004/02/04 08:41:02  Goober5000
+ * made code more uniform and simplified some things,
+ * specifically shield percentage and quadrant stuff
+ * --Goober5000
+ *
  * Revision 2.81  2004/01/30 07:39:09  Goober5000
  * whew - I just went through all the code I ever added (or at least, that I could
  * find that I commented with a Goober5000 tag) and added a bunch of Asserts
@@ -1876,7 +1881,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				for (i=0; i<Ship_info[ship_class].n_subsystems; i++)
 				{
-					if (!stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(index)))
+					if (!subsystem_stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(index)))
 					{
 						break;
 					}
@@ -4433,7 +4438,7 @@ int sexp_hits_left_subsystem(int n)
 			ss = GET_FIRST( &Ships[shipnum].subsys_list );
 			while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) ) {
 
-				if ( !stricmp(ss->system_info->subobj_name, subsys_name)) {
+				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
 					percent = (int) (ss->current_hits / ss->max_hits * 100.0f);
 					return percent;
 				}
@@ -4649,7 +4654,7 @@ void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vector *subsys_world
 	while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
 	{
 		// if we found the subsystem
-		if ( !stricmp(ss->system_info->subobj_name, subsys_name))
+		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name))
 		{
 			// find world position of subsystem on this object (the ship)
 			get_subsystem_world_pos(&Objects[Ships[shipnum].objnum], ss, subsys_world_pos);
@@ -5564,7 +5569,7 @@ void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix 
 	while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
 	{
 		// if we found the subsystem
-		if ( !stricmp(ss->system_info->subobj_name, subsys_name))
+		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name))
 		{
 			// set the flags
 			*known = ss->subsys_cargo_revealed;
@@ -5743,7 +5748,7 @@ void sexp_set_scanned_unscanned(int n, int flag)
 		while ( ss != END_OF_LIST( &Ships[shipnum].subsys_list ) )
 		{
 			// if we found the subsystem
-			if ( !stricmp(ss->system_info->subobj_name, subsys_name))
+			if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name))
 			{
 				// do it for the subsystem
 				if (flag)
@@ -6157,7 +6162,7 @@ int sexp_is_ai_class( int n )
 			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
 			{
 				// if we found the subsystem
-				if ( !stricmp(ss->system_info->subobj_name, subsystem))
+				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
 				{
 					// get ai class
 					class_to_test = ss->weapons.ai_class;
@@ -7215,7 +7220,7 @@ int sexp_is_cargo(int n)
 			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
 			{
 				// if we found the subsystem
-				if ( !stricmp(ss->system_info->subobj_name, subsystem))
+				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
 				{
 					// set cargo
 					cargo_index = ss->subsys_cargo_name;
@@ -7330,7 +7335,7 @@ void sexp_set_cargo(int n)
 			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
 			{
 				// if we found the subsystem
-				if ( !stricmp(ss->system_info->subobj_name, subsystem))
+				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
 				{
 					// set cargo
 					ss->subsys_cargo_name = cargo_index | (ss->subsys_cargo_name & CARGO_NO_DEPLETE);
@@ -8790,7 +8795,7 @@ int sexp_targeted(int node)
 
 		if (CDR(CDR(node)) >= 0) {
 			ptr = Player_ai->targeted_subsys;
-			if (!ptr || stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
+			if (!ptr || subsystem_stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
 				return 0;
 			}
 		}
@@ -10202,7 +10207,7 @@ int sexp_missile_locked(int node)
 				return 0;
 
 			// if we're not targeting the specific subsystem, it's false
-			if (stricmp(Player_ai->targeted_subsys->system_info->name, CTEXT(CDR(CDR(node)))))
+			if (subsystem_stricmp(Player_ai->targeted_subsys->system_info->name, CTEXT(CDR(CDR(node)))))
 				return 0;
 		}
 	}
@@ -10549,7 +10554,7 @@ int process_special_sexps(int index)
 	case 2:	//	Ship "Freighter 1", subsystem "Weapons" is aspect locked by player.
 		if (Player_ai->target_objnum != -1) {
 			if (!(stricmp(Ships[Objects[Player_ai->target_objnum].instance].ship_name, "Freighter 1"))) {
-				if (!(stricmp(Player_ai->targeted_subsys->system_info->name, "Weapons"))) {
+				if (!(subsystem_stricmp(Player_ai->targeted_subsys->system_info->name, "Weapons"))) {
 					if (Player_ai->current_target_is_locked){
 						return SEXP_TRUE;
 					}

@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.9 $
- * $Author: Kazan $
- * $Date: 2003-10-12 03:46:23 $
+ * $Revision: 2.10 $
+ * $Author: Goober5000 $
+ * $Date: 2004-02-07 00:48:52 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/12 03:46:23  Kazan
+ * #Kazan# FS2NetD client code gone multithreaded, some Fred2 Open -mod stuff [obvious code.lib] including a change in cmdline.cpp, changed Stick's "-nohtl" to "-htl" - HTL is _OFF_ by default here (Bobboau and I decided this was a better idea for now)
+ *
  * Revision 2.8  2003/09/30 04:05:09  Goober5000
  * updated FRED to import FS1 default weapons loadouts as well as missions
  * --Goober5000
@@ -331,6 +334,9 @@ extern jmp_buf parse_abort;
 // Goober5000 - this seems to be a pretty universal function
 void end_string_at_first_hash_symbol(char *src);
 char *get_pointer_to_first_hash_symbol(char *src);
+
+// Goober5000
+int subsystem_stricmp(char *s1, char *s2);
 
 // white space
 extern int is_white_space(char ch);

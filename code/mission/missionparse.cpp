@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.53 $
- * $Date: 2004-02-05 14:31:44 $
+ * $Revision: 2.54 $
+ * $Date: 2004-02-07 00:48:53 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2004/02/05 14:31:44  Goober5000
+ * fixed a few random bugs
+ * --Goober5000
+ *
  * Revision 2.52  2004/02/04 08:41:04  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -2103,7 +2107,7 @@ int parse_create_object(p_object *objp)
 				}
 			}
 
-			if (!stricmp(ptr->system_info->subobj_name, sssp->name)) {
+			if (!subsystem_stricmp(ptr->system_info->subobj_name, sssp->name)) {
 				if (Fred_running) {
 					ptr->current_hits = sssp->percent;
 					ptr->max_hits = 100.0f;
@@ -6219,7 +6223,7 @@ void restore_default_weapons(char *ships_tbl)
 					si_subsys = -1;
 					for (j = 0; j < sip->n_subsystems; j++)
 					{
-						if (!stricmp(ss->system_info->subobj_name, sip->subsystems[j].subobj_name))
+						if (!subsystem_stricmp(ss->system_info->subobj_name, sip->subsystems[j].subobj_name))
 						{
 							si_subsys = j;
 							break;
