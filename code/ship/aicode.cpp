@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-01-18 09:25:40 $
+ * $Revision: 2.17 $
+ * $Date: 2003-01-18 23:25:38 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/01/18 09:25:40  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.15  2003/01/15 07:09:09  Goober5000
  * changed most references to modelnum to use ship instead of ship_info --
  * this will help with the change-model sexp and any other instances of model
@@ -13372,9 +13377,9 @@ void ai_set_mode_warp_out(object *objp, ai_info *aip)
 	}
 }
 
-//	Maybe warp ship out.
+//	Maybe make ship depart (Goober5000 - changed from always warp ship out)
 //	Shivan and HoL fighter/bomber warp out if their weapons subsystems have been destroyed.
-void ai_maybe_warp_out(object *objp)
+void ai_maybe_depart(object *objp)
 {
 	ship	*shipp;
 
@@ -13387,17 +13392,18 @@ void ai_maybe_warp_out(object *objp)
 	shipp = &Ships[objp->instance];
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 
-	if (aip->mode == AIM_WARP_OUT)
+	if (aip->mode == AIM_WARP_OUT || aip->mode == AIM_BAY_DEPART)
 		return;
 
-	//	If a support ship with no goals and low hull, warp out.  Be sure that there are no pending goals
+	//	If a support ship with no goals and low hull, depart.  Be sure that there are no pending goals
 	// in the support ships ai_goal array.  Just process this ships goals.
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 	if (sip->flags & SIF_SUPPORT) {
 		if ( timestamp_elapsed(aip->warp_out_timestamp) ) {
 			ai_process_mission_orders( OBJ_INDEX(objp), aip );
 			if ( (aip->dock_objnum == -1) && (objp->hull_strength/sip->initial_hull_strength < 0.25f) ) {
-				ai_set_mode_warp_out(objp, aip);
+				if (!(shipp->flags & SF_DEPARTING))
+					mission_do_departure(objp);
 			}
 		}
 	}
@@ -13416,7 +13422,7 @@ void ai_maybe_warp_out(object *objp)
 				//	aip->warp_out_timestamp = timestamp(((myrand() % 10) + 10) * 1000);
 				//}
 			} else if (timestamp_elapsed(aip->warp_out_timestamp)) {
-				ai_set_mode_warp_out(objp, aip);
+				mission_do_departure(objp);
 			}
 		}
 	}
@@ -14113,7 +14119,7 @@ void ai_frame(int objnum)
 		}
 	}
 
-	ai_maybe_warp_out(Pl_objp);
+	ai_maybe_depart(Pl_objp);
 
 /*
 	//	If this ship is attacking an object's subsystems and someone else destroyed
@@ -14748,8 +14754,8 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 
 				training_fail();
 
-				//	Instructor warp out.
-				ai_set_mode_warp_out(objp_hit, &Ai_info[Ships[objp_hit->instance].ai_index]);
+				//	Instructor leaves.
+				mission_do_departure(objp_hit);
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
 
 				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(get_shield_strength(objp_hitter) + Ship_info[shipp_hitter->ship_info_index].initial_hull_strength) );
@@ -15314,8 +15320,8 @@ void ai_warp_out(object *objp, vector *vp)
 
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
-	if (aip->mode != AIM_WARP_OUT) {
-		ai_set_mode_warp_out(objp, aip);
+	if ((aip->mode != AIM_WARP_OUT) && (aip->mode != AIM_BAY_DEPART)) {
+		mission_do_departure(objp);
 	}
 	float	dist;
 	float	dot;

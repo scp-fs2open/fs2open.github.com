@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-18 09:25:40 $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-18 23:25:38 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/18 09:25:40  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.3  2003/01/07 20:06:44  Goober5000
  * added ai-chase-any-except sexp
  * --Goober5000
@@ -2181,7 +2186,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		int index;
 
 		index = current_goal->wp_index;
-		ai_set_mode_warp_out( objp, aip );
+		mission_do_departure( objp );
 		break;
 	}
 

@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.19 $
+ * $Revision: 2.20 $
  * $Author: Goober5000 $
- * $Date: 2003-01-18 09:25:41 $
+ * $Date: 2003-01-18 23:25:39 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/01/18 09:25:41  Goober5000
+ * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
+ * than SF_ flags
+ * --Goober5000
+ *
  * Revision 2.18  2003/01/17 01:48:50  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -645,7 +650,7 @@ int mission_parse_is_multi(char *filename, char *mission_name );
 int mission_parse_get_multi_mission_info(char *filename);
 
 // called externally from multiplayer code
-void mission_do_departure(object *objp);
+int mission_do_departure(object *objp);
 
 // called externally from Freespace.cpp
 void mission_parse_fixup_players(void);
