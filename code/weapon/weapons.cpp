@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/12/17 16:41:25  phreak
+ * "small only" weapons flag added. weapon shoots at small ships like fighters
+ *
  * Revision 2.46  2003/12/02 03:16:16  Goober5000
  * fixed CVS log header so that changes would update more cleanly
  * --Goober5000
@@ -1553,8 +1556,10 @@ int parse_weapon()
 	wip->lssm_stage5_vel=0;		//velocity during final stage
 	wip->lssm_warpin_radius=0;
 	wip->lssm_lock_range=1000000.0f;	//local ssm lock range (optional)
-	if (optional_string("$Local SSM:"))
+	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
 	{
+		required_string("$Local SSM:");
+
 		required_string("+Warpout Delay:");
 		stuff_int(&wip->lssm_warpout_delay);
 
