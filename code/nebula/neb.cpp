@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-04-11 13:56:33 $
- * $Author: randomtiger $
+ * $Revision: 2.24 $
+ * $Date: 2004-04-14 10:25:50 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/04/11 13:56:33  randomtiger
+ * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
+ *
  * Revision 2.22  2004/04/03 02:55:49  bobboau
  * commiting recent minor bug fixes
  *
@@ -692,9 +695,11 @@ void neb2_page_in()
 	int idx;
 
 	// load in all nebula bitmaps
-	for(idx=0; idx<Neb2_poof_count; idx++){
-		if((Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx))){
-			bm_page_in_texture(Neb2_poofs[idx]);
+	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+		for(idx=0; idx<Neb2_poof_count; idx++){
+			if((Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx))){
+				bm_page_in_texture(Neb2_poofs[idx]);
+			}
 		}
 	}
 }
@@ -1289,12 +1294,14 @@ void neb2_render_player()
 				frame_area -= this_area;
 				frame_rendered++;			
 #else */
-				if(!Cmdline_nohtl)gr_set_lighting(false,false);
+				// have lighting enabled but not set to fix whiteout in OGL
+				if(!Cmdline_nohtl)gr_set_lighting(false,(gr_screen.mode == GR_OPENGL));
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		 	  	if(Cmdline_nohtl)
 	 				g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 		 	  	else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-			//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
+				// turn lighting back off if in OGL to not mess up HUD
+				if(!Cmdline_nohtl && (gr_screen.mode == GR_OPENGL))gr_set_lighting(false,false);
 //#endif
 			}
 		}
