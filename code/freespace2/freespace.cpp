@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.78 $
- * $Date: 2004-03-08 22:02:38 $
- * $Author: Kazan $
+ * $Revision: 2.79 $
+ * $Date: 2004-03-08 22:16:32 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2004/03/08 22:02:38  Kazan
+ * Lobby GUI screen restored
+ *
  * Revision 2.77  2004/03/08 18:36:20  randomtiger
  * Added complete stub system to replace software.
  *
@@ -4191,11 +4194,17 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 	}
 #endif
 
+	//fugly hack.  this will make the skybox render in HT&L
+	//i want the stars_draw() function to get ported to HT&L quick
+	int nohtl_save = Cmdline_nohtl;
+	Cmdline_nohtl = 1;
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1);
 	} else {
 		stars_draw(1,1,1,0);
 	}
+	Cmdline_nohtl = nohtl_save;
+
 
 	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
