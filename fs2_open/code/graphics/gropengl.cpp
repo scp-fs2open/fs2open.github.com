@@ -2,13 +2,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.90 $
- * $Date: 2005-01-01 11:24:22 $
+ * $Revision: 2.91 $
+ * $Date: 2005-01-03 18:45:22 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2005/01/01 11:24:22  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 2.89  2004/12/22 23:05:48  phreak
  * added a pragma message if DevIL isn't compiled into the build
  *
@@ -1928,7 +1936,7 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
-void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0 )
+void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage )
 {
 	if ( !gr_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
 		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
@@ -3727,7 +3735,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		}
 	}
 
-	glGetIntegerv(GL_MAX_LIGHTS, &max_gl_lights); //Get the max number of lights supported
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
 	if (!Cmdline_window)

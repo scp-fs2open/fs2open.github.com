@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-01-01 11:24:23 $
+ * $Revision: 1.6 $
+ * $Date: 2005-01-03 18:45:22 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/01/01 11:24:23  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 1.4  2004/10/31 21:45:13  taylor
  * Linux tree merge, single array for VBOs/HTL
  *
@@ -66,7 +74,7 @@
 // Variables
 opengl_light opengl_lights[MAX_LIGHTS];
 bool active_light_list[MAX_LIGHTS];
-int currently_enabled_lights[MAX_OPENGL_LIGHTS] = {-1};
+int *currently_enabled_lights = NULL;
 bool lighting_is_enabled = true;
 int active_gl_lights = 0;
 int n_active_gl_lights = 0;
@@ -76,7 +84,7 @@ extern float static_light_factor;
 extern float static_tube_factor;
 extern double specular_exponent_value;
 
-int max_gl_lights;
+int GL_max_lights = 0;
 
 // OGL defaults
 static const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
@@ -143,7 +151,7 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 
 void set_opengl_light(int light_num, opengl_light *light)
 {
-	Assert(light_num < max_gl_lights);
+	Assert(light_num < GL_max_lights);
 	glLightfv(GL_LIGHT0+light_num, GL_POSITION, &light->Position.x);
 	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, &light->Ambient.r);
 	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, &light->Diffuse.r);
@@ -155,7 +163,7 @@ void set_opengl_light(int light_num, opengl_light *light)
 
 //finds the first unocupyed light
 void opengl_pre_render_init_lights(){
-	for(int i = 0; i<max_gl_lights; i++){
+	for(int i = 0; i<GL_max_lights; i++){
 		if(currently_enabled_lights[i] > -1) glDisable(GL_LIGHT0+i);
 		currently_enabled_lights[i] = -1;
 	}
@@ -183,11 +191,11 @@ void opengl_change_active_lights(int pos){
 
 	glScalef(1,1,-1);
 	
-	for(int i = 0; (i < max_gl_lights) && ((pos * max_gl_lights)+i < active_gl_lights); i++){
+	for(int i = 0; (i < GL_max_lights) && ((pos * GL_max_lights)+i < active_gl_lights); i++){
 		glDisable(GL_LIGHT0+i);
 		move = false;
 		for(k; k<MAX_LIGHTS && !move; k++){
-			int slot = (pos * max_gl_lights)+l;
+			int slot = (pos * GL_max_lights)+l;
 			if(active_light_list[slot]){
 				if(opengl_lights[slot].occupied){
 					set_opengl_light(i,&opengl_lights[slot]);
@@ -236,7 +244,7 @@ void gr_opengl_reset_lighting()
 	for(i = 0; i<MAX_LIGHTS; i++){
 		opengl_lights[i].occupied = false;
 	}
-	for(i=0; i<max_gl_lights; i++){
+	for(i=0; i<GL_max_lights; i++){
 		glDisable(GL_LIGHT0+i);
 		active_light_list[i] = false;
 	}
@@ -262,6 +270,21 @@ void opengl_init_light()
 
 	// only on front, tends to be more believable
 	glMaterialf(GL_FRONT, GL_SHININESS, 80.0f );
+
+	if ( os_config_read_uint(NULL, "OGLRealisticLightModel", 0) ) {
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+	}
+
+	glGetIntegerv(GL_MAX_LIGHTS, &GL_max_lights); // Get the max number of lights supported
+
+	// allocate memory for enabled lights
+	Verify(GL_max_lights > 0);
+	currently_enabled_lights = (int*)malloc(GL_max_lights * sizeof(int));
+
+	if (currently_enabled_lights == NULL)
+		Error( LOCATION, "Unable to allocate memory for lights!\n");
+
+	memset( currently_enabled_lights, -1, GL_max_lights * sizeof(int) );
 }
 
 void opengl_default_light_settings(int ambient = 1, int emission = 1, int specular = 1)
@@ -302,7 +325,7 @@ void gr_opengl_set_lighting(bool set, bool state)
 		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, GL_light_ambient );
 	}
 
-	for(int i = 0; i<max_gl_lights; i++){
+	for(int i = 0; i<GL_max_lights; i++){
 		if(currently_enabled_lights[i] > -1)glDisable(GL_LIGHT0+i);
 		currently_enabled_lights[i] = -1;
 	}

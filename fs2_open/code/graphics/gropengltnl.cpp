@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-01-01 11:24:23 $
+ * $Revision: 1.12 $
+ * $Date: 2005-01-03 18:45:22 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/01/01 11:24:23  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 1.10  2004/10/31 21:45:13  taylor
  * Linux tree merge, single array for VBOs/HTL
  *
@@ -448,8 +456,8 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	opengl_pre_render_init_lights();
 	opengl_change_active_lights(0);
 
-	// only change lights if we have a specmap
-	if ( (lighting_is_enabled) && (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) ) {
+	// only change lights if we have a specmap, don't render the specmap when fog is enabled
+	if ( (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) ) {
 		use_spec = true;
 		opengl_default_light_settings(1, 1, 0); // don't render with spec lighting here
 	} else {
@@ -487,20 +495,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		} else {
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
-/*
-		gr_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
 
-		opengl_switch_arb(0, 1);
-
-		// render with spec lighting only
-		opengl_default_light_settings(0, 0, 1);
-
-		gr_opengl_set_modulate_tex_env();
-
-		glBlendFunc(GL_ONE, GL_ONE);
-		glDepthFunc(GL_EQUAL);
-		glDepthMask(GL_FALSE);
-*/
 		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
 
 		glLockArraysEXT( 0, vbp->n_verts );
@@ -520,12 +515,12 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	// reset lights to default values
 //	opengl_default_light_settings();
 
-	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/max_gl_lights > 0) ) {
+	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/GL_max_lights > 0) ) {
 		gr_opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 		opengl_switch_arb(1,0);
 		opengl_switch_arb(2,0);
 
-		for(i=1; i< (n_active_gl_lights-1)/max_gl_lights; i++)
+		for(i=1; i< (n_active_gl_lights-1)/GL_max_lights; i++)
 		{
 			opengl_change_active_lights(i);
 
