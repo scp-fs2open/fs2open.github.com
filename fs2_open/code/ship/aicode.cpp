@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.94 $
- * $Date: 2005-03-03 06:41:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.95 $
+ * $Date: 2005-03-06 16:43:40 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2005/03/03 06:41:40  Goober5000
+ * removed the "error" in the new docking code
+ * --Goober5000
+ *
  * Revision 2.93  2005/03/03 03:55:03  wmcoolmon
  * Turret AI code optimizations. If freaky stuff happens, call WMC()
  *
@@ -11147,10 +11151,14 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 
 	case REPAIR_INFO_ABORT:
 		// undock if necessary (we may be just waiting for a repair in which case we aren't docked)
-		Assert((repair_objp != NULL) && (repaired_objp != NULL));
-		if (dock_check_find_direct_docked_object(repair_objp, repaired_objp))
+		// repair_objp will be NULL as a support ship is just warping in when we get here - taylor
+		Assert(repaired_objp != NULL);
+		if (repair_objp != NULL)
 		{
-			ai_do_objects_undocked_stuff(repair_objp, repaired_objp);
+			if (dock_check_find_direct_docked_object(repair_objp, repaired_objp))
+			{
+				ai_do_objects_undocked_stuff(repair_objp, repaired_objp);
+			}
 		}
 		// fall through
 
