@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-08-22 07:35:09 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2003-09-11 19:36:20 $
+ * $Author: argv $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.16  2003/08/06 17:37:08  phreak
  * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
  *
@@ -1054,8 +1059,9 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vector 
 	// it should take to go through the effect, or 2R.
 	*speed = shipfx_calculate_warp_speed(objp);
 
+	// _argv[-1] - this was causing problems with ships with maxvel of around 100 or higher. so cap at 65.
 	if ( objp == Player_obj )	{
-		*speed = 0.8f*objp->phys_info.max_vel.xyz.z;
+		*speed = min(0.8f*objp->phys_info.max_vel.xyz.z, 65.0f);
 	}
 
 	// Now we know our speed. Figure out how far the warp effect will be from here.  
@@ -1861,7 +1867,8 @@ DCF(bs_exp_fire_time_mult, "Multiplier time between fireball in big ship explosi
 	}
 }
 
-#define MAX_SPLIT_SHIPS		3		// How many can explode at once.  Each one is about 1K.
+// _argv[-1] - I hit this limit (3), and its cost is fairly low, so increased it.
+#define MAX_SPLIT_SHIPS		16		// How many can explode at once.  Each one is about 1K.
 
 #define DEBRIS_NONE			0
 #define DEBRIS_DRAW			1
@@ -2894,6 +2901,10 @@ void engine_wash_ship_process(ship *shipp)
 		return;
 	}
 
+	// _argv[-1] - if power output goes to zero, the ship is disabled but engine subsystems are not destroyed.
+	if (shipp->flags & SF_DISABLED)
+		return;
+
 	Assert(shipp != NULL);
 	Assert(shipp->objnum >= 0);
 	objp = &Objects[shipp->objnum];
@@ -2951,10 +2962,14 @@ void engine_wash_ship_process(ship *shipp)
 		}
 
 		float	speed_scale;
+		// _argv[-1] - base this on thrust instead of speed.
+		/*
 		if (ship_objp->phys_info.speed > 20.0f)
 			speed_scale = 1.0f;
 		else
 			speed_scale = ship_objp->phys_info.speed/20.0f;
+		*/
+		speed_scale = max(ship_objp->phys_info.forward_thrust, 0.0f);
 
 		for (idx = 0; idx < pm->n_thrusters; idx++) {
 			thruster_bank *bank = &pm->thrusters[idx];
