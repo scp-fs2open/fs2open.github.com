@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.5 $
- * $Date: 2004-08-11 05:06:34 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-08 09:59:10 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/08/11 05:06:34  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.4  2004/06/18 04:59:55  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -271,6 +274,7 @@ extern float	Master_sound_volume;		// 0 -> 1.0
 extern float	Master_voice_volume;		// 0 -> 1.0
 extern int		Snd_sram;					// System memory consumed by sound data	
 extern int		Snd_hram;					// Soundcard memory consumed by sound data
+extern unsigned short UserSampleRate, UserSampleBits;
 
 #ifndef NO_SOUND
 //int	snd_load( char *filename, int hardware=0, int three_d=0, int *sig=NULL );

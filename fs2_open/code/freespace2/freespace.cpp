@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.117 $
- * $Date: 2005-01-01 07:18:47 $
+ * $Revision: 2.118 $
+ * $Date: 2005-01-08 10:00:59 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2005/01/01 07:18:47  wmcoolmon
+ * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
+ *
  * Revision 2.116  2004/12/25 09:28:41  wmcoolmon
  * Sync to current NEW_HUD code
  *
@@ -2820,8 +2823,8 @@ void game_init()
 
 	if (!Is_standalone)
 	{
-		unsigned short UserSampleRate = (unsigned short) os_config_read_uint(NULL, "SoundSampleRate", 22050);
-		unsigned short UserSampleBits = (unsigned short) os_config_read_uint(NULL, "SoundSampleBits", 16);
+		UserSampleRate = (unsigned short) os_config_read_uint(NULL, "SoundSampleRate", 22050);
+		UserSampleBits = (unsigned short) os_config_read_uint(NULL, "SoundSampleBits", 16);
 		snd_init(use_a3d, use_eax, UserSampleRate, UserSampleBits);
 	}
 
@@ -5171,29 +5174,40 @@ void game_frame(int paused)
 				Net_player->s_info.eye_orient = eye_orient;
 			}
 #endif  // ifndef NO_NETWORK
-
-			/*
-			//Do 3D cockpit model
-			vector		camera_eye = {0.0f,0.0f,0.0f};
-			vector orient_vec = {0.0f,0.0f,0.0f};
-			vector obj_pos = {0.0f,0.0f,0.0f};
-			vector up_vector = {0.0f,0.0f,0.0f};
-			matrix camera_orient = IDENTITY_MATRIX;
-			float factor = 2;
-			float Hud_target_object_factor = 2.2f;
-
+/*
 			static int cp_model = -1;
-			cp_model = model_load("cockpitTest.pof", 0, NULL, 0);
+			//Do 3D cockpit model
+			if(cp_model != -2)
+			{
+				
+				vector		camera_eye = {0.0f,0.0f,0.0f};
+				vector orient_vec = {0.0f,0.0f,0.0f};
+				vector obj_pos = {0.0f,0.0f,0.0f};
+				vector up_vector = {0.0f,0.0f,0.0f};
+				matrix camera_orient = IDENTITY_MATRIX;
+				float factor = 2;
+				float Hud_target_object_factor = 2.2f;
 
-			vm_vec_normalize(&orient_vec);
-			vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
-			vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
+				vm_vec_normalize(&orient_vec);
+				vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
+				vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
-//			hud_render_target_setup(&camera_eye, &camera_orient, 0.5f * Hud_target_object_factor);
-			model_clear_instance(cp_model);
-			model_render( cp_model, &camera_orient, &obj_pos, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
-//			hud_render_target_close();
-			//End 3d model
+				
+				if(cp_model == -1)
+				{
+					cp_model = model_load("cockpitTest.pof", 0, NULL, 0);
+					if(cp_model == -1)
+					{
+						cp_model = -2;
+					}
+				}
+
+	//			hud_render_target_setup(&camera_eye, &camera_orient, 0.5f * Hud_target_object_factor);
+	//			model_clear_instance(cp_model);
+				model_render( cp_model, &View_matrix, &View_position, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
+	//			hud_render_target_close();
+				//End 3d model
+			}
 			*/
 
 			hud_show_target_model();
@@ -5247,7 +5261,7 @@ void game_frame(int paused)
 			//Display all new hud gauges. Note this is somewhat inefficient;
 			//set_current_hud really only needs to be called when the viewer
 			//object changes, however, it works fine this way.
-			if(Viewer_obj && Viewer_obj != Player_obj && Viewer_obj->type == OBJ_SHIP)
+			if(Viewer_obj && Viewer_obj->type == OBJ_SHIP)
 			{
 				set_current_hud(&Ships[Viewer_obj->instance]);
 				Ships[Viewer_obj->instance].ship_hud.show();

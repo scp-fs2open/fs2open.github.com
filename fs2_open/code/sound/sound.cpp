@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-12-25 00:23:46 $
+ * $Revision: 2.11 $
+ * $Date: 2005-01-08 09:59:10 $
  * $Author: wmcoolmon $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/12/25 00:23:46  wmcoolmon
+ * Ogg support for WIN32
+ *
  * Revision 2.9  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -352,7 +355,7 @@
 #include "sound/ogg/ogg.h"
 		
 
-
+unsigned short UserSampleRate, UserSampleBits;
 
 
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
@@ -639,7 +642,12 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		si->format = OGG_FORMAT_VORBIS;
 		si->n_channels = si->ogg_info.vi->channels;
 		si->sample_rate = si->ogg_info.vi->rate;
-		si->bits = 16;								//OGGs always decoded at 16 bits here
+		if(UserSampleBits == 16 || UserSampleBits == 8)
+			si->bits = UserSampleBits;				//Decode at whatever the user specifies; only 16 and 8 are supported.
+		else if(UserSampleBits > 16)
+			si->bits = 16;
+		else
+			si->bits = 8;
 		si->n_block_align = si->n_channels * 2;
 		si->avg_bytes_per_sec = si->sample_rate * si->n_block_align;
 		if(ov_pcm_total(&si->ogg_info, -1) < UINT_MAX)
