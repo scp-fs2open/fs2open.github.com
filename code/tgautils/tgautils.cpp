@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-03-13 23:07:36 $
+ * $Revision: 2.14 $
+ * $Date: 2005-03-15 17:10:58 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/13 23:07:36  taylor
+ * enable 32-bit to 16-bit TGA conversion with -tga16 cmdline option (experimental)
+ * fix crash when upgrading from original campaign stats file to current
+ *
  * Revision 2.12  2005/02/23 05:05:38  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -523,19 +527,19 @@ int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *
 		targa_file = NULL;
 	}
 
-	*w = header.width;
-	*h = header.height;
-	*bpp = header.pixel_depth;
-
-	Assert( (*bpp == 16) || (*bpp == 24) || (*bpp == 32) );
+	Assert( (header.pixel_depth == 16) || (header.pixel_depth == 24) || (header.pixel_depth == 32) );
 
 	// If we aren't using the -jpgtga option then don't even try to use anything other
 	// than 16-bit TARGAs.  Otherwise DevIL should be available to deal with heigher bits.
-	if ( !Cmdline_jpgtga && !Cmdline_tga16 && (*bpp != 16) )
+	if ( !Cmdline_jpgtga && !Cmdline_tga16 && (header.pixel_depth != 16) )
 		return TARGA_ERROR_READING;
 
-	if ( (Cmdline_jpgtga || Cmdline_tga16) && (*bpp != 16) && (*bpp != 24) && (*bpp != 32) )
+	if ( (Cmdline_jpgtga || Cmdline_tga16) && (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32) )
 		return TARGA_ERROR_READING;
+
+	if (w) *w = header.width;
+	if (h) *h = header.height;
+	if (bpp) *bpp = header.pixel_depth;
 
 	return TARGA_ERROR_NONE;
 }
