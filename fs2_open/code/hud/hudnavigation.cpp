@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.8 $
- * $Date: 2004-08-20 05:13:07 $
- * $Author: Kazan $
+ * $Revision: 1.9 $
+ * $Date: 2004-11-27 10:51:01 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/08/20 05:13:07  Kazan
+ * wakka wakka - fix minor booboo
+ *
  * Revision 1.7  2004/07/27 18:52:10  Kazan
  * squished another
  *
@@ -40,11 +43,12 @@
  *
  */
 
-#include "Hud/HUDNavigation.h"
+#include "PreProcDefines.h"
 
 #if defined(ENABLE_AUTO_PILOT)
-#include "Autopilot/Autopilot.h"
-#include "Hud/HUDtarget.h"
+#include "hud/hudnavigation.h"
+#include "autopilot/autopilot.h"
+#include "hud/hudtarget.h"
 #include "ship/ship.h"
 #include "object/object.h"
 #include "render/3d.h"
