@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.7 $
- * $Date: 2005-02-27 14:09:27 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-31 11:11:56 $
  * $Author: Goober5000 $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/27 14:09:27  Goober5000
+ * First stage of "apply to all ships in this wing" weapon loadout button code.
+ * Button hooks only, pending interface art.  The "apply-to-all" code itself
+ * still has to be written.
+ * --Goober5000
+ *
  * Revision 2.6  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -193,7 +199,7 @@ void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count);
 void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_count);
 
 void wl_synch_interface();
-void wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int ship_slot,int player_index = -1);
-void wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot,int player_index = -1);
+int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int ship_slot,int player_index = -1, bool dont_play_sound = false);
+int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot,int player_index = -1, bool dont_play_sound = false);
 
 #endif /* __MISSION_WEAPON_CHOICE_H__ */

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.44 $
+ * $Date: 2005-03-31 11:11:56 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.42  2005/03/12 04:44:24  wmcoolmon
  * Fixx0red odd drag problems
  *
@@ -963,7 +966,7 @@ int Slist_start, Slist_size;
 
 static int Selected_wl_slot = -1;			// Currently selected ship slot
 static int Selected_wl_class = -1;			// Class of weapon that is selected
-static int Hot_wl_slot = -1;					//	Ship slot that mouse is over (0..11)
+static int Hot_wl_slot = -1;					//	Ship slot that mouse is over (0..MAX_WSS_SLOTS-1)
 static int Hot_weapon_icon = -1;				// Icon number (0-7) which has mouse over it
 static int Hot_weapon_bank = -1;				// index (0-7) for weapon slot on ship that has a droppable icon over it
 static int Hot_weapon_bank_icon = -1;
@@ -1065,6 +1068,7 @@ void wl_maybe_reset_selected_weapon_class();
 void wl_render_icon_count(int num, int x, int y);
 void wl_render_weapon_desc();
 
+void wl_apply_current_loadout_to_all_ships_in_current_wing();
 
 
 // carry icon functions
@@ -1257,6 +1261,9 @@ void weapon_button_do(int i)
 				}
 				break;
 #endif
+
+			case WL_BUTTON_APPLY_ALL:
+				break;
 
 			default:
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Button %d is not yet implemented", i);
@@ -1606,7 +1613,7 @@ void wl_render_overhead_view(float frametime)
 	//Draw ship name
 	char						name[NAME_LENGTH + CALLSIGN_LEN];
 
-	ss_return_name(Selected_wl_slot/4, Selected_wl_slot%4, name);
+	ss_return_name(Selected_wl_slot/MAX_WING_SLOTS, Selected_wl_slot%MAX_WING_SLOTS, name);
 	gr_set_color_fast(&Color_normal);
 	gr_string(Wl_ship_name_coords[gr_screen.res][0], Wl_ship_name_coords[gr_screen.res][1], name);
 }
@@ -1676,7 +1683,7 @@ void wl_set_disabled_weapons(int ship_class)
 // ---------------------------------------------------------------------------------
 // maybe_select_wl_slot()
 //
-// A slot index was clicked on, mabye change Selected_wl_slot
+// A slot index was clicked on, maybe change Selected_wl_slot
 void maybe_select_wl_slot(int block, int slot)
 {
 	int sidx;
@@ -1684,7 +1691,7 @@ void maybe_select_wl_slot(int block, int slot)
 	if ( Wss_num_wings <= 0 )
 		return;
 
-	sidx = block*4 + slot;
+	sidx = block*MAX_WING_SLOTS + slot;
 	if ( Wss_slots[sidx].ship_class < 0 ) {
 		return;
 	}
@@ -1766,9 +1773,11 @@ void wl_init_pool(team_data *td)
 {
 	int i;
 
+	/* Goober5000 - isn't this superfluous?
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		Wl_pool[i] = -1;
 	}
+	*/
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		Wl_pool[i] = td->weaponry_pool[i];	// read from mission
@@ -2316,13 +2325,13 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
 	if ( ss->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE ) {
 		for ( i=0; i < MAX_SHIP_PRIMARY_BANKS; i++ ) {
 			wep[i] = ss->primary_banks[i];		
-		} // end for
+		}
 	}
 
 	if ( ss->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE ) {
 		for ( i=0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
 			wep[i+MAX_WL_PRIMARY] = ss->secondary_banks[i];	
-		} // end for
+		}
 	}
 
 	// ammo counts could still be modified
@@ -2406,10 +2415,10 @@ void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_cou
 			wl_get_parseobj_weapons(sa_index, ship_class, wep, wep_count);
 		} else {
 			// ship has been created
-//			wl_get_ship_weapons(slot_num/4, slot_num%4, wep, wep_count);
+//			wl_get_ship_weapons(slot_num/MAX_WING_SLOTS, slot_num%MAX_WING_SLOTS, wep, wep_count);
 			int ship_index = -1;
 			p_object *pobjp;
-			ss_return_ship(slot_num/4, slot_num%4, &ship_index, &pobjp);
+			ss_return_ship(slot_num/MAX_WING_SLOTS, slot_num%MAX_WING_SLOTS, &ship_index, &pobjp);
 			Assert(ship_index != -1);
 			wl_get_ship_weapons(ship_index, wep, wep_count);
 		}
@@ -4722,7 +4731,7 @@ void wl_synch_interface()
 {
 }
 
-void wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int ship_slot,int player_index)
+int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int ship_slot,int player_index, bool dont_play_sound)
 {
 	int update=0;
 	int sound=-1;
@@ -4757,7 +4766,7 @@ void wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int s
 	}
 
 	// only play this sound if the move was done locally (by the host in other words)
-	if ( (sound >= 0) && (player_index == -1) ) {	
+	if ( (sound >= 0) && (player_index == -1) && !dont_play_sound) {	
 		gamesnd_play_iface(sound);	
 	}	
 
@@ -4787,12 +4796,15 @@ void wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int s
 		{
 			wl_synch_interface();
 		}
-	}		
+	}
+	
+	return update;
 }
 
-void wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, int player_index)
+int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, int player_index, bool dont_play_sound)
 {
 	int mode;
+	int update=0;
 #ifndef NO_NETWORK
 	net_player *pl;
 
@@ -4819,7 +4831,7 @@ void wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot,
 
 		mode = wss_get_mode(from_bank, from_list, to_bank, to_list, ship_slot);
 		if ( mode >= 0 ) {
-			wl_apply(mode, from_bank, from_list, to_bank, to_list, ship_slot, player_index);
+			update = wl_apply(mode, from_bank, from_list, to_bank, to_list, ship_slot, player_index, dont_play_sound);
 		}		
 
 #ifndef NO_NETWORK
@@ -4831,4 +4843,11 @@ void wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot,
 		send_wss_request_packet(Net_player->player_id, from_bank, from_list, to_bank, to_list, ship_slot, -1, WSS_WEAPON_SELECT);
 	}
 #endif
+
+	return update;
+}
+
+// Goober5000
+void wl_apply_current_loadout_to_all_ships_in_current_wing()
+{
 }
