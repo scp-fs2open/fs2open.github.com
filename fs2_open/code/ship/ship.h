@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.27 $
- * $Date: 2003-01-19 07:02:15 $
+ * $Revision: 2.28 $
+ * $Date: 2003-01-19 22:20:22 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/01/19 07:02:15  Goober5000
+ * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
+ * all ships, and all ships who have their departure anchor set to a capital ship
+ * should exit to that ship when told to depart
+ * --Goober5000
+ *
  * Revision 2.26  2003/01/18 09:25:40  Goober5000
  * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
  * than SF_ flags
@@ -1507,5 +1513,11 @@ extern void ship_change_iff(int ship_num, int new_team);
 
 // wing squad logos - Goober5000
 extern void wing_load_squad_bitmap(wing *w);
+
+// Goober5000 - needed by new hangar depart code
+extern int ship_has_dock_bay(int shipnum);
+
+// Goober5000 - needed by new hangar depart code
+extern int ship_get_ship_with_dock_bay(int team);
 
 #endif

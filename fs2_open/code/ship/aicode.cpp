@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.21 $
- * $Date: 2003-01-19 09:10:40 $
+ * $Revision: 2.22 $
+ * $Date: 2003-01-19 22:20:22 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2003/01/19 09:10:40  Goober5000
+ * more tweaky bug fixes
+ * --Goober5000
+ *
  * Revision 2.20  2003/01/19 07:13:05  Goober5000
  * oops - forgot a bit of departure code :)
  * --Goober5000
@@ -13009,27 +13013,17 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 
 	aip = &Ai_info[Ships[pl_objp->instance].ai_index];
 
-	if ( parent_objnum == -1 ) {
-		ship_obj	*so;
-
-		// for now just locate a captial ship on the same team:
-		so = GET_FIRST(&Ship_obj_list);
-		objnum = -1;
-		while(so != END_OF_LIST(&Ship_obj_list)){
-			sp = &Ships[Objects[so->objnum].instance];
-			if ( (Ship_info[sp->ship_info_index].flags & (SIF_HUGE_SHIP)) && (sp->team == Ships[pl_objp->instance].team) ) {
-				objnum = so->objnum;
-				break;
-			}
-			so = GET_NEXT(so);
-		} 
+	if ( parent_objnum == -1 )
+	{
+		// locate a captial ship on the same team:
+		objnum = Ships[ship_get_ship_with_dock_bay(Ships[pl_objp->instance].team)].objnum;
 	} else {
 		objnum = parent_objnum;
 	}
 
 	aip->path_start = -1;
 
-	if ( objnum == -1 )
+	if ( objnum < 0 )
 		return -1;
 
 	pm = model_get( Ships[Objects[objnum].instance].modelnum );
@@ -13083,6 +13077,7 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 void ai_bay_depart()
 {
 	ai_info	*aip;
+	int anchor_shipnum;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -13093,9 +13088,20 @@ void ai_bay_depart()
 	}
 
 	// check if parent ship still exists, if not abort depart 
-	if ( (Ships[Objects[aip->goal_objnum].instance].flags & (SF_DYING | SF_DEPARTING)) || ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
+// ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
+	anchor_shipnum = ship_name_lookup(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
+	if (anchor_shipnum >= 0)
+	{
+		if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
+		{
+			anchor_shipnum = -1;
+		}
+	}
+
+	if (anchor_shipnum < 0)
 	{
 		aip->mode = AIM_NONE;
+		
 		Ships[Pl_objp->instance].flags &= ~SF_DEPART_DOCKBAY;
 		return;
 	}
@@ -13460,6 +13466,7 @@ void ai_warp_out(object *objp)
 	}
 
 	ai_info	*aip;
+	int anchor_shipnum;
 
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -13518,19 +13525,37 @@ void ai_warp_out(object *objp)
 		break;
 	case AIS_DEPART_TO_BAY:	// no warp stuff
 		// check if parent ship still exists; if not, abort depart
-		if ( (Ships[Objects[aip->goal_objnum].instance].flags & (SF_DYING | SF_DEPARTING)) || ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
+	// ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
+		anchor_shipnum = ship_name_lookup(Parse_names[Ships[objp->instance].departure_anchor]);
+		if (anchor_shipnum >= 0)
+		{
+			if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
+			{
+				anchor_shipnum = -1;
+			}
+		}
+
+		if (anchor_shipnum < 0)
 		{
 			// if no warp drive, cancel everything
 			if (Ships[objp->instance].flags2 & SF2_NO_SUBSPACE_DRIVE)
 			{
-				aip->goals[aip->active_goal].ai_mode = AI_GOAL_NONE;
-				aip->goals[aip->active_goal].ai_submode = 0;
-				aip->mode = AIM_NONE;
+				ai_goal *aigp = &aip->goals[aip->active_goal];
+
 				Ships[objp->instance].flags &= ~SF_DEPARTING;
+
+				// engage enemy
+				aip->target_objnum = -1;	// force reacquisition of target
+				aip->enemy_wing = -1;		// same with wing
+				aigp->ai_mode = AI_GOAL_CHASE_ANY;
+				aigp->ai_submode = SM_ATTACK;
+				ai_attack_object( objp, NULL, aigp->priority, NULL );
 			}
 			// if we have warp, engage warp drive instead
 			else
 			{
+				(Ships[objp->instance].flags &= ~SF_DEPART_DOCKBAY) |= SF_DEPART_WARP;
+
 				aip->goals[aip->active_goal].ai_mode = AI_GOAL_WARP;
 				aip->goals[aip->active_goal].ai_submode = -1;
 				aip->mode = AIM_WARP_OUT;
