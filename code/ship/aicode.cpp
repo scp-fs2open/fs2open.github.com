@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.83 $
- * $Date: 2005-01-26 01:26:09 $
+ * $Revision: 2.84 $
+ * $Date: 2005-01-27 11:26:22 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2005/01/26 01:26:09  Goober5000
+ * dockpoints now rotate with rotating subobjects
+ * --Goober5000
+ *
  * Revision 2.82  2005/01/18 06:14:29  Goober5000
  * fixed a silly error
  * --Goober5000
@@ -3909,6 +3913,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	vector	v1;
 	int		pp_index;		//	index in Path_points at which to store point, if this is a modify-in-place (pnp ! NULL)
 	int		start_index, finish_index;
+	vector submodel_offset, local_vert;
 	
 	// nprintf(("AI", "Creating path for object %s in frame #%i\n", Ships[objp->instance].ship_name, AI_FrameCount));
 	
@@ -3929,15 +3934,18 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	}
 
 	// Goober5000 - start submodel calculation
+	ship_model_start(objp);
+
 	modelnum = Ships[objp->instance].modelnum;
 	pm = model_get(modelnum);
-	ship_model_start(objp);	// needed for model_find_world_point
+
+	model_find_submodel_offset(&submodel_offset, modelnum, mp->parent_submodel);
 
 	int offset = 0;
 	for (i=start_index; i != finish_index; i += dir) {
 		//	Globalize the point.
 		// Goober5000 - check whether this submodel rotates
-		if (pm->submodel[mp->parent_submodel].movement_type == -1)
+		if ((mp->parent_submodel < 0) || (pm->submodel[mp->parent_submodel].movement_type < 0))
 		{
 			// no movement... calculate as in original code
 			vm_vec_unrotate(&v1, &mp->verts[i].pos, &objp->orient);
@@ -3945,8 +3953,9 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		}
 		else
 		{
-			// movement... find location of point just like in shipfx with rotating sparks
-			model_find_world_point(&v1, &mp->verts[i].pos, modelnum, mp->parent_submodel, &objp->orient, &objp->pos);			
+			// movement... find location of point like with docking code
+			vm_vec_sub(&local_vert, &mp->verts[i].pos, &submodel_offset);
+			model_find_world_point(&v1, &local_vert, modelnum, mp->parent_submodel, &objp->orient, &objp->pos);			
 		}
 
 		if ( randomize_pnt == i ) {
@@ -4882,7 +4891,7 @@ float ai_matrix_dist(matrix *mat1, matrix *mat2)
 //	prevents this from happening too often.
 //	force_recreate_flag TRUE means to recreate regardless of timestamp.
 //	Returns TRUE if path recreated.
-float maybe_recreate_path(object *objp, ai_info *aip, int force_recreate_flag)
+float maybe_recreate_path(object *objp, ai_info *aip, int force_recreate_flag, int override_hash = 0)
 {
 	int	hashval;
 
@@ -4906,8 +4915,9 @@ float maybe_recreate_path(object *objp, ai_info *aip, int force_recreate_flag)
 		object	*path_objp;
 
 		path_objp = &Objects[aip->path_objnum];
+		hashval = create_object_hash(path_objp);
 
-		if ((hashval = create_object_hash(path_objp)) != aip->path_goal_obj_hash) {
+		if (override_hash || (hashval != aip->path_goal_obj_hash)) {
 			float dist;
 			
 			dist = vm_vec_dist_quick(&path_objp->pos, &aip->path_create_pos);
@@ -9769,26 +9779,27 @@ void ai_chase()
 
 }
 
-//	Make the object *objp move so that the point *dp on the object moves towards the point *vp
+//	Make the object *objp move so that the point *start moves towards the point *finish.
 //	Return distance.
-void dock_move_towards_point(object *objp, vector *dp, vector *vp, float speed_scale, float other_obj_speed = 0.0f)
+float dock_move_towards_point(object *objp, vector *start, vector *finish, float tangential_velocity, int dock_mode, float speed_scale, float other_obj_speed = 0.0f)
 {
 	physics_info	*pi = &objp->phys_info;
-	float				dist;			//	dist to goal
+	float			dist;			//	dist to goal
 	vector			v2g;			//	vector to goal
-	vector			abs_pnt;		//	location of dock point, ie objp->pos + db
 
-	if (dp == NULL)
-		abs_pnt = objp->pos;
-	else
-		vm_vec_add(&abs_pnt, &objp->pos, dp);
-
-	dist = vm_vec_dist_quick(vp, &abs_pnt);
+	dist = vm_vec_dist_quick(start, finish);
 	if (dist > 0.0f) {
 		float	speed;
 
-		dist = vm_vec_normalized_dir(&v2g, vp, &abs_pnt);
+		dist = vm_vec_normalized_dir(&v2g, finish, start);
 		speed = fl_sqrt(dist) * speed_scale;
+
+		// Goober5000 - adjust velocity, ramping only if we're approaching or in the last stage of undocking
+		if ((dist - objp->radius > 1.0f) && ((dock_mode == DOA_APPROACH) || (dock_mode == DOA_UNDOCK_3)))
+			speed += tangential_velocity / (dist - objp->radius);
+		else
+			speed += tangential_velocity;
+
 		if (other_obj_speed < MAX_REPAIR_SPEED*0.75f)
 			speed += other_obj_speed;
 		else
@@ -9797,79 +9808,148 @@ void dock_move_towards_point(object *objp, vector *dp, vector *vp, float speed_s
 		vm_vec_copy_scale(&pi->desired_vel, &v2g, speed);
 	} else
 		vm_vec_zero(&pi->desired_vel);
+
+	return dist;
 }
 
 //	Set the orientation in the global reference frame for an object to attain
-//	to dock with another object.
-//	*dom		resultant global matrix
-//	*db_dest	pointer to destination docking bay information
-//	*db_src	pointer to source docking bay information
-//	*dorient	pointer to global orientation of docking bay (ie, the dockee object's orient)
-//	*sorient	pointer to global orientation of docker
-void set_goal_dock_orient(matrix *dom, dock_bay *db_dest, dock_bay *db_src, matrix *dorient, matrix *sorient)
+//	to dock with another object.  Resultant global matrix returned in dom.
+// Revised by Goober5000
+void set_goal_dock_orient(matrix *dom, vector *docker_p0, vector *docker_p1, vector *docker_p0_norm, matrix *docker_orient, vector *dockee_p0, vector *dockee_p1, vector *dockee_p0_norm, matrix *dockee_orient)
 {
-	vector	fvec, uvec;
+	vector	fvec, uvec, temp;
 	matrix	m1, m2, m3;
 
-	//	Compute the global orientation of the docker's (dest) docking bay.
-	fvec = db_dest->norm[0];
+	//	Compute the global orientation of the dockee's docking bay.
+
+	// get the rotated (local) fvec
+	vm_vec_rotate(&fvec, dockee_p0_norm, dockee_orient);
 	vm_vec_negate(&fvec);
 
-	vm_vec_normalized_dir(&uvec, &db_dest->pnt[1], &db_dest->pnt[0]);
+	// get the rotated (local) uvec
+	vm_vec_normalized_dir(&temp, dockee_p1, dockee_p0);
+	vm_vec_rotate(&uvec, &temp, dockee_orient);
+
+	// create a rotation matrix
 	vm_vector_2_matrix(&m1, &fvec, &uvec, NULL);
 
-	vm_matrix_x_matrix(&m3, dorient, &m1);
+	// get the global orientation
+	vm_matrix_x_matrix(&m3, dockee_orient, &m1);
 
-	//	Compute the matrix given by the source docking bay.
-	//	Pre-multiply the orientation of the source object (sorient) by the transpose
-	//	of the docking bay's orientation, ie unrotate the source object's matrix.
-	fvec = db_src->norm[0];
-	vm_vec_normalized_dir(&uvec, &db_src->pnt[1], &db_src->pnt[0]);
+	//	Compute the matrix given by the docker's docking bay.
+
+	// get the rotated (local) fvec
+	vm_vec_rotate(&fvec, docker_p0_norm, docker_orient);
+
+	// get the rotated (local) uvec
+	vm_vec_normalized_dir(&temp, docker_p1, docker_p0);
+	vm_vec_rotate(&uvec, &temp, docker_orient);
+
+	// create a rotation matrix
 	vm_vector_2_matrix(&m2, &fvec, &uvec, NULL);
-	vm_transpose(&m2);
 
+	//	Pre-multiply the orientation of the source object (docker_orient) by the transpose
+	//	of the docking bay's orientation, ie unrotate the source object's matrix.
+	vm_transpose(&m2);
 	vm_matrix_x_matrix(dom, &m3, &m2);
+}
+
+// Goober5000
+// Return the rotating submodel on which is mounted the specified dockpoint, or -1 for none.
+int find_parent_rotating_submodel(polymodel *pm, int dock_index)
+{
+	int path_num, submodel;
+
+	// find a path for this dockpoint (c.f. ai_return_path_num_from_dockbay)
+	path_num = pm->docking_bays[dock_index].splines[0];
+
+	// path must exist
+	if (path_num >= 0)
+	{
+		// find the submodel for the path for this dockpoint
+		submodel = pm->paths[path_num].parent_submodel;
+
+		// submodel must exist and must move
+		if ((submodel >= 0) && (pm->submodel[submodel].movement_type >= 0))
+		{
+			return submodel;
+		}
+	}
+
+	// if path doesn't exist or the submodel doesn't exist or the submodel doesn't move
+	return -1;
+}
+
+// Goober5000
+void find_adjusted_dockpoint_info(vector *global_p0, vector *global_p1, vector *global_p0_norm, object *objp, polymodel *pm, int modelnum, int submodel, int dock_index)
+{
+	// are we basing this off a rotating submodel?
+	if (submodel >= 0)
+	{
+		vector submodel_offset;
+		vector local_p0, local_p1;
+
+		ship_model_start(objp);
+
+		// calculate the dockpoint locations relative to the unrotated submodel
+		model_find_submodel_offset(&submodel_offset, modelnum, submodel);
+		vm_vec_sub(&local_p0, &pm->docking_bays[dock_index].pnt[0], &submodel_offset);
+		vm_vec_sub(&local_p1, &pm->docking_bays[dock_index].pnt[1], &submodel_offset);
+
+		// find the dynamic positions of the dockpoints
+		model_find_world_point(global_p0, &local_p0, modelnum, submodel, &objp->orient, &objp->pos);
+		model_find_world_point(global_p1, &local_p1, modelnum, submodel, &objp->orient, &objp->pos);
+
+		// find the normal of the first dockpoint
+		model_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], modelnum, submodel, &objp->orient, &objp->pos);
+
+		ship_model_stop(objp);
+	}
+	// use the static dockpoints
+	else
+	{
+		vm_vec_unrotate(global_p0, &pm->docking_bays[dock_index].pnt[0], &objp->orient);
+		vm_vec_add2(global_p0, &objp->pos);
+
+		vm_vec_unrotate(global_p1, &pm->docking_bays[dock_index].pnt[1], &objp->orient);
+		vm_vec_add2(global_p1, &objp->pos);
+
+		vm_vec_unrotate(global_p0_norm, &pm->docking_bays[dock_index].norm[0], &objp->orient);
+	}
 }
 
 #define	DOCK_BACKUP_RETURN_VAL	99999.9f
 
-//	Make objp dock with dobjp
+//	Make docker_objp dock with dockee_objp
 //	Returns distance to goal, defined as distance between corresponding dock points, plus 10.0f * rotational velocity vector (DOA_DOCK only)
 //	DOA_APPROACH	means	approach point aip->path_cur
 //	DOA_DOCK			means dock
 //	DOA_UNDOCK_1	means undock, moving to point nearest dock bay
 //	DOA_UNDOCK_2	means undock, moving to point nearest dock bay and facing away from ship
+//	DOA_UNDOCK_3	means undock, moving directly away from ship
 //	DOA_DOCK_STAY	means rigidly maintain position in dock bay.
-float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, int dockee_index, int dock_mode)
+float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode)
 {
 	ship_info	*sip0, *sip1;
 	polymodel	*pm0, *pm1;
 	ai_info		*aip;
 	matrix		dom, nm;
-	vector		goal_point, docker_point;
+	vector docker_p0, docker_p1, docker_p0_norm;
+	vector dockee_p0, dockee_p1, dockee_p0_norm;
 	float			fdist = UNINITIALIZED_VALUE;
 
 
-	aip = &Ai_info[Ships[objp->instance].ai_index];
+	docker_objp->phys_info.forward_thrust = 0.0f;		//	Kill thrust so we don't have a sputtering thruster.
 
-	// docker is Pl_objp -- dockee is dobjp
+	// Goober5000 - moved out here to save calculations
+	if (dock_mode != DOA_DOCK_STAY)
+		if (ship_get_subsystem_strength(&Ships[docker_objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
+			return 9999.9f;
 
-	//	If dockee has moved much, then path will be recreated.
-	//	Might need to change state if moved too far.
-	if ((dock_mode != DOA_DOCK_STAY) && (dock_mode != DOA_DOCK)) {
-		if (maybe_recreate_path(objp, &Ai_info[Ships[objp->instance].ai_index], 0) > 5.0f) {
-/*			if (dock_mode == DOA_APPROACH) {
-				return DOCK_BACKUP_RETURN_VAL;
-			} else if (dock_mode == DOA_DOCK) {
-				return DOCK_BACKUP_RETURN_VAL;		
-			}
-*/		}
-	}
+	aip = &Ai_info[Ships[docker_objp->instance].ai_index];
 
-	objp->phys_info.forward_thrust = 0.0f;		//	Kill thrust so we don't have a sputtering thruster.
-
-	sip0 = &Ship_info[Ships[objp->instance].ship_info_index];
-	sip1 = &Ship_info[Ships[dobjp->instance].ship_info_index];
+	sip0 = &Ship_info[Ships[docker_objp->instance].ship_info_index];
+	sip1 = &Ship_info[Ships[dockee_objp->instance].ship_info_index];
 	pm0 = model_get( sip0->modelnum );
 	pm1 = model_get( sip1->modelnum );
 
@@ -9879,6 +9959,51 @@ float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, in
 	Assert(pm0->docking_bays[docker_index].num_slots == 2);
 	Assert(pm1->docking_bays[dockee_index].num_slots == 2);
 
+
+	// Goober5000 - check if we're attached to a rotating submodel
+	int dockee_rotating_submodel = find_parent_rotating_submodel(pm1, dockee_index);
+
+	// Goober5000 - move docking points with submodels if necessary, for both docker and dockee
+	find_adjusted_dockpoint_info(&docker_p0, &docker_p1, &docker_p0_norm, docker_objp, pm0, sip0->modelnum, -1, docker_index);
+	find_adjusted_dockpoint_info(&dockee_p0, &dockee_p1, &dockee_p0_norm, dockee_objp, pm1, sip1->modelnum, dockee_rotating_submodel, dockee_index);
+
+	// Goober5000
+	float tangential_velocity = 0.0f;
+	if ((dockee_rotating_submodel >= 0) && (dock_mode != DOA_DOCK_STAY))
+	{
+		vector world_submodel_center, submodel_offset;
+
+		ship_model_start(dockee_objp);
+
+		// get radius from submodel center to dockpoint
+		model_find_submodel_offset(&submodel_offset, sip1->modelnum, dockee_rotating_submodel);
+		vm_vec_add(&world_submodel_center, &dockee_objp->pos, &submodel_offset);
+		float radius = vm_vec_dist(&world_submodel_center, &dockee_p0);
+
+		// get linear velocity of dockpoint
+		tangential_velocity = pm1->submodel[dockee_rotating_submodel].sii->cur_turn_rate * pm1->submodel[dockee_rotating_submodel].rad;
+
+		ship_model_stop(dockee_objp);
+	}
+
+
+	//	If dockee has moved much, then path will be recreated.
+	//	Might need to change state if moved too far.
+	if ((dock_mode != DOA_DOCK_STAY) && (dock_mode != DOA_DOCK)) {
+		// Goober5000 - maybe force recreate
+		int force_recreate = (dockee_rotating_submodel >= 0) && (dock_mode != DOA_DOCK_STAY);
+
+		if (maybe_recreate_path(docker_objp, aip, force_recreate, force_recreate) > 5.0f)
+		{
+/*			if (dock_mode == DOA_APPROACH) {
+				return DOCK_BACKUP_RETURN_VAL;
+			} else if (dock_mode == DOA_DOCK) {
+				return DOCK_BACKUP_RETURN_VAL;		
+			}
+*/		}
+	}
+
+
 	float speed_scale = 1.0f;
 	if (sip0->flags & SIF_SUPPORT) {
 		speed_scale = 3.0f;
@@ -9886,36 +10011,34 @@ float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, in
 
 	switch (dock_mode) {
 	case DOA_APPROACH:
-		{
-		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f) {
-			return 9999.9f;
-		}
-		
+	{
+		vector *goal_point;
+
 		//	Compute the desired global orientation matrix for the docker's station.
 		//	That is, the normal vector of the docking station must be the same as the
 		//	forward vector and the vector between its two points must be the uvec.
-		set_goal_dock_orient(&dom, &pm1->docking_bays[dockee_index], &pm0->docking_bays[docker_index], &dobjp->orient, &objp->orient);
+		set_goal_dock_orient(&dom, &docker_p0, &docker_p1, &docker_p0_norm, &docker_objp->orient, &dockee_p0, &dockee_p1, &dockee_p0_norm, &dockee_objp->orient);
 
 		//	Compute new orientation matrix and update rotational velocity.
-		vector	w_in, w_out, vel_limit, acc_limit;
+		vector	omega_in, omega_out, vel_limit, acc_limit;
 		float		tdist, mdist, ss1;
 
-		w_in = objp->phys_info.rotvel;
-		vel_limit = objp->phys_info.max_rotvel;
+		omega_in = docker_objp->phys_info.rotvel;
+		vel_limit = docker_objp->phys_info.max_rotvel;
 		vm_vec_copy_scale(&acc_limit, &vel_limit, 0.3f);
 		
 		if (sip0->flags & SIF_SUPPORT)
 			vm_vec_scale(&acc_limit, 2.0f);
 
 		// 1 at end of line prevent overshoot
-		vm_matrix_interpolate(&dom, &objp->orient, &w_in, flFrametime, &nm, &w_out, &vel_limit, &acc_limit, 1);
-		objp->phys_info.rotvel = w_out;
-		objp->orient = nm;
+		vm_matrix_interpolate(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit, 1);
+		docker_objp->phys_info.rotvel = omega_out;
+		docker_objp->orient = nm;
 
 		//	Translate towards goal and note distance to goal.
-		goal_point = Path_points[aip->path_cur].pos;
-		mdist = ai_matrix_dist(&objp->orient, &dom);
-		tdist = vm_vec_dist_quick(&objp->pos, &goal_point);
+		goal_point = &Path_points[aip->path_cur].pos;
+		mdist = ai_matrix_dist(&docker_objp->orient, &dom);
+		tdist = vm_vec_dist_quick(&docker_objp->pos, goal_point);
 
 		//	If translation is badly lagging rotation, speed up translation.
 		if (mdist > 0.1f) {
@@ -9925,12 +10048,14 @@ float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, in
 		} else
 			ss1 = 2.0f;
 
+		// if we're docking to a rotating submodel, speed up translation
+		if (dockee_rotating_submodel >= 0)
+			ss1 = 2.0f;
+
 		// nprintf(("AI", "speed scale = %7.3f\n", ss1));
 		speed_scale *= 1.0f + ss1;
 
-		dock_move_towards_point(objp, NULL, &goal_point, speed_scale, dobjp->phys_info.speed);
-
-		fdist = vm_vec_dist_quick(&objp->pos, &goal_point);
+		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, goal_point, tangential_velocity, dock_mode, speed_scale, dockee_objp->phys_info.speed);
 
 		//	Note, we're interested in distance from goal, so if we're still turning, bash that into return value.
 		// nprintf(("AI", "matrix dist = %7.3f, threshold = %7.3f\n", mdist, 2*flFrametime));
@@ -9939,92 +10064,64 @@ float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, in
 		break;
 	}
 	case DOA_DOCK:
-		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f) {
-			return 9999.9f;
-		}
 	case DOA_DOCK_STAY:
+	{
+		vector docker_point, dockee_point;
+
 		//	Compute the desired global orientation matrix for the docker's station.
 		//	That is, the normal vector of the docking station must be the same as the
 		//	forward vector and the vector between its two points must be the uvec.
-		set_goal_dock_orient(&dom, &pm1->docking_bays[dockee_index], &pm0->docking_bays[docker_index], &dobjp->orient, &objp->orient);
+		set_goal_dock_orient(&dom, &docker_p0, &docker_p1, &docker_p0_norm, &docker_objp->orient, &dockee_p0, &dockee_p1, &dockee_p0_norm, &dockee_objp->orient);
 
 		//	Compute distance between dock bay points.
-		vector	db0, db1, db2, db3;
-
-		vm_vec_unrotate(&db0, &pm0->docking_bays[docker_index].pnt[0], &objp->orient);
-		vm_vec_add2(&db0, &objp->pos);
-
-		vm_vec_unrotate(&db1, &pm0->docking_bays[docker_index].pnt[1], &objp->orient);
-		vm_vec_add2(&db1, &objp->pos);
-
-		vm_vec_unrotate(&db2, &pm1->docking_bays[dockee_index].pnt[0], &dobjp->orient);
-		vm_vec_add2(&db2, &dobjp->pos);
-
-		vm_vec_unrotate(&db3, &pm1->docking_bays[dockee_index].pnt[1], &dobjp->orient);
-		vm_vec_add2(&db3, &dobjp->pos);
-
-		vm_vec_avg(&goal_point, &db2, &db3);
-
-		vm_vec_avg(&docker_point, &db0, &db1);
-		vm_vec_sub2(&docker_point, &objp->pos);
+		vm_vec_avg(&docker_point, &docker_p0, &docker_p1);
+		vm_vec_avg(&dockee_point, &dockee_p0, &dockee_p1);
 
 		if (dock_mode == DOA_DOCK) {
-			vector	t1, t2;
-			vector	w_in, w_out, vel_limit, acc_limit;
-
-			fdist = vm_vec_dist_quick(vm_vec_avg(&t1, &db0, &db1), vm_vec_avg(&t2, &db2, &db3));
+			vector	omega_in, omega_out, vel_limit, acc_limit;
 
 			//	Compute new orientation matrix and update rotational velocity.
-			w_in = objp->phys_info.rotvel;
-			vel_limit = objp->phys_info.max_rotvel;
+			omega_in = docker_objp->phys_info.rotvel;
+			vel_limit = docker_objp->phys_info.max_rotvel;
 			vm_vec_copy_scale(&acc_limit, &vel_limit, 0.3f);
 
 			if (sip0->flags & SIF_SUPPORT)
 				vm_vec_scale(&acc_limit, 2.0f);
 
-			vm_matrix_interpolate(&dom, &objp->orient, &w_in, flFrametime, &nm, &w_out, &vel_limit, &acc_limit);
-			objp->phys_info.rotvel = w_out;
-			objp->orient = nm;
+			vm_matrix_interpolate(&dom, &docker_objp->orient, &omega_in, flFrametime, &nm, &omega_out, &vel_limit, &acc_limit);
+			docker_objp->phys_info.rotvel = omega_out;
+			docker_objp->orient = nm;
 
+			fdist = dock_move_towards_point(docker_objp, &docker_point, &dockee_point, tangential_velocity, dock_mode, speed_scale, dockee_objp->phys_info.speed);
+		
 			//	Note, we're interested in distance from goal, so if we're still turning, bash that into return value.
-			fdist += 10.0f * vm_vec_mag_quick(&w_out);
-
-			dock_move_towards_point(objp, &docker_point, &goal_point, speed_scale, dobjp->phys_info.speed);
+			fdist += 10.0f * vm_vec_mag_quick(&omega_out);
 		} else {
+			vector offset;
+
 			Assert(dock_mode == DOA_DOCK_STAY);
-			objp->orient = dom;
-//			vector	temp;
-//			vm_vec_sub(&temp, &goal_point, &docker_point);
-			vm_vec_sub(&objp->pos, &goal_point, &docker_point);
+			docker_objp->orient = dom;
+
+			vm_vec_sub(&offset, &dockee_point, &docker_point);
+			vm_vec_add2(&docker_objp->pos, &offset);
 		}
 
 		break;
-	case DOA_UNDOCK_1: {
-		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f) {
-			return 9999.9f;
-		}
-
+	}
+	case DOA_UNDOCK_1:
+	{
 		//	Undocking.
 		//	Move to point on dock path nearest to dock station.
 		Assert(aip->path_length >= 2);
-		goal_point = Path_points[aip->path_start + aip->path_length-2].pos;
-
-		vm_vec_zero(&docker_point);
-		fdist = vm_vec_dist_quick(&objp->pos, &goal_point);
-
-		dock_move_towards_point(objp, &docker_point, &goal_point, speed_scale);
+		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, &Path_points[aip->path_start + aip->path_length-2].pos, tangential_velocity, dock_mode, speed_scale);
 
 		break;
-			  }
-
-	case DOA_UNDOCK_2: {
+	}
+	case DOA_UNDOCK_2:
+	{
 		//	Undocking.
 		//	Move to point on dock path nearest to dock station and orient away from big ship.
 		int		desired_index;
-
-		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f) {
-			return 9999.9f;
-		}
 
 		Assert(aip->path_length >= 2);
 //		if (aip->path_length >= 3)
@@ -10032,29 +10129,29 @@ float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, in
 //		else
 			desired_index = aip->path_length-2;
 
-		goal_point = Path_points[aip->path_start + desired_index].pos;
+		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, &Path_points[aip->path_start + desired_index].pos, tangential_velocity, dock_mode, speed_scale);
 
-		dock_move_towards_point(objp, NULL, &goal_point, speed_scale);
-
-		fdist = vm_vec_dist_quick(&objp->pos, &goal_point);
 		break;
-			  }
-	case DOA_UNDOCK_3: {
+	}
+	case DOA_UNDOCK_3:
+	{
+		vector	goal_point;
 		float		dist, goal_dist;
 		vector	away_vec;
 
-		goal_dist = objp->radius + dobjp->radius + 25.0f;
+		goal_dist = docker_objp->radius + dockee_objp->radius + 25.0f;
 
-		dist = vm_vec_normalized_dir(&away_vec, &objp->pos, &dobjp->pos);
-		vm_vec_scale_add(&goal_point, &dobjp->pos, &away_vec, goal_dist);
-		if (vm_vec_dist_quick(&goal_point, &dobjp->pos) < vm_vec_dist_quick(&objp->pos, &dobjp->pos))
+		dist = vm_vec_normalized_dir(&away_vec, &docker_objp->pos, &dockee_objp->pos);
+		vm_vec_scale_add(&goal_point, &dockee_objp->pos, &away_vec, goal_dist);
+		if (vm_vec_dist_quick(&goal_point, &dockee_objp->pos) < vm_vec_dist_quick(&docker_objp->pos, &dockee_objp->pos))
 			fdist = 0.0f;
-		else {
+		else
+		{
 			float	dot, accel;
-			float turn_time = Ship_info[Ships[objp->instance].ship_info_index].srotation_time;
-			ai_turn_towards_vector(&goal_point, objp, flFrametime, turn_time, NULL, NULL, 0.0f, 0);
+			float turn_time = Ship_info[Ships[docker_objp->instance].ship_info_index].srotation_time;
+			ai_turn_towards_vector(&goal_point, docker_objp, flFrametime, turn_time, NULL, NULL, 0.0f, 0);
 
-			dot = vm_vec_dot(&objp->orient.vec.fvec, &away_vec);
+			dot = vm_vec_dot(&docker_objp->orient.vec.fvec, &away_vec);
 			accel = 0.1f;
 			if (dot > accel)
 				accel = dot;
@@ -10062,11 +10159,11 @@ float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, in
 				accel *= 1.2f - 0.5f*goal_dist/dist;
 
 			accelerate_ship(aip, accel);
-			fdist = vm_vec_dist_quick(&objp->pos, &goal_point);
+			fdist = vm_vec_dist_quick(&docker_objp->pos, &goal_point);
 		}
 
 		break;
-							 }
+	}
 	}
 
 #ifndef NDEBUG
@@ -10081,13 +10178,13 @@ float dock_orient_and_approach(object *objp, int docker_index, object *dobjp, in
 		dockee_index = 0;
 	}
 
-	vm_vec_unrotate(&d0, &pm0->docking_bays[docker_index].norm[0], &objp->orient);
-	vm_vec_unrotate(&d1, &pm1->docking_bays[dockee_index].norm[0], &dobjp->orient);
+	vm_vec_unrotate(&d0, &pm0->docking_bays[docker_index].norm[0], &docker_objp->orient);
+	vm_vec_unrotate(&d1, &pm1->docking_bays[dockee_index].norm[0], &dockee_objp->orient);
 */
 
 	//nprintf(("AI", "or/app: dist = %7.3f/%7.3f, dot = %7.3f, global dot = %7.3f\n", 
-	//	vm_vec_dist_quick(&goal_point, &objp->pos), fdist,
-	//	vm_vec_dot(&objp->orient.fvec, &dom.fvec), 
+	//	vm_vec_dist_quick(&goal_point, &docker_objp->pos), fdist,
+	//	vm_vec_dot(&docker_objp->orient.fvec, &dom.fvec), 
 	//	vm_vec_dot(&d0, &d1)));
 #endif
 

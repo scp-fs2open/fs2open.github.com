@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-01-21 08:58:32 $
- * $Author: taylor $
+ * $Revision: 2.50 $
+ * $Date: 2005-01-27 11:26:23 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/01/21 08:58:32  taylor
+ * cleanup debug messages for texture loading making the output more readable and useful
+ *
  * Revision 2.48  2005/01/11 21:38:50  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -3769,6 +3772,25 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 }
 
 
+// Goober5000
+// For a submodel, return its overall offset from the main model.
+void model_find_submodel_offset(vector *outpnt, int model_num, int sub_model_num)
+{
+	int mn;
+	polymodel *pm = model_get(model_num);
+
+	vm_vec_zero(outpnt);
+	mn = sub_model_num;
+
+	//instance up the tree for this point
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0))
+	{
+		vm_vec_add2(outpnt, &pm->submodel[mn].offset);
+
+		mn = pm->submodel[mn].parent;
+	}
+}
+
 // Given a point (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
@@ -3784,7 +3806,7 @@ void model_find_world_point(vector * outpnt, vector *mpnt,int model_num,int sub_
 	mn = sub_model_num;
 
 	//instance up the tree for this point
-	while ((mn>-1) && (pm->submodel[mn].parent > -1) ) {
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
 		
 		vm_angles_2_matrix(&m,&pm->submodel[mn].angs );
 		vm_vec_unrotate(&tpnt,&pnt,&m);
@@ -3929,7 +3951,7 @@ void model_find_world_dir(vector * out_dir, vector *in_dir,int model_num, int su
 	mn = sub_model_num;
 
 	//instance up the tree for this point
-	while ((mn>-1) && (pm->submodel[mn].parent > -1) ) {
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
 		
 		vm_angles_2_matrix(&m,&pm->submodel[mn].angs );
 		vm_vec_unrotate(&tpnt,&pnt,&m);
