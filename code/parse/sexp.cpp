@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.67 $
- * $Date: 2003-08-27 02:04:54 $
+ * $Revision: 2.68 $
+ * $Date: 2003-08-28 06:17:29 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2003/08/27 02:04:54  Goober5000
+ * added percent-ships-disarmed and percent-ships-disabled
+ * --Goober5000
+ *
  * Revision 2.66  2003/08/27 01:38:00  Goober5000
  * added is-ship-type, is-ship-class, lock-rotating-subsystem, and free-rotating-subsystem;
  * also fixed the argument and return values for various sexps so that they work
@@ -909,7 +913,9 @@ sexp_oper Operators[] = {
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "toggle-hud",					OP_TOGGLE_HUD,					0, 0 },		// Goober5000
 
+/*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
+*/
 
 	{ "ai-chase",					OP_AI_CHASE,					2, 2, },
 	{ "ai-chase-wing",			OP_AI_CHASE_WING,				2, 2, },
@@ -1515,12 +1521,21 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 	if (op == -1)
 		return SEXP_CHECK_UNKNOWN_OP;  // unrecognized operator
 
-	//special case - OPR_AMBIGUOUS matches all
-	if (return_type != OPR_AMBIGUOUS) {
-		if (query_operator_return_type(op) != return_type) {
+	// special case - OPR_AMBIGUOUS matches all
+	if (return_type != OPR_AMBIGUOUS)
+	{
+		// get the return type of the next thing
+		z = query_operator_return_type(op);
+		if (z == OPR_POSITIVE && return_type == OPR_NUMBER)
+		{
+			// positive data type can map to number data type just fine
+		}
+		else if (z != return_type)
+		{
+			// anything else is a mismatch
 			return SEXP_CHECK_TYPE_MISMATCH;
 		}
-	} 
+	}
 
 	count = query_sexp_args_count(op_index);
 	if (count < Operators[op].min || count > Operators[op].max)
@@ -10487,6 +10502,7 @@ int eval_sexp(int cur_node)
 
 			case OP_ABS:
 				sexp_val = abs_sexp( node );
+				break;
 
 		// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
@@ -11041,9 +11057,9 @@ int eval_sexp(int cur_node)
 				break;
 
 			case OP_CARGO_NO_DEPLETE:
-					sexp_cargo_no_deplete( node );
-					sexp_val = 1;
-					break;
+				sexp_cargo_no_deplete( node );
+				sexp_val = 1;
+				break;
 
 			case OP_SET_SCANNED:	// Goober5000
 			case OP_SET_UNSCANNED:
@@ -11057,9 +11073,9 @@ int eval_sexp(int cur_node)
 				break;
 
 			//-Sesquipedalian
-			case OP_END_MISSION: 
-                        sexp_end_mission( node );
-                        sexp_val = 1;
+			case OP_END_MISSION:
+				sexp_end_mission( node );
+				sexp_val = 1;
 				break;
 
 				// sexpressions for setting flag for good/bad time for someone to reasm
@@ -11250,11 +11266,12 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			// debugging operators
+/*			// debugging operators
 			case OP_INT3:
 				Int3();
 				sexp_val = 0;
 				break;
+*/
 
 			case 0: // zero represents a non-operator
 				return sexp_get_val(cur_node);
@@ -11711,7 +11728,7 @@ int query_operator_return_type(int op)
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
 		case OP_BEAM_UNPROTECT_SHIP:
-		case OP_INT3:
+/*		case OP_INT3:	*/
 		case OP_NOP:
 		case OP_GOALS_ID:
 		case OP_SEND_MESSAGE:
@@ -11874,7 +11891,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TRUE:
 		case OP_FALSE:
 		case OP_MISSION_TIME:
-		case OP_INT3:
+/*		case OP_INT3:	*/
 		case OP_NOP:
 		case OP_WAYPOINT_MISSED:
 		case OP_WAYPOINT_TWICE:
