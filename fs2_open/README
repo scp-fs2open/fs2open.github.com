@@ -13,6 +13,11 @@ will still work on Windows.  Some changes may be necessary.
 
 There are occasional crashes and segfaults from time to time.
 
+All of this was tested on my system only.  I don't know if any
+assumptions about my hardware have crept into the code.  I guess it
+goes without saying that this will only work on x86-based Linux
+systems :-)
+
 
 STATUS:
 =======
@@ -48,20 +53,23 @@ RUNNING:
 ========
 The fs2 executable should be copied (or symlinked) to the same
 directory as the *.VP files.  All the *.VP files that you need should
-be here -- the code isn't smart enough to look in your CD for command brief ANIs, etc.
+be here -- the code isn't smart enough to look in your CD for command
+brief ANIs, etc.
 
 It only runs in windowed mode, no full screen.
 
 I have never run it in high-resolution mode (1024x768), so all bets
 are off if you try it.
 
-There seems to be a bug in some of the 'glob' routines that scan for files in the 'data' directory, so you will have better results if you:
-
+There seems to be a bug in some of the 'glob' routines that scan for
+files in the 'data' directory, so you will have better results if you:
   1.  Keep everything in the *.VP file (i.e., no mods)
   2.  Only have one player file
 
 I recommend that background graphics be turned off via the "Options"
-screen or it will look very odd.
+screen or it will look very odd.  Your in-game framerate will be
+significantly higher if you turn off (or set to 'popup') as many HUD
+gauges as possible.
 
 Due to the painful slowness of the 2D UI, you might need to hold the
 mouse button down a little longer to get buttons to activate.
