@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.18 $
+ * $Revision: 2.19 $
  * $Author: Goober5000 $
- * $Date: 2003-01-17 01:48:50 $
+ * $Date: 2003-01-18 09:25:41 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2003/01/17 01:48:50  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.17  2003/01/15 05:24:23  Goober5000
  * added texture replacement parse - will be implemented later
  * --Goober5000
@@ -539,12 +545,12 @@ typedef struct p_object {
 
 // these flags do not appear in the array; we may want to add them
 // in the future though
-#define P_OF_NO_LASERS				(1<<20)
-#define P_OF_NO_ENGINES				(1<<21)
-#define P_SIF_STEALTH				(1<<22)
-#define P_SIF2_FRIENDLY_STEALTH_INVISIBLE	(1<<23)
-#define P_SF_VAPORIZE				(1<<24)
-#define P_SIF_DONT_COLLIDE_INVIS	(1<<25)
+#define P_OF_NO_LASERS					(1<<20)
+#define P_OF_NO_ENGINES					(1<<21)
+#define P_SF_VAPORIZE					(1<<22)
+#define P_SF2_STEALTH					(1<<23)
+#define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<24)
+#define P_SF2_DONT_COLLIDE_INVIS		(1<<25)
 
 // the following parse object flags are used internally by Freespace
 #define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship
@@ -561,6 +567,12 @@ typedef struct p_object {
 #define MAX_PARSE_OBJECT_FLAGS_2	5
 
 #define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
+#define P2_SF2_NO_SUBSPACE_DRIVE		(1<<1)
+
+// and again: these flags do not appear in the array
+//#define blah							(1<<29)
+//#define blah							(1<<30)
+//#define blah							(1<<31)
 
 
 extern p_object ship_arrival_list;			// used by sexpression parser

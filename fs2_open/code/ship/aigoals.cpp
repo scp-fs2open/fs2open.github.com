@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-07 20:06:44 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-18 09:25:40 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/07 20:06:44  Goober5000
+ * added ai-chase-any-except sexp
+ * --Goober5000
+ *
  * Revision 2.2  2003/01/06 22:57:23  Goober5000
  * implemented keep-safe-distance
  * --Goober5000
@@ -674,7 +678,7 @@ int ai_query_goal_valid( int ship, int ai_goal )
 			accepted = 1;
 		}
 		break;
-	case SIF_STEALTH:
+	case SIF_SHIP_CLASS_STEALTH:
 		if ( ai_goal & AI_GOAL_ACCEPT_STEALTH ){
 			accepted = 1;
 		}

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.25 $
- * $Date: 2003-01-17 01:48:49 $
+ * $Revision: 2.26 $
+ * $Date: 2003-01-18 09:25:40 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/01/17 01:48:49  Goober5000
+ * added capability to the $Texture replace code to substitute the textures
+ * without needing and extra model, however, this way you can't substitute
+ * transparent or animated textures
+ * --Goober5000
+ *
  * Revision 2.24  2003/01/16 06:49:11  Goober5000
  * yay! got texture replacement to work!!!
  * --Goober5000
@@ -605,9 +611,12 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 
 
 // Bits for ship.flags2
-// None are in FRED
 #define	SF2_LIGHTS_ON				(1<<0)		// ship has 'GLOW' lights turned on (Bobboau's lights)
 #define SF2_PRIMITIVE_SENSORS		(1<<1)		// Goober5000 - primitive sensor display
+#define SF2_FRIENDLY_STEALTH_INVIS	(1<<2)		// Goober5000 - when stealth, don't appear on radar even if friendly
+#define SF2_STEALTH					(1<<3)		// Goober5000 - is this particular ship stealth
+#define SF2_DONT_COLLIDE_INVIS		(1<<4)		// Goober5000 - is this particular ship don't-collide-invisible
+#define SF2_NO_SUBSPACE_DRIVE		(1<<5)		// Goober5000 - this ship has no subspace drive
 
 
 #define MAX_DAMAGE_SLOTS	32
@@ -884,10 +893,10 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_IN_TECH_DATABASE		(1 << 19)	// is ship type to be listed in the tech database?
 #define	SIF_IN_TECH_DATABASE_M	(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
 
-#define	SIF_STEALTH					(1 << 21)	// the ship is a stealth ship
+#define	SIF_SHIP_CLASS_STEALTH		(1 << 21)	// the ship is a stealth ship
 #define	SIF_SUPERCAP				(1 << 22)	// the ship is a supercap
 #define	SIF_DRYDOCK					(1 << 23)	// the ship is a drydock
-#define	SIF_DONT_COLLIDE_INVIS	(1 << 24)	// Don't collide with this ship's invisible polygons
+#define	SIF_SHIP_CLASS_DONT_COLLIDE_INVIS	(1 << 24)	// Don't collide with this ship's invisible polygons
 
 #define	SIF_BIG_DAMAGE				(1 << 25)	// this ship is classified as a big damage ship
 #define	SIF_HAS_AWACS				(1 << 26)	// ship has an awacs subsystem
@@ -901,8 +910,8 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_NO_FRED					(1 << 31)	// not available in fred
 
 // flags2 -- added by Goober5000
-#define SIF2_FRIENDLY_STEALTH_INVISIBLE		(1 << 0)
-
+//#define SIF2_ [whatever]		(1 << 0)
+//etc.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)

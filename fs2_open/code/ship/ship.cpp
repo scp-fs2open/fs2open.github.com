@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-01-17 07:59:08 $
+ * $Revision: 2.40 $
+ * $Date: 2003-01-18 09:25:40 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/01/17 07:59:08  Goober5000
+ * fixed some really strange behavior with strings not being truncated at the
+ * # symbol
+ * --Goober5000
+ *
  * Revision 2.38  2003/01/17 01:48:49  Goober5000
  * added capability to the $Texture replace code to substitute the textures
  * without needing and extra model, however, this way you can't substitute
@@ -1018,7 +1023,7 @@ int Ship_type_flags[MAX_SHIP_TYPE_COUNTS] = {
 	SIF_SENTRYGUN,
 	SIF_ESCAPEPOD,
 	SIF_SUPERCAP,
-	SIF_STEALTH,
+	SIF_SHIP_CLASS_STEALTH,
 	SIF_FIGHTER,
 	SIF_BOMBER,
 	SIF_DRYDOCK,
@@ -1634,7 +1639,7 @@ strcpy(parse_error_text, temp_error);
 		else if ( !stricmp( NOX("in tech database multi"), ship_strings[i]))
 			sip->flags |= SIF_IN_TECH_DATABASE_M;
 		else if ( !stricmp( NOX("dont collide invisible"), ship_strings[i]))
-			sip->flags |= SIF_DONT_COLLIDE_INVIS;
+			sip->flags |= SIF_SHIP_CLASS_DONT_COLLIDE_INVIS;
 		else if ( !stricmp( NOX("big damage"), ship_strings[i]))
 			sip->flags |= SIF_BIG_DAMAGE;
 		else if ( !stricmp( NOX("corvette"), ship_strings[i]))
@@ -1787,7 +1792,7 @@ strcpy(parse_error_text, temp_error);
 
 	// if the ship is a stealth ship
 	if ( optional_string("$Stealth:") ){
-		sip->flags |= SIF_STEALTH;
+		sip->flags |= SIF_SHIP_CLASS_STEALTH;
 	}
 
 	// parse contrail info
