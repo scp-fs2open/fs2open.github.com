@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-03-03 06:05:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.60 $
+ * $Date: 2005-03-06 17:16:08 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/03/03 06:05:30  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.58  2005/03/01 23:08:24  taylor
  * make sure starfield bitmaps render when not in HTL mode
  * slight header fix for osapi.h
@@ -1016,13 +1019,19 @@ void generate_vertex_buffers(bsp_info*, polymodel*);
 // With the basic page in system this can be called from outside of modelread.cpp
 void model_unload(int modelnum, int force)
 {
-	int i,j;
+	int i,j,num;
 
-	if ( (modelnum < 0) || (modelnum>MAX_POLYGON_MODELS))	{
+	if ( modelnum >= MAX_POLYGON_MODELS ) {
+		num = modelnum % MAX_POLYGON_MODELS;
+	} else {
+		num = modelnum;
+	}
+
+	if ( (num < 0) || (num >= MAX_POLYGON_MODELS))	{
 		return;
 	}
 
-	polymodel *pm = Polygon_models[modelnum];
+	polymodel *pm = Polygon_models[num];
 
 	if ( !pm )	{
 		return;
@@ -1126,7 +1135,7 @@ void model_unload(int modelnum, int force)
 	memset( pm, 0, sizeof(polymodel));
 	free( pm );
 
-	Polygon_models[modelnum] = NULL;	
+	Polygon_models[num] = NULL;	
 }
 
 void model_free_all()
