@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.176 $
- * $Date: 2005-03-27 13:37:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.177 $
+ * $Date: 2005-03-30 02:32:41 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.176  2005/03/27 13:37:15  Goober5000
+ * bah
+ *
  * Revision 2.175  2005/03/27 12:28:35  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -2705,14 +2708,22 @@ strcpy(parse_error_text, temp_error);
 	required_string("$Scan time:");
 	stuff_int(&sip->scan_time);
 
-	required_string("$EngineSnd:");
-	stuff_int(&sip->engine_snd);
-	
-	// bah: ensure the sounds are in range
-	if (sip->engine_snd < -1 || sip->engine_snd >= Num_game_sounds)
+	sip->engine_snd = -1;
+	if(optional_string("$EngineSnd:"))
 	{
-		Warning(LOCATION, "$EngineSnd sound index out of range on ship %s.  Must be between 0 and %d.  Forcing to -1.\n", sip->name, Num_game_sounds);
-		sip->engine_snd = -1;
+		stuff_string(buf, F_NAME, NULL);
+		i = gamesnd_get_by_name(buf);
+		if(i != -1)
+			sip->engine_snd = j;
+		else
+			sip->engine_snd = atoi(buf);
+		
+		// bah: ensure the sounds are in range
+		if (sip->engine_snd < -1 || sip->engine_snd >= Num_game_sounds)
+		{
+			Warning(LOCATION, "$EngineSnd sound index out of range on ship %s.  Must be between 0 and %d.  Forcing to -1.\n", sip->name, Num_game_sounds);
+			sip->engine_snd = -1;
+		}
 	}
 
 	required_string("$Closeup_pos:");

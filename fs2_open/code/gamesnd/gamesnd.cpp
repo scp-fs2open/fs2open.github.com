@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-24 23:31:46 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-30 02:32:40 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/24 23:31:46  taylor
+ * make sounds.tbl dynamic
+ * "filename" will never be larger than 33 chars so having it 260 is a waste (freespace.cpp)
+ *
  * Revision 2.7  2004/07/26 20:47:30  Kazan
  * remove MCD complete
  *
@@ -228,6 +232,18 @@ void gamesnd_play_iface(int n)
 		snd_stop(Snds_iface_handle[n]);
 
 	Snds_iface_handle[n] = snd_play(&Snds_iface[n]);
+}
+
+int gamesnd_get_by_name(char* name)
+{
+	for(int i = 0; i < Num_game_sounds; i++)
+	{
+		if(!stricmp(Snds[i].filename, name))
+		{
+			return i;
+		}
+	}
+	return -1;
 }
 
 // load in sounds that we expect will get played

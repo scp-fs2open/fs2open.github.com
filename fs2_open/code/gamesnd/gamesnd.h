@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.7 $
- * $Date: 2005-03-24 23:31:46 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-30 02:32:40 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/24 23:31:46  taylor
+ * make sounds.tbl dynamic
+ * "filename" will never be larger than 33 chars so having it 260 is a waste (freespace.cpp)
+ *
  * Revision 2.6  2004/08/11 05:06:23  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -356,6 +360,7 @@ void gamesnd_load_interface_sounds();
 void gamesnd_unload_interface_sounds();
 void gamesnd_preload_common_sounds();
 void gamesnd_play_iface(int n);
+int gamesnd_get_by_name(char* name);
 
 void gamesnd_play_error_beep();
 
