@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-01-30 03:26:11 $
+ * $Revision: 2.15 $
+ * $Date: 2005-02-18 09:54:41 $
  * $Author: wmcoolmon $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/01/30 03:26:11  wmcoolmon
+ * HUD updates
+ *
  * Revision 2.13  2004/12/23 23:36:30  wmcoolmon
  * Removed unneccessary function call (.0000001 ms speed increase!)
  *
@@ -764,14 +767,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 	height = y2-y1;
 	Assert(height>=0);
 
-	if ( (width>(gr_screen.max_w - 1)) && (height>(gr_screen.max_h - 1)) ) {
-		return;
-	}
-	if ( width > 1200 ) {
-		return;
-
-	}
-	if ( height > 1200) {
+	if ( (width>=(gr_screen.max_w)) && (height>=(gr_screen.max_h)) ) {
 		return;
 	}
 
