@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.41 $
- * $Date: 2004-05-09 15:02:00 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2004-06-06 20:04:28 $
+ * $Author: randomtiger $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2004/05/09 15:02:00  taylor
+ * prefer ani over pcx for ship textures
+ *
  * Revision 2.40  2004/04/26 12:37:10  taylor
  * don't try to load glow maps if they are disabled
  *
@@ -2318,7 +2321,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
 
 						pm->ins[idx].norm[idx2] = tempv;
-						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
+//						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
 
 					}
 				}					
