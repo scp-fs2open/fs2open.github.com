@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-09-06 19:09:24 $
+ * $Revision: 2.40 $
+ * $Date: 2003-09-06 20:41:52 $
  * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/09/06 19:09:24  wmcoolmon
+ * Added optional mission parameter "+Support Repair Ceiling", which sets what percentage a support ship can repair a ship's hull to.
+ *
  * Revision 2.38  2003/09/05 10:41:48  Goober5000
  * bah - fixed a dumb bug
  * --Goober5000
@@ -985,6 +988,7 @@ void parse_mission_info(mission *pm)
 	pm->support_ships.departure_location = 0;	// ASSUMPTION: hyperspace
 	pm->support_ships.departure_anchor = -1;
 	pm->support_ships.max_hull_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
+	pm->support_ships.max_subsys_repair_val = 100.0f;
 	pm->support_ships.max_support_ships = 0;	// infinite
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
@@ -997,7 +1001,7 @@ void parse_mission_info(mission *pm)
 		pm->support_ships.max_support_ships = (temp > 0) ? -1 : 0;
 	}
 
-	if ( optional_string("+Support Repair Ceiling:"))
+	if ( optional_string("+Hull Repair Ceiling:"))
 	{
 		float temp;
 		stuff_float(&temp);
@@ -1005,6 +1009,17 @@ void parse_mission_info(mission *pm)
 		//ONLY set max_hull_repair_val if the value given is valid -C
 		if (temp <= 100.0f && temp >= 0.0f) {
 			pm->support_ships.max_hull_repair_val = temp;
+		}
+	}
+
+	if ( optional_string("+Subsystem Repair Ceiling:"))
+	{
+		float temp;
+		stuff_float(&temp);
+
+		//ONLY set max_subsys_repair_val if the value given is valid -C
+		if (temp <= 100.0f && temp >= 0.0f) {
+			pm->support_ships.max_subsys_repair_val = temp;
 		}
 	}
 
