@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.64 $
- * $Date: 2004-02-15 06:02:31 $
- * $Author: bobboau $
+ * $Revision: 2.65 $
+ * $Date: 2004-02-20 21:45:41 $
+ * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/02/15 06:02:31  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.63  2004/02/15 03:04:25  bobboau
  * fixed bug involving 3d shockwaves, note I wasn't able to compile the directshow file, so I ifdefed everything to an older version,
  * you shouldn't see anything diferent, as the ifdef should be set to the way it should be, if it isn't you will get a warning mesage during compile telling you how to fix it
@@ -4213,6 +4218,11 @@ void gr_opengl_unlock()
 {
 }
 
+// RT Not sure if we should use opengl_zbias, untested so use stub for now
+void gr_opengl_zbias_stub(int bias)
+{
+}
+
 void opengl_zbias(int bias)
 {
 	if (bias) {
@@ -5328,6 +5338,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
 
 	gr_screen.gf_set_texture_addressing = gr_opengl_set_texture_addressing;
+	gr_screen.gf_zbias = gr_opengl_zbias_stub;
 
 	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_opengl_make_buffer;
@@ -5345,8 +5356,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_screen.gf_set_light = gr_opengl_set_light;
 		gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
 
-		gr_screen.start_clip_plane = gr_opengl_start_clip_plane;
-		gr_screen.end_clip_plane = gr_opengl_end_clip_plane;
+		gr_screen.gf_start_clip_plane = gr_opengl_start_clip_plane;
+		gr_screen.gf_end_clip_plane = gr_opengl_end_clip_plane;
 
 		gr_screen.gf_lighting = gr_opengl_set_lighting;
 
@@ -5358,6 +5369,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 		gr_screen.gf_push_scale_matrix = gr_opengl_push_scale_matrix;
 		gr_screen.gf_pop_scale_matrix = gr_opengl_pop_scale_matrix;
+		gr_screen.gf_center_alpha = gr_opengl_center_alpha;
 
 //		glEnable(GL_NORMALIZE);
 	}
@@ -5371,9 +5383,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 
 		gr_screen.gf_lighting = gr_opengl_set_lighting;
-		gr_screen.gf_center_alpha = gr_opengl_center_alpha;
-
-
 
 	}
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.22 $
- * $Date: 2004-02-15 06:02:31 $
- * $Author: bobboau $
+ * $Revision: 2.23 $
+ * $Date: 2004-02-20 21:45:41 $
+ * $Author: randomtiger $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/02/15 06:02:31  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.21  2004/02/15 03:04:25  bobboau
  * fixed bug involving 3d shockwaves, note I wasn't able to compile the directshow file, so I ifdefed everything to an older version,
  * you shouldn't see anything diferent, as the ifdef should be set to the way it should be, if it isn't you will get a warning mesage during compile telling you how to fix it
@@ -800,8 +805,10 @@ typedef struct screen {
 	void (*gf_lighting)(bool,bool);
 	void (*gf_center_alpha)(int);
 
-	void (*start_clip_plane)();
-	void (*end_clip_plane)();
+	void (*gf_start_clip_plane)();
+	void (*gf_end_clip_plane)();
+
+	void (*gf_zbias)(int zbias);
 
 /*	void (*gf_begin_sprites)();//does prep work for sprites
 	void (*gf_draw_sprite)(vector*);//draws a sprite
@@ -1022,8 +1029,10 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define	gr_set_lighting GR_CALL			(*gr_screen.gf_lighting)
 #define	gr_center_alpha GR_CALL			(*gr_screen.gf_center_alpha)
 
-#define	gr_start_clip GR_CALL			(*gr_screen.start_clip_plane)
-#define	gr_end_clip GR_CALL				(*gr_screen.end_clip_plane)
+#define	gr_start_clip GR_CALL			(*gr_screen.gf_start_clip_plane)
+#define	gr_end_clip GR_CALL				(*gr_screen.gf_end_clip_plane)
+
+#define	gr_zbias GR_CALL				(*gr_screen.gf_zbias)
 
 /*
 #define	gr_begin_sprites GR_CALL		(*gr_screen.gf_begin_sprites)

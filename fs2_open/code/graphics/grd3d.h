@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.9 $
- * $Date: 2004-02-15 06:02:31 $
- * $Author: bobboau $
+ * $Revision: 2.10 $
+ * $Date: 2004-02-20 21:45:41 $
+ * $Author: randomtiger $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/02/15 06:02:31  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.8  2004/02/14 00:18:31  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -176,8 +181,8 @@ void gr_d3d_start_instance_matrix(vector*, matrix*);
 void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient);
 void gr_d3d_end_instance_matrix();
 
-void d3d_start_clip();
-void d3d_end_clip();
+void gr_d3d_start_clip();
+void gr_d3d_end_clip();
 
 extern ID3DXMatrixStack *world_matrix_stack;
 extern ID3DXMatrixStack *view_matrix_stack;

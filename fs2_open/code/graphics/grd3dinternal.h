@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.22 $
- * $Date: 2004-02-16 11:47:33 $
+ * $Revision: 2.23 $
+ * $Date: 2004-02-20 21:45:41 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/02/16 11:47:33  randomtiger
+ * Removed a lot of files that we dont need anymore.
+ * Changed htl to be on by default, command now -nohtl
+ * Changed D3D to use a 2D vertex for 2D operations which should cut down on redundant data having to go though the system.
+ * Added small change to all -start_mission flag to take you to any mission by filename, very useful for testing.
+ * Removed old dshow code and took away timerbar compile flag condition since it uses a runtime flag now.
+ *
  * Revision 2.21  2004/02/14 00:18:31  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -513,6 +520,7 @@ void gr_d3d_print_screen(char *filename);
 void gr_d3d_push_texture_matrix(int unit);
 void gr_d3d_pop_texture_matrix(int unit);
 void gr_d3d_translate_texture_matrix(int unit, vector *shift);
+void gr_d3d_zbias(int zbias);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
 

@@ -879,6 +879,7 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_translate_texture_matrix = gr_d3d_translate_texture_matrix;
 
 	gr_screen.gf_set_texture_addressing = gr_d3d_set_texture_addressing;
+	gr_screen.gf_zbias = gr_d3d_zbias;
 
 	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_d3d_make_buffer;
@@ -906,8 +907,8 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_lighting = gr_d3d_lighting;
 		gr_screen.gf_center_alpha = gr_d3d_center_alpha;
 
-		gr_screen.start_clip_plane = d3d_start_clip;
-		gr_screen.end_clip_plane = d3d_end_clip;
+		gr_screen.gf_start_clip_plane = gr_d3d_start_clip;
+		gr_screen.gf_end_clip_plane   = gr_d3d_end_clip;
 	}
 
 }
@@ -1254,11 +1255,6 @@ void d3d_init_vars_from_reg()
 		}
 	}
 #endif
-
-	// zbiasing?
-	if(os_config_read_uint(NULL, "DisableZbias", 0)){
-		GlobalD3DVars::D3D_zbias = 0;
-	}  
 }
 
 void d3d_setup_color()

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.56 $
- * $Date: 2004-02-20 04:29:54 $
- * $Author: bobboau $
+ * $Revision: 2.57 $
+ * $Date: 2004-02-20 21:45:41 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2004/02/20 04:29:54  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.55  2004/02/16 21:53:40  bobboau
  * fixing lighting bug I accedently introduced
  *
@@ -1990,7 +1995,6 @@ extern int GR_center_alpha;
 bool the_lights_are_on;
 extern bool lighting_enabled;
 void gr_d3d_center_alpha_int(int type);
-extern void d3d_zbias(int bias);
 
 void gr_d3d_render_buffer(int idx)
 {
@@ -2136,7 +2140,7 @@ void gr_d3d_render_buffer(int idx)
 
 	//spec mapping
 	if(SPECMAP > -1){
-		d3d_zbias(1);
+		gr_zbias(1);
 		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
 				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
@@ -2154,7 +2158,7 @@ void gr_d3d_render_buffer(int idx)
 			}
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
 		}
-		d3d_zbias(0);
+		gr_zbias(0);
 	}
 
 	// Revert back to old fog state
@@ -2312,7 +2316,7 @@ void gr_d3d_end_scale_matrix()
  *
  * @return void
  */
-void d3d_start_clip(){
+void gr_d3d_start_clip(){
 
 	D3DXVECTOR3 point(G3_user_clip_point.xyz.x,G3_user_clip_point.xyz.y,G3_user_clip_point.xyz.z); 
 	D3DXVECTOR3	normal(G3_user_clip_normal.xyz.x,G3_user_clip_normal.xyz.y,G3_user_clip_normal.xyz.z);
@@ -2335,7 +2339,7 @@ void d3d_start_clip(){
  *
  * @return void
  */
-void d3d_end_clip(){
+void gr_d3d_end_clip(){
 	d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , FALSE);
 }
 

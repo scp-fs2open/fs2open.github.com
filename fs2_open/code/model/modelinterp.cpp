@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.70 $
- * $Date: 2004-02-15 06:02:32 $
- * $Author: bobboau $
+ * $Revision: 2.71 $
+ * $Date: 2004-02-20 21:45:41 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/02/15 06:02:32  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.69  2004/02/15 03:04:25  bobboau
  * fixed bug involving 3d shockwaves, note I wasn't able to compile the directshow file, so I ifdefed everything to an older version,
  * you shouldn't see anything diferent, as the ifdef should be set to the way it should be, if it isn't you will get a warning mesage during compile telling you how to fix it
@@ -3264,10 +3269,6 @@ DCF(tiling, "")
 	}
 }
 
-#ifndef NO_DIRECT3D
-extern void d3d_zbias(int bias);
-#endif
-
 void moldel_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos, float w, float z_add, vector *Eyeposition )
 {
 	vector uvec, rvec;
@@ -3478,11 +3479,8 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		g3_start_instance_matrix(&auto_back, NULL, true);		
 	}	
 
-#ifndef NO_DIRECT3D
-	if(gr_screen.mode == GR_DIRECT3D){
-		d3d_zbias(1);
-	}
-#endif
+	gr_zbias(1);
+
 	if(!Cmdline_nohtl) {
 		light_set_all_relevent();
 	}
@@ -3541,13 +3539,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 	
 	gr_zbuffer_set(zbuf_mode);
-
-#ifndef NO_DIRECT3D
-	if(gr_screen.mode == GR_DIRECT3D){
-		d3d_zbias(0);	
-	}
-#endif
-
+	gr_zbias(0);	
 
 	model_radius = pm->submodel[pm->detail[detail_level]].rad;
 
@@ -3579,21 +3571,14 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 	model_radius = 0.0f;
 
-#ifndef NO_DIRECT3D
 	// render model insignias
-	if(gr_screen.mode == GR_DIRECT3D){
-		d3d_zbias(1);
-	}
-#endif
+	gr_zbias(1);
+
 	gr_zbuffer_set(GR_ZBUFF_READ);
 	model_render_insignias(pm, detail_level);	
 
-#ifndef NO_DIRECT3D
-	// zbias back to 0	
-	if(gr_screen.mode == GR_DIRECT3D){
-		d3d_zbias(0);	
-	}	
-#endif
+	gr_zbias(0);  
+	
 //	object *obj = &Objects[objnum];
 //	decal_render_all(&Objects[objnum]);
 //	gr_set_lighting(false,false);
