@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.10 $
- * $Date: 2002-12-21 17:58:11 $
+ * $Revision: 2.11 $
+ * $Date: 2002-12-22 17:22:47 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2002/12/21 17:58:11  Goober5000
+ * rearranged the sexp list and got the preliminary subcategories working - still need to work on the actual submenu
+ * --Goober5000
+ *
  * Revision 2.9  2002/12/20 07:17:23  Goober5000
  * Updated the cargo-known-delay and cap-subsys-cargo-known-delay sexps to work correctly if set-scanned and set-unscanned are used repeatedly with the same ship or ship subsystem.  In most cases, this functionality will never be needed, but it's nice to know that it's here. :) However, I should point out that cap-subsys-cargo-known-delay will recognize only the first instance of a subsystem being revealed once the ship is no longer in the mission.  Here is the relevant bit I put into the sexp handling routine...
  * "Since there is no way to keep track of subsystem status once a ship has departed or has been destroyed, check the mission log.  This will work in 99.9999999% of all cases; however, if the mission designer repeatedly sets and resets the scanned status of the subsystem, the mission log will only return the first occurrence of the subsystem cargo being revealed (regardless of whether it was first hidden using set-unscanned).  Normally, ships keep track of cargo data in the subsystem struct, but once/ the ship has left the mission, the subsystem linked list is purged, causing the loss of this information.  I judged the significant rework of the subsystem code not worth the rare instance that this sexp may be required to work in this way, especially since this problem only occurs after the ship departs.  If the mission designer really needs this functionality, he or she can achieve the same result with creative combinations of event chaining and is-event-true."
@@ -10205,11 +10209,7 @@ int get_subcategory(int sexp_id)
 			return CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS;
 			
 		case OP_ADD_GOAL:
-		case OP_ADD_SHIP_GOAL:
-		case OP_ADD_WING_GOAL:
 		case OP_CLEAR_GOALS:
-		case OP_CLEAR_SHIP_GOALS:
-		case OP_CLEAR_WING_GOALS:
 		case OP_GOOD_REARM_TIME:
 		case OP_GOOD_SECONDARY_TIME:
 		case OP_CHANGE_IFF:
@@ -10259,9 +10259,7 @@ int get_subcategory(int sexp_id)
 
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
-		case OP_NEXT_MISSION:
 		case OP_END_CAMPAIGN:
-		case OP_END_OF_CAMPAIGN:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
 		case OP_ALLOW_SHIP:
@@ -10284,6 +10282,6 @@ int get_subcategory(int sexp_id)
 			return CHANGE_SUBCATEGORY_SPECIAL;
 		
 		default:
-			return -1;
+			return -1;		// sexp doesn't have a subcategory
 	}
 }
