@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-01-30 03:27:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.24 $
+ * $Date: 2005-02-04 10:12:30 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/01/30 03:27:09  wmcoolmon
+ * This isn't needed anymore
+ *
  * Revision 2.22  2005/01/29 08:08:24  wmcoolmon
  * Various updates; shader, assert, and clipping
  *
@@ -1461,16 +1464,14 @@ void main_hall_close()
 
 	// unload the main hall bitmap
 	if(Main_hall_bitmap != -1){
-		bm_unload(Main_hall_bitmap);
+		bm_release(Main_hall_bitmap);
 	}
 
 	// unload any bitmaps
 	if(Main_hall_mask >= 0){		
 		// make sure we unlock the mask bitmap so it can be unloaded
 		bm_unlock(Main_hall_mask);
-		if(!bm_unload(Main_hall_mask)){
-			nprintf(("General","WARNING! Couldn't unload main hall mask bitmap!\n"));
-		}
+		bm_release(Main_hall_mask);
 	}
 
 	// free up any (possibly) playing misc animation handles

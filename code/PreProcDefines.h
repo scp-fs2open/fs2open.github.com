@@ -5,12 +5,20 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.8 $
- * $Date: 2005-01-01 13:14:19 $
- * $Author: argv $
+ * $Revision: 1.9 $
+ * $Date: 2005-02-04 10:12:29 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/01/01 13:14:19  argv
+ * Since Taylor's asteroid targeting code does not use the
+ * TURRETS_SHOOT_ASTEROIDS #define, remove it from preprocdefines.h. We can
+ * put it back from an old rev if people decide to use my code instead of his,
+ * which seems unlikely.
+ *
+ * -- _argv[-1]
+ *
  * Revision 1.7  2004/12/31 03:13:08  argv
  * I've just been informed that turrets do not shoot asteroids in the retail
  * game, and that this implementation causes them to shoot at the parent ship,
@@ -77,10 +85,6 @@
 
 
 /*
-#ifndef USE_DEVIL
-#define USE_DEVIL			1
-#endif
-
 #ifndef FS2_SPEECH
 #define FS2_SPEECH			1
 #endif

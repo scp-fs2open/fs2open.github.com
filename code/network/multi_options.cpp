@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -527,6 +530,72 @@ void multi_options_local_load(multi_local_options *options, net_player *pxo_pl)
 	}
 }
 
+// add data from a multi_server_options struct
+void add_server_options(ubyte *data, int *size, multi_server_options *mso)
+{
+	int packet_size = *size;
+	multi_server_options mso_tmp;
+
+	memcpy(&mso_tmp, mso, sizeof(multi_server_options));
+
+	mso_tmp.flags = INTEL_INT(mso->flags);
+	mso_tmp.respawn = INTEL_INT(mso->respawn);
+	mso_tmp.voice_token_wait = INTEL_INT(mso->voice_token_wait);
+	mso_tmp.voice_record_time = INTEL_INT(mso->voice_record_time);
+//	mso_tmp.mission_time_limit = INTEL_INT(mso->mission_time_limit);
+	mso_tmp.kill_limit = INTEL_INT(mso->kill_limit);
+
+	ADD_DATA(mso_tmp);
+
+	*size = packet_size;
+}
+
+// add data from a multi_local_options struct
+void add_local_options(ubyte *data, int *size, multi_local_options *mlo)
+{
+	int packet_size = *size;
+	multi_local_options mlo_tmp;
+
+	memcpy(&mlo_tmp, mlo, sizeof(multi_local_options));
+
+	mlo_tmp.flags = INTEL_INT(mlo->flags);
+	mlo_tmp.obj_update_level = INTEL_INT(mlo->obj_update_level);
+
+	ADD_DATA(mlo_tmp);
+
+	*size = packet_size;
+}
+
+// get data from multi_server_options struct
+void get_server_options(ubyte *data, int *size, multi_server_options *mso)
+{
+	int offset = *size;
+
+	GET_DATA(*mso);
+
+	mso->flags = INTEL_INT(mso->flags);
+	mso->respawn = INTEL_INT(mso->respawn);
+	mso->voice_token_wait = INTEL_INT(mso->voice_token_wait);
+	mso->voice_record_time = INTEL_INT(mso->voice_record_time);
+//	mso->mission_time_limit = INTEL_INT(mso->mission_time_limit);
+	mso->kill_limit = INTEL_INT(mso->kill_limit);
+
+	*size = offset;
+}
+
+// get data from multi_local_options struct
+void get_local_options(ubyte *data, int *size, multi_local_options *mlo)
+{
+	int offset = *size;
+
+	GET_DATA(*mlo);
+
+	mlo->flags = INTEL_INT(mlo->flags);
+	mlo->obj_update_level = INTEL_INT(mlo->obj_update_level);
+
+	*size = offset;
+}
+
 // update everyone on the current netgame options
 void multi_options_update_netgame()
 {
@@ -541,7 +610,7 @@ void multi_options_update_netgame()
 	ADD_DATA(code);
 
 	// add the netgame options
-	ADD_DATA(Netgame.options);
+	add_server_options(data, &packet_size, &Netgame.options);
 
 	// send the packet
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
@@ -568,7 +637,7 @@ void multi_options_update_local()
 	ADD_DATA(code);
 
 	// add the netgame options
-	ADD_DATA(Net_player->p_info.options);
+	add_local_options(data, &packet_size, &Net_player->p_info.options);
 
 	// send the packet		
 	multi_io_send_reliable(Net_player, data, packet_size);
@@ -590,8 +659,8 @@ void multi_options_update_start_game(netgame_info *ng)
 
 	// add the start game options
 	ADD_STRING(ng->name);
-	ADD_DATA(ng->mode);
-	ADD_DATA(ng->security);
+	ADD_INT(ng->mode);
+	ADD_INT(ng->security);
 
 	// add mode-specific data
 	switch(ng->mode){
@@ -600,7 +669,7 @@ void multi_options_update_start_game(netgame_info *ng)
 		break;
 	case NG_MODE_RANK_ABOVE:
 	case NG_MODE_RANK_BELOW:
-		ADD_DATA(ng->rank_base);
+		ADD_INT(ng->rank_base);
 		break;
 	}
 
@@ -623,10 +692,10 @@ void multi_options_update_mission(netgame_info *ng, int campaign_mode)
 	ADD_DATA(code);
 
 	// type (coop or team vs. team)
-	ADD_DATA(ng->type_flags);
+	ADD_INT(ng->type_flags);
 
 	// respawns
-	ADD_DATA(ng->respawn);
+	ADD_UINT(ng->respawn);
 
 	// add the mission/campaign filename
 	code = (ubyte)campaign_mode;
@@ -669,10 +738,10 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		GET_STRING(Netgame.name);		
 
 		// get the netgame mode
-		GET_DATA(Netgame.mode);
+		GET_INT(Netgame.mode);
 
 		// get the security #
-		GET_DATA(Netgame.security);
+		GET_INT(Netgame.security);
 
 		// get mode specific data
 		switch(Netgame.mode){
@@ -681,7 +750,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			break;
 		case NG_MODE_RANK_ABOVE:
 		case NG_MODE_RANK_BELOW:
-			GET_DATA(Netgame.rank_base);
+			GET_INT(Netgame.rank_base);
 			break;
 		}
 
@@ -703,7 +772,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		Assert(Game_mode & GM_STANDALONE_SERVER);
 
 		// coop or team vs. team mode
-		GET_DATA(ng.type_flags);
+		GET_INT(ng.type_flags);
 		if((ng.type_flags & NG_TYPE_TEAM) && !(Netgame.type_flags & NG_TYPE_TEAM)){
 			multi_team_reset();
 		}
@@ -714,7 +783,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		Netgame.type_flags = ng.type_flags;
 
 		// new respawn count
-		GET_DATA(Netgame.respawn);
+		GET_UINT(Netgame.respawn);
 
 		// name string
 		memset(str,255,0);
@@ -778,7 +847,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 	// get the netgame options
 	case MULTI_OPTION_SERVER:		
-		GET_DATA(Netgame.options);
+		get_server_options(data, &offset, &Netgame.options);
 
 		// if we're a standalone set for no sound, do so here
 		if((Game_mode & GM_STANDALONE_SERVER) && !Multi_options_g.std_voice){
@@ -816,9 +885,9 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 	// local netplayer options
 	case MULTI_OPTION_LOCAL:
 		if(player_index == -1){
-			GET_DATA(bogus);
+			get_local_options(data, &offset, &bogus);
 		} else {
-			GET_DATA(Net_players[player_index].p_info.options);
+			get_local_options(data, &offset, &Net_players[player_index].p_info.options);
 		}		
 		break;
 	}

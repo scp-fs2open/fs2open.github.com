@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:53 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:33 $
+ * $Author: taylor $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:53  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:33:07  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -537,6 +540,6 @@ void init_multiplayer_stats( )
 
 void set_player_stats(int pid)
 {
-   Active_player = Net_players[pid].player;
+   Active_player = Net_players[pid].m_player;
 }
 #endif

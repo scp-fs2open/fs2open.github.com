@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.8 $
- * $Date: 2005-01-11 21:38:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-02-04 10:12:32 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.7  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -622,7 +627,7 @@ void obj_client_pre_interpolate();
 void obj_client_post_interpolate();
 
 // move an observer object in multiplayer
-void obj_observer_move(float flFrametime);
+void obj_observer_move(float frame_time);
 
 // Goober5000
 int object_is_docked(object *objp);

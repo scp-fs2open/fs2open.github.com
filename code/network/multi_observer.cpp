@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_observer.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -138,7 +141,7 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	// DOH!!! The lack of this caused many bugs. 
 	Net_players[player_num].flags = (NETINFO_FLAG_DO_NETWORKING | NETINFO_FLAG_OBSERVER);
 	// memcpy(&Net_players[player_num].p_info.addr, addr, sizeof(net_addr));	
-	Net_players[player_num].player = pl;
+	Net_players[player_num].m_player = pl;
 	
 	// 6/3/98 -- don't set observer to update high...let it be whatever player set it at.
 	//Net_players[player_num].p_info.options.obj_update_level = OBJ_UPDATE_HIGH;
@@ -158,7 +161,7 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	
 	// timestamp his last_full_update_time
 	Net_players[player_num].s_info.last_full_update_time = timestamp(0);			
-	Net_players[player_num].player->objnum = -1;	
+	Net_players[player_num].m_player->objnum = -1;	
 
 	// nil his file xfer handle
 	Net_players[player_num].s_info.xfer_handle = -1;
@@ -208,7 +211,7 @@ void multi_obs_create_observer(net_player *pl)
 	Objects[objnum].pos.xyz.z = 1.0f;
 
 	// assign this object to the player
-	pl->player->objnum = objnum;				
+	pl->m_player->objnum = objnum;				
 }
 
 // create observer object locally, and additionally, setup some other information
@@ -223,7 +226,7 @@ void multi_obs_create_observer_client()
 	multi_obs_create_observer(Net_player);	
 					
 	// set my object to be the observer object	
-	Player_obj = &Objects[Net_player->player->objnum];
+	Player_obj = &Objects[Net_player->m_player->objnum];
 	
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
 	pobj_num = parse_create_object(&Player_start_pobject);

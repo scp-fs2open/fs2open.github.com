@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_team.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-12-14 14:46:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/12/14 14:46:13  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.4  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -297,10 +301,10 @@ void multi_team_set_captain(net_player *pl,int set)
 
 	// set the player flags as being a captain and notify everyone else of this
 	if(set){
-		nprintf(("Network","MULTI TEAM : Server setting player %s team %d captain\n",pl->player->callsign,pl->p_info.team));
+		nprintf(("Network","MULTI TEAM : Server setting player %s team %d captain\n",pl->m_player->callsign,pl->p_info.team));
 		pl->flags |= NETINFO_FLAG_TEAM_CAPTAIN;
 	} else {
-		nprintf(("Network","MULTI TEAM : Server unsetting player %s as team %d captain\n",pl->player->callsign,pl->p_info.team));
+		nprintf(("Network","MULTI TEAM : Server unsetting player %s as team %d captain\n",pl->m_player->callsign,pl->p_info.team));
 		pl->flags &= ~(NETINFO_FLAG_TEAM_CAPTAIN);
 	}	
 }
@@ -310,7 +314,7 @@ void multi_team_set_team(net_player *pl,int team)
 {	
 	// if i'm the server of the game, do it now
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){		
-		nprintf(("Network","MULTI TEAM : Server/Host setting player %s to team %d and locking\n",pl->player->callsign,team));
+		nprintf(("Network","MULTI TEAM : Server/Host setting player %s to team %d and locking\n",pl->m_player->callsign,team));
 
 		pl->p_info.team = team;
 
@@ -340,7 +344,7 @@ void multi_team_process_team_change_request(net_player *pl,net_player *who_from,
 	} 
 
 	// otherwise set the team for the player and send an update
-	nprintf(("Network","MULTI TEAM : Server changing player %s to team %d from client request\n",pl->player->callsign,team));
+	nprintf(("Network","MULTI TEAM : Server changing player %s to team %d from client request\n",pl->m_player->callsign,team));
 	pl->p_info.team = team;
 	pl->flags &= ~(NETINFO_FLAG_TEAM_CAPTAIN);					
 
@@ -785,8 +789,8 @@ void multi_team_process_packet(unsigned char *data, header *hinfo)
 		Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
 
 		// get the packet data
-		GET_DATA(player_id);
-		GET_DATA(req_team);
+		GET_USHORT(player_id);
+		GET_INT(req_team);
 
 		// if i'm the host of the game, process here		
 		req_index = find_player_id(player_id);
@@ -821,10 +825,10 @@ void multi_team_send_team_request(net_player *pl, int team)
 	ADD_DATA(code);
 
 	// add the address of the guy we want to change
-	ADD_DATA(pl->player_id);
+	ADD_SHORT(pl->player_id);
 
 	// add the team I want to be on
-	ADD_DATA(team);
+	ADD_INT(team);
 
 	// send to the server of the game (will be routed to host if in a standalone situation)	
 	multi_io_send_reliable(Net_player, data, packet_size);
@@ -858,7 +862,7 @@ void multi_team_send_update()
 			ADD_DATA(stop);
 
 			// add this guy's id
-			ADD_DATA(Net_players[idx].player_id);
+			ADD_SHORT(Net_players[idx].player_id);
 
 			// pack all his data into a byte
 			val = 0x0;
@@ -903,7 +907,7 @@ int multi_team_process_team_update(ubyte *data)
 	GET_DATA(stop);
 	while(stop != 0xff){
 		// get the net address and flags for the guy
-		GET_DATA(player_id);
+		GET_SHORT(player_id);
 		GET_DATA(flags);
 
 		// do a player lookup

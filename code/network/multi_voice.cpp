@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_voice.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1034,7 +1037,7 @@ void multi_voice_take_token(int stream_index)
 	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);	
 
 	// if the index is -1, the token has probably been released to us "officially" already
-	if((Multi_voice_stream[stream_index].token_status == MULTI_VOICE_TOKEN_INDEX_FREE) || (Multi_voice_stream[stream_index].token_status == MULTI_VOICE_TOKEN_INDEX_RELEASED)){
+	if((Multi_voice_stream[stream_index].token_status == (int)MULTI_VOICE_TOKEN_INDEX_FREE) || (Multi_voice_stream[stream_index].token_status == (int)MULTI_VOICE_TOKEN_INDEX_RELEASED)){
 		Multi_voice_stream[stream_index].token_stamp = -1;
 		return;
 	}
@@ -1161,7 +1164,7 @@ void multi_voice_set_prefs(int pref_flags)
 				ADD_DATA(code);
 
 				// add the player's id
-				ADD_DATA(Net_players[idx].player_id);
+				ADD_SHORT(Net_players[idx].player_id);
 			}
 		}
 		// add final stop byte
@@ -1231,7 +1234,7 @@ void multi_voice_process_token_request(int player_index)
 	// if the player's token timestamp is not -1, can't give him the token
 	if(Net_players[player_index].s_info.voice_token_timestamp != -1){
 #ifdef MULTI_VOICE_VERBOSE
-		nprintf(("Network","MULTI VOICE : Not giving token because player %s's timestamp hasn't elapsed yet!\n",Net_players[player_index].player->callsign));
+		nprintf(("Network","MULTI VOICE : Not giving token because player %s's timestamp hasn't elapsed yet!\n",Net_players[player_index].m_player->callsign));
 		nprintf(("Network","MULTI VOICE : token status %d\n",Multi_voice_stream[0].token_status));
 #endif
 		// deny the guy
@@ -1320,18 +1323,18 @@ void multi_voice_player_send_stream()
 		// add the routing data and any necessary targeting information
 		ADD_DATA(msg_mode);
 		if(msg_mode == MULTI_MSG_TARGET){
-			ADD_DATA(Objects[Net_players[target_index].player->objnum].net_signature);
+			ADD_DATA(Objects[Net_players[target_index].m_player->objnum].net_signature);
 		}
 
 		// add my id#
-		ADD_DATA(Net_player->player_id);
+		ADD_SHORT(Net_player->player_id);
 
 		// add the current stream id#
 		ADD_DATA(Multi_voice_stream_id);
 
 		Assert(uncompressed_size < MULTI_VOICE_MAX_BUFFER_SIZE);
 		uc_size = (ushort)uncompressed_size;
-		ADD_DATA(uc_size);
+		ADD_USHORT(uc_size);
 
 		// add the chunk index
 		ADD_DATA(chunk_index);
@@ -1342,10 +1345,10 @@ void multi_voice_player_send_stream()
 		} else {
 			chunk_size = (ushort)(sound_size - size_sent);
 		}
-		ADD_DATA(chunk_size);
+		ADD_USHORT(chunk_size);
 
 		// add the gain
-		ADD_DATA(gain);
+		ADD_FLOAT(gain);
 
 		// add the chunk of data		
 		memcpy(data+packet_size, rbuf,chunk_size);		
@@ -1378,12 +1381,12 @@ int multi_voice_process_data(ubyte *data, int player_index,int msg_mode,net_play
 	int offset = 0;
 
 	// read in all packet data except for the sound chunk itself
-	GET_DATA(who_from);
+	GET_SHORT(who_from);
 	GET_DATA(stream_id);
-	GET_DATA(uc_size);
+	GET_USHORT(uc_size);
 	GET_DATA(chunk_index);
-	GET_DATA(chunk_size);
-	GET_DATA(gain);				
+	GET_USHORT(chunk_size);
+	GET_FLOAT(gain);				
 
 	// if our netgame options are currently set for no voice, ignore the packet
 	if((Netgame.options.flags & MSO_FLAG_NO_VOICE) || !Multi_options_g.std_voice){
@@ -1775,7 +1778,7 @@ void multi_voice_send_dummy_packet()
 	}
 	ADD_DATA(msg_mode);
 	if(msg_mode == MULTI_MSG_TARGET){
-		ADD_DATA(Objects[Net_players[target_index].player->objnum].net_signature);
+		ADD_USHORT(Objects[Net_players[target_index].m_player->objnum].net_signature);
 	}
 
 	// add the voice stream id
@@ -1829,13 +1832,13 @@ int multi_voice_process_player_prefs(ubyte *data,int player_index)
 	// get all muted players
 	GET_DATA(val);
 	while(val != 0xff){
-		GET_DATA(mute_id);
+		GET_SHORT(mute_id);
 
 		// get the player to mute
 		mute_index = find_player_id(mute_id);
 		if(mute_index != -1){
 #ifdef MULTI_VOICE_VERBOSE
-			nprintf(("Network","Player %s muting player %s\n",Net_players[player_index].player->callsign,Net_players[mute_index].player->callsign));
+			nprintf(("Network","Player %s muting player %s\n",Net_players[player_index].m_player->callsign,Net_players[mute_index].m_player->callsign));
 #endif
 			// mute the guy
 			Multi_voice_player_prefs[player_index] &= ~(1<<mute_index);
@@ -1937,7 +1940,7 @@ void multi_voice_process_packet(ubyte *data, header *hinfo)
 		target_index = -1;
 		GET_DATA(msg_mode);
 		if(msg_mode == MULTI_MSG_TARGET){
-			GET_DATA(target_sig);
+			GET_USHORT(target_sig);
 			target_index = multi_find_player_by_net_signature(target_sig);
 			Assert(target_index != -1);
 		}
@@ -1959,7 +1962,7 @@ void multi_voice_process_packet(ubyte *data, header *hinfo)
 		target_index = -1;
 		GET_DATA(msg_mode);
 		if(msg_mode == MULTI_MSG_TARGET){
-			GET_DATA(target_sig);
+			GET_USHORT(target_sig);
 			target_index = multi_find_player_by_net_signature(target_sig);
 			Assert(target_index != -1);
 		}
@@ -2045,18 +2048,18 @@ void multi_voice_client_send_pending()
 		ADD_DATA(msg_mode);
 		if(msg_mode == MULTI_MSG_TARGET){
 			Assert(Game_mode & GM_IN_MISSION);
-			ADD_DATA(Objects[Net_players[target_index].player->objnum].net_signature);
+			ADD_USHORT(Objects[Net_players[target_index].m_player->objnum].net_signature);
 		}
 
 		// add my address 
-		ADD_DATA(Net_player->player_id);
+		ADD_SHORT(Net_player->player_id);
 
 		// add the current stream id#
 		ADD_DATA(Multi_voice_stream_id);
 
 		Assert(str->accum_buffer_usize[sent] < MULTI_VOICE_MAX_BUFFER_SIZE);
 		uc_size = (ushort)str->accum_buffer_usize[sent];
-		ADD_DATA(uc_size);
+		ADD_USHORT(uc_size);
 
 		// add the chunk index
 		chunk_index = (ubyte)sent;
@@ -2064,11 +2067,11 @@ void multi_voice_client_send_pending()
 
 		// size of the sound data
 		chunk_size = (ushort)str->accum_buffer_csize[sent];		
-		ADD_DATA(chunk_size);
+		ADD_USHORT(chunk_size);
 
 		// add the gain
 		gain = (float)str->accum_buffer_gain[sent];
-		ADD_DATA(gain);
+		ADD_FLOAT(gain);
 
 		// add the chunk of data		
 		memcpy(data+packet_size, str->accum_buffer[sent],chunk_size);		
@@ -2149,7 +2152,7 @@ void multi_voice_alg_play_window(int stream_index)
 
 			if(player_index != -1){
 				memset(voice_msg,0,256);
-				sprintf(voice_msg,XSTR("<%s is speaking>",712),Net_players[player_index].player->callsign);
+				sprintf(voice_msg,XSTR("<%s is speaking>",712),Net_players[player_index].m_player->callsign);
 
 				// display a chat message (write to the correct spot - hud, standalone gui, chatbox, etc)
 				multi_display_chat_msg(voice_msg,player_index,0);

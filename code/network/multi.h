@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.8 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.7  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -747,7 +750,7 @@ typedef struct net_player_info {
 
 // NETPLAYER COMMON INFORMATION
 typedef struct net_player {
-	player			*player;								// stuff pertaining directly to the player (callsign, etc).
+	player			*m_player;								// stuff pertaining directly to the player (callsign, etc).
 	short				player_id;							// player id (always use this instead of ip address for identification purposes)
 	int				tracker_player_id;            // the tracker id for this player, only matters in
 																// tracker games.	

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_data.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -143,6 +146,8 @@
  */
 
 #include <time.h>
+#include <ctype.h>
+
 #include "network/multi.h"
 #include "network/multi_data.h"
 #include "network/multi_xfer.h"
@@ -169,6 +174,7 @@ typedef struct np_data {
 
 np_data Multi_data[MAX_MULTI_DATA];
 
+// this doesn't travel off platform to don't _fs_time_t it
 time_t Multi_data_time = 0;
 
 
@@ -368,8 +374,8 @@ void multi_data_send_my_junk()
 	// pilot pic --------------------------------------------------------------
 
 	// verify that my pilot pic is valid
-	if(strlen(Net_player->player->image_filename)){
-		bmap = bm_load(Net_player->player->image_filename);
+	if(strlen(Net_player->m_player->image_filename)){
+		bmap = bm_load(Net_player->m_player->image_filename);
 		if(bmap == -1){			
 			ok_to_send = 0;
 		}
@@ -394,19 +400,19 @@ void multi_data_send_my_junk()
 	}
 
 	if(ok_to_send){
-		with_ext = cf_add_ext(Net_player->player->image_filename, NOX(".pcx"));
+		with_ext = cf_add_ext(Net_player->m_player->image_filename, NOX(".pcx"));
 		if(with_ext != NULL){
-			strcpy(Net_player->player->image_filename, with_ext);
+			strcpy(Net_player->m_player->image_filename, with_ext);
 		}
 
 		// host should put his own pic file in the list now
-		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (strlen(Net_player->player->image_filename) > 0)){
-			multi_data_add_new(Net_player->player->image_filename, MY_NET_PLAYER_NUM);
+		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (strlen(Net_player->m_player->image_filename) > 0)){
+			multi_data_add_new(Net_player->m_player->image_filename, MY_NET_PLAYER_NUM);
 		}
 		// otherwise clients should just queue up a send
 		else {
 			// add a file extension if necessary			
-			multi_xfer_send_file(Net_player->reliable_socket, Net_player->player->image_filename, CF_TYPE_ANY, MULTI_XFER_FLAG_AUTODESTROY | MULTI_XFER_FLAG_QUEUE);
+			multi_xfer_send_file(Net_player->reliable_socket, Net_player->m_player->image_filename, CF_TYPE_ANY, MULTI_XFER_FLAG_AUTODESTROY | MULTI_XFER_FLAG_QUEUE);
 		}		
 	}
 
@@ -415,8 +421,8 @@ void multi_data_send_my_junk()
 
 	// verify that my pilot pic is valid
 	ok_to_send = 1;
-	if(strlen(Net_player->player->squad_filename)){
-		bmap = bm_load(Net_player->player->squad_filename);
+	if(strlen(Net_player->m_player->squad_filename)){
+		bmap = bm_load(Net_player->m_player->squad_filename);
 		if(bmap == -1){			
 			ok_to_send = 0;
 		}
@@ -441,19 +447,19 @@ void multi_data_send_my_junk()
 	}
 
 	if(ok_to_send){
-		with_ext = cf_add_ext(Net_player->player->squad_filename, NOX(".pcx"));
+		with_ext = cf_add_ext(Net_player->m_player->squad_filename, NOX(".pcx"));
 		if(with_ext != NULL){
-			strcpy(Net_player->player->squad_filename,with_ext);
+			strcpy(Net_player->m_player->squad_filename,with_ext);
 		}
 
 		// host should put his own pic file in the list now
-		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (strlen(Net_player->player->squad_filename) > 0)){
-			multi_data_add_new(Net_player->player->squad_filename, MY_NET_PLAYER_NUM);
+		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (strlen(Net_player->m_player->squad_filename) > 0)){
+			multi_data_add_new(Net_player->m_player->squad_filename, MY_NET_PLAYER_NUM);
 		}
 		// otherwise clients should just queue up a send
 		else {
 			// add a file extension if necessary			
-			multi_xfer_send_file(Net_player->reliable_socket, Net_player->player->squad_filename, CF_TYPE_ANY, MULTI_XFER_FLAG_AUTODESTROY | MULTI_XFER_FLAG_QUEUE);
+			multi_xfer_send_file(Net_player->reliable_socket, Net_player->m_player->squad_filename, CF_TYPE_ANY, MULTI_XFER_FLAG_AUTODESTROY | MULTI_XFER_FLAG_QUEUE);
 		}		
 	}
 }
@@ -542,13 +548,13 @@ void multi_data_maybe_reload()
 
 	// go through all connected and try to reload their images if necessary
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && strlen(Net_players[idx].player->squad_filename) && (Net_players[idx].player->insignia_texture == -1)){
-			Net_players[idx].player->insignia_texture = bm_load_duplicate(Net_players[idx].player->squad_filename);
+		if(MULTI_CONNECTED(Net_players[idx]) && strlen(Net_players[idx].m_player->squad_filename) && (Net_players[idx].m_player->insignia_texture == -1)){
+			Net_players[idx].m_player->insignia_texture = bm_load_duplicate(Net_players[idx].m_player->squad_filename);
 
 			// if the bitmap loaded properly, lock it as a transparent texture
-			if(Net_players[idx].player->insignia_texture != -1){
-				bm_lock(Net_players[idx].player->insignia_texture, 16, BMP_TEX_XPARENT);
-				bm_unlock(Net_players[idx].player->insignia_texture);
+			if(Net_players[idx].m_player->insignia_texture != -1){
+				bm_lock(Net_players[idx].m_player->insignia_texture, 16, BMP_TEX_XPARENT);
+				bm_unlock(Net_players[idx].m_player->insignia_texture);
 			}
 		}
 	}	

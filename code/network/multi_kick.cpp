@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_kick.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -217,7 +220,7 @@ void multi_kick_player(int player_index, int ban, int reason)
 			// add the string to the chatbox and the hud (always safe - if it is not inited, nothing bad will happen)			
 			char str[512];
 			memset(str, 0, 512);
-			sprintf(str, XSTR("<kicking %s ...>", 1501), Net_players[player_index].player->callsign);
+			sprintf(str, XSTR("<kicking %s ...>", 1501), Net_players[player_index].m_player->callsign);
 			multi_display_chat_msg(str, player_index, 0);							 
 		}
 		// otherwise, we should send the packet indicating that this guy should be kicked
@@ -259,7 +262,7 @@ void multi_dcf_kick()
 
 	player_num = -1;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && (stricmp(Net_players[idx].player->callsign,Dc_arg)==0)){
+		if(MULTI_CONNECTED(Net_players[idx]) && (stricmp(Net_players[idx].m_player->callsign,Dc_arg)==0)){
 			player_num = idx;
 			break;
 		}
@@ -279,22 +282,22 @@ void multi_dcf_kick()
 void multi_kick_get_text(net_player *pl, int reason, char *str)
 {
 	// safety net
-	if((pl == NULL) || (pl->player == NULL)){
+	if((pl == NULL) || (pl->m_player == NULL)){
 		strcpy(str, NOX(""));
 	}
 
 	switch(reason){
 	case KICK_REASON_BAD_XFER:
-		sprintf(str, XSTR("<%s was kicked because of mission file xfer failure>", 1003), pl->player->callsign);
+		sprintf(str, XSTR("<%s was kicked because of mission file xfer failure>", 1003), pl->m_player->callsign);
 		break;
 	case KICK_REASON_CANT_XFER:
-		sprintf(str, XSTR("<%s was kicked for not having builtin mission %s>", 1004), pl->player->callsign, Game_current_mission_filename);
+		sprintf(str, XSTR("<%s was kicked for not having builtin mission %s>", 1004), pl->m_player->callsign, Game_current_mission_filename);
 		break;
 	case KICK_REASON_INGAME_ENDED:
-		sprintf(str, XSTR("<%s was kicked for ingame joining an ended game>",1005), pl->player->callsign);
+		sprintf(str, XSTR("<%s was kicked for ingame joining an ended game>",1005), pl->m_player->callsign);
 		break;
 	default:
-		sprintf(str, XSTR("<%s was kicked>",687), pl->player->callsign);
+		sprintf(str, XSTR("<%s was kicked>",687), pl->m_player->callsign);
 		break;
 	}		
 }
@@ -327,11 +330,11 @@ void send_player_kick_packet(int player_index, int ban, int reason)
 	BUILD_HEADER(KICK_PLAYER);
 
 	// add the address of the player to be kicked
-	ADD_DATA(Net_players[player_index].player_id);
+	ADD_SHORT(Net_players[player_index].player_id);
 	
 	// indicate if he should be banned
-	ADD_DATA(ban);
-	ADD_DATA(reason);
+	ADD_INT(ban);
+	ADD_INT(reason);
 
 	// send the request to the server	
 	multi_io_send_reliable(Net_player, data, packet_size);
@@ -345,9 +348,9 @@ void process_player_kick_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	
 	// get the address of the guy who is to be kicked
-	GET_DATA(player_id);
-	GET_DATA(ban);
-	GET_DATA(reason);
+	GET_SHORT(player_id);
+	GET_INT(ban);
+	GET_INT(reason);
 	player_num = find_player_id(player_id);
 	PACKET_SET_SIZE();
 

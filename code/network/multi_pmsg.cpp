@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pmsg.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -138,6 +141,8 @@
  * 
  * $NoKeywords: $
  */
+
+#include <ctype.h>
 
 #include "network/multi_pmsg.h"
 #include "network/multi.h"
@@ -433,26 +438,26 @@ void multi_msg_display_mission_text(char *msg,int player_index)
 	if(MULTI_STANDALONE(Net_players[player_index])){
 		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s %s",XSTR("<SERVER>",698),msg);			
 	} else {
-		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s : %s",Net_players[player_index].player->callsign,msg);			
+		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s : %s",Net_players[player_index].m_player->callsign,msg);			
 	}
 }
 
 // if the passed net_player's callsign matches the reg expression of the passed expr
-int multi_msg_matches_expr(net_player *player,char *expr)
+int multi_msg_matches_expr(net_player *np,char *expr)
 {
 	char callsign[CALLSIGN_LEN+1];
 	int len,idx;
 
 	// some error checking
-	if((player == NULL) || (expr == NULL) || (strlen(expr) <= 0)){
+	if((np == NULL) || (expr == NULL) || (strlen(expr) <= 0)){
 		return 0;
 	}
 
 	// get the completely lowercase callsign
 	memset(callsign,0,CALLSIGN_LEN+1);
-	len = strlen(player->player->callsign);
+	len = strlen(np->m_player->callsign);
 	for(idx=0;idx<len;idx++){
-		callsign[idx] = (char)tolower(player->player->callsign[idx]);
+		callsign[idx] = (char)tolower(np->m_player->callsign[idx]);
 	}
 
 	// see if this guy's callsign matches the expr
@@ -595,7 +600,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	memset(temp_string,0,100);	
 
 	// add the message header
-	sprintf(hud_string,XSTR("ORDER FROM <%s> : ",699),source->player->callsign);
+	sprintf(hud_string,XSTR("ORDER FROM <%s> : ",699),source->m_player->callsign);
 
 	// get the target obj if possible
 	target_obj = NULL;
@@ -697,14 +702,14 @@ int multi_msg_player_in_wing(int wingnum,net_player *pl)
 	int idx;
 	
 	// if this guy doesn't have a valid ship, bail 
-	if((pl->player->objnum == -1) || (Objects[pl->player->objnum].type != OBJ_SHIP)){
+	if((pl->m_player->objnum == -1) || (Objects[pl->m_player->objnum].type != OBJ_SHIP)){
 		return 0;
 	}
 
 	// look through all ships in the wing
 	for(idx=0;idx<Wings[wingnum].current_count;idx++){
 		// if we found a match
-		if(Wings[wingnum].ship_index[idx] == Objects[pl->player->objnum].instance){
+		if(Wings[wingnum].ship_index[idx] == Objects[pl->m_player->objnum].instance){
 			return 1;
 		}
 	}
@@ -716,7 +721,7 @@ int multi_msg_player_in_wing(int wingnum,net_player *pl)
 int multi_msg_player_in_ship(int shipnum,net_player *pl)
 {
 	// if we found a matching ship
-	if((pl->player->objnum != -1) && (Objects[pl->player->objnum].type == OBJ_SHIP) && (shipnum == Objects[pl->player->objnum].instance)){
+	if((pl->m_player->objnum != -1) && (Objects[pl->m_player->objnum].type == OBJ_SHIP) && (shipnum == Objects[pl->m_player->objnum].instance)){
 		return 1;
 	}
 
@@ -741,13 +746,13 @@ void multi_msg_send_squadmsg_packet(net_player *target,net_player *source,int co
 	BUILD_HEADER(SQUADMSG_PLAYER);
 
 	// add the command and targeting data	
-	ADD_DATA(command);
+	ADD_INT(command);
 
 	// add the id of the guy sending the order
-	ADD_DATA(source->player_id);
+	ADD_SHORT(source->player_id);
 
 	// net signature
-	ADD_DATA(net_sig);
+	ADD_USHORT(net_sig);
 	
 	// targeted subsytem (or -1 if none)
 	s_val = (char)subsys_type;
@@ -873,9 +878,9 @@ void multi_msg_process_squadmsg_packet(unsigned char *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 
 	// get all packet data
-	GET_DATA(command);
-	GET_DATA(source_id);
-	GET_DATA(net_sig);
+	GET_INT(command);
+	GET_SHORT(source_id);
+	GET_USHORT(net_sig);
 	GET_DATA(s_val);
 	PACKET_SET_SIZE();
 

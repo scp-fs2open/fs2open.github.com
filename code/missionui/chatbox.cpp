@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:38 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:38  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -997,7 +1000,7 @@ void chatbox_add_line(char *msg, int pid, int add_id)
 		if(MULTI_STANDALONE(Net_players[pid])){
 			sprintf(msg_extra, NOX("%s %s"), NOX("<SERVER>"), msg );
 		} else {
-			sprintf(msg_extra, NOX("%s: %s"), Net_players[pid].player->short_callsign, msg );
+			sprintf(msg_extra, NOX("%s: %s"), Net_players[pid].m_player->short_callsign, msg );
 		}
 	} else {
 		strcpy(msg_extra,msg);

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_xfer.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -857,11 +860,11 @@ int multi_xfer_process_packet(unsigned char *data, PSNET_SOCKET_RELIABLE who)
 
 	// read in all packet data
 	GET_DATA(val);	
-	GET_DATA(sig);
+	GET_USHORT(sig);
 	switch(val){
 	// RECV side
 	case MULTI_XFER_CODE_DATA:				
-		GET_DATA(data_size);		
+		GET_USHORT(data_size);		
 		memcpy(xfer_data, data + offset, data_size);
 		offset += data_size;
 		sender_side = 0;
@@ -870,8 +873,8 @@ int multi_xfer_process_packet(unsigned char *data, PSNET_SOCKET_RELIABLE who)
 	// RECV side
 	case MULTI_XFER_CODE_HEADER:		
 		GET_STRING(filename);
-		GET_DATA(file_size);					
-		GET_DATA(file_checksum);
+		GET_INT(file_size);					
+		GET_USHORT(file_checksum);
 		sender_side = 0;
 		break;
 
@@ -911,7 +914,7 @@ int multi_xfer_process_packet(unsigned char *data, PSNET_SOCKET_RELIABLE who)
 			if(np_index < 0){
 				ml_string(": player == unknown");
 			} else {
-				ml_printf(": player == %s", Net_players[np_index].player->callsign);
+				ml_printf(": player == %s", Net_players[np_index].m_player->callsign);
 			}
 			if(sender_side){
 				ml_string(": sending");
@@ -1216,13 +1219,13 @@ void multi_xfer_send_next(xfer_entry *xe)
 	ADD_DATA(code);
 
 	// add the sig
-	ADD_DATA(xe->sig);
+	ADD_USHORT(xe->sig);
 
 	// add in the size of the rest of the packet	
-	ADD_DATA(data_size);
+	ADD_USHORT(data_size);
 	
 	// copy in the data
-	if(cfread(data+packet_size,1,(int)data_size,xe->file) == NULL){
+	if(cfread(data+packet_size,1,(int)data_size,xe->file) == 0){
 		// send a nack to the receiver
 		multi_xfer_send_nak(xe->file_socket, xe->sig);
 
@@ -1255,7 +1258,7 @@ void multi_xfer_send_ack(PSNET_SOCKET_RELIABLE socket, ushort sig)
 	ADD_DATA(code);
 
 	// add the sig
-	ADD_DATA(sig);
+	ADD_USHORT(sig);
 	
 	// send the data	
 	psnet_rel_send(socket, data, packet_size);
@@ -1275,7 +1278,7 @@ void multi_xfer_send_nak(PSNET_SOCKET_RELIABLE socket, ushort sig)
 	ADD_DATA(code);
 
 	// add the sig
-	ADD_DATA(sig);
+	ADD_USHORT(sig);
 
 	// send the data	
 	psnet_rel_send(socket, data, packet_size);
@@ -1295,7 +1298,7 @@ void multi_xfer_send_final(xfer_entry *xe)
 	ADD_DATA(code);
 
 	// add the sig
-	ADD_DATA(xe->sig);
+	ADD_USHORT(xe->sig);
 
 	// send the data	
 	psnet_rel_send(xe->file_socket, data, packet_size);
@@ -1313,16 +1316,16 @@ void multi_xfer_send_header(xfer_entry *xe)
 	ADD_DATA(code);
 
 	// add the sig
-	ADD_DATA(xe->sig);
+	ADD_USHORT(xe->sig);
 
 	// add the filename
 	ADD_STRING(xe->filename);
 		
 	// add the id #
-	ADD_DATA(xe->file_size);
+	ADD_INT(xe->file_size);
 
 	// add the file checksum
-	ADD_DATA(xe->file_chksum);
+	ADD_USHORT(xe->file_chksum);
 
 	// send the packet	
 	psnet_rel_send(xe->file_socket, data, packet_size);

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-01-30 09:27:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-02-04 10:12:29 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/01/30 09:27:41  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.14  2004/10/31 21:34:39  taylor
  * rename __ASSERT check to _ASSERT to fix constant warning message - why did no one else fix this?
  *
@@ -1577,6 +1581,66 @@ void vm_free_all()
 {
 }
 
+#ifndef NDEBUG
+void *vm_realloc( void *ptr, int size, char *filename, int line )
+#else
+void *vm_realloc( void *ptr, int size )
+#endif
+{
+	void *ret_ptr = NULL;
 
+	#if (!defined(NDEBUG)) && defined(_MSC_VER)
+	if ( !Heap )	{
+		TotalRam += size;
+
+		ptr = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__ );
+		if(Cmdline_show_mem_usage)
+			register_malloc(size, filename, line, ptr);
+		return ptr;
+	}
+	#endif
+
+	// if this is the first time it's used then we need to malloc it first
+	if ( ptr == NULL ) {
+		return vm_malloc(size);
+	}
+
+	ret_ptr = HeapReAlloc(Heap, HEAP_FLAG, ptr, size);
+
+	if (ret_ptr == NULL) {
+		mprintf(( "HeapReAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
+
+		Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
+			"virtual memory size, or installing more physical RAM.\n");
+	}
+
+	// do a size check now since we need to know if we got what was asked for
+	int actual_size = HeapSize(Heap, HEAP_FLAG, ret_ptr);
+
+	if (actual_size < size) {
+		mprintf(( "HeapReAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
+
+		Error(LOCATION, "The required ammount of memory cannot be allocated.\n"
+			"Try closing down other applications, increasing your\n"
+			"virtual memory size, or installing more physical RAM.\n");
+
+		vm_free(ret_ptr);
+
+		return NULL;
+	}
+
+	#ifndef NDEBUG
+		if ( Watch_malloc )	{
+			mprintf(( "ReAlloc %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
+		}
+		TotalRam += actual_size;
+
+	if(Cmdline_show_mem_usage)
+		register_malloc(actual_size, filename, line, ret_ptr);
+
+	#endif
+
+	return ret_ptr;
+}
 
 

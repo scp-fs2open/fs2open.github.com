@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Palman/PalMan.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-10-31 22:00:57 $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 10:12:32 $
  * $Author: taylor $
  *
  * Palette manager routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/10/31 22:00:57  taylor
+ * new bmpman merge support, add PreProcDefines.h a few new places
+ *
  * Revision 2.5  2004/07/26 20:47:46  Kazan
  * remove MCD complete
  *
@@ -341,7 +344,7 @@ void palette_load_table( char * filename )
 		*p = 0;
 	}
 
-	pcx_error = pcx_read_header(palette_base_filename, NULL, &w, &h, palette_org );
+	pcx_error = pcx_read_header(palette_base_filename, NULL, &w, &h, NULL, palette_org );
 	if ( pcx_error != PCX_ERROR_NONE )	{
 		// Read the old .256 file
 		CFILE *fp;
@@ -474,7 +477,7 @@ uint palette_find( int r, int g, int b )
 // version 18 - fixed bug with blue nondarkening colors
 // version 19 - fixed bug where only colors divisible by 4 got used.
 // version 20 - added flag to only use lower 128 colors for palette.
-#define PAL_ID 'LAPV'			// VPAL (Volition Palette)
+#define PAL_ID 0x4c415056			// "LAPV" in file = VPAL (Volition Palette)
 #define PAL_VERSION  20
 #define PAL_LAST_COMPATIBLE_VERSION 20
 

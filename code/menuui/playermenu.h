@@ -9,10 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.h $
- * $Revision: 2.2 $Date: 2004/07/17 18:46:07 $
- * $Author: Kazan $
+ * $Revision: 2.3 $Date: 2004/08/11 05:06:27 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:27  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/07/17 18:46:07  taylor
  * various OGL and memory leak fixes
  *
@@ -78,6 +81,7 @@ int player_select_get_last_pilot();
 
 // tooltips
 void player_tips_init();
+void player_tips_close();
 void player_tips_popup();
 void player_tips_close();
 

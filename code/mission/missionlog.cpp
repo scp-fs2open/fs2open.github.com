@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-01-11 21:28:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/11 21:28:24  Goober5000
+ * made a capitalization thing consistent
+ * --Goober500
+ *
  * Revision 2.4  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -492,7 +496,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 					int np_ship = multi_get_player_ship(np_index);
 
 					if(np_ship != -1){
-						team = Ships[Objects[Net_players[np_index].player->objnum].instance].team;
+						team = Ships[Objects[Net_players[np_index].m_player->objnum].instance].team;
 					}
 					// argh. badness
 					else {

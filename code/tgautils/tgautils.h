@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.h $
- * $Revision: 2.3 $
- * $Date: 2004-10-31 22:00:57 $
+ * $Revision: 2.4 $
+ * $Date: 2005-02-04 10:12:33 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/10/31 22:00:57  taylor
+ * new bmpman merge support, add PreProcDefines.h a few new places
+ *
  * Revision 2.2  2004/08/11 05:06:35  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -62,7 +65,6 @@ struct CFILE;
 
 int targa_read_header(char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, ubyte *palette=NULL );
 int targa_read_bitmap(char *filename, ubyte *data, ubyte *palette, int dest_size );
-int targa_read_bitmap_32(char *filename, ubyte *data, ubyte *palette, int dest_size );
 int targa_write_bitmap(char *filename, ubyte *data, ubyte *palette, int w, int h, int bpp);
 
 // The following are used by the tools\vani code.

@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.21 $
- * $Date: 2004-12-15 15:14:03 $
- * $Author: Goober5000 $
- * $Revision: 2.21 $
- * $Date: 2004-12-15 15:14:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2005-02-04 10:12:29 $
+ * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2005-02-04 10:12:29 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/12/15 15:14:03  Goober5000
+ * added Verify, an error checking macro that works in both release and debug modes
+ * --Goober5000
+ *
  * Revision 2.20  2004/10/31 21:32:27  taylor
  * no networking with Inferno builds, basic 64-bit OS support
  *
@@ -346,8 +350,14 @@
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
 #include <memory.h>
+#if defined(_WIN32) || defined(HAVE_MALLOC_H)
 #include <malloc.h>
+#endif
 #include <string.h>
+
+#if defined( __x86_64__ ) || defined( _WIN64 )
+#define IAM_64BIT 1
+#endif
 
 #include "windows_stub/config.h"
 
@@ -383,6 +393,7 @@ typedef unsigned __int64 ulonglong;
 typedef unsigned char ubyte;
 typedef unsigned short ushort;
 typedef unsigned int uint;
+typedef unsigned long ulong;
 
 
 #define HARDWARE_ONLY
@@ -480,9 +491,10 @@ typedef struct bitmap_section_info {
 typedef struct bitmap {
 	short	w, h;		// Width and height
 	short	rowsize;	// What you need to add to go to next row
-	ubyte	bpp;		// How many bits per pixel it is. (7,8,15,16,24,32)
+	ubyte	bpp;		// How many bits per pixel it is. (7,8,15,16,24,32) (what is requested)
+	ubyte	true_bpp;	// How many bits per pixel the image actually is.
 	ubyte	flags;	// See the BMP_???? defines for values
-	uint	data;		// Pointer to data, or maybe offset into VRAM.
+	ptr_u	data;		// Pointer to data, or maybe offset into VRAM.
 	ubyte *palette;	// If bpp==8, this is pointer to palette.   If the BMP_NO_PALETTE_MAP flag
 							// is not set, this palette just points to the screen palette. (gr_palette)
 
@@ -691,11 +703,8 @@ void dc_printf( char *format, ... );
 #include "math/floating.h"
 
 // Some constants for stuff
-#ifdef _WIN32
 #define MAX_FILENAME_LEN	32			// Length for filenames, ie "title.pcx"
-
 #define MAX_PATH_LEN			128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
-#endif
 
 // contants and defined for byteswapping routines (useful for mac)
 
@@ -711,13 +720,59 @@ void dc_printf( char *format, ... );
 						((x & 0x00ff0000) >> 8)		\
 						)
 
-#ifndef MACINTOSH
-#define INTEL_INT(x)	x
-#define INTEL_SHORT(x)	x
+#ifdef SCP_UNIX
+#include "SDL_endian.h"
+#endif
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#ifndef BYTE_ORDER
+#define BYTE_ORDER	BIG_ENDIAN
+#endif // !BYTE_ORDER
+#endif // SDL_BYTEORDER
+
+#if BYTE_ORDER == BIG_ENDIAN
+// turn off inline asm
+#undef USE_INLINE_ASM
+
+// tigital -
+inline float SWAPFLOAT(float *x)
+{
+#if !defined(__MWERKS__)
+	// Usage:  void __stwbrx( unsigned int, unsigned int *address, int byteOffsetFromAddress );
+#define __stwbrx(value, base, index) \
+	__asm__ ( "stwbrx %0, %1, %2" :  : "r" (value), "b%" (index), "r" (base) : "memory" )
+#endif
+
+	union
+	{
+		int		i;
+		float	f;
+	} buf;
+
+	// load the float into the integer unit
+	register int a = ((int*) x)[0];
+
+	// store it to the transfer union, with byteswapping
+	__stwbrx(a, 0, &buf.i);
+
+	// load it into the FPU and return it
+	return buf.f;
+}
+
+#ifdef SCP_UNIX
+#define INTEL_INT(x)	SDL_Swap32(x)
+#define INTEL_SHORT(x)	SDL_Swap16(x)
 #else
 #define INTEL_INT(x)	SWAPINT(x)
 #define INTEL_SHORT(x)	SWAPSHORT(x)
-#endif
+#endif // (unix)
+#define INTEL_FLOAT(x)	SWAPFLOAT(x)
+
+#else // Little Endian -
+#define INTEL_INT(x)	x
+#define INTEL_SHORT(x)	x
+#define INTEL_FLOAT(x)	(*x)
+#endif // BYTE_ORDER
 
 #define TRUE	1
 #define FALSE	0
@@ -744,7 +799,7 @@ int myrand();
 extern int game_busy_callback( void (*callback)(int count), int delta_step = -1 );
 
 // Call whenever loading to display cursor
-extern void game_busy();
+extern void game_busy(char *filename = NULL);
 
 
 //=========================================================
@@ -843,13 +898,18 @@ template <class T> void CAP( T& v, T mn, T mx )
 	// Frees all RAM.
 	void vm_free_all();
 
+	// reallocates some RAM
+	void *vm_realloc( void *ptr, int size, char *filename = NULL, int line=-1);
+
 	// Easy to use macros
 	#define VM_MALLOC(size) vm_malloc((size),__FILE__,__LINE__)
 	#define VM_FREE(ptr) vm_free((ptr),__FILE__,__LINE__)
+	#define VM_REALLOC(ptr, size) vm_realloc((ptr),(size),__FILE__,__LINE__)
 
 	#define malloc(size) vm_malloc((size),__FILE__,__LINE__)
 	#define free(ptr) vm_free((ptr),__FILE__,__LINE__)
 	#define strdup(ptr) vm_strdup((ptr),__FILE__,__LINE__)
+	#define realloc(ptr, size) vm_realloc((ptr),(size),__FILE__,__LINE__)
 	
 #else
 	// Release versions
@@ -869,13 +929,18 @@ template <class T> void CAP( T& v, T mn, T mx )
 	// Frees all RAM.
 	void vm_free_all();
 
+	// reallocates some RAM
+	void *vm_realloc( void *ptr, int size );
+
 	// Easy to use macros
 	#define VM_MALLOC(size) vm_malloc(size)
 	#define VM_FREE(ptr) vm_free(ptr)
+	#define VM_REALLOC(ptr, size) vm_realloc((ptr),(size))
 
 	#define malloc(size) vm_malloc(size)
 	#define free(ptr) vm_free(ptr)
 	#define strdup(ptr) vm_strdup(ptr)
+	#define realloc(ptr, size) vm_realloc((ptr),(size))
 
 
 #endif

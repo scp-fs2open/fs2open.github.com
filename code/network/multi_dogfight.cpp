@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -99,16 +102,11 @@
 #include "stats/scoring.h"
 #include "mission/missionparse.h"
 
-#include "fs2open_pxo/client.h"
+#include "fs2open_pxo/Client.h"
 #include "cfile/cfile.h"
 
 
 
-#if !defined(PXO_TCP)
-extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#else
-extern TCP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan
-#endif
 
 extern int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[32];
@@ -223,8 +221,8 @@ void multi_df_level_pre_enter()
 
 	// go through all player ships and make them hostile
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].player != NULL) && (Net_players[idx].player->objnum >= 0) && (Objects[Net_players[idx].player->objnum].type == OBJ_SHIP)){
-			Ships[Objects[Net_players[idx].player->objnum].instance].team = TEAM_TRAITOR;
+		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP)){
+			Ships[Objects[Net_players[idx].m_player->objnum].instance].team = TEAM_TRAITOR;
 		}
 	}
 
@@ -242,7 +240,7 @@ void multi_df_eval_kill(net_player *killer, object *dead_obj)
 	}
 
 	// sanity checks
-	if((killer == NULL) || (dead_obj == NULL) || (killer->player == NULL)){
+	if((killer == NULL) || (dead_obj == NULL) || (killer->m_player == NULL)){
 		return;
 	}
 	
@@ -257,7 +255,7 @@ void multi_df_eval_kill(net_player *killer, object *dead_obj)
 	}
 
 	// update his kills
-	killer->player->stats.m_dogfight_kills[dead_index]++;
+	killer->m_player->stats.m_dogfight_kills[dead_index]++;
 }
 
 // debrief
@@ -449,8 +447,8 @@ void multi_df_debrief_close()
 		if (multi_debrief_stats_accept_code() != 1) {
 			if(MULTIPLAYER_MASTER){
 				for(idx=0; idx<MAX_PLAYERS; idx++){
-					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].player != NULL)){
-						scoring_backout_accept(&Net_players[idx].player->stats);
+					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL)){
+						scoring_backout_accept(&Net_players[idx].m_player->stats);
 					}
 				}
 			} else {
@@ -501,17 +499,17 @@ void multi_df_setup_kill_matrix()
 
 	// add players as necessary
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].player != NULL)){
+		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL)){
 			// stuff data for this guy
 			s = &Multi_df_score[Multi_df_score_count++];
 
-			ml_printf("Dogfight debrief stats for %s", Net_players[idx].player->callsign);
+			ml_printf("Dogfight debrief stats for %s", Net_players[idx].m_player->callsign);
 			for(s_idx=0; s_idx<MAX_PLAYERS; s_idx++){
-				ml_printf("%d", Net_players[idx].player->stats.m_dogfight_kills[s_idx]);
+				ml_printf("%d", Net_players[idx].m_player->stats.m_dogfight_kills[s_idx]);
 			}
 
-			s->stats = Net_players[idx].player->stats;
-			strcpy(s->callsign, Net_players[idx].player->callsign);			
+			s->stats = Net_players[idx].m_player->stats;
+			strcpy(s->callsign, Net_players[idx].m_player->callsign);			
 			s->np_index = idx;
 		}
 	}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:33 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:30 $
+ * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -94,11 +97,8 @@
  * $NoKeywords: $
  */
 
-#if defined _WIN32
-	#include <windows.h>
-#elif defined unix
-	#include <sys/time.h>
-	#include <unistd.h>
+#ifdef _WIN32
+#include <windows.h>
 #endif
 
 #include	"limits.h"
@@ -106,6 +106,7 @@
 #include "io/timer.h"
 #include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
+#include "osapi/osapi.h"	// for multi-thread macros
 
 
 
@@ -116,8 +117,6 @@
 #if defined _WIN32
 static longlong Timer_last_value, Timer_base;
 static uint Timer_freq=0;
-#elif defined unix
-static struct timeval Timer_last_value, Timer_base;
 #endif
 
 static int Timer_inited = 0;
@@ -128,7 +127,7 @@ void timer_close()
 {
 	if ( Timer_inited )	{
 		Timer_inited = 0;
-		DeleteCriticalSection( &Timer_lock );
+		DELETE_CRITICAL_SECTION( Timer_lock );
 	}
 }
 
@@ -143,12 +142,9 @@ void timer_init()
 
 		QueryPerformanceCounter((LARGE_INTEGER *)&Timer_base);
 		QueryPerformanceCounter((LARGE_INTEGER *)&Timer_last_value);
-#elif defined unix
-		gettimeofday(&Timer_base, NULL);
-		gettimeofday(&Timer_last_value, NULL);
 #endif
-		InitializeCriticalSection(&Timer_lock);
-		
+		INITIALIZE_CRITICAL_SECTION( Timer_lock );
+
 		Timer_inited = 1;
 
 		atexit(timer_close);
@@ -156,15 +152,11 @@ void timer_init()
 }
 
 // Fills Time_now with the ticks since program start
-#if defined _WIN32
+#ifdef _WIN32
 static void timer_get(LARGE_INTEGER * out)
-#elif defined unix
-static void timer_get(timeval * out)
-#endif
 {
-	EnterCriticalSection(&Timer_lock);
+	ENTER_CRITICAL_SECTION( Timer_lock );
 
-#if defined _WIN32
 	longlong time_tmp;
 	longlong Time_now;
 
@@ -181,19 +173,10 @@ static void timer_get(timeval * out)
 	Timer_last_value = time_tmp;
 
 	out->QuadPart = Time_now;
-#elif defined unix
-	timeval time_tmp;
-	gettimeofday(&time_tmp, NULL);
-	out->tv_usec = time_tmp.tv_usec - Timer_base.tv_usec;
-	out->tv_sec  = time_tmp.tv_sec  - Timer_base.tv_sec;
-	if (out->tv_usec < 0) {
-		out->tv_usec += 1000000;
-		out->tv_sec  -= 1;
-	}		
-#endif
-
-	LeaveCriticalSection(&Timer_lock);
+	
+	LEAVE_CRITICAL_SECTION( Timer_lock );
 }
+#endif // _WIN32
 
 fix timer_get_fixed_seconds()
 {
@@ -258,13 +241,12 @@ sub_again:
 
 	return tmp;
 
-#elif defined unix
+#elif defined(SCP_UNIX)
 
-	timeval tmp_tv;
-	timer_get(&tmp_tv);
-	// TODO: we are not handling overflow properly
-	return ((tmp_tv.tv_sec & 0x7fff) << 16)
-		| ((tmp_tv.tv_usec << 11) / 31250);
+	__extension__ long long a = SDL_GetTicks();
+
+	a *= 65536;
+	return (fix)(a / 1000);
 
 #else
 #error unknown architecture/compiler
@@ -337,11 +319,9 @@ sub_again:
 	return tmp;
 
 
-#elif defined unix
+#elif defined(SCP_UNIX)
 
-	timeval tmp_tv;
-	timer_get(&tmp_tv);
-	return (tmp_tv.tv_sec * 1000) + (tmp_tv.tv_usec / 1000);
+	return SDL_GetTicks();
 
 #else
 #error unknown architecture/compiler
@@ -406,11 +386,9 @@ sub_again:
 
 	return tmp;
 
-#elif defined unix
+#elif defined(SCP_UNIX)
 
-	timeval tmp_tv;
-	timer_get(&tmp_tv);
-	return (tmp_tv.tv_sec * 1000000) + tmp_tv.tv_usec;
+	return SDL_GetTicks() * 1000;
 
 #else
 #error unknown architecture/compiler

@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.3 $
- * $Date: 2005-01-03 18:45:22 $
+ * $Revision: 1.4 $
+ * $Date: 2005-02-04 10:12:29 $
  * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/01/03 18:45:22  taylor
+ * dynamic allocation of num supported OpenGL lights
+ * add config option for more realistic light settings
+ * don't render spec maps in nebula to address lighting issue
+ *
  * Revision 1.2  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -55,6 +60,7 @@ extern bool lighting_is_enabled;
 extern int GL_max_lights;
 extern int active_gl_lights;
 extern int n_active_gl_lights;
+extern int GL_center_alpha;
 
 struct ogl_light_struct_col
 {
@@ -90,5 +96,7 @@ void gr_opengl_set_lighting(bool set, bool state);
 void opengl_pre_render_init_lights();
 void opengl_change_active_lights(int);
 void opengl_init_light();
+void gr_opengl_center_alpha(int type);
+void gr_opengl_set_center_alpha(int type);
 
 #endif //_GROPENGLLIGHT_H

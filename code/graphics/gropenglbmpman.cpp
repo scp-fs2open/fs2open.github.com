@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.4 $
- * $Date: 2005-01-21 08:54:53 $
+ * $Revision: 1.5 $
+ * $Date: 2005-02-04 10:12:29 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/01/21 08:54:53  taylor
+ * slightly better memory management
+ *
  * Revision 1.3  2004/12/05 01:28:39  taylor
  * support uncompressed DDS images
  * use TexSubImage2D for video anis
@@ -124,7 +127,7 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 	}
 	// if its a pcx file
 	else if (type == BM_TYPE_PCX) {
-		int pcx_error = pcx_read_header( filename, img_cfp, w, h, NULL );
+		int pcx_error = pcx_read_header( filename, img_cfp, w, h, bpp, NULL );
 		if ( pcx_error != PCX_ERROR_NONE )	{
 			mprintf(( "pcx: Couldn't open '%s'\n", filename ));
 			return -1;
@@ -154,9 +157,20 @@ void gr_opengl_bm_page_in_start()
 int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags )
 {
 	ubyte c_type = BM_TYPE_NONE;
+	ubyte true_bpp;
 
 	bitmap_entry *be = &bm_bitmaps[bitmapnum];
 	bitmap *bmp = &be->bm;
+
+	if (Is_standalone) {
+		true_bpp = 8;
+	}
+	// not really sure how we this is going to work out in every case but...
+	else if (bmp->true_bpp > bpp) {
+		true_bpp = bmp->true_bpp;
+	} else {
+		true_bpp = bpp;
+	}
 
 	// don't do a bpp check here since it could be different in OGL - taylor
 	if ( (bmp->data == 0) ) {
@@ -172,7 +186,7 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 			if ( be->type != BM_TYPE_USER ) {
 				char flag_text[64];
 				strcpy( flag_text, "--" );							
-				nprintf(( "Paging", "Loading %s (%dx%dx%dx%s)\n", be->filename, bmp->w, bmp->h, bpp, flag_text ));
+				nprintf(( "Paging", "Loading %s (%dx%dx%dx%s)\n", be->filename, bmp->w, bmp->h, true_bpp, flag_text ));
 			}
 		}
 
@@ -194,30 +208,30 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 
 		switch ( c_type ) {
 			case BM_TYPE_PCX:
-				bm_lock_pcx( handle, bitmapnum, be, bmp, bpp, flags );
+				bm_lock_pcx( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
 			case BM_TYPE_ANI:
-				bm_lock_ani( handle, bitmapnum, be, bmp, bpp, flags );
+				bm_lock_ani( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
 			case BM_TYPE_USER:	
-				bm_lock_user( handle, bitmapnum, be, bmp, bpp, flags );
+				bm_lock_user( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
 			case BM_TYPE_TGA:
-				bm_lock_tga( handle, bitmapnum, be, bmp, bpp, flags );
+				bm_lock_tga( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
 			case BM_TYPE_JPG:
-				bm_lock_jpg( handle, bitmapnum, be, bmp, bpp, flags );
+				bm_lock_jpg( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
 			case BM_TYPE_DDS:
 			case BM_TYPE_DXT1:
 			case BM_TYPE_DXT3:
 			case BM_TYPE_DXT5:
-				bm_lock_dds( handle, bitmapnum, be, bmp, bpp, flags );
+				bm_lock_dds( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
 			default:

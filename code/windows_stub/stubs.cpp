@@ -1,13 +1,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.6 $
- * $Date: 2005-01-30 18:32:42 $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 10:12:33 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/30 18:32:42  taylor
+ * merge with Linux/OSX tree - p0130
+ * remove extra brace in cfile.cpp
+ *
  *
  * $NoKeywords: $
  */
@@ -325,6 +329,7 @@ char *itoa(int value, char *str, int radix)
 #undef malloc
 #undef free
 #undef strdup
+#undef realloc
 
 
 /* *************************************
@@ -388,7 +393,7 @@ void *vm_malloc( int size )
 #ifndef NDEBUG
 void *vm_realloc( void *ptr, int size, char *filename, int line )
 #else
-void *vm_realloc( const void *ptr, int size )
+void *vm_realloc( void *ptr, int size )
 #endif
 {
 	void *ret_ptr = realloc( ptr, size );

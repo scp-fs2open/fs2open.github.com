@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -361,13 +364,13 @@ void multi_respawn_handle_invul_players()
 	int idx;
 	object *objp;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && (Objects[Net_players[idx].player->objnum].flags & OF_INVULNERABLE)){	
+		if(MULTI_CONNECTED(Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].flags & OF_INVULNERABLE)){	
 			// make him normal (_non_ invulnerable) on either of 2 conditions :
 			// 1.) More than 5 seconds have passed
 			// 2.) He's fired either a primary or a secondary weapon
 			if( ((Net_players[idx].s_info.invul_timestamp != -1) && (timestamp_elapsed(Net_players[idx].s_info.invul_timestamp))) ||
-				 ((Net_players[idx].player->ci.fire_primary_count > 0) || (Net_players[idx].player->ci.fire_secondary_count > 0)) ) {
-				objp = &Objects[Net_players[idx].player->objnum];
+				 ((Net_players[idx].m_player->ci.fire_primary_count > 0) || (Net_players[idx].m_player->ci.fire_secondary_count > 0)) ) {
+				objp = &Objects[Net_players[idx].m_player->objnum];
 				obj_set_flags(objp,objp->flags & ~(OF_INVULNERABLE));
 			}
 		}
@@ -506,7 +509,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	pl->s_info.rate_stamp = timestamp( (int)(1000.0f / (float)OO_gran) );
 
 	// set some player information
-	pl->player->objnum = objnum;
+	pl->m_player->objnum = objnum;
 	if ( pl == Net_player ) {
 		// this is a hack to ensure that old (dead) player ships are destroyed, since at this point he's actually an OBJ_GHOST
 		Player_obj->flags |= OF_SHOULD_BE_DEAD;						
@@ -562,8 +565,8 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	pl->flags &= ~(NETINFO_FLAG_RESPAWNING | NETINFO_FLAG_LIMBO);
 
 	// blast his control and button info clear
-	memset(&pl->player->bi, 0, sizeof(pl->player->bi));
-	memset(&pl->player->ci, 0, sizeof(pl->player->ci));
+	memset(&pl->m_player->bi, 0, sizeof(pl->m_player->bi));
+	memset(&pl->m_player->ci, 0, sizeof(pl->m_player->ci));
 
 	// if this is me, clear accum button info
 	if(pl == Net_player){
@@ -627,7 +630,7 @@ void multi_respawn_as_observer()
 	multi_obs_create_observer(Net_player);
 	
 	// set my object to be the observer object
-	Player_obj = &Objects[Net_player->player->objnum];
+	Player_obj = &Objects[Net_player->m_player->objnum];
 	Player_ship = &Hud_obs_ship;	
 	Player_ai = &Hud_obs_ai;	
 	
@@ -637,7 +640,7 @@ void multi_respawn_as_observer()
 	Net_player->flags &= ~(NETINFO_FLAG_LIMBO);
 
 	// clear my auto-match speed flag
-	Net_player->player->flags &= ~(PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_MATCH_TARGET);
+	Net_player->m_player->flags &= ~(PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_MATCH_TARGET);
 	
 	// reset the control info structure
 	memset(&Player->ci,0,sizeof(control_info));	
@@ -653,7 +656,7 @@ void multi_respawn_send_ai_respawn( ushort net_signature )
 	BUILD_HEADER(RESPAWN_NOTICE);
 	val = AI_RESPAWN_NOTICE;
 	ADD_DATA(val);
-	ADD_DATA( net_signature );
+	ADD_USHORT( net_signature );
 
 	// broadcast the packet to all players
 	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
@@ -690,8 +693,8 @@ void multi_respawn_broadcast(net_player *np)
 	// broadcast the packet to all players
 	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
 
-	signature = Objects[np->player->objnum].net_signature;
-	pos = Objects[np->player->objnum].pos;
+	signature = Objects[np->m_player->objnum].net_signature;
+	pos = Objects[np->m_player->objnum].pos;
 
 	// build the header and add the opcode
 	BUILD_HEADER(RESPAWN_NOTICE);
@@ -699,13 +702,13 @@ void multi_respawn_broadcast(net_player *np)
 	ADD_DATA(val);
 
 	// add the data for the respawn
-	ADD_DATA(signature);
-	ADD_DATA(pos);
-	ADD_DATA(np->player_id);
+	ADD_USHORT(signature);
+	ADD_VECTOR(pos);
+	ADD_SHORT(np->player_id);
 	ADD_DATA(np->s_info.cur_primary_bank);
 	ADD_DATA(np->s_info.cur_secondary_bank);
 	ADD_DATA(np->s_info.cur_link_status);
-	ADD_DATA(np->s_info.ship_ets);
+	ADD_USHORT(np->s_info.ship_ets);
 	ADD_STRING(np->p_info.p_objp->name);
 
 	Assert( np->s_info.ship_ets != 0 );		// find dave or allender
@@ -740,7 +743,7 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 	case AI_RESPAWN_NOTICE: 
 		p_object *pobjp;
 
-		GET_DATA( net_sig );
+		GET_USHORT( net_sig );
 		pobjp = mission_parse_get_arrival_ship( net_sig );
 		Assert( pobjp != NULL );
 		multi_respawn_ai( pobjp );
@@ -748,13 +751,13 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 
 	case RESPAWN_BROADCAST:
 		// get the respawn data
-		GET_DATA(net_sig);
-		GET_DATA(v);
-		GET_DATA(player_id);
+		GET_USHORT(net_sig);
+		GET_VECTOR(v);
+		GET_SHORT(player_id);
 		GET_DATA(cur_primary_bank);
 		GET_DATA(cur_secondary_bank);
 		GET_DATA(cur_link_status);
-		GET_DATA(ship_ets);
+		GET_USHORT(ship_ets);
 		GET_STRING(parse_name);
 		player_index = find_player_id(player_id);
 		if(player_index == -1){

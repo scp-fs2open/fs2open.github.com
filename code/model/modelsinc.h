@@ -7,9 +7,10 @@
  *
 */ 
 
-#include "PreProcDefines.h"
 #ifndef _MODELSINC_H
 #define _MODELSINC_H
+
+#include "PreProcDefines.h"
 
 struct polymodel;
 
@@ -33,12 +34,7 @@ struct polymodel;
 	#error Neither FREESPACE1_FORMAT or FREESPACE2_FORMAT defined
 #endif
 
-
-#if !defined(BYTE_ORDER) || !defined(LITTLE_ENDIAN) || !defined(BIG_ENDIAN)
-#error BYTE_ORDER is not defined
-#endif
-
-#if BYTE_ORDER == LITTLE_ENDIAN
+// endianess will be handled by cfile and others now, little-endian should be default in all cases
 
 // little-endian (Intel) IDs
 #define POF_HEADER_ID  0x4f505350	// 'OPSP' (PSPO) POF file header
@@ -68,41 +64,6 @@ struct polymodel;
 #define ID_GLOW 0x574f4c47				// WOLG (GLOW): glow points -Bobboau
 #define ID_GLOX 0x584f4c47				// experimental glow points will be gone as soon as we get a proper pof editor -Bobboau
 
-#elif BYTE_ORDER == BIG_ENDIAN
-
-// big-endian (Motorola, Sparc, etc.) IDs
-#define POF_HEADER_ID  0x5053504f	// PSPO
-#if defined( FREESPACE1_FORMAT )
-	// FREESPACE1 FORMAT
-	#define ID_OHDR 0x4f484452      // OHDR: POF file header
-	#define ID_SOBJ 0x534f424a      // SOBJ: Subobject header
-#else
-	#define ID_OHDR 0x48445232      // HDR2: POF file header
-	#define ID_SOBJ 0x4f424a32      // OBJ2: Subobject header
-#endif
-#define ID_TXTR 0x54585452				// TXTR: Texture filename list
-#define ID_INFO 0x50494e46				// PINF: POF file information, like command line
-#define ID_GRID 0x47524944				// GRID: Grid information
-#define ID_SPCL 0x5350434c				// SPCL: Special object -- like a gun, missile, 
-#define ID_PATH 0x50415448				// PATH: A spline based path
-#define ID_GPNT 0x47504e54				// GPNT: gun points
-#define ID_MPNT 0x4d504e54				// MPNT: missile points
-#define ID_DOCK 0x444f434b				// DOCK: docking points
-#define ID_TGUN 0x5447554e				// TGUN: turret gun points
-#define ID_TMIS 0x544d4953				// TMIS: turret missile points
-#define ID_FUEL 0x4655454c				// FUEL: thruster points
-#define ID_SHLD 0x53484c44				// SHLD: shield definition
-#define ID_EYE  0x45594520				// EYE : eye information
-#define ID_INSG 0x494e5347				// INSG: insignia information
-#define ID_ACEN 0x4143454e				// ACEN: autocentering information
-#define ID_GLOW 0x474c4f57				// GLOW: glow points -Bobboau
-
-#else
-// neither BIG_ENDIAN nor LITTLE_ENDIAN ??
-#error unknown value for BYTE_ORDER
-
-#endif
-
 
 #define uw(p)	(*((uint *) (p)))
 #define w(p)	(*((int *) (p)))
@@ -121,6 +82,9 @@ void model_octant_free( polymodel * pm );
 void model_calc_bound_box( vector *box, vector *big_mn, vector *big_mx);
 
 void interp_clear_instance();
+
+// endian swapping stuff - tigital
+void swap_bsp_data( polymodel *pm, void *model_ptr );
 
 #define MAX_POLYGON_VECS	6500		//6500 (7x)
 //be sure to update 2d.h

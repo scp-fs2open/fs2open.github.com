@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-02-04 10:12:31 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -524,7 +527,7 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 		multi_campaign_client_start();
 
 		// read in the # of missions
-		GET_DATA(Campaign.num_missions);
+		GET_INT(Campaign.num_missions);
 
 		// read in the mission filenames
 		for(idx=0;idx<Campaign.num_missions;idx++){
@@ -723,7 +726,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 		BUILD_HEADER(CAMPAIGN_UPDATE_INGAME);
 		packet_type = MC_JIP_INITIAL_PACKET;
 		ADD_DATA(packet_type);
-		ADD_DATA(Campaign.num_missions);
+		ADD_INT(Campaign.num_missions);
 		for( i = 0; i < Campaign.num_missions; i++) {
 			Assert(Campaign.missions[i].name != NULL);
 			ADD_STRING(Campaign.missions[i].name);
@@ -748,7 +751,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 			BUILD_HEADER( CAMPAIGN_UPDATE_INGAME );
 			packet_type = MC_JIP_GE_STATUS;
 			ADD_DATA( packet_type );
-			ADD_DATA(i);
+			ADD_INT(i);
 			ADD_DATA( num_goals );
 			for ( j = 0; j < num_goals; j++ ) {
 				status = (ubyte)Campaign.missions[i].goals[j].status;
@@ -781,7 +784,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 			BUILD_HEADER( CAMPAIGN_UPDATE_INGAME );
 			packet_type = MC_JIP_GOAL_NAMES;
 			ADD_DATA(packet_type);
-			ADD_DATA(i);
+			ADD_INT(i);
 
 			// save a pointer so we can put the number of goals written here.
 			ptr = &data[packet_size];
@@ -803,7 +806,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 					BUILD_HEADER(CAMPAIGN_UPDATE_INGAME);
 					packet_type = MC_JIP_GOAL_NAMES;
 					ADD_DATA( packet_type );
-					ADD_DATA(i);
+					ADD_INT(i);
 					ptr = &data[packet_size];
 					goal_count = 0;
 					ADD_DATA( goal_count );
@@ -831,7 +834,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 			BUILD_HEADER(CAMPAIGN_UPDATE_INGAME);
 			packet_type = MC_JIP_EVENT_NAMES;
 			ADD_DATA(packet_type);
-			ADD_DATA(i);
+			ADD_INT(i);
 
 			// save a pointer so we can put the number of goals written here.
 			ptr = &data[packet_size];
@@ -853,7 +856,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 					BUILD_HEADER(CAMPAIGN_UPDATE_INGAME);
 					packet_type = MC_JIP_EVENT_NAMES;
 					ADD_DATA( packet_type );
-					ADD_DATA(i);
+					ADD_INT(i);
 					ptr = &data[packet_size];
 					event_count = 0;
 					ADD_DATA( event_count );
@@ -890,7 +893,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 		mission_campaign_close();						// should free all data structures which need to be freed
 
 		// get the number of campaigns and their names.
-		GET_DATA(Campaign.num_missions);
+		GET_INT(Campaign.num_missions);
 		for( i = 0; i < Campaign.num_missions ; i++) {
 			GET_STRING(fname);
 			Campaign.missions[i].name = strdup(fname);
@@ -900,7 +903,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 
 	case MC_JIP_GE_STATUS:
 		
-		GET_DATA( mission_num );
+		GET_INT( mission_num );
 		GET_DATA( num_goals );
 		// need to malloc out the data
 		Assert( Campaign.missions[mission_num].num_goals == 0 );
@@ -933,7 +936,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 		break;
 
 	case MC_JIP_GOAL_NAMES:
-		GET_DATA( mission_num );
+		GET_INT( mission_num );
 		GET_DATA( num_goals );
 		GET_DATA( starting_num );
 		for ( i = starting_num; i < (starting_num + num_goals); i++ ) {
@@ -942,7 +945,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 		break;
 
 	case MC_JIP_EVENT_NAMES:
-		GET_DATA( mission_num );
+		GET_INT( mission_num );
 		GET_DATA( num_events );
 		GET_DATA( starting_num );
 		for ( i = starting_num; i < (starting_num + num_events); i++ ) {
