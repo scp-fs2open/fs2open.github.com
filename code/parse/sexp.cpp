@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.109 $
- * $Date: 2004-09-22 21:52:22 $
+ * $Revision: 2.110 $
+ * $Date: 2004-09-23 05:53:00 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2004/09/22 21:52:22  Goober5000
+ * further work on ubersexp framework
+ * --Goober5000
+ *
  * Revision 2.108  2004/09/22 08:32:05  Goober5000
  * fixed some small problems in the framework - should be working nicely now;
  * next step is the actual sexp implementation :-P
@@ -1294,7 +1298,6 @@ int	Sexp_music_handle = -1;
 void sexp_stop_music(int fade = 1);
 
 int get_sexp(char *token);
-int eval_sexp(int cur_node);
 void build_extended_sexp_string(int cur_node, int level, int mode);
 void update_sexp_references(char *old_name, char *new_name, int format, int node);
 int sexp_determine_team(char *subj);
@@ -1304,9 +1307,62 @@ int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 int num_eval(int node);
 
+// Goober5000
+char *Sexp_current_replacement_argument;
+arg_item *Sexp_applicable_argument_list;
+
+
+// Goober5000 - arg_item class stuff, mostly borrowed from sexp_list_item class stuff -------------
+void arg_item::set_data(char *str)
+{
+	text = str;
+}
+
+void arg_item::add_data(char *str)
+{
+	arg_item *item, *ptr;
+
+	item = new arg_item;
+	ptr = this;
+	while (ptr->next != NULL)
+		ptr = ptr->next;
+
+	ptr->next = item;
+	item->set_data(str);
+}
+
+void arg_item::add_list(arg_item *list)
+{
+	arg_item *ptr;
+
+	ptr = this;
+	while (ptr->next != NULL)
+		ptr = ptr->next;
+
+	ptr->next = list;
+}
+
+void arg_item::destroy()
+{
+	arg_item *ptr, *ptr2;
+
+	ptr = this;
+	while (ptr != NULL)
+	{
+		ptr2 = ptr->next;
+		delete ptr;
+		ptr = ptr2;
+	}
+}
+//-------------------------------------------------------------------------------------------------
+
 void init_sexp()
 {
 	int i;
+
+	// Goober5000
+	Sexp_current_replacement_argument = NULL;
+	Sexp_applicable_argument_list = NULL;
 
 	for (i=0; i<MAX_SEXP_NODES; i++) {
 		if ( !(Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT) ){
@@ -6143,28 +6199,100 @@ int waypoint_lookup(char *name)
 	return -1;
 }
 
+// Goober5000
+void do_action_for_each_special_argument( int cur_node )
+{
+	arg_item *ptr;
+
+	// loop through all the supplied arguments
+	ptr = Sexp_applicable_argument_list;
+	while (ptr != NULL)
+	{
+		// acquire argument to be used
+		Sexp_current_replacement_argument = ptr->text;
+
+		// execute sexp... CTEXT will insert the argument as necessary
+		// (since these are all actions, they don't return any meaningful values)
+		eval_sexp(cur_node);
+
+		// continue along argument list
+		ptr = ptr->next;
+	}
+}
+
+// Goober5000
+int special_argument_appears_in_sexp_tree(int node)
+{
+	// empty tree
+	if (node < 0)
+		return 0;
+
+	// special argument?
+	if (!strcmp(Sexp_nodes[node].text, SEXP_ARGUMENT_STRING))
+		return 1;
+
+	return special_argument_appears_in_sexp_tree(CAR(node))
+		|| special_argument_appears_in_sexp_tree(CDR(node));
+}
+
 // conditional sexpressions follow
 	
+// Goober5000 - added capability for arguments
 // eval_when evaluates the when conditional
-int eval_when(int n)
+int eval_when(int n, int use_arguments)
 {
-	int cond, val;
+	int arg_handler, cond, val, actions, exp;
 
-	Assert( n >= 0 );				// must have valid sexp index
+	Assert( n >= 0 );
 
-	cond = CAR(n);
-	val = eval_sexp(cond);		// get the value of the the conditional
-	if ( val ) {					// if the value is true, perform the actions is the 'then' part of the if
-		int actions, exp;
+	// get the parts of the sexp and evaluate the conditional
+	if (use_arguments)
+	{
+		arg_handler = CAR(n);
+		cond = CADR(n);
+		actions = CDDR(n);
 
+		// evaluate for custom arguments
+		val = eval_sexp(arg_handler, cond);
+	}
+	else
+	{
+		cond = CAR(n);
 		actions = CDR(n);
-		while ( actions != -1 ) {
+
+		// evaluate just as-is
+		val = eval_sexp(cond);
+	}
+
+	// if value is true, perform the actions in the 'then' part
+	if (val)
+	{
+		// loop through every action
+		while (actions != -1)
+		{
+			// get the operator
 			exp = CAR(actions);
-			if ( exp != -1 )
-				val = eval_sexp(exp);								// these sexp evaled only for side effects
+			if (exp != -1)
+			{
+				// if we're using the special argument in this action
+				if (special_argument_appears_in_sexp_tree(exp))
+				{
+					do_action_for_each_special_argument(exp);			// these sexps eval'd only for side effects
+				}
+				// if not, just evaluate it once as-is
+				else
+				{
+					// Goober5000 - possible bug? (see when val is used below)
+					/*val = */eval_sexp(exp);							// these sexps eval'd only for side effects
+				}
+			}
 			actions = CDR(actions);
 		}
 	}
+
+	// clean up any special sexp stuff
+	Sexp_current_replacement_argument = NULL;
+	Sexp_applicable_argument_list->destroy();
 
 	if (Sexp_nodes[cond].value == SEXP_KNOWN_FALSE)
 		return SEXP_KNOWN_FALSE;  // no need to waste time on this anymore
@@ -6173,20 +6301,6 @@ int eval_when(int n)
 		return SEXP_FALSE;  // can't return known false, as this would bypass future actions under the when
 
 	return val;
-}
-
-// Goober5000
-int eval_when_argument(int n)
-{
-	Assert( n >= 0 );
-
-	// construct a new node to evaluate the argument conditions
-
-	// construct a new node to do the required actions
-
-	// handle known_false, etc., properly
-
-	return 0;
 }
 
 // eval_cond() evaluates the cond conditional
@@ -6223,6 +6337,30 @@ int eval_cond( int n )
 	}
 
 	return val;
+}
+
+// Goober5000
+int eval_any_of(int arg_handler_node, int condition_node)
+{
+	return 0;
+}
+
+// Goober5000
+int eval_every_of(int arg_handler_node, int condition_node)
+{
+	return 0;
+}
+
+// Goober5000
+int eval_random_of(int arg_handler_node, int condition_node)
+{
+	return 0;
+}
+
+// Goober5000
+int eval_number_of(int arg_handler_node, int condition_node)
+{
+	return 0;
 }
 
 // Goober5000 - added wing capability
@@ -11295,7 +11433,7 @@ void sexp_set_training_context_speed(int node)
 }
 
 // high-level sexpression evaluator
-int eval_sexp(int cur_node)
+int eval_sexp(int cur_node, int referenced_node)
 {
 	int node, type, sexp_val = UNINITIALIZED;
 	if (cur_node == -1)  // empty list, i.e. sexp: ( )
@@ -11678,32 +11816,41 @@ int eval_sexp(int cur_node)
 
 			// conditional sexpressions
 			case OP_WHEN:
-				sexp_val = eval_when( node );
+			case OP_WHEN_ARGUMENT:
+				sexp_val = eval_when( node, (op_num == OP_WHEN_ARGUMENT) );
 				break;
 
 			case OP_COND:
 				sexp_val = eval_cond( node );
 				break;
 
-			// Goober5000: special case ubersexp
-			case OP_WHEN_ARGUMENT:
-				sexp_val = eval_when_argument( node );
-				break;
-
 			// Goober5000: special case; evaluate like when, but flush the sexp tree
 			// and return SEXP_NAN so this will always be re-evaluated
 			case OP_EVERY_TIME:
-				eval_when( node );
+			case OP_EVERY_TIME_ARGUMENT:
+				eval_when( node, (op_num == OP_EVERY_TIME_ARGUMENT) );
 				flush_sexp_tree( node );
 				sexp_val = SEXP_NAN;
 				break;
 
-			// Goober5000: special case: evaluate like when-argument, but flush the sexp tree
-			// and return SEXP_NAN so this will always be re-evaluated
-			case OP_EVERY_TIME_ARGUMENT:
-				eval_when_argument( node );
-				flush_sexp_tree( node );
-				sexp_val = SEXP_NAN;
+			// Goober5000
+			case OP_ANY_OF:
+				sexp_val = eval_any_of( node, referenced_node );
+				break;
+
+			// Goober5000
+			case OP_EVERY_OF:
+				sexp_val = eval_every_of( node, referenced_node );
+				break;
+
+			// Goober5000
+			case OP_RANDOM_OF:
+				sexp_val = eval_random_of( node, referenced_node );
+				break;
+
+			// Goober5000
+			case OP_NUMBER_OF:
+				sexp_val = eval_number_of( node, referenced_node );
 				break;
 
 			// sexpressions with side effects
@@ -14382,6 +14529,11 @@ int extract_sexp_variable_index(int node)
 // wrapper around Sexp_node[xx].text for normal and variable
 char *CTEXT(int n)
 {
+	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
+	// the CTEXT wrapper, when-argument would probably be infeasibly difficult to code.
+	if (!strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))
+		return Sexp_current_replacement_argument;
+
 	if (Sexp_nodes[n].type & SEXP_FLAG_VARIABLE) {
 		int sexp_variable_index;
 		if (Fred_running) {
