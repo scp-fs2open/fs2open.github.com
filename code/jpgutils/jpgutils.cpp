@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-02-04 10:12:30 $
+ * $Revision: 1.8 $
+ * $Date: 2005-02-05 04:15:35 $
  * $Author: taylor $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 1.6  2004/10/31 22:00:56  taylor
  * new bmpman merge support, add PreProcDefines.h a few new places
  *
@@ -38,6 +41,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
+#include <jpeglib.h>
+
+#undef LOCAL // fix from a jpeg header, pstypes.h will define it again
 
 #include "globalincs/pstypes.h"
 #include "jpgutils/jpgutils.h"
@@ -45,9 +51,6 @@
 #include "bmpman/bmpman.h"
 #include "palman/palman.h"
 #include "graphics/2d.h"
-
-#include <jpeglib.h>
-#include <jerror.h>
 
 
 // forward declarations

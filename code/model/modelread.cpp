@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-02-04 23:29:32 $
+ * $Revision: 2.54 $
+ * $Date: 2005-02-05 04:15:35 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/02/04 23:29:32  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 2.52  2005/01/30 09:27:40  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -924,7 +927,7 @@
 
 #include <string.h>
 #include <ctype.h>
-#ifdef __WIN32
+#ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
