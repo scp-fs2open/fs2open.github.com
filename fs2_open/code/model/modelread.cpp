@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-01-30 09:27:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.53 $
+ * $Date: 2005-02-04 23:29:32 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/01/30 09:27:40  Goober5000
+ * nitpicked some boolean tests, and fixed two small bugs
+ * --Goober5000
+ *
  * Revision 2.51  2005/01/28 11:06:23  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -922,6 +926,8 @@
 #include <ctype.h>
 #ifdef __WIN32
 #include <io.h>
+#include <direct.h>
+#include <windows.h>
 #endif
 
 #define MODEL_LIB
@@ -942,8 +948,6 @@
 #include "parse/parselo.h"
 #include "cmdline/cmdline.h"
 
-#include <direct.h>
-#include <windows.h>
 
 
 
@@ -984,7 +988,7 @@ void generate_vertex_buffers(bsp_info*, polymodel*);
 // Can't be called from outside of model code because more
 // than one person might be using this model so we can't free 
 // it.
-static void model_unload(int modelnum)
+static void model_unload(int modelnum, int force = 0)
 {
 	int i,j;
 
@@ -997,6 +1001,14 @@ static void model_unload(int modelnum)
 	if ( !pm )	{
 		return;
 	}
+
+	Assert( pm->used_this_mission >= 0 );
+
+	if (!force && (--pm->used_this_mission > 0)) {
+		return;
+	}
+
+	//model_page_out_textures(pm->id);
 
 #ifndef NDEBUG
 	Model_ram -= pm->ram_used;
@@ -1103,9 +1115,45 @@ void model_free_all()
 	mprintf(( "Freeing all existing models...\n" ));
 
 	for (i=0;i<MAX_POLYGON_MODELS;i++) {
-		model_unload(i);		
+		model_unload(i, 1);		
 	}
 
+}
+
+void model_page_in_start()
+{
+	int i;
+
+	if ( !model_initted ) {
+		model_init();
+		return;
+	}
+
+	mprintf(( "Starting model page in...\n" ));
+
+	for (i=0; i<MAX_POLYGON_MODELS; i++) {
+		if (Polygon_models[i] != NULL)
+			Polygon_models[i]->used_this_mission = 0;
+	}
+}
+
+void model_page_in_stop()
+{
+	int i;
+
+	Assert( model_initted );
+
+	mprintf(( "Stopping model page in...\n" ));
+
+	for (i=0; i<MAX_POLYGON_MODELS; i++) {
+		if (Polygon_models[i] == NULL)
+			continue;
+
+		if (Polygon_models[i]->used_this_mission)
+			continue;
+	
+		model_unload(i);
+	}
 }
 
 void model_init()
@@ -1433,15 +1481,10 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 	}
 #ifndef NDEBUG
 	if ( !ss_warning_shown) {
-#ifdef _WIN32
 		char bname[_MAX_FNAME];
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 //		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname);
 		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname));
-#else
-//		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\n", model_filename);
-		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname));
-#endif  // ifdef WIN32
 		ss_warning_shown = 1;
 	} else
 #endif
@@ -1784,7 +1827,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->num_xc = cfread_int(fp);
 					if (pm->num_xc > 0) {
 						pm->xc = (cross_section*) malloc(pm->num_xc*sizeof(cross_section));
-						for (int i=0; i<pm->num_xc; i++) {
+						for (i=0; i<pm->num_xc; i++) {
 							pm->xc[i].z = cfread_float(fp);
 							pm->xc[i].radius = cfread_float(fp);
 						}
@@ -1951,6 +1994,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				if ( pm->submodel[n].bsp_data_size > 0 )	{
 					pm->submodel[n].bsp_data = (ubyte *)malloc(pm->submodel[n].bsp_data_size);
 					cfread(pm->submodel[n].bsp_data,1,pm->submodel[n].bsp_data_size,fp);
+					swap_bsp_data( pm, pm->submodel[n].bsp_data );
 				} else {
 					pm->submodel[n].bsp_data = NULL;
 				}
@@ -2229,7 +2273,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			case ID_TMIS: {
 				int n_banks, n_slots, parent;
 				model_subsystem *subsystemp;
-				int i, j, snum=-1;
+				int snum=-1;
 	
 				n_banks = cfread_int(fp);				// number of turret points
 				for ( i = 0; i < n_banks; i++ ) {
@@ -2315,7 +2359,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			}
 			
 			case ID_TXTR: {		//Texture filename list
-				int i,n;
+				int n;
 //				char name_buf[128];
 
 				//mprintf(0,"Got chunk TXTR, len=%d\n",len);
@@ -2418,7 +2462,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 			case ID_EYE:					// an eye position(s)
 				{
-					int num_eyes, i;
+					int num_eyes;
 
 					// all eyes points are stored simply as vectors and their normals.
 					// 0th element is used as usual player view position.
@@ -2607,6 +2651,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		pm->glow_textures[i] = -1;
 		pm->glow_original_textures[i] = -1;
 		pm->glow_is_ani[i] = 0;
+		pm->glow_numframes[i] = 0;
 	} else {
 		strcpy( tmp_name, file );
 		strcat( tmp_name, "-glow" );
@@ -2617,6 +2662,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 			pm->glow_is_ani[i] = 0;
 			pm->glow_textures[i] = bm_load( tmp_name );
+			pm->glow_numframes[i] = 1;
 
 			if(pm->glow_textures[i]<0){
 			//	Warning( LOCATION, "Couldn't open glow_texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
@@ -2674,6 +2720,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		if ( Polygon_models[i] )	{
 			if (!stricmp(filename, Polygon_models[i]->filename) && !duplicate)		{
 				// Model already loaded; just return.
+				Polygon_models[i]->used_this_mission++;
 				return Polygon_models[i]->id;
 			}
 		} else if ( num == -1 )	{
@@ -2711,9 +2758,13 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	extern int Parse_normal_problem_count;
 	Parse_normal_problem_count = 0;
 
+	pm->used_this_mission = 0;
+
 	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
 		return -1;
 	}
+
+	pm->used_this_mission++;
 
 	if(Fred_running && Parse_normal_problem_count > 0)
 	{
@@ -4319,4 +4370,256 @@ void model_duplicate_reskin(int modelnum, char *ship_name)
 			}
 		}
 	}
+}
+
+#if BYTE_ORDER == BIG_ENDIAN
+// tigital -
+void swap_bsp_defpoints(ubyte * p)
+{
+	int n, i;
+	int nverts = INTEL_INT( w(p+8) );		//tigital
+	int offset = INTEL_INT( w(p+16) );
+	int n_norms = INTEL_INT( w(p+12) );
+
+	w(p+8) = nverts;
+	w(p+16) = offset;
+	w(p+12) = n_norms;
+
+	ubyte * normcount = p+20;
+	vector *src = vp(p+offset);
+
+	Assert( nverts < MAX_POLYGON_VECS );
+	// Assert( nnorms < MAX_POLYGON_NORMS );
+
+	for (n=0; n<nverts; n++ )	{
+		src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
+		src->xyz.y = INTEL_FLOAT( &src->xyz.y );
+		src->xyz.z = INTEL_FLOAT( &src->xyz.z );
+
+		Interp_verts[n] = src;
+		src++;	//tigital
+
+		for (i=0; i<normcount[n]; i++){
+			src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
+			src->xyz.y = INTEL_FLOAT( &src->xyz.y );
+			src->xyz.z = INTEL_FLOAT( &src->xyz.z );
+			src++;
+		}
+	}
+}
+
+void swap_bsp_tmappoly( polymodel * pm, ubyte * p )
+{
+	int i, nv;
+	model_tmap_vert *verts;
+	vector * normal = vp(p+8);	//tigital
+	vector * center = vp(p+20);
+	float radius = INTEL_FLOAT( &fl(p+32) );
+
+	fl(p+32) = radius;
+
+	normal->xyz.x = INTEL_FLOAT( &normal->xyz.x );
+	normal->xyz.y = INTEL_FLOAT( &normal->xyz.y );
+	normal->xyz.z = INTEL_FLOAT( &normal->xyz.z );
+	center->xyz.x = INTEL_FLOAT( &center->xyz.x );
+	center->xyz.y = INTEL_FLOAT( &center->xyz.y );
+	center->xyz.z = INTEL_FLOAT( &center->xyz.z );
+
+	nv = INTEL_INT( w(p+36));		//tigital
+		w(p+36) = nv;
+
+	int tmap_num = INTEL_INT( w(p+40) );	//tigital
+		w(p+40) = tmap_num;
+
+	if ( nv < 0 ) return;
+
+	verts = (model_tmap_vert *)(p+44);
+	for (i=0;i<nv;i++){
+		verts[i].vertnum = INTEL_SHORT( verts[i].vertnum );
+		verts[i].normnum = INTEL_SHORT( verts[i].normnum );
+		verts[i].u = INTEL_FLOAT( &verts[i].u );
+		verts[i].v = INTEL_FLOAT( &verts[i].v );
+	}
+
+	if ( pm->version < 2003 )	{
+		// Set the "normal_point" part of field to be the center of the polygon
+		vector center_point;
+		vm_vec_zero( &center_point );
+
+		for (i=0;i<nv;i++)	{
+			vm_vec_add2( &center_point, Interp_verts[verts[i].vertnum] );
+		}
+
+		center_point.xyz.x /= nv;
+		center_point.xyz.y /= nv;
+		center_point.xyz.z /= nv;
+
+		*vp(p+20) = center_point;
+
+		float rad = 0.0f;
+
+		for (i=0;i<nv;i++)	{
+			float dist = vm_vec_dist( &center_point, Interp_verts[verts[i].vertnum] );
+			if ( dist > rad )	{
+				rad = dist;
+			}
+		}
+		fl(p+32) = rad;
+	}
+}
+
+void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
+{
+	int i, nv;
+	short *verts;
+	vector * normal = vp(p+8);	//tigital
+	vector * center = vp(p+20);
+
+	float radius = INTEL_FLOAT( &fl(p+32) );
+
+	fl(p+32) = radius; 
+
+	normal->xyz.x = INTEL_FLOAT( &normal->xyz.x );
+	normal->xyz.y = INTEL_FLOAT( &normal->xyz.y );
+	normal->xyz.z = INTEL_FLOAT( &normal->xyz.z );
+	center->xyz.x = INTEL_FLOAT( &center->xyz.x );
+	center->xyz.y = INTEL_FLOAT( &center->xyz.y );
+	center->xyz.z = INTEL_FLOAT( &center->xyz.z );
+
+	nv = INTEL_INT( w(p+36));		//tigital
+		w(p+36) = nv;
+        
+	if ( nv < 0 ) return;
+
+	verts = (short *)(p+44);
+	for (i=0; i<nv*2; i++){
+		verts[i] = INTEL_SHORT( verts[i] );
+	}
+
+	if ( pm->version < 2003 )	{
+		// Set the "normal_point" part of field to be the center of the polygon
+		vector center_point;
+		vm_vec_zero( &center_point );
+
+		for (i=0;i<nv;i++)	{
+			vm_vec_add2( &center_point, Interp_verts[verts[i*2]] );
+		}
+
+		center_point.xyz.x /= nv;
+		center_point.xyz.y /= nv;
+		center_point.xyz.z /= nv;
+
+		*vp(p+20) = center_point;
+
+		float rad = 0.0f;
+
+		for (i=0;i<nv;i++)	{
+			float dist = vm_vec_dist( &center_point, Interp_verts[verts[i*2]] );
+			if ( dist > rad )	{
+				rad = dist;
+			}
+		}
+		fl(p+32) = rad;
+	}
+}
+
+void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
+{
+	int frontlist = INTEL_INT( w(p+36) );	//tigital
+	int backlist = INTEL_INT( w(p+40) );
+	int prelist = INTEL_INT( w(p+44) );
+	int postlist = INTEL_INT( w(p+48) );
+	int onlist = INTEL_INT( w(p+52) );
+
+	w(p+36) = frontlist;
+	w(p+40) = backlist;
+	w(p+44) = prelist;
+	w(p+48) = postlist;
+	w(p+52) = onlist;
+
+	vector * normal = vp(p+8);	//tigital
+	vector * center = vp(p+20);
+	int  tmp = INTEL_INT( w(p+32) );
+	
+	w(p+32) = tmp;
+
+	normal->xyz.x = INTEL_FLOAT( &normal->xyz.x );
+	normal->xyz.y = INTEL_FLOAT( &normal->xyz.y );
+	normal->xyz.z = INTEL_FLOAT( &normal->xyz.z );
+	center->xyz.x = INTEL_FLOAT( &center->xyz.x );
+	center->xyz.y = INTEL_FLOAT( &center->xyz.y );
+	center->xyz.z = INTEL_FLOAT( &center->xyz.z );
+
+	vector * bmin = vp(p+56);	//tigital
+	vector * bmax = vp(p+68);
+
+	bmin->xyz.x = INTEL_FLOAT( &bmin->xyz.x );
+	bmin->xyz.y = INTEL_FLOAT( &bmin->xyz.y );
+	bmin->xyz.z = INTEL_FLOAT( &bmin->xyz.z );
+	bmax->xyz.x = INTEL_FLOAT( &bmax->xyz.x );
+	bmax->xyz.y = INTEL_FLOAT( &bmax->xyz.y );
+	bmax->xyz.z = INTEL_FLOAT( &bmax->xyz.z );
+
+	if (prelist) swap_bsp_data(pm,p+prelist);
+	if (backlist) swap_bsp_data(pm,p+backlist);
+	if (onlist) swap_bsp_data(pm,p+onlist);
+	if (frontlist) swap_bsp_data(pm,p+frontlist);
+	if (postlist) swap_bsp_data(pm,p+postlist);
+}
+#endif // BIG_ENDIAN
+
+void swap_bsp_data( polymodel * pm, void *model_ptr )
+{
+#if BYTE_ORDER == BIG_ENDIAN
+	ubyte *p = (ubyte *)model_ptr;
+	int chunk_type, chunk_size;
+	vector * min;
+	vector * max;
+
+	chunk_type = INTEL_INT( w(p) );	//tigital
+	chunk_size = INTEL_INT( w(p+4) );
+	w(p) = chunk_type;
+	w(p+4) = chunk_size;
+
+	while (chunk_type != OP_EOF) {
+		switch (chunk_type) {
+			case OP_EOF:
+				return;
+			case OP_DEFPOINTS:
+				swap_bsp_defpoints(p); 
+				break;
+			case OP_FLATPOLY:
+				swap_bsp_flatpoly(pm, p);
+				break;
+			case OP_TMAPPOLY:
+				swap_bsp_tmappoly(pm, p);
+				break;
+			case OP_SORTNORM:	
+				swap_bsp_sortnorms(pm, p);
+				break;
+			case OP_BOUNDBOX:
+				min = vp(p+8);
+				max = vp(p+20);
+				min->xyz.x = INTEL_FLOAT( &min->xyz.x );
+				min->xyz.y = INTEL_FLOAT( &min->xyz.y );
+				min->xyz.z = INTEL_FLOAT( &min->xyz.z );
+				max->xyz.x = INTEL_FLOAT( &max->xyz.x );
+				max->xyz.y = INTEL_FLOAT( &max->xyz.y );
+				max->xyz.z = INTEL_FLOAT( &max->xyz.z );
+				break;
+			default:
+				mprintf(( "Bad chunk type %d, len=%d in modelread:swap_bsp_data\n", chunk_type, chunk_size ));
+				Int3();		// Bad chunk type!
+			return;
+		}
+
+		p += chunk_size;
+		chunk_type = INTEL_INT( w(p));	//tigital
+		chunk_size = INTEL_INT( w(p+4) );
+		w(p) = chunk_type;
+		w(p+4) = chunk_size;
+	}
+
+	return;
+#endif
 }

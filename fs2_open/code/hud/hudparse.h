@@ -268,7 +268,7 @@ typedef struct hud_info
 //	int gauge_text_sexp_vars[MAX_HUD_GAUGE_TYPES];
 //	int gauge_frame_sexp_vars[MAX_HUD_GAUGE_TYPES];
 
-	hud_info();
+//	hud_info();  // GCC won't take this with offsetof
 } hud_info;
 
 #endif
@@ -282,8 +282,8 @@ typedef struct gauge_info
 	int defaulty_480;	//Default 640x480 y coord
 	int defaultx_1024;	//Default 1024x768 x coord
 	int defaulty_768;	//Default 1024x768 y coord
-	size_t size_dest;	//offset of size coord in hud_info; init in load_hud_defaults() (Can be NULL)
-	size_t image_dest;	//offset of image string in hud_info; init in load_hud_defaults() (Can be NULL)
+	size_t size_dest;	//offset of size coord in hud_info; init in load_hud_defaults() (Can be 0 (*not* NULL))
+	size_t image_dest;	//offset of image string in hud_info; init in load_hud_defaults() (Can be 0 (*not* NULL))
 	size_t frame_dest;	//Storage spot for frame info
 	size_t text_dest;	//Storage spot for text value
 	size_t color_dest;	//Storage spot for color value

@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.40 $
- * $Date: 2005-01-22 20:29:05 $
- * $Author: wmcoolmon $
+ * $Revision: 2.41 $
+ * $Date: 2005-02-04 23:29:31 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/01/22 20:29:05  wmcoolmon
+ * Fix0red the ext error. Always make sure you have room for the string terminator. :)
+ *
  * Revision 2.39  2005/01/21 08:20:44  taylor
  * make sure we can still use TGAs (16-bit) when Cmdline_jpgtga is not set, PCX still takes precedence per retail
  *
@@ -700,8 +703,8 @@ int Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
 
 
 // locals
-uint Bm_next_signature = 0x1234;
-int bm_next_handle = 1;
+static uint Bm_next_signature = 0x1234;
+static int bm_next_handle = 1;
 int Bm_low_mem = 0;
 // Bm_max_ram - How much RAM bmpman can use for textures.
 // Set to <1 to make it use all it wants.
@@ -1104,7 +1107,7 @@ int bm_load_sub_fast(char *real_filename, const char *ext, int *handle, int dir_
 int bm_load( char * real_filename )
 {
 	int i, n, first_slot = MAX_BITMAPS;
-	int w, h, bpp;
+	int w, h, bpp = 8;
 	int rc = 0;
 	int bm_size = 0, mm_lvl = 0;
 	char filename[MAX_FILENAME_LEN];
@@ -1122,7 +1125,7 @@ int bm_load( char * real_filename )
 	}
 
 	// if no file was passed then get out now
-	if (strlen(real_filename) <= 0) {
+	if ( (real_filename == NULL) || (strlen(real_filename) <= 0) ) {
 		return -1;
 	}
 
@@ -1220,6 +1223,7 @@ int bm_load( char * real_filename )
 	bm_bitmaps[n].bm.rowsize = short(w);
 	bm_bitmaps[n].bm.h = short(h);
 	bm_bitmaps[n].bm.bpp = 0;
+	bm_bitmaps[n].bm.true_bpp = bpp;
 	bm_bitmaps[n].bm.flags = 0;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
@@ -1482,6 +1486,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		anim_fps = the_anim.fps;
 		anim_width = the_anim.width;
 		anim_height = the_anim.height;
+		bpp = 8;
 	} else {
 		return -1;
 	}
@@ -1545,7 +1550,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 			bm_bitmaps[n+i].bm.h /= 2;
 		}
 		bm_bitmaps[n+i].bm.flags = 0;
-		bm_bitmaps[n+i].bm.bpp = (ubyte)bpp;
+		bm_bitmaps[n+i].bm.bpp = 0;
+		bm_bitmaps[n+i].bm.true_bpp = (ubyte)bpp;
 		bm_bitmaps[n+i].bm.data = 0;
 		bm_bitmaps[n+i].bm.palette = NULL;
 		bm_bitmaps[n+i].type = type;
@@ -1588,6 +1594,7 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 	if ( !bm_inited ) return;
 
 	int bitmapnum = handle % MAX_BITMAPS;
+
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
 	
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_NONE) || (bm_bitmaps[bitmapnum].handle != handle) ) {
@@ -1650,7 +1657,7 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 		if(flags & BMP_AABITMAP){
 			Assert(bmp->bpp == 8);
 		} else {
-			Assert( (bmp->bpp == 16) || (bmp->bpp == 32) );
+			Assert( (bmp->bpp == 16) || (bmp->bpp == 24) || (bmp->bpp == 32) );
 		}
 	}
 
@@ -1964,17 +1971,12 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
 
-	// support true color targas when requested
-	if (Cmdline_jpgtga) {
-		bpp = 32;
-	}
-
 	if(Is_standalone){
 		Assert(bpp == 8);
 	} 
 	else 
 	{
-		Assert( (bpp == 16) || (bpp == 32) );
+		Assert( (bpp == 16) || (bpp == 24 ) || (bpp == 32) );
 	}
 
 	// should never try to make an aabitmap out of a targa
@@ -2008,11 +2010,7 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	if (bpp == 32) {
-		tga_error = targa_read_bitmap_32( filename, data, NULL, d_size);
-	} else {
-		tga_error = targa_read_bitmap( filename, data, NULL, d_size);
-	}
+	tga_error = targa_read_bitmap( filename, data, NULL, d_size);
 
 	if ( tga_error != TARGA_ERROR_NONE )	{
 		// Error( LOCATION, "Couldn't open '%s'\n", be->filename );
@@ -2079,29 +2077,20 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
 
-	// support true color jpegs when requested
-	if (Cmdline_jpgtga) {
-		bpp = 32;
-	} else {
-		// not supported yet
-		return;
-	}
-
 	// should never try to make an aabitmap out of a jpeg
 	Assert(!(flags & BMP_AABITMAP));
 
+	d_size = (bpp / 8);
+
 	// allocate bitmap data 
-	if (bpp == 32) {
-		data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h * 4);
+	data = (ubyte*)bm_malloc(bitmapnum, bmp->w * bmp->h * d_size);
 
-		Assert(data);
+	Assert(data);
 
-		if (data) {
-			memset( data, 0, bmp->w * bmp->h * 4);
-			d_size = 4;
-		} else {
-			return;
-		}
+	if (data) {
+		memset( data, 0, bmp->w * bmp->h * d_size);
+	} else {
+		return;
 	}
  
 	bmp->bpp = bpp;
@@ -2114,9 +2103,7 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	if (bpp == 32) {
-		jpg_error = jpeg_read_bitmap_32( filename, data, NULL, d_size);
-	}
+	jpg_error = jpeg_read_bitmap( filename, data, NULL, d_size);
  
 	if ( jpg_error != JPEG_ERROR_NONE )	{
 		if (data != NULL) {
@@ -2298,7 +2285,7 @@ void bm_get_palette(int handle, ubyte *pal, char *name)
 		strcpy( name, filename );
 	}
 
-	int pcx_error=pcx_read_header( filename, NULL, &w, &h, pal );
+	int pcx_error=pcx_read_header( filename, NULL, &w, &h, NULL, pal );
 	if ( pcx_error != PCX_ERROR_NONE ){
 		// Error(LOCATION, "Couldn't open '%s'\n", filename );
 	}
@@ -2325,7 +2312,7 @@ void bm_release(int handle)
 	}
 
 	if ( bm_bitmaps[n].type != BM_TYPE_USER )	{
-		return;
+		nprintf(("BmpMan", "Releasing bitmap %s in slot %i with handle %i\n", bm_bitmaps[n].filename, n, handle));
 	}
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
@@ -2343,8 +2330,11 @@ void bm_release(int handle)
 		bm_bitmaps[n].info.user.bpp = 0;
 	}
 
+	bm_bitmaps[n].bm.true_bpp = 0;
+
 	bm_bitmaps[n].type = BM_TYPE_NONE;
 
+	bm_bitmaps[n].dir_type = CF_TYPE_ANY;
 	// Fill in bogus structures!
 
 	// For debugging:
@@ -2393,7 +2383,7 @@ int bm_unload( int handle )
 	bmp = &be->bm;
 
 	if ( be->type == BM_TYPE_NONE ) {
-		return 0;		// Already been released
+		return -1;		// Already been released
 	}
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE!
@@ -2498,7 +2488,7 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 	for (i=0; i<nframes;i++ )	{
 		bm_bitmaps[n+i].preloaded = 1;
 
-	//	bm_bitmaps[n+i].preload_count++;
+		bm_bitmaps[n+i].preload_count++;
 
 		bm_bitmaps[n+i].used_flags = BMP_TEX_OTHER;
 
@@ -2534,7 +2524,7 @@ void bm_page_in_nondarkening_texture( int bitmapnum, int nframes )
 	for (i=0; i<nframes;i++ )	{
 		bm_bitmaps[n+i].preloaded = 4;
 
-	//	bm_bitmaps[n+i].preload_count++;
+		bm_bitmaps[n+i].preload_count++;
 
 		bm_bitmaps[n+i].used_flags = BMP_TEX_NONDARK;
 	}
@@ -2554,7 +2544,7 @@ void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 	for (i=0; i<nframes;i++ )	{
 		bm_bitmaps[n+i].preloaded = 3;
 
-	//	bm_bitmaps[n+i].preload_count++;
+		bm_bitmaps[n+i].preload_count++;
 
 		bm_bitmaps[n+i].used_flags = BMP_TEX_XPARENT;
 
@@ -2589,7 +2579,7 @@ void bm_page_in_aabitmap( int bitmapnum, int nframes )
 	for (i=0; i<nframes;i++ )	{
 		bm_bitmaps[n+i].preloaded = 2;
 
-	//	bm_bitmaps[n+i].preload_count++;
+		bm_bitmaps[n+i].preload_count++;
 	
 		bm_bitmaps[n+i].used_flags = BMP_AABITMAP;
 	}
@@ -2610,7 +2600,7 @@ void bm_page_in_start()
 		//	bm_unload(bm_bitmaps[i].handle);
 		}
 		bm_bitmaps[i].preloaded = 0;
-	//	bm_bitmaps[i].preload_count = 0;
+		bm_bitmaps[i].preload_count = 0;
 		#ifdef BMPMAN_NDEBUG
 			bm_bitmaps[i].used_count = 0;
 		#endif
@@ -2686,7 +2676,7 @@ void bm_page_in_stop()
 				bm_unload(bm_bitmaps[i].handle);
 			}
 		}
-		game_busy();
+		game_busy(bm_bitmaps[i].filename);
 	}
 	nprintf(( "BmpInfo","BMPMAN: Loaded %d bitmaps that are marked as used for this level.\n", n ));
 
@@ -2706,7 +2696,7 @@ void bm_page_in_stop()
 	Bm_paging = 0;
 }
 
-/* for unloading bitmaps while a mission is going, not currently used
+// for unloading bitmaps while a mission is going
 void bm_page_out( int bitmap_id )
 {
 	int n = bitmap_id % MAX_BITMAPS;
@@ -2723,7 +2713,6 @@ void bm_page_out( int bitmap_id )
 		bm_unload( bitmap_id );
 	}
 }
-*/
 
 int bm_get_cache_slot( int bitmap_id, int separate_ani_frames )
 {
@@ -2801,14 +2790,14 @@ void bm_set_components_argb_d3d_16_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte
 
 void bm_set_components_argb_d3d_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
-	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	*((ushort*)pixel) &= ~(Gr_current_alpha->mask);
+	*((uint*)pixel) |= (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
+	*((uint*)pixel) |= (uint)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
+	*((uint*)pixel) &= ~(Gr_current_alpha->mask);
 	if(*av){
-		*((ushort*)pixel) |= (ushort)(Gr_current_alpha->mask);
+		*((uint*)pixel) |= (uint)(Gr_current_alpha->mask);
 	} else {
-		*((ushort*)pixel) = 0;
+		*((uint*)pixel) = 0;
 	}
 }
 /*
@@ -2845,14 +2834,13 @@ void BM_SELECT_SCREEN_FORMAT()
 		} else {
 			bm_set_components = bm_set_components_argb_d3d_16_screen;
 		}
-		bm_set_components = bm_set_components_argb_d3d_16_screen;
 	} else
 #endif // !NO_DIRECT3D
 	if (gr_screen.mode == GR_OPENGL) {
 		if (gr_screen.bits_per_pixel == 32) {
-				bm_set_components = bm_set_components_argb_d3d_32_screen;
+			bm_set_components = bm_set_components_argb_d3d_32_screen;
 		} else {
-				bm_set_components = bm_set_components_argb_d3d_16_screen;
+			bm_set_components = bm_set_components_argb_d3d_16_screen;
 		}
 	}
 }
@@ -2872,14 +2860,13 @@ void BM_SELECT_TEX_FORMAT()
 		} else {
 			bm_set_components = bm_set_components_argb_d3d_16_tex;
 		}
-		bm_set_components = bm_set_components_argb_d3d_16_tex;
 	} else
 #endif // !NO_DIRECT3D
 	if (gr_screen.mode == GR_OPENGL) {
 		if (gr_screen.bits_per_pixel == 32) {
-				bm_set_components = bm_set_components_argb_d3d_32_tex;
+			bm_set_components = bm_set_components_argb_d3d_32_tex;
 		} else {
-				bm_set_components = bm_set_components_argb_d3d_16_tex;
+			bm_set_components = bm_set_components_argb_d3d_16_tex;
 		}
 	}
 }
@@ -2899,14 +2886,13 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 		} else {
 			bm_set_components = bm_set_components_argb_d3d_16_tex;
 		}
-		bm_set_components = bm_set_components_argb_d3d_16_tex;
 	} else
 #endif // !NO_DIRECT3D
 	if (gr_screen.mode == GR_OPENGL) {
 		if (gr_screen.bits_per_pixel == 32) {
-				bm_set_components = bm_set_components_argb_d3d_32_tex;
+			bm_set_components = bm_set_components_argb_d3d_32_tex;
 		} else {
-				bm_set_components = bm_set_components_argb_d3d_16_tex;
+			bm_set_components = bm_set_components_argb_d3d_16_tex;
 		}
 	}
 }
@@ -3119,6 +3105,7 @@ int bm_is_compressed(int num)
 		case BM_TYPE_DXT5:
 			return DDS_DXT5;
 	}
+
 	return 0;
 }
 
@@ -3167,7 +3154,7 @@ void bm_print_bitmaps()
 	for (i=0; i<MAX_BITMAPS; i++) {
 		if (bm_bitmaps[i].type != BM_TYPE_NONE) {
 			if (bm_bitmaps[i].data_size) {
-				nprintf(("BMP DEBUG", "BMPMAN = num: %d, name: %s, handle: %d (%s) size: %.3fM\n", i, bm_bitmaps[i].filename, bm_bitmaps[i].handle, bm_bitmaps[i].data_size ? NOX("*LOCKED*") : NOX(""), ((float)bm_bitmaps[i].data_size/1024.0f)/1024.0f));
+				nprintf(("BMP DEBUG", "BMPMAN = num: %d, name: %s, handle: %d - (%s) size: %.3fM\n", i, bm_bitmaps[i].filename, bm_bitmaps[i].handle, bm_bitmaps[i].data_size ? NOX("*LOCKED*") : NOX(""), ((float)bm_bitmaps[i].data_size/1024.0f)/1024.0f));
 			} else {
 				nprintf(("BMP DEBUG", "BMPMAN = num: %d, name: %s, handle: %d\n", i, bm_bitmaps[i].filename, bm_bitmaps[i].handle));
 			}

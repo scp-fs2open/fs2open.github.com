@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.99 $
- * $Date: 2005-01-30 10:49:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.100 $
+ * $Date: 2005-02-04 23:29:32 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2005/01/30 10:49:26  Goober5000
+ * bah - rolled back the HTL fix that doesn't really work
+ * --Goober5000
+ *
  * Revision 2.98  2005/01/30 09:27:40  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -1614,7 +1618,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			// all textured polys go through here
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
-				if ( Interp_subspace && D3D_enabled )	{										
+				if ( Interp_subspace && (D3D_enabled || OGL_enabled) )	{										
 					gr_set_bitmap( pm->textures[tmap_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
 				}
 				// all other textures
@@ -3718,7 +3722,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	neb2_get_fog_intensity(obj);
 //start rendering glow points -Bobboau
 
-		if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
+		if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) && (Detail.engine_glows)*/ )	{
 
 		for (i = 0; i < pm->n_glows; i++ ) {
 			glow_bank *bank = &pm->glows[i];
@@ -5158,7 +5162,8 @@ void recode_bsp(int offset, ubyte *bsp_data);
 void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer);
 poly_list model_list;
 void generate_vertex_buffers(bsp_info* model, polymodel * pm){
-	for(int i =0; i<MAX_MODEL_TEXTURES; i++){
+	int i;
+	for(i =0; i<MAX_MODEL_TEXTURES; i++){
 		list[i].n_prim=0;
 		list[i].n_verts=0;
 		tri_count[i]=0;
@@ -5950,9 +5955,10 @@ void triggered_rotation::add_queue(queued_animation* new_queue){
 	memcpy(old, queue, sizeof(queued_animation)*MAX_TRIGGERED_ANIMATIONS);
 
 	if(n_queue > 0){
+		int i;
 		//if we already have something in the queue find the first item on the 
 		//queue that is going to start after the new item, 
-		for(int i = 0; new_queue->start > old[i].start && i < n_queue && i < MAX_TRIGGERED_ANIMATIONS; i++);
+		for(i = 0; new_queue->start > old[i].start && i < n_queue && i < MAX_TRIGGERED_ANIMATIONS; i++);
 		if(i >= MAX_TRIGGERED_ANIMATIONS)return;
 		//then incert the new item before that item
 		//from the begining of the queue to the item on the queue that is just before the new item
@@ -5971,12 +5977,14 @@ void triggered_rotation::add_queue(queued_animation* new_queue){
 //look at the queue and see if any of the items on it need to be started
 //remove items from the queue that you just executed
 void triggered_rotation::proces_queue(){
+	int i;
+
 	if(!n_queue)return;
 	//if there is nothing on the queue just quit right now
 
 	//all items on the que are in cronological order (or at least they should be)
 	//so execute all items who's starting timestamps are less than the current time
-	for(int i = 0; queue[i].start<=timestamp() && i<n_queue; i++){
+	for(i = 0; queue[i].start<=timestamp() && i<n_queue; i++){
 		start(&queue[i]);
 	}
 	//if no items were procesed quit

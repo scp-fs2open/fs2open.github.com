@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.133 $
- * $Date: 2005-01-26 06:58:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.134 $
+ * $Date: 2005-02-04 23:29:32 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2005/01/26 06:58:37  Goober5000
+ * hm... added a necessary bugfix for something very badly designed
+ * --Goober5000
+ *
  * Revision 2.132  2005/01/26 06:49:50  Goober5000
  * whoops... need to free variable blocks for special hitpoints
  * --Goober5000
@@ -2157,7 +2161,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_SUBSYSTEM:
 			{
 				char *shipname;
-				int shipnum,ship_class, i;
+				int shipnum,ship_class;
 				int ship_index;				
 
 				if (type2 != SEXP_ATOM_STRING){
@@ -2388,6 +2392,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_SOUNDTRACK_NAME:
+#ifndef NO_SOUND
 				if (type2 != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -2405,7 +2410,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if (i == Num_soundtracks)
 					return SEXP_CHECK_INVALID_SOUNDTRACK_NAME;
-
+#endif
 				break;
 
 			case OPF_SHIP_WITH_BAY:
@@ -2494,7 +2499,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if (Fred_running) {
-					int ship_num, ship2, i, w = 0, z;
+					int ship_num, ship2, w = 0;
 
 					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);	// Goober5000 - include players
 					if (ship_num < 0) {
@@ -2728,7 +2733,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {
-					int ship_num, model, i, z;
+					int ship_num, model;
 
 					z = find_parent_operator(op_node);
 					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[z].rest), 1);
@@ -2756,7 +2761,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {
-					int ship_num, model, i, z;
+					int ship_num, model;
 
 					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);
 					if (ship_num < 0) {
@@ -7378,7 +7383,9 @@ void sexp_player_use_ai(int flag)
 // Goober5000
 void sexp_change_soundtrack(int n)
 {
+#ifndef NO_SOUND
 	event_sexp_change_soundtrack(CTEXT(n));
+#endif
 }
 
 // Goober5000
@@ -8569,7 +8576,7 @@ void sexp_grant_medal( int n )
 		if ( Game_mode & GM_MULTIPLAYER ) {
 			for ( j = 0; j < MAX_PLAYERS; j++ ) {
 				if ( MULTI_CONNECTED(Net_players[j]) ) {
-					Net_players[j].player->stats.m_medal_earned = i;
+					Net_players[j].m_player->stats.m_medal_earned = i;
 				}
 			}
 		}
@@ -11648,7 +11655,7 @@ int sexp_num_kills(int node)
 		// try and find the player
 		np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
-			p = Net_players[np_index].player;
+			p = Net_players[np_index].m_player;
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
@@ -11691,7 +11698,7 @@ int sexp_num_type_kills(int node)
 		// try and find the player
 		np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
-			p = Net_players[np_index].player;
+			p = Net_players[np_index].m_player;
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
@@ -11747,7 +11754,7 @@ int sexp_num_class_kills(int node)
 		// try and find the player
 		np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
-			p = Net_players[np_index].player;
+			p = Net_players[np_index].m_player;
 		}
 	}
 	// if we're in single player, we're only concerned with ourself

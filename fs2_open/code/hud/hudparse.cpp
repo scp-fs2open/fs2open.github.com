@@ -1,7 +1,7 @@
 /* hudparse.cpp
 *	Contains code to parse hud gauge locations
 */
-#include <stddef.h>
+#include <cstddef>
 
 #include "parse/parselo.h"
 #include "graphics/2d.h"
@@ -936,10 +936,12 @@ void set_current_hud(int player_ship_num)
 
 #ifndef NEW_HUD
 
+/* - not POD so GCC won't take it for offsetof - taylor
 hud_info::hud_info()
 {
 	memset(this, 0, sizeof(hud_info));
 }
+*/
 
 #else
 

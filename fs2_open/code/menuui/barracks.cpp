@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-01-29 08:08:24 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2005-02-04 23:29:32 $
+ * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/01/29 08:08:24  wmcoolmon
+ * Various updates; shader, assert, and clipping
+ *
  * Revision 2.13  2005/01/10 04:44:03  wmcoolmon
  * Small fix, so we don't try to delete the same thing twice
  *
@@ -1250,7 +1253,7 @@ void barracks_button_pressed(int n)
 		case B_PILOT_MULTI_MODE_BUTTON:
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 			game_feature_not_in_demo_popup();
-#elif defined(NO_NETWORKING)
+#elif defined(NO_NETWORK)
 			game_feature_disabled_popup();
 #else
 			if (Player_sel_mode != PLAYER_SELECT_MODE_MULTI) {
@@ -1668,6 +1671,8 @@ void barracks_do_frame(float frametime)
 			case KEY_TAB:  // switch mode (simgle/multi)
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 	game_feature_not_in_demo_popup();
+#elif defined(NO_NETWORK)
+				game_feature_disabled_popup();
 #else
 				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
