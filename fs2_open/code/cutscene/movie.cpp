@@ -41,14 +41,14 @@ bool movie_play(char *name, int unknown_value)
 	if(movie_shutdown_fgx == true)
 	{
 		gr_activate(0);
+		
+		if (gr_screen.mode==GR_OPENGL)
+		{
+			gr_opengl_cleanup(0);
+		}
 	}
 
 #ifdef _WIN32
-
-	if (gr_screen.mode==GR_OPENGL)
-	{
-		gr_opengl_cleanup(0);
-	}
 
 	os_app_activate_set(false);
 
@@ -78,15 +78,15 @@ bool movie_play(char *name, int unknown_value)
 	}
 	*/
  
-	if (gr_screen.mode==GR_OPENGL)
-	{
-		gr_opengl_init(1);
-	}
 #endif // _WIN32
 
 	if(movie_shutdown_fgx == true)
 	{
 		gr_activate(1);
+		if (gr_screen.mode==GR_OPENGL)
+		{
+			gr_opengl_init(1);
+		}
 	}
 
 	return true;
