@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/SLIDER2.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * Implements UI_SLIDER2 control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -285,10 +288,10 @@ int UI_SLIDER2::get_currentItem() {
 }
 
 // change range. reset back to position 0
-void UI_SLIDER2::set_numberItems(int _numberItems, int reset) {
+void UI_SLIDER2::set_numberItems(int _numberItems, int _reset) {
 	numberItems = _numberItems;
 
-	if (reset) {
+	if (_reset) {
 		currentItem = 0;
 		currentPosition = 0;
 	} else {
@@ -311,13 +314,13 @@ void UI_SLIDER2::set_numberItems(int _numberItems, int reset) {
 // force slider to new position manually
 void UI_SLIDER2::set_currentItem(int _currentItem) {
 	if (_currentItem > numberItems) 
-		return;
+		goto cpSafety;
 
 	if (_currentItem == currentItem)
-		return;
+		goto cpSafety;
 
 	if (_currentItem < 0)
-		return;
+		goto cpSafety;
 
 	if (_currentItem > currentItem) {
 		while (currentItem != _currentItem) {
@@ -334,14 +337,36 @@ void UI_SLIDER2::set_currentItem(int _currentItem) {
 	}	
 	
 	currentPosition = fl2i(((float)currentItem/(float)numberItems) * (float)numberPositions);	
+
+cpSafety: // helps fix math problem on x86_64
+	if (currentPosition > numberItems)
+		currentPosition = numberItems;
+
+	if (currentPosition < 0)
+		currentPosition = 0;
 }
 
 void UI_SLIDER2::force_currentItem(int _currentItem) {	
+	if (_currentItem > numberItems)
+		goto cpSafety;
+
+	if (_currentItem == currentItem)
+		goto cpSafety;
+
 	currentItem = _currentItem;	
+
 	if(currentItem < 0){
 		currentItem = 0;
 	};
+
 	currentPosition = fl2i(((float)currentItem/(float)numberItems) * (float)numberPositions);	
+
+cpSafety: // helps fix math problem on x86_64
+	if (currentPosition > numberItems)
+		currentPosition = numberItems;
+
+	if (currentPosition < 0)
+		currentPosition = 0;
 }
 
 void UI_SLIDER2::forceDown() {
@@ -355,5 +380,8 @@ void UI_SLIDER2::forceUp() {
 	if (currentItem > 0) {
 		currentItem--;
 		currentPosition = fl2i(((float)currentItem/(float)numberItems) * (float)numberPositions);
+
+		if (currentPosition < 0)
+			currentPosition = 0;
 	}
 }

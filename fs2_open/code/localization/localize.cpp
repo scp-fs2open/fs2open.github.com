@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-31 23:27:53 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.12  2004/07/12 16:32:52  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -740,13 +743,13 @@ void lcl_add_dir(char *current_path)
 	last_char = current_path[path_len - 1];
 
 	// if the last char is a slash, just copy in the disk extension
-	if (last_char == '\\') {
+	if (last_char == DIR_SEPARATOR_CHAR) {
 		strcat(current_path, Lcl_languages[Lcl_current_lang].lang_ext);
-		strcat(current_path, "\\");
+		strcat(current_path, DIR_SEPARATOR_STR);
 	} 
 	// otherwise add a slash, then copy in the disk extension
 	else {
-		strcat(current_path, "\\");
+		strcat(current_path, DIR_SEPARATOR_STR);
 		strcat(current_path, Lcl_languages[Lcl_current_lang].lang_ext);
 	}
 }
@@ -763,7 +766,7 @@ void lcl_add_dir_to_path_with_filename(char *current_path)
 
 	// find position of last slash and copy rest of filename (not counting slash) to temp
 	// mark end of current path with '\0', so strcat will work
-	char *last_slash = strrchr(current_path, '\\');
+	char *last_slash = strrchr(current_path, DIR_SEPARATOR_CHAR);
 	if (last_slash == NULL) {
 		strcpy(temp, current_path);
 		current_path[0] = '\0';
@@ -774,7 +777,7 @@ void lcl_add_dir_to_path_with_filename(char *current_path)
 
 	// add extension
 	strcat(current_path, Lcl_languages[Lcl_current_lang].lang_ext);
-	strcat(current_path, "\\");
+	strcat(current_path, DIR_SEPARATOR_STR);
 
 	// copy rest of filename from temp
 	strcat(current_path, temp);
@@ -1150,7 +1153,7 @@ int lcl_ext_lookup(char *out, int id)
 	// reset parsing vars and go to town
 	Ts_current_state = TS_SCANNING;
 	Ts_id_text_size = 0;
-	Ts_text_size;
+//	Ts_text_size;
 	memset(Ts_text, 0, PARSE_TEXT_STRING_LEN);
 	memset(Ts_id_text, 0, PARSE_ID_STRING_LEN);
 	while((cftell(Lcl_ext_file) < Lcl_pointers[Lcl_pointer_count - 1]) && cfgets(text, 1024, Lcl_ext_file)){

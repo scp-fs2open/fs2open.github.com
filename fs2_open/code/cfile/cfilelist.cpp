@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileList.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:25 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-31 23:27:51 $
+ * $Author: taylor $
  *
  * Code for doing directory lists and sorts
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:25  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/17 09:26:00  taylor
  * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
  *
@@ -175,6 +178,8 @@ void cf_sort_filenames( int n, char **list, int sort, file_list_info *info )
 	nprintf(("Error", "Unknown sorting method %d passed to cf_sort_filenames()\n", sort));
 }
 
+
+#if (0) // these aren't used anywhere now
 
 //	cf_compress - Do Run Length Compression on a block of data. Targa format.
 //
@@ -344,6 +349,8 @@ int cf_decompress(char *out, char *in )
 	return out - param_out;
 			
 }
+
+#endif // 0
 
 
 // cfread() reads from a file and decompresses it

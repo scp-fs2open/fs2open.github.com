@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.8 $
- * $Date: 2004-08-11 05:06:23 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2005-01-31 23:27:52 $
+ * $Author: taylor $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/08/11 05:06:23  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.7  2004/05/28 23:37:30  wmcoolmon
  * Modular music tables
  *
@@ -264,8 +267,8 @@ void event_music_hostile_ship_destroyed();
 #else
 
 // Goober5000 - for NO_SOUND
-#define maybe_get_next_nrml_no_cycle(int pattern)	(0)
-#define maybe_cycle_nrml(int pattern)				(0)
+#define maybe_get_next_nrml_no_cycle(pattern)	(0)
+#define maybe_cycle_nrml(pattern)				(0)
 
 #define	event_music_init()
 #define	event_music_close()

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/BUTTON.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-11-11 02:15:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * Code for pushbuttons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/11/11 02:15:42  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -557,14 +562,14 @@ int UI_BUTTON::button_down()
 // set the callback function for when the mouse first goes over
 // a button
 //
-void UI_BUTTON::set_highlight_action( void (*user_function)(void) )
+void UI_BUTTON::set_highlight_action( void (*_user_function)(void) )
 {
-	m_just_highlighted_function = user_function;
+	m_just_highlighted_function = _user_function;
 }
 
-void UI_BUTTON::set_disabled_action( void (*user_function)(void) )
+void UI_BUTTON::set_disabled_action( void (*_user_function)(void) )
 {
-	m_disabled_function = user_function;
+	m_disabled_function = _user_function;
 }
 
 

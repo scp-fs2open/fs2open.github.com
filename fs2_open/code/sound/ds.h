@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.8 $
- * $Date: 2004-12-25 00:23:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/12/25 00:23:46  wmcoolmon
+ * Ogg support for WIN32
+ *
  * Revision 2.7  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -133,8 +136,11 @@
 #ifndef __DS_H__
 #define __DS_H__
 
+#ifdef _WIN32
 #include <windows.h>
 #include "directx/vdsound.h"
+#endif
+
 #include "sound/ogg/ogg.h"
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
@@ -171,10 +177,12 @@ typedef struct sound_info {
 } sound_info;
 
 extern int							ds_initialized;
+#ifdef _WIN32
 extern LPDIRECTSOUNDBUFFER		pPrimaryBuffer;
 extern LPDIRECTSOUND				pDirectSound;
 
 extern HRESULT (__stdcall *pfn_DirectSoundCaptureCreate)(LPGUID lpGUID, LPDIRECTSOUNDCAPTURE *lplpDSC, LPUNKNOWN pUnkOuter);
+#endif
 
 int	ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	ds_close();
@@ -229,12 +237,14 @@ void ds_do_frame();
 //
 // --------------------
 
+#ifdef _WIN32
 // EAX (listener) reverb property set {4a4e6fc1-c341-11d1-b73a-444553540000}
 DEFINE_GUID(DSPROPSETID_EAX_ReverbProperties, 
     0x4a4e6fc1,
     0xc341,
     0x11d1,
     0xb7, 0x3a, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
+#endif
 
 typedef enum 
 {
@@ -291,12 +301,14 @@ enum
 
 #define EAX_MAX_ENVIRONMENT (EAX_ENVIRONMENT_COUNT - 1)
 
+#ifdef _WIN32
 // EAX buffer reverb property set {4a4e6fc0-c341-11d1-b73a-444553540000}
 DEFINE_GUID(DSPROPSETID_EAXBUFFER_ReverbProperties, 
     0x4a4e6fc0,
     0xc341,
     0x11d1,
     0xb7, 0x3a, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
+#endif
 
 typedef enum 
 {

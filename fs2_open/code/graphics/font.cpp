@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2005-01-31 23:27:53 $
+ * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.10  2004/07/17 18:46:07  taylor
  * various OGL and memory leak fixes
  *
@@ -347,11 +350,11 @@ int get_char_width(ubyte c1,ubyte c2,int *width,int *spacing)
 
 			if ((letter2>=0) && (letter2<Current_font->num_chars) ) {				//not in font, draw as space
 				font_kernpair	*k = &Current_font->kern_data[i];
-				while( (k->c1 == letter) && (k->c2<letter2) && (i<Current_font->num_kern_pairs) )	{
+				while( (k->c1 == (char)letter) && (k->c2<(char)letter2) && (i<Current_font->num_kern_pairs) )	{
 					i++;
 					k++;
 				}
-				if ( k->c2 == letter2 )	{
+				if ( k->c2 == (char)letter2 )	{
 					*spacing += k->offset;
 				}
 			}
@@ -394,9 +397,9 @@ void gr_print_timestamp(int x, int y, int timestamp)
 	int w, c;
 
 	// format the time information into strings
-	sprintf(h, "%0.1d", (timestamp / 3600000) % 10);
-	sprintf(m, "%0.2d", (timestamp / 60000) % 60);
-	sprintf(s, "%0.2d", (timestamp / 1000) % 60);
+	sprintf(h, "%.1d", (timestamp / 3600000) % 10);
+	sprintf(m, "%.2d", (timestamp / 60000) % 60);
+	sprintf(s, "%.2d", (timestamp / 1000) % 60);
 
 	gr_get_string_size(&w, NULL, "0");
 	gr_get_string_size(&c, NULL, ":");
@@ -831,6 +834,17 @@ int gr_create_font(char * typeface)
 	cfread( &fnt->char_data_size, sizeof(int), 1, fp );
 	cfread( &fnt->pixel_data_size, sizeof(int), 1, fp );
 
+	fnt->id = INTEL_SHORT( fnt->id );
+	fnt->version = INTEL_INT( fnt->version );
+	fnt->num_chars = INTEL_INT( fnt->num_chars );
+	fnt->first_ascii = INTEL_INT( fnt->first_ascii );
+	fnt->w = INTEL_INT( fnt->w );
+	fnt->h = INTEL_INT( fnt->h );
+	fnt->num_kern_pairs = INTEL_INT( fnt->num_kern_pairs );
+	fnt->kern_data_size = INTEL_INT( fnt->kern_data_size );
+	fnt->char_data_size = INTEL_INT( fnt->char_data_size );
+	fnt->pixel_data_size = INTEL_INT( fnt->pixel_data_size );
+
 	if ( fnt->kern_data_size )	{
 		fnt->kern_data = (font_kernpair *)malloc( fnt->kern_data_size );
 		Assert(fnt->kern_data!=NULL);
@@ -842,6 +856,14 @@ int gr_create_font(char * typeface)
 		fnt->char_data = (font_char *)malloc( fnt->char_data_size );
 		Assert( fnt->char_data != NULL );
 		cfread( fnt->char_data, fnt->char_data_size, 1, fp );
+
+		for (int i=0; i<fnt->num_chars; i++) {
+			fnt->char_data[i].spacing = INTEL_INT( fnt->char_data[i].spacing );
+			fnt->char_data[i].byte_width = INTEL_INT( fnt->char_data[i].byte_width );
+			fnt->char_data[i].offset = INTEL_INT( fnt->char_data[i].offset );
+			fnt->char_data[i].kerning_entry = INTEL_INT( fnt->char_data[i].kerning_entry );
+			fnt->char_data[i].user_data = INTEL_SHORT( fnt->char_data[i].user_data );
+		}
 	} else {
 		fnt->char_data = NULL;
 	}

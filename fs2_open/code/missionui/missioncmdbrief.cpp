@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-26 20:47:38 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2005-01-31 23:27:54 $
+ * $Author: taylor $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/26 20:47:38  Kazan
+ * remove MCD complete
+ *
  * Revision 2.10  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -434,9 +437,9 @@ static anim_instance *Cur_anim_instance = NULL;
 static int Last_anim_frame_num;
 
 static int Cmd_brief_last_voice;
-static int Palette_bmp = -1;
+//static int Palette_bmp = -1;
 static ubyte Palette[768];
-static char Palette_name[128];
+//static char Palette_name[128];
 
 static int Uses_scroll_buttons = 0;
 
@@ -572,8 +575,8 @@ void cmd_brief_new_stage(int stage)
 	cmd_brief_stop_anim(i);
 
 	if (i != Anim_playing_id) {
-		if (Cur_cmd_brief->stage[i].anim) {
-			anim_play_init(&aps, Cur_cmd_brief->stage[i].anim,Cmd_image_wnd_coords[gr_screen.res][CMD_X_COORD], Cmd_image_wnd_coords[gr_screen.res][CMD_Y_COORD]);
+		if (Cur_cmd_brief->stage[i].cmd_anim) {
+			anim_play_init(&aps, Cur_cmd_brief->stage[i].cmd_anim,Cmd_image_wnd_coords[gr_screen.res][CMD_X_COORD], Cmd_image_wnd_coords[gr_screen.res][CMD_Y_COORD]);
 			aps.looped = 1;
 			Cur_anim_instance = anim_play(&aps);
 			Last_anim_frame_num = 0;
@@ -582,8 +585,8 @@ void cmd_brief_new_stage(int stage)
 		Anim_playing_id = i;
 	}
 
-	if (Cur_cmd_brief->stage[i].anim) {
-		memcpy(Palette, Cur_cmd_brief->stage[i].anim->palette, 384);
+	if (Cur_cmd_brief->stage[i].cmd_anim) {
+		memcpy(Palette, Cur_cmd_brief->stage[i].cmd_anim->palette, 384);
 		gr_set_palette(Cur_cmd_brief->stage[i].ani_filename, Palette, 1);
 	}
 
@@ -718,8 +721,8 @@ void cmd_brief_ani_wave_init(int index)
 			break;
 		}
 
-		Cur_cmd_brief->stage[index].anim = anim_load(name, 1);
-		if ( Cur_cmd_brief->stage[index].anim ) {
+		Cur_cmd_brief->stage[index].cmd_anim = anim_load(name, 1);
+		if ( Cur_cmd_brief->stage[index].cmd_anim ) {
 			break;
 		}
 
@@ -733,8 +736,8 @@ void cmd_brief_ani_wave_init(int index)
 	}
 
 	// check to see if cb anim loaded, if not, try the default one
-	if ( !Cur_cmd_brief->stage[index].anim ) {
-		Cur_cmd_brief->stage[index].anim = anim_load(NOX("CB_default"), 1);
+	if ( !Cur_cmd_brief->stage[index].cmd_anim ) {
+		Cur_cmd_brief->stage[index].cmd_anim = anim_load(NOX("CB_default"), 1);
 	}
 }
 
@@ -843,8 +846,8 @@ void cmd_brief_close()
 				audiostream_close_file(Cur_cmd_brief->stage[i].wave, 0);
 
 			if (Cur_cmd_brief->stage[i].anim_ref < 0)
-				if (Cur_cmd_brief->stage[i].anim)
-					anim_free(Cur_cmd_brief->stage[i].anim);
+				if (Cur_cmd_brief->stage[i].cmd_anim)
+					anim_free(Cur_cmd_brief->stage[i].cmd_anim);
 		}
 
 		if (Cmd_brief_background_bitmap >= 0)
@@ -871,7 +874,7 @@ void cmd_brief_close()
 void cmd_brief_do_frame(float frametime)
 {
 	char buf[40];
-	int i, k, w;		
+	int i, k, w, h;		
 
 	// if no command briefing exists, skip this screen.
 	if (!Cmd_brief_inited) {
@@ -960,7 +963,7 @@ void cmd_brief_do_frame(float frametime)
 		// can be scrolled down
 		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2) - 10;
 		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered
-		int w, h;
+
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h);

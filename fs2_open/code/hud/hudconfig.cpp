@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2005-01-31 23:27:53 $
+ * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.8  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -296,6 +299,7 @@
 
 
 
+#pragma warning(disable:4710)	// function not inlined
 
 //////////////////////////////////////////////////////////////////////////////
 // Game-wide Globals
@@ -460,7 +464,6 @@ int HC_select_all = 0;
 // Module Globals
 //////////////////////////////////////////////////////////////////////////////
 
-#pragma warning(disable:4710)	// function not inlined
 
 char *Hud_config_fname[GR_NUM_RESOLUTIONS] = {
 	"HUDConfig",
@@ -582,7 +585,6 @@ struct HC_gauge_region	HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES] =
 	}
 };
 
-#pragma warning(default:4710)	// function not inlined
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	{	// GR_640
@@ -701,7 +703,6 @@ char *HC_gauge_descriptions(int n)
 #define HCB_RESET					18
 #define HCB_ACCEPT				19
 
-#pragma warning(disable : 4710)	// function not inlined
 
 ui_button_info HC_buttons[GR_NUM_RESOLUTIONS][NUM_HUD_BUTTONS] = {
 	{ // GR_640
@@ -1118,9 +1119,9 @@ void hud_config_render_gauges()
 			gr_set_color_fast(use_color);			
 		} else {
 			// if its off, make it dark gray
-			static color use_color;
-			gr_init_alphacolor(&use_color, 127, 127, 127, 64);
-			gr_set_color_fast(&use_color);			
+			use_color = &HUD_config.clr[i];
+			gr_init_alphacolor(use_color, 127, 127, 127, 64);
+			gr_set_color_fast(use_color);			
 		}
 
 		// draw

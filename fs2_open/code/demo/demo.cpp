@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:27 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-31 23:27:52 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:27  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:45  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -59,7 +62,7 @@
 
 #include "demo/demo.h"
 #include "ship/ship.h"
-#include "Weapon/weapon.h"
+#include "weapon/weapon.h"
 #include "globalincs/linklist.h"
 #include "freespace2/freespace.h"
 #include "object/object.h"

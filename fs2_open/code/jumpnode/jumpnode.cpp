@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:35 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-01-31 23:27:53 $
+ * $Author: taylor $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:35  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:52  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -134,7 +137,7 @@ int jumpnode_create(vector *pos, char* file_name)
 
 	Assert(Num_jump_nodes < MAX_JUMP_NODES);
 
-	Jump_nodes[Num_jump_nodes].modelnum = model_load(NOX("subspacenode.pof"), NULL, NULL);
+	Jump_nodes[Num_jump_nodes].modelnum = model_load(NOX("subspacenode.pof"), 0, NULL);
 	if ( Jump_nodes[Num_jump_nodes].modelnum < 0 ) {
 		Int3();
 		return -1;

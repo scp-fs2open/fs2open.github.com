@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:42 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:42  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -560,7 +563,6 @@ void multi_endgame_cleanup()
 
 	// close all open SPX/TCP reliable sockets
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		int idx;
 		// do it for all players, since we're leaving anyway.
 		for(idx=0;idx<MAX_PLAYERS;idx++){
 			// 6/25/98 -- MWA delete all players from the game

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-12-02 11:18:15 $
+ * $Revision: 2.11 $
+ * $Date: 2005-01-31 23:27:53 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/12/02 11:18:15  taylor
+ * make OGL use same gamma reg setting as D3D since it's the same ramp
+ * have OGL respect the -no_set_gamma cmdline option
+ * reset gamma to default on OGL exit to make sure the desktop doesn't stay wrong
+ *
  * Revision 2.9  2004/10/31 21:53:23  taylor
  * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
  *
@@ -866,7 +871,7 @@ void options_change_tab(int n)
 		game_feature_not_in_demo_popup();
 		return;
 	}
-#elif defined(NO_NETWORKING)
+#elif defined(NO_NETWORK)
 	if (n == MULTIPLAYER_TAB) {
 		game_feature_disabled_popup();
 		return;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:35 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * Include file for our user interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:35  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2004/03/10 18:45:09  Kazan
  * partially complete IRC - so i can work on it on my laptop
  *
@@ -448,7 +451,7 @@ class UI_GADGET
 		int bmap_ids[MAX_BMAPS_PER_GADGET];
 
 		UI_GADGET();	// constructor
-		~UI_GADGET();	// destructor
+		virtual ~UI_GADGET();	// destructor
 
 		void base_create( UI_WINDOW *wnd, int kind, int x, int y, int w, int h );
 		virtual void draw();
@@ -456,7 +459,7 @@ class UI_GADGET
 		void clear_focus();
 		int has_focus();
 		void set_hotkey(int keycode);
-		void set_callback(void (*user_function)(void));
+		void set_callback(void (*_user_function)(void));
 		void disable();
 		void enable(int n = 1);
 		void capture_mouse();
@@ -567,8 +570,8 @@ class UI_BUTTON : public UI_GADGET
 		void set_button_hilighted();	// force button to be highlighted
 		void press_button();		// force button to get pressed
 		void create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int _h, int do_repeat=0, int ignore_focus = 0);
-		void set_highlight_action( void (*user_function)(void) );
-		void set_disabled_action( void (*user_function)(void) );
+		void set_highlight_action( void (*_user_function)(void) );
+		void set_disabled_action( void (*_user_function)(void) );
 		void draw_forced(int frame_num);
 		void reset_status();
 		void reset_timestamps();
@@ -585,7 +588,7 @@ class UI_KEYTRAP : public UI_GADGET
 
 	public:
 		int pressed();
-		void create(UI_WINDOW *wnd, int hotkey, void (*user_function)(void) );
+		void create(UI_WINDOW *wnd, int hotkey, void (*_user_function)(void) );
 };
 
 class UI_USERBOX : public UI_GADGET
@@ -798,7 +801,7 @@ class UI_SLIDER2 : public UI_GADGET
 		int get_numberItems();		// return number of itmes
 		int get_currentPosition();	// return current position
 		int get_currentItem();		// return current item
-		void set_numberItems(int _numberItems, int reset = 1);		// change range. maybe reset back to position 0
+		void set_numberItems(int _numberItems, int _reset = 1);		// change range. maybe reset back to position 0
 		void set_currentItem(int _currentItem);		// force slider to new position manually
 		void force_currentItem(int _currentItem);		// force slider to new position manually, _not_ calling any callbacks
 
@@ -978,7 +981,7 @@ public:
 	void draw_XSTR_forced(UI_GADGET *owner, int frame);
 	int get_current_hotspot();
 	void destroy();
-	ushort *get_mask_data(int *w, int *h) { *w = mask_w; *h = mask_h; return mask_data; }
+	ushort *get_mask_data(int *w_md, int *h_md) { *w_md = mask_w; *h_md = mask_h; return mask_data; }
 	void render_tooltip(char *str);
 	void set_ignore_gadgets(int state);
 	void add_XSTR(char *string, int xstr_id, int x, int y, UI_GADGET *assoc, int color_type, int font_id = -1);

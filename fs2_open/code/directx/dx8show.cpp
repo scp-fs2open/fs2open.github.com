@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "osapi/osapi.h"
-#include "dx8show.h"
+#include "directx/dx8show.h"
 #include "debugconsole/dbugfile.h"
 #include "graphics/2d.h"
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/slider.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-31 23:27:55 $
+ * $Author: taylor $
  *
  * C++ file for controlling and displaying a horizontal slider
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -276,7 +279,7 @@ void UI_DOT_SLIDER::create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int
 
 	num_pos = _num_pos;
 
-	sprintf(filename, "%s%0.2d", bm, hotspot);
+	sprintf(filename, "%s%.2d", bm, hotspot);
 	first_frame = bm_load_animation(filename, &total_frames);
 	if (first_frame < 0) {
 		Error(LOCATION, "Could not load %s.ani\n", filename);
@@ -300,7 +303,7 @@ void UI_DOT_SLIDER::create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int
 
 	if ( has_end_buttons ) {
 		// Second button is the up (increase) button
-		sprintf(filename, "%s%0.2d", bm, id + 2);
+		sprintf(filename, "%s%.2d", bm, id + 2);
 		up_button.create( wnd, "", _x + 216, _y, 22, 24, 1, 1 );
 		up_button.set_parent(this);
 		up_button.set_highlight_action(common_play_highlight_sound);
@@ -308,7 +311,7 @@ void UI_DOT_SLIDER::create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int
 		up_button.link_hotspot(id + 2);
 
 		// Third button is the down (decrease) button
-		sprintf(filename, "%s%0.2d", bm, id);
+		sprintf(filename, "%s%.2d", bm, id);
 		down_button.create( wnd, "", _x, _y, 22, 24, 1, 1 );
 		down_button.set_parent(this);
 		down_button.set_highlight_action(common_play_highlight_sound);
