@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.30 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.31 $
+ * $Date: 2004-09-26 16:24:51 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.29  2004/07/05 05:09:19  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -581,7 +584,7 @@ HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_
 HRESULT d3d_DrawPrimitive(int vertex_type, D3DPRIMITIVETYPE prim_type, LPVOID pvertices, DWORD vertex_count);
 void d3d_reset_texture_stage_states();
 HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value, bool set = true, bool init = false);
-void d3d_lost_device();
+BOOL d3d_lost_device();
 HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
 HRESULT d3d_SetVertexShader(uint vertex_type);
 HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.70 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.71 $
+ * $Date: 2004-09-26 16:24:51 $
+ * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.69  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1444,12 +1447,19 @@ void set_stage_for_mapped_environment_mapping(){
 void gr_d3d_flip()
 {
 	if(!GlobalD3DVars::D3D_activate) return;
-	int mx, my;	
-	
+	int mx, my;
+
 	// Attempt to allow D3D8 to recover from task switching
-	if(GlobalD3DVars::lpD3DDevice == NULL || GlobalD3DVars::lpD3DDevice->TestCooperativeLevel() != D3D_OK) {
-		d3d_lost_device();
-	}
+	// this can't work if it's NULL, check reversed - taylor
+	if ( GlobalD3DVars::lpD3DDevice == NULL )
+		return;
+
+	// if the device is not going to be available then just loop around until we get it back
+	// Returns:
+	//   TRUE  = the device is lost and cannot be recovered yet
+	//   FALSE = the device is fine or has been successfully reset
+	if ( d3d_lost_device() )
+		return;
 
 	gr_reset_clip();	
 
