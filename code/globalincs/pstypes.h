@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.7 $
- * $Date: 2003-01-18 19:48:19 $
- * $Author: phreak $
+ * $Revision: 2.8 $
+ * $Date: 2003-03-02 05:27:44 $
+ * $Author: penguin $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/01/18 19:48:19  phreak
+ * added some defines that deal with mages using DXTC
+ *
  * Revision 2.6  2002/12/02 23:56:12  Goober5000
  * fixed misspelling
  *
@@ -434,8 +437,12 @@ extern void _cdecl Warning( char * filename, int line, char * format, ... );
 	#endif	// NDEBUG && DEMO
 #endif	// INTERPLAYQA
 
+#ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef max
 #define max(a,b) (((a) > (b)) ? (a) : (b))
+#endif
 
 #define PI					3.141592654f
 #define PI2					(3.141592654f*2.0f)	// PI*2
