@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.58 $
- * $Date: 2004-03-05 09:01:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.59 $
+ * $Date: 2004-03-16 18:37:01 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.57  2004/02/27 04:09:55  bobboau
  * fixed a Z buffer error in HTL submodel rendering,
  * and glow points,
@@ -505,6 +509,94 @@ public:
 	char *str();
 };
 
+enum
+{
+	// DO NOT CHANGE ANYTHING ABOUT THESE FIRST TWO OR WILL MESS UP THE LAUNCHER
+	EASY_DEFAULT  =  1 << 1,
+	EASY_ALL_ON   =  1 << 2,
+
+	EASY_MEM_ON   =  1 << 3,
+	EASY_MEM_OFF  =  1 << 4,
+
+	// Add new flags here
+
+	// Combos
+	EASY_MEM_ALL_ON  = EASY_ALL_ON  | EASY_MEM_ON,
+	EASY_DEFAULT_MEM = EASY_DEFAULT | EASY_MEM_OFF,
+};
+
+typedef struct
+{
+	// DO NOT CHANGE THE SIZE OF THIS STRING!
+	char name[32];
+
+} EasyFlag;
+
+EasyFlag easy_flags[] =
+{
+	"Custom",	 
+	"Default FS2 (All features off)",
+	"All features on",
+	"High memory usage features on",
+	"High memory usage features off",
+};
+
+// DO NOT CHANGE **ANYTHING** ABOUT THIS STRUCTURE AND ITS CONTENT
+typedef struct
+{
+	char  name[20];		// The actual flag
+	char  desc[40];		// The text that will appear in the launcher (unless its blank, other name is shown)
+	bool  fso_only;		// true if this is a fs2_open only feature
+	int   on_flags;		// Easy flag which will turn this feature on
+	int   off_flags;	// Easy flag which will turn this feature off
+	char  type[16];		// Launcher uses this to put flags under different headings
+	char  web_url[256];	// Link to documentation of feature (please use wiki or somewhere constant)
+
+} Flag;
+
+// Please group them by type, ie Graphics, gameplay etc, maximum 20 different types
+Flag exe_params[] = 
+{
+	"-spec",		  "Enable specular",				true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
+	"-glow",		  "Enable glowmaps",				true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"", 
+	"-pcx32",		  "Enable 32bit textures",			true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/32%20bit%20PCX%20textures", 
+	"-jpgtga",		  "Enable jpg,tga textures",		true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/JPG%20and%20TGA%20textures", 
+	"-d3dmipmap",	  "Enable mipmapping",				true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Mipmaping%2C%20blending%20textures%20over%20distance", 
+	"-cell",		  "Enable cell shading",			true,	0,				 EASY_DEFAULT,		"Graphics",		"", 
+	"-phreak", 		  "Enable Phreaks options",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
+	"-ship_choice_3d","Enable models instead of ani",	true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
+	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,				 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Disable%20V-Sync", 
+
+	"-nobeampierce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"", 
+
+	"-fps",			  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-window",		  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-timerbar",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-stats",		  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-coords",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-show_mem_usage","",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-pofspew",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-tablecrcs",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+																
+	"-oldfire",		  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-nohtl",		  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-nosound",		  "",								false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-nomusic",		  "",								false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-no_set_gamma",  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-dnoshowvid", 	  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-safeloading",	  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-query_speech",  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",
+																
+	"-standalone",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-startgame",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-closed",		  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-restricted",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-multilog",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
+	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
+};
+
 // here are the command line parameters that we will be using for FreeSpace
 cmdline_parm standalone_arg("-standalone", NULL);
 cmdline_parm nosound_arg("-nosound", NULL);
@@ -524,9 +616,8 @@ cmdline_parm client_dodamage("-clientdamage", NULL);
 cmdline_parm pof_spew("-pofspew", NULL);
 cmdline_parm mouse_coords("-coords", NULL);
 cmdline_parm timeout("-timeout", NULL);
-cmdline_parm d3d_window("-window", NULL);
+cmdline_parm window("-window", NULL);
 cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
-cmdline_parm gf4fix_arg("-gf4fix", NULL); //DTP for random tigers GF4fix
 cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player missions
 cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
 cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
@@ -562,6 +653,7 @@ cmdline_parm d3d_notmanaged_arg("-d3d_notmanaged",NULL);
 cmdline_parm rt_arg("-rt",NULL);
 cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
+cmdline_parm get_flags_arg("-get_flags",NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -846,7 +938,7 @@ char *cmdline_parm::str()
 
 // external entry point into this modules
 
-void SetCmdlineParams()
+bool SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
 
@@ -964,7 +1056,7 @@ void SetCmdlineParams()
 	}
 
 	// d3d windowed
-	if(d3d_window.found()){
+	if(window.found()){
 		Cmdline_window = 1;
 	}
 	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
@@ -1143,6 +1235,38 @@ void SetCmdlineParams()
 	{
 		Cmdline_ambient_factor = ambient_factor_arg.get_int();
 	}
+
+	if(get_flags_arg.found())
+	{
+		FILE *fp = fopen("flags.lch","w");
+
+		if(fp == NULL)
+		{
+			MessageBox(NULL,"Error creating flag list for launcher", "Error", MB_OK);
+			return false; 
+		}
+
+		int easy_flag_size	= sizeof(EasyFlag);
+		int flag_size		= sizeof(Flag);
+
+		int num_easy_flags	= sizeof(easy_flags) / easy_flag_size;
+		int num_flags		= sizeof(exe_params) / flag_size;
+
+		// Launcher will check its using structures of the same size
+		fwrite(&easy_flag_size, sizeof(int), 1, fp);
+		fwrite(&flag_size, sizeof(int), 1, fp);
+
+		fwrite(&num_easy_flags, sizeof(int), 1, fp);
+		fwrite(&easy_flags, sizeof(easy_flags), 1, fp);
+
+		fwrite(&num_flags, sizeof(int), 1, fp);
+		fwrite(&exe_params, sizeof(exe_params), 1, fp);
+
+		fclose(fp);
+		return false; 
+	}
+		
+	return true; 
 }
 
 
@@ -1174,8 +1298,7 @@ int fred2_parse_cmdline(int argc, char *argv[])
 		os_init_cmdline("");
 	}
 
-	SetCmdlineParams();
-	return 1;
+	return SetCmdlineParams();
 }
 
 #ifdef _WIN32
@@ -1217,9 +1340,7 @@ int parse_cmdline(int argc, char *argv[])
 	// --------------- Kazan -------------
 	// If you're looking for the list of if (someparam.found()) { cmdline_someparam = something; } look above at this function
 	// I did this because of fred2_parse_cmdline()
-	SetCmdlineParams();
-
-	return 1;
+	return SetCmdlineParams();
 }
 
 //float global_scaleing_factor = 3.0f;
