@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-03-01 06:55:45 $
- * $Author: bobboau $
+ * $Revision: 2.22 $
+ * $Date: 2005-03-03 03:53:18 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/03/01 06:55:45  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.20  2005/02/20 23:13:01  wmcoolmon
  * Trails stuff, moved ship docking func declaration so FRED could get to it.
  *
@@ -391,8 +395,11 @@ void ct_ship_process_ABtrails(ship *shipp)
 
 	if(!(objp->phys_info.flags & PF_AFTERBURNER_ON)){ //if the after burners aren't on -Bobboau
 		for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-			if(shipp->ABtrail_ptr[idx])trail_object_died(shipp->ABtrail_ptr[idx]);
-			shipp->ABtrail_ptr[idx] = NULL;
+			if(shipp->ABtrail_ptr[idx] != NULL)
+			{
+				trail_object_died(shipp->ABtrail_ptr[idx]);
+				shipp->ABtrail_ptr[idx] = NULL;
+			}
 		}
 
 		//No more abtrails
