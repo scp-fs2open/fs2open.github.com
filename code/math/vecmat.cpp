@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-01-06 00:27:34 $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-06 00:37:32 $
  * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/01/06 00:27:34  Goober5000
+ * added vm_vec_dist_squared_to_line
+ * --Goober5000
+ *
  * Revision 2.12  2004/10/31 21:49:49  taylor
  * fix math error that was hitting Assert()'s and making OGL models flip around for no reason
  *
@@ -2964,7 +2968,7 @@ int vm_vec_dist_to_line(vector *p, vector *l0, vector *l1, vector *nearest, floa
 // Goober5000
 // Finds the distance squared to a line.  Same as above, except it uses vm_vec_dist_squared, which is faster;
 // and it doesn't check whether the nearest point is on the line segment.
-void vm_vec_dist_squared_to_line(vector *p, vector *l0, vector *l1, vector *nearest, float *dist)
+void vm_vec_dist_squared_to_line(vector *p, vector *l0, vector *l1, vector *nearest, float *dist_squared)
 {
 	vector a, b, c;
 	float b_mag, comp;
