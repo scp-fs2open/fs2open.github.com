@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-12-26 20:46:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2004-12-26 22:45:58 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/12/26 20:46:34  Goober5000
+ * hud-disable-except-messages now resets after each mission
+ * --Goober5000
+ *
  * Revision 2.29  2004/12/25 09:27:41  wmcoolmon
  * Fix to modular tables workaround with Fs2NetD + Sync to current NEW_HUD code
  *
@@ -1111,18 +1115,6 @@ void hud_disable_except_messages(int disable)
 // like hud_disabled, except messages are still drawn
 int hud_disabled_except_messages()
 {
-	if (HUD_disable_except_messages) {
-		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
-			// draw a border around a talking head if it is playing
-			hud_maybe_blit_head_border();
-
-			// show the directives popup and/or training popup
-			message_training_display();
-		}
-
-		hud_show_messages();
-	}
-
 	return HUD_disable_except_messages;
 }
 
@@ -1671,6 +1663,16 @@ void HUD_render_2d(float frametime)
 	// Goober5000 - special case... hud is off, but we're still displaying messages
 	if ( hud_disabled_except_messages() )
 	{
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
+			// draw a border around a talking head if it is playing
+			hud_maybe_blit_head_border();
+
+			// show the directives popup and/or training popup
+			message_training_display();
+		}
+
+		hud_show_messages();
+
 		return;
 	}
 

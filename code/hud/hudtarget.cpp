@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.45 $
- * $Date: 2004-12-25 19:17:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.46 $
+ * $Date: 2004-12-26 22:45:58 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2004/12/25 19:17:23  wmcoolmon
+ * Fixed text not displaying for single-weapon sips.
+ *
  * Revision 2.44  2004/12/25 17:02:18  wmcoolmon
  * Fixed a couple of blonde moments.
  *
@@ -3927,6 +3930,10 @@ void hud_show_targeting_gauges(float frametime, int in_cockpit)
 {
 	vertex target_point;					// temp vertex used to find screen position for 3-D object;
 	vector target_pos;
+
+	if ( hud_disabled_except_messages() ) {
+		return;
+	}
 
 	// draw the triangle that points to the closest hostile ship that is firing on the player
 	// This is always drawn, even if there is no current target.  There is also a hook that will
