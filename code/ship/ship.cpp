@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.116 $
- * $Date: 2004-04-13 05:42:44 $
+ * $Revision: 2.117 $
+ * $Date: 2004-04-30 22:20:27 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.116  2004/04/13 05:42:44  Goober5000
+ * fixed the custom hitpoints subsystem bug
+ * --Goober5000
+ *
  * Revision 2.115  2004/04/03 02:55:50  bobboau
  * commiting recent minor bug fixes
  *
@@ -2616,9 +2620,9 @@ strcpy(parse_error_text, temp_error);
 	// must be > 0//no it doesn't :P -Bobboau
 	// yes it does! - Goober5000
 	// (we don't want a div-0 error)
-	if (hull_percentage_of_hits < 0.0f )
+	if (hull_percentage_of_hits <= 0.0f )
 	{
-		Warning(LOCATION, "The subsystems defined for the %s can take more combined damage than the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
+		Warning(LOCATION, "The subsystems defined for the %s can take more (or the same) combined damage than the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
 	}
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	sip->n_subsystems = n_subsystems;
