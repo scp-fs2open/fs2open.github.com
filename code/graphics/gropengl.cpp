@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-01-09 21:19:54 $
+ * $Revision: 2.10 $
+ * $Date: 2003-01-18 19:49:45 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/01/09 21:19:54  phreak
+ * glowmaps in OpenGL, yay!
+ *
  * Revision 2.8  2002/12/23 19:25:39  phreak
  * dumb typo
  *
@@ -333,6 +336,7 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include "osapi/osregistry.h"
 #include "cfile/cfile.h"
 #include "io/timer.h"
+#include "ddsutils/ddsutils.h"
 
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
@@ -379,7 +383,9 @@ typedef struct ogl_extension
 #define GL_SECONDARY_COLOR3UB 5
 #define GL_SECONDARY_COLOR_POINTER 6
 #define GL_TEXTURE_ENV_ADD 7
-#define GL_NUM_EXTENSIONS 8
+#define GL_COMP_TEX	8
+#define GL_TEX_COMP_S3TC		9
+#define GL_NUM_EXTENSIONS 10
 
 static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 {
@@ -390,7 +396,9 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, NULL, "glSecondaryColor3fEXT", "GL_EXT_secondary_color",0},
 	{0, NULL, "glSecondaryColor3ubEXT", "GL_EXT_secondary_color",0},
 	{0, NULL, "glSecondaryColorPointerEXT", "GL_EXT_secondary_color",0},
-	{0, NULL, NULL, "GL_ARB_texture_env_add", 1}					//required for glow maps
+	{0, NULL, NULL, "GL_ARB_texture_env_add", 1},					//required for glow maps
+	{0, NULL, "glCompressedTexImage2D", "GL_ARB_texture_compression",0},
+	{0, NULL, NULL, "GL_EXT_texture_compression_s3tc",0}
 };
 
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
@@ -410,6 +418,9 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 
 #define glSecondaryColorPointerEXT GLEXT_CALL(PFNGLSECONDARYCOLORPOINTEREXTPROC, GL_SECONDARY_COLOR_POINTER)
 
+#define glCompressedTexImage2D GLEXT_CALL(PFNGLCOMPRESSEDTEXIMAGE2DPROC, GL_COMP_TEX)
+
+extern int Texture_compression_enabled;
 
 typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,
@@ -477,6 +488,7 @@ int opengl_get_extensions()
 			if (cur->function_name==NULL)
 			{
 				mprintf(("found extension %s\n", cur->extension_name));
+				cur->enabled=1;
 				num_found++;
 				continue;
 			}
@@ -498,7 +510,7 @@ int opengl_get_extensions()
 			mprintf(("did not find extension: %s\n", cur->extension_name));
 			if (cur->required_to_run)
 			{
-				Error(__FILE__,__LINE__,"The extension %s is not supported by your graphics card, please use the Glide or Direct3D rendering engines.\n\n",cur->extension_name);
+				Error(__FILE__,__LINE__,"The required OpenGL extension %s is not supported by your graphics card, please use the Glide or Direct3D rendering engines.\n\n",cur->extension_name);
 			}
 		}
 	}
@@ -2302,43 +2314,71 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	switch (bitmap_type) {
+	//compression takes precedence
+	if (bitmap_type & TCACHE_TYPE_COMPRESSED)
+	{
+		GLenum ctype;
+		switch (bm_is_compressed(texture_handle))
+		{
+			case 1:
+				ctype=GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+				break;
 
-		case TCACHE_TYPE_AABITMAP:
+			case 2:
+				ctype=GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+				break;
+
+			case 3:
+				ctype=GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				break;
+
+			default:
+				Assert(0);
+		}
+		glCompressedTexImage2D(GL_TEXTURE_2D, 0, ctype, tex_w, tex_h,0, bm_get_size(texture_handle), (ubyte*)data);
+	}
+	else
+	{
+
+		switch (bitmap_type) {
+	
+			case TCACHE_TYPE_AABITMAP:
 			{
-			int i,j;
-			ubyte *bmp_data = ((ubyte*)data);
-			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
-			ubyte *texmemp = texmem;
-			ubyte xlat[256];
+				int i,j;
+				ubyte *bmp_data = ((ubyte*)data);
+				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
+				ubyte *texmemp = texmem;
+				ubyte xlat[256];
 			
-			for (i=0; i<16; i++) {
-				xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
-			}
-			xlat[15] = xlat[1];
-			for ( ; i<256; i++ )    {
-				xlat[i] = xlat[0];
-			}
+				for (i=0; i<16; i++) {
+					xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
+				}	
+				xlat[15] = xlat[1];
+				for ( ; i<256; i++ )    {
+					xlat[i] = xlat[0];
+				}
 			
-			for (i=0;i<tex_h;i++)
-			{
-				for (j=0;j<tex_w;j++)
+				for (i=0;i<tex_h;i++)
 				{
+					for (j=0;j<tex_w;j++)
+					{
 					if (i < bmap_h && j < bmap_w) {
-						*texmemp++ = 0xff;
-						*texmemp++ = xlat[bmp_data[i*bmap_w+j]];
-					} else {
-						*texmemp++ = 0;
-						*texmemp++ = 0;
+							*texmemp++ = 0xff;
+							*texmemp++ = xlat[bmp_data[i*bmap_w+j]];
+						} else {
+							*texmemp++ = 0;
+							*texmemp++ = 0;
+						}
 					}
 				}
-			}
 
-			glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
 
-			free (texmem);
+				free (texmem);
 			}
 			break;
+
+
 		case TCACHE_TYPE_BITMAP_SECTION:
 			{
 				int i,j;
@@ -2397,12 +2437,14 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				free(texmem);
 				break;
 			}
-	}
+		}//end switch
+	}//end else
 	
 	t->bitmap_id = texture_handle;
 	t->time_created = GL_frame_count;
 	t->used_this_frame = 0;
-	t->size = tex_w * tex_h * 2;
+	if (bitmap_type & TCACHE_TYPE_COMPRESSED) t->size=bm_get_size(texture_handle);
+	else	t->size = tex_w * tex_h * 2;
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
 	GL_textures_in_frame += t->size;
@@ -2436,6 +2478,30 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 		case TCACHE_TYPE_NONDARKENING:
 			Int3();
 			flags |= BMP_TEX_NONDARK;
+			break;
+	}
+	
+	switch (bm_is_compressed(bitmap_handle))
+	{
+		case 1:				//dxt1
+			bpp=24;
+			flags |=BMP_TEX_DXT1;
+			bitmap_type|=TCACHE_TYPE_COMPRESSED;
+			break;
+
+		case 2:				//dxt3
+			bpp=32;
+			flags |=BMP_TEX_DXT3;
+			bitmap_type|=TCACHE_TYPE_COMPRESSED;
+			break;
+
+		case 3:				//dxt5
+			bpp=32;
+			flags |=BMP_TEX_DXT5;
+			bitmap_type|=TCACHE_TYPE_COMPRESSED;
+			break;
+		
+		default:
 			break;
 	}
 
@@ -3442,6 +3508,9 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_clear();
 	gr_flip();
 	Mouse_hidden--;
+
+	//if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
+	Texture_compression_enabled=((GL_Extensions[GL_TEX_COMP_S3TC].enabled) && (GL_Extensions[GL_COMP_TEX].enabled));
 }
 #endif
 
