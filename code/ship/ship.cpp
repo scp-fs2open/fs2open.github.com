@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.123 $
- * $Date: 2004-05-26 03:52:07 $
+ * $Revision: 2.124 $
+ * $Date: 2004-05-26 21:02:27 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2004/05/26 03:52:07  wmcoolmon
+ * Ship & weapon modular table files
+ *
  * Revision 2.122  2004/05/26 02:31:39  wmcoolmon
  * Modular ship table support. Uses *-shp.tbm , with the same structure as a normal ships.tbl. Individual sections are optional and entries with the same name will override previous settings. -C
  *
@@ -1684,7 +1687,7 @@ void parse_engine_wash(bool replace)
 // Kazan -- Volition had this set to 1500, Set it to 4K for WC Saga
 //#define SHIP_MULTITEXT_LENGTH 1500
 #define SHIP_MULTITEXT_LENGTH 4096
-
+char current_ship_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
 
 // function to parse the information for a specific ship type.	
 int parse_ship(bool replace)
@@ -1750,7 +1753,7 @@ int parse_ship(bool replace)
 		}
 		else
 		{
-			Error(LOCATION, "Error:  Ship name %s already exists in ships.tbl.  All ship class names must be unique.", sip->name);
+			Error(LOCATION, "Error:  Ship name %s already exists in %s.  All ship class names must be unique.", sip->name, current_ship_table);
 		}
 	}
 	else
@@ -2746,7 +2749,6 @@ char get_engine_wash_index(char *engine_wash_name)
 	return -1;
 }
 
-char current_ship_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
 void parse_shiptbl(char* longname, bool is_chunk)
 {
 	strcpy(current_ship_table, longname);
@@ -2875,7 +2877,7 @@ void ship_init()
 
 			//Then other ones
 			char tbl_files[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-shp.tbm");
+			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_files, NULL, CF_TYPE_TABLES, "*-shp.tbm", CF_SORT_REVERSE);
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK
@@ -3529,7 +3531,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		if ( sp->model_num == -1 ) {
-			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem %s on ship type %s.\nNot linking into ship!\n\n(This warning means that a subsystem was present in ships.tbl and not present in the model\nit should probably be removed from the table or added to the model.)\n", sp->subobj_name, sinfo->name );
+			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem %s on ship type %s.\nNot linking into ship!\n\n(This warning means that a subsystem was present in %s and not present in the model\nit should probably be removed from the table or added to the model.)\n", sp->subobj_name, sinfo->name, current_ship_table );
 			continue;
 		}
 
@@ -5704,7 +5706,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 	// Primary banks
 	if ( po->n_guns > sip->num_primary_banks ) {
 		Assert(po->n_guns <= MAX_SHIP_PRIMARY_BANKS);
-		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks in ships.tbl for %s\n", po->n_guns, sip->num_primary_banks, sip->name);
+		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks in %s for %s\n", po->n_guns, sip->num_primary_banks, current_ship_table, sip->name);
 		for ( i = sip->num_primary_banks; i < po->n_guns; i++ ) {
 			// Make unspecified weapon for bank be a Light Laser
 			swp->primary_bank_weapons[i] = weapon_info_lookup(NOX("Light Laser"));
@@ -5713,14 +5715,14 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		sip->num_primary_banks = po->n_guns;
 	}
 	else if ( po->n_guns < sip->num_primary_banks ) {
-		Warning(LOCATION, "There are %d primary banks in ships.tbl for %s\nbut only %d primary banks in the model\n", sip->num_primary_banks, sip->name, po->n_guns);
+		Warning(LOCATION, "There are %d primary banks in %s for %s\nbut only %d primary banks in the model\n", sip->num_primary_banks, sip->name, current_ship_table, po->n_guns);
 		sip->num_primary_banks = po->n_guns;
 	}
 
 	// Secondary banks
 	if ( po->n_missiles > sip->num_secondary_banks ) {
 		Assert(po->n_missiles <= MAX_SHIP_SECONDARY_BANKS);
-		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks in ships.tbl for %s\n", po->n_missiles, sip->num_secondary_banks, sip->name);
+		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks in %s for %s\n", po->n_missiles, sip->num_secondary_banks, current_ship_table, sip->name);
 		for ( i = sip->num_secondary_banks; i < po->n_missiles; i++ ) {
 			// Make unspecified weapon for bank be a Rockeye Missile
 			swp->secondary_bank_weapons[i] = weapon_info_lookup(NOX("Rockeye Missile"));
@@ -5729,7 +5731,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		sip->num_secondary_banks = po->n_missiles;
 	}
 	else if ( po->n_missiles < sip->num_secondary_banks ) {
-		Warning(LOCATION, "There are %d secondary banks in ships.tbl for %s,\n but only %d secondary banks in the model.\n", sip->num_secondary_banks, sip->name, po->n_missiles);
+		Warning(LOCATION, "There are %d secondary banks in %s for %s,\n but only %d secondary banks in the model.\n", sip->num_secondary_banks, current_ship_table, sip->name, po->n_missiles);
 		sip->num_secondary_banks = po->n_missiles;
 	}
 
@@ -6204,7 +6206,7 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 						}
 
 						if ( ss == END_OF_LIST(&Ships[n].subsys_list) )
-							Warning(LOCATION, "Couldn't fix up turret indices in spline path\n\nModel: %s\nPath: %s\nVertex: %d\nTurret model id:%d\n\nThis probably means the turret was not specified in ships.tbl", sip->pof_file, pm->paths[i].name, j, ptindex );
+							Warning(LOCATION, "Couldn't fix up turret indices in spline path\n\nModel: %s\nPath: %s\nVertex: %d\nTurret model id:%d\n\nThis probably means the turret was not specified in %s", sip->pof_file, pm->paths[i].name, j, ptindex, current_ship_table );
 					}
 				}
 			}

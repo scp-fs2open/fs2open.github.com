@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.7 $
- * $Date: 2003-08-20 08:12:08 $
+ * $Revision: 2.8 $
+ * $Date: 2004-05-26 21:02:26 $
  * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/08/20 08:12:08  wmcoolmon
+ * Made cfile_delete return 0 on failure, 1 on success
+ *
  * Revision 2.6  2002/11/10 16:29:53  DTP
  * -DTP reworked mod support,
  *
@@ -444,6 +447,7 @@ typedef struct {
 #define CF_SORT_NONE	0
 #define CF_SORT_NAME 1
 #define CF_SORT_TIME 2
+#define CF_SORT_REVERSE 3
 
 #define cfread_fix(file) (fix)cfread_int(file)
 #define cfwrite_fix(i,file) cfwrite_int(i,file)
