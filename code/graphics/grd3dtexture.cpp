@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-12-04 20:39:09 $
+ * $Revision: 2.23 $
+ * $Date: 2003-12-05 18:17:06 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/12/04 20:39:09  randomtiger
+ * Added DDS image support for D3D
+ * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
+ * Hopefully have fixed D3D text batching bug that caused old values to appear
+ * Added Hud_target_object_factor variable to control 3D object sizes of zoom in HUD target
+ * Fixed jump nodes not showing
+ *
  * Revision 2.21  2003/12/03 19:27:00  randomtiger
  * Changed -t32 flag to -jpgtga
  * Added -query_flag to identify builds with speech not compiled and other problems
@@ -509,6 +516,8 @@ typedef struct tcache_slot_d3d {
 	tcache_slot_d3d			*data_sections[MAX_BMAP_SECTIONS_X][MAX_BMAP_SECTIONS_Y];
 	tcache_slot_d3d			*parent;
 } tcache_slot_d3d;
+
+bool Supports_compression[NUM_COMPRESSION_TYPES];
 
 static void *Texture_sections = NULL;
 tcache_slot_d3d *Textures = NULL;
@@ -1430,27 +1439,51 @@ int d3d_get_valid_texture_size(int value, bool width)
 	return -1;
 }
 
-IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags, int use_alpha_format) 
+IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags) 
 {
 	D3DXIMAGE_INFO source_desc;
 	if(FAILED(D3DXGetImageInfoFromFileInMemory(data, size,	&source_desc))) {
 		return NULL;
 	} 
 
-	D3DFORMAT use_format;
+	D3DFORMAT use_format  = D3DFMT_UNKNOWN;
 
-	bool d3dx_format  = 
-		((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG) || (type == BM_TYPE_DDS)) 
-		&& Cmdline_jpgtga;
+	// Determine the destination (texture) format to hold the image
+	switch(source_desc.Format)
+	{
+		case D3DFMT_DXT1:  
+		case D3DFMT_DXT2:  
+		case D3DFMT_DXT3:  
+		case D3DFMT_DXT4:  
+		case D3DFMT_DXT5: 
+		{
+			// If this format is supported
+			if(Supports_compression[source_desc.Format-D3DFMT_DXT1] == true)
+			{
+				// Use that format
+				use_format = source_desc.Format;
+				break;
+			}
+			// Otherwise fall over into default case
+		}
+		default:
+		{
+			bool use_alpha_format;
 
-	if(d3dx_format) {
-		use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;
-	} else {
-		use_format = use_alpha_format ? default_alpha_tformat : default_non_alpha_tformat;
+			// Determine if the destination format needs to store alpha details
+			switch(type)
+			{
+			case BM_TYPE_TGA: use_alpha_format = (source_desc.Format == D3DFMT_A8R8G8B8); break; // 32 Bit TGAs only
+			case BM_TYPE_JPG: use_alpha_format = false; break; // JPG: Never 
+			case BM_TYPE_DDS: use_alpha_format = true;  break; // DDS: Always
+			}
 
-		// Special case
-		if(type == BM_TYPE_TGA && source_desc.Format != D3DFMT_A8R8G8B8)
-			use_format = default_non_alpha_tformat;
+			if(gr_screen.bits_per_pixel == 32) {
+				use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;
+			} else {
+				use_format = use_alpha_format ? default_alpha_tformat : default_non_alpha_tformat;
+			}
+		}
 	}
 	  
 	bool use_mipmapping = Cmdline_d3dmipmap && (flags != TCACHE_TYPE_BITMAP_SECTION);
@@ -1483,12 +1516,11 @@ void *d3d_lock_d3dx_types(char *file, int type, ubyte flags )
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
 
-	bool use_alpha_format = true;
 	switch(type)
 	{
-		case BM_TYPE_DDS: strcat( filename, ".dds" ); use_alpha_format = true;  break;
-		case BM_TYPE_TGA: strcat( filename, ".tga" ); use_alpha_format = true;  break;
-		case BM_TYPE_JPG: strcat( filename, ".jpg" ); use_alpha_format = false; break;
+		case BM_TYPE_DDS: strcat( filename, ".dds" ); break;
+		case BM_TYPE_TGA: strcat( filename, ".tga" ); break;
+		case BM_TYPE_JPG: strcat( filename, ".jpg" ); break;
 		default: return NULL;
 	}
 
@@ -1511,7 +1543,7 @@ void *d3d_lock_d3dx_types(char *file, int type, ubyte flags )
 	cfclose(targa_file);
 	targa_file = NULL;
 	
-	IDirect3DTexture8 *ptexture = d3d_make_texture(tga_data, size, type, flags, use_alpha_format);
+	IDirect3DTexture8 *ptexture = d3d_make_texture(tga_data, size, type, flags);
 
 	free(tga_data);
 
@@ -1528,7 +1560,7 @@ bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)
 
 	switch(type)
 	{
-		case BM_TYPE_DDS: strcat( filename, ".dds" ); break;
+		case BM_TYPE_DDS: strcat( filename, ".dds" ); break;  
 		case BM_TYPE_TGA: strcat( filename, ".tga" ); break;
 		case BM_TYPE_JPG: strcat( filename, ".jpg" ); break;
 	}

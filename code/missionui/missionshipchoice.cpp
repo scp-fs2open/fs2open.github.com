@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-12-04 20:39:10 $
+ * $Revision: 2.16 $
+ * $Date: 2003-12-05 18:17:06 $
  * $Author: randomtiger $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/12/04 20:39:10  randomtiger
+ * Added DDS image support for D3D
+ * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
+ * Hopefully have fixed D3D text batching bug that caused old values to appear
+ * Added Hud_target_object_factor variable to control 3D object sizes of zoom in HUD target
+ * Fixed jump nodes not showing
+ *
  * Revision 2.14  2003/11/17 04:25:57  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -1708,7 +1715,7 @@ void ship_select_do(float frametime)
 
 	if(!Cmdline_ship_choice_3d)
 	{
-		if (Selected_ss_class >= 0 && ShipSelectModelNum >= 0)
+		if (Selected_ss_class >= 0)
 		{
 			Assert(Selected_ss_class >= 0);
 			if ( Ss_icons[Selected_ss_class].anim_instance->frame_num == Ss_icons[Selected_ss_class].anim_instance->stop_at ) { 
@@ -1724,7 +1731,6 @@ void ship_select_do(float frametime)
 				Ss_icons[Selected_ss_class].anim_instance = anim_play(&aps);
 			}
 		}
-
 		gr_reset_clip();
 	}
 

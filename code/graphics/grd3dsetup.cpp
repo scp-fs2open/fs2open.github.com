@@ -729,6 +729,22 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 
 	if(	d3d_get_mode_bit(mode->Format) < 32)
 		Cmdline_pcx32 = 0;
+
+	// Check compressed textures here
+	extern bool Supports_compression[NUM_COMPRESSION_TYPES];
+	D3DFORMAT compression_types[NUM_COMPRESSION_TYPES] =
+	{
+		D3DFMT_DXT1, 
+		D3DFMT_DXT2, 
+		D3DFMT_DXT3, 
+		D3DFMT_DXT4, 
+		D3DFMT_DXT5 
+	};
+
+	for(int ct = 0; ct < NUM_COMPRESSION_TYPES; ct++)
+	{
+		Supports_compression[ct] = d3d_texture_format_is_supported(compression_types[ct], adapter, mode);
+	}
 }
 
 /**
