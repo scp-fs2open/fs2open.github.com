@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-05-11 19:39:29 $
+ * $Revision: 2.6 $
+ * $Date: 2004-05-12 23:24:35 $
  * $Author: phreak $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/05/11 19:39:29  phreak
+ * fixed an array bounds error that was causing debug builds to crash when
+ * rendering a ship
+ *
  * Revision 2.4  2004/04/26 13:02:27  taylor
  * light setup changes, support cmdline ambient value
  *
@@ -222,8 +226,8 @@ void gr_opengl_reset_lighting()
 void opengl_init_light()
 {
 	if (!Cmdline_nospec) {
-		glEnable(GL_COLOR_MATERIAL);
-		glColorMaterial(GL_FRONT_AND_BACK,GL_EMISSION);
+//		glEnable(GL_COLOR_MATERIAL);
+//		glColorMaterial(GL_FRONT_AND_BACK,GL_EMISSION);
 		glLightModeli( GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR );
 	}
 
