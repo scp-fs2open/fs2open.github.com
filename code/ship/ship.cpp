@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.23 $
- * $Date: 2002-12-31 18:59:42 $
+ * $Revision: 2.24 $
+ * $Date: 2002-12-31 19:35:14 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2002/12/31 18:59:42  Goober5000
+ * if it ain't broke, don't fix it
+ * --Goober5000
+ *
  * Revision 2.21  2002/12/30 06:16:09  Goober5000
  * made force feedback stronger when firing ballistic primaries
  * --Goober5000
@@ -1392,10 +1396,14 @@ int parse_ship()
 		Assert(sip->primary_bank_weapons[i] >= 0);
 	}
 
+	// set primary capacities to zero first - in case of bugs :) 
+	for (i = 0; i < MAX_PRIMARY_BANKS; i++)
+	{
+		sip->primary_bank_ammo_capacity[i] = 0;
+	}
+
 	// optional ballistic primary imformation (Goober5000)......
 	pbank_capacity_specified = 0;
-	// set to zero first - in case of bugs :) 
-	for (i = 0; i < sip->num_primary_banks; i++) sip->primary_bank_ammo_capacity[i] = 0; 
 	if(optional_string("+Pbank Capacity:"))
 	{
 		pbank_capacity_specified = 1;
