@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.24 $
+ * $Revision: 2.25 $
  * $Author: Goober5000 $
- * $Date: 2003-03-20 23:20:26 $
+ * $Date: 2003-03-25 07:03:30 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2003/03/20 23:20:26  Goober5000
+ * comments
+ * --Goober500
+ *
  * Revision 2.23  2003/03/19 22:49:32  Goober5000
  * added some mission flags
  * --Goober5000
@@ -471,6 +475,7 @@ extern int	Num_team_names;
 extern int	Num_reinforcement_type_names;
 extern int	Player_starts;
 extern fix	Entry_delay_time;
+extern int	Fred_num_texture_replacements;	// Goober5000
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;
@@ -667,6 +672,11 @@ extern char *Nebula_colors[NUM_NEBULA_COLORS];
 extern p_object *Arriving_support_ship;
 
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
+
+// Goober5000
+#define FRED_TEXTURE_REPLACE					1
+#define FRED_DUPLICATE_MODEL_TEXTURE_REPLACE	2
+extern texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
 
 int parse_main(char *mission_name, int flags = 0);
 int mission_parse_ship_arrived(char *shipname);
