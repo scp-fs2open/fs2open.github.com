@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.34 $
- * $Date: 2003-06-14 21:22:42 $
+ * $Revision: 2.35 $
+ * $Date: 2003-06-25 03:16:32 $
  * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/06/14 21:22:42  phreak
+ * capital ship turrets that use the "huge" flag will not target bombs
+ * this will prevent large beams from shooting the player if he shoots a bomb at a destroyer
+ *
  * Revision 2.33  2003/06/12 16:53:16  phreak
  * turrets now properly use local ssms
  *
@@ -2986,7 +2990,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	weapon_travel_dist = min(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
 
 	if (Weapon_info[tp->turret_weapon_type].wi_flags2 & WIF2_LOCAL_SSM)
-		weapon_travel_dist=100000.0f;
+		weapon_travel_dist=Weapon_info[tp->turret_weapon_type].lssm_lock_range;
 
 	// Set flag based on strength of weapons subsystem.  If weapons subsystem is destroyed, don't let turrets fire at bombs
 	weapon_system_ok = 0;
@@ -8819,7 +8823,7 @@ void ai_chase()
 									float firing_range;
 									
 									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
-										firing_range=1000000.0f;		//that should be enough
+										firing_range=swip->lssm_lock_range;		//that should be enough
 									else if (swip->wi_flags & WIF_BOMB)
 										firing_range = swip->max_speed * swip->lifetime * 0.75f;
 									else
@@ -11371,7 +11375,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	if (Weapon_info[turret_weapon_class].wi_flags2 & WIF2_LOCAL_SSM)
 	{
-		weapon_firing_range=1000000.0f;
+		weapon_firing_range=Weapon_info[turret_weapon_class].lssm_lock_range;
 	}
 
 
