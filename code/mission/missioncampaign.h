@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.3 $
- * $Date: 2003-03-03 04:28:36 $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-05 04:25:29 $
  * $Author: Goober5000 $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/03 04:28:36  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.2  2003/01/14 04:00:16  Goober5000
  * allowed for up to 256 main halls
  * --Goober5000
@@ -273,6 +277,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "stats/scoring.h"
+#include "parse/sexp.h"
 
 // name of the builtin campaign.
 #if defined(FS2_DEMO)
@@ -349,14 +354,16 @@ typedef struct cmission {
 	int				formula;					// sexpression used to determine mission branching.
 	int				completed;				// has the player completed this mission
 	int				num_goals;				// number of goals this mission had
-	mgoal				*goals;					// malloced array of mgoals (of num_goals size) which has the goal completion status
+	mgoal			*goals;					// malloced array of mgoals (of num_goals size) which has the goal completion status
 	int				num_events;				// number of events this mission had
-	mevent			*events;					// malloced array of mevents (of num_events) size) which has event completion status
+	mevent			*events;				// malloced array of mevents (of num_events size) which has event completion status
+	int				num_saved_variables;	// number of variables this mission had - Goober5000
+	sexp_variable	*saved_variables;		// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
 	int				has_mission_loop;		// whether current mission has side loop
 	int				mission_loop_formula;// formula to determine whether to allow a side loop
-	char				*mission_loop_desc;	// message in popup
-	char				*mission_loop_brief_anim;
-	char				*mission_loop_brief_sound;
+	char			*mission_loop_desc;	// message in popup
+	char			*mission_loop_brief_anim;
+	char			*mission_loop_brief_sound;
 	int				level;					// what level of the tree it's on (Fred)
 	int				pos;						// what x position on level it's on (Fred)
 	int				flags;
@@ -477,7 +484,7 @@ int mission_campaign_get_mission_list(char *filename, char **list, int max);
 int mission_load_up_campaign();
 
 // stores mission goals and events in Campaign struct
-void mission_campaign_store_goals_and_events();
+void mission_campaign_store_goals_and_events_and_variables();
 
 // evaluates next mission and possible loop mission
 void mission_campaign_eval_next_mission();
@@ -498,6 +505,9 @@ void mission_campaign_jump_to_mission(char *name);
 void mission_campaign_end_init();
 void mission_campaign_end_close();
 void mission_campaign_end_do();
+
+// Goober5000 - save persistent variables
+extern void mission_campaign_save_player_persistent_variables();
 
 // End CSFE stuff
 #endif

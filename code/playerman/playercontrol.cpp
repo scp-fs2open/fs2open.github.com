@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-08-06 17:39:04 $
- * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2003-09-05 04:25:28 $
+ * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/06 17:39:04  phreak
+ * added a thing to set max thrust when tertiary boost pod is engaged
+ *
  * Revision 2.4  2003/04/29 01:03:24  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -481,6 +484,9 @@ player	Players[MAX_PLAYERS];
 
 int		Player_num;
 player	*Player = NULL;
+
+// Goober5000
+int		Player_use_ai = 0;
 
 physics_info Descent_physics;			// used when we want to control the player like the descent ship
 
@@ -1462,6 +1468,8 @@ void player_level_init()
 	Player_obj = NULL;
 	Player_ship = NULL;
 	Player_ai = NULL;
+
+	Player_use_ai = 0;	// Goober5000
 	
 	//	Init variables for friendly fire monitoring.
 	Player->friendly_last_hit_time = 0;

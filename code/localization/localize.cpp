@@ -9,12 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-08-25 04:45:57 $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-05 04:25:29 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/25 04:45:57  Goober5000
+ * added replacement of $rank with the player's rank in any string that appears
+ * in-game (same as with $callsign); also bumped the limit on the length of text
+ * allowed per entry in species.tbl
+ * --Goober5000
+ *
  * Revision 2.2  2003/08/22 07:01:57  Goober5000
  * implemented $callsign to add the player callsign in a briefing, message, or whatever
  * --Goober5000
@@ -769,9 +775,10 @@ void lcl_ext_close()
 	Lcl_ext_file = NULL;
 }
 
-// Goober5000 - replace stuff in the string, e.g. "$callsign" with player's callsign
-// now will also replace "$rank" with rank, e.g. "Lieutenant"
-#define LCL_NUM_REPLACEMENTS 2
+// Goober5000 - replace stuff in the string, e.g. $callsign with player's callsign
+// now will also replace $rank with rank, e.g. "Lieutenant"
+// now will also replace $quote with double quotation marks
+#define LCL_NUM_REPLACEMENTS 4
 #define LCL_TEMP_TEXT_SIZE 2048
 void lcl_replace_stuff(char *text, uint max_len)
 {
@@ -791,6 +798,10 @@ void lcl_replace_stuff(char *text, uint max_len)
 	strcpy(replace[0][1], Player->callsign);
 	strcpy(replace[1][0], "$rank");
 	strcpy(replace[1][1], Ranks[Player->stats.rank].name);
+	strcpy(replace[2][0], "$quote");
+	strcpy(replace[2][1], "\"");
+	strcpy(replace[3][0], "$semicolon");
+	strcpy(replace[3][1], ";");
 
 	// do all replacements
 	for (i = 0; i < LCL_NUM_REPLACEMENTS; i++)

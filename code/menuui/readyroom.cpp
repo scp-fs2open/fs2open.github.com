@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-04-06 03:56:54 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-05 04:25:28 $
  * $Author: Goober5000 $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/04/06 03:56:54  Goober5000
+ * fixed some scrolling issues; added scroll bar to mission select
+ * --Goober5000
+ *
  * Revision 2.5  2003/04/05 11:09:22  Goober5000
  * fixed some fiddly bits with scrolling and ui stuff
  * --Goober5000
@@ -1661,6 +1665,9 @@ void campaign_room_commit()
 			// reset tech database to what's in the tables
 			tech_reset_to_default();
 		}
+
+		// Goober5000 - reset player-persistent variables
+		Player->num_variables = 0;
 	}
 
 	if (mission_campaign_next_mission()) {  // is campaign and next mission valid?
@@ -1722,6 +1729,9 @@ int campaign_room_button_pressed(int n)
 					// reset tech database to what's in the tables
 					tech_reset_to_default();
 				}
+
+				// Goober5000 - reset player-persistent variables
+				Player->num_variables = 0;
 			}
 
 			break;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-30 21:16:21 $
+ * $Revision: 2.6 $
+ * $Date: 2003-09-05 04:25:28 $
  * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/30 21:16:21  Goober5000
+ * fixed stupid spelling mistake
+ * --Goober5000
+ *
  * Revision 2.4  2003/03/20 07:15:37  Goober5000
  * implemented mission flags for no briefing or no debriefing - yay!
  * --Goober5000
@@ -656,7 +660,7 @@ void brief_skip_training_pressed()
 	// tricky part.  Need to move to the next mission in the campaign.
 	mission_goal_mark_objectives_complete();
 	mission_goal_fail_incomplete();
-	mission_campaign_store_goals_and_events();
+	mission_campaign_store_goals_and_events_and_variables();
 
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-06-25 03:13:48 $
- * $Author: phreak $
+ * $Revision: 2.10 $
+ * $Date: 2003-09-05 04:25:28 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/06/25 03:13:48  phreak
+ * weapon energy cheat does not carry over from mission to mission
+ *
  * Revision 2.8  2003/03/20 07:15:37  Goober5000
  * implemented mission flags for no briefing or no debriefing - yay!
  * --Goober5000
@@ -2310,7 +2313,7 @@ void debrief_init()
 #endif
 		// MUST store goals and events first - may be used to evaluate next mission
 		// store goals and events
-		mission_campaign_store_goals_and_events();
+		mission_campaign_store_goals_and_events_and_variables();
 
 		// evaluate next mission
 		mission_campaign_eval_next_mission();
