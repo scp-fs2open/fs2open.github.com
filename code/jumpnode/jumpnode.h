@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.7 $
- * $Date: 2005-03-11 01:28:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-20 21:07:10 $
+ * $Author: phreak $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/11 01:28:23  wmcoolmon
+ * Oops, gotta remember to commit main codebase stuff when fixing FRED
+ *
  * Revision 2.6  2005/03/03 06:05:28  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -121,5 +124,7 @@ jump_node *jumpnode_get_which_in(object *objp);
 void jumpnode_level_init();
 void jumpnode_render_all();	// called by FRED
 void jumpnode_level_close();
+
+bool jumpnode_check_for_duplicates();
 
 #endif
