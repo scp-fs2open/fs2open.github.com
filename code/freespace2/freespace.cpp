@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.28 $
- * $Date: 2003-03-18 10:07:01 $
- * $Author: unknownplayer $
+ * $Revision: 2.29 $
+ * $Date: 2003-03-22 06:11:51 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/03/18 10:07:01  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.27  2003/03/02 05:23:34  penguin
  * 1. Renamed or, og, ob vars to o_r, o_g, o_b  ("or" caused gcc to choke).
  * 2. Added #ifndef NO_SOFTWARE_RENDERING around software rendering code
@@ -1619,6 +1622,7 @@ void game_flash_diminish(float frametime)
 void game_level_close()
 {
 	// De-Initialize the game subsystems
+	sexp_music_close();	// Goober5000
 	message_mission_shutdown();
 	event_music_level_close();
 	game_stop_looped_sounds();

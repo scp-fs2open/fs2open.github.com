@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.50 $
- * $Date: 2003-03-21 08:33:33 $
+ * $Revision: 2.51 $
+ * $Date: 2003-03-22 06:11:51 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2003/03/21 08:33:33  Goober5000
+ * yuck - fixed a nasty error when FRED provides a default value for warp-effect
+ * and explosion-effect
+ * --Goober5000
+ *
  * Revision 2.49  2003/03/21 04:51:32  Goober5000
  * added get-relative-object-*, where * = x, y, and z; these sexps return the
  * world coordinates of a set of relative coordinates to an object; also, fixed many
@@ -588,6 +593,8 @@
 #include "ship/shipfx.h"
 #include "weapon/shockwave.h"
 #include "weapon/emp.h"
+#include "sound/audiostr.h"
+#include "cmdline/cmdline.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -820,9 +827,12 @@ sexp_oper Operators[] = {
 	{ "ship-lights-off",					OP_SHIP_LIGHTS_OFF,					1, 1			}, //-WMCoolmon
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
-	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
+	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
+	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
+	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 1 },		// Goober5000
+	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	0, 1 },		// Goober5000
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -966,6 +976,10 @@ sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 int Players_target = UNINITIALIZED;
 ship_subsys *Players_targeted_subsys;
 int Players_target_timestamp;
+
+// for play-music - Goober5000
+int	Sexp_music_handle = -1;
+void sexp_stop_music(int fade = 1);
 
 int get_sexp(char *token);
 int eval_sexp(int cur_node);
@@ -2244,6 +2258,7 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 				break;
 
 			case OPF_CARGO:
+			case OPF_STRING:
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 				break;
@@ -5955,9 +5970,60 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 }
 
 // Goober5000
-void sexp_change_music(int n)
+void sexp_change_soundtrack(int n)
 {
-	event_sexp_change_music(CTEXT(n));
+	event_sexp_change_soundtrack(CTEXT(n));
+}
+
+// Goober5000
+void sexp_play_sound_from_table(int n)
+{
+	vector origin;
+	int sound_index;
+
+	// read in data --------------------------------
+	origin.xyz.x = (float)sexp_get_val(n);
+	n = CDR(n);
+	origin.xyz.y = (float)sexp_get_val(n);
+	n = CDR(n);
+	origin.xyz.z = (float)sexp_get_val(n);
+	n = CDR(n);
+	sound_index = sexp_get_val(n);
+
+
+	// play sound effect ---------------------------
+	snd_play_3d( &Snds[sound_index], &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+}
+
+// Goober5000
+void sexp_close_sound_from_file(int n)
+{
+	if (n != -1)
+	{
+		if (Sexp_nodes[Sexp_nodes[n].first].value != SEXP_KNOWN_TRUE)
+		{
+			sexp_stop_music(0);
+		}
+	}
+
+	sexp_stop_music();
+}
+
+// Goober5000
+void sexp_play_sound_from_file(int n)
+{
+	vector origin;
+
+	// read in data --------------------------------
+	origin.xyz.x = (float)sexp_get_val(n);
+	n = CDR(n);
+	origin.xyz.y = (float)sexp_get_val(n);
+	n = CDR(n);
+	origin.xyz.z = (float)sexp_get_val(n);
+	n = CDR(n);
+
+
+	// play sound file -----------------------------
 }
 
 // Goober5000
@@ -10347,7 +10413,22 @@ int eval_sexp(int cur_node)
 				break;
 				
 			case OP_CHANGE_SOUNDTRACK:
-				sexp_change_music(node);
+				sexp_change_soundtrack(node);
+				sexp_val = 1;
+				break;
+
+			case OP_PLAY_SOUND_FROM_TABLE:
+				sexp_play_sound_from_table(node);
+				sexp_val = 1;
+				break;
+
+			case OP_PLAY_SOUND_FROM_FILE:
+				sexp_play_sound_from_file(node);
+				sexp_val = 1;
+				break;
+
+			case OP_CLOSE_SOUND_FROM_FILE:
+				sexp_close_sound_from_file(node);
 				sexp_val = 1;
 				break;
 
@@ -11163,6 +11244,9 @@ int query_operator_return_type(int op)
 		case OP_ACTIVATE_GLOW_POINT_BANK:
 		case OP_SET_SUPPORT_SHIP:
 		case OP_CHANGE_SOUNDTRACK:
+		case OP_PLAY_SOUND_FROM_FILE:
+		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_SHIP_POSITION:
@@ -11553,6 +11637,15 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CHANGE_SOUNDTRACK:
 			return OPF_SOUNDTRACK_NAME;
+
+		case OP_PLAY_SOUND_FROM_TABLE:
+			return OPF_POSITIVE;
+
+		case OP_PLAY_SOUND_FROM_FILE:
+			return OPF_STRING;
+
+		case OP_CLOSE_SOUND_FROM_FILE:
+			return OPF_BOOL;
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -12777,6 +12870,53 @@ int num_eval(int node)
 	}
 }
 
+// Goober5000
+void sexp_stop_music(int fade)
+{
+	if ( Sexp_music_handle != -1 ) {
+		audiostream_close_file(Sexp_music_handle, fade);
+		Sexp_music_handle = -1;
+	}
+}
+
+// Goober5000
+void sexp_music_close()
+{
+#ifndef NO_SOUND
+	if ( Cmdline_freespace_no_music ) {
+		return;
+	}
+
+	sexp_stop_music();
+#endif
+}
+
+// Goober5000
+void sexp_load_music(char* fname)
+{
+	if ( Cmdline_freespace_no_music ) {
+		return;
+	}
+
+	if ( Sexp_music_handle != -1 )
+		return;
+
+	if ( fname )
+		Sexp_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
+}
+
+// Goober5000
+void sexp_start_music()
+{
+	if ( Sexp_music_handle != -1 ) {
+		if ( !audiostream_is_playing(Sexp_music_handle) )
+			audiostream_play(Sexp_music_handle, Master_event_music_volume);
+	}
+	else {
+		nprintf(("Warning", "No file exists to play sound via sexp-play-sound-from-file!\n"));
+	}
+}
+
 // Goober5000 - for FRED2 menu subcategories
 int get_subcategory(int sexp_id)
 {
@@ -12894,6 +13034,9 @@ int get_subcategory(int sexp_id)
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
+		case OP_PLAY_SOUND_FROM_TABLE:
+		case OP_PLAY_SOUND_FROM_FILE:
+		case OP_CLOSE_SOUND_FROM_FILE:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 		
 		default:
