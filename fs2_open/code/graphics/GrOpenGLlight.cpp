@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-04-26 13:02:27 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2004-05-11 19:39:29 $
+ * $Author: phreak $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/04/26 13:02:27  taylor
+ * light setup changes, support cmdline ambient value
+ *
  * Revision 2.3  2004/04/13 01:55:41  phreak
  * put in the correct fields for the CVS comments to register
  * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
@@ -255,7 +258,7 @@ void gr_opengl_set_lighting(bool set, bool state)
 		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb );
 	} else {
 		amb[0] = amb[1] = amb[2] = GL_light_ambient_value;
-		amb[4] = 1.0;
+		amb[3] = 1.0;
 		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb );
 	}
 
