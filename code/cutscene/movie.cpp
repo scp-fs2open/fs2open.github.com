@@ -91,10 +91,10 @@ bool movie_play(char *name)
 				{
 					// Terminate movie playback early
 					CloseClip((HWND) os_get_window());
-					LockWindowUpdate( NULL);
+			   //		LockWindowUpdate( NULL);
 			   		GlobalD3DVars::D3D_activate = 1;
 					gr_set_clear_color(0,0,0);
-
+					process_messages();
 					return true;
 				}
 			}
