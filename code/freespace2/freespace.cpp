@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.99 $
- * $Date: 2004-07-01 16:38:18 $
- * $Author: Kazan $
+ * $Revision: 2.100 $
+ * $Date: 2004-07-08 22:08:21 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2004/07/01 16:38:18  Kazan
+ * working on autonav
+ *
  * Revision 2.98  2004/07/01 02:06:31  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -3021,7 +3024,10 @@ void game_init()
 	anim_init();
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info  
-	hud_positions_init();		//Setup hud positions
+	if(!Is_standalone)
+	{
+		hud_positions_init();		//Setup hud positions
+	}
 	
 #ifndef NO_NETWORK
 	// initialize psnet
@@ -6782,6 +6788,9 @@ void game_enter_state( int old_state, int new_state )
 				event_music_first_pattern();	// start the first pattern
 			}			
 			player_restore_target_and_weapon_link_prefs();
+
+			//Set the current hud
+			set_current_hud(Player_ship->ship_info_index);
 
 			Game_mode |= GM_IN_MISSION;
 
