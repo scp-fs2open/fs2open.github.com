@@ -9,13 +9,18 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-11-14 04:18:17 $
- * $Author: bobboau $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-07 00:02:08 $
+ * $Author: phreak $
  *
  * Low level Windows code
  *
- * $Log: not supported by cvs2svn $ 
+ * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/11/14 04:18:17  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ * 
  * 
  * 7     6/30/99 5:53p Dave
  * Put in new anti-camper code.
@@ -590,7 +595,7 @@ BOOL win32_create_window()
 	int windowed = 0;
 	int hires = 0;
 	char *ptr = os_config_read_string(NULL, NOX("Videocard"), NULL);	
-	if(ptr && strstr(ptr, NOX("Direct 3D -")) && Cmdline_window){
+	if(ptr && ( (strstr(ptr, NOX("Direct 3D -")) ) || (strstr(ptr, NOX("OpenGL -")))) && Cmdline_window){
 		windowed = 1;
 	}
 	if(ptr && strstr(ptr, NOX("1024")) && Cmdline_window){
