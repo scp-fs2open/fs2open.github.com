@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-02-16 05:14:28 $
- * $Author: bobboau $
+ * $Revision: 2.10 $
+ * $Date: 2003-03-02 05:43:48 $
+ * $Author: penguin $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/02/16 05:14:28  bobboau
+ * added glow map nebula bug fix for d3d, someone should add a fix for glide too
+ * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
+ *
  * Revision 2.8  2003/01/20 05:40:49  bobboau
  * added several sExps for turning glow points and glow maps on and off
  *
@@ -1304,9 +1308,9 @@ void gr_d3d_reset_clip()
 void gr_d3d_init_color(color *c, int r, int g, int b)
 {
 	c->screen_sig = gr_screen.signature;
-	c->red = unsigned char(r);
-	c->green = unsigned char(g);
-	c->blue = unsigned char(b);
+	c->red = (unsigned char) r;
+	c->green = (unsigned char) g;
+	c->blue = (unsigned char) b;
 	c->alpha = 255;
 	c->ac_type = AC_TYPE_NONE;
 	c->alphacolor = -1;
@@ -1323,7 +1327,7 @@ void gr_d3d_init_alphacolor( color *clr, int r, int g, int b, int alpha, int typ
 
 	gr_d3d_init_color( clr, r, g, b );
 
-	clr->alpha = unsigned char(alpha);
+	clr->alpha = (unsigned char) alpha;
 	clr->ac_type = (ubyte)type;
 	clr->alphacolor = -1;
 	clr->is_alphacolor = 1;

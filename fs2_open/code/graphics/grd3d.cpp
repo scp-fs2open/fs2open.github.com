@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-01-14 05:53:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-03-02 05:43:48 $
+ * $Author: penguin $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/01/14 05:53:58  Goober5000
+ * commented out some mprintfs that were clogging up the debug spew
+ * --Goober5000
+ *
  * Revision 2.3  2002/10/05 16:46:09  randomtiger
  * Added us fs2_open people to the credits. Worth looking at just for that.
  * Added timer bar code, by default its not compiled in.
@@ -667,14 +671,14 @@ HRESULT d3d_DrawPrimitive( D3DPRIMITIVETYPE dptPrimitiveType, D3DVERTEXTYPE dvtV
 					OP_NOP( D3D_ex_ptr );
 				}
 
-				OP_TRIANGLE_LIST( unsigned short(dwVertexCount-2), D3D_ex_ptr );
+				OP_TRIANGLE_LIST( (unsigned short)(dwVertexCount-2), D3D_ex_ptr );
 
 				LPD3DTRIANGLE tri = ( LPD3DTRIANGLE )D3D_ex_ptr;
 
 				for (i=0; i<(int)dwVertexCount-2; i++ )	{
-					tri->v1 = unsigned short(D3D_num_verts+0);
-					tri->v2 = unsigned short(D3D_num_verts+i+1);
-					tri->v3 = unsigned short(D3D_num_verts+i+2);
+					tri->v1 = (unsigned short)(D3D_num_verts+0);
+					tri->v2 = (unsigned short)(D3D_num_verts+i+1);
+					tri->v3 = (unsigned short)(D3D_num_verts+i+2);
 					tri->wFlags = D3DTRIFLAG_EDGEENABLETRIANGLE;
 					tri++;
 				
@@ -714,8 +718,8 @@ HRESULT d3d_DrawPrimitive( D3DPRIMITIVETYPE dptPrimitiveType, D3DVERTEXTYPE dvtV
 	
 				for (i=0; i<(int)nlines; i++ )	{
 					LPD3DLINE line = (LPD3DLINE )D3D_ex_ptr;
-					line->v1 = unsigned short(D3D_num_verts);
-					line->v2 = unsigned short(D3D_num_verts+1);
+					line->v1 = (unsigned short)(D3D_num_verts);
+					line->v2 = (unsigned short)(D3D_num_verts+1);
 					D3D_ex_ptr = (void *)(((LPD3DLINE)D3D_ex_ptr) + 1);
 				}	
 

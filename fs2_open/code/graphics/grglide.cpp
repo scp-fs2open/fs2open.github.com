@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrGlide.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-02 05:43:49 $
  * $Author: penguin $
  *
  * Code that uses 3DFX's Glide graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:22  penguin
  * Warpcore CVS sync
  *
@@ -2170,9 +2173,9 @@ void gr_glide_set_palette(ubyte *new_palette, int force_flag )
 void gr_glide_init_color(color *c, int r, int g, int b)
 {
 	c->screen_sig = gr_screen.signature;
-	c->red = unsigned char(r);
-	c->green = unsigned char(g);
-	c->blue = unsigned char(b);
+	c->red = (unsigned char)(r);
+	c->green = (unsigned char)(g);
+	c->blue = (unsigned char)(b);
 	c->alpha = 255;
 	c->ac_type = AC_TYPE_NONE;
 	c->alphacolor = -1;
@@ -2189,7 +2192,7 @@ void gr_glide_init_alphacolor( color *clr, int r, int g, int b, int alpha, int t
 
 	gr_glide_init_color( clr, r, g, b );
 
-	clr->alpha = unsigned char(alpha);
+	clr->alpha = (unsigned char)(alpha);
 	clr->ac_type = (ubyte)type;
 	clr->alphacolor = -1;
 	clr->is_alphacolor = 1;

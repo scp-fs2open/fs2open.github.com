@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrSoft.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:05 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 05:43:49 $
  * $Author: penguin $
  *
  * Code for our software renderer using standard Win32 functions.  (Dibsections, etc)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -567,7 +570,7 @@ void gr_buffer_create( int w, int h, int bpp )
 		Gr_blue.mask = 0xff;
 
 		DibInfo.Header.biCompression = BI_RGB; 
-		DibInfo.Header.biBitCount = unsigned short(bpp); 
+		DibInfo.Header.biBitCount = (unsigned short)(bpp); 
 		break;
 
 	default:
