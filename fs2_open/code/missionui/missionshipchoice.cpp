@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-15 06:50:49 $
+ * $Author: DTP $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -579,7 +582,8 @@ typedef struct ss_active_item
 } ss_active_item;
 
 static ss_active_item	SS_active_head;
-static ss_active_item	SS_active_items[MAX_WSS_SLOTS];
+//static ss_active_item	SS_active_items[MAX_WSS_SLOTS];//DTP commented out or else singleplayer will only have a max of 12 ships
+static ss_active_item	SS_active_items[MAX_SHIP_TYPES];//DTP, now we have all ships in the TBL, as they can all be playerships
 
 static int SS_active_list_start;
 static int SS_active_list_size;
@@ -793,7 +797,8 @@ void ss_set_carried_icon(int from_slot, int ship_class)
 void clear_active_list()
 {
 	int i;
-	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) { //DTP singleplayer ship choice fix 
+	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { 
 		SS_active_items[i].flags = 0;
 		SS_active_items[i].ship_class = -1;
 	}
@@ -803,18 +808,21 @@ void clear_active_list()
 	SS_active_list_size = 0;
 }
 
+
 // get a free element from SS_active_items[]
 ss_active_item *get_free_active_list_node()
 {
 	int i;
-	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		if ( SS_active_items[i].flags == 0 ) {
+	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) { 
+	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY 12 SHIPS ???, as MAX_WSS_SLOTS will be 12.
+	if ( SS_active_items[i].flags == 0 ) {
 			SS_active_items[i].flags |= SS_ACTIVE_ITEM_USED;
 			return &SS_active_items[i];
 		}
 	}
 	return NULL;
 }
+
 
 // add a ship into the active list
 void active_list_add(int ship_class)
