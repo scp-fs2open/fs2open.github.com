@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.13 $
+ * $Revision: 2.14 $
  * $Author: wmcoolmon $
- * $Date: 2004-05-26 03:52:07 $
+ * $Date: 2004-05-29 02:52:17 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/05/26 03:52:07  wmcoolmon
+ * Ship & weapon modular table files
+ *
  * Revision 2.12  2004/05/11 02:52:11  Goober5000
  * completed the FRED import conversion stuff that I started ages ago
  * --Goober5000
@@ -388,6 +391,7 @@ extern void stuff_int(int *i);
 extern void stuff_byte(ubyte *i);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type);
+extern int stuff_float_list(float* flp, int max_floats);
 extern int stuff_vector_list(vector *vlp, int max_vecs);
 extern void stuff_vector(vector *vp);
 extern void stuff_matrix(matrix *mp);
