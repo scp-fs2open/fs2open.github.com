@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.30 $
- * $Date: 2003-01-21 17:24:16 $
+ * $Revision: 2.31 $
+ * $Date: 2003-01-27 07:46:32 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/01/21 17:24:16  Goober5000
+ * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
+ * help for the sexps in sexp_tree
+ * --Goober5000
+ *
  * Revision 2.29  2003/01/20 05:40:50  bobboau
  * added several sExps for turning glow points and glow maps on and off
  *
@@ -403,7 +408,7 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 
 // the #defines below are to avoid round-off errors
 #define WEAPON_RESERVE_THRESHOLD		0.01f	// energy threshold where ship is considered to have no weapon energy system
-#define FIGHTERBAY_DAMAGE_THRESHOLD		0.01f	// max_hits threshold where fighterbay is considered to take damage
+#define SUBSYS_MAX_HITS_THRESHOLD		0.01f	// max_hits threshold where subsys is considered to take damage
 
 #define	HP_SCALE						1.2			//	1.2 means die when 20% of hits remaining
 #define	MAX_SHIP_HITS				8				// hits to kill a ship
@@ -1533,5 +1538,14 @@ extern int ship_has_dock_bay(int shipnum);
 
 // Goober5000 - needed by new hangar depart code
 extern int ship_get_ship_with_dock_bay(int team);
+
+// Goober5000 - moved here from hudbrackets.cpp
+extern int ship_subsys_is_fighterbay(ship_subsys *ss);
+
+// Goober5000
+extern int ship_fighterbays_all_destroyed(ship *shipp);
+
+// Goober5000
+extern int ship_subsys_takes_damage(ship_subsys *ss);
 
 #endif

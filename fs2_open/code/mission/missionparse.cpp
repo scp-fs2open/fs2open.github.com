@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.32 $
- * $Date: 2003-01-26 00:20:01 $
+ * $Revision: 2.33 $
+ * $Date: 2003-01-27 07:46:33 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/01/26 00:20:01  Goober5000
+ * oops - fixed the nebula bug that wasn't completely fixed :)
+ * --Goober5000
+ *
  * Revision 2.31  2003/01/19 22:20:23  Goober5000
  * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
  * and departure into hangars should now all work properly
@@ -2776,6 +2780,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				Sexp_nodes[wingp->arrival_cue].value = SEXP_KNOWN_FALSE;
 				return 0;
 			}
+
+			// check status of fighterbays - if they're destroyed, we can't launch - but we want to reeval later
+			if (ship_fighterbays_all_destroyed(&Ships[shipnum]))
+				return 0;
 		}
 
 		if ( num_to_create == 0 )
@@ -4787,6 +4795,10 @@ int mission_did_ship_arrive(p_object *objp)
 				Sexp_nodes[objp->arrival_cue].value = SEXP_KNOWN_FALSE;
 				return -1;
 			}
+
+			// Goober5000: aha - also don't create if fighterbay is destroyed
+			if (ship_fighterbays_all_destroyed(&Ships[shipnum]))
+				return -1;
 		}
 
 		object_num = parse_create_object(objp);							// create the ship
@@ -5144,9 +5156,13 @@ int mission_do_departure( object *objp )
 		// make sure ship not dying or departing
 		if (!(Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING)))
 		{
-			if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
+			// also make sure fighterbays aren't destroyed
+			if (!ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]))
 			{
-				return 1;
+				if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
+				{
+					return 1;
+				}
 			}
 		}
 		

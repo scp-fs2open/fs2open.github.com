@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-01-19 22:25:10 $
+ * $Revision: 2.24 $
+ * $Date: 2003-01-27 07:46:32 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/01/19 22:25:10  Goober5000
+ * removed unreferenced variable
+ * --Goober5000
+ *
  * Revision 2.22  2003/01/19 22:20:22  Goober5000
  * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
  * and departure into hangars should now all work properly
@@ -13091,12 +13095,19 @@ void ai_bay_depart()
 		return;
 	}
 
-	// check if parent ship still exists, if not abort depart 
+	// check if parent ship valid; if not, abort depart 
 // ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
 	anchor_shipnum = ship_name_lookup(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
 	if (anchor_shipnum >= 0)
 	{
+		// make sure not dying or departing
 		if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
+		{
+			anchor_shipnum = -1;
+		}
+
+		// make sure fighterbays not destroyed
+		if ( ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]) )
 		{
 			anchor_shipnum = -1;
 		}
