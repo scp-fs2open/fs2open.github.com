@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.4 $
+ * $Date: 2002-08-07 00:44:13 $
+ * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/29 06:35:15  DTP
  * added -almission commandline arguement, will autoload mission i.e fs2_open.exe -almission kickass will autoload kickass.fs2 which should be a multiplayer mission.
  *
@@ -251,8 +254,7 @@ cmdline_parm mouse_coords("-coords", NULL);
 cmdline_parm timeout("-timeout", NULL);
 cmdline_parm d3d_window("-window", NULL);
 cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
-
-
+cmdline_parm gf4fix_arg("-GF4FIX", NULL); //DTP for random tigers GF4fix
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -270,7 +272,7 @@ char *Cmdline_game_password = NULL;
 char *Cmdline_rank_above= NULL;
 char *Cmdline_rank_below = NULL;
 char *Cmdline_connect_addr = NULL;
-char *Cmdline_almission = NULL;	//DTP FOR AUTO-LOAD Multi MISSION
+char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
 int Cmdline_multi_log = 0;
 int Cmdline_server_firing = 0;
 int Cmdline_client_dodamage = 0;
@@ -280,6 +282,7 @@ int Cmdline_mouse_coords = 0;
 int Cmdline_timeout = -1;
 
 int Cmdline_window = 0;
+int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
@@ -643,6 +646,8 @@ int parse_cmdline(int argc, char *argv[])
 		Cmdline_use_last_pilot = 1;
 		Cmdline_start_netgame = 1;
 	}
-
+	if (gf4fix_arg.found() ) {
+	Cmdline_gf4fix = 1;
+	}
 	return 1;
 }
