@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.40 $
- * $Date: 2003-09-05 04:25:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2003-09-07 18:14:52 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/09/05 04:25:29  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.39  2003/08/22 07:35:08  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -848,6 +860,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "hud/hudshield.h"
 #include "ship/shiphit.h"
 #include "missionui/missionloopbrief.h"
+#include "sound/fsspeech.h"
 #include "debugconsole/dbugfile.h"
 #include "debugconsole/timerbar.h"
 
@@ -2463,8 +2476,14 @@ void game_init()
 	}
 
 	if (!Is_standalone) {
+
 		snd_init(use_a3d, use_eax);
 	}
+
+	if(fsspeech_init() == false) {
+		mprintf(("Failed to init speech\n"));
+	} 
+
 /////////////////////////////
 // SOUND INIT END
 /////////////////////////////
@@ -5909,6 +5928,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_DEBRIEF:
 			if ( (new_state != GS_STATE_VIEW_MEDALS) && (new_state != GS_STATE_OPTIONS_MENU) ) {
 				debrief_close();				
+				fsspeech_stop();
 			}
 			break;
 
@@ -7496,6 +7516,8 @@ void game_shutdown(void)
 #ifdef _WIN32
 	timeEndPeriod(1);
 #endif
+
+	fsspeech_deinit();
 
 	// don't ever flip a page on the standalone!
 	if(!(Game_mode & GM_STANDALONE_SERVER)){

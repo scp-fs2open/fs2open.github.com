@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-09-05 04:25:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-07 18:14:54 $
+ * $Author: randomtiger $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/05 04:25:28  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.3  2003/03/18 10:07:04  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -179,6 +191,7 @@
 #include "sound/audiostr.h"
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
+#include "sound/fsspeech.h"
 #include "debugconsole/dbugfile.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -324,6 +337,7 @@ void red_alert_voice_unload()
 void red_alert_voice_play()
 {
 	if ( Red_alert_voice == -1 ){
+		fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].new_text);
 		return;	// voice file doesn't exist
 	}
 
@@ -495,6 +509,8 @@ void red_alert_close()
 	}
 
 	Red_alert_inited = 0;
+
+	fsspeech_stop();
 }
 
 // called once per frame when game state is GS_STATE_RED_ALERT

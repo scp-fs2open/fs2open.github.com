@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-08-31 06:00:41 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2003-09-07 18:14:53 $
+ * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/08/31 06:00:41  bobboau
+ * an asortment of bugfixes, mostly with the specular code,
+ * HUD flickering should be completly gone now
+ *
  * Revision 2.16  2003/08/22 07:35:08  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -1581,6 +1585,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	}
 
 	// Draws just about everything except stars and lines
+
  	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 
 	//spec mapping

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-08-25 04:45:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2003-09-07 18:14:53 $
+ * $Author: randomtiger $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/08/25 04:45:57  Goober5000
+ * added replacement of $rank with the player's rank in any string that appears
+ * in-game (same as with $callsign); also bumped the limit on the length of text
+ * allowed per entry in species.tbl
+ * --Goober5000
+ *
  * Revision 2.6  2003/04/05 11:09:22  Goober5000
  * fixed some fiddly bits with scrolling and ui stuff
  * --Goober5000
@@ -280,6 +286,7 @@
 #include "anim/animplay.h"
 #include "localization/localize.h"
 #include "lighting/lighting.h"
+#include "sound/fsspeech.h"
 #include "debugconsole/dbugfile.h"
 
 #define REVOLUTION_RATE	5.2f
@@ -591,6 +598,7 @@ void techroom_select_new_entry()
 //	Techroom_ship_rot = PI;
 
 	techroom_init_desc(Current_list[Cur_entry].desc, Tech_desc_coords[gr_screen.res][SHIP_W_COORD]);
+	fsspeech_play(FSSPEECH_FROM_TECHROOM, Current_list[Cur_entry].desc);
 	techroom_start_anim();
 }
 
@@ -1173,10 +1181,12 @@ int techroom_button_pressed(int num)
 		case SHIPS_DATA_TAB:
 		case WEAPONS_DATA_TAB:
 		case INTEL_DATA_TAB:
+			fsspeech_stop();
 			techroom_change_tab(num);
 			break;
 
 		case SIMULATOR_TAB:
+			fsspeech_stop();
 #if !defined(E3_BUILD) && !defined(PD_BUILD)
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_SIMULATOR_ROOM);
@@ -1186,6 +1196,7 @@ int techroom_button_pressed(int num)
 #endif
 
 		case CUTSCENES_TAB:
+			fsspeech_stop();
 #if !defined(E3_BUILD) && !defined(PD_BUILD)
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN);
@@ -1195,6 +1206,7 @@ int techroom_button_pressed(int num)
 #endif
 
 		case CREDITS_TAB:
+			fsspeech_stop();
 #if !defined(E3_BUILD) && !defined(PD_BUILD)
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CREDITS);
@@ -1240,6 +1252,7 @@ int techroom_button_pressed(int num)
 			break;
 
 		case EXIT_BUTTON:
+			fsspeech_stop();
 			gamesnd_play_iface(SND_COMMIT_PRESSED);
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 			break;
@@ -1481,6 +1494,7 @@ void techroom_close()
 {
 	int i;
 
+	fsspeech_stop();
 	techroom_stop_anim(-1);
 	for (i=0; i<MAX_WEAPON_TYPES; i++) {
 		if ( Weapon_list[i].animation ) {

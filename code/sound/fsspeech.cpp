@@ -1,13 +1,41 @@
-#include <stdio.h>
-#include <string.h>
+/*
+ * Code created by Thomas Whittaker (RT) for a Freespace 2 source code project
+ *
+ * You may not sell or otherwise commercially exploit the source or things you 
+ * created based on the source.
+ *
+*/ 
 
+#include <windows.h>
+	
+/*
+ * This stuff is for voice select which we are not ready for yet
+ *
+#if FS2_SPEECH
+
+// Have to do this to let sphelper.h compile OK
+#undef Assert
+
+#include <atlbase.h>
+#include <sapi.h>
+#include <sphelper.h>
+
+#if defined(NDEBUG)
+#define Assert(x) do {} while (0)
+#else
+void gr_activate(int);
+#define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
+#endif
+
+#endif
+  */
+  
 
 #include "sound/speech.h"
 #include "osapi/osregistry.h"
 
+#include "debugconsole/dbugfile.h"
 #include "sound/fsspeech.h"
-
-
 
 const int MAX_SPEECH_BUFFER_LEN = 4096;
 
@@ -30,9 +58,12 @@ bool fsspeech_init()
 
 	// Get the settings from the registry
 	for(int i = 0; i < FSSPEECH_FROM_MAX; i++) {
-		FSSpeech_play_from[i] = true;
-//			os_config_read_uint(NULL, FSSpeech_play_id[i], 0) ? true : false;
+		FSSpeech_play_from[i] =
+			os_config_read_uint(NULL, FSSpeech_play_id[i], 0) ? true : false;
 	}
+
+	int volume = os_config_read_uint(NULL, "SpeechVolume", 100);
+	speech_set_volume(volume);
 
 	return true;
 }
