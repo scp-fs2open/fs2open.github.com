@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.83 $
- * $Date: 2004-02-07 00:48:52 $
+ * $Revision: 2.84 $
+ * $Date: 2004-02-14 04:26:58 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2004/02/07 00:48:52  Goober5000
+ * made FS2 able to account for subsystem mismatches between ships.tbl and the
+ * model file - e.g. communication vs. communications
+ * --Goober5000
+ *
  * Revision 2.82  2004/02/04 08:41:02  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -7734,11 +7739,11 @@ void sexp_allow_weapon( int n )
 	mission_campaign_save_persistent( CAMPAIGN_PERSISTENT_WEAPON, sindex );
 }
 
-// functions to deal with breaking/fixing the warp engines on ships/wings.  should_break is true when
-// we are breaking the warp drive (can be repaired). The parameter is 0 when is getting broken (i.e.
-// can be fixed by repair).  The repair parameter tells us whether we are clearing the destroyed or broken
-// flag (1), or setting them (0).
-void sexp_deal_with_warp( int n, int should_break, int nix )
+// modified by Goober5000; now it should work properly
+// function to deal with breaking/fixing the warp engines on ships/wings.
+// --repairable is true when we are breaking the warp drive (can be repaired)
+// --damage_it is true when we are sabotaging it, one way or the other; false when fixing it
+void sexp_deal_with_warp( int n, int repairable, int damage_it )
 {
 	int index, flag;
 	char *name;
@@ -7755,12 +7760,12 @@ void sexp_deal_with_warp( int n, int should_break, int nix )
 		if ( index != -1 ) {
 
 			// set the flag value accoring to whether we are destroying the warp or just breaking it
-			if ( should_break )
+			if ( repairable )
 				flag = SF_WARP_BROKEN;
 			else
 				flag = SF_WARP_NEVER;
 
-			if ( nix )
+			if ( damage_it )
 				Ships[index].flags |= flag;
 			else
 				Ships[index].flags &= ~flag;
@@ -7776,12 +7781,12 @@ void sexp_deal_with_warp( int n, int should_break, int nix )
 				continue;
 			}
 #endif
-			if ( should_break )
+			if ( repairable )
 				flag = P_SF_WARP_BROKEN;
 			else
-				flag = P_SF_WARP_BROKEN;
+				flag = P_SF_WARP_NEVER;		// Goober5000 - was BROKEN... bug, no?
 
-			if ( nix )
+			if ( damage_it )
 				pobjp->flags |= flag;
 			else
 				pobjp->flags &= ~flag;
@@ -11399,15 +11404,13 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
+			// Goober5000 - sigh, was this messed up all along?
 			case OP_WARP_BROKEN:
 			case OP_WARP_NOT_BROKEN:
-				sexp_deal_with_warp( node, 0, op_num==OP_WARP_BROKEN?1:0 );
-				sexp_val = 1;
-				break;
-
 			case OP_WARP_NEVER:
 			case OP_WARP_ALLOWED:
-				sexp_deal_with_warp( node, 1, op_num==OP_WARP_NEVER?1:0 );
+				sexp_deal_with_warp( node, (op_num==OP_WARP_BROKEN) || (op_num==OP_WARP_NOT_BROKEN),
+					(op_num==OP_WARP_BROKEN) || (op_num==OP_WARP_NEVER) );
 				sexp_val = 1;
 				break;
 
