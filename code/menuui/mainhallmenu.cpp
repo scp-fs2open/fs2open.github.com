@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:06 $
+ * $Revision: 2.3 $
+ * $Date: 2002-08-04 05:12:10 $
  * $Author: penguin $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/29 07:56:10  DTP
  * FIX; Startgame arguement dont go ahead when a singleplayer pilot is selected
  *
@@ -1910,9 +1913,9 @@ void main_hall_blit_version()
 	// get the length of the string
 	gr_get_string_size(&w,NULL,version_string);
 
-	// print the string out in the lower right corner
-	gr_set_color_fast(&Color_white);
-	gr_string(gr_screen.max_w - 55, gr_screen.max_h - 12, version_string);
+	// print the string near the lower left corner
+	gr_set_color_fast(&Color_bright_white);
+	gr_string(5, gr_screen.max_h - 24, version_string);
 }
 
 // blit any necessary tooltips
