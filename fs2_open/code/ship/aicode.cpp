@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.81 $
- * $Date: 2005-01-13 02:25:52 $
- * $Author: phreak $
+ * $Revision: 2.82 $
+ * $Date: 2005-01-18 06:14:29 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/01/13 02:25:52  phreak
+ * difficulty table changes.  this lets modders specify how the difficulty level affect
+ * how the AI behaves and controls advantages given to the player based on the
+ * skill level.
+ *
+ * --phreak
+ *
  * Revision 2.80  2005/01/12 00:52:41  Goober5000
  * two minor but important bugfixes to the multiple ship docking
  * --Goober5000
@@ -1549,7 +1556,7 @@ void ai_init()
 		}
 
 		if ((rval = setjmp(parse_abort)) != 0) {
-			nprintf(("Warning", "Unable to parse %difficulty!  Code = %i.\n", rval));
+			nprintf(("Warning", "Unable to parse 'difficulty.tbl'!  Code = %i.\n", rval));
 		} else {			
 			parse_difftbl();			
 		}
