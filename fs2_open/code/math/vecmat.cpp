@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-10-31 21:49:49 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-01-06 00:27:34 $
+ * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/10/31 21:49:49  taylor
+ * fix math error that was hitting Assert()'s and making OGL models flip around for no reason
+ *
  * Revision 2.11  2004/07/26 20:47:36  Kazan
  * remove MCD complete
  *
@@ -2956,4 +2959,34 @@ int vm_vec_dist_to_line(vector *p, vector *l0, vector *l1, vector *nearest, floa
 		return 1;						// after the line
 	}
 	return 0;							// on the line
+}
+
+// Goober5000
+// Finds the distance squared to a line.  Same as above, except it uses vm_vec_dist_squared, which is faster;
+// and it doesn't check whether the nearest point is on the line segment.
+void vm_vec_dist_squared_to_line(vector *p, vector *l0, vector *l1, vector *nearest, float *dist)
+{
+	vector a, b, c;
+	float b_mag, comp;
+
+#ifndef NDEBUG
+	if(vm_vec_same(l0, l1)){
+		*nearest = vmd_zero_vector;
+		return;
+	}
+#endif
+
+	// compb_a == a dot b / len(b)
+	vm_vec_sub(&a, p, l0);
+	vm_vec_sub(&b, l1, l0);		
+	b_mag = vm_vec_copy_normalize(&c, &b);	
+
+	// calculate component
+	comp = vm_vec_dotprod(&a, &b) / b_mag;
+
+	// stuff nearest
+	vm_vec_scale_add(nearest, l0, &c, comp);
+
+	// get the distance
+	*dist = vm_vec_dist_squared(nearest, p);
 }
