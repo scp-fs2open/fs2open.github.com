@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-01-16 22:39:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.28 $
+ * $Date: 2005-01-29 05:34:30 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/01/16 22:39:09  wmcoolmon
+ * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
+ *
  * Revision 2.26  2005/01/12 00:52:42  Goober5000
  * two minor but important bugfixes to the multiple ship docking
  * --Goober5000
@@ -1170,8 +1173,16 @@ int physics_paused = 0, ai_paused = 0;
 
 
 // Goober5000
+extern void call_doa(object *child, object *parent);
 void move_one_docked_object(object *objp, object *parent_objp)
 {
+	// in FRED, just move and return
+	if (Fred_running)
+	{
+		call_doa(objp, parent_objp);
+		return;
+	}
+
 	// support ships don't keep up if they're undocking
 	ship *shipp = &Ships[objp->instance];
 	if (Ship_info[shipp->ship_info_index].flags & SIF_SUPPORT)
@@ -1194,7 +1205,6 @@ void move_one_docked_object(object *objp, object *parent_objp)
 	}
 
 	// we're here, so we move with our parent object
-	extern void call_doa(object *child, object *parent);
 	call_doa(objp, parent_objp);
 }
 
