@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.79 $
- * $Date: 2005-02-04 20:06:08 $
- * $Author: taylor $
+ * $Revision: 2.80 $
+ * $Date: 2005-02-19 07:57:03 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2005/02/04 20:06:08  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.78  2005/01/27 04:23:18  wmcoolmon
  * Ship autorepair, requested by TBP
  *
@@ -1025,7 +1028,7 @@ typedef struct ship {
 	float emp_decr;									// how much to decrement EMP effect per second for this ship
 
 	// contrail stuff
-	short trail_num[MAX_SHIP_CONTRAILS];	
+	trail *trail_ptr[MAX_SHIP_CONTRAILS];	
 
 	// tag stuff
 	float tag_total;									// total tag time
@@ -1059,7 +1062,7 @@ typedef struct ship {
 	int *replacement_textures;
 	int replacement_textures_buf[MAX_MODEL_TEXTURES];	// replacement texture for this ship
 
-	short ABtrail_num[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
+	trail *ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
 

@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/02/18 04:54:44  wmcoolmon
+ * Added $Tech Model (after +Tech Description)
+ *
  * Revision 2.39  2005/02/04 20:06:10  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -531,7 +534,7 @@ typedef struct weapon {
 	vector	homing_pos;						// world position missile is homing on
 	short		swarm_index;					// index into swarm missile info, -1 if not WIF_SWARM
 	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
-	int		trail_num;						// -1 if no trail, else index into Trails array
+	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
 	int		group_id;						// Which group this is in.
 

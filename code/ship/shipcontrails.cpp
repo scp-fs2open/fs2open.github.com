@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-01-31 10:34:39 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-02-19 07:57:03 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/01/31 10:34:39  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.15  2005/01/28 11:39:18  Goober5000
  * cleaned up some build warnings
  * --Goober5000
@@ -150,11 +153,11 @@ void ct_ship_create(ship *shipp)
 
 	// null out the ct indices for this guy
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		shipp->trail_num[idx] = (short)-1;
+		shipp->trail_ptr[idx] = NULL;
 	}
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		shipp->ABtrail_num[idx] = (short)-1;
+		shipp->ABtrail_ptr[idx] = NULL;
 	}
 
 
@@ -168,13 +171,13 @@ void ct_ship_delete(ship *shipp)
 	Assert(shipp != NULL);
 	// free up any contrails this guy may have had
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		if(shipp->trail_num[idx] >= 0){
-			trail_object_died(shipp->trail_num[idx]);
-			shipp->trail_num[idx] = (short)-1;
+		if(shipp->trail_ptr[idx] != NULL){
+			trail_object_died(shipp->trail_ptr[idx]);
+			shipp->trail_ptr[idx] = NULL;
 		}
-		if(shipp->ABtrail_num[idx] >= 0){
-			trail_object_died(shipp->ABtrail_num[idx]);
-			shipp->ABtrail_num[idx] = (short)-1;
+		if(shipp->ABtrail_ptr[idx] != NULL){
+			trail_object_died(shipp->ABtrail_ptr[idx]);
+			shipp->ABtrail_ptr[idx] = NULL;
 		}
 	}
 }
@@ -214,10 +217,10 @@ void ct_ship_process(ship *shipp)
 	if(ct_below_limit(objp)){
 		// kill any active trails he has
 		for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-			if(shipp->trail_num[idx] >= 0){
+			if(shipp->trail_ptr[idx] != NULL){
 			//lets make sure it only erases nebula trails in nebula missions
-					trail_object_died(shipp->trail_num[idx]);
-					shipp->trail_num[idx] = (short)-1;
+					trail_object_died(shipp->trail_ptr[idx]);
+					shipp->trail_ptr[idx] = NULL;
 			}
 		}
 	}
@@ -251,7 +254,7 @@ int ct_has_contrails(ship *shipp)
 	int idx;
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		if(shipp->trail_num[idx] >= 0){
+		if(shipp->trail_ptr[idx] != NULL){
 			return 1;
 		}
 	}
@@ -287,17 +290,17 @@ void ct_update_contrails(ship *shipp)
 	// process each contrail	
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		// if this is a valid contrail
-			if(shipp->trail_num[idx] >= 0){	
+			if(shipp->trail_ptr[idx] != NULL){	
 				// get the point for the contrail
 				vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
 				vm_vec_add2(&v1, &objp->pos);
 
 				// if the spew stamp has elapsed
-				if(trail_stamp_elapsed(shipp->trail_num[idx])){	
-					trail_add_segment(shipp->trail_num[idx], &v1);
-					trail_set_stamp(shipp->trail_num[idx]);
+				if(trail_stamp_elapsed(shipp->trail_ptr[idx])){	
+					trail_add_segment(shipp->trail_ptr[idx], &v1);
+					trail_set_stamp(shipp->trail_ptr[idx]);
 				} else {
-					trail_set_segment(shipp->trail_num[idx], &v1);
+					trail_set_segment(shipp->trail_ptr[idx], &v1);
 				}			
 			}
 	}
@@ -331,13 +334,13 @@ void ct_create_contrails(ship *shipp)
 
 	for(idx=0; idx<sip->ct_count; idx++){
 			//if (this is a neb mision and this is a neb trail) or an ABtrail -Bobboau
-			shipp->trail_num[idx] = (short)trail_create(sip->ct_info[idx]);	
+			shipp->trail_ptr[idx] = trail_create(sip->ct_info[idx]);	
 	
 			// add the point		
 			vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
-			trail_add_segment(shipp->trail_num[idx], &v1);
-			trail_add_segment(shipp->trail_num[idx], &v1);
+			trail_add_segment(shipp->trail_ptr[idx], &v1);
+			trail_add_segment(shipp->trail_ptr[idx], &v1);
 	}
 
 #endif
@@ -373,8 +376,8 @@ void ct_ship_process_ABtrails(ship *shipp)
 
 	if(!(objp->phys_info.flags & PF_AFTERBURNER_ON)){ //if the after burners aren't on -Bobboau
 		for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-			trail_object_died(shipp->ABtrail_num[idx]);
-			shipp->ABtrail_num[idx] = (short)-1;
+			trail_object_died(shipp->ABtrail_ptr[idx]);
+			shipp->ABtrail_ptr[idx] = NULL;
 		}
 	}
 
@@ -425,16 +428,16 @@ void ct_create_ABtrails(ship *shipp)
 
 		for(idx=0; idx<shipp->ab_count; idx++){
 		
-			shipp->ABtrail_num[idx] = (short)trail_create(shipp->ab_info[idx]);	
+			shipp->ABtrail_ptr[idx] = trail_create(shipp->ab_info[idx]);	
 			// get the point for the contrail
 			vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
 			// if the spew stamp has elapsed
-			if(trail_stamp_elapsed(shipp->ABtrail_num[idx])){	
-				trail_add_segment(shipp->ABtrail_num[idx], &v1);
-				trail_set_stamp(shipp->ABtrail_num[idx]);
+			if(trail_stamp_elapsed(shipp->ABtrail_ptr[idx])){	
+				trail_add_segment(shipp->ABtrail_ptr[idx], &v1);
+				trail_set_stamp(shipp->ABtrail_ptr[idx]);
 			} else {
-				trail_set_segment(shipp->ABtrail_num[idx], &v1);
+				trail_set_segment(shipp->ABtrail_ptr[idx], &v1);
 			}
 		}
 /*		if( objp == Player_obj){
@@ -468,17 +471,17 @@ void ct_update_ABtrails(ship *shipp)
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		if(objp->phys_info.flags & PF_AFTERBURNER_ON){//ABtrails
-			if(shipp->ABtrail_num[idx] >= 0){	
+			if(shipp->ABtrail_ptr[idx] >= 0){	
 				// get the point for the contrail
 				vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
 				vm_vec_add2(&v1, &objp->pos);
 
 				// if the spew stamp has elapsed
-				if(trail_stamp_elapsed(shipp->ABtrail_num[idx])){	
-					trail_add_segment(shipp->ABtrail_num[idx], &v1);
-					trail_set_stamp(shipp->ABtrail_num[idx]);
+				if(trail_stamp_elapsed(shipp->ABtrail_ptr[idx])){	
+					trail_add_segment(shipp->ABtrail_ptr[idx], &v1);
+					trail_set_stamp(shipp->ABtrail_ptr[idx]);
 				} else {
-					trail_set_segment(shipp->ABtrail_num[idx], &v1);
+					trail_set_segment(shipp->ABtrail_ptr[idx], &v1);
 				}			
 			}
 		}
@@ -500,7 +503,7 @@ int ct_has_ABtrails(ship *shipp)
 	}
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		if(shipp->ABtrail_num[idx] >= 0){
+		if(shipp->ABtrail_ptr[idx] != NULL){
 			return 1;
 		}
 	}

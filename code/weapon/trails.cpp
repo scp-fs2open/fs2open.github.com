@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.20 $
- * $Date: 2004-10-31 22:02:47 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2005-02-19 07:54:33 $
+ * $Author: wmcoolmon $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2004/10/31 22:02:47  taylor
+ * little cleanup
+ *
  * Revision 2.19  2004/07/26 20:47:56  Kazan
  * remove MCD complete
  *
@@ -191,82 +194,64 @@
 
 #define MAX_TRAILS 1500
 
-// Stuff for missile trails doesn't need to be saved or restored... or does it?
-typedef struct trail {
-	int		head, tail;						// pointers into the queue for the trail points
-	vector	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
-	float		val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
-	int		object_died;					// set to zero as long as object	
-	int		trail_stamp;					// trail timestamp	
-
-	// trail info
-	trail_info info;							// this is passed when creating a trail
-
-	struct	trail * prev;
-	struct	trail * next;
-} trail;
+trail::~trail()
+{
+	prev->next = next;
+	next->prev = prev;
+}
 
 
 int Num_trails = 0;
-trail Trails[MAX_TRAILS];
+//trail Trails[MAX_TRAILS];
+trail Mytrails;
 
-trail Trail_free_list;
-trail Trail_used_list;
+//trail Trail_free_list;
+//trail Trail_used_list;
 
 // Reset everything between levels
 void trail_level_init()
 {
-	int i;
+//	int i;
 
 	Num_trails = 0;
-	list_init( &Trail_free_list );
+	list_init(&Mytrails);
+	/*list_init( &Trail_free_list );
 	list_init( &Trail_used_list );
 
 	// Link all object slots into the free list
 	for (i=0; i<MAX_TRAILS; i++)	{
 		list_append(&Trail_free_list, &Trails[i] );
-	}
+	}*/
 }
 
 //returns the number of a free trail
 //returns -1 if no free trails
-int trail_create(trail_info info)
+trail *trail_create(trail_info info)
 {
-	int trail_num;
 	trail *trailp;
 
 	// standalone server should never create trails
 	if(Game_mode & GM_STANDALONE_SERVER){
-		return -1;
+		return NULL;
 	}
 
 	if ( !Detail.weapon_extras )	{
 		// No trails at slot 0
-		return -1;
+		return NULL;
 	}
 
-	if (Num_trails >= MAX_TRAILS ) {
+	/*if (Num_trails >= MAX_TRAILS ) {
 		#ifndef NDEBUG
 		mprintf(("Trail creation failed - too many trails!\n" ));
 		#endif
-		return -1;
-	}
+		return NULL;
+	}*/
 
 	// Find next available trail
-	trailp = GET_FIRST(&Trail_free_list);
-	Assert( trailp != &Trail_free_list );		// shouldn't have the dummy element
-
-	// remove trailp from the free list
-	list_remove( &Trail_free_list, trailp );
-	
-	// insert trailp onto the end of used list
-	list_append( &Trail_used_list, trailp );
+	trailp = new trail;
 
 	// increment counter
 	Num_trails++;
-
-	// get objnum
-	trail_num = trailp-Trails;
 
 	// Init the trail data
 	trailp->info = info;
@@ -275,7 +260,9 @@ int trail_create(trail_info info)
 	trailp->object_died = 0;		
 	trailp->trail_stamp = timestamp(trailp->info.stamp);
 
-	return trail_num;
+	list_append(&Mytrails, trailp);
+
+	return trailp;
 }
 
 // output top and bottom vectors
@@ -297,12 +284,12 @@ void trail_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos,
 }
 
 // trail is on ship
-int trail_is_on_ship(int trail_index, ship *shipp)
+int trail_is_on_ship(trail *trailp, ship *shipp)
 {
 	int idx;
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		if(shipp->trail_num[idx] == (short)trail_index){
+		if(shipp->trail_ptr[idx] == trailp){
 			return 1;
 		}
 	}
@@ -470,7 +457,7 @@ void trail_render( trail * trailp )
 	int n = trailp->tail;
 
 	// if this trail is on the player ship, and he's in any padlock view except rear view, don't draw	
-	if((Player_ship != NULL) && trail_is_on_ship(trailp - Trails, Player_ship) && (Viewer_mode & (VM_PADLOCK_UP | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)) ){
+	if((Player_ship != NULL) && trail_is_on_ship(trailp, Player_ship) && (Viewer_mode & (VM_PADLOCK_UP | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)) ){
 		return;
 	}
 
@@ -604,13 +591,8 @@ void trail_render( trail * trailp )
 
 
 
-void trail_add_segment( int trail_num, vector *pos )
+void trail_add_segment( trail *trailp, vector *pos )
 {
-	if (trail_num < 0 ) return;
-	if (trail_num >= MAX_TRAILS ) return;
-
-	trail *trailp = &Trails[trail_num];
-
 	int next = trailp->tail;
 	trailp->tail++;
 	if ( trailp->tail >= NUM_TRAIL_SECTIONS )
@@ -627,13 +609,8 @@ void trail_add_segment( int trail_num, vector *pos )
 	trailp->val[next] = 0.0f;
 }		
 
-void trail_set_segment( int trail_num, vector *pos )
+void trail_set_segment( trail *trailp, vector *pos )
 {
-	if (trail_num < 0 ) return;
-	if (trail_num >= MAX_TRAILS ) return;
-
-	trail *trailp = &Trails[trail_num];
-
 	int next = trailp->tail-1;
 	if ( next < 0 )	{
 		next = NUM_TRAIL_SECTIONS-1;
@@ -644,13 +621,16 @@ void trail_set_segment( int trail_num, vector *pos )
 
 void trail_move_all(float frametime)
 {
-	trail *trailp;	
+	int num_alive_segments;
+	trail *trailp;
+	trail *next_trail;
 
-	trailp=GET_FIRST(&Trail_used_list);
+	trailp=GET_FIRST(&Mytrails);
 
-	while ( trailp!=END_OF_LIST(&Trail_used_list) )	{
-
-		int num_alive_segments = 0;
+	while ( trailp!=END_OF_LIST(&Mytrails) )
+	{
+		next_trail = GET_NEXT(trailp);
+		num_alive_segments = 0;
 
 		if ( trailp->tail != trailp->head )	{
 			int n = trailp->tail;			
@@ -668,35 +648,21 @@ void trail_move_all(float frametime)
 			} while ( n != trailp->head );
 		}		
 	
-		if ( trailp->object_died && (num_alive_segments < 1) )	{
-			// delete it from the list!
-			trail *next_one = GET_NEXT(trailp);
-
-			// remove objp from the used list
-			list_remove( &Trail_used_list, trailp);
-
-			// add objp to the end of the free
-			list_append( &Trail_free_list, trailp );
+		if ( trailp->object_died && (num_alive_segments < 1) )
+		{
+			delete trailp;
 
 			// decrement counter
 			Num_trails--;
-
-			Assert(Num_trails >= 0);
 			
-			trailp = next_one;
-		} else {
-			trailp=GET_NEXT(trailp);
 		}
+
+		trailp = next_trail;
 	}
 }
 
-void trail_object_died( int trail_num )
+void trail_object_died( trail *trailp )
 {
-	if (trail_num < 0 ) return;
-	if (trail_num >= MAX_TRAILS ) return;
-
-	trail *trailp = &Trails[trail_num];
-	
 	trailp->object_died++;
 }
 
@@ -709,20 +675,20 @@ void trail_render_all()
 		return;
 	}
 
-	trailp=GET_FIRST(&Trail_used_list);
+	trailp=GET_FIRST(&Mytrails);
 
-	while ( trailp!=END_OF_LIST(&Trail_used_list) )	{
+	while ( trailp!=END_OF_LIST(&Mytrails) )	{
 		trail_render(trailp);
 		trailp=GET_NEXT(trailp);
 	}
 
 }
-int trail_stamp_elapsed(int trail_num)
+int trail_stamp_elapsed(trail *trailp)
 {
-	return timestamp_elapsed(Trails[trail_num].trail_stamp);
+	return timestamp_elapsed(trailp->trail_stamp);
 }
 
-void trail_set_stamp(int trail_num)
+void trail_set_stamp(trail *trailp)
 {
-	Trails[trail_num].trail_stamp = timestamp(Trails[trail_num].info.stamp);
+	trailp->trail_stamp = timestamp(trailp->info.stamp);
 }
