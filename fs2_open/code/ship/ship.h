@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.4 $
- * $Date: 2002-10-19 19:29:29 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2002-10-31 21:56:44 $
+ * $Author: DTP $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/10/19 19:29:29  bobboau
+ * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ *
  * Revision 2.3  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -696,7 +699,7 @@ typedef struct ship {
 #define SEF_BEEN_TAGGED			(1<<4)
 #define SEF_RED_ALERT_CARRY	(1<<5)
 
-#define MAX_EXITED_SHIPS	200
+#define MAX_EXITED_SHIPS	800 //DTP changed for MAX_SHIPS sake. double of max_ships.
 
 typedef struct exited_ship {
 	char		ship_name[NAME_LENGTH];
