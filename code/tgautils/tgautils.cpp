@@ -9,12 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-09-28 19:54:32 $
- * $Author: Kazan $
+ * $Revision: 2.9 $
+ * $Date: 2004-10-09 17:44:10 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/09/28 19:54:32  Kazan
+ * | is binary or, || is boolean or - please use the right one
+ * autopilot velocity ramping biasing
+ * made debugged+k kill guardianed ships
+ *
  * Revision 2.7  2004/09/22 03:50:13  tbird
  * Modified the image loading to accept 24 and 32 bit images
  *
@@ -98,6 +103,7 @@
 #include "graphics/2d.h"
 #include "openil/il_func.h"
 
+extern int Cmdline_jpgtga;
 
 // -----------------
 //
@@ -408,7 +414,6 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 //
 int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *palette )
 {	
-#ifndef USE_DEVIL_TGA
 	targa_header header;
 	CFILE *targa_file;
 	char filename[MAX_FILENAME_LEN];
@@ -466,39 +471,15 @@ int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *pale
 	*h = header.height;
 	*bpp = header.pixel_depth;
 
-	Assert(*bpp == 16 || *bpp == 32 || *bpp == 24);
-	if(*bpp != 16 && *bpp != 32 && *bpp != 24)
+	Assert( (*bpp == 16) || (*bpp == 24) || (*bpp == 32) );
+
+	// If we aren't using the -jpgtga option then don't even try to use anything other
+	// than 16-bit TARGAs.  Otherwise DevIL should be available to deal with heigher bits.
+	if ( !Cmdline_jpgtga && (*bpp != 16) )
 		return TARGA_ERROR_READING;
 
-#else
-	char filename[MAX_FILENAME_LEN];
-	ILuint tgaimage;
-	ILint ilw, ilh, ilbpp;
-		
-	strcpy( filename, real_filename );
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-	strcat( filename, ".tga" );
-
-	ilGenImages(1,&tgaimage);
-	ilBindImage(tgaimage);
-
-	if (ilLoadImage(filename) == IL_FALSE) {
-		mprintf(( "Couldn't open '%s' -- some kind of devIL-error: %s\n", filename, iluErrorString(ilGetError()) ));
-		ilDeleteImages(1,&tgaimage);
+	if ( Cmdline_jpgtga && (*bpp != 16) && (*bpp != 24) && (*bpp != 32) )
 		return TARGA_ERROR_READING;
-	}
-
-	ilGetIntegerv(IL_IMAGE_WIDTH,&ilw);
-	ilGetIntegerv(IL_IMAGE_HEIGHT,&ilh);
-	ilGetIntegerv(IL_IMAGE_BITS_PER_PIXEL,&ilbpp);
-
-	*w = ilw;
-	*h = ilh;
-	*bpp = ilbpp;
-
-	ilDeleteImages(1,&tgaimage);
-#endif
 
 	return TARGA_ERROR_NONE;
 }
