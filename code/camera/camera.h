@@ -1,4 +1,7 @@
 #include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include <string>
+#include <vector>
 
 class camera
 {
@@ -33,8 +36,46 @@ public:
 	matrix *get_orientation() {return &orientation;}
 
 	//Do
-	void do_movement(float in_frametime);
+	void do_frame(float in_frametime);
 };
 
-//Some global cameras
-extern camera free_camera;
+class subtitle
+{
+private:
+	std::vector<std::string> text_lines;
+	int text_pos[2];
+
+	float display_time;
+	float fade_time;
+	color text_color;
+
+	//Done with set
+	char imageanim[MAX_FILENAME_LEN];
+	int image_id;
+	int image_pos[2];
+	
+	//Time this has been displayed
+	float time_displayed;
+
+	//When to end it
+	float time_displayed_end;
+public:
+	subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim = NULL, float in_fade_time = 0.0f, color *in_text_color = NULL, bool center_x = false, bool center_y = false, int in_width = 200);
+	~subtitle();
+
+	void do_frame(float frametime);
+};
+
+//Some global stuff
+extern std::vector<subtitle> Subtitles;
+extern std::vector<camera> Cameras;
+//Preset cameras
+extern camera* Free_camera;
+
+//Helpful functions
+void cameras_init();
+void cameras_close();
+void cameras_do_frame(float frametime);
+void subtitles_init();
+void subtitles_close();
+void subtitles_do_frame(float frametime);
