@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.23 $
- * $Date: 2004-02-20 21:45:41 $
+ * $Revision: 2.24 $
+ * $Date: 2004-03-19 14:51:55 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/02/20 21:45:41  randomtiger
+ * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
+ * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
+ * Fixed setup of center_alpha in OGL which was causing crash.
+ *
  * Revision 2.22  2004/02/16 11:47:33  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -357,6 +362,22 @@ typedef struct
 
 } PIXELFORMAT;
 
+typedef struct tcache_slot_d3d {
+
+	IDirect3DTexture8 *d3d8_thandle;
+
+	float						u_scale, v_scale;
+	int							bitmap_id;
+	int							size;
+	char						used_this_frame;
+	int							time_created;
+	ushort						w, h;
+
+	// sections
+	tcache_slot_d3d			*data_sections[MAX_BMAP_SECTIONS_X][MAX_BMAP_SECTIONS_Y];
+	tcache_slot_d3d			*parent;
+} tcache_slot_d3d;
+
 // This vertex type tells D3D that it has already been transformed an lit
 // D3D will simply display the polygon with no extra processing
 typedef struct { 
@@ -545,6 +566,7 @@ bool d3d_read_header_d3dx(char *file, int type, int *w, int *h);
 void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum);
 
 bool d3d_init_light();
+int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslot, int fail_on_full);
 
 extern D3DCOLOR ambient_light;
 

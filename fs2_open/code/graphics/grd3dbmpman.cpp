@@ -584,9 +584,6 @@ static void bm_d3d_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte 
 	} 
 }
 
-int D3d_tuse = 0;
-int Wasted_space = 0;
-
 void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
 {	
 	ubyte *data, *palette;
@@ -601,8 +598,6 @@ void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 		bpp = 32;
 	}
 
-	Wasted_space += (bmp->w * bmp->h * (bpp / 8));
-   //	mprintf(("%s %d\n",be->filename,(bmp->w * bmp->h * (bpp / 8))));
 	data = (ubyte *)bm_d3d_malloc(bitmapnum, bmp->w * bmp->h * (bpp / 8));
 	bmp->data = (uint)data;
 	memset( data, 0, bmp->w * bmp->h * (bpp / 8));
@@ -810,6 +805,30 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 		bm_unlock(handle); 
 		
 	 	if(u_scale) *u_scale = d3d_bitmap_entry[bitmapnum].uscale;
+	 	if(v_scale) *v_scale = d3d_bitmap_entry[bitmapnum].vscale;
+
+		d3d_SetTexture(stage, d3d_bitmap_entry[bitmapnum].tinterface);
+		return true;
+	}
+
+	if(Cmdline_d3d_lesstmem && bm_bitmaps[bitmapnum].type == BM_TYPE_PCX)
+	{
+		if(d3d_bitmap_entry[bitmapnum].tinterface == NULL)
+		{
+			// Trick the normal functions into getting the info we need
+			tcache_slot_d3d t;
+			t.bitmap_id = -1;
+
+			d3d_create_texture(handle, flags, &t, 0); 
+			d3d_bitmap_entry[bitmapnum].uscale = t.u_scale;
+	 		d3d_bitmap_entry[bitmapnum].vscale = t.v_scale;
+		  	d3d_bitmap_entry[bitmapnum].tinterface = t.d3d8_thandle;
+
+			free((void *) bm_bitmaps[bitmapnum].bm.data);
+			bm_bitmaps[bitmapnum].bm.data = NULL;
+		}
+
+		if(u_scale) *u_scale = d3d_bitmap_entry[bitmapnum].uscale;
 	 	if(v_scale) *v_scale = d3d_bitmap_entry[bitmapnum].vscale;
 
 		d3d_SetTexture(stage, d3d_bitmap_entry[bitmapnum].tinterface);
@@ -1121,9 +1140,6 @@ void bm_d3d_unload_all()
 			bm_unload(bm_bitmaps[i].handle);
 		}
 	}
-
-	D3d_tuse = 0;
-	Wasted_space = 0;
 }
 
 // Marks a texture as being used for this level
@@ -1206,10 +1222,6 @@ void bm_d3d_page_in_start()
 	}
 
 	GlobalD3DVars::lpD3DDevice->ResourceManagerDiscardBytes(0);
-
-
-	D3d_tuse = 0;
-	Wasted_space = 0;
 }
 
 void bm_d3d_page_in_stop()

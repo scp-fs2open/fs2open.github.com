@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.80 $
- * $Date: 2004-03-16 18:37:02 $
+ * $Revision: 2.81 $
+ * $Date: 2004-03-19 14:51:55 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2004/03/16 18:37:02  randomtiger
+ * Added new launcher flag construction code.
+ *
  * Revision 2.79  2004/03/08 22:16:32  phreak
  * fugly hack to get skyboxes working in HT&L.  please port stars_draw() to use HT&L
  * so this hack can be removed
@@ -3046,16 +3049,6 @@ void game_get_framerate()
 		gr_string( 20, 170, mem_buffer);
 		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
 		gr_string( 20, 180, mem_buffer);
-
-		extern int Wasted_space;
-		extern int D3d_tuse;   
-
-		sprintf(mem_buffer,"Wasted memory %d Meg, D3D Texture mem: %d", 
-			Wasted_space/1024/1024,
-			D3d_tuse/1024/1024);
-		gr_string( 20, 200, mem_buffer);
-
-
 	}
 
 #ifndef NDEBUG

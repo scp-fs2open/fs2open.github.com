@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.48 $
- * $Date: 2004-03-19 11:44:04 $
+ * $Revision: 2.49 $
+ * $Date: 2004-03-19 14:51:54 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2004/03/19 11:44:04  randomtiger
+ * Removed -d3d_notmanaged param.
+ * Tided D3D texture code. Merged remaining section code into the rest of the system.
+ * Prepared for removal of code causing waste of memory for secondry store of textures.
+ *
  * Revision 2.47  2004/02/27 04:09:55  bobboau
  * fixed a Z buffer error in HTL submodel rendering,
  * and glow points,
@@ -470,6 +475,6 @@ extern int Cmdline_show_mem_usage;
 extern int Cmdline_rt;
 extern char *Cmdline_start_mission;
 
-//extern float global_scaleing_factor;
+extern int Cmdline_d3d_lesstmem;
 
 #endif
