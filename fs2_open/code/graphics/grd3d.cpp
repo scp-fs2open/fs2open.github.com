@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-07-04 02:27:48 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2003-07-06 00:19:25 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/07/04 02:27:48  phreak
+ * added support for cloaking.
+ * i will need to contact someone who knows d3d to get this to work
+ *
  * Revision 2.11  2003/03/19 23:06:39  Goober5000
  * bit o' housecleaning
  * --Goober5000
@@ -458,22 +462,9 @@ const D3DMULTISAMPLE_TYPE multisample_types[multisample_max] =
 	D3DMULTISAMPLE_16_SAMPLES
 };
 
-HWND select_vmode_dialog_hwnd   = NULL;
-bool select_vmode_dialog_end    = false;
-int  select_vmode_dialog_result = 0;
-
-char adapter_details[10][MAX_DEVICE_IDENTIFIER_STRING];
-D3DDISPLAYMODE adapter_mode_details[100];
-
-// This is where the final choices will be stored and read from
-int final_adapter_choice = 0;
-int final_mode_choice    = 0;
-int final_aatype_choice  = 0;
-
 volatile int D3D_running = 0;
 volatile int D3D_activate = 0;
 volatile int D3D_deactivate = 0;
-
 
 // -1 == no fog, bad bad bad
 // 0 == vertex fog
@@ -866,11 +857,6 @@ void d3d_release_rendering_objects()
 	}
 
 	DBUGFILE_OUTPUT_COUNTER(0, "Number of unfreed textures");
-
-	// It all seemed to go well so lets store the options in the registry
-	os_config_write_uint( NULL, "D3D8_Adapter", final_adapter_choice);
-	os_config_write_uint( NULL, "D3D8_Mode",    final_mode_choice);
-	os_config_write_uint( NULL, "D3D8_AAType",  final_aatype_choice);
 }
 
 // This function calls these render state one when the device is initialised and when the device is lost.
@@ -946,7 +932,7 @@ bool d3d_init_device(int screen_width, int screen_height)
 	}
 
 	// windowed
-	if(D3D_window)//DX D3D_window)
+	if(D3D_window)
 	{
 		SetWindowPos(hwnd, HWND_TOP, 0, 0, gr_screen.max_w, gr_screen.max_h, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME);
 		SetForegroundWindow(hwnd);
@@ -1966,343 +1952,19 @@ int d3d_get_mode_bit(D3DFORMAT type)
 }
 
 /**
- * D3D8 Launcher func: Determines the currently selected adapter by querying the windows dialog item
- * Then it fills the adapter_mode_details array with all the mode data that should be needed and
- * @return int, the number of usable modes
- * @param int selected_adapter 
- */
-int d3d_fill_adapter_mode_list(int selected_adapter)
-{
-	int num_usable_modes = 0;
-
-	// Get number of modes for that adapter
-	int num_modes = lpD3D->GetAdapterModeCount(selected_adapter);
-
-	// Check that the user has the hi res pack installed
-	char dir[MAX_PATH];
-	_getcwd(dir, MAX_PATH);
-
-	bool hi_res_vp_installed = ( _access("sparky_hi_fs2.vp", 0) == 0);
-
-	// Only list different resolutions and bit type NOT different refresh rates
-	int last_bit_type = 0;
-	for( int i = num_modes - 1; i >= 0; i--)
-	{
-		D3DDISPLAYMODE *mode = &adapter_mode_details[num_usable_modes];
-		lpD3D->EnumAdapterModes(selected_adapter, i, mode); 
-
-		// Only list hi res if the pack is installed, ignore invalid modes
-		if( !(hi_res_vp_installed && mode->Width == 1024 && mode->Height == 768) &&
-			!(mode->Width == 640 && mode->Height == 480))
-		{
-			continue;
-		}
-
-		// Is this mode 32 or 16 bit?
-		int bit_type = d3d_get_mode_bit(mode->Format);
-
-		// Ignore invalid modes (failed or 24 bit)
-		if(bit_type == 0)
-		{
-			continue;
-		}
-
-		// This ensures the different refresh rates are not listed, refresh rates are set to a default
-		// value later
-		if(bit_type == last_bit_type)
-		{
-	   		continue;
-		}
-
-		last_bit_type = bit_type;
-
-		num_usable_modes++;
-	}
-
-	return num_usable_modes;
-}
-
-/**
- * D3D8 Launcher func: This generates a list of adapters avaliable to render in
- * Typically there is only one hardware adapter avaliable
- *
- * @return int, number of usable adapters 
- * @param HWND hwnd 
- */
-int d3d_fill_adapter_list(HWND hwnd)
-{
-	D3DADAPTER_IDENTIFIER8 identifier;
-	int num_adapters = lpD3D->GetAdapterCount();
-
-	for(int i = 0; i < num_adapters; i++)
-	{
-		lpD3D->GetAdapterIdentifier(i, D3DENUM_NO_WHQL_LEVEL, &identifier);
-		strcpy(adapter_details[i], identifier.Description);
-	}
-
-	if(num_adapters == 0)
-	{
-		EnableWindow(GetDlgItem(hwnd, ID_OK), FALSE);
-	}
-
-	return num_adapters;
-}
-
-/**
- * D3D8 Launcher func: Call this to display the list of adapters in the dialog box
- *
- * @return void
- * @param HWND hwnd 
- */
-void d3d_update_adapter_mode_list(HWND hwnd)
-{
-	char buffer[100];
-	// Now get list of modes
-
-	// Delete all entries that are already there
-	int num_in_list	= SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_GETCOUNT, 0, 0);
-
-	for(int i = 0; i < num_in_list; i++)
-	{
-		SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE),CB_DELETESTRING, 0, 0);  
-	}
-		
-	int currently_selected_adapter = 
-		SendMessage(GetDlgItem(select_vmode_dialog_hwnd, IDC_COMBO_VCARD), CB_GETCURSEL, 0, 0);
-
-	// now get the new modes
-	num_in_list = d3d_fill_adapter_mode_list(currently_selected_adapter);
-	
-	if(num_in_list == 0)
-	{
-		EnableWindow(GetDlgItem(hwnd, ID_OK), FALSE);
-		return;
-	}
-	
-	// Format the mode data into a string and put into list
-	for(i = 0; i < num_in_list; i++)
-	{
-		D3DDISPLAYMODE *mode = &adapter_mode_details[i];
-		char *mode_type = NULL;
-
-		switch(mode->Format)
-		{
-			case D3DFMT_X8R8G8B8: mode_type = "X8R8G8B8"; break; 
-			case D3DFMT_A8R8G8B8: mode_type = "A8R8G8B8"; break;		
-			case D3DFMT_A2B10G10R10: mode_type = "A2B10G10R10"; break;	
-			case D3DFMT_R8G8B8:	  mode_type = "R8G8B8"; break;
-			case D3DFMT_R5G6B5:   mode_type = "R5G6B5"; break;  
-			case D3DFMT_X1R5G5B5: mode_type = "X1R5G5B5"; break;
-			case D3DFMT_X4R4G4B4: mode_type = "X4R4G4B4"; break;
-			case D3DFMT_A1R5G5B5: mode_type = "A1R5G5B5"; break;		
-			case D3DFMT_A4R4G4B4: mode_type = "A4R4G4B4"; break;		
-			case D3DFMT_A8R3G3B2: mode_type = "A8R3G3B2"; break;		
-		}
-
-		sprintf(buffer, "%d x %d x %d bit    (%s)", 
-			mode->Width, mode->Height, d3d_get_mode_bit(mode->Format), mode_type); 
-
-		// Add the string to the dialog box
-		SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_ADDSTRING, 0, (long) buffer);
-	}
-
-	// UP: Don't select the first by default, check what options were used to initialize the
-	// the game from the users registry and pick a size accordingly, so a 640x480 window won't
-	// be forced to run a 1024x768 image by default
-	
-	// Setup a variable to do bit depth comparions between modes against
-	int askedbitdepth;
-	
-	if (Cmdline_force_32bit == 1)
-	{
-		askedbitdepth = 32;
-	}
-	else
-	{
-		askedbitdepth = 16;
-	}
-
-	// Try and find a mode that matches what we're looking for
-	for (i = 0; i < num_in_list; i++)
-	{
-		if ((adapter_mode_details[i].Width == (uint)gr_screen.max_w) && (adapter_mode_details[i].Height == (uint)gr_screen.max_h))
-		{
-			// We have a candidate
-			if ((d3d_get_mode_bit((&adapter_mode_details[i])->Format)) == askedbitdepth)
-			{
-				// We have a winner!
-				SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_SETCURSEL, i, 0);
-				EnableWindow(GetDlgItem(hwnd, ID_OK), TRUE);
-				return;
-			}
-		}
-	}
-
-	// If all else has failed, just pick the first mode in the list
-	SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_SETCURSEL, 0, 0);
-	EnableWindow(GetDlgItem(hwnd, ID_OK), TRUE);
-}
-
-/**
- * D3D8 Launcher func: Call this to display the list of Antialising modes
- *
- * @return void
- * @param HWND hwnd 
- */
-void d3d_update_aa_mode_list(HWND hwnd)
-{
-	// Delete all entries that are already there
-	int num_in_list	= SendMessage(GetDlgItem(hwnd, IDC_COMBO_AATYPE), CB_GETCOUNT, 0, 0);
-
-	for(int i = 0; i < num_in_list; i++)
-	{
-		SendMessage(GetDlgItem(hwnd, IDC_COMBO_AATYPE),CB_DELETESTRING, 0, 0);  
-	}
-		
-	// Now fill the avaliable anti aliasing  for this mode
-	const char *multisample_text[multisample_max] =
-	{
- 		"D3DMULTISAMPLE_NONE",
-		"D3DMULTISAMPLE_2_SAMPLES",
-		"D3DMULTISAMPLE_3_SAMPLES",
-		"D3DMULTISAMPLE_4_SAMPLES",
-		"D3DMULTISAMPLE_5_SAMPLES",
-		"D3DMULTISAMPLE_6_SAMPLES",
-		"D3DMULTISAMPLE_7_SAMPLES",
-		"D3DMULTISAMPLE_8_SAMPLES",
-		"D3DMULTISAMPLE_9_SAMPLES",
-		"D3DMULTISAMPLE_10_SAMPLES",
-		"D3DMULTISAMPLE_11_SAMPLES",
-		"D3DMULTISAMPLE_12_SAMPLES",
-		"D3DMULTISAMPLE_13_SAMPLES",
-		"D3DMULTISAMPLE_14_SAMPLES",
-		"D3DMULTISAMPLE_15_SAMPLES",
-		"D3DMULTISAMPLE_16_SAMPLES"
-	};
-
-	int adapter_choice = SendMessage(GetDlgItem(hwnd, IDC_COMBO_VCARD), CB_GETCURSEL, 0, 0);
-	int mode_choice    = SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_GETCURSEL, 0, 0);
-
-	{
-		D3DDISPLAYMODE *mode = &adapter_mode_details[mode_choice];
-		for(i = 0; i < multisample_max; i++) {
-		
-			if( FAILED( lpD3D->CheckDeviceMultiSampleType( 
-				adapter_choice, D3DDEVTYPE_HAL , mode->Format, FALSE, multisample_types[i] ) ) ) {
-			 	break;
-			}
-		
-			// Add the string to the dialog box
-			SendMessage(GetDlgItem(hwnd, IDC_COMBO_AATYPE), CB_ADDSTRING, 0, (long) multisample_text[i] );
-		}
-	}
-
-	// Select the first by default
-	SendMessage(GetDlgItem(hwnd, IDC_COMBO_AATYPE), CB_SETCURSEL, 0, 0);
-}
-
-/**
- * D3D8 Launcher func: Looks after the message processing for the mode selecting dialog box
- *
- * @return BOOL
- * @param HWND hwnd 
- * @param UINT umsg 
- * @param WPARAM wParam 
- * @param LPARAM lParam
- */
-BOOL CALLBACK select_vmode_dialog(HWND hwnd, UINT umsg, WPARAM wParam, LPARAM lParam)
-{
-	switch(umsg){		
-	case WM_INITDIALOG:
-	{
-		// Get list of adapters
-		int num_in_list = d3d_fill_adapter_list(hwnd);
-
-		// If there are no adapters fail
-		if(num_in_list == 0)
-		{
-			return false;
-		}
-
-		// List the adapters in the dialog box
-		for(int i = 0; i < num_in_list; i++)
-		{
-			SendMessage(GetDlgItem(hwnd, IDC_COMBO_VCARD), CB_ADDSTRING, 0, (long) adapter_details[i]); 
-		}
-
-		// Select the first adapter by default
-		SendMessage(GetDlgItem(hwnd, IDC_COMBO_VCARD), CB_SETCURSEL, 0, 0); 
-
-		// Show the list of modes for that adapter 
-		d3d_update_adapter_mode_list(hwnd);
-		d3d_update_aa_mode_list(hwnd);
-		return TRUE;
-	}
-
-	case WM_COMMAND:
-	{
-		int wmId    = LOWORD(wParam); 
-		// Parse the menu selections:
-		switch (wmId)
-		{
-			// Mode chosen, get details and move on
-			case ID_OK:
-			{
-				final_adapter_choice = SendMessage(GetDlgItem(hwnd, IDC_COMBO_VCARD), CB_GETCURSEL, 0, 0);
-				final_mode_choice    = SendMessage(GetDlgItem(hwnd, IDC_COMBO_VMODE), CB_GETCURSEL, 0, 0);
-				final_aatype_choice  = SendMessage(GetDlgItem(hwnd, IDC_COMBO_AATYPE), CB_GETCURSEL, 0, 0);
-				// There is not meant to be a break here!
-			}
-			// User has cancelled mode selection, quit
- 			case ID_CANCEL:
-			{
-				select_vmode_dialog_result = wmId; 
-				select_vmode_dialog_end    = true;
-				break;
-			}
-			// User has chosen an adapter, update the mode list
-			case IDC_COMBO_VCARD:
-			{
-				d3d_update_adapter_mode_list(hwnd);
-				break;
-			}
-
-			case IDC_COMBO_VMODE:
-			{
-				d3d_update_aa_mode_list(hwnd);
-				break;
-			}
-
-		}
-		break;
-	}
-
-	// destory command
-	case WM_CLOSE:
-		select_vmode_dialog_end = true;
-		return 0;
-
-	case WM_DESTROY:
-		break;
-	}
-
-	return 0;
-}
-
-/**
  * This checks that the given texture format is supported in the chosen adapter and mode
  *
  * @return bool
  * @param D3DFORMAT tformat
  */
-bool d3d_texture_format_is_supported(D3DFORMAT tformat)
+bool d3d_texture_format_is_supported(D3DFORMAT tformat, int adapter, D3DDISPLAYMODE *mode)
 {
 	HRESULT hr;
 
 	hr = lpD3D->CheckDeviceFormat(
-			final_adapter_choice,
+			adapter,
 			D3DDEVTYPE_HAL,
-			adapter_mode_details[final_mode_choice].Format,
+			mode->Format,
 			0,
 			D3DRTYPE_TEXTURE,
 			tformat);
@@ -2416,7 +2078,7 @@ void d3d_fill_pixel_format(DDPIXELFORMAT *pixelf, D3DFORMAT tformat)
  *
  * @return void
  */
-void d3d_determine_texture_formats()
+void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 {
 	const int num_non_alpha = 3;
 	const int num_alpha     = 4;
@@ -2449,7 +2111,7 @@ void d3d_determine_texture_formats()
 			continue;
 		}
 
-		if(d3d_texture_format_is_supported(alpha_list[i]) == true) {
+		if(d3d_texture_format_is_supported(alpha_list[i], adapter, mode) == true) {
 			default_alpha_tformat = alpha_list[i];
 			break;
 		}
@@ -2464,11 +2126,11 @@ void d3d_determine_texture_formats()
 
 	// Try to get 32 bit texture formats
 	if(D3D_32bit) {
-		if(d3d_texture_format_is_supported(D3DFMT_X8R8G8B8)) {
+		if(d3d_texture_format_is_supported(D3DFMT_X8R8G8B8, adapter, mode)) {
 			default_32_non_alpha_tformat = D3DFMT_X8R8G8B8;
 		}
 
-		if(d3d_texture_format_is_supported(D3DFMT_A8R8G8B8)) {
+		if(d3d_texture_format_is_supported(D3DFMT_A8R8G8B8, adapter, mode)) {
 			default_32_alpha_tformat = D3DFMT_A8R8G8B8;
 		}
 	}
@@ -2482,7 +2144,7 @@ void d3d_determine_texture_formats()
 			continue;
 		}
 
-		if(d3d_texture_format_is_supported(non_alpha_list[i]) == true)
+		if(d3d_texture_format_is_supported(non_alpha_list[i], adapter, mode) == true)
 		{
 			default_non_alpha_tformat = non_alpha_list[i];
 			break;
@@ -2640,6 +2302,48 @@ void d3d_setup_function_pointers()
 
 }
 
+int d3d_match_mode(int adapter)
+{
+	char *ptr = os_config_read_string(NULL, NOX("videocardFs2open"), NULL);	
+	uint width, height;
+	int cdepth;
+
+	if(ptr == NULL)
+	{
+		strcpy(Device_init_error, "Cant get 'videocardFs2open' reg entry");
+		return -1;
+	}
+
+	if(sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) {
+		strcpy(Device_init_error, "Cant understand 'videocardFs2open' reg entry");
+		return -1;
+	}
+
+	int num_modes = lpD3D->GetAdapterModeCount(adapter);
+
+	if(num_modes == 0) {
+		strcpy(Device_init_error, "No modes for this adapter");
+		return -1;
+	}
+
+	for(int i = 0; i < num_modes; i++)
+	{
+		D3DDISPLAYMODE mode;
+		lpD3D->EnumAdapterModes(adapter, i, &mode); 
+
+		// ignore invalid modes
+		if(cdepth != d3d_get_mode_bit(mode.Format)) continue; 
+		if(width  != mode.Width)  continue; 
+		if(height != mode.Height) continue; 
+
+		// This is the mode we want
+		return i;
+	}
+
+	strcpy(Device_init_error, "No suitable mode found");
+	return -1;
+}
+
 /**
  * This is the new D3D8 initialise function
  *
@@ -2647,6 +2351,9 @@ void d3d_setup_function_pointers()
  */
 bool gr_d3d_init()
 {
+	int adapter_choice = D3DADAPTER_DEFAULT;
+	D3DDISPLAYMODE mode;
+
 	DBUGFILE_OUTPUT_0("gr_d3d_init start");
 
 	lpD3D = Direct3DCreate8( D3D_SDK_VERSION );
@@ -2654,66 +2361,6 @@ bool gr_d3d_init()
 	if( lpD3D == NULL ) {
 		MessageBox(NULL, "Please make sure you have DX8.1b installed", "RandomTiger", MB_OK);
 		return false;
-	}
-
-	// Attempt to get options from the registry
-	final_adapter_choice = os_config_read_uint( NULL, "D3D8_Adapter", 0xffff);
-	final_mode_choice	 = os_config_read_uint( NULL, "D3D8_Mode", 0xffff);
-	final_aatype_choice  = os_config_read_uint( NULL, "D3D8_AAType", 0xffff);
-
-	// We need to know this here
-	D3D_window = Cmdline_window;		
-
-	// Should only activate if a value in the registry is not set or its going to run in a window or
-	// a optional parameter forces it to run. Otherwise the mode values are taken from reg value
-	if( final_adapter_choice == 0xffff || 
-		final_mode_choice	 == 0xffff || 
-		final_aatype_choice  == 0xffff || 
-		D3D_window == 1 ||
-		Cmdline_d3dlauncher == 1) {
-		// Choose gfx mode here
-		ShowCursor(true);
-
-		select_vmode_dialog_hwnd = 
-			CreateDialog(
-				GetModuleHandle(NULL), 
-				MAKEINTRESOURCE(IDD_RT_VSELECT), 
-				(HWND) os_get_window(), 
-				(DLGPROC) select_vmode_dialog);	
-
-		// If we are looking at a windowed run then disable mode and AA options cos they are overwriten
-		if(D3D_window == 1) {
-	   		EnableWindow(GetDlgItem(select_vmode_dialog_hwnd,IDC_COMBO_VMODE), FALSE);
-	   		EnableWindow(GetDlgItem(select_vmode_dialog_hwnd,IDC_COMBO_AATYPE), FALSE);
-		}
-		
-		ShowWindow(select_vmode_dialog_hwnd, SW_SHOW);
-		
-		MSG msg;
-		while (GetMessage(&msg, NULL, 0, 0))  {
-
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		
-			if(select_vmode_dialog_end == true) {
-				break;
-			}
-		}
-		
-		// Cleanup from selection dialog box
-		DestroyWindow(select_vmode_dialog_hwnd);
-		
-		select_vmode_dialog_hwnd = NULL;
-		
-		SetForegroundWindow((HWND) os_get_window());
-		
-		if(select_vmode_dialog_result != ID_OK) {
-			strcpy(Device_init_error, "Failed to pick mode, exiting");
-			return false;
-		}
-	} else {					
-		// Generate the data we need
-		d3d_fill_adapter_mode_list( final_adapter_choice);
 	}
 
 	ShowCursor(false);
@@ -2730,55 +2377,75 @@ bool gr_d3d_init()
 	// Sadly we need this until we implement hardware fog
 	d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
     
-	// UP: This is so we can still use the windowed mode to debug -> yes it has some 
-	// unnecessary redunancy, but who'll use it other than developers?
+	D3D_window = Cmdline_window;
+
 	if (D3D_window) {	
 		// If we go windowed, then we need to adjust some other present parameters		
-		D3DDISPLAYMODE d3ddm;
-		if (FAILED(lpD3D->GetAdapterDisplayMode( final_adapter_choice, &d3ddm )))
+		if (FAILED(lpD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode )))
 		{
-			DBUGFILE_OUTPUT_0("Could not get adapter display mode");
-			MessageBox(NULL, "Could not get adapter display mode", "##UnknownPlayer##", MB_OK);
+			strcpy(Device_init_error, "Could not get adapter display mode");
 			return false;
 		}
 
-		d3dpp.MultiSampleType  = multisample_types[final_aatype_choice];
-		d3dpp.BackBufferWidth  = adapter_mode_details[final_mode_choice].Width;
-		d3dpp.BackBufferHeight = adapter_mode_details[final_mode_choice].Height;
+		d3dpp.MultiSampleType  = D3DMULTISAMPLE_NONE;
+		d3dpp.BackBufferWidth  = 1024;
+		d3dpp.BackBufferHeight = 768;
 
 		d3dpp.FullScreen_RefreshRateInHz      = 0;
 		d3dpp.FullScreen_PresentationInterval = 0;
 
 		d3dpp.Windowed		   = TRUE;
-		d3dpp.BackBufferFormat = d3ddm.Format;
+		d3dpp.BackBufferFormat = mode.Format;
 	} else {
-		D3D_Antialiasing = (final_aatype_choice != 0);
 
-		d3dpp.MultiSampleType  = multisample_types[final_aatype_choice];
-		d3dpp.BackBufferWidth  = adapter_mode_details[final_mode_choice].Width;
-		d3dpp.BackBufferHeight = adapter_mode_details[final_mode_choice].Height;
+		// Attempt to get options from the registry
+		adapter_choice = os_config_read_uint( NULL, "D3D8_Adapter", 0xffff);
+		int aatype_choice  = os_config_read_uint( NULL, "D3D8_AAType", 0xffff);
+		int mode_choice	   = d3d_match_mode(adapter_choice);
+		
+		if(mode_choice == -1)
+		{
+			return false;
+		}
+
+		// Should only activate if a value in the registry is not set or its going to run in a window or
+		// a optional parameter forces it to run. Otherwise the mode values are taken from reg value
+		if( adapter_choice == 0xffff || 
+			aatype_choice  == 0xffff)
+		{
+			strcpy(Device_init_error, "DX8 options not set, please run launcher");
+			return false;
+		}
+
+		if(FAILED(lpD3D->EnumAdapterModes(adapter_choice, mode_choice, &mode)))
+		{
+			sprintf(Device_init_error, "Could not use selected mode: %d", mode_choice);
+			return false;
+		}
+
+		D3D_Antialiasing = (aatype_choice != 0);
+
+		d3dpp.MultiSampleType  = multisample_types[aatype_choice];
+		d3dpp.BackBufferWidth  = mode.Width;
+		d3dpp.BackBufferHeight = mode.Height;
 
 		d3dpp.FullScreen_RefreshRateInHz      = D3DPRESENT_RATE_DEFAULT;
 		d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_ONE;
 
 		d3dpp.Windowed		   = FALSE;
-		d3dpp.BackBufferFormat = adapter_mode_details[final_mode_choice].Format;
+		d3dpp.BackBufferFormat = mode.Format;
 	}
 		
-	DBUGFILE_OUTPUT_3("Mode: %d x %d x %d bit",
-		d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, d3d_get_mode_bit(d3dpp.BackBufferFormat));
-
-
 	// NOTE from UP: Maybe we should also try for pure devices here?
 	// Try to create hardware vertex processing device first
-	if( FAILED( lpD3D->CreateDevice(final_adapter_choice, D3DDEVTYPE_HAL, 
+	if( FAILED( lpD3D->CreateDevice(adapter_choice, D3DDEVTYPE_HAL, 
 								(HWND) os_get_window(),
                                 D3DCREATE_HARDWARE_VERTEXPROCESSING,
                                 &d3dpp, &lpD3DDevice) ) ) {
 
 		DBUGFILE_OUTPUT_0("Failed to create hardware vertex processing device, trying software");
 
-		if( FAILED( lpD3D->CreateDevice(final_adapter_choice, D3DDEVTYPE_HAL, 
+		if( FAILED( lpD3D->CreateDevice(adapter_choice, D3DDEVTYPE_HAL, 
 								(HWND) os_get_window(),
                                 D3DCREATE_SOFTWARE_VERTEXPROCESSING,
                                 &d3dpp, &lpD3DDevice) ) ) {
@@ -2798,7 +2465,7 @@ bool gr_d3d_init()
 
 	DBUGFILE_OUTPUT_2("D3D_32bit %d, bits_per_pixel %d",D3D_32bit, gr_screen.bits_per_pixel);
 
-	d3d_determine_texture_formats();
+	d3d_determine_texture_formats(adapter_choice, &mode);
 											   
 	lpD3DDevice->GetDeviceCaps(&d3d_caps);
 
