@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.8 $
- * $Date: 2002-12-23 19:25:39 $
+ * $Revision: 2.9 $
+ * $Date: 2003-01-09 21:19:54 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/23 19:25:39  phreak
+ * dumb typo
+ *
  * Revision 2.7  2002/12/23 17:52:51  phreak
  * added code that displays an error if user's OGL version is less than 1.2
  *
@@ -375,17 +378,19 @@ typedef struct ogl_extension
 #define GL_SECONDARY_COLOR3F 4
 #define GL_SECONDARY_COLOR3UB 5
 #define GL_SECONDARY_COLOR_POINTER 6
-#define GL_NUM_EXTENSIONS 7
+#define GL_TEXTURE_ENV_ADD 7
+#define GL_NUM_EXTENSIONS 8
 
 static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 {
 	{0, NULL, "glFogCoordfEXT", "GL_EXT_fog_coord",0},
 	{0, NULL, "glFogCoordPointerEXT", "GL_EXT_fog_coord",0},
-	{0, NULL, "glMultiTexCoord2fARB", "GL_ARB_multitexture",0},
-	{0, NULL, "glActiveTextureARB", "GL_ARB_multitexture",0},
+	{0, NULL, "glMultiTexCoord2fARB", "GL_ARB_multitexture",1},		//required for glow maps
+	{0, NULL, "glActiveTextureARB", "GL_ARB_multitexture",1},		//required for glow maps
 	{0, NULL, "glSecondaryColor3fEXT", "GL_EXT_secondary_color",0},
 	{0, NULL, "glSecondaryColor3ubEXT", "GL_EXT_secondary_color",0},
-	{0, NULL, "glSecondaryColorPointerEXT", "GL_EXT_secondary_color",0}
+	{0, NULL, "glSecondaryColorPointerEXT", "GL_EXT_secondary_color",0},
+	{0, NULL, NULL, "GL_ARB_texture_env_add", 1}					//required for glow maps
 };
 
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
@@ -410,6 +415,7 @@ typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,
 	TEXTURE_SOURCE_DECAL,
 	TEXTURE_SOURCE_NO_FILTERING,
+	TEXTURE_SOURCE_ADD
 } gr_texture_source;
 
 typedef enum gr_alpha_blend {
@@ -467,6 +473,14 @@ int opengl_get_extensions()
 		cur=&GL_Extensions[i];
 		if (opengl_find_extension(cur->extension_name))
 		{
+			//some extensions do not have functions
+			if (cur->function_name==NULL)
+			{
+				mprintf(("found extension %s\n", cur->extension_name));
+				num_found++;
+				continue;
+			}
+			
 			cur->func_pointer=(uint)wglGetProcAddress(cur->function_name);
 			if (cur->func_pointer)
 			{
@@ -547,6 +561,10 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			break;
+		case TEXTURE_SOURCE_ADD:
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
 		default:
 			break;
 	}
@@ -1300,7 +1318,11 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 {
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
+	int bitmapidx=gr_screen.current_bitmap % MAX_BITMAPS;
+	int do_glow=(GLOWMAP[bitmapidx] > 0);
 
+//	if (do_glow)
+//		Int3();
 	// Make nebula use the texture mapper... this blends the colors better.
 	if ( flags & TMAP_FLAG_NEBULA ){
 		Int3 ();
@@ -1381,11 +1403,38 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 	texture_source = TEXTURE_SOURCE_NONE;
 	
 	if ( flags & TMAP_FLAG_TEXTURED )       {
+		if (do_glow)
+		{
+			//mprintf(("rendering a glow texture %s\n", bm_get_filename(GLOWMAP[bitmapidx])));
+			glPushAttrib(GL_TEXTURE_BIT);
+			glActiveTextureARB(GL_TEXTURE0_ARB);		//texture is bound in gr_opengl_tcache_set
+			glEnable(GL_TEXTURE_2D);
+			texture_source=TEXTURE_SOURCE_DECAL;
+		}
+
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 		{
 			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
+
+		if (do_glow)
+		{
+			gr_opengl_set_state(texture_source, alpha_blend, zbuffer_type);
+			gr_set_bitmap(GLOWMAP[bitmapidx], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.0f);
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+			glEnable(GL_TEXTURE_2D);
+			texture_source=TEXTURE_SOURCE_ADD;
+			//texture is bound in gr_opengl_tcache_set
+			if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+			{
+				mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+				return;
+			}
+			gr_opengl_set_state(texture_source, alpha_blend, zbuffer_type);
+		}				
+
+
 
 		// use nonfiltered textures for bitmap sections
 		if(flags & TMAP_FLAG_BITMAP_SECTION){
@@ -1396,7 +1445,8 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 	}
 
 
-	gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
+	if (!do_glow)
+		gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
 	
 	if ( flags & TMAP_FLAG_TEXTURED )
 	{
@@ -1486,6 +1536,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		} else {
 			// use constant RGB values...
 		}
+		
 		glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
 	
 		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 3)){
@@ -1511,13 +1562,28 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 		if ( flags & TMAP_FLAG_TEXTURED )       {
 			tu = va->u*u_scale;
 			tv = va->v*v_scale;
-			glTexCoord2f(tu, tv);
+			if (do_glow)
+			{
+				//use opengl hardware multitexturing
+				glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
+				glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
+			}
+			else
+			{
+				glTexCoord2f(tu, tv);
+			}
 		}
 		
 		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
 	}
 	glEnd();
+
+	if (do_glow)
+	{
+		glPopAttrib();
+	}
 }
+
 
 void gr_opengl_tmapper( int nverts, vertex **verts, uint flags )
 {
@@ -2582,7 +2648,6 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 		GL_last_bitmap_type = bitmap_type;
 		GL_last_section_x = sx;
 		GL_last_section_y = sy;
-
 		t->used_this_frame++;
 	}
 	// gah
