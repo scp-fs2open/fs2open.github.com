@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.96 $
- * $Date: 2005-01-29 15:40:22 $
- * $Author: phreak $
+ * $Revision: 2.97 $
+ * $Date: 2005-01-30 03:23:22 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2005/01/29 15:40:22  phreak
+ * fixed error message again :)
+ * -p
+ *
  * Revision 2.95  2005/01/28 23:45:23  wmcoolmon
  * Added better too-many-textures error message
  *
@@ -5251,6 +5255,8 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	}
 
 	model->indexed_vertex_buffer = gr_make_buffer(&model_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_NORMAL | VERTEX_FLAG_UV1);
+	if(model->indexed_vertex_buffer == -1)
+		Error(LOCATION, "Could not generate model->indexed_vertex_buffer");
 	recode_check = 0;
 //	recode_bsp(0, model->bsp_data);
 
