@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.7 2005-03-28 13:25:18 mrduckman Exp $
+dnl $Id: configure.ac,v 1.8 2005-03-30 16:05:41 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -48,6 +48,13 @@ AC_ARG_ENABLE(debug,
 		[Build in DEBUG mode (default = no)]),
 		[fs2_debug=$enableval],
 		[fs2_debug=no],
+)
+
+AC_ARG_ENABLE(wxfred2,
+	AC_HELP_STRING([--enable-wxfred2],
+		[Build wxFRED2 rather than the normal game (default = no)]),
+		[fs2_fred=$enableval],
+		[fs2_fred=no],
 )
 
 AC_ARG_ENABLE(speech,
@@ -181,13 +188,34 @@ if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
 	FS2_CXXFLAGS="$FS2_CXXFLAGS -O0 -g -Wall"
 	FS2_LDFLAGS="$FS2_LDFLAGS -g"
-	AC_SUBST(FS2_BINARY, ["fs2_open_d"])
+
+	if test "$fs2_fred" = "yes" ; then
+		FS2_CXXFLAGS="$FS2_CXXFLAGS 'wx-config --cxxflags'"
+		FS2_LDFLAGS="$FS2_LDFLAGS 'wx-config --libs'"
+		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
+	else
+		AC_SUBST(FS2_BINARY, ["fs2_open_d"])
+	fi
 else
 	AC_DEFINE([NDEBUG])
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -O2 -Wall"
-	FS2_LDFLAGS="$FS2_LDFLAGS"
-	AC_SUBST(FS2_BINARY, ["fs2_open_r"])
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -g -O2 -Wall"
+	FS2_LDFLAGS="$FS2_LDFLAGS -g"
+
+	if test "$fs2_fred" = "yes" ; then
+		FS2_CXXFLAGS="$FS2_CXXFLAGS `wx-config --cxxflags`"
+		FS2_LDFLAGS="$FS2_LDFLAGS `wx-config --libs`"
+		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
+	else
+		AC_SUBST(FS2_BINARY, ["fs2_open_r"])
+	fi
 fi
+
+dnl if test "$fs2_fred" = "yes" ; then
+dnl 	AC_DEFINE([NDEBUG])
+dnl 	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/usr/lib64/wx/include/gtk-2.4 -DGTK_NO_CHECK_CASTS -D__WXGTK__ -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -O2 -Wall"
+dnl 	FS2_LDFLAGS="$FS2_LDFLAGS -L/usr/lib64 -pthread -lwx_gtk-2.4"
+dnl 	AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
+dnl fi
 
 if test "$fs2_lite" = "yes" ; then
 	AC_DEFINE([GL_NO_HTL])

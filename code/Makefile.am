@@ -1,11 +1,11 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.9 2005-03-27 06:07:00 taylor Exp $
+## $Id: Makefile.am,v 1.10 2005-03-30 16:05:42 taylor Exp $
 
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
 
-EXTRA_PROGRAMS = fs2_open_r fs2_open_d
+EXTRA_PROGRAMS = fs2_open_r fs2_open_d wxFRED2_r wxFRED2_d
 
 ###############################################################################
 ##
@@ -357,6 +357,27 @@ fs2_open_r_SOURCES =	\
 
 fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a
 fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a
+
+##
+## End MAIN library
+##
+###############################################################################
+
+###############################################################################
+##
+## Begin wxFRED2 binary
+##
+
+wxFRED2_d_SOURCES = \
+	wxfred2/wxfred2.cpp wxfred2/fredframe.cpp	\
+	${PLATFORM_SOURCES}
+
+wxFRED2_r_SOURCES =	\
+	wxfred2/wxfred2.cpp wxfred2/fredframe.cpp	\
+	${PLATFORM_SOURCES}
+
+wxFRED2_d_LDADD = libcode.a ../libjpeg/libjpeg.a
+wxFRED2_r_LDADD = libcode.a ../libjpeg/libjpeg.a
 
 ##
 ## End MAIN library
