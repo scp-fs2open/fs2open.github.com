@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/radarsetup.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-02-04 20:06:07 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-19 07:52:56 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions to manage different radar modes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/02/04 20:06:07  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.4  2004/08/02 22:54:07  phreak
  * orb radar rendering style
  *
@@ -35,7 +38,6 @@
 #include "hud/hudconfig.h"
 #include "ship/subsysdamage.h"
 #include "gamesnd/gamesnd.h"
-#include "globalincs/linklist.h"
 #include "network/multi.h"
 #include "weapon/emp.h"
 #include "freespace2/freespace.h"
