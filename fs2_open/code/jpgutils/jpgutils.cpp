@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-03-06 11:32:40 $
- * $Author: wmcoolmon $
+ * $Revision: 1.15 $
+ * $Date: 2005-03-10 16:16:52 $
+ * $Author: taylor $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/03/06 11:32:40  wmcoolmon
+ * Whoops!
+ *
  * Revision 1.13  2005/03/06 11:23:45  wmcoolmon
  * RE-fixed stuff. Ogg support. Briefings.
  *
@@ -62,16 +65,7 @@
 #include <string.h>
 #include <setjmp.h>
 
-#ifndef WMC
-extern "C" {
-	#include <jpeglib.h>
-}
-#else
-//This is because of the screwy way I have my includes set up.
-extern "C" {
-	#include <libjpeg/jpeglib.h>
-}
-#endif
+#include "jpeglib.h"
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again
 
