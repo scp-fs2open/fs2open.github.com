@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 01:44:31 $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-20 22:58:43 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 01:44:31  Goober5000
+ * fixed some misspellings
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/10 05:43:35  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -537,8 +541,8 @@ extern game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
 #define	SND_COPILOT							162
 
 // added for ballistic primaries - Goober5000
-#define	SND_BALLISTIC_START_LOAD		165
-#define	SND_BALLISTIC_LOAD				166
+#define	SND_BALLISTIC_START_LOAD		171
+#define	SND_BALLISTIC_LOAD				172
 
 // supernova 1 and supernova 2
 #define	SND_SUPERNOVA_1					173
