@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dClipper.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-08-16 03:52:24 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-30 14:49:01 $
+ * $Author: phreak $
  *
  * Polygon clipping functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/08/16 03:52:24  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.3  2003/08/12 03:18:34  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -253,6 +262,10 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 			tmp->spec_g = ubyte(fl2i(onspec_g + (offspec_g-onspec_g) * ratio));
 			tmp->spec_b = ubyte(fl2i(onspec_b + (offspec_b-onspec_b) * ratio));
 		}
+	}
+	else
+	{
+		tmp->spec_r=tmp->spec_g=tmp->spec_b=0;
 	}
 
 	if (flags & TMAP_FLAG_ALPHA) {
