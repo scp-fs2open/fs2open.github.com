@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-03-24 23:42:21 $
- * $Author: taylor $
+ * $Revision: 1.21 $
+ * $Date: 2005-03-27 02:59:27 $
+ * $Author: wmcoolmon $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/03/24 23:42:21  taylor
+ * s/gr_ogl_/gr_opengl_/g
+ * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
+ * make gr_opengl_draw_htl_sphere() just use GLU so we don't need yet another friggin API
+ *
  * Revision 1.19  2005/03/20 00:09:07  phreak
  * Added gr_draw_htl_line and gr_draw_htl sphere
  * There still needs to be D3D versions implemented, but OGL is done.
@@ -820,7 +825,8 @@ static GLuint current_state_block;
 
 int opengl_get_new_state_block_internal()
 {
-	for(uint i = 0; i < n_state_blocks; i++)
+	uint i;
+	for(i = 0; i < n_state_blocks; i++)
 		if(state_blocks[i] == EMPTY_STATE_BOX_REF_COUNT) return i;
 
 	//oh crap, we need more state blocks
