@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-26 20:47:50 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2004-08-02 22:54:07 $
+ * $Author: phreak $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/26 20:47:50  Kazan
+ * remove MCD complete
+ *
  * Revision 2.9  2004/07/12 16:33:03  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -208,135 +211,32 @@
 #include "ship/awacs.h"
 #include "radar/radarsetup.h"
 
+extern float radx, rady;
 
+extern float	Radar_dim_range;					// range at which we start dimming the radar blips
+extern int		Radar_calc_dim_dist_timer;		// timestamp at which we recalc Radar_dim_range
 
-int Radar_radius[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		120, 100
-	},
-	{ // GR_1024
-		192, 160
-	}
-};
+extern int Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
+extern int Radar_flicker_on[NUM_FLICKER_TIMERS];						// status of flickering
 
-float Radar_center[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		322.0f, 422.0f
-	},
-	{ // GR_1024
-		515.0f, 675.0f
-	}
-};
+extern rcol Radar_color_rgb[MAX_RADAR_LEVELS][MAX_RADAR_COLORS];
+extern color Radar_colors[MAX_RADAR_LEVELS][MAX_RADAR_COLORS];
 
-int Radar_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		257, 369
-	}, 
-	{ // GR_1024
-		411, 590
-	}
-};
-char Radar_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"radar1",
-	"2_radar1"
-};
+extern blip	Blip_bright_list[MAX_RADAR_COLORS];		// linked list of bright blips
+extern blip	Blip_dim_list[MAX_RADAR_COLORS];			// linked list of dim blips
+extern blip	Blips[MAX_BLIPS];								// blips pool
+extern int	N_blips;											// next blip index to take from pool
 
-int Radar_blip_radius_normal[GR_NUM_RESOLUTIONS] = {
-	2,
-	4
-};
-int Radar_blip_radius_target[GR_NUM_RESOLUTIONS] = {
-	5,
-	8
-};
+extern float Radar_farthest_dist;
+extern int Blip_mutate_id;
 
-#define BLIP_MUTATE_TIME	100
+extern int Radar_static_playing;			// is static currently playing on the radar?
+extern int Radar_static_next;				// next time to toggle static on radar
+extern int Radar_avail_prev_frame;		// was radar active last frame?
+extern int Radar_death_timer;				// timestamp used to play static on radar
+extern int Radar_static_looping;					// id for looping radar static sound
 
-float radx, rady;
-
-#define MAX_RADAR_LEVELS	2		// bright and dim radar dots are allowed
-
-#define MAX_BLIPS 150
-typedef struct rcol {
-	ubyte	r, g, b;
-} rcol;
-
-#define	MAX_RADAR_COLORS		9
-
-#define	RCOL_HOSTILE			0
-#define	RCOL_FRIENDLY			1
-#define	RCOL_UNKNOWN			2
-#define	RCOL_NEUTRAL			3
-#define	RCOL_BOMB				4
-#define	RCOL_NAVBUOYS			5
-#define  RCOL_WARPING_SHIP		6
-#define	RCOL_JUMP_NODE			7
-#define	RCOL_TAGGED				8
-
-static float	Radar_dim_range;					// range at which we start dimming the radar blips
-static int		Radar_calc_dim_dist_timer;		// timestamp at which we recalc Radar_dim_range
-
-#define NUM_FLICKER_TIMERS	2
-static int Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
-static int Radar_flicker_on[NUM_FLICKER_TIMERS];						// status of flickering
-
-#define	RADAR_BLIP_BRIGHT		0				
-#define	RADAR_BLIP_DIM			1
-
-rcol Radar_color_rgb[MAX_RADAR_LEVELS][MAX_RADAR_COLORS] = {
-	{{ 0xff, 0x00, 0x00},		// hostile			(red)
-	{ 0x00, 0xff, 0x00},			// friendly			(green)
-	{ 0xff, 0x00, 0xff},			// unknown			(purple)
-	{ 0xff, 0x00, 0x00},			//	neutral			(red)
-	{ 0x7f, 0x7f, 0x00},			// homing missile (yellow)
-	{ 0x7f, 0x7f, 0x7f},			// navbuoy or cargo	(gray)
-	{ 0x00, 0x00, 0xff},			// warp ship		(blue)
-	{ 0x7f, 0x7f, 0x7f},			// jump node		(gray)
-	{ 0xff, 0xff, 0x00}},		// tagged	 		(yellow)
-
-	// 1/3 intensity of above colors
-	{{ 0x7f, 0x00, 0x00},		// hostile			(red)
-	{ 0x00, 0x7f, 0x00},			// friendly			(green)
-	{ 0x7f, 0x00, 0x7f},			// unknown			(purple)
-	{ 0x7f, 0x00, 0x00},			//	neutral			(red)
-	{ 0x40, 0x40, 0x00},			// homing missile (yellow)
-	{ 0x40, 0x40, 0x40},			// navbuoy or cargo	(gray)
-	{ 0x00, 0x00, 0x7f},			// warp ship		(blue)
-	{ 0x40, 0x40, 0x40},			// jump node		(gray)
-	{ 0x7f, 0x7f, 0x00}},		// tagged			(yellow)
-};
-
-color Radar_colors[MAX_RADAR_LEVELS][MAX_RADAR_COLORS];
-
-blip	Blip_bright_list[MAX_RADAR_COLORS];		// linked list of bright blips
-blip	Blip_dim_list[MAX_RADAR_COLORS];			// linked list of dim blips
-blip	Blips[MAX_BLIPS];								// blips pool
-int	N_blips;											// next blip index to take from pool
-
-float Radar_farthest_dist = 1000.0f;
-static int Blip_mutate_id;
-
-static int Radar_static_playing;			// is static currently playing on the radar?
-static int Radar_static_next;				// next time to toggle static on radar
-static int Radar_avail_prev_frame;		// was radar active last frame?
-static int Radar_death_timer;				// timestamp used to play static on radar
-int Radar_static_looping;					// id for looping radar static sound
-
-static hud_frames Radar_gauge;
-
-int Radar_dist_coords[GR_NUM_RESOLUTIONS][RR_MAX_RANGES][2] = 
-{
-	{ // GR_640
-		{367, 461},								// short
-		{364, 461},								// long
-		{368, 461}								// infinity
-	},
-	{ // GR_1024
-		{595, 740},								// short
-		{592, 740},								// long
-		{596, 741}								// infinity
-	}
-};
+extern hud_frames Radar_gauge;
 
 // forward declarations
 void draw_radar_blips(int desired_color, int is_dim, int distort=0);
@@ -345,9 +245,9 @@ void radar_init_std()
 {
 	int i,j;
 
-	Radar_gauge.first_frame = bm_load_animation(Radar_fname[gr_screen.res], &Radar_gauge.num_frames);
+	Radar_gauge.first_frame = bm_load_animation(Current_radar_global->Radar_fname[gr_screen.res], &Radar_gauge.num_frames);
 	if ( Radar_gauge.first_frame < 0 ) {
-		Warning(LOCATION,"Cannot load hud ani: %s\n", Radar_fname[gr_screen.res]);
+		Warning(LOCATION,"Cannot load hud ani: %s\n", Current_radar_global->Radar_fname[gr_screen.res]);
 	}
 
 	for (i=0; i<MAX_RADAR_LEVELS; i++ )	{
@@ -415,9 +315,7 @@ int radar_blip_color_std(object *objp)
 	return color;
 }
 
-int See_all = FALSE;
-DCF_BOOL(see_all, See_all)
-
+extern int See_all;
 void radar_plot_object_std( object *objp )	
 {
 	vector	pos, tempv;
@@ -530,7 +428,7 @@ void radar_plot_object_std( object *objp )
 		float max_radius;
 
 		hypotenuse = (float)_hypot(new_x_dist, new_y_dist);
-		max_radius = i2fl(Radar_radius[gr_screen.res][0] - 5);
+		max_radius = i2fl(Current_radar_global->Radar_radius[gr_screen.res][0] - 5);
 
 		if (hypotenuse >= (max_radius) ) {
 			clipped_x_dist = max_radius * (new_x_dist / hypotenuse);
@@ -540,8 +438,8 @@ void radar_plot_object_std( object *objp )
 		}
 	}
 
-	xpos = fl2i( Radar_center[gr_screen.res][0] + new_x_dist );
-	ypos = fl2i( Radar_center[gr_screen.res][1] - new_y_dist );
+	xpos = fl2i( Current_radar_global->Radar_center[gr_screen.res][0] + new_x_dist );
+	ypos = fl2i( Current_radar_global->Radar_center[gr_screen.res][1] - new_y_dist );
 
 	color = radar_blip_color(objp);
 
@@ -659,8 +557,8 @@ char Large_blip_string[2];
 void radar_frame_init_std()
 {
 	radar_null_nblips();
-	radx = i2fl(Radar_radius[gr_screen.res][0])/2.0f;
-	rady = i2fl(Radar_radius[gr_screen.res][1])/2.0f;
+	radx = i2fl(Current_radar_global->Radar_radius[gr_screen.res][0])/2.0f;
+	rady = i2fl(Current_radar_global->Radar_radius[gr_screen.res][1])/2.0f;
 
 	int w,h;
 	gr_set_font(FONT1);
@@ -680,7 +578,7 @@ void radar_frame_init_std()
 
 void radar_draw_circle_std( int x, int y, int rad )
 {
-	if ( rad == Radar_blip_radius_target[gr_screen.res] )	{
+	if ( rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res] )	{
 		gr_string( Large_blip_offset_x+x, Large_blip_offset_y+y, Large_blip_string );
 	} else {
 		// rad = RADAR_BLIP_RADIUS_NORMAL;
@@ -762,9 +660,9 @@ void draw_radar_blips(int rcol, int is_dim, int distort)
 
 		if (b->flags & BLIP_CURRENT_TARGET) {
 			// draw cool blip to indicate current target
-			b->rad = Radar_blip_radius_target[gr_screen.res];				
+			b->rad = Current_radar_global->Radar_blip_radius_target[gr_screen.res];				
 		} else {
-			b->rad = Radar_blip_radius_normal[gr_screen.res];
+			b->rad = Current_radar_global->Radar_blip_radius_normal[gr_screen.res];
 		}
 
 		if ( distort ) { 
@@ -815,16 +713,16 @@ void radar_draw_range_std()
 	switch ( HUD_config.rp_dist ) {
 
 	case RR_SHORT:
-		gr_printf(Radar_dist_coords[gr_screen.res][RR_SHORT][0], Radar_dist_coords[gr_screen.res][RR_SHORT][1], XSTR( "2k", 467));
+		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_SHORT][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_SHORT][1], XSTR( "2k", 467));
 		break;
 
 	case RR_LONG:
-		gr_printf(Radar_dist_coords[gr_screen.res][RR_LONG][0], Radar_dist_coords[gr_screen.res][RR_LONG][1], XSTR( "10k", 468));
+		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_LONG][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_LONG][1], XSTR( "10k", 468));
 		break;
 
 	case RR_INFINITY:
 		sprintf(buf, NOX("%c"), Lcl_special_chars);
-		gr_printf(Radar_dist_coords[gr_screen.res][RR_INFINITY][0], Radar_dist_coords[gr_screen.res][RR_INFINITY][1], buf);
+		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_INFINITY][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_INFINITY][1], buf);
 		break;
 
 	default:
@@ -911,7 +809,7 @@ void radar_blit_gauge_std()
 	GLOWMAP = -1;
 
 	gr_set_bitmap(Radar_gauge.first_frame+1);
-	gr_aabitmap( Radar_coords[gr_screen.res][0], Radar_coords[gr_screen.res][1] );
+	gr_aabitmap( Current_radar_global->Radar_coords[gr_screen.res][0], Current_radar_global->Radar_coords[gr_screen.res][1] );
 } 
 
 void radar_page_in_std()
