@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-01-11 21:38:48 $
+ * $Revision: 2.18 $
+ * $Date: 2005-01-12 23:38:42 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/01/11 21:38:48  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 2.16  2004/12/14 14:46:12  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -1784,7 +1789,8 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// special cases to deal with.  Both the chase wing and undock commands will return from within
 	// the if statement.
 	// Goober5000 - don't return achievable for undocking anymore!
-	if ( (aigp->ai_mode == AI_GOAL_CHASE_WING) || (aigp->ai_mode == AI_GOAL_GUARD_WING) ) {
+	if ( (aigp->ai_mode == AI_GOAL_CHASE_WING) || (aigp->ai_mode == AI_GOAL_GUARD_WING) )
+	{
 		int num = wing_name_lookup( aigp->ship_name );
 		wing *wingp = &Wings[num];
 
@@ -1794,17 +1800,32 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			return AI_GOAL_NOT_KNOWN;
 		else
 			return AI_GOAL_ACHIEVABLE;
-// Goober5000 - check more stuff further below
-//	} else if ( aigp->ai_mode == AI_GOAL_UNDOCK ) {
-//			return AI_GOAL_ACHIEVABLE;
-	} else {
+	}
+	// Goober5000 - undocking from an unspecified object is always achievable;
+	// undocking from a specified object is handled below
+	else if ( (aigp->ai_mode == AI_GOAL_UNDOCK) && (aigp->ship_name == NULL) )
+	{
+			return AI_GOAL_ACHIEVABLE;
+	}
+	else
+	{
+		// goal ship is currently in mission
 		if ( ship_name_lookup( aigp->ship_name ) != -1 )
+		{
 			status = SHIP_STATUS_ARRIVED;
+		}
+		// goal ship is still on the arrival list
 		else if ( !mission_parse_ship_arrived(aigp->ship_name) )
+		{
 			status = SHIP_STATUS_NOT_ARRIVED;
+		}
+		// goal ship has left the area
 		else if ( ship_find_exited_ship_by_name(aigp->ship_name) != -1 )
+		{
 			status = SHIP_STATUS_GONE;
-		else {
+		}
+		else
+		{
 			Int3();		// get ALLENDER
 			status = SHIP_STATUS_UNKNOWN;
 		}
@@ -2306,18 +2327,32 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 			// hmm, perhaps he was destroyed
 			if (shipnum == -1)
+			{
 				other_obj = NULL;
+			}
+			// he exists... let's undock from him
 			else
+			{
 				other_obj = &Objects[Ships[shipnum].objnum];
+			}
 		}
 		// no specific ship
 		else
 		{
-			// just pick the first guy we're docked to
-			other_obj = dock_get_first_docked_object( objp );
+			// are we docked?
+			if (object_is_docked(objp))
+			{
+				// just pick the first guy we're docked to
+				other_obj = dock_get_first_docked_object( objp );
 
-			// and add the ship name so it displays on the HUD
-			current_goal->ship_name = Ships[other_obj->instance].ship_name;
+				// and add the ship name so it displays on the HUD
+				current_goal->ship_name = Ships[other_obj->instance].ship_name;
+			}
+			// hmm, nobody exists that we can undock from
+			else
+			{
+				other_obj = NULL;
+			}
 		}
 
 		if ( other_obj == NULL ) {
