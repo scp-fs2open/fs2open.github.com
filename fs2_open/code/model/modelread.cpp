@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-02-07 00:48:52 $
+ * $Revision: 2.29 $
+ * $Date: 2004-02-07 01:25:15 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/02/07 00:48:52  Goober5000
+ * made FS2 able to account for subsystem mismatches between ships.tbl and the
+ * model file - e.g. communication vs. communications
+ * --Goober5000
+ *
  * Revision 2.27  2003/11/11 18:06:49  phreak
  * made some functions that are there for 2d drawing not modify T&L matrices
  *
@@ -1294,13 +1299,12 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 #ifndef NDEBUG
 		// Goober5000 - notify if there's a mismatch
-		if ( !stricmp(subobj_name, subsystemp->subobj_name) && subsystem_stricmp(subobj_name, subsystemp->subobj_name) ||
-				stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
+		if ( stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
 		{
-			Warning(LOCATION, "Subsystem %s in model %s is represented as %s in ships.tbl.  "
+			Warning(LOCATION, "Subsystem \"%s\" in model %s is represented as \"%s\" in ships.tbl.  "
 				"Although FS2_OPEN 3.6 and later will catch and correct this error, earlier "
 				"versions (as well as retail FS2) will not.  You are advised to fix this if "
-				"you plan to support earlier versions of Freespace.\n", subsystemp->subobj_name, model_get(model_num)->filename, subobj_name);
+				"you plan to support earlier versions of Freespace.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name);
 
 		}
 #endif

@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.14 $
+ * $Revision: 2.15 $
  * $Author: Goober5000 $
- * $Date: 2004-02-07 00:48:52 $
+ * $Date: 2004-02-07 01:25:14 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/02/07 00:48:52  Goober5000
+ * made FS2 able to account for subsystem mismatches between ships.tbl and the
+ * model file - e.g. communication vs. communications
+ * --Goober5000
+ *
  * Revision 2.13  2004/02/04 09:02:43  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -1988,24 +1993,24 @@ int subsystem_stricmp(char *s1, char *s2)
 {
 	Assert(s1 && s2);
 
-	// ensure pos-1 will be valid
+	// ensure len-1 will be valid
 	if (!*s1 || !*s2)
 		return stricmp(s1, s2);
 
-	// find end of string
-	char *pos1 = strchr(s1, '\0');
-	char *pos2 = strchr(s2, '\0');
+	// calc lengths
+	int len1 = strlen(s1);
+	int len2 = strlen(s2);
 
-	// get rid of trailing s on s1
-	if (tolower(*(pos1-1) == 's'))
-		*(pos1-1) = 0;
+	// get rid of trailing s on s1?
+	if (tolower(*(s1+len1-2) == 's'))
+		len1--;
 
-	// get rid of trailing s on s2
-	if (tolower(*(pos2-1) == 's'))
-		*(pos2-1) = 0;
+	// get rid of trailing s on s2?
+	if (tolower(*(s2+len2-2) == 's'))
+		len2--;
 
 	// now do the comparison
-	return stricmp(s1, s2);
+	return strnicmp(s1, s2, min(len1, len2));
 }
 
 // Goober5000
