@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.60 $
- * $Author: Goober5000 $
- * $Date: 2004-05-10 10:51:52 $
+ * $Revision: 2.61 $
+ * $Author: wmcoolmon $
+ * $Date: 2004-06-01 07:31:57 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/05/10 10:51:52  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.59  2004/05/03 21:22:23  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -697,6 +702,7 @@ struct ship_subsys;
 #define CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES				(0x0007 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION			(0x0008	| OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_MUSIC_AND_SOUND					(0x0009 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_HUD								(0x000a | OP_CATEGORY_CHANGE)
 
 #define	OP_PLUS									(0x0000 | OP_CATEGORY_ARITHMETIC)
 #define	OP_MINUS								(0x0001 | OP_CATEGORY_ARITHMETIC)
@@ -924,8 +930,11 @@ struct ship_subsys;
 #define OP_PLAYER_NOT_USE_AI				(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FORCE_JUMP						(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
-
-
+//Hud stuff
+#define OP_HUD_SET_TEXT						(0x008f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_TEXT_NUM					(0x0090 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_COORDS					(0x0091 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_FRAME					(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 
 /* made obsolete by Goober5000
 // debugging sexpressions
