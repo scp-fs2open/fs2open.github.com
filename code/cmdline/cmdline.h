@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.27 $
- * $Date: 2003-09-14 19:00:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.28 $
+ * $Date: 2003-09-23 02:42:52 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/09/14 19:00:02  wmcoolmon
+ * Changed "nospec" and "cell" to "Cmdline_nospec" and "Cmdline_cell"
+ *
  * Revision 2.26  2003/09/14 18:32:24  wmcoolmon
  * Added "-safeloading" command line parameter, which uses old fs2_retail-style loading code -C
  *
@@ -308,6 +311,7 @@ extern int Cmdline_spew_pof_info;
 extern int Cmdline_force_32bit;
 extern int Cmdline_mouse_coords;
 extern int Cmdline_timeout;
+extern int Cmdline_SpewMission_CRCs;
 
 extern int Cmdline_window;
 extern char *Cmdline_almission;	//DTP for autoload mission

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.42 $
- * $Date: 2003-09-14 19:01:16 $
- * $Author: wmcoolmon $
+ * $Revision: 2.43 $
+ * $Date: 2003-09-23 02:42:52 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2003/09/14 19:01:16  wmcoolmon
+ * Changed "cell" to "Cmdline_cell" -C
+ *
  * Revision 2.41  2003/09/07 18:14:52  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -776,6 +779,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 # include "network/multi_log.h"
 # include "network/multi_dogfight.h"
 # include "network/multi_rate.h"
+extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #endif
 
 #include "cfile/cfile.h"
@@ -909,6 +913,10 @@ void common_play_highlight_sound()
 {
 }
 #endif
+
+//  This function is defined in code\network\multiutil.cpp so will be linked from multiutil.obj
+//  it's required fro the -missioncrcs command line option - Kazan
+void multi_spew_pxo_checksums(int max_files, char *outfile);
 
 extern bool frame_rate_display;
 
@@ -2690,6 +2698,8 @@ void game_init()
 	// attempt to load up master tracker registry info (login and password)
 	Multi_tracker_id = -1;		
 
+	// should we be using this or not?
+	Om_tracker_flag = os_config_read_uint( "PXO", "FS2OpenPXO" , 0 );
 	// pxo login and password
 	ptr = os_config_read_string(NOX("PXO"),NOX("Login"),NULL);
 	if(ptr == NULL){
@@ -7326,6 +7336,7 @@ int WinMainSub(int argc, char *argv[])
    parse_cmdline(argc, argv);
 #endif
 
+
 #ifndef NO_NETWORK
 #ifdef STANDALONE_ONLY_BUILD
 	Is_standalone = 1;
@@ -7344,6 +7355,13 @@ int WinMainSub(int argc, char *argv[])
 
 	game_init();
 	game_stop_time();
+
+   if (Cmdline_SpewMission_CRCs) // -missioncrcs
+   {
+	   multi_spew_pxo_checksums(1024, "FS2MissionsCRCs.txt");
+	   game_shutdown();
+	   return 0;
+   }
 
 	// maybe spew pof stuff
 	if(Cmdline_spew_pof_info){

@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-09-05 04:25:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2003-09-23 02:42:54 $
+ * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/09/05 04:25:28  Goober5000
+ * well, let's see here...
+ *
+ * * persistent variables
+ * * rotating gun barrels
+ * * positive/negative numbers fixed
+ * * sexps to trigger whether the player is controlled by AI
+ * * sexp for force a subspace jump
+ *
+ * I think that's it :)
+ * --Goober5000
+ *
  * Revision 2.4  2002/12/24 07:42:29  Goober5000
  * added change-ai-class and is-ai-class, and I think I may also have nailed the
  * is-iff bug; did some other bug hunting as well
@@ -201,6 +213,7 @@
 
 #include <winsock.h>
 
+#include "fs2open_pxo/Client.h"
 #include "globalincs/pstypes.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -1473,6 +1486,7 @@ void multi_do_frame()
 		}
 	}	
 
+
 	// process any kicked player details
 	multi_kick_process();
 
@@ -1499,6 +1513,8 @@ void multi_do_frame()
 	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
 		hud_setup_escort_list(0);
 	}
+
+
 }
 
 // -------------------------------------------------------------------------------------------------
