@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.145 $
- * $Date: 2004-12-30 07:26:21 $
- * $Author: argv $
+ * $Revision: 2.146 $
+ * $Date: 2005-01-01 07:18:48 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.145  2004/12/30 07:26:21  argv
+ * Quick hack to remove the 50% rate-of-fire penalty when primary weapons are
+ * linked. "#define NO_LINKED_PRIMARY_PENALTY" to enable this change; it's
+ * disabled by default.
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.144  2004/12/25 09:23:10  wmcoolmon
  * Fix to modular tables workaround with Fs2NetD
  *
@@ -2863,7 +2870,7 @@ strcpy(parse_error_text, temp_error);
 	// (we don't want a div-0 error)
 	if (hull_percentage_of_hits <= 0.0f )
 	{
-		Warning(LOCATION, "The subsystems defined for the %s can take more (or the same) combined damage than the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
+		//Warning(LOCATION, "The subsystems defined for the %s can take more (or the same) combined damage than the ship itself. Adjust the tables so that the percentages add up to less than 100", sip->name);
 	}
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	sip->n_subsystems = n_subsystems;

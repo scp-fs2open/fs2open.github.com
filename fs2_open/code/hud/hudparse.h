@@ -9,13 +9,11 @@
 
 //Teh hud_info struct...maybe class
 #define MAX_CUSTOM_HUD_GAUGES 32
-#ifndef NEW_HUD
-#define MAX_HUD_GAUGE_TYPES 64
-#else
+#ifdef NEW_HUD
 #define MAX_HUD_GAUGES			64
 #define MAX_GAUGE_CHILDREN		8
 #define MAX_GAUGE_FRAMES		8
-#define MAX_GAUGE_IMAGES		2
+#define MAX_GAUGE_SHAPES		8
 
 //Return values for update funcs
 #define HG_RETURNNODRAW			-1
@@ -33,52 +31,147 @@
 #define HG_ALWAYSUPDATE		(1<<1)
 #define HG_PRIORITYCOLOR	(1<<2)
 
+//Shape types
+#define HG_SHAPERECTANGLE		0
+#define HG_SHAPECIRCLE			1
+#define HG_SHAPELINE			2
+#define HG_SHAPEAALINE			3
+#define HG_SHAPEGRADIENT		4
+
+#define GV_NONE			0
+#define GV_ADD			1
+#define GV_SUBTRACT		2
+#define GV_MULTIPLY		3
+#define GV_DIVIDE		4
+
+//**********gauge_var***********
+//Assume sizeof(int) is 32
+#define GV_NOVAR		0
+#define GV_INTVAR		1	//<-- These mean that the function needs
+#define GV_CHARVAR		2	//<-- to take on the responsibility of
+#define GV_FLOATVAR		3	//<-- deallocating whatever types are set
+#define GV_GAUGEVAR		4	//<-- in the union.
+
+#define GV_PTRSTART		100
+
+#define GV_INTPTR		100	
+#define GV_CHARPTR		101
+#define GV_FLOATPTR		102
+#define GV_GAUGEVARPTR	103
+
+class gauge_var
+{
+	int var_operator;
+	int data_type;
+	size_t char_size;
+
+	union
+	{
+		int *int_variable;
+		char **char_pointer;	//Necessary for dynamic calculations
+		char *char_variable;
+		float *float_variable;
+
+		gauge_var *gv_variable;
+	};
+
+	int prev_data_type;
+	size_t prev_char_size;
+	union
+	{
+		int *prev_int_result;
+		char *prev_char_result;
+		float *prev_float_result;
+	};
+
+	gauge_var *next, *prev;
+
+	void DeallocVars();
+public:
+	//Cover all the bases
+	void gauge_var::operator=(int value);
+	void gauge_var::operator=(char* value);
+	void gauge_var::operator=(float value);
+
+	//Pointer to other parts of the code
+	void gauge_var::operator=(int* pointer);
+	void gauge_var::operator=(char** pointer);
+	void gauge_var::operator=(float* pointer);
+
+	void Evaluate(int* result);
+	void Evaluate(float* result);
+	void Evaluate(char** result);
+
+	int Append();
+	gauge_var();
+	~gauge_var();
+};
+
+//**********gauge_data***********
 struct ship;
 class gauge_data;
 
 class gauge_data
 {
+	friend class hud;
 private:
-	//nonperishable stuff
+	//nonperishable stuff - these are constant.
 	char name[NAME_LENGTH];								//Gauge name - nonperishable after setup
+	int type;											//Basically, main gauge or child gauge?
+	int priority;										//Goes 0 to 100, 50 are retail gauges
+	
+	//Dynamically changeable gauge variables
+	int coords[2];										//Coordinates of the gauge
 
-	//Set by update
+	//Set by update - not to be touched outside of update()
 	int draw_coords[2];									//Coordinates the gauge is drawn at
 	int update_num;										//Number of times the gauge has been updated
 
+	//Image
 	char image[MAX_FILENAME_LEN];						//Image displayed for the gauge
 	int image_id;										//ID of image
+	int image_size[2];									//Size of the image
 	int num_frames;										//Number of frames the image has
+	int frame[MAX_GAUGE_FRAMES];						//Which image frames to show; -1 means empty
+	int frame_attrib[MAX_GAUGE_FRAMES][8];				//Info for each frame; 0-top clip, 1-left clip, 2-bottom clip, 3-right clip
+	//TODO: attribute 4 should determine style, hud-color or image-pallete
 
-	int shape_id;										//Index of shape to draw
-	int shape_attrib[8];								//Attributes of shape
+	//Text
+	char text[MESSAGE_LENGTH];							//Text for the gauge (Displayed under image)
+	int max_text_lines;									//Number of text lines
+	int max_text_width;									//How wide the text can be
 
+	//Shape
+	int shape_id[MAX_GAUGE_SHAPES];						//Index of shape to draw
+	int shape_attrib[MAX_GAUGE_SHAPES][8];				//Attributes of shape
+
+	//Model
 	char model[MAX_FILENAME_LEN];						//Name of model to draw
 	int model_id;										//Model id
-public:
-	int type;											//Basically, main gauge or child gauge?
-	int coords[2];										//Coordinates of the gauge
-	gauge_data *children[MAX_GAUGE_CHILDREN];				//Children of the gauge
-	int (*update_func)(gauge_data* cg, ship* gauge_owner);//Function that sets data, maybe performs esoteric display functions
-
-	int image_size[2];									//Size of the image
-
-	int frame[MAX_GAUGE_FRAMES];						//Which image frame to use
-	int frame_info[MAX_GAUGE_FRAMES][8];				//Info for each frame; 0-top clip, 1-left clip, 2-bottom clip, 3-right clip, 4-alpha
-
-	char text[MESSAGE_LENGTH];							//Text for the gauge (Displayed under image)
-//	int max_text_width;									//Maximum length in pixels text can be
-
+	int model_attrib[8];								//Attributes of model
 	color g_color;										//Gauge's default color; no alpha means it uses hud default
 	color user_color;									//Default user color; no alpha means no setting
 
-	int model_attrib[8];								//Attributes of model
+	gauge_data *next, *prev;
+	gauge_data *first_child;							//Linked list of children
 
+	//Private functions that help keep drawing nice and neat
+	void draw_shape();
+	void draw_image();
+	void draw_model();
+	void draw_text();
+public:
+	int (*update_func)(gauge_data* cg, ship* gauge_owner);//Function that sets data, maybe performs esoteric display functions
+
+	int data_flags;										//Flags that provide additional info on the data
 	int user_flags;										//Flags settable by the user
 	int show_flags;										//Flags that set where the gauge is viewable
-	int data_flags;										//Flags that provide additional info on the data
 public:
 	gauge_data();										//Creates the gauge
+	~gauge_data();
+	int copy(gauge_data *dest_gauge);
+
+	gauge_data *get_gauge(char *name);
 
 	//Info
 	int get_update_num(){return update_num;}			//Current iteration number, so you can output a list of items
@@ -88,30 +181,49 @@ public:
 	int reset();										//Call before a level to reset everything to defaults (incomplete)
 
 	//In-mission functions
-	int update(ship* gauge_owner, gauge_data* cgp = NULL);	//Updates the gauge and all children
+	int show(ship* gauge_owner, gauge_data* cgp = NULL);	//Updates the gauge and all children
 	int draw();												//Draws the gauge; shouldn't need to be called outside of update
-	int set_up(char* name, int def_x, int def_y, gauge_data* new_parent = NULL);		//Inits a gauge with data and readies it for use
+	int set_up(char* name, int def_x, int def_y, gauge_data* new_parent = NULL, int priority = 100);		//Inits a gauge with data and readies it for use
 	int set_image(char* image_name, int newframe = 0, int sizex = 0, int sizey = 0);	//Sets the current image
 	int set_model(char* model_name);	//Sets the current model (incomplete)
 };
 
+//**********hud***********
 #define HI_DIM		0
 #define HI_NORMAL	1
 #define HI_BRIGHT	2
 
-#endif
+class hud
+{
+	friend void set_current_hud(ship* owner);
+private:
+	bool loaded;
+	int resolution[2];
 
+	int num_gauges;
+	gauge_data *first_gauge;
+	ship* owner;
+	color hud_color;
+public:
+	bool is_loaded() { return loaded; }
+	void show();
+	ubyte get_preset_alpha(int preset_id);
+	gauge_data* add_gauge(char* name, int def_x_coord, int def_y_coord, gauge_data* new_gauge_parent = NULL, int priority = 100);
+	gauge_data *get_gauge(char* name);
+
+	int copy(hud* dest_hud);
+
+	hud();
+	~hud();
+};
+
+#else
+#define MAX_HUD_GAUGE_TYPES 64
 typedef struct hud_info
 {
 	bool loaded;
 	int resolution[2];
-#ifdef NEW_HUD
-	int num_gauges;
-	gauge_data gauges[MAX_HUD_GAUGES];
-	//Who's hud is this??
-	ship *owner;
-	color hud_color;
-#endif
+
 	//"Int Row"
 	//*Main Gauges*
 	//Hudshield
@@ -156,11 +268,9 @@ typedef struct hud_info
 //	int gauge_frame_sexp_vars[MAX_HUD_GAUGE_TYPES];
 
 	hud_info();
-#ifdef NEW_HUD
-	ubyte get_preset_alpha(int preset_id);
-	gauge_data* add_gauge(char* name, int def_x_coord, int def_y_coord, gauge_data* new_gauge_parent = NULL);
-#endif
 } hud_info;
+
+#endif
 
 typedef struct gauge_info
 {

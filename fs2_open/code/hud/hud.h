@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.7 $
- * $Date: 2004-09-17 00:18:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-01-01 07:18:47 $
+ * $Author: wmcoolmon $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/09/17 00:18:17  Goober5000
+ * changed toggle-hud to hud-disable; added hud-disable-except-messages
+ * --Goober5000
+ *
  * Revision 2.6  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -276,13 +280,12 @@
 
 #include "hud/hudgauges.h"
 #include "graphics/2d.h"
+#include "hud/hudparse.h"
 
 #define SCREEN_CENTER_X ((gr_screen.clip_left + gr_screen.clip_right)	/ 2.0f)
 #define SCREEN_CENTER_Y ((gr_screen.clip_top + gr_screen.clip_bottom)   / 2.0f)
 
 struct object;
-
-struct hud_info;
 
 typedef struct hud_anim
 {
@@ -308,7 +311,9 @@ typedef struct hud_frames_info
 } hud_frames_info;
 
 //Current HUD to use for info -C
+#ifndef NEW_HUD
 extern hud_info* current_hud;
+#endif
 
 #define HUD_NUM_COLOR_LEVELS	16
 extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];
