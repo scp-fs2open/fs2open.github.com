@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.102 $
- * $Date: 2005-03-03 00:33:41 $
+ * $Revision: 2.103 $
+ * $Date: 2005-03-03 16:16:55 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2005/03/03 00:33:41  taylor
+ * use the back buffer for screen saves, this didn't work on Windows at one
+ *    point but I'm out of things to try and it may be ok after other fixes
+ *
  * Revision 2.101  2005/02/27 10:38:06  wmcoolmon
  * Nonstandard res stuff
  *
@@ -1972,6 +1976,8 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 
 	if (flags & TMAP_FLAG_TRISTRIP) 
 		glBegin(GL_TRIANGLE_STRIP);
+	else if (flags & TMAP_FLAG_TRILIST)
+		glBegin(GL_TRIANGLES);
 	else 
 		glBegin(GL_TRIANGLE_FAN);
 
@@ -2332,8 +2338,12 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 
 	vertex *va;
 	
-	if (flags & TMAP_FLAG_TRISTRIP) glBegin(GL_TRIANGLE_STRIP);
-	else glBegin(GL_TRIANGLE_FAN);
+	if (flags & TMAP_FLAG_TRISTRIP)
+		glBegin(GL_TRIANGLE_STRIP);
+	else if (flags & TMAP_FLAG_TRILIST)
+		glBegin(GL_TRIANGLES);
+	else
+		glBegin(GL_TRIANGLE_FAN);
 
 	for (i=0; i < nv; i++) {
 		va=verts[i];
@@ -2966,7 +2976,12 @@ int gr_opengl_save_screen()
  		return -1;
  	}
 	
+#ifdef _WIN32
+	// why oh why does Windows suck??
+	glReadBuffer(GL_FRONT);
+#else
 	glReadBuffer(GL_BACK);
+#endif
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, fmt, opengl_screen_tmp);
         
    
@@ -3433,6 +3448,15 @@ void gr_opengl_close()
 	}
 
 	gr_opengl_free_mouse_area();
+
+#ifdef _WIN32
+	wglMakeCurrent(NULL, NULL);
+
+	if (rend_context) {
+		wglDeleteContext(rend_context);
+		rend_context=NULL;
+	}
+#endif
 }
 
 void opengl_setup_function_pointers()
@@ -3717,7 +3741,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	pfd.nVersion=1;
 	pfd.cColorBits=(ubyte)bpp;
 	pfd.dwFlags=PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.cDepthBits=24;
+	pfd.cDepthBits=32;	// 24 wasn't the right size if we are using 32bpp
 	pfd.iPixelType=PFD_TYPE_RGBA;
 	pfd.cRedBits=(ubyte)Gr_red.bits;
 	pfd.cRedShift=(ubyte)Gr_red.shift;
