@@ -1871,11 +1871,19 @@ SOURCE=..\..\code\sound\ogg\ogg.h
 # End Group
 # Begin Source File
 
+SOURCE="..\..\code\sound\acm-openal.cpp"
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Sound\acm.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\Sound\acm.h
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\code\sound\audiostr-openal.cpp"
 # End Source File
 # Begin Source File
 
