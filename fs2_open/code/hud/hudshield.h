@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.h $
- * $Revision: 2.3 $
- * $Date: 2003-09-13 06:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2003-09-19 00:10:21 $
+ * $Author: argv $
  *
  * Header file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.1  2003/01/06 17:14:52  Goober5000
  * added wing configurable squad logos - put +Squad Logo: filename.pcx as
  * the last entry in each wing that you want (but the player's squad logo will
@@ -80,7 +84,7 @@ typedef struct shield_hit_info
 	int shield_hit_next_flash[NUM_SHIELD_HIT_MEMBERS];
 } shield_hit_info;
 
-extern ubyte Quadrant_xlate[4];
+extern ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS];
 
 struct player;
 
