@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.46 $
+ * $Revision: 2.47 $
  * $Author: Goober5000 $
- * $Date: 2003-08-27 01:38:00 $
+ * $Date: 2003-08-27 02:04:54 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/08/27 01:38:00  Goober5000
+ * added is-ship-type, is-ship-class, lock-rotating-subsystem, and free-rotating-subsystem;
+ * also fixed the argument and return values for various sexps so that they work
+ * properly for negative numbers
+ * --Goober5000
+ *
  * Revision 2.45  2003/06/19 18:12:12  phreak
  * added turret-tagged-specific and turret-tagged-clear-specific sexps
  *
@@ -656,7 +662,9 @@
 #define	OP_PERCENT_SHIPS_DEPARTED			(0x0013 | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)
 #define	OP_PERCENT_SHIPS_DESTROYED			(0x0014 | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)
 #define	OP_DEPART_NODE_DELAY					(0x0015 | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)
-#define	OP_DESTROYED_DEPARTED_DELAY		(0x0016 | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)
+#define	OP_DESTROYED_DEPARTED_DELAY			(0x0016 | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)
+#define OP_PERCENT_SHIPS_DISARMED			(0x0017 | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PERCENT_SHIPS_DISABLED			(0x0018 | OP_CATEGORY_OBJECTIVE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define	OP_TIME_SHIP_DESTROYED				(0x0000 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_TIME_SHIP_ARRIVED					(0x0001 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
