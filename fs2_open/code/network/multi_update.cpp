@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-04-01 07:27:32 $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-01 07:31:10 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/01 07:27:32  taylor
+ * some minor Linux fixage
+ *
  * Revision 2.5  2005/03/02 21:18:20  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
