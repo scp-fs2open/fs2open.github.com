@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.78 $
+ * $Revision: 2.79 $
  * $Author: Goober5000 $
- * $Date: 2004-10-31 02:04:34 $
+ * $Date: 2004-11-17 22:23:13 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2004/10/31 02:04:34  Goober5000
+ * added Knossos_warp_ani_used flag for taylor
+ * --Goober5000
+ *
  * Revision 2.77  2004/10/15 10:03:09  Goober5000
  * added change-alt-name
  * --Goober5000
@@ -1003,21 +1007,23 @@ struct ship_subsys;
 #define OP_TURRET_TAGGED_CLEAR_SPECIFIC		(0x0089 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //phreak
 #define OP_LOCK_ROTATING_SUBSYSTEM			(0x008a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_FREE_ROTATING_SUBSYSTEM			(0x008b | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_PLAYER_USE_AI					(0x008c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_PLAYER_NOT_USE_AI				(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_HUD_DISABLE_EXCEPT_MESSAGES		(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_FORCE_JUMP						(0x008f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_REVERSE_ROTATING_SUBSYSTEM		(0x008c | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_ROTATING_SUBSYS_SET_TURN_TIME	(0x008d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PLAYER_USE_AI					(0x008e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PLAYER_NOT_USE_AI				(0x008f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_HUD_DISABLE_EXCEPT_MESSAGES		(0x0090 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FORCE_JUMP						(0x0091 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 //Hud stuff
-#define OP_HUD_SET_TEXT						(0x0090 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_HUD_SET_TEXT_NUM					(0x0091 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_HUD_SET_COORDS					(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_HUD_SET_FRAME					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_HUD_SET_COLOR					(0x0094 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_RADAR_SET_MAXRANGE				(0x0095 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
+#define OP_HUD_SET_TEXT						(0x0092 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_TEXT_NUM					(0x0093 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_COORDS					(0x0094 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_FRAME					(0x0095 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_HUD_SET_COLOR					(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
+#define OP_RADAR_SET_MAXRANGE				(0x0097 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
 //
-#define OP_SHIP_TAG							(0x0096 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
-#define OP_SHIP_UNTAG						(0x0097 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
-#define OP_SHIP_CHANGE_ALT_NAME				(0x0098 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_TAG							(0x0098 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SHIP_UNTAG						(0x0099 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_SHIP_CHANGE_ALT_NAME				(0x009a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1394,6 +1400,7 @@ extern int count_free_sexp_nodes();
 // Goober5000
 void do_action_for_each_special_argument(int index);
 int special_argument_appears_in_sexp_tree(int node);
+int special_argument_appears_in_sexp_list(int node);
 
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );

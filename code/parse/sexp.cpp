@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.122 $
- * $Date: 2004-10-31 02:04:34 $
+ * $Revision: 2.123 $
+ * $Date: 2004-11-17 22:23:13 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2004/10/31 02:04:34  Goober5000
+ * added Knossos_warp_ani_used flag for taylor
+ * --Goober5000
+ *
  * Revision 2.121  2004/10/18 09:27:47  Goober5000
  * fixed FRED bug that changed special arguments to (null)
  * --Goober5000
@@ -1059,6 +1063,8 @@ sexp_oper Operators[] = {
 	{ "set-unscanned",				OP_SET_UNSCANNED,				1, 2 },
 	{ "lock-rotating-subsystem",	OP_LOCK_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
 	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
+	{ "reverse-rotating-subsystem",	OP_REVERSE_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
+	{ "rotating-subsys-set-turn-time", OP_ROTATING_SUBSYS_SET_TURN_TIME,	3, INT_MAX	},	// Goober5000
 	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
 	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
 
@@ -1892,6 +1898,11 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 	if (count < Operators[op].min || count > Operators[op].max)
 		return SEXP_CHECK_BAD_ARG_COUNT;  // incorrect number of arguments
 
+	// Goober5000 - if this is a list of stuff that has the special argument as
+	// an item in the list, assume it's valid
+	if (special_argument_appears_in_sexp_list(op_index))
+		return 0;
+
 	index = Sexp_nodes[op_index].rest;
 	while (index != -1) {
 		type = query_operator_argument_type(op, argnum);
@@ -1992,14 +2003,6 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 		} else {
 			Assert(0);
-		}
-
-		// Goober5000 - assume the special argument is okay
-		if (!strcmp(Sexp_nodes[index].text, SEXP_ARGUMENT_STRING))
-		{
-			index = CDR(index);
-			argnum++;
-			continue;
 		}
 
 		switch (type) {
@@ -6315,6 +6318,22 @@ int special_argument_appears_in_sexp_tree(int node)
 
 	return special_argument_appears_in_sexp_tree(CAR(node))
 		|| special_argument_appears_in_sexp_tree(CDR(node));
+}
+
+// Goober5000
+int special_argument_appears_in_sexp_list(int node)
+{
+	// look through list
+	while (node != -1)
+	{
+		// special argument?
+		if (!strcmp(Sexp_nodes[node].text, SEXP_ARGUMENT_STRING))
+			return 1;
+
+		node = CDR(node);
+	}
+
+	return 0;
 }
 
 // conditional sexpressions follow
@@ -10766,16 +10785,92 @@ void sexp_set_subsys_rotation_lock(int node, int locked)
 	if(Ships[ship_num].objnum < 0)
 		return;
 
+	node = CDR(node);
+
+	// loop for all specified subsystems
+	while (node != -1)
+	{
+		// get the rotating subsystem
+		rotate = ship_get_subsys(&Ships[ship_num], CTEXT(node));
+		if(rotate == NULL)
+			return;
+
+		// set rotate or not, depending on flag
+		if (locked)
+			rotate->system_info->flags &= ~MSS_FLAG_ROTATES;
+		else
+			rotate->system_info->flags |= MSS_FLAG_ROTATES;
+
+		// iterate
+		node = CDR(node);
+	}
+}
+
+// Goober5000
+void sexp_reverse_rotating_subsystem(int node)
+{
+	int ship_num;
+	ship_subsys *rotate;
+
+	// get the ship
+	ship_num = ship_name_lookup(CTEXT(node));
+
+	if(ship_num < 0)
+		return;
+	
+	if(Ships[ship_num].objnum < 0)
+		return;
+
+	node = CDR(node);
+
+	// loop for all specified subsystems
+	while (node != -1)
+	{
+		// get the rotating subsystem
+		rotate = ship_get_subsys(&Ships[ship_num], CTEXT(node));
+		if(rotate == NULL)
+			return;
+
+		// switch direction of rotation
+		rotate->system_info->turn_rate *= -1.0f;
+		rotate->submodel_info_1.cur_turn_rate *= -1.0f;
+		rotate->submodel_info_1.desired_turn_rate *= -1.0f;
+
+		// iterate
+		node = CDR(node);
+	}
+}
+
+// Goober5000
+void sexp_rotating_subsys_set_turn_time(int node)
+{
+	int ship_num;
+	float turn_time, turn_accel;
+	ship_subsys *rotate;
+
+	// get the ship
+	ship_num = ship_name_lookup(CTEXT(node));
+
+	if(ship_num < 0)
+		return;
+	
+	if(Ships[ship_num].objnum < 0)
+		return;
+
 	// get the rotating subsystem
 	rotate = ship_get_subsys(&Ships[ship_num], CTEXT(CDR(node)));
 	if(rotate == NULL)
 		return;
 
-	// set rotate or not, depending on flag
-	if (locked)
-		rotate->system_info->flags &= ~MSS_FLAG_ROTATES;
+	// get and set the turn time
+	turn_time = ((float) atoi(CTEXT(CDDR(node)))) / 1000.0f;
+	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
+
+	// maybe get and set the turn accel
+	if (CDDDR(node) != -1)
+		turn_accel = ((float) atoi(CTEXT(CDDDR(node)))) / 1000.0f;
 	else
-		rotate->system_info->flags |= MSS_FLAG_ROTATES;
+		rotate->submodel_info_1.cur_turn_rate = PI2 / turn_time;
 }
 
 void sexp_turret_tagged_specific(int node)
@@ -13038,6 +13133,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = 1;
 				break;
 
+			case OP_REVERSE_ROTATING_SUBSYSTEM:
+				sexp_reverse_rotating_subsystem(node);
+				sexp_val = 1;
+				break;
+
+			case OP_ROTATING_SUBSYS_SET_TURN_TIME:
+				sexp_rotating_subsys_set_turn_time(node);
+				sexp_val = 1;
+				break;
+
 			case OP_NUM_SHIPS_IN_BATTLE:
 				sexp_val=sexp_num_ships_in_battle(node);
 				break;
@@ -13507,6 +13612,8 @@ int query_operator_return_type(int op)
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 		case OP_LOCK_ROTATING_SUBSYSTEM:
 		case OP_FREE_ROTATING_SUBSYSTEM:
+		case OP_REVERSE_ROTATING_SUBSYSTEM:
+		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 #if defined(ENABLE_AUTO_PILOT)
@@ -14351,10 +14458,21 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_LOCK_ROTATING_SUBSYSTEM:
 		case OP_FREE_ROTATING_SUBSYSTEM:
+		case OP_REVERSE_ROTATING_SUBSYSTEM:
 			if (argnum == 0)
 				return OPF_SHIP;
 			else
 				return OPF_ROTATING_SUBSYSTEM;
+
+		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_ROTATING_SUBSYSTEM;
+			else if (argnum == 2)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
 
 		case OP_BEAM_FREE_ALL:
 		case OP_BEAM_LOCK_ALL:
@@ -15412,6 +15530,8 @@ int get_subcategory(int sexp_id)
 		case OP_SET_UNSCANNED:
 		case OP_LOCK_ROTATING_SUBSYSTEM:
 		case OP_FREE_ROTATING_SUBSYSTEM:
+		case OP_REVERSE_ROTATING_SUBSYSTEM:
+		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
 		case OP_SHIP_INVULNERABLE:
