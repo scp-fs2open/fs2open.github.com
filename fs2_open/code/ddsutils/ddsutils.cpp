@@ -9,7 +9,7 @@ int Texture_compression_enabled=0;
 int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, int *size)
 {
 	DDSURFACEDESC2 dds_header;
-	char code[5];
+	int code = 0;
 	CFILE *ddsfile;
 	char real_name[MAX_FILENAME_LEN];
 	int retval = DDS_ERROR_NONE;
@@ -36,19 +36,32 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 		ddsfile = img_cfp;
 	}
 
-	memset(code, 0, sizeof(code));
-
-
 	// read the code
-	cfread(code, 1, 4, ddsfile);
-	code[4] = 0;
+	code = cfread_int(ddsfile);
 
 	// check it
-	if (strncmp(code, DDS_FILECODE, 4) != 0)
+	if (code != DDS_FILECODE)
 		return DDS_ERROR_BAD_HEADER;
 
 	// read the header
 	cfread(&dds_header, sizeof(DDSURFACEDESC2), 1, ddsfile);
+
+	// swap header variables
+	dds_header.dwSize				= INTEL_INT( dds_header.dwSize );
+	dds_header.dwFlags				= INTEL_INT( dds_header.dwFlags );
+	dds_header.dwHeight				= INTEL_INT( dds_header.dwHeight );
+	dds_header.dwWidth				= INTEL_INT( dds_header.dwWidth );
+	dds_header.dwPitchOrLinearSize	= INTEL_INT( dds_header.dwPitchOrLinearSize );
+	dds_header.dwDepth				= INTEL_INT( dds_header.dwDepth);
+	dds_header.dwMipMapCount		= INTEL_INT( dds_header.dwMipMapCount );
+	dds_header.ddpfPixelFormat.dwSize				= INTEL_INT( dds_header.ddpfPixelFormat.dwSize );
+	dds_header.ddpfPixelFormat.dwFlags				= INTEL_INT( dds_header.ddpfPixelFormat.dwFlags );
+	dds_header.ddpfPixelFormat.dwFourCC				= INTEL_INT( dds_header.ddpfPixelFormat.dwFourCC );
+	dds_header.ddpfPixelFormat.dwRGBBitCount		= INTEL_INT( dds_header.ddpfPixelFormat.dwRGBBitCount );
+	dds_header.ddpfPixelFormat.dwRBitMask			= INTEL_INT( dds_header.ddpfPixelFormat.dwRBitMask );
+	dds_header.ddpfPixelFormat.dwGBitMask			= INTEL_INT( dds_header.ddpfPixelFormat.dwGBitMask );
+	dds_header.ddpfPixelFormat.dwBBitMask			= INTEL_INT( dds_header.ddpfPixelFormat.dwBBitMask );
+	dds_header.ddpfPixelFormat.dwRGBAlphaBitMask	= INTEL_INT( dds_header.ddpfPixelFormat.dwRGBAlphaBitMask );
 
 	// calculate the type and size of the data
 	if (dds_header.ddpfPixelFormat.dwFlags & DDPF_FOURCC) {

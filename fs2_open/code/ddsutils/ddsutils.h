@@ -39,7 +39,7 @@ struct CFILE;
 #define FOURCC_DXT4  (MAKEFOURCC('D','X','T','4'))
 #define FOURCC_DXT5  (MAKEFOURCC('D','X','T','5'))
 
-#define DDS_FILECODE					"DDS "
+#define DDS_FILECODE	0x20534444	// "DDS " in file
 
 #ifndef DUMMYUNIONNAMEN
 #if defined(__cplusplus) || !defined(NONAMELESSUNION)
