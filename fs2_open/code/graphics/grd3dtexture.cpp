@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.25 $
- * $Date: 2004-01-20 23:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2004-01-26 20:03:51 $
+ * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2004/01/20 23:01:52  Goober5000
+ * added some initialization to get rid of warnings
+ * --Goober5000
+ *
  * Revision 2.24  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -1450,7 +1454,7 @@ int d3d_get_valid_texture_size(int value, bool width)
 	return -1;
 }
 
-IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags) 
+IDirect3DTexture8 *d3d_make_texture(void *data, int bitmapnum, int size, int type, int flags) 
 {
 	D3DXIMAGE_INFO source_desc;
 	if(FAILED(D3DXGetImageInfoFromFileInMemory(data, size,	&source_desc))) {
@@ -1494,13 +1498,26 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags)
 			}
 		}
 	}
+
+	extern D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
+
+	float *uscale = &(d3d_bitmap_entry[bitmapnum].uscale);
+	float *vscale = &(d3d_bitmap_entry[bitmapnum].vscale);
 	  
-	bool use_mipmapping = Cmdline_d3dmipmap && (flags != TCACHE_TYPE_BITMAP_SECTION);
+	bool use_mipmapping = (Cmdline_d3dmipmap > 0);
 
 	DWORD filter = D3DX_FILTER_LINEAR; // Linear, enough to smooth rescales but not too much blur
 
-	if(gr_screen.bits_per_pixel == 16 && ((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG)))
+	*uscale = *vscale = 1.0;
+
+	if(flags == TCACHE_TYPE_BITMAP_SECTION) {
+		use_mipmapping = 0;
+	  	filter = D3DX_FILTER_NONE; 
+		*uscale = ((float) source_desc.Width)  / ((float) d3d_get_valid_texture_size(source_desc.Width, true));
+		*vscale = ((float) source_desc.Height) / ((float) d3d_get_valid_texture_size(source_desc.Height, false));
+	} else if(gr_screen.bits_per_pixel == 16 && ((type == BM_TYPE_TGA) || (type == BM_TYPE_JPG))) {
 	  	filter |=D3DX_FILTER_DITHER;
+	}
 
 	IDirect3DTexture8 *ptexture = NULL;
 	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
@@ -1522,7 +1539,7 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int size, int type, int flags)
 	return SUCCEEDED(hr) ? ptexture : NULL;
 }
 
-void *d3d_lock_d3dx_types(char *file, int type, ubyte flags )
+void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum)
 {
 	char filename[MAX_FILENAME_LEN];
 
@@ -1556,8 +1573,8 @@ void *d3d_lock_d3dx_types(char *file, int type, ubyte flags )
 
 	cfclose(targa_file);
 	targa_file = NULL;
-	
-	IDirect3DTexture8 *ptexture = d3d_make_texture(tga_data, size, type, flags);
+
+	IDirect3DTexture8 *ptexture = d3d_make_texture(tga_data, bitmapnum, size, type, flags);
 
 	free(tga_data);
 

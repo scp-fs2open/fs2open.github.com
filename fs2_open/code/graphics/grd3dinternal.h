@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.19 $
- * $Date: 2004-01-24 14:31:27 $
+ * $Revision: 2.20 $
+ * $Date: 2004-01-26 20:03:51 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/01/24 14:31:27  randomtiger
+ * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
+ * Its optional and off by default, use -d3d_particle to activiate.
+ * Also bumped up D3D ambient light setting, it was way too dark.
+ * Its now set to something similar to the original game.
+ *
  * Revision 2.18  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -505,7 +511,7 @@ int d3d_get_num_prims(int vertex_count, D3DPRIMITIVETYPE prim_type);
 // GrD3Dtexture
 void *d3d_lock_32_pcx(char *real_filename, int type, float *u, float *v);
 bool d3d_read_header_d3dx(char *file, int type, int *w, int *h);
-void *d3d_lock_d3dx_types(char *file, int type, ubyte flags );
+void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum);
 
 const D3DCOLOR ambient_dark  = D3DCOLOR_ARGB(255,16,16,16);
 const D3DCOLOR ambient_light = 

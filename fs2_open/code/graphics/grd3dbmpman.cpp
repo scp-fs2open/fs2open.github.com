@@ -42,13 +42,6 @@ void bm_d3d_set_max_bitmap_size(int size)
 
 extern bitmap_entry bm_bitmaps[];
 
-typedef struct {
-
-	IDirect3DBaseTexture8 *tinterface;
-	float uscale, vscale;
-
-} D3DBitmapData;
-
 D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
 
 // keep this defined to use per-ship nondarkening pixels
@@ -866,8 +859,8 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 		bm_d3d_lock(handle, bpp, flags );
 		bm_unlock(handle); 
 		
-	 	if(u_scale) *u_scale = 1.0;
-	 	if(v_scale) *v_scale = 1.0;
+	 	if(u_scale) *u_scale = d3d_bitmap_entry[bitmapnum].uscale;
+	 	if(v_scale) *v_scale = d3d_bitmap_entry[bitmapnum].vscale;
 
 		d3d_SetTexture(stage, d3d_bitmap_entry[bitmapnum].tinterface);
 		return true;
@@ -932,7 +925,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 			case BM_TYPE_TGA:
 			{
 				d3d_bitmap_entry[bitmapnum].tinterface = 
-					(IDirect3DBaseTexture8 *) d3d_lock_d3dx_types(be->filename, be->type, flags );			
+					(IDirect3DBaseTexture8 *) d3d_lock_d3dx_types(be->filename, be->type, flags, bitmapnum);			
 				break;
 			}
 			default:

@@ -18,6 +18,11 @@
 D3DPOINTVERTEX Particle_list[MAX_PARTICLES];
 int Current_index = 0;
 
+float rt_pointsize   = 3.0f;
+float rt_pointsize_A = 1.0f;
+float rt_pointsize_B = 0.9f;
+float rt_pointsize_C = 0.8f;  
+
 bool d3d_particle_init()
 {
 	return true;
@@ -77,7 +82,7 @@ bool gr_d3d_particle_render_list()
     d3d_SetRenderState( D3DRS_POINTSPRITEENABLE, TRUE );
     d3d_SetRenderState( D3DRS_POINTSCALEENABLE,  TRUE );
     d3d_SetRenderState( D3DRS_POINTSIZE_MIN, FtoDW(0.0f) );
-	d3d_SetRenderState( D3DRS_POINTSIZE, FtoDW(rt_pointsize) );
+ 	d3d_SetRenderState( D3DRS_POINTSIZE, FtoDW(rt_pointsize) );
     d3d_SetRenderState( D3DRS_POINTSCALE_A,  FtoDW(rt_pointsize_A) );
     d3d_SetRenderState( D3DRS_POINTSCALE_B,  FtoDW(rt_pointsize_B) );
     d3d_SetRenderState( D3DRS_POINTSCALE_C,  FtoDW(rt_pointsize_C) );

@@ -215,6 +215,8 @@ void gr_d3d_cleanup()
 	// restore windows clipping rectangle
  	ClipCursor(NULL);
 	GlobalD3DVars::D3D_inited = 0;
+
+	DBUGFILE_OUTPUT_4("%f %f %f %f",rt_pointsize,rt_pointsize_A,rt_pointsize_B,rt_pointsize_C);
 }
 
 bool d3d_init_win32(int screen_width, int screen_height)
