@@ -2,13 +2,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.100 $
- * $Date: 2005-02-23 05:11:13 $
- * $Author: taylor $
+ * $Revision: 2.101 $
+ * $Date: 2005-02-27 10:38:06 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2005/02/23 05:11:13  taylor
+ * more consolidation of various graphics variables
+ * some header cleaning
+ * only one tmapper_internal for OGL, don't use more than two tex/pass now
+ * seperate out 2d matrix mode to allow -2d_poof in OGL and maybe fix missing
+ *    interface when set 3d matrix stuff doesn't have corresponding end
+ * add dump_frame stuff for OGL, mostly useless but allows trailer recording
+ *
  * Revision 2.99  2005/02/19 07:50:15  wmcoolmon
  * OpenGL gradient fix for nonstandard resolutions
  *
@@ -1348,7 +1356,7 @@ void gr_opengl_shade(int x,int y,int w,int h)
        gr_opengl_rect_internal(x, y, w, h, r, g, b, a);	
 }
 
-void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy, bool resize = true)
+void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize=false)
 {
 //	mprintf(("gr_opengl_aabitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s\n", 
   //				x, y, w, h, 
@@ -1430,7 +1438,7 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy, bool 
 
 }
 
-void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy)
+void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 {
 	int reclip;
 	#ifndef NDEBUG
@@ -1506,10 +1514,10 @@ void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy)
 	#endif
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	gr_opengl_aabitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
+	gr_opengl_aabitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
 }
 
-void gr_opengl_aabitmap(int x, int y)
+void gr_opengl_aabitmap(int x, int y, bool resize)
 {
 	int w, h;
 
@@ -1531,7 +1539,7 @@ void gr_opengl_aabitmap(int x, int y)
 	if ( sy >= h ) return;
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-	gr_aabitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
+	gr_aabitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
 }
 
 
@@ -1553,6 +1561,7 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 
 	if (sx==0x8000) {			//centered
 		x = get_centered_x(s);
+		gr_unsize_screen_pos(&x, NULL);
 	} else {
 		x = sx;
 	}
@@ -1567,6 +1576,7 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 			y += Current_font->h;
 			if (sx==0x8000) {			//centered
 				x = get_centered_x(s);
+				gr_unsize_screen_pos(&x, NULL);
 			} else {
 				x = sx;
 			}
@@ -1606,7 +1616,7 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 		int u = Current_font->bm_u[letter];
 		int v = Current_font->bm_v[letter];
 
-		gr_opengl_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd, resize );
+		gr_opengl_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd, resize);
 	}
 
 	TIMERBAR_POP();

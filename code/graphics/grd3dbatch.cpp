@@ -9,6 +9,9 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/02/18 09:51:06  wmcoolmon
+ * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
+ *
  * Revision 2.17  2005/02/10 04:01:42  wmcoolmon
  * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
  *
@@ -448,12 +451,17 @@ void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, i
 
 		if(resize)
 		{
-			//if(x_resize)
+			if(x_resize)
+			{
 				gr_resize_screen_pos(&nx, &ny);
-			//else
-			//	gr_resize_screen_pos(NULL, &ny);
+				gr_resize_screen_pos(&nw, &nh);
+			}
+			else
+			{
+				gr_resize_screen_pos(NULL, &ny);
+				gr_resize_screen_pos(NULL, &nh);
+			}
 
-			gr_resize_screen_pos(&nw, &nh);
 		}
 
 		x1 = i2fl(nx);
