@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-02-20 07:39:34 $
+ * $Revision: 2.19 $
+ * $Date: 2005-02-20 08:22:48 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/02/20 07:39:34  wmcoolmon
+ * Trails update: Better, faster, stronger, but not much more reliable
+ *
  * Revision 2.17  2005/02/19 07:57:03  wmcoolmon
  * Removed trails limit
  *
@@ -335,15 +338,19 @@ void ct_create_contrails(ship *shipp)
 	sip = &Ship_info[shipp->ship_info_index];
 
 
-	for(idx=0; idx<sip->ct_count; idx++){
+	for(idx=0; idx<sip->ct_count; idx++)
+	{
 			//if (this is a neb mision and this is a neb trail) or an ABtrail -Bobboau
 			shipp->trail_ptr[idx] = trail_create(&sip->ct_info[idx]);	
 	
+		if(shipp->trail_ptr[idx] != NULL)
+		{
 			// add the point		
 			vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
 			trail_add_segment(shipp->trail_ptr[idx], &v1);
 			trail_add_segment(shipp->trail_ptr[idx], &v1);
+		}
 	}
 
 #endif
@@ -429,18 +436,22 @@ void ct_create_ABtrails(ship *shipp)
 
 	if(objp->phys_info.flags & PF_AFTERBURNER_ON){//AB trails-Bobboau
 
-		for(idx=0; idx<shipp->ab_count; idx++){
+		for(idx=0; idx<shipp->ab_count; idx++)
+		{
 		
 			shipp->ABtrail_ptr[idx] = trail_create(&shipp->ab_info[idx]);	
-			// get the point for the contrail
-			vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
-			vm_vec_add2(&v1, &objp->pos);
-			// if the spew stamp has elapsed
-			if(trail_stamp_elapsed(shipp->ABtrail_ptr[idx])){	
-				trail_add_segment(shipp->ABtrail_ptr[idx], &v1);
-				trail_set_stamp(shipp->ABtrail_ptr[idx]);
-			} else {
-				trail_set_segment(shipp->ABtrail_ptr[idx], &v1);
+			if(shipp->ABtrail_ptr[idx] != NULL)
+			{
+				// get the point for the contrail
+				vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
+				vm_vec_add2(&v1, &objp->pos);
+				// if the spew stamp has elapsed
+				if(trail_stamp_elapsed(shipp->ABtrail_ptr[idx])){	
+					trail_add_segment(shipp->ABtrail_ptr[idx], &v1);
+					trail_set_stamp(shipp->ABtrail_ptr[idx]);
+				} else {
+					trail_set_segment(shipp->ABtrail_ptr[idx], &v1);
+				}
 			}
 		}
 /*		if( objp == Player_obj){
@@ -474,7 +485,7 @@ void ct_update_ABtrails(ship *shipp)
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		if(objp->phys_info.flags & PF_AFTERBURNER_ON){//ABtrails
-			if(shipp->ABtrail_ptr[idx] >= 0){	
+			if(shipp->ABtrail_ptr[idx] != NULL){	
 				// get the point for the contrail
 				vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
 				vm_vec_add2(&v1, &objp->pos);
