@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-02-28 14:14:56 $
- * $Author: randomtiger $
+ * $Revision: 2.18 $
+ * $Date: 2004-03-07 23:07:20 $
+ * $Author: Kazan $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/02/28 14:14:56  randomtiger
+ * Removed a few uneeded if DIRECT3D's.
+ * Set laser function to only render the effect one sided.
+ * Added some stuff to the credits.
+ * Set D3D fogging to fall back to vertex fog if table fog not supported.
+ *
  * Revision 2.16  2004/02/16 11:47:32  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -559,6 +565,7 @@
 #include <windowsx.h>
 #endif
 
+#include "graphics/GrSoft.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 #include "graphics/2d.h"
@@ -703,6 +710,10 @@ void gr_close()
 #endif
 	case GR_OPENGL:
 		gr_opengl_cleanup();
+		break;
+
+	case GR_SOFTWARE:
+		gr_soft_cleanup();
 		break;
 
 	default:
@@ -1088,6 +1099,10 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 		case GR_OPENGL:
 			gr_opengl_cleanup();
 			break;
+		
+		case GR_SOFTWARE:
+			gr_soft_cleanup();
+			break;
 
 		default:
 			Int3();		// Invalid graphics mode
@@ -1115,6 +1130,10 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 
 		case GR_OPENGL:
 			gr_opengl_init();
+			break;
+
+		case GR_SOFTWARE:
+			gr_soft_init();
 			break;
 
 		default:
@@ -1166,6 +1185,9 @@ void gr_force_windowed()
 			opengl_minimize();
 			break;
 
+		case GR_SOFTWARE:
+			break;
+
 		default:
 			Int3();		// Invalid graphics mode
 	}
@@ -1193,6 +1215,9 @@ void gr_activate(int active)
 		case GR_OPENGL:
 			extern void gr_opengl_activate(int active);
 			gr_opengl_activate(active);
+			break;
+
+		case GR_SOFTWARE:
 			break;
 
 		default:

@@ -445,11 +445,55 @@ SOURCE=.\GlobalIncs\WinDebug.cpp
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\graphics\aaline.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Bitblt.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Bitblt.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Circle.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Circle.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Colors.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Colors.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Graphics\Font.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\Graphics\Font.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Gradient.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Gradient.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrSoft.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\GrSoft.h
 # End Source File
 # Begin Source File
 
@@ -461,7 +505,75 @@ SOURCE=.\Graphics\GrZbuffer.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\graphics\Line.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Graphics\Line.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Pixel.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Pixel.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Rect.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Rect.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Scaler.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Scaler.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Shade.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Shade.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\Tmapper.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\TmapScanline.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\TmapScanline.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\TmapScanTiled128x128.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\TmapScanTiled16x16.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\TmapScanTiled256x256.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\TmapScanTiled32x32.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\TmapScanTiled64x64.cpp
 # End Source File
 # End Group
 # Begin Group "D3D8Gr"

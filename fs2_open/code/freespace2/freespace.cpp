@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.75 $
- * $Date: 2004-03-05 21:19:38 $
+ * $Revision: 2.76 $
+ * $Date: 2004-03-07 23:07:19 $
  * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2004/03/05 21:19:38  Kazan
+ * Fixed mission validation (was returning false positives)
+ *
  * Revision 2.74  2004/03/05 09:02:01  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -2754,6 +2757,10 @@ void game_init()
 			return;
 		}
 	}
+	else
+	{
+		gr_init(GR_640, GR_SOFTWARE, 16, 640, 480);
+	}
 
 #elif defined unix
 	// initialize the graphics system (unix)
@@ -2792,11 +2799,14 @@ void game_init()
 		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
 	}
 
-	gr_set_gamma(Freespace_gamma);
+	
 
 //#if defined(FS2_DEMO) || defined(OEM_BUILD)
 	// add title screen
 	if(!Is_standalone){
+		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
+		// cannot make gr_* calls in standalone mode because all gr_ calls are NULL pointers
+		gr_set_gamma(Freespace_gamma);
 		display_title_screen();
 	}
 //#endif
@@ -2862,7 +2872,10 @@ void game_init()
 	key_init();
 	mouse_init();
 	gamesnd_parse_soundstbl();
-	radar_init();
+
+	if (!Is_standalone)
+		radar_init();
+
 	gameseq_init();
 
 #ifndef NO_NETWORK

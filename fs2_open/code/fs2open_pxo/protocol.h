@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.9 $
- * $Date: 2004-02-21 00:59:43 $
+ * $Revision: 1.10 $
+ * $Date: 2004-03-07 23:07:20 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/02/21 00:59:43  Kazan
+ * FS2NETD License Comments
+ *
  * Revision 1.8  2003/11/09 04:09:17  Goober5000
  * edited for language
  * --Goober5000
@@ -35,7 +38,7 @@
 
 #pragma warning(disable:4663)
 
-#define PXO_PROTO_VER "1.1"
+#define PXO_PROTO_VER "1.2"
 // PUT the Protocol into TCP mode
 #define PXO_TCP
 
@@ -82,14 +85,16 @@ struct serverlist_request_packet
 // servername = "TERM"
 // netspeed = status = players = type = 0
 
+
 struct serverlist_reply_packet
 {
       int pid; // 0x2 : serverlist reply (PCKT_SLIST_REPLY)
-      char servername[65];
-      int netspeed;
-      int status;
+      char name[65];
+	  char mission_name[65];
+	  char title[65];
       short players;
-      int type; // binary bitmask for type and dedicated server
+      int flags;
+
 	  char  ip[16]; // "255.255.255.255"
 	  int port;
 };
@@ -99,11 +104,12 @@ struct serverlist_reply_packet
 struct serverlist_hb_packet
 {
       int pid; // 0x3 : serverlist register (PCKT_SLIST_HB)
-      char servername[65];
-      int netspeed;
-      int status;
+
+      char name[65];
+	  char mission_name[65];
+	  char title[65];
       short players;
-      int type; // binary bitmask for type and dedicated server
+      int flags;
 	  int port;
 };
 
