@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-03-03 06:05:28 $
+ * $Revision: 2.24 $
+ * $Date: 2005-03-03 07:13:16 $
  * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.22  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -475,8 +478,8 @@ void hud_shield_show(object *objp)
 	sp = &Ships[objp->instance];
 	sip = &Ship_info[sp->ship_info_index];
 
-//	bool middle_finger = (fod_model != -2 && strstr(sp->ship_name, "Sathanas") != NULL);
-	if ( sip->shield_icon_index == 255 && !sip->initial_shield_strength /*&& !middle_finger*/) {
+//	bool digitus_improbus = (fod_model != -2 && strstr(sp->ship_name, "Sathanas") != NULL);
+	if ( sip->shield_icon_index == 255 && !(sip->flags & SIF2_GENERATE_HUD_ICON) /*&& !digitus_improbus*/) {
 		return;
 	}
 
@@ -543,7 +546,7 @@ void hud_shield_show(object *objp)
 		HUD_set_clip(sx, sy, 112, 93);
 		model_set_detail_level(1);
 
-		//if(!middle_finger)
+		//if(!digitus_improbus)
 			g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
 		/*else
 		{
@@ -556,7 +559,7 @@ void hud_shield_show(object *objp)
 
 		//We're ready to show stuff
 		ship_model_start(objp);
-		//if(!middle_finger)
+		//if(!digitus_improbus)
 		{
 			model_render( sp->modelnum, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
 		}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.167 $
- * $Date: 2005-03-03 06:05:31 $
+ * $Revision: 2.168 $
+ * $Date: 2005-03-03 07:13:17 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.167  2005/03/03 06:05:31  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.166  2005/03/02 21:24:47  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -2547,6 +2550,8 @@ strcpy(parse_error_text, temp_error);
 			sip->flags2 |= SIF2_SURFACE_SHIELDS;
 		else if( !stricmp( NOX("show ship"), ship_strings[i]))
 			sip->flags2 |= SIF2_SHOW_SHIP_MODEL;
+		else if( !stricmp( NOX("generate icon"), ship_strings[i]))
+			sip->flags2 |= SIF2_GENERATE_HUD_ICON;
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
