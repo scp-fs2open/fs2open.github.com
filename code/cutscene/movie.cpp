@@ -69,10 +69,6 @@ int movie_find(char *filename, char *out_name)
 // Play one movie
 bool movie_play(char *name)
 {
-#ifdef NO_DSHOW_CODE
-	return false;
-#endif
-
 	extern int Is_standalone;
 	if(Is_standalone) return false;
  	if(Cmdline_dnoshowvid) return false;
