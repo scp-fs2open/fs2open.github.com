@@ -155,6 +155,11 @@ int bomb_headed_towards_ship(object *bomb_objp, object *ship_objp)
 
 // Set active weapon for turret
 //This really isn't needed...but whatever -WMC
+
+//Returns the best weapon on turret for target
+//Note that all non-negative return values are expressed in
+//what I like to call "widx"s.
+//Returns -1 if unable to find a weapon for the target at all.
 int turret_select_best_weapon(ship_subsys *turret, object *target)
 {
 	//TODO: Fill this out with extraodinary gun-picking algorithms
@@ -171,6 +176,7 @@ int turret_select_best_weapon(ship_subsys *turret, object *target)
 }
 
 //doesn't work for WIF2
+//Returns true if all weapons in swp have the specified flag
 bool all_turret_weapons_have_flags(ship_weapon *swp, int flags)
 {
 	int i;
@@ -188,6 +194,7 @@ bool all_turret_weapons_have_flags(ship_weapon *swp, int flags)
 	return true;
 }
 
+//Returns true if any of the weapons in swp have flags
 bool turret_weapon_has_flags(ship_weapon *swp, int flags)
 {
 	int i = 0;
@@ -206,6 +213,7 @@ bool turret_weapon_has_flags(ship_weapon *swp, int flags)
 }
 
 //does work for WIF2, but not WIF
+//Returns true if any of the weapons in swp have flags
 bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
 {
 	int i = 0;
@@ -225,6 +233,7 @@ bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
 
 //It might be a little faster to optimize based on WP_LASER should only appear in primaries
 //and WP_MISSILE in secondaries. but in the interest of future coding I leave it like this.
+//Returns true if any of the weapons in swp have the subtype specified
 bool turret_weapon_has_subtype(ship_weapon *swp, int subtype)
 {
 	int i = 0;
@@ -243,6 +252,7 @@ bool turret_weapon_has_subtype(ship_weapon *swp, int subtype)
 }
 
 //Use for getting a Weapon_info pointer, given a turret and a turret weapon indice
+//Returns a pointer to the Weapon_info for weapon_num
 weapon_info *get_turret_weapon_wip(ship_weapon *swp, int weapon_num)
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
@@ -256,6 +266,7 @@ weapon_info *get_turret_weapon_wip(ship_weapon *swp, int weapon_num)
 
 
 //This function is kinda slow
+//Returns the longest-ranged weapon on a turret
 float longest_turret_weapon_range(ship_weapon *swp)
 {
 	float longest_range_so_far = 0.0f;
