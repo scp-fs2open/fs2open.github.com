@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-02-16 16:09:59 $
+ * $Revision: 2.16 $
+ * $Date: 2004-02-16 16:15:04 $
  * $Author: phreak $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/02/16 16:09:59  phreak
+ * made the window command line tag recognize non-standard resolutions
+ *
  * Revision 2.14  2004/02/14 00:18:35  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -744,6 +747,11 @@ BOOL win32_create_window()
 		{
 			sscanf(ptr, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth);			
 		} 
+		else
+		{
+			width = 640;
+			height =480;
+		}
 
 
 		hwndApp = CreateWindow( szWinClass, szWinTitle,
