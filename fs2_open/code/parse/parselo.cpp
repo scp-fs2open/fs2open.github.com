@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.18 $
+ * $Revision: 2.19 $
  * $Author: wmcoolmon $
- * $Date: 2004-05-29 02:52:17 $
+ * $Date: 2004-05-29 03:01:00 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/05/29 02:52:17  wmcoolmon
+ * Added stuff_float_list
+ *
  * Revision 2.17  2004/05/11 02:52:11  Goober5000
  * completed the FRED import conversion stuff that I started ages ago
  * --Goober5000
@@ -1584,6 +1587,8 @@ int stuff_float_list(float* flp, int max_floats)
 		stuff_float(&flp[count++]);
 		ignore_white_space();
 	}
+
+	Mp++;
 
 	return count;
 }
