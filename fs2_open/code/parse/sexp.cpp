@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.97 $
- * $Date: 2004-07-26 21:26:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.98 $
+ * $Date: 2004-07-27 18:52:10 $
+ * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2004/07/26 21:26:45  Goober5000
+ * outline of ship-tag and ship-untag sexps
+ * --Goober5000
+ *
  * Revision 2.96  2004/07/26 20:47:47  Kazan
  * remove MCD complete
  *
@@ -1007,6 +1011,7 @@ sexp_oper Operators[] = {
 	{ "unhide-nav",						OP_NAV_UNHIDE,					1, 1 }, //kazan
 	{ "unrestrict-nav",					OP_NAV_UNRESTRICT,				1, 1 }, //kazan
 	{ "set-nav-visited",				OP_NAV_SET_VISITED,				1, 1 }, //kazan
+	{ "unset-nav-visited",				OP_NAV_UNSET_VISITED,				1, 1 }, //kazan
 	{ "set-nav-carry",					OP_NAV_SET_CARRY,				1, INT_MAX }, //kazan
 	{ "unset-nav-carry",				OP_NAV_UNSET_CARRY,				1, INT_MAX }, //kazan
 #endif
@@ -1198,6 +1203,7 @@ void restrict_nav(int node);
 void unhide_nav(int node);
 void unrestrict_nav(int node);
 void set_nav_visited(int node);
+void unset_nav_visited(int node);
 
 int is_nav_visited(int node);
 int distance_to_nav(int node);
@@ -6701,7 +6707,7 @@ void sexp_hud_set_color(int n)
 // Kazan
 void sexp_radar_set_maxrange(int n)
 {
-	Radar_ranges[RR_MAX_RANGES-1] = atof(CTEXT(n));
+	Radar_ranges[RR_MAX_RANGES-1] = (float)atof(CTEXT(n));
 }
 
 // Goober5000
@@ -10584,6 +10590,15 @@ void set_nav_visited(int node)
 	Nav_Set_Visited(nav_name);
 }
 
+//text: unset-nav-visited
+//args: 1, Nav Name
+void unset_nav_visited(int node)
+{
+	char *nav_name = CTEXT(node);
+	Nav_UnSet_Visited(nav_name);
+}
+
+
 //text: is-nav-visited
 //args: 1, Nav Name
 //rets: true/false
@@ -12320,6 +12335,11 @@ int eval_sexp(int cur_node)
 				set_nav_visited(node);
 				break;
 
+			case OP_NAV_UNSET_VISITED: //kazan
+				sexp_val = 1;
+				unset_nav_visited(node);
+				break;
+
 			case OP_NAV_SET_CARRY: //kazan
 				sexp_val = 1;
 				set_nav_carry_status(node);
@@ -12734,6 +12754,7 @@ int query_operator_return_type(int op)
 		case OP_NAV_UNHIDE:			//kazan
 		case OP_NAV_UNRESTRICT:		//kazan
 		case OP_NAV_SET_VISITED:	//kazan
+		case OP_NAV_UNSET_VISITED:	//kazan
 		case OP_NAV_SET_CARRY:		//kazan
 		case OP_NAV_UNSET_CARRY:	//kazan
 #endif
@@ -13675,6 +13696,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NAV_UNHIDE:			//kazan
 		case OP_NAV_UNRESTRICT:		//kazan
 		case OP_NAV_SET_VISITED:	//kazan
+		case OP_NAV_UNSET_VISITED:	//kazan
 			return OPF_NAV_POINT;
 			
 		

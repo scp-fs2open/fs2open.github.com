@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.6 $
- * $Date: 2004-07-26 20:47:32 $
+ * $Revision: 1.7 $
+ * $Date: 2004-07-27 18:52:10 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 1.5  2004/07/26 19:39:49  Kazan
  * add conditional compilation directive
  *
@@ -92,7 +95,17 @@ void HUD_Draw_Navigation()
 
 		
 		color NavColor;
-		gr_init_alphacolor( &NavColor,	0x80, 0x80, 0xff, HUD_COLOR_ALPHA_MAX * 16);
+
+		unsigned int alpha = HUD_COLOR_ALPHA_MAX * 16;
+
+		//if (CanAutopilot())
+		//	alpha = HUD_COLOR_ALPHA_MAX * 16;
+
+		if (Navs[CurrentNav].flags & NP_VISITED)
+			gr_init_alphacolor( &NavColor,	0xFF, 0xFF, 0x00, alpha);
+		else
+			gr_init_alphacolor( &NavColor,	0x80, 0x80, 0xff, alpha);
+
 		gr_set_color_fast(&NavColor);
 		
 
