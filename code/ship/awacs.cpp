@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-23 05:18:52 $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-27 02:57:50 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/23 05:18:52  Goober5000
+ * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
+ * one ship would return after only dealing with the first ship.
+ *
+ * Also added the following sexps:
+ * is-ship-stealthed
+ * ship-force-stealth
+ * ship-force-nostealth
+ * ship-remove-stealth-forcing
+ *
+ * They toggle the stealth flag on and off.  If a ship is forced stealthy, it won't even
+ * show up for friendly ships.
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -237,7 +251,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	float closest = 0.0f;
 	float test;
 	int closest_index = -1;
-	int idx, forced_invisible;
+	int idx, friendly_invisible;
 	ship *shipp;
 	ship_info *sip;
 
@@ -250,11 +264,11 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 
 	// Goober5000
 	sip = &Ship_info[Ships[target->instance].ship_info_index];
-	forced_invisible = (sip->stealth_flags & SSF_FORCING_STEALTH_STATUS) && (sip->flags & SIF_STEALTH);
-			
+	friendly_invisible = (sip->flags & SIF_STEALTH) && (sip->flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE);
+	
 	// ships on the same team are always viewable
-	// not if we used the force-stealth sexp! :) -- Goober5000
-	if((target->type == OBJ_SHIP) && (Ships[target->instance].team == viewer->team) && (!forced_invisible))
+	// not necessarily now! :) -- Goober5000
+	if((target->type == OBJ_SHIP) && (Ships[target->instance].team == viewer->team) && (!friendly_invisible))
 	{
 		return 1.5f;
 	}

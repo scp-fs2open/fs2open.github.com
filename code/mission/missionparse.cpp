@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.8 $
- * $Date: 2002-12-23 05:18:52 $
+ * $Revision: 2.9 $
+ * $Date: 2002-12-27 02:57:51 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/23 05:18:52  Goober5000
+ * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
+ * one ship would return after only dealing with the first ship.
+ *
+ * Also added the following sexps:
+ * is-ship-stealthed
+ * ship-force-stealth
+ * ship-force-nostealth
+ * ship-remove-stealth-forcing
+ *
+ * They toggle the stealth flag on and off.  If a ship is forced stealthy, it won't even
+ * show up for friendly ships.
+ * --Goober5000
+ *
  * Revision 2.7  2002/12/22 22:59:04  Goober5000
  * hack: turn on ship trails if in nebula - restores backward compatibility
  * --Goober5000
@@ -1617,8 +1631,11 @@ int parse_create_object(p_object *objp)
 	if ( objp->flags & P_SF_HIDDEN_FROM_SENSORS )
 		Ships[shipnum].flags |= SF_HIDDEN_FROM_SENSORS;
 
-	if ( objp->flags & P_SSF_STEALTH )
+	if ( objp->flags & P_SIF_STEALTH )
 		Ship_info[Ships[shipnum].ship_info_index].flags |= SIF_STEALTH;
+
+	if ( objp->flags & P_SIF2_FRIENDLY_STEALTH_INVISIBLE )
+		Ship_info[Ships[shipnum].ship_info_index].flags2 |= SIF2_FRIENDLY_STEALTH_INVISIBLE;
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
