@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.4 $
- * $Date: 2005-01-06 00:27:34 $
+ * $Revision: 2.5 $
+ * $Date: 2005-01-06 00:37:32 $
  * $Author: Goober5000 $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/01/06 00:27:34  Goober5000
+ * added vm_vec_dist_squared_to_line
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:27  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -672,7 +676,7 @@ int vm_vec_dist_to_line(vector *p, vector *l0, vector *l1, vector *nearest, floa
 // Goober5000
 // Finds the distance squared to a line.  Same as above, except it uses vm_vec_dist_squared, which is faster;
 // and it doesn't check whether the nearest point is on the line segment.
-void vm_vec_dist_squared_to_line(vector *p, vector *l0, vector *l1, vector *nearest, float *dist);
+void vm_vec_dist_squared_to_line(vector *p, vector *l0, vector *l1, vector *nearest, float *dist_squared);
 
 void vm_vert2vec(vertex *vert, vector *vec);
 void vm_vec2vert(vector *vec, vertex *vert);
