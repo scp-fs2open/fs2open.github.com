@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.53 $
- * $Date: 2003-03-22 07:24:53 $
+ * $Revision: 2.54 $
+ * $Date: 2003-03-22 08:17:34 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2003/03/22 07:24:53  Goober5000
+ * bleah
+ * --Goober5000
+ *
  * Revision 2.52  2003/03/22 06:35:37  Goober5000
  * bugs are bad, mmkay?
  * --Goober5000
@@ -5984,6 +5988,61 @@ void sexp_change_soundtrack(int n)
 }
 
 // Goober5000
+void sexp_stop_music(int fade)
+{
+#ifndef NO_SOUND
+	if ( Sexp_music_handle != -1 ) {
+		audiostream_close_file(Sexp_music_handle, fade);
+		Sexp_music_handle = -1;
+	}
+#endif
+}
+
+// Goober5000
+void sexp_music_close()
+{
+	if ( Cmdline_freespace_no_music ) {
+		return;
+	}
+
+	sexp_stop_music();
+}
+
+// Goober5000
+void sexp_load_music(char* fname)
+{
+#ifndef NO_SOUND
+	if ( Cmdline_freespace_no_music ) {
+		return;
+	}
+
+	if ( Sexp_music_handle != -1 )
+	{
+		sexp_stop_music();
+	}
+
+	if ( fname )
+	{
+		Sexp_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
+	}
+#endif
+}
+
+// Goober5000
+void sexp_start_music()
+{
+#ifndef NO_SOUND
+	if ( Sexp_music_handle != -1 ) {
+		if ( !audiostream_is_playing(Sexp_music_handle) )
+			audiostream_play(Sexp_music_handle, Master_event_music_volume, 0);
+	}
+	else {
+		nprintf(("Warning", "No file exists to play sound via sexp-play-sound-from-file!\n"));
+	}
+#endif
+}
+
+// Goober5000
 void sexp_play_sound_from_table(int n)
 {
 	vector origin;
@@ -6017,18 +6076,11 @@ void sexp_close_sound_from_file(int n)
 // Goober5000
 void sexp_play_sound_from_file(int n)
 {
-	vector origin;
-
-	// read in data --------------------------------
-	origin.xyz.x = (float)sexp_get_val(n);
-	n = CDR(n);
-	origin.xyz.y = (float)sexp_get_val(n);
-	n = CDR(n);
-	origin.xyz.z = (float)sexp_get_val(n);
-	n = CDR(n);
-
+	// load sound file -----------------------------
+	sexp_load_music(CTEXT(n));
 
 	// play sound file -----------------------------
+	sexp_start_music();
 }
 
 // Goober5000
@@ -12873,61 +12925,6 @@ int num_eval(int node)
 	} else {
 		return atoi(CTEXT(node));
 	}
-}
-
-// Goober5000
-void sexp_stop_music(int fade)
-{
-#ifndef NO_SOUND
-	if ( Sexp_music_handle != -1 ) {
-		audiostream_close_file(Sexp_music_handle, fade);
-		Sexp_music_handle = -1;
-	}
-#endif
-}
-
-// Goober5000
-void sexp_music_close()
-{
-	if ( Cmdline_freespace_no_music ) {
-		return;
-	}
-
-	sexp_stop_music();
-}
-
-// Goober5000
-void sexp_load_music(char* fname)
-{
-#ifndef NO_SOUND
-	if ( Cmdline_freespace_no_music ) {
-		return;
-	}
-
-	if ( Sexp_music_handle != -1 )
-	{
-		sexp_stop_music();
-	}
-
-	if ( fname )
-	{
-		Sexp_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
-	}
-#endif
-}
-
-// Goober5000
-void sexp_start_music()
-{
-#ifndef NO_SOUND
-	if ( Sexp_music_handle != -1 ) {
-		if ( !audiostream_is_playing(Sexp_music_handle) )
-			audiostream_play(Sexp_music_handle, Master_event_music_volume);
-	}
-	else {
-		nprintf(("Warning", "No file exists to play sound via sexp-play-sound-from-file!\n"));
-	}
-#endif
 }
 
 // Goober5000 - for FRED2 menu subcategories
