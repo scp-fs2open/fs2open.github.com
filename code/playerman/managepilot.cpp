@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-26 20:47:49 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2004-10-31 22:07:27 $
+ * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/26 20:47:49  Kazan
+ * remove MCD complete
+ *
  * Revision 2.9  2004/07/12 16:33:03  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -261,6 +264,8 @@
  *
 */
 
+#include <errno.h>
+
 #include "playerman/managepilot.h"
 #include "freespace2/freespace.h"
 #include "hud/hudsquadmsg.h"
@@ -294,7 +299,8 @@
 
 
 // update this when altering data that is read/written to .PLR file
-#define CURRENT_PLAYER_FILE_VERSION					141
+#define CURRENT_PLAYER_FILE_VERSION					242
+#define CURRENT_MULTI_PLAYER_FILE_VERSION			142
 #define FS2_DEMO_PLAYER_FILE_VERSION				135
 #define LOWEST_COMPATIBLE_PLAYER_FILE_VERSION		140	// compatible with release - Goober5000
 // it used to be "demo plr files should work in final", but I guess this was cleared out
@@ -317,8 +323,15 @@
 // HERE ONWARD ARE SCP CHANGES - MAINTAIN COMPATIBILITY WITH RELEASE -- VERSION 140
 // version 141 : player-persistent variables - Goober5000
 
+// multi player file version changes - no savefiles, need to keep everything here
+// version 142 : handle new ship/weapon tables properly - multi only - taylor
+
+// single player file version changes
+// version 242 : move anything that might be campaign specific to the savefile - single only - taylor
+
 // search for PLAYER INIT for new pilot initialization stuff. I _think_ its in the right spot for now
-#define PLR_FILE_ID	'FPSF'	// unique signiture to identify a .PLR file (FreeSpace Player File)  // FPSF appears as FSPF in file.
+//#define PLR_FILE_ID	'FPSF'	// unique signiture to identify a .PLR file (FreeSpace Player File)  // FPSF appears as FSPF in file.
+#define PLR_FILE_ID	0x46505346 // "FPSF" - unique signiture to identify a .PLR file (FreeSpace Player File), appears as FSPF in file.
 
 // Current content of a .PLR file
 //
@@ -339,8 +352,10 @@ int Num_pilot_squad_images = 0;
 static uint Player_file_version;
 
 // forward declarations
+void read_detail_settings(CFILE *file, int Player_file_version);
+void write_detail_settings(CFILE *file);
 void read_stats_block(CFILE *file, int Player_file_version, scoring_struct *stats);
-void write_stats_block(CFILE *file, scoring_struct *stats);
+void write_stats_block(CFILE *file, scoring_struct *stats, int multi);
 void read_multiplayer_options(player *p,CFILE *file);
 void write_multiplayer_options(player *p,CFILE *file);
 
@@ -349,7 +364,6 @@ void write_multiplayer_options(player *p,CFILE *file);
 //returns 0 on failure, 1 on success
 int delete_pilot_file( char *pilot_name, int single )
 {
-#ifdef _WIN32
 	int delreturn;
 	char filename[MAX_FILENAME_LEN];
 	char basename[MAX_FILENAME_LEN];
@@ -358,10 +372,12 @@ int delete_pilot_file( char *pilot_name, int single )
 	_splitpath(pilot_name, NULL, NULL, basename, NULL);
 
 	strcpy( filename, basename );
-	strcat( filename, NOX(".plr") );
+
 	if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
+		strcat( filename, NOX(".pl2") ); // we only support the new format now - taylor
 		delreturn = cf_delete(filename, CF_TYPE_SINGLE_PLAYERS);
 	} else {
+		strcat( filename, NOX(".plr") ); // multi pilots use modified old format
 		delreturn = cf_delete(filename, CF_TYPE_MULTI_PLAYERS);
 	}
 
@@ -372,10 +388,31 @@ int delete_pilot_file( char *pilot_name, int single )
 	} else {
 		return 0;
 	}
-#else
-	// TODO - add delete pilot files code
+}
+
+// same as delete_pilot_file() but deletes the old .plr files only
+// we don't delete campaign files here though, do it in missioncampaign.cpp instead
+int delete_pilot_file_old( char *pilot_name, int single )
+{
+	int delreturn = 0;
+	char filename[MAX_FILENAME_LEN];
+	char basename[MAX_FILENAME_LEN];
+
+	// get the player file.
+	_splitpath(pilot_name, NULL, NULL, basename, NULL);
+
+	strcpy( filename, basename );
+	strcat( filename, NOX(".plr") );
+
+	// this is for single players only
+	if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
+		delreturn = cf_delete(filename, CF_TYPE_SINGLE_PLAYERS);
+	}
+
+	if (delreturn)
+		return 1;
+
 	return 0;
-#endif
 }
 
 // check if a pilot file is valid or not (i.e. is usable, not out of date, etc)
@@ -385,22 +422,41 @@ int verify_pilot_file(char *filename, int single, int *rank)
 	CFILE	*file;
 	uint id, file_version;
 	int type;
+	char pname[MAX_FILENAME_LEN];
 
-	filename = cf_add_ext(filename, NOX(".plr"));
-	
+	Assert( strlen(filename) < MAX_FILENAME_LEN - 4 );
+	strcpy(pname, filename);
+
+	char *p = strchr( pname, '.' );
+	if ( p ) *p = 0;
+
+	if (single)
+		strcat(pname, ".pl2");
+	else
+		strcat(pname, ".plr");
+
 	if (single){
-		file = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
+		file = cfopen(pname, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
 	} else {
-		file = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_MULTI_PLAYERS);
+		file = cfopen(pname, "rb", CFILE_NORMAL, CF_TYPE_MULTI_PLAYERS);
 	}
 
-	if (!file){
-		return -1;
+	// if we didn't fine the file try the old version
+	if (!file) {
+		if (single){
+			strcpy(pname, filename);
+			strcat(pname, ".plr");
+
+			file = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
+		}
+
+		if (!file)
+			return -1;
 	}
 
 	id = cfread_uint(file);
 	if (id != PLR_FILE_ID) {
-		nprintf(("Warning", "Player file has invalid signature\n"));
+		nprintf(("Warning", "Player file ('%s') has invalid signature\n", filename));
 		cfclose(file);
 		delete_pilot_file( filename, single );
 		return -1;
@@ -412,7 +468,7 @@ int verify_pilot_file(char *filename, int single, int *rank)
 /*	if (file_version < INITIAL_RELEASE_FILE_VERSION) { */
 //	if (file_version != CURRENT_PLAYER_FILE_VERSION) {
 	if (file_version < LOWEST_COMPATIBLE_PLAYER_FILE_VERSION) {
-		nprintf(("Warning", "WARNING => Player file is outdated and not compatible...\n"));
+		nprintf(("Warning", "WARNING => Player file ('%s') is outdated and not compatible...\n", filename));
 
 		// Goober5000 - warn them
 		char warning_text[256];
@@ -421,6 +477,16 @@ int verify_pilot_file(char *filename, int single, int *rank)
 
 		cfclose(file);
 		delete_pilot_file( filename, single );
+		return -1;
+	} else if ( single && (file_version > CURRENT_PLAYER_FILE_VERSION) ) {
+		nprintf(("Warning", "WARNING => Player file ('%s') is too new and not compatible...\n", filename));
+
+		cfclose(file);
+		return -1;
+	} else if ( !single && (file_version > CURRENT_MULTI_PLAYER_FILE_VERSION) ) {
+		nprintf(("Warning", "WARNING => Player file ('%s') is too new and not compatible...\n", filename));
+
+		cfclose(file);
 		return -1;
 	}
 
@@ -443,10 +509,14 @@ int verify_pilot_file(char *filename, int single, int *rank)
 	return 0;
 }
 
-void pilot_write_techroom_data(CFILE *file)
+void pilot_write_techroom_data(CFILE *file, int multi)
 {
 	int idx;		
 	ubyte out;
+
+	/******** MULTI ONLY ********/
+	if ( !multi )
+		return;
 
 	// write the ship and weapon count
 	cfwrite_int(Num_ship_types, file);
@@ -470,71 +540,78 @@ void pilot_write_techroom_data(CFILE *file)
 		out = (Intel_info[idx].flags & IIF_IN_TECH_DATABASE) ? (ubyte)1 : (ubyte)0;
 		cfwrite_ubyte(out, file);
 	}
+
 }
 
-void pilot_read_techroom_data(CFILE *file)
+void pilot_read_techroom_data(CFILE *file, int pfile_version)
 {
 	int idx;
 	int ship_count, weapon_count, intel_count;
 	ubyte in;
 
-	// read in ship and weapon counts
-	ship_count = cfread_int(file);
-	weapon_count = cfread_int(file);
-	Assert(ship_count <= MAX_SHIP_TYPES);
-	Assert(weapon_count <= MAX_WEAPON_TYPES);
+	if (pfile_version < 242) {
+		// read in ship and weapon counts
+		ship_count = cfread_int(file);
+		weapon_count = cfread_int(file);
+		Assert(ship_count <= MAX_SHIP_TYPES);
+		Assert(weapon_count <= MAX_WEAPON_TYPES);
 
-	// maintain compatibility w/ demo version
-	if (Player_file_version < 136) {
-		// skip over all this data, because the lack of tech room in the demo
-		// left this all hosed in the demo .plr files
-		// this will all get initialized as if this fella was a new pilot
-		for (idx=0; idx<ship_count+weapon_count; idx++) {
-			in = cfread_ubyte(file);
-		}
-
-	} else {
-
-		intel_count = cfread_int(file);
-		Assert(intel_count <= MAX_INTEL_ENTRIES);
-
-		// read all ships in
-		for (idx=0; idx<ship_count; idx++) {
-			in = cfread_ubyte(file);
-			if (in) {
-				Ship_info[idx].flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
-			} else {
-				Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
+		// maintain compatibility w/ demo version
+		if (Player_file_version < 136) {
+			// skip over all this data, because the lack of tech room in the demo
+			// left this all hosed in the demo .plr files
+			// this will all get initialized as if this fella was a new pilot
+			for (idx=0; idx<ship_count+weapon_count; idx++) {
+				in = cfread_ubyte(file);
 			}
-		}
 
-		// read all weapons in
-		for (idx=0; idx<weapon_count; idx++) {
-			in = cfread_ubyte(file);
-			if (in) {
-				Weapon_info[idx].wi_flags |= WIF_IN_TECH_DATABASE;
-			} else {
-				Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
+		} else {
+
+			intel_count = cfread_int(file);
+			Assert(intel_count <= MAX_INTEL_ENTRIES);
+
+			// read all ships in
+			for (idx=0; idx<ship_count; idx++) {
+				in = cfread_ubyte(file);
+				if (in) {
+					Ship_info[idx].flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
+				} else {
+					Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
+				}
 			}
-		}
 
-		// read all intel entries in
-		for (idx=0; idx<intel_count; idx++) {
-			in = cfread_ubyte(file);
-			if (in) {
-				Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
-			} else {
-				Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
+			// read all weapons in
+			for (idx=0; idx<weapon_count; idx++) {
+				in = cfread_ubyte(file);
+				if (in) {
+					Weapon_info[idx].wi_flags |= WIF_IN_TECH_DATABASE;
+				} else {
+					Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
+				}	
+			}
+	
+			// read all intel entries in
+			for (idx=0; idx<intel_count; idx++) {
+				in = cfread_ubyte(file);
+				if (in) {
+					Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
+				} else {
+					Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
+				}
 			}
 		}
 	}
 }
 
 // write out the player ship selection
-void pilot_write_loadout(CFILE *file)
+void pilot_write_loadout(CFILE *file, int multi)
 {
 	int i, j;
 	wss_unit *slot;	
+
+	/******** MULTI ONLY ********/
+	if ( !multi )
+		return;
 
 	cfwrite_string_len(Player_loadout.filename, file);
 	cfwrite_string_len(Player_loadout.last_modified, file);
@@ -546,60 +623,93 @@ void pilot_write_loadout(CFILE *file)
 	// write ship pool
 	for ( i = 0; i < Num_ship_types; i++ ) {
 		cfwrite_int(Player_loadout.ship_pool[i], file);
+		cfwrite_string_len(Ship_info[i].name, file);
 	}
 
 	// write weapons pool
 	for ( i = 0; i < Num_weapon_types; i++ ) {
 		cfwrite_int(Player_loadout.weapon_pool[i], file);
+		cfwrite_string_len(Weapon_info[i].name, file);
 	}
 
 	// write ship loadouts
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
 		cfwrite_int(slot->ship_class, file);
+		cfwrite_string_len(Ship_info[slot->ship_class].name, file);
+
 		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
 			cfwrite_int(slot->wep[j], file);
 			cfwrite_int(slot->wep_count[j], file);
+			cfwrite_string_len(Weapon_info[slot->wep[j]].name, file);
 		}
 	}
 }
 
 // read in the ship selection for the pilot
-void pilot_read_loadout(CFILE *file)
+void pilot_read_loadout(CFILE *file, int pfile_version)
 {
 	int i, j;
 	wss_unit *slot;
 	int ship_count, weapon_count;
+	char sw_name[NAME_LENGTH];
+	int pool_count = -1;
 
-	memset(Player_loadout.filename, 0, MAX_FILENAME_LEN);
-	cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, file);
+	if (pfile_version < 242) {
+		memset(Player_loadout.filename, 0, MAX_FILENAME_LEN);
+		memset(Player_loadout.last_modified, 0, DATE_TIME_LENGTH);
 
-	memset(Player_loadout.last_modified, 0, DATE_TIME_LENGTH);	
-	cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, file);	
+		cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, file);
+		cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, file);	
 
-	// read in ship and weapon counts
-	ship_count = cfread_int(file);
-	weapon_count = cfread_int(file);
-	Assert(ship_count <= MAX_SHIP_TYPES);
-	Assert(weapon_count <= MAX_WEAPON_TYPES);
+		// read in ship and weapon counts
+		ship_count = cfread_int(file);
+		weapon_count = cfread_int(file);
+		Assert(ship_count <= MAX_SHIP_TYPES);
+		Assert(weapon_count <= MAX_WEAPON_TYPES);
 
-	// read in ship pool
-	for ( i = 0; i < ship_count; i++ ) {
-		Player_loadout.ship_pool[i] = cfread_int(file);
-	}
+		// read in ship pool
+		for ( i = 0; i < ship_count; i++ ) {
+			if (pfile_version >= 142) {
+				pool_count = cfread_int(file);
+				cfread_string_len(sw_name, NAME_LENGTH, file);
+				Player_loadout.ship_pool[ship_info_lookup(sw_name)] = pool_count;
+			} else {
+				Player_loadout.ship_pool[i] = cfread_int(file);
+			}
+		}
 
-	// read in weapons pool
-	for ( i = 0; i < weapon_count; i++ ) {
-		Player_loadout.weapon_pool[i] = cfread_int(file);
-	}
+		// read in weapons pool
+		for ( i = 0; i < weapon_count; i++ ) {
+			if (pfile_version >= 142) {
+				pool_count = cfread_int(file);
+				cfread_string_len(sw_name, NAME_LENGTH, file);
+				Player_loadout.weapon_pool[weapon_info_lookup(sw_name)] = pool_count;
+			} else {
+				Player_loadout.weapon_pool[i] = cfread_int(file);
+			}
 
-	// read in loadout info
-	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		slot = &Player_loadout.unit_data[i];
-		slot->ship_class = cfread_int(file);
-		for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
-			slot->wep[j] = cfread_int(file);
-			slot->wep_count[j] = cfread_int(file);
+		}
+
+		// read in loadout info
+		for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+			slot = &Player_loadout.unit_data[i];
+			slot->ship_class = cfread_int(file);
+
+			if (pfile_version >= 142) {
+				cfread_string_len(sw_name, NAME_LENGTH, file);
+				slot->ship_class = ship_info_lookup(sw_name);
+			}
+
+			for ( j = 0; j < MAX_WL_WEAPONS; j++ ) {
+				slot->wep[j] = cfread_int(file);
+				slot->wep_count[j] = cfread_int(file);
+
+				if (pfile_version >= 142) {
+					cfread_string_len(sw_name, NAME_LENGTH, file);
+					slot->wep[j] = weapon_info_lookup(sw_name);
+				}
+			}
 		}
 	}
 }
@@ -620,16 +730,26 @@ int read_pilot_file(char *callsign, int single, player *p)
 	uint id;
 	int idx;
 	int i, key_value;
+	int pfile_upgrade = 0;
+	char *ext;
 
 	if (!p) {
 		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
 		p = &Players[Player_num];
 	}
 
+	// multi doesn't have a campaign savefile so we have to still use the old format
+	// for all multi pilots.  Do use the new 142 version though for table values.
+	if (single) {
+		ext = NOX(".pl2");
+	} else {
+		ext = NOX(".plr");
+	}
+
 	//sprintf(filename, "%-.8s.plr",Players[Player_num].callsign);
 	Assert(strlen(callsign) < MAX_FILENAME_LEN - 4);  // ensure we won't overrun the buffer
 	strcpy( filename, callsign );
-	strcat( filename, NOX(".plr") );
+	strcat( filename, ext );
 
 	// if we're a standalone server in multiplayer, just fill in some bogus values since we don't have a pilot file
 	if ((Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_STANDALONE_SERVER)) {
@@ -646,8 +766,19 @@ int read_pilot_file(char *callsign, int single, player *p)
 		file = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_MULTI_PLAYERS);
 	}
 
+	// if we couldn't open the new filetype try the old one and upgrade
 	if (!file) {
-		return errno;
+		if (single) {
+			strcpy( filename, callsign );
+			strcat( filename, NOX(".plr") );
+
+			file = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
+
+			pfile_upgrade = 1;
+		}
+
+		if (!file)
+			return errno;
 	}
 
 	id = cfread_uint(file);
@@ -686,7 +817,10 @@ int read_pilot_file(char *callsign, int single, player *p)
 	cfread_int(file);  
 
 	// get player location
-	p->main_hall = cfread_ubyte(file);
+	// moved to campaign file in 242 - taylor
+	if ( Player_file_version < 242 ) {
+		p->main_hall = cfread_ubyte(file);
+	}
 
 	// tips?
 	p->tips = cfread_int(file);
@@ -770,7 +904,10 @@ int read_pilot_file(char *callsign, int single, player *p)
 	}
 
 	// read in the cutscenes which have been viewed
-	Cutscenes_viewable = cfread_int(file);
+	// moved to campaign file in 242 - taylor
+	if (Player_file_version < 242) {
+		Cutscenes_viewable = cfread_int(file);
+	}
 
 #ifndef NO_SOUND
 	Master_sound_volume = cfread_float(file);
@@ -791,25 +928,25 @@ int read_pilot_file(char *callsign, int single, player *p)
 	(void) cfread_float(file);
 #endif
 
-	cfread( &Detail, sizeof(detail_levels), 1, file );
+	read_detail_settings(file, Player_file_version);
 
 	// restore list of most recently played missions
 	Num_recent_missions = cfread_int( file );
 	Assert(Num_recent_missions <= MAX_RECENT_MISSIONS);
 	for ( i = 0; i < Num_recent_missions; i++ ) {
-		char *p;
+		char *cp;
 
 		cfread_string_len( Recent_missions[i], MAX_FILENAME_LEN, file);
 		// Remove the extension
-		p = strchr(Recent_missions[i], '.');
-		if (p)
-			*p = 0;
+		cp = strchr(Recent_missions[i], '.');
+		if (cp)
+			*cp = 0;
 	}
 	
 	// use this block of stats from now on
 	read_stats_block(file, Player_file_version, &p->stats);	
 
-   Game_skill_level = cfread_int(file);
+	Game_skill_level = cfread_int(file);
 
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
 		Axis_map_to[i] = cfread_int(file);
@@ -820,7 +957,7 @@ int read_pilot_file(char *callsign, int single, player *p)
 	Player[Player_num].save_flags = cfread_int(file);
 
 	// restore the most recent ship selection	
-	pilot_read_loadout(file);	
+	pilot_read_loadout(file, Player_file_version);	
 
 	// read in multiplayer options
 	read_multiplayer_options(p,file);
@@ -845,10 +982,13 @@ int read_pilot_file(char *callsign, int single, player *p)
 #endif
 
 	// restore wingman status used by red alert missions
-	red_alert_read_wingman_status(file, Player_file_version);
+	// moved to campaign file in 242 - taylor
+	if ( Player_file_version < 242 ) {
+		red_alert_read_wingman_status(file, Player_file_version);
+	}
 
 	// read techroom data
-	pilot_read_techroom_data(file);
+	pilot_read_techroom_data(file, Player_file_version);
 
 	// restore auto-advance pref
 	Player->auto_advance = cfread_int(file);
@@ -909,50 +1049,90 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	hud_squadmsg_save_keys();			// when new pilot read in, must save info for squadmate messaging
 
+	// if we had to upgrade formats force a save to be sure we don't lose anything
+	if (pfile_upgrade) {
+		write_pilot_file(p);
+
+		// now delete old .plr file if it exists
+		delete_pilot_file_old(callsign, single);
+	}
+
 	return 0;
 }
 
-void read_stats_block(CFILE *file, int Player_file_version, scoring_struct *stats)
+void read_stats_block(CFILE *file, int pfile_version, scoring_struct *stats)
 {
 	int i, total;
-   
+	int k_count;
+	char kname[NAME_LENGTH];
+
 	init_scoring_element(stats);
-	stats->score = cfread_int(file);
-	stats->rank = cfread_int(file);
-	stats->assists = cfread_int(file);
 
-	if (Player_file_version < 139) {
-		// support for FS2_DEMO pilots that still have FS1 medal info in the .plr files
-		for (i=0; i < NUM_MEDALS_FS1; i++) {
-			total = cfread_int(file);			// dummy read
+	if (pfile_version < 242) {
+		stats->score = cfread_int(file);
+		stats->rank = cfread_int(file);
+		stats->assists = cfread_int(file);
+
+		if (pfile_version < 139) {
+			// support for FS2_DEMO pilots that still have FS1 medal info in the .plr files
+			for (i=0; i < NUM_MEDALS_FS1; i++) {
+				total = cfread_int(file);			// dummy read
+			}
+		} else {
+			// read the usual way
+			for (i=0; i < NUM_MEDALS; i++) {
+				stats->medals[i] = cfread_int(file);
+			}
 		}
-	} else {
-		// read the usual way
-		for (i=0; i < NUM_MEDALS; i++) {
-			stats->medals[i] = cfread_int(file);
+
+		total = cfread_int(file);
+		if (total > MAX_SHIP_TYPES){
+			Warning(LOCATION, "Some ship kill information will be lost due to MAX_SHIP_TYPES decrease");
 		}
-	}
 
-	total = cfread_int(file);
-	if (total > MAX_SHIP_TYPES){
-		Warning(LOCATION, "Some ship kill information will be lost due to MAX_SHIP_TYPES decrease");
-	}
+		for (i=0; i<total && i<MAX_SHIP_TYPES; i++){
+			if (pfile_version >= 142) {
+				k_count = cfread_ushort(file);
+				cfread_string_len(kname, NAME_LENGTH, file);
+				stats->kills[ship_info_lookup(kname)] = k_count;
+			} else {
+				stats->kills[i] = cfread_ushort(file);
+			}
+		}
 
-	for (i=0; i<total && i<MAX_SHIP_TYPES; i++){
-		stats->kills[i] = cfread_ushort(file);
-	}
-
-	stats->kill_count = cfread_int(file);
-	stats->kill_count_ok = cfread_int(file);
+		stats->kill_count = cfread_int(file);
+		stats->kill_count_ok = cfread_int(file);
 	
-	stats->p_shots_fired = cfread_uint(file);
-	stats->s_shots_fired = cfread_uint(file);
-	stats->p_shots_hit = cfread_uint(file);
-	stats->s_shots_hit = cfread_uint(file);
+		stats->p_shots_fired = cfread_uint(file);
+		stats->s_shots_fired = cfread_uint(file);
+		stats->p_shots_hit = cfread_uint(file);
+		stats->s_shots_hit = cfread_uint(file);
 	
-   stats->p_bonehead_hits = cfread_uint(file);
-	stats->s_bonehead_hits = cfread_uint(file);
-	stats->bonehead_kills = cfread_uint(file);
+		stats->p_bonehead_hits = cfread_uint(file);
+		stats->s_bonehead_hits = cfread_uint(file);
+		stats->bonehead_kills = cfread_uint(file);
+	}
+}
+
+// grab the various detail settings
+void read_detail_settings(CFILE *file, int pfile_version)
+{
+	// mass read the Detail struct
+	cfread( &Detail, sizeof(detail_levels), 1, file );
+
+	// swap, swap, swap
+	Detail.setting = INTEL_INT(Detail.setting);
+	Detail.nebula_detail = INTEL_INT(Detail.nebula_detail);
+	Detail.detail_distance = INTEL_INT(Detail.detail_distance);
+	Detail.hardware_textures = INTEL_INT(Detail.hardware_textures);
+	Detail.num_small_debris = INTEL_INT(Detail.num_small_debris);
+	Detail.num_particles = INTEL_INT(Detail.num_particles);
+	Detail.num_stars = INTEL_INT(Detail.num_stars);
+	Detail.shield_effects = INTEL_INT(Detail.shield_effects);
+	Detail.lighting = INTEL_INT(Detail.lighting);
+	Detail.targetview_model = INTEL_INT(Detail.targetview_model);
+	Detail.planets_suns = INTEL_INT(Detail.planets_suns);
+	Detail.weapon_extras = INTEL_INT(Detail.weapon_extras);
 }
 
 // Will write the pilot file in the most current format
@@ -981,7 +1161,6 @@ int write_pilot_file_core(player *p)
 
 	Assert((i > 0) && (i <= MAX_FILENAME_LEN - 4));  // ensure we won't overrun the buffer
 	strcpy( filename, p->callsign);
-	strcat( filename, NOX(".plr") );
 
 	// determine if this pilot is a multiplayer pilot or not
 	if (p->flags & PLAYER_FLAGS_IS_MULTI){
@@ -992,8 +1171,10 @@ int write_pilot_file_core(player *p)
 
 	// see above
 	if ( !is_multi ){
+		strcat( filename, NOX(".pl2") ); // support only new format on save - taylor
 		file = cfopen(filename, "wb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
 	} else {
+		strcat( filename, NOX(".plr") );
 		file = cfopen(filename, "wb", CFILE_NORMAL, CF_TYPE_MULTI_PLAYERS);
 	}
 
@@ -1003,11 +1184,17 @@ int write_pilot_file_core(player *p)
 
 	// Write out player's info
 	cfwrite_uint(PLR_FILE_ID, file);
-	cfwrite_uint(CURRENT_PLAYER_FILE_VERSION, file);
+	if ( !is_multi )
+		cfwrite_uint(CURRENT_PLAYER_FILE_VERSION, file);
+	else
+		cfwrite_uint(CURRENT_MULTI_PLAYER_FILE_VERSION, file);
 
 	cfwrite_ubyte(is_multi, file);
 	cfwrite_int(p->stats.rank, file);
-	cfwrite_ubyte((ubyte) p->main_hall, file);
+
+	if ( is_multi ) {
+		cfwrite_ubyte((ubyte) p->main_hall, file);
+	}
 
 	cfwrite_int(p->tips, file);
 
@@ -1073,7 +1260,8 @@ int write_pilot_file_core(player *p)
 	}
 
 	// write the cutscenes which have been viewed
-	cfwrite_int(Cutscenes_viewable, file);
+	if (is_multi)
+		cfwrite_int(Cutscenes_viewable, file);
 
 	// store the digital sound fx volume, and music volume
 #ifndef NO_SOUND
@@ -1089,7 +1277,7 @@ int write_pilot_file_core(player *p)
 	}
 #endif
 
-	cfwrite( &Detail, sizeof(detail_levels), 1, file );
+	write_detail_settings(file);
 
 	// store list of most recently played missions
 	cfwrite_int(Num_recent_missions, file);
@@ -1098,8 +1286,8 @@ int write_pilot_file_core(player *p)
 	}
 
 	// write the player stats
-	write_stats_block(file, &p->stats);	
-   cfwrite_int(Game_skill_level, file);
+	write_stats_block(file, &p->stats, is_multi);	
+	cfwrite_int(Game_skill_level, file);
 
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
 		cfwrite_int(Axis_map_to[i], file);
@@ -1107,16 +1295,16 @@ int write_pilot_file_core(player *p)
 	}
 
 	// store some player flags
-   cfwrite_int(Player->save_flags, file);
+	cfwrite_int(Player->save_flags, file);
 
 	// store ship selection for most recent mission
-	pilot_write_loadout(file);
+	pilot_write_loadout(file, is_multi);
 
 	// read in multiplayer options	
 	write_multiplayer_options(p, file);
 
 	cfwrite_int(p->readyroom_listing_mode, file);
-   cfwrite_int(Briefing_voice_enabled, file);
+	cfwrite_int(Briefing_voice_enabled, file);
 
 #ifndef NO_NETWORK
 	// store the default netgame protocol mode for this pilot
@@ -1130,11 +1318,14 @@ int write_pilot_file_core(player *p)
 	cfwrite_int(0, file);
 #endif
 
-	red_alert_write_wingman_status(file);
-	pilot_write_techroom_data(file);
+	if ( is_multi ) {
+		red_alert_write_wingman_status(file);
+	}
+
+	pilot_write_techroom_data(file, is_multi);
 
 	// store auto-advance pref
-   cfwrite_int(Player->auto_advance, file);
+	cfwrite_int(Player->auto_advance, file);
 
 	cfwrite_int(Use_mouse_to_fly, file);
 	cfwrite_int(Mouse_sensitivity, file);
@@ -1191,10 +1382,14 @@ int write_pilot_file(player *the_player)
 	return 0;
 }
 
-void write_stats_block(CFILE *file,scoring_struct *stats)
+void write_stats_block(CFILE *file,scoring_struct *stats, int multi)
 {
+
 	int i;
 	int total;
+
+	if ( !multi )
+		return;
 
 	cfwrite_int(stats->score, file);
 	cfwrite_int(stats->rank, file);
@@ -1211,18 +1406,45 @@ void write_stats_block(CFILE *file,scoring_struct *stats)
 	cfwrite_int(total, file);
 	for (i=0; i<total; i++){
 		cfwrite_ushort((ushort)stats->kills[i], file);
+		cfwrite_string_len(Ship_info[i].name, file);
 	}
 
 	cfwrite_int(stats->kill_count,file);
 	cfwrite_int(stats->kill_count_ok,file);
 
-   cfwrite_uint(stats->p_shots_fired,file);
+	cfwrite_uint(stats->p_shots_fired,file);
 	cfwrite_uint(stats->s_shots_fired,file);
 	cfwrite_uint(stats->p_shots_hit,file);
 	cfwrite_uint(stats->s_shots_hit,file);
 	cfwrite_uint(stats->p_bonehead_hits,file);
 	cfwrite_uint(stats->s_bonehead_hits,file);
 	cfwrite_uint(stats->bonehead_kills,file);
+}
+
+// write the various detail settings
+void write_detail_settings(CFILE *file)
+{
+	// we still need sane values in the Detail struct so create
+	// a temporary one to value swap and write to file
+	detail_levels Detail_tmp;
+	memset(&Detail_tmp, 0, sizeof(detail_levels));
+	memcpy(&Detail_tmp, &Detail, sizeof(detail_levels));
+
+	// swap, swap, swap - on big-endian this will convert back to little-endian
+	Detail_tmp.setting = INTEL_INT(Detail_tmp.setting);
+	Detail_tmp.nebula_detail = INTEL_INT(Detail_tmp.nebula_detail);
+	Detail_tmp.detail_distance = INTEL_INT(Detail_tmp.detail_distance);
+	Detail_tmp.hardware_textures = INTEL_INT(Detail_tmp.hardware_textures);
+	Detail_tmp.num_small_debris = INTEL_INT(Detail_tmp.num_small_debris);
+	Detail_tmp.num_particles = INTEL_INT(Detail_tmp.num_particles);
+	Detail_tmp.num_stars = INTEL_INT(Detail_tmp.num_stars);
+	Detail_tmp.shield_effects = INTEL_INT(Detail_tmp.shield_effects);
+	Detail_tmp.lighting = INTEL_INT(Detail_tmp.lighting);
+	Detail_tmp.targetview_model = INTEL_INT(Detail_tmp.targetview_model);
+	Detail_tmp.planets_suns = INTEL_INT(Detail_tmp.planets_suns);
+	Detail_tmp.weapon_extras = INTEL_INT(Detail_tmp.weapon_extras);
+
+	cfwrite( &Detail_tmp, sizeof(detail_levels), 1, file );
 }
 
 // write multiplayer information
