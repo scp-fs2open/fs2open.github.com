@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.6 2005-03-27 06:08:42 taylor Exp $
+dnl $Id: configure.ac,v 1.7 2005-03-28 13:25:18 mrduckman Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -63,7 +63,12 @@ AC_ARG_WITH(ogl-libs,
 		[fs2_ogl_libs="$withval"],
 		[fs2_ogl_libs=""],
 )
-
+AC_ARG_WITH(ogl-incs,
+	AC_HELP_STRING([--with-ogl-incs=DIR],
+		[Use OpenGL Includes from this directory]),
+		[fs2_ogl_incs="$withval"],
+		[fs2_ogl_incs=""],
+)
 AC_ARG_ENABLE(scplite,
 	AC_HELP_STRING([--enable-scplite],
 		[Make a SCP Lite build]),
@@ -264,6 +269,9 @@ elif test "$fs2_os_unix" = "yes" ; then
 	else
 		FS2_LDFLAGS="$FS2_LDFLAGS -lGL -lGLU"
 	fi
+	if test "x$fs2_ogl_incs" != "x" ; then
+		FS2_CXXFLAGS="$FS2_CXXFLAGS -I$fs2_ogl_incs"
+	fi
 	AC_CHECK_LIB(GL, glBindBufferARB, ,
 		[AC_DEFINE(GL_NO_HTL)
 			echo ""
@@ -385,6 +393,9 @@ echo Configure options:
 echo
 if test "x$fs2_ogl_libs" != "x" ; then
 	echo Using OpenGL libs from . : $fs2_ogl_libs
+fi
+if test "x$fs2_ogl_incs" != "x" ; then
+	echo Using OpenGL includes from . : $fs2_ogl_incs
 fi
 if test "x$fs2_static_jpeg" != "x" ; then
 	echo Using libjpeg.a from ... : $fs2_static_jpeg
