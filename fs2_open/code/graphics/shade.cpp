@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Shade.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:05 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 05:40:28 $
  * $Author: penguin $
  *
  * Routines to shade an area.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -197,7 +200,7 @@ void gr8_shade(int x,int y,int w,int h)
 					int left_over = w1 % 4;
 			
 					if ( wd4 > 0 )	{
-#ifdef _WIN32
+#if defined _WIN32 && !defined __GNUC__
 						_asm push eax
 						_asm push ebx
 						_asm push ecx
@@ -248,7 +251,8 @@ void gr8_shade(int x,int y,int w,int h)
 						_asm pop ebx
 						_asm pop eax
 #else
-#warning not implemented
+#warning asm not implemented
+						  Error(LOCATION, "asm not implemented");
 #endif
 					}
 
