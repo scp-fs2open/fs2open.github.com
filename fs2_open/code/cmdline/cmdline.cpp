@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.72 $
- * $Date: 2004-06-19 22:15:48 $
+ * $Revision: 2.73 $
+ * $Date: 2004-06-26 00:28:05 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/06/19 22:15:48  wmcoolmon
+ * Added -nomotion debris command line option; also re-ordered categories.
+ *
  * Revision 2.71  2004/06/06 12:25:19  randomtiger
  * Added new compression option -pcx32dds, build posted in RSB forum.
  * Changed flag because of launcher bug, have fixed launcher bug, will distribute later.
@@ -622,7 +625,8 @@ Flag exe_params[] =
 	"-cell",		  "Enable cell shading",			true,	0,				 EASY_DEFAULT,		"Graphics",		"", 
 	"-phreak", 		  "Enable Phreaks options",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 	"-ship_choice_3d","Enable models instead of ani",	true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
-	"-nomotiondebris","Disable motion debris",			true,	0,				 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-nomotiondebris",
+	"-targetinfo",	  "Enable info next to target",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-targetinfo",
+	"-nomotiondebris","Disable motion debris",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-nomotiondebris",
 	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 
 	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"", 
@@ -685,6 +689,7 @@ cmdline_parm window("-window", NULL);
 cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
 cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player missions
 cmdline_parm phreak_arg("-phreak", NULL); // Change to phreaks options including new targetting code
+cmdline_parm targetinfo_arg("-targetinfo", NULL);	//Adds ship name/class to right of target box -C
 cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
@@ -767,6 +772,7 @@ int Cmdline_d3d_particle = 0;
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
 int Cmdline_phreak	= 0;
+int Cmdline_targetinfo = 0;
 int Cmdline_dnoshowvid = 0;
 int Cmdline_show_fps = 0;
 int Cmdline_safeloading = 0;
@@ -1189,6 +1195,11 @@ bool SetCmdlineParams()
 
 	if(phreak_arg.found() ) {
 		Cmdline_phreak = 1;
+	}
+
+	if(targetinfo_arg.found())
+	{
+		Cmdline_targetinfo = 1;
 	}
 
 	if(dnoshowvid_arg.found() ) {
