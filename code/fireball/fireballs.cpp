@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-03-01 06:55:40 $
- * $Author: bobboau $
+ * $Revision: 2.23 $
+ * $Date: 2005-03-10 08:00:02 $
+ * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/03/01 06:55:40  bobboau
+ * oh, hey look I've commited something :D
+ * animation system, weapon models detail box alt-tab bug, probly other stuff
+ *
  * Revision 2.21  2005/02/23 05:05:39  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -1048,7 +1052,7 @@ int fireball_get_lod(vector *pos, fireball_info *fd, float size)
 	}
 
 	// return the best lod
-	return min(ret_lod, fd->lod_count - 1);
+	return MIN(ret_lod, fd->lod_count - 1);
 }
 
 //	Create a fireball, return object index.
@@ -1106,7 +1110,7 @@ int fireball_create( vector * pos, int fireball_type, int parent_obj, float size
 	// change lod if low res is desired
 	if (low_res) {
 		fb_lod++;
-		fb_lod = min(fb_lod, fd->lod_count - 1);
+		fb_lod = MIN(fb_lod, fd->lod_count - 1);
 	}
 
 	// if this is a warpout fireball, never go higher than LOD 1

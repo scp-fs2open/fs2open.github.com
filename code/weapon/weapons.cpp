@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2005/03/08 04:41:39  Goober5000
+ * whoops
+ *
  * Revision 2.94  2005/03/08 03:50:18  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -1603,7 +1606,7 @@ int parse_weapon(int subtype, bool replace)
 
         stuff_float( &MinRange );
 
-        if( MinRange > 0.0f && MinRange < min ( wip->max_speed * wip->lifetime, wip->weapon_range ) )
+        if( MinRange > 0.0f && MinRange < MIN( wip->max_speed * wip->lifetime, wip->weapon_range ) )
         {
 
             wip->WeaponMinRange = MinRange;
@@ -3078,7 +3081,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		if (wip->wi_flags & WIF_BOMB) {
 			if (wip->lifetime - wp->lifeleft < 0.5f) {
 				float	time_scale = wip->lifetime - wp->lifeleft;
-				vm_vec_scale_add2(&obj->phys_info.desired_vel, &obj->orient.vec.uvec, (time_scale - 0.5f) * max(10.0f, obj->phys_info.speed/2.0f));
+				vm_vec_scale_add2(&obj->phys_info.desired_vel, &obj->orient.vec.uvec, (time_scale - 0.5f) * MAX(10.0f, obj->phys_info.speed/2.0f));
 			}
 		}
 */
@@ -3306,7 +3309,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
 		//	is what's causing Harbingers to miss the super destroyer. -- MK, 4/15/98
 		if ((wip->wi_flags & WIF_HOMING_ASPECT) && (old_dot > 0.1f) && (time_to_target > 0.1f))
-			vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, min(time_to_target, 2.0f));
+			vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f));
 
 		//nprintf(("AI", "Dot = %7.3f, dist = %7.3f, time_to = %6.3f, deg/sec = %7.3f\n", old_dot, dist_to_target, time_to_target, angles/flFrametime));
 
@@ -3334,7 +3337,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	Control speed based on dot product to goal.  If close to straight ahead, move
 		//	at max speed, else move slower based on how far from ahead.
 		if (old_dot < 0.90f) {
-			obj->phys_info.speed = max(0.2f, old_dot* (float) fabs(old_dot));
+			obj->phys_info.speed = MAX(0.2f, old_dot* (float) fabs(old_dot));
 			if (obj->phys_info.speed < max_speed*0.75f)
 				obj->phys_info.speed = max_speed*0.75f;
 		} else
@@ -3643,7 +3646,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 			//set the time the warphole stays open, minimum of 7 seconds
 			wp->lssm_warp_time = ((obj->radius * 2) / (obj->phys_info.speed)) +1.5f;
-			wp->lssm_warp_time = max(wp->lssm_warp_time,7.0f);
+			wp->lssm_warp_time = MAX(wp->lssm_warp_time,7.0f);
 
 			//calculate the percerentage of the warpholes life at which the missile is fully in subspace.
 			wp->lssm_warp_pct = 1.0f - (3.0f/wp->lssm_warp_time);
@@ -5255,7 +5258,7 @@ int weapon_get_expl_handle(int weapon_expl_index, vector *pos, float size)
 		g3_end_frame();
 	}
 
-	best_lod = min(best_lod, wei->lod_count - 1);
+	best_lod = MIN(best_lod, wei->lod_count - 1);
 	return wei->lod[best_lod].bitmap_id;
 }
 

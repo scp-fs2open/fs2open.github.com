@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-03-03 06:05:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.24 $
+ * $Date: 2005-03-10 08:00:13 $
+ * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/03/03 06:05:31  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.22  2005/03/02 21:24:46  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1327,7 +1330,7 @@ void read_player_controls(object *objp, float frametime)
 		if ( !(Ships[Player_obj->instance].flags & SF_DYING) ) {
 			vector wash_rot;
 			if ((Ships[objp->instance].wash_intensity > 0) && !((Player->control_mode == PCM_WARPOUT_STAGE1) || (Player->control_mode == PCM_WARPOUT_STAGE2) || (Player->control_mode == PCM_WARPOUT_STAGE3)) ) {
-				float intensity = 0.3f * min(Ships[objp->instance].wash_intensity, 1.0f);
+				float intensity = 0.3f * MIN(Ships[objp->instance].wash_intensity, 1.0f);
 				vm_vec_copy_scale(&wash_rot, &Ships[objp->instance].wash_rot_axis, intensity);
 				physics_read_flying_controls( &objp->orient, &objp->phys_info, &(Player->ci), flFrametime, &wash_rot);
 			} else {
@@ -1829,7 +1832,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 	}
 
 	// see if player is within inspection range
-	if ( Player_ai->current_target_distance < max(CARGO_REVEAL_MIN_DIST, (cargo_objp->radius+CARGO_RADIUS_DELTA)) ) {
+	if ( Player_ai->current_target_distance < MAX(CARGO_REVEAL_MIN_DIST, (cargo_objp->radius+CARGO_RADIUS_DELTA)) ) {
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
@@ -1934,9 +1937,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 	// Goober5000
 	if (cargo_sip->flags & SIF_HUGE_SHIP) {
-		scan_dist = max(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA));
+		scan_dist = MAX(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA));
 	} else {
-		scan_dist = max(CARGO_REVEAL_MIN_DIST, (subsys_rad + CARGO_RADIUS_DELTA));
+		scan_dist = MAX(CARGO_REVEAL_MIN_DIST, (subsys_rad + CARGO_RADIUS_DELTA));
 	}
 
 	if ( Player_ai->current_target_distance < scan_dist ) {
@@ -1982,7 +1985,7 @@ float	player_farthest_weapon_range()
 	hud_get_best_primary_bank(&prange);
 	srange=ship_get_secondary_weapon_range(Player_ship);
 
-	return max(prange,srange);
+	return MAX(prange,srange);
 }
 
 // Determine text name for the weapon that killed the player.

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.48 $
- * $Date: 2005-03-07 13:10:20 $
- * $Author: bobboau $
+ * $Revision: 2.49 $
+ * $Date: 2005-03-10 08:00:04 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/03/07 13:10:20  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.47  2005/03/06 11:23:44  wmcoolmon
  * RE-fixed stuff. Ogg support. Briefings.
  *
@@ -889,7 +893,7 @@ typedef struct screen {
 	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
 	bool (*gf_make_render_target)(int n, int &x_res, int &y_res, int flags );
-	bool (*gf_set_render_target)(int n, int face=-1);
+	bool (*gf_set_render_target)(int n, int face);
 
 	void (*gf_translate_texture_matrix)(int unit, vector *shift);
 	void (*gf_push_texture_matrix)(int unit);
@@ -1175,7 +1179,11 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 #define gr_bm_lock					GR_CALL(*gr_screen.gf_bm_lock)          
 
 #define gr_make_render_target					GR_CALL(*gr_screen.gf_make_render_target)          
-#define gr_set_render_target					GR_CALL(*gr_screen.gf_set_render_target)          
+
+__inline bool gr_set_render_target(int n, int face = -1)
+{
+	return (*gr_screen.gf_set_render_target)(n, face);
+}
 
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
@@ -1229,6 +1237,7 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 // new bitmap functions
 void gr_bitmap(int x, int y, bool resize = true);
 void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling);
+void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-03-02 21:24:44 $
+ * $Revision: 2.14 $
+ * $Date: 2005-03-10 08:00:06 $
  * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.12  2005/02/23 13:17:05  taylor
  * few more compiler warning fixes (didn't mean to commit iostream.h change)
  * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
@@ -1923,7 +1926,7 @@ void hud_config_color_load(char *name)
 void hud_config_alpha_slider_up()
 {	
 	int pos = HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem());
-	int max = max(max( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) ), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
+	int max = MAX(MAX( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) ), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
 
 	// if this would put the brightest element past its limit, skip
 	if(max >= 255){
@@ -1947,7 +1950,7 @@ void hud_config_alpha_slider_up()
 void hud_config_alpha_slider_down()
 {	
 	int pos = HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem());
-	int min = min(min( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) ), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
+	int min = MIN(MIN( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) ), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
 
 	// if this would put the brightest element past its limit, skip
 	if(min <= 0){

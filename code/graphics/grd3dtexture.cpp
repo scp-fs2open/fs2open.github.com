@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-03-07 13:10:21 $
- * $Author: bobboau $
+ * $Revision: 2.47 $
+ * $Date: 2005-03-10 08:00:05 $
+ * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.45  2005/02/15 00:03:36  taylor
  * don't try and draw starfield bitmaps if they aren't valid
  * make AB thruster stuff in ship_create() a little less weird
@@ -712,7 +716,7 @@ void d3d_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h
 	if ( D3D_square_textures )	{
 		int new_size;
 		// Make the both be equal to larger of the two
-		new_size = max(tex_w, tex_h);
+		new_size = MAX(tex_w, tex_h);
 		tex_w = new_size;
 		tex_h = new_size;
 	}	

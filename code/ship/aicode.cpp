@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.96 $
- * $Date: 2005-03-07 20:12:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.97 $
+ * $Date: 2005-03-10 08:00:14 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2005/03/07 20:12:36  Goober5000
+ * rolled back my original code on the support ship CTD; thanks taylor :)
+ * --Goober5000
+ *
  * Revision 2.95  2005/03/06 16:43:40  taylor
  * don't Assert() when repair_objp is NULL (support ship object is invalid until it's done with warpin)
  *
@@ -3415,7 +3419,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 
 	tp = turret_subsys->system_info;
 	wip=&Weapon_info[tp->turret_weapon_type];
-	weapon_travel_dist = min(wip->lifetime * wip->max_speed, wip->weapon_range);
+	weapon_travel_dist = MIN(wip->lifetime * wip->max_speed, wip->weapon_range);
 
 	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
 		weapon_travel_dist=wip->lssm_lock_range;
@@ -3970,11 +3974,11 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 
 	if (dir == 1) {
 		start_index = 0;
-		finish_index = min(count, mp->nverts);
+		finish_index = MIN(count, mp->nverts);
 	} else {
 		Assert(dir == -1);	//	direction must be up by 1 or down by 1 and it's neither!
 		start_index = mp->nverts-1;
-		finish_index = max(-1, mp->nverts-1-count);
+		finish_index = MAX(-1, mp->nverts-1-count);
 	}
 
 	// Goober5000 - start submodel calculation
@@ -4998,7 +5002,7 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 		}
 	} else {
 		if ((aip->mode == AIM_DOCK) && (dist_to_next < 150.0f) && (aip->path_start + aip->path_length - 2 == aip->path_cur)) {
-			set_accel_for_target_speed(objp, sip->max_speed * max(dist_to_next/500.0f, 1.0f));
+			set_accel_for_target_speed(objp, sip->max_speed * MAX(dist_to_next/500.0f, 1.0f));
 			//mprintf(("dist = %7.3f, speed = %7.3f\n", dist_to_next, objp->phys_info.speed));
 		} else if ((dot_to_next >= dot * .9) || (dist_to_next > 100.0f)) {
 			if (dist_to_goal > 200.0f)
@@ -5025,7 +5029,7 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 		} else {
 			float	xdot;
 
-			xdot = max(dot_to_next, 0.1f);
+			xdot = MAX(dot_to_next, 0.1f);
 			if ( aip->mode != AIM_DOCK ) {
 				set_accel_for_target_speed(objp, sip->max_speed);
 			} else {
@@ -5939,9 +5943,9 @@ void avoid_ship()
 	float	radsum = Pl_objp->radius + En_objp->radius;
 
 	if (dist < radsum)
-		accelerate_ship(aip, max(away_dot, 0.2f));
+		accelerate_ship(aip, MAX(away_dot, 0.2f));
 	else if (dist < 2*radsum)
-		accelerate_ship(aip, max(away_dot, (dist - radsum) / radsum)+0.2f);
+		accelerate_ship(aip, MAX(away_dot, (dist - radsum) / radsum)+0.2f);
 	else
 		accelerate_ship(aip, 1.0f);
 
@@ -7605,7 +7609,7 @@ void set_predicted_enemy_pos(vector *predicted_enemy_pos, object *pobjp, object 
 	ship	*shipp = &Ships[pobjp->instance];
 
 	weapon_speed = ai_get_weapon_speed(&shipp->weapons);
-	weapon_speed = max(weapon_speed, 1.0f);		// set not less than 1
+	weapon_speed = MAX(weapon_speed, 1.0f);		// set not less than 1
 
 	range_time = 2.0f;
 
@@ -7810,7 +7814,7 @@ void attack_set_accel(ai_info *aip, float dist_to_enemy, float dot_to_enemy, flo
 		if ((dist_to_enemy > 200.0f) && (dist_to_enemy < 800.0f)) {
 			if ((dot_from_enemy < 0.9f) || ai_near_full_strength(Pl_objp)) {
 				//nprintf(("AI", " slowly "));
-				accelerate_ship(aip, max(1.0f - (dist_to_enemy-200.0f)/600.0f, 0.1f));
+				accelerate_ship(aip, MAX(1.0f - (dist_to_enemy-200.0f)/600.0f, 0.1f));
 				return;
 			}
 		} else
@@ -8079,7 +8083,7 @@ int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vector
 			aip->ai_flags |= AIF_AVOIDING_BIG_SHIP;
 			mabs_pick_goal_point(objp, &Objects[ship_num], &collision_point, &aip->avoid_goal_point);
 			float dist = vm_vec_dist_quick(&aip->avoid_goal_point, &objp->pos);
-			aip->avoid_check_timestamp = timestamp(2000 + min(1000, (int) (dist * 2.0f)));	//	Delay until check again is based on distance to avoid point.
+			aip->avoid_check_timestamp = timestamp(2000 + MIN(1000, (int) (dist * 2.0f)));	//	Delay until check again is based on distance to avoid point.
 			aip->avoid_ship_num = ship_num;
 		} else {
 			aip->ai_flags &= ~AIF_AVOIDING_BIG_SHIP;
@@ -8229,8 +8233,8 @@ void ai_stealth_sweep()
 
 		// make box size based on speed of stealth and expected time to intercept (keep box in range 200-500)
 		float box_size = vm_vec_mag_quick(&aip->stealth_velocity) * (0.001f * lost_time);
-		box_size = min(200.0f, box_size);
-		box_size = max(500.0f, box_size);
+		box_size = MIN(200.0f, box_size);
+		box_size = MAX(500.0f, box_size);
 		aip->stealth_sweep_box_size = box_size;
 
 		aip->goal_point = goal_pt;
@@ -8696,7 +8700,7 @@ void update_aspect_lock_information(ai_info *aip, vector *vec_to_enemy, float di
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
 	if (num_weapon_types && (wip->wi_flags & WIF_HOMING_ASPECT)) {
-		if (dist_to_enemy > 300.0f - min(enemy_radius, 100.0f))
+		if (dist_to_enemy > 300.0f - MIN(enemy_radius, 100.0f))
 			aip->ai_flags |= AIF_SEEK_LOCK;
 		else
 			aip->ai_flags &= ~AIF_SEEK_LOCK;
@@ -8930,17 +8934,17 @@ void ai_chase_big_get_separations(object *attack_objp, object *target_objp, vect
 	// get parameters of ships (as cylinders - radius and height)
 	// get radius of attacker (for rotations about forward)
 	pm = model_get(Ships[attack_objp->instance].modelnum);
-	temp = max(pm->maxs.xyz.x, pm->maxs.xyz.y);
-	r_attacker = max(-pm->mins.xyz.x, -pm->mins.xyz.y);
-	r_attacker = max(temp, r_attacker);
-	h_attacker = max(-pm->mins.xyz.z, pm->maxs.xyz.z);
+	temp = MAX(pm->maxs.xyz.x, pm->maxs.xyz.y);
+	r_attacker = MAX(-pm->mins.xyz.x, -pm->mins.xyz.y);
+	r_attacker = MAX(temp, r_attacker);
+	h_attacker = MAX(-pm->mins.xyz.z, pm->maxs.xyz.z);
 
 	// get radius of target (for rotations about forward)
 	pm = model_get(Ships[attack_objp->instance].modelnum);
-	temp = max(pm->maxs.xyz.x, pm->maxs.xyz.y);
-	r_target = max(-pm->mins.xyz.x, -pm->mins.xyz.y);
-	r_target = max(temp, r_target);
-	h_target = max(-pm->mins.xyz.z, pm->maxs.xyz.z);
+	temp = MAX(pm->maxs.xyz.x, pm->maxs.xyz.y);
+	r_target = MAX(-pm->mins.xyz.x, -pm->mins.xyz.y);
+	r_target = MAX(temp, r_target);
+	h_target = MAX(-pm->mins.xyz.z, pm->maxs.xyz.z);
 
 	// find separation between cylinders [if parallel]
 	vm_vec_sub(&vec_to_target, &attack_objp->pos, &target_objp->pos);
@@ -8967,17 +8971,17 @@ void ai_chase_big_parallel_set_goal(vector *goal_pos, object *attack_objp, objec
 	// get parameters of ships (as cylinders - radius and height)
 	// get radius of attacker (for rotations about forward)
 	pm = model_get(Ships[attack_objp->instance].modelnum);
-	temp = max(pm->maxs.xyz.x, pm->maxs.xyz.y);
-	r_attacker = max(-pm->mins.xyz.x, -pm->mins.xyz.y);
-	r_attacker = max(temp, r_attacker);
-	h_attacker = max(-pm->mins.xyz.z, pm->maxs.xyz.z);
+	temp = MAX(pm->maxs.xyz.x, pm->maxs.xyz.y);
+	r_attacker = MAX(-pm->mins.xyz.x, -pm->mins.xyz.y);
+	r_attacker = MAX(temp, r_attacker);
+	h_attacker = MAX(-pm->mins.xyz.z, pm->maxs.xyz.z);
 
 	// get radius of target (for rotations about forward)
 	pm = model_get(Ships[attack_objp->instance].modelnum);
-	temp = max(pm->maxs.xyz.x, pm->maxs.xyz.y);
-	r_target = max(-pm->mins.xyz.x, -pm->mins.xyz.y);
-	r_target = max(temp, r_target);
-	h_target = max(-pm->mins.xyz.z, pm->maxs.xyz.z);
+	temp = MAX(pm->maxs.xyz.x, pm->maxs.xyz.y);
+	r_target = MAX(-pm->mins.xyz.x, -pm->mins.xyz.y);
+	r_target = MAX(temp, r_target);
+	h_target = MAX(-pm->mins.xyz.z, pm->maxs.xyz.z);
 
 	// are we opposing (only when other ship is not moving)
 	opposing = ( vm_vec_dotprod(&attack_objp->orient.vec.fvec, &target_objp->orient.vec.fvec) < 0 );
@@ -9014,7 +9018,7 @@ void ai_chase_big_parallel_set_goal(vector *goal_pos, object *attack_objp, objec
 	} else {
 		// up in front, so slow down
 		*accel = match_accel  - match_accel / length_scale * -perp_dist;
-		*accel = max(0.0f, *accel);
+		*accel = MAX(0.0f, *accel);
 	}
 
 }
@@ -9705,12 +9709,12 @@ void ai_chase()
 	//nprintf(("AI", "time_enemy_in_range = %7.3f, dot = %7.3f\n", aip->time_enemy_in_range, dot_to_enemy));
 
 	if (aip->mode != AIM_EVADE) {
-		if (dot_to_enemy > 0.95f - 0.5f * En_objp->radius/max(1.0f, En_objp->radius + dist_to_enemy)) {
+		if (dot_to_enemy > 0.95f - 0.5f * En_objp->radius/MAX(1.0f, En_objp->radius + dist_to_enemy)) {
 			aip->time_enemy_in_range += flFrametime;
 			
 			//	Chance of hitting ship is based on dot product of firing ship's forward vector with vector to ship
 			//	and also the size of the target relative to distance to target.
-			if (dot_to_enemy > max(0.5f, 0.90f + aip->ai_accuracy/10.0f - En_objp->radius/max(1.0f,dist_to_enemy))) {
+			if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy/10.0f - En_objp->radius/MAX(1.0f,dist_to_enemy))) {
 
 				ship *temp_shipp;
 				ship_weapon *tswp;
@@ -10701,9 +10705,9 @@ float get_cylinder_points(object *other_objp, object *cyl_objp, vector *axis_pt,
 	// get radius of cylinder
 	polymodel *pm = model_get(Ships[cyl_objp->instance].modelnum);
 	float tempx, tempy;
-	tempx = max(-pm->mins.xyz.x, pm->maxs.xyz.x);
-	tempy = max(-pm->mins.xyz.y, pm->maxs.xyz.y);
-	*radius = max(tempx, tempy);
+	tempx = MAX(-pm->mins.xyz.x, pm->maxs.xyz.x);
+	tempy = MAX(-pm->mins.xyz.y, pm->maxs.xyz.y);
+	*radius = MAX(tempx, tempy);
 
 	// get vec from cylinder to other_obj
 	vector r_sph;
@@ -11920,7 +11924,7 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 			}
 		} else {
 			if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
-				ai_big_pick_attack_point_turret(lep, ss, &gun_pos, &gun_vec, &enemy_point, tp->turret_fov, min(weapon_travel_dist, Weapon_info[tp->turret_weapon_type].weapon_range));
+				ai_big_pick_attack_point_turret(lep, ss, &gun_pos, &gun_vec, &enemy_point, tp->turret_fov, MIN(weapon_travel_dist, Weapon_info[tp->turret_weapon_type].weapon_range));
 			} else {
 				enemy_point = lep->pos;
 			}
@@ -12177,7 +12181,7 @@ int turret_should_fire_aspect(ship_subsys *turret, float dot, int weapon_class)
 
 	wip = &Weapon_info[weapon_class];
 
-	if ( (dot > AICODE_TURRET_DUMBFIRE_ANGLE) && (turret->turret_time_enemy_in_range >= min(wip->min_lock_time,AICODE_TURRET_MAX_TIME_IN_RANGE)) ) {
+	if ( (dot > AICODE_TURRET_DUMBFIRE_ANGLE) && (turret->turret_time_enemy_in_range >= MIN(wip->min_lock_time,AICODE_TURRET_MAX_TIME_IN_RANGE)) ) {
 		return 1;
 	}
 
@@ -12495,7 +12499,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	}
 
 	// Don't try to fire beyond weapon_limit_range
-	weapon_firing_range = min(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
+	weapon_firing_range = MIN(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
 
 
     // *Weapon minimum firing range -Et1
@@ -12587,7 +12591,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			if ( lep->type == OBJ_SHIP ) {
 				ss->targeted_subsys = aifft_find_turret_subsys(objp, ss, lep, &dot);				
 			}
-			ss->turret_next_enemy_check_stamp = timestamp((int) (max(dot, 0.5f)*2000.0f) + 1000);
+			ss->turret_next_enemy_check_stamp = timestamp((int) (MAX(dot, 0.5f)*2000.0f) + 1000);
 		} else {
 			ss->turret_next_enemy_check_stamp = timestamp((int) (2000.0f * frand_range(0.9f, 1.1f)));	//	Check every two seconds
 		}
@@ -13070,7 +13074,7 @@ void get_absolute_wing_pos(vector *result_pos, object *leader_objp, int wing_ind
 
 	get_wing_delta(&wing_delta, wing_index);		//	Desired location in leader's reference frame
 
-	wing_spread_size = max(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
+	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
 
 	// for player obj (1) move ships up 20% (2) scale formation up 20%
 	if (leader_objp->flags & OF_PLAYER_SHIP) {
@@ -13442,7 +13446,7 @@ int ai_formation()
 		//	Leader flying like a maniac.  Don't try hard to form on wing.
 		if (chaotic_leader) {
 			turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f);
-			set_accel_for_target_speed(Pl_objp, min(leader_speed*0.8f, 20.0f));
+			set_accel_for_target_speed(Pl_objp, MIN(leader_speed*0.8f, 20.0f));
 		} else if (dist_to_goal > 75.0f) {
 			turn_towards_point(Pl_objp, &future_goal_point_2, NULL, 0.0f);
 			float	delta_speed;
@@ -16281,7 +16285,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 		ship_info *sip = &Ship_info[Ships[objp_hit->instance].ship_info_index];
 		if (shipp_hit->ship_initial_hull_strength > 1000.0f) {
 			float factor = shipp_hit->ship_initial_hull_strength / 1000.0f;
-			factor = min(100.0f, factor);
+			factor = MIN(100.0f, factor);
 			damage /= factor;
 		}
 
@@ -16299,7 +16303,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 		pp->friendly_hits++;
 
 		// cap damage and number of hits done this frame
-		float accredited_damage = min(MAX_BURST_DAMAGE, pp->damage_this_burst + damage) - pp->damage_this_burst;
+		float accredited_damage = MIN(MAX_BURST_DAMAGE, pp->damage_this_burst + damage) - pp->damage_this_burst;
 		pp->friendly_damage += accredited_damage;
 		pp->damage_this_burst += accredited_damage;
 
@@ -16500,9 +16504,9 @@ void ai_update_lethality(object *ship_obj, object *other_obj, float damage)
 					// increase lethality weapon's parent ship
 					ai_info *aip = &Ai_info[Ships[Objects[parent].instance].ai_index];
 					aip->lethality += lethality;
-					aip->lethality = min(110.0f, aip->lethality);
+					aip->lethality = MIN(110.0f, aip->lethality);
 					// if you hit, don;t be less than 0
-					aip->lethality = max(0.0f, aip->lethality);
+					aip->lethality = MAX(0.0f, aip->lethality);
 
 //					if (aip->lethality > max_lethality) {
 //						max_lethality = aip->lethality;

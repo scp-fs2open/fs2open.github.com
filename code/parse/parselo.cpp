@@ -9,13 +9,21 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.32 $
+ * $Revision: 2.33 $
  * $Author: taylor $
- * $Date: 2005-02-23 05:05:38 $
+ * $Date: 2005-03-10 08:00:12 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/02/23 05:05:38  taylor
+ * compiler warning fixes (for MSVC++ 6)
+ * have the warp effect only load as many LODs as will get used
+ * head off strange bug in release when corrupt soundtrack number gets used
+ *    (will still Assert in debug)
+ * don't ever try and save a campaign savefile in multi or standalone modes
+ * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
+ *
  * Revision 2.31  2005/02/04 20:06:06  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -1479,7 +1487,7 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 	Assert(file_len < MISSION_TEXT_SIZE);
 
 	// read first 10 bytes to determine if file is encrypted
-	cfread(raw_text, min(file_len, 10), 1, mf);
+	cfread(raw_text, MIN(file_len, 10), 1, mf);
 	file_is_encrypted = is_encrypted(raw_text);
 	cfseek(mf, 0, CF_SEEK_SET);
 	if ( file_is_encrypted ) {
@@ -2328,7 +2336,7 @@ int subsystem_stricmp(char *s1, char *s2)
 		len2--;
 
 	// now do the comparison
-	return strnicmp(s1, s2, min(len1, len2));
+	return strnicmp(s1, s2, MIN(len1, len2));
 }
 
 // Goober5000

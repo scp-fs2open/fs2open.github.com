@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.7 $
- * $Date: 2005-02-04 10:12:33 $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-10 08:00:18 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/04 10:12:33  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.6  2005/01/30 18:32:42  taylor
  * merge with Linux/OSX tree - p0130
  * remove extra brace in cfile.cpp
@@ -75,6 +78,7 @@ void WinAssert(char * text, char *filename, int line)
 // standard warning message
 void Warning( char * filename, int line, char * format, ... )
 {
+#ifndef NDEBUG
 	va_list args;
 	char buffer[200];
 	char buffer_tmp[200];
@@ -106,6 +110,7 @@ void Warning( char * filename, int line, char * format, ... )
 
 	// Order UP!!
 	fprintf(stderr, "WARNING: \"%s\" at %s:%d\n", buffer, filename, line);
+#endif
 }
 
 // fatal error message

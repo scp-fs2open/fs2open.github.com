@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-03-02 21:24:47 $
+ * $Revision: 2.37 $
+ * $Date: 2005-03-10 08:00:16 $
  * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/03/02 21:24:47  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.35  2005/02/23 04:57:28  taylor
  * even more bm_unload() -> bm_release() changes
  *
@@ -912,7 +915,7 @@ void shipfx_warpin_start( object *objp )
 		// maybe special warpin
 		if (shipp->special_warp_objnum >= 0) {
 			// cap radius to size of knossos
-			effect_radius = min(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
+			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
 			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
 		} else {
 			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
@@ -1119,7 +1122,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vector 
 
 	if ( objp == Player_obj )	{
 		// Goober5000 - cap at 65
-		*speed = min(0.8f*objp->phys_info.max_vel.xyz.z, 65.0f);
+		*speed = MIN(0.8f*objp->phys_info.max_vel.xyz.z, 65.0f);
 	}
 
 	// center the effect properly
@@ -1244,7 +1247,7 @@ void shipfx_warpout_start( object *objp )
 	// maybe special warpout
 	if (shipp->special_warp_objnum >= 0) {
 		// cap radius to size of knossos
-		effect_radius = min(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
+		effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
 		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 	} else {
 
@@ -2084,7 +2087,7 @@ static void split_ship_init( ship* shipp, split_ship* split_ship )
 	// s_r_f effects speed of "wipe" and rotvel
 	float speed_reduction_factor = (1.0f + 0.001f*parent_ship_obj->radius);
 	float explosion_time = (3.0f + expl_length_scale + (frand()-0.5f)) * speed_reduction_factor;
-	float long_length = max(front_length, back_length);
+	float long_length = MAX(front_length, back_length);
 	float expl_vel = long_length / explosion_time;
 	split_ship->front_ship.explosion_vel = expl_vel;
 	split_ship->back_ship.explosion_vel  = -expl_vel;
@@ -2294,7 +2297,7 @@ float get_model_cross_section_at_z(float z, polymodel* pm)
 	} else {
 		int floor_index = (int)floor(index);
 		int ceil_index  = (int)ceil(index);
-		return max(pm->xc[ceil_index].radius, pm->xc[floor_index].radius);
+		return MAX(pm->xc[ceil_index].radius, pm->xc[floor_index].radius);
 	}
 }
 
@@ -2382,7 +2385,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 			}
 
 			rad *= 1.5f;
-			rad = min(rad, half_ship->parent_obj->radius);
+			rad = MIN(rad, half_ship->parent_obj->radius);
 
 			// mprintf(("xc %.1f model %.1f\n", rad, half_ship->parent_obj->radius*0.25));
 			int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
@@ -2483,7 +2486,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 	the_split_ship->front_ship.cur_clip_plane_pt += the_split_ship->front_ship.explosion_vel*frametime;
 	the_split_ship->back_ship.cur_clip_plane_pt  += the_split_ship->back_ship.explosion_vel *frametime;
 
-	float length_left = max( the_split_ship->front_ship.length_left, the_split_ship->back_ship.length_left );
+	float length_left = MAX( the_split_ship->front_ship.length_left, the_split_ship->back_ship.length_left );
 
 	//	mprintf(( "Blowup frame, dist = %.1f \n", length_left ));
 
@@ -3079,7 +3082,7 @@ void engine_wash_ship_process(ship *shipp)
 				if (dot_to_ship > 0) {
 
 					// get max wash distance
-					max_wash_dist = max(ewp->length, bank->point[j].radius*ewp->radius_mult);
+					max_wash_dist = MAX(ewp->length, bank->point[j].radius*ewp->radius_mult);
 
 					// check if within dist range
 					dist_sqr = vm_vec_mag_squared(&thruster_to_ship);

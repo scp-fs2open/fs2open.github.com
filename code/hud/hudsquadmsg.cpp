@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-03-02 21:24:44 $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-10 08:00:06 $
  * $Author: taylor $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.9  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -1027,7 +1030,7 @@ void hud_squadmsg_display_menu( char *title )
 			hud_set_gauge_color(HUD_MESSAGE_BOX, HUD_C_BRIGHT);
 		} else {
 			/*
-			dim_index = min(5, HUD_color_alpha - 2);
+			dim_index = MIN(5, HUD_color_alpha - 2);
 			if ( dim_index < 0 ) {
 				dim_index = 0;
 			}

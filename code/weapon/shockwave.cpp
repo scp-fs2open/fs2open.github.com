@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-26 20:47:56 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2005-03-10 08:00:17 $
+ * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/26 20:47:56  Kazan
+ * remove MCD complete
+ *
  * Revision 2.9  2004/07/12 16:33:09  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -549,7 +552,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 
 		// If this shockwave hit the player, play shockwave impact sound
 		if ( objp == Player_obj ) {
-			snd_play( &Snds[SND_SHOCKWAVE_IMPACT], 0.0f, max(0.4f, damage/Weapon_info[sw->weapon_info_index].damage) );
+			snd_play( &Snds[SND_SHOCKWAVE_IMPACT], 0.0f, MAX(0.4f, damage/Weapon_info[sw->weapon_info_index].damage) );
 		}
 
 	}	// end for

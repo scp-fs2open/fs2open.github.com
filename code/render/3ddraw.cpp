@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-03-09 03:23:32 $
- * $Author: bobboau $
+ * $Revision: 2.31 $
+ * $Date: 2005-03-10 08:00:13 $
+ * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/03/09 03:23:32  bobboau
+ * added a new interface render funtion
+ *
  * Revision 2.29  2005/03/03 14:29:39  bobboau
  * fixed a small error from my earlier commit.
  *
@@ -1102,7 +1105,7 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 	*x = (int)(pnt->sx - *w/2.0f);
 	*y = (int)(pnt->sy - *h/2.0f);	
 
-	*size = max(bw, bh);
+	*size = MAX(bw, bh);
 
 	return 0;
 }
@@ -2557,7 +2560,7 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		// stuff coords	
 
 		bitmap_2d_list* b = &b_list[i].screen_rect;
-		texture_rect* t = &b_list[i].texture_rect;
+		texture_rect_list* t = &b_list[i].texture_rect;
 		//tri one
 		vertex *V = &bitmap_2d_poly_list[i*6];
 		V->sx = (float)b->x;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.169 $
- * $Date: 2005-03-08 02:31:51 $
- * $Author: bobboau $
+ * $Revision: 2.170 $
+ * $Date: 2005-03-10 08:00:15 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.169  2005/03/08 02:31:51  bobboau
+ * minor change to high level render target code
+ *
  * Revision 2.168  2005/03/03 07:13:17  wmcoolmon
  * Made HUD shield icon auto-generation off unless "generate icon" ship flag is specified for the ship.
  *
@@ -6156,7 +6159,7 @@ void lethality_decay(ai_info *aip)
 {
 	float decay_rate = Decay_rate;
 	aip->lethality -= 100.0f * decay_rate * flFrametime;
-	aip->lethality = max(-10.0f, aip->lethality);
+	aip->lethality = MAX(-10.0f, aip->lethality);
 
 //	if (aip->lethality < min_lethality) {
 //		min_lethality = aip->lethality;
@@ -7613,7 +7616,7 @@ int ship_stop_fire_primary(object * obj)
 	if ( shipp->flags & SF_PRIMARY_LINKED ) {
 		num_primary_banks = swp->num_primary_banks;
 	} else {
-		num_primary_banks = min(1, swp->num_primary_banks);
+		num_primary_banks = MIN(1, swp->num_primary_banks);
 	}
 
 	for ( i = 0; i < num_primary_banks; i++ ) {	
@@ -7716,7 +7719,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	if ( shipp->flags & SF_PRIMARY_LINKED ) {
 		num_primary_banks = swp->num_primary_banks;
 	} else {
-		num_primary_banks = min(1, swp->num_primary_banks);
+		num_primary_banks = MIN(1, swp->num_primary_banks);
 	}
 
 	Assert(num_primary_banks > 0);
@@ -8556,7 +8559,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		//	firing weapon despite fire causing detonation of existing weapon.
 		if (swp->current_secondary_bank >= 0) {
 			if (timestamp_elapsed(swp->next_secondary_fire_stamp[bank])){
-				swp->next_secondary_fire_stamp[bank] = timestamp(max((int) flFrametime*3000, 250));
+				swp->next_secondary_fire_stamp[bank] = timestamp(MAX((int) flFrametime*3000, 250));
 			}
 		}
 		return 0;
@@ -8878,7 +8881,7 @@ done_secondary:
 	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) ) {
 		//int fire_wait = (int)(Weapon_info[weapon].fire_wait * 1000.0f);	//DTP commented out, mistake, takes our current firewait time for our current weapon, it should have been our next valid weapon, but the weapon_info contains no Var for NEXT valid bank
 		if ( ship_select_next_valid_secondary_bank(swp) ) {			//DTP here we switch to the next valid bank, but we cant call weapon_info on next fire_wait
-			//swp->next_secondary_fire_stamp[swp->current_secondary_bank] = max(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire	//DTP, Commented out mistake, here AL put the wroung firewait into the correct next_firestamp
+			//swp->next_secondary_fire_stamp[swp->current_secondary_bank] = MAX(timestamp(250),timestamp(fire_wait));	//	1/4 second delay until can fire	//DTP, Commented out mistake, here AL put the wroung firewait into the correct next_firestamp
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
 				shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(1000);	//Bumped from 250 to 1000 because some people seem to be to triggerhappy :).
 			}
@@ -11636,7 +11639,7 @@ void ship_check_cargo_all()
 					// use square of distance, faster than getting real distance (which will use sqrt)
 					dist_squared = vm_vec_dist_squared(&cargo_objp->pos, &Objects[ship_sp->objnum].pos);
 					limit_squared = (cargo_objp->radius+CARGO_RADIUS_DELTA)*(cargo_objp->radius+CARGO_RADIUS_DELTA);
-					if ( dist_squared <= max(limit_squared, CARGO_REVEAL_MIN_DIST*CARGO_REVEAL_MIN_DIST) ) {
+					if ( dist_squared <= MAX(limit_squared, CARGO_REVEAL_MIN_DIST*CARGO_REVEAL_MIN_DIST) ) {
 						ship_do_cargo_revealed( cargo_sp );
 						break;	// break out of for loop, move on to next hostile cargo
 					}
@@ -13351,13 +13354,13 @@ float ship_get_max_speed(ship *shipp)
 	max_speed = Ship_info[ship_info_index].max_overclocked_speed;
 
 	// normal max speed
-	max_speed = max(max_speed, Ship_info[ship_info_index].max_vel.xyz.z);
+	max_speed = MAX(max_speed, Ship_info[ship_info_index].max_vel.xyz.z);
 
 	// afterburn
-	max_speed = max(max_speed, Ship_info[ship_info_index].afterburner_max_vel.xyz.z);
+	max_speed = MAX(max_speed, Ship_info[ship_info_index].afterburner_max_vel.xyz.z);
 
 	// maybe cap-waypoint-speed has set it higher - Goober5000
-	max_speed = max(max_speed, Ai_info[shipp->ai_index].waypoint_speed_cap);
+	max_speed = MAX(max_speed, Ai_info[shipp->ai_index].waypoint_speed_cap);
 
 	return max_speed;
 }

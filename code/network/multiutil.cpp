@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-03-08 03:50:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2005-03-10 08:00:11 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/03/08 03:50:23  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.29  2005/03/02 21:18:20  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -4432,9 +4436,9 @@ int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vecto
 	float r,u,f;
 	int fields = 0;
 
-	max_vel.xyz.x = max( sip->max_vel.xyz.x, sip->afterburner_max_vel.xyz.x );
-	max_vel.xyz.y = max( sip->max_vel.xyz.y, sip->afterburner_max_vel.xyz.y );
-	max_vel.xyz.z = max( sip->max_vel.xyz.z, sip->afterburner_max_vel.xyz.z );	
+	max_vel.xyz.x = MAX( sip->max_vel.xyz.x, sip->afterburner_max_vel.xyz.x );
+	max_vel.xyz.y = MAX( sip->max_vel.xyz.y, sip->afterburner_max_vel.xyz.y );
+	max_vel.xyz.z = MAX( sip->max_vel.xyz.z, sip->afterburner_max_vel.xyz.z );	
 
 	if ( write )	{
 		// Find desired vel in local coordinates

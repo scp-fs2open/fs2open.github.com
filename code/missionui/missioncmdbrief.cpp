@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-02-23 05:05:38 $
+ * $Revision: 2.14 $
+ * $Date: 2005-03-10 08:00:08 $
  * $Author: taylor $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/02/23 05:05:38  taylor
+ * compiler warning fixes (for MSVC++ 6)
+ * have the warp effect only load as many LODs as will get used
+ * head off strange bug in release when corrupt soundtrack number gets used
+ *    (will still Assert in debug)
+ * don't ever try and save a campaign savefile in multi or standalone modes
+ * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
+ *
  * Revision 2.12  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -486,7 +494,7 @@ int cmd_brief_check_stage_done()
 
 	// if we get here, there is no voice, so we simulate the time it would take instead
 	if (!Voice_ended_time)
-		Voice_ended_time = Voice_started_time + max(5000, Num_brief_text_lines[0] * 3500);
+		Voice_ended_time = Voice_started_time + MAX(5000, Num_brief_text_lines[0] * 3500);
 
 	return 0;
 }

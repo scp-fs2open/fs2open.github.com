@@ -9,10 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.h $
- * $Revision: 2.3 $Date: 2004/08/11 05:06:27 $
+ * $Revision: 2.4 $Date: 2005/02/04 10:12:30 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.2  2004/08/11 05:06:27  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -84,5 +87,9 @@ void player_tips_init();
 void player_tips_close();
 void player_tips_popup();
 void player_tips_close();
+
+// quick check to make sure we always load default campaign savefile values when loading from the pilot
+// select screen but let us not overwrite current values with defaults when we aren't - taylor
+extern int Player_select_screen_active;
 
 #endif

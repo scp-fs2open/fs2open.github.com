@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-03-08 03:50:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2005-03-10 08:00:06 $
+ * $Author: taylor $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/03/08 03:50:21  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.24  2005/03/03 07:13:16  wmcoolmon
  * Made HUD shield icon auto-generation off unless "generate icon" ship flag is specified for the ship.
  *
@@ -614,7 +618,7 @@ void hud_shield_show(object *objp)
 			continue;
 		}
 
-		range = max(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
+		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
 		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-03-06 11:23:45 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2005-03-10 08:00:08 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/03/06 11:23:45  wmcoolmon
+ * RE-fixed stuff. Ogg support. Briefings.
+ *
  * Revision 2.18  2005/03/01 06:55:41  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -2735,7 +2738,7 @@ int brief_time_to_advance(int stage_num, float frametime)
 	}
 
 	if ( !voice_active && (Brief_textdraw_finished > 0) ) {
-		if ( Brief_stage_time > max(5000, Num_brief_text_lines[0] * 3500) ) {
+		if ( Brief_stage_time > MAX(5000, Num_brief_text_lines[0] * 3500) ) {
 			advance = 1;
 		}
 	}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-01-31 10:34:38 $
+ * $Revision: 2.6 $
+ * $Date: 2005-03-10 08:00:11 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/31 10:34:38  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.4  2004/07/26 16:11:41  Goober5000
  * fixored a problem when using the command-line compiler to compile everything under Windows
  * --Goober5000
@@ -113,7 +116,6 @@
 #include <stdarg.h>
 
 #include "globalincs/pstypes.h"
-#include "osapi/osapi.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "osapi/outwnd.h"
@@ -121,6 +123,9 @@
 #include "io/joy_ff.h"
 #include "osapi/osregistry.h"
 #include "graphics/2d.h"
+
+#define THREADED	// to use the proper set of macros
+#include "osapi/osapi.h"
 
 // ----------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS

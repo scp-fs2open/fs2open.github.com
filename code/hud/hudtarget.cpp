@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-03-06 11:23:45 $
- * $Author: wmcoolmon $
+ * $Revision: 2.54 $
+ * $Date: 2005-03-10 08:00:06 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/03/06 11:23:45  wmcoolmon
+ * RE-fixed stuff. Ogg support. Briefings.
+ *
  * Revision 2.52  2005/03/03 06:05:28  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -4244,7 +4247,7 @@ int hud_get_best_primary_bank(float *range)
 	if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
 		num_to_test = swp->num_primary_banks;
 	} else {
-		num_to_test = min(1, swp->num_primary_banks);
+		num_to_test = MIN(1, swp->num_primary_banks);
 	}
 
 	for ( i = 0; i < num_to_test; i++ )

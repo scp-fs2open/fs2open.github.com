@@ -1,7 +1,12 @@
-#include "globalincs/pstypes.h"
-#include "graphics/2d.h"
+
+#ifndef _CAMERA_H
+#define _CAMERA_H
+
 #include <string>
 #include <vector>
+
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
 
 class camera
 {
@@ -79,3 +84,5 @@ void cameras_do_frame(float frametime);
 void subtitles_init();
 void subtitles_close();
 void subtitles_do_frame(float frametime);
+
+#endif // _CAMERA_H
