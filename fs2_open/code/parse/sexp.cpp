@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.120 $
- * $Date: 2004-10-15 10:03:08 $
+ * $Revision: 2.121 $
+ * $Date: 2004-10-18 09:27:47 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2004/10/15 10:03:08  Goober5000
+ * added change-alt-name
+ * --Goober5000
+ *
  * Revision 2.119  2004/10/15 09:21:55  Goober5000
  * cleaned up some sexp stuff and added wing capability to kamikaze sexp
  * --Goober5000
@@ -15003,6 +15007,19 @@ char *CTEXT(int n)
 	// the CTEXT wrapper, when-argument would probably be infeasibly difficult to code.
 	if (!strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))
 	{
+		if (Fred_running)
+		{
+			// CTEXT is used when writing sexps to savefiles, so don't translate the argument
+			return Sexp_nodes[n].text;
+		}
+		else
+		{
+			// make sure we have an argument to replace it with
+			Assert(Sexp_current_replacement_argument != NULL);
+			if (Sexp_current_replacement_argument == NULL)
+				return Sexp_nodes[n].text;
+		}
+
 		// if the replacement argument is a variable name, get the variable index
 		sexp_variable_index = get_index_sexp_variable_name(Sexp_current_replacement_argument);
 
