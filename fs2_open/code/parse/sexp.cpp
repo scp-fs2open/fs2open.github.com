@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.103 $
- * $Date: 2004-09-17 00:18:18 $
+ * $Revision: 2.104 $
+ * $Date: 2004-09-17 00:28:31 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2004/09/17 00:18:18  Goober5000
+ * changed toggle-hud to hud-disable; added hud-disable-except-messages
+ * --Goober5000
+ *
  * Revision 2.102  2004/09/02 04:02:44  Goober5000
  * fixed a warning
  * --Goober5000
@@ -958,8 +962,7 @@ sexp_oper Operators[] = {
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
 	{ "kamikaze",					OP_KAMIKAZE,					2, INT_MAX }, //-Sesquipedalian
 	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
-	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
-	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
+	{ "player-use-ai",				OP_PLAYER_USE_AI,				1, 1 },			// Goober5000
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 3,			},
@@ -6738,9 +6741,9 @@ void sexp_radar_set_maxrange(int n)
 
 // Goober5000
 // trigger whether player uses the game AI for stuff
-void sexp_player_use_ai(int use_ai)
+void sexp_player_use_ai(int n)
 {
-	Player_use_ai = use_ai;
+	Player_use_ai = sexp_get_val(n);
 }
 
 // Goober5000
@@ -11822,8 +11825,7 @@ int eval_sexp(int cur_node)
 
 			// Goober5000
 			case OP_PLAYER_USE_AI:
-			case OP_PLAYER_NOT_USE_AI:
-				sexp_player_use_ai(op_num == OP_PLAYER_USE_AI);
+				sexp_player_use_ai(node);
 				sexp_val = 1;
 				break;
 
@@ -12804,7 +12806,6 @@ int query_operator_return_type(int op)
 		case OP_LOCK_ROTATING_SUBSYSTEM:
 		case OP_FREE_ROTATING_SUBSYSTEM:
 		case OP_PLAYER_USE_AI:
-		case OP_PLAYER_NOT_USE_AI:
 #if defined(ENABLE_AUTO_PILOT)
 		case OP_NAV_ADD_WAYPOINT:	//kazan
 		case OP_NAV_ADD_SHIP:		//kazan
@@ -13279,8 +13280,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_PLAYER_USE_AI:
-		case OP_PLAYER_NOT_USE_AI:
-			return OPF_NONE;
+			return OPF_POSITIVE;
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -14609,7 +14609,6 @@ int get_subcategory(int sexp_id)
 		case OP_KAMIKAZE:
 		case OP_NOT_KAMIKAZE:
 		case OP_PLAYER_USE_AI:
-		case OP_PLAYER_NOT_USE_AI:
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
 		case OP_SABOTAGE_SUBSYSTEM:
