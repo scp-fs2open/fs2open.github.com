@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-07-18 03:27:38 $
+ * $Revision: 2.4 $
+ * $Date: 2002-07-18 05:38:28 $
  * $Author: unknownplayer $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/07/18 03:27:38  unknownplayer
+ *
+ * Fixed AI problems with using the maxim on fighters.
+ *
  * Revision 2.2  2002/07/17 23:58:46  unknownplayer
  *
  * Minor commenting added to two functions.
@@ -5439,9 +5443,10 @@ void show_firing_diag()
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
 /**
- * Rewrote a large part of this. It has certain inefficiencies but these are
- * necessary until I think of a better way, since we may in future have ships
- * with more then two banks of primaries.
+ * This is by no means perfect AI code - it won't choose the best weapon in some circumstances,
+ * however it will cover most possible situations until we have ships carrying much more then two
+ * weapons with quirky balancing. If it ever becomes a noticeable problem (if we ever get to that
+ * point) then I will change it.
  *
  * AI will now not use the Maxim on any shielded target (i.e. fighters) and instead
  * try and choose a different weapon.
@@ -5495,58 +5500,55 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		// AL 26-3-98: If we couldn't find a puncture weapon, pick first available weapon if one isn't active
 		// ##UnknownPlayer## - removed.
 	}
-	
-	// Code to check for shields on enemy, and to try and arm the maxim if enemy is shieldless - unknownplayer
-	if (other_objp->flags & OF_NO_SHIELDS)	
+
+	// NOTE: This code is begging for a better way to calculate the best weapon to use
+	// Possibly check to see if shield quadrant has power in it?
+	if (other_objp->flags & OF_NO_SHIELDS)		// Is the target shielded? - ##UnknownPlayer##
 	{
-		// Try and find a maxim cannon - this searches for the shudder property
-		for (int i = 0; i < swp->num_primary_banks; i++)
+		int i;
+		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
+		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
+		// Find the weapon with the highest hull * damage factor
+		for (i = 0; i < swp->num_primary_banks; i++)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_SHUDDER)	// Is it a maxim gun?
+				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
 				{
-					// Yes.
-					swp->current_primary_bank = i;
-					return i;						// Exit function
+					// This weapon is the new candidate
+					i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
+					i_hullfactor_prev_bank = i;
 				}
 			}
 		}
-	}
-
-	// No gun matches, try and find something that isn't either
-	for (int i = 0; i < swp->num_primary_banks; i++)
-	{
-		if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon
+		if (i_hullfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_SHUDDER & WIF_PUNCTURE))
+			i_hullfactor_prev_bank = 0;		// Just switch to the first one
+		}
+		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
+		return i_hullfactor_prev_bank;							// Return
+	}
+	else
+	{
+		// Just find a weapon which doesn't do puncture damage
+		for (int i = 0; i < swp->num_primary_banks; i++)
+		{
+			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon
 			{
-				swp->current_primary_bank = i;		// Found a match, arm it
-				return i;							// Exit function
+				if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE))
+				{
+					swp->current_primary_bank = i;		// Found a match, arm it
+					return i;							// Exit function
+				}
 			}
 		}
-	}
-
-	// No gun matches, try and find something that at least isn't the maxim
-	for (i = 0; i < swp->num_primary_banks; i++)
-	{
-		if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon
+		// Just grab the first possible weapon
+		if ( swp->current_primary_bank < 0 ) 
 		{
-			if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_SHUDDER))
+			if ( swp->num_primary_banks > 0 ) 
 			{
-				swp->current_primary_bank = i;		// Found a match, arm it
-				return i;							// Exit function
+				swp->current_primary_bank = 0;
 			}
-		}
-	}
-	
-	// This was moved here because we have more options now
-	// Make sure we eventually arm some weapon if possible
-	if ( swp->current_primary_bank < 0 ) 
-	{
-		if ( swp->num_primary_banks > 0 ) 
-		{
-			swp->current_primary_bank = 0;
 		}
 	}
 
@@ -5574,7 +5576,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		}
 	}
 		//	Wasn't able to find a non-puncture weapon.  Stick with what we have.
-	*/
+*/
 	
 	Assert( swp->current_primary_bank != -1 );		// get Alan or Allender
 
