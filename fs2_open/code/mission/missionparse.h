@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.45 $
- * $Author: Goober5000 $
- * $Date: 2004-08-23 04:32:40 $
+ * $Revision: 2.46 $
+ * $Author: phreak $
+ * $Date: 2004-09-01 00:58:46 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2004/08/23 04:32:40  Goober5000
+ * warp effect is back to FS2 default
+ * --Goober5000
+ *
  * Revision 2.44  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -428,6 +432,7 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define MISSION_FLAG_BOBBOAU_WARP_EFFECT	(1<<9)	// use Bobboau's warp effect - Goober5000
 #define MISSION_FLAG_NO_BRIEFING			(1<<10)	// no briefing, jump right into mission - Goober5000
 #define MISSION_FLAG_NO_DEBRIEFING			(1<<11)	// no debriefing, just like red-alert - Goober5000
+#define MISSION_FLAG_USE_NEW_AI				(1<<12)	// use SCP AI fixes.  Allows old missions to be balanced. -phreak
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
