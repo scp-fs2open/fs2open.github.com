@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-03-06 23:28:23 $
- * $Author: bobboau $
+ * $Revision: 2.13 $
+ * $Date: 2004-04-26 01:40:53 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/03/06 23:28:23  bobboau
+ * fixed motion debris
+ * animated laser textures
+ * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
+ *
  * Revision 2.11  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -903,10 +908,27 @@ void messages_init()
 
 }
 
+// free a loaded avi
+void message_mission_free_avi(int m_index)
+{
+	if ( (m_index < 0) || (m_index > Num_message_avis) )
+		return;
+
+#ifndef NDEBUG
+	if (Message_avis[m_index].anim_data != NULL) {
+		while (Message_avis[m_index].anim_data->ref_count) {
+			anim_free(Message_avis[m_index].anim_data);
+		}
+
+		Message_avis[m_index].anim_data = NULL;
+	}
+#endif
+}
+
 // called to do cleanup when leaving a mission
 void message_mission_shutdown()
 {
-	int i, j;
+	int i;
 
 	mprintf(("Unloading in mission messages\n"));
 
@@ -920,16 +942,11 @@ void message_mission_shutdown()
 	}
 
 	fsspeech_stop();
-	//Taylor from icculus found and fixed this -Bobboau
-    // free up remaining anim data 
-    for (i=0; i<Num_message_avis; i++) { 
-            if (Message_avis[i].anim_data != NULL) { 
-                    for (j=0; j<Message_avis[i].anim_data->ref_count; j++) { 
-                            anim_free(Message_avis[i].anim_data); 
-                    } 
-            } 
-            Message_avis[i].anim_data = NULL; 
-    } 
+
+	// free up remaining anim data - taylor
+	for (i=0; i<Num_message_avis; i++) {
+		message_mission_free_avi(i);
+	}
 }
 
 // functions to deal with queuing messages to the message system.
@@ -1254,6 +1271,11 @@ void message_play_anim( message_q *q )
 	char				ani_name[MAX_FILENAME_LEN], *p;
 	MissionMessage	*m;
 
+	// don't even bother with this stuff if the gauge is disabled - taylor
+	if ( !hud_gauge_active(HUD_TALKING_HEAD) ) {
+		return;
+	}
+
 	m = &Messages[q->message_num];
 
 	// check to see if the avi_index is valid -- try and load/play the avi if so.
@@ -1326,17 +1348,15 @@ void message_play_anim( message_q *q )
 
 	// check to see if the avi has been loaded.  If not, then load the AVI.  On an error loading
 	// the avi, set the top level index to -1 to avoid multiple tries at loading the flick.
-	if ( hud_gauge_active(HUD_TALKING_HEAD) ) {
- 
- 	//Taylor from icculus found and fixed this -Bobboau
-           // if there is something already here that's not this same file then go ahead a let go of it 
-           if ( (anim_info->anim_data != NULL) && stricmp(ani_name, anim_info->anim_data->name) ) 
-                   anim_free(anim_info->anim_data); 
 
-		anim_info->anim_data = anim_load( ani_name, 0 );
-	} else {
-		return;
+#ifndef NDEBUG
+	// if there is something already here that's not this same file then go ahead a let go of it - taylor
+	if ( (anim_info->anim_data != NULL) && !strstr(anim_info->anim_data->name, ani_name) ) {
+		message_mission_free_avi( m->avi_info.index );
 	}
+#endif
+
+	anim_info->anim_data = anim_load( ani_name, 0 );
 
 	if ( anim_info->anim_data == NULL ) {
 		nprintf (("messaging", "Cannot load message avi %s.  Will not play.\n", ani_name));
@@ -1356,20 +1376,18 @@ void message_play_anim( message_q *q )
 			return;
 		}
 
-		if ( hud_gauge_active(HUD_TALKING_HEAD) ) {
-			int anim_start_frame;
-			anim_play_struct aps;
+		int anim_start_frame;
+		anim_play_struct aps;
 
-			// figure out anim start frame
-			anim_start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
-			anim_play_init(&aps, anim_info->anim_data, Head_coords[gr_screen.res][0], Head_coords[gr_screen.res][1]);
-			aps.start_at = anim_start_frame;
-			
-			// aps.color = &HUD_color_defaults[HUD_color_alpha];
-			aps.color = &HUD_config.clr[HUD_TALKING_HEAD];
+		// figure out anim start frame
+		anim_start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
+		anim_play_init(&aps, anim_info->anim_data, Head_coords[gr_screen.res][0], Head_coords[gr_screen.res][1]);
+		aps.start_at = anim_start_frame;
 
-			Playing_messages[Num_messages_playing].anim = anim_play(&aps);
-		}
+		// aps.color = &HUD_color_defaults[HUD_color_alpha];
+		aps.color = &HUD_config.clr[HUD_TALKING_HEAD];
+
+		Playing_messages[Num_messages_playing].anim = anim_play(&aps);
 	}
 }
 
