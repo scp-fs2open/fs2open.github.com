@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.91 $
- * $Date: 2004-05-03 21:22:20 $
- * $Author: Kazan $
+ * $Revision: 2.92 $
+ * $Date: 2004-05-27 00:49:25 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2004/05/03 21:22:20  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.90  2004/04/27 20:41:58  taylor
  * add NULL check to game_hacked_data() to prevent crash
  *
@@ -2917,7 +2922,7 @@ void game_init()
 	Init_Species_Definitions();					// Load up the Species defs - this needs to be done FIRST -- Kazan
 
 	// hud shield icon stuff
-	hud_shield_game_init();
+	//hud_shield_game_init(); No longer needed; see ships.tbl -C
 
 	control_config_common_init();				// sets up localization stuff in the control config
 
