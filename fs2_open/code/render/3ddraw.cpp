@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-08-30 14:49:01 $
- * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-23 18:03:24 $
+ * $Author: randomtiger $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/08/30 14:49:01  phreak
+ * fixed some random specular lighting bugs
+ *
  * Revision 2.4  2003/08/21 15:03:43  phreak
  * zeroed out the specular fields since they caused some flickering
  *
@@ -195,6 +198,7 @@
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/alphacolors.h"
+#include "cmdline/cmdline.h"
 
 #include "io/key.h"
 
@@ -440,6 +444,11 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
 	if (cc.cc_and)
 		return 1;	//all points off screen
 
+	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+		gr_tmapper( nv, bufptr, tmap_flags );
+		return 0;
+	}
+
 	if (cc.cc_or)	{
 		Assert( G3_count == 1 );
 
@@ -563,11 +572,57 @@ int g3_draw_sphere_ez(vector *pnt,float rad)
 }
 
 
+int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth){
+
+	vector PNT;
+	vm_vert2vec(pnt, &PNT);
+
+	vector s;
+	vm_vec_sub(&s, &View_position, &PNT);
+	vm_vec_normalize(&s);
+	vm_vec_scale(&s,depth);
+
+	vector p[4];
+	vertex P[4];
+	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
+	vector u = View_matrix.vec.uvec, r = View_matrix.vec.rvec;
+	vm_vec_scale(&u,rad);
+	vm_vec_scale(&r,rad);
+	vector nu = u, nr = r;
+	vm_vec_negate(&nu);
+	vm_vec_negate(&nr);
+	vm_vec_add2(&PNT, &s);
+	vm_vec_add(&p[0], &PNT, &u);
+	p[1]=p[0];
+	vm_vec_add(&p[2], &PNT, &nu);
+	p[3]=p[2];
+	vm_vec_add(&p[0], &p[0], &r);
+	vm_vec_add(&p[1], &p[1], &nr);
+	vm_vec_add(&p[2], &p[2], &nr);
+	vm_vec_add(&p[3], &p[3], &r);
+	g3_transfer_vertex(&P[0], &p[0]);
+	g3_transfer_vertex(&P[1], &p[1]);
+	g3_transfer_vertex(&P[2], &p[2]);
+	g3_transfer_vertex(&P[3], &p[3]);
+	P[0].u = 0.0f;	P[0].v = 0.0f;
+	P[1].u = 0.0f;	P[1].v = 1.0f;
+	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[3].u = 1.0f;	P[3].v = 0.0f;
+
+	g3_draw_poly(4,ptlist,tmap_flags);
+
+	return 0;
+}
+
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if drew
 // Orient
-int g3_draw_bitmap(vertex *pnt,int orient, float rad,uint tmap_flags)
+int g3_draw_bitmap(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
 {
+	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+		return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
+	}
+
 	vertex va, vb;
 	float t,w,h;
 	float width, height;
@@ -695,10 +750,65 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 	return 0;
 }
 
+int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags, float depth){
+	angle+=Physics_viewer_bank;
+	if ( angle < 0.0f )
+		angle += PI2;
+	else if ( angle > PI2 )
+		angle -= PI2;
+
+	vector PNT;
+	vm_vert2vec(pnt, &PNT);
+
+	vector s;
+	vm_vec_sub(&s, &View_position, &PNT);
+	vm_vec_normalize(&s);
+	vector S = s;
+	vm_vec_scale(&s,depth);
+
+	vector p[4];
+	vertex P[4];
+	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
+	vector u = View_matrix.vec.uvec, r = View_matrix.vec.rvec;
+	vm_vec_scale(&u,rad);
+	vm_vec_scale(&r,rad);
+	vector nu = u, nr = r;
+	vm_vec_negate(&nu);
+	vm_vec_negate(&nr);
+	vm_vec_add2(&PNT, &s);
+	vm_vec_add(&p[0], &PNT, &u);
+	p[1]=p[0];
+	vm_vec_add(&p[2], &PNT, &nu);
+	p[3]=p[2];
+	vm_vec_add(&p[0], &p[0], &r);
+	vm_vec_add(&p[1], &p[1], &nr);
+	vm_vec_add(&p[2], &p[2], &nr);
+	vm_vec_add(&p[3], &p[3], &r);
+	vm_rot_point_around_line(&p[0], &p[0], angle, &PNT, &S);
+	vm_rot_point_around_line(&p[1], &p[1], angle, &PNT, &S);
+	vm_rot_point_around_line(&p[2], &p[2], angle, &PNT, &S);
+	vm_rot_point_around_line(&p[3], &p[3], angle, &PNT, &S);
+	g3_transfer_vertex(&P[0], &p[0]);
+	g3_transfer_vertex(&P[1], &p[1]);
+	g3_transfer_vertex(&P[2], &p[2]);
+	g3_transfer_vertex(&P[3], &p[3]);
+	P[0].u = 0.0f;	P[0].v = 0.0f;
+	P[1].u = 0.0f;	P[1].v = 1.0f;
+	P[2].u = 1.0f;	P[2].v = 1.0f;
+	P[3].u = 1.0f;	P[3].v = 0.0f;
+
+	g3_draw_poly(4,ptlist,tmap_flags);
+
+	return 0;
+}
+
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if drew
-int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags)
+int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, float depth)
 {
+	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+		return g3_draw_rotated_bitmap_3d(pnt, angle, rad, tmap_flags, depth);
+	}
 	vertex v[4];
 	vertex *vertlist[4] = { &v[3], &v[2], &v[1], &v[0] };
 	float sa, ca;

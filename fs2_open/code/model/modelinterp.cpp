@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.39 $
- * $Date: 2003-10-23 13:53:36 $
- * $Author: fryday $
+ * $Revision: 2.40 $
+ * $Date: 2003-10-23 18:03:24 $
+ * $Author: randomtiger $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2003/10/23 13:53:36  fryday
+ * Simplified model rendering, and it fixed up a serious bug on my system in which models with submodels didn't get their hull rendered
+ *
  * Revision 2.38  2003/10/18 02:43:59  phreak
  * oops!  forgot to bracket something off with an if :rolleyes:
  *
@@ -2250,10 +2253,17 @@ void model_render_insignias(polymodel *pm, int detail_level)
 			vm_vec_add(&t1, &pm->ins[idx].vecs[i1], &pm->ins[idx].offset);
 			vm_vec_add(&t2, &pm->ins[idx].vecs[i2], &pm->ins[idx].offset);
 			vm_vec_add(&t3, &pm->ins[idx].vecs[i3], &pm->ins[idx].offset);
-			g3_rotate_vertex(&vecs[0], &t1);
-			g3_rotate_vertex(&vecs[1], &t2);
-			g3_rotate_vertex(&vecs[2], &t3);
-			
+
+			if(Cmdline_nohtl){
+				g3_rotate_vertex(&vecs[0], &t1);
+				g3_rotate_vertex(&vecs[1], &t2);
+				g3_rotate_vertex(&vecs[2], &t3);
+			}else{
+				g3_transfer_vertex(&vecs[0], &t1);
+				g3_transfer_vertex(&vecs[1], &t2);
+				g3_transfer_vertex(&vecs[2], &t3);
+			}
+
 			// setup texture coords
 			vecs[0].u = pm->ins[idx].u[s_idx][0];  vecs[0].v = pm->ins[idx].v[s_idx][0];
 			vecs[1].u = pm->ins[idx].u[s_idx][1];  vecs[1].v = pm->ins[idx].v[s_idx][1];
@@ -2271,7 +2281,7 @@ void model_render_insignias(polymodel *pm, int detail_level)
 			vecs[k].r = (ubyte)255;*/
 //			gr_printf((0), (0), "r %d, g %d, b %d", (int)vecs[k].r, (int)vecs[k].g, (int)vecs[k].b);
 			// draw the polygon
-			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT );
+			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 		//	g3_draw_poly(3, vlist, 0);
 		}
 	}
@@ -3277,7 +3287,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	g3_start_instance_matrix(pos,orient);
-	if (!Cmdline_nohtl)	gr_start_instance_matrix(pos,orient);
 
 	if ( Interp_flags & MR_SHOW_RADIUS )	{
 		if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
@@ -3382,6 +3391,15 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	if(!Cmdline_nohtl) {
 		light_set_all_relevent();
 	}
+
+	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
+	{
+		float fog_near, fog_far;
+		neb2_get_fog_values(&fog_near, &fog_far, obj);
+		unsigned char r, g, b;
+		neb2_get_fog_colour(&r, &g, &b);
+		gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
+	}
 	// Draw the subobjects	
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 
@@ -3394,6 +3412,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
 			}
+			gr_zbuffer_set(zbuf_mode);
 			if(!Cmdline_nohtl) {
 
 /*				gr_zbuffer_set(zbuf_mode);
@@ -3411,7 +3430,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// rotate lights for the hull
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
-	}	
+	}else {
+		gr_reset_lighting();
+	}
 
 	if ( pm->submodel[pm->detail[detail_level]].num_children > 0 ){
 //		zbuf_mode |= GR_ZBUFF_WRITE;		// write only
@@ -3442,7 +3463,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 	else {
 
-		model_interp_sub( (ubyte *)pm->submodel[pm->detail[detail_level]].bsp_data, pm, &pm->submodel[pm->detail[detail_level]], 0 );
 	}
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
@@ -3744,28 +3764,36 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 					float w = bank->radius[j]*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
 
+					vertex pt;
 					g3_rotate_vertex( &p, &bank->pnt[j] );
+					if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &bank->pnt[j]);
+					else pt = p;
 					//these two lines are used by the tertiary glows, thus we will need to project this all of the time
 				if ( d > 0.0f){
 					gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 					{
 						//primary thruster glows, sort of a lens flare/engine wash thing						Gr_scaler_zbuffering = 1;
 
-						g3_draw_bitmap(&p,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
+//						g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
+						if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
+						else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, 0.375f*w );
+
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
 						Gr_scaler_zbuffering = 0;
 					}
 				}//d>0
 
-				gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
-				{
+				if(Interp_tertiary_thrust_glow_bitmap > -1){
 					//tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
 					//thus is imostly for haveing a glow that is visable from the front
+					gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0 );
+					
 					Gr_scaler_zbuffering = 1;
 					p.sw -= w;
 					//g3_draw_bitmap(&p,0,w, TMAP_FLAG_TEXTURED );
-					g3_draw_rotated_bitmap(&p,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED );
-					Gr_scaler_zbuffering = 0;
+					if(Cmdline_nohtl)g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED); 
+					else g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, -0.375f*w);
+ 					Gr_scaler_zbuffering = 0;
 				}
 				
 
@@ -3778,7 +3806,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 				vector pnt = bank->pnt[j];
 
 				scale = magnitude*(MAX_SCALE-(MIN_SCALE/2))+(MIN_SCALE/2);
-
+																				    
 				vertex h1[4];				// halves of a beam section	
 				vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
 				vector fvec, top1, bottom1, top2, bottom2, norm2;
@@ -3815,10 +3843,19 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					int idx = 0;
 
 
-					g3_rotate_vertex(verts[0], &bottom1); 
-					g3_rotate_vertex(verts[1], &bottom2);	
-					g3_rotate_vertex(verts[2], &top2); 
-					g3_rotate_vertex(verts[3], &top1); 
+
+					if(Cmdline_nohtl) {
+						g3_rotate_vertex(verts[0], &bottom1); 
+						g3_rotate_vertex(verts[1], &bottom2);	
+						g3_rotate_vertex(verts[2], &top2); 
+						g3_rotate_vertex(verts[3], &top1); 	  
+					}else{
+						g3_transfer_vertex(verts[0], &bottom1); 
+						g3_transfer_vertex(verts[1], &bottom2);
+						g3_transfer_vertex(verts[2], &top2);    
+						g3_transfer_vertex(verts[3], &top1); 	  
+					}
+
 					for(idx=0; idx<4; idx++) g3_project_vertex(verts[idx]);
 					verts[0]->u = 0.0f; verts[0]->v = 0.0f;	
 					verts[1]->u = 1.0f; verts[1]->v = 0.0f; 
@@ -3842,7 +3879,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 					gr_set_cull(0);
 					gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d);		
-					g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
+					g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
 					gr_set_cull(1);
 				}
 
@@ -3933,8 +3970,11 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 			gr_zbuffer_set(zbuf_mode);
 
-			model_interp_subcall( pm, i, detail_level );
-	//		model_render_buffers(&pm->submodel[i], pm);
+			if(!Cmdline_nohtl) {
+				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
+			} else {
+				model_interp_subcall( pm, i, detail_level );
+			}
 		}
 		i = pm->submodel[i].next_sibling;
 	}	
@@ -3953,7 +3993,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		g3_done_instance();
 	}
 
-	if (!Cmdline_nohtl) gr_end_instance_matrix();
 	g3_done_instance();
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
@@ -4022,7 +4061,11 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 		light_rotate_all();
 	}
 
-	model_interp_sub( pm->submodel[submodel_num].bsp_data, pm, &pm->submodel[submodel_num], 0 );
+	if(!Cmdline_nohtl) {
+		model_render_buffers(&pm->submodel[submodel_num], pm);
+	} else {
+		model_interp_sub( pm->submodel[submodel_num].bsp_data, pm, &pm->submodel[submodel_num], 0 );
+	}
 	if ( pm->submodel[submodel_num].num_arcs )	{
 		interp_render_lightning( pm, &pm->submodel[submodel_num]);
 	}
@@ -4656,10 +4699,12 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 		return;
 	}
 
+	unsigned int fl = Interp_flags;
 	if (pm->submodel[mn].is_thruster )	{
 		if ( !(Interp_flags & MR_SHOW_THRUSTERS) ){
 			return;
 		}
+		Interp_flags |= MR_NO_LIGHTING;
 		Interp_thrust_scale_subobj=1;
 	} else {
 		Interp_thrust_scale_subobj=0;
@@ -4667,11 +4712,7 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 
 	vm_vec_add2(&Interp_offset,&pm->submodel[mn].offset);
 
-	matrix m;
-	vm_angles_2_matrix(&m, &pm->submodel[mn].angs);
-	
 	g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
-	gr_start_instance_matrix(&pm->submodel[mn].offset, &m);
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
 	}
@@ -4703,7 +4744,7 @@ void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int
 
 	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
 
-	gr_end_instance_matrix();
+	Interp_flags = fl;
 	g3_done_instance();
 }
 
@@ -4711,49 +4752,55 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING) );
 	gr_set_cull(1);
 
-	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
-	{
-		unsigned char r, g, b;
-		neb2_get_fog_colour(&r, &g, &b);
-		gr_fog_set(GR_FOGMODE_FOG, r, g, b, 50.0f, 500.0f);
-	}
+	float msz = Model_Interp_scale_z;
+	if(Interp_thrust_scale_subobj)Model_Interp_scale_z = Interp_thrust_scale;
 
 	for(int i = 0; i<model->n_buffers; i++){
 		int texture = -1;
 
-					if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)){
-						texture = Interp_forced_bitmap;
-					}else if(Warp_Map > -1){
-						texture = Warp_Map;
-					}else if(Interp_replacement_bitmap >= 0){
-						texture = Interp_replacement_bitmap;
-					} else {
-						if (pm->is_ani[model->buffer[i].texture]){
-							texture = pm->textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->fps[model->buffer[i].texture])) % pm->num_frames[model->buffer[i].texture]);//here is were it picks the texture to render for ani-Bobboau
-						}else{
-							texture = pm->textures[model->buffer[i].texture];//here is were it picks the texture to render for normal-Bobboau
-						}
+		if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)){
+			texture = Interp_forced_bitmap;
+		}else if(Warp_Map > -1){
+			texture = Warp_Map;
+		}else if(Interp_replacement_bitmap >= 0){
+			texture = Interp_replacement_bitmap;
+		}else if(Interp_thrust_scale_subobj){
+			texture = Interp_thrust_bitmap;
+		} else {
+			if (pm->is_ani[model->buffer[i].texture]){
+				texture = pm->textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->fps[model->buffer[i].texture])) % pm->num_frames[model->buffer[i].texture]);//here is were it picks the texture to render for ani-Bobboau
+			}else{
+				texture = pm->textures[model->buffer[i].texture];//here is were it picks the texture to render for normal-Bobboau
+			}
 
-						if((Detail.lighting > 2)  && (model_current_LOD < 1))SPECMAP = pm->specular_textures[model->buffer[i].texture];
+			if((Detail.lighting > 2)  && (model_current_LOD < 1))SPECMAP = pm->specular_textures[model->buffer[i].texture];
 
-						if(glow_maps_active)
-						{
-							if (pm->glow_is_ani[model->buffer[i].texture])
-							{
-								GLOWMAP = pm->glow_textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->glow_fps[model->buffer[i].texture])) % pm->glow_numframes[model->buffer[i].texture]);
-							}
-							else
-							{
-								GLOWMAP = pm->glow_textures[model->buffer[i].texture];
-							}
-						}
-					}
+			if(glow_maps_active)
+			{
+				if (pm->glow_is_ani[model->buffer[i].texture])
+				{
+					GLOWMAP = pm->glow_textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->glow_fps[model->buffer[i].texture])) % pm->glow_numframes[model->buffer[i].texture]);
+				}
+				else
+				{
+					GLOWMAP = pm->glow_textures[model->buffer[i].texture];
+				}
+			}
+		}
 
-					if(texture == -1)continue;
-		if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
+		if(texture == -1)continue;
+		if(Interp_thrust_scale_subobj) {
+
+			if((Interp_thrust_bitmap>-1) && (Interp_thrust_scale > 0.0f)) {
+				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f);
+			}
+			gr_start_instance_matrix();
+		} else if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
 			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
+
 		}else if(Warp_Map > -1){	//trying to get transperent textures-Bobboau
+			gr_set_cull(0);
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 		}else{
 //	gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
@@ -4764,6 +4811,12 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	}
 	GLOWMAP = -1;
 	SPECMAP = -1;
-	gr_set_lighting( false );
+
+	if(Interp_thrust_scale_subobj){
+			Model_Interp_scale_z = msz;
+			gr_start_instance_matrix();
+	}
+	gr_end_instance_matrix();
+//	gr_set_lighting( false );
 
 }

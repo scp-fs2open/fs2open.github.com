@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-08-21 15:04:17 $
- * $Author: phreak $
+ * $Revision: 2.5 $
+ * $Date: 2003-10-23 18:03:25 $
+ * $Author: randomtiger $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/08/21 15:04:17  phreak
+ * zeroed out the specular fields since they caused some flickering
+ *
  * Revision 2.3  2003/07/15 16:07:12  phreak
  * trails now properly alphablend in ogl as it does in d3d
  *
@@ -233,7 +236,8 @@ int trail_is_on_ship(int trail_index, ship *shipp)
 extern int OGL_inited;
 
 // Render the trail behind a missile.
-// Basically a queue of points that face the viewer.
+// Basically a queue of points that face the viewer
+extern int Cmdline_nohtl;
 void trail_render( trail * trailp )
 {		
 	trail_info *ti;	
@@ -306,9 +310,14 @@ void trail_render( trail * trailp )
 		}
 			
 		trail_calc_facing_pts( &topv, &botv, fvec, &pos, w );
-
-		g3_rotate_vertex( &top, &topv );
-		g3_rotate_vertex( &bot, &botv );
+	
+		if(!Cmdline_nohtl){
+			g3_transfer_vertex( &top, &topv );
+			g3_transfer_vertex( &bot, &botv );
+		}else{
+			g3_rotate_vertex( &top, &topv );
+			g3_rotate_vertex( &bot, &botv );
+		}
 		top.a = bot.a = l;	
 
 		if ( i > 0 )	{
@@ -318,7 +327,11 @@ void trail_render( trail * trailp )
 				vector centerv;
 				vm_vec_avg( &centerv, &topv, &botv );
 				vertex center;
-				g3_rotate_vertex( &center, &centerv );
+				if(!Cmdline_nohtl){
+					g3_transfer_vertex( &center, &centerv );
+				}else{
+					g3_rotate_vertex( &center, &centerv );
+				}
 				center.a = l;	
 
 				vertex *vlist[3];
@@ -332,9 +345,12 @@ void trail_render( trail * trailp )
 
 				gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, l/255.0f );
 				if ( D3D_enabled || OGL_inited )	{
-					g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD );
+
+					if(Cmdline_nohtl)g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD );
+					else g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 				} else {
-					g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED );
+					if(Cmdline_nohtl)g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED );
+					else g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 				}
 
 
@@ -352,9 +368,11 @@ void trail_render( trail * trailp )
 
 				gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, l/255.0f );
 				if ( D3D_enabled || OGL_inited )	{
-					g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD );
+					if(Cmdline_nohtl)g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD );
+					else g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 				} else {
-					g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED );
+					if(Cmdline_nohtl)g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED );
+					else g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 				}
 			}
 		}

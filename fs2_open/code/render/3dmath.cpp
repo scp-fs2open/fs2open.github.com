@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-06-08 17:39:35 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2003-10-23 18:03:24 $
+ * $Author: randomtiger $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/06/08 17:39:35  phreak
+ * the real position is now copied in g3_rotate_vertex
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -163,6 +166,19 @@ ubyte g3_code_vertex(vertex *p)
 	return p->codes = cc;
 
 }
+
+ubyte g3_transfer_vertex(vertex *dest,vector *src)
+{
+	dest->x = src->xyz.x;
+	dest->y = src->xyz.y;
+	dest->z = src->xyz.z;
+
+	dest->codes = 0;
+	dest->flags |= PF_PROJECTED;
+
+	return 0;
+}
+
 
 MONITOR( NumRotations );	
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.26 $
- * $Date: 2003-10-17 17:18:42 $
+ * $Revision: 2.27 $
+ * $Date: 2003-10-23 18:03:24 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/10/17 17:18:42  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.25  2003/10/16 17:36:29  randomtiger
  * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
  * Put in Bobs specular fog fix.
@@ -608,7 +611,7 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 	current_state = current_state | (zt<<10);
 
 	if ( current_state == D3d_last_state ) {
-		return;
+	//	return;
 	}
 
 	D3d_last_state = current_state;
@@ -694,20 +697,15 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 		Int3();
 	}
 
-	// RT not uisng wbuffer for now, it doesnt work
-#if 1
-	const bool use_wbuffer = false;
+	// RT - we should get the wbuffer back in at some point, I will attend to this at some point
+	// Changing this value to -1 is not enough
+	static int use_wbuffer = false;
 
-#else
 	// Determine if device can use wbuffer 
-	static int use_wbuffer = -1;
-	if(use_wbuffer == -1)
+	if(!Cmdline_nohtl && use_wbuffer == -1)
 	{
-		use_wbuffer = (d3d_caps.RasterCaps & D3DPRASTERCAPS_WBUFFER) ? 1 : 0;
-
-		DBUGFILE_OUTPUT_1("Using %c buffer", use_wbuffer ? 'w' : 'z');
+		use_wbuffer = (GlobalD3DVars::d3d_caps.RasterCaps & D3DPRASTERCAPS_WBUFFER) ? 1 : 0;
 	}
-#endif
 
 	switch( zt )	{
 
@@ -1004,6 +1002,209 @@ static float Interp_fog_level;
 int w_factor = 256;
 
 /**
+ * This will be used to render the 3D parts the of FS2 engine
+ *
+ * @param int nverts
+ * @param  vertex **verts
+ * @param  uint flags
+ * @param  int is_scaler
+ *
+ * @return void
+ */
+//this is all RT's stuff
+void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, int is_scaler )	
+{
+	// Some checks to make sure this function isnt used when it shouldnt be
+	Assert(flags & TMAP_HTL_3D_UNLIT);
+
+//	TIMERBAR_PUSH(TIMERBAR_3D_UNLIT);
+
+	float u_scale = 1.0f, v_scale = 1.0f;
+	int bw = 1, bh = 1;		
+
+	gr_texture_source texture_source = (gr_texture_source)-1;
+	gr_alpha_blend alpha_blend = (gr_alpha_blend)-1;
+	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)-1;
+
+	if ( gr_zbuffering )	{
+		if ( is_scaler || (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER)	)	{
+			zbuffer_type = ZBUFFER_TYPE_READ;
+		} else {
+			zbuffer_type = ZBUFFER_TYPE_FULL;
+		}
+	} else {
+		zbuffer_type = ZBUFFER_TYPE_NONE;
+	}
+
+	int alpha;
+
+	int tmap_type = TCACHE_TYPE_NORMAL;
+
+	int r, g, b;
+
+	if ( flags & TMAP_FLAG_TEXTURED )	{
+		r = 255;
+		g = 255;
+		b = 255;
+	} else {
+		r = gr_screen.current_color.red;
+		g = gr_screen.current_color.green;
+		b = gr_screen.current_color.blue;
+	}
+
+	// want to be in here!
+	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )	{
+
+		if (GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE )	{
+			tmap_type   = TCACHE_TYPE_NORMAL;
+			alpha_blend = ALPHA_BLEND_ALPHA_ADDITIVE;
+
+			// Blend with screen pixel using src*alpha+dst
+			float factor = gr_screen.current_alpha;
+
+			alpha = 255;
+
+			if ( factor <= 1.0f )	{
+				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
+				r = (r*tmp_alpha)/255;
+				g = (g*tmp_alpha)/255;
+				b = (b*tmp_alpha)/255;
+			}
+		} else {
+
+			tmap_type = TCACHE_TYPE_XPARENT;
+
+			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
+
+			// Blend with screen pixel using src*alpha+dst
+			float factor = gr_screen.current_alpha;
+
+			if ( factor > 1.0f )	{
+				alpha = 255;
+			} else {
+				alpha = fl2i(gr_screen.current_alpha*255.0f);
+			}
+		}
+	} else {
+		alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
+		alpha = 255;
+	}
+
+	Assert(!(flags & TMAP_FLAG_BITMAP_SECTION));
+
+	texture_source = TEXTURE_SOURCE_NONE;
+ 
+	if ( flags & TMAP_FLAG_TEXTURED )	{
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale))	{
+			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
+
+		// use nonfiltered textures for bitmap sections
+		if(flags & TMAP_FLAG_BITMAP_SECTION) {
+			texture_source = TEXTURE_SOURCE_NO_FILTERING;
+		} else {
+			texture_source = TEXTURE_SOURCE_DECAL;
+		}
+	}
+	
+	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
+	
+	Assert(nverts < 32);
+
+	D3DLVERTEX d3d_verts[32];
+	D3DLVERTEX *src_v = d3d_verts;
+
+	float uoffset = 0.0f;
+	float voffset = 0.0f;
+
+	float minu=0.0f, minv=0.0f, maxu=1.0f, maxv=1.0f;
+
+	if ( flags & TMAP_FLAG_TEXTURED )	{								
+		if ( GlobalD3DVars::D3D_rendition_uvs )	{				
+			bm_get_info(gr_screen.current_bitmap, &bw, &bh);			
+				
+			uoffset = 2.0f/i2fl(bw);
+			voffset = 2.0f/i2fl(bh);
+
+			minu = uoffset;
+			minv = voffset;
+
+			maxu = 1.0f - uoffset;
+			maxv = 1.0f - voffset;
+		}				
+	}	
+
+	for (int i=0; i<nverts; i++ )	{
+		vertex * va = verts[i];		
+			  
+		int a      = ( flags & TMAP_FLAG_ALPHA )   ? verts[i]->a : alpha;
+	
+		if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )	{
+			// Make 0.75 be 256.0f
+			r = verts[i]->r;
+			g = verts[i]->g;
+			b = verts[i]->b;
+		} else {
+			// use constant RGB values...
+		}
+		
+		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
+
+		src_v->sx = va->x; 
+		src_v->sy = va->y; 
+		src_v->sz = va->z;
+
+		if ( flags & TMAP_FLAG_TEXTURED )	{
+			// argh. rendition
+			if ( GlobalD3DVars::D3D_rendition_uvs ){				
+				// tiled texture (ships, etc), bitmap sections
+				if(flags & TMAP_FLAG_TILED){					
+					src_v->tu = va->u*u_scale;
+					src_v->tv = va->v*v_scale;
+				}
+				// sectioned
+				else if(flags & TMAP_FLAG_BITMAP_SECTION){
+					int sw, sh;
+					bm_get_info(gr_screen.current_bitmap, &sw, &sh, NULL, NULL, NULL);
+
+
+				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
+					src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
+					src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
+				}										   
+
+				// all else.
+				else {				
+					src_v->tu = flCAP(va->u, minu, maxu);
+					src_v->tv = flCAP(va->v, minv, maxv);
+				}				
+			}
+			// yay. non-rendition
+			else {
+				src_v->tu = va->u*u_scale;
+				src_v->tv = va->v*v_scale;
+			}							
+		} else {
+			src_v->tu = 0.0f;
+			src_v->tv = 0.0f;
+		}
+		src_v++;
+	}
+
+	// None if these objects are set to be fogged, but perhaps they should be
+	if(flags & TMAP_FLAG_PIXEL_FOG) {	
+	  	gr_fog_set(GR_FOGMODE_FOG, 0, 255, 0, 1.0f, 750.0f);
+	} else {
+		gr_fog_set(GR_FOGMODE_NONE,0,0,0);
+	}
+
+ 	d3d_DrawPrimitive(D3DVT_LVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+//	TIMERBAR_POP();
+
+}
+
+/**
  * This is used to render the 2D parts the of FS2 engine
  *
  * @param int nverts
@@ -1021,6 +1222,12 @@ bool cell_enabled = false;
 extern bool rendering_shockwave;
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
+
+	if(!Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT)) {
+		gr_d3d_tmapper_internal_3d_unlit(nverts, verts, flags, is_scaler);
+		return;
+	}
+
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	int bw = 1, bh = 1;		

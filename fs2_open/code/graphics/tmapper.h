@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.2 $
- * $Date: 2003-10-16 00:17:14 $
+ * $Revision: 2.3 $
+ * $Date: 2003-10-23 18:03:24 $
  * $Author: randomtiger $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/10/16 00:17:14  randomtiger
+ * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
+ * As well as initialised in a different mode, bitmaps are stretched and for these modes
+ * previously point filtered textures now use linear to keep them smooth.
+ * I also had to shuffle some of the GR_1024 a bit.
+ * Put my HT&L flags in ready for my work to sort out some of the render order issues.
+ * Tided some other stuff up.
+ *
  * Revision 2.1  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -143,5 +151,9 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 #define TMAP_HTL_2D_UNLIT	(1<<14)	  
 #define TMAP_HTL_PARTICLE  	(1<<15)	  
 #define TMAP_HTL_VIDEO  	(1<<16)
+
+#define TMAP_HTL_SUN  		(1<<17)
+#define TMAP_HTL_THRUSTPNT  (1<<18)
+
 
 #endif

@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-10-14 17:39:18 $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-23 18:03:24 $
  * $Author: randomtiger $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/10/14 17:39:18  randomtiger
+ * Implemented hardware fog for the HT&L code path.
+ * It doesnt use the backgrounds anymore but its still an improvement.
+ * Currently it fogs to a brighter colour than it should because of Bob specular code.
+ * I will fix this after discussing it with Bob.
+ *
+ * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
+ * the htl code to use the existing D3D engine instead of work around it.
+ * And added extra information in version number on bottom left of frontend screen.
+ *
  * Revision 2.4  2003/10/10 03:59:41  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -379,6 +389,9 @@ void g3_start_instance_matrix(vector *pos,matrix *orient)
 
 	vm_matrix_x_matrix(&Light_matrix,&saved_orient, orient);
 
+	if(!Cmdline_nohtl)
+		gr_start_instance_matrix();
+
 }
 
 
@@ -418,6 +431,9 @@ void g3_done_instance()
 	Object_matrix = instance_stack[instance_depth].om;
 	Object_position = instance_stack[instance_depth].op;
 
+	if(!Cmdline_nohtl)
+	   	gr_start_instance_matrix();	// Shouldnt this be gr_end_instance_matrix
+//	 	gr_end_instance_matrix();	
 }
 
 int G3_user_clip = 0;

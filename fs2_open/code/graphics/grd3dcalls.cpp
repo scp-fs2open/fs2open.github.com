@@ -12,7 +12,7 @@
 #include "graphics/grd3dinternal.h"
 
 // Uncomment this to disable checking if states are already set, slower but useful for searching for bugs
-#define D3D_CALLS_CHECK 1
+#define D3D_CALLS_CHECK 0
 
 // Heres the internal vertex information that DX need to know to render them
 VertexTypeInfo vertex_types[D3DVT_MAX] =
@@ -365,8 +365,6 @@ HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr)
 #endif
 
 	HRESULT hr = GlobalD3DVars::lpD3DDevice->SetTexture(stage, texture_ptr);
-		//changed from this -Bobboau
-//	HRESULT hr = lpD3DDevice->SetTexture(0, texture_ptr);
 
 	if(FAILED(hr)) {
 		mprintf(("Failed to set texture"));

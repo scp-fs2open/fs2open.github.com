@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-19 06:23:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-23 18:03:23 $
+ * $Author: randomtiger $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/19 06:23:27  Goober5000
+ * added warp-effect sexp
+ * --Goober5000
+ *
  * Revision 2.4  2003/03/18 01:44:30  Goober5000
  * fixed some misspellings
  * --Goober5000
@@ -360,6 +364,7 @@
 #include "globalincs/linklist.h"
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
+#include "cmdline/cmdline.h"
 
 int wm;
 
@@ -576,13 +581,17 @@ void fireball_render(object * obj)
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
-	g3_rotate_vertex(&p, &obj->pos );
+	if(Cmdline_nohtl) {
+		g3_rotate_vertex(&p, &obj->pos );
+	}else{
+		g3_transfer_vertex(&p, &obj->pos);
+	}
 
 	switch( fb->fireball_info_index )	{
 	
 		case FIREBALL_EXPLOSION_MEDIUM:
 			gr_set_bitmap(Fireballs[num].current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-			g3_draw_bitmap(&p, fb->orient, obj->radius, TMAP_FLAG_TEXTURED );
+			g3_draw_bitmap(&p, fb->orient, obj->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 			break;
 
 		case FIREBALL_EXPLOSION_LARGE1:
@@ -611,7 +620,7 @@ void fireball_render(object * obj)
 		case FIREBALL_ASTEROID:
 			// Make the big explosions rotate with the viewer.
 			gr_set_bitmap(Fireballs[num].current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-			g3_draw_rotated_bitmap(&p, (i2fl(fb->orient)*PI)/180.0f, obj->radius, TMAP_FLAG_TEXTURED );
+			g3_draw_rotated_bitmap(&p, (i2fl(fb->orient)*PI)/180.0f, obj->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 			break;
 
 		case FIREBALL_WARP_EFFECT:

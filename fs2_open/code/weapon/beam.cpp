@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-10-22 23:10:14 $
- * $Author: phreak $
+ * $Revision: 2.28 $
+ * $Date: 2003-10-23 18:03:25 $
+ * $Author: randomtiger $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/10/22 23:10:14  phreak
+ * commented out some mprintfs that kazan missed
+ *
  * Revision 2.26  2003/10/13 05:57:50  Kazan
  * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
  * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
@@ -394,7 +397,7 @@
 #include "hud/hudshield.h"
 //#include "decals/decals.h"	//shouldn't need it becase it's in ship.h
 
-
+extern int Cmdline_nohtl;
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS
 //
@@ -1495,7 +1498,6 @@ void beam_move_all_post()
 
 // render a beam weapon
 #define STUFF_VERTICES()	do { verts[0]->u = 0.0f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.0f; verts[3]->v = 1.0f; } while(0);
-#define R_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
 #define P_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 int poly_beam = 0;
 float U_offset =0.0f; // beam texture offset -Bobboau
@@ -1535,7 +1537,17 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 		scale = frand_range(1.0f - bwi->sections[s_idx].flicker, 1.0f + bwi->sections[s_idx].flicker);
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, start, bwi->sections[s_idx].width * scale * shrink, bwi->sections[s_idx].z_add);	
 		beam_calc_facing_pts(&top2, &bottom2, &fvec, shot, bwi->sections[s_idx].width * scale * scale * shrink, bwi->sections[s_idx].z_add);				
-		R_VERTICES();																// rotate and project the vertices
+		if(Cmdline_nohtl){
+			g3_rotate_vertex(verts[0], &bottom1); 
+			g3_rotate_vertex(verts[1], &bottom2);	
+			g3_rotate_vertex(verts[2], &top2); 
+			g3_rotate_vertex(verts[3], &top1);
+		}else{
+			g3_transfer_vertex(verts[0], &bottom1); 
+			g3_transfer_vertex(verts[1], &bottom2);	
+			g3_transfer_vertex(verts[2], &top2); 
+			g3_transfer_vertex(verts[3], &top1);
+		}
 		P_VERTICES();						
 		STUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
 
@@ -1581,9 +1593,11 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 
 		// set the right texture with additive alpha, and draw the poly
 		gr_set_bitmap(bwi->sections[s_idx].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
-		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); 
+		if(Cmdline_nohtl)g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); 
+		else g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); 
 		// added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
 		// added TMAP_FLAG_RGB and TMAP_FLAG_GOURAUD so the beam would apear to fade along it's length-Bobboau
+		
 	}		
 	
 	// turn backface culling back on
@@ -1702,20 +1716,23 @@ void beam_render_muzzle_glow(beam *b)
 	}
 
 	// draw the bitmap
+	vertex pt;
 	g3_rotate_vertex(&v, &b->last_start);
+	if(!Cmdline_nohtl)g3_transfer_vertex(&pt, &b->last_start);
+	else pt = v;
 	gr_set_bitmap( bwi->beam_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);	
 	// draw 1 bitmap
-	g3_draw_bitmap(&v, 0, wip->b_info.beam_muzzle_radius * pct * rand_val, TMAP_FLAG_TEXTURED);
+	g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * rand_val, (!Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
 	
 	// maybe draw more
 	if(pct > 0.3f){
-		g3_draw_bitmap(&v, 0, wip->b_info.beam_muzzle_radius * pct * 0.75f * rand_val, TMAP_FLAG_TEXTURED);
+		g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * 0.75f * rand_val, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
 	}
 	if(pct > 0.5f){
-		g3_draw_bitmap(&v, 0, wip->b_info.beam_muzzle_radius * pct * 0.45f * rand_val, TMAP_FLAG_TEXTURED);
+		g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * 0.45f * rand_val, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
 	}
 	if(pct > 0.7f){
-		g3_draw_bitmap(&v, 0, wip->b_info.beam_muzzle_radius * pct * 0.25f * rand_val, TMAP_FLAG_TEXTURED);
+		g3_draw_bitmap(&pt, 0, wip->b_info.beam_muzzle_radius * pct * 0.25f * rand_val, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
 	}
 }
 

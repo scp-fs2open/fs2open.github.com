@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-10-15 22:03:26 $
- * $Author: Kazan $
+ * $Revision: 2.10 $
+ * $Date: 2003-10-23 18:03:25 $
+ * $Author: randomtiger $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/10/15 22:03:26  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.8  2003/09/13 06:02:03  Goober5000
  * clean rollback of all of argv's stuff
  * --Goober5000
@@ -488,6 +491,8 @@ void free_global_tri_records(int shnum)
 	}
 }
 
+extern int Cmdline_nohtl;
+
 void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vector *pos, ubyte r, ubyte g, ubyte b)
 {
 	matrix	m;
@@ -503,7 +508,9 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vector *
 		vm_vec_add2(&pnt, pos);
 
 		// Pnt is now the x,y,z world coordinates of this vert.
-		g3_rotate_vertex(&verts[j], &pnt);
+
+		if(!Cmdline_nohtl) g3_transfer_vertex(&verts[j], &pnt);
+		else g3_rotate_vertex(&verts[j], &pnt);
 		verts[j].u = trip->verts[j].u;
 		verts[j].v = trip->verts[j].v;
 	}	
@@ -529,13 +536,13 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vector *
 		vertlist[1] = &verts[2];
 		vertlist[2] = &verts[1]; 
 		vertlist[3] = &verts[0]; 
-		g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
+		g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT);
 	} else {
 		vertlist[0] = &verts[0]; 
 		vertlist[1] = &verts[1];
 		vertlist[2] = &verts[2]; 
 		vertlist[3] = &verts[3]; 
-		g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
+		g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT);
 	}
 }
 
