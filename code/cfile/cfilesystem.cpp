@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-04-03 18:11:19 $
- * $Author: Kazan $
+ * $Revision: 2.11 $
+ * $Date: 2004-04-26 00:26:37 $
+ * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/04/03 18:11:19  Kazan
+ * FRED fixes
+ *
  * Revision 2.9  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -462,11 +465,20 @@ void cf_build_root_list(char *cdrom_dir)
 
 	if(Cmdline_mod) {
 		strcat(Cmdline_mod, DIR_SEPARATOR_STR);
-		cf_root *modroot;
-		modroot = cf_create_root();
-		strcpy(modroot->path,Cmdline_mod);
-		modroot->roottype = CF_ROOTTYPE_PATH;
-		cf_build_pack_list(modroot);
+		root = cf_create_root();
+
+		if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
+			Error(LOCATION, "Can't get current working directory -- %d", errno );
+		}
+
+		// do we already have a slash? as in the case of a root directory install
+		if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+			strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+		}
+
+		strcat(root->path, Cmdline_mod);
+		root->roottype = CF_ROOTTYPE_PATH;
+		cf_build_pack_list(root);
 	}
 
 	root = cf_create_root();
@@ -711,7 +723,7 @@ void cf_build_file_list()
 	Num_files = 0;
 
 	// For each root, find all files...
-	for (i=1; i<Num_roots; i++ )	{
+	for (i=0; i<Num_roots; i++ )	{
 		cf_root	*root = cf_get_root(i);
 		if ( root->roottype == CF_ROOTTYPE_PATH )	{
 			cf_search_root_path(i);
@@ -796,6 +808,7 @@ void cf_free_secondary_filelist()
 int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, int *size, int *offset, bool localize )
 {
 	int i;
+	int cfs_slow_search = 0;
 
 	Assert(filespec && strlen(filespec));
 
@@ -847,118 +860,100 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 	long findhandle;
 	_finddata_t findstruct;
 #endif
-	// for testing
-	char test[256];
-	getcwd(test, 256);
-
 
 	for (i=0; i<num_search_dirs; i++ )	{
 		char longname[MAX_PATH_LEN];
 
-		cf_create_default_path_string( longname, search_order[i], filespec, localize );
-#if defined _WIN32
-
-		/*
-		// fixing a fred2 problem
-		char longpath[MAX_PATH_LEN];
-		strcpy(longpath, FreeSpace_Directory);
-		strcat(longpath, "\\");
-		strcat(longpath, longname);
-		strcpy(longname, longpath);*/
-
-
-
-		if(!Cmdline_safeloading)
-		{
-			findhandle = _findfirst(longname, &findstruct);
-			if (findhandle != -1)	{
-				if ( size ) {
-					*size = findstruct.size;
-				}
-				
-				_findclose(findhandle);
-
-				if ( offset ) *offset = 0;
-				if ( pack_filename ) {
-					strcpy( pack_filename, longname );
-				};
-				return 1;
-			}
+		switch (search_order[i]) {
+			case CF_TYPE_ROOT:
+			case CF_TYPE_DATA:
+			case CF_TYPE_SINGLE_PLAYERS:
+			case CF_TYPE_MULTI_PLAYERS:
+			case CF_TYPE_MULTI_CACHE:
+				cfs_slow_search = 1;
+				break;
+ 
+			default:
+				cfs_slow_search = 0;
+				break;
 		}
-		else
-		{
+ 
+		if (cfs_slow_search) {
+			cf_create_default_path_string( longname, search_order[i], filespec, localize );
+
+#if defined _WIN32
+			if(!Cmdline_safeloading)
+			{
+				findhandle = _findfirst(longname, &findstruct);
+				if (findhandle != -1)	{
+					if ( size ) {
+						*size = findstruct.size;
+					}
+
+					_findclose(findhandle);
+
+					if ( offset ) *offset = 0;
+					if ( pack_filename ) {
+						strcpy( pack_filename, longname );
+					};
+					return 1;
+				}
+			}
+			else
+			{
+				FILE *fp = fopen(longname, "rb" );
+				if(fp) {
+					if( size ) {
+						*size = filelength( fileno(fp) );
+					}
+
+					fclose(fp);
+
+					if(offset) *offset = 0;
+					if( pack_filename ) {
+						strcpy(pack_filename, longname);
+					}
+
+					return 1;
+				}
+			}
+#elif defined unix
 			FILE *fp = fopen(longname, "rb" );
-			if(fp) {
-				if( size ) {
-					*size = filelength( fileno(fp) );
+			if (fp) {
+				if ( size ) {
+					struct stat statbuf;
+					fstat(fileno(fp), &statbuf);
+					*size = statbuf.st_size;
 				}
 
 				fclose(fp);
-
-				if(offset) *offset = 0;
-				if( pack_filename ) {
-					strcpy(pack_filename, longname);
-				}
-
-				return 1;
-			}
-		}
-#elif defined unix
-		FILE *fp = fopen(longname, "rb" );
-		if (fp) {
-			if ( size ) {
-				struct stat statbuf;
-				fstat(fileno(fp), &statbuf);
-				*size = statbuf.st_size;
-			}
-
-			fclose(fp);
 				
-			if ( offset ) *offset = 0;
-			if ( pack_filename ) {
-				strcpy( pack_filename, longname );
-			}	
-			return 1;		
-		}
+				if ( offset ) *offset = 0;
+				if ( pack_filename ) {
+					strcpy( pack_filename, longname );
+				}	
+				return 1;		
+			}
 #endif
-	} 
+		}
+	}
 
 	// Search the pak files and CD-ROM.
 
-		for (i=0; i<Num_files; i++ )	{
-			cf_file * f = cf_get_file(i);
+	for (i=0; i<Num_files; i++ )	{
+		cf_file * f = cf_get_file(i);
 
-			// only search paths we're supposed to...
-			if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
-				continue;
-			}
+		// only search paths we're supposed to...
+		if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
+			continue;
+		}
 
-			if (localize) {
-				// create localized filespec
-				char temp[MAX_PATH_LEN];
-				strcpy(temp, filespec);
-				lcl_add_dir_to_path_with_filename(filespec);
+		if (localize) {
+			// create localized filespec
+			char temp[MAX_PATH_LEN];
+			strcpy(temp, filespec);
+			lcl_add_dir_to_path_with_filename(filespec);
 			
-				if ( !stricmp(filespec, f->name_ext) )	{
-					if ( size ) *size = f->size;
-					if ( offset ) *offset = f->pack_offset;
-					if ( pack_filename ) {
-						cf_root * r = cf_get_root(f->root_index);
-
-						strcpy( pack_filename, r->path );
-						if ( f->pack_offset < 1 )	{
-							strcat( pack_filename, Pathtypes[f->pathtype_index].path );
-							strcat( pack_filename, DIR_SEPARATOR_STR );
-							strcat( pack_filename, f->name_ext );
-						}
-					}
-					return 1;
-				}
-				// restore original filespec
-				strcpy(filespec, temp);
-			}
-
-			// file either not localized or localized version not found
 			if ( !stricmp(filespec, f->name_ext) )	{
 				if ( size ) *size = f->size;
 				if ( offset ) *offset = f->pack_offset;
@@ -967,21 +962,41 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 					strcpy( pack_filename, r->path );
 					if ( f->pack_offset < 1 )	{
-
-						if(strlen(Pathtypes[f->pathtype_index].path)){
-							strcat( pack_filename, Pathtypes[f->pathtype_index].path );
-							strcat( pack_filename, DIR_SEPARATOR_STR );
-						}
-
+						strcat( pack_filename, Pathtypes[f->pathtype_index].path );
+						strcat( pack_filename, DIR_SEPARATOR_STR );
 						strcat( pack_filename, f->name_ext );
 					}
 				}
-				
 				return 1;
 			}
+			// restore original filespec
+			strcpy(filespec, temp);
 		}
+
+		// file either not localized or localized version not found
+		if ( !stricmp(filespec, f->name_ext) )	{
+			if ( size ) *size = f->size;
+			if ( offset ) *offset = f->pack_offset;
+			if ( pack_filename ) {
+				cf_root * r = cf_get_root(f->root_index);
+
+				strcpy( pack_filename, r->path );
+				if ( f->pack_offset < 1 )	{
+
+					if(strlen(Pathtypes[f->pathtype_index].path)){
+						strcat( pack_filename, Pathtypes[f->pathtype_index].path );
+						strcat( pack_filename, DIR_SEPARATOR_STR );
+					}
+
+					strcat( pack_filename, f->name_ext );
+				}
+			}
+				
+			return 1;
+		}
+	}
 		
-		return 0;
+	return 0;
 }
 
 
