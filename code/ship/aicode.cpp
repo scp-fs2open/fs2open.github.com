@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-07-18 05:38:28 $
+ * $Revision: 2.5 $
+ * $Date: 2002-07-18 09:55:26 $
  * $Author: unknownplayer $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/07/18 05:38:28  unknownplayer
+ *
+ * Rewrote my original algorithm to search by proportional hull damage.
+ * Does the same thing a little better.
+ *
  * Revision 2.3  2002/07/18 03:27:38  unknownplayer
  *
  * Fixed AI problems with using the maxim on fighters.
@@ -5443,13 +5448,12 @@ void show_firing_diag()
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
 /**
- * This is by no means perfect AI code - it won't choose the best weapon in some circumstances,
- * however it will cover most possible situations until we have ships carrying much more then two
- * weapons with quirky balancing. If it ever becomes a noticeable problem (if we ever get to that
- * point) then I will change it.
- *
- * AI will now not use the Maxim on any shielded target (i.e. fighters) and instead
- * try and choose a different weapon.
+ * Etc. Etc. This is like the 4th rewrite of the code here. Special thanks to Bobboau
+ * for finding the get_shield_strength function.
+ * 
+ * The AI will now intelligently choose the best weapon to use based on the overall shield
+ * status of the target.
+ * 
  * ##UnknownPlayer##
  */
 int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
@@ -5501,14 +5505,23 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		// ##UnknownPlayer## - removed.
 	}
 
-	// NOTE: This code is begging for a better way to calculate the best weapon to use
-	// Possibly check to see if shield quadrant has power in it?
-	if (other_objp->flags & OF_NO_SHIELDS)		// Is the target shielded? - ##UnknownPlayer##
+	// Get the total possible strength of enemies shields here.
+	float enemytotalshield = 0.0f;
+	if (!(other_objp->flags & OF_NO_SHIELDS))
 	{
+		enemytotalshield += Ship_info[other_objp->instance].shields;
+	}
+
+	float enemy_remaining_shield = (get_shield_strength(other_objp))/enemytotalshield;
+
+	// Is the target shielded by say only 5%?
+	if (enemy_remaining_shield <= 0.05f)	
+	{
+		// Then it is safe to start using a heavy hull damage weapon such as the maxim
 		int i;
 		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
 		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
-		// Find the weapon with the highest hull * damage factor
+		// Find the weapon with the highest hull * damage / fire delay factor
 		for (i = 0; i < swp->num_primary_banks; i++)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
@@ -5528,55 +5541,69 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
 		return i_hullfactor_prev_bank;							// Return
 	}
-	else
+	
+	// Is the target shielded by less then 50%?
+	if (enemy_remaining_shield <= 0.50f)	
 	{
-		// Just find a weapon which doesn't do puncture damage
-		for (int i = 0; i < swp->num_primary_banks; i++)
+		// Should be using best balanced shield gun
+		int i;
+		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
+		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
+		// Find the weapon with the highest average hull and shield * damage / fire delay factor
+		for (i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon
+			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE))
+				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev )
 				{
-					swp->current_primary_bank = i;		// Found a match, arm it
-					return i;							// Exit function
+					// This weapon is the new candidate
+					i_hullfactor_prev = ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait));
+					i_hullfactor_prev_bank = i;
 				}
 			}
 		}
-		// Just grab the first possible weapon
-		if ( swp->current_primary_bank < 0 ) 
+		if (i_hullfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			if ( swp->num_primary_banks > 0 ) 
+			i_hullfactor_prev_bank = 0;		// Just switch to the first one
+		}
+		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
+		return i_hullfactor_prev_bank;							// Return
+	}
+	else
+	{
+		// Should be using best shield destroying gun
+		int i;
+		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
+		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
+		// Find the weapon with the highest average hull and shield * damage / fire delay factor
+		for (i = 0; i < swp->num_primary_banks; i++)
+		{
+			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				swp->current_primary_bank = 0;
+				if ((((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev )
+				{
+					// This weapon is the new candidate
+					i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
+					i_hullfactor_prev_bank = i;
+				}
 			}
 		}
+		if (i_hullfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
+		{
+			i_hullfactor_prev_bank = 0;		// Just switch to the first one
+		}
+		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
+		return i_hullfactor_prev_bank;							// Return
 	}
 
-	/* Code removed by ##UnknownPlayer##
-	//	Don't need to be using a puncture weapon.
-	if (swp->current_primary_bank >= 0) 
+	// Somehow no weapons were found - just take the first one
+	if ( swp->current_primary_bank < 0 ) 
 	{
-		if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE))
+		if ( swp->num_primary_banks > 0 ) 
 		{
-			// We are not using a puncture weapon, so return - unknownplayer (yes I gave up on the ##'s)
-			return swp->current_primary_bank;
+			swp->current_primary_bank = 0;
 		}
 	}
-	for (int i=0; i<swp->num_primary_banks; i++) 
-	{
-		if (swp->primary_bank_weapons[i] > -1)		// If the primary bank has a weapon loaded - unknownplayer
-		{
-			// Is it NOT a puncture weapon, and NOT the maxim if the target has shields? - unknownplayer
-			if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE))
-			{
-				swp->current_primary_bank = i;		// If so then switch to it - unknownplayer
-				nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
-				return i;							// return the bank no we armed - unknownplayer
-			}
-		}
-	}
-		//	Wasn't able to find a non-puncture weapon.  Stick with what we have.
-*/
 	
 	Assert( swp->current_primary_bank != -1 );		// get Alan or Allender
 
