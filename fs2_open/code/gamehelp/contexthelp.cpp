@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:30 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-01-29 08:05:31 $
+ * $Author: wmcoolmon $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:30  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:47  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -278,15 +281,15 @@ void help_overlay_reset_all()
 // Set up Grey_shader, which is used game-wide to grey out background when using help overlays
 void create_grey_shader()
 {
-	float tmp,c;
+	/*float tmp,c;
 
 	tmp = 0.4f/3.0f;
 
 	// The c matrix brightens everything a bit.
 //	c = 0.125f;
-	c = 0.110f;
+	c = 0.110f;*/
 
-	gr_create_shader( &Grey_shader, tmp, tmp, tmp, c );
+	gr_create_shader( &Grey_shader, 34, 34, 34, 168 );
 }
 
 // called at game startup to init all help related data
