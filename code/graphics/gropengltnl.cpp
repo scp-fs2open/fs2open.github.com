@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-02-23 05:11:13 $
- * $Author: taylor $
+ * $Revision: 1.17 $
+ * $Date: 2005-03-19 18:02:34 $
+ * $Author: bobboau $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/02/23 05:11:13  taylor
+ * more consolidation of various graphics variables
+ * some header cleaning
+ * only one tmapper_internal for OGL, don't use more than two tex/pass now
+ * seperate out 2d matrix mode to allow -2d_poof in OGL and maybe fix missing
+ *    interface when set 3d matrix stuff doesn't have corresponding end
+ * add dump_frame stuff for OGL, mostly useless but allows trailer recording
+ *
  * Revision 1.15  2005/02/15 00:06:27  taylor
  * clean up some model related globals
  * code to disable individual thruster glows
@@ -777,8 +785,30 @@ void gr_opengl_start_clip_plane()
 }
 
 //face -1 is to turn it off, the rest are right, left, up, down , front, and back
+
+//++++++++++++++++++this isn't used anymore!!!!!
+//needs to be set up in in the render-to-texture stuff
+/*
 void gr_opengl_render_to_env(int FACE)
 {
 	if (Cmdline_nohtl)
 		return;
+}
+*/
+
+//start recording a state block, no rendering should occur after this call untill the recording is ended
+void gr_opengl_start_state_block(){
+	gr_screen.recording_state_block = true;
+}
+
+//stops recording of a state block, returns a handle to be used by set_render_state
+int gr_opengl_end_state_block(){
+	gr_screen.recording_state_block = false;
+
+	return -1;//standard error return
+}
+
+//takes a handle to a state_block
+void gr_opengl_set_state_block(int handle){
+	if(handle == -1)return;
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.11 $
- * $Date: 2005-03-09 03:23:32 $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-19 18:02:34 $
  * $Author: bobboau $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/09 03:23:32  bobboau
+ * added a new interface render funtion
+ *
  * Revision 2.10  2005/03/03 06:05:31  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -149,6 +152,7 @@
 
 #include "math/vecmat.h"
 #include "graphics/tmapper.h"
+#include "graphics/2d.h"
 
 //flags for point structure
 #define PF_PROJECTED 	 1	//has been projected, so sx,sy valid
@@ -379,4 +383,33 @@ ubyte g3_transfer_vertex(vertex *dest, vector *src);
 
 int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additional_tmap_flags);
 int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint additional_tmap_flags);
+
+
+//flash ball
+// a neat looking ball of rays that move around and look all energetic and stuff
+struct flash_beam{
+	vertex start;
+	vertex end;
+	float width;
+};
+
+class flash_ball{
+	flash_beam *ray;
+	vector center;
+	int n_rays;
+	static geometry_batcher batcher;
+	void parse_bsp(int offset, ubyte *bsp_data);
+	void defpoint(int off, ubyte *bsp_data);
+
+public:
+//	flash_ball():ray(NULL),n_rays(0){}
+	flash_ball(int number, float min_ray_width, float max_ray_width = 0, vector* dir = &vmd_zero_vector, vector*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255)
+		:ray(NULL),n_rays(0)
+		{initalise(number, min_ray_width, max_ray_width , dir , center , outer , inner , max_r , max_g , max_b , min_r , min_g ,min_b);}
+	~flash_ball(){if(ray)free(ray);}
+
+	void initalise(int number, float min_ray_width, float max_ray_width = 0, vector* dir = &vmd_zero_vector, vector*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void initalise(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, vector* dir = &vmd_zero_vector, vector*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void render(float rad, float intinsity, float life);
+};
 #endif

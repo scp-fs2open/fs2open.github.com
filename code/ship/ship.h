@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.82 $
- * $Date: 2005-03-03 07:13:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.83 $
+ * $Date: 2005-03-19 18:02:34 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2005/03/03 07:13:17  wmcoolmon
+ * Made HUD shield icon auto-generation off unless "generate icon" ship flag is specified for the ship.
+ *
  * Revision 2.81  2005/03/01 06:55:45  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -594,6 +597,7 @@
 #include "network/multi_oo.h"
 #endif
 #include "hud/hudparse.h"
+#include "render/3d.h"
 
 struct object;
 
@@ -1115,7 +1119,12 @@ typedef struct ship {
 	float reload_time[MAX_SHIP_SECONDARY_BANKS]; //how many seconds it will take for any point in a bank to reload
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
-
+/*
+	flash_ball	*debris_flare;
+	int n_debris_flare;
+	float flare_life;
+	int flare_bm;
+	*/
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful

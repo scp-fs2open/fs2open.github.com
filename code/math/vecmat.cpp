@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-03-08 03:50:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-03-19 18:02:34 $
+ * $Author: bobboau $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/03/08 03:50:25  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.18  2005/03/03 06:05:29  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -2933,6 +2937,43 @@ void vm_vec_random_cone(vector *out, vector *in, float max_angle, matrix *orient
 	// axis 3
 	vm_rot_point_around_line(out, &t2, fl_radian(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
 }
+
+void vm_vec_random_cone(vector *out, vector *in, float min_angle, float max_angle, matrix *orient){
+	vector t1, t2;
+	matrix *rot;
+	matrix m;
+
+	// get an orientation matrix
+	if(orient != NULL){
+		rot = orient;
+	} else {
+		vm_vector_2_matrix(&m, in, NULL, NULL);
+		rot = &m;
+	}
+	float dif_angle = max_angle - min_angle;
+	
+	// axis 1
+	float temp_ang = (frand_range(-dif_angle, dif_angle));
+	if(temp_ang < 0)temp_ang -= (min_angle);
+	else temp_ang += (min_angle);
+
+	vm_rot_point_around_line(&t1, in, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.fvec);
+	
+	// axis 2
+	temp_ang = (frand_range(-dif_angle, dif_angle));
+	if(temp_ang < 0)temp_ang -= (min_angle);
+	else temp_ang += (min_angle);
+
+	vm_rot_point_around_line(&t2, &t1, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.rvec);
+
+	// axis 3
+	temp_ang = (frand_range(-dif_angle, dif_angle));
+	if(temp_ang < 0)temp_ang -= (min_angle);
+	else temp_ang += (min_angle);
+
+	vm_rot_point_around_line(out, &t2, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.uvec);
+}
+
 
 // given a start vector, an orientation and a radius, give a point on the plane of the circle
 // if on_edge is 1, the point is on the very edge of the circle

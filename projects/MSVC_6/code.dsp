@@ -133,11 +133,11 @@ SOURCE=..\..\code\Bmpman\BmpMan.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\camera\camera.h
+SOURCE=..\..\code\camera\camera.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\camera\camera.cpp
+SOURCE=..\..\code\camera\camera.h
 # End Source File
 # End Group
 # Begin Group "CFile"
@@ -513,6 +513,10 @@ SOURCE=..\..\code\graphics\GrD3DParticle.h
 
 SOURCE=..\..\code\graphics\grd3dsetup.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\GrD3DStateBlock.h
+# End Source File
 # End Group
 # Begin Source File
 
@@ -545,6 +549,10 @@ SOURCE=..\..\code\Graphics\GrD3DRender.cpp
 # Begin Source File
 
 SOURCE=..\..\code\graphics\GrD3Dsetup.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\GrD3DStateBlock.cpp
 # End Source File
 # Begin Source File
 

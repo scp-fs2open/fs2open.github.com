@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.51 $
- * $Date: 2005-03-16 01:35:58 $
+ * $Revision: 2.52 $
+ * $Date: 2005-03-19 18:02:33 $
  * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/03/16 01:35:58  bobboau
+ * added a geometry batcher and implemented it in sevral places
+ * namely: lasers, thrusters, and particles,
+ * these have been the primary botle necks for some time,
+ * and this seems to have smoothed them out quite a bit.
+ *
  * Revision 2.50  2005/03/11 01:27:17  wmcoolmon
  * I like comments
  *
@@ -780,6 +786,13 @@ typedef struct screen {
 	int static_environment_map;
 	int dynamic_environment_map;
 
+	bool recording_state_block;
+	int current_state_block;
+
+	void (*gf_start_state_block)();
+	int (*gf_end_state_block)();
+	void (*gf_set_state_block)(int);
+
 	//switch onscreen, offscreen
 	void (*gf_flip)();
 	void (*gf_flip_window)(uint _hdc, int x, int y, int w, int h );
@@ -1280,6 +1293,10 @@ __inline bool gr_set_render_target(int n, int face = -1)
 #define	gr_zbias GR_CALL				(*gr_screen.gf_zbias)
 #define	gr_set_fill_mode GR_CALL		(*gr_screen.gf_set_fill_mode)
 #define	gr_set_texture_panning GR_CALL	(*gr_screen.gf_set_texture_panning)
+
+#define	gr_start_state_block GR_CALL	(*gr_screen.gf_start_state_block)
+#define	gr_end_state_block GR_CALL		(*gr_screen.gf_end_state_block)
+#define	gr_set_state_block GR_CALL		(*gr_screen.gf_set_state_block)
 
 //#define	gr_set_environment_mapping GR_CALL	(*gr_screen.gf_set_environment_mapping)
 

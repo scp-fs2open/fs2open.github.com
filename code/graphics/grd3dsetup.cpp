@@ -24,6 +24,7 @@
 #include "graphics/grbatch.h"
 #include "graphics/grd3dbatch.h"
 #include "graphics/grd3dparticle.h"
+#include "graphics/grd3dstateblock.h"
 
 #include "debugconsole/timerbar.h"
 #include "debugconsole/dbugfile.h"
@@ -870,6 +871,10 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_zbias = gr_d3d_zbias;
 	gr_screen.gf_set_fill_mode = gr_d3d_set_fill_mode;
 	gr_screen.gf_set_texture_panning = d3d_set_texture_panning;
+
+	gr_screen.gf_start_state_block = gr_d3d_start_state_block;
+	gr_screen.gf_end_state_block = gr_d3d_end_state_block;
+	gr_screen.gf_set_state_block = gr_d3d_set_state_block;
 
 	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_d3d_make_buffer;

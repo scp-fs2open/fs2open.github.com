@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.171 $
- * $Date: 2005-03-16 00:18:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.172 $
+ * $Date: 2005-03-19 18:02:34 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.171  2005/03/16 00:18:31  wmcoolmon
+ * Commited placeholder turret funcs.
+ *
  * Revision 2.170  2005/03/10 08:00:15  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -3995,7 +3998,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->primary_rotate_rate[i] = 0.0f;
 		shipp->primary_rotate_ang[i] = 0.0f;
 	}
-
+/*
 	for(i = 0; i < sip->n_subsystems; i++){
 		model_subsystem* ms = &sip->subsystems[i];
 		
@@ -4003,7 +4006,9 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		else ms->trigger.snd_pnt = ms->pnt;
 		ms->trigger.obj_num = objnum;
 	}
-
+	shipp->flare_life = 0;
+	shipp->flare_bm = bm_load("boom");
+*/
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -4596,6 +4601,7 @@ void ship_render(object * obj)
 			}
 		}
 
+
 		//draw weapon models
 		if(si->draw_models){
 			ship_weapon *swp = &shipp->weapons;
@@ -4672,7 +4678,19 @@ void ship_render(object * obj)
 
 		// always turn off fog after rendering a ship
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+/*
+		if(shipp->flare_life>0){
+			g3_start_instance_matrix(&obj->pos, &obj->orient, true);
+			float flalpha = min(shipp->flare_life, 1.0f);
+			float splode_factor = min(pow(shipp->flare_life,6), 1.0f) * 1.25;
+			for( int i = 0; i<shipp->n_debris_flare; i++){
+				gr_set_bitmap( shipp->flare_bm, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 
+				shipp->debris_flare[i].render(model_get(shipp->modelnum)->rad*splode_factor,flalpha, shipp->flare_life);
+			}
+				g3_done_instance(true);
+		}
+*/
 		light_set_shadow(0);
 
 		#ifndef NDEBUG
@@ -5311,6 +5329,9 @@ void ship_dying_frame(object *objp, int ship_num)
 			}
 		}
 
+//		if(sp->flare_life>=0 && sp->flare_life<1){
+//		}
+
 		// bash the desired rotvel
 		objp->phys_info.desired_rotvel = sp->deathroll_rotvel;
 
@@ -5380,7 +5401,8 @@ void ship_dying_frame(object *objp, int ship_num)
 
 		//nprintf(("AI", "Ship.cpp: Frame=%i, Time = %7.3f, Ship %s will die in %7.3f seconds.\n", Framecount, f2fl(Missiontime), Ships[ship_num].ship_name, (float) timestamp_until(sp->final_death_time)/1000.0f));
 		int time_until_minor_explosions = timestamp_until(sp->final_death_time);
-
+//		if(time_until_minor_explosions < 500)
+//			sp->flare_life += flFrametime;
 		// Wait until just before death and set off some explosions
 		// If it is less than 1/2 second until large explosion, but there is
 		// at least 1/10th of a second left, then create 5 small explosions
@@ -7034,7 +7056,17 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	ct_ship_create(shipp);
 
 	ship_animation_set_inital_states(shipp);
+/*
+	polymodel *pm = model_get(shipp->modelnum);
+	if(shipp->debris_flare)free(shipp->debris_flare);
+	shipp->debris_flare = (flash_ball*)malloc(sizeof(flash_ball)*pm->num_debris_objects);
+	shipp->n_debris_flare = pm->num_debris_objects;
 
+	for(i = 0; i<shipp->n_debris_flare; i++){
+		bsp_info *debris = &pm->submodel[pm->debris_objects[i]];
+		shipp->debris_flare[i].initalise(debris->bsp_data, 0.1f,0.3f, &vmd_zero_vector, &debris->offset);
+	}
+	*/
 	return objnum;
 }
 

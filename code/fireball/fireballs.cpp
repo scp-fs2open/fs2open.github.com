@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-03-14 03:24:25 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2005-03-19 18:02:33 $
+ * $Author: bobboau $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/03/14 03:24:25  taylor
+ * speedup grow/shrink time for the warp to avoid the big size skips
+ *
  * Revision 2.23  2005/03/10 08:00:02  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -462,6 +465,7 @@ int Num_fireballs = 0;
 int fireballs_inited = 0;
 
 int Warp_glow_bitmap = -1;
+int Warp_ball_bitmap = -1;
 
 #define FB_INDEX(fb)	(fb-Fireballs)
 
@@ -594,6 +598,9 @@ void fireball_load_data()
 
 	if ( Warp_glow_bitmap == -1 )	{
 		Warp_glow_bitmap = bm_load( NOX("warpglow01") );
+	}
+	if ( Warp_ball_bitmap == -1 )	{
+		Warp_ball_bitmap = bm_load( NOX("warpball01") );
 	}
 	
 //	polymodel Warp_pm;
