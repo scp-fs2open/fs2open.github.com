@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.60 $
- * $Date: 2004-03-19 11:44:04 $
+ * $Revision: 2.61 $
+ * $Date: 2004-03-19 14:51:54 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/03/19 11:44:04  randomtiger
+ * Removed -d3d_notmanaged param.
+ * Tided D3D texture code. Merged remaining section code into the rest of the system.
+ * Prepared for removal of code causing waste of memory for secondry store of textures.
+ *
  * Revision 2.59  2004/03/16 18:37:01  randomtiger
  * Added new launcher flag construction code.
  *
@@ -598,6 +603,8 @@ Flag exe_params[] =
 	"-restricted",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
 	"-multilog",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
 	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
+	
+	"-d3d_lesstmem",  "Remove secondry texture system",	false,	0,				 EASY_DEFAULT,		"Experimental",	"",	
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -656,6 +663,7 @@ cmdline_parm rt_arg("-rt",NULL);
 cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 cmdline_parm get_flags_arg("-get_flags",NULL);
+cmdline_parm d3d_lesstmem_arg("-d3d_lesstmem",NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -713,6 +721,7 @@ int Cmdline_pcx32 = 0;
 int Cmdline_query_speech = 0;
 
 int Cmdline_show_mem_usage = 0;
+int Cmdline_d3d_lesstmem = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 
@@ -1260,6 +1269,11 @@ bool SetCmdlineParams()
 
 		fclose(fp);
 		return false; 
+	}
+
+	if(d3d_lesstmem_arg.found())
+	{
+		Cmdline_d3d_lesstmem = 1;
 	}
 		
 	return true; 

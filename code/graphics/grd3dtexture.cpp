@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.34 $
- * $Date: 2004-03-19 12:35:58 $
+ * $Revision: 2.35 $
+ * $Date: 2004-03-19 14:51:55 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/03/19 12:35:58  randomtiger
+ * Further D3D texture system simplification.
+ *
  * Revision 2.33  2004/03/19 11:44:04  randomtiger
  * Removed -d3d_notmanaged param.
  * Tided D3D texture code. Merged remaining section code into the rest of the system.
@@ -560,22 +563,6 @@
 
 #include "network/multi_log.h"
 
-typedef struct tcache_slot_d3d {
-
-	IDirect3DTexture8 *d3d8_thandle;
-
-	float						u_scale, v_scale;
-	int							bitmap_id;
-	int							size;
-	char						used_this_frame;
-	int							time_created;
-	ushort						w, h;
-
-	// sections
-	tcache_slot_d3d			*data_sections[MAX_BMAP_SECTIONS_X][MAX_BMAP_SECTIONS_Y];
-	tcache_slot_d3d			*parent;
-} tcache_slot_d3d;
-
 bool Supports_compression[NUM_COMPRESSION_TYPES];
 
 tcache_slot_d3d *Textures = NULL;
@@ -946,11 +933,6 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 	if(t->d3d8_thandle == NULL)
 	{
 		return 0;
-	}
-
-	if(reload) {
-		extern int D3d_tuse;
-		D3d_tuse += tex_w * tex_h * bpp / 8;
 	}
 
 	t->bitmap_id = texture_handle;
