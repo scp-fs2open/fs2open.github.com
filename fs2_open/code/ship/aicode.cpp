@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.82 $
- * $Date: 2005-01-18 06:14:29 $
+ * $Revision: 2.83 $
+ * $Date: 2005-01-26 01:26:09 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2005/01/18 06:14:29  Goober5000
+ * fixed a silly error
+ * --Goober5000
+ *
  * Revision 2.81  2005/01/13 02:25:52  phreak
  * difficulty table changes.  this lets modders specify how the difficulty level affect
  * how the AI behaves and controls advantages given to the player based on the
@@ -3900,8 +3904,8 @@ void create_path_to_point(vector *curpos, vector *goalpos, object *curobjp, obje
 // input:	randomize_pnt	=> optional parameter (default value -1), add random vector in sphere to this path point
 void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int count, int path_num, pnode *pnp, int randomize_pnt)
 {
-	matrix	m;
-	int		i;
+	polymodel *pm;
+	int		i, modelnum;
 	vector	v1;
 	int		pp_index;		//	index in Path_points at which to store point, if this is a modify-in-place (pnp ! NULL)
 	int		start_index, finish_index;
@@ -3915,8 +3919,6 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	else
 		pp_index = 0;			//	pp_index will get assigned to index in Path_points to reuse.
 
-	vm_copy_transpose_matrix(&m, &objp->orient);
-
 	if (dir == 1) {
 		start_index = 0;
 		finish_index = min(count, mp->nverts);
@@ -3926,11 +3928,26 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		finish_index = max(-1, mp->nverts-1-count);
 	}
 
+	// Goober5000 - start submodel calculation
+	modelnum = Ships[objp->instance].modelnum;
+	pm = model_get(modelnum);
+	ship_model_start(objp);	// needed for model_find_world_point
+
 	int offset = 0;
 	for (i=start_index; i != finish_index; i += dir) {
 		//	Globalize the point.
-		vm_vec_rotate(&v1, &mp->verts[i].pos, &m);
-		vm_vec_add2(&v1, &objp->pos);
+		// Goober5000 - check whether this submodel rotates
+		if (pm->submodel[mp->parent_submodel].movement_type == -1)
+		{
+			// no movement... calculate as in original code
+			vm_vec_unrotate(&v1, &mp->verts[i].pos, &objp->orient);
+			vm_vec_add2(&v1, &objp->pos);
+		}
+		else
+		{
+			// movement... find location of point just like in shipfx with rotating sparks
+			model_find_world_point(&v1, &mp->verts[i].pos, modelnum, mp->parent_submodel, &objp->orient, &objp->pos);			
+		}
 
 		if ( randomize_pnt == i ) {
 			vector v_rand;
@@ -3945,6 +3962,9 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		add_path_point(&v1, path_num, i, pp_index);
 		offset++;
 	}
+
+	// Goober5000 - stop submodel calculation
+	ship_model_stop(objp);
 }
 
 
