@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-17 20:40:50 $
+ * $Author: randomtiger $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -372,12 +375,15 @@
 #define HUD_NEW_ALPHA_NORMAL_HI		190
 #define HUD_NEW_ALPHA_BRIGHT_HI		255
 
+// This is used to prevent drawing of hud (and pause popup)
+
 // globals that will control the color of the HUD gauges
 int HUD_color_red = 0;
 int HUD_color_green = 255;
 int HUD_color_blue = 0;
 int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
+int HUD_draw     = 1;
 int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
 
 color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];		// array of colors with different alpha blending
@@ -959,9 +965,16 @@ void HUD_init()
 
 	// default to high contrast in the nebula
 	HUD_contrast = 0;
+	HUD_draw     = 1;
+
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
 		HUD_contrast = 1;
 	} 
+}
+
+void hud_toggle_draw()
+{
+	HUD_draw = !HUD_draw;
 }
 
 // return !0 if HUD is disabled (ie no gauges are shown/usable), otherwise return 0
@@ -971,7 +984,7 @@ int hud_disabled()
 		//return 1;
 	//}
 
-	return 0;
+	return !HUD_draw;
 }
 
 // Determine if we should popup the weapons gauge on the HUD.
