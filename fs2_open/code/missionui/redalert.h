@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2004-10-31 21:53:24 $
+ * $Author: taylor $
  *
  * Header file for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -66,6 +69,8 @@
 #ifndef __REDALERT_H__
 #define __REDALERT_H__
 
+#include "globalincs/globals.h"
+
 struct CFILE;
 
 void	red_alert_start_mission();
@@ -81,5 +86,9 @@ void red_alert_store_wingman_status();
 void red_alert_bash_wingman_status();
 void red_alert_write_wingman_status(CFILE *fp);
 void red_alert_read_wingman_status(CFILE *fp, int version);
+
+// campaign savefile versions
+void red_alert_write_wingman_status_campaign(CFILE *fp);
+void red_alert_read_wingman_status_campaign(CFILE *fp, char ships[][NAME_LENGTH], char weapons[][NAME_LENGTH]);
 
 #endif

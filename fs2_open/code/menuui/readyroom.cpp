@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2004-10-31 21:53:24 $
+ * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.10  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -137,6 +140,8 @@
  *
  * $NoKeywords: $
  */
+
+#include <ctype.h>
 
 #include "menuui/readyroom.h"
 #include "graphics/font.h"
@@ -334,7 +339,7 @@ static int Campaign_names_inited = 0;
 static int Campaign_mission_names_inited = 0;
 static int Num_standalone_missions;
 static int Num_campaign_missions;
-static int Num_player_missions;
+//static int Num_player_missions;
 static int Scroll_offset;
 static int Selected_line;
 static int Num_lines;
@@ -1093,6 +1098,7 @@ void sim_room_scroll_capture()
 // Initialize the sim_room assignment screen system.  Called when GS_STATE_sim_room_SCREEN
 // is entered.
 //
+
 void sim_room_init()
 {
 	int i;
@@ -1252,6 +1258,7 @@ void sim_room_close()
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
 	write_pilot_file();
+	mission_campaign_savefile_save();
 
 	// unload special mission icons
 	sim_room_unload_mission_icons();
@@ -1528,10 +1535,12 @@ UI_XSTR Cr_text[GR_NUM_RESOLUTIONS][CR_NUM_TEXT] = {
 	}
 };
 
+/*
 static struct {
 	char *text;
 	int len;
 } campaign_desc_lines[MAX_DESC_LINES];
+*/
 
 static int Num_desc_lines;
 static int Desc_scroll_offset;
@@ -1653,12 +1662,14 @@ void campaign_room_commit()
 	}
 
 	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename)) {  // new campaign selected
+		/* This is all that's stopping us from switching campaigns without restarting - taylor
 		if ((Active_campaign_index >= 0) && campaign_room_reset_campaign(Active_campaign_index)) {
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 			return;
 		}
 
 		mission_campaign_savefile_delete(Campaign_file_names[Selected_campaign_index]);
+		*/
 		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
 		strcpy(Player->current_campaign, Campaign.filename);  // track new campaign for player
 
@@ -1863,6 +1874,7 @@ void campaign_room_close()
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
 	write_pilot_file();
+	mission_campaign_savefile_save();
 }
 
 void campaign_room_do_frame(float frametime)
