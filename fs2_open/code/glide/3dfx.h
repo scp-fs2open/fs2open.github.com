@@ -62,6 +62,9 @@ typedef struct { float r, g, b, a; } FxColor4;
 #elif defined(__unix__)
   #define FX_ENTRY extern
   #define FX_CALL
+#elif defined(__GNUC__)
+  #define FX_ENTRY extern
+  #define FX_CALL
 #else
   #warning define FX_ENTRY & FX_CALL for your compiler
   #define FX_ENTRY extern
