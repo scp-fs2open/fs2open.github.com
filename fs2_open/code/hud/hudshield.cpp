@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-09-05 19:23:24 $
+ * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.16  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -706,7 +709,7 @@ void hud_shield_assign_info(ship_info *sip, char *filename)
 	//No HUD icon found. Add one!
 	Assert(Hud_shield_filename_count < MAX_SHIELD_ICONS);
 	if(Hud_shield_filename_count < MAX_SHIELD_ICONS){
-		sip->shield_icon_index = Hud_shield_filename_count;
+		sip->shield_icon_index = (unsigned char) Hud_shield_filename_count;
 		strcpy(Hud_shield_filenames[Hud_shield_filename_count++], filename);
 	}
 }

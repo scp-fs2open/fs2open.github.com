@@ -467,7 +467,7 @@ int parse_hud_gauges_tbl(char* longname)
 
 	if(optional_string("#Main Gauges"))
 	{
-		while((rval = required_string_3("#End", "$Default:", "$Resolution:")))
+		while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
 		{
 			if(parse_resolution_start(dest_hud, rval))
 			{
@@ -483,7 +483,7 @@ int parse_hud_gauges_tbl(char* longname)
 	
 	if(optional_string("#Gauges"))
 	{
-		while((rval = required_string_3("#End", "$Default:", "$Resolution:")))
+		while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
 		{
 			if(parse_resolution_start(dest_hud, rval))
 			{
@@ -506,9 +506,9 @@ int parse_hud_gauges_tbl(char* longname)
 		{
 			while (required_string_either("#End","$Ship:"))
 			{
-				if((dest_hud = parse_ship_start()))
+				if(dest_hud = parse_ship_start(), dest_hud)
 				{
-					while((rval = required_string_3("#End", "$Default:", "$Resolution:")))
+					while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
 					{
 						if(parse_resolution_start(dest_hud, rval))
 						{
@@ -529,9 +529,9 @@ int parse_hud_gauges_tbl(char* longname)
 		{
 			while (required_string_either("#End","$Ship:"))
 			{
-				if((dest_hud = parse_ship_start()))
+				if(dest_hud = parse_ship_start(), dest_hud)
 				{
-					while((rval = required_string_3("#End", "$Default:", "$Resolution:")))
+					while(rval = required_string_3("#End", "$Default:", "$Resolution:"), rval)
 					{
 						if(parse_resolution_start(dest_hud, rval))
 						{

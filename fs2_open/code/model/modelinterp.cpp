@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.87 $
- * $Date: 2004-07-26 20:47:41 $
- * $Author: Kazan $
+ * $Revision: 2.88 $
+ * $Date: 2004-09-05 19:23:24 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2004/07/26 20:47:41  Kazan
+ * remove MCD complete
+ *
  * Revision 2.86  2004/07/12 16:32:56  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -5399,13 +5402,13 @@ void recode_tmap(int offset, ubyte *bsp_data){
 	}
 	//int n_tri = n_vert - 2;
 	ubyte *temp_verts;
-	ubyte *p = &bsp_data[offset];
+	//ubyte *p = &bsp_data[offset];
 
 	model_tmap_vert *tverts;
 	tverts = (model_tmap_vert *)&bsp_data[offset+44];
 	temp_verts = &bsp_data[offset+44];
 
-	int problem_count = 0;
+	//int problem_count = 0;
 
 	for(int i = 0; i<n_vert; i++){	
 		vertex vert;
@@ -5499,7 +5502,7 @@ void model_resort_index_buffer_tmap(int offset, ubyte *bsp_data, short* index_bu
 	int n_vert = bsp_data[offset+36];
 	//int n_tri = n_vert - 2;
 	ubyte *temp_verts;
-	ubyte *p = &bsp_data[offset];
+	//ubyte *p = &bsp_data[offset];
 
 	model_tmap_vert *tverts;
 	tverts = (model_tmap_vert *)&bsp_data[offset+44];

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.7 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 1.8 $
+ * $Date: 2004-09-05 19:23:24 $
+ * $Author: Goober5000 $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 1.6  2004/07/21 00:03:46  taylor
  * fix problem with sectioned menu bitmaps in OGL
  *
@@ -217,7 +220,9 @@ void opengl_tcache_init (int use_sections)
 #endif // GL_SECTIONS
 
 	// Init the texture structures
+#ifdef GL_SECTIONS
 	int section_count = 0;
+#endif // GL_SECTIONS
 	for( i=0; i<MAX_BITMAPS; i++ )  {
 		/*
 		Textures[i].vram_texture = NULL;
@@ -568,7 +573,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 
 		case TCACHE_TYPE_COMPRESSED:
 		{
-			GLenum ctype;
+			GLenum ctype = UNINITIALIZED;
 			int block_size = 0;
 			int dds_h = tex_h;
 			int dds_w = tex_w;
@@ -888,9 +893,9 @@ int opengl_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_s
 
 int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int tex_unit = 0)
 {
+#ifdef GL_SECTIONS
 	bitmap *bmp = NULL;
 
-#ifdef GL_SECTIONS
 	int idx, s_idx;
 #endif // GL_SECTIONS
 	int ret_val = 1;

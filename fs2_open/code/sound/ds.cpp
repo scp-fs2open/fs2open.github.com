@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-08-23 07:48:08 $
+ * $Revision: 2.10 $
+ * $Date: 2004-09-05 19:23:24 $
  * $Author: Goober5000 $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/08/23 07:48:08  Goober5000
+ * fix0red some warnings
+ * --Goober5000
+ *
  * Revision 2.8  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -733,7 +737,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	int	convert_len;					// num bytes of converted wav file
 	uint	src_bytes_used;				// number of source bytes actually converted (should always be equal to original size)
 	//Stuff for ogg
-	unsigned long pos = 0;
+	//unsigned long pos = 0;
 //	int garbage;
 
 	// Ensure DirectSound initialized
