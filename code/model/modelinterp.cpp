@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-01-20 05:40:49 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2003-01-21 17:24:16 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/01/20 05:40:49  bobboau
+ * added several sExps for turning glow points and glow maps on and off
+ *
  * Revision 2.14  2003/01/19 01:07:41  bobboau
  * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
  *
@@ -3044,9 +3047,11 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		for (i = 0; i < pm->n_glows; i++ ) {
 			glow_bank *bank = &pm->glows[i];
 			int j;
-			if(bank->is_on){
+			if(bank->is_on)
+			{
 				if(is_ship && i<32)
-				if(!(shipp->glows_active & (1 << i)))continue;
+					if(!(shipp->glows_active & (1 << i)))
+						continue;
 
 				for ( j=0; j<bank->num_slots; j++ )	{
 					

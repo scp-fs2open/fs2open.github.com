@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.25 $
- * $Author: bobboau $
- * $Date: 2003-01-20 05:40:50 $
+ * $Revision: 2.26 $
+ * $Author: Goober5000 $
+ * $Date: 2003-01-21 17:24:16 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/01/20 05:40:50  bobboau
+ * added several sExps for turning glow points and glow maps on and off
+ *
  * Revision 2.24  2003/01/19 07:02:16  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -525,7 +528,7 @@
 #define CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS				(0x0004 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN				(0x0005 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_SPECIAL							(0x0006 | OP_CATEGORY_CHANGE)
-#define CHANGE_SUBCATEGORY_MODEL							(0x0007 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES				(0x0007 | OP_CATEGORY_CHANGE)
 
 #define	OP_PLUS									(0x0000 | OP_CATEGORY_ARITHMETIC)
 #define	OP_MINUS								(0x0001 | OP_CATEGORY_ARITHMETIC)
@@ -704,12 +707,12 @@
 #define OP_CHANGE_SHIP_CLASS				(0x0071	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CHANGE_SHIP_MODEL				(0x0072	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_SUPPORT_SHIP					(0x0073 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_DEACTIVAE_GLOW_POINTS			(0x0074	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
-#define OP_ACTIVAE_GLOW_POINTS				(0x0075	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
-#define OP_DEACTIVAE_GLOW_MAPS				(0x0076	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
-#define OP_ACTIVAE_GLOW_MAPS				(0x0077	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
-#define OP_DEACTIVAE_GLOW_POINT				(0x0078	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
-#define OP_ACTIVAE_GLOW_POINT				(0x0079	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
+#define OP_DEACTIVATE_GLOW_POINTS			(0x0074	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
+#define OP_ACTIVATE_GLOW_POINTS				(0x0075	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
+#define OP_DEACTIVATE_GLOW_MAPS				(0x0076	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
+#define OP_ACTIVATE_GLOW_MAPS				(0x0077	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
+#define OP_DEACTIVATE_GLOW_POINT_BANK		(0x0078	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
+#define OP_ACTIVATE_GLOW_POINT_BANK			(0x0079	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
 
 
 // debugging sexpressions

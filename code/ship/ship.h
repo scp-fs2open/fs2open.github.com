@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.29 $
- * $Date: 2003-01-20 05:40:50 $
- * $Author: bobboau $
+ * $Revision: 2.30 $
+ * $Date: 2003-01-21 17:24:16 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2003/01/20 05:40:50  bobboau
+ * added several sExps for turning glow points and glow maps on and off
+ *
  * Revision 2.28  2003/01/19 22:20:22  Goober5000
  * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
  * and departure into hangars should now all work properly
@@ -651,6 +654,9 @@ typedef struct ship_spark {
 #define AWACS_WARN_25		(1 << 1)
 #define AWACS_WARN_75		(1 << 2)
 
+#define MAX_GLOW_POINTS 32
+#define GLOW_POINTS_ALL_ON	0xFFFFFFFF		// (2 raised to MAX_GLOW_POINTS) - 1
+#define GLOW_POINTS_ALL_OFF	0x00000000
 
 typedef struct ship {
 	int	objnum;
