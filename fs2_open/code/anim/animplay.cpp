@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-10-09 17:58:48 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2004-12-20 20:18:30 $
+ * $Author: fryday $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/10/09 17:58:48  taylor
+ * one more try to fix the memory leak and end-of-mission crash for talking head anis
+ *
  * Revision 2.11  2004/07/26 20:47:23  Kazan
  * remove MCD complete
  *
@@ -916,7 +919,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 		floor_pow++;
 	}
 
-	int floor_size = (int) pow(2, floor_pow);
+	int floor_size = (int) pow(2.0, floor_pow);
 	int diff = ptr->height - floor_size;
 	float waste = 100.0f * float((floor_size - diff))/(2.0f *(float)floor_size);
 

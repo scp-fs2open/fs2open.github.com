@@ -11,7 +11,7 @@
 #endif
 
 #include <windows.h>
-#include <atlbase.h>
+//#include <atlbase.h>
 
 
 #pragma warning(disable:4711)	// function selected for inlining
