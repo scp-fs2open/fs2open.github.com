@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2004-08-23 04:00:15 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -119,6 +122,19 @@ ssm_strike Ssm_strikes[MAX_SSM_STRIKES];
 ssm_strike Ssm_free_list;
 ssm_strike Ssm_used_list;
 int Num_ssm_strikes = 0;
+
+// Goober5000
+int ssm_info_lookup(char *name)
+{
+	if(name == NULL)
+		return -1;
+
+	for (int i = 0; i < Ssm_info_count; i++)
+		if (!stricmp(name, Ssm_info[i].name))
+			return i;
+
+	return -1;
+}
 
 // game init
 void ssm_init()

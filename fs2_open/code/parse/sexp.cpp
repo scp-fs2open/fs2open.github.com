@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.99 $
- * $Date: 2004-07-29 23:41:21 $
- * $Author: Kazan $
+ * $Revision: 2.100 $
+ * $Date: 2004-08-23 04:00:15 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2004/07/29 23:41:21  Kazan
+ * bugfixes
+ *
  * Revision 2.98  2004/07/27 18:52:10  Kazan
  * squished another
  *
@@ -776,6 +779,7 @@
 #include "sound/audiostr.h"
 #include "cmdline/cmdline.h"
 #include "hud/hudparse.h"
+#include "hud/hudartillery.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1061,8 +1065,8 @@ sexp_oper Operators[] = {
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
-	{ "ship-tag",				OP_SHIP_TAG,				2, INT_MAX			},	// Goober5000
-	{ "ship-untag",				OP_SHIP_UNTAG,				1, INT_MAX			},	// Goober5000
+	{ "ship-tag",				OP_SHIP_TAG,				3, 7			},	// Goober5000
+	{ "ship-untag",				OP_SHIP_UNTAG,				1, 1			},	// Goober5000
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 
@@ -8633,27 +8637,61 @@ void sexp_ships_visible( int n, int visible )
 }
 
 // Goober5000
-void sexp_ships_tag( int n, int tag )
+void sexp_ship_tag( int n, int tag )
 {
-	char *ship_name;
-	int num, tag_val;
+	int ship_num, tag_level, tag_time, ssm_index;
 
-	tag_val = sexp_get_val(n);
-	n=CDR(n);	
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if ( mission_log_get_time(LOG_SHIP_DEPART, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
+		return;
 
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
+	// get the ship num
+	ship_num = ship_name_lookup(CTEXT(n));
+	if ( ship_num < 0 )
+		return;
 
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 ) {
-			// TODO: this stuff
-		}
+	// if untag, then unset everything and leave
+	if (!tag)
+	{
+		Ships[ship_num].tag_left = -1.0f;
+		Ships[ship_num].level2_tag_left = -1.0f;
+		return;
 	}
+
+	// get the tag level and time
+	n = CDR(n);
+	tag_level = sexp_get_val(n);
+	n = CDR(n);
+	tag_time = sexp_get_val(n);
+
+	// get SSM info if needed
+	vector start;
+	if (tag_level == 3)
+	{
+		n = CDR(n);
+		if (n < 0)
+			return;
+		ssm_index = ssm_info_lookup(CTEXT(n));
+		if (ssm_index < 0)
+			return;
+
+		n = CDR(n);
+		if (n < 0)
+			return;
+		start.xyz.x = (float)sexp_get_val(n);
+
+		n = CDR(n);
+		if (n < 0)
+			return;
+		start.xyz.y = (float)sexp_get_val(n);
+
+		n = CDR(n);
+		if (n < 0)
+			return;
+		start.xyz.z = (float)sexp_get_val(n);
+	}
+
+	ship_apply_tag(ship_num, tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum].pos, &start, ssm_index);
 }
 
 // Goober5000
@@ -9001,7 +9039,7 @@ void sexp_kamikaze(int n, int kamikaze)
 				if (kamikaze)
 				{
 					parse_obj->flags |= P_AIF_KAMIKAZE;
-					parse_obj->kamikaze_damage = kdamage;
+					parse_obj->kamikaze_damage = i2fl(kdamage);
 				}
 				else
 				{
@@ -11643,7 +11681,7 @@ int eval_sexp(int cur_node)
 			// Goober5000
 			case OP_SHIP_TAG:
 			case OP_SHIP_UNTAG:
-				sexp_ships_tag(node, op_num==OP_SHIP_TAG?1:0);
+				sexp_ship_tag(node, op_num==OP_SHIP_TAG?1:0);
 				sexp_val = 1;
 				break;
 
@@ -12926,9 +12964,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SHIP_TAG:
 			if (argnum == 0)
-				return OPF_POSITIVE;
-			else
 				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
 
 		case OP_SHIP_UNTAG:
 			return OPF_SHIP;
