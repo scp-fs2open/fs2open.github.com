@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-08-06 16:49:22 $
+ * $Author: phreak $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ *
+ * Revision 2.2  2002/08/04 23:15:40  PhReAk
+ * Fixed previous missile cheat, commented out beam_test(x) lines
+ * in process_debug_keys().  beam_test(x) caused assertion failure in
+ * beam.cpp apprx line 3147.  Also added toggle for wire_hud in process_player_ship_keys()
+ *
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -1066,7 +1075,7 @@ void process_debug_keys(int k)
 			break;
 		}
 
-			/*
+			
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_9: {
 		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_9:
 			ship* shipp;
@@ -1079,7 +1088,7 @@ void process_debug_keys(int k)
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name);
 			break;
 		}
-		*/
+		
 
 #ifndef FS2_DEMO
 		case KEY_DEBUGGED + KEY_U: {
@@ -1251,7 +1260,7 @@ void process_debug_keys(int k)
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Skill level set to %s.", 25), Skill_level_names(Game_skill_level));
 			break;
 
-		// kill all missiles
+		/*// kill all missiles
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_1:
 			beam_test(1);
 			break;				
@@ -1288,7 +1297,7 @@ void process_debug_keys(int k)
 			break;		
 		case KEY_DEBUGGED + KEY_CTRLED + KEY_3:
 			beam_test_new(3);
-			break;
+			break;*/
 					
 #ifndef NO_SOUND
 		case KEY_DEBUGGED + KEY_T: {
@@ -1368,6 +1377,7 @@ void process_debug_keys(int k)
 
 			break;
 		}
+
 	}	// end switch
 
 }
@@ -1498,6 +1508,17 @@ void process_player_ship_keys(int k)
 	if(Player->control_mode == PCM_SUPERNOVA){
 		return;
 	}
+
+	//phreak 2002/08/04 - put this here for now
+	if (k==KEY_SHIFTED + KEY_CTRLED + KEY_Q)
+	{
+		extern int Targetbox_wire;
+		Targetbox_wire++;
+		if (Targetbox_wire==3)
+			Targetbox_wire=0;
+	}
+
+
 
 	// pass the key to the squadmate messaging code.  If the messaging code took the key, then return
 	// from here immediately since we don't want to do further key processing.
