@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-11-18 21:27:13 $
+ * $Revision: 2.4 $
+ * $Date: 2002-11-22 20:55:27 $
  * $Author: phreak $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/11/18 21:27:13  phreak
+ * added bm_select_components functions for OpenGL -phreak
+ *
  * Revision 2.2  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -2053,6 +2056,8 @@ DCF(bmpman,"Shows/changes bitmap caching parameters and usage")
 	}
 }
 
+extern int OGL_inited;
+
 // Marks a texture as being used for this level
 void bm_page_in_texture( int bitmapnum, int nframes )
 {
@@ -2062,7 +2067,7 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 
 		bm_bitmaps[n+i].preloaded = 1;
 
-		if ( D3D_enabled )	{
+		if ( D3D_enabled || OGL_inited )	{
 			bm_bitmaps[n+i].used_flags = BMP_TEX_OTHER;
 		} else {			
 			bm_bitmaps[n+i].used_flags = 0;
@@ -2080,7 +2085,7 @@ void bm_page_in_nondarkening_texture( int bitmapnum, int nframes )
 
 		bm_bitmaps[n+i].preloaded = 4;
 
-		if ( D3D_enabled )	{			
+		if ( D3D_enabled || OGL_inited )	{			
 			bm_bitmaps[n+i].used_flags = BMP_TEX_NONDARK;
 		} else {
 			bm_bitmaps[n+i].used_flags = 0;
@@ -2099,7 +2104,7 @@ void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 
 		bm_bitmaps[n+i].preloaded = 3;
 
-		if ( D3D_enabled )	{
+		if ( D3D_enabled || OGL_inited )	{
 			// bm_bitmaps[n+i].used_flags = BMP_NO_PALETTE_MAP;
 			bm_bitmaps[n+i].used_flags = BMP_TEX_XPARENT;
 		} else {
@@ -2118,7 +2123,7 @@ void bm_page_in_aabitmap( int bitmapnum, int nframes )
 
 		bm_bitmaps[n+i].preloaded = 2;
 	
-		if ( D3D_enabled )	{
+		if ( D3D_enabled || OGL_inited )	{
 			bm_bitmaps[n+i].used_flags = BMP_AABITMAP;
 		} else {
 			bm_bitmaps[n+i].used_flags = 0;
@@ -2344,20 +2349,12 @@ void bm_set_components_opengl(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, uby
 	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
 	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
 	*((ushort*)pixel) &= ~(0x8000);
-	if(*av){
-		*((ushort*)pixel) |= 0x8000;
-	}
-	
-}
-
-void bm_set_components_opengl_32bit_scr(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
-{
-	// rgba 
-	*((uint*)pixel) |= (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((uint*)pixel) |= (uint)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	if(*av){
-		*((uint*)pixel) |= 0xff000000;
+	if (*((ushort*)pixel) == (ushort)Gr_current_green->mask) {
+		*((ushort*)pixel) = 0;
+	} else {
+		if(*av){
+			*((ushort*)pixel) |= 0x8000;
+		}
 	}
 }
 
@@ -2375,15 +2372,12 @@ void BM_SELECT_SCREEN_FORMAT()
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
-			mprintf(("bm_set_components_argb_d3d_screen\n"));
 			bm_set_components = bm_set_components_d3d;
 		} else {
 #ifndef NO_DIRECT3D
 			if(D3D_32bit){
-				mprintf(("bm_set_components_argb_d3d_32_screen\n"));
 				bm_set_components = bm_set_components_argb_d3d_32_screen;
 			} else {
-				mprintf(("bm_set_components_argb_d3d_16_screen\n"));
 				bm_set_components = bm_set_components_argb_d3d_16_screen;
 			}
 #else
@@ -2395,10 +2389,7 @@ void BM_SELECT_SCREEN_FORMAT()
 #ifdef USE_OPENGL
 	else if (gr_screen.mode == GR_OPENGL)
 	{
-		if (gr_screen.bits_per_pixel==32)
-			bm_set_components = bm_set_components_opengl_32bit_scr;
-		else
-			bm_set_components = bm_set_components_opengl;
+		bm_set_components = bm_set_components_opengl;
 	}
 #endif	
 #else
@@ -2419,15 +2410,12 @@ void BM_SELECT_TEX_FORMAT()
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
-			mprintf(("bm_set_components_argb_d3d_screen\n"));
 			bm_set_components = bm_set_components_d3d;
 		} else {
 #ifndef NO_DIRECT3D
 			if(D3D_32bit){
-				mprintf(("bm_set_components_argb_d3d_32_tex\n"));
 				bm_set_components = bm_set_components_argb_d3d_32_tex;
 			} else {
-				mprintf(("bm_set_components_argb_d3d_16_tex\n"));
 				bm_set_components = bm_set_components_argb_d3d_16_tex;
 			}
 #else
@@ -2459,15 +2447,12 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 		bm_set_components = bm_set_components_argb;
 	} else if(gr_screen.mode == GR_DIRECT3D){
 		if(Bm_pixel_format == BM_PIXEL_FORMAT_D3D){
-			mprintf(("bm_set_components_argb_d3d\n"));
 			bm_set_components = bm_set_components_d3d;
 		} else {
 #ifndef NO_DIRECT3D
 			if(D3D_32bit){
-				mprintf(("bm_set_components_argb_d3d_32_tex\n"));
 				bm_set_components = bm_set_components_argb_d3d_32_tex;
 			} else {
-				mprintf(("bm_set_components_argb_d3d_32_tex\n"));
 				bm_set_components = bm_set_components_argb_d3d_16_tex;
 			}
 #else
