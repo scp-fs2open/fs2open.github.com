@@ -143,19 +143,19 @@ SOURCE=..\..\code\ai\AiGoals.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ship\AiGoals.h
+SOURCE=..\..\code\ai\AiGoals.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ship\AiInternal.h
+SOURCE=..\..\code\ai\AiInternal.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ship\AiLocal.h
+SOURCE=..\..\code\ai\AiLocal.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ship\AiTurret.cpp
+SOURCE=..\..\code\ai\AiTurret.cpp
 # End Source File
 # End Group
 # Begin Group "Anim"
