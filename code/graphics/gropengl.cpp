@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.18 $
+ * $Date: 2003-05-04 20:49:18 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.16  2003/03/07 00:15:45  phreak
  * added some hacks that shutdown and restore opengl because of cutscenes
  *
@@ -777,7 +780,7 @@ void gr_opengl_flip()
 	} while (error != GL_NO_ERROR);
 #endif
 	
-	if(!SwapBuffers(GetDC((HWND)os_get_window())))
+	if(!SwapBuffers(dev_context))
 	{
 		MessageBox((HWND)os_get_window(), "unable to swap buffers", "error", MB_OK);
 		exit(2);
