@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/dscap.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-01-08 09:59:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 11:48:23 $
+ * $Author: taylor $
  *
  * C module for DirectSoundCapture code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/01/08 09:59:10  wmcoolmon
+ * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ *
  * Revision 2.3  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -73,6 +76,9 @@
  *
  * $NoKeywords: $
  */
+
+
+#ifndef USE_OPENAL
 
 #include "globalincs/pstypes.h"
 #include "sound/ds.h"
@@ -385,3 +391,5 @@ int dscap_get_raw_data(unsigned char *outbuf, unsigned int max_size)
 	Dscap_last_capture_offset = read_offset;
 	return (size1+size2);
 }
+
+#endif	// !USE_OPENAL

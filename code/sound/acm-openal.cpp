@@ -2,11 +2,34 @@
  * Portions of this file are Copyright (c) Ryan C. Gordon
  ***********************************************************/
 
+/*
+ * $Logfile: /Freespace2/code/sound/acm-openal.cpp $
+ * $Revision: 2.1 $
+ * $Date: 2005-04-05 11:48:22 $
+ * $Author: taylor $
+ *
+ * OS independant ADPCM decoder
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ * $NoKeywords: $
+ */
+
+
 #ifdef USE_OPENAL	// to end of file...
 
+#ifdef _WIN32
+#define NONEWWAVE
+#include <windows.h>
+#endif
 
 #include "globalincs/pstypes.h"
 #include "sound/acm.h"
+
+// we aren't including all of mmreg.h on Windows so this picks up the slack
+#ifndef WAVE_FORMAT_ADPCM
+#define WAVE_FORMAT_ADPCM	2
+#endif
 
 
 typedef struct adpcmcoef_tag{
@@ -49,7 +72,7 @@ typedef struct acm_stream_t {
 
 
 // similar to BIAL_IF_MACRO in SDL_sound
-#define IF_ERR(a, b) if (a) { printf("ACM ERROR, function: %s, line %d...\n", __FUNCTION__, __LINE__); return b; }
+#define IF_ERR(a, b) if (a) { mprintf(("ACM ERROR, line %d...\n", __LINE__)); return b; }
 
 static int ACM_inited = 0;
 

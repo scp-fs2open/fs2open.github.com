@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-05 05:53:25 $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-05 11:48:23 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.7  2005/04/01 07:33:08  taylor
  * fix hanging on exit with OpenAL
  * some better error handling on OpenAL init and make it more Windows friendly too
@@ -129,15 +132,15 @@
 #include "directx/vdsound.h"
 #include "sound/channel.h"
 #else
-#ifndef __APPLE__
-#include <AL/al.h>
-#include <AL/alc.h>
-#include <AL/alut.h>
+#if !(defined(__APPLE__) || defined(_WIN32))
+	#include <AL/al.h>
+	#include <AL/alc.h>
+	#include <AL/alut.h>
 #else
-#include "al.h"
-#include "alc.h"
-#include "alut.h"
-#endif // !__APPLE__
+	#include "al.h"
+	#include "alc.h"
+	#include "alut.h"
+#endif // !__APPLE__ && !_WIN32
 #endif // USE_OPENAL
 
 #include "sound/ds3d.h"
@@ -179,19 +182,6 @@ extern LPDIRECTSOUND pDirectSound;
 LPDIRECTSOUND3DLISTENER	pDS3D_listener = NULL;
 
 GUID DSPROPSETID_VoiceManager_Def = {0x62a69bae, 0xdf9d, 0x11d1, {0x99, 0xa6, 0x0, 0xc0, 0x4f, 0xc9, 0x9d, 0x46}};
-#else
-
-#define OpenAL_ErrorCheck()	do {		\
-	int i = alGetError();			\
-	if (i != AL_NO_ERROR) {			\
-		while(i != AL_NO_ERROR) {	\
-			nprintf(("Warning", "%s/%s:%d - OpenAL error %s\n", __FUNCTION__, __FILE__, __LINE__, alGetString(i))); \
-			i = alGetError();	\
-		}				\
-		return -1;			\
-	} 					\
-} while (0);
-
 #endif	// !USE_OPENAL
 
 
@@ -221,49 +211,37 @@ int ds3d_update_buffer(int channel, float min, float max, vec3d *pos, vec3d *vel
 
 #ifdef USE_OPENAL
 	// as used by DS3D
-//	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-/*
-	// set the min distance
-	alSourcef(Channels[channel].source_id, AL_REFERENCE_DISTANCE, min);
+//	OpenAL_ErrorPrint( alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED) );
 
-	OpenAL_ErrorCheck();
+	// set the min distance
+	OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_REFERENCE_DISTANCE, min) );
 
 	// set the max distance
-//	alSourcef(Channels[channel].source_id, AL_MAX_DISTANCE, max);
-	alSourcef(Channels[channel].source_id, AL_MAX_DISTANCE, 40000.0f);
+//	OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_MAX_DISTANCE, max) );
+	OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_MAX_DISTANCE, 40000.0f) );
 	
-	OpenAL_ErrorCheck();
-
 	// set rolloff factor
-	alSourcef(Channels[channel].source_id, AL_ROLLOFF_FACTOR, 1.0f);
-	
-	OpenAL_ErrorCheck();
-	
+	OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_ROLLOFF_FACTOR, 1.0f) );
+		
 	// set doppler
-	alDopplerVelocity(10000.0f);
-	alDopplerFactor(0.0f);  // TODO: figure out why using a value of 1 sounds bad
+	OpenAL_ErrorPrint( alDopplerVelocity(10000.0f) );
+	OpenAL_ErrorPrint( alDopplerFactor(0.0f) );  // TODO: figure out why using a value of 1 sounds bad
 
 	// set the buffer position
 	if ( pos != NULL ) {
 		ALfloat alpos[] = { pos->xyz.x, pos->xyz.y, pos->xyz.z };
-		alSourcefv(Channels[channel].source_id, AL_POSITION, alpos);
-		
-		OpenAL_ErrorCheck();
+		OpenAL_ErrorPrint( alSourcefv(Channels[channel].source_id, AL_POSITION, alpos) );
 	}
 
 	// set the buffer velocity
 	if ( vel != NULL ) {
 		ALfloat alvel[] = { vel->xyz.x, vel->xyz.y, vel->xyz.z };
-		alSourcefv(Channels[channel].source_id, AL_VELOCITY, alvel);
-
-		OpenAL_ErrorCheck();
+		OpenAL_ErrorPrint( alSourcefv(Channels[channel].source_id, AL_VELOCITY, alvel) );
 	} else {
 		ALfloat alvel[] = { 0.0f, 0.0f, 0.0f };
-		alSourcefv(Channels[channel].source_id, AL_VELOCITY, alvel);
-
-		OpenAL_ErrorCheck();
+		OpenAL_ErrorPrint( alSourcefv(Channels[channel].source_id, AL_VELOCITY, alvel) );
 	}
-*/
+
 #else
 
 	HRESULT						hr;
@@ -311,30 +289,24 @@ int ds3d_update_listener(vec3d *pos, vec3d *vel, matrix *orient)
 		return 0;
 
 #ifdef USE_OPENAL
-/*	// set the listener position
+	// set the listener position
 	if ( pos != NULL ) {
-		alListener3f(AL_POSITION, pos->xyz.x, pos->xyz.y, pos->xyz.z);
-
-		OpenAL_ErrorCheck();
+		OpenAL_ErrorPrint( alListener3f(AL_POSITION, pos->xyz.x, pos->xyz.y, pos->xyz.z) );
 	}
 
 	// set the listener velocity
 	if ( vel != NULL ) {
-		alListener3f(AL_VELOCITY, vel->xyz.x, vel->xyz.y, vel->xyz.z);
-
-		OpenAL_ErrorCheck();
+		OpenAL_ErrorPrint( alListener3f(AL_VELOCITY, vel->xyz.x, vel->xyz.y, vel->xyz.z) );
 	}
 
 	// set the listener orientation
 	if ( orient != NULL ) {
 		// uvec is up/top vector, fvec is at/front vector
-		ALfloat list_orien[] = { orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, (orient->vec.fvec.xyz.z * -1.0),
-									orient->vec.uvec.xyz.x, orient->vec.uvec.xyz.y, (orient->vec.uvec.xyz.z * -1.0) };
-		alListenerfv(AL_ORIENTATION, list_orien);
-
-		OpenAL_ErrorCheck();
+		ALfloat list_orien[] = { orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z,
+									orient->vec.uvec.xyz.x, orient->vec.uvec.xyz.y, orient->vec.uvec.xyz.z };
+		OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
 	}
-*/
+
 #else
 
 	HRESULT			hr;
