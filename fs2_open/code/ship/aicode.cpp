@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.71 $
- * $Date: 2004-10-03 21:41:11 $
- * $Author: Kazan $
+ * $Revision: 2.72 $
+ * $Date: 2004-10-11 22:29:24 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2004/10/03 21:41:11  Kazan
+ * Autopilot convergence collision fix for ai_fly_to_ship() and ai_waypoints() -- mathematically expensive, only usable by autopilot
+ *
  * Revision 2.70  2004/09/28 22:51:41  Kazan
  * fix autopilot formation bug
  *
@@ -1782,7 +1785,8 @@ void ai_turn_towards_vector(vector *dest, object *objp, float frametime, float t
 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
 	// Goober5000 - don't bank if sexp says not to
-	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) )
+	// Goober5000 - also don't bank if ship doesn't bank
+	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) || (Ships[objp->instance].flags2 & SF2_NO_BANK) )
 		delta_bank = 0.0f;
 	else if ((bank_override) && (Ships[objp->instance].team & opposing_team_mask(Player_ship->team))) {	//	Theoretically, this will only happen for Shivans.
 		delta_bank = bank_override;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.65 $
- * $Date: 2004-08-11 05:06:34 $
- * $Author: Kazan $
+ * $Revision: 2.66 $
+ * $Date: 2004-10-11 22:29:24 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/08/11 05:06:34  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.64  2004/07/11 03:22:53  bobboau
  * added the working decal code
  *
@@ -771,10 +774,9 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 #define SF2_STEALTH					(1<<3)		// Goober5000 - is this particular ship stealth
 #define SF2_DONT_COLLIDE_INVIS		(1<<4)		// Goober5000 - is this particular ship don't-collide-invisible
 #define SF2_NO_SUBSPACE_DRIVE		(1<<5)		// Goober5000 - this ship has no subspace drive
-
-#if defined(ENABLE_AUTO_PILOT)
 #define SF2_NAVPOINT_CARRY			(1<<6)		// Kazan      - This ship autopilots with the player
-#endif
+#define SF2_NO_BANK					(1<<7)		// Goober5000 - ship doesn't bank when turning
+#define SF2_AFFECTED_BY_GRAVITY		(1<<8)		// Goober5000 - ship affected by gravity points
 
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
