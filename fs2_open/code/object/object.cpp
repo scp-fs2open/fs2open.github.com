@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-08-22 03:39:35 $
- * $Author: phreak $
+ * $Revision: 2.12 $
+ * $Date: 2003-08-22 07:35:09 $
+ * $Author: bobboau $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/08/22 03:39:35  phreak
+ * warp effects and fireballs have their own distinct colors
+ *
  * Revision 2.10  2003/08/16 03:52:24  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -491,6 +494,7 @@
 #include "weapon/beam.h"
 #include "weapon/swarm.h"
 #include "demo/demo.h"
+#include "fireball/fireballs.h"
 
 /*
  *  Global variables
@@ -1539,6 +1543,8 @@ void obj_clear_weapon_group_id_list()
 int Arc_light = 1;		// If set, electrical arcs on debris cast light
 DCF_BOOL(arc_light, Arc_light)	
 extern int OGL_inited;
+extern fireball Fireballs[];
+
 extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)

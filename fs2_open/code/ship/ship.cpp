@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.69 $
- * $Date: 2003-08-21 06:11:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.70 $
+ * $Date: 2003-08-22 07:35:09 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2003/08/21 06:11:09  Goober5000
+ * Ballistic primaries will now deplete ammo correctly - that is, ammo will be
+ * reduced by the number of firing points, not necessarily 1.
+ * --Goober5000
+ *
  * Revision 2.68  2003/08/21 05:50:00  Goober5000
  * "Fixed" the ballistic primary rearm bug.  I have no idea how... I have to assume
  * it's a bug in MSVC.
@@ -1564,6 +1569,13 @@ int parse_ship()
 	sip->shockwave_count = 1;
 	if(optional_string("$Shockwave Count:")){
 		stuff_int(&sip->shockwave_count);
+	}
+
+	sip->shockwave_moddel = -1;
+	if(optional_string("$Shockwave_model:")){
+		char shockwave_model_filename[32];
+		stuff_string( shockwave_model_filename, F_NAME, NULL);
+		sip->shockwave_moddel = model_load( shockwave_model_filename , 0, NULL, 0);
 	}
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )

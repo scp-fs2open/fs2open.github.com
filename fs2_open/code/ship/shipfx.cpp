@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-08-06 17:37:08 $
- * $Author: phreak $
+ * $Revision: 2.17 $
+ * $Date: 2003-08-22 07:35:09 $
+ * $Author: bobboau $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/08/06 17:37:08  phreak
+ * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
+ *
  * Revision 2.15  2003/07/15 16:06:24  phreak
  * higher particle limits for opengl. now matched d3d
  *
@@ -2868,7 +2871,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 		sci2.speed = sci->speed * frand_range(0.75f, 1.25f);
 		sci2.rot_angle = frand_range(0.0f, 359.0f);
 
-		shockwave_create(shipp->objnum, &shockwave_pos, &sci2, SW_SHIP_DEATH, (int)frand_range(0.0f, 350.0f));
+		shockwave_create(shipp->objnum, &shockwave_pos, &sci2, SW_SHIP_DEATH, (int)frand_range(0.0f, 350.0f), Ship_info[shipp->ship_info_index].shockwave_moddel);
 		// shockwave_create(shipp->objnum, &objp->pos, sip->shockwave_speed, sip->inner_rad, sip->outer_rad, sip->damage, sip->blast, SW_SHIP_DEATH);
 
 		// next shockwave

@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.19 $
- * $Date: 2003-08-12 03:18:34 $
+ * $Revision: 2.20 $
+ * $Date: 2003-08-22 07:35:09 $
  * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2003/08/12 03:18:34  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.18  2003/03/02 05:56:56  penguin
  * Added #ifdef WIN32 around non-standard header file io.h
  *  - penguin
@@ -1019,7 +1037,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *dname )
 {
 	char *p;
-	char buf[32];
+	char buf[64];
 	char	lcdname[256];
 
 	if ( (p = strstr(props, "$name")) != NULL)
@@ -1578,7 +1596,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				bool rotating_submodel_has_subsystem = !(pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT);
 				if ( ( p = strstr(props, "$special"))!= NULL ) {
-					char type[32];
+					char type[64];
 
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
@@ -1963,7 +1981,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->num_split_plane++;
 						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
 					} else if ( ( p = strstr(props, "$special"))!= NULL ) {
-						char type[32];
+						char type[64];
 
 						get_user_prop_value(p+9, type);
 						if ( !stricmp(type, "subsystem") )						// if we have a subsystem, put it into the list!
@@ -1983,6 +2001,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				//mprintf(0,"Got chunk TXTR, len=%d\n",len);
 
+
 				n = cfread_int(fp);
 				pm->n_textures = n;
 				// Dont overwrite memory!!
@@ -1996,6 +2015,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					model_load_texture(pm, i, tmp_name);
 					//mprintf(0,"<%s>\n",name_buf);
 				}
+
 
 				break;
 			}
@@ -2208,16 +2228,14 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	}
 	else
 	{
-		if(strstr(tmp_name, "-trans"))
+		if(strstr(tmp_name, "-trans") || strstr(tmp_name, "shockwave") || strstr(tmp_name, "thruster"))
 		{
 			pm->transparent[i]=1;
-			nprintf(("%s is transparent, oooow\n",tmp_name));
 		}
 
 		if(strstr(tmp_name, "-amb"))
 		{
 			pm->ambient[i]=1;
-			nprintf(("%s is ambient, aaaahhh\n",tmp_name));
 		}
 
 		pm->textures[i] = bm_load( tmp_name );

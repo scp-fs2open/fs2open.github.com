@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:11 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-08-22 07:35:09 $
+ * $Author: bobboau $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:11  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -110,18 +113,19 @@ typedef struct shockwave {
 	int			objnum;					// index into Objects[] for shockwave
 	int			num_objs_hit;
 	int			obj_sig_hitlist[SW_MAX_OBJS_HIT];
-	float			speed, radius;
-	float			inner_radius, outer_radius, damage;
+	float		speed, radius;
+	float		inner_radius, outer_radius, damage;
 	int			weapon_info_index;	// -1 if shockwave not caused by weapon	
 	vector		pos;
-	float			blast;					// amount of blast to apply
+	float		blast;					// amount of blast to apply
 	int			next_blast;				// timestamp for when to apply next blast damage
 	int			shockwave_info_index;
 	int			current_bitmap;
-	float			time_elapsed;			// in seconds
-	float			total_time;				// total lifetime of animation in seconds
+	float		time_elapsed;			// in seconds
+	float		total_time;				// total lifetime of animation in seconds
 	int			delay_stamp;			// for delayed shockwaves
-	float			rot_angle;
+	float		rot_angle;
+	int			model;
 } shockwave;
 
 typedef struct shockwave_create_info {
@@ -141,7 +145,7 @@ void shockwave_level_init();
 void shockwave_level_close();
 void shockwave_delete(object *objp);
 void shockwave_move_all(float frametime);
-int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci, int flag, int delay = -1);
+int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci, int flag, int delay = -1, int model = -1);
 void shockwave_render(object *objp);
 int shockwave_weapon_index(int index);
 float shockwave_max_radius(int index);

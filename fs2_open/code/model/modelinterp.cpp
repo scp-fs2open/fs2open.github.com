@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.28 $
- * $Date: 2003-08-16 03:52:24 $
+ * $Revision: 2.29 $
+ * $Date: 2003-08-22 07:35:09 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/08/16 03:52:24  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.27  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -392,6 +401,9 @@ typedef struct model_light_object {
 	ubyte		r[MAX_POLYGON_NORMS];
 	ubyte		g[MAX_POLYGON_NORMS];
 	ubyte		b[MAX_POLYGON_NORMS];
+	ubyte		spec_r[MAX_POLYGON_NORMS];
+	ubyte		spec_g[MAX_POLYGON_NORMS];
+	ubyte		spec_b[MAX_POLYGON_NORMS];
 	int		objnum;
 	int		skip;
 	int		skip_max;
@@ -678,6 +690,7 @@ void model_set_thrust( int model_num, vector *length /*<-I did that-Bobboau*/, i
 	}
 }
 
+float GEOMETRY_NOISE = 0.0f;
 
 // Point list
 // +0      int         id
@@ -967,6 +980,20 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 }
 
 extern bool env_enabled;
+
+void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pnt, vector *norm, float alpha, bool invert = false){
+	vector r;
+	vm_vec_sub(&r, &View_position, pnt);
+	vm_vec_normalize(&r);
+	float d = vm_vec_dot(&r, norm);
+	if(d<0.0f)d=-d;
+
+	if(invert)
+		*param_r = *param_g = *param_b = ubyte( fl2i((1.0f - d) * 254.0f * alpha));
+	else
+		*param_r = *param_g = *param_b = ubyte( fl2i(d * 254.0f * alpha) );
+}
+
 // Textured Poly
 // +0      int         id
 // +4      int         size 
@@ -985,6 +1012,8 @@ ubyte Interp_subspace_r = 255;
 ubyte Interp_subspace_g = 255;
 ubyte Interp_subspace_b = 255;
 extern int spec;
+extern int cell;
+extern bool cell_enabled;
 
 void model_interp_tmappoly(ubyte * p,polymodel * pm)
 {
@@ -992,13 +1021,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	int i;
 	int nv;
 	model_tmap_vert *verts;
-/*	Interp_list[i]->spec_r = 0;
-	Interp_list[i]->spec_g = 0;
-	Interp_list[i]->spec_b = 0;
-*/
+
 	int is_invisible = 0;
 
-	if(Warp_Map < 0){
+	if((Warp_Map < 0)){
 		if ((!Interp_thrust_scale_subobj) && (pm->textures[w(p+40)]<0))	{
 			// Don't draw invisible polygons.
 			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES))	{
@@ -1018,7 +1044,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	modelstats_num_polys++;
 	#endif
 
-	if(Warp_Map < 0){
+	if((Warp_Map < 0)){
 		if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)) return;
 	}
 
@@ -1056,6 +1082,13 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				} else {
 					Interp_list[i]->b = 191;
 				}
+				
+				Interp_list[i]->spec_r = 0;
+				Interp_list[i]->spec_g = 0;
+				Interp_list[i]->spec_b = 0;
+				
+				if((Interp_flags & MR_EDGE_ALPHA))model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, false);
+				if((Interp_flags & MR_CENTER_ALPHA))model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, true);
 			} else {
 
 				int vertnum = verts[i].vertnum;
@@ -1064,9 +1097,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					if ( D3D_enabled || OGL_inited )	{
 						light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-						if((Detail.lighting > 2) && (model_current_LOD < 2))
+						if((Detail.lighting > 2) && (model_current_LOD < 2) && !cell)
 							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
-						interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
+					//	interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
 					} else {
 						Interp_list[i]->b = light_apply( Interp_verts[vertnum], vp(p+8), Interp_light );
 					}
@@ -1076,9 +1109,9 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 						if ( D3D_enabled || OGL_inited )	{
 							light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-							if((Detail.lighting > 2) && (model_current_LOD < 2))
-								light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
-							interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
+							if((Detail.lighting > 2) && (model_current_LOD < 2) && !cell)
+								light_apply_specular( &Interp_lighting->spec_r[norm], &Interp_lighting->spec_g[norm], &Interp_lighting->spec_b[norm], Interp_verts[vertnum], Interp_norms[norm],  &View_position);
+						//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 
 						} else {
 							int li;
@@ -1111,18 +1144,24 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 						Interp_light_applied[norm] = 1;
 					}else if(Interp_light_applied[norm]){
-						if((Detail.lighting > 2) && (model_current_LOD < 2))
-							light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
-						interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
+					//	if((Detail.lighting > 2) && (model_current_LOD < 2))
+					//		light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
+					//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 					}
 
 					if ( D3D_enabled || OGL_inited )	{
+						Interp_list[i]->spec_r = Interp_lighting->spec_r[norm];
+						Interp_list[i]->spec_g = Interp_lighting->spec_g[norm];
+						Interp_list[i]->spec_b = Interp_lighting->spec_b[norm];
+
 						Interp_list[i]->r = Interp_lighting->r[norm];
 						Interp_list[i]->g = Interp_lighting->g[norm];
 						Interp_list[i]->b = Interp_lighting->b[norm];
 					} else {
 						Interp_list[i]->b = Interp_lighting->b[norm];
 					}
+//					if((Detail.lighting > 2) && (model_current_LOD < 2))
+//						light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 				}
 			}
 		}
@@ -1157,6 +1196,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );
 		}else{
 			env_enabled = true;
+			cell_enabled = true;
 			// all textured polys go through here
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
@@ -1221,11 +1261,15 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				}
 			}
 
-			env_enabled = false;
-			GLOWMAP = -1;
-			SPECMAP = -1;
+//			env_enabled = false;
+//			GLOWMAP = -1;
+//			SPECMAP = -1;
 		}
 	}
+	env_enabled = false;
+	cell_enabled = false;
+	GLOWMAP = -1;
+	SPECMAP = -1;
 
 	if (Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET) )	{
 	
@@ -3498,6 +3542,54 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					}
 				}
 
+/*begin secondary glows*/
+/*				vertex h1[4];				// halves of a beam section	
+				vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
+				vector fvec, top1, bottom1, top2, bottom2, start, end, s, e;
+
+				vm_vec_scale_add(&e, &bank->pnt[j], &bank->norm[j], &bank->radius[j]);
+
+				vm_vec_rotate(&start, &bank->pnt[j], orient);
+				vm_vec_rotate(&end, &e, orient);
+				vm_vec_sub(&fvec, &end, &start);
+
+				vm_vec_normalize(&fvec);
+
+				moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, 1.0f, 1.0f, &Eye_position);	
+				moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, 1.0f, 1.0f, &Eye_position);	
+
+				int idx = 0;
+
+				do { 
+					g3_rotate_vertex(verts[0], &bottom1); 
+					g3_rotate_vertex(verts[1], &bottom2);	
+					g3_rotate_vertex(verts[2], &top2); 
+					g3_rotate_vertex(verts[3], &top1); } while(0);
+				do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
+				do { 
+					verts[0]->u = 0.0f; verts[0]->v = 0.0f;	
+					verts[1]->u = 1.0f; verts[1]->v = 0.0f; 
+					verts[2]->u = 1.0f;	verts[2]->v = 1.0f; 
+					verts[3]->u = 0.0f; verts[3]->v = 1.0f; 
+				} while(0);
+//						mR_VERTICES();																// rotate and project the vertices
+//						mP_VERTICES();						
+//						mSTUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
+
+				vm_vec_sub(&tempv,&View_position,&pnt);
+				vm_vec_normalize(&tempv);
+								
+
+				gr_set_cull(0);
+				if(The_mission.flags & MISSION_FLAG_FULLNEB){
+					gr_set_bitmap(bank->glow_neb_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+				}else{
+					gr_set_bitmap(bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+				}
+					g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
+					gr_set_cull(1);
+				}
+*/
 			}
 		}
 	}

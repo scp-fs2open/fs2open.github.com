@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.26 $
- * $Date: 2003-08-12 03:18:33 $
+ * $Revision: 2.27 $
+ * $Date: 2003-08-22 07:35:09 $
  * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/08/12 03:18:33  bobboau
+ * Specular 'shine' mapping;
+ * useing a phong lighting model I have made specular highlights
+ * that are mapped to the model,
+ * rendering them is still slow, but they look real purdy
+ *
+ * also 4 new (untested) comand lines, the XX is a floating point value
+ * -spec_exp XX
+ * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
+ * -spec_point XX
+ * -spec_static XX
+ * -spec_tube XX
+ * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
+ * static is the local stars,
+ * point is weapons/explosions/warp in/outs,
+ * tube is beam weapons,
+ * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
+ *
  * Revision 2.25  2003/07/15 02:36:54  phreak
  * changed the model_setup_cloak() function to allow an alpha value
  *
@@ -933,6 +951,8 @@ void model_set_detail_level(int n);
 #define MR_NO_CULL					(1<<22)		// don't cull backfacing poly's
 #define MR_FORCE_TEXTURE			(1<<23)		// force a given texture to always be used
 #define MR_FORCE_LOWER_DETAIL		(1<<24)		// force the model to draw 1 LOD lower, if possible
+#define MR_EDGE_ALPHA		(1<<25)		// makes norms that are faceing away from you render more transparent -Bobboau
+#define MR_CENTER_ALPHA		(1<<27)		// oposite of above -Bobboau
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-08-21 20:54:37 $
- * $Author: randomtiger $
- * $Revision: 2.23 $
- * $Date: 2003-08-21 20:54:37 $
- * $Author: randomtiger $
+ * $Revision: 2.24 $
+ * $Date: 2003-08-22 07:35:08 $
+ * $Author: bobboau $
+ * $Revision: 2.24 $
+ * $Date: 2003-08-22 07:35:08 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/08/21 20:54:37  randomtiger
+ * Fixed switching - RT
+ *
  * Revision 2.22  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -375,6 +378,8 @@ cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
 
+cmdline_parm cell_arg("-cell", NULL);
+
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
 int Cmdline_freespace_no_music = 0;
@@ -419,6 +424,8 @@ static int Parm_list_inited = 0;
 float Cmdline_fov = 0.75f;
 extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
+
+int cell = 0;
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -836,6 +843,10 @@ int parse_cmdline(int argc, char *argv[])
 
 	if ( spec_tube_arg.found() ) {
 		static_tube_factor = spec_tube_arg.get_float();
+	}
+
+	if ( cell_arg.found() ) {
+		cell = 1;
 	}
 
 	return 1;

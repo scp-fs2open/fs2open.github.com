@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 08:44:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-08-22 07:35:09 $
+ * $Author: bobboau $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 08:44:06  Goober5000
+ * added explosion-effect sexp and did some other minor housekeeping
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -251,6 +255,7 @@ shockwave_info	Shockwave_info[MAX_SHOCKWAVE_TYPES];
 shockwave			Shockwave_list;
 int					Shockwave_inited = 0;
 
+int defalt_shockwave_model = -1;
 // -----------------------------------------------------------
 // Function macros
 // -----------------------------------------------------------
@@ -281,8 +286,10 @@ extern int Show_area_effect;
 //				failure			=>	-1
 //
 // Goober5000 - now parent_objnum can be allowed to be -1
-int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci, int flag, int delay)
+int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci, int flag, int delay, int model)
 {
+	if(model == -1)model = defalt_shockwave_model;
+
 	int				i, objnum, real_parent;
 	shockwave		*sw;
 	shockwave_info	*si;
@@ -308,6 +315,9 @@ int shockwave_create(int parent_objnum, vector *pos, shockwave_create_info *sci,
 	}
 
 	sw = &Shockwaves[i];
+
+	sw->model = model;
+
 	sw->flags = (SW_USED | flag);
 	sw->speed = sci->speed;
 	sw->inner_radius = sci->inner_rad;
@@ -529,6 +539,7 @@ void shockwave_render(object *objp)
 
 	sw = &Shockwaves[objp->instance];
 	si = &Shockwave_info[sw->shockwave_info_index];
+	int shockwave_model = sw->model;
 
 	if( (sw->delay_stamp != -1) && !timestamp_elapsed(sw->delay_stamp)){
 		return;
@@ -543,10 +554,33 @@ void shockwave_render(object *objp)
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
-	g3_rotate_vertex(&p, &sw->pos );
+	if(shockwave_model > -1){
+		float model_Interp_scale_x = sw->radius /40;
+		float model_Interp_scale_y = sw->radius /40;
+		float model_Interp_scale_z = sw->radius /40;
 
-	gr_set_bitmap(sw->current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-	g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angle), sw->radius, TMAP_FLAG_TEXTURED);	
+		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, 1.0f - (sw->radius/sw->outer_radius) );
+		
+		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
+
+		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
+		gr_set_cull(0);
+		model_render( shockwave_model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL);
+		gr_set_cull(1);
+
+		model_Interp_scale_x = 1.0f;
+		model_Interp_scale_y = 1.0f;
+		model_Interp_scale_z = 1.0f;
+
+
+
+		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, 0.0f);
+	}else{
+		g3_rotate_vertex(&p, &sw->pos );
+	
+		gr_set_bitmap(sw->current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
+		g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angle), sw->radius, TMAP_FLAG_TEXTURED);	
+	}
 }
 
 // ------------------------------------------------------------------------------------
@@ -574,6 +608,11 @@ void shockwave_level_init()
 		Shockwaves[i].flags = 0;
 		Shockwaves[i].objnum = -1;
 	}
+
+	mprintf(("loading defalt shockwave model"));
+	defalt_shockwave_model = -1;
+	defalt_shockwave_model = model_load("shockwave.pof", 0, NULL, 0);
+	mprintf((" %d\n", defalt_shockwave_model));
 
 	Shockwave_inited = 1;
 }

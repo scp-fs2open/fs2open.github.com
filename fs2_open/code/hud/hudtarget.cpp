@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-08-21 06:31:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2003-08-22 07:35:08 $
+ * $Author: bobboau $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/08/21 06:31:19  Goober5000
+ * ships that have no afterburners will no longer have the afterburner gauge drawn
+ * --Goober5000
+ *
  * Revision 2.16  2003/08/21 06:18:52  Goober5000
  * primary weapons will now truncate properly at a '#' symbol, just like secondaries
  * --Goober5000
@@ -3008,6 +3012,10 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 	verts[0].sx = x1;	verts[0].sy = y1;
 	verts[1].sx = x2;	verts[1].sy = y2;
 	verts[2].sx = x3;	verts[2].sy = y3;
+
+	verts[0].spec_r = 0;
+	verts[1].spec_b = 0;
+	verts[2].spec_g = 0;
 
 	uint saved_mode = gr_zbuffer_get();
 	

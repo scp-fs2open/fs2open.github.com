@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.9 $
- * $Date: 2003-08-20 08:12:08 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10 $
+ * $Date: 2003-08-22 07:35:07 $
+ * $Author: bobboau $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2003/08/20 08:12:08  wmcoolmon
+ * Made cfile_delete return 0 on failure, 1 on success
+ *
  * Revision 2.8  2003/03/18 10:07:00  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -800,6 +803,8 @@ extern int game_cd_changed();
 
 CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize)
 {
+	if( strlen(file_path) > 31 )
+		Error(LOCATION, "file name %s too long, \nmust be less than 31 charicters", file_path);
 	char longname[_MAX_PATH];
 
 	//================================================

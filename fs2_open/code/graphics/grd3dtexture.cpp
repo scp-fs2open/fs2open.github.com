@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-08-21 20:54:38 $
- * $Author: randomtiger $
+ * $Revision: 2.8 $
+ * $Date: 2003-08-22 07:35:08 $
+ * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/08/21 20:54:38  randomtiger
+ * Fixed switching - RT
+ *
  * Revision 2.6  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -934,11 +937,11 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		return 0;
 	}
 
-	if(stage == 0){
+/*	if(stage == 0){
 		d3d_SetTexture(1, NULL);
 		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
 	}
-	//turn off glowmapping/specmapping right away, if it's needed turn it back on later
+*/	//turn off glowmapping/specmapping right away, if it's needed turn it back on later
 
 	int n = bm_get_cache_slot( bitmap_id, 1 );
 

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-08-16 03:52:23 $
+ * $Revision: 2.4 $
+ * $Date: 2003-08-22 07:35:09 $
  * $Author: bobboau $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.2  2003/08/12 03:18:33  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -204,6 +213,7 @@
 #define LT_POINT			1		// A point light, like an explosion
 #define LT_TUBE			2		// A tube light, like a fluorescent light
 
+int cell_shaded_lightmap = -1;
 typedef struct light {
 	int		type;							// What type of light this is
 	vector	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
@@ -1008,7 +1018,6 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 
 		dot = (float)pow((double)vm_vec_dot(&R, &n ), specular_exponent_value) * l->intensity * factor;		// reflective light
 		
-		dot = vm_vec_dot(&to_light, norm);
 	//		dot = 1.0f;
 		if ( dot > 0.0f )	{
 			// indicating that we already calculated the distance (vm_vec_dist_to_line(...) does this for us)
