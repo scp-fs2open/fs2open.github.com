@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2004/11/02 08:32:38  taylor
+ * animate weapon glow/bitmaps properly while in flight, make sure
+ * we don't exceed bitmap frame numbers, don't try to calculate
+ * frame for particle spew animations since particle_render_all()
+ * does that for us already
+ *
  * Revision 2.75  2004/09/10 13:48:34  et1
  * Implemented "+WeaponMinRange" token
  *
@@ -1198,6 +1204,7 @@ int parse_weapon(int subtype, bool replace)
 					wip->laser_glow_bitmap_fps = 0;
 				}
 
+				/* there's no purpose to this, it just gets unloaded before use anyway - taylor
 				// might as well lock it down as an aabitmap now
 				if(wip->laser_glow_bitmap >= 0){	//locking all frames if it is a ani-Bobboau
 					for(int i = 0; i>wip->laser_glow_bitmap_nframes; i++){
@@ -1207,6 +1214,7 @@ int parse_weapon(int subtype, bool replace)
 					//	mprintf(("locking glow for weapon"));
 					}
 				}
+				*/
 			}
 		}
 		
@@ -1876,18 +1884,24 @@ int parse_weapon(int subtype, bool replace)
 			required_string("+Texture:");
 			stuff_string(tex_name, F_NAME, NULL);
 			i.texture = -1;
+			i.nframes = 1;
+			i.fps = 1;
+
 			if(!Fred_running){
-	
 				i.texture = bm_load(tex_name);
-	
+
+				if (i.texture < 0) {
+					i.texture = bm_load_animation(tex_name, &i.nframes, &i.fps);
+				}
+
+				/* there's no purpose to this, it just gets unloaded before use anyway - taylor
 				if(i.texture >= 0){
 	
 					bm_lock(i.texture, 16, BMP_TEX_OTHER);
 	
 					bm_unlock(i.texture);
 	
-				}
-	
+				} */
 			}
 
 			// rgba inner
@@ -2456,7 +2470,7 @@ void weapon_render(object *obj)
 			if (wip->laser_bitmap >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
 				if(wip->laser_bitmap_nframes > 1){
-					wp->frame = ((timestamp() / (int)(wip->laser_bitmap_fps)) % (wip->laser_bitmap_nframes-1));
+					wp->frame = (timestamp() / (int)(wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
 				//	wp->frame = (int)(wp->frame + ((int)(flFrametime * 1000) / wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
 		//			HUD_printf("frame %d", wp->frame);
 					gr_set_bitmap(wip->laser_bitmap + wp->frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
@@ -2493,7 +2507,7 @@ void weapon_render(object *obj)
 
 
 				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
-					wp->gframe = ((timestamp() / (int)(wip->laser_glow_bitmap_fps)) % (wip->laser_glow_bitmap_nframes-1));
+					wp->gframe = (timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
 				//	wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
 					gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 				}else{
@@ -4499,10 +4513,14 @@ extern int Cmdline_load_only_used;
 unsigned int used_weapons[MAX_WEAPON_TYPES] = {0};
 
 //Call before weapons_page_in to mark a weapon as used
-void mark_weapon_used(int weapon_id)
+void weapon_mark_as_used(int weapon_id)
 {
-	if(weapon_id != -1)
-	{
+	if (weapon_id < 0)
+		return;
+
+	Assert( weapon_id < MAX_WEAPON_TYPES );
+
+	if (weapon_id <= Num_weapon_types) {
 		used_weapons[weapon_id]++;
 	}
 }
@@ -4511,14 +4529,32 @@ void weapons_page_in()
 {
 	int i, j, idx;
 
-	// Bitmaps for weapons in weaponry pool
-	if(Cmdline_load_only_used)
-	{
-		for(i = 0; i < Num_teams; i++)
-		{
-			for(j = 0; j < Num_weapon_types; j++)
-			{
+	if (Cmdline_load_only_used) {
+		// for weapons in weaponry pool
+		for (i = 0; i < Num_teams; i++) {
+			for (j = 0; j < Num_weapon_types; j++) {
 				used_weapons[j] += Team_data[i].weaponry_pool[j];
+			}
+		}
+
+		// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
+		// assigned directly to a ship
+		for (i = 0; i < Num_weapon_types; i++) {
+			if (Weapon_info[i].spawn_type)
+				used_weapons[(int)Weapon_info[i].spawn_type]++;
+		}
+
+		// shouldn't have to do this but some weapons here can be different than the ship
+		// weapons for some reason so this is here mainly as a double check
+		for (i = 0; i < MAX_SUBSYS_STATUS; i++) {
+			for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
+				if (Subsys_status[i].primary_banks[j] > -1)
+					weapon_mark_as_used(Subsys_status[i].primary_banks[j]);
+			}
+
+			for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
+				if (Subsys_status[i].secondary_banks[j] > -1)
+					weapon_mark_as_used(Subsys_status[i].secondary_banks[j]);
 			}
 		}
 	}
@@ -4593,7 +4629,7 @@ void weapons_page_in()
 			// all beam sections
 			for(idx=0; idx<wip->b_info.beam_num_sections; idx++){
 				if((idx < MAX_BEAM_SECTIONS) && (wip->b_info.sections[idx].texture >= 0)){
-					bm_page_in_texture(wip->b_info.sections[idx].texture);
+					bm_page_in_texture(wip->b_info.sections[idx].texture, wip->b_info.sections[idx].nframes);
 				}
 			}
 
