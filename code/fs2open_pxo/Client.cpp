@@ -13,6 +13,53 @@
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);
 #define PXO_ADDSTRING(x, y) memcpy(cur, x, y); cur += y;
 // need to compile and link UDP_Server.cpp
+
+//**************************************************************************************************************************************************
+
+int CheckSingleMission(const char* mission, unsigned int crc32, UDP_Socket &Socket, const char* masterserver, int port, int timeout)
+{
+	
+	timeout = timeout * CLK_TCK;
+	int starttime = clock();
+
+	std::string sender = masterserver;
+
+	// send Packet
+	fs2open_file_check_single checkpack;
+	memset((char *) &checkpack, 0, sizeof(fs2open_file_check_single));
+	checkpack.pid = PCKT_MISSION_CHECK;
+	strncpy(checkpack.name, mission, 60);
+	checkpack.crc32 = crc32;
+
+
+	if (Socket.SendPacket((char *) &checkpack, sizeof(fs2open_file_check_single), sender, port) == -1)
+		return NULL;
+
+
+	fs2open_fcheck_reply c_reply;
+
+	while ((clock() - starttime) <= timeout)
+	{
+
+		if (Socket.GetPacket((char *) &c_reply, sizeof(fs2open_fcheck_reply), sender) != -1)
+		{
+
+			if (c_reply.pid != PCKT_MCHECK_REPLY) // ignore packet
+			{
+				continue;
+			}
+
+			return c_reply.status;
+
+
+			
+		}
+
+
+	}
+
+	return -1;
+}
 //**************************************************************************************************************************************************
 
 int SendPlayerData(int SID, const char* player_name, const char* user, player *pl, const char* masterserver, UDP_Socket &Socket, int port, int timeout)

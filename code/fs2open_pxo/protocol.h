@@ -23,6 +23,9 @@
 #define PCKT_PING			0xD
 #define PCKT_PINGREPLY		0xE
 
+#define PCKT_MISSION_CHECK	0xF
+#define PCKT_MCHECK_REPLY	0x10
+
 #define FS2OPEN_PXO_PORT	12000
 #define FS2OPEN_CLIENT_PORT	FS2OPEN_PXO_PORT + 1
 
@@ -98,9 +101,20 @@ struct fs2open_pxo_lreply
 
 // ----- Missions & Tables -----
 
+struct fs2open_file_check_single
+{
+	int pid; //PCKT_MISSION_CHECK
+	char name[60];
+	unsigned int crc32;
+};
+
+struct fs2open_fcheck_reply
+{
+	int pid; //PCKT_MCHECK_REPLY
+	int status; // 1 = valid, 0 = invalid
+};
+
 //request
-
-
 
 struct fs2open_file_check
 {

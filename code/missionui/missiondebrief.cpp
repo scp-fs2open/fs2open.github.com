@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-09-24 19:35:58 $
+ * $Revision: 2.13 $
+ * $Date: 2003-09-26 15:34:26 $
  * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/09/24 19:35:58  Kazan
+ * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
+ *
  * Revision 2.11  2003/09/07 18:14:54  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -1245,10 +1248,21 @@ void debrief_ui_init()
 		List_region.create(&Debrief_ui_window, "", Debrief_list_coords[gr_screen.res][0], Debrief_list_coords[gr_screen.res][1], Debrief_list_coords[gr_screen.res][2], Debrief_list_coords[gr_screen.res][3], 0, 1);
 		List_region.hide();
 
-		if (Om_tracker_flag && multi_num_players() > 1)
+		unsigned int CurrentMissionChsum;
+
+		
+		cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
+
+		int mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
+
+		//
+		// Netgame.mission_name
+		
+			
+		if (Om_tracker_flag /*&& multi_num_players() > 1*/ && !game_hacked_data() && mValidStatus)
 		{
 			// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
-            int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
+			int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
 			
 			switch (spd_ret) // 0 = pilot updated, 1  = invalid pilot, 2 = invalid (expired?) sid
 			{
@@ -1288,6 +1302,7 @@ void debrief_ui_init()
 					multi_display_chat_msg("Unknown Stats Store Request Reply",0,0);
 					break;
 			}
+
 		}
 		else
 		{
