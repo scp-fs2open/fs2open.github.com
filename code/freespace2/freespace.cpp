@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.108 $
- * $Date: 2004-07-26 21:19:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.109 $
+ * $Date: 2004-08-05 02:15:27 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2004/07/26 21:19:05  Goober5000
+ * updated launcher link
+ * --Goober5000
+ *
  * Revision 2.107  2004/07/26 20:47:28  Kazan
  * remove MCD complete
  *
@@ -3032,7 +3036,7 @@ void game_init()
 	gamesnd_parse_soundstbl();
 
 	if (!Is_standalone)
-		select_radar_mode(RADAR_MODE_STANDARD);
+		select_radar_mode(Cmdline_orb_radar);
 
 	gameseq_init();
 
