@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.70 $
- * $Date: 2004-05-01 22:47:23 $
+ * $Revision: 2.71 $
+ * $Date: 2004-06-06 12:25:19 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2004/05/01 22:47:23  randomtiger
+ * FS2_open will now take flag settings from cmdline_fso.cfg not cmdline.cfg.
+ * This means retail FS2 will not crash because of fs2_open flags.
+ * The new version of the launcher (v5) must used to setup flags now.
+ * Anyone distributing pre 3.6 builds should make this clear and 3.6 should come with Launcher v5.
+ *
  * Revision 2.69  2004/05/01 17:10:18  Kazan
  * Multiple -mod - "-mod ModA,ModB,ModC" in order of priority
  * Giving you:
@@ -611,18 +617,20 @@ Flag exe_params[] =
 	"-cell",		  "Enable cell shading",			true,	0,				 EASY_DEFAULT,		"Graphics",		"", 
 	"-phreak", 		  "Enable Phreaks options",			true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 	"-ship_choice_3d","Enable models instead of ani",	true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
-	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,				 EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Disable%20V-Sync", 
 	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
+
+	"-pcx2dds",	      "Compress pcx",			        true,   0,				 EASY_DEFAULT,		"Game Speed",	"", 
+	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,				 EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Disable%20V-Sync", 
 
 	"-nobeampierce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"", 
 	"-radar_reduce",  "",								true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Gameplay",		"", 
 
-	"-fps",			  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-window",		  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-fps",			  "Show frames per seconds",		false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-window",		  "Run in window",					true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-timerbar",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-stats",		  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-coords",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
-	"-show_mem_usage","",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-stats",		  "Show statistics",				true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-coords",		  "Show coordinates",				false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
+	"-show_mem_usage","Show memory usage",				true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-pofspew",		  "",								false,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-tablecrcs",	  "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
 	"-missioncrcs",   "",								true,	0,				 EASY_DEFAULT,		"Dev Tool",		"", 
@@ -634,7 +642,7 @@ Flag exe_params[] =
 	"-no_set_gamma",  "Disable D3D gamma",				true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-dnoshowvid", 	  "Disable video playback",			true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-safeloading",	  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
-	"-query_speech",  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",
+	"-query_speech",  "Does this build have speech?",   true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",
 	"-d3d_bad_tsys",  "Enable inefficient textures",	false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",	
 	"-novbo",		  "Disable OpenGL VBO",				true,	0,				 EASY_DEFAULT,		"Troubleshoot", "",	
 																
@@ -645,8 +653,6 @@ Flag exe_params[] =
 	"-multilog",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
 	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
 	
-	"-batch_3dunlit", "Batch dynamic data (in dev)",	false,	0,				 EASY_DEFAULT,		"Experimental",	"",	
-
 	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"", 
 };
 
@@ -695,6 +701,7 @@ cmdline_parm jpgtga_arg("-jpgtga",NULL);
 cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);
 cmdline_parm d3d_no_vsync_arg("-d3d_no_vsync", NULL);
 cmdline_parm pcx32_arg("-pcx32",NULL);
+cmdline_parm pcx32dds_arg("-pcx2dds",NULL);
 cmdline_parm timerbar_arg("-timerbar", NULL);
 cmdline_parm stats_arg("-stats", NULL);
 cmdline_parm query_speech_arg("-query_speech", NULL);
@@ -773,6 +780,7 @@ int Cmdline_jpgtga = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_d3d_no_vsync = 0;
 int Cmdline_pcx32 = 0;
+int Cmdline_pcx32dds = 0;
 int Cmdline_query_speech = 0;
 
 int Cmdline_show_mem_usage = 0;
@@ -1295,6 +1303,11 @@ bool SetCmdlineParams()
 	if(pcx32_arg.found() )
 	{
 		Cmdline_pcx32 = 1;
+	}
+
+	if(pcx32dds_arg.found() )
+	{
+		Cmdline_pcx32dds = 1;
 	}
 
 	if(glow_arg.found() )

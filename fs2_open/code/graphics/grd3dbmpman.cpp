@@ -594,7 +594,7 @@ void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 	bm_d3d_free_data( bitmapnum );	
 
 	// allocate bitmap data
-	if(bpp == 16 && Cmdline_pcx32) {
+	if(bpp == 16 && (Cmdline_pcx32 || Cmdline_pcx32dds)) {
 		bpp = 32;
 	}
 

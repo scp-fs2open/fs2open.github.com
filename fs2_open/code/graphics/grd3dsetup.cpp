@@ -734,6 +734,12 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 	{
 		default_compressed_format = (D3DFORMAT) (D3DFMT_DXT1 + Cmdline_dxt - 1);
 	}
+
+	// Make sure this device supports the compression
+	if(Supports_compression[4] == 0)
+	{
+		Cmdline_pcx32dds = 0;
+	}
 }
 
 /**

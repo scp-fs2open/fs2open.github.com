@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.54 $
- * $Date: 2004-04-26 18:23:47 $
- * $Author: Kazan $
+ * $Revision: 2.55 $
+ * $Date: 2004-06-06 12:25:19 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2004/04/26 18:23:47  Kazan
+ * -no_fps_capping
+ *
  * Revision 2.53  2004/04/26 00:23:26  taylor
  * novbo and snd_preload cmdline options, fix moddir getting appended space
  *
@@ -480,6 +483,7 @@ extern int Cmdline_jpgtga;
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_d3d_no_vsync;
 extern int Cmdline_pcx32;
+extern int Cmdline_pcx32dds;
 
 extern int Cmdline_noglow;
 extern int Cmdline_timerbar;
