@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:25:32 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/24 07:25:32  taylor
+ * filename case change
+ *
  * Revision 2.4  2004/04/26 13:05:19  taylor
  * respect -glow and -spec
  *
@@ -181,16 +184,16 @@ int gr_opengl_make_buffer(poly_list *list)
 
 		vbp->used=1;
 
-		vbp->n_poly=list->n_poly;
+		vbp->n_poly=list->n_verts / 3;
 
-		vbp->texcoord_array=(uv_pair*)malloc(list->n_poly * 3 * sizeof(uv_pair));	
-		memset(vbp->texcoord_array,0,list->n_poly*sizeof(uv_pair));
+		vbp->texcoord_array=(uv_pair*)malloc(list->n_verts * sizeof(uv_pair));	
+		memset(vbp->texcoord_array,0,list->n_verts*sizeof(uv_pair));
 
-		vbp->normal_array=(vector*)malloc(list->n_poly * 3 * sizeof(vector));
-		memset(vbp->normal_array,0,list->n_poly*sizeof(vector));
+		vbp->normal_array=(vector*)malloc(list->n_verts * sizeof(vector));
+		memset(vbp->normal_array,0,list->n_verts*sizeof(vector));
 
-		vbp->vertex_array=(vector*)malloc(list->n_poly * 3 * sizeof(vector));
-		memset(vbp->vertex_array,0,list->n_poly*sizeof(vector));
+		vbp->vertex_array=(vector*)malloc(list->n_verts * sizeof(vector));
+		memset(vbp->vertex_array,0,list->n_verts*sizeof(vector));
 
 		vector *n=vbp->normal_array;
 		vector *v=vbp->vertex_array;
@@ -198,10 +201,10 @@ int gr_opengl_make_buffer(poly_list *list)
 	
 		vertex *vl;
 
-		memcpy(n,list->norm,list->n_poly*sizeof(vector)*3);
+		memcpy(n,list->norm,list->n_verts*sizeof(vector));
 				
 
-		for (int i=0; i < list->n_poly*3; i++)
+		for (int i=0; i < list->n_verts; i++)
 		{
 				vl=&list->vert[i];
 				v->xyz.x=vl->x; 
@@ -243,9 +246,17 @@ void gr_opengl_destroy_buffer(int idx)
 	memset(vbp,0,sizeof(opengl_vertex_buffer));
 }
 
+opengl_vertex_buffer *g_vbp;
+void gr_opengl_set_buffer(int idx){
+	g_vbp=&vertex_buffers[idx];
+}
+
+
 //#define DRAW_DEBUG_LINES
 extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
-void gr_opengl_render_buffer(int idx)
+
+//start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
+void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 {
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
@@ -257,7 +268,7 @@ void gr_opengl_render_buffer(int idx)
 	
 	glColor3ub(255,255,255);
 	
-	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
+	opengl_vertex_buffer *vbp=g_vbp;
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	if (vbp->vbo_vert)

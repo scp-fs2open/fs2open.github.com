@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.27 $
- * $Date: 2004-04-26 12:41:46 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/04/26 12:41:46  taylor
+ * gr_preload() pointer for use in bmpman.cpp
+ *
  * Revision 2.26  2004/04/11 13:56:33  randomtiger
  * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
  *
@@ -554,6 +557,7 @@ void gr_d3d_push_texture_matrix(int unit);
 void gr_d3d_pop_texture_matrix(int unit);
 void gr_d3d_translate_texture_matrix(int unit, vector *shift);
 void gr_d3d_zbias(int zbias);
+void gr_d3d_set_fill_mode(int mode);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
 

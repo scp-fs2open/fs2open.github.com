@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-06-27 01:47:16 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/06/27 01:47:16  wmcoolmon
+ * Unneccessary warning removed, small change for VC6.
+ *
  * Revision 2.7  2004/06/26 03:19:53  wmcoolmon
  * Displayed escorts now settable up to MAX_COMPLETE_ESCORT_LIST via "$Max Escort Ships:" in hud_gauges.tbl
  * Escort list is now hud_gauges.tbl compatible.
@@ -819,13 +822,13 @@ void hud_display_escort()
 
 		//Back to right #
 		Num_escort_ships++;
-	}
 
-	//Last one
-	x += current_hud->Escort_entry_last[0];
-	y += current_hud->Escort_entry_last[1];
-	GR_AABITMAP(Escort_gauges[2].first_frame, x, y);
-	hud_escort_show_icon(x, y, i);
+		//Last one
+		x += current_hud->Escort_entry_last[0];
+		y += current_hud->Escort_entry_last[1];
+		GR_AABITMAP(Escort_gauges[2].first_frame, x, y);
+		hud_escort_show_icon(x, y, i);
+	}
 
 /*
 	if ( Num_escort_ships >= 2 ) {

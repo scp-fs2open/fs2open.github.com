@@ -424,6 +424,8 @@ HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr)
  * @return void
  *
  */
+extern IDirect3DIndexBuffer8 *global_index_buffer;
+
 void d3d_lost_device()
 {
 	// Set states to what they will be after reset
@@ -433,6 +435,9 @@ void d3d_lost_device()
 	// from video memory, and all state information to be lost. Before calling the Reset method for a 
 	// device, an application should release any explicit render targets, depth stencil surfaces, 
 	// additional swap chains and D3DPOOL_DEFAULT resources associated with the device.
+	global_index_buffer->Release();
+	global_index_buffer = NULL;
+
 	GlobalD3DVars::lpD3DDevice->Reset(&GlobalD3DVars::d3dpp); 
 
 	d3d_reset_render_states();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.5 $
- * $Date: 2004-06-27 01:45:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2004-06-28 02:13:08 $
+ * $Author: bobboau $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/06/27 01:45:23  wmcoolmon
+ * Commented out ogg header
+ *
  * Revision 2.4  2004/06/22 23:14:10  wmcoolmon
  * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
  * OGG code has been commented out, so you don't need the SDK yet.
@@ -148,7 +151,7 @@
 
 typedef struct sound_info {
 	int	format;		// WAVE_FORMAT_* defines from mmreg.h
-	OggVorbis_File ogg_info;
+//	OggVorbis_File ogg_info;
 	uint	size;
 	int	sample_rate;
 	int	avg_bytes_per_sec;

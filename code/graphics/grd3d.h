@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.11 $
- * $Date: 2004-03-17 04:07:29 $
+ * $Revision: 2.12 $
+ * $Date: 2004-06-28 02:13:07 $
  * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/03/17 04:07:29  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.10  2004/02/20 21:45:41  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -172,7 +179,8 @@ void gr_d3d_get_region(int front, int w, int h, ubyte *data);
 
 int gr_d3d_make_buffer(poly_list *list);
 void gr_d3d_destroy_buffer(int idx);
-void gr_d3d_render_buffer(int idx);
+void gr_d3d_render_buffer(int start, int n_prim, short* index_list);
+void gr_d3d_set_buffer(int idx);
 int gr_d3d_make_flat_buffer(poly_list *list);
 int gr_d3d_make_line_buffer(line_list *list);
 

@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.4 $
- * $Date: 2004-04-26 12:41:46 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * $NoKeywords: $
  */
@@ -94,6 +94,7 @@ void gr_stub_dump_frame() {}
 uint gr_stub_lock(){return 1;}
 void gr_stub_unlock() {}
 void gr_stub_zbias_stub(int bias) {}
+void gr_set_fill_mode_stub(int mode) {}
 void stub_zbias(int bias) {}
 void gr_stub_bitmap_internal(int x,int y,int w,int h,int sx,int sy) {}
 void gr_stub_bitmap_ex(int x,int y,int w,int h,int sx,int sy) {}
@@ -108,7 +109,8 @@ int stub_mod_depth() {return 0;}
 uint stub_create_vbo(uint size, void** data) {return 0;}
 int gr_stub_make_buffer(poly_list *list) {return 0;}
 void gr_stub_destroy_buffer(int idx) {}
-void gr_stub_render_buffer(int idx) {}
+void gr_stub_render_buffer(int start, int n_prim, short* index_list) {}
+void gr_stub_set_buffer(int idx) {}
 void gr_stub_start_instance_matrix(vector *offset, matrix* rotation) {}
 void gr_stub_start_instance_angles(vector *pos, angles* rotation) {}
 void gr_stub_end_instance_matrix() {}
@@ -264,11 +266,13 @@ void gr_stub_init()
 
 	gr_screen.gf_set_texture_addressing = gr_stub_set_texture_addressing;
 	gr_screen.gf_zbias = gr_stub_zbias_stub;
+	gr_screen.gf_set_fill_mode = gr_set_fill_mode_stub;
 
 	{
 		gr_screen.gf_make_buffer = gr_stub_make_buffer;
 		gr_screen.gf_destroy_buffer = gr_stub_destroy_buffer;
 		gr_screen.gf_render_buffer = gr_stub_render_buffer;
+		gr_screen.gf_set_buffer = gr_stub_set_buffer;
 
 		gr_screen.gf_start_instance_matrix = gr_stub_start_instance_matrix;
 		gr_screen.gf_end_instance_matrix = gr_stub_end_instance_matrix;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.40 $
- * $Date: 2004-05-10 10:51:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2004-06-28 02:13:08 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2004/05/10 10:51:52  Goober5000
+ * made primary and secondary banks quite a bit more friendly... added error-checking
+ * and reorganized a bunch of code
+ * --Goober5000
+ *
  * Revision 2.39  2004/03/20 21:17:13  bobboau
  * fixed -spec comand line option,
  * probly some other stuf
@@ -600,8 +605,13 @@ typedef struct model_special {
 #define MAX_LIVE_DEBRIS	7
 
 struct buffer_data{
+	buffer_data():index_buffer(NULL){};
+	~buffer_data(){if(index_buffer)free(index_buffer);};
+	void allocate_index_buffer(int size){if(index_buffer)free(index_buffer); index_buffer = (short*)malloc(sizeof(short) * size);};
 	int vertex_buffer;     //index to a array of pointers to vertex buffers
 	int texture;     //this is the texture the vertex buffer will use
+	int n_prim;
+	short* index_buffer;
 //other things we may want to keep track of for vertex buffers, like material settings
 };
 
@@ -661,6 +671,7 @@ typedef struct bsp_info {
 	
 
 	int n_buffers;
+	int indexed_vertex_buffer;
 	int flat_buffer;
 	int flat_line_buffer;
 	buffer_data buffer[MAX_BUFFERS_PER_SUBMODEL];

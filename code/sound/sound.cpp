@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-06-22 23:14:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2004-06-28 02:13:08 $
+ * $Author: bobboau $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/06/22 23:14:10  wmcoolmon
+ * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
+ * OGG code has been commented out, so you don't need the SDK yet.
+ *
  * Revision 2.5  2004/06/18 04:59:55  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -452,10 +456,10 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 //		Warning(LOCATION, "Could not properly initialize the Microsoft ADPCM codec.\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.");
 	}
 
-	if ( OGG_init() == -1)
-	{
-		mprintf(("Could not initialize the OGG vorbis converter."));
-	}
+//	if ( OGG_init() == -1)
+//	{
+//		mprintf(("Could not initialize the OGG vorbis converter."));
+//	}
 
 	// Init the audio streaming stuff
 	audiostream_init();

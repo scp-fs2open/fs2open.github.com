@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.30 $
- * $Date: 2004-05-25 00:37:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/05/25 00:37:26  wmcoolmon
+ * Updated function calls for VC7 use
+ *
  * Revision 2.28  2004/04/11 13:56:33  randomtiger
  * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
  *
@@ -535,9 +538,12 @@ typedef struct color {
 //a list of triangles and there assosiated normals
 
 struct poly_list{
-	poly_list():n_poly(0),vert(NULL),norm(NULL){};
-	~poly_list(){if(vert!=NULL)delete[] vert; if(norm!=NULL)delete[] norm;};
-	int n_poly;
+	poly_list():currently_allocated(0),n_verts(0), n_prim(0),vert(NULL),norm(NULL){};
+	~poly_list();
+	void allocate(int size);
+	int currently_allocated;
+	int n_prim;
+	int n_verts;
 	vertex *vert;
 	vector *norm;
 };
@@ -809,7 +815,8 @@ typedef struct screen {
 
 	int	 (*gf_make_buffer)(poly_list*);
 	void (*gf_destroy_buffer)(int);
-	void (*gf_render_buffer)(int);
+	void (*gf_set_buffer)(int);
+	void (*gf_render_buffer)(int, int, short*);
 	int	 (*gf_make_flat_buffer)(poly_list*);
 	int	 (*gf_make_line_buffer)(line_list*);
 	
@@ -842,6 +849,8 @@ typedef struct screen {
 
 	void (*gf_zbias)(int zbias);
 	void (*gf_setup_background_fog)(bool);
+
+	void (*gf_set_fill_mode)(int);
 
 /*	void (*gf_begin_sprites)();//does prep work for sprites
 	void (*gf_draw_sprite)(vector*);//draws a sprite
@@ -879,6 +888,9 @@ extern bool gr_init(int res, int mode, int depth = 16, int fred_x = -1, int fred
 extern void gr_close();
 
 extern screen gr_screen;
+
+#define GR_FILL_MODE_WIRE 1
+#define GR_FILL_MODE_SOLID 2
 
 #define GR_ZBUFF_NONE	0
 #define GR_ZBUFF_WRITE	(1<<0)
@@ -1081,7 +1093,9 @@ __inline void bm_page_in_xparent_texture( int bitmapnum, int nframes = 1)
 
 #define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)            
-#define gr_render_buffer				 GR_CALL(*gr_screen.gf_render_buffer)            
+#define gr_render_buffer				 GR_CALL(*gr_screen.gf_render_buffer)      
+#define gr_set_buffer				 GR_CALL(*gr_screen.gf_set_buffer)      
+      
 #define gr_make_flat_buffer					 GR_CALL(*gr_screen.gf_make_flat_buffer)            
 #define gr_make_line_buffer					 GR_CALL(*gr_screen.gf_make_line_buffer)            
 
@@ -1108,6 +1122,8 @@ __inline void bm_page_in_xparent_texture( int bitmapnum, int nframes = 1)
 #define	gr_end_clip GR_CALL				(*gr_screen.gf_end_clip_plane)
 
 #define	gr_zbias GR_CALL				(*gr_screen.gf_zbias)
+#define	gr_set_fill_mode GR_CALL				(*gr_screen.gf_set_fill_mode)
+
 
 #define gr_setup_background_fog GR_CALL		(*gr_screen.gf_setup_background_fog)
 

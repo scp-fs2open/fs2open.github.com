@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.65 $
- * $Date: 2004-05-25 00:37:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.66 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2004/05/25 00:37:26  wmcoolmon
+ * Updated function calls for VC7 use
+ *
  * Revision 2.64  2004/05/03 08:41:24  randomtiger
  * Fixed D3D fogging on R7000
  *
@@ -715,9 +718,10 @@
 enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
 // Structures and enums
 struct Vertex_buffer{
-	Vertex_buffer(): ocupied(false), n_prim(0){};
+	Vertex_buffer(): ocupied(false), n_verts(0), n_prim(0){};
 	bool ocupied;
 	int n_prim;
+	int n_verts;
 	vertex_buffer_type type;
 	IDirect3DVertexBuffer8 *buffer;
 };
@@ -1814,6 +1818,22 @@ void gr_d3d_set_cull(int cull)
 	d3d_SetRenderState( D3DRS_CULLMODE, cull ? D3DCULL_CCW : D3DCULL_NONE );				
 }
 
+void gr_d3d_set_fill_mode(int mode)
+{
+	if(mode == GR_FILL_MODE_SOLID){
+		d3d_SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+		return;
+	}
+	if(mode == GR_FILL_MODE_WIRE){
+		d3d_SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
+		return;
+	}
+	//defalt value
+	d3d_SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+
+}
+
+
 /**
  * Cross fade, actually works now
  *
@@ -1921,14 +1941,14 @@ int gr_d3d_make_buffer(poly_list *list){
 	if(idx > -1){
 		IDirect3DVertexBuffer8 **buffer = &vertex_buffer[idx].buffer;
 
-		d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_poly*3), NULL, (void**)buffer);
+		d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_verts), NULL, (void**)buffer);
 
 		D3DVERTEX *v, *V;
 		vertex *L;
 		vector *N;
 
 		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
-		for(int k = 0; k<list->n_poly*3; k++){
+		for(int k = 0; k<list->n_verts; k++){
 				V = &v[k];
 				L = &list->vert[k];
 				N = &list->norm[k];
@@ -1950,7 +1970,8 @@ int gr_d3d_make_buffer(poly_list *list){
 		vertex_buffer[idx].buffer->Unlock();
 
 		vertex_buffer[idx].ocupied = true;
-		vertex_buffer[idx].n_prim  = list->n_poly;
+		vertex_buffer[idx].n_verts  = list->n_verts;
+		vertex_buffer[idx].n_prim  = list->n_verts;
 		vertex_buffer[idx].type = TRILIST_;
 	}
 	return idx;
@@ -1962,14 +1983,14 @@ int gr_d3d_make_flat_buffer(poly_list *list){
 	if(idx > -1){
 		IDirect3DVertexBuffer8 **buffer = &vertex_buffer[idx].buffer;
 
-		d3d_CreateVertexBuffer(D3DVT_LVERTEX, (list->n_poly*3), NULL, (void**)buffer);
+		d3d_CreateVertexBuffer(D3DVT_LVERTEX, (list->n_verts), NULL, (void**)buffer);
 
 		D3DLVERTEX *v, *V;
 		vertex *L;
 //		vector *N;
 
 		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
-		for(int k = 0; k<list->n_poly*3; k++){
+		for(int k = 0; k<list->n_verts; k++){
 				V = &v[k];
 				L = &list->vert[k];
 			//	N = &list->norm[k]; //these don't have normals :\
@@ -1987,7 +2008,7 @@ int gr_d3d_make_flat_buffer(poly_list *list){
 		vertex_buffer[idx].buffer->Unlock();
 
 		vertex_buffer[idx].ocupied = true;
-		vertex_buffer[idx].n_prim  = list->n_poly;
+		vertex_buffer[idx].n_prim  = list->n_verts/3;
 		vertex_buffer[idx].type = FLAT_;
 	}
 	return idx;
@@ -2042,6 +2063,7 @@ int gr_d3d_make_line_buffer(line_list *list){
 	
 //kills buffers dead!
 void gr_d3d_destroy_buffer(int idx){
+	if(idx < 0)return;
 	vertex_buffer[idx].buffer->Release();
 	vertex_buffer[idx].ocupied = false;
 }
@@ -2068,10 +2090,31 @@ extern int GR_center_alpha;
 bool the_lights_are_on;
 extern bool lighting_enabled;
 void gr_d3d_center_alpha_int(int type);
+Vertex_buffer *set_buffer;
+
+void gr_d3d_set_buffer(int idx){
+	set_buffer = &vertex_buffer[idx];
+	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, set_buffer->buffer, sizeof(D3DVERTEX));
+}
+
+IDirect3DIndexBuffer8 *global_index_buffer = NULL;
+int index_buffer_size = 0;
 
 
-void gr_d3d_render_buffer(int idx)
+void gr_d3d_render_buffer(int start, int n_prim, short* index_buffer)
 {
+	if(index_buffer != NULL){
+		if(index_buffer_size < n_prim * 3){
+			GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(short), D3DUSAGE_DYNAMIC, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
+			index_buffer_size = n_prim * 3;
+		}
+		short* i_buffer;
+	//	global_index_buffer->Lock(start, n_prim * 3 * sizeof(short), (BYTE **)&index_buffer, D3DLOCK_DISCARD);
+		global_index_buffer->Lock(0, 0, (BYTE **)&i_buffer, D3DLOCK_DISCARD);
+		memcpy(i_buffer, index_buffer, n_prim*3*sizeof(short));
+		global_index_buffer->Unlock();
+		GlobalD3DVars::lpD3DDevice->SetIndices(global_index_buffer, 0);
+	}
 //	GlobalD3DVars::d3d_caps.MaxActiveLights = 1;
 
 //	if(!the_lights_are_on){
@@ -2109,14 +2152,14 @@ void gr_d3d_render_buffer(int idx)
 		}
 
 
-		if(!vertex_buffer[idx].ocupied) {
+		if(!set_buffer->ocupied) {
 			return;
 		}
-	if(vertex_buffer[idx].type == LINELIST_) {
+/*	if(set_buffer->type == LINELIST_) {
 		gr_d3d_render_line_buffer(idx); 
 		return;
 	}
-
+*/
 	float u_scale = 1.0f, v_scale = 1.0f;
 
 	gr_alpha_blend ab = ALPHA_BLEND_NONE;
@@ -2160,11 +2203,10 @@ void gr_d3d_render_buffer(int idx)
 	int passes = (n_active_lights / GlobalD3DVars::d3d_caps.MaxActiveLights);
 	d3d_SetVertexShader(D3DVT_VERTEX);
 
-	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DVERTEX));
-
 	gr_d3d_center_alpha_int(GR_center_alpha);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-	GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+	if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+	else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
 
 
@@ -2198,7 +2240,8 @@ void gr_d3d_render_buffer(int idx)
 	for(int i = 1; i<passes; i++){
 		shift_active_lights(i);
 		TIMERBAR_PUSH(7);
-		GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+		if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+		else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 		TIMERBAR_POP();
 	}
 	if(!lighting_enabled){
@@ -2223,11 +2266,13 @@ void gr_d3d_render_buffer(int idx)
 
 		if(set_stage_for_spec_mapped()){
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-			GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+			if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+			else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 			d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(0,0,0,0));
 			for(int i = 1; i<passes; i++){
 				shift_active_lights(i);
-				GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+				if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+				else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 			}
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
 		}

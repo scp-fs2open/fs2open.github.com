@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.1 $
- * $Date: 2004-05-24 07:25:32 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2004-06-28 02:13:07 $
+ * $Author: bobboau $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/24 07:25:32  taylor
+ * filename case change
+ *
  * Revision 2.3  2004/04/13 01:55:41  phreak
  * put in the correct fields for the CVS comments to register
  * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
@@ -47,7 +50,8 @@ void gr_opengl_end_clip_plane();
 void opengl_init_vertex_buffers();
 int gr_opengl_make_buffer(poly_list *list);
 void gr_opengl_destroy_buffer(int idx);
-void gr_opengl_render_buffer(int idx);
+void gr_opengl_set_buffer(int idx);
+void gr_opengl_render_buffer(int start, int n_prim, short* index_list);
 
 
 #endif //_GROPENGLTNL_H

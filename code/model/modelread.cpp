@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.42 $
- * $Date: 2004-06-06 20:04:28 $
- * $Author: randomtiger $
+ * $Revision: 2.43 $
+ * $Date: 2004-06-28 02:13:08 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2004/06/06 20:04:28  randomtiger
+ * Commented out mprintf, it was swamping debug console.
+ * Uncommented some code which I hope has plugged the memory leak.
+ *
  * Revision 2.41  2004/05/09 15:02:00  taylor
  * prefer ani over pcx for ship textures
  *
@@ -1017,9 +1021,10 @@ static void model_unload(int modelnum)
 	if (pm->submodel)	{
 		for (i=0; i<pm->n_models; i++ )	{
 			if(!Cmdline_nohtl) {
-				for (int k=0; k<pm->submodel[i].n_buffers; k++ ){
+		/*		for (int k=0; k<pm->submodel[i].n_buffers; k++ ){
 					gr_destroy_buffer(pm->submodel[i].buffer[k].vertex_buffer);
-				}
+				}*/
+				gr_destroy_buffer(pm->submodel[i].indexed_vertex_buffer);
 			}
 			
 			if ( pm->submodel[i].bsp_data )	{
