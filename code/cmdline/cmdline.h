@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.50 $
- * $Date: 2004-03-20 14:47:12 $
- * $Author: randomtiger $
+ * $Revision: 2.51 $
+ * $Date: 2004-04-03 18:11:20 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2004/03/20 14:47:12  randomtiger
+ * Added base for a general dynamic batching solution.
+ * Fixed NO_DSHOW_CODE code path bug.
+ *
  * Revision 2.49  2004/03/19 14:51:54  randomtiger
  * New command line parameter: -d3d_lesstmem causes D3D to bypass V's secondry texture system.
  *
@@ -481,4 +485,8 @@ extern char *Cmdline_start_mission;
 extern int Cmdline_d3d_lesstmem;
 extern int Cmdline_batch_3dunlit;
 
+extern int Cmdline_FRED2_htl;
+extern int CmdLine_FRED2_NoWarn;
+
+//extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif

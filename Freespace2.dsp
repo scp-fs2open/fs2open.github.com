@@ -94,7 +94,7 @@ LINK32=link.exe
 InputPath=C:\games\freespace2\fs2_open_d.exe
 SOURCE="$(InputPath)"
 
-"c:\games\freespace2\fs2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"d:\games\freespace2\fs2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
 	copy $(InputPath) D:\games\freespace2
 
 # End Custom Build

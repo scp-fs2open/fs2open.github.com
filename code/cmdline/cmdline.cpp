@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.63 $
- * $Date: 2004-04-02 18:25:16 $
- * $Author: randomtiger $
+ * $Revision: 2.64 $
+ * $Date: 2004-04-03 18:11:20 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/04/02 18:25:16  randomtiger
+ * Changed D3D secondry texture system to be off by default to save mem.
+ * Added some friendly names for parameters.
+ *
  * Revision 2.62  2004/03/20 14:47:12  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -498,6 +502,7 @@
  * $NoKeywords: $
  */
 
+#include <direct.h>
 #include <string.h>
 #include <stdlib.h>
 #include "globalincs/pstypes.h"
@@ -672,6 +677,8 @@ cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 cmdline_parm get_flags_arg("-get_flags",NULL);
 cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
+cmdline_parm fred2_htl_arg("-fredhtl",NULL);
+cmdline_parm fred2_nowarn_arg("-fred_no_warn", NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -732,6 +739,10 @@ int Cmdline_show_mem_usage = 0;
 int Cmdline_d3d_lesstmem = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
+int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
+int CmdLine_FRED2_NoWarn = 0; // turn warnings off in FRED
+
+//char FreeSpace_Directory[256]; // allievating a cfilesystem problem caused by fred -- Kazan
 
 static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
@@ -918,10 +929,12 @@ cmdline_parm::cmdline_parm(char *name_, char *help_)
 // destructor - frees any allocated memory
 cmdline_parm::~cmdline_parm()
 {
+#ifndef FRED
 	if (args) {
 		delete [] args;
 		args = NULL;
 	}
+#endif
 }
 
 
@@ -960,6 +973,17 @@ char *cmdline_parm::str()
 bool SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
+	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
+
+	if (fred2_nowarn_arg.found())
+	{
+		CmdLine_FRED2_NoWarn = 1;
+	}
+
+	if (fred2_htl_arg.found())
+	{
+		Cmdline_FRED2_htl = 1;
+	}
 
 	if (timerbar_arg.found()) {
 		Cmdline_timerbar = 1;

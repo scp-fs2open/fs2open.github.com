@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-03-05 09:01:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2004-04-03 18:11:19 $
+ * $Author: Kazan $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,10 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/03/05 09:01:54  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.8  2003/09/14 18:32:41  wmcoolmon
  * Added "-safeloading" command line parameter, which uses old fs2_retail-style loading code -C
  *
@@ -843,12 +847,26 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 	long findhandle;
 	_finddata_t findstruct;
 #endif
+	// for testing
+	char test[256];
+	getcwd(test, 256);
+
 
 	for (i=0; i<num_search_dirs; i++ )	{
 		char longname[MAX_PATH_LEN];
 
 		cf_create_default_path_string( longname, search_order[i], filespec, localize );
 #if defined _WIN32
+
+		/*
+		// fixing a fred2 problem
+		char longpath[MAX_PATH_LEN];
+		strcpy(longpath, FreeSpace_Directory);
+		strcat(longpath, "\\");
+		strcat(longpath, longname);
+		strcpy(longname, longpath);*/
+
+
 
 		if(!Cmdline_safeloading)
 		{
