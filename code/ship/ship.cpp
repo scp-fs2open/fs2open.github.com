@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.115 $
- * $Date: 2004-04-03 02:55:50 $
- * $Author: bobboau $
+ * $Revision: 2.116 $
+ * $Date: 2004-04-13 05:42:44 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2004/04/03 02:55:50  bobboau
+ * commiting recent minor bug fixes
+ *
  * Revision 2.114  2004/03/21 10:34:05  bobboau
  * fixed a texture loading bug
  *
@@ -3371,6 +3374,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		// if duplicate, use the duplicate info
 		if (shipp->alt_modelnum != -1)
 		{
+			Assert(shipp->subsystems);
+
 			sp = &(shipp->subsystems[i]);
 		}
 		else
@@ -3391,7 +3396,10 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->system_info = sp;						// set the system_info pointer to point to the data read in from the model
 
-		ship_system->max_hits = sp->max_subsys_strength * shipp->ship_initial_hull_strength / sinfo->initial_hull_strength;
+		// Goober5000 - this has to be moved outside back to parse_create_object, because
+		// a lot of the ship creation code is duplicated in several points and overwrites
+		// previous things... ugh.
+		ship_system->max_hits = sp->max_subsys_strength;	// * shipp->ship_initial_hull_strength / sinfo->initial_hull_strength;
 
 		if ( !Fred_running ){
 			ship_system->current_hits = ship_system->max_hits;		// set the current hits
