@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.14 $
- * $Date: 2003-08-16 03:52:23 $
- * $Author: bobboau $
+ * $Revision: 2.15 $
+ * $Date: 2003-09-11 19:05:10 $
+ * $Author: argv $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/08/16 03:52:23  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.13  2003/08/05 23:45:18  bobboau
  * glow maps, for some reason they wern't in here, they should be now,
  * also there is some debug code for changeing the FOV in game,
@@ -1068,10 +1077,13 @@ void process_debug_keys(int k)
 
 					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, (float) -Player_ai->targeted_subsys->system_info->type); //100.0f);
 
+					// _argv[-1] - this is now handled in hudets.cpp.
+					/*
 					if ( sp->subsys_info[SUBSYSTEM_ENGINE].current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
 						sp->flags |= SF_DISABLED;				// add the disabled flag
 					}
+					*/
 
 					if ( sp->subsys_info[SUBSYSTEM_TURRET].current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
