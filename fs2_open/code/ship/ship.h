@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.36 $
- * $Date: 2003-03-05 12:38:01 $
+ * $Revision: 2.37 $
+ * $Date: 2003-03-06 09:13:43 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/03/05 12:38:01  Goober5000
+ * rewrote the restricted bank loadout code; it should work now
+ * --Goober5000
+ *
  * Revision 2.35  2003/03/05 09:17:15  Goober5000
  * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
  * --Goober5000
@@ -453,9 +457,9 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 // Goober5000 - now used in hudtarget.cpp->hud_get_best_primary_bank
 // Goober5000 - now also used in ship.cpp for weapon specific bank parsing
 #define MAX_SUPPORTED_PRIMARY_BANKS	2
-#define UPPER_BOUND_PRIMARY_BANK	(MAX_SUPPORTED_PRIMARY_BANKS - 1)
+#define UPPER_BOUND_SUPPORTED_PRIMARY_BANK	(MAX_SUPPORTED_PRIMARY_BANKS - 1)
 #define MAX_SUPPORTED_SECONDARY_BANKS	3
-#define UPPER_BOUND_SECONDARY_BANK	(MAX_SUPPORTED_SECONDARY_BANKS - 1)
+#define UPPER_BOUND_SUPPORTED_SECONDARY_BANK	(MAX_SUPPORTED_SECONDARY_BANKS - 1)
 // IMPORTANT: MAX_SUPPORTED_PRIMARY_BANKS+MAX_SUPPORTED_SECONDARY_BANKS must equal MAX_SHIP_WEAPONS
 
 // defines for 'direction' parameter of ship_select_next_primary()

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-03-05 12:38:01 $
+ * $Revision: 2.13 $
+ * $Date: 2003-03-06 09:13:42 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/03/05 12:38:01  Goober5000
+ * rewrote the restricted bank loadout code; it should work now
+ * --Goober5000
+ *
  * Revision 2.11  2003/03/05 09:17:14  Goober5000
  * cleaned out Bobboau's buggy code - about to rewrite with new, bug-free code :)
  * --Goober5000
@@ -1916,7 +1920,7 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 		// possibly re-do flag according to whether it's restricted
 		if (i < MAX_WL_PRIMARY)
 		{
-			if (i < MAX_PRIMARY_BANKS)
+			if (i < MAX_SUPPORTED_PRIMARY_BANKS)
 			{
 				if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i]))
 				{
@@ -1926,11 +1930,11 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 		}
 		else
 		{
-			if (i-MAX_WL_PRIMARY < MAX_SECONDARY_BANKS)
+			if (i-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
 			{
-				if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i-MAX_WL_PRIMARY+MAX_PRIMARY_BANKS]))
+				if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i-MAX_WL_PRIMARY+MAX_SUPPORTED_PRIMARY_BANKS]))
 				{
-					check_flag = Ship_info[ship_class].allowed_bank_restricted_weapons[i-MAX_WL_PRIMARY+MAX_PRIMARY_BANKS][wep[i]];
+					check_flag = Ship_info[ship_class].allowed_bank_restricted_weapons[i-MAX_WL_PRIMARY+MAX_SUPPORTED_PRIMARY_BANKS][wep[i]];
 				}
 			}
 		}
@@ -3723,21 +3727,21 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 		to_index = -1;
 
 		// calculate indices for ship_info
-		if (from_bank < MAX_PRIMARY_BANKS)
+		if (from_bank < MAX_SUPPORTED_PRIMARY_BANKS)
 		{
 			from_index = from_bank;
 		}
-		if (to_bank < MAX_PRIMARY_BANKS)
+		if (to_bank < MAX_SUPPORTED_PRIMARY_BANKS)
 		{
 			to_index = to_bank;
 		}
-		if (MAX_WL_PRIMARY <= from_bank && from_bank-MAX_WL_PRIMARY < MAX_SECONDARY_BANKS)
+		if (MAX_WL_PRIMARY <= from_bank && from_bank-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
 		{
-			from_index = from_bank - MAX_WL_PRIMARY + MAX_PRIMARY_BANKS;
+			from_index = from_bank - MAX_WL_PRIMARY + MAX_SUPPORTED_PRIMARY_BANKS;
 		}
-		if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SECONDARY_BANKS)
+		if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
 		{
-			to_index = to_bank - MAX_WL_PRIMARY + MAX_PRIMARY_BANKS;
+			to_index = to_bank - MAX_WL_PRIMARY + MAX_SUPPORTED_PRIMARY_BANKS;
 		}
 
 		ship_info *sip = &Ship_info[slot->ship_class];
@@ -3900,13 +3904,13 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 	to_index = -1;
 
 	// calculate index for ship_info
-	if (to_bank < MAX_PRIMARY_BANKS)
+	if (to_bank < MAX_SUPPORTED_PRIMARY_BANKS)
 	{
 		to_index = to_bank;
 	}
-	if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SECONDARY_BANKS)
+	if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
 	{
-		to_index = to_bank - MAX_WL_PRIMARY + MAX_PRIMARY_BANKS;
+		to_index = to_bank - MAX_WL_PRIMARY + MAX_SUPPORTED_PRIMARY_BANKS;
 	}
 
 	ship_info *sip = &Ship_info[slot->ship_class];
@@ -3916,9 +3920,9 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 	{
 		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_index]))
 		{
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_index][slot->wep[from_list]]))
+			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_index][from_list]))
 			{
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "This bank is unable to carry %s weaponry", Weapon_info[slot->wep[from_list]].name);
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "This bank is unable to carry %s weaponry", Weapon_info[from_list].name);
 				return 0;
 			}
 		}
@@ -3982,13 +3986,13 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 	to_index = -1;
 
 	// calculate index for ship_info
-	if (to_bank < MAX_PRIMARY_BANKS)
+	if (to_bank < MAX_SUPPORTED_PRIMARY_BANKS)
 	{
 		to_index = to_bank;
 	}
-	if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SECONDARY_BANKS)
+	if (MAX_WL_PRIMARY <= to_bank && to_bank-MAX_WL_PRIMARY < MAX_SUPPORTED_SECONDARY_BANKS)
 	{
-		to_index = to_bank - MAX_WL_PRIMARY + MAX_PRIMARY_BANKS;
+		to_index = to_bank - MAX_WL_PRIMARY + MAX_SUPPORTED_PRIMARY_BANKS;
 	}
 
 	ship_info *sip = &Ship_info[slot->ship_class];
@@ -3998,9 +4002,9 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 	{
 		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_index]))
 		{
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_index][slot->wep[from_list]]))
+			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_index][from_list]))
 			{
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "This bank is unable to carry %s weaponry", Weapon_info[slot->wep[from_list]].name);
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "This bank is unable to carry %s weaponry", Weapon_info[from_list].name);
 				return 0;
 			}
 		}
