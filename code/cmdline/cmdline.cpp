@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.85 $
- * $Date: 2004-11-29 18:04:53 $
+ * $Revision: 2.86 $
+ * $Date: 2004-12-02 11:20:33 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2004/11/29 18:04:53  taylor
+ * little reorg to flags so Experimental won't show up twice
+ * add/update the wiki links since none of them worked before
+ * remove all options that require an argument since they won't work
+ *
  * Revision 2.84  2004/11/23 19:29:13  taylor
  * fix 2d warp in D3D, add cmdline option for 3d warp
  *
@@ -699,7 +704,7 @@ Flag exe_params[] =
 
 	"-oldfire",		  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.oldfire", 
 	"-nohtl",		  "Software mode (very slow)",		true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nohtl", 
-	"-no_set_gamma",  "Disable D3D gamma",				true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
+	"-no_set_gamma",  "Disable setting of gamma",		true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-dnoshowvid", 	  "Disable video playback",			true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.dnoshowvid", 
 	"-safeloading",	  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.safeloading", 
 	"-query_speech",  "Does this build have speech?",   true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.query_speech",
