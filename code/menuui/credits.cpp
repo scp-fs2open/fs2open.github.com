@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-10-05 16:46:10 $
- * $Author: randomtiger $
+ * $Revision: 2.4 $
+ * $Date: 2002-11-02 22:10:48 $
+ * $Author: DTP $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/10/05 16:46:10  randomtiger
+ * Added us fs2_open people to the credits. Worth looking at just for that.
+ * Added timer bar code, by default its not compiled in.
+ * Use TIMEBAR_ACTIVE in project and dependancy code settings to activate.
+ * Added the new timebar files with the new code.
+ *
  * Revision 2.2  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -186,6 +192,7 @@ char *fs2_open_credit_text =
 	"Programmers:\n"
 	"\n"
 	"Bobboau\n"
+	"Dennis \"DTP\" Pedersen"
 	"Joe \"Righteous1\" Dowd\n"
 	"Kazan\n"
 	"Mike \"penguin\" Harris\n"
