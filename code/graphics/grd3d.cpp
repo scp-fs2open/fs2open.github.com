@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.58 $
- * $Date: 2004-02-27 04:09:55 $
- * $Author: bobboau $
+ * $Revision: 2.59 $
+ * $Date: 2004-02-28 14:14:56 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2004/02/27 04:09:55  bobboau
+ * fixed a Z buffer error in HTL submodel rendering,
+ * and glow points,
+ * and other stuff
+ *
  * Revision 2.57  2004/02/20 21:45:41  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
  * Changed -htl param to -nohtl. Fixed some badly named functions to match convention.
@@ -933,8 +938,6 @@ void d3d_set_initial_render_state()
 
 		// Turn lighting off here, its on by default!
 		d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-		if(GlobalD3DVars::d3d_caps.RasterCaps & D3DPRASTERCAPS_FOGRANGE)
-			d3d_SetRenderState(D3DRS_RANGEFOGENABLE, TRUE);
 	}
 
 
@@ -1663,7 +1666,7 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
 	if(fog_mode == GR_FOGMODE_NONE){
 		// only change state if we need to
 		if(gr_screen.current_fog_mode != fog_mode){
-			d3d_SetRenderState(D3DRS_FOGENABLE, FALSE );		
+			d3d_SetRenderState(D3DRS_FOGENABLE, FALSE );	
 		}
 		gr_screen.current_fog_mode = fog_mode;
 
@@ -1673,11 +1676,22 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
 
 	// maybe switch fogging on
 	if(gr_screen.current_fog_mode != fog_mode){		
-		d3d_SetRenderState(D3DRS_FOGENABLE, TRUE);	
+		if(GlobalD3DVars::d3d_caps.RasterCaps & D3DPRASTERCAPS_FOGTABLE)
+			d3d_SetRenderState(D3DRS_FOGENABLE, TRUE);	
 
 		// if we're using table fog, enable table fogging
 		if(!Cmdline_nohtl){
-			d3d_SetRenderState( D3DRS_FOGTABLEMODE, D3DFOG_LINEAR );			
+
+			if(GlobalD3DVars::d3d_caps.RasterCaps & D3DPRASTERCAPS_FOGTABLE)
+				d3d_SetRenderState( D3DRS_FOGTABLEMODE, D3DFOG_LINEAR );
+			else 
+			{
+				d3d_SetRenderState( D3DRS_FOGTABLEMODE,   D3DFOG_NONE );
+				d3d_SetRenderState( D3DRS_FOGVERTEXMODE,  D3DFOG_LINEAR);
+
+		  		if(GlobalD3DVars::d3d_caps.RasterCaps & D3DPRASTERCAPS_FOGRANGE)
+		  	  		d3d_SetRenderState(D3DRS_RANGEFOGENABLE, TRUE);
+			}
 		}
 
 		gr_screen.current_fog_mode = fog_mode;	
@@ -1695,8 +1709,8 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
 	// planes changing?
 	if( (fog_near >= 0.0f) && (fog_far >= 0.0f) && ((fog_near != gr_screen.fog_near) || (fog_far != gr_screen.fog_far)) ){		
 		gr_screen.fog_near = fog_near;		
-		gr_screen.fog_far = fog_far;					
-
+		gr_screen.fog_far = fog_far;   
+				
 		// only generate a new fog table if we have to (wfog/table fog mode)
 		if(!Cmdline_nohtl){
 			d3d_SetRenderState( D3DRS_FOGSTART, *((DWORD *)(&fog_near)));		

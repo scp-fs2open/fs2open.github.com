@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-02-14 00:18:33 $
+ * $Revision: 2.16 $
+ * $Date: 2004-02-28 14:14:57 $
  * $Author: randomtiger $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/02/14 00:18:33  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.14  2003/11/12 06:05:00  Goober5000
  * added Bobboau's real name to the credits, with his permission
  * --Goober5000
@@ -235,9 +246,10 @@
 char *fs2_open_credit_text = 
 	"FS2_OPEN STAFF:\n"
 	"\n"
+	"Project Leaders:\n"
 	"\n"
-	"Project leaders:\n"
 	"Edward \"Inquisitor\" Gardner\n"
+	"\n"
 	"Ian \"Goober5000\" Warfield\n"
 	"\n"
 	"Programmers:\n"
@@ -256,16 +268,30 @@ char *fs2_open_credit_text =
 	"Will \"##Unknown Player##\" Rousnel\n"
 	"\"WMCoolmon\"\n"
 	"\n"
-	"\"Readme staff:\n"
-	"\"bottomfan\"\n"
-	"\"Flipside\"\n"
-	"\"redmenace\"\n"
+	"Lead QA\n"
 	"\n"
-	"Web support:\n"
+	"Chris \"Rga\" Pfingsten\n"
+	"\n"
+	"Readme Staff:\n"
+	"\n"
+	"\"Bottomfan\"\n"
+	"\"Flipside\"\n"
+	"\"Redmenace\"\n"
+	"\n"
+	"Web Support:\n"
+	"\n"
 	"Colin \"IceFire\" Czerneda and the staff at VolitionWatch.com\n"
 	"Alex \"Thunder\" Avery and the staff at Hard Light Productions\n"
 	"\n"
 	"Special thanks to:\n"
+	"\n"
+	"Martin \"Maeglamor\"\n"
+	"for donating a graphics card!\n"
+	"\n"
+	"\"Lightspeed\"\n"
+	"for helping out whenever and whereever he could\n"
+	"\n"
+	"Very special thanks to:\n"
 	"\n"
 	"Volition for making FS2 such a great game\n"
 	"Dave Baranec for giving us the code and keeping us sanity checked\n"

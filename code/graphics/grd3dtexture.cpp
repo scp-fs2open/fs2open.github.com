@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.31 $
- * $Date: 2004-02-20 04:29:54 $
- * $Author: bobboau $
+ * $Revision: 2.32 $
+ * $Date: 2004-02-28 14:14:56 $
+ * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2004/02/20 04:29:54  bobboau
+ * pluged memory leaks,
+ * 3D HTL lasers (they work perfictly)
+ * and posably fixed Turnsky's shinemap bug
+ *
  * Revision 2.30  2004/02/16 11:47:33  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -1279,18 +1284,11 @@ void d3d_tcache_frame()
 
 void gr_d3d_preload_init()
 {
-	if ( gr_screen.mode != GR_DIRECT3D )	{
-		return;
-	}
 	d3d_tcache_flush();
 }
 
 int gr_d3d_preload(int bitmap_num, int is_aabitmap)
 {
-	if ( gr_screen.mode != GR_DIRECT3D )	{
-		return 0;
-	}
-
 	float u_scale, v_scale;
 	int retval;
 	

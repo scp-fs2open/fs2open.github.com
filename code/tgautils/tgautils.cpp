@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-03-18 10:07:06 $
- * $Author: unknownplayer $
+ * $Revision: 2.3 $
+ * $Date: 2004-02-28 14:14:57 $
+ * $Author: randomtiger $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/03/18 10:07:06  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.1.2.1  2002/11/04 03:02:29  randomtiger
  *
  * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
@@ -442,13 +445,9 @@ int targa_read_header(char *real_filename, int *w, int *h, int *bpp, ubyte *pale
 	*h = header.height;
 	*bpp = header.pixel_depth;
 
-	// only support 16 bit pixels for other engines
-	if(gr_screen.mode != GR_DIRECT3D) {
-		Assert(*bpp == 16);
-		if(*bpp != 16){
-			return TARGA_ERROR_READING;
-		}
-	}
+	Assert(*bpp == 16);
+	if(*bpp != 16)
+		return TARGA_ERROR_READING;
 	
 	return TARGA_ERROR_NONE;
 }
