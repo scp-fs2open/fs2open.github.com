@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-04-27 20:43:32 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2004-04-30 18:32:51 $
+ * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/04/27 20:43:32  taylor
+ * fix create game buttons
+ *
  * Revision 2.26  2004/04/24 15:44:22  Kazan
  * Fixed Lobby screen showing up while exiting from non-tracker games
  * Time dialiation up to 1/4
@@ -1706,11 +1709,14 @@ void multi_join_game_do_frame()
 			help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
 		} else {		
 			// #kazan# changed for chat
-			//gameseq_post_event(GS_EVENT_MAIN_MENU);
+#if defined(PXO_LOBBY)
 			if (Om_tracker_flag)
 				gameseq_post_event(GS_EVENT_NET_CHAT);
 			else
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
+#else
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+#endif
 			gamesnd_play_iface(SND_USER_SELECT);
 		}
 		break;
