@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.62 $
- * $Date: 2004-09-10 13:51:20 $
- * $Author: et1 $
+ * $Revision: 2.63 $
+ * $Date: 2004-11-23 19:29:13 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2004/09/10 13:51:20  et1
+ * Command line option for TBP for warp stuff, "-tbpwarpeffects"
+ *
  * Revision 2.61  2004/08/11 05:06:19  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -532,6 +535,7 @@ extern int Cmdline_d3d_lesstmem;
 extern int Cmdline_batch_3dunlit;
 
 extern int Cmdline_2d_poof;
+extern int Cmdline_3dwarp;
 
 extern int Cmdline_FRED2_htl;
 extern int CmdLine_NoWarn;

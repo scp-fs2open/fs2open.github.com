@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.83 $
- * $Date: 2004-09-10 13:51:45 $
- * $Author: et1 $
+ * $Revision: 2.84 $
+ * $Date: 2004-11-23 19:29:13 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2004/09/10 13:51:45  et1
+ * Command line option for TBP for warp stuff, "-tbpwarpeffects"
+ *
  * Revision 2.82  2004/08/08 02:56:54  phreak
  * fixed the -orbradar launcher string
  *
@@ -673,6 +676,7 @@ Flag exe_params[] =
 	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"", 
 	"-orbradar",	  "Enables 3d radar",				true,   EASY_ALL_ON,	 EASY_DEFAULT,		"Graphics",		"",
     "-tbpwarpeffects","Enable TBP Warp Effects",        true,   0,               EASY_DEFAULT,      "Graphics",     "", // TBP warp effects -Et1
+	"-3dwarp",        "Enable 3d warp",                 true,   0,               EASY_DEFAULT,      "Graphics",     "",
 
 	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"", 
 
@@ -786,6 +790,7 @@ cmdline_parm alpha_env("-alpha_env", NULL);
 cmdline_parm decals("-decals", NULL);	
 cmdline_parm orb_radar("-orbradar",NULL);
 cmdline_parm TBPWarpEffects( "-tbpwarpeffects", NULL ); // TBP warp effects -Et1
+cmdline_parm use_3dwarp("-3dwarp", NULL);
 
 //Experimental
 cmdline_parm load_only_used("-loadonlyused", NULL);
@@ -830,6 +835,7 @@ int Cmdline_ship_choice_3d = 0;
 int Cmdline_d3d_particle = 0;
 int Cmdline_orb_radar = 0;
 int Cmdline_TBPWarpEffects = 0; // TBP warp effects -Et1
+int Cmdline_3dwarp = 0;
 
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
@@ -1358,6 +1364,9 @@ bool SetCmdlineParams()
 
     }
 
+	if ( use_3dwarp.found() ) {
+		Cmdline_3dwarp = 1;
+	}
 
 //specular comand lines
 	if ( spec_exp_arg.found() ) {

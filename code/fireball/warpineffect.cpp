@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-09-17 07:12:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2004-11-23 19:29:13 $
+ * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/09/17 07:12:22  Goober5000
+ * changed around the logic for the 3D warp effect
+ * --Goober5000
+ *
  * Revision 2.20  2004/08/23 04:32:39  Goober5000
  * warp effect is back to FS2 default
  * --Goober5000
@@ -214,6 +218,7 @@
 
 extern int Warp_model;
 extern int Cmdline_nohtl;
+extern int Cmdline_3dwarp;
 
 DCF(norm,"normalize a zero length vector")
 {
@@ -320,7 +325,7 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 		}
 	}
 
-	if(Warp_model > -1 && (warp_3d || (The_mission.flags & MISSION_FLAG_3D_WARP_EFFECT)))
+	if(Warp_model > -1 && (warp_3d || (The_mission.flags & MISSION_FLAG_3D_WARP_EFFECT) || Cmdline_3dwarp))
 	{
 		float model_Interp_scale_x = radius /20;
 		float model_Interp_scale_y = radius /20;
@@ -419,10 +424,12 @@ void warpin_render(object *obj, matrix *orient, vector *pos, int texture_bitmap_
 			}
 		}
 
+		gr_set_cull(0); // fixes rendering problem in D3D - taylor
 		draw_face( &verts[0], &verts[4], &verts[1] );
 		draw_face( &verts[1], &verts[4], &verts[2] );
 		draw_face( &verts[4], &verts[3], &verts[2] );
 		draw_face( &verts[0], &verts[3], &verts[4] );
+		gr_set_cull(1);
 	}
 	gr_zbuffer_set( saved_gr_zbuffering );
 }
