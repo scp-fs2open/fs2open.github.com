@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-17 18:46:07 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-26 20:47:37 $
+ * $Author: Kazan $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/17 18:46:07  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.11  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -245,8 +248,7 @@
 #include "network/multi.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // --------------------------------------------------------------------------------------------------------
 // Demo title screen

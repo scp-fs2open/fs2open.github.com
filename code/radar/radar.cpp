@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.9 $
- * $Date: 2004-07-12 16:33:03 $
+ * $Revision: 2.10 $
+ * $Date: 2004-07-26 20:47:50 $
  * $Author: Kazan $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2004/07/12 16:33:03  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.8  2004/07/03 06:08:54  wmcoolmon
  * Removed function pointer w/ default arguments for compatibility with .NET Sorry, you'll just have to add that "0" by hand. :p
  *
@@ -205,8 +208,7 @@
 #include "ship/awacs.h"
 #include "radar/radarsetup.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 int Radar_radius[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640

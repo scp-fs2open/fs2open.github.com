@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.40 $
- * $Date: 2004-07-12 16:32:48 $
+ * $Revision: 2.41 $
+ * $Date: 2004-07-26 20:47:31 $
  * $Author: Kazan $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.39  2004/07/11 03:22:49  bobboau
  * added the working decal code
  *
@@ -582,8 +585,7 @@
 
 #include "network/multi_log.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 bool Supports_compression[NUM_COMPRESSION_TYPES];
 

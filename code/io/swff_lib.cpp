@@ -41,8 +41,7 @@ Version	Date		Author	Comments
 #include "directx/vdinput.h"
 #undef INITGUIDS
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #pragma warning(disable:4711)	// function selected for inlining
 

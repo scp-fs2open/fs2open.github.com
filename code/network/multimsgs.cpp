@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-07-15 00:16:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.23 $
+ * $Date: 2004-07-26 20:47:42 $
+ * $Author: Kazan $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/15 00:16:46  wmcoolmon
+ * I though I fixed this...
+ *
  * Revision 2.21  2004/07/12 16:32:57  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -500,8 +503,7 @@ extern char PXO_Server[];
 extern int PXO_port;
 #pragma warning(pop)
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-07-12 16:32:56 $
+ * $Revision: 2.28 $
+ * $Date: 2004-07-26 20:47:41 $
  * $Author: Kazan $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/07/12 16:32:56  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.26  2004/07/01 01:12:33  bobboau
  * implemented index buffered background bitmaps,
  * OGL people you realy should get this implemented
@@ -249,8 +252,7 @@
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS

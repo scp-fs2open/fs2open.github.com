@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-25 18:46:28 $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-26 20:47:31 $
  * $Author: Kazan $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/25 18:46:28  Kazan
+ * -fred_no_warn has become -no_warn and applies to both fred and fs2
+ * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
+ * fixed player ship speed bug w/ player-use-ai, now stays in formation correctly and manages speed
+ * made -radar_reduce ignore itself if no parameter is given (ignoring launcher bug)
+ *
  * Revision 2.11  2004/07/25 00:31:28  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -168,8 +174,7 @@
 #ifdef _MSC_VER
 #include <crtdbg.h>
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 //Uncomment SHOW_CALL_STACK to show the call stack in Asserts, Warnings, and Errors
 #define SHOW_CALL_STACK

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.106 $
- * $Date: 2004-07-26 17:54:04 $
+ * $Revision: 2.107 $
+ * $Date: 2004-07-26 20:47:28 $
  * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2004/07/26 17:54:04  Kazan
+ * Autopilot system completed -- i am dropping plans for GUI nav map
+ * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
+ * Fixed FPS counter during time compression
+ *
  * Revision 2.105  2004/07/18 04:07:26  Kazan
  * nothing major
  *
@@ -1124,13 +1129,8 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "network/fs2ox.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 
-#if defined(_MCD_CHECK)
-FILE *mem_log = NULL;
-#endif
 
 #ifdef NDEBUG
 #ifdef FRED
@@ -2081,10 +2081,7 @@ void game_level_init(int seed)
 
 	cube_map_drawen = false;
 
-#if defined(_MCD_CHECK)
-	fputs("Post Level Init Stats: ", mem_log);
-	showMemStats();
-#endif
+
 }
 
 // called when a mission is over -- does server specific stuff.
@@ -7683,10 +7680,7 @@ int WinMainSub(int argc, char *argv[])
 #endif
 {
 
-#if defined(_MCD_CHECK)
-	mem_log = fopen("memory_log.txt", "a");
-	_MCD_MemStatLog(mem_log);
-#endif
+
 
 #ifdef _DEBUG
 	void memblockinfo_output_memleak();
@@ -7800,10 +7794,7 @@ int WinMainSub(int argc, char *argv[])
 #endif
 
 	game_init();
-#if defined(_MCD_CHECK)
-	fputs("Post Init Stats: ", mem_log);
-	showMemStats();
-#endif
+
 	game_stop_time();
 
    if (Cmdline_SpewMission_CRCs) // -missioncrcs
@@ -7868,10 +7859,7 @@ int WinMainSub(int argc, char *argv[])
 			break;
 		}
 
-		/*#if defined(_MCD_CHECK)
-	fputs("Post Init Stats: ", mem_log);
-	showMemStats();
-#endif*/
+
 	} 
 
 #ifdef FS2_DEMO
@@ -7884,13 +7872,6 @@ int WinMainSub(int argc, char *argv[])
 #endif
 
 	game_shutdown();
-#if defined(_MCD_CHECK)
-	fputs("Post Shutdown Stats: ", mem_log);
-	showMemStats();
-#endif
-#if defined(_MCD_CHECK)
-	fclose(mem_log);
-#endif
 
 #ifdef _WIN32
 	return 1;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.10 $
- * $Date: 2004-07-12 16:32:57 $
+ * $Revision: 1.11 $
+ * $Date: 2004-07-26 20:47:42 $
  * $Author: Kazan $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/07/12 16:32:57  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.9  2004/04/03 18:11:21  Kazan
  * FRED fixes
  *
@@ -75,8 +78,6 @@ TCP_Socket ServerConnection;
 
 #include "irc/irc.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 irc_client IRCConn;
 

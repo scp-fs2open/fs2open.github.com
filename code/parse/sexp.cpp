@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.95 $
- * $Date: 2004-07-26 17:54:05 $
+ * $Revision: 2.96 $
+ * $Date: 2004-07-26 20:47:47 $
  * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2004/07/26 17:54:05  Kazan
+ * Autopilot system completed -- i am dropping plans for GUI nav map
+ * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
+ * Fixed FPS counter during time compression
+ *
  * Revision 2.94  2004/07/12 16:33:01  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -777,8 +782,7 @@
 #include "autopilot/autopilot.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define TRUE	1
 #define FALSE	0

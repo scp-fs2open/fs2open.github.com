@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-25 00:31:28 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-26 20:47:26 $
  * $Author: Kazan $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/25 00:31:28  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.7  2004/07/12 16:32:43  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -406,8 +409,6 @@
 #include "io/joy.h"
 #include "localization/localize.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #define TARGET_TAB			0
 #define SHIP_TAB				1

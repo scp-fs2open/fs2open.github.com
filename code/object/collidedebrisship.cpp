@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:59 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:45 $
  * $Author: Kazan $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:59  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/03/05 09:01:57  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -187,8 +190,7 @@
 #include "hud/hud.h"
 #include "object/object.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 

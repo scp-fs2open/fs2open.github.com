@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-12 16:32:58 $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-26 20:47:44 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/12 16:32:58  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.10  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -402,8 +405,7 @@ HANDLE Standalone_thread;
 DWORD Standalone_thread_id;
 static HWND Standalone_hwnd = NULL;
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // -----------------------------------------------------------------------------------------
 // standalone global defs

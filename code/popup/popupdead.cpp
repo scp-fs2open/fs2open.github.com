@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:33:03 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:49 $
  * $Author: Kazan $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:33:03  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/03/05 09:02:11  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -143,8 +146,6 @@
 #include "network/multiutil.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 UI_WINDOW	Popupdead_window;
 UI_BUTTON	Popupdead_buttons[POPUPDEAD_NUM_CHOICES_MAX];				// actual lit buttons

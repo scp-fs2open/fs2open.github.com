@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-07-12 16:33:09 $
+ * $Revision: 2.19 $
+ * $Date: 2004-07-26 20:47:56 $
  * $Author: Kazan $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/07/12 16:33:09  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.17  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -182,8 +185,6 @@
 #include "io/timer.h"
 #include "ship/ship.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #define MAX_TRAILS 1500
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.11 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 2.12 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.10  2004/05/10 08:03:30  Goober5000
  * fixored the handling of no lasers and no engines... the tests should check the ship,
  * not the object
@@ -183,8 +186,6 @@
 #include "globalincs/systemvars.h"
 #include "object/object.h"
 	
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #define ENERGY_DIVERT_DELTA				0.2f	// percentage of energy transferred in a shield->weapon or weapon->shield energy transfer
 #define INTIAL_SHIELD_RECHARGE_INDEX	4		// default shield charge rate (index in Energy_levels[])

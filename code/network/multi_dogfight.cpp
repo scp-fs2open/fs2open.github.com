@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:57 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:42 $
  * $Author: Kazan $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:57  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/03/08 15:06:24  Kazan
  * Did, undo
  *
@@ -99,8 +102,7 @@
 #include "fs2open_pxo/client.h"
 #include "cfile/cfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #if !defined(PXO_TCP)
 extern UDP_Socket FS2OpenPXO_Socket; // obvious :D - Kazan

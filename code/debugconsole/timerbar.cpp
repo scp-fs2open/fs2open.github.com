@@ -20,8 +20,6 @@
 #include "timerbar.h"
 #include "globalincs\pstypes.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // Internal structure for handling frame data
 typedef	struct 

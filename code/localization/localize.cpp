@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-12 16:32:52 $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/12 16:32:52  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.11  2004/05/10 06:14:40  Goober5000
  * fixed $quote and $semicolon... it was simply a matter of moving the spot where
  * the replacement occurred
@@ -347,8 +350,7 @@
 #include "playerman/player.h"
 #include "cfile/cfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 // ------------------------------------------------------------------------------------------------------------

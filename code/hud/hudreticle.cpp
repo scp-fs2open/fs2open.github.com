@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/03/28 17:49:54  taylor
  * runtime language selection, mantis:0000133
  *
@@ -222,8 +225,7 @@
 #include "network/multi.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 static int Reticle_inited = 0;
 

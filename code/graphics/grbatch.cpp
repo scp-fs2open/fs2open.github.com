@@ -11,8 +11,7 @@
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 typedef struct {
 	int start, length;

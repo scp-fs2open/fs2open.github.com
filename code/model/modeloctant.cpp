@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:32:56 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:41 $
  * $Author: Kazan $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:32:56  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2004/03/20 21:17:13  bobboau
  * fixed -spec comand line option,
  * probly some other stuf
@@ -113,9 +116,6 @@
 #include "math/vecmat.h"
 #include "model/modelsinc.h"
 #include "cmdline/cmdline.h"
-
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 
 // returns 1 if a point is in an octant.

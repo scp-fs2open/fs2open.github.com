@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-17 18:46:08 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-26 20:47:37 $
+ * $Author: Kazan $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/17 18:46:08  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.13  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -276,8 +279,7 @@
 #include "starfield/supernova.h"
 #include "Cutscene/Cutscenes.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // mission disk stuff
 #define CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD						75

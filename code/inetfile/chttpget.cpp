@@ -9,13 +9,16 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/Chttpget.cpp $
-* $Revision: 2.4 $
-* $Date: 2004-07-12 16:32:50 $
+* $Revision: 2.5 $
+* $Date: 2004-07-26 20:47:33 $
 * $Author: Kazan $
 *
 * HTTP Client class (get only)
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.4  2004/07/12 16:32:50  Kazan
+* MCD - define _MCD_CHECK to use memory tracking
+*
 * Revision 2.3  2004/02/04 09:02:45  Goober5000
 * got rid of unnecessary double semicolons
 * --Goober5000
@@ -127,8 +130,7 @@
 #include "inetfile/inetgetfile.h"
 #include "inetfile/chttpget.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #ifdef __LINUX__
 

@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.21 $
- * $Date: 2004-07-25 00:31:29 $
+ * $Revision: 2.22 $
+ * $Date: 2004-07-26 20:47:46 $
  * $Author: Kazan $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/07/25 00:31:29  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.20  2004/07/12 16:33:00  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -207,8 +210,7 @@
 #include "osapi/osregistry.h"
 #include "cmdline/cmdline.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 // ----------------------------------------------------------------------------------------------------

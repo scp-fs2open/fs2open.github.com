@@ -10,8 +10,7 @@
 #include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // -----------------------------------------------------------------------------------
 // ALPHA DEFINES/VARS

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * $NoKeywords: $
@@ -26,8 +26,8 @@
 #include "network/multi.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
+
 
 // use these to redirect Player_ship and Player_ai when switching into ai mode
 ship Hud_obs_ship;

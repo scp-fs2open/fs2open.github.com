@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.34 $
- * $Date: 2004-07-25 00:31:29 $
+ * $Revision: 2.35 $
+ * $Date: 2004-07-26 20:47:33 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/07/25 00:31:29  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.33  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -471,9 +474,6 @@
 #if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
 #endif
-
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // --------------------------------------------------------------
 // Global to file 

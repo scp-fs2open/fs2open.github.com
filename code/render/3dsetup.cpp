@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-07-12 16:33:04 $
+ * $Revision: 2.17 $
+ * $Date: 2004-07-26 20:47:50 $
  * $Author: Kazan $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/07/12 16:33:04  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.15  2004/02/13 04:17:14  randomtiger
  * Turned off fog in OGL for Fred.
  * Simulated speech doesnt say tags marked by $ now.
@@ -173,8 +176,7 @@
 #include "graphics/2d.h"			// Needed for w,h,aspect of canvas
 #include "lighting/lighting.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 matrix		View_matrix;		// The matrix to convert local coordinates to screen

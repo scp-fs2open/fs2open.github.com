@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:32:57 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:42 $
  * $Author: Kazan $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:32:57  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2004/04/03 06:22:32  Goober5000
  * fixed some stub functions and a bunch of compile warnings
  * --Goober5000
@@ -63,8 +66,7 @@
 #include "io/timer.h"
 #include "globalincs/alphacolors.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // how many records in the past we'll keep track of
 #define NUM_UPDATE_RECORDS							5

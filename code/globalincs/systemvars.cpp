@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:47 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:31 $
  * $Author: Kazan $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:47  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2002/11/22 20:56:15  phreak
  * added OGL_inited global.  Sets to 0 even if OGL isn't defined by preproccessor
  * -phreak
@@ -206,8 +209,6 @@
 #include "io/timer.h"
 #include "nebula/neb.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 fix Missiontime;
 fix Frametime;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.63 $
- * $Date: 2004-07-25 19:27:51 $
+ * $Revision: 2.64 $
+ * $Date: 2004-07-26 20:47:50 $
  * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/07/25 19:27:51  Kazan
+ * only disable afterburning during AIM_WAYPOINTS and AIM_FLY_TO_SHIP while AutoPilotEngaged
+ *
  * Revision 2.62  2004/07/25 18:46:29  Kazan
  * -fred_no_warn has become -no_warn and applies to both fred and fs2
  * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
@@ -711,8 +714,7 @@
 
 #include "Autopilot/Autopilot.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #pragma optimize("", off)
 #pragma auto_inline(off)

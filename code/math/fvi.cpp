@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:52 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  * Routines to find intersections of various 3d things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:52  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2002/12/07 01:37:41  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -170,8 +173,7 @@
 #include "math/floating.h"
 #include "math/fvi.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define	SMALL_NUM	1E-6
 void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 );

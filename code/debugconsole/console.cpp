@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/DebugConsole/Console.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:32:44 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:27 $
  * $Author: Kazan $
  *
  * Routines for managing the debug console window.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:32:44  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2004/03/05 09:01:58  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -128,8 +131,6 @@
 #include "osapi/osapi.h"
 #include "debugconsole/dbugfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #define MAX_COMMANDS 300
 

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.6 $
- * $Date: 2004-07-21 00:03:46 $
- * $Author: taylor $
+ * $Revision: 1.7 $
+ * $Date: 2004-07-26 20:47:32 $
+ * $Author: Kazan $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/07/21 00:03:46  taylor
+ * fix problem with sectioned menu bitmaps in OGL
+ *
  * Revision 1.5  2004/07/17 18:49:57  taylor
  * oops, I can't spell
  *
@@ -65,8 +68,7 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/grinternal.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 static tcache_slot_opengl *Textures = NULL;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:32:51 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:33 $
  * $Author: Kazan $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:32:51  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2003/11/11 02:15:44  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -160,8 +163,7 @@
 #include "osapi/osapi.h"
 #include "localization/localize.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define KEY_BUFFER_SIZE 16
 

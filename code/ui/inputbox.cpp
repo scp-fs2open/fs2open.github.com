@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:33:08 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:55 $
  * $Author: Kazan $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:33:08  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/07/12 03:19:17  Kazan
  * removed a couple pointless useless messages from the debug console
  *
@@ -212,8 +215,7 @@
 #include "io/timer.h"
 #include "globalincs/alphacolors.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define INPUTBOX_PASSWD_CHAR        '*'   // the password protected char
 

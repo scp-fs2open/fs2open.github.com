@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-17 09:26:00 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2004-07-26 20:47:30 $
+ * $Author: Kazan $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/17 09:26:00  taylor
+ * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
+ *
  * Revision 2.12  2004/07/12 16:32:47  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -173,8 +176,7 @@
 #include "localization/localize.h"
 #include "parse/parselo.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #pragma optimize("", off)
 

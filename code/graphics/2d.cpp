@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.27 $
- * $Date: 2004-07-17 18:43:46 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2004-07-26 20:47:31 $
+ * $Author: Kazan $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2004/07/17 18:43:46  taylor
+ * don't use bitmap sections by default, openil_close()
+ *
  * Revision 2.26  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -613,8 +616,7 @@
 // 3dnow stuff
 // #include "amd3d.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // Includes for different rendering systems
 #include "graphics/grd3dsetup.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.86 $
- * $Date: 2004-07-12 16:32:56 $
+ * $Revision: 2.87 $
+ * $Date: 2004-07-26 20:47:41 $
  * $Author: Kazan $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2004/07/12 16:32:56  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.85  2004/07/11 03:22:50  bobboau
  * added the working decal code
  *
@@ -644,8 +647,7 @@
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 float model_radius = 0;
 

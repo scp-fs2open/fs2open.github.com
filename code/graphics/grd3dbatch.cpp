@@ -9,6 +9,9 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.14  2004/07/05 05:09:19  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -87,8 +90,6 @@
 #include "graphics/grd3dinternal.h"
 #include "debugconsole/timerbar.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 const int FONT_VTYPE = D3DVT_VERTEX2D;
 typedef	D3DVERTEX2D FONT_VERTEX;

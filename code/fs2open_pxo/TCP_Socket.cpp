@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.10 $
- * $Date: 2004-07-12 16:32:46 $
+ * $Revision: 1.11 $
+ * $Date: 2004-07-26 20:47:29 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/07/12 16:32:46  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.9  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -61,8 +64,6 @@
 //#include <process.h>
 //#include <iostream.h>
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 
 //**************************************************************************

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fix.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:52 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  * Code to deal with 16.16 fixed point numbers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:52  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -49,8 +52,7 @@
 #include "globalincs/pstypes.h"
 #include "math/fix.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 fix fixmul(fix a, fix b)
 {

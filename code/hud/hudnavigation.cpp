@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.5 $
- * $Date: 2004-07-26 19:39:49 $
+ * $Revision: 1.6 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/07/26 19:39:49  Kazan
+ * add conditional compilation directive
+ *
  * Revision 1.4  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
  * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
@@ -42,11 +45,6 @@
 #include "hud/hud.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudtargetbox.h"
-
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
-
-
 
 
 

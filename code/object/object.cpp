@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.22 $
- * $Date: 2004-07-12 16:32:59 $
+ * $Revision: 2.23 $
+ * $Date: 2004-07-26 20:47:45 $
  * $Author: Kazan $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2004/07/12 16:32:59  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.21  2004/07/01 01:53:51  phreak
  * function pointer radar update.
  * will enable us to make different radar styles that we can switch between
@@ -530,8 +533,7 @@
 #include "demo/demo.h"
 #include "radar/radarsetup.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 /*
  *  Global variables

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-12 16:32:54 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-26 20:47:37 $
  * $Author: Kazan $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/12 16:32:54  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.6  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -203,8 +206,6 @@
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 static int Key_sets[MAX_KEYED_TARGETS] = {
 	KEY_F5,

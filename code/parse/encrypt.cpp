@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:33:01 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:47 $
  * $Author: Kazan $
  *
  * Module for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:33:01  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2003/11/09 04:09:18  Goober5000
  * edited for language
  * --Goober5000
@@ -76,8 +79,7 @@
 #include "globalincs/pstypes.h"
 #include "parse/encrypt.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 const uint Encrypt_new_signature			= 0x5c331a55;		// new encryption
 const uint Encrypt_signature				= 0xdeadbeef;		// full encryption

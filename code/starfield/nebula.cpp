@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-12 16:33:07 $
+ * $Revision: 2.6 $
+ * $Date: 2004-07-26 20:47:53 $
  * $Author: Kazan $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/12 16:33:07  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.4  2004/03/05 09:02:07  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -149,8 +152,6 @@
 #include "nebula/neb.h"
 #include "cfile/cfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 
 #define MAX_TRIS 200

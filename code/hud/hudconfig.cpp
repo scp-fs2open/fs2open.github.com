@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.7  2004/04/06 01:11:41  Kazan
  * make custom build work again
  *
@@ -291,8 +294,7 @@
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 //////////////////////////////////////////////////////////////////////////////

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:32:51 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:33 $
  * $Author: Kazan $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:32:51  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2003/03/02 05:46:28  penguin
  * Added gcc-compatible asm blocks
  *  - penguin
@@ -104,8 +107,7 @@
 #include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #ifndef NDEBUG
 	#define USE_TIMING

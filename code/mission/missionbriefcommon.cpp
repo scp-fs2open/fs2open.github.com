@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.12 $
- * $Date: 2004-07-17 18:46:08 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2004-07-26 20:47:37 $
+ * $Author: Kazan $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2004/07/17 18:46:08  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.11  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -224,8 +227,6 @@
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // --------------------------------------------------------------------------------------
 // briefing icons

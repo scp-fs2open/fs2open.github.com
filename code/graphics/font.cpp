@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-17 18:46:07 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-26 20:47:31 $
+ * $Author: Kazan $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/17 18:46:07  taylor
+ * various OGL and memory leak fixes
+ *
  * Revision 2.9  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -281,8 +284,7 @@
 #include "localization/localize.h"
 #include "globalincs/systemvars.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 int Num_fonts = 0;
 font Fonts[MAX_FONTS];

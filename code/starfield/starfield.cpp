@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.36 $
- * $Date: 2004-07-17 19:01:15 $
- * $Author: taylor $
+ * $Revision: 2.37 $
+ * $Date: 2004-07-26 20:47:53 $
+ * $Author: Kazan $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/07/17 19:01:15  taylor
+ * stupid braces...
+ *
  * Revision 2.35  2004/07/17 18:59:01  taylor
  * fix set_*_matrix overcompensation, makes OGL work again
  *
@@ -357,8 +360,6 @@
 #include "cmdline\cmdline.h"
 #include "parse/parselo.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #define MAX_DEBRIS_VCLIPS	4
 #define DEBRIS_ROT_MIN				10000

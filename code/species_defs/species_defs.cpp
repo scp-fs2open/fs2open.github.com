@@ -5,11 +5,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.9 $
- * $Date: 2004-07-12 16:33:07 $
+ * $Revision: 1.10 $
+ * $Date: 2004-07-26 20:47:53 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/07/12 16:33:07  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 1.8  2004/03/31 05:42:29  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -61,8 +64,7 @@
 #include "cfile/cfile.h"
 //#include <memory.h>
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // from shield.cpp
 int True_NumSpecies = 3;

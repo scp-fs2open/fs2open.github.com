@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.51 $
- * $Date: 2004-07-12 16:32:48 $
+ * $Revision: 2.52 $
+ * $Date: 2004-07-26 20:47:31 $
  * $Author: Kazan $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.50  2004/07/05 05:09:19  bobboau
  * FVF code, only the data that is needed is sent off to the card,,
  * OGL can take advantage of this if they want but it won't break
@@ -719,8 +722,7 @@
 
 #include <D3dx8tex.h>
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // Viewport used to change render between full screen and sub sections like the pilot animations
 D3DVIEWPORT8 viewport;

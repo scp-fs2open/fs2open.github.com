@@ -13,8 +13,6 @@
 #include <windows.h>
 #include <atlbase.h>
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #pragma warning(disable:4711)	// function selected for inlining
 

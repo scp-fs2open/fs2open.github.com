@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/Popup.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:33:03 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:49 $
  * $Author: Kazan $
  *
  * Code for displaying pop-up dialog boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:33:03  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2004/03/05 09:02:11  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -213,8 +216,7 @@
 #include "globalincs/alphacolors.h"
 #include "osapi/osapi.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define POPUP_MAX_CHOICES			3					// max number of buttons allowed on popup
 

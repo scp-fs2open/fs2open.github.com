@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.8 $
- * $Date: 2004-07-12 16:32:41 $
+ * $Revision: 2.9 $
+ * $Date: 2004-07-26 20:47:23 $
  * $Author: Kazan $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/07/12 16:32:41  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.7  2004/03/31 05:42:25  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -330,8 +333,7 @@
 #include "network/multi.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #ifndef FS2_DEMO
 

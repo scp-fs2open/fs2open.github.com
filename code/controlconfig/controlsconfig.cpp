@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-25 00:31:28 $
+ * $Revision: 2.8 $
+ * $Date: 2004-07-26 20:47:26 $
  * $Author: Kazan $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/25 00:31:28  Kazan
+ * i have absolutely nothing to say about that subject
+ *
  * Revision 2.6  2004/07/12 16:32:43  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -357,8 +360,7 @@
 #include "hud/hud.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define NUM_SYSTEM_KEYS			14
 #define NUM_BUTTONS				19

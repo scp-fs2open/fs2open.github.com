@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:54 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:37 $
  * $Author: Kazan $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:54  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -213,8 +216,7 @@
 #include "network/multiutil.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define MAX_LOG_ENTRIES		700
 #define MAX_LOG_LINES		1000

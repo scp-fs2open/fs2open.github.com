@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.69 $
- * $Date: 2004-07-12 16:32:48 $
+ * $Revision: 2.70 $
+ * $Date: 2004-07-26 20:47:31 $
  * $Author: Kazan $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/07/12 16:32:48  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.68  2004/07/11 03:22:48  bobboau
  * added the working decal code
  *
@@ -728,8 +731,7 @@
 #include "cmdline/cmdline.h"   
 #include "graphics/grbatch.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
 // Structures and enums

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-12 16:33:07 $
+ * $Revision: 2.5 $
+ * $Date: 2004-07-26 20:47:53 $
  * $Author: Kazan $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/12 16:33:07  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.3  2004/03/05 09:02:05  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -210,8 +213,6 @@
 #include "network/multi.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #define MISSION_STATS_START_Y 80
 #define ALLTIME_STATS_START_Y 270

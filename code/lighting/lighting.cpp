@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-07-12 16:32:52 $
+ * $Revision: 2.15 $
+ * $Date: 2004-07-26 20:47:35 $
  * $Author: Kazan $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/07/12 16:32:52  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.13  2004/03/05 09:02:04  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -259,8 +262,7 @@
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 
 #define MAX_LIGHTS 256

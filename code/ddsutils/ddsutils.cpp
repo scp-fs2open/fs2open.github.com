@@ -1,8 +1,7 @@
 #include "ddsutils/ddsutils.h"
 #include "cfile/cfile.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 int Texture_compression_enabled=0;
 

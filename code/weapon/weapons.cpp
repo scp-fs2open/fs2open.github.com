@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/07/17 09:25:59  taylor
+ * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
+ *
  * Revision 2.71  2004/07/14 01:27:01  wmcoolmon
  * Better -load_only_used handling; added mark_weapon_used(weapon ID), which does check for IDs of -1.
  *
@@ -631,8 +634,6 @@
 #include "network/multiutil.h"
 #endif
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 #ifndef NDEBUG
 int Weapon_flyby_sound_enabled = 1;

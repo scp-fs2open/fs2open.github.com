@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.13 $
- * $Date: 2004-07-12 16:32:45 $
+ * $Revision: 2.14 $
+ * $Date: 2004-07-26 20:47:28 $
  * $Author: Kazan $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2004/07/12 16:32:45  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.12  2004/05/12 22:49:14  phreak
  * renamed the warp model variable from 'wm' to 'Warp_model'
  *
@@ -391,8 +394,6 @@
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 int Warp_model;
 

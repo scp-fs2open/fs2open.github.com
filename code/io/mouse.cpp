@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-12 16:32:51 $
+ * $Revision: 2.7 $
+ * $Date: 2004-07-26 20:47:33 $
  * $Author: Kazan $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/12 16:32:51  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.5  2004/02/14 00:18:33  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -165,8 +168,7 @@
 #include "graphics/2d.h"
 #include "osapi/osapi.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1

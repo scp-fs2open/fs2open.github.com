@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/UIMOUSE.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-07-12 16:33:08 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-26 20:47:55 $
  * $Author: Kazan $
  *
  * Code for dealing with the mouse
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/07/12 16:33:08  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -73,8 +76,6 @@
 #include "ui/ui.h"
 #include "io/timer.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 UI_MOUSE ui_mouse;
 

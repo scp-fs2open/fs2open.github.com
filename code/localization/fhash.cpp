@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/localization/fhash.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-07-12 16:32:52 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/07/12 16:32:52  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -40,8 +43,7 @@
 #include "globalincs/pstypes.h"
 #include "localization/fhash.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 // -----------------------------------------------------------------------------------------------
 // HASH DEFINES/VARS

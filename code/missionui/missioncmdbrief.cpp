@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-07-12 16:32:54 $
+ * $Revision: 2.11 $
+ * $Date: 2004-07-26 20:47:38 $
  * $Author: Kazan $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/07/12 16:32:54  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.9  2004/03/05 09:01:55  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -285,8 +288,7 @@
 #include "anim/animplay.h"
 #include "sound/fsspeech.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define NUM_CMD_SETTINGS	2
 

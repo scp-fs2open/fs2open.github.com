@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.77 $
- * $Date: 2004-07-25 18:46:28 $
+ * $Revision: 2.78 $
+ * $Date: 2004-07-26 20:47:25 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2004/07/25 18:46:28  Kazan
+ * -fred_no_warn has become -no_warn and applies to both fred and fs2
+ * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
+ * fixed player ship speed bug w/ player-use-ai, now stays in formation correctly and manages speed
+ * made -radar_reduce ignore itself if no parameter is given (ignoring launcher bug)
+ *
  * Revision 2.76  2004/07/12 16:32:42  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -567,8 +573,6 @@
 #include "species_defs/species_defs.h"
 #include "hud/hudconfig.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // variables
 class cmdline_parm {

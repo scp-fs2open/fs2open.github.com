@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.34 $
- * $Date: 2004-07-12 16:32:49 $
+ * $Revision: 2.35 $
+ * $Date: 2004-07-26 20:47:32 $
  * $Author: Kazan $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.33  2004/06/18 04:59:54  wmcoolmon
  * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
  *
@@ -368,8 +371,6 @@
 #include "ship/awacs.h"
 #include "parse/parselo.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-12 16:32:52 $
+ * $Revision: 2.4 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  * static random functions.  Return "random" number based on integer inut
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/12 16:32:52  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.2  2004/06/05 19:14:42  phreak
  * added static_random_cone which is used for spawn angle features in multi
  *
@@ -53,8 +56,7 @@
 #include "math/staticrand.h"
 #include "math/vecmat.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 int Semirand_inited = 0;
 int Semirand[SEMIRAND_MAX];

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.cpp $
- * $Revision: 2.2 $
- * $Date: 2004-07-12 16:32:52 $
+ * $Revision: 2.3 $
+ * $Date: 2004-07-26 20:47:36 $
  * $Author: Kazan $
  *
  * Low-level floating point math routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/07/12 16:32:52  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
  *
@@ -72,8 +75,7 @@
 #include "math/floating.h"
 #include "io/timer.h"
 
-// memory tracking - ALWAYS INCLUDE LAST
-#include "mcd/mcd.h"
+
 
 #define LOOKUP_BITS	6
 #define EXP_POS		23
