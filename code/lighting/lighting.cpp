@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-08-22 07:35:09 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-09 17:10:55 $
+ * $Author: matt $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/08/22 07:35:09  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.3  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -231,6 +236,8 @@ typedef struct light {
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
+
+extern int nospec;
 
 light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
 int Num_relevent_lights[MAX_LIGHT_LEVELS];
@@ -901,6 +908,13 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 
 	light *l;
 	float rval = 0, gval = 0, bval = 0;
+
+	if ( nospec ) {
+		*param_r = 0;
+		*param_g = 0;
+		*param_b = 0;
+		return;
+	}
 
 	if (Detail.lighting==0) {
 		*param_r = 0;
