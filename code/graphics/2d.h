@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.4 $
- * $Date: 2003-09-26 14:37:14 $
- * $Author: bobboau $
+ * $Revision: 2.5 $
+ * $Date: 2003-10-10 03:59:40 $
+ * $Author: matt $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/09/26 14:37:14  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.3  2003/07/04 02:27:48  phreak
  * added support for cloaking.
  * i will need to contact someone who knows d3d to get this to work
@@ -669,7 +679,6 @@ typedef struct screen {
 	void (*gf_push_texture_matrix)(int unit);
 	void (*gf_pop_texture_matrix)(int unit);
 
-#ifdef HTL
 	int	 (*gf_make_buffer)(poly_list*);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_render_buffer)(int);
@@ -686,7 +695,7 @@ typedef struct screen {
 
 	void (*start_clip_plane)();
 	void (*end_clip_plane)();
-#endif
+
 } screen;
 
 // cpu types
@@ -877,7 +886,6 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define bm_page_in_xparent_texture 		 GR_CALL(*gr_screen.gf_bm_page_in_xparent_texture)     
 #define bm_page_in_aabitmap				 GR_CALL(*gr_screen.gf_bm_page_in_aabitmap)            
 
-#ifdef HTL
 #define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)            
 #define gr_render_buffer				 GR_CALL(*gr_screen.gf_render_buffer)            
@@ -895,7 +903,6 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define	gr_start_clip GR_CALL			(*gr_screen.start_clip_plane)
 #define	gr_end_clip GR_CALL				(*gr_screen.end_clip_plane)
 
-#endif
 
 // new bitmap functions
 extern int Gr_bitmap_poly;

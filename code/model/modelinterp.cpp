@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.33 $
- * $Date: 2003-10-04 22:42:22 $
- * $Author: Kazan $
+ * $Revision: 2.34 $
+ * $Date: 2003-10-10 03:59:41 $
+ * $Author: matt $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2003/10/04 22:42:22  Kazan
+ * fs2netd now TCP
+ *
  * Revision 2.32  2003/09/26 14:37:15  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -418,6 +421,8 @@ int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
 
+extern int nohtl;
+
 int glow_maps_active = 1;
 
 extern int OGL_inited;
@@ -539,10 +544,10 @@ static int FULLCLOAK=-1;
 void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
 void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
 
-#ifdef HTL
+
 void model_render_buffers(bsp_info* model, polymodel * pm);
 void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level);
-#endif
+
 
 void (*model_interp_sortnorm)(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check) = model_interp_sortnorm_b2f;
 
@@ -934,48 +939,50 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 		for (n=0; n<nverts; n++ )	{	
 
-#ifdef HTL
-			if(GEOMETRY_NOISE!=0.0f){
-				GEOMETRY_NOISE = model_radius / 50;
+			if(!nohtl) {
+				if(GEOMETRY_NOISE!=0.0f){
+					GEOMETRY_NOISE = model_radius / 50;
 
-				Interp_verts[n] = src;	
-				point.xyz.x = src->xyz.x + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-				point.xyz.y = src->xyz.y + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-				point.xyz.z = src->xyz.z + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-						
-				g3_rotate_vertex(dest, &point);
-			}else{
-				Interp_verts[n] = src;	
-				g3_rotate_vertex(dest, src);
+					Interp_verts[n] = src;	
+					point.xyz.x = src->xyz.x + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+					point.xyz.y = src->xyz.y + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+					point.xyz.z = src->xyz.z + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+							
+					g3_rotate_vertex(dest, &point);
+				}else{
+					Interp_verts[n] = src;	
+					g3_rotate_vertex(dest, src);
+				}
 			}
-#else
+			else {
 	
-			Interp_verts[n] = src; 	 
-             /* 	                                 
-             vector tmp = *src; 	 
-             // TEST 	                                 ;
-             if(Interp_thrust_twist > 0.0f){ 	                                 
-                     float theta; 	                                 
-                     float st, ct; 	                                 
+				Interp_verts[n] = src; 	 
+				 /* 	                                 
+				 vector tmp = *src; 	 
+				 // TEST 	                                 ;
+				 if(Interp_thrust_twist > 0.0f){ 	                                 
+						 float theta; 	                                 
+						 float st, ct; 	                                 
 
-                     // determine theta for this vertex 	                                 
-                     theta = fl_radian(20.0f + Interp_thrust_twist2); 	                         
-                     st = sin(theta); 	                                 
-                     ct = cos(theta); 	                                 
-  	             }
-                     // twist 	 
-                     tmp.xyz.z = (src->xyz.z * ct) - (src->xyz.y * st); 	 
-                     tmp.xyz.y = (src->xyz.z * st) + (src->xyz.y * ct); 	 
+						 // determine theta for this vertex 	                                 
+						 theta = fl_radian(20.0f + Interp_thrust_twist2); 	                         
+						 st = sin(theta); 	                                 
+						 ct = cos(theta); 	                                 
+  					 }
+						 // twist 	 
+						 tmp.xyz.z = (src->xyz.z * ct) - (src->xyz.y * st); 	 
+						 tmp.xyz.y = (src->xyz.z * st) + (src->xyz.y * ct); 	 
 
-                     // scale the z a bit 	 
-                     tmp.xyz.z += Interp_thrust_twist; 	 
-             } 	 
+						 // scale the z a bit 	 
+						 tmp.xyz.z += Interp_thrust_twist; 	 
+				 } 	 
 
-             g3_rotate_vertex(dest, &tmp); 	 
-             */ 	 
+				 g3_rotate_vertex(dest, &tmp); 	 
+				 */ 	 
 
-             g3_rotate_vertex(dest, src);
-#endif
+				 g3_rotate_vertex(dest, src);
+			}
+
 			src++;		// move to normal
 
 			for (i=0; i<normcount[n]; i++ )	{
@@ -1191,48 +1198,48 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	if ( nv < 0 ) return;
 
 	verts = (model_tmap_vert *)(p+44);
-#ifdef HTL
-	if((Warp_Map < 0)){
-		if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
-			if(Cmdline_cell){
-				for (i=0;i<nv;i++){
-					Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
-					Interp_list[i]->u = verts[i].u;
-					Interp_list[i]->v = verts[i].v;
-					Interp_list[i]->r = 250;
-					Interp_list[i]->g = 250;
-					Interp_list[i]->b = 250;
-	
+	if(!nohtl) {
+		if((Warp_Map < 0)){
+			if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
+				if(Cmdline_cell){
+					for (i=0;i<nv;i++){
+						Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
+						Interp_list[i]->u = verts[i].u;
+						Interp_list[i]->v = verts[i].v;
+						Interp_list[i]->r = 250;
+						Interp_list[i]->g = 250;
+						Interp_list[i]->b = 250;
+		
+					}
+					gr_set_cull(0);
+					gr_set_color( 0, 0, 0 );
+					g3_draw_poly( nv, Interp_list, 0 );
+					gr_set_cull(1);
 				}
-				gr_set_cull(0);
-				gr_set_color( 0, 0, 0 );
-				g3_draw_poly( nv, Interp_list, 0 );
-				gr_set_cull(1);
+				if(!splodeing)return;
 			}
-			if(!splodeing)return;
 		}
-	}
 
-	if(splodeing){
-		float salpha = 1.0f - splode_level;
-		for (i=0;i<nv;i++){
-			Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
-			Interp_list[i]->u = verts[i].u*2;
-			Interp_list[i]->v = verts[i].v*2;
-			Interp_list[i]->r = 255*salpha;
-			Interp_list[i]->g = 250*salpha;
-			Interp_list[i]->b = 200*salpha;
-			model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], salpha, false);
+		if(splodeing){
+			float salpha = 1.0f - splode_level;
+			for (i=0;i<nv;i++){
+				Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
+				Interp_list[i]->u = verts[i].u*2;
+				Interp_list[i]->v = verts[i].v*2;
+				Interp_list[i]->r = 255*salpha;
+				Interp_list[i]->g = 250*salpha;
+				Interp_list[i]->b = 200*salpha;
+				model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], salpha, false);
+			}
+			gr_set_cull(0);
+			gr_set_bitmap( splodeingtexture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, salpha );
+		//	gr_set_color( 255, 250, 200 );
+		//	g3_draw_poly( nv, Interp_list, 0 );
+			g3_draw_poly( nv, Interp_list,  TMAP_FLAG_TEXTURED|TMAP_FLAG_GOURAUD);
+			gr_set_cull(1);
+			return;
 		}
-		gr_set_cull(0);
-		gr_set_bitmap( splodeingtexture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, salpha );
-	//	gr_set_color( 255, 250, 200 );
-	//	g3_draw_poly( nv, Interp_list, 0 );
-		g3_draw_poly( nv, Interp_list,  TMAP_FLAG_TEXTURED|TMAP_FLAG_GOURAUD);
-		gr_set_cull(1);
-		return;
 	}
-#endif
 
 	for (i=0;i<nv;i++)	{
 		Interp_list[i] = &Interp_points[verts[i].vertnum];
@@ -3151,9 +3158,7 @@ void moldel_calc_facing_pts( vector *top, vector *bot, vector *fvec, vector *pos
 //	Int3();
 }
  
-#ifdef HTL
 void light_set_all_relevent();
-#endif
 
 #define mSTUFF_VERTICES()	do { verts[0]->u = 0.0f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.0f; verts[3]->v = 1.0f; } while(0);
 #define mR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
@@ -3346,9 +3351,9 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		d3d_zbias(1);
 	}
 #endif
-#ifdef HTL
-	light_set_all_relevent();
-#endif
+	if(!nohtl) {
+		light_set_all_relevent();
+	}
 	// Draw the subobjects	
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 
@@ -3360,15 +3365,16 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			if(Interp_flags & MR_NO_ZBUFFER){
 				zbuf_mode = GR_ZBUFF_NONE;
 			}
-#ifdef HTL
+			if(!nohtl) {
 
-			gr_zbuffer_set(zbuf_mode);
-			{
-				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
+				gr_zbuffer_set(zbuf_mode);
+				{
+					model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
+				}
 			}
-#else
-			model_interp_subcall( pm, i, detail_level );
-#endif
+			else {
+				model_interp_subcall( pm, i, detail_level );
+			}
 		} 
 		i = pm->submodel[i].next_sibling;
 	}	
@@ -3400,11 +3406,13 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	model_radius = pm->submodel[pm->detail[detail_level]].rad;
 
 	// draw the hull of the ship
-#ifdef HTL
-	model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
-#else
-	model_interp_sub( (ubyte *)pm->submodel[pm->detail[detail_level]].bsp_data, pm, &pm->submodel[pm->detail[detail_level]], 0 );
-#endif
+	if(!nohtl) {
+		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
+	}
+	else {
+
+		model_interp_sub( (ubyte *)pm->submodel[pm->detail[detail_level]].bsp_data, pm, &pm->submodel[pm->detail[detail_level]], 0 );
+	}
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
 		model_draw_debug_points( pm, &pm->submodel[pm->detail[detail_level]] );
@@ -4414,7 +4422,7 @@ int model_is_pirate_ship(int modelnum)
 	return 0;
 }
 
-#ifdef HTL
+
 
 //**********verrtex buffer stuff**********//
 
@@ -4718,5 +4726,3 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	gr_set_lighting( false );
 
 }
-
-#endif

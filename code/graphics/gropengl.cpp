@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.31 $
- * $Date: 2003-10-05 23:40:54 $
- * $Author: phreak $
+ * $Revision: 2.32 $
+ * $Date: 2003-10-10 03:59:41 $
+ * $Author: matt $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/10/05 23:40:54  phreak
+ * bug squashing.
+ * preliminary tnl work done
+ *
  * Revision 2.30  2003/10/04 00:26:43  phreak
  * shinemapping completed. it works!
  * -phreak
@@ -444,6 +448,7 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #define REQUIRED_GL_VERSION 1.2f
 
 extern int OGL_inited;
+extern int nohtl;
 
 int vram_full = 0;			// UnknownPlayer
 
@@ -3980,7 +3985,6 @@ void gr_opengl_translate_texture_matrix(int unit, vector *shift)
 	tex_shift=vmd_zero_vector;
 }
 
-#ifdef HTL
 
 struct uv_pad
 {
@@ -4238,7 +4242,6 @@ void gr_opengl_start_clip()
 void gr_opengl_set_lighting(bool state)
 {}
 
-#endif
 
 extern char *Osreg_title;
 void gr_opengl_init(int reinit)
@@ -4249,9 +4252,9 @@ void gr_opengl_init(int reinit)
 	char curver[3];
 	int bpp = gr_screen.bits_per_pixel;
 
-#ifdef HTL
-	opengl_init_vertex_buffers();
-#endif
+	if(!nohtl) {
+		opengl_init_vertex_buffers();
+	}
 
 	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 
@@ -4612,24 +4615,24 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_pop_texture_matrix = gr_opengl_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
 
-#ifdef HTL
-	gr_screen.gf_make_buffer = gr_opengl_make_buffer;
-	gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
-	gr_screen.gf_render_buffer = gr_opengl_render_buffer;
+	if(!nohtl) {
+		gr_screen.gf_make_buffer = gr_opengl_make_buffer;
+		gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
+		gr_screen.gf_render_buffer = gr_opengl_render_buffer;
 
-	gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;
+		gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
+		gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;
 
-	gr_screen.gf_make_light = gr_opengl_make_light;
-	gr_screen.gf_modify_light = gr_opengl_modify_light;
-	gr_screen.gf_destroy_light = gr_opengl_destroy_light;
-	gr_screen.gf_set_light = gr_opengl_set_light;
+		gr_screen.gf_make_light = gr_opengl_make_light;
+		gr_screen.gf_modify_light = gr_opengl_modify_light;
+		gr_screen.gf_destroy_light = gr_opengl_destroy_light;
+		gr_screen.gf_set_light = gr_opengl_set_light;
 
-	gr_screen.start_clip_plane = gr_opengl_end_clip;
-	gr_screen.end_clip_plane = gr_opengl_start_clip;
+		gr_screen.start_clip_plane = gr_opengl_end_clip;
+		gr_screen.end_clip_plane = gr_opengl_start_clip;
 
-	gr_screen.gf_lighting = gr_opengl_set_lighting;
-#endif
+		gr_screen.gf_lighting = gr_opengl_set_lighting;
+	}
 
 	Mouse_hidden++;
 	gr_reset_clip();

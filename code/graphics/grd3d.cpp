@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.23 $
- * $Date: 2003-09-26 14:37:14 $
- * $Author: bobboau $
+ * $Revision: 2.24 $
+ * $Date: 2003-10-10 03:59:40 $
+ * $Author: matt $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2003/09/26 14:37:14  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.22  2003/09/23 02:42:53  Kazan
  * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
  *
@@ -518,6 +528,7 @@ RECT D3D_cursor_clip_rect;
 int  D3D_texture_divider = 1;
 int  D3D_window = 0;
 char Device_init_error[512] = "";
+extern int nohtl;
 
 const int multisample_max = 16;
 const D3DMULTISAMPLE_TYPE multisample_types[multisample_max] =
@@ -1235,10 +1246,8 @@ void d3d_setup_format_components(
 		a_gun->scale = 256;
 	}
 }
-#ifdef HTL
 
 D3DMATERIAL8 material;
-#endif
 
 // This is what remains of the old d3d5 init function
 bool d3d_init_device(int screen_width, int screen_height)
@@ -1371,34 +1380,34 @@ bool d3d_init_device(int screen_width, int screen_height)
 	// setup proper render state
 	d3d_set_initial_render_state();	
 
-#ifdef HTL
+	if(!nohtl) {
 
-	ZeroMemory(&material,sizeof(D3DMATERIAL8));
-	material.Diffuse.r = 1.0f;
-	material.Diffuse.g = 1.0f;
-	material.Diffuse.b = 1.0f;
-	material.Diffuse.a = 1.0f;
+		ZeroMemory(&material,sizeof(D3DMATERIAL8));
+		material.Diffuse.r = 1.0f;
+		material.Diffuse.g = 1.0f;
+		material.Diffuse.b = 1.0f;
+		material.Diffuse.a = 1.0f;
 
-	material.Ambient.r = 1.0f;
-	material.Ambient.g = 1.0f;
-	material.Ambient.b = 1.0f;
-	material.Ambient.a = 1.0f;
+		material.Ambient.r = 1.0f;
+		material.Ambient.g = 1.0f;
+		material.Ambient.b = 1.0f;
+		material.Ambient.a = 1.0f;
 
-	material.Emissive.r = 0.0f;
-	material.Emissive.g = 0.0f;
-	material.Emissive.b = 0.0f;
-	material.Emissive.a = 0.0f;
+		material.Emissive.r = 0.0f;
+		material.Emissive.g = 0.0f;
+		material.Emissive.b = 0.0f;
+		material.Emissive.a = 0.0f;
 
- 	material.Specular.r = 1.0f;
-	material.Specular.g = 1.0f;
-	material.Specular.b = 1.0f;
-	material.Specular.a = 1.0f;
+ 		material.Specular.r = 1.0f;
+		material.Specular.g = 1.0f;
+		material.Specular.b = 1.0f;
+		material.Specular.a = 1.0f;
 
-	material.Power = 16.0f;
+		material.Power = 16.0f;
 
-	lpD3DDevice->SetMaterial(&material);
+		lpD3DDevice->SetMaterial(&material);
 
-#endif
+	}
 
 	mprintf(( "Direct3D Initialized OK!\n" ));
 
@@ -2510,7 +2519,7 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 
 	DBUGFILE_OUTPUT_1("default_32_alpha_tformat %d",default_32_alpha_tformat);
 }
-#ifdef HTL
+
 //*******Vertex buffer stuff*******//
 //-Bobboau
 struct Vertex_buffer{
@@ -2647,6 +2656,22 @@ void gr_d3d_destroy_buffer(int idx){
 }*/
 //set_stage_for_spec_glow_mapped
 void gr_d3d_render_buffer(int idx){
+
+
+	// Sets the current alpha of the object
+	if(gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER){
+		material.Ambient.a = gr_screen.current_alpha;
+		material.Diffuse.a = gr_screen.current_alpha;
+		material.Specular.a = gr_screen.current_alpha;
+		material.Emissive.a = gr_screen.current_alpha;
+	}else{
+		material.Ambient.a = 1.0;
+		material.Diffuse.a = 1.0;
+		material.Specular.a = 1.0;
+		material.Emissive.a = 1.0f;
+	}
+	lpD3DDevice->SetMaterial(&material);
+
 
 	if(!vertex_buffer[idx].ocupied)return;
 	float u_scale = 1.0f, v_scale = 1.0f;
@@ -2797,6 +2822,13 @@ void gr_d3d_start_instance_matrix(){
 }
 
 void gr_d3d_end_instance_matrix(){
+	D3DXMATRIX mat;
+	D3DXMatrixIdentity(&mat);
+	lpD3DDevice->SetTransform(D3DTS_VIEW, &mat);
+	lpD3DDevice->SetTransform(D3DTS_PROJECTION, &mat);
+	lpD3DDevice->SetTransform(D3DTS_WORLD, &mat);
+
+
 	lpD3DDevice->SetVertexShader(old_shader);
 	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
 	d3d_SetTexture(1, NULL);
@@ -3006,7 +3038,6 @@ void d3d_end_clip(){
 	d3d_SetRenderState(D3DRS_CLIPPLANEENABLE , FALSE);
 }
 
-#endif
 /**
  * Sets up all the graphics function pointers to the relevent d3d functions
  *
@@ -3132,24 +3163,24 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_pop_texture_matrix = gr_d3d_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_d3d_translate_texture_matrix;
 
-#ifdef HTL
-	gr_screen.gf_make_buffer = gr_d3d_make_buffer;
-	gr_screen.gf_destroy_buffer = gr_d3d_destroy_buffer;
-	gr_screen.gf_render_buffer = gr_d3d_render_buffer;
+	if(!nohtl) {
+		gr_screen.gf_make_buffer = gr_d3d_make_buffer;
+		gr_screen.gf_destroy_buffer = gr_d3d_destroy_buffer;
+		gr_screen.gf_render_buffer = gr_d3d_render_buffer;
 
-	gr_screen.gf_start_instance_matrix = gr_d3d_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix = gr_d3d_end_instance_matrix;
+		gr_screen.gf_start_instance_matrix = gr_d3d_start_instance_matrix;
+		gr_screen.gf_end_instance_matrix = gr_d3d_end_instance_matrix;
 
-	gr_screen.gf_make_light = gr_d3d_make_light;
-	gr_screen.gf_modify_light = gr_d3d_modify_light;
-	gr_screen.gf_destroy_light = gr_d3d_destroy_light;
-	gr_screen.gf_set_light = gr_d3d_set_light;
+		gr_screen.gf_make_light = gr_d3d_make_light;
+		gr_screen.gf_modify_light = gr_d3d_modify_light;
+		gr_screen.gf_destroy_light = gr_d3d_destroy_light;
+		gr_screen.gf_set_light = gr_d3d_set_light;
 
-	gr_screen.gf_lighting = gr_d3d_lighting;
+		gr_screen.gf_lighting = gr_d3d_lighting;
 
-	gr_screen.start_clip_plane = d3d_start_clip;
-	gr_screen.end_clip_plane = d3d_end_clip;
-#endif
+		gr_screen.start_clip_plane = d3d_start_clip;
+		gr_screen.end_clip_plane = d3d_end_clip;
+	}
 
 }
 

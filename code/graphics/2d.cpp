@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-26 14:37:14 $
- * $Author: bobboau $
+ * $Revision: 2.8 $
+ * $Date: 2003-10-10 03:59:40 $
+ * $Author: matt $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/26 14:37:14  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.6  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1520,14 +1530,4 @@ void gr_pline_special(vector **pts, int num_pts, int thickness)
 	// restore culling
 	gr_set_cull(1);		
 }
-
-#ifndef _HTL_WARNING
-#define _HTL_WARNING
-#ifdef HTL
-#pragma message( "WARNING: You have enabled the experemental Hardware Transform and Lighting code" )
-#else
-#pragma message( "WARNING: You have not compiled Hardware Transform and Lighting, use compile flag HTL to enable" )
-#endif
-#endif
-
 

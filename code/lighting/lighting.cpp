@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-09-26 14:37:14 $
- * $Author: bobboau $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-10 03:59:41 $
+ * $Author: matt $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/09/26 14:37:14  bobboau
+ * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
+ * still needs a lot of work, ubt the frame rates were getting with it are incredable
+ * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
+ * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
+ * and weapons, I think these should be modifyed to be sent through hardware,
+ * it would be slightly faster and it would likely fix the problem
+ *
+ * also the thruster glow/particle stuff I did is now in.
+ *
  * Revision 2.7  2003/09/14 19:00:36  wmcoolmon
  * Changed "nospec" to "Cmdline_nospec" -C
  *
@@ -248,6 +258,7 @@ typedef struct light {
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
+extern int nohtl;
 
 light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
 int Num_relevent_lights[MAX_LIGHT_LEVELS];
@@ -368,9 +379,10 @@ void light_reset()
 
 	Num_lights = 0;
 	light_filter_reset();
-#ifdef HTL
-	for(int i = 0; i<MAX_LIGHTS; i++)gr_destroy_light(i);
-#endif
+
+	if(!nohtl) {
+		for(int i = 0; i<MAX_LIGHTS; i++)gr_destroy_light(i);
+	}
 }
 extern vector Object_position;
 // Rotates the light into the current frame of reference
@@ -379,10 +391,11 @@ void light_rotate(light * l)
 	switch( l->type )	{
 	case LT_DIRECTIONAL:
 		// Rotate the light direction into local coodinates
-#ifdef HTL
-		light_data L = *(light_data*)(void*)l;
-		gr_modify_light(&L,l->instance, 2);
-#endif
+
+		if(!nohtl) {
+			light_data L = *(light_data*)(void*)l;
+			gr_modify_light(&L,l->instance, 2);
+		}
 		
 		vm_vec_rotate(&l->local_vec, &l->vec, &Light_matrix );
 		break;
@@ -394,10 +407,10 @@ void light_rotate(light * l)
 			vm_vec_sub(&tempv, &l->vec, &Light_base );
 			vm_vec_rotate(&l->local_vec, &tempv, &Light_matrix );
 
-#ifdef HTL
-			light_data L = *(light_data*)(void*)l;
-			gr_modify_light(&L,l->instance, 2);
-#endif
+			if(!nohtl) {
+				light_data L = *(light_data*)(void*)l;
+				gr_modify_light(&L,l->instance, 2);
+			}
 		}
 		break;
 	
@@ -411,36 +424,37 @@ void light_rotate(light * l)
 			// Rotate the point into local coordinates
 			vm_vec_sub(&tempv, &l->vec2, &Light_base );
 			vm_vec_rotate(&l->local_vec2, &tempv, &Light_matrix );
-#ifdef HTL
 
-			//move the point to the neares to the object on the line
-				vector pos;
+			if(!nohtl) {
 
-/*				vm_vec_unrotate(&temp2, &temp, &obj->orient);
-				vm_vec_add2(&temp, &temp2);
-				vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].b_info.range);
-*/
-				switch(vm_vec_dist_to_line(&Object_position, &l->local_vec, &l->local_vec2, &pos, NULL)){
-					// behind the beam, so use the start pos
-				case -1:
-					pos = l->vec;
-					break;
-			
-					// use the closest point
-				case 0:
-					// already calculated in vm_vec_dist_to_line(...)
-					break;
+				//move the point to the neares to the object on the line
+					vector pos;
 
-					// past the beam, so use the shot pos
-				case 1:
-					pos = l->vec2;
-					break;
-				}
-			light_data L = *(light_data*)(void*)l;
-			L.vec = pos;
-			L.local_vec = pos;
-			gr_modify_light(&L,l->instance, 2);
-#endif
+	/*				vm_vec_unrotate(&temp2, &temp, &obj->orient);
+					vm_vec_add2(&temp, &temp2);
+					vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].b_info.range);
+	*/
+					switch(vm_vec_dist_to_line(&Object_position, &l->local_vec, &l->local_vec2, &pos, NULL)){
+						// behind the beam, so use the start pos
+					case -1:
+						pos = l->vec;
+						break;
+				
+						// use the closest point
+					case 0:
+						// already calculated in vm_vec_dist_to_line(...)
+						break;
+
+						// past the beam, so use the shot pos
+					case 1:
+						pos = l->vec2;
+						break;
+					}
+				light_data L = *(light_data*)(void*)l;
+				L.vec = pos;
+				L.local_vec = pos;
+				gr_modify_light(&L,l->instance, 2);
+			}
 		}
 		break;
 
@@ -499,10 +513,10 @@ void light_add_directional( vector *dir, float intensity, float r, float g, floa
 	if(Static_light_count < MAX_STATIC_LIGHTS){		
 		Static_light[Static_light_count++] = l;
 	}
-#ifdef HTL
-	light_data *L = (light_data*)(void*)l;
-	gr_make_light(L,Num_lights-1, 1);
-#endif
+	if(!nohtl) {
+		light_data *L = (light_data*)(void*)l;
+		gr_make_light(L,Num_lights-1, 1);
+	}
 }
 
 
@@ -546,10 +560,10 @@ void light_add_point( vector * pos, float rad1, float rad2, float intensity, flo
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-#ifdef HTL
-	light_data *L = (light_data*)(void*)l;
-	gr_make_light(L,Num_lights-1, 2);
-#endif
+	if(!nohtl) {
+		light_data *L = (light_data*)(void*)l;
+		gr_make_light(L,Num_lights-1, 2);
+	}
 //	Relevent_lights[Num_relevent_lights[Num_light_levels-1]++][Num_light_levels-1] = l;
 //	light_data *L = (light_data*)(void*)l;
 //	l->API_index = gr_make_light(L);
@@ -595,10 +609,10 @@ void light_add_point_unique( vector * pos, float rad1, float rad2, float intensi
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-#ifdef HTL
-	light_data *L = (light_data*)(void*)l;
-	gr_make_light(L,Num_lights-1, 2);
-#endif
+	if(!nohtl) {
+		light_data *L = (light_data*)(void*)l;
+		gr_make_light(L,Num_lights-1, 2);
+	}
 //	light_data *L = (light_data*)(void*)l;
 //	l->API_index = gr_make_light(L);
 }
@@ -645,10 +659,10 @@ void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity,
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-#ifdef HTL
-	light_data *L = (light_data*)(void*)l;
-	gr_make_light(L,Num_lights-1, 3);
-#endif
+	if(!nohtl) {
+		light_data *L = (light_data*)(void*)l;
+		gr_make_light(L,Num_lights-1, 3);
+	}
 //	light_data *L = (light_data*)(void*)l;
 //	l->API_index = gr_make_light(L);
 }
@@ -889,7 +903,7 @@ void light_set_shadow( int state )
 {
 	Light_in_shadow = state;
 }
-#ifdef HTL
+
 
 void light_set_all_relevent(){
 	int set_lights = 0;
@@ -899,7 +913,7 @@ void light_set_all_relevent(){
 	int n = Num_light_levels-1;
 	for( i=0; i<Num_relevent_lights[n]; i++ )gr_set_light(Relevent_lights[i][n]->instance, true);
 }
-#endif
+
 
 ubyte light_apply( vector *pos, vector * norm, float static_light_level )
 {
