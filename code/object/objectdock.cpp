@@ -7,13 +7,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.1 $
- * $Date: 2005-01-11 21:38:49 $
+ * $Revision: 2.2 $
+ * $Date: 2005-01-29 05:34:30 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2005/01/11 21:38:49  Goober5000
+ * multiple ship docking :)
+ * don't tell anyone yet... check the SCP internal
+ * --Goober500
+ *
  * Revision 1.0  2004/12/30 16:35:00  Goober5000
  * Addition to CVS repository
  *
@@ -332,8 +337,7 @@ void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function
 
 void dock_move_docked_objects(object *objp)
 {
-	if (objp->type != OBJ_SHIP)
-		return;
+	Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
 
 	if (!object_is_docked(objp))
 		return;
@@ -347,13 +351,21 @@ void dock_move_docked_objects(object *objp)
 	dock_function_info dfi;
 	object *fastest_objp;
 
-	// find the object with the highest max speed
-	dock_evaluate_all_docked_objects(objp, &dfi, dock_find_max_speed_helper);
-	fastest_objp = dfi.maintained_variables.objp_value;
-
-	// if we have no max speed, just use the first one
-	if (fastest_objp == NULL)
+	// in FRED, objp is the object everyone moves with
+	if (Fred_running)
+	{
 		fastest_objp = objp;
+	}
+	else
+	{
+		// find the object with the highest max speed
+		dock_evaluate_all_docked_objects(objp, &dfi, dock_find_max_speed_helper);
+		fastest_objp = dfi.maintained_variables.objp_value;
+
+		// if we have no max speed, just use the first one
+		if (fastest_objp == NULL)
+			fastest_objp = objp;
+	}
 	
 	// start a tree with that object as the parent... do NOT use the überfunction for this,
 	// because we must use a tree for the parent ancestry to work correctly
