@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-04-13 01:55:41 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-04-26 12:43:58 $
+ * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/13 01:55:41  phreak
+ * put in the correct fields for the CVS comments to register
+ * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
+ *
  *
  * $NoKeywords: $
  */
@@ -31,6 +35,8 @@
 #include "globalincs/systemvars.h"
 
 #include "bmpman/bmpman.h"
+
+#include "cmdline/cmdline.h"
 
 #include "graphics/gropengl.h"
 #include "graphics/gropengltexture.h"
@@ -189,6 +195,7 @@ void opengl_tcache_init (int use_sections)
 		Textures[i].bitmap_id = -1;
 		Textures[i].size = 0;
 		Textures[i].used_this_frame = 0;
+		Textures[i].bpp = 0;
 
 		Textures[i].parent = NULL;
 
@@ -206,6 +213,7 @@ void opengl_tcache_init (int use_sections)
 					Textures[i].data_sections[idx][s_idx]->bitmap_id = -1;
 					Textures[i].data_sections[idx][s_idx]->size = 0;
 					Textures[i].data_sections[idx][s_idx]->used_this_frame = 0;
+					Textures[i].data_sections[idx][s_idx]->bpp = 0;
 				}
 			}
 		} else {
@@ -350,6 +358,7 @@ int opengl_free_texture ( tcache_slot_opengl *t )
 
 		t->bitmap_id = -1;
 		t->used_this_frame = 0;
+		t->bpp = 0;
 		GL_textures_in -= t->size;
 	}
 
@@ -423,6 +432,9 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_opengl *t, int reload, int fail_on_full)
 {
 	int ret_val = 1;
+	int byte_mult = 0;
+	GLenum tex_format;
+	ubyte saved_bpp = 0;
 
 	// bogus
 	if(t == NULL){
@@ -434,6 +446,9 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 		return 0;
 	}
 	if ( !reload )  {
+		// save the bpp since it will get reset - fixes anis being 0 bpp
+		saved_bpp = t->bpp;
+
 		// gah
 		if(!opengl_free_texture(t)){
 			return 0;
@@ -468,6 +483,24 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 		return 0;
 	}
 	
+	if (t->bpp == 0) {
+		// it got reset, revert to saved setting
+		t->bpp = saved_bpp;
+	}
+
+	// set the byte per pixel multiplier
+	byte_mult = (t->bpp >> 3);
+
+	if (byte_mult == 4) {
+		tex_format = GL_UNSIGNED_INT_8_8_8_8_REV;
+	} else if (byte_mult == 2) {
+		tex_format = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	} else if (byte_mult == 1) {
+		tex_format = GL_UNSIGNED_BYTE;
+	} else {
+		tex_format = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	}
+
 	glBindTexture (GL_TEXTURE_2D, t->texture_handle);
 
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -541,9 +574,9 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 
 		case TCACHE_TYPE_BITMAP_SECTION:
 			{
-				int i,j;
+				int i,j,k;
 				ubyte *bmp_data = ((ubyte*)data);
-				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
+				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
 				ubyte *texmemp = texmem;
 				
 				for (i=0;i<tex_h;i++)
@@ -551,23 +584,26 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 					for (j=0;j<tex_w;j++)
 					{
 						if (i < src_h && j < src_w) {
-							*texmemp++ = bmp_data[((i+sy)*bmap_w+(j+sx))*2+0];
-							*texmemp++ = bmp_data[((i+sy)*bmap_w+(j+sx))*2+1];
+							for (k = 0; k < byte_mult; k++) {
+								*texmemp++ = bmp_data[((i+sy)*bmap_w+(j+sx))*byte_mult+k];
+							}
 						} else {
-							*texmemp++ = 0;
-							*texmemp++ = 0;
+							for (k = 0; k < byte_mult; k++) {
+								*texmemp++ = 0;
+							}
 						}
 					}
 				}
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
+
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA, tex_format, texmem);
 				free(texmem);
 				break;
 			}
 		default:
 			{
-				int i,j;
+				int i,j,k;
 				ubyte *bmp_data = ((ubyte*)data);
-				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
+				ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
 				ubyte *texmemp = texmem;
 				
 				fix u, utmp, v, du, dv;
@@ -582,14 +618,15 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 					utmp = u;
 					for (i=0;i<tex_w;i++)
 					{
-						*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*2+0];
-						*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*2+1];
+						for (k = 0; k < byte_mult; k++) {
+							*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*byte_mult+k];
+						}
 						utmp += du;
 					}
 					v += dv;
 				}
 
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, texmem);
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_BGRA, tex_format, texmem);
 				free(texmem);
 				break;
 			}
@@ -600,7 +637,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	t->time_created = GL_frame_count;
 	t->used_this_frame = 0;
 	if (bitmap_type & TCACHE_TYPE_COMPRESSED) t->size=bm_get_size(texture_handle);
-	else	t->size = tex_w * tex_h * 2;
+	else	t->size = tex_w * tex_h * byte_mult;
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
 	GL_textures_in_frame += t->size;
@@ -671,6 +708,8 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	int max_w = bmp->w;
 	int max_h = bmp->h;
 
+	// set the bits per pixel
+	tslot->bpp = bmp->bpp;
 	
 	   // DDOI - TODO
 	if ( bitmap_type != TCACHE_TYPE_AABITMAP )      {
@@ -730,6 +769,10 @@ int opengl_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_s
 		mprintf(("Couldn't lock bitmap %d.\n", bitmap_handle ));
 		return 0;
 	}
+
+	// set the bits per pixel
+	tslot->bpp = bmp->bpp;
+
 	// determine the width and height of this section
 	bm_get_section_size(bitmap_handle, sx, sy, &section_x, &section_y);
 
@@ -814,7 +857,9 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 
 			// lock the bitmap in the proper format
 			bmp = bm_lock(bitmap_id, 16, BMP_TEX_XPARENT);
-			bm_unlock(bitmap_id);
+
+			// set the bits per pixel
+			t->bpp = bmp->bpp;
 
 			// now lets do something for each texture
 
@@ -829,6 +874,9 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 					t->data_sections[idx][s_idx]->used_this_frame = 0;
 				}
 			}
+
+			// unlock the bitmap now that we're good and done with it
+			bm_unlock(bitmap_id);
 
 			// zero out pretty much everything in the parent struct since he's just the root
 			t->bitmap_id = bitmap_id;
@@ -892,37 +940,55 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 	//make sure textuing is on
 	opengl_switch_arb(0,1);
 
-	if (GLOWMAP>-1)
+	r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
+
+	if (Interp_multitex_cloakmap>0)
+	{
+		// no point in using glow or spec maps when this is on so make sure they are off
+		GLOWMAP = -1;
+		SPECMAP = -1;
+
+		opengl_switch_arb(1,1);
+
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		gr_opengl_set_additive_tex_env();
+
+		r2=gr_opengl_tcache_set_internal(Interp_multitex_cloakmap, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
+
+		r3=1;
+		opengl_switch_arb(2,0);
+	}
+
+	if ((GLOWMAP>-1) && !Cmdline_noglow)
 	{
 		opengl_switch_arb(1,1);
-		
-		r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
-		r2=gr_opengl_tcache_set_internal(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
 	
 		//set the glowmap stuff
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		gr_opengl_set_additive_tex_env();
 
-		if ((Interp_multitex_cloakmap>0) && (GL_supported_texture_units > 2))
-		{
-			opengl_switch_arb(2,1);
-			glActiveTextureARB(GL_TEXTURE2_ARB);
-			gr_opengl_set_additive_tex_env();
-			r3=gr_opengl_tcache_set_internal(CLOAKMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 2);
-		}
-		else 
-		{
-			opengl_switch_arb(2,0);
-			r3=1;
-		}
+		r2=gr_opengl_tcache_set_internal(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 1);
 	}
 	else
 	{
 		opengl_switch_arb(1,0);
+		r2=1;		
+	}
+
+//	if ((SPECMAP > -1) && !Cmdline_nospec && (GL_supported_texture_units > 2))
+	if (0)
+	{
+		opengl_switch_arb(2,1);
+
+		glActiveTextureARB(GL_TEXTURE2_ARB);
+		// tex env thingy - batteries not included
+
+		r3=gr_opengl_tcache_set_internal(SPECMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 2);
+	}
+	else
+	{
 		opengl_switch_arb(2,0);
-		r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
-		r2=1;
-		r3=1;			
+		r3=1;
 	}
 
 	return ((r1) && (r2) && (r3));

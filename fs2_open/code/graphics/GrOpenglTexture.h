@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 2.3 $
- * $Date: 2004-04-13 01:55:41 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-04-26 12:43:58 $
+ * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/13 01:55:41  phreak
+ * put in the correct fields for the CVS comments to register
+ * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
+ *
  *
  * $NoKeywords: $
  */
@@ -26,17 +30,21 @@
 #ifndef _GROPENGLTEXTURE_H
 #define _GROPENGLTEXTURE_H
 
+#include "globalincs/pstypes.h"
+
+
 //turns on/off GL_TEXTUREx_ARB
 void opengl_switch_arb(int unit, int state);
 
 typedef struct tcache_slot_opengl {
-	unsigned int	texture_handle;
+	uint	texture_handle;
 	float	u_scale, v_scale;
 	int	bitmap_id;
 	int	size;
 	char	used_this_frame;
 	int	time_created;
-	unsigned short	w,h;
+	ushort	w,h;
+	ubyte bpp;
 
 	// sections
 	tcache_slot_opengl	*data_sections[MAX_BMAP_SECTIONS_X][MAX_BMAP_SECTIONS_Y];
