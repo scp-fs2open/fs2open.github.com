@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.29 $
+ * $Date: 2004-10-31 21:35:53 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.27  2004/07/17 18:43:46  taylor
  * don't use bitmap sections by default, openil_close()
  *
@@ -1151,6 +1154,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	}
 
 	D3D_enabled = 0;
+	OGL_enabled = 0;
 	Gr_inited = 1;
 
 	// Moved memset to out here so its not all scrubbed when D3D8 needs to call it again to revise 
@@ -1572,7 +1576,7 @@ bool same_vert(vertex *v1, vertex *v2, vector *n1, vector *n2){
 }
 
 //finds the first occorence of a vertex within a poly list
-short find_fisrt_index(poly_list *plist, int idx){
+short find_first_index(poly_list *plist, int idx){
 	vector norm = plist->norm[idx];
 	vertex vert = plist->vert[idx];
 	int missed = 0;
@@ -1583,10 +1587,10 @@ short find_fisrt_index(poly_list *plist, int idx){
 	}
 	return -1;
 }
-//index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
+//index_buffer[j] = find_first_index_vb(&list[i], j, &model_list);
 
 //given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-short find_fisrt_index_vb(poly_list *plist, int idx, poly_list *v){
+short find_first_index_vb(poly_list *plist, int idx, poly_list *v){
 	for(short i = 0; i<v->n_verts; i++){
 		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
 			return i;
@@ -1619,20 +1623,20 @@ void poly_list::make_index_buffer(){
 
 		int nverts = 0;
 		for( int j = 0; j<n_verts; j++){
-			if((find_fisrt_index(this, j)) == j)nverts++;
+			if((find_first_index(this, j)) == j)nverts++;
 		}
 
 		poly_list_index_bufer_internal_list.n_verts = 0;
 		int z = 0;
 		poly_list_index_bufer_internal_list.allocate(nverts);
 		for(int k = 0; k<n_verts; k++){
-			if(find_fisrt_index(this, k) != k){
+			if(find_first_index(this, k) != k){
 				continue;
 			}
 			poly_list_index_bufer_internal_list.vert[z] = vert[k];
 			poly_list_index_bufer_internal_list.norm[z] = norm[k];
 			poly_list_index_bufer_internal_list.n_verts++;
-			Assert(find_fisrt_index(&poly_list_index_bufer_internal_list, z) == z);
+			Assert(find_first_index(&poly_list_index_bufer_internal_list, z) == z);
 			z++;
 		}
 		Assert(nverts == poly_list_index_bufer_internal_list.n_verts);
