@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.35 $
- * $Author: Goober5000 $
- * $Date: 2003-03-22 06:11:51 $
+ * $Revision: 2.36 $
+ * $Author: sesquipedalian $
+ * $Date: 2003-03-29 08:52:59 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/03/22 06:11:51  Goober5000
+ * added play-sound-from-table, play-sound-from-file, and close-sound-from-file
+ * --Goober5000
+ *
  * Revision 2.34  2003/03/21 04:51:33  Goober5000
  * added get-relative-object-*, where * = x, y, and z; these sexps return the
  * world coordinates of a set of relative coordinates to an object; also, fixed many
@@ -666,6 +670,7 @@
 #define OP_GET_OBJECT_RELATIVE_X			(0x0022 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Y			(0x0023 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_OBJECT_RELATIVE_Z			(0x0024 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_MISSILE_LOCKED				(0x0025 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Sesquipedalian
 
 // conditional sexpressions
 #define OP_WHEN									(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -1033,6 +1038,7 @@ extern float Training_context_distance;
 extern int Players_target;
 extern ship_subsys *Players_targeted_subsys;
 extern int Players_target_timestamp;
+extern int Players_mlocked_timestamp;
 extern int Sexp_clipboard;  // used by Fred
 
 extern void init_sexp();
