@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.41 $
- * $Date: 2004-12-24 00:41:23 $
+ * $Revision: 2.42 $
+ * $Date: 2004-12-24 05:07:05 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2004/12/24 00:41:23  wmcoolmon
+ * Ballistic primary ammo-gauge to the right of the HUD, support for weapon images in list.
+ *
  * Revision 2.40  2004/12/15 15:22:23  Goober5000
  * commented dumbfire lead indicator back in, because you need to know where your missiles are going
  * --Goober5000
@@ -1540,7 +1543,7 @@ void hud_init_targeting()
 		}
 		Lead_indicator_gauge_loaded = 1;
 	}
-
+#ifndef NEW_HUD
 	if (!Aburn_bar_gauge_loaded) {
 		Aburn_bar_gauge.first_frame = bm_load_animation(current_hud->Aburn_fname, &Aburn_bar_gauge.num_frames);
 		if ( Aburn_bar_gauge.first_frame < 0 ) {
@@ -1556,7 +1559,7 @@ void hud_init_targeting()
 		}
 		Wenergy_bar_gauge_loaded = 1;
 	}
-
+#endif
 	if (!Toggle_gauge_loaded) {
 		Toggle_gauge.first_frame = bm_load_animation(Toggle_fname[gr_screen.res], &Toggle_gauge.num_frames);
 		if ( Toggle_gauge.first_frame < 0 ) {
@@ -4984,6 +4987,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vector *tpos, float dist
 //	Render the HUD afterburner energy gauge
 void hud_show_afterburner_gauge()
 {
+#ifndef NEW_HUD
 	float percent_left;
 	int	clip_h,w,h;	
 
@@ -5015,11 +5019,13 @@ void hud_show_afterburner_gauge()
 	if ( clip_h <= current_hud->Aburn_size[0] ) {		
 		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0], current_hud->Aburn_coords[1]+clip_h,w,h-clip_h,0,clip_h);
 	} 	
+#endif
 }
 
 //	Render the player weapon energy on the HUD
 void hud_show_weapon_energy_gauge()
 {
+#ifndef NEW_HUD
 	int x;
 	bool use_new_gauge = false;
 	for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
@@ -5155,6 +5161,7 @@ void hud_show_weapon_energy_gauge()
 
 		// hud_set_default_color();
 	}
+#endif
 }
 
 // --------------------------------------------------------------------------------------

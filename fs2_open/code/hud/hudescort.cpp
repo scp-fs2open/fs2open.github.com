@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-12-24 05:07:05 $
+ * $Author: wmcoolmon $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.16  2004/07/12 16:32:49  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -289,6 +292,7 @@ extern hud_frames Shield_mini_gauge;
 // called from HUD init, loads the bitmap data in once, and resets any data for each level
 void hud_escort_init()
 {
+#ifndef NEW_HUD
 	int i;
 
 	if ( !Escort_gauges_loaded ) {
@@ -311,6 +315,7 @@ void hud_escort_init()
 	{
 		Max_escort_ships = MAX_COMPLETE_ESCORT_LIST;
 	}
+#endif
 }
 
 // ----------------------------------------------------------------------
@@ -704,6 +709,7 @@ int hud_escort_set_gauge_color(int index, int friendly)
 // multiplayer dogfight
 void hud_escort_show_icon_dogfight(int x, int y, int index)
 {
+#ifndef NEW_HUD
 	int			hull_integrity = 100;
 	char			buf[255];	
 	int			np_index;
@@ -748,12 +754,14 @@ void hud_escort_show_icon_dogfight(int x, int y, int index)
 	} else {
 		emp_hud_printf( x+current_hud->Escort_integrity[0] - stat_shift, y+current_hud->Escort_integrity[1], EG_NULL, "(%d%%) %d", hull_integrity, Net_players[np_index].player->stats.m_kill_count_ok);	
 	}
+#endif
 }
 #endif
 
 // draw the shield icon and integrity for the escort ship
 void hud_escort_show_icon(int x, int y, int index)
 {
+#ifdef NEW_HUD
 #ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && index <= 2)
 	{
@@ -803,6 +811,7 @@ void hud_escort_show_icon(int x, int y, int index)
 
 	//Let's be nice.
 	hud_set_gauge_color(HUD_ESCORT_VIEW);
+#endif
 }
 
 
@@ -812,6 +821,7 @@ void hud_escort_show_icon(int x, int y, int index)
 // Display the data on ships in the escort list
 void hud_display_escort()
 {
+#ifndef NEW_HUD
 	int	i = 0;
 
 	if ( !Show_escort_view ) {
@@ -899,6 +909,7 @@ void hud_display_escort()
 			hud_escort_show_icon(i, objp);
 		}
 	}*/
+#endif
 }
 
 // ----------------------------------------------------------------------
