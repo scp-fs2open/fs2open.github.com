@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-16 11:56:46 $
+ * $Revision: 2.8 $
+ * $Date: 2003-09-16 13:30:16 $
  * $Author: unknownplayer $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/16 11:56:46  unknownplayer
+ * Changed the ship selection window to load the 3D FS2 ship models instead
+ * of the custom *.ani files. It just does a techroom rotation for now, but I'll add
+ * more features later - tell me of any problems or weirdness caused by it, or if
+ * you don't like it and want it as an option only.
+ *
  * Revision 2.6  2003/03/20 07:15:37  Goober5000
  * implemented mission flags for no briefing or no debriefing - yay!
  * --Goober5000
@@ -467,7 +473,10 @@ int Commit_pressed;	// flag to indicate that the commit button was pressed
 static int Ship_anim_class = -1;		// ship class that is playing as an animation
 static int Ss_delta_x, Ss_delta_y;	// used to offset the carried icon to make it smoothly leave static position
 
+// UnknownPlayer //
 float ShipSelectScreenShipRot = 0.0f;
+int ShipSelectModelNum = -1;
+
 static matrix ShipScreenOrient = IDENTITY_MATRIX;
 
 //////////////////////////////////////////////////////
@@ -1709,7 +1718,7 @@ void ship_select_do(float frametime)
 	//////////////////////////////////
 
 	// check we have a valid ship class selected
-	if (Selected_ss_class >= 0)
+	if (Selected_ss_class >= 0 && ShipSelectModelNum >= 0)
 	{
 
 		// now render the trackball ship, which is unique to the ships tab
@@ -1778,17 +1787,14 @@ void ship_select_do(float frametime)
 		light_reset();
 		vector light_dir = vmd_zero_vector;
 		light_dir.xyz.y = 1.0f;	
-		light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
+		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
 		// light_filter_reset();
 		light_rotate_all();
 		// lighting for techroom
 
-		if (sip->modelnum >= 0)
-		{
-			model_clear_instance(sip->modelnum);
-			model_set_detail_level(0);
-			model_render(sip->modelnum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
-		}
+		model_clear_instance(ShipSelectModelNum);
+		model_set_detail_level(0);
+		model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
 
 		g3_end_frame();
 
@@ -2032,16 +2038,18 @@ void start_ship_animation(int ship_class, int play_sound)
 {
 	if (ship_class < 0)
 	{
+		DBUGFILE_OUTPUT_0("No ship class passed in to start_ship_animation - why?");
+		ShipSelectModelNum = -1;
 		return;
 	}
 
 	ship_info* sip = &Ship_info[ship_class];
 
 	// Load the necessary model file
-	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
 	// page in ship textures properly (takes care of nondimming pixels)
-	model_page_in_textures(sip->modelnum, ship_class);
+	model_page_in_textures(ShipSelectModelNum, ship_class);
 
 	if (sip->modelnum < 0)
 	{
