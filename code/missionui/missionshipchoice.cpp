@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.19 $
- * $Date: 2004-03-05 09:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2004-04-01 15:29:39 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2004/03/05 09:01:55  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.18  2004/02/04 09:02:43  Goober5000
  * got rid of unnecessary double semicolons
  * --Goober5000
@@ -2253,6 +2257,9 @@ void commit_pressed()
 	{
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
+
+	// close out mission briefing before mission
+	common_select_close();
 }
 
 // ------------------------------------------------------------------------
