@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.30 $
- * $Date: 2003-01-06 18:50:37 $
+ * $Revision: 2.31 $
+ * $Date: 2003-01-06 19:33:21 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/01/06 18:50:37  Goober5000
+ * a wee failsafe added
+ * --Goober5000
+ *
  * Revision 2.29  2003/01/06 17:14:52  Goober5000
  * added wing configurable squad logos - put +Squad Logo: filename.pcx as
  * the last entry in each wing that you want (but the player's squad logo will
@@ -1881,7 +1885,9 @@ strcpy(parse_error_text, temp_error);
 			Int3();	// Impossible return value from required_string_3.
 		}
 	}	
-//	Assert( hull_percentage_of_hits > 0.0f );		// must be > 0//no it doesn't :P -Bobboau
+	Assert( hull_percentage_of_hits > 0.0f );		// must be > 0//no it doesn't :P -Bobboau
+													// yes it does! - Goober5000
+													// (we don't want a div-0 error)
 
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	sip->n_subsystems = n_subsystems;
@@ -2886,7 +2892,7 @@ void ship_render(object * obj)
 			if (ft.xyz.y < -1.0f)
 				ft.xyz.y = -1.0f;
 
-			model_set_thrust( shipp->modelnum, ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
+			model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
 			render_flags |= MR_SHOW_THRUSTERS;
 		}
 
