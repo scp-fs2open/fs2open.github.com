@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.15 $
- * $Date: 2002-12-17 03:08:18 $
+ * $Revision: 2.16 $
+ * $Date: 2002-12-21 13:39:25 $
  * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2002/12/17 03:08:18  DTP
+ * fix to Show_framerate. seems it will call an unresolved external error during fred builds. modified my ifndefs a bit, dsw modified to include preprocessor tag FRED.
+ *
  * Revision 2.14  2002/12/17 02:22:34  DTP
  * wrong name :)
  *
@@ -324,6 +327,7 @@ int Cmdline_window = 0;
 int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 int Cmdline_allslev = 0;
 int Cmdline_phreak	= 0;
+int Cmdline_show_fps = 0;
 
 
 
@@ -706,13 +710,11 @@ int parse_cmdline(int argc, char *argv[])
 		Cmdline_mod = mod_arg.str();
 	}
 
-#ifndef FRED //will call an unresolved link error during fred builds
 
 	if (fps_arg.found())
 	{
-		Show_framerate=1;
+		Cmdline_show_fps = 1;
 	}
-#endif
 
 	return 1;
 }

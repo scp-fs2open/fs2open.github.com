@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.15 $
- * $Date: 2002-12-18 22:21:23 $
- * $Author: phreak $
+ * $Revision: 2.16 $
+ * $Date: 2002-12-21 13:39:03 $
+ * $Author: DTP $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2002/12/18 22:21:23  phreak
+ * tidied up game_init() a bit.. took out a bunch of unneeded ifdefs like E3_BUILD
+ * Added option to access OpenGL from the registry keys.  searches for "OpenGL-"
+ * whoever is in charge of the launcher might want to know this.
+ *
  * Revision 2.14  2002/11/18 21:34:16  phreak
  * made ogl be used if "NDEBUG" is not defined and "USE_OPENGL" is defined  - phreak
  *
@@ -1221,7 +1226,7 @@ void game_framerate_check()
 		Gf_critical_time += flFrametime;
 	}	
 
-	if(!Show_framerate){
+	if((!Show_framerate) || (!Cmdline_show_fps)) {
 		return;
 	}
 
@@ -2631,7 +2636,7 @@ void game_get_framerate()
 	}
 	Framecount++;
 
-	if (Show_framerate)	{
+	if ((Show_framerate) || (Cmdline_show_fps))	{
 		gr_set_color_fast(&HUD_color_debug);
 		gr_string( 570, 2, text );
 	}
