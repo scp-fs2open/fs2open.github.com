@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-01-21 17:24:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2003-01-30 23:19:14 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/01/21 17:24:16  Goober5000
+ * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
+ * help for the sexps in sexp_tree
+ * --Goober5000
+ *
  * Revision 2.15  2003/01/20 05:40:49  bobboau
  * added several sExps for turning glow points and glow maps on and off
  *
@@ -322,6 +327,8 @@ int modelstats_num_boxes = 0;
 #endif
 
 int glow_maps_active = 1;
+
+extern int OGL_inited;
 
 // a lighting object
 typedef struct model_light_object {
@@ -784,7 +791,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 		Interp_list[i] = &Interp_points[verts[i*2]];
 
 		if ( Interp_flags & MR_NO_LIGHTING )	{
-			if ( D3D_enabled )	{
+			if ( D3D_enabled || OGL_inited )	{
 				Interp_list[i]->r = 191;
 				Interp_list[i]->g = 191;
 				Interp_list[i]->b = 191;
@@ -796,7 +803,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 			int norm = verts[i*2+1];
 	
 			if ( Interp_flags & MR_NO_SMOOTHING )	{
-				if ( D3D_enabled )	{
+				if ( D3D_enabled || OGL_inited )	{
 					light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
 				} else {
 					Interp_list[i]->b = light_apply( Interp_verts[vertnum], vp(p+8), Interp_light );
@@ -804,7 +811,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 			} else {
 				// if we're not using saved lighting
 				if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
-					if ( D3D_enabled )	{
+					if ( D3D_enabled || OGL_inited )	{
 						light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], vp(p+8), Interp_light );
 					} else {
 						Interp_lighting->b[norm] = light_apply( Interp_verts[vertnum], Interp_norms[norm], Interp_light );
@@ -812,7 +819,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 					Interp_light_applied[norm] = 1;
 				}
 
-				if ( D3D_enabled )	{
+				if ( D3D_enabled || OGL_inited )	{
 					Interp_list[i]->r = Interp_lighting->r[norm];
 					Interp_list[i]->g = Interp_lighting->g[norm];
 					Interp_list[i]->b = Interp_lighting->b[norm];
@@ -829,7 +836,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 	}
 
 	if ( !(Interp_flags & MR_NO_POLYS))	{
-		if ( D3D_enabled )	{
+		if ( D3D_enabled || OGL_inited )	{
 			g3_draw_poly( nv, Interp_list, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB );	
 		} else {
 			g3_draw_poly( nv, Interp_list, TMAP_FLAG_GOURAUD | TMAP_FLAG_RAMP );	
@@ -928,7 +935,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	//		Assert( verts[i].normnum == verts[i].vertnum );
 
 			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[w(p+40)]))	{	//gets the ambient glow to work
-				if ( D3D_enabled )	{
+				if ( D3D_enabled || OGL_inited )	{
 					Interp_list[i]->r = 191;
 					Interp_list[i]->g = 191;
 					Interp_list[i]->b = 191;
@@ -940,7 +947,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				int norm = verts[i].normnum;
 		
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
-					if ( D3D_enabled )	{
+					if ( D3D_enabled || OGL_inited )	{
 						light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
 					} else {
 						Interp_list[i]->b = light_apply( Interp_verts[vertnum], vp(p+8), Interp_light );
@@ -949,7 +956,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					// if we're applying lighting as normal, and not using saved lighting
 					if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
 
-						if ( D3D_enabled )	{
+						if ( D3D_enabled || OGL_inited )	{
 							light_apply_rgb( &Interp_lighting->r[norm], &Interp_lighting->g[norm], &Interp_lighting->b[norm], Interp_verts[vertnum], Interp_norms[norm], Interp_light );
 
 						} else {
@@ -984,7 +991,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						Interp_light_applied[norm] = 1;
 					}
 
-					if ( D3D_enabled )	{
+					if ( D3D_enabled || OGL_inited )	{
 						Interp_list[i]->r = Interp_lighting->r[norm];
 						Interp_list[i]->g = Interp_lighting->g[norm];
 						Interp_list[i]->b = Interp_lighting->b[norm];
@@ -2783,7 +2790,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	pm = model_get(model_num);	
 
 	// Set the flags we will pass to the tmapper
-	if ( D3D_enabled )	{
+	if ( D3D_enabled || OGL_inited )	{
 		Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 	} else {
 		Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RAMP;
@@ -3368,7 +3375,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vector * p
 	pm = model_get(model_num);
 
 	// Set the flags we will pass to the tmapper
-	if ( D3D_enabled )	{
+	if ( D3D_enabled || OGL_inited )	{
 		Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 	} else {
 		Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RAMP;
