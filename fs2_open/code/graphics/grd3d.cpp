@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.63 $
- * $Date: 2004-04-11 13:56:33 $
+ * $Revision: 2.64 $
+ * $Date: 2004-05-03 08:41:24 $
  * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/04/11 13:56:33  randomtiger
+ * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
+ *
  * Revision 2.62  2004/04/03 06:22:32  Goober5000
  * fixed some stub functions and a bunch of compile warnings
  * --Goober5000
@@ -1723,14 +1726,15 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
 
 	// maybe switch fogging on
 	if(gr_screen.current_fog_mode != fog_mode){		
-		if(GlobalD3DVars::d3d_caps.RasterCaps & D3DPRASTERCAPS_FOGTABLE)
-			d3d_SetRenderState(D3DRS_FOGENABLE, TRUE);	
+		d3d_SetRenderState(D3DRS_FOGENABLE, TRUE);	
 
 		// if we're using table fog, enable table fogging
 		if(!Cmdline_nohtl){
 
 			if(GlobalD3DVars::d3d_caps.RasterCaps & D3DPRASTERCAPS_FOGTABLE)
+			{
 				d3d_SetRenderState( D3DRS_FOGTABLEMODE, D3DFOG_LINEAR );
+			}
 			else 
 			{
 				d3d_SetRenderState( D3DRS_FOGTABLEMODE,   D3DFOG_NONE );
