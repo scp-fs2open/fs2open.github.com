@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2004/12/25 09:25:41  wmcoolmon
+ * Fix to modular tables workaround with Fs2NetD
+ *
  * Revision 2.78  2004/12/23 23:35:02  wmcoolmon
  * Added +Hud Image: for weapons, which replaces the weapon name in the list with an image.
  *
@@ -4561,7 +4564,7 @@ void weapons_page_in()
 		// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
 		// assigned directly to a ship
 		for (i = 0; i < Num_weapon_types; i++) {
-			if (Weapon_info[i].spawn_type)
+			if (Weapon_info[i].spawn_type > -1)
 				used_weapons[(int)Weapon_info[i].spawn_type]++;
 		}
 
