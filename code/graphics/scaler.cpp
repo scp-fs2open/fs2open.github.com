@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Scaler.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:05 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 05:45:04 $
  * $Author: penguin $
  *
  * Routines to scale a bitmap.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:55:59  penguin
  * Back-port to MSVC
  *
@@ -817,8 +820,9 @@ void gr8_scaler(vertex *va, vertex *vb )
 	spixels = (ubyte *)bp->data;
 
 	gr_lock();
+#ifndef NO_SOFTWARE_RENDERING
 	Tmap.pScreenBits = (uint)gr_screen.offscreen_buffer_base;
-
+#endif
 	uint *zbuf;
 
 	for (y=dy0; y<=dy1; v += dv, y++ )			{
@@ -836,7 +840,8 @@ void gr8_scaler(vertex *va, vertex *vb )
 		}
 
 		if ( Gr_scaler_zbuffering && gr_zbuffering )	{
-			zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)Tmap.pScreenBits];
+// 			zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)Tmap.pScreenBits];
+			zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)gr_screen.offscreen_buffer_base];
 		}
 	
 #ifdef USE_COMPILED_CODE
@@ -876,7 +881,7 @@ void gr8_scaler(vertex *va, vertex *vb )
 			} 
 */
 
-#ifdef _WIN32
+#if defined _WIN32 && defined _MSC_VER
 			_asm push esi
 			_asm push edi
 			_asm push edx
@@ -898,8 +903,33 @@ void gr8_scaler(vertex *va, vertex *vb )
 			_asm pop edx
 			_asm pop edi
 			_asm pop esi
+#elif defined __GNUC__
+			  asm(
+			"push %%esi;"
+			"push %%edi;"
+			"push %%edx;"
+			"push %%ecx;"
+			"push %%ebx;"
+			"push %%eax;"
+			"mov  %0,%%ecx;"  // lookup
+			"mov  %1,%%esi;"  // sbits
+			"mov  %2,%%edi;"  // dbits
+			"mov  %3,%%eax;"  // cc
+			"mov  %4,%%edx;"  // zbuf
+			"push %%ebp;"
+			"mov  %5,%%ebp;"  // Gr_global_z
+			"call *%%eax;"
+			"pop  %%ebp;"
+			"pop  %%eax;"
+			"pop  %%ebx;"
+			"pop  %%ecx;"
+			"pop  %%edx;"
+			"pop  %%edi;"
+			"pop  %%esi;"
+			: /* no outputs */
+			: "g" (lookup), "g" (sbits), "g" (dbits), "g" (cc), "g" (zbuf), "g" (Gr_global_z));
 #else
-#warning not implemented
+#error asm not implemented
 #endif
 		}
 #else	
@@ -1100,7 +1130,8 @@ void gr8_aascaler(vertex *va, vertex *vb )
 			int x, tmp_u;
 			tmp_u = u;
 
-			uint *zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)Tmap.pScreenBits];
+// 			uint *zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)Tmap.pScreenBits];
+			uint *zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)gr_screen.offscreen_buffer_base];
 	
 			for (x=0; x<w; x++ )			{
 				if ( fx_w > *zbuf )	{
@@ -1113,7 +1144,7 @@ void gr8_aascaler(vertex *va, vertex *vb )
 				tmp_u += du;
 			}
 		} else {
-#ifdef _WIN32
+#if defined _WIN32 && defined _MSC_VER
 			_asm push esi
 			_asm push edi
 			_asm push ecx
@@ -1129,8 +1160,27 @@ void gr8_aascaler(vertex *va, vertex *vb )
 			_asm pop ecx
 			_asm pop edi
 			_asm pop esi
+#elif defined __GNUC__
+			  asm(
+			"push %%esi;"
+			"push %%edi;"
+			"push %%ecx;"
+			"push %%ebx;"
+			"push %%eax;"
+			"mov  %0,%%ecx;"  // lookup
+			"mov  %1,%%esi;"  // sbits
+			"mov  %2,%%edi;"  // dbits
+			"mov  %3,%%eax;"  // cc
+			"call *%%eax;"
+			"pop  %%eax;"
+			"pop  %%ebx;"
+			"pop  %%ecx;"
+			"pop  %%edi;"
+			"pop  %%esi;"
+			: /* no outputs */
+			: "g" (lookup), "g" (sbits), "g" (dbits), "g" (cc));
 #else
-#warning not implemented
+#error asm not implemented
 #endif
 		}
 #else	
@@ -1138,7 +1188,8 @@ void gr8_aascaler(vertex *va, vertex *vb )
 			int x, tmp_u;
 			tmp_u = u;
 
-			uint *zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)Tmap.pScreenBits];
+// 			uint *zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)Tmap.pScreenBits];
+			uint *zbuf = (uint *)&gr_zbuffer[(uint)dbits-(uint)gr_screen.offscreen_buffer_base];
 	
 			for (x=0; x<w; x++ )			{
 				if ( fx_w > *zbuf )	{
