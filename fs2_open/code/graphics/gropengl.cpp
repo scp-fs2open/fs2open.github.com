@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.49 $
- * $Date: 2003-11-22 10:36:32 $
+ * $Revision: 2.50 $
+ * $Date: 2003-11-25 15:04:45 $
  * $Author: fryday $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/11/22 10:36:32  fryday
+ * Changed default alpha value for lasers in OpenGL to be like in D3D
+ * Fixed Glowmaps being rendered with GL_NEAREST instead of GL_LINEAR.
+ * Dynamic Lighting almost there. It looks like some normals are fudged or something.
+ *
  * Revision 2.48  2003/11/17 04:25:56  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -948,7 +953,8 @@ void gr_opengl_set_lighting(bool set, bool state)
 
 	lighting_is_enabled = set;
 
-	col.r = col.g = col.b = col.a = 1.0f;
+	col.r = col.g = col.b = col.a = set ? 1.0f : 0.0f;  //Adunno why the ambient and diffuse need to be set to 0.0 when lighting is disabled
+														//They just do, and that should suffice as an answer
 	glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
 	glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,specular_exponent_value);
 	if((gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set){
@@ -2558,10 +2564,10 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 	int alpha,tmap_type, r, g, b;
 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
-	
+
 	if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
 	{
-		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+		mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 		return;
 	}
 
@@ -2575,6 +2581,7 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 	for (i=0; i < nv; i++)
 	{
 		va=verts[i];
+		if(flags & TMAP_FLAG_RGB) glColor3ub(Gr_gamma_lookup[va->r],Gr_gamma_lookup[va->g],Gr_gamma_lookup[va->b]);
 		glTexCoord2f(va->u, va->v);
 		glVertex3f(va->x,va->y,va->z);
 	}

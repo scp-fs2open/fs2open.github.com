@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.53 $
- * $Date: 2003-11-17 04:25:57 $
- * $Author: bobboau $
+ * $Revision: 2.54 $
+ * $Date: 2003-11-25 15:04:46 $
+ * $Author: fryday $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2003/11/17 04:25:57  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.52  2003/11/16 04:09:22  Goober5000
  * language
  *
@@ -3959,7 +3965,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 					gr_set_cull(0);
 					gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d);		
-					g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
+					g3_draw_poly( 4, verts, /*TMAP_FLAG_TILED |*/ TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
 					gr_set_cull(1);
 				}
 
