@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-01-29 08:04:15 $
+ * $Revision: 2.56 $
+ * $Date: 2005-01-30 03:24:39 $
  * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/01/29 08:04:15  wmcoolmon
+ * Ahh, the sweet smell of optimized code
+ *
  * Revision 2.54  2005/01/14 05:28:57  wmcoolmon
  * gr_curve
  *
@@ -3293,8 +3296,8 @@ void gr_d3d_gradient(int x1,int y1,int x2,int y2)
 {
 	int clipped = 0, swapped=0;
 
-	gr_resize_screen_pos(&x1, &y1);
-	gr_resize_screen_pos(&x2, &y2);
+	//gr_resize_screen_pos(&x1, &y1);
+	//gr_resize_screen_pos(&x2, &y2);
 
 	if ( !gr_screen.current_color.is_alphacolor )	{
 		gr_line( x1, y1, x2, y2 );

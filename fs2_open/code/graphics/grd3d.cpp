@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.73 $
- * $Date: 2004-12-20 20:28:15 $
- * $Author: fryday $
+ * $Revision: 2.74 $
+ * $Date: 2005-01-30 03:24:39 $
+ * $Author: wmcoolmon $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2004/12/20 20:28:15  fryday
+ * Fixed a tiny error in bob's code in d3d_init_environment (which seems to be called even
+ * if there's no -env command-line) which created the cube-map and didn't check
+ * if the creation of it failed. Added the same sanity check to d3d_render_to_env
+ *
  * Revision 2.72  2004/10/31 21:38:25  taylor
  * reinit device if lost - one of the D3D people should make sure this isn't stupid
  *
@@ -2125,6 +2130,9 @@ int find_first_empty_buffer(){
 //makes the vertex buffer, returns an index to it
 int gr_d3d_make_buffer(poly_list *list, uint flags){
 	int idx = find_first_empty_buffer();
+
+	if(list->n_verts < 1)
+		return -1;
 
 	if(idx > -1){
 		vertex_buffer[idx].size = vertex_size(flags);
