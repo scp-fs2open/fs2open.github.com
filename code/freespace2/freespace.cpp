@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.50 $
- * $Date: 2003-10-16 17:36:29 $
+ * $Revision: 2.51 $
+ * $Date: 2003-10-26 00:31:58 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2003/10/16 17:36:29  randomtiger
+ * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
+ * Put in Bobs specular fog fix.
+ *
  * Revision 2.49  2003/10/16 00:17:12  randomtiger
  * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
  * As well as initialised in a different mode, bitmaps are stretched and for these modes
@@ -2652,7 +2656,7 @@ void game_init()
 
 	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("D3D8-") )))	{
 
-		bool use_hi_res = !strstr(ptr, NOX("(640 x 480)")) && has_sparky_hi;
+		bool use_hi_res = !strstr(ptr, NOX("(640x480)")) && has_sparky_hi;
 
 		// Direct 3D
 		gr_init(use_hi_res ? GR_1024 : GR_640, GR_DIRECT3D, depth);

@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-10-24 17:35:04 $
+ * $Revision: 2.37 $
+ * $Date: 2003-10-26 00:31:58 $
  * $Author: randomtiger $
- * $Revision: 2.36 $
- * $Date: 2003-10-24 17:35:04 $
+ * $Revision: 2.37 $
+ * $Date: 2003-10-26 00:31:58 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/10/24 17:35:04  randomtiger
+ * Implemented support for 32bit TGA and JPG for D3D
+ * Also 32 bit PCX, but it still has some bugs to be worked out
+ * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
+ *
  * Revision 2.35  2003/10/15 22:03:23  Kazan
  * Da Species Update :D
  *
@@ -429,7 +434,7 @@ cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
 cmdline_parm nohtl_arg("-htl", NULL); //Use software HT&L	  
 cmdline_parm cell_arg("-cell", NULL);
-cmdline_parm textures_32bit("-32bit_textures",NULL);
+cmdline_parm textures_32bit("-t32",NULL);
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
