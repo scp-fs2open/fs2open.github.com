@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.60 $
- * $Date: 2004-01-12 21:12:41 $
- * $Author: randomtiger $
+ * $Revision: 2.61 $
+ * $Date: 2004-01-20 22:39:06 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2004/01/12 21:12:41  randomtiger
+ * Added fix for fogging debris in D3D htl.
+ *
  * Revision 2.59  2003/12/04 20:39:10  randomtiger
  * Added DDS image support for D3D
  * Added new command flag '-ship_choice_3d' to activate 3D models instead of ani's in ship choice, feature now off by default
@@ -4771,8 +4774,9 @@ void parse_tmap(int offset, ubyte *bsp_data){
 // +42     byte        blue
 // +43     byte        pad
 // +44     nverts*short*short  vertlist, smoothlist
-void parse_flat_poly(int offset, ubyte *bsp_data){
-
+void parse_flat_poly(int offset, ubyte *bsp_data)
+{
+/* Goober5000 - if this function was commented out, the variables should be also
 	int nv = bsp_data[offset+36];
 	short *verts = (short *)(&bsp_data[offset+44]);
 
@@ -4780,7 +4784,7 @@ void parse_flat_poly(int offset, ubyte *bsp_data){
 	vector *v;
 	vector *N;
 	int i = 0;
-
+*/
 /*	for( i = 1; i<nv-1; i++){
 		V = &flat_list.vert[flat_list.n_poly][0];
 		N = &flat_list.norm[flat_list.n_poly][0];
