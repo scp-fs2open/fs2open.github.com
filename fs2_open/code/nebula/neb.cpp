@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-16 04:09:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-17 04:25:57 $
+ * $Author: bobboau $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/16 04:09:21  Goober5000
+ * language
+ *
  * Revision 2.10  2003/11/11 03:56:12  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -1232,8 +1235,8 @@ void neb2_render_player()
 				frame_area -= this_area;
 				frame_rendered++;			
 #else */
-				if(!Cmdline_nohtl)gr_set_lighting(false,false);
-				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+//				if(!Cmdline_nohtl)gr_set_lighting(false,false);
+//				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 				if(Cmdline_nohtl)g3_draw_rotated_bitmap(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 				else g3_draw_rotated_bitmap(&p_, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 //#endif

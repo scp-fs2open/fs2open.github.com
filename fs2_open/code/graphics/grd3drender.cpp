@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.35 $
- * $Date: 2003-11-11 02:15:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.36 $
+ * $Date: 2003-11-17 04:25:56 $
+ * $Author: bobboau $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/11/11 02:15:44  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.34  2003/11/06 21:10:26  randomtiger
  * Added my batching solution for more efficient d3d_string.
  * Its part of the new grd3dbatch module, most of this isnt in use but it might help out later so I've left it in.
@@ -1273,7 +1278,7 @@ bool cell_enabled = false;
 extern bool rendering_shockwave;
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
-	d3d_set_initial_render_state();
+//	d3d_set_initial_render_state();
 
 	if(!Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT)) {
 		gr_d3d_tmapper_internal_3d_unlit(nverts, verts, flags, is_scaler);

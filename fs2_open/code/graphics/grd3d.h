@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.6 $
- * $Date: 2003-11-01 21:59:21 $
+ * $Revision: 2.7 $
+ * $Date: 2003-11-17 04:25:56 $
  * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/11/01 21:59:21  bobboau
+ * new matrix handeling code, and fixed some problems with 3D lit verts,
+ * several other small fixes
+ *
  * Revision 2.5  2003/10/25 03:26:39  phreak
  * fixed some old bugs that reappeared after RT committed his texture code
  *
@@ -97,6 +101,7 @@
 #define _GRD3D_H
 
 struct poly_list;
+struct line_list;
 
 #include "globalincs/systemvars.h"
 #include <d3dx8math.h>
@@ -142,6 +147,8 @@ void gr_d3d_get_region(int front, int w, int h, ubyte *data);
 int gr_d3d_make_buffer(poly_list *list);
 void gr_d3d_destroy_buffer(int idx);
 void gr_d3d_render_buffer(int idx);
+int gr_d3d_make_flat_buffer(poly_list *list);
+int gr_d3d_make_line_buffer(line_list *list);
 
 void gr_d3d_set_proj_matrix(float fov, float ratio, float n, float f);
 void gr_d3d_end_proj_matrix();

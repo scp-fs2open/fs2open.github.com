@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.34 $
- * $Date: 2003-11-11 02:15:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2003-11-17 04:25:57 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/11/11 02:15:45  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.33  2003/10/10 03:59:41  matt
  * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
  * out now. -Sticks
@@ -629,6 +634,8 @@ typedef struct bsp_info {
 	
 
 	int n_buffers;
+	int flat_buffer;
+	int flat_line_buffer;
 	buffer_data buffer[MAX_MODEL_TEXTURES/4];
 	//I figured that, 64 textures per model, half of that would probly be in LOD0, and half of that might be in the main model, I don't think we'd need more than 12 textures (and thus vertex buffers) per submodel
 } bsp_info;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-11-16 04:08:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2003-11-17 04:25:57 $
+ * $Author: bobboau $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/11/16 04:08:47  Goober5000
+ * fixed briefing scroll and display of "more"
+ * --Goober5000
+ *
  * Revision 2.10  2003/11/11 03:56:11  bobboau
  * lots of bug fixing, much of it in nebula and bitmap drawing
  *
@@ -1447,7 +1451,7 @@ void brief_render_closeup(int ship_class, float frametime)
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
 
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f,30000);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f,30000);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
 	model_clear_instance( Closeup_icon->modelnum );

@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.47 $
- * $Date: 2003-11-12 00:44:52 $
- * $Author: Kazan $
+ * $Revision: 2.48 $
+ * $Date: 2003-11-17 04:25:56 $
+ * $Author: bobboau $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/11/12 00:44:52  Kazan
+ * (Kazan) /me slaps forehead... make sure things compile before committing.. sorry guys
+ *
  * Revision 2.46  2003/11/11 18:05:02  phreak
  * support for GL_ARB_vertex_buffer_object.  should run real fast now with _VERY_
  * high poly ships
@@ -4190,11 +4193,9 @@ int gr_opengl_make_buffer(poly_list *list)
 		memcpy(n,list->norm,list->n_poly*sizeof(vector));
 				
 
-		for (int i=0; i < list->n_poly; i++)
+		for (int i=0; i < list->n_poly*3; i++)
 		{
-			for (int j=0; j < 3; j++)
-			{	
-				vl=&list->vert[i][j];
+				vl=&list->vert[i];
 
 				v->xyz.x=vl->x; 
 				v->xyz.y=vl->y;
@@ -4204,7 +4205,6 @@ int gr_opengl_make_buffer(poly_list *list)
 				t->u=vl->u;
 				t->v=vl->v;
 				t++;
-			}				
 		}
 
 		//maybe load it into a vertex buffer object

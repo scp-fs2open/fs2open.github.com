@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.52 $
- * $Date: 2003-11-16 04:09:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.53 $
+ * $Date: 2003-11-17 04:25:57 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2003/11/16 04:09:22  Goober5000
+ * language
+ *
  * Revision 2.51  2003/11/11 18:12:41  phreak
  * changed g3_done_instance() calls to take a parameter to pop the T&L matrices
  *
@@ -4581,8 +4584,10 @@ int model_is_pirate_ship(int modelnum)
 
 
 //**********verrtex buffer stuff**********//
-
+int tri_count[MAX_MODEL_TEXTURES];
 poly_list list[MAX_MODEL_TEXTURES];
+poly_list flat_list;
+line_list flat_line_list;
 
 #define parseF(dest, f, off)	{memcpy(&dest, &f[off], sizeof(float)); off += sizeof(float);}
 #define parseI(dest, f, off)	{memcpy(&dest, &f[off], sizeof(int)); off += sizeof(int);}
@@ -4653,8 +4658,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 	vector *N;
 
 	for(int i = 1; i<n_vert-1; i++){
-		V = &list[pof_tex].vert[list[pof_tex].n_poly][0];
-		N = &list[pof_tex].norm[list[pof_tex].n_poly][0];
+		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)];
+		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)];
 		v = Interp_verts[(int)tverts[0].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
@@ -4664,8 +4669,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		*N = *Interp_norms[(int)tverts[0].normnum];
 		vm_vec_normalize(N);
 
-		V = &list[pof_tex].vert[list[pof_tex].n_poly][1];
-		N = &list[pof_tex].norm[list[pof_tex].n_poly][1];
+		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+1];
+		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)+1];
 		v = Interp_verts[(int)tverts[i].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
@@ -4675,8 +4680,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		*N = *Interp_norms[(int)tverts[i].normnum];
 		vm_vec_normalize(N);
 
-		V = &list[pof_tex].vert[list[pof_tex].n_poly][2];
-		N = &list[pof_tex].norm[list[pof_tex].n_poly][2];
+		V = &list[pof_tex].vert[(list[pof_tex].n_poly*3)+2];
+		N = &list[pof_tex].norm[(list[pof_tex].n_poly*3)+2];
 		v = Interp_verts[(int)tverts[i+1].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
@@ -4691,6 +4696,103 @@ void parse_tmap(int offset, ubyte *bsp_data){
 	}
 
 }
+
+// Flat Poly
+// +0      int         id
+// +4      int         size 
+// +8      vector      normal
+// +20     vector      center
+// +32     float       radius
+// +36     int         nverts
+// +40     byte        red
+// +41     byte        green
+// +42     byte        blue
+// +43     byte        pad
+// +44     nverts*short*short  vertlist, smoothlist
+void parse_flat_poly(int offset, ubyte *bsp_data){
+
+	int nv = bsp_data[offset+36];
+	short *verts = (short *)(&bsp_data[offset+44]);
+
+	vertex *V;
+	vector *v;
+	vector *N;
+	int i = 0;
+
+/*	for( i = 1; i<nv-1; i++){
+		V = &flat_list.vert[flat_list.n_poly][0];
+		N = &flat_list.norm[flat_list.n_poly][0];
+		v = Interp_verts[verts[i*2]];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = 0.0f;
+		V->v = 0.0f;
+		*N = *(vector*)&bsp_data[offset+8];
+		V->r = bsp_data[offset+40];
+		V->g = bsp_data[offset+41];
+		V->b = bsp_data[offset+42];
+		vm_vec_normalize(N);
+
+		V = &flat_list.vert[flat_list.n_poly][1];
+		N = &flat_list.norm[flat_list.n_poly][1];
+		v = Interp_verts[verts[i*2]];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = 0.0f;
+		V->v = 0.0f;
+		*N = *(vector*)&bsp_data[offset+8];
+		V->r = bsp_data[offset+40];
+		V->g = bsp_data[offset+41];
+		V->b = bsp_data[offset+42];
+		vm_vec_normalize(N);
+
+		V = &flat_list.vert[flat_list.n_poly][2];
+		N = &flat_list.norm[flat_list.n_poly][2];
+		v = Interp_verts[verts[i*2]];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = 0.0f;
+		V->v = 0.0f;
+		*N = *(vector*)&bsp_data[offset+8];
+		V->r = bsp_data[offset+40];
+		V->g = bsp_data[offset+41];
+		V->b = bsp_data[offset+42];
+		vm_vec_normalize(N);
+
+		flat_list.n_poly++;
+	}
+*/
+/*	//we don't need this
+	for(i = 0; i<nv; i++){
+		V = &flat_line_list.vert[flat_line_list.n_line][0];
+		v = Interp_verts[verts[(i%nv*2)]];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = 0.0f;
+		V->v = 0.0f;
+		V->r = bsp_data[offset+40];
+		V->g = bsp_data[offset+41];
+		V->b = bsp_data[offset+42];
+
+		V = &flat_line_list.vert[flat_line_list.n_line][1];
+		v = Interp_verts[verts[(((i+1)%nv)*2)]];
+		V->x = v->xyz.x;
+		V->y = v->xyz.y;
+		V->z = v->xyz.z;
+		V->u = 0.0f;
+		V->v = 0.0f;
+		V->r = bsp_data[offset+40];
+		V->g = bsp_data[offset+41];
+		V->b = bsp_data[offset+42];
+
+		flat_line_list.n_line++;
+	}*/
+}
+//flat_list
 
 void parse_sortnorm(int offset, ubyte *bsp_data);
 
@@ -4710,7 +4812,7 @@ void parse_bsp(int offset, ubyte *bsp_data){
 			break;
 		case OP_SORTNORM:	parse_sortnorm(offset, bsp_data);
 			break;
-		case OP_FLATPOLY:
+		case OP_FLATPOLY:	parse_flat_poly(offset, bsp_data);
 			break;
 		case OP_TMAPPOLY:	parse_tmap(offset, bsp_data);
 			break;
@@ -4744,9 +4846,28 @@ void parse_sortnorm(int offset, ubyte *bsp_data){
 	if (postlist) parse_bsp(offset+postlist, bsp_data);
 }
 
+void find_tri_counts(int offset, ubyte *bsp_data);
+
+void alocate_poly_list(){
+	for(int i = 0; i<MAX_MODEL_TEXTURES; i++){
+		if(list[i].vert!=NULL){delete[] list[i].vert; list[i].vert = NULL;}
+		if(list[i].norm!=NULL){delete[] list[i].norm; list[i].norm = NULL;}
+		if(tri_count[i])list[i].vert = new vertex[tri_count[i]*3];
+		if(tri_count[i])list[i].norm = new vector[tri_count[i]*3];
+	}
+}
+
 void generate_vertex_buffers(bsp_info* model, polymodel * pm){
-	for(int i =0; i<MAX_MODEL_TEXTURES; i++)
+	for(int i =0; i<MAX_MODEL_TEXTURES; i++){
 		list[i].n_poly=0;
+		tri_count[i]=0;
+	}
+
+//	flat_list.n_poly = 0;
+	flat_line_list.n_line = 0;
+
+	find_tri_counts(0, model->bsp_data);
+	alocate_poly_list();
 
 	parse_bsp(0, model->bsp_data);
 	model->n_buffers = 0;
@@ -4757,7 +4878,71 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model->buffer[model->n_buffers].texture = i;
 		model->n_buffers++;
 	}
+//	model->flat_buffer = -1;
+	model->flat_line_buffer = -1;
+//	if(flat_list.n_poly)model->flat_buffer = gr_make_flat_buffer(&flat_list);
+	//we don't need this
+	if(flat_line_list.n_line)model->flat_line_buffer = gr_make_line_buffer(&flat_line_list);
 }
+
+
+void find_tmap(int offset, ubyte *bsp_data){
+	int pof_tex = bsp_data[offset+40];
+	int n_vert = bsp_data[offset+36];
+
+	tri_count[pof_tex] +=n_vert-2;	
+
+}
+
+void find_sortnorm(int offset, ubyte *bsp_data){
+
+	int frontlist, backlist, prelist, postlist, onlist;
+	memcpy(&frontlist, &bsp_data[offset+36], sizeof(int));
+	memcpy(&backlist, &bsp_data[offset+40], sizeof(int));
+	memcpy(&prelist, &bsp_data[offset+44], sizeof(int));
+	memcpy(&postlist, &bsp_data[offset+48], sizeof(int));
+	memcpy(&onlist, &bsp_data[offset+52], sizeof(int));
+
+	if (prelist) find_tri_counts(offset+prelist,bsp_data);
+	if (backlist) find_tri_counts(offset+backlist, bsp_data);
+	if (onlist) find_tri_counts(offset+onlist, bsp_data);
+	if (frontlist) find_tri_counts(offset+frontlist, bsp_data);
+	if (postlist) find_tri_counts(offset+postlist, bsp_data);
+}
+
+//tri_count
+void find_tri_counts(int offset, ubyte *bsp_data){
+	int ID, SIZE;
+
+	memcpy(&ID, &bsp_data[offset], sizeof(int));
+	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+	while(ID!=0){
+		switch(ID){
+		case OP_EOF:	
+			return;
+			break;
+		case OP_DEFPOINTS:	//find_defpoint(offset, bsp_data);
+			break;
+		case OP_SORTNORM:	find_sortnorm(offset, bsp_data);
+			break;
+		case OP_FLATPOLY:	//find_flat_poly(offset, bsp_data);
+			break;
+		case OP_TMAPPOLY:	find_tmap(offset, bsp_data);
+			break;
+		case OP_BOUNDBOX:
+			break;
+		default:
+			return;
+		}
+			offset += SIZE;
+		memcpy(&ID, &bsp_data[offset], sizeof(int));
+		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+
+		if(SIZE < 1)ID=OP_EOF;
+	}
+}
+
 
 void model_render_childeren_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level){
 	int i;
@@ -4835,7 +5020,6 @@ extern matrix Object_matrix;
 
 void model_render_buffers(bsp_info* model, polymodel * pm){
 	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING), true );
-	gr_set_cull(1);
 
 	vector scale;
 
@@ -4847,6 +5031,12 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 		scale.xyz.x = Model_Interp_scale_x;
 		scale.xyz.y = Model_Interp_scale_y;
 		scale.xyz.z = Model_Interp_scale_z;
+	}
+
+	if(Interp_flags & MR_NO_CULL){
+		gr_set_cull(0);
+	}else{
+		gr_set_cull(1);
 	}
 
 	gr_push_scale_matrix(&scale);
@@ -4869,7 +5059,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 				texture = pm->textures[model->buffer[i].texture];//here is were it picks the texture to render for normal-Bobboau
 			}
 
-			if((Detail.lighting > 2)  && (model_current_LOD < 1))SPECMAP = pm->specular_textures[model->buffer[i].texture];
+			if((Detail.lighting > 2)  && (model_current_LOD < 2))SPECMAP = pm->specular_textures[model->buffer[i].texture];
 
 			if(glow_maps_active)
 			{
@@ -4885,6 +5075,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 		}
 
 		if(texture == -1)continue;
+
 		if(Interp_thrust_scale_subobj) {
 
 			if((Interp_thrust_bitmap>-1) && (Interp_thrust_scale > 0.0f)) {
@@ -4911,6 +5102,10 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	}
 	GLOWMAP = -1;
 	SPECMAP = -1;
+
+//	if(model->flat_buffer != -1)gr_render_buffer(model->flat_buffer);
+	//we don't need this
+	if(model->flat_line_buffer != -1)gr_render_buffer(model->flat_line_buffer);
 
 	gr_pop_scale_matrix();
 
