@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.h $
- * $Revision: 2.7 $
- * $Date: 2003-08-30 20:55:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-05-09 23:32:40 $
+ * $Author: phreak $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/08/30 20:55:09  Goober5000
+ * bumped version to 3.5.5
+ * --Goober5000
+ *
  * Revision 2.6  2003/02/05 07:04:31  Goober5000
  * fixed version bumpage... the version is 3.5.0, not 3.50.0 ;)
  * --Goober5000
@@ -143,8 +147,8 @@
 //   Major.Minor.Bugfix
 
 #define FS_VERSION_MAJOR 3					// major version
-#define FS_VERSION_MINOR 5					// increase by 1 for minor revs
-#define FS_VERSION_BUILD 5					// bugfix release
+#define FS_VERSION_MINOR 6					// increase by 1 for minor revs
+#define FS_VERSION_BUILD 0					// bugfix release
 
 #define VERSION_LOC_FNAME			"version.nfo"
 #define MOTD_LOC_FNAME				"motd.txt"
