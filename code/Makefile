@@ -91,9 +91,8 @@ LDLIBS = -L/usr/X11R6/lib -lSDL -lGL -lGLU -lpthread
 CXXFLAGS = \
  -g \
  -I/usr/local/include/SDL \
- -I. -Iwindows_stub \
+ -I. \
  -fno-exceptions \
- -IWeapon -ILocalization -INebula -IDemo -IInetfile -IExceptionHandler \
  -D_DEBUG -DNO_CD_CHECK -UNDEBUG \
  -DNO_DIRECT3D $(SOUND_DEF) $(JOYSTICK_DEF) $(NETWORK_DEF) $(OPENGL_DEF)
 
