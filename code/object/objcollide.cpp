@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-06-11 03:00:50 $
+ * $Author: phreak $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -835,6 +838,12 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 
 		float max_vel_weapon, max_vel_other;
 		max_vel_weapon = weapon->phys_info.max_vel.xyz.z;
+
+		if ((Weapons[weapon->instance].lssm_stage==5))
+		{
+			max_vel_weapon=Weapon_info[Weapons[weapon->instance].weapon_info_index].lssm_stage5_vel;
+		}
+
 		max_vel_other = other->phys_info.max_vel.xyz.z;
 		if (max_vel_other < 10.0f) {
 			if ( vm_vec_mag_squared( &other->phys_info.vel ) > 100 ) {
