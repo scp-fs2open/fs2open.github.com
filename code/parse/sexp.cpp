@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.115 $
- * $Date: 2004-10-14 01:19:17 $
+ * $Revision: 2.116 $
+ * $Date: 2004-10-14 22:28:27 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2004/10/14 01:19:17  Goober5000
+ * more ubersexp bugfixing
+ * --Goober5000
+ *
  * Revision 2.114  2004/10/13 10:46:49  Goober5000
  * fixed a few when-argument bugs
  * --Goober5000
@@ -2885,20 +2889,33 @@ int get_string(char *str)
 	return len;
 }
 
+// Goober5000
+void get_unformatted_sexp_variable_name(char *unformatted, char *formatted_pre)
+{
+	int end_index;
+	char *formatted;
+
+	// Goober5000 - trim @ if needed
+	if (formatted_pre[0] == SEXP_VARIABLE_CHAR)
+		formatted = formatted_pre+1;
+	else
+		formatted = formatted_pre;
+
+	// get variable name (up to '['
+	end_index = strcspn(formatted, "[");
+	Assert( (end_index != 0) && (end_index < TOKEN_LENGTH-1) );
+	strncpy(unformatted, formatted, end_index);
+	unformatted[end_index] = '\0';
+}
 
 // get text to stuff into Sexp_node in case of variable
 // if Fred_running - stuff Sexp_variables[].variable_name
 // otherwise - stuff index into Sexp_variables array.
 void get_sexp_text_for_variable(char *text, char *token)
 {
-	int end_index;
 	int sexp_var_index;
 	
-	// get variable name (up to '['
-	end_index = strcspn(token, "[");
-	Assert( (end_index != 0) && (end_index < TOKEN_LENGTH-1) );
-	strncpy(text, token, end_index);
-	text[end_index] = '\0';
+	get_unformatted_sexp_variable_name(text, token);
 
 	if ( !Fred_running ) {
 		// freespace - get index into Sexp_variables array
@@ -6494,6 +6511,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 	}
 
 	// only eval this argument if it's valid
+	val = SEXP_FALSE;
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
 		// flush stuff
@@ -14747,13 +14765,32 @@ int extract_sexp_variable_index(int node)
 // wrapper around Sexp_node[xx].text for normal and variable
 char *CTEXT(int n)
 {
+	int sexp_variable_index;
+	char variable_name[TOKEN_LENGTH];
+
 	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
 	// the CTEXT wrapper, when-argument would probably be infeasibly difficult to code.
 	if (!strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))
-		return Sexp_current_replacement_argument;
+	{
+		// if the replacement argument is a variable name, get the variable index
+		sexp_variable_index = get_index_sexp_variable_name(Sexp_current_replacement_argument);
 
+		// if the replacement argument is a formatted variable name, get the variable index
+		if (Sexp_current_replacement_argument[0] == SEXP_VARIABLE_CHAR)
+		{
+			get_unformatted_sexp_variable_name(variable_name, Sexp_current_replacement_argument);
+			sexp_variable_index = get_index_sexp_variable_name(variable_name);
+		}
+
+		// if we have a variable, return the variable value, else return the regular argument
+		if (sexp_variable_index != -1)
+			return Sexp_variables[sexp_variable_index].text;
+		else
+			return Sexp_current_replacement_argument;
+	}
+
+	// Goober5000 - if not special argument, proceed as normal
 	if (Sexp_nodes[n].type & SEXP_FLAG_VARIABLE) {
-		int sexp_variable_index;
 		if (Fred_running) {
 			sexp_variable_index = get_index_sexp_variable_name(Sexp_nodes[n].text);
 			Assert(sexp_variable_index != -1);
