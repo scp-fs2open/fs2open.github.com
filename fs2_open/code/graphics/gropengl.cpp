@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.30 $
- * $Date: 2003-10-04 00:26:43 $
+ * $Revision: 2.31 $
+ * $Date: 2003-10-05 23:40:54 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2003/10/04 00:26:43  phreak
+ * shinemapping completed. it works!
+ * -phreak
+ *
  * Revision 2.29  2003/09/26 14:37:14  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -431,6 +435,7 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include "cfile/cfile.h"
 #include "io/timer.h"
 #include "ddsutils/ddsutils.h"
+#include "model/model.h"
 
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
@@ -478,13 +483,51 @@ typedef struct ogl_extension
 #define GL_TEXTURE_ENV_ADD				4			// additive texture environment
 #define GL_COMP_TEX						5			// texture compression
 #define GL_TEX_COMP_S3TC				6			// S3TC/DXTC compression format
-#define GL_TEX_FILTER_aniso				7			// anisotrophic filtering
+#define GL_TEX_FILTER_ANSIO				7			// anisotrophic filtering
 #define GL_NV_RADIAL_FOG				8			// for better looking fog
 #define GL_SECONDARY_COLOR_3FV			9			// for better looking fog
 #define GL_SECONDARY_COLOR_3UBV			10			// specular
-#define GL_ARB_ENV_COMBINE				11
-#define GL_EXT_ENV_COMBINE				12
-#define GL_NUM_EXTENSIONS				13
+#define GL_ARB_ENV_COMBINE				11			// spec mapping
+#define GL_EXT_ENV_COMBINE				12			// spec mapping
+#define GL_LOCK_ARRAYS					13			// HTL
+#define GL_UNLOCK_ARRAYS				14			// HTL
+#define GL_LOAD_TRANSPOSE				15			
+#define GL_MULT_TRANSPOSE				16
+
+
+//GL_ARB_vertex_buffer_object FUNCTIONS
+/*#define GL_ARB_VBO_BIND_BUFFER		15			
+#define GL_ARB_VBO_DEL_BUFFER			16
+#define GL_ARB_VBO_GEN_BUFFER			17
+#define GL_ARB_VBO_BUFFER_DATA			18
+#define GL_ARB_VBO_MAP_BUFFER			19
+#define GL_ARB_VBO_UNMAP_BUFFER			20*/
+
+
+#define GL_NUM_EXTENSIONS				17
+
+/*
+Assorted Functions for GL_ARB_vertex_buffer_object
+
+void BindBufferARB(enum target, uint buffer);
+void DeleteBuffersARB(sizei n, const uint *buffers);
+void GenBuffersARB(sizei n, uint *buffers);
+boolean IsBufferARB(uint buffer);
+
+void BufferDataARB(enum target, sizeiptrARB size, const void *data,
+                       enum usage);
+void BufferSubDataARB(enum target, intptrARB offset, sizeiptrARB size,
+                          const void *data);
+void GetBufferSubDataARB(enum target, intptrARB offset,
+                             sizeiptrARB size, void *data);
+
+void *MapBufferARB(enum target, enum access);
+boolean UnmapBufferARB(enum target);
+
+void GetBufferParameterivARB(enum target, enum pname, int *params);
+void GetBufferPointervARB(enum target, enum pname, void **params);
+
+  */
 
 static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 {
@@ -500,7 +543,12 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, NULL, "glSecondaryColor3fvEXT", "GL_EXT_secondary_color", 0},
 	{0, NULL, "glSecondaryColor3ubvEXT", "GL_EXT_secondary_color", 0},
 	{0, NULL, NULL, "GL_ARB_texture_env_combine",0},
-	{0, NULL, NULL, "GL_EXT_texture_env_combine",0}
+	{0, NULL, NULL, "GL_EXT_texture_env_combine",0},
+	{0, NULL, "glLockArraysEXT", "GL_EXT_compiled_vertex_array",0},
+	{0, NULL, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array",0},
+	{0, NULL,"glLoadTransposeMatrixfARB","GL_ARB_transpose_matrix",	1},
+	{0, NULL, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1}		
+
 };
 
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
@@ -519,6 +567,14 @@ static ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 #define glSecondaryColor3fvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3FVEXTPROC, GL_SECONDARY_COLOR_3FV)
 
 #define glSecondaryColor3ubvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3UBVEXTPROC, GL_SECONDARY_COLOR_3UBV)
+
+#define glLockArraysEXT GLEXT_CALL(PFNGLLOCKARRAYSEXTPROC, GL_LOCK_ARRAYS)
+
+#define glUnlockArraysEXT GLEXT_CALL(PFNGLUNLOCKARRAYSEXTPROC, GL_UNLOCK_ARRAYS)
+									 
+#define glLoadTransposeMatrixfARB GLEXT_CALL(PFNGLLOADTRANSPOSEMATRIXFARBPROC, GL_LOAD_TRANSPOSE)
+
+#define glMultTransposeMatrixfARB GLEXT_CALL(PFNGLMULTTRANSPOSEMATRIXFARBPROC, GL_MULT_TRANSPOSE)
 
 extern int Texture_compression_enabled;
 
@@ -888,70 +944,54 @@ void gr_opengl_set_tex_env_scale(float scale)
 void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
 {
 
-	if (ts != GL_current_tex_src)
-	{
-		gr_opengl_set_tex_state_combine_arb(ts);
-	}
+	gr_opengl_set_tex_state_combine_arb(ts);
 
-	if (ab != GL_current_alpha_blend)
-	{
-		switch (ab) {
-			case ALPHA_BLEND_NONE:
-				GL_current_alpha_blend=ab;
-				glBlendFunc(GL_ONE, GL_ZERO);
-				break;
 
-			case ALPHA_BLEND_ALPHA_ADDITIVE:
-				GL_current_alpha_blend=ab;
-				glBlendFunc(GL_ONE, GL_ONE);
-				break;
+	switch (ab) {
+		case ALPHA_BLEND_NONE:
+			glBlendFunc(GL_ONE, GL_ZERO);
+			break;
 
-			case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
-				GL_current_alpha_blend=ab;
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				break;
+		case ALPHA_BLEND_ALPHA_ADDITIVE:
+			glBlendFunc(GL_ONE, GL_ONE);
+			break;
+
+		case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			break;
 		
-			case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
-				GL_current_alpha_blend=ab;
-				glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
-				break;
+		case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
+			glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+			break;
 	
-			default:
-				break;
-		}
+		default:
+			break;
 	}
 	
-	if (zt != GL_current_ztype)
-	{
-		switch (zt) {
-			case ZBUFFER_TYPE_NONE:
-				GL_current_ztype = zt;
-				glDepthFunc(GL_ALWAYS);
-				glDepthMask(GL_FALSE);
-				break;
+	switch (zt) {
+		case ZBUFFER_TYPE_NONE:
+			glDepthFunc(GL_ALWAYS);
+			glDepthMask(GL_FALSE);
+			break;
 
-			case ZBUFFER_TYPE_READ:
-				GL_current_ztype = zt;
-				glDepthFunc(GL_LESS);
-				glDepthMask(GL_FALSE);	
-				break;
+		case ZBUFFER_TYPE_READ:
+			glDepthFunc(GL_LESS);
+			glDepthMask(GL_FALSE);	
+			break;
 
-			case ZBUFFER_TYPE_WRITE:
-				GL_current_ztype = zt;
-				glDepthFunc(GL_ALWAYS);
-				glDepthMask(GL_TRUE);
-				break;
+		case ZBUFFER_TYPE_WRITE:
+			glDepthFunc(GL_ALWAYS);
+			glDepthMask(GL_TRUE);
+			break;
 	
-			case ZBUFFER_TYPE_FULL:
-				GL_current_ztype = zt;
-				glDepthFunc(GL_LESS);
-				glDepthMask(GL_TRUE);
-				break;
+		case ZBUFFER_TYPE_FULL:
+			glDepthFunc(GL_LESS);
+			glDepthMask(GL_TRUE);
+			break;
 	
-			default:
-				break;
+		default:
+			break;
 		}	
-	}		
 }
 
 void gr_opengl_activate(int active)
@@ -1534,6 +1574,10 @@ void gr_opengl_line(int x1,int y1,int x2,int y2)
 	if ( x1 == x2 && y1 == y2 ) {
 		glBegin (GL_POINTS);
 		  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+		 
+		  ubyte zero[]={0,0,0};
+		  glSecondaryColor3ubvEXT(zero);
+
 		  glVertex3f (sx1, sy1, -0.99f);
 		glEnd ();
 		
@@ -1556,6 +1600,10 @@ void gr_opengl_line(int x1,int y1,int x2,int y2)
 	
 	glBegin (GL_LINES);
 	  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	  
+	  ubyte zero[]={0,0,0};
+	  glSecondaryColor3ubvEXT(zero);
+
 	  glVertex3f (sx2, sy2, -0.99f);
 	  glVertex3f (sx1, sy1, -0.99f);
 	glEnd ();
@@ -1603,6 +1651,9 @@ void gr_opengl_gradient(int x1,int y1,int x2,int y2)
 			sx1 += 0.5f;
 		}
 	}
+
+	ubyte zero[]={0,0,0};
+	glSecondaryColor3ubvEXT(zero);
 	
 	glBegin (GL_LINES);
 	  glColor4ub ((ubyte)gr_screen.current_color.red, (ubyte)gr_screen.current_color.green, (ubyte)gr_screen.current_color.blue, (ubyte)ba);
@@ -1715,10 +1766,8 @@ void gr_opengl_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb)
 
 static int ogl_maybe_pop_arb1=0;
 
-void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, float v_scale, int alpha, int override_primary=0)
+void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int alpha, int override_primary=0)
 {
-	int r=255, g=255, b=255; 
-
 	glBegin(GL_TRIANGLE_FAN);
 		for (int i = nv-1; i >= 0; i--) {		
 		vertex * va = verts[i];
@@ -1967,7 +2016,7 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 	if (CLOAKMAP==gr_screen.current_bitmap)
 		glBlendFunc(GL_ONE, GL_ONE);
 
-	opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,alpha);
+	opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha);
 
 	//if we used arb1 for the cloakmap, return
 	if (ogl_maybe_pop_arb1)
@@ -2002,7 +2051,7 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 		glDepthMask(GL_FALSE);
 		glDepthFunc(GL_EQUAL);
 	
-		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,alpha);
+		opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha);
 
 
 		glMatrixMode(GL_TEXTURE);
@@ -2028,7 +2077,7 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 			glDepthMask(GL_FALSE);
 			glDepthFunc(GL_EQUAL);
 			gr_opengl_set_tex_env_scale(4.0f);
-			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,alpha,1);
+			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,1);
 			
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -2181,7 +2230,7 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 	if (CLOAKMAP==gr_screen.current_bitmap)
 		glBlendFunc(GL_ONE, GL_ONE);
 
-	opengl_draw_primitive(nv,verts,flags, u_scale, v_scale, alpha);
+	opengl_draw_primitive(nv,verts,flags, u_scale, v_scale, r,g,b,alpha);
 
 	if (ogl_maybe_pop_arb1)
 	{
@@ -2189,7 +2238,7 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 		ogl_maybe_pop_arb1=0;
 	}
 
-	if (SPECMAP > -1)
+	if ((SPECMAP > -1) && (flags & TMAP_FLAG_TEXTURED))
 	{
 			gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 			GLOWMAP=-1;
@@ -2204,7 +2253,7 @@ void gr_opengl_tmapper_internal_3multitex( int nv, vertex ** verts, uint flags, 
 			glDepthMask(GL_FALSE);
 			glDepthFunc(GL_EQUAL);
 			gr_opengl_set_tex_env_scale(4.0f);
-			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,alpha,1);
+			opengl_draw_primitive(nv,verts,flags,u_scale,v_scale,r,g,b,alpha,1);
 			
 			glDepthMask(GL_TRUE);
 			glDepthFunc(GL_LESS);
@@ -3933,25 +3982,232 @@ void gr_opengl_translate_texture_matrix(int unit, vector *shift)
 
 #ifdef HTL
 
-int gr_opengl_make_buffer(poly_list *list){
-	//stubb
-	return -1;
-}
-	
-void gr_opengl_destroy_buffer(int idx){
-	//stubb
-}
-	
-void gr_opengl_render_buffer(int idx){
-	//stubb
+struct uv_pad
+{
+	float u,v,pad;
+};
+
+struct opengl_vertex_buffer
+{
+	int n_poly;
+	vector *vertex_array;
+	uv_pair *texcoord_array;
+	vector *normal_array;
+
+	int used;
+};
+
+#define MAX_SUBOBJECTS 64
+#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*(MAX_MODEL_TEXTURES/4)
+
+opengl_vertex_buffer vertex_buffers[MAX_BUFFERS];
+
+//some globals
+extern matrix View_matrix;
+extern vector View_position;
+extern matrix Eye_matrix;
+extern vector Eye_position;
+extern vector Object_position;
+extern matrix Object_matrix;
+extern float	Canv_w2;				// Canvas_width / 2
+extern float	Canv_h2;				// Canvas_height / 2
+extern float	View_zoom;
+static int n_active_lights = 0;
+
+//zeros everything out
+void opengl_init_vertex_buffers()
+{
+	memset(vertex_buffers,0,sizeof(opengl_vertex_buffer)*MAX_BUFFERS);
 }
 
-void gr_opengl_start_instance_matrix(){
-	//stubb
+int opengl_find_first_free_buffer()
+{
+	for (int i=0; i < MAX_BUFFERS; i++)
+	{
+		if (!vertex_buffers[i].used)
+			return i;
+	}
+	
+	return -1;
+}
+
+int gr_opengl_make_buffer(poly_list *list)
+{
+	int buffer_num=opengl_find_first_free_buffer();
+
+	//we have a valid buffer
+	if (buffer_num > -1)
+	{
+		opengl_vertex_buffer *vbp=&vertex_buffers[buffer_num];
+
+		vbp->used=1;
+
+		vbp->n_poly=list->n_poly;
+
+		vbp->texcoord_array=(uv_pair*)malloc(list->n_poly * 3 * sizeof(uv_pair));	
+		memset(vbp->texcoord_array,0,list->n_poly*sizeof(uv_pair));
+
+		vbp->normal_array=(vector*)malloc(list->n_poly * 3 * sizeof(vector));
+		memset(vbp->normal_array,0,list->n_poly*sizeof(vector));
+
+		vbp->vertex_array=(vector*)malloc(list->n_poly * 3 * sizeof(vector));
+		memset(vbp->vertex_array,0,list->n_poly*sizeof(vector));
+
+		vector *n=vbp->normal_array;
+		vector *v=vbp->vertex_array;
+		uv_pair *t=vbp->texcoord_array;
+
+		vertex *vl;
+		
+		memcpy(n,list->norm,list->n_poly*sizeof(vector));
+				
+
+		for (int i=0; i < list->n_poly; i++)
+		{
+			for (int j=0; j < 3; j++)
+			{	
+				vl=&list->vert[i][j];
+
+				v->xyz.x=vl->x; 
+				v->xyz.y=vl->y;
+				v->xyz.z=vl->z;
+				v++;
+
+				t->u=vl->u;
+				t->v=vl->v;
+				t++;
+			}				
+		}
+
+	}
+	
+
+	return buffer_num;
+}
+	
+void gr_opengl_destroy_buffer(int idx)
+{
+	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
+	free(vbp->normal_array);
+	free(vbp->texcoord_array);
+	free(vbp->vertex_array);
+
+	memset(vbp,0,sizeof(opengl_vertex_buffer));
+}
+	
+void gr_opengl_render_buffer(int idx)
+{
+	float u_scale,v_scale;
+
+	glFrontFace(GL_CW);
+	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3,GL_FLOAT,0,vbp->vertex_array);
+
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glNormalPointer(GL_FLOAT,0,vbp->normal_array);
+
+	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+	
+	if (GLOWMAP > -1)
+	{
+		glActiveTextureARB(GL_TEXTURE1_ARB);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2,GL_FLOAT,0,vbp->texcoord_array);
+	}
+//	else
+//	{
+//		glActiveTextureARB(GL_TEXTURE1_ARB);
+//		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+//		glDisable(GL_TEXTURE_2D);
+//	}
+
+	gr_opengl_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
+	glColor3ub(255,255,255);
+	gr_tcache_set(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
+	
+	glLockArraysEXT(0,vbp->n_poly*3);
+	glDrawArrays(GL_TRIANGLES,0,vbp->n_poly*3);
+	glUnlockArraysEXT();
+
+
+}
+
+
+extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
+
+int depth =0;
+//set camera and shiz
+void gr_opengl_start_instance_matrix()
+{
+	if (depth==0){
+		//change the viewport
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+
+		//fov, aspect ratio, z_near, z_far
+		gluPerspective(45.0, (float)gr_screen.max_w/(float)gr_screen.max_h, 0.1, 100000.0);
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+
+	}
+	
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	vector fwd;
+	vector *uvec=&Eye_matrix.vec.uvec;
+
+	vm_vec_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec);
+
+	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,Eye_position.xyz.z,
+			fwd.xyz.x,fwd.xyz.y,fwd.xyz.z,
+			uvec->xyz.x, uvec->xyz.y,uvec->xyz.z);
+
+	glTranslatef(Object_position.xyz.x,Object_position.xyz.y,Object_position.xyz.z);
+
+	vector axis;
+	float ang;
+
+	vm_matrix_to_rot_axis_and_angle(&Object_matrix,&ang,&axis);
+
+	glRotatef(fl_degrees(ang),axis.xyz.x,-axis.xyz.y,-axis.xyz.z);
+
+	glScalef(-Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z);
+
+/*	vector fwd;
+	vector *uvec=&Eye_matrix.vec.uvec;
+
+	vm_vec_scale_add(&fwd,&Eye_position, &Eye_matrix.vec.fvec,30000);
+
+	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,Eye_position.xyz.z,
+			fwd.xyz.x,fwd.xyz.y,fwd.xyz.z,
+			uvec->xyz.x, uvec->xyz.y,uvec->xyz.z);
+*/
+
+
+	depth++;
+
 }
 
 void gr_opengl_end_instance_matrix(){
-	//stubb
+	
+	depth--;
+
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
+	if (depth==0)
+	{
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+	}
 }
 
 int	 gr_opengl_make_light(light_data* light, int idx, int priority){
@@ -3967,9 +4223,20 @@ void gr_opengl_destroy_light(int idx){
 	//stubb
 }
 
-void gr_opengl_set_light(int idx, bool){
+void gr_opengl_set_light(int idx, bool state){
 	//stubb
 }
+
+void gr_opengl_end_clip()
+{
+}
+
+void gr_opengl_start_clip()
+{
+}
+
+void gr_opengl_set_lighting(bool state)
+{}
 
 #endif
 
@@ -3982,6 +4249,9 @@ void gr_opengl_init(int reinit)
 	char curver[3];
 	int bpp = gr_screen.bits_per_pixel;
 
+#ifdef HTL
+	opengl_init_vertex_buffers();
+#endif
 
 	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 
@@ -4354,6 +4624,11 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	gr_screen.gf_modify_light = gr_opengl_modify_light;
 	gr_screen.gf_destroy_light = gr_opengl_destroy_light;
 	gr_screen.gf_set_light = gr_opengl_set_light;
+
+	gr_screen.start_clip_plane = gr_opengl_end_clip;
+	gr_screen.end_clip_plane = gr_opengl_start_clip;
+
+	gr_screen.gf_lighting = gr_opengl_set_lighting;
 #endif
 
 	Mouse_hidden++;
@@ -4366,7 +4641,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	Texture_compression_enabled=((GL_Extensions[GL_TEX_COMP_S3TC].enabled) && (GL_Extensions[GL_COMP_TEX].enabled));
 
 	//setup anisotropic filtering if found
-	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)
+	if (GL_Extensions[GL_TEX_FILTER_ANSIO].enabled)
 	{
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
