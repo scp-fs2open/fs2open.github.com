@@ -42,7 +42,6 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release/Profile"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
 # ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/msw" /D "WIN32" /D "_WINDOWS" /D "NDEBUG" /U "_DEBUG" /YX /FD /c
 # SUBTRACT CPP /Fr
@@ -79,7 +78,6 @@ SOURCE="$(InputPath)"
 # PROP Intermediate_Dir "Debug\Profile"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
 # ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /U "NDEBUG" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -113,12 +111,20 @@ SOURCE="$(InputPath)"
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=..\..\code\wxfred2\fredframe.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\wxfred2\wxfred2.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\fredframe.h
+# End Source File
 # Begin Source File
 
 SOURCE=..\..\code\wxfred2\wxfred2.h
