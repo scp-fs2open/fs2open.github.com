@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-09 08:37:31 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-08 19:49:15 $
  * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/09 08:37:31  Goober5000
+ * fixed misspelling
+ *
  * Revision 2.2  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -2339,9 +2342,12 @@ void debrief_init()
 	}
 	*/
 
-	/* 21-07-02 01:12 Commented out DTP, so we have the original source here 
+	// Goober5000 - restored original source, because we can have multiplayer campaigns
+	// also, added flag (Game_mode & GM_CAMPAIGN_MODE) to check if in campaign
+
+//	/* 21-07-02 01:12 Commented out DTP, so we have the original source here 
 	// start up the appropriate music
-	if (Campaign.next_mission == Campaign.current_mission) {
+	if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) {
 		// you failed the mission because you suck, so you get the suck music
 		common_music_init(SCORE_DEBRIEF_FAIL);
 	} else if (mission_goals_met()) {
@@ -2352,16 +2358,16 @@ void debrief_init()
 		common_music_init(SCORE_DEBRIEF_AVERAGE);
 	}
 
-	if (Campaign.next_mission == Campaign.current_mission) {
+	if ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) {
 		// better luck next time, increase his retries
 		Player->failures_this_session++;
 	} else { 
 		// clear his retries info regardless of whether or not he accepts
 		Player->failures_this_session = 0;
 	}
-	*/ //commented out stop
+//	*/ //commented out stop
 
-	// 21-07-02 01:12 DTP; New checks for setting debriefing music. at lot like the old.
+/*	// 21-07-02 01:12 DTP; New checks for setting debriefing music. at lot like the old.
 	// this is for single player
 	if (Campaign.next_mission == Campaign.current_mission && (Game_mode & GM_NORMAL)) {	//DTP
 		common_music_init(SCORE_DEBRIEF_FAIL);	//DTP
@@ -2392,6 +2398,8 @@ void debrief_init()
 		}
 		
 	}
+*/
+
 #ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_init();
