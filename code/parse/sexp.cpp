@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.75 $
- * $Date: 2003-09-13 06:02:07 $
+ * $Revision: 2.76 $
+ * $Date: 2003-10-20 11:49:18 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2003/09/13 06:02:07  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.72  2003/09/05 05:06:32  Goober5000
  * merged num-ships-in-battle and num-ships-in-battle-team, making the
  * team argument optional
@@ -704,6 +708,9 @@ sexp_oper Operators[] = {
 	{ "mod",				OP_MOD,				2,	INT_MAX	},
 	{ "rand",				OP_RAND,			2,	2	},
 	{ "abs",				OP_ABS,				1,	1 },	// Goober5000
+	{ "min",				OP_MIN,				1,	INT_MAX },	// Goober5000
+	{ "max",				OP_MAX,				1,	INT_MAX },	// Goober5000
+	{ "avg",				OP_AVG,				1,	INT_MAX },	// Goober5000
 
 	{ "true",							OP_TRUE,							0,	0,			},
 	{ "false",							OP_FALSE,						0,	0,			},
@@ -3091,6 +3098,58 @@ int rand_internal(int low, int high)
 int abs_sexp(int n)
 {
 	return abs(num_eval(n));
+}
+
+// Goober5000
+int min_sexp(int n)
+{
+	int temp, min_val = INT_MAX;
+
+	while (n != -1)
+	{
+		temp = num_eval(n);
+
+		if (temp < min_val)
+			min_val = temp;
+
+		n = CDR(n);
+	}
+
+	return min_val;
+}
+
+// Goober5000
+int max_sexp(int n)
+{
+	int temp, max_val = INT_MIN;
+
+	while (n != -1)
+	{
+		temp = num_eval(n);
+
+		if (temp > max_val)
+			max_val = temp;
+
+		n = CDR(n);
+	}
+
+	return max_val;
+}
+
+// Goober5000
+int avg_sexp(int n)
+{
+	int num = 0, avg_val = 0;
+
+	while (n != -1)
+	{
+		avg_val += num_eval(n);
+		num++;
+
+		n = CDR(n);
+	}
+
+	return (int) floor(((double) avg_val / num) + 0.5);
 }
 
 int rand_sexp(int n, int multiple = 1)	// was 0 - changed to 1 by Goober5000
@@ -10655,6 +10714,18 @@ int eval_sexp(int cur_node)
 				sexp_val = abs_sexp( node );
 				break;
 
+			case OP_MIN:
+				sexp_val = min_sexp( node );
+				break;
+
+			case OP_MAX:
+				sexp_val = max_sexp( node );
+				break;
+
+			case OP_AVG:
+				sexp_val = avg_sexp( node );
+				break;
+
 		// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
 				sexp_val = SEXP_KNOWN_TRUE;
@@ -11866,6 +11937,9 @@ int query_operator_return_type(int op)
 		case OP_MUL:
 		case OP_DIV:
 		case OP_RAND:
+		case OP_MIN:
+		case OP_MAX:
+		case OP_AVG:
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
@@ -12112,6 +12186,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_LESS_THAN:
 		case OP_RAND:
 		case OP_ABS:
+		case OP_MIN:
+		case OP_MAX:
+		case OP_AVG:
 			return OPF_NUMBER;
 
 		case OP_HAS_TIME_ELAPSED:
