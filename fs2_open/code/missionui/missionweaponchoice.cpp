@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-01-18 01:14:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2005-01-29 09:19:45 $
+ * $Author: argv $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/01/18 01:14:17  wmcoolmon
+ * OGG fixes, ship selection fixes
+ *
  * Revision 2.29  2005/01/16 23:18:03  wmcoolmon
  * Added "show ship" ship flag
  *
@@ -1352,7 +1355,7 @@ void wl_render_overhead_view(float frametime)
 			g3_start_frame(1);
 			g3_set_view_matrix( &sip->closeup_pos, &Eye_matrix, zoom);
 			model_set_detail_level(0);
-			if (!Cmdline_nohtl) gr_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
+			if (!Cmdline_nohtl) gr_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 			if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 			light_reset();
