@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.67 $
- * $Date: 2004-04-26 00:23:25 $
- * $Author: taylor $
+ * $Revision: 2.68 $
+ * $Date: 2004-04-26 18:23:47 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/04/26 00:23:25  taylor
+ * novbo and snd_preload cmdline options, fix moddir getting appended space
+ *
  * Revision 2.66  2004/04/18 19:39:12  randomtiger
  * Added -2d_poof command which allows access to 2D poof rendering
  * Added -radar_reduce to launcher flag description structure
@@ -702,6 +705,8 @@ cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
 cmdline_parm no_vbo_arg("-novbo", NULL);
 cmdline_parm snd_preload_arg("-snd_preload", NULL);
 
+cmdline_parm no_fpscap("-no_fps_capping", NULL);
+
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
@@ -767,6 +772,8 @@ int CmdLine_FRED2_NoWarn = 0; // turn warnings off in FRED
 
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
+
+int Cmdline_NoFPSCap; // Disable FPS capping - kazan
 
 //char FreeSpace_Directory[256]; // allievating a cfilesystem problem caused by fred -- Kazan
 
@@ -1000,7 +1007,10 @@ bool SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
-
+	if (no_fpscap.found())
+	{
+		Cmdline_NoFPSCap = 1;
+	}
 
 	if(poof_2d_arg.found())
 	{

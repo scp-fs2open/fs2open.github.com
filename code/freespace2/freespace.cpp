@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.88 $
- * $Date: 2004-04-26 00:25:08 $
- * $Author: taylor $
+ * $Revision: 2.89 $
+ * $Date: 2004-04-26 18:23:48 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2004/04/26 00:25:08  taylor
+ * don't preload every sound (fixes some slowdowns), snd_preload option support
+ *
  * Revision 2.87  2004/04/14 23:17:26  taylor
  * let language reg setting override auto detection
  *
@@ -1168,6 +1171,7 @@ float flFrametime;
 #endif
 
 int	Framerate_cap = 120;
+
 
 int	Show_cpu = 0;
 int	Show_target_debug_info = 0;
@@ -5187,6 +5191,7 @@ void game_set_frametime(int state)
 	Assert( Framerate_cap > 0 );
 
 	// Cap the framerate so it doesn't get too high.
+	if (!Cmdline_NoFPSCap)
 	{
 		fix cap;
 
