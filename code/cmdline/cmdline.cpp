@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.66 $
- * $Date: 2004-04-18 19:39:12 $
- * $Author: randomtiger $
+ * $Revision: 2.67 $
+ * $Date: 2004-04-26 00:23:25 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/04/18 19:39:12  randomtiger
+ * Added -2d_poof command which allows access to 2D poof rendering
+ * Added -radar_reduce to launcher flag description structure
+ *
  * Revision 2.65  2004/04/06 01:11:41  Kazan
  * make custom build work again
  *
@@ -617,6 +621,7 @@ Flag exe_params[] =
 	"-safeloading",	  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-query_speech",  "",								true,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",
 	"-d3d_bad_tsys",  "Enable inefficient textures",	false,	0,				 EASY_DEFAULT,		"Troubleshoot",	"",	
+	"-novbo",		  "Disable OpenGL VBO",				true,	0,				 EASY_DEFAULT,		"Troubleshoot", "",	
 																
 	"-standalone",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
 	"-startgame",	  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"", 
@@ -626,6 +631,8 @@ Flag exe_params[] =
 	"-clientdamage",  "",								false,	0,				 EASY_DEFAULT,		"Multi",		"",	
 	
 	"-batch_3dunlit", "Batch dynamic data (in dev)",	false,	0,				 EASY_DEFAULT,		"Experimental",	"",	
+
+	"-snd_preload",	  "Preload mission game sounds",	true,	EASY_MEM_ALL_ON, EASY_DEFAULT_MEM,	"Audio",		"", 
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -692,6 +699,9 @@ cmdline_parm fred2_nowarn_arg("-fred_no_warn", NULL);
 cmdline_parm poof_2d_arg("-2d_poof", NULL);
 cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
 
+cmdline_parm no_vbo_arg("-novbo", NULL);
+cmdline_parm snd_preload_arg("-snd_preload", NULL);
+
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
@@ -754,6 +764,9 @@ int Cmdline_d3d_lesstmem = 0;
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
 int CmdLine_FRED2_NoWarn = 0; // turn warnings off in FRED
+
+int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
+int Cmdline_snd_preload = 0; // preload game sounds during mission load
 
 //char FreeSpace_Directory[256]; // allievating a cfilesystem problem caused by fred -- Kazan
 
@@ -1146,6 +1159,16 @@ bool SetCmdlineParams()
 
 	if(mod_arg.found() ) {
 		Cmdline_mod = mod_arg.str();
+
+		// be sure that this string fits in our limits
+		if ( strlen(Cmdline_mod) > MAX_FILENAME_LEN ) {
+			Cmdline_mod[MAX_FILENAME_LEN-1] = '\0';
+		}
+
+		// strip off blank space it it's there
+		if ( Cmdline_mod[strlen(Cmdline_mod)-1] == ' ' ) {
+			Cmdline_mod[strlen(Cmdline_mod)-1] = '\0';
+		}
 	}
 
 
@@ -1333,6 +1356,16 @@ bool SetCmdlineParams()
 	if(batch_3dunlit_arg.found())
 	{
 		Cmdline_batch_3dunlit = 1;
+	}
+
+	if ( no_vbo_arg.found() )
+	{
+		Cmdline_novbo = 1;
+	}
+
+	if ( snd_preload_arg.found() )
+	{
+		Cmdline_snd_preload = 1;
 	}
 
 	return true; 

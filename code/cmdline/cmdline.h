@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.52 $
- * $Date: 2004-04-18 19:39:12 $
- * $Author: randomtiger $
+ * $Revision: 2.53 $
+ * $Date: 2004-04-26 00:23:26 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2004/04/18 19:39:12  randomtiger
+ * Added -2d_poof command which allows access to 2D poof rendering
+ * Added -radar_reduce to launcher flag description structure
+ *
  * Revision 2.51  2004/04/03 18:11:20  Kazan
  * FRED fixes
  *
@@ -492,6 +496,9 @@ extern int Cmdline_2d_poof;
 
 extern int Cmdline_FRED2_htl;
 extern int CmdLine_FRED2_NoWarn;
+
+extern int Cmdline_novbo;
+extern int Cmdline_snd_preload;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif
