@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-01 01:41:10 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 06:37:24 $
  * $Author: penguin $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.1  2002/07/07 19:56:00  penguin
  * Back-port to MSVC
  *
@@ -103,7 +106,6 @@
 
 #include "globalincs/pstypes.h"
 #include <windows.h>
-#include <mmreg.h>
 #include "directx/vdsound.h"
 
 #include "sound/ds3d.h"

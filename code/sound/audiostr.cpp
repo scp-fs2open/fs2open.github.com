@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:10 $
+ * $Revision: 2.2 $
+ * $Date: 2003-03-02 06:37:24 $
  * $Author: penguin $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:10  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -179,8 +182,8 @@
 
 #include <windows.h>
 #include <mmsystem.h>
-#include <mmreg.h>
-#include <msacm.h>
+#include "mm/mmreg.h"
+#include "mm/msacm.h"
 #include "directx/vdsound.h"
 #include "sound/audiostr.h"
 #include "cfile/cfile.h"		// needed for cf_get_path
@@ -1075,7 +1078,7 @@ long AudioStream::Get_Volume()
 // constructor
 void Timer::constructor(void)
 {
-	m_nIDTimer = NULL;
+	m_nIDTimer = 0;
 }
 
 
@@ -1084,7 +1087,7 @@ void Timer::destructor(void)
 {
 	if (m_nIDTimer) {
 		timeKillEvent (m_nIDTimer);
-		m_nIDTimer = NULL;
+		m_nIDTimer = 0;
 	}
 }
 
@@ -1103,7 +1106,7 @@ BOOL Timer::Create (UINT nPeriod, UINT nRes, DWORD dwUser, TIMERCALLBACK pfnCall
 	m_dwUser = dwUser;
 	m_pfnCallback = pfnCallback;
 
-	if ((m_nIDTimer = timeSetEvent (m_nPeriod, m_nRes, TimeProc, (DWORD) this, TIME_PERIODIC)) == NULL) {
+	if ((m_nIDTimer = timeSetEvent (m_nPeriod, m_nRes, TimeProc, (DWORD) this, TIME_PERIODIC)) == 0) {
 	  bRtn = FAILURE;
 	}
 
