@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.32 $
+ * $Revision: 2.33 $
  * $Author: Goober5000 $
- * $Date: 2003-03-20 04:27:10 $
+ * $Date: 2003-03-20 09:17:16 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/03/20 04:27:10  Goober5000
+ * extended sexps
+ * --Goober5000
+ *
  * Revision 2.31  2003/03/19 06:23:28  Goober5000
  * added warp-effect sexp
  * --Goober5000
@@ -748,10 +752,9 @@
 #define OP_TECH_RESET_TO_DEFAULT			(0x007c	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_EXPLOSION_EFFECT					(0x007d | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_WARP_EFFECT						(0x007e | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_EMP_EFFECT						(0x007f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SET_SHIP_FACING					(0x0080 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SET_SHIP_FACING_OBJECT			(0x0081 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_SET_SHIP_POSITION				(0x0082	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_SHIP_FACING					(0x007f | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_SHIP_FACING_OBJECT			(0x0080 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_SHIP_POSITION				(0x0081	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions

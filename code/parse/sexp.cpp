@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.47 $
- * $Date: 2003-03-20 04:27:10 $
+ * $Revision: 2.48 $
+ * $Date: 2003-03-20 09:17:16 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2003/03/20 04:27:10  Goober5000
+ * extended sexps
+ * --Goober5000
+ *
  * Revision 2.46  2003/03/20 00:08:08  Goober5000
  * making sexps better
  * --Goober5000
@@ -572,6 +576,7 @@
 #include "asteroid/asteroid.h"
 #include "ship/shipfx.h"
 #include "weapon/shockwave.h"
+#include "weapon/emp.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -802,9 +807,8 @@ sexp_oper Operators[] = {
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
-	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 11 },			// Goober5000
+	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
-	{ "emp-effect",					OP_EMP_EFFECT,					1, 1 },			// Goober5000
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -5847,19 +5851,21 @@ void sexp_change_music(int n)
 void sexp_explosion_effect(int n)
 /* From the SEXP help...
 	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
-		"\tCauses an explosion at a given origin, with the given parameters.  The explosion goes off immediately.\r\n"
-		"Takes 10 arguments...\r\n"
+		"\tCauses an explosion at a given origin, with the given parameters.  The explosion goes off immediately.  "
+		"Takes 11 or 13 arguments...\r\n"
 		"\t1:  Origin X\r\n"
 		"\t2:  Origin Y\r\n"
 		"\t3:  Origin Z\r\n"
 		"\t4:  Damage\r\n"
 		"\t5:  Blast force\r\n"
-		"\t6:  Size of explosion\r\n"
-		"\t7:  Inner radius to apply damage\r\n"
-		"\t8:  Outer radius to apply damage\r\n"
+		"\t6:  Size of explosion (if 0, explosion will not be visible)\r\n"
+		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
+		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
 		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"
-		"\t11: Sound (index into sounds.tbl)" },
+		"\t11: Sound (index into sounds.tbl)\r\n"
+		"\t12: EMP intensity (optional)\r\n"
+		"\t13: EMP duration in seconds (optional)" },
 */
 // Basically, this function pretends that there's a ship at the origin that's blowing up, and
 // it does stuff accordingly.  In some places, it has to tiptoe around a little because the
@@ -5867,6 +5873,7 @@ void sexp_explosion_effect(int n)
 {
 	vector origin;
 	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, fireball_type, sound_index;
+	int emp_intensity, emp_duration;
 	shockwave_create_info sci;
 
 	// read in data --------------------------------
@@ -5913,6 +5920,21 @@ void sexp_explosion_effect(int n)
 	n = CDR(n);
 
 	sound_index = atoi(CTEXT(n));
+	n = CDR(n);
+
+	// optional EMP
+	emp_intensity = 0;
+	emp_duration = 0;
+	if (n != -1)
+	{
+		emp_intensity = atoi(CTEXT(n));
+		n = CDR(n);
+	}
+	if (n != -1)
+	{
+		emp_duration = atoi(CTEXT(n));
+		n = CDR(n);
+	}
 
 
 	// play sound effect ---------------------------
@@ -5920,69 +5942,77 @@ void sexp_explosion_effect(int n)
 
 
 	// create the fireball -------------------------
-	fireball_create( &origin, fireball_type, -1, (float)explosion_size );
+	if (explosion_size && inner_radius && outer_radius)
+		fireball_create( &origin, fireball_type, -1, (float)explosion_size );
 
 
 	// apply area affect damage --------------------
-	if (!max_damage && !max_blast)
-		return;
-
-	if ( shockwave_speed > 0 )
+	if (max_damage || max_blast)
 	{
-		sci.inner_rad = (float)inner_radius;
-		sci.outer_rad = (float)outer_radius;
-		sci.blast = (float)max_blast;
-		sci.damage = (float)max_damage;
-		sci.speed = (float)shockwave_speed;
-		sci.rot_angle = frand_range(0.0f, 359.0f);
-		shockwave_create(-1, &origin, &sci, SW_SHIP_DEATH);
-	}
-	else
-	{
-		object *objp;
-		float t_blast = 0.0f;
-		float t_damage = 0.0f;
-		for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+		if ( shockwave_speed > 0 )
 		{
-			if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) )
+			sci.inner_rad = (float)inner_radius;
+			sci.outer_rad = (float)outer_radius;
+			sci.blast = (float)max_blast;
+			sci.damage = (float)max_damage;
+			sci.speed = (float)shockwave_speed;
+			sci.rot_angle = frand_range(0.0f, 359.0f);
+			shockwave_create(-1, &origin, &sci, SW_SHIP_DEATH);
+		}
+		else
+		{
+			object *objp;
+			float t_blast = 0.0f;
+			float t_damage = 0.0f;
+			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 			{
-				continue;
-			}
-		
-			// don't blast navbuoys
-			if ( objp->type == OBJ_SHIP )
-			{
-				if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY )
+				if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) )
 				{
 					continue;
 				}
-			}
+		
+				// don't blast navbuoys
+				if ( objp->type == OBJ_SHIP )
+				{
+					if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY )
+					{
+						continue;
+					}
+				}
 
-			if ( ship_explode_area_calc_damage( &origin, &objp->pos, (float)inner_radius, (float)outer_radius, (float)max_damage, (float)max_blast, &t_damage, &t_blast ) == -1 )
-			{
-				continue;
-			}
+				if ( ship_explode_area_calc_damage( &origin, &objp->pos, (float)inner_radius, (float)outer_radius, (float)max_damage, (float)max_blast, &t_damage, &t_blast ) == -1 )
+				{
+					continue;
+				}
+	
+				switch ( objp->type )
+				{
+					case OBJ_SHIP:
+						ship_apply_global_damage( objp, NULL, &origin, t_damage );
+						vector force, vec_ship_to_impact;
+						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
+						vm_vec_copy_normalize( &force, &vec_ship_to_impact );
+						vm_vec_scale( &force, (float)max_blast );
+						ship_apply_whack( &force, &vec_ship_to_impact, objp );
+						break;
 
-			switch ( objp->type )
-			{
-				case OBJ_SHIP:
-					ship_apply_global_damage( objp, NULL, &origin, t_damage );
-					vector force, vec_ship_to_impact;
-					vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
-					vm_vec_copy_normalize( &force, &vec_ship_to_impact );
-					vm_vec_scale( &force, (float)max_blast );
-					ship_apply_whack( &force, &vec_ship_to_impact, objp );
-					break;
+					case OBJ_ASTEROID:
+						asteroid_hit(objp, NULL, NULL, t_damage);
+						break;
+	
+					default:
+						Int3();
+						break;
+				}
+			}	// end for
+		}
+	}
 
-				case OBJ_ASTEROID:
-					asteroid_hit(objp, NULL, NULL, t_damage);
-					break;
 
-				default:
-					Int3();
-					break;
-			}
-		}	// end for
+	// apply emp damage if applicable --------------
+	if (emp_intensity && emp_duration)
+	{
+		emp_apply(&origin, (float)inner_radius, (float)outer_radius, (float)emp_intensity, (float)emp_duration);
 	}
 }
 
@@ -5990,7 +6020,7 @@ void sexp_explosion_effect(int n)
 void sexp_warp_effect(int n)
 /* From the SEXP help...
 	{ OP_WARP_EFFECT, "warp-effect\r\n"
-		"\tCauses a subspace warp effect at a given origin, facing toward a given location, with the given parameters.\r\n"
+		"\tCauses a subspace warp effect at a given origin, facing toward a given location, with the given parameters.  "
 		"Takes 12 arguments...\r\n"
 		"\t1:  Origin X\r\n"
 		"\t2:  Origin Y\r\n"
@@ -6084,37 +6114,6 @@ void sexp_warp_effect(int n)
 
 	// create fireball -----------------------------
 	fireball_create(&origin, fireball_type, -1, (float)radius, 0, NULL, (float)duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index);
-}
-
-// Goober5000
-void sexp_emp_effect(int n)
-/* From the SEXP help...
-	{ OP_EMP_EFFECT, "emp-effect\r\n"
-		"\tCauses an emp blast at a given origin, with the given parameters.\r\n"
-		"Takes 5 arguments...\r\n"
-		"\t1: Origin X\r\n"
-		"\t2: Origin Y\r\n"
-		"\t3: Origin Z\r\n"
-		"\t4: Intensity\r\n"
-		"\t5: Duration in seconds" },*/
-{
-	vector origin;
-	int intensity, duration;
-
-	// read in data --------------------------------
-	origin.xyz.x = (float)atoi(CTEXT(n));
-	n = CDR(n);
-	origin.xyz.y = (float)atoi(CTEXT(n));
-	n = CDR(n);
-	origin.xyz.z = (float)atoi(CTEXT(n));
-	n = CDR(n);
-
-	intensity = atoi(CTEXT(n));
-	n = CDR(n);
-	duration = atoi(CTEXT(n));
-
-
-	// start emp effect
 }
 
 void sexp_send_message( int n )
@@ -10249,11 +10248,6 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			case OP_EMP_EFFECT:
-				sexp_emp_effect(node);
-				sexp_val = 1;
-				break;
-
 			case OP_SEND_MESSAGE:
 				sexp_send_message( node );
 				sexp_val = 1;
@@ -11052,7 +11046,6 @@ int query_operator_return_type(int op)
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_EMP_EFFECT:
 		case OP_SET_SHIP_POSITION:
 		case OP_SET_SHIP_FACING:
 		case OP_SET_SHIP_FACING_OBJECT:
@@ -11437,12 +11430,6 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_WARP_EFFECT:
 			if (argnum <= 5)
-				return OPF_NUMBER;
-			else
-				return OPF_POSITIVE;
-
-		case OP_EMP_EFFECT:
-			if (argnum <= 2)
 				return OPF_NUMBER;
 			else
 				return OPF_POSITIVE;
@@ -12775,7 +12762,6 @@ int get_subcategory(int sexp_id)
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_EMP_EFFECT:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 		
 		default:
