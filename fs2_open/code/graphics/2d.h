@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.8 $
- * $Date: 2003-10-18 02:46:45 $
+ * $Revision: 2.9 $
+ * $Date: 2003-10-21 18:23:15 $
  * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/10/18 02:46:45  phreak
+ * changed gr_start_instance_matrix(void) to gr_start_instance_matrix((vector*, matrix*)
+ *
  * Revision 2.7  2003/10/17 17:18:42  randomtiger
  * Big restructure for D3D and new modules grd3dlight and grd3dsetup
  *
@@ -793,6 +796,7 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
 
 #define gr_flip				GR_CALL(gr_screen.gf_flip)
+#define gr_flip_window		GR_CALL(gr_screen.gf_flip_window)
 
 #define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
 #define gr_reset_clip		GR_CALL(gr_screen.gf_reset_clip)
