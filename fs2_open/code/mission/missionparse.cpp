@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.63 $
- * $Date: 2004-07-26 20:47:37 $
+ * $Revision: 2.64 $
+ * $Date: 2004-07-27 20:09:12 $
  * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.62  2004/07/12 16:32:54  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -895,7 +898,7 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 
 char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"primitive-sensors",
-	"no-subspace-drive"
+	"no-subspace-drive",
 #if defined(ENABLE_AUTO_PILOT)
 	"nav-carry-status"
 #endif
