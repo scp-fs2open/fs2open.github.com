@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-10-31 21:53:23 $
+ * $Revision: 2.15 $
+ * $Date: 2004-12-05 23:47:18 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/10/31 21:53:23  taylor
+ * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
+ *
  * Revision 2.13  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -394,6 +397,8 @@ int Player_select_last_is_multi;
 
 int Player_select_force_main_hall = 0;
 
+static int Player_select_no_save_pilot = 0;		// to skip save of pilot in pilot_select_close()
+
 // notification text areas
 
 static int Player_select_bottom_text_y[GR_NUM_RESOLUTIONS] = {
@@ -679,6 +684,9 @@ void player_select_do()
 		}
 		break;	
 #endif
+		case KEY_ESC:
+			Player_select_no_save_pilot = 1;
+			break;
 	}	
 
 	// draw the player select pseudo-dialog over it
@@ -745,7 +753,13 @@ void player_select_close()
 	if(Player_select_input_mode){
 		player_select_cancel_create();
 	}
-	
+
+	// if we are just exiting then don't try to save any pilot files - taylor
+	if (Player_select_no_save_pilot) {
+		Player = NULL;
+		return;
+	}
+
 	// actually set up the Player struct here	
 	if((Player_select_pilot == -1) || (Player_select_num_pilots == 0)){
 		nprintf(("General","WARNING! No pilot selected! We should be exiting the game now!\n"));
