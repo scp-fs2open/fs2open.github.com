@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.13 $
- * $Date: 2005-01-01 11:24:23 $
+ * $Revision: 1.14 $
+ * $Date: 2005-01-21 08:25:14 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/01/01 11:24:23  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 1.12  2004/12/05 01:28:39  taylor
  * support uncompressed DDS images
  * use TexSubImage2D for video anis
@@ -492,6 +500,14 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 		return;
 	}
 
+	// if we can support non-power-of-2 textures then just return current sizes - taylor
+	if ( opengl_extension_is_enabled(GL_ARB_TEXTURE_NON_POWER_OF_TWO) ) {
+		*w_out = w_in;
+		*h_out = h_in;
+
+		return;
+	}
+
 	// starting size
 	tex_w = w_in;
 	tex_h = h_in;
@@ -763,7 +779,9 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				}
 			}
 
-			for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
+			// temporary fix for some crashes from multiple mipmaps, only support the first one
+		//	for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
+			for (i = 0; i<1; i++) {
 				dsize = mipmap_h * mipmap_w * byte_mult;
 
 				if (!reload)
@@ -806,7 +824,9 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				v += dv;
 			}
 
-			for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
+			// temporary fix for some crashes from multiple mipmaps, only support the first one
+		//	for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
+			for (i = 0; i<1; i++) {
 				dsize = mipmap_h * mipmap_w * byte_mult;
 
 				if (!reload)
@@ -1270,5 +1290,25 @@ void gr_opengl_set_texture_panning(float u, float v, bool enable)
 		glMatrixMode(current_matrix);
 	
 		GL_texture_panning_enabled = 0;
+	}
+}
+
+void gr_opengl_set_texture_addressing(int mode)
+{
+	if (mode == TMAP_ADDRESS_WRAP) {
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	} else if (mode == TMAP_ADDRESS_MIRROR) {
+		if (opengl_extension_is_enabled(GL_ARB_TEXTURE_MIRRORED_REPEAT)) {
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT_ARB);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT_ARB);
+		} else {
+			// just use a standard repeat if the mirror extension isn't supported
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		}
+	} else if (mode == TMAP_ADDRESS_CLAMP) {
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	}
 }

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.4 $
- * $Date: 2004-10-31 21:45:13 $
+ * $Revision: 1.5 $
+ * $Date: 2005-01-21 08:25:14 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/10/31 21:45:13  taylor
+ * Linux tree merge, single array for VBOs/HTL
+ *
  * Revision 1.3  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -89,15 +92,16 @@ ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, 0, NULL, "GL_EXT_texture_env_combine",0},
 	{0, 0, "glLockArraysEXT", "GL_EXT_compiled_vertex_array",0},
 	{0, 0, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array",0},
-	{0, 0,"glLoadTransposeMatrixfARB","GL_ARB_transpose_matrix",	1},
+	{0, 0, "glLoadTransposeMatrixfARB", "GL_ARB_transpose_matrix",	1},
 	{0, 0, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1},
 	{0, 0, "glClientActiveTextureARB", "GL_ARB_multitexture",1},
 	{0, 0, "glDrawRangeElements", "GL_EXT_draw_range_elements", 1},
+	{0, 0, NULL, "GL_ARB_texture_mirrored_repeat", 0},
+	{0, 0, NULL, "GL_ARB_texture_non_power_of_two", 0},
 	{0, 0, "glBindBufferARB", "GL_ARB_vertex_buffer_object",0},
 	{0, 0, "glDeleteBuffersARB", "GL_ARB_vertex_buffer_object",0},
 	{0, 0, "glGenBuffersARB", "GL_ARB_vertex_buffer_object",0},
-	{0, 0, "glBufferDataARB", "GL_ARB_vertex_buffer_object",0},
-
+	{0, 0, "glBufferDataARB", "GL_ARB_vertex_buffer_object",0}
 };
 
 //tries to find a certain extension

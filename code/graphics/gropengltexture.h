@@ -9,14 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.5 $
- * $Date: 2005-01-01 11:24:23 $
+ * $Revision: 1.6 $
+ * $Date: 2005-01-21 08:25:15 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/01/01 11:24:23  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 1.4  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -108,6 +116,6 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_preload_init();
 void opengl_set_max_anistropy();
 void gr_opengl_set_texture_panning(float u, float v, bool enable);
-
+void gr_opengl_set_texture_addressing(int mode);
 
 #endif	//_GROPENGLTEXTURE_H
