@@ -10,13 +10,22 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.6 $
- * $Date: 2003-08-16 03:52:22 $
- * $Author: bobboau $
+ * $Revision: 2.7 $
+ * $Date: 2003-10-24 17:35:04 $
+ * $Author: randomtiger $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/08/16 03:52:22  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.5  2003/08/12 03:18:32  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -247,11 +256,16 @@
 #define BM_PIXEL_FORMAT_D3D				1						// d3d - card dependant. booo!
 #define BM_PIXEL_FORMAT_ARGB_D3D			2						// this card has nice 1555 textures like Glide - ahhhhh!
 
-#define	BM_TYPE_NONE		0
-#define	BM_TYPE_PCX			1
-#define	BM_TYPE_USER		2
-#define	BM_TYPE_ANI			3		// in-house ANI format
-#define	BM_TYPE_TGA			4		// 16 bit targa
+enum
+{
+	BM_TYPE_NONE,		
+	BM_TYPE_PCX,			
+	BM_TYPE_USER,		
+	BM_TYPE_ANI,				// in-house ANI format
+	BM_TYPE_TGA,				// 32 bit only supported by D3D current
+	BM_TYPE_JPG,					// supported by D3D current
+	BM_TYPE_PCX_32,			
+};
 
 /// Moved from cpp file ///////////////////
 // Consider these 'protected' structures and functions that should only be used by special bitmap functions
@@ -475,9 +489,6 @@ char *bm_get_filename(int handle);
 void BM_SELECT_SCREEN_FORMAT();
 void BM_SELECT_TEX_FORMAT();
 void BM_SELECT_ALPHA_TEX_FORMAT();
-
-// convert a 24 bit value to a 16 bit value
-void bm_gfx_24_to_16(int bit_24, ushort *bit_16);
 
 // set the rgba components of a pixel, any of the parameters can be NULL
 extern void (*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);

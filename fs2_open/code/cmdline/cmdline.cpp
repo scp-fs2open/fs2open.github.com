@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.35 $
- * $Date: 2003-10-15 22:03:23 $
- * $Author: Kazan $
- * $Revision: 2.35 $
- * $Date: 2003-10-15 22:03:23 $
- * $Author: Kazan $
+ * $Revision: 2.36 $
+ * $Date: 2003-10-24 17:35:04 $
+ * $Author: randomtiger $
+ * $Revision: 2.36 $
+ * $Date: 2003-10-24 17:35:04 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2003/10/15 22:03:23  Kazan
+ * Da Species Update :D
+ *
  * Revision 2.34  2003/10/14 17:39:12  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -426,6 +429,7 @@ cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
 cmdline_parm nohtl_arg("-htl", NULL); //Use software HT&L	  
 cmdline_parm cell_arg("-cell", NULL);
+cmdline_parm textures_32bit("-32bit_textures",NULL);
 
 int Cmdline_multi_stream_chat_to_file = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -469,6 +473,7 @@ int Cmdline_d3dmipmap = 0;
 
 // Lets keep a convention here
 int Cmdline_nohtl = 0;
+int Cmdline_32bit_textures = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 
@@ -902,6 +907,10 @@ void SetCmdlineParams()
 		Cmdline_nohtl = 1;
 	}
 
+	if( textures_32bit.found() )
+	{
+		Cmdline_32bit_textures = 1;
+	}
 }
 
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-10-17 17:18:42 $
+ * $Revision: 2.11 $
+ * $Date: 2003-10-24 17:35:05 $
  * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/17 17:18:42  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.9  2003/10/16 17:36:29  randomtiger
  * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
  * Put in Bobs specular fog fix.
@@ -589,6 +592,7 @@ void d3d_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h
 // tex_h == height of final texture
 int d3d_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_d3d *t, int reload, int fail_on_full)
 {
+	Assert(data != 0xdeadbeef);
 	if(t == NULL)
 	{
 		return 0;
@@ -937,6 +941,8 @@ bool d3d_preload_texture_func(int bitmap_id)
 	return 1;
 }
 
+bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte flags, float *u_scale, float *v_scale );
+
 int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage )
 {
 	bitmap *bmp = NULL;
@@ -948,11 +954,15 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		return 0;
 	}
 
-/*	if(stage == 0){
-		d3d_SetTexture(1, NULL);
-		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+  	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, 16, BMP_TEX_XPARENT, u_scale, v_scale) == true) 
+	{
+	//	D3D_last_bitmap_type = BMP_TEX_XPARENT;
+	 //	D3D_last_section_x = -1;
+	//	D3D_last_section_y = -1;
+
+	 //	D3D_last_bitmap_id = -1;
+	 	return 1;
 	}
-*/	//turn off glowmapping/specmapping right away, if it's needed turn it back on later
 
 	int n = bm_get_cache_slot( bitmap_id, 1 );
 
@@ -960,8 +970,6 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		D3D_last_detail = Detail.hardware_textures;
 		d3d_tcache_flush();
 	}
-	
-//	int n = bm_get_cache_slot( bitmap_id, 1 );
 	
 	tcache_slot_d3d * t = &Textures[n];		
 	
@@ -1044,13 +1052,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 
-//		if(bitmap_id != GLOWMAP){
-			d3d_SetTexture(stage, t->d3d8_thandle);
-//		}else if(GLOWMAP > 0){
-//			d3d_SetTexture(1, t->d3d8_thandle);
-///			d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
-//		}
-		//glowmapping stuff-Bobboau
+		d3d_SetTexture(stage, t->d3d8_thandle);
 		
 		D3D_last_bitmap_id = t->bitmap_id;
 		D3D_last_bitmap_type = bitmap_type;
@@ -1063,11 +1065,6 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 	else {	
 	 	return 0;
    	}	
-
-	//glowmapping stuff-Bobboau
-//	if((GLOWMAP > 0) && (bitmap_id != GLOWMAP)){
-//		d3d_tcache_set(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force);
-//	}
 
 	return 1;
 }
@@ -1304,4 +1301,333 @@ int gr_d3d_preload(int bitmap_num, int is_aabitmap)
 
 	return retval;
 }
+
+#include "cfile/cfile.h"
+/* PCX Header data type */
+typedef struct	{
+	ubyte		Manufacturer;
+	ubyte		Version;
+	ubyte		Encoding;
+	ubyte		BitsPerPixel;
+	short		Xmin;
+	short		Ymin;
+	short		Xmax;
+	short		Ymax;
+	short		Hdpi;
+	short		Vdpi;
+	ubyte		ColorMap[16][3];
+	ubyte		Reserved;
+	ubyte		Nplanes;
+	short		BytesPerLine;
+	ubyte		filler[60];
+} PCXHeader;
+
+int d3d_get_valid_texture_size(int value, bool width)
+{
+	int min = width ? D3D_min_texture_width : D3D_min_texture_height;
+
+	if(value < min)
+		return min;
+
+	int max = width ? D3D_max_texture_width : D3D_max_texture_height;
+
+	for(int v = min; v <= max; v <<= 1) {
+		if(value <= v)
+		{
+			return v;
+		}
+	}
+
+	// value is too big
+	return -1;
+}
+
+void *d3d_lock_32_pcx(char *real_filename, float *u, float *v)
+{
+	PCXHeader header;
+	CFILE * PCXfile;
+	int row, col, count;
+	ubyte data=0;
+	int buffer_size, buffer_pos;
+	ubyte buffer[1024];
+	char filename[MAX_FILENAME_LEN];
+	ubyte palette[768];	
+	ubyte r, g, b, al;
+		
+	
+	strcpy( filename, real_filename );
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
+	strcat( filename, ".pcx" );
+
+	
+	PCXfile = cfopen( filename , "rb" );
+	if ( !PCXfile ){
+	
+		return NULL;
+	}
+
+	// read 128 char PCX header
+	if (cfread( &header, sizeof(PCXHeader), 1, PCXfile )!=1)	{
+		cfclose( PCXfile );
+	
+		return NULL;
+	}
+
+	// Is it a 256 color PCX file?
+	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
+		cfclose( PCXfile );
+	
+		return NULL;
+	}
+
+	
+	// Find the size of the image
+	int src_xsize = header.Xmax - header.Xmin + 1;
+	int src_ysize = header.Ymax - header.Ymin + 1;
+
+	int dst_xsize = d3d_get_valid_texture_size(src_xsize, true);
+	int dst_ysize = d3d_get_valid_texture_size(src_ysize, false);
+
+	// To big to fit into texture memory
+	if(dst_xsize == -1 && dst_ysize == -1) {
+		return NULL;
+	}
+
+	if(u) {
+		*u = ((float) src_xsize) / ((float) dst_xsize);
+	}
+
+	if(v) {
+		*v = ((float) src_ysize) / ((float) dst_ysize);
+	}
+	
+	// Read the extended palette at the end of PCX file
+	// Read in a character which should be 12 to be extended palette file
+
+	cfseek( PCXfile, -768, CF_SEEK_END );
+	cfread( palette, 3, 256, PCXfile );
+	cfseek( PCXfile, sizeof(PCXHeader), CF_SEEK_SET );
+	
+	buffer_size = 1024;
+	buffer_pos = 0;
+	
+//	Assert( buffer_size == 1024 );	// AL: removed to avoid optimized warning 'unreachable code'
+	
+	buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
+	
+
+	IDirect3DTexture8 *p_texture = NULL;
+	// OK, we are ready to go, lets get some D3D texture space
+	if(FAILED(GlobalD3DVars::lpD3DDevice->CreateTexture(
+			dst_xsize, dst_ysize,
+			0, // No mipmapping for now
+			0,
+			D3DFMT_A8R8G8B8, 
+			D3DPOOL_MANAGED, &p_texture)))
+	{
+		return NULL;
+	}
+
+	// lock texture here
+
+	D3DLOCKED_RECT locked_rect;
+	if(FAILED(p_texture->LockRect(0, &locked_rect, NULL, 0)))
+	{
+		p_texture->Release();
+		return NULL;
+	}
+
+	count = 0; 
+	
+#ifdef _DEBUG
+
+	D3DCOLOR *temp = (D3DCOLOR *)locked_rect.pBits;
+
+	for(int i = 0; i < dst_xsize * dst_ysize; i++)
+	{
+		temp[i] = D3DCOLOR_RGBA(0,0,255,255);
+	}
+#endif
+
+	D3DCOLOR *org_data = (D3DCOLOR *)locked_rect.pBits;
+
+	for (row=0; row < src_ysize;row++)      {
+	
+		D3DCOLOR *pixdata = org_data;
+
+		for (col=0; col < header.BytesPerLine;col++)     {
+			if ( count == 0 )	{
+				data = buffer[buffer_pos++];
+				if ( buffer_pos == buffer_size )	{
+					buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
+					Assert( buffer_size > 0 );
+					buffer_pos = 0;
+				}
+				if ((data & 0xC0) == 0xC0)     {
+					count = data & 0x3F;
+					data = buffer[buffer_pos++];
+					if ( buffer_pos == buffer_size )	{
+						buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
+						Assert( buffer_size > 0 );
+						buffer_pos = 0;
+					}
+				} else {
+					count = 1;
+				}
+			}
+			// stuff the pixel
+			if ( col < src_xsize ){								
+				// stuff the 24 bit value				
+				r = palette[data*3];
+				g = palette[data*3 + 1];
+				b = palette[data*3 + 2];
+
+					
+				// if the color matches the transparent color, make it so
+				al = 255;
+				if((0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2])){
+					r = b = g = al = 0;					
+				} 
+
+				*pixdata = D3DCOLOR_RGBA(r,g,b,al);
+
+				pixdata++;
+			}
+			count--;
+		}
+
+		org_data += dst_xsize;
+	}
+	
+	cfclose(PCXfile);
+
+	p_texture->UnlockRect(0);
+	return p_texture;
+}
+
+void *d3d_lock_d3dx_types(char *file, int type, int bitmapnum, ubyte flags )
+{
+	char filename[MAX_FILENAME_LEN];
+
+	strcpy( filename, file);
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
+
+	bool use_alpha_format = true;
+	switch(type)
+	{
+		case BM_TYPE_TGA: strcat( filename, ".tga" ); use_alpha_format = true;  break;
+		case BM_TYPE_JPG: strcat( filename, ".jpg" ); use_alpha_format = false; break;
+		default: return NULL;
+	}
+
+	// If its a 16 bit texture we will want to dither
+	DWORD load_filter = D3DX_FILTER_TRIANGLE;
+
+	CFILE *targa_file = cfopen( filename , "rb" );
+
+	if (targa_file == NULL){
+		DBUGFILE_OUTPUT_1("Failed to open through cfopen '%s'", filename);
+		return NULL;
+	}		
+
+	int size = cfilelength(targa_file);
+	void *tga_data = malloc(size);
+
+	if(tga_data == NULL) {
+		return NULL;
+	}
+
+	cfread(tga_data, size, 1, targa_file);	
+
+	cfclose(targa_file);
+	targa_file = NULL;
+
+	D3DXIMAGE_INFO source_desc;
+	if(FAILED(D3DXGetImageInfoFromFileInMemory(tga_data, size,	&source_desc))) {
+		return NULL;
+	} 
+	
+	D3DFORMAT use_format;
+	if(Cmdline_32bit_textures) {
+		use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;
+	} else {
+		use_format = use_alpha_format ? default_alpha_tformat : default_non_alpha_tformat;
+
+		// Special case
+		if(type == BM_TYPE_TGA && source_desc.Format != D3DFMT_A8R8G8B8)
+			use_format = default_non_alpha_tformat;
+	}
+	  
+	IDirect3DTexture8 *ptexture = NULL; 
+	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
+		GlobalD3DVars::lpD3DDevice,
+		tga_data, size,
+	  	// Opertunity to control sizes here.
+		D3DX_DEFAULT, D3DX_DEFAULT,
+		D3DX_DEFAULT,
+		0, 
+		use_format,
+		D3DPOOL_MANAGED, 
+		load_filter, 
+		D3DX_DEFAULT,
+		0, 
+		&source_desc, 
+		NULL, &ptexture);
+
+	free(tga_data);
+
+	if(FAILED(hr))
+	{
+		return NULL;
+	}
+	
+	return ptexture;
+
+}
+
+bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)
+{
+	char filename[MAX_FILENAME_LEN];
+
+	strcpy( filename, file);
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
+
+	switch(type)
+	{
+		case BM_TYPE_TGA: strcat( filename, ".tga" ); break;
+		case BM_TYPE_JPG: strcat( filename, ".jpg" ); break;
+	}
+
+	CFILE *targa_file = cfopen( filename , "rb" );
+
+	if (targa_file == NULL){
+		return false;
+	}		
+
+	int size = cfilelength(targa_file);
+	void *tga_data = malloc(size);
+
+	if(tga_data == NULL) {
+		return false;
+	}
+
+	cfread(tga_data, size, 1, targa_file);	
+
+	cfclose(targa_file);
+	targa_file = NULL;
+
+	D3DXIMAGE_INFO source_desc;
+	if(FAILED(D3DXGetImageInfoFromFileInMemory(tga_data, size,	&source_desc))) {
+		return false;
+	} 
+
+	if(w) *w = source_desc.Width;
+	if(h) *h = source_desc.Height;
+	
+	return true;
+}
+
 

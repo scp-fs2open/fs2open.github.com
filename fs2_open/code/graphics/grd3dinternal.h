@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.10 $
- * $Date: 2003-10-17 17:18:42 $
+ * $Revision: 2.11 $
+ * $Date: 2003-10-24 17:35:05 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/10/17 17:18:42  randomtiger
+ * Big restructure for D3D and new modules grd3dlight and grd3dsetup
+ *
  * Revision 2.9  2003/10/16 00:17:14  randomtiger
  * Added incomplete code to allow selection of non-standard modes in D3D (requires new launcher).
  * As well as initialised in a different mode, bitmaps are stretched and for these modes
@@ -348,9 +351,6 @@ typedef enum gr_zbuffer_type {
 
 extern int D3D_32bit;
 
-extern D3DFORMAT default_32_non_alpha_tformat;
-extern D3DFORMAT default_32_alpha_tformat;
-
 // 16 bit formats for pcx media
 extern D3DFORMAT default_non_alpha_tformat;
 extern D3DFORMAT default_alpha_tformat;
@@ -433,5 +433,10 @@ void d3d_lost_device();
 HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
 HRESULT d3d_SetVertexShader(int vertex_type);
 HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **buffer);
+
+// GrD3Dtexture
+void *d3d_lock_32_pcx(char *real_filename, float *u, float *v);
+bool d3d_read_header_d3dx(char *file, int type, int *w, int *h);
+void *d3d_lock_d3dx_types(char *file, int type, int bitmapnum, ubyte flags );
 
 #endif //_GRD3DINTERNAL_H

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrDirectDraw.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.4 $
+ * $Date: 2003-10-24 17:35:05 $
+ * $Author: randomtiger $
  *
  * Code for software 8-bpp rendering using DirectDraw
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.2  2003/01/14 05:53:58  Goober5000
  * commented out some mprintfs that were clogging up the debug spew
  * --Goober5000
@@ -1335,7 +1338,6 @@ NoDDError:
 	gr_screen.gf_bm_page_in_start           = bm_gfx_page_in_start;           
 	gr_screen.gf_bm_page_in_stop            = bm_gfx_page_in_stop;            
 	gr_screen.gf_bm_get_cache_slot          = bm_gfx_get_cache_slot;          
-	gr_screen.gf_bm_24_to_16                = bm_gfx_24_to_16;                
 	gr_screen.gf_bm_get_components          = bm_gfx_get_components;          
 	gr_screen.gf_bm_get_section_size        = bm_gfx_get_section_size;
 

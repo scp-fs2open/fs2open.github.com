@@ -10,13 +10,22 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.15 $
- * $Date: 2003-08-16 03:52:22 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2003-10-24 17:35:04 $
+ * $Author: randomtiger $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/08/16 03:52:22  bobboau
+ * update for the specmapping code includeing
+ * suport for seperate specular levels on lights and
+ * optional strings for the stars table
+ * code has been made more organised,
+ * though there seems to be a bug in the state selecting code
+ * resulting in the HUD being rendered incorectly
+ * and specmapping failing ocasionaly
+ *
  * Revision 2.14  2003/08/12 03:18:32  bobboau
  * Specular 'shine' mapping;
  * useing a phong lighting model I have made specular highlights
@@ -2442,15 +2451,6 @@ int bm_gfx_get_cache_slot( int bitmap_id, int separate_ani_frames )
 
 	return n;
 
-}
-
-// convert a 24 bit value to a 16 bit value
-void bm_gfx_24_to_16(int bit_24, ushort *bit_16)
-{
-	ubyte *pixel = (ubyte*)&bit_24;
-	ubyte alpha = 1;
-
-	bm_set_components((ubyte*)bit_16, (ubyte*)&pixel[0], (ubyte*)&pixel[1], (ubyte*)&pixel[2], &alpha);	
 }
 
 #ifndef NO_DIRECT3D

@@ -24,10 +24,11 @@
 #include "anim/packunpack.h"
 #include "cfile/cfile.h"
 #include "graphics/grinternal.h"
-#include "tgautils/tgautils.h"
+#include "graphics/grd3dinternal.h"
 #include "ship/ship.h"
 #include "debugconsole/dbugfile.h"
 #include "bmpman/bmpman.h"
+#include "Cmdline/cmdline.h"
 
 #include "graphics/grd3dbmpman.h"
 
@@ -44,7 +45,7 @@ extern bitmap_entry bm_bitmaps[];
 typedef struct {
 
 	IDirect3DBaseTexture8 *tinterface;
-	IDirect3DBaseTexture8 *bumpmap;
+	float uscale, vscale;
 
 } D3DBitmapData;
 
@@ -57,23 +58,7 @@ int bm_d3d_inited = 0;
 int bm_d3d_next_handle = 1;
 
 // 16 bit pixel formats
-extern int Bm_pixel_format;
-
-// get and put functions for 16 bit pixels - neat bit slinging, huh?
-#define BM_SET_R_ARGB(p, r)	{ p[1] &= ~(0x7c); p[1] |= ((r & 0x1f) << 2); }
-#define BM_SET_G_ARGB(p, g)	{ p[0] &= ~(0xe0); p[1] &= ~(0x03); p[0] |= ((g & 0x07) << 5); p[1] |= ((g & 0x18) >> 3); }
-#define BM_SET_B_ARGB(p, b)	{ p[0] &= ~(0x1f); p[0] |= b & 0x1f; }
-#define BM_SET_A_ARGB(p, a)	{ p[1] &= ~(0x80); p[1] |= ((a & 0x01) << 7); }
-
-#define BM_SET_R_D3D(p, r)		{ *p |= (ushort)(( (int)r / Gr_current_red->scale ) << Gr_current_red->shift); }
-#define BM_SET_G_D3D(p, g)		{ *p |= (ushort)(( (int)g / Gr_current_green->scale ) << Gr_current_green->shift); }
-#define BM_SET_B_D3D(p, b)		{ *p |= (ushort)(( (int)b / Gr_current_blue->scale ) << Gr_current_blue->shift); }
-#define BM_SET_A_D3D(p, a)		{ if(a == 0){ *p = (ushort)Gr_current_green->mask; } }
-
-#define BM_SET_R(p, r)	{ switch(Bm_pixel_format){ case BM_PIXEL_FORMAT_ARGB: BM_SET_R_ARGB(((char*)p), r); break; case BM_PIXEL_FORMAT_D3D: BM_SET_R_D3D(p, r); break; default: Int3(); } }
-#define BM_SET_G(p, g)	{ switch(Bm_pixel_format){ case BM_PIXEL_FORMAT_ARGB: BM_SET_G_ARGB(((char*)p), g); break; case BM_PIXEL_FORMAT_D3D: BM_SET_G_D3D(p, g); break; default: Int3(); } }
-#define BM_SET_B(p, b)	{ switch(Bm_pixel_format){ case BM_PIXEL_FORMAT_ARGB: BM_SET_B_ARGB(((char*)p), b); break; case BM_PIXEL_FORMAT_D3D: BM_SET_B_D3D(p, b); break;  default: Int3(); } }
-#define BM_SET_A(p, a)	{ switch(Bm_pixel_format){ case BM_PIXEL_FORMAT_ARGB: BM_SET_A_ARGB(((char*)p), a); break; case BM_PIXEL_FORMAT_D3D: BM_SET_A_D3D(p, a); break;  default: Int3(); } }
+//extern int Bm_pixel_format;
 
 int bm_d3d_get_next_handle()
 {
@@ -98,7 +83,8 @@ static void bm_d3d_free_data(int n)
 	bmp = &be->bm;
 
 	if(d3d_bitmap_entry[n].tinterface != NULL) {
-		d3d_bitmap_entry[n].tinterface->Release();
+	   	d3d_bitmap_entry[n].tinterface->Release();
+		d3d_bitmap_entry[n].tinterface = NULL;
 	}
 
 	// If there isn't a bitmap in this structure, don't
@@ -205,6 +191,9 @@ void bm_d3d_calc_sections(bitmap *be)
 // is called on that bitmap.
 int bm_d3d_create( int bpp, int w, int h, void * data, int flags )
 {
+
+	Assert(bm_d3d_inited);
+
 	int i, n, first_slot = MAX_BITMAPS;
 
 	if(bpp != 16){
@@ -213,14 +202,15 @@ int bm_d3d_create( int bpp, int w, int h, void * data, int flags )
 		Assert(bpp == 16);
 	}
 
-	if ( !bm_d3d_inited ) bm_d3d_init();
-
 	for (i = MAX_BITMAPS-1; i >= 0; i-- ) {
 		if ( bm_bitmaps[i].type == BM_TYPE_NONE )	{
 			first_slot = i;
 			break;
 		}
 	}
+
+	Assert(d3d_bitmap_entry[i].tinterface == NULL);
+
 
 	n = first_slot;
 	Assert( n > -1 );
@@ -263,7 +253,7 @@ int bm_d3d_create( int bpp, int w, int h, void * data, int flags )
 //          0 if it was found as a file
 //          1 if it already exists, fills in handle
 int Bm_d3d_ignore_duplicates = 0;
-int bm_d3d_load_sub(char *real_filename, char *ext, int *handle)
+int bm_d3d_load_sub(char *real_filename, const char *ext, int *handle)
 {	
 	int i;
 	char filename[MAX_FILENAME_LEN] = "";
@@ -304,14 +294,11 @@ int bm_d3d_load_sub(char *real_filename, char *ext, int *handle)
 // width, height, and possibly flags.
 int bm_d3d_load( char * real_filename )
 {
-	int i, n, first_slot = MAX_BITMAPS;
-	int w, h, bpp;
-	char filename[MAX_FILENAME_LEN];
-	int tga = 0;
-	int handle;
-	int found = 0;
+	Assert(bm_d3d_inited);
 
-	if ( !bm_d3d_inited ) bm_d3d_init();
+	int i, n;
+	int w, h;
+	char filename[MAX_FILENAME_LEN];
 
 	// nice little trick for keeping standalone memory usage way low - always return a bogus bitmap 
 	if(Game_mode & GM_STANDALONE_SERVER){
@@ -326,71 +313,71 @@ int bm_d3d_load( char * real_filename )
 		//Int3();
 		*p = 0;
 	}
-	 
-	// try and find the tga file (first)
-	switch(bm_d3d_load_sub(filename, ".tga", &handle)){
-	// error
-	case -1:			
-		break;
 
-	// found as a file
-	case 0:			
-		found = 1;
-		strcat(filename, ".tga");
-		tga = 1;
-		break;
+	// Lets find out what type it is
+	int type = BM_TYPE_NONE;
+	{
+		bool found = false;
 
-	// found as pre-existing
-	case 1:						
-		return handle;					
-	}
+		int handle = -1;
+		const int NUM_TYPES	= 3;
+		const int type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_PCX};
+		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".pcx"};
+		
+		for(int i = 0; i < NUM_TYPES; i++) {
+		
+			int handle = 0;
+			int result = bm_d3d_load_sub(filename, ext_list[i], &handle);
+			
+			// Image is already loaded
+			if(result == 1) {
+				return handle;
+			}
 
-	if(!found){
-		// try and find the pcx file		
-		switch(bm_d3d_load_sub(filename, ".pcx", &handle)){
-		// error
-		case -1:
+			// File was found
+			if(result == 0)	{
+				strcat(filename, ext_list[i]);
+				type = type_list[i];
+				found = true;
+				break;
+			}
+		}
+		
+		// No match was found
+		if(found == false) {
 			return -1;
-		
-		// found as a file
-		case 0:
-			strcat(filename, ".pcx");
-			break;
-		
-		// found as pre-existing
-		case 1:
-			return handle;		
 		}
 	}
+
+	Assert(type != BM_TYPE_NONE);
 
 	// Find an open slot
+	int first_slot = MAX_BITMAPS;
 	for (i = 0; i < MAX_BITMAPS; i++) {
-		if ( (bm_bitmaps[i].type == BM_TYPE_NONE) && (first_slot == MAX_BITMAPS) ){
+		if ( (bm_bitmaps[i].type == BM_TYPE_NONE) ){
 			first_slot = i;
+			break;
 		}
 	}
+
+	Assert(d3d_bitmap_entry[i].tinterface == NULL);
 
 	n = first_slot;
 	Assert( n < MAX_BITMAPS );	
 
 	if ( n == MAX_BITMAPS ) return -1;	
 
-	// if its a tga file
-	if(tga){
-		DBUGFILE_OUTPUT_1("tga %s",filename);
 
-		int tga_error = targa_read_header( filename, &w, &h, &bpp, NULL );
-
-		if ( tga_error != TARGA_ERROR_NONE )	{
+	if(type == BM_TYPE_PCX) {
+		int pcx_error=pcx_read_header( filename, &w, &h, NULL );		
+		if ( pcx_error != PCX_ERROR_NONE )	{
+			DBUGFILE_OUTPUT_1("Cant load %s",filename);
 			mprintf(( "Couldn't open '%s'\n", filename ));
 			return -1;
 		}
-	}
-	// if its a pcx file
-	else {
-
-		int pcx_error=pcx_read_header( filename, &w, &h, NULL );		
-		if ( pcx_error != PCX_ERROR_NONE )	{
+	} else {
+		// Let D3DX handle this
+		if(d3d_read_header_d3dx( filename, type, &w, &h) == false) {
 			DBUGFILE_OUTPUT_1("Cant load %s",filename);
 			mprintf(( "Couldn't open '%s'\n", filename ));
 			return -1;
@@ -402,7 +389,7 @@ int bm_d3d_load( char * real_filename )
 	
 	// Mark the slot as filled, because cf_read might load a new bitmap
 	// into this slot.
-	bm_bitmaps[n].type = tga ? (ubyte)BM_TYPE_TGA : (ubyte)BM_TYPE_PCX;
+	bm_bitmaps[n].type = (ubyte) type;
 	Assert ( strlen(filename) < MAX_FILENAME_LEN );
 	strncpy(bm_bitmaps[n].filename, filename, MAX_FILENAME_LEN-1 );
 	bm_bitmaps[n].bm.w = short(w);
@@ -419,9 +406,7 @@ int bm_d3d_load( char * real_filename )
 
 	d3d_bitmap_entry[n].tinterface = NULL;
 
-	// fill in section info
 	bm_d3d_calc_sections(&bm_bitmaps[n].bm);
-
 	return bm_bitmaps[n].handle;
 }
 
@@ -474,12 +459,12 @@ static int find_block_of(int n)
 //
 int bm_d3d_load_animation( char *real_filename, int *nframes, int *fps, int can_drop_frames)
 {
+	Assert(bm_d3d_inited);
+
 	int	i, n;
 	anim	the_anim;
 	CFILE	*fp;
 	char filename[MAX_FILENAME_LEN];
-
-	if ( !bm_d3d_inited ) bm_d3d_init();
 
 	strcpy( filename, real_filename );
 	char *p = strchr( filename, '.' );
@@ -569,9 +554,9 @@ int bm_d3d_load_animation( char *real_filename, int *nframes, int *fps, int can_
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
 void bm_d3d_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *fps, bitmap_section_info **sections )
 {
-	bitmap * bmp;
+	Assert(bm_d3d_inited);
 
-	if ( !bm_d3d_inited ) return;
+	bitmap * bmp;
 
 	int bitmapnum = handle % MAX_BITMAPS;
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE!	
@@ -613,7 +598,7 @@ void bm_d3d_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, 
 
 uint bm_d3d_get_signature( int handle )
 {
-	if ( !bm_d3d_inited ) bm_d3d_init();
+	Assert(bm_d3d_inited);
 
 	int bitmapnum = handle % MAX_BITMAPS;
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
@@ -624,7 +609,6 @@ uint bm_d3d_get_signature( int handle )
 static void bm_d3d_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flags )
 {	
 	int idx;	
-	int r, g, b, a;
 
 	if(flags & BMP_AABITMAP){
 		Assert(bmp->bpp == 8);
@@ -638,25 +622,7 @@ static void bm_d3d_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte 
 			
 			// if the pixel is transparent
 			if ( ((ushort*)bmp->data)[idx] == Gr_t_green.mask)	{
-				switch(Bm_pixel_format){
-				// 1555, all we need to do is zero the whole thing
-				case BM_PIXEL_FORMAT_ARGB:
-				case BM_PIXEL_FORMAT_ARGB_D3D:
 					((ushort*)bmp->data)[idx] = 0;
-					break;
-				// d3d format
-				case BM_PIXEL_FORMAT_D3D:									
-					r = g = b = a = 0;
-					r /= Gr_t_red.scale;
-					g /= Gr_t_green.scale;
-					b /= Gr_t_blue.scale;
-					a /= Gr_t_alpha.scale;
-					((ushort*)bmp->data)[idx] = (unsigned short)((a<<Gr_t_alpha.shift) | (r << Gr_t_red.shift) | (g << Gr_t_green.shift) |	(b << Gr_t_blue.shift));
-					break;
-				default:
-					DBUGFILE_OUTPUT_0("Not valid pixel format");
-					Int3();
-				}
 			}
 		}
 
@@ -868,37 +834,34 @@ void bm_d3d_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp,
 	bm_d3d_convert_format( bitmapnum, bmp, bpp, flags );
 }
 
-void bm_d3d_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
+bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte flags, float *u_scale, float *v_scale )
 {
-	ubyte *data;	
+	int bitmapnum = handle % MAX_BITMAPS;
+	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
 
-	// Unload any existing data
-	bm_d3d_free_data( bitmapnum );	
 
-	Assert(bpp == 16);
+	// Turn off 32bit PCX for now, its still buggy
+	int valid_pcx	= 0;//bm_bitmaps[bitmapnum].type == BM_TYPE_PCX && bpp != 8 && Cmdline_32bit_textures;
+	int valid_other = bm_bitmaps[bitmapnum].type == BM_TYPE_TGA || bm_bitmaps[bitmapnum].type == BM_TYPE_JPG;
 
-	// should never try to make an aabitmap out of a targa
-	Assert(!(flags & BMP_AABITMAP));
 
-	// allocate bitmap data	
-	if(bpp == 16){
-		data = (ubyte*)bm_d3d_malloc(bitmapnum, bmp->w * bmp->h * 2);	
-		memset( data, 0, bmp->w * bmp->h * 2);	
-	} else {
-		data = (ubyte*)bm_d3d_malloc(bitmapnum, bmp->w * bmp->h);	
-		memset( data, 0, bmp->w * bmp->h );	
+	if(valid_pcx || valid_other)	
+	{
+		// There is no internal texture
+		bm_d3d_lock(handle, bpp, flags );
+		bm_unlock(handle);	
+
+	 	if(u_scale) *u_scale = 1.0;//d3d_bitmap_entry[bitmapnum].uscale;
+	 	if(v_scale) *v_scale = 1.0;//d3d_bitmap_entry[bitmapnum].vscale;
 	}
-	bmp->bpp = bpp;
-	bmp->data = (uint)data;
-	bmp->palette = NULL;
 
-	Assert( &be->bm == bmp );
-	
-//	int tga_error=
-	targa_read_bitmap( be->filename, data, NULL, (bpp == 16) ? 2 : 1);
+	if(bm_bitmaps[bitmapnum].type == BM_TYPE_PCX_32 || valid_other)
+	{
+		d3d_SetTexture(stage, d3d_bitmap_entry[bitmapnum].tinterface);
+		return true;
+	}
 
-	bmp->flags = 0;	
-	bm_d3d_convert_format( bitmapnum, bmp, bpp, flags );
+	return false;
 }
 
 // This locks down a bitmap and returns a pointer to a bitmap
@@ -907,10 +870,10 @@ void bm_d3d_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, 
 // appropriate format also.
 bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 {
+	Assert(bm_d3d_inited);
+
 	bitmap			*bmp;
 	bitmap_entry	*be;
-
-	if ( !bm_d3d_inited ) bm_d3d_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
@@ -923,12 +886,24 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 	// otherwise do it as normal
 	else if(flags & BMP_AABITMAP){
 		Assert( bpp == 8 );
-	} else {
+	} 
+	else {
 		Assert( bpp == 16 );
 	}
 
 	be = &bm_bitmaps[bitmapnum];
 	bmp = &be->bm;
+
+	// Give pcx control to D3D if we are expected to load it into 32 bit
+	// 8 bit images are likcy to be masks, data needs to be passed back
+	if(be->type == BM_TYPE_PCX && bpp != 8 && Cmdline_32bit_textures)
+	{
+//   	 	be->type = BM_TYPE_PCX_32;
+
+		// No texture sections
+	 //	bmp->sections.num_x = bmp->sections.num_y = 0;
+	 //	bmp->sections.sx[0] = bmp->sections.sy[0] = 0;
+	}
 
 	// If you hit this assert, chances are that someone freed the
 	// wrong bitmap and now someone is trying to use that bitmap.
@@ -944,10 +919,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 
 	// if bitmap hasn't been loaded yet, then load it from disk
 	// reread the bitmap from disk under certain conditions
-	int pal_changed = 0;
-	int rle_changed = 0;
-	int fake_xparent_changed = 0;	
-	if ( (bmp->data == 0) || (bpp != bmp->bpp) || pal_changed || rle_changed || fake_xparent_changed ) {
+	if ( (bmp->data == 0) || (bpp != bmp->bpp)) {
 		Assert(be->ref_count == 1);
 
 		if ( be->type != BM_TYPE_USER ) {
@@ -955,13 +927,7 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 				nprintf (("BmpMan","Loading %s for the first time.\n", be->filename));
 			} else if ( bpp != bmp->bpp ) {
 				nprintf (("BmpMan","Reloading %s from bitdepth %d to bitdepth %d\n", be->filename, bmp->bpp, bpp));
-			} else if ( pal_changed ) {
-				nprintf (("BmpMan","Reloading %s to remap palette\n", be->filename));
-			} else if ( rle_changed )	{
-				nprintf (("BmpMan","Reloading %s to change RLE.\n", be->filename));
-			} else if ( fake_xparent_changed )	{
-				nprintf (("BmpMan","Reloading %s to change fake xparency.\n", be->filename));
-			}
+			} 
 		}
 
 		// select proper format
@@ -986,10 +952,30 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 			bm_d3d_lock_user( handle, bitmapnum, be, bmp, bpp, flags );
 			break;
 
-		case BM_TYPE_TGA:
-			bm_d3d_lock_tga( handle, bitmapnum, be, bmp, bpp, flags );
+		case BM_TYPE_PCX_32:
+			{
+			if(d3d_bitmap_entry[bitmapnum].tinterface) return bmp;
+
+			d3d_bitmap_entry[bitmapnum].tinterface = 
+				(IDirect3DBaseTexture8 *) d3d_lock_32_pcx(be->filename, 
+					&d3d_bitmap_entry[bitmapnum].uscale, 
+					&d3d_bitmap_entry[bitmapnum].vscale);
+			}
 			break;
 
+
+		// We'll let D3DX handle this
+		case BM_TYPE_JPG:
+		case BM_TYPE_TGA:
+			{
+			if(d3d_bitmap_entry[bitmapnum].tinterface) return bmp;
+
+			bm_d3d_free_data( bitmapnum );
+			d3d_bitmap_entry[bitmapnum].tinterface = 
+				(IDirect3DBaseTexture8 *) d3d_lock_d3dx_types(be->filename, be->type, bitmapnum, flags );
+
+			}
+			break;
 		default:
 			Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", be->type );
 			return NULL;
@@ -1027,6 +1013,8 @@ bitmap * bm_d3d_lock( int handle, ubyte bpp, ubyte flags )
 //
 void bm_d3d_unlock( int handle )
 {
+	Assert(bm_d3d_inited);
+
 	bitmap_entry	*be;
 	bitmap			*bmp;
 
@@ -1034,7 +1022,6 @@ void bm_d3d_unlock( int handle )
 	Assert( bm_bitmaps[bitmapnum].handle == handle );	// INVALID BITMAP HANDLE
 
 	Assert(bitmapnum >= 0 && bitmapnum < MAX_BITMAPS);
-	if ( !bm_d3d_inited ) bm_d3d_init();
 
 	be = &bm_bitmaps[bitmapnum];
 	bmp = &be->bm;
@@ -1338,15 +1325,6 @@ int bm_d3d_get_cache_slot( int bitmap_id, int separate_ani_frames )
 
 }
 
-// convert a 24 bit value to a 16 bit value
-void bm_d3d_24_to_16(int bit_24, ushort *bit_16)
-{
-	ubyte *pixel = (ubyte*)&bit_24;
-	ubyte alpha = 1;
-
-	bm_set_components((ubyte*)bit_16, (ubyte*)&pixel[0], (ubyte*)&pixel[1], (ubyte*)&pixel[2], &alpha);	
-}
-
 // get the rgba components of a pixel, any of the parameters can be NULL
 void bm_d3d_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 {
@@ -1380,50 +1358,14 @@ void bm_d3d_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 		}
 	}
 
-	// get the alpha value
+	// get the alpha value - this is never asked for
 	if(a != NULL){		
 		*a = 1;
 
-		switch(Bm_pixel_format){
-		// glide has an alpha channel so we have to unset ir or set it each time
-		case BM_PIXEL_FORMAT_ARGB:			
 			Assert(!bit_32);
 			if(!( ((ushort*)pixel)[0] & 0x8000)){
 				*a = 0;
 			} 
-			break;
-
-		// this d3d format has no alpha channel, so only make it "transparent", never make it "non-transparent"
-		case BM_PIXEL_FORMAT_D3D:
-			Assert(!bit_32);
-			if( *((ushort*)pixel) == Gr_current_green->mask){ 
-				*a = 0;
-			}
-			break;
-
-		// nice 1555 texture format mode
-		case BM_PIXEL_FORMAT_ARGB_D3D:	
-			// if we're writing to a normal texture, use nice alpha bits
-			if(Gr_current_red == &Gr_t_red){				
-				Assert(!bit_32);
-
-				if(!(*((ushort*)pixel) & Gr_current_alpha->mask)){
-					*a = 0;
-				}
-			}
-			// otherwise do it as normal
-			else {
-				if(bit_32){
-					if(*((int*)pixel) == Gr_current_green->mask){ 
-						*a = 0;
-					}
-				} else {
-					if(*((ushort*)pixel) == Gr_current_green->mask){ 
-						*a = 0;
-					}
-				}
-			}
-		}
 	}
 }
 
