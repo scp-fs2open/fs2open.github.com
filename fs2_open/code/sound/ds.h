@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.13 $
- * $Date: 2005-04-05 05:53:25 $
+ * $Revision: 2.14 $
+ * $Date: 2005-04-05 11:48:23 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.12  2005/04/01 07:33:08  taylor
  * fix hanging on exit with OpenAL
  * some better error handling on OpenAL init and make it more Windows friendly too
@@ -150,19 +153,22 @@
 #ifndef __DS_H__
 #define __DS_H__
 
-#ifndef USE_OPENAL
+#ifdef _WIN32
 #include <windows.h>
+#endif
+
+#ifndef USE_OPENAL
 #include "directx/vdsound.h"
 #else
-#ifndef __APPLE__
-#include <AL/al.h>
-#include <AL/alc.h>
-#include <AL/alut.h>
+#if !(defined(__APPLE__) || defined(_WIN32))
+	#include <AL/al.h>
+	#include <AL/alc.h>
+	#include <AL/alut.h>
 #else
-#include "al.h"
-#include "alc.h"
-#include "alut.h"
-#endif // !__APPLE__
+	#include "al.h"
+	#include "alc.h"
+	#include "alut.h"
+#endif // !__APPLE__ && !_WIN32
 #endif // USE_OPENAL
 
 #include "sound/ogg/ogg.h"
@@ -217,32 +223,59 @@ typedef struct channel
 
 extern channel *Channels;
 
-/*
-#ifndef NDEBUG
-#define OpenAL_ErrorCheck()	do {		\
-	int i = alGetError();			\
-	if (i != AL_NO_ERROR) {			\
-		while(i != AL_NO_ERROR) {	\
-			nprintf(("Warning", "%s/%s:%d - OpenAL error %s\n", __FUNCTION__, __FILE__, __LINE__, alGetString(i))); \
-			i = alGetError();	\
-		}				\
-		return -1;			\
-	} 					\
+extern const char* openal_error_string();
+
+// if an error occurs after executing 'x' then do 'y'
+#define OpenAL_ErrorCheck( x, y )	do {	\
+	x;	\
+	const char *error_text = openal_error_string();	\
+	if ( error_text != NULL ) {	\
+		while ( error_text != NULL ) {	\
+			nprintf(("Warning", "SOUND: %s:%d - OpenAL error = '%s'\n", __FILE__, __LINE__, error_text));	\
+			error_text = openal_error_string();	\
+		}	\
+		y;	\
+	}	\
 } while (0);
+
+// like OpenAL_ErrorCheck() except that it gives the error message from x but does nothing about it
+#define OpenAL_ErrorPrint( x )	do {	\
+	x;	\
+	const char *error_text = openal_error_string();	\
+	if ( error_text != NULL ) {	\
+		while ( error_text != NULL ) {	\
+			nprintf(("Sound", "OpenAL ERROR: \"%s\" in %s, line %i\n", error_text, __FILE__, __LINE__));	\
+			error_text = openal_error_string();	\
+		}	\
+	}	\
+} while (0);
+
 #else
-#define OpenAL_ErrorCheck()
-#endif
-*/
-#endif // USE_OPENAL
 
-
-extern int							ds_initialized;
-#ifdef _WIN32
 extern LPDIRECTSOUNDBUFFER		pPrimaryBuffer;
 extern LPDIRECTSOUND				pDirectSound;
 
 extern HRESULT (__stdcall *pfn_DirectSoundCaptureCreate)(LPGUID lpGUID, LPDIRECTSOUNDCAPTURE *lplpDSC, LPUNKNOWN pUnkOuter);
-#endif
+
+
+// EAX buffer reverb property set {4a4e6fc0-c341-11d1-b73a-444553540000}
+DEFINE_GUID(DSPROPSETID_EAXBUFFER_ReverbProperties, 
+    0x4a4e6fc0,
+    0xc341,
+    0x11d1,
+    0xb7, 0x3a, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
+
+// EAX (listener) reverb property set {4a4e6fc1-c341-11d1-b73a-444553540000}
+DEFINE_GUID(DSPROPSETID_EAX_ReverbProperties, 
+    0x4a4e6fc1,
+    0xc341,
+    0x11d1,
+    0xb7, 0x3a, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
+
+#endif // USE_OPENAL
+
+
+extern int							ds_initialized;
 
 int	ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	ds_close();
@@ -299,15 +332,6 @@ void ds_do_frame();
 //
 // --------------------
 
-#ifdef _WIN32
-// EAX (listener) reverb property set {4a4e6fc1-c341-11d1-b73a-444553540000}
-DEFINE_GUID(DSPROPSETID_EAX_ReverbProperties, 
-    0x4a4e6fc1,
-    0xc341,
-    0x11d1,
-    0xb7, 0x3a, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
-#endif
-
 typedef enum 
 {
     DSPROPERTY_EAX_ALL,                // all reverb properties
@@ -362,15 +386,6 @@ enum
 };
 
 #define EAX_MAX_ENVIRONMENT (EAX_ENVIRONMENT_COUNT - 1)
-
-#ifdef _WIN32
-// EAX buffer reverb property set {4a4e6fc0-c341-11d1-b73a-444553540000}
-DEFINE_GUID(DSPROPSETID_EAXBUFFER_ReverbProperties, 
-    0x4a4e6fc0,
-    0xc341,
-    0x11d1,
-    0xb7, 0x3a, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
-#endif
 
 typedef enum 
 {

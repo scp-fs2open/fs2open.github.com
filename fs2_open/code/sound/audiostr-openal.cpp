@@ -1,12 +1,17 @@
 /*
  * $Logfile: $
- * $Revision: 1.3 $
- * $Date: 2005-04-01 07:33:08 $
+ * $Revision: 1.4 $
+ * $Date: 2005-04-05 11:48:22 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/04/01 07:33:08  taylor
+ * fix hanging on exit with OpenAL
+ * some better error handling on OpenAL init and make it more Windows friendly too
+ * basic 3d sound stuff for OpenAL, not working right yet
+ *
  * Revision 1.2  2005/03/27 08:51:24  taylor
  * this is what coding on an empty stomach will get you
  *
@@ -27,7 +32,7 @@
 #include <mmsystem.h>
 #endif
 
-#ifndef __APPLE__
+#if !(defined(__APPLE__) || defined(_WIN32))
 	#include <AL/al.h>
 	#include <AL/alc.h>
 	#include <AL/alut.h>
@@ -35,7 +40,7 @@
 	#include "al.h"
 	#include "alc.h"
 	#include "alut.h"
-#endif // !__APPLE__
+#endif // !__APPLE__ && !_WIN32
 
 #include "globalincs/pstypes.h"
 #include "sound/audiostr.h"
@@ -50,22 +55,7 @@
 #include "osapi/osapi.h"
 
 
-#ifndef NDEBUG
-#define OpenAL_ErrorCheck(onerr)	do {		\
-	int i = alGetError();			\
-	if (i != AL_NO_ERROR) {			\
-		while(i != AL_NO_ERROR) {	\
-			nprintf(("Warning", "%s/%s:%d - OpenAL error %s\n", __FUNCTION__, __FILE__, __LINE__, alGetString(i)));	\
-			i = alGetError();	\
-		}				\
-		return onerr;	\
-	} 					\
-} while (0);
-#else
-#define OpenAL_ErrorCheck(onerr)
-#endif
-
-#define MAX_AL_BUF 4
+#define MAX_STREAM_BUFFERS 4
 
 // status
 #define ASF_FREE	0
@@ -229,9 +219,9 @@ protected:
 	BOOL ServiceBuffer (void);
 	static BOOL TimerCallback (ptr_u dwUser);
 
-	ALuint m_al_multichannel_id;   // name of openAL source
-	ALuint m_al_buffer_ids[MAX_AL_BUF]; //names of buffers
-	int m_al_buffer_play;
+	ALuint m_source_id;   // name of openAL source
+	ALuint m_buffer_ids[MAX_STREAM_BUFFERS]; //names of buffers
+	int m_play_buffer_id;
 
 	Timer m_timer;              // ptr to Timer object
 	WaveFile * m_pwavefile;        // ptr to WaveFile object
@@ -296,7 +286,11 @@ BOOL Timer::Create (UINT nPeriod, UINT nRes, DWORD dwUser, TIMERCALLBACK pfnCall
 	m_dwUser = dwUser;
 	m_pfnCallback = pfnCallback;
 
+#ifndef SCP_UNIX
+	if ((m_nIDTimer = timeSetEvent (m_nPeriod, m_nRes, TimeProc, (DWORD)this, TIME_PERIODIC)) == NULL) {
+#else
 	if ((m_nIDTimer = timeSetEvent (m_nPeriod, m_nRes, (ptr_u)TimeProc, (DWORD *)this, TIME_PERIODIC)) == NULL) {
+#endif
 	  bRtn = FAILURE;
 	}
 
@@ -869,9 +863,9 @@ void AudioStream::Init_Data ()
 	m_nBufService = DefBufferServiceInterval;
 	m_nTimeStarted = 0;
 
-	memset(m_al_buffer_ids, 0, sizeof(m_al_buffer_ids));
-	m_al_multichannel_id = 0;
-	m_al_buffer_play = 0;
+	memset(m_buffer_ids, 0, sizeof(m_buffer_ids));
+	m_source_id = 0;
+	m_play_buffer_id = 0;
 }
 
 // Create
@@ -903,30 +897,18 @@ BOOL AudioStream::Create (char *pszFilename)
 //				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
 
 				// Create sound buffer
-				alGenBuffers(MAX_AL_BUF, m_al_buffer_ids);
+				OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), return FAILURE );
 				
-				OpenAL_ErrorCheck( FAILURE );
-
-				alGenSources(1, &m_al_multichannel_id);
+				OpenAL_ErrorCheck( alGenSources(1, &m_source_id), return FAILURE );
 				
-				OpenAL_ErrorCheck( FAILURE );
+				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 0) );
 
-				alSourcef(m_al_multichannel_id, AL_ROLLOFF_FACTOR, 0);
-
-				OpenAL_ErrorCheck( FAILURE );
-
-				alSourcef(m_al_multichannel_id, AL_SOURCE_RELATIVE, AL_TRUE);
-
-				OpenAL_ErrorCheck( FAILURE );
+				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
 
 				ALfloat posv[] = { 0, 0, 0 };
-				alSourcefv(m_al_multichannel_id, AL_POSITION, posv);
+				OpenAL_ErrorPrint( alSourcefv(m_source_id, AL_POSITION, posv) );
 
-				OpenAL_ErrorCheck( FAILURE );
-
-				alSourcef(m_al_multichannel_id, AL_GAIN, 1);
-
-				OpenAL_ErrorCheck( FAILURE );
+				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, 1) );
 
 				// Cue for playback
 				Cue ();
@@ -966,8 +948,8 @@ BOOL AudioStream::Destroy (void)
 	Stop ();
 
 	// Release sound buffer
-	alDeleteBuffers(MAX_AL_BUF,m_al_buffer_ids);
-	alDeleteSources(1,&m_al_multichannel_id);
+	alDeleteBuffers(MAX_STREAM_BUFFERS, m_buffer_ids);
+	alDeleteSources(1, &m_source_id);
 	Snd_sram -= m_cbBufSize;
 
 	// Delete WaveFile object
@@ -999,7 +981,7 @@ BOOL AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 		return fRtn;
 	}
 
-	if ( (m_al_buffer_ids[0] == 0) || !m_pwavefile ) {
+	if ( (m_buffer_ids[0] == 0) || !m_pwavefile ) {
 		return fRtn;
 	}
 
@@ -1025,7 +1007,7 @@ BOOL AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 	}
 
 	if ( num_bytes_read > 0 ) {
-		nprintf(("SOUND", "SOUND ==> Queueing %d bytes of Data\n", num_bytes_read));
+	//	nprintf(("SOUND", "SOUND ==> Queueing %d bytes of Data\n", num_bytes_read));
 
 		// Lock the sound buffer
 		ALenum format = AL_FORMAT_MONO8;
@@ -1044,22 +1026,18 @@ BOOL AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 
 		ALuint bid = 0;
 
-		alSourceUnqueueBuffers(m_al_multichannel_id, 1, &bid);
+		// it's quite possible for this to give us an error so don't fail if it does
+		// and rembmer to clear the error queue before moving on to the next commands
+		OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, 1, &bid) );
 
-		alGetError();
+		OpenAL_ErrorCheck( alBufferData(m_buffer_ids[m_play_buffer_id], format, uncompressed_wave_data, num_bytes_read, m_pwavefile->m_wfmt.nSamplesPerSec), return FAILURE );
 
-		alBufferData(m_al_buffer_ids[m_al_buffer_play], format, uncompressed_wave_data, num_bytes_read, m_pwavefile->m_wfmt.nSamplesPerSec);
+		OpenAL_ErrorCheck( alSourceQueueBuffers(m_source_id, 1, &m_buffer_ids[m_play_buffer_id]), return FAILURE );
 
-		OpenAL_ErrorCheck( FAILURE );
+		m_play_buffer_id++;
 
-		alSourceQueueBuffers(m_al_multichannel_id, 1, &m_al_buffer_ids[m_al_buffer_play]);
-
-		OpenAL_ErrorCheck( FAILURE );
-
-		m_al_buffer_play++;
-
-		if (m_al_buffer_play >= MAX_AL_BUF)
-			m_al_buffer_play = 0;
+		if (m_play_buffer_id >= MAX_STREAM_BUFFERS)
+			m_play_buffer_id = 0;
 	}
 
 	if ( service ) {
@@ -1091,17 +1069,13 @@ BOOL AudioStream::WriteSilence (uint size)
 DWORD AudioStream::GetMaxWriteSize (void)
 {
 	DWORD dwMaxSize = m_cbBufSize;
-	ALint n,q;
+	ALint n, q;
 
-	alGetSourcei(m_al_multichannel_id,AL_BUFFERS_PROCESSED,&n);
+	OpenAL_ErrorCheck( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &n), return 0 );
 
-	OpenAL_ErrorCheck( 0 );
+	OpenAL_ErrorCheck( alGetSourcei(m_source_id, AL_BUFFERS_QUEUED, &q), return 0 );
 
-	alGetSourcei(m_al_multichannel_id,AL_BUFFERS_QUEUED,&q);
-
-	OpenAL_ErrorCheck( 0 );
-
-	if (!n && q>=MAX_AL_BUF) //all buffers queued
+	if (!n && q>=MAX_STREAM_BUFFERS) //all buffers queued
 		dwMaxSize = 0;
 
 	//	nprintf(("Alan","Max write size: %d\n", dwMaxSize));
@@ -1193,11 +1167,9 @@ BOOL AudioStream::ServiceBuffer (void)
 
 			ALint n;
 			// get the number of buffers processed to see if we're done
-			alGetSourcei(m_al_multichannel_id, AL_BUFFERS_PROCESSED, &n);
+			OpenAL_ErrorCheck( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &n), return FALSE );
 
-			OpenAL_ErrorCheck( 1 );
-
-			if ( m_bReadingDone && (n == MAX_AL_BUF) ) {
+			if ( m_bReadingDone && (n == MAX_STREAM_BUFFERS) ) {
 				if ( m_bDestroy_when_faded == TRUE ) {
 					LEAVE_CRITICAL_SECTION( write_lock );
 
@@ -1251,7 +1223,7 @@ void AudioStream::Cue (void)
 		m_pwavefile->Cue ();
 
 		// Unqueue all buffers
-		alSourceUnqueueBuffers(m_al_multichannel_id, MAX_AL_BUF, m_al_buffer_ids);
+		alSourceUnqueueBuffers(m_source_id, MAX_STREAM_BUFFERS, m_buffer_ids);
 
 		// Fill buffer with wave data
 		WriteWaveData (m_cbBufSize, &num_bytes_written, 0);
@@ -1263,7 +1235,7 @@ void AudioStream::Cue (void)
 // Play
 void AudioStream::Play (long volume, int looping)
 {
-	if (m_al_buffer_ids[0] != 0) {
+	if (m_buffer_ids[0] != 0) {
 		// If playing, stop
 		if (m_fPlaying) {
 			if ( m_bIsPaused == FALSE)
@@ -1280,9 +1252,7 @@ void AudioStream::Play (long volume, int looping)
 		else
 			m_bLooping = 0;
 
-		alSourcePlay(m_al_multichannel_id);
-
-		OpenAL_ErrorCheck();
+		OpenAL_ErrorPrint( alSourcePlay(m_source_id) );
 
 		m_nTimeStarted = timer_get_milliseconds();
 		Set_Volume(volume);
@@ -1344,12 +1314,10 @@ void AudioStream::Stop(int paused)
 {
 	if (m_fPlaying) {
 		if (paused) {
-			alSourcePause(m_al_multichannel_id);
+			OpenAL_ErrorPrint( alSourcePause(m_source_id) );
 		} else {
-			alSourceStop(m_al_multichannel_id);
+			OpenAL_ErrorPrint( alSourceStop(m_source_id) );
 		}
-
-		OpenAL_ErrorCheck();
 
 		m_fPlaying = FALSE;
 		m_bIsPaused = paused;
@@ -1364,9 +1332,7 @@ void AudioStream::Stop_and_Rewind (void)
 {
 	if (m_fPlaying) {
 		// Stop playback
-		alSourceStop(m_al_multichannel_id);
-
-		OpenAL_ErrorCheck();
+		OpenAL_ErrorPrint( alSourceStop(m_source_id) );
 
 		// Delete Timer object
 		m_timer.destructor();
@@ -1389,9 +1355,9 @@ void AudioStream::Set_Volume(long vol)
 
 	Assert( vol >= -10000 && vol <= 0 );
 
-	ALfloat alvol = (vol != -10000) ? pow(10.0, (float)vol / (-600.0 / log10(.5))): 0.0;
+	ALfloat alvol = (vol != -10000) ? powf(10.0f, (float)vol / (-600.0f / log10f(.5f))): 0.0f;
 
-	alSourcef(m_al_multichannel_id,AL_GAIN,alvol);
+	alSourcef(m_source_id, AL_GAIN, alvol);
 
 	m_lVolume = vol;
 	if ( h_result != 0 )

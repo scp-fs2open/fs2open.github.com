@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/acm.h $
- * $Revision: 2.4 $
- * $Date: 2005-01-31 10:34:39 $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 11:48:22 $
  * $Author: taylor $
  *
  * Header file for interface to Audio Compression Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/01/31 10:34:39  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.3  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -61,8 +64,12 @@
 
 #ifdef _WIN32
 #include "mm/mmreg.h"
+#endif
+
+#ifndef USE_OPENAL
 #include "mm/msacm.h"
 #endif
+
 #include "globalincs/pstypes.h"
 
 int	ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, ubyte **dest, int max_dest_bytes, int *dest_len, unsigned int *src_bytes_used, unsigned short dest_bps=16);

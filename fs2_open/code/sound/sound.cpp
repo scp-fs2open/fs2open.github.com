@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-04-05 05:53:25 $
+ * $Revision: 2.21 $
+ * $Date: 2005-04-05 11:48:23 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.19  2005/04/01 07:33:08  taylor
  * fix hanging on exit with OpenAL
  * some better error handling on OpenAL init and make it more Windows friendly too
@@ -1388,7 +1391,7 @@ void snd_stop_all()
 //
 uint sound_get_ds()
 {
-#ifdef SCP_UNIX
+#ifdef USE_OPENAL
 	// unused
 	return 0;
 #else
@@ -1625,7 +1628,7 @@ int snd_time_remaining(int handle)
 		int bytes_remaining = max_offset - current_offset;
 		int samples_remaining = bytes_remaining / (bits_per_sample/8);
 		time_remaining = fl2i(1000.0f * samples_remaining/frequency + 0.5f);
-	}	
+	}
 
 //	mprintf(("time_remaining: %d\n", time_remaining));	
 	return time_remaining;
