@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/09/13 06:02:04  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.17  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -570,6 +574,7 @@ typedef struct weapon_info {
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
 	float	shockwave_speed;					// speed of shockwave ( 0 means none )
+	char	shockwave_pof_name[NAME_LENGTH];	// Name of the pof for the shockwave, if useing it's own
 	int		shockwave_model;					//model for the shock wave -Bobboau
 
 	float	armor_factor, shield_factor, subsystem_factor;	//	in 0.0..2.0, scale of damage done to type of thing

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-09-14 19:00:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2003-09-26 14:37:14 $
+ * $Author: bobboau $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/09/14 19:00:36  wmcoolmon
+ * Changed "nospec" to "Cmdline_nospec" -C
+ *
  * Revision 2.6  2003/09/09 21:26:23  fryday
  * Fixed specular for dynamic lights, optimized it a bit
  *
@@ -216,6 +219,7 @@
 #include "lighting/lighting.h"
 #include "io/timer.h"
 #include "globalincs/systemvars.h"
+#include "graphics/2d.h"
 #include "cmdline/cmdline.h"
 
 #define MAX_LIGHTS 256
@@ -239,6 +243,7 @@ typedef struct light {
 	float		spec_r,spec_g,spec_b;		// The specular color components of the light
 	int		ignore_objnum;				// Don't light this object.  Used to optimize weapons casting light on parents.
 	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
+	int instance;
 } light;
 
 light Lights[MAX_LIGHTS];
@@ -363,27 +368,42 @@ void light_reset()
 
 	Num_lights = 0;
 	light_filter_reset();
+#ifdef HTL
+	for(int i = 0; i<MAX_LIGHTS; i++)gr_destroy_light(i);
+#endif
 }
-
+extern vector Object_position;
 // Rotates the light into the current frame of reference
 void light_rotate(light * l)
 {
 	switch( l->type )	{
 	case LT_DIRECTIONAL:
 		// Rotate the light direction into local coodinates
+#ifdef HTL
+		light_data L = *(light_data*)(void*)l;
+		gr_modify_light(&L,l->instance, 2);
+#endif
+		
 		vm_vec_rotate(&l->local_vec, &l->vec, &Light_matrix );
 		break;
 	
 	case LT_POINT:	{
 			vector tempv;
 			// Rotate the point into local coordinates
+	
 			vm_vec_sub(&tempv, &l->vec, &Light_base );
 			vm_vec_rotate(&l->local_vec, &tempv, &Light_matrix );
+
+#ifdef HTL
+			light_data L = *(light_data*)(void*)l;
+			gr_modify_light(&L,l->instance, 2);
+#endif
 		}
 		break;
 	
 	case LT_TUBE:{
 			vector tempv;
+
 			// Rotate the point into local coordinates
 			vm_vec_sub(&tempv, &l->vec, &Light_base );
 			vm_vec_rotate(&l->local_vec, &tempv, &Light_matrix );
@@ -391,6 +411,36 @@ void light_rotate(light * l)
 			// Rotate the point into local coordinates
 			vm_vec_sub(&tempv, &l->vec2, &Light_base );
 			vm_vec_rotate(&l->local_vec2, &tempv, &Light_matrix );
+#ifdef HTL
+
+			//move the point to the neares to the object on the line
+				vector pos;
+
+/*				vm_vec_unrotate(&temp2, &temp, &obj->orient);
+				vm_vec_add2(&temp, &temp2);
+				vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].b_info.range);
+*/
+				switch(vm_vec_dist_to_line(&Object_position, &l->local_vec, &l->local_vec2, &pos, NULL)){
+					// behind the beam, so use the start pos
+				case -1:
+					pos = l->vec;
+					break;
+			
+					// use the closest point
+				case 0:
+					// already calculated in vm_vec_dist_to_line(...)
+					break;
+
+					// past the beam, so use the shot pos
+				case 1:
+					pos = l->vec2;
+					break;
+				}
+			light_data L = *(light_data*)(void*)l;
+			L.vec = pos;
+			L.local_vec = pos;
+			gr_modify_light(&L,l->instance, 2);
+#endif
 		}
 		break;
 
@@ -441,6 +491,7 @@ void light_add_directional( vector *dir, float intensity, float r, float g, floa
 	l->rad2_squared = l->rad2*l->rad2;
 	l->ignore_objnum = -1;
 	l->affected_objnum = -1;
+	l->instance = Num_lights-1;
 		
 	Assert( Num_light_levels <= 1 );
 //	Relevent_lights[Num_relevent_lights[Num_light_levels-1]++][Num_light_levels-1] = l;
@@ -448,6 +499,10 @@ void light_add_directional( vector *dir, float intensity, float r, float g, floa
 	if(Static_light_count < MAX_STATIC_LIGHTS){		
 		Static_light[Static_light_count++] = l;
 	}
+#ifdef HTL
+	light_data *L = (light_data*)(void*)l;
+	gr_make_light(L,Num_lights-1, 1);
+#endif
 }
 
 
@@ -488,9 +543,16 @@ void light_add_point( vector * pos, float rad1, float rad2, float intensity, flo
 	l->rad2_squared = l->rad2*l->rad2;
 	l->ignore_objnum = ignore_objnum;
 	l->affected_objnum = -1;
+	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
+#ifdef HTL
+	light_data *L = (light_data*)(void*)l;
+	gr_make_light(L,Num_lights-1, 2);
+#endif
 //	Relevent_lights[Num_relevent_lights[Num_light_levels-1]++][Num_light_levels-1] = l;
+//	light_data *L = (light_data*)(void*)l;
+//	l->API_index = gr_make_light(L);
 }
 
 void light_add_point_unique( vector * pos, float rad1, float rad2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
@@ -530,8 +592,15 @@ void light_add_point_unique( vector * pos, float rad1, float rad2, float intensi
 	l->rad2_squared = l->rad2*l->rad2;
 	l->ignore_objnum = -1;
 	l->affected_objnum = affected_objnum;
+	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
+#ifdef HTL
+	light_data *L = (light_data*)(void*)l;
+	gr_make_light(L,Num_lights-1, 2);
+#endif
+//	light_data *L = (light_data*)(void*)l;
+//	l->API_index = gr_make_light(L);
 }
 
 // for now, tube lights only affect one ship (to keep the filter stuff simple)
@@ -573,8 +642,15 @@ void light_add_tube(vector *p0, vector *p1, float r1, float r2, float intensity,
 	l->rad2_squared = l->rad2*l->rad2;
 	l->ignore_objnum = -1;
 	l->affected_objnum = affected_objnum;
+	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
+#ifdef HTL
+	light_data *L = (light_data*)(void*)l;
+	gr_make_light(L,Num_lights-1, 3);
+#endif
+//	light_data *L = (light_data*)(void*)l;
+//	l->API_index = gr_make_light(L);
 }
 
 // Reset the list of lights to point to all lights.
@@ -813,7 +889,17 @@ void light_set_shadow( int state )
 {
 	Light_in_shadow = state;
 }
+#ifdef HTL
 
+void light_set_all_relevent(){
+	int set_lights = 0;
+	for(int i=0; i<MAX_LIGHTS; i++ )gr_set_light(i, false);
+	for(int idx=0; idx<Static_light_count; idx++)gr_set_light(Static_light[idx]->instance, true);
+//	for simplicity sake were going to forget about dynamic lights for the moment
+	int n = Num_light_levels-1;
+	for( i=0; i<Num_relevent_lights[n]; i++ )gr_set_light(Relevent_lights[i][n]->instance, true);
+}
+#endif
 
 ubyte light_apply( vector *pos, vector * norm, float static_light_level )
 {
@@ -912,11 +998,6 @@ double specular_exponent_value = 16.0;
 void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *pos, vector * norm, vector * cam){
 
 	light *l;
-	vector V,nrml;
-	vm_vec_sub(&V, cam,pos);
-	vm_vec_normalize(&V);
-	nrml = *norm;
-	vm_vec_normalize(&nrml);
 	float rval = 0, gval = 0, bval = 0;
 
 	if ( Cmdline_nospec ) {
@@ -940,6 +1021,13 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 		return;
 	}
 
+	vector V, N;
+	vm_vec_sub(&V, cam,pos);
+	vm_vec_normalize(&V);
+
+	N = *norm;
+	vm_vec_normalize(&N);
+
 	// Factor in light from sun if there is one
 		// apply all sun lights
 		for(int idx=0; idx<Static_light_count; idx++){			
@@ -954,7 +1042,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 			vm_vec_sub(&R,&V, &Static_light[idx]->local_vec);
 			vm_vec_normalize(&R);
 
-			ltmp = (float)pow((double)vm_vec_dot(&R, &nrml ), specular_exponent_value) * Static_light[idx]->intensity * static_light_factor;		// reflective light
+			ltmp = (float)pow((double)vm_vec_dot(&R, &N ), specular_exponent_value) * Static_light[idx]->intensity * static_light_factor;		// reflective light
 
 			switch(Lighting_mode)	{
 			case LM_BRIGHTEN:
@@ -1033,9 +1121,8 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 		vm_vec_add(&R,&V, &to_light);
 		vm_vec_normalize(&R);
 
-		dot = (float)pow((double)vm_vec_dot(&R, &nrml ), specular_exponent_value) * l->intensity * factor;		// reflective light
-		
-	//		dot = 1.0f;
+		dot = (float)pow((double)vm_vec_dot(&R, &N ), specular_exponent_value) * l->intensity * factor;		// reflective light
+	
 		if ( dot > 0.0f )	{
 			// indicating that we already calculated the distance (vm_vec_dist_to_line(...) does this for us)
 			if(dist < 0.0f){
@@ -1061,12 +1148,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vector
 			}
 		}
 	}
-/*
-	float tr=rval*rval, tg=gval*gval, tb=bval*bval;
-	rval*=tr*tr*tr*tr;
-	gval*=tg*tg*tg*tg;
-	bval*=tb*tb*tb*tb;
-*/
+
 	if ( rval < 0.0f ) {
 		rval = 0.0f;
 	} else if ( rval > 1.0f ) {
@@ -1179,7 +1261,7 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vector *po
 	vector temp;
 	for (i=0; i<Num_relevent_lights[n]; i++ )	{
 		l = Relevent_lights[i][n];
-
+break;
 		dist = -1.0f;
 		switch(l->type){
 		// point lights

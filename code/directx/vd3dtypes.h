@@ -407,12 +407,21 @@ typedef struct _D3DVERTEX {
 	D3DVALUE     tv;
 	D3DVALUE     dvTV;
     };
+    union {
+	D3DVALUE     tu2;            /* Texture coordinates */
+	D3DVALUE     dvTU2;
+    };
+    union {
+	D3DVALUE     tv2;
+	D3DVALUE     dvTV2;
+    };
 #if (defined __cplusplus) && (defined D3D_OVERLOADS)
     _D3DVERTEX() { }
-    _D3DVERTEX(const D3DVECTOR& v, const D3DVECTOR& n, float _tu, float _tv)
+    _D3DVERTEX(const D3DVECTOR& v, const D3DVECTOR& n, float _tu, float _tv, float _tu2=_tu, float _tv2=_tv)
         { x = v.x; y = v.y; z = v.z;
           nx = n.x; ny = n.y; nz = n.z;
           tu = _tu; tv = _tv;
+          tu2 = _tu2; tv2 = _tv2;
         }
 #endif
 } D3DVERTEX, *LPD3DVERTEX;

@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-08-31 06:00:41 $
+ * $Revision: 2.9 $
+ * $Date: 2003-09-26 14:37:13 $
  * $Author: bobboau $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/08/31 06:00:41  bobboau
+ * an asortment of bugfixes, mostly with the specular code,
+ * HUD flickering should be completly gone now
+ *
  * Revision 2.7  2003/03/19 23:06:40  Goober5000
  * bit o' housecleaning
  * --Goober5000
@@ -240,7 +244,7 @@ void warpin_render(matrix *orient, vector *pos, int texture_bitmap_num, float ra
 		model_Interp_scale_y = 1.0f;
 		model_Interp_scale_z = 1.0f;
 
-		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, 0.0f);
+		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, -1.0f);
 
 		gr_set_cull(0);
 /*

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-09-13 06:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2003-09-26 14:37:14 $
+ * $Author: bobboau $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.14  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -1325,6 +1329,13 @@ void process_debug_keys(int k)
 			break;
 		}
 #endif
+		case KEY_DEBUGGED  + KEY_A:	{
+
+			HUD_printf("frame rate currently is %0.2 FPS", 1/flFrametime);
+
+			break;
+		}
+
 
 #ifndef NO_NETWORK
 		case KEY_DEBUGGED + KEY_D:

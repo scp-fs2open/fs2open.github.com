@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.81 $
- * $Date: 2003-09-13 20:59:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.82 $
+ * $Date: 2003-09-26 14:37:16 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2003/09/13 20:59:54  Goober5000
+ * fixed case-sensitivity bugs and possibly that Zeta wing bug
+ * --Goober5000
+ *
  * Revision 2.80  2003/09/13 08:27:28  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -1108,6 +1112,12 @@
 																// that will warp in.
 #endif
 
+extern bool splodeing;
+
+extern float splode_level;
+
+extern int splodeingtexture;
+
 //#define MIN_COLLISION_MOVE_DIST		5.0
 //#define COLLISION_VEL_CONST			0.1
 #define COLLISION_FRICTION_FACTOR	0.0		// ratio of maximum friction impulse to repulsion impulse
@@ -1214,6 +1224,55 @@ ship_counts Ship_counts[MAX_SHIP_TYPE_COUNTS];
 // every SHIP_CARGO_CHECK_INTERVAL ms.  Didn't want to make a timer in each ship struct.  Ensure
 // inited to 1 at mission start.
 static int Ship_cargo_check_timer;
+
+
+// Stuff for showing ship thrusters. 
+typedef struct thrust_anim {
+	int	num_frames;
+	int	first_frame;
+	int secondary;
+	int tertiary;
+	float time;				// in seconds
+} thrust_anim;
+
+#define NUM_THRUST_ANIMS			6
+#define NUM_THRUST_GLOW_ANIMS		6
+
+// These are indexed by:  Species*2 + (After_burner_on?1:0)
+static thrust_anim	Thrust_anims[NUM_THRUST_ANIMS];
+char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
+//XSTR:OFF
+	"thruster01", "thruster01a", 
+	"thruster02", "thruster02a", 
+	"thruster03", "thruster03a" 
+//XSTR:ON
+};
+char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
+//XSTR:OFF
+	"thruster02-01", "thruster02-01a", 
+	"thruster02-02", "thruster02-02a", 
+	"thruster02-03", "thruster02-03a" 
+//XSTR:ON
+};
+char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
+//XSTR:OFF
+	"thruster03-01", "thruster03-01a", 
+	"thruster03-02", "thruster03-02a", 
+	"thruster03-03", "thruster03-03a" 
+//XSTR:ON
+};
+
+// These are indexed by:  Species*2 + (After_burner_on?1:0)
+static thrust_anim	Thrust_glow_anims[NUM_THRUST_GLOW_ANIMS];
+char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN] = {	
+//XSTR:OFF
+	"thrusterglow01", "thrusterglow01a", 
+	"thrusterglow02", "thrusterglow02a", 
+	"thrusterglow03", "thrusterglow03a" 
+//XSTR:ON
+};
+
+static int Thrust_anim_inited = 0;
 
 // a global definition of the IFF colors
 color IFF_colors[MAX_IFF_COLORS][2];	// AL 1-2-97: Create two IFF colors, regular and bright
@@ -1627,10 +1686,9 @@ int parse_ship()
 	}
 
 	sip->shockwave_moddel = -1;
+	strcpy(sip->shockwave_pof_file, "");
 	if(optional_string("$Shockwave_model:")){
-		char shockwave_model_filename[32];
-		stuff_string( shockwave_model_filename, F_NAME, NULL);
-		sip->shockwave_moddel = model_load( shockwave_model_filename , 0, NULL, 0);
+		stuff_string( sip->shockwave_pof_file, F_NAME, NULL);
 	}
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
@@ -2126,10 +2184,97 @@ strcpy(parse_error_text, temp_error);
 		stuff_int( &sip->score );
 	}
 
+
+	sip->thruster_glow1 = -1;
+	sip->thruster_glow1a = -1;
+	sip->thruster_glow2 = -1;
+	sip->thruster_glow2a = -1;
+	sip->thruster_glow3 = -1;
+	sip->thruster_glow3a = -1;
+//	sip->thruster_particle_bitmap01 = -1;
+
+//	strcpy(sip->thruster_particle_bitmap01_name,"thrusterparticle");
+
+	strcpy(sip->splodeing_texture_name, "boom");
+
+	i = sip->species*2;
+	strcpy(sip->thruster_bitmap1, Thrust_glow_anim_names[i]);
+	strcpy(sip->thruster_bitmap2, Thrust_secondary_anim_names[i]);
+	strcpy(sip->thruster_bitmap3, Thrust_tertiary_anim_names[i++]);
+	strcpy(sip->thruster_bitmap1a, Thrust_glow_anim_names[i]);
+	strcpy(sip->thruster_bitmap2a, Thrust_secondary_anim_names[i]);
+	strcpy(sip->thruster_bitmap3a, Thrust_tertiary_anim_names[i]);
+
+	 sip->thruster01_rad_factor = 1.0f;
+	 sip->thruster02_rad_factor = 1.0f;
+	 sip->thruster02_len_factor = 1.0f;
+	 sip->thruster03_rad_factor = 1.0f;
+
+	if ( optional_string("$Thruster Bitmap 1:") ){
+		stuff_string( sip->thruster_bitmap1, F_NAME, NULL );
+	}
+	if ( optional_string("$Thruster Bitmap 1a:") ){
+		stuff_string( sip->thruster_bitmap1a, F_NAME, NULL );
+	}
+	if ( optional_string("$Thruster01 Radius factor:") ){
+		stuff_float(&sip->thruster01_rad_factor);
+	}
+
+	if ( optional_string("$Thruster Bitmap 2:") ){
+		stuff_string( sip->thruster_bitmap2, F_NAME, NULL );
+	}
+	if ( optional_string("$Thruster Bitmap 2a:") ){
+		stuff_string( sip->thruster_bitmap2a, F_NAME, NULL );
+	}
+	if ( optional_string("$Thruster02 Radius factor:") ){
+		stuff_float(&sip->thruster02_rad_factor);
+	}
+	if ( optional_string("$Thruster01 Length factor:") ){
+		stuff_float(&sip->thruster02_len_factor);
+	}
+
+	if ( optional_string("$Thruster Bitmap 3:") ){
+		stuff_string( sip->thruster_bitmap3, F_NAME, NULL );
+	}
+	if ( optional_string("$Thruster Bitmap 3a:") ){
+		stuff_string( sip->thruster_bitmap3a, F_NAME, NULL );
+	}
+	if ( optional_string("$Thruster03 Radius factor:") ){
+		stuff_float(&sip->thruster03_rad_factor);
+	}
+
+	sip->n_thruster_particles = 0;
+	sip->n_ABthruster_particles = 0;
+	while(optional_string("$Thruster Particles:")){
+		thruster_particles* t;
+		if ( optional_string("$Thruster Particle Bitmap:") ){
+			t = &sip->normal_thruster_particles[sip->n_thruster_particles++];
+		}else if ( optional_string("$Afterburner Particle Bitmap:") ){
+			t = &sip->afterburner_thruster_particles[sip->n_ABthruster_particles++];
+		}else{
+			Error( LOCATION, "formatting error in the thruster's particle section for ship %s\n", sip->name );
+			break;
+		}
+
+		stuff_string(t->thruster_particle_bitmap01_name, F_NAME, NULL );
+
+			required_string("$Min Radius:");
+		stuff_float(&t->min_rad);
+			required_string("$Max Radius:");
+		stuff_float(&t->max_rad);
+			required_string("$Min created:");
+		stuff_int(&t->n_low);
+			required_string("$Max created:");
+		stuff_int(&t->n_high);
+			required_string("$Variance:");
+		stuff_float(&t->variance);
+	}
+
 	// if the ship is a stealth ship
 	if ( optional_string("$Stealth:") ){
 		sip->flags |= SIF_SHIP_CLASS_STEALTH;
 	}
+
 
 	// parse contrail info
 	char trail_name[MAX_FILENAME_LEN] = "";
@@ -2672,6 +2817,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	if ( !Fred_running ) {
 		shipp->final_warp_time = timestamp(-1);
 		shipp->final_death_time = timestamp(-1);	// There death sequence ain't start et.
+		shipp->end_death_time = 0;
+		shipp->death_time = -1;
 		shipp->really_final_death_time = timestamp(-1);	// There death sequence ain't start et.
 		shipp->next_fireball = timestamp(-1);		// When a random fireball will pop up
 		shipp->next_hit_spark = timestamp(-1);		// when a hit spot will spark
@@ -2682,6 +2829,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	} else {		// the values should be different for Fred
 		shipp->final_warp_time = -1;
 		shipp->final_death_time = 0;
+		shipp->end_death_time = 0;
+		shipp->death_time = -1;
 		shipp->really_final_death_time = -1;
 		shipp->next_fireball = -1;
 		shipp->next_hit_spark = -1;
@@ -2845,6 +2994,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->num_turret_swarm_info = 0;
 	shipp->death_roll_snd = -1;
 	shipp->thruster_bitmap = -1;
+	shipp->secondary_thruster_bitmap = -1;
+	shipp->tertiary_thruster_bitmap = -1;
 	shipp->thruster_frame = 0.0f;
 	shipp->thruster_glow_bitmap = -1;
 	shipp->thruster_glow_noise = 1.0f;
@@ -3308,6 +3459,18 @@ void ship_render(object * obj)
 		}
 	}
 
+//	if((shipp->end_death_time - shipp->death_time) <= 0)shipp->end_death_time = 0;
+//	if((timestamp() - shipp->death_time) <= 0)shipp->end_death_time = 0;
+	if( !( shipp->large_ship_blowup_index > -1 ) && timestamp_elapsed(shipp->death_time) && shipp->end_death_time){
+		splodeingtexture = si->splodeing_texture;
+		splodeing = true;
+		splode_level = ((float)timestamp() - (float)shipp->death_time) / ((float)shipp->end_death_time - (float)shipp->death_time);
+		//splode_level *= 2.0f;
+		model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
+		splodeing = false;
+	}
+//	if(splode_level<=0.0f)shipp->end_death_time = 0;
+
 	if ( shipp->large_ship_blowup_index > -1 )	{
 		shipfx_large_blowup_render(shipp);
 	} else {
@@ -3337,6 +3500,12 @@ void ship_render(object * obj)
 			if (ft.xyz.y < -1.0f)
 				ft.xyz.y = -1.0f;
 
+/*			if (ft.xyz.x || ft.xyz.y || ft.xyz.z) {
+				model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise, (obj->phys_info.flags & PF_AFTERBURNER_ON || obj->phys_info.flags & PF_BOOSTER_ON), shipp->secondary_thruster_bitmap, shipp->tertiary_thruster_bitmap, &Objects[shipp->objnum].phys_info.rotvel, si->thruster01_rad_factor, si->thruster02_rad_factor, si->thruster02_len_factor, si->thruster02_rad_factor );
+				render_flags |= MR_SHOW_THRUSTERS;
+			}
+			*/
+			//had a conflict, had to chose one, and I don't like ^that^ one
 			model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
 			render_flags |= MR_SHOW_THRUSTERS;
 		}
@@ -4173,6 +4342,9 @@ void ship_dying_frame(object *objp, int ship_num)
 
 		if ( timestamp_elapsed(sp->final_death_time))	{
 
+			sp->death_time = sp->final_death_time;
+			
+
 			sp->final_death_time = timestamp(-1);	// never time out again
 			//mprintf(( "Ship dying!!\n" ));
 			
@@ -4230,6 +4402,8 @@ void ship_dying_frame(object *objp, int ship_num)
 				shipfx_large_blowup_init(sp);
 				// need to timeout immediately to keep physics in sync
 				sp->really_final_death_time = timestamp(0);
+				polymodel *pm = model_get(sp->modelnum);
+				sp->end_death_time = timestamp(pm->core_radius);
 			} else {
 				// only do big fireball if not big ship
 				float big_rad;
@@ -4255,7 +4429,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				// ship, so instead of just taking this code out, since we might need
 				// it in the future, I disabled it.   You can reenable it by changing
 				// the commenting on the following two lines.
-				sp->really_final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the ship up.
+				sp->end_death_time = sp->really_final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the ship up.
 				//sp->really_final_death_time = timestamp(0);	// Make ship break apart the instant the explosion starts
 			}
 
@@ -4356,37 +4530,6 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 
 }
 
-// Stuff for showing ship thrusters. 
-typedef struct thrust_anim {
-	int	num_frames;
-	int	first_frame;
-	float time;				// in seconds
-} thrust_anim;
-
-#define NUM_THRUST_ANIMS			6
-#define NUM_THRUST_GLOW_ANIMS		6
-
-// These are indexed by:  Species*2 + (After_burner_on?1:0)
-static thrust_anim	Thrust_anims[NUM_THRUST_ANIMS];
-char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
-//XSTR:OFF
-	"thruster01", "thruster01a", 
-	"thruster02", "thruster02a", 
-	"thruster03", "thruster03a" 
-//XSTR:ON
-};
-
-// These are indexed by:  Species*2 + (After_burner_on?1:0)
-static thrust_anim	Thrust_glow_anims[NUM_THRUST_GLOW_ANIMS];
-char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN] = {	
-//XSTR:OFF
-	"thrusterglow01", "thrusterglow01a", 
-	"thrusterglow02", "thrusterglow02a", 
-	"thrusterglow03", "thrusterglow03a" 
-//XSTR:ON
-};
-
-static int Thrust_anim_inited = 0;
 
 // loads the animations for ship's afterburners
 void ship_init_thrusters()
@@ -4406,6 +4549,9 @@ void ship_init_thrusters()
 	for ( i = 0; i < num_thrust_anims; i++ ) {
 		ta = &Thrust_anims[i];
 		ta->first_frame = bm_load_animation(Thrust_anim_names[i],  &ta->num_frames, &fps, 1);
+		ta->secondary = bm_load(Thrust_secondary_anim_names[i]);
+		ta->tertiary = bm_load(Thrust_tertiary_anim_names[i]);
+		
 		if ( ta->first_frame == -1 ) {
 			Error(LOCATION,"Error loading animation file: %s\n",Thrust_anim_names[i]);
 			return;
@@ -4448,6 +4594,8 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	thrust_anim *the_anim;
 	ship_info	*sinfo = &Ship_info[shipp->ship_info_index];
 
+	bool AB = false;
+
 	if ( !Thrust_anim_inited )	ship_init_thrusters();
 
 	// The animations are organized by:
@@ -4457,11 +4605,13 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if ( objp->phys_info.flags & PF_AFTERBURNER_ON )	{
 		anim_index++;		//	select afterburner anim.
 		rate = 1.5f;		// go at 1.5x faster when afterburners on
+		AB = true;
 	} 
 	else if (objp->phys_info.flags & PF_BOOSTER_ON)
 	{
 		anim_index++;		//	select afterburner anim.
 		rate = 2.5f;		// go at 2.5x faster when booster pod on
+		AB = true;
 	}else {
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
@@ -4495,6 +4645,9 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	
 	// Get the bitmap for this frame
 	shipp->thruster_bitmap = the_anim->first_frame + framenum;
+//	shipp->secondary_thruster_bitmap = the_anim->secondary;
+//	shipp->tertiary_thruster_bitmap = the_anim->tertiary;
+	
 
 //	mprintf(( "TF: %.2f\n", shipp->thruster_frame ));
 
@@ -4519,9 +4672,16 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 //		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  the_anim->num_frames, anim_index ));
 	
 	// Get the bitmap for this frame
-	shipp->thruster_glow_bitmap = the_anim->first_frame;	// + framenum;
+//	shipp->thruster_glow_bitmap = the_anim->first_frame;	// + framenum;
 	shipp->thruster_glow_noise = Noise[framenum];
 
+
+	if(AB)shipp->thruster_glow_bitmap = sinfo->thruster_glow1a;
+	else shipp->thruster_glow_bitmap = sinfo->thruster_glow1;
+	if(AB)shipp->secondary_thruster_bitmap = sinfo->thruster_glow2a;
+	else shipp->secondary_thruster_bitmap = sinfo->thruster_glow2;
+	if(AB)shipp->tertiary_thruster_bitmap = sinfo->thruster_glow3a;
+	else shipp->tertiary_thruster_bitmap = sinfo->thruster_glow3;
 }
 
 
@@ -5495,6 +5655,10 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 	shipp->modelnum = sip->modelnum;
 
+	if(strcmp(sip->shockwave_pof_file,""))
+	sip->shockwave_moddel = model_load(sip->shockwave_pof_file, 0, NULL);
+	else sip->shockwave_moddel = -1;
+
 	// alt stuff
 	shipp->alt_modelnum = -1;
 	shipp->n_subsystems = 0;
@@ -5705,6 +5869,13 @@ int ship_create(matrix *orient, vector *pos, int ship_type, char *ship_name)
 	shipp->wing_status_wing_index = -1;		// wing index (0-4) in wingman status gauge
 	shipp->wing_status_wing_pos = -1;		// wing position (0-5) in wingman status gauge
 
+/*	sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
+	sip->thruster_glow1a = bm_load(sip->thruster_bitmap1a);
+	sip->thruster_glow2 = bm_load(sip->thruster_bitmap2);
+	sip->thruster_glow2a = bm_load(sip->thruster_bitmap2a);
+	sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
+	sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
+*/
 	trail_info *ci;
 	//first try at ABtrails -Bobboau	
 	shipp->ab_count = 0;
@@ -10999,6 +11170,31 @@ void ship_page_in()
 			} else {
 				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
 			}
+				if(strcmp(sip->thruster_bitmap1, "none"))sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
+				else sip->thruster_glow1 = -1;
+				if(strcmp(sip->thruster_bitmap1a, "none"))sip->thruster_glow1a = bm_load(sip->thruster_bitmap1a);
+				else sip->thruster_glow1a = -1;
+				if(strcmp(sip->thruster_bitmap2, "none"))sip->thruster_glow2 = bm_load(sip->thruster_bitmap2);
+				else sip->thruster_glow2 = -1;
+				if(strcmp(sip->thruster_bitmap2a, "none"))sip->thruster_glow2a = bm_load(sip->thruster_bitmap2a);
+				else sip->thruster_glow2a = -1;
+				if(strcmp(sip->thruster_bitmap3, "none"))sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
+				else sip->thruster_glow3 = -1;
+				if(strcmp(sip->thruster_bitmap3a, "none"))sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
+				else sip->thruster_glow3a = -1;
+				
+				if(strcmp(sip->splodeing_texture_name, "none"))sip->splodeing_texture = bm_load(sip->splodeing_texture_name);
+				else sip->splodeing_texture = -1;
+
+				int idontcare = 0;
+				for(int k = 0; k<sip->n_thruster_particles; k++){
+					if(strcmp(sip->normal_thruster_particles[k].thruster_particle_bitmap01_name, "none"))sip->normal_thruster_particles[k].thruster_particle_bitmap01 = bm_load_animation(sip->normal_thruster_particles[k].thruster_particle_bitmap01_name, &sip->normal_thruster_particles[k].thruster_particle_bitmap01_nframes, &idontcare, 1);
+					else sip->normal_thruster_particles[k].thruster_particle_bitmap01 = -1;
+				}
+				for( k = 0; k<sip->n_thruster_particles; k++){
+					if(strcmp(sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_name, "none"))sip->afterburner_thruster_particles[k].thruster_particle_bitmap01 = bm_load_animation(sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_name, &sip->afterburner_thruster_particles[k].thruster_particle_bitmap01_nframes, &idontcare, 1);
+					else sip->afterburner_thruster_particles[k].thruster_particle_bitmap01 = -1;
+				}
 		}
 	}
 
@@ -11092,6 +11288,8 @@ void ship_page_in()
 			}
 		}
 	}
+
+
 }
 
 // Goober5000 - called from ship_page_in()

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.3 $
- * $Date: 2003-07-04 02:27:48 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-26 14:37:14 $
+ * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/07/04 02:27:48  phreak
+ * added support for cloaking.
+ * i will need to contact someone who knows d3d to get this to work
+ *
  * Revision 2.2  2003/03/18 10:07:02  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -370,6 +374,9 @@ gr_line(x1,y1,x2,y2)
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
 
+//MAX_POLYGON_NORMS
+#define MAX_POLYGON_TRI_POINTS 5500
+
 // This is a structure used by the shader to keep track
 // of the values you want to use in the shade primitive.
 typedef struct shader {
@@ -397,6 +404,36 @@ typedef struct color {
 	int		alphacolor;
 	int		magic;		
 } color;
+
+#define TL_COMPATABLE D3D_enabled || OGL_inited
+
+//this should be basicly just like it is in the VB
+//a list of triangles and there assosiated normals
+
+struct poly_list{
+	int n_poly;
+	vertex vert[MAX_POLYGON_TRI_POINTS][3];
+	vector norm[MAX_POLYGON_TRI_POINTS][3];
+};
+
+//exactly the same as the light structure from light.cpp, 
+//I did this only becase it wouldn't compile from the header for some reason
+//and becase we may need to add some data to it
+struct light_data {
+	int		type;							// What type of light this is
+	vector	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
+	vector	vec2;							// second point on a tube light
+	vector	local_vec;					// rotated light vector
+	vector	local_vec2;					// rotated 2nd light vector for a tube light
+	float		intensity;					// How bright the light is.
+	float		rada, rada_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
+	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
+	float		r,g,b;						// The color components of the light
+	float		spec_r,spec_g,spec_b;		// The specular color components of the light
+	int		ignore_objnum;				// Don't light this object.  Used to optimize weapons casting light on parents.
+	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
+};
+
 
 #define GR_ALPHABLEND_NONE			0		// no blending
 #define GR_ALPHABLEND_FILTER		1		// 50/50 mix of foreground, background, using intensity as alpha
@@ -632,7 +669,24 @@ typedef struct screen {
 	void (*gf_push_texture_matrix)(int unit);
 	void (*gf_pop_texture_matrix)(int unit);
 
+#ifdef HTL
+	int	 (*gf_make_buffer)(poly_list*);
+	void (*gf_destroy_buffer)(int);
+	void (*gf_render_buffer)(int);
 
+	void (*gf_start_instance_matrix)();
+	void (*gf_end_instance_matrix)();
+
+	int	 (*gf_make_light)(light_data*, int, int );
+	void (*gf_modify_light)(light_data*, int, int );
+	void (*gf_destroy_light)(int);
+	void (*gf_set_light)(int, bool);
+
+	void (*gf_lighting)(bool);
+
+	void (*start_clip_plane)();
+	void (*end_clip_plane)();
+#endif
 } screen;
 
 // cpu types
@@ -823,7 +877,27 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define bm_page_in_xparent_texture 		 GR_CALL(*gr_screen.gf_bm_page_in_xparent_texture)     
 #define bm_page_in_aabitmap				 GR_CALL(*gr_screen.gf_bm_page_in_aabitmap)            
 
- // new bitmap functions
+#ifdef HTL
+#define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
+#define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)            
+#define gr_render_buffer				 GR_CALL(*gr_screen.gf_render_buffer)            
+
+#define gr_start_instance_matrix		 GR_CALL(*gr_screen.gf_start_instance_matrix)            
+#define gr_end_instance_matrix		 GR_CALL(*gr_screen.gf_end_instance_matrix)            
+
+#define	gr_make_light GR_CALL			(*gr_screen.gf_make_light)
+#define	gr_modify_light GR_CALL			(*gr_screen.gf_modify_light)
+#define	gr_destroy_light GR_CALL		(*gr_screen.gf_destroy_light)
+#define	gr_set_light GR_CALL			(*gr_screen.gf_set_light)
+
+#define	gr_set_lighting GR_CALL			(*gr_screen.gf_lighting)
+
+#define	gr_start_clip GR_CALL			(*gr_screen.start_clip_plane)
+#define	gr_end_clip GR_CALL				(*gr_screen.end_clip_plane)
+
+#endif
+
+// new bitmap functions
 extern int Gr_bitmap_poly;
 void gr_bitmap(int x, int y);
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy);
@@ -834,3 +908,4 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy);
 void gr_pline_special(vector **pts, int num_pts, int thickness);
 
 #endif
+

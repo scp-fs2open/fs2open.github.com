@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.6 $
- * $Date: 2003-08-22 07:35:08 $
+ * $Revision: 2.7 $
+ * $Date: 2003-09-26 14:37:14 $
  * $Author: bobboau $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/08/22 07:35:08  bobboau
+ * specular code should be bugless now,
+ * cell shadeing has been added activated via the comand line '-cell',
+ * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
+ *
  * Revision 2.5  2003/08/16 03:52:23  bobboau
  * update for the specmapping code includeing
  * suport for seperate specular levels on lights and
@@ -321,7 +326,7 @@ typedef struct {
     float sx, sy, sz;
   	float nx, ny, nz;
 
-    float tu, tv; 
+    float tu, tv, tu2, tv2; 
 
 } D3DVERTEX;
 
@@ -385,4 +390,5 @@ HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWO
 void d3d_lost_device();
 HRESULT d3d_SetTexture(int stage, IDirect3DBaseTexture8* texture_ptr);
 
+#define VEC2DVEC(v) D3DXVECTOR3(v.xyz.x,v.xyz.y,v.xyz.z)
 #endif //_GRD3DINTERNAL_H

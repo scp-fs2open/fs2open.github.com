@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.49 $
- * $Date: 2003-09-13 06:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2003-09-26 14:37:16 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/09/13 06:02:03  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.45  2003/08/28 20:42:18  Goober5000
  * implemented rotating barrels for firing primary weapons
  * --Goober5000
@@ -763,6 +767,8 @@ typedef struct ship {
 	int next_corkscrew_fire;						// next time to fire a corkscrew missile
 
 	int	final_death_time;				// Time until big fireball starts
+	int	death_time;				// Time until big fireball starts
+	int	end_death_time;				// Time until big fireball starts
 	int	really_final_death_time;	// Time until ship breaks up and disappears
 	vector	deathroll_rotvel;			// Desired death rotational velocity
 	int	dock_objnum_when_dead;		// Objnum of ship docked to when ship died (-1 if none)
@@ -857,6 +863,8 @@ typedef struct ship {
 	int	ship_list_index;					// index of ship in Ship_objs[] array
 
 	int	thruster_bitmap;					// What frame the current thruster bitmap is at for this ship
+	int	secondary_thruster_bitmap;			// What frame the current thruster bitmap is at for this ship
+	int	tertiary_thruster_bitmap;			// What frame the current thruster bitmap is at for this ship
 	float	thruster_frame;					// Used to keep track of which frame the animation should be on.
 
 	int	thruster_glow_bitmap;			// What frame the current thruster engine glow bitmap is at for this ship
@@ -1078,6 +1086,18 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 
+#define	MAX_THRUSTER_PARTICLES 3
+typedef struct thruster_particles{
+	char		thruster_particle_bitmap01_name[NAME_LENGTH];
+	int			thruster_particle_bitmap01;
+	int			thruster_particle_bitmap01_nframes;
+	float		min_rad;
+	float		max_rad;
+	int			n_high;
+	int			n_low;
+	float		variance;
+	}thruster_particles;
+
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
@@ -1128,6 +1148,7 @@ typedef struct ship_info {
 	int	explosion_propagates;				// If true, then the explosion propagates
 	float	shockwave_speed;						// speed at which shockwave expands, 0 means no shockwave
 	int	shockwave_count;						// the # of total shockwaves
+	char shockwave_pof_file[NAME_LENGTH];			// POF file to load/associate with ship's shockwave
 	int shockwave_moddel;
 
 	// subsystem information
@@ -1194,6 +1215,31 @@ typedef struct ship_info {
 	float		ABwidth_factor;	//a number that the width (set by the thruster glow width) will be multiplyed by
 	float		ABAlpha_factor;	//allows you to set how starting trasparency value
 	float		ABlife;			//how long the trails live for
+
+	char		thruster_bitmap1[NAME_LENGTH];
+	char		thruster_bitmap1a[NAME_LENGTH];
+	char		thruster_bitmap2[NAME_LENGTH];
+	char		thruster_bitmap2a[NAME_LENGTH];
+	char		thruster_bitmap3[NAME_LENGTH];
+	char		thruster_bitmap3a[NAME_LENGTH];
+	int			thruster_glow1;
+	int			thruster_glow1a;
+	int			thruster_glow2;
+	int			thruster_glow2a;
+	int			thruster_glow3;
+	int			thruster_glow3a;
+	float		thruster01_rad_factor;
+	float		thruster02_rad_factor;
+	float		thruster02_len_factor;
+	float		thruster03_rad_factor;
+
+	int			n_thruster_particles;
+	int			n_ABthruster_particles;
+	thruster_particles	normal_thruster_particles[MAX_THRUSTER_PARTICLES];
+	thruster_particles	afterburner_thruster_particles[MAX_THRUSTER_PARTICLES];
+
+	int splodeing_texture;
+	char splodeing_texture_name[NAME_LENGTH];
 
 } ship_info;
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-08-31 06:00:42 $
+ * $Revision: 2.5 $
+ * $Date: 2003-09-26 14:37:16 $
  * $Author: bobboau $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/08/31 06:00:42  bobboau
+ * an asortment of bugfixes, mostly with the specular code,
+ * HUD flickering should be completly gone now
+ *
  * Revision 2.3  2003/08/22 07:35:09  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -582,7 +586,7 @@ void shockwave_render(object *objp)
 
 
 
-		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, 0.0f);
+		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, -1.0f);
 	}else{
 		g3_rotate_vertex(&p, &sw->pos );
 	

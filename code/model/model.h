@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.31 $
- * $Date: 2003-09-13 06:02:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2003-09-26 14:37:15 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2003/09/13 06:02:06  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.28  2003/08/28 20:42:18  Goober5000
  * implemented rotating barrels for firing primary weapons
  * --Goober5000
@@ -556,6 +560,14 @@ typedef struct model_special {
 
 #define MAX_LIVE_DEBRIS	7
 
+#ifdef HTL
+struct buffer_data{
+	int vertex_buffer;     //index to a array of pointers to vertex buffers
+	int texture;     //this is the texture the vertex buffer will use
+//other things we may want to keep track of for vertex buffers, like material settings
+};
+#endif
+
 typedef struct bsp_info {
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
 	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
@@ -602,7 +614,12 @@ typedef struct bsp_info {
 	int		num_arcs;												// See model_add_arc for more info	
 	vector	arc_pts[MAX_ARC_EFFECTS][2];	
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
-
+	
+#ifdef HTL
+	int n_buffers;
+	buffer_data buffer[MAX_MODEL_TEXTURES/4];
+	//I figured that, 64 textures per model, half of that would probly be in LOD0, and half of that might be in the main model, I don't think we'd need more than 12 textures (and thus vertex buffers) per submodel
+#endif
 } bsp_info;
 
 
@@ -1255,7 +1272,7 @@ int model_which_octant( vector *pnt, int model_num,matrix *model_orient, vector 
 
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num, vector *length, int bitmapnum, int glow_bitmapnum=-1, float glow_noise=1.0f);
+void model_set_thrust(int model_num, vector *length, int bitmapnum, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false, int secondary_bitmap = -1, int tertiary_thruster_bitmap = -1, vector *rovel = NULL, float trf1 = 1.0f, float trf2 = 1.0f, float trf3 = 1.0f, float tlf = 1.0f);
 
 //=========================================================
 // model caching

@@ -122,6 +122,7 @@ void model_calc_bound_box( vector *box, vector *big_mn, vector *big_mx);
 void interp_clear_instance();
 
 #define MAX_POLYGON_VECS	3500		//6500 (7x)
+//be sure to update 2d.h
 #define MAX_POLYGON_NORMS	5500		//6500 (3x)
 
 extern vector *Interp_verts[MAX_POLYGON_VECS];

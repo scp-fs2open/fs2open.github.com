@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-08-09 06:07:24 $
+ * $Revision: 2.3 $
+ * $Date: 2003-09-26 14:37:15 $
  * $Author: bobboau $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/08/09 06:07:24  bobboau
+ * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -125,6 +128,9 @@ int			Canvas_height;		// The actual height
 float			Canv_w2;				// Canvas_width / 2
 float			Canv_h2;				// Canvas_height / 2
 
+vector Object_position;
+matrix	Object_matrix;			// Where the viewer's eye is pointing in World coordinates
+
 //vertex buffers for polygon drawing and clipping
 vertex * Vbuf0[TMAP_MAX_VERTS];
 vertex * Vbuf1[TMAP_MAX_VERTS];
@@ -136,6 +142,8 @@ struct instance_context {
 	vector p;
 	matrix lm;
 	vector lb;
+	matrix om;
+	vector op;
 } instance_stack[MAX_INSTANCE_DEPTH];
 
 int instance_depth = 0;
@@ -233,6 +241,8 @@ void g3_set_view_matrix(vector *view_pos,matrix *view_matrix,float zoom)
 	Light_base.xyz.y = 0.0f;
 	Light_base.xyz.z = 0.0f;
 
+	vm_vec_zero(&Object_position);
+	Object_matrix = vmd_identity_matrix;
 }
 
 
@@ -306,12 +316,15 @@ void g3_start_instance_matrix(vector *pos,matrix *orient)
 	instance_stack[instance_depth].p = View_position;
 	instance_stack[instance_depth].lm = Light_matrix;
 	instance_stack[instance_depth].lb = Light_base;
+	instance_stack[instance_depth].om = Object_matrix;
+	instance_stack[instance_depth].op = Object_position;
 	instance_depth++;
 
 	// Make sure orient is valid
 	if (!orient) {
 		orient = &vmd_identity_matrix;		// Assume no change in orient
 	}
+
 
 	if ( pos )	{
 		//step 1: subtract object position from view position
@@ -320,6 +333,11 @@ void g3_start_instance_matrix(vector *pos,matrix *orient)
 		//step 2: rotate view vector through object matrix
 		vm_vec_rotate(&tempv,&View_position,orient);
 		View_position = tempv;
+
+		vm_copy_transpose_matrix(&tempm2,&Object_matrix);
+		vm_vec_rotate(&tempv,pos,&tempm2);
+		vm_vec_add(&Object_position, &Object_position, &tempv);
+//		Object_position = tempv;
 	} else {
 		// No movement, leave View_position alone
 	}
@@ -330,6 +348,8 @@ void g3_start_instance_matrix(vector *pos,matrix *orient)
 	vm_matrix_x_matrix(&tempm,&tempm2,&View_matrix);
 	View_matrix = tempm;
 
+	vm_matrix_x_matrix(&Object_matrix,orient,&instance_stack[instance_depth-1].om);
+//	Object_matrix = tempm;
 
 	// Update the lighting matrix
 	matrix saved_orient = Light_matrix;
@@ -380,6 +400,8 @@ void g3_done_instance()
 	View_matrix = instance_stack[instance_depth].m;
 	Light_matrix = instance_stack[instance_depth].lm;
 	Light_base = instance_stack[instance_depth].lb;
+	Object_matrix = instance_stack[instance_depth].om;
+	Object_position = instance_stack[instance_depth].op;
 
 }
 
@@ -413,10 +435,14 @@ void g3_start_user_clip_plane( vector *plane_point, vector *plane_normal )
 	}
 
 	G3_user_clip = 1;
-//	G3_user_clip_normal = *plane_normal;
-//	G3_user_clip_point = *plane_point;
+#ifdef HTL
+	G3_user_clip_normal = *plane_normal;
+	G3_user_clip_point = *plane_point;
 //	return;
 
+
+	gr_start_clip();
+#endif
 	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &View_matrix );
 	vm_vec_normalize(&G3_user_clip_normal);
 
@@ -429,6 +455,9 @@ void g3_start_user_clip_plane( vector *plane_point, vector *plane_normal )
 void g3_stop_user_clip_plane()
 {
 	G3_user_clip = 0;
+#ifdef HTL
+	gr_end_clip();
+#endif
 }
 
 // Returns TRUE if point is behind user plane
