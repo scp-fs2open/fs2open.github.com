@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.9 $
- * $Date: 2002-12-27 02:57:51 $
+ * $Revision: 2.10 $
+ * $Date: 2003-01-01 23:33:34 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2002/12/27 02:57:51  Goober5000
+ * removed the existing stealth sexps and replaced them with the following...
+ * ship-stealthy
+ * ship-unstealthy
+ * is-ship-stealthy
+ * friendly-stealth-invisible
+ * friendly-stealth-visible
+ * is-friendly-stealth-visible
+ * --Goober5000
+ *
  * Revision 2.8  2002/12/23 05:18:52  Goober5000
  * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
  * one ship would return after only dealing with the first ship.
@@ -1636,6 +1646,9 @@ int parse_create_object(p_object *objp)
 
 	if ( objp->flags & P_SIF2_FRIENDLY_STEALTH_INVISIBLE )
 		Ship_info[Ships[shipnum].ship_info_index].flags2 |= SIF2_FRIENDLY_STEALTH_INVISIBLE;
+
+	if ( objp->flags & P_SF_VAPORIZE )
+		Ship_info[Ships[shipnum].ship_info_index].flags |= SF_VAPORIZE;
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
