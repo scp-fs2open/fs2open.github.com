@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-03-20 00:11:27 $
+ * $Revision: 2.37 $
+ * $Date: 2005-03-23 20:08:33 $
  * $Author: phreak $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/03/20 00:11:27  phreak
+ * high-level implementation for gr_draw_htl_line and gr_draw_htl_sphere
+ *
  * Revision 2.35  2005/03/19 18:02:34  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -2310,20 +2313,20 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 			// stuff texture coords
 			v[0].u = ui * float(idx);
 			v[0].v = vi * float(s_idx);
-			v[0].spec_r=v[2].spec_g=v[3].spec_b=0;
+			v[0].spec_r=v[0].spec_g=v[0].spec_b=0;
 			
 			v[1].u = ui * float(idx+1);
 			v[1].v = vi * float(s_idx);
-			v[1].spec_r=v[2].spec_g=v[3].spec_b=0;
+			v[1].spec_r=v[1].spec_g=v[1].spec_b=0;
 
 			v[2].u = ui * float(idx+1);
 			v[2].v = vi * float(s_idx+1);
-			v[2].spec_r=v[2].spec_g=v[3].spec_b=0;
+			v[2].spec_r=v[2].spec_g=v[2].spec_b=0;
 
 
 			v[3].u = ui * float(idx);
 			v[3].v = vi * float(s_idx+1);
-			v[3].spec_r=v[2].spec_g=v[3].spec_b=0;
+			v[3].spec_r=v[3].spec_g=v[3].spec_b=0;
 
 			// poly 1
 			v[0].flags = 0;
