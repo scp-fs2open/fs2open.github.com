@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.92 $
- * $Date: 2004-05-27 00:49:25 $
+ * $Revision: 2.93 $
+ * $Date: 2004-05-30 08:04:48 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2004/05/27 00:49:25  wmcoolmon
+ * Made HUD.tbl obsolete. Info is now taken directly from $Shield_icon in ships.tbl
+ * Now this table can be used for something more useful...say, hud gauge positions?
+ *
  * Revision 2.91  2004/05/03 21:22:20  Kazan
  * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
  * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
@@ -980,6 +984,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "hud/hudmessage.h"
 #include "hud/hudshield.h"
 #include "hud/hudtargetbox.h"
+#include "hud/hudparse.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
 #include "io/key.h"
@@ -2968,6 +2973,7 @@ void game_init()
 	anim_init();
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info  
+	hud_positions_init();		//Setup hud positions
 	
 #ifndef NO_NETWORK
 	// initialize psnet

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.4 $
- * $Date: 2004-03-05 09:02:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2004-05-30 08:04:49 $
+ * $Author: wmcoolmon $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/03/05 09:02:03  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.3  2003/01/17 07:59:09  Goober5000
  * fixed some really strange behavior with strings not being truncated at the
  * # symbol
@@ -272,6 +276,8 @@
 
 struct object;
 
+struct hud_info;
+
 typedef struct hud_anim
 {
 	char	name[MAX_FILENAME_LEN];
@@ -294,6 +300,9 @@ typedef struct hud_frames_info
 	char	*name;
 	int	x, y;
 } hud_frames_info;
+
+//Current HUD to use for info -C
+extern hud_info* current_hud;
 
 #define HUD_NUM_COLOR_LEVELS	16
 extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];
