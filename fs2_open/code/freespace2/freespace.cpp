@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.132 $
- * $Date: 2005-03-13 08:04:43 $
- * $Author: taylor $
+ * $Revision: 2.133 $
+ * $Date: 2005-03-14 06:36:30 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2005/03/13 08:04:43  taylor
+ * fix various compiler warning messages
+ * make sure screenshot count doesn't get too high
+ * fix movies playing twice in redalert missions
+ * reset time compression for redalert missions and cmdbriefings, just in case
+ *
  * Revision 2.131  2005/03/10 08:00:02  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -2401,6 +2407,42 @@ void game_loading_callback(int count)
 		memset( Processing_filename, 0, MAX_PATH_LEN );
 	}
 #endif
+	#define MAX_PATH          260
+extern int Cmdline_show_mem_usage;
+#ifndef NDEBUG
+	if(Cmdline_show_mem_usage)
+	{
+#ifdef _WIN32
+		void memblockinfo_sort();
+		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
+
+		char mem_buffer[1000];
+		char filename[MAX_PATH];
+		int size;
+	  	memblockinfo_sort();
+		for(int i = 0; i < 30; i++)
+		{
+			memblockinfo_sort_get_entry(i, filename, &size);
+
+			size /= 1024;
+
+			if(size == 0)
+				break;
+
+			char *short_name = strrchr(filename, '\\');
+			if(short_name == NULL)
+				short_name = filename;
+			else
+				short_name++;
+
+			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
+			gr_string( 20, 220 + (i*10), mem_buffer);
+		}
+		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
+		gr_string( 20, 230 + (i*10), mem_buffer);
+#endif
+	}
+#endif
 	if(cbitmap != -1)last_cbitmap = cbitmap;
 
 	if (do_flip) {
@@ -4358,7 +4400,7 @@ void setup_environment_mapping(vector *eye_pos, matrix *eye_orient){
 //		vector old_position = Eye_position;
 		matrix new_orient;
 		float old_zoom = View_zoom, new_zoom = 0.925f;
-		vector nv = ZERO_VECTOR;
+//		vector nv = ZERO_VECTOR;
 		int i = 0;
 
 		{
@@ -6253,12 +6295,17 @@ int game_poll()
 
 				// we could probably go with .3 here for 1,000 shots but people really need to clean out
 				// their directories better than that so it's 100 for now.
-				sprintf( tmp_name, NOX("screen%.2i"), counter );
+				sprintf( tmp_name, NOX("screen%.4i"), counter );
 				counter++;
 
 				// we've got two character precision so we can only have 100 shots at a time, reset if needed
-				if (counter > 99)
+				//Now we have four digit precision :) -WMC
+				if (counter > 9999)
+				{
+					//This should pop up a dialogue or something ingame.
+					Warning(LOCATION, "Screenshot count has reached max of 9999. Resetting to 0.");
 					counter = 0;
+				}
 
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
 				gr_print_screen(tmp_name);
@@ -8337,7 +8384,6 @@ int WinMainSub(int argc, char *argv[])
 #else
    parse_cmdline(argc, argv);
 #endif
-
 
 #ifndef NO_NETWORK
 #ifdef STANDALONE_ONLY_BUILD
