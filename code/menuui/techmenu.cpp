@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-06 22:46:26 $
- * $Author: phreak $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-09 06:31:40 $
+ * $Author: Kazan $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/06 22:46:26  phreak
+ * added gr_start_**_matrix() and gr_end_**_matrix() around where ships are rendered
+ *
  * Revision 2.9  2003/09/26 14:37:15  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -840,9 +843,12 @@ void techroom_ships_render(float frametime)
 	model_set_detail_level(0);
 	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER);
 
-	if (!Cmdline_nohtl)gr_end_view_matrix();
-	if (!Cmdline_nohtl)gr_end_proj_matrix();
-	
+	if (!Cmdline_nohtl)
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+
 	g3_end_frame();
 #endif
 

@@ -10,11 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.36 $
- * $Date: 2003-11-09 04:09:18 $
- * $Author: Goober5000 $
+
+ * $Revision: 2.37 $
+ * $Date: 2003-11-09 06:31:38 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/11/09 04:09:18  Goober5000
+ * edited for language
+ * --Goober5000
+ *
  * Revision 2.35  2003/11/08 22:25:47  Kazan
  * Timerbar was enabled in both release and debug - so i made it a command line option "-timerbar"
  * DONT MESS WITH OTHER PEOPLES INCLUDE PATHS

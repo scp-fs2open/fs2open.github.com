@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-11-06 22:45:55 $
- * $Author: phreak $
+ * $Revision: 2.9 $
+ * $Date: 2003-11-09 06:31:40 $
+ * $Author: Kazan $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/11/06 22:45:55  phreak
+ * added gr_start_**_matrix() and gr_end_**_matrix() around where ships are rendered
+ *
  * Revision 2.7  2003/09/07 18:14:54  randomtiger
  * Checked in new speech code and calls from relevent modules to make it play.
  * Should all work now if setup properly with version 2.4 of the launcher.
@@ -1463,8 +1466,11 @@ void brief_render_closeup(int ship_class, float frametime)
 		The_mission.flags |= MISSION_FLAG_FULLNEB;
 	}
 
-	if (!Cmdline_nohtl) gr_end_view_matrix();
-	if (!Cmdline_nohtl) gr_end_proj_matrix();
+	if (!Cmdline_nohtl)
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
 
 	g3_end_frame();
 

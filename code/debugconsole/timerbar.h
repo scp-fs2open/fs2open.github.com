@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/debugconsole/timerbar.h $
- * $Revision: 1.5 $
- * $Date: 2003-11-09 04:09:17 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2003-11-09 06:31:39 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2003/11/09 04:09:17  Goober5000
+ * edited for language
+ * --Goober5000
+ *
  * Revision 1.4  2003/11/08 22:25:47  Kazan
  * Timerbar was enabled in both release and debug - so i made it a command line option "-timerbar"
  * DONT MESS WITH OTHER PEOPLES INCLUDE PATHS

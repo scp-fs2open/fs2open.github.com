@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.55 $
- * $Date: 2003-11-07 18:31:02 $
- * $Author: randomtiger $
+ * $Revision: 2.56 $
+ * $Date: 2003-11-09 06:31:39 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2003/11/07 18:31:02  randomtiger
+ * Fixed a nohtl call to htl funcs (crash with NULL pointer)
+ * Fixed a bug with 32bit PCX code.
+ * Fixed a bug in the d3d_string batch system that was messing up screen shaking.
+ * Added a couple of checks to try and stop timerbar push and pop overloads, check returns missing pops if you use the system.
+ * Put in a higher res icon until we get something better sorted out.
+ *
  * Revision 2.54  2003/11/06 22:47:37  phreak
  * added gr_start_**_matrix() and gr_end_**_matrix() around where 3d stuff is rendered
  *
@@ -4108,8 +4115,11 @@ void game_render_frame( vector * eye_pos, matrix * eye_orient )
 #endif
 #endif
 
-	gr_end_proj_matrix();
-	gr_end_view_matrix();
+	if(!Cmdline_nohtl)
+	{
+		gr_end_proj_matrix();
+		gr_end_view_matrix();
+	}
 	//================ END OF 3D RENDERING STUFF ====================
 
 	hud_show_radar();

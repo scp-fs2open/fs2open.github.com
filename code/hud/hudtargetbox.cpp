@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-11-06 22:47:02 $
- * $Author: phreak $
+ * $Revision: 2.21 $
+ * $Date: 2003-11-09 06:31:39 $
+ * $Author: Kazan $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/11/06 22:47:02  phreak
+ * added gr_start_**_matrix() and gr_end_**_matrix() around where ships are rendered
+ *
  * Revision 2.19  2003/09/13 08:27:29  Goober5000
  * added some minor things, such as code cleanup and the following:
  * --turrets will not fire at cargo
@@ -705,8 +708,11 @@ void hud_render_target_setup(vector *camera_eye, matrix *camera_orient, float zo
 //
 void hud_render_target_close()
 {
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
+	if(!Cmdline_nohtl)
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
 	g3_end_frame();
 	hud_save_restore_camera_data(0);
 }
