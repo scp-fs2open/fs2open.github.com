@@ -950,6 +950,10 @@ int parse_weapon()
 	stuff_float(&wip->damage);
 
 	// secondary weapons require these values
+	wip->blast_force = 0;
+	wip->inner_radius = 0;
+	wip->outer_radius = 0;
+	wip->shockwave_speed = 0;
 	if (First_secondary_index != -1) {
 		required_string("$Blast Force:");
 		stuff_float( &(wip->blast_force) );
@@ -1177,8 +1181,17 @@ int parse_weapon()
 		// ballistic
 		if (wip->wi_flags2 & WIF2_BALLISTIC)
 		{
-			Warning(LOCATION, "Secondary weapons can't be ballistic.  Removing this flag...\n");
+			Warning(LOCATION, "Secondary weapon %s can't be ballistic.  Removing this flag...\n", wip->name);
 			wip->wi_flags2 &= ~WIF2_BALLISTIC;
+		}
+	}
+
+	// also make sure EMP is friendly - Goober5000
+	if (wip->wi_flags & WIF_EMP)
+	{
+		if (!wip->outer_radius)
+		{
+			Warning(LOCATION, "Outer blast radius of weapon %s is zero - EMP will not work.\nAdd $Outer Radius to weapon table entry.\n", wip->name);
 		}
 	}
 
