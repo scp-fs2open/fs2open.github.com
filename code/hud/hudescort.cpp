@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-06-26 03:19:53 $
+ * $Revision: 2.8 $
+ * $Date: 2004-06-27 01:47:16 $
  * $Author: wmcoolmon $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/06/26 03:19:53  wmcoolmon
+ * Displayed escorts now settable up to MAX_COMPLETE_ESCORT_LIST via "$Max Escort Ships:" in hud_gauges.tbl
+ * Escort list is now hud_gauges.tbl compatible.
+ *
  * Revision 2.6  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -256,10 +260,13 @@ void hud_escort_init()
 
 	if ( !Escort_gauges_loaded ) {
 		for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
-			Escort_gauges[i].first_frame = bm_load_animation(current_hud->Escort_filename[i], &Escort_gauges[i].num_frames);
-			if ( Escort_gauges[i].first_frame == -1 ) {
-				Warning(LOCATION, "Could not load in ani: %s\n", current_hud->Escort_filename[i]);
-				return;
+			if(strlen(current_hud->Escort_filename[i]))
+			{
+				Escort_gauges[i].first_frame = bm_load_animation(current_hud->Escort_filename[i], &Escort_gauges[i].num_frames);
+				if ( Escort_gauges[i].first_frame == -1) {
+					Warning(LOCATION, "Could not load in ani: %s\n", current_hud->Escort_filename[i]);
+					return;
+				}
 			}
 		}
 		Escort_gauges_loaded = 1;
@@ -717,7 +724,8 @@ void hud_escort_show_icon(int x, int y, int index)
 #ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && index <= 2)
 	{
-		return hud_escort_show_icon_dogfight(x, y, index);
+		hud_escort_show_icon_dogfight(x, y, index);
+		return;
 	}
 #endif
 
