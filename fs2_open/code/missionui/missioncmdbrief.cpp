@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-03-30 21:08:42 $
+ * $Revision: 2.4 $
+ * $Date: 2003-04-05 08:46:51 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/03/30 21:08:42  Goober5000
+ * preliminary work on adding scroll buttons to command briefings
+ * --Goober5000
+ *
  * Revision 2.2  2003/03/18 10:07:04  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -254,15 +258,31 @@
 #include "anim/animplay.h"
 #include "debugconsole/dbugfile.h"
 
-char *Cmd_brief_fname[GR_NUM_RESOLUTIONS] = {
-	"CommandBrief",
-	"2_CommandBrief"
+#define NUM_CMD_SETTINGS	2
+
+char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] = {
+	{
+		"CommandBrief",
+		"2_CommandBrief"
+	},
+	{
+		"CommandBriefb",
+		"2_CommandBriefb"
+	}
 };
 
-char *Cmd_brief_mask[GR_NUM_RESOLUTIONS] = {
-	"CommandBrief-m",
-	"2_Commandbrief-m"
+
+char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] = {
+	{
+		"CommandBrief-m",
+		"2_CommandBrief-m"
+	},
+	{
+		"CommandBrief-mb",
+		"2_CommandBrief-mb"
+	},
 };
+
 
 // lookups for coordinates
 #define CMD_X_COORD 0
@@ -270,12 +290,24 @@ char *Cmd_brief_mask[GR_NUM_RESOLUTIONS] = {
 #define CMD_W_COORD 2
 #define CMD_H_COORD 3
 
-int Cmd_text_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
+int Cmd_text_wnd_coords[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS][4] = {
+	// original
 	{
-		17, 109, 606, 108			// GR_640
+		{
+			17, 109, 606, 108			// GR_640
+		},
+		{
+			28, 174, 969, 174			// GR_1024
+		}
 	},
+	// buttons
 	{
-		28, 174, 969, 174			// GR_1024
+		{
+			17, 109, 587, 108			// GR_640
+		},
+		{
+			28, 174, 939, 174			// GR_1024
+		}
 	}
 };
 
@@ -294,7 +326,14 @@ int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-#define NUM_BUTTONS	8
+int Top_cmd_brief_text_line;
+int Cmd_brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
+	10, 17
+};
+
+#define MAX_CMD_BRIEF_BUTTONS	10
+#define MIN_CMD_BRIEF_BUTTONS	8
+#define NUM_CMD_BRIEF_BUTTONS	(Uses_scroll_buttons ? MAX_CMD_BRIEF_BUTTONS : MIN_CMD_BRIEF_BUTTONS)
 
 #define CMD_BRIEF_BUTTON_FIRST_STAGE	0
 #define CMD_BRIEF_BUTTON_PREV_STAGE		1
@@ -308,7 +347,7 @@ int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
 #define CMD_BRIEF_BUTTON_SCROLL_DOWN	9
 
 // buttons
-ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
+ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][MAX_CMD_BRIEF_BUTTONS] = {
 	{ // GR_640
 		ui_button_info("CBB_00",	504,	221,	-1,	-1,	0),
 		ui_button_info("CBB_01",	527,	221,	-1,	-1,	1),
@@ -318,6 +357,8 @@ ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		ui_button_info("CBB_05",	539,	431,	-1,	-1,	5),
 		ui_button_info("CBB_06",	538,	455,	-1,	-1,	6),
 		ui_button_info("CBB_07",	575,	432,	-1,	-1,	7),
+		ui_button_info("CBB_08",	615,	144,	-1,	-1,	8),
+		ui_button_info("CBB_09",	615,	186,	-1,	-1,	9),
 	},
 	{ // GR_1024
 		ui_button_info("2_CBB_00",	806,	354,	-1,	-1,	0),
@@ -328,6 +369,8 @@ ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		ui_button_info("2_CBB_05",	863,	690,	-1,	-1,	5),
 		ui_button_info("2_CBB_06",	861,	728,	-1,	-1,	6),
 		ui_button_info("2_CBB_07",	920,	692,	-1,	-1,	7),
+		ui_button_info("2_CBB_08",	985,	232,	-1,	-1,	8),
+		ui_button_info("2_CBB_09",	985,	299,	-1,	-1,	9),
 	}
 };
 
@@ -347,9 +390,8 @@ UI_XSTR Cmd_brief_text[GR_NUM_RESOLUTIONS][CMD_BRIEF_NUM_TEXT] = {
 };
 
 static UI_WINDOW Ui_window;
-static int Background_bitmap;					// bitmap for the background of the cmd_briefing
+static int Cmd_brief_background_bitmap;					// bitmap for the background of the cmd_briefing
 static int Cur_stage;
-static int Scroll_offset;
 static int Cmd_brief_inited = 0;
 // static int Cmd_brief_ask_for_cd;
 static int Voice_good_to_go = 0;
@@ -363,6 +405,8 @@ static int Cmd_brief_last_voice;
 static int Palette_bmp = -1;
 static ubyte Palette[768];
 static char Palette_name[128];
+
+static int Uses_scroll_buttons = 0;
 
 void cmd_brief_init_voice()
 {
@@ -482,7 +526,7 @@ void cmd_brief_new_stage(int stage)
 	}
 
 	Cur_stage = stage;
-	brief_color_text_init(Cur_cmd_brief->stage[stage].text, Cmd_text_wnd_coords[gr_screen.res][CMD_W_COORD]);
+	brief_color_text_init(Cur_cmd_brief->stage[stage].text, Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]);
 
 	i = Cur_cmd_brief->stage[Cur_stage].anim_ref;
 	if (i < 0)
@@ -505,6 +549,8 @@ void cmd_brief_new_stage(int stage)
 		memcpy(Palette, Cur_cmd_brief->stage[i].anim->palette, 384);
 		gr_set_palette(Cur_cmd_brief->stage[i].ani_filename, Palette, 1);
 	}
+
+	Top_cmd_brief_text_line = 0;
 }
 
 void cmd_brief_hold()
@@ -578,6 +624,26 @@ void cmd_brief_button_pressed(int n)
 		case CMD_BRIEF_BUTTON_PAUSE:
 			gamesnd_play_iface(SND_USER_SELECT);
 			Player->auto_advance ^= 1;
+			break;
+
+		case CMD_BRIEF_BUTTON_SCROLL_UP:
+			Top_cmd_brief_text_line--;
+			if ( Top_cmd_brief_text_line < 0 ) {
+				Top_cmd_brief_text_line = 0;
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+			} else {
+				gamesnd_play_iface(SND_SCROLL);
+			}
+			break;
+
+		case CMD_BRIEF_BUTTON_SCROLL_DOWN:
+			Top_cmd_brief_text_line++;
+			if ( (Num_brief_text_lines[0] - Top_cmd_brief_text_line) < Cmd_brief_text_max_lines[gr_screen.res]) {
+				Top_cmd_brief_text_line--;
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+			} else {
+				gamesnd_play_iface(SND_SCROLL);
+			}
 			break;
 	}
 }
@@ -667,12 +733,21 @@ void cmd_brief_init(int team)
 	gr_set_palette(Palette_name, Palette, 1);
 	*/
 
+	// first determine which layout to use
+	Uses_scroll_buttons = 1;	// assume true
+	Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);	// try to load extra one first
+	if (Cmd_brief_background_bitmap < 0)	// failed to load
+	{
+		Uses_scroll_buttons = 0;	// nope, sorry
+		Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);
+	}
+
 	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
-	Ui_window.set_mask_bmap(Cmd_brief_mask[gr_screen.res]);
+	Ui_window.set_mask_bmap(Cmd_brief_mask[Uses_scroll_buttons][gr_screen.res]);
 
 	// Cmd_brief_ask_for_cd = 1;
 
-	for (i=0; i<NUM_BUTTONS; i++) {
+	for (i=0; i<NUM_CMD_BRIEF_BUTTONS; i++) {
 		b = &Cmd_brief_buttons[gr_screen.res][i];
 
 		b->button.create(&Ui_window, "", b->x, b->y, 60, 30, 0, 1);
@@ -696,17 +771,21 @@ void cmd_brief_init(int team)
 	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_HELP].button.set_hotkey(KEY_F1);
 	Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_OPTIONS].button.set_hotkey(KEY_F2);
 
+	// extra - Goober5000
+	if (Uses_scroll_buttons)
+	{
+		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_SCROLL_UP].button.set_hotkey(KEY_UP);
+		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_SCROLL_DOWN].button.set_hotkey(KEY_DOWN);
+	}
+
 	// load in help overlay bitmap	
 	help_overlay_load(CMD_BRIEF_OVERLAY);
 	help_overlay_set_state(CMD_BRIEF_OVERLAY,0);
-
-	Background_bitmap = bm_load(Cmd_brief_fname[gr_screen.res]);
 
 	for (i=0; i<Cur_cmd_brief->num_stages; i++)
 		cmd_brief_ani_wave_init(i);
 
 	cmd_brief_init_voice();
-	Scroll_offset = 0;
 	Cur_anim_instance = NULL;
 	cmd_brief_new_stage(0);
 	Cmd_brief_inited = 1;
@@ -730,8 +809,8 @@ void cmd_brief_close()
 					anim_free(Cur_cmd_brief->stage[i].anim);
 		}
 
-		if (Background_bitmap >= 0)
-			bm_unload(Background_bitmap);
+		if (Cmd_brief_background_bitmap >= 0)
+			bm_unload(Cmd_brief_background_bitmap);
 
 		// unload the overlay bitmap
 		help_overlay_unload(CMD_BRIEF_OVERLAY);
@@ -785,7 +864,7 @@ void cmd_brief_do_frame(float frametime)
 		break;
 	}	// end switch
 
-	for (i=0; i<NUM_BUTTONS; i++){
+	for (i=0; i<NUM_CMD_BRIEF_BUTTONS; i++){
 		if (Cmd_brief_buttons[gr_screen.res][i].button.pressed()){
 			cmd_brief_button_pressed(i);
 		}
@@ -805,9 +884,9 @@ void cmd_brief_do_frame(float frametime)
 		Last_anim_frame_num = Cur_anim_instance->frame_num;
 	}
 
-	GR_MAYBE_CLEAR_RES(Background_bitmap);
-	if (Background_bitmap >= 0) {
-		gr_set_bitmap(Background_bitmap);
+	GR_MAYBE_CLEAR_RES(Cmd_brief_background_bitmap);
+	if (Cmd_brief_background_bitmap >= 0) {
+		gr_set_bitmap(Cmd_brief_background_bitmap);
 		gr_bitmap(0, 0);
 	} 
 
@@ -829,10 +908,23 @@ void cmd_brief_do_frame(float frametime)
 
 	sprintf(buf, XSTR( "Stage %d of %d", 464), Cur_stage + 1, Cur_cmd_brief->num_stages);
 	gr_get_string_size(&w, NULL, buf);
-	gr_string(Cmd_text_wnd_coords[gr_screen.res][CMD_X_COORD] + Cmd_text_wnd_coords[gr_screen.res][CMD_W_COORD] - w, Cmd_stage_y[gr_screen.res], buf);
+	gr_string(Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD] - w, Cmd_stage_y[gr_screen.res], buf);
 
-	if (brief_render_text(Scroll_offset, Cmd_text_wnd_coords[gr_screen.res][CMD_X_COORD], Cmd_text_wnd_coords[gr_screen.res][CMD_Y_COORD], Cmd_text_wnd_coords[gr_screen.res][CMD_H_COORD], frametime, 0, 1)){
+	if (brief_render_text(Top_cmd_brief_text_line, Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD], Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD], Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD], frametime, 0, 1)){
 		Voice_good_to_go = 1;
+	}
+
+	// maybe output the "more" indicator
+	if ( (Cmd_brief_text_max_lines[gr_screen.res] + Top_cmd_brief_text_line + 2) < Num_brief_text_lines[0] ) {
+		// can be scrolled down
+		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2);// - 10;
+		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered
+		int w, h;
+		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
+		gr_set_color_fast(&Color_black);
+		gr_rect(more_txt_x-2, more_txt_y, w+3, h);
+		gr_set_color_fast(&Color_red);
+		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469));  // base location on the input x and y?
 	}
 
 	// blit help overlay if active
