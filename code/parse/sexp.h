@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.6 $
+ * $Revision: 2.7 $
  * $Author: Goober5000 $
- * $Date: 2002-12-02 23:56:12 $
+ * $Date: 2002-12-12 08:01:57 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/12/02 23:56:12  Goober5000
+ * fixed misspelling
+ *
  * Revision 2.5  2002/12/02 20:37:26  Goober5000
  * fixed misspelling of "category" as "catagory"
  *
@@ -325,14 +328,14 @@
 #define	MAX_OPERATORS	200  // Yes, this is used, but not by the Sexp code.
 
 // Operator argument formats (data types of an argument)
-#define	OPF_NONE					1  // argument cannot exist at this position if it's this
-#define	OPF_NULL					2  // no value.  Can still be used for type matching, however
-#define	OPF_BOOL					3
+#define	OPF_NONE				1		// argument cannot exist at this position if it's this
+#define	OPF_NULL				2		// no value.  Can still be used for type matching, however
+#define	OPF_BOOL				3
 #define	OPF_NUMBER				4
-#define	OPF_SHIP					5
-#define	OPF_WING					6
+#define	OPF_SHIP				5
+#define	OPF_WING				6
 #define	OPF_SUBSYSTEM			7
-#define	OPF_POINT				8  // either a 3d point in space, or a waypoint name
+#define	OPF_POINT				8		// either a 3d point in space, or a waypoint name
 #define	OPF_IFF					9
 #define	OPF_AI_GOAL				10		// special to match ai goals
 #define	OPF_DOCKER_POINT		11		// docking point on docker ship
@@ -346,22 +349,22 @@
 #define	OPF_SHIP_POINT			19		// a waypoint or a ship
 #define	OPF_GOAL_NAME			20		// name of goal (or maybe event?) from a mission
 #define	OPF_SHIP_WING			21		// either a ship or wing name (they don't conflict)
-#define	OPF_SHIP_WING_POINT	22		// name of a ship, wing, or a point
+#define	OPF_SHIP_WING_POINT		22		// name of a ship, wing, or a point
 #define	OPF_SHIP_TYPE			23		// type of ship (fighter/bomber/etc)
 #define	OPF_KEYPRESS			24		// a default key
 #define	OPF_EVENT_NAME			25		// name of an event
 #define	OPF_AI_ORDER			26		// a squadmsg order player can give to a ship
-#define	OPF_SKILL_LEVEL		27		// current skill level of the game
+#define	OPF_SKILL_LEVEL			27		// current skill level of the game
 #define	OPF_MEDAL_NAME			28		// name of medals
-#define	OPF_WEAPON_NAME		29		// name of a weapon
-#define	OPF_SHIP_CLASS_NAME	30		// name of a ship class
-#define	OPF_HUD_GAUGE_NAME	31		// name of HUD gauge
-#define	OPF_HUGE_WEAPON		32		// name of a secondary bomb type weapon
-#define	OPF_SHIP_NOT_PLAYER	33		// a ship, but not a player ship
-#define	OPF_JUMP_NODE_NAME	34		// name of a jump node
+#define	OPF_WEAPON_NAME			29		// name of a weapon
+#define	OPF_SHIP_CLASS_NAME		30		// name of a ship class
+#define	OPF_HUD_GAUGE_NAME		31		// name of HUD gauge
+#define	OPF_HUGE_WEAPON			32		// name of a secondary bomb type weapon
+#define	OPF_SHIP_NOT_PLAYER		33		// a ship, but not a player ship
+#define	OPF_JUMP_NODE_NAME		34		// name of a jump node
 #define	OPF_VARIABLE_NAME		35		// variable name
 #define	OPF_AMBIGUOUS			36		// type used with variable
-#define	OPF_AWACS_SUBSYSTEM	37		// an awacs subsystem
+#define	OPF_AWACS_SUBSYSTEM		37		// an awacs subsystem
 
 // Operand return types
 #define	OPR_NUMBER		1	// returns number
@@ -451,9 +454,10 @@
 #define	OP_HITS_LEFT							(0x0001 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_HITS_LEFT_SUBSYSTEM				(0x0002 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_DISTANCE								(0x0003 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define	OP_LAST_ORDER_TIME					(0x0004 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define	OP_NUM_PLAYERS							(0x0005 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-#define	OP_SKILL_LEVEL_AT_LEAST				(0x0006 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define	OP_DISTANCE_SUBSYSTEM						(0x0004 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define	OP_LAST_ORDER_TIME					(0x0005 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define	OP_NUM_PLAYERS							(0x0006 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define	OP_SKILL_LEVEL_AT_LEAST				(0x0007 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_WAS_PROMOTION_GRANTED			(0x0008 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_WAS_MEDAL_GRANTED					(0x0009 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_CARGO_KNOWN_DELAY					(0x000a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
@@ -473,7 +477,6 @@
 #define	OP_SPECIAL_WARP_DISTANCE			(0X0018 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_IS_SHIP_VISIBLE					(0X0019 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_TEAM_SCORE							(0X0020 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
-
 
 
 // conditional sexpressions
