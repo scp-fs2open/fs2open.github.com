@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-12-10 05:43:34 $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-13 08:13:29 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/12/10 05:43:34  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.4  2002/12/03 23:05:13  Goober5000
  * implemented beam-free-all-by-default mission flag
  *
@@ -1553,7 +1556,8 @@ int parse_create_object(p_object *objp)
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
 	// Goober5000
-	if (objp->flags & P_OF_NO_LASERS || sip->max_weapon_reserve < 0.01f)
+	// (to avoid round-off errors, weapon reserve is not tested for zero)
+	if (objp->flags & P_OF_NO_LASERS || Ship_info[objp->ship_class].max_weapon_reserve < WEAPON_RESERVE_THRESHOLD)
 		Objects[objnum].flags |= OF_NO_LASERS;
 
 	// Goober5000

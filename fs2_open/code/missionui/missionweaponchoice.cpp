@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-12-10 05:43:33 $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-13 08:13:28 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/12/10 05:43:33  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.1  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -1967,7 +1970,7 @@ void wl_add_index_to_list(int wi_index)
 	}
 }
 
-// remove the weapons specificed by wep[] and wep_count[] from Wl_pool[].
+// remove the weapons specified by wep[] and wep_count[] from Wl_pool[].
 void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 {
 	int i, wi_index;

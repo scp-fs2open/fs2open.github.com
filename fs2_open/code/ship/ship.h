@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.8 $
- * $Date: 2002-12-10 05:43:33 $
+ * $Revision: 2.9 $
+ * $Date: 2002-12-13 08:13:28 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/10 05:43:33  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
  * Revision 2.7  2002/12/07 01:37:42  bobboau
  * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
@@ -284,6 +287,8 @@ extern vector	Dead_camera_pos, Original_vec_to_deader;
 #endif
 
 #define	HULL_DAMAGE_THRESHOLD_PERCENT	0.25f	//	Apply damage to hull, not shield if shield < this
+#define WEAPON_RESERVE_THRESHOLD		0.01f	// energy threshold where ship is considered to have no weapon energy system
+
 #define	HP_SCALE						1.2			//	1.2 means die when 20% of hits remaining
 #define	MAX_SHIP_HITS				8				// hits to kill a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at

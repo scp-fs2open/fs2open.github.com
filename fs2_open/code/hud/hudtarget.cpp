@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-10 05:42:42 $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-13 08:13:30 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/10 05:42:42  Goober5000
+ * Full-fledged ballistic primary support added!  Try it and see! :)
+ *
+ * Fixed lead indicator behavior; Phreak's version didn't work properly.
+ *
  * Revision 2.2  2002/09/20 20:02:00  phreak
  * lead indicator for dumbfire missiles
  *
@@ -4663,8 +4668,7 @@ void hud_show_weapon_energy_gauge()
 	}
 
 	// also leave if no energy can be stored for weapons
-	// to avoid round-off errors, this is not exactly zero
-	if (Ship_info[Player_ship->ship_info_index].max_weapon_reserve < 0.01f)
+	if (Objects[Player_ship->objnum].flags & OF_NO_LASERS)
 	{
 		return;
 	}
