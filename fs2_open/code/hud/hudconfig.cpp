@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-01-31 23:27:53 $
+ * $Revision: 2.11 $
+ * $Date: 2005-02-23 04:51:56 $
  * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/01/31 23:27:53  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.9  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -1768,9 +1771,7 @@ void hud_config_unload_gauges()
 		hg = &HC_gauge_regions[gr_screen.res][i];
 
 		if ( hg->bitmap >= 0 ) {
-			for ( j=0; j<hg->nframes; j++ ) {
-				bm_unload(hg->bitmap+j);
-			}
+			bm_release(hg->bitmap);
 		}
 
 		hg->bitmap=-1;

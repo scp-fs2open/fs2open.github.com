@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.43 $
- * $Date: 2005-02-12 10:44:10 $
+ * $Revision: 2.44 $
+ * $Date: 2005-02-23 04:51:55 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/02/12 10:44:10  taylor
+ * fix possible crash in bm_get_section_size()
+ * get jpeg_read_header() working properly
+ * VBO fixes and minor optimizations
+ *
  * Revision 2.42  2005/02/10 14:38:50  taylor
  * fix an issue with bm_set_components()
  * abs is for ints fabsf is for floats (camera.cpp)
@@ -2301,6 +2306,7 @@ void bm_get_palette(int handle, ubyte *pal, char *name)
 
 // --------------------------------------------------------------------------------------
 // bm_release()  - unloads the bitmap's data and entire slot, so bitmap 'n' won't be valid anymore
+//                 NOTE: this releases the slot of EVERY frame in an ANI so don't pass any frame but the first
 //
 // parameters:		n		=>		index into bm_bitmaps ( index returned from bm_load() or bm_create() )
 //
@@ -2331,39 +2337,76 @@ void bm_release(int handle)
 		return;
 	}
 
-	bm_free_data(n);
+	// be sure that all frames of an ani are unloaded - taylor
+	if ( be->type == BM_TYPE_ANI ) {
+		int i,first = bm_bitmaps[n].info.ani.first_frame;
 
-	if ( bm_bitmaps[n].type == BM_TYPE_USER )	{
-		bm_bitmaps[n].info.user.data = NULL;
-		bm_bitmaps[n].info.user.bpp = 0;
-	}
+		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
+			bm_free_data(first+i);		// clears flags, bbp, data, etc
 
-	bm_bitmaps[n].bm.true_bpp = 0;
+			bm_bitmaps[first+i].bm.true_bpp = 0;
 
-	bm_bitmaps[n].type = BM_TYPE_NONE;
+			bm_bitmaps[first+i].type = BM_TYPE_NONE;
 
-	bm_bitmaps[n].dir_type = CF_TYPE_ANY;
-	// Fill in bogus structures!
+			bm_bitmaps[first+i].dir_type = CF_TYPE_ANY;
+			// Fill in bogus structures!
 
-	// For debugging:
-	strcpy( bm_bitmaps[n].filename, "IVE_BEEN_RELEASED!" );
-	bm_bitmaps[n].signature = 0xDEADBEEF;									// a unique signature identifying the data
-	bm_bitmaps[n].palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
+			// For debugging:
+			strcpy( bm_bitmaps[first+i].filename, "IVE_BEEN_RELEASED!" );
+			bm_bitmaps[first+i].signature = 0xDEADBEEF;									// a unique signature identifying the data
+			bm_bitmaps[first+i].palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
-	// bookeeping
-	#ifdef BMPMAN_NDEBUG
-	bm_bitmaps[n].data_size = -1;									// How much data this bitmap uses
-	#endif
-	bm_bitmaps[n].ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
+			// bookeeping
+			#ifdef BMPMAN_NDEBUG
+			bm_bitmaps[first+i].data_size = -1;									// How much data this bitmap uses
+			#endif
+			bm_bitmaps[first+i].ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
 
-	// Bitmap info
-	bm_bitmaps[n].bm.w = bm_bitmaps[n].bm.h = -1;
+			// Bitmap info
+			bm_bitmaps[first+i].bm.w = bm_bitmaps[first+i].bm.h = -1;
 	
-	// Stuff needed for animations
-	// Stuff needed for user bitmaps
-	memset( &bm_bitmaps[n].info, 0, sizeof(bm_extra_info) );
+			// Stuff needed for animations
+			// Stuff needed for user bitmaps
+			memset( &bm_bitmaps[first+i].info, 0, sizeof(bm_extra_info) );
+			bm_bitmaps[first+i].info.ani.first_frame = -1;
 
-	bm_bitmaps[n].handle = -1;
+			bm_bitmaps[first+i].handle = -1;
+		}
+	} else {
+		bm_free_data(n);		// clears flags, bbp, data, etc
+
+	//	if ( bm_bitmaps[n].type == BM_TYPE_USER )	{
+	//		bm_bitmaps[n].info.user.data = NULL;
+	//		bm_bitmaps[n].info.user.bpp = 0;
+	//	}
+
+		bm_bitmaps[n].bm.true_bpp = 0;
+
+		bm_bitmaps[n].type = BM_TYPE_NONE;
+
+		bm_bitmaps[n].dir_type = CF_TYPE_ANY;
+		// Fill in bogus structures!
+
+		// For debugging:
+		strcpy( bm_bitmaps[n].filename, "IVE_BEEN_RELEASED!" );
+		bm_bitmaps[n].signature = 0xDEADBEEF;									// a unique signature identifying the data
+		bm_bitmaps[n].palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
+
+		// bookeeping
+		#ifdef BMPMAN_NDEBUG
+		bm_bitmaps[n].data_size = -1;									// How much data this bitmap uses
+		#endif
+		bm_bitmaps[n].ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
+
+		// Bitmap info
+		bm_bitmaps[n].bm.w = bm_bitmaps[n].bm.h = -1;
+	
+		// Stuff needed for animations
+		// Stuff needed for user bitmaps
+		memset( &bm_bitmaps[n].info, 0, sizeof(bm_extra_info) );
+
+		bm_bitmaps[n].handle = -1;
+	}
 }
 
 

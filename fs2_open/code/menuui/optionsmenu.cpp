@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-01-31 23:27:53 $
+ * $Revision: 2.12 $
+ * $Date: 2005-02-23 04:51:56 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/01/31 23:27:53  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.10  2004/12/02 11:18:15  taylor
  * make OGL use same gamma reg setting as D3D since it's the same ramp
  * have OGL respect the -no_set_gamma cmdline option
@@ -1365,10 +1368,10 @@ void options_menu_close()
 
 	for (i=0; i<NUM_TABS; i++) {
 		if (Backgrounds[gr_screen.res][i].bitmap >= 0){
-			bm_unload(Backgrounds[gr_screen.res][i].bitmap);
+			bm_release(Backgrounds[gr_screen.res][i].bitmap);
 		}
 		if ((Backgrounds[gr_screen.res][i].mask >= 0) && (i != Tab)){  // Ui_window.destroy() expects to release current tab's mask.
-			bm_unload(Backgrounds[gr_screen.res][i].mask);
+			bm_release(Backgrounds[gr_screen.res][i].mask);
 		}
 	}
 
