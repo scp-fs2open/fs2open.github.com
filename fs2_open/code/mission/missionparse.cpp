@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.72 $
- * $Date: 2004-12-14 14:46:13 $
+ * $Revision: 2.73 $
+ * $Date: 2004-12-15 17:32:19 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2004/12/14 14:46:13  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.71  2004/11/21 11:31:46  taylor
  * newline fix (got tired of seeing this)
  *
@@ -1208,38 +1212,20 @@ void parse_mission_info(mission *pm)
 	}
 
 	// wing stuff by Goober5000 ------------------------------------------
+	// the wing name arrays are initialized in ship_level_init
 	if (optional_string("$Starting wing names:"))
 	{
 		stuff_string_list(Starting_wing_names, MAX_STARTING_WINGS);
-	}
-	else
-	{
-		strcpy(Starting_wing_names[0], "Alpha");
-		strcpy(Starting_wing_names[1], "Beta");
-		strcpy(Starting_wing_names[2], "Gamma");
 	}
 
 	if (optional_string("$Squadron wing names:"))
 	{
 		stuff_string_list(Squadron_wing_names, MAX_SQUADRON_WINGS);
 	}
-	else
-	{
-		strcpy(Squadron_wing_names[0], "Alpha");
-		strcpy(Squadron_wing_names[1], "Beta");
-		strcpy(Squadron_wing_names[2], "Gamma");
-		strcpy(Squadron_wing_names[3], "Delta");
-		strcpy(Squadron_wing_names[4], "Epsilon");
-	}
 
 	if (optional_string("$Team-versus-team wing names:"))
 	{
 		stuff_string_list(TVT_wing_names, MAX_TVT_WINGS);
-	}
-	else
-	{
-		strcpy(TVT_wing_names[0], "Alpha");
-		strcpy(TVT_wing_names[1], "Zeta");
 	}
 
 	// minimal error checking
