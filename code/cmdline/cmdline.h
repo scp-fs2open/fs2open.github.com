@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.64 $
- * $Date: 2004-12-24 19:36:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.65 $
+ * $Date: 2005-01-21 08:29:04 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2004/12/24 19:36:12  Goober5000
+ * resorted command-line options and added an option for WMC's ballistic gauge
+ * --Goober5000
+ *
  * Revision 2.63  2004/11/23 19:29:13  taylor
  * fix 2d warp in D3D, add cmdline option for 3d warp
  *
@@ -522,6 +526,7 @@ extern int Cmdline_d3d_no_vsync;
 extern int Cmdline_pcx32;
 extern int Cmdline_pcx32dds;
 extern int Cmdline_nomotiondebris;
+extern int Cmdline_rlm;
 
 extern int Cmdline_noglow;
 extern int Cmdline_timerbar;

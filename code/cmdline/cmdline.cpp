@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.88 $
- * $Date: 2004-12-24 19:36:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.89 $
+ * $Date: 2005-01-21 08:29:04 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2004/12/24 19:36:12  Goober5000
+ * resorted command-line options and added an option for WMC's ballistic gauge
+ * --Goober5000
+ *
  * Revision 2.87  2004/12/11 09:37:17  wmcoolmon
  * Apparently I never commited -mpnoreturn...
  *
@@ -685,6 +689,7 @@ Flag exe_params[] =
 	"-nomotiondebris","Disable motion debris",			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomotiondebris",
 	"-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.2d_poof", 
 	"-cell",		  "Enable cell shading",			true,	0,					EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.cell", 
+	"-rlm",           "Enable more realistic lighting", true,   0,                  EASY_DEFAULT,       "Graphics",     "",
 
 	"-pcx2dds",	      "Compress pcx",			        true,   0,					EASY_DEFAULT,		"Game Speed",	"", 
 	"-d3d_no_vsync",  "Disable vertical sync",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_no_vsync", 
@@ -807,6 +812,7 @@ cmdline_parm orb_radar("-orbradar",NULL);
 cmdline_parm TBPWarpEffects( "-tbpwarpeffects", NULL ); // TBP warp effects -Et1
 cmdline_parm use_3dwarp("-3dwarp", NULL);
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
+cmdline_parm use_rlm("-rlm", NULL); // more realistic lighting model - taylor
 
 //Experimental
 cmdline_parm load_only_used("-loadonlyused", NULL);
@@ -890,6 +896,8 @@ int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
 int CmdLine_NoWarn = 0; // turn warnings off in FRED
 
 int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
+
+int Cmdline_rlm = 0;	// more realistic lighting model - taylor
 
 //Experimental
 int Cmdline_load_only_used;
@@ -1590,6 +1598,12 @@ bool SetCmdlineParams()
 		Cmdline_ballistic_gauge = 1;
 	} else {
 		Cmdline_ballistic_gauge = 0;
+	}
+
+	if ( use_rlm.found() ) {
+		Cmdline_rlm = 1;
+	} else {
+		Cmdline_rlm = 0;
 	}
 
 	return true; 

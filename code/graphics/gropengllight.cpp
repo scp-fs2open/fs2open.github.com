@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-01-07 14:00:04 $
- * $Author: argv $
+ * $Revision: 1.8 $
+ * $Date: 2005-01-21 08:29:04 $
+ * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/01/07 14:00:04  argv
+ * Added missing #include.
+ *
+ * -- _argv[-1]
+ *
  * Revision 1.6  2005/01/03 18:45:22  taylor
  * dynamic allocation of num supported OpenGL lights
  * add config option for more realistic light settings
@@ -73,7 +78,6 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
-#include "osapi/osregistry.h"
 
 
 
@@ -89,6 +93,8 @@ extern float static_point_factor;
 extern float static_light_factor;
 extern float static_tube_factor;
 extern double specular_exponent_value;
+
+extern int Cmdline_rlm;
 
 int GL_max_lights = 0;
 
@@ -277,7 +283,8 @@ void opengl_init_light()
 	// only on front, tends to be more believable
 	glMaterialf(GL_FRONT, GL_SHININESS, 80.0f );
 
-	if ( os_config_read_uint(NULL, "OGLRealisticLightModel", 0) ) {
+	// more realistic lighting model
+	if (Cmdline_rlm)
 		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 	}
 
