@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-01-16 23:18:03 $
+ * $Revision: 2.30 $
+ * $Date: 2005-01-18 01:14:17 $
  * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/01/16 23:18:03  wmcoolmon
+ * Added "show ship" ship flag
+ *
  * Revision 2.28  2005/01/15 05:53:18  wmcoolmon
  * Current version of the new techroom code -C
  *
@@ -3736,16 +3739,15 @@ int wl_slots_all_empty(wss_unit *slot)
 int wl_update_ship_weapons(int objnum, wss_unit *slot )
 {
 	ship_info *sip = &Ship_info[Ships[Player_obj->instance].ship_info_index];
+	if(sip->num_secondary_banks <= 0 && sip->num_primary_banks <= 0)
+	{
+		return 0;
+	}
 	// AL 11-15-97: Ensure that the player ship hasn't removed all 
 	//					 weapons from their ship.  This will cause a warning to appear.
 	if ( objnum == OBJ_INDEX(Player_obj) && Weapon_select_open ) {
 		if ( wl_slots_all_empty(slot) && (sip->num_primary_banks > 0 || sip->num_secondary_banks > 0)) {
 			return -1;
-		}
-		else
-		{
-			//Player ship shouldn't have weapons...deal with it.
-			return 0;
 		}
 	}
 

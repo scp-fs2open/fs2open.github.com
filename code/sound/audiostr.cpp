@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-01-08 09:59:10 $
+ * $Revision: 2.7 $
+ * $Date: 2005-01-18 01:14:17 $
  * $Author: wmcoolmon $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/08 09:59:10  wmcoolmon
+ * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ *
  * Revision 2.5  2004/12/25 00:23:46  wmcoolmon
  * Ogg support for WIN32
  *
@@ -283,7 +286,7 @@ public:
 	UINT m_max_uncompressed_bytes_to_read;
 
 protected:
-	//These two aren't needed for OGG
+	//These two ARE needed for OGG
 	UINT m_data_offset;						// number of bytes to actual wave data
 	int  m_data_bytes_left;
 	HMMIO	cfp;
@@ -357,10 +360,10 @@ public:
 	void	Set_Volume(long vol);
 	long	Get_Volume();
 	void	Init_Data();
-	void	Set_Byte_Cutoff(unsigned int num_bytes_cutoff);
+	void	Set_Sample_Cutoff(unsigned int num_samples_cutoff);
 	void  Set_Default_Volume(long converted_volume) { m_lDefaultVolume = converted_volume; }
 	long	Get_Default_Volume() { return m_lDefaultVolume; }
-	unsigned int Get_Bytes_Committed(void);
+	unsigned int Get_Samples_Committed(void);
 	int	Is_looping() { return m_bLooping; }
 	int	status;
 	int	type;
@@ -1002,20 +1005,20 @@ BOOL AudioStream::TimerCallback (DWORD dwUser)
     return (pas->ServiceBuffer ());
 }
 
-void AudioStream::Set_Byte_Cutoff(unsigned int byte_cutoff)
+void AudioStream::Set_Sample_Cutoff(unsigned int sample_cutoff)
 {
 	if ( m_pwavefile == NULL )
 		return;
 
-	m_pwavefile->m_max_uncompressed_bytes_to_read = byte_cutoff;
+	m_pwavefile->m_max_uncompressed_bytes_to_read = ((sample_cutoff * m_pwavefile->m_wfmt.wBitsPerSample) / 8);
 }
 
-unsigned int AudioStream::Get_Bytes_Committed(void)
+unsigned int AudioStream::Get_Samples_Committed(void)
 {
 	if ( m_pwavefile == NULL )
 		return 0;
 
-	return m_pwavefile->m_total_uncompressed_bytes_read;
+	return ((m_pwavefile->m_total_uncompressed_bytes_read * 8) / m_pwavefile->m_wfmt.wBitsPerSample);
 }
 
 
@@ -1213,6 +1216,8 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 	}
 
 	cfp = mmioOpen(fullpath, NULL, MMIO_ALLOCBUF | MMIO_READ);
+	mmioSeek( cfp, FileOffset, SEEK_SET );
+
 	if ( cfp == NULL ) {
 		goto OPEN_ERROR;
 	}
@@ -1230,7 +1235,7 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 		m_wave_format = OGG_FORMAT_VORBIS;
 
 		m_wfmt.wFormatTag = WAVE_FORMAT_PCM;
-		m_wfmt.nChannels = m_ogg_info.vi->channels;
+		m_wfmt.nChannels = (WORD) m_ogg_info.vi->channels;
 		m_wfmt.nSamplesPerSec = m_ogg_info.vi->rate;
 		m_wfmt.cbSize = 0;
 		if(UserSampleBits == 16 || UserSampleBits == 8)
@@ -1245,6 +1250,11 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 
 		m_nBlockAlign = m_wfmt.nBlockAlign;
 		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
+
+		//Unfortunately, OGG is rather immature and wants to keep reading past the current file
+		//These let us stop it
+		m_data_offset = FileOffset;
+		m_nDataSize = m_data_bytes_left = FileSize;
 		goto OPEN_DONE;
 	}
 	else
@@ -1380,15 +1390,20 @@ BOOL WaveFile::Cue (void)
 {
 	BOOL fRtn = SUCCESS;    // assume success
 
-	//Ogg does its file I/O itself
-	if(m_wave_format == OGG_FORMAT_VORBIS)
-	{
-		return fRtn;
-	}
 	int rval;
 
 	m_total_uncompressed_bytes_read = 0;
 	m_max_uncompressed_bytes_to_read = AS_HIGHEST_MAX;
+
+	//Ogg is special...
+	if(m_wave_format == OGG_FORMAT_VORBIS)
+	{
+		mmioSeek( (HMMIO) m_ogg_info.datasource, m_data_offset, SEEK_SET );
+		m_data_bytes_left = m_nDataSize;
+		m_abort_next_read = FALSE;
+
+		return fRtn;
+	}
 
 	rval = mmioSeek( cfp, m_data_offset, SEEK_SET );
 	if ( rval == -1 ) {
@@ -1471,6 +1486,10 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 	uncompressed_bytes_written = 0;
 	if(m_wave_format == OGG_FORMAT_VORBIS)
 	{
+		//We ran out of file the last time.
+		if(m_abort_next_read)
+			return -1;
+
 		int garbage;
 		while(uncompressed_bytes_written < (int) num_bytes_desired)
 		{
@@ -1483,28 +1502,36 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 			}
 			else if(rc == 0)
 			{
-				if(uncompressed_bytes_written == 0)
+				if(uncompressed_bytes_written < (int) num_bytes_desired)
 				{
-					uncompressed_bytes_written = -1;
+					m_abort_next_read = TRUE;
 				}
 				goto READ_DONE;
 			}
-			else
+			else if(rc != OV_HOLE)
 			{
 				uncompressed_bytes_written += rc;
+				m_nBytesPlayed += rc;
+			}
+
+			//OGG is trying to read the next file!
+			m_data_bytes_left = (m_data_offset + m_nDataSize) - mmioSeek((HMMIO) m_ogg_info.datasource, 0, SEEK_CUR);
+			if(m_data_bytes_left <= 0)
+			{
+				m_abort_next_read = TRUE;
+				goto READ_DONE;
 			}
 		}
 
 		goto READ_DONE;
 	}
-    num_bytes_read = 0;
+
+	num_bytes_read = 0;
 	convert_len = 0;
 	src_bytes_used = 0;
 
 	// read data from disk
 	if ( m_data_bytes_left <= 0 ) {
-		num_bytes_read = 0;
-		uncompressed_bytes_written = 0;
 		return -1;
 	}
 
@@ -1520,8 +1547,6 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 
 		actual_read = mmioRead( cfp, (char *)dest_buf, num_bytes_read );
 		if ( (actual_read <= 0) || (m_abort_next_read) ) {
-			num_bytes_read = 0;
-			uncompressed_bytes_written = 0;
 			return -1;
 		}
 
@@ -1912,7 +1937,7 @@ int audiostream_is_paused(int i)
 }
 
 
-void audiostream_set_byte_cutoff(int i, unsigned int cutoff)
+void audiostream_set_sample_cutoff(int i, unsigned int cutoff)
 {
 	if ( i == -1 )
 		return;
@@ -1923,11 +1948,11 @@ void audiostream_set_byte_cutoff(int i, unsigned int cutoff)
 	if ( Audio_streams[i].status == ASF_FREE )
 		return;
 
-	Audio_streams[i].Set_Byte_Cutoff(cutoff);
+	Audio_streams[i].Set_Sample_Cutoff(cutoff);
 }
 
 
-unsigned int audiostream_get_bytes_committed(int i)
+unsigned int audiostream_get_samples_committed(int i)
 {
 	if ( i == -1 )
 		return 0;
@@ -1937,9 +1962,7 @@ unsigned int audiostream_get_bytes_committed(int i)
 	if ( Audio_streams[i].status == ASF_FREE )
 		return 0;
 
-	unsigned int num_bytes_committed;
-	num_bytes_committed = Audio_streams[i].Get_Bytes_Committed();
-	return num_bytes_committed;
+	return Audio_streams[i].Get_Samples_Committed();
 }
 
 int audiostream_done_reading(int i)

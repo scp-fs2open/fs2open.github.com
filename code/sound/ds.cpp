@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-01-08 09:59:10 $
+ * $Revision: 2.14 $
+ * $Date: 2005-01-18 01:14:17 $
  * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/01/08 09:59:10  wmcoolmon
+ * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ *
  * Revision 2.12  2004/12/25 17:45:38  wmcoolmon
  * Quick update to tempfix possible bug.
  *
@@ -835,7 +838,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 				{
 					break;
 				}
-				else
+				else if(rc != OV_HOLE)
 				{
 					final_sound_size += rc;
 				}

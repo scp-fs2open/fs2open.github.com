@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-12-25 16:42:59 $
+ * $Revision: 2.17 $
+ * $Date: 2005-01-18 01:14:17 $
  * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/12/25 16:42:59  wmcoolmon
+ * Fix to modular tables workaround with Fs2NetD
+ *
  * Revision 2.15  2004/12/11 09:03:08  wmcoolmon
  * Changed music modular table ending to *-mus.tbm, in case a miscellaneous modular table is needed.
  *
@@ -210,7 +213,7 @@ typedef struct tagSNDPATTERN {
 	int handle;						// handle to open audio stream
 	int force_pattern;			// flag to indicate that we want to not continue loop, but go to next_pattern
 	int can_force;					// whether this pattern can be interrupted
-	int bytes_per_measure;		// number of bytes in a measure
+	int samples_per_measure;		// number of bytes in a measure
 	float num_measures;				// number of measures in wave file
 }	SNDPATTERN;
 
@@ -244,7 +247,7 @@ static int Current_soundtrack_fs1_style;
 float	Pattern_num_measures[MAX_SOUNDTRACKS][MAX_PATTERNS];
 
 // stores the number of bytes per measure (data from music.tbl)
-int	Pattern_bytes_per_measure[MAX_SOUNDTRACKS][MAX_PATTERNS];
+int	Pattern_samples_per_measure[MAX_SOUNDTRACKS][MAX_PATTERNS];
 
 char* Pattern_names[MAX_PATTERNS] =
 {
@@ -510,7 +513,7 @@ void event_music_force_switch()
 
 	Assert(new_pattern >= 0 && new_pattern < MAX_PATTERNS);
 	audiostream_play(Patterns[new_pattern].handle, Master_event_music_volume, 0);	// no looping
-	audiostream_set_byte_cutoff(Patterns[new_pattern].handle, fl2i(Patterns[new_pattern].num_measures * Patterns[new_pattern].bytes_per_measure) );
+	audiostream_set_sample_cutoff(Patterns[new_pattern].handle, fl2i(Patterns[new_pattern].num_measures * Patterns[new_pattern].samples_per_measure) );
 	Patterns[Current_pattern].next_pattern = Patterns[Current_pattern].default_next_pattern;
 	Patterns[Current_pattern].force_pattern = FALSE;
 	nprintf(("EVENTMUSIC", "EVENTMUSIC => switching to %s from %s\n", Pattern_names[new_pattern], Pattern_names[Current_pattern]));
@@ -542,7 +545,7 @@ void event_music_do_frame()
 		if ( Current_pattern != -1 ) {
 			Assert(Patterns[Current_pattern].handle >= 0 );
 			audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
-			audiostream_set_byte_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].bytes_per_measure) );
+			audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 		}
 	}
 
@@ -564,7 +567,7 @@ void event_music_do_frame()
 			pat->loop_for--;
 			if ( pat->loop_for > 0 ) {
 				audiostream_play(pat->handle, Master_event_music_volume, 0);	// no looping
-				audiostream_set_byte_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].bytes_per_measure) );
+				audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 			}
 			else {
 				event_music_force_switch();
@@ -572,10 +575,10 @@ void event_music_do_frame()
 		}
 		// Third case: switching to a different track by interruption
 		else if ( (pat->force_pattern == TRUE && pat->can_force == TRUE) ) {
-			int bytes_streamed = audiostream_get_bytes_committed(pat->handle);
-			int measures_played = bytes_streamed / pat->bytes_per_measure;
+			int samples_streamed = audiostream_get_samples_committed(pat->handle);
+			int measures_played = samples_streamed / pat->samples_per_measure;
 			if ( measures_played < pat->num_measures ) {
-				audiostream_set_byte_cutoff(pat->handle, pat->bytes_per_measure * (measures_played+1) );
+				audiostream_set_sample_cutoff(pat->handle, pat->samples_per_measure * (measures_played+1) );
 				pat->force_pattern = FALSE;
 				pat->loop_for = 0;
 			}
@@ -697,7 +700,7 @@ void event_music_level_init(int force_soundtrack)
 		Patterns[i].default_loop_for = Pattern_loop_for[i];
 		Patterns[i].force_pattern = FALSE;
 		Patterns[i].can_force = Pattern_can_force[i];
-		Patterns[i].bytes_per_measure = Pattern_bytes_per_measure[Current_soundtrack_num][i];
+		Patterns[i].samples_per_measure = Pattern_samples_per_measure[Current_soundtrack_num][i];
 		Patterns[i].num_measures = Pattern_num_measures[Current_soundtrack_num][i];
 	}
 
@@ -993,7 +996,7 @@ int event_music_friendly_arrival()
 			// arrival music pattern, and this is it
 			Assert(Patterns[SONG_AARV_1].handle >= 0 );
 			audiostream_play(Patterns[SONG_AARV_1].handle, Master_event_music_volume, 0);	// no looping
-			audiostream_set_byte_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].bytes_per_measure) );
+			audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure) );
 		}
 	}
 
@@ -1208,14 +1211,13 @@ void parse_soundtrack()
 				Pattern_num_measures[Num_soundtracks][num_patterns] = (float)atof(token);
 
 			} else {
-				Pattern_bytes_per_measure[Num_soundtracks][num_patterns] = atoi(token);
+				Pattern_samples_per_measure[Num_soundtracks][num_patterns] = atoi(token);
 			}
 
 			count++;
 		}	// end while
 
 		// convert from samples per measure to bytes per measure
-		Pattern_bytes_per_measure[Num_soundtracks][num_patterns] *= 2;
 		strcpy(Soundtracks[Num_soundtracks].pattern_fnames[num_patterns], fname);
 		num_patterns++;
 		}
@@ -1484,7 +1486,7 @@ void event_music_unpause()
 	Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 	if ( audiostream_is_paused(Patterns[Current_pattern].handle) == TRUE ) {
 		audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
-		audiostream_set_byte_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].bytes_per_measure) );
+		audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 	}
 }
 

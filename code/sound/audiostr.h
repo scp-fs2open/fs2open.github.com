@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 2.1 $
- * $Date: 2004-08-11 05:06:34 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2005-01-18 01:14:17 $
+ * $Author: wmcoolmon $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/08/11 05:06:34  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.0  2002/06/03 04:02:29  penguin
  * Warpcore CVS sync
  *
@@ -138,11 +141,11 @@ void audiostream_set_volume(int i, float volume);
 // see if a particular stream is paused
 int audiostream_is_paused(int i);
 
-// set the number of bytes that the sound should cutoff after
-void audiostream_set_byte_cutoff(int i, unsigned int cutoff);
+// set the number of samples that the sound should cutoff after
+void audiostream_set_sample_cutoff(int i, unsigned int cutoff);
 
-// return the number of bytes streamed to the Direct Sound buffer so far
-unsigned int audiostream_get_bytes_committed(int i);
+// return the number of samples streamed to the Direct Sound buffer so far
+unsigned int audiostream_get_samples_committed(int i);
 
 // check if the streaming has read all the bytes from disk yet
 int audiostream_done_reading(int i);
@@ -169,8 +172,8 @@ void audiostream_unpause_all();	// unpause all audio streams
 #define audiostream_set_volume_all(volume, type)  ((void)((volume), (type)))
 #define audiostream_set_volume(i, volume)         ((void)((i), (volume)))
 #define audiostream_is_paused(i)                  ((i), 0)
-#define audiostream_set_byte_cutoff(i, cutoff)    ((void)((i), (cutoff)))
-#define audiostream_get_bytes_committed(i)        ((i), 0)
+#define audiostream_set_sample_cutoff(i, cutoff)    ((void)((i), (cutoff)))
+#define audiostream_get_samples_committed(i)        ((i), 0)
 #define audiostream_done_reading(i)               ((i), 1)
 #define audiostream_is_inited()                   (1)
 #define audiostream_pause(i)                      ((void)(i))
