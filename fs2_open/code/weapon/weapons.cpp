@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Weapons.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-11-06 23:22:05 $
+ * $Revision: 2.4 $
+ * $Date: 2002-11-11 20:18:30 $
  * $Author: phreak $
  *
  * Code to handle the weapon systems
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/11/06 23:22:05  phreak
+ * Parser error handling for fighter flak, it didn't want flak on player weapons, now it doesn't care
+ *
  * Revision 2.2  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -1156,6 +1159,43 @@ int parse_weapon()
 		stuff_float(&wip->afterburner_reduce);
 	} else {
 		wip->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
+	}
+
+/*
+	int Corkscrew_missile_delay			= 30;			// delay between missile firings
+	int Corkscrew_num_missiles_fired		= 4;			// # of missiles fire in one shot
+	float Corkscrew_radius					= 1.25f;		// radius of the corkscrew itself
+	float Corkscrew_twist					= 5.0f;		// in degrees/second
+	int Corkscrew_helix						= 1;			// attempt to point the missile in the right direction
+	int Corkscrew_counterrotate			= 1;			// counterrotate every other missile
+	int Corkscrew_shrink						= 0;			// shrink the radius of every successive missile
+	float Corkscrew_shrink_val				= 0.3f;		// rate at which the radius shrinks
+	int Corkscrew_down_first				= 1;			// have the corkscrew go "down" first
+*/
+	//customizeable corkscrew stuff
+	wip->cs_num_fired=4;
+	wip->cs_radius=1.25f;
+	wip->cs_delay=30;
+	wip->cs_crotate=1;
+	wip->cs_twist=5.0f;
+
+	if (optional_string("$Corkscrew:"))
+	{
+		required_string("+Num Fired:");
+		stuff_int(&wip->cs_num_fired);
+
+		required_string("+Radius:");
+		stuff_float(&wip->cs_radius);
+
+		required_string("+Fire Delay:");
+		stuff_int(&wip->cs_delay);
+		
+		required_string("+Counter rotate:");
+		stuff_boolean(&wip->cs_crotate);
+
+		required_string("+Twist:");
+		stuff_float(&wip->cs_twist);
+
 	}
 
 	// beam weapon optional stuff
