@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-06-26 03:19:53 $
+ * $Revision: 2.8 $
+ * $Date: 2004-06-28 10:00:33 $
  * $Author: wmcoolmon $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/06/26 03:19:53  wmcoolmon
+ * Displayed escorts now settable up to MAX_COMPLETE_ESCORT_LIST via "$Max Escort Ships:" in hud_gauges.tbl
+ * Escort list is now hud_gauges.tbl compatible.
+ *
  * Revision 2.6  2004/06/26 00:27:20  wmcoolmon
  * Basic target info next to targeted object.
  *
@@ -822,7 +826,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				tinfo_name = XSTR( "Debris", 348);
 				break;
 			case OBJ_WEAPON:
-				strcpy(buffer, Weapon_info[t_objp->instance].name);
+				strcpy(buffer, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
 				end_string_at_first_hash_symbol(buffer);
 				tinfo_name = buffer;
 				break;
