@@ -1937,10 +1937,10 @@ int Text::DoRefreshSize()
 	int width;
 	if(Style & GS_NOAUTORESIZEX)
 		width = Coords[2] - Coords[0];
-	else if(Parent != NULL)
+	else if(Parent != NULL && (Parent->Style & GS_NOAUTORESIZEX))
 		width = Parent->ChildCoords[2] - Coords[0];
 	else
-		width = gr_screen.clip_width - Coords[0];
+		width = gr_screen.clip_right - Coords[0];
 
 	NumLines = split_str((char*)Content.c_str(), width, LineLengths, LineStartPoints, MAX_TEXT_LINES);
 
@@ -2476,6 +2476,8 @@ ImageAnim::ImageAnim(std::string in_name, std::string in_imagename, int x_coord,
 {
 	//Load the image
 	IsSet = false;
+
+	Type = GT_IMAGEANIM;
 }
 
 void ImageAnim::DoDraw(float frametime)
@@ -2534,7 +2536,10 @@ void ImageAnim::DoDraw(float frametime)
 		}
 	}
 
-	IMG_SET_FRAME(ImageHandle, CurrentFrame);
+	//IMG_SET_FRAME(ImageHandle, CurrentFrame);
+	gr_set_bitmap( ImageHandle + CurrentFrame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1-((Progress - (float)(CurrentFrame / TotalFrames)) / (float)(TotalFrames/CurrentFrame)));
+	IMG_DRAW(Coords[0], Coords[1]);
+	gr_set_bitmap( ImageHandle + CurrentFrame + 1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, ((Progress - (float)(CurrentFrame / TotalFrames)) / (float)(TotalFrames/CurrentFrame)));
 	IMG_DRAW(Coords[0], Coords[1]);
 }
 
@@ -2573,7 +2578,6 @@ void ImageAnim::Play(bool in_isreversed)
 {
 	if(ImageFlags & IF_REVERSED)
 		PlayType = PT_PLAYING;
-
 }
 
 void ImageAnim::Pause()

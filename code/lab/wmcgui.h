@@ -163,6 +163,7 @@ public:
 #define GT_MENU					3
 #define GT_TEXT					4
 #define	GT_CHECKBOX				5
+#define GT_IMAGEANIM			6
 #define GT_NUM_TYPES			6	//Total number of types
 
 //States of being for GUIObjects

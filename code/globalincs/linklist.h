@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/LinkList.h $
- * $Revision: 2.3 $
- * $Date: 2005-03-25 06:57:33 $
+ * $Revision: 2.4 $
+ * $Date: 2005-03-26 07:53:32 $
  * $Author: wmcoolmon $
  *
  * Macros to handle doubly linked lists
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/03/25 06:57:33  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.2  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -134,6 +137,7 @@ do {												\
 
 template <class StoreType> class linked_list
 {
+protected:
 	StoreType *m_next;
 	StoreType *m_prev;
 public:
