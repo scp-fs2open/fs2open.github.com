@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-02-25 16:46:01 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2003-03-02 05:56:56 $
+ * $Author: penguin $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/02/25 16:46:01  bobboau
+ * fixing my bug fix for the warp model, and not being able to find it
+ *
  * Revision 2.16  2003/02/25 06:22:49  bobboau
  * fixed a bunch of fighter beam bugs,
  * most notabley the sound now works corectly,
@@ -749,6 +752,9 @@
 
 #include <string.h>
 #include <ctype.h>
+#ifdef __WIN32
+#include <io.h>
+#endif
 
 #define MODEL_LIB
 
