@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.5 $
- * $Date: 2002-10-31 21:56:44 $
+ * $Revision: 2.6 $
+ * $Date: 2002-11-10 19:57:36 $
  * $Author: DTP $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/10/31 21:56:44  DTP
+ * DTP Bumped Max_exited_ships from 200 to double that of MAX_SHIPS = 800 . make sense ehh. for logging effect.
+ *
  * Revision 2.4  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -930,7 +933,7 @@ extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST
 // ****************************************************************
-#define MAX_SHIP_TYPES		200	//DTP bumped from 130 to 200
+#define MAX_SHIP_TYPES		130	//DTP bumped from 130 to 200
 
 #define MAX_SHIPS_PER_WING	6
 
