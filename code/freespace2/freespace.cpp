@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-08-04 05:11:05 $
+ * $Revision: 2.6 $
+ * $Date: 2002-08-13 03:34:00 $
  * $Author: penguin $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/08/04 05:11:05  penguin
+ * Don't write version to registry; change way version string is formatted
+ *
  * Revision 2.4  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -481,6 +484,8 @@
  * 
  * 
  */
+
+static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 
 #include <stdlib.h>
 #include <time.h>
@@ -7826,14 +7831,29 @@ void get_version_string(char *str)
 {
 //XSTR:OFF
 if ( FS_VERSION_BUILD == 0 ) {
-	sprintf(str,"fs2_open %d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	sprintf(str,"V%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 } else {
-	sprintf(str,"fs2_open %d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+	sprintf(str,"V%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
 }
 
 #ifdef _DEBUG
 	strcat(str, " Dbg");
 #endif
+
+	// append the CVS "release" version in the $Name variable, but
+	// only do this if it's been tagged
+	int rcs_name_len = strlen(RCS_Name);
+	if (rcs_name_len > 11) {
+		char buffer[100];
+		strcpy(buffer, RCS_Name + 7);
+		buffer[rcs_name_len-9] = 0;
+
+		strcat(str, " Build: ");
+        strcat(str, buffer);
+	} else {
+		strcat(str, " (fs2_open)");
+	}
+
 //XSTR:ON
 	/*
 	HMODULE hMod;
@@ -8607,7 +8627,8 @@ int game_do_cd_check_specific(char *volume_name, int cdnum)
 // only need to do this in RELEASE_REAL
 int game_do_cd_mission_check(char *filename)
 {	
-#ifdef RELEASE_REAL
+//#ifdef RELEASE_REAL
+#if 0
 	int cd_num;
 	int cd_present = 0;
 	int cd_drive_num;
