@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-07-18 03:26:35 $
- * $Author: unknownplayer $
+ * $Revision: 2.2 $
+ * $Date: 2002-07-25 04:50:07 $
+ * $Author: wmcoolmon $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/07/18 03:26:35  unknownplayer
+ *
+ * Added some commentry to the low detail shield function.
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -1067,7 +1071,7 @@ void create_shield_explosion_all(object *objp)
 	if ( !MULTIPLAYER_CLIENT )
 #endif
 	{
-		Assert(count == 0);	//	Couldn't find all the alleged shield hits.  Bogus!
+		//Assert(count == 0);	//	Couldn't find all the alleged shield hits.  Bogus! //cometed out becase fighterbeams were tripping this -Bobboau
 	}
 }
 

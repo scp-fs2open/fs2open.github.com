@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-25 04:50:48 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.3  2002/05/13 21:09:29  mharris
  * I think the last of the networking code has ifndef NO_NETWORK...
  *
@@ -856,9 +859,10 @@ int beam_get_parent(object *bm)
 	}
 
 	// if the object handle is invalid
-	if(b->objp->signature != b->sig){
+/*	if(b->objp->signature != b->sig){
 		return -1;
 	}
+*/ //comented out to see if this is the weak link in the fighter beam hit recording -Bobboau
 
 	// return the handle
 	return OBJ_INDEX(b->objp);
@@ -2322,13 +2326,28 @@ int beam_collide_ship(obj_pair *pair)
 	test_collide.p0 = &b->last_start;
 	test_collide.p1 = &b->last_shot;
 
-	// maybe do a sphereline
+	weapon_info * bwi = &Weapon_info[b->weapon_info_index];
+
+	// maybe do a sphere line
 	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
 		test_collide.radius = beam_get_widest(b) * 0.5f;
-		test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+		if ( get_shield_strength(&Objects[shipp->objnum]) && (bwi->b_info.beam_type == BEAM_TYPE_C) ){	//check shields for type c beams -Bobboau
+			//HUD_printf("BC shpere sheild");
+			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
+		}else{		
+			//HUD_printf("BC shpere hull");
+			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+		}
 	} else {	
-		test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
+		if ( get_shield_strength(&Objects[shipp->objnum]) && (bwi->b_info.beam_type == BEAM_TYPE_C) ){	//check shields for type c beams -Bobboau
+			//HUD_printf("BC ray sheild");
+			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
+		}else{		
+			//HUD_printf("BC ray hull");
+			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
+		}
 	}
+
 	model_collide(&test_collide);
 
 	// if we got a hit
@@ -2639,12 +2658,25 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 {
 	beam_collision *bc;
 	int idx;
+	int	quadrant_num = -1;
 
 	// if we haven't reached the limit for beam collisions, just add
 	if(b->f_collision_count < MAX_FRAME_COLLISIONS){
 		bc = &b->f_collisions[b->f_collision_count++];
 		bc->c_objnum = OBJ_INDEX(hit_object);
 		bc->cinfo = *cinfo;
+
+		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
+			quadrant_num = get_quadrant(&cinfo->hit_point);
+//			if (!(hit_object->flags & SF_DYING) && ship_is_shield_up(hit_object,quadrant_num) ) {
+				HUD_printf("you should see sheild hits");
+				add_shield_point(hit_object->instance, cinfo->shield_hit_tri, &cinfo->hit_point);
+				bc->quadrant=quadrant_num;
+//				hud_shield_quadrant_hit(hit_object, quadrant_num);
+//				gr_printf(10, 50, "shield hit %f", quadrant_num);
+//			}
+		}
+
 
 		// done
 		return;
@@ -2805,7 +2837,7 @@ void beam_handle_collisions(beam *b)
 				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), -1);
 
 				// if this is the first hit on the player ship. whack him				
-				if(do_damage){
+				if((do_damage) && !(b->f_collisions[idx].quadrant)){ //I didn't want the beam wacking things if it's hitting just sheilds -Bobboau
 					beam_apply_whack(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world);
 				}
 				break;

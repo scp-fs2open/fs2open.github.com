@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:29 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-07-25 04:50:48 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:29  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:13  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -155,6 +158,7 @@ typedef struct beam_collision {
 	int				c_objnum;						// objnum of the guy we recently collided with
 	int				c_sig;							// object sig
 	int				c_stamp;							// when we should next apply damage	
+	int				quadrant;						// sheild quadrant this beam hits if any -Bobboau
 } beam_collision;
 
 // beam lighting effects
