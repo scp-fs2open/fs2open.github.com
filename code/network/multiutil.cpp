@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.23 $
- * $Date: 2004-07-26 20:47:43 $
+ * $Revision: 2.24 $
+ * $Date: 2004-08-26 18:19:36 $
  * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2004/07/26 20:47:43  Kazan
+ * remove MCD complete
+ *
  * Revision 2.22  2004/07/12 16:32:58  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -3652,7 +3655,6 @@ void multi_update_valid_tables()
 				
 				std_gen_set_text((char *) temp.c_str(),1);
 			}
-			else
 #endif
 			//multi_update_validate_tables_DrawString((char *) temp.c_str());
 			cf_chksum_long(full_name, &checksum);

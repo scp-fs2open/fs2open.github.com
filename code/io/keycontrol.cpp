@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.36 $
- * $Date: 2004-07-29 19:37:50 $
+ * $Revision: 2.37 $
+ * $Date: 2004-08-26 18:19:36 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2004/07/29 19:37:50  Kazan
+ * unbug the JS bug i caused --- kazan
+ *
  * Revision 2.35  2004/07/26 20:47:33  Kazan
  * remove MCD complete
  *
@@ -957,6 +960,12 @@ void process_debug_keys(int k)
 	if ( !Debug_allowed )
 		return;
 #endif
+
+	// Kazan -- NO CHEATS IN MULTIb
+	if (Game_mode & GM_MULTIPLAYER)
+	{
+		return;
+	}
 
 	// if ( (k & KEY_DEBUGGED) && (Game_mode & GM_RECORDING_DEMO) )
 		// return;
