@@ -1,3 +1,26 @@
+/*
+ * Copyright (C) Volition, Inc. 1999.  All rights reserved.
+ *
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
+ * source.
+ *
+*/
+
+/*
+ * $Logfile: /Freespace2/code/cutscene/movie.cpp $
+ * $Revision: 2.20 $
+ * $Date: 2004-04-26 13:09:20 $
+ * $Author: taylor $
+ *
+ * movie player code
+ * 
+ * $Log: not supported by cvs2svn $
+ * 
+ * 
+ * $NoKeywords: $
+ */
+
 #include <windows.h>
 
 #include "movie.h"
@@ -6,6 +29,8 @@
 #include "cmdline/cmdline.h"	
 #include "debugconsole/dbugfile.h" 
 #include "cfile/cfile.h"
+#include "cutscene/cutscenes.h" // cutscene_mark_viewable()
+#include "freespace2/freespace.h" // for Game_mode, etc.
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play
@@ -69,6 +94,19 @@ int movie_find(char *filename, char *out_name)
 // Play one movie
 bool movie_play(char *name)
 {
+	// mark the movie as viewable to the player when in a campaign
+	// do this before anything else so that we're sure the movie is available
+	// to the player even if it's not going to play right now
+	if (Game_mode & GM_CAMPAIGN_MODE) {
+		cutscene_mark_viewable(name);
+	}
+
+	// reset the gr_* stuff before trying to play a movie
+	// fixes white flash in OGL and possibly other wierd stuff
+	gr_reset_clip();
+	gr_clear();
+	gr_flip();
+
 	extern int Is_standalone;
 	if(Is_standalone) return false;
  	if(Cmdline_dnoshowvid) return false;
