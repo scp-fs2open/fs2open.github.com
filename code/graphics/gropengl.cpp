@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.108 $
- * $Date: 2005-03-19 21:03:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.109 $
+ * $Date: 2005-03-20 00:09:07 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2005/03/19 21:03:54  wmcoolmon
+ * OpenGL display lists
+ *
  * Revision 2.107  2005/03/19 18:02:33  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -751,6 +754,7 @@
 #if defined(_WIN32) && !defined(__GNUC__)
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
+#pragma comment (lib, "glaux")
 #endif
 
 

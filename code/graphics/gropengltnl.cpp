@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-03-19 21:03:54 $
- * $Author: wmcoolmon $
+ * $Revision: 1.19 $
+ * $Date: 2005-03-20 00:09:07 $
+ * $Author: phreak $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/03/19 21:03:54  wmcoolmon
+ * OpenGL display lists
+ *
  * Revision 1.17  2005/03/19 18:02:34  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -850,4 +853,21 @@ void gr_opengl_set_state_block(int handle)
 {
 	if(handle < 0) return;
 	glCallList(handle);
+}
+
+
+void gr_opengl_draw_htl_line(vector *start, vector* end)
+{
+	if (Cmdline_nohtl) return;
+	glBegin(GL_LINES);
+		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+		glVertex3fv(start->a1d);
+		glVertex3fv(end->a1d);
+	glEnd();
+}
+
+void gr_opengl_draw_htl_sphere(float rad)
+{
+	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+	auxSolidSphere(rad);
 }

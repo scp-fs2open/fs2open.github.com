@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.52 $
- * $Date: 2005-03-19 18:02:33 $
- * $Author: bobboau $
+ * $Revision: 2.53 $
+ * $Date: 2005-03-20 00:09:07 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/03/19 18:02:33  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 2.51  2005/03/16 01:35:58  bobboau
  * added a geometry batcher and implemented it in sevral places
  * namely: lasers, thrusters, and particles,
@@ -1016,6 +1020,9 @@ typedef struct screen {
 
 	void (*gf_draw_line_list)(colored_vector*lines, int num);
 
+	void (*gf_draw_htl_line)(vector *start, vector* end);
+	void (*gf_draw_htl_sphere)(float rad);
+
 //	void (*gf_set_environment_mapping)(int i);
 
 /*	void (*gf_begin_sprites)();//does prep work for sprites
@@ -1303,6 +1310,9 @@ __inline bool gr_set_render_target(int n, int face = -1)
 #define gr_setup_background_fog GR_CALL	(*gr_screen.gf_setup_background_fog)
 
 #define gr_draw_line_list GR_CALL	(*gr_screen.gf_draw_line_list)
+
+#define gr_draw_htl_line GR_CALL(*gr_screen.gf_draw_htl_line)
+#define gr_draw_htl_sphere GR_CALL(*gr_screen.gf_draw_htl_sphere)
 
 /*
 #define	gr_begin_sprites GR_CALL		(*gr_screen.gf_begin_sprites)

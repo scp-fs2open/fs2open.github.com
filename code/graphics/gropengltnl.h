@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.8 $
- * $Date: 2005-03-19 18:02:34 $
- * $Author: bobboau $
+ * $Revision: 1.9 $
+ * $Date: 2005-03-20 00:09:07 $
+ * $Author: phreak $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/03/19 18:02:34  bobboau
+ * added new graphic functions for state blocks
+ * also added a class formanageing a new effect
+ *
  * Revision 1.7  2005/02/23 05:11:13  taylor
  * more consolidation of various graphics variables
  * some header cleaning
@@ -87,5 +91,8 @@ void gr_opengl_render_to_env(int FACE);
 void gr_opengl_start_state_block();
 int gr_opengl_end_state_block();
 void gr_opengl_set_state_block(int);
+
+void gr_opengl_draw_htl_line(vector *start, vector* end);
+void gr_opengl_draw_htl_sphere(float rad);
 
 #endif //_GROPENGLTNL_H

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.67 $
- * $Date: 2005-03-13 08:44:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.68 $
+ * $Date: 2005-03-20 00:09:07 $
+ * $Author: phreak $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/03/13 08:44:10  wmcoolmon
+ * Squashed compiler warnings
+ *
  * Revision 2.66  2005/03/08 03:50:19  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -3893,3 +3896,9 @@ void gr_d3d_draw_line_list(colored_vector*lines, int num){
 	render_buffer.unlock();
 	render_buffer.draw(D3DPT_LINELIST, num);
 }
+
+void gr_d3d_draw_htl_line(vector *start, vector* end)
+{}
+
+void gr_d3d_draw_htl_sphere(float rad)
+{}

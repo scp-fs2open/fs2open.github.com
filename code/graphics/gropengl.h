@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.6 $
- * $Date: 2005-02-23 05:11:13 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-03-20 00:09:07 $
+ * $Author: phreak $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/23 05:11:13  taylor
+ * more consolidation of various graphics variables
+ * some header cleaning
+ * only one tmapper_internal for OGL, don't use more than two tex/pass now
+ * seperate out 2d matrix mode to allow -2d_poof in OGL and maybe fix missing
+ *    interface when set 3d matrix stuff doesn't have corresponding end
+ * add dump_frame stuff for OGL, mostly useless but allows trailer recording
+ *
  * Revision 2.5  2005/01/01 11:24:23  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -68,6 +76,7 @@
 	#include "graphics/gl/gl.h"
 	#include "graphics/gl/glu.h"
 	#include "graphics/gl/glext.h"
+	#include "graphics/gl/glaux.h"
 
 	#define STUB_FUNCTION 0
 #elif defined(SCP_UNIX)
@@ -82,6 +91,7 @@
 	#include <GL/gl.h>
 	#include <GL/glu.h>
 	#include <GL/glext.h>
+	#include <GL/glaux.h>
 #endif // SDL_VERSION check
 #endif
 
