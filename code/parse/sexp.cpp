@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.116 $
- * $Date: 2004-10-14 22:28:27 $
+ * $Revision: 2.117 $
+ * $Date: 2004-10-14 23:03:37 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.116  2004/10/14 22:28:27  Goober5000
+ * added ability for variable names to be used as special arguments
+ * --Goober5000
+ *
  * Revision 2.115  2004/10/14 01:19:17  Goober5000
  * more ubersexp bugfixing
  * --Goober5000
@@ -14570,9 +14574,8 @@ int sexp_query_type_match(int opf, int opr)
 
 		// Goober5000
 		case OPF_ANYTHING:
-			// this violates the designation of "anything", but is necessary to prevent
-			// nesting of flexible-argument sexps, which would be a nightmare to code
-			return (opr != OPR_FLEXIBLE_ARGUMENT);
+			// don't match any operators, only data
+			return 0;
 
 		case OPF_AI_GOAL:
 			return (opr == OPR_AI_GOAL);
