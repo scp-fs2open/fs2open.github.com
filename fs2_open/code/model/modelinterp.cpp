@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.88 $
- * $Date: 2004-09-05 19:23:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.89 $
+ * $Date: 2004-10-09 17:48:58 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2004/09/05 19:23:24  Goober5000
+ * fixed a few warnings
+ * --Goober5000
+ *
  * Revision 2.87  2004/07/26 20:47:41  Kazan
  * remove MCD complete
  *
@@ -3559,7 +3563,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	// Draw the subobjects	
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 
-	gr_set_fill_mode((is_outlines_only == true)?GR_FILL_MODE_WIRE:GR_FILL_MODE_SOLID);
+	//gr_set_fill_mode((is_outlines_only == true)?GR_FILL_MODE_WIRE:GR_FILL_MODE_SOLID);
 	while( i>-1 )	{
 		if (!pm->submodel[i].is_thruster )	{
 			zbuf_mode = GR_ZBUFF_FULL;
@@ -3571,7 +3575,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 			}
 			gr_zbuffer_set(zbuf_mode);
 			// When in htl mode render with htl method unless its a jump node
-			if(!Cmdline_nohtl ){
+			if(!Cmdline_nohtl && !is_outlines_only ){
 				model_render_childeren_buffers(&pm->submodel[i], pm, i, detail_level);
 			}
 			else {
@@ -3609,7 +3613,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	//*************************** draw the hull of the ship *********************************************
 
 	// When in htl mode render with htl method unless its a jump node
-	if(!Cmdline_nohtl){
+	if(!Cmdline_nohtl && !is_outlines_only){
 		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
 //		model_render_childeren_buffers(&pm->submodel[pm->detail[detail_level]], pm, pm->detail[detail_level], detail_level);
 	}
@@ -5090,7 +5094,68 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model_list.n_verts += list[i].n_verts;
 	}
 
-	model_list.make_index_buffer();
+	// IBX stuff
+	extern IBX ibuffer_info;
+
+	// if we have an IBX read file then use it, otherwise generate buffers and save them to file
+	if ( ibuffer_info.read != NULL ) {
+		int ibx_verts = 0;
+		int ibx_size = 0;
+
+		ibx_verts = cfread_int( ibuffer_info.read );
+		ibuffer_info.size -= sizeof(int); // subtract
+
+		// figure up how big this section of data is going to be
+		ibx_size += ibx_verts * sizeof(float); // first set of data (here)
+		ibx_size += ibx_verts * sizeof(short); // second set of data (next "for" statement)
+
+		// safety check for this section
+		// ibuffer_info.size should be greater than or equal to ibx_size at this point
+		if ( ibx_size > ibuffer_info.size ) {
+			// AAAAAHH! not enough stored data - Abort, Retry, Fail?
+			mprintf(("IBX: Safety Check Failure!  The file doesn't contain enough data, deleting '%s'\n", ibuffer_info.name));
+
+			cfclose( ibuffer_info.read );
+			ibuffer_info.read = NULL;
+			ibuffer_info.size = 0;
+			cf_delete( ibuffer_info.name, CF_TYPE_CACHE );
+
+			// force generate
+			model_list.make_index_buffer();
+		} else {
+			// it's all good
+			for (i=0; i<ibx_verts; i++) {
+				model_list.vert[i].x = cfread_float( ibuffer_info.read );
+				model_list.vert[i].y = cfread_float( ibuffer_info.read );
+				model_list.vert[i].z = cfread_float( ibuffer_info.read );
+				model_list.vert[i].u = cfread_float( ibuffer_info.read );
+				model_list.vert[i].v = cfread_float( ibuffer_info.read );
+				cfread_vector( &model_list.norm[i], ibuffer_info.read );
+			}
+
+			model_list.n_verts = ibx_verts;
+		}
+
+		// subtract this block of data from the total size for next check
+		// remember that this includes the next set of reads too
+		ibuffer_info.size -= ibx_size;
+	} else {
+		// no read file so we'll have to generate
+		model_list.make_index_buffer();
+
+		if ( ibuffer_info.write != NULL ) {
+			cfwrite_int( model_list.n_verts, ibuffer_info.write );
+
+			for (i=0; i<model_list.n_verts; i++) {
+				cfwrite_float( model_list.vert[i].x, ibuffer_info.write );
+				cfwrite_float( model_list.vert[i].y, ibuffer_info.write );
+				cfwrite_float( model_list.vert[i].z, ibuffer_info.write );
+				cfwrite_float( model_list.vert[i].u, ibuffer_info.write );
+				cfwrite_float( model_list.vert[i].v, ibuffer_info.write );
+				cfwrite_vector( &model_list.norm[i], ibuffer_info.write );
+			}
+		}
+	}
 
 	model->indexed_vertex_buffer = gr_make_buffer(&model_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_NORMAL | VERTEX_FLAG_UV1);
 	recode_check = 0;
@@ -5101,10 +5166,19 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		if(!list[i].n_verts)continue;
 		model->buffer[model->n_buffers].index_buffer.allocate_index_buffer(list[i].n_verts);
 		for(int j = 0; j < list[i].n_verts; j++){
-			model->buffer[model->n_buffers].index_buffer.index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
-			Assert(model->buffer[model->n_buffers].index_buffer.index_buffer[j] != -1);
-			Assert(same_vert(&model_list.vert[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].vert[j], &model_list.norm[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].norm[j]));
-		//	Assert(find_fisrt_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
+			if ( ibuffer_info.read != NULL ) {
+				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = cfread_short( ibuffer_info.read );
+			} else {
+				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = find_fisrt_index_vb(&list[i], j, &model_list);
+				Assert(model->buffer[model->n_buffers].index_buffer.index_buffer[j] != -1);
+				Assert(same_vert(&model_list.vert[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].vert[j], &model_list.norm[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].norm[j]));
+			//	Assert(find_fisrt_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
+
+				// try to write out generated index buffer for later use
+				if ( ibuffer_info.write != NULL ) {
+					cfwrite_short( model->buffer[model->n_buffers].index_buffer.index_buffer[j], ibuffer_info.write );
+				}
+			}
 		}
 		model->buffer[model->n_buffers].n_prim = tri_count[i];
 		model->buffer[model->n_buffers].texture = i;
