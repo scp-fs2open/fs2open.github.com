@@ -9,18 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-06 16:50:44 $
+ * $Revision: 2.3 $
+ * $Date: 2002-09-20 20:01:30 $
  * $Author: phreak $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/06 16:50:44  phreak
+ * added wireframe targetbox feature
  *
- * Revision 2.21 2002/08/04 23:17:40  PhReAk
+ * Revision 2.2 2002/08/04 23:17:40  phreak
  * Did the toggling code for wireframes -> CTRL+SHIFT+Q
  *
- * Revision 2.2  2002/08/04 21:53:13  PhReAk
+ * Revision 2.2  2002/08/04 21:53:13  phreak
  * Changed hud_render_target_asteroid, ...weapon, ...ship to render in wireframe
  *
  * Revision 2.1  2002/08/01 01:41:06  penguin
@@ -1208,11 +1210,19 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 
 	gr_line(x1, y1, x2, y1);
 
+	// added 2nd horizontal scan line - phreak
+	y1 = fl2i(Cargo_scan_coords[gr_screen.res][1] + Cargo_scan_coords[gr_screen.res][3] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][3] ));
+	gr_line(x1, y1, x2, y1);
+
 	// draw vertical scan line
 	x1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][0] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][2] ));
 	y1 = Cargo_scan_coords[gr_screen.res][1];
 	y2 = y1 + Cargo_scan_coords[gr_screen.res][3];
 
+	gr_line(x1, y1-3, x1, y2-1);
+
+	// added 2nd vertical scan line - phreak
+	x1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][2] + Cargo_scan_coords[gr_screen.res][0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][2] ));
 	gr_line(x1, y1-3, x1, y2-1);
 }
 
