@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.9 $
- * $Date: 2002-12-20 07:17:23 $
+ * $Revision: 2.10 $
+ * $Date: 2002-12-21 17:58:11 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2002/12/20 07:17:23  Goober5000
+ * Updated the cargo-known-delay and cap-subsys-cargo-known-delay sexps to work correctly if set-scanned and set-unscanned are used repeatedly with the same ship or ship subsystem.  In most cases, this functionality will never be needed, but it's nice to know that it's here. :) However, I should point out that cap-subsys-cargo-known-delay will recognize only the first instance of a subsystem being revealed once the ship is no longer in the mission.  Here is the relevant bit I put into the sexp handling routine...
+ * "Since there is no way to keep track of subsystem status once a ship has departed or has been destroyed, check the mission log.  This will work in 99.9999999% of all cases; however, if the mission designer repeatedly sets and resets the scanned status of the subsystem, the mission log will only return the first occurrence of the subsystem cargo being revealed (regardless of whether it was first hidden using set-unscanned).  Normally, ships keep track of cargo data in the subsystem struct, but once/ the ship has left the mission, the subsystem linked list is purged, causing the loss of this information.  I judged the significant rework of the subsystem code not worth the rare instance that this sexp may be required to work in this way, especially since this problem only occurs after the ship departs.  If the mission designer really needs this functionality, he or she can achieve the same result with creative combinations of event chaining and is-event-true."
+ *
+ * Please note that this problem only occurs with cap-subsys-cargo-known-delay, only if the subsystem scanned status is revealed more than once, and then only after the ship is no longer in the mission.  Sufficiently rare, I figured, that I could afford to not worry about it.
+ * --Goober5000
+ *
  * Revision 2.8  2002/12/17 03:25:30  Goober5000
  * added set-scanned and set-unscanned sexps
  *
@@ -380,6 +387,7 @@
 #define TRUE	1
 #define FALSE	0
 
+
 sexp_oper Operators[] = {
 //   Operator, Identity, Min / Max arguments
 	{ "+",		OP_PLUS,		2,	INT_MAX	},
@@ -400,63 +408,74 @@ sexp_oper Operators[] = {
 	{ "<",								OP_LESS_THAN,					2,	2,			},
 	{ "is-iff",							OP_IS_IFF,						2, INT_MAX,	},
 	{ "has-time-elapsed",			OP_HAS_TIME_ELAPSED,			1,	1,			},
-	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 
-	{ "is-goal-incomplete",					OP_GOAL_INCOMPLETE,				1, 1,	},
 	{ "is-goal-true-delay",					OP_GOAL_TRUE_DELAY,				2, 2,	},
 	{ "is-goal-false-delay",				OP_GOAL_FALSE_DELAY,				2, 2,	},
-	{ "is-event-incomplete",				OP_EVENT_INCOMPLETE,				1, 1,	},
+	{ "is-goal-incomplete",					OP_GOAL_INCOMPLETE,				1, 1,	},
+	{ "is-event-true",						OP_EVENT_TRUE,							1, 1,			},
 	{ "is-event-true-delay",				OP_EVENT_TRUE_DELAY,				2, 2,	},
+	{ "is-event-false",						OP_EVENT_FALSE,						1, 1,			},
 	{ "is-event-false-delay",				OP_EVENT_FALSE_DELAY,			2, 2,	},
-	{ "is-previous-goal-incomplete",		OP_PREVIOUS_GOAL_INCOMPLETE,	2, 3,	},
+	{ "is-event-incomplete",				OP_EVENT_INCOMPLETE,				1, 1,	},
 	{ "is-previous-goal-true",				OP_PREVIOUS_GOAL_TRUE,			2, 3,	},
 	{ "is-previous-goal-false",			OP_PREVIOUS_GOAL_FALSE,			2, 3,	},
-	{ "is-previous-event-incomplete",	OP_PREVIOUS_EVENT_INCOMPLETE,	2, 3,	},
+	{ "is-previous-goal-incomplete",		OP_PREVIOUS_GOAL_INCOMPLETE,	2, 3,	},
 	{ "is-previous-event-true",			OP_PREVIOUS_EVENT_TRUE,			2, 3,	},
 	{ "is-previous-event-false",			OP_PREVIOUS_EVENT_FALSE,		2, 3,	},
+	{ "is-previous-event-incomplete",	OP_PREVIOUS_EVENT_INCOMPLETE,	2, 3,	},
 
 	{ "is-destroyed",							OP_IS_DESTROYED,						1,	INT_MAX,	},
-	{ "is-subsystem-destroyed",			OP_IS_SUBSYSTEM_DESTROYED,			2, 2,			},
-	{ "is-disabled",							OP_IS_DISABLED,						1, INT_MAX,	},
-	{ "is-disarmed",							OP_IS_DISARMED,						1, INT_MAX,	},
-	{ "has-docked",							OP_HAS_DOCKED,							3, 3,			},
-	{ "has-undocked",							OP_HAS_UNDOCKED,						3, 3,			},
-	{ "has-arrived",							OP_HAS_ARRIVED,						1, INT_MAX,	},
-	{ "has-departed",							OP_HAS_DEPARTED,						1, INT_MAX,	},
 	{ "is-destroyed-delay",					OP_IS_DESTROYED_DELAY,				2,	INT_MAX,	},
+	{ "is-subsystem-destroyed",			OP_IS_SUBSYSTEM_DESTROYED,			2, 2,			},
 	{ "is-subsystem-destroyed-delay",	OP_IS_SUBSYSTEM_DESTROYED_DELAY,	3, 3,			},
+	{ "is-disabled",							OP_IS_DISABLED,						1, INT_MAX,	},
 	{ "is-disabled-delay",					OP_IS_DISABLED_DELAY,				2, INT_MAX,	},
+	{ "is-disarmed",							OP_IS_DISARMED,						1, INT_MAX,	},
 	{ "is-disarmed-delay",					OP_IS_DISARMED_DELAY,				2, INT_MAX,	},
+	{ "has-docked",							OP_HAS_DOCKED,							3, 3,			},
 	{ "has-docked-delay",					OP_HAS_DOCKED_DELAY,					4, 4,			},
+	{ "has-undocked",							OP_HAS_UNDOCKED,						3, 3,			},
 	{ "has-undocked-delay",					OP_HAS_UNDOCKED_DELAY,				4, 4,			},
+	{ "has-arrived",							OP_HAS_ARRIVED,						1, INT_MAX,	},
 	{ "has-arrived-delay",					OP_HAS_ARRIVED_DELAY,				2, INT_MAX,	},
+	{ "has-departed",							OP_HAS_DEPARTED,						1, INT_MAX,	},
 	{ "has-departed-delay",					OP_HAS_DEPARTED_DELAY,				2, INT_MAX,	},
 	{ "are-waypoints-done",					OP_WAYPOINTS_DONE,					2, 2,			},
 	{ "are-waypoints-done-delay",			OP_WAYPOINTS_DONE_DELAY,			3, 3,			},
 	{ "ship-type-destroyed",				OP_SHIP_TYPE_DESTROYED,				2, 2,			},
-	{ "is-event-true",						OP_EVENT_TRUE,							1, 1,			},
-	{ "is-event-false",						OP_EVENT_FALSE,						1, 1,			},
-	{ "is-cargo-known",						OP_IS_CARGO_KNOWN,					1, INT_MAX,	},
-	{ "was-promotion-granted",				OP_WAS_PROMOTION_GRANTED,			0, 1,			},
-	{ "was-medal-granted",					OP_WAS_MEDAL_GRANTED,				0, 1,			},
-	{ "percent-ships-departed",			OP_PERCENT_SHIPS_DEPARTED,			2, INT_MAX,	},
 	{ "percent-ships-destroyed",			OP_PERCENT_SHIPS_DESTROYED,		2, INT_MAX,	},
-	{ "is-cargo-known-delay",				OP_CARGO_KNOWN_DELAY,				2, INT_MAX,	},
-	{ "cap-subsys-cargo-known-delay",	OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,	3, INT_MAX,	},
-	{ "has-been-tagged-delay",				OP_HAS_BEEN_TAGGED_DELAY,			2, INT_MAX,	},
+	{ "percent-ships-departed",			OP_PERCENT_SHIPS_DEPARTED,			2, INT_MAX,	},
 	{ "depart-node-delay",					OP_DEPART_NODE_DELAY,				3, INT_MAX, },	
 	{ "destroyed-or-departed-delay",		OP_DESTROYED_DEPARTED_DELAY,		2, INT_MAX, },	
+
+	{ "is-cargo-known",						OP_IS_CARGO_KNOWN,					1, INT_MAX,	},
+	{ "is-cargo-known-delay",				OP_CARGO_KNOWN_DELAY,				2, INT_MAX,	},
+	{ "cap-subsys-cargo-known-delay",	OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,	3, INT_MAX,	},
+	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,			1, 1, },
 	{ "is_tagged",								OP_IS_TAGGED,							1, 1			},
-	{ "num_kills",								OP_NUM_KILLS,							1, 1			},
-	{ "num_type_kills",						OP_NUM_TYPE_KILLS,					2,	2			},
-	{ "num_class_kills",						OP_NUM_CLASS_KILLS,					2,	2			},
+	{ "has-been-tagged-delay",				OP_HAS_BEEN_TAGGED_DELAY,			2, INT_MAX,	},
 	{ "shield-recharge-pct",				OP_SHIELD_RECHARGE_PCT,				1, 1			},
 	{ "engine-recharge-pct",				OP_ENGINE_RECHARGE_PCT,				1, 1			},
 	{ "weapon-recharge-pct",				OP_WEAPON_RECHARGE_PCT,				1, 1			},
 	{ "shield-quad-low",						OP_SHIELD_QUAD_LOW,					2,	2			},
 	{ "secondary-ammo-pct",					OP_SECONDARY_AMMO_PCT,				2,	2			},
-	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
 	{ "is-primary-selected",				OP_IS_PRIMARY_SELECTED,				2,	2			},
+	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
+	{ "shields-left",					OP_SHIELDS_LEFT,				1, 1, },
+	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
+	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 2, },
+	{ "distance",						OP_DISTANCE,					2, 2, },
+	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
+	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
+	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
+	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
+	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
+	{ "num_kills",								OP_NUM_KILLS,							1, 1			},
+	{ "num_type_kills",						OP_NUM_TYPE_KILLS,					2,	2			},
+	{ "num_class_kills",						OP_NUM_CLASS_KILLS,					2,	2			},
+	{ "team-score",					OP_TEAM_SCORE,					1,	1,	}, 
+	{ "was-promotion-granted",				OP_WAS_PROMOTION_GRANTED,			0, 1,			},
+	{ "was-medal-granted",					OP_WAS_MEDAL_GRANTED,				0, 1,			},
 
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,	1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,	1,	1,	},
@@ -468,23 +487,15 @@ sexp_oper Operators[] = {
 	{ "time-docked",				OP_TIME_DOCKED,			3, 3, },
 	{ "time-undocked",			OP_TIME_UNDOCKED,			3, 3, },
 
-	{ "shields-left",					OP_SHIELDS_LEFT,				1, 1, },
-	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
-	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 2, },
-	{ "distance",						OP_DISTANCE,					2, 2, },
-	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
-	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,			1, 1, },
-	{ "team-score",					OP_TEAM_SCORE,					1,	1,	}, 
-	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
-	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
-	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
-	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
-
-	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
-
-	{ "do-nothing",	OP_NOP,	0, 0,			},
 	{ "when",			OP_WHEN,	2, INT_MAX, },
 	{ "cond",			OP_COND, 1, INT_MAX, },
+
+
+	{ "send-message-list",			OP_SEND_MESSAGE_LIST,			4, INT_MAX	},
+	{ "send-message",					OP_SEND_MESSAGE,					3, 3,			},
+	{ "send-random-message",		OP_SEND_RANDOM_MESSAGE,			3, INT_MAX,	},
+	{ "invalidate-goal",				OP_INVALIDATE_GOAL,				1, INT_MAX,	},
+	{ "validate-goal",				OP_VALIDATE_GOAL,					1, INT_MAX,	},
 
 	{ "add-goal",						OP_ADD_GOAL,						2, 2,			},
 	{ "add-ship-goal",				OP_ADD_SHIP_GOAL,					2, 2,			},
@@ -492,43 +503,37 @@ sexp_oper Operators[] = {
 	{ "clear-goals",					OP_CLEAR_GOALS,					1, INT_MAX,	},
 	{ "clear-ship-goals",			OP_CLEAR_SHIP_GOALS,				1, 1,			},
 	{ "clear-wing-goals",			OP_CLEAR_WING_GOALS,				1, 1,			},
+	{ "good-rearm-time",				OP_GOOD_REARM_TIME,				2,	2,			},
+	{ "good-secondary-time",		OP_GOOD_SECONDARY_TIME,			4, 4,			},
 	{ "change-iff",					OP_CHANGE_IFF,						2,	INT_MAX,	},
 	{ "protect-ship",					OP_PROTECT_SHIP,					1, INT_MAX,	},
 	{ "unprotect-ship",				OP_UNPROTECT_SHIP,				1, INT_MAX,	},
 	{ "beam-protect-ship",			OP_BEAM_PROTECT_SHIP,			1, INT_MAX,	},
 	{ "beam-unprotect-ship",		OP_BEAM_UNPROTECT_SHIP,			1, INT_MAX,	},
-	{ "send-message",					OP_SEND_MESSAGE,					3, 3,			},
-	{ "self-destruct",				OP_SELF_DESTRUCT,					1, INT_MAX,	},
-	{ "next-mission",					OP_NEXT_MISSION,					1, 1,			},
-	{ "end-campaign",					OP_END_CAMPAIGN,					0, 0,			},
-	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0,			},
+
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,				3, 3,			},
 	{ "set-subsystem-strength",	OP_SET_SUBSYSTEM_STRNGTH,		3, 3,			},
-	{ "invalidate-goal",				OP_INVALIDATE_GOAL,				1, INT_MAX,	},
-	{ "validate-goal",				OP_VALIDATE_GOAL,					1, INT_MAX,	},
-	{ "send-random-message",		OP_SEND_RANDOM_MESSAGE,			3, INT_MAX,	},
+	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
+	{ "self-destruct",				OP_SELF_DESTRUCT,					1, INT_MAX,	},
 	{ "transfer-cargo",				OP_TRANSFER_CARGO,				2, 2,			},
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
-	{ "end-mission",			OP_END_MISSION,			0, 0,			}, //-Sesquipedalian
-	{ "good-rearm-time",				OP_GOOD_REARM_TIME,				2,	2,			},
-	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
-	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
-	{ "allow-ship",					OP_ALLOW_SHIP,						1, 1,			},
-	{ "allow-weapon",					OP_ALLOW_WEAPON,					1, 1,			},
+	{ "jettison-cargo-delay",		OP_JETTISON_CARGO,				2, 2			},
+	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,				1,	2			},
+	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
+	{ "set-unscanned",				OP_SET_UNSCANNED,					1, 2 },
+
+	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
+	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,				1, INT_MAX	},
+	{ "ship-guardian",				OP_SHIP_GUARDIAN,					1, INT_MAX	},
+	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,				1, INT_MAX	},
+	{ "ship-invisible",				OP_SHIP_INVISIBLE,				1, INT_MAX	},
+	{ "ship-visible",					OP_SHIP_VISIBLE,					1, INT_MAX	},
 	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
 	{ "fix-warp",						OP_WARP_NOT_BROKEN,				1, INT_MAX,	},
 	{ "never-warp",					OP_WARP_NEVER,						1, INT_MAX, },
 	{ "allow-warp",					OP_WARP_ALLOWED,					1, INT_MAX, },
-	{ "good-secondary-time",		OP_GOOD_SECONDARY_TIME,			4, 4,			},
-	{ "ship-invisible",				OP_SHIP_INVISIBLE,				1, INT_MAX	},
-	{ "ship-visible",					OP_SHIP_VISIBLE,					1, INT_MAX	},
-	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
-	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,				1, INT_MAX	},
-	{ "red-alert",						OP_RED_ALERT,						0, 0			},
-	{ "tech-add-ships",				OP_TECH_ADD_SHIP,					1, INT_MAX	},
-	{ "tech-add-weapons",			OP_TECH_ADD_WEAPON,				1, INT_MAX	},
-	{ "jettison-cargo-delay",		OP_JETTISON_CARGO,				2, 2			},
+
 	{ "fire-beam",						OP_BEAM_FIRE,						3, 4			},
 	{ "beam-free",						OP_BEAM_FREE,						2, INT_MAX	},
 	{ "beam-free-all",				OP_BEAM_FREE_ALL,					1, 1			},
@@ -538,45 +543,53 @@ sexp_oper Operators[] = {
 	{ "turret-free-all",				OP_TURRET_FREE_ALL,				1, 1			},
 	{ "turret-lock",					OP_TURRET_LOCK,					2, INT_MAX	},
 	{ "turret-lock-all",				OP_TURRET_LOCK_ALL,				1, 1			},
+	{ "turret-tagged-only",			OP_TURRET_TAGGED_ONLY_ALL,		1,	1			},
+	{ "turret-tagged-clear",		OP_TURRET_TAGGED_CLEAR_ALL,	1,	1			},
+
+	{ "red-alert",						OP_RED_ALERT,						0, 0			},
+	{ "end-mission",			OP_END_MISSION,			0, 0,			}, //-Sesquipedalian
+	{ "next-mission",					OP_NEXT_MISSION,					1, 1,			},
+	{ "end-campaign",					OP_END_CAMPAIGN,					0, 0,			},
+	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0,			},
+	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
+	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
+	{ "allow-ship",					OP_ALLOW_SHIP,						1, 1,			},
+	{ "allow-weapon",					OP_ALLOW_WEAPON,					1, 1,			},
+	{ "tech-add-ships",				OP_TECH_ADD_SHIP,					1, INT_MAX	},
+	{ "tech-add-weapons",			OP_TECH_ADD_WEAPON,				1, INT_MAX	},
+
+	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
 	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
 	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
-	{ "send-message-list",			OP_SEND_MESSAGE_LIST,			4, INT_MAX	},
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
-	{ "ship-guardian",				OP_SHIP_GUARDIAN,					1, INT_MAX	},
-	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,				1, INT_MAX	},
+	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
+	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
 	{ "ship-lights-on",					OP_SHIP_LIGHTS_ON,					1, 1			}, //-WMCoolmon
 	{ "ship-lights-off",					OP_SHIP_LIGHTS_OFF,					1, 1			}, //-WMCoolmon
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
-	{ "turret-tagged-only",			OP_TURRET_TAGGED_ONLY_ALL,		1,	1			},
-	{ "turret-tagged-clear",		OP_TURRET_TAGGED_CLEAR_ALL,	1,	1			},
-	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
-	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
-	{ "cargo-no-deplete",			OP_CARGO_NO_DEPLETE,				1,	2			},
-	{ "set-scanned",				OP_SET_SCANNED,					1, 2 },
-	{ "set-unscanned",				OP_SET_UNSCANNED,					1, 2 },
 
 	{ "error",	OP_INT3,	0, 0 },
 
 	{ "ai-chase",					OP_AI_CHASE,					2, 2, },
 	{ "ai-chase-wing",			OP_AI_CHASE_WING,				2, 2, },
-	{ "ai-dock",					OP_AI_DOCK,						4, 4, },
-	{ "ai-undock",					OP_AI_UNDOCK,					1, 1, },
-	{ "ai-warp",					OP_AI_WARP,						2, 2, },
-	{ "ai-warp-out",				OP_AI_WARP_OUT,				1, 1, },
-	{ "ai-waypoints",				OP_AI_WAYPOINTS,				2, 2, },
-	{ "ai-waypoints-once",		OP_AI_WAYPOINTS_ONCE,		2, 2, },
+	{ "ai-chase-any",				OP_AI_CHASE_ANY,				1, 1, },
+	{ "ai-guard",					OP_AI_GUARD,					2, 2, },
+	{ "ai-guard-wing",			OP_AI_GUARD_WING,				2, 2, },
 	{ "ai-destroy-subsystem",	OP_AI_DESTROY_SUBSYS,		3, 3, },
 	{ "ai-disable-ship",			OP_AI_DISABLE_SHIP,			2, 2, },
 	{ "ai-disarm-ship",			OP_AI_DISARM_SHIP,			2, 2, },
-	{ "ai-guard",					OP_AI_GUARD,					2, 2, },
-	{ "ai-chase-any",				OP_AI_CHASE_ANY,				1, 1, },
-	{ "ai-guard-wing",			OP_AI_GUARD_WING,				2, 2, },
-	{ "ai-evade-ship",			OP_AI_EVADE_SHIP,				2, 2,	},
-	{ "ai-stay-near-ship",		OP_AI_STAY_NEAR_SHIP,		2, 2, },
-	{ "ai-keep-safe-distance",	OP_AI_KEEP_SAFE_DISTANCE,	1, 1, },
+	{ "ai-warp",					OP_AI_WARP,						2, 2, },
+	{ "ai-warp-out",				OP_AI_WARP_OUT,				1, 1, },
+	{ "ai-dock",					OP_AI_DOCK,						4, 4, },
+	{ "ai-undock",					OP_AI_UNDOCK,					1, 1, },
+	{ "ai-waypoints",				OP_AI_WAYPOINTS,				2, 2, },
+	{ "ai-waypoints-once",		OP_AI_WAYPOINTS_ONCE,		2, 2, },
 	{ "ai-ignore",					OP_AI_IGNORE,					2, 2, },
+	{ "ai-stay-near-ship",		OP_AI_STAY_NEAR_SHIP,		2, 2, },
+	{ "ai-evade-ship",			OP_AI_EVADE_SHIP,				2, 2,	},
+	{ "ai-keep-safe-distance",	OP_AI_KEEP_SAFE_DISTANCE,	1, 1, },
 	{ "ai-stay-still",			OP_AI_STAY_STILL,				2, 2, },
 	{ "ai-play-dead",				OP_AI_PLAY_DEAD,				1, 1, },
 
@@ -594,11 +607,13 @@ sexp_oper Operators[] = {
 	{ "path-flown",				OP_PATH_FLOWN,					0, 0,			},
 	{ "training-msg",				OP_TRAINING_MSG,				1, 4,			},
 	{ "flash-hud-gauge",			OP_FLASH_HUD_GAUGE,			1, 1,			},
-	{ "special-check",			OP_SPECIAL_CHECK,				1, 1,			},
 	{ "secondaries-depleted",	OP_SECONDARIES_DEPLETED,	1, 1,			},
+	{ "special-check",			OP_SPECIAL_CHECK,				1, 1,			},
 
 	{ "set-training-context-fly-path",	OP_SET_TRAINING_CONTEXT_FLY_PATH,	2, 2, },
 	{ "set-training-context-speed",		OP_SET_TRAINING_CONTEXT_SPEED,		2, 2, },
+
+	{ "do-nothing",	OP_NOP,	0, 0,			},
 };
 
 sexp_ai_goal_link Sexp_ai_goal_links[] = {
@@ -4329,6 +4344,8 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 
 	num_known = 0;
 	count = 0;
+	cargo_revealed = 0;
+	time_revealed = 0;
 
 	// get delay
 	delay = atoi(CTEXT(n));
@@ -10173,5 +10190,100 @@ int num_eval(int node)
 		return eval_sexp(CAR(node));
 	} else {
 		return atoi(CTEXT(node));
+	}
+}
+
+int get_subcategory(int sexp_id)
+{
+	switch(sexp_id)
+	{
+		case OP_SEND_MESSAGE_LIST:
+		case OP_SEND_MESSAGE:
+		case OP_SEND_RANDOM_MESSAGE:
+		case OP_INVALIDATE_GOAL:
+		case OP_VALIDATE_GOAL:
+			return CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS;
+			
+		case OP_ADD_GOAL:
+		case OP_ADD_SHIP_GOAL:
+		case OP_ADD_WING_GOAL:
+		case OP_CLEAR_GOALS:
+		case OP_CLEAR_SHIP_GOALS:
+		case OP_CLEAR_WING_GOALS:
+		case OP_GOOD_REARM_TIME:
+		case OP_GOOD_SECONDARY_TIME:
+		case OP_CHANGE_IFF:
+		case OP_PROTECT_SHIP:
+		case OP_UNPROTECT_SHIP:
+		case OP_BEAM_PROTECT_SHIP:
+		case OP_BEAM_UNPROTECT_SHIP:
+			return CHANGE_SUBCATEGORY_AI_AND_IFF;
+			
+		case OP_SABOTAGE_SUBSYSTEM:
+		case OP_REPAIR_SUBSYSTEM:
+		case OP_SET_SUBSYSTEM_STRNGTH:
+		case OP_SUBSYS_SET_RANDOM:
+		case OP_SELF_DESTRUCT:
+		case OP_TRANSFER_CARGO:
+		case OP_EXCHANGE_CARGO:
+		case OP_JETTISON_CARGO:
+		case OP_CARGO_NO_DEPLETE:
+		case OP_SET_SCANNED:
+		case OP_SET_UNSCANNED:
+			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
+			
+		case OP_SHIP_INVULNERABLE:
+		case OP_SHIP_VULNERABLE:
+		case OP_SHIP_GUARDIAN:
+		case OP_SHIP_NO_GUARDIAN:
+		case OP_SHIP_INVISIBLE:
+		case OP_SHIP_VISIBLE:
+		case OP_WARP_BROKEN:
+		case OP_WARP_NOT_BROKEN:
+		case OP_WARP_NEVER:
+		case OP_WARP_ALLOWED:
+			return CHANGE_SUBCATEGORY_SHIP_STATUS;
+			
+		case OP_BEAM_FIRE:
+		case OP_BEAM_FREE:
+		case OP_BEAM_FREE_ALL:
+		case OP_BEAM_LOCK:
+		case OP_BEAM_LOCK_ALL:
+		case OP_TURRET_FREE:
+		case OP_TURRET_FREE_ALL:
+		case OP_TURRET_LOCK:
+		case OP_TURRET_LOCK_ALL:
+		case OP_TURRET_TAGGED_ONLY_ALL:
+		case OP_TURRET_TAGGED_CLEAR_ALL:
+			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
+
+		case OP_RED_ALERT:
+		case OP_END_MISSION:
+		case OP_NEXT_MISSION:
+		case OP_END_CAMPAIGN:
+		case OP_END_OF_CAMPAIGN:
+		case OP_GRANT_PROMOTION:
+		case OP_GRANT_MEDAL:
+		case OP_ALLOW_SHIP:
+		case OP_ALLOW_WEAPON:
+		case OP_TECH_ADD_SHIP:
+		case OP_TECH_ADD_WEAPON:
+			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
+
+		case OP_MODIFY_VARIABLE:
+		case OP_ADD_REMOVE_ESCORT:
+		case OP_AWACS_SET_RADIUS:
+		case OP_CAP_WAYPOINT_SPEED:
+		case OP_SUPERNOVA_START:
+		case OP_SET_SPECIAL_WARPOUT_NAME:
+		case OP_SHIP_VANISH:
+		case OP_SHIP_LIGHTS_ON:
+		case OP_SHIP_LIGHTS_OFF:
+		case OP_SHIELDS_ON:
+		case OP_SHIELDS_OFF:
+			return CHANGE_SUBCATEGORY_SPECIAL;
+		
+		default:
+			return -1;
 	}
 }
