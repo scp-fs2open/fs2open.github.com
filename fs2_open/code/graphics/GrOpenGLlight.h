@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 2.3 $
- * $Date: 2004-04-13 01:55:41 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-04-26 13:02:27 $
+ * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/13 01:55:41  phreak
+ * put in the correct fields for the CVS comments to register
+ * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
+ *
  *
  * $NoKeywords: $
  */
@@ -78,5 +82,6 @@ void gr_opengl_reset_lighting();
 void gr_opengl_set_lighting(bool set, bool state);
 void opengl_pre_render_init_lights();
 void opengl_change_active_lights(int);
+void opengl_init_light();
 
 #endif //_GROPENGLLIGHT_H

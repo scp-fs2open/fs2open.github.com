@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-04-13 01:55:41 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2004-04-26 13:02:27 $
+ * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/04/13 01:55:41  phreak
+ * put in the correct fields for the CVS comments to register
+ * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
+ *
  *
  * $NoKeywords: $
  */
@@ -32,6 +36,7 @@
 #include "graphics/gl/glu.h"
 #include "graphics/gl/glext.h"
 #include "render/3d.h"
+#include "cmdline/cmdline.h"
 
 // Variables
 opengl_light opengl_lights[MAX_LIGHTS];
@@ -47,6 +52,11 @@ extern float static_tube_factor;
 extern double specular_exponent_value;
 
 int max_gl_lights;
+
+// OGL defaults
+static const float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
+static const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+static float GL_light_ambient_value = 0.47f;
 
 
 void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
@@ -194,7 +204,9 @@ void gr_opengl_set_light(light_data *light)
 
 void gr_opengl_reset_lighting()
 {
-	for(int i = 0; i<MAX_LIGHTS; i++){
+	int i;
+
+	for(i = 0; i<MAX_LIGHTS; i++){
 		opengl_lights[i].occupied = false;
 	}
 	for(i=0; i<max_gl_lights; i++){
@@ -204,27 +216,47 @@ void gr_opengl_reset_lighting()
 	active_gl_lights =0;
 }
 
+void opengl_init_light()
+{
+	if (!Cmdline_nospec) {
+		glEnable(GL_COLOR_MATERIAL);
+		glColorMaterial(GL_FRONT_AND_BACK,GL_EMISSION);
+		glLightModeli( GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR );
+	}
+
+	float amb_user = 0.0f;
+
+	amb_user = (float)((Cmdline_ambient_factor * 2) - 255) / 255.0f;
+
+	GL_light_ambient_value = GL_light_ambient[0] + amb_user;
+		
+	if (GL_light_ambient_value > 1.0f) {
+		GL_light_ambient_value = 1.0f;
+	} else if (GL_light_ambient_value < 0.02f) {
+		GL_light_ambient_value = 0.02f;
+	}
+}
+
 
 void gr_opengl_set_lighting(bool set, bool state)
 {
-	struct {
-			float r,g,b,a;
-	} ambient, col;
-
 	lighting_is_enabled = set;
 
-	col.r = col.g = col.b = col.a = set ? 1.0f : 0.0f;  //Adunno why the ambient and diffuse need to be set to 0.0 when lighting is disabled
-														//They just do, and that should suffice as an answer
-	glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
-	glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR, &col.r); //changed to GL_FRONT_AND_BACK, just to make sure
-	glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,(float)specular_exponent_value);
-	if((gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set){
-		ambient.r = ambient.g = ambient.b = ambient.a = gr_screen.current_alpha;
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &ambient.r);
-	}else{
-		ambient.r = ambient.g = ambient.b = 0.125; // 1/16th of the max value, just like D3D
-		ambient.a = 1.0f;
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, &ambient.r);
+	float amb[4] = { GL_light_ambient[0], GL_light_ambient[1], GL_light_ambient[2], GL_light_ambient[3] };
+	float col[4] = { GL_light_color[0], GL_light_color[1], GL_light_color[2], GL_light_color[3] };
+
+
+	glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, col);
+	glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, col);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 100.0f);
+
+	if ( (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set ) {
+		amb[0] = amb[1] = amb[2] = amb[3] = gr_screen.current_alpha;
+		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb );
+	} else {
+		amb[0] = amb[1] = amb[2] = GL_light_ambient_value;
+		amb[4] = 1.0;
+		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb );
 	}
 
 	for(int i = 0; i<max_gl_lights; i++){
@@ -234,8 +266,7 @@ void gr_opengl_set_lighting(bool set, bool state)
 
 	if(state) {
 		glEnable(GL_LIGHTING);
-	}
-	else {
+	} else {
 		glDisable(GL_LIGHTING);
 	}
 
