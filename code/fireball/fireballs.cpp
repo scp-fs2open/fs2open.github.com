@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.18 $
- * $Date: 2004-10-31 02:26:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2004-11-01 20:57:03 $
+ * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2004/10/31 02:26:15  Goober5000
+ * whoops
+ * --Goober5000
+ *
  * Revision 2.17  2004/10/31 02:04:33  Goober5000
  * added Knossos_warp_ani_used flag for taylor
  * --Goober5000
@@ -1217,10 +1221,11 @@ void fireballs_page_in()
 	for ( i = 0; i < MAX_FIREBALL_TYPES ; i++ ) {
 		fd = &Fireball_info[i];
 
+		// if this is a Knossos ani, only load if Knossos_warp_ani_used is true
+		if ( (i == FIREBALL_KNOSSOS_EFFECT) && !Knossos_warp_ani_used)
+			continue;
+
 		for(idx=0; idx<fd->lod_count; idx++) {
-
-			// if this is a Knossos ani, only load if Knossos_warp_ani_used is true
-
 			bm_page_in_texture( fd->lod[idx].bitmap_id, fd->lod[idx].num_frames );
 		}
 	}
