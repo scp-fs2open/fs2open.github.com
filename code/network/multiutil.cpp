@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-03-10 08:00:11 $
+ * $Revision: 2.32 $
+ * $Date: 2005-03-11 14:14:05 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/03/10 08:00:11  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.30  2005/03/08 03:50:23  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -389,15 +398,6 @@
 #pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 #pragma warning(pop)
-
-
-// FIXME: don't know why this should be needed but it is, copied from pstypes.h
-#ifndef min
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-#endif
-#ifndef max
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#endif
 
 extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
 extern int MSG_WINDOW_Y_START;
