@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.96 $
- * $Date: 2005-03-08 03:50:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.97 $
+ * $Date: 2005-03-12 03:09:55 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2005/03/08 03:50:19  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.95  2005/03/03 06:05:26  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -751,6 +755,7 @@ Flag exe_params[] =
 	"-nohtl",		  "Software mode (very slow)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nohtl", 
 	"-no_set_gamma",  "Disable setting of gamma",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", 
 	"-dnoshowvid", 	  "Disable video playback",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.dnoshowvid", 
+	"-noparseerrors", "Disable parsing errors",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "",
 	"-safeloading",	  "",								true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.safeloading", 
 	"-query_speech",  "Does this build have speech?",   true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.query_speech",
 	"-d3d_bad_tsys",  "Enable inefficient textures",	false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_bad_tsys",	
@@ -800,6 +805,7 @@ cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player m
 cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Change to phreaks options including new targetting code
 cmdline_parm targetinfo_arg("-targetinfo", NULL);	//Adds ship name/class to right of target box -C
 cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
+cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	//turns off parsing errors -C
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
 cmdline_parm pos_arg("-pos", NULL);
@@ -911,6 +917,7 @@ int Cmdline_allslev = 0;
 int Cmdline_dualscanlines	= 0;
 int Cmdline_targetinfo = 0;
 int Cmdline_dnoshowvid = 0;
+int Cmdline_noparseerrors = 0;
 int Cmdline_show_fps = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_safeloading = 0;
@@ -1407,6 +1414,10 @@ bool SetCmdlineParams()
 
 	if(dnoshowvid_arg.found() ) {
 		Cmdline_dnoshowvid = 1;
+	}
+
+	if(noparseerrors_arg.found()) {
+		Cmdline_noparseerrors = 1;
 	}
 
 

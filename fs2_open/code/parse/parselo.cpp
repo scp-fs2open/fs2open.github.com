@@ -9,13 +9,22 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.33 $
- * $Author: taylor $
- * $Date: 2005-03-10 08:00:12 $
+ * $Revision: 2.34 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-03-12 03:09:22 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/03/10 08:00:12  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.32  2005/02/23 05:05:38  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -461,6 +470,7 @@ int get_line_num()
 //	error_level == 0 means this is just a warning.
 //	!0 means it's an error message.
 //	Prints line number and other useful information.
+extern int Cmdline_noparseerrors;
 void error_display(int error_level, char *format, ...)
 {
 	char	buffer[1024];
@@ -483,7 +493,7 @@ void error_display(int error_level, char *format, ...)
 	Assert(strlen(buffer) < 1024);
 
 	nprintf((error_text, "%s", buffer));
-	if(error_level == 0)
+	if(error_level == 0 || Cmdline_noparseerrors)
 		Warning(LOCATION, "%s(%i):\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
 	else
 		Error(LOCATION, "%s(%i):\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
