@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-10-13 05:57:48 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2003-10-14 16:27:01 $
+ * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/10/13 05:57:48  Kazan
+ * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
+ * Commented out the "warning null vector in vector normalize" crap since we don't give a rats arse
+ * Added "beam no whack" flag for beams - said beams NEVER whack
+ * Some reliability updates in FS2NetD
+ *
  * Revision 2.4  2003/03/02 07:39:34  penguin
  * Added type for static var
  *  - penguin
@@ -676,9 +682,8 @@ float vm_vec_copy_normalize(vector *dest,vector *src)
 	//	Mainly here to trap attempts to normalize a null vector.
 	if (m <= 0.0f) {
 		if(!ben_warned){
-			// SHUT UP - We Don't fucking care!!! - Kazan
-			//Warning(LOCATION,	"Null vector in vector normalize.\n"
-			//					"Trace out of vecmat.cpp and find offending code.\n");
+			Warning(LOCATION,	"Null vector in vector normalize.\n"
+								"Trace out of vecmat.cpp and find offending code.\n");
 			ben_warned = true;
 		}
 		dest->xyz.x = 1.0f;
