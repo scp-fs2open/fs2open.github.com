@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-01-24 12:47:48 $
+ * $Revision: 2.4 $
+ * $Date: 2004-01-29 01:34:01 $
  * $Author: randomtiger $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/01/24 12:47:48  randomtiger
+ * Font and other small changes for Fred
+ *
  * Revision 2.2  2003/03/02 05:30:26  penguin
  * Added #ifdef _MSC_VER to MSVC-specific code
  *  - penguin
@@ -126,6 +129,7 @@
 
 #include "osapi/osapi.h"
 #include "globalincs/pstypes.h"
+#include "cmdline/cmdline.h"
 
 #ifdef _MSC_VER
 #include <crtdbg.h>
@@ -143,7 +147,7 @@
 //    #error _ASSERT is not defined yet for debug mode with non-MSVC compilers
   #endif
 #endif
-
+				   
 
 #ifdef SHOW_CALL_STACK
 
@@ -1170,21 +1174,172 @@ char *clean_filename(char *name)
 	return p;	
 }
 
+const int MAX_MEM = 600;
+
+typedef struct
+{
+	char filename[MAX_PATH];
+	int  size;
+	int  magic_num1;
+	int  magic_num2;
+	bool in_use;
+	void *ptr;
+
+} MemBlockInfo;
+
+MemBlockInfo mem_block_list[MAX_MEM];
+
+int memblockinfo_sort_compare( const void *arg1, const void *arg2 )
+{
+	MemBlockInfo *mbi1 = (MemBlockInfo *) arg1;
+	MemBlockInfo *mbi2 = (MemBlockInfo *) arg2;
+
+	if (mbi1->size > mbi2->size)
+		return -1;
+		
+	if (mbi1->size < mbi2->size)
+		return 1;
+		
+	return 0; 
+}
+
+void memblockinfo_sort()
+{
+	qsort(mem_block_list, MAX_MEM, sizeof(MemBlockInfo), memblockinfo_sort_compare );
+}
+
+void memblockinfo_sort_get_entry(int index, char *filename, int *size)
+{
+	Assert(index < MAX_MEM);
+
+	strcpy(filename, mem_block_list[index].filename);
+	*size = mem_block_list[index].size;
+}
+
+static bool first_time = true;
+
+void register_malloc( int size, char *filename, int line, void *ptr)
+{
+	if(first_time == true)
+	{
+		ZeroMemory(mem_block_list, MAX_MEM * sizeof(MemBlockInfo) );
+		first_time = false;
+
+		// Get current flag
+		int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
+		
+		// Turn on leak-checking bit
+		tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
+		
+		// Set flag to the new value
+		_CrtSetDbgFlag( tmpFlag );
+	}
+
+	// calculate magic numbers
+	int magic1, magic2, len = strlen(filename);
+
+	magic1 = magic2 = 0;
+
+	for(int c = 0; c < len; c++)
+	{
+		magic1 += filename[c];
+
+		if(c % 2)
+			magic2 += filename[c];
+		else
+			magic2 -= filename[c];
+	}
+
+	for(int i = 0; i < MAX_MEM; i++)
+	{
+		// Found the first empty entry, fill it
+		if(mem_block_list[i].in_use == false)
+		{
+			strcpy(mem_block_list[i].filename, filename);
+			mem_block_list[i].size = size;
+			mem_block_list[i].magic_num1 = magic1;
+			mem_block_list[i].magic_num2 = magic2;
+			mem_block_list[i].in_use     = true;
+			mem_block_list[i].ptr		 = ptr;
+			break;
+		}
+
+		// Found a matching entry, update it
+		if(	mem_block_list[i].magic_num1 == magic1 &&
+			mem_block_list[i].magic_num2 == magic2 &&
+			stricmp(mem_block_list[i].filename, filename) == 0)
+		{
+			mem_block_list[i].size += size;
+			break;
+		}
+	}
+}
+
+void memblockinfo_output_memleak()
+{
+	if(!Cmdline_show_mem_usage)	return;
+
+	for(int i = 0; i < MAX_MEM; i++)
+	{
+		// Found the first empty entry, fill it
+	  	if(mem_block_list[i].size > 0)
+		{
+			_RPT2(_CRT_WARN, "Memory leaks: %s %d\n", mem_block_list[i].filename, mem_block_list[i].size);
+		}
+	}
+}
+
+void unregister_malloc(char *filename, int size)
+{
+	// calculate magic numbers
+	int magic1, magic2, len = strlen(filename);
+
+	magic1 = magic2 = 0;
+
+	for(int c = 0; c < len; c++)
+	{
+		magic1 += filename[c];
+
+		if(c % 2)
+			magic2 += filename[c];
+		else
+			magic2 -= filename[c];
+	}
+
+
+	for(int i = 0; i < MAX_MEM; i++)
+	{
+		// Found a matching entry, update it
+		if(	mem_block_list[i].magic_num1 == magic1 &&
+			mem_block_list[i].magic_num2 == magic2 &&
+			stricmp(mem_block_list[i].filename, filename) == 0)
+		{
+			mem_block_list[i].size -= size;
+			return;
+		}
+	}
+}
+
 #ifndef NDEBUG
 void *vm_malloc( int size, char *filename, int line )
 #else
 void *vm_malloc( int size )
 #endif
 {
+	void *ptr = NULL;
+
 	#if (!defined(NDEBUG)) && defined(_MSC_VER)
 	if ( !Heap )	{
 		TotalRam += size;
 
-		return _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__ );
+		ptr = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__ );
+		if(Cmdline_show_mem_usage)
+			register_malloc(size, filename, line, ptr);
+		return ptr;
 	}
 	#endif
  
-	void *ptr = HeapAlloc(Heap, HEAP_FLAG, size );
+	ptr = HeapAlloc(Heap, HEAP_FLAG, size );
 
 	if ( ptr == NULL )	{
 		mprintf(( "HeapAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
@@ -1199,7 +1354,12 @@ void *vm_malloc( int size )
 			mprintf(( "Malloc %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
 		}
 		TotalRam += actual_size;
+
+	if(Cmdline_show_mem_usage)
+		register_malloc(actual_size, filename, line, ptr);
+
 	#endif
+
 	return ptr;
 }
 
@@ -1242,6 +1402,9 @@ void vm_free( void *ptr )
 
 		TotalRam -= nSize;
 
+		if(Cmdline_show_mem_usage)
+			unregister_malloc(filename, nSize);
+
 		_free_dbg(ptr,_NORMAL_BLOCK);
 		return;
 	}
@@ -1251,6 +1414,8 @@ void vm_free( void *ptr )
 		mprintf(( "Free %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
 	}
 	TotalRam -= actual_size;
+	if(Cmdline_show_mem_usage)
+		unregister_malloc(filename, actual_size);
 #endif
 	HeapFree( Heap, HEAP_FLAG, ptr );
 	HeapCompact(Heap, HEAP_FLAG);

@@ -626,6 +626,7 @@ static void bm_d3d_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte 
 	} 
 }
 
+int D3d_tuse = 0;
 int Wasted_space = 0;
 
 void bm_d3d_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
@@ -1154,6 +1155,7 @@ void bm_d3d_unload_all()
 		}
 	}
 
+	D3d_tuse = 0;
 	Wasted_space = 0;
 }
 
@@ -1236,6 +1238,10 @@ void bm_d3d_page_in_start()
 		bm_bitmaps[i].used_flags = 0;
 	}
 
+	GlobalD3DVars::lpD3DDevice->ResourceManagerDiscardBytes(0);
+
+
+	D3d_tuse = 0;
 	Wasted_space = 0;
 }
 

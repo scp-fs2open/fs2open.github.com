@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.51 $
- * $Date: 2004-01-24 14:31:26 $
+ * $Revision: 2.52 $
+ * $Date: 2004-01-29 01:34:00 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2004/01/24 14:31:26  randomtiger
+ * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
+ * Its optional and off by default, use -d3d_particle to activiate.
+ * Also bumped up D3D ambient light setting, it was way too dark.
+ * Its now set to something similar to the original game.
+ *
  * Revision 2.50  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -523,6 +529,8 @@ cmdline_parm query_speech_arg("-query_speech", NULL);
 cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);
 cmdline_parm dxt_arg("-dxt",NULL);
 cmdline_parm d3d_particle_arg("-d3d_particle",NULL);
+cmdline_parm show_mem_usage_arg("-show_mem_usage",NULL);
+cmdline_parm d3d_notmanaged_arg("-d3d_notmanaged",NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -567,6 +575,7 @@ int Cmdline_dxt = 0;
 
 int Cmdline_cache_ani = 0;
 int Cmdline_d3dmipmap = 0;
+int Cmdline_d3d_notmanaged = 0;
 
 // Lets keep a convention here
 int Cmdline_nohtl = 0;
@@ -575,6 +584,8 @@ int Cmdline_no_set_gamma = 0;
 int Cmdline_d3d_no_vsync = 0;
 int Cmdline_pcx32 = 0;
 int Cmdline_query_speech = 0;
+
+int Cmdline_show_mem_usage = 0;
 
 int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 
@@ -1056,6 +1067,15 @@ void SetCmdlineParams()
 
 	if(d3d_particle_arg.found()) {
 		Cmdline_d3d_particle = 1;
+	}
+
+	if(show_mem_usage_arg.found()) {
+		Cmdline_show_mem_usage = 1;
+	}
+
+	if(d3d_notmanaged_arg.found())
+	{
+		Cmdline_d3d_notmanaged	= 1;
 	}
 }
 
