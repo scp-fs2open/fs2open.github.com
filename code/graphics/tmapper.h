@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.7 $
- * $Date: 2004-03-05 09:02:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-21 09:41:54 $
+ * $Author: randomtiger $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/03/05 09:02:01  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.6  2004/02/16 11:47:33  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -180,6 +184,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 
 //tristrips, for trails mostly, might find other uses eventualy
 #define TMAP_FLAG_TRISTRIP	(1<<20)
+#define TMAP_HTL_3DU_BATCH	(1<<21)	  
 
 #define TMAP_ADDRESS_WRAP		1
 #define TMAP_ADDRESS_MIRROR		2

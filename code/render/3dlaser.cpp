@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-03-17 04:07:31 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2004-03-21 09:41:54 $
+ * $Author: randomtiger $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/03/17 04:07:31  bobboau
+ * new fighter beam code
+ * fixed old after burner trails
+ * had to bump a few limits, working on some dynamic solutions
+ * a few fixed to background POF rendering
+ * fixing asorted bugs
+ *
  * Revision 2.9  2004/03/06 23:28:24  bobboau
  * fixed motion debris
  * animated laser textures
@@ -182,6 +189,7 @@
 #include "globalincs/systemvars.h"
 #include "io/key.h"
 #include "cmdline/cmdline.h"
+#include "graphics/grbatch.h"
 
 int Lasers = 1;
 DCF_BOOL( lasers, Lasers );
@@ -255,8 +263,95 @@ float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, 
 }
 */
 
+float g3_draw_laser_htl_batched(vector *p0,float width1,vector *p1,float width2, int r, int g, int b, uint tmap_flags)
+{
+	width1 *= 0.5f;
+	width2 *= 0.5f;
+	vector uvec, fvec, rvec, center, reye;
+
+	vm_vec_sub( &fvec, p0, p1 );
+	vm_vec_normalize_safe( &fvec );
+
+	vm_vec_avg( &center, p0, p1 ); //needed for the return value only
+	vm_vec_sub(&reye, &Eye_position, &center);
+	vm_vec_normalize(&reye);
+
+	vm_vec_crossprod(&uvec,&fvec,&reye);
+	vm_vec_normalize(&uvec);
+	vm_vec_crossprod(&fvec,&uvec,&reye);
+	vm_vec_normalize(&fvec);
+	
+//	if(vm_vec_mag_squared(&uvec)==0) uvec.xyz.y = 1.0f; //in case fvec is exactly equal to matrx.rvec, stick some arbitrary value in uvec
+	//normalize new perpendicular vector
+//	vm_vec_normalize(&uvec);
+	 
+	//now recompute right vector, in case it wasn't entirely perpendiclar
+	vm_vec_crossprod(&rvec,&uvec,&fvec);
+
+	// Now have uvec, which is up vector and rvec which is the normal
+	// of the face.
+
+	int i;
+	vector start, end;
+	vm_vec_scale_add(&start, p0, &fvec, -width1);
+	vm_vec_scale_add(&end, p1, &fvec, width2);
+	vector vecs[6];
+
+	vm_vec_scale_add( &vecs[0], &start, &uvec, width1 );
+	vm_vec_scale_add( &vecs[1], &end, &uvec, width2 );
+	vm_vec_scale_add( &vecs[2], &end, &uvec, -width2 );
+	vm_vec_scale_add( &vecs[3], &start, &uvec, -width1 );
+
+	vertex *pts = batch_get_block(6, tmap_flags | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+
+	for (i=0; i<4; i++ )	{
+		g3_transfer_vertex( &pts[i], &vecs[i] );
+	}
+
+	pts[0].u = 0.0f;
+	pts[0].v = 1.0f;
+	pts[0].r = (ubyte)r;
+	pts[0].g = (ubyte)g;
+	pts[0].b = (ubyte)b;
+	pts[0].a = 255;
+
+	pts[1].u = 1.0f;
+	pts[1].v = 1.0f;
+	pts[1].r = (ubyte)r;
+	pts[1].g = (ubyte)g;
+	pts[1].b = (ubyte)b;
+	pts[1].a = 255;
+
+	pts[2].u = 1.0f;
+	pts[2].v = 0.0f;
+	pts[2].r = (ubyte)r;
+	pts[2].g = (ubyte)g;
+	pts[2].b = (ubyte)b;
+	pts[2].a = 255;
+
+	pts[3].u = 0.0f;
+	pts[3].v = 0.0f;
+	pts[3].r = (ubyte)r;
+	pts[3].g = (ubyte)g;
+	pts[3].b = (ubyte)b;
+	pts[3].a = 255;
+ 
+	// 302
+	memcpy(&pts[4], &pts[2], sizeof(vertex)); 
+	memcpy(&pts[5], &pts[0], sizeof(vertex)); 
+
+	return center.xyz.z;
+}
+
 float g3_draw_laser_htl(vector *p0,float width1,vector *p1,float width2, int r, int g, int b, uint tmap_flags)
 {
+	// Redirect for batching!
+	if(Cmdline_batch_3dunlit && tmap_flags & TMAP_HTL_3DU_BATCH)
+	{
+		return g3_draw_laser_htl_batched(p0,width1,p1,width2, r, g, b, tmap_flags);
+
+	}
+
 	width1 *= 0.5f;
 	width2 *= 0.5f;
 	vector uvec, fvec, rvec, center, reye;
