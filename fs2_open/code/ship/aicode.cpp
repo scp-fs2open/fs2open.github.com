@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.48 $
- * $Date: 2003-12-19 05:58:44 $
- * $Author: phreak $
+ * $Revision: 2.49 $
+ * $Date: 2004-01-20 22:13:06 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/12/19 05:58:44  phreak
+ * fixed a null pointer
+ *
  * Revision 2.47  2003/12/17 16:42:20  phreak
  * added ai code for "small only" weapons.  works for turrets at the moment
  *
@@ -7053,7 +7056,8 @@ void get_behind_ship(ai_info *aip, ship_info *sip, float dist_to_enemy)
 		accelerate_ship(aip, (dot + 1.0f)/2.0f);
 	}
 
-	slide_face_ship();//added this -Bobboau
+	// Goober5000: removed this... why was it added?
+	// slide_face_ship();//added this -Bobboau
 }
 
 int avoid_player(object *objp, vector *goal_pos)
@@ -7555,7 +7559,9 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vector *predicted_enemy_pos, 
 	}
 
 	attack_set_accel(aip, dist_to_enemy, dot_to_enemy, dot_from_enemy);
-	slide_face_ship();//added this -Bobboau
+
+	// Goober5000: removed this... why was it added?
+	// slide_face_ship();//added this -Bobboau
 }
 
 //	EVADE_SQUIGGLE submode handler for chase mode.
