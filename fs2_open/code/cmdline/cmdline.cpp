@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.27 $
- * $Date: 2003-09-13 06:02:05 $
- * $Author: Goober5000 $
- * $Revision: 2.27 $
- * $Date: 2003-09-13 06:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2003-09-14 18:32:24 $
+ * $Author: wmcoolmon $
+ * $Revision: 2.28 $
+ * $Date: 2003-09-14 18:32:24 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.25  2003/09/09 17:10:54  matt
  * Added -nospec cmd line param to disable specular -Sticks
  *
@@ -385,6 +389,7 @@ cmdline_parm spec_exp_arg("-spec_exp", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
+cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
 cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
 
 cmdline_parm cell_arg("-cell", NULL);
@@ -421,6 +426,7 @@ int Cmdline_allslev = 0;
 int Cmdline_phreak	= 0;
 int Cmdline_dnoshowvid = 0;
 int Cmdline_show_fps = 0;
+int Cmdline_safeloading = 0;
 
 int Cmdline_d3dlowmem = 0;
 int Cmdline_d3dmipmap = 0;
@@ -819,6 +825,10 @@ int parse_cmdline(int argc, char *argv[])
 	if (fps_arg.found())
 	{
 		Cmdline_show_fps = 1;
+	}
+
+	if ( safeloading_arg.found() ) {
+		Cmdline_safeloading = 1;
 	}
 
 	if( d3dlowmem_arg.found() ) {

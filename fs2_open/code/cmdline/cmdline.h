@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.25 $
- * $Date: 2003-09-13 06:02:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2003-09-14 18:32:24 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2003/09/13 06:02:05  Goober5000
+ * clean rollback of all of argv's stuff
+ * --Goober5000
+ *
  * Revision 2.23  2003/08/22 07:35:08  bobboau
  * specular code should be bugless now,
  * cell shadeing has been added activated via the comand line '-cell',
@@ -310,6 +314,7 @@ extern int Cmdline_phreak;
 extern int Cmdline_dnoshowvid;	//WMC Toggles movie playing support
 extern char *Cmdline_mod; //DTP for mod support
 extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.
+extern int Cmdline_safeloading;
 
 extern int Cmdline_d3dlowmem;
 extern int Cmdline_d3dmipmap;
