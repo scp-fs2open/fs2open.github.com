@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-02-20 05:22:44 $
+ * $Revision: 2.42 $
+ * $Date: 2005-02-21 05:40:16 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/02/20 05:22:44  Goober5000
+ * restored original behavior for cheat code time dilation
+ * --Goober5000
+ *
  * Revision 2.40  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -1023,8 +1027,6 @@ void process_debug_keys(int k)
 
 		case KEY_DEBUGGED + KEY_X:
 		case KEY_DEBUGGED1 + KEY_X:
-		case KEY_DEBUGGED + KEY_SHIFTED + KEY_X:
-		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_X:
 			HUD_printf("Cloaking has been disabled, thank you for playing fs2_open, %s", Player->callsign);
 			break;
 
@@ -1239,7 +1241,7 @@ void process_debug_keys(int k)
 			break;
 
 		case KEY_DEBUGGED + KEY_O:
-		// case KEY_DEBUGGED1 + KEY_O:
+		case KEY_DEBUGGED1 + KEY_O:
 			toggle_player_object();
 			break;				
 
@@ -1286,17 +1288,17 @@ void process_debug_keys(int k)
 			break;
 
 		case KEY_DEBUGGED + KEY_G:
-		// case KEY_DEBUGGED1 + KEY_G:
+		case KEY_DEBUGGED1 + KEY_G:
 			mission_goal_mark_all_true( PRIMARY_GOAL );
 			break;
 
 		case KEY_DEBUGGED + KEY_G + KEY_SHIFTED:
-		// case KEY_DEBUGGED1 + KEY_G + KEY_SHIFTED:
+		case KEY_DEBUGGED1 + KEY_G + KEY_SHIFTED:
 			mission_goal_mark_all_true( SECONDARY_GOAL );
 			break;
 
 		case KEY_DEBUGGED + KEY_G + KEY_ALTED:
-		// case KEY_DEBUGGED1 + KEY_G + KEY_ALTED:
+		case KEY_DEBUGGED1 + KEY_G + KEY_ALTED:
 			mission_goal_mark_all_true( BONUS_GOAL );
 			break;
 
@@ -1398,7 +1400,7 @@ void process_debug_keys(int k)
 #endif
 
 		case KEY_DEBUGGED + KEY_R: {
-		// case KEY_DEBUGGED1 + KEY_R:
+		case KEY_DEBUGGED1 + KEY_R:
 			if (Player_ai->target_objnum != -1)
 				ai_issue_rearm_request(&Objects[Player_ai->target_objnum]);
 			else
