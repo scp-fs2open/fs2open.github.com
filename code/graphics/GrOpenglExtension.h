@@ -1,5 +1,24 @@
-//header file to contain the defenitions for the OpenGL exetension
-//functions used in fs2_open
+/*
+ * Copyright (C) Volition, Inc. 1999.  All rights reserved.
+ *
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
+ * source.
+ *
+*/
+
+/*
+ * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
+ * $Revision: 2.2 $
+ * $Date: 2004-04-06 01:37:21 $
+ * $Author: phreak $
+ *
+ * header file to contain the defenitions for the OpenGL exetension
+ * functions used in fs2_open
+ *
+ *
+ * $NoKeywords: $
+ */
 
 #ifndef _GROPENGLEXT_H
 #define _GROPENGLEXT_H

@@ -1,3 +1,25 @@
+/*
+ * Copyright (C) Volition, Inc. 1999.  All rights reserved.
+ *
+ * All source code herein is the property of Volition, Inc. You may not sell 
+ * or otherwise commercially exploit the source or things you created based on the 
+ * source.
+ *
+*/
+
+
+/*
+ * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
+ * $Revision: 2.2 $
+ * $Date: 2004-04-06 01:37:21 $
+ * $Author: phreak $
+ *
+ * source for texturing in OpenGL
+ *
+ *
+ * $NoKeywords: $
+ */
+
 #include <windows.h>
 
 #include "graphics/gl/gl.h"
@@ -90,7 +112,7 @@ void opengl_set_max_anistropy()
 
 void opengl_switch_arb(int unit, int state)
 {
-	if (GL_supported_texture_units >= unit)
+	if (unit >= GL_supported_texture_units)
 		return;
 
 	if (state)
