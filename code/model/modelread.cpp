@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-11-14 04:18:16 $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-07 01:37:42 $
  * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/11/14 04:18:16  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.4  2002/10/19 19:29:27  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -1247,7 +1252,7 @@ int Bogus_warning_flag_1903 = 0;
 #endif
 
 //reads a binary file containing a 3d model
-int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subsystem *subsystems)
+int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
 {
 	CFILE *fp;
 	int version;
@@ -1259,7 +1264,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 #endif
 
 	fp = cfopen(filename,"rb");
-	if (!fp){
+	if (!(fp) && (ferror == 1)){
 		Error( LOCATION, "Can't open file <%s>",filename);
 		return 0;
 	}		
@@ -1558,7 +1563,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->submodel[n].is_damaged=1;
 				else
 					pm->submodel[n].is_damaged=0;
-					
+
+				if ( strstr( pm->submodel[n].name, "-nameplate") )	
+					pm->submodel[n].is_nameplate=1;
+				else
+					pm->submodel[n].is_nameplate=0;
+
 				//mprintf(( "Submodel %d, name '%s', parent = %d\n", n, pm->submodel[n].name, pm->submodel[n].parent ));
 				//key_getch();
 
@@ -2097,6 +2107,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							pm->ins[idx].u[idx2][idx3] = cfread_float(fp);
 							pm->ins[idx].v[idx2][idx3] = cfread_float(fp);
 						}
+						vector tempv;
+
+						//get three points (rotated) and compute normal
+
+						vm_vec_perp(&tempv, 
+							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]], 
+							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]], 
+							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+
+						pm->ins[idx].norm[idx2] = tempv;
+						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
+
 					}
 				}					
 				break;
@@ -2145,7 +2167,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 
 //returns the number of this model
-int model_load(char *filename, int n_subsystems, model_subsystem *subsystems)
+int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
 {
 	int i, num, arc_idx;
 
@@ -2199,7 +2221,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems)
 	Assert( (Model_signature % MAX_POLYGON_MODELS) == 0 );
 	pm->id = Model_signature + num;
 
-	if (!read_model_file(pm, filename, n_subsystems, subsystems))	{
+	if (!read_model_file(pm, filename, n_subsystems, subsystems, ferror))	{
 		return -1;
 	}
 
@@ -2357,6 +2379,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems)
 	Model_ram += pm->ram_used;
 	//mprintf(( "Model RAM = %d KB\n", Model_ram ));
 #endif
+
 
 	return pm->id;
 }

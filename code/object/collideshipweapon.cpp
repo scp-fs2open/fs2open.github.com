@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-07 01:37:42 $
+ * $Author: bobboau $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -248,6 +251,18 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vector *worl
 		// apply a whack		
 		ship_apply_whack( &force, hitpos, ship_obj );
 	}
+
+	if(quadrant_num == -1){
+		weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
+		decal_point dec;
+		dec.orient = weapon_obj->orient;
+		dec.pnt.xyz = hitpos->xyz;
+		dec.radius = wip->decal_rad;
+		if((dec.radius > 0) && (wip->decal_texture > -1))
+		decal_create(ship_obj, &dec, submodel_num, wip->decal_texture, wip->decal_backface_texture );
+	}
+	
+
 }
 
 extern int Framecount;
@@ -388,7 +403,6 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 		}
 	}
 
-	
 	return valid_hit_occured;
 }
 

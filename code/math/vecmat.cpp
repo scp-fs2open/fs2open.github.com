@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:06 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-12-07 01:37:41 $
+ * $Author: bobboau $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:06  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -392,6 +395,41 @@ void vm_vec_sub2(vector *dest,vector *src)
 }
 #endif
 
+
+void vm_vert2vec(vertex *vert, vector *vec)	//takes a vertex and makes it into a vector-Bobboau
+{
+	vec->xyz.x = vert->x;
+	vec->xyz.y = vert->y;
+	vec->xyz.z = vert->z;
+}
+
+void vm_vec2vert(vector *vec, vertex *vert)	//takes a vector and makes it into a vertex-Bobboau
+{
+	vert->x = vec->xyz.x;
+	vert->y = vec->xyz.y;
+	vert->z = vec->xyz.z;
+}
+
+//averages n vectors. returns ptr to dest
+//dest can equal either source
+vector *vm_vec_avg_n(vector *dest, int n, vector src[])
+{
+	float x=0,y=0,z=0;
+
+	for(int i = 0; i<n; i++){
+		x += src[i].xyz.x;
+		y += src[i].xyz.y;
+		z += src[i].xyz.z;
+	}
+
+	dest->xyz.x = x / n;
+	dest->xyz.y = y / n;
+	dest->xyz.z = z / n;
+
+	return dest;
+}
+
+
 //averages two vectors. returns ptr to dest
 //dest can equal either source
 vector *vm_vec_avg(vector *dest,vector *src0,vector *src1)
@@ -403,6 +441,15 @@ vector *vm_vec_avg(vector *dest,vector *src0,vector *src1)
 	return dest;
 }
 
+//averages four vectors. returns ptr to dest
+//dest can equal any source
+vector *vm_vec_avg3(vector *dest,vector *src0,vector *src1,vector *src2)
+{
+	dest->xyz.x = (src0->xyz.x + src1->xyz.x + src2->xyz.x) * 0.333333333f;
+	dest->xyz.y = (src0->xyz.y + src1->xyz.y + src2->xyz.y) * 0.333333333f;
+	dest->xyz.z = (src0->xyz.z + src1->xyz.z + src2->xyz.z) * 0.333333333f;
+	return dest;
+}
 
 //averages four vectors. returns ptr to dest
 //dest can equal any source

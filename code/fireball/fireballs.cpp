@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-11-14 04:18:16 $
+ * $Revision: 2.3 $
+ * $Date: 2002-12-07 01:37:41 $
  * $Author: bobboau $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/11/14 04:18:16  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
  *
@@ -516,10 +521,6 @@ void fireball_load_data()
 	}
 	
 //	polymodel Warp_pm;
-	mprintf(("loading warp model"));
-	wm = -1;
-	wm = model_load("warp.pof", 0, NULL);
-	mprintf((" %d\n", wm));
 
 }
 
@@ -547,6 +548,11 @@ void fireball_init()
 	for (i=0; i<MAX_FIREBALLS; i++ )	{
 		Fireballs[i].objnum	= -1;
 	}
+
+	mprintf(("loading warp model"));
+	wm = -1;
+	wm = model_load("warp.pof", 0, NULL, 0);
+	mprintf((" %d\n", wm));
 
 
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.6 $
- * $Date: 2002-11-10 19:57:36 $
- * $Author: DTP $
+ * $Revision: 2.7 $
+ * $Date: 2002-12-07 01:37:42 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/11/10 19:57:36  DTP
+ * DTP bumped back MAX_SHIP_TYPES to 130
+ *
  * Revision 2.5  2002/10/31 21:56:44  DTP
  * DTP Bumped Max_exited_ships from 200 to double that of MAX_SHIPS = 800 . make sense ehh. for logging effect.
  *
@@ -247,7 +250,7 @@
 #include "graphics/2d.h"			// for color def
 #include "weapon/trails.h"
 #include "palman/palman.h"
-
+#include "decals/decals.h"
 #ifndef NO_NETWORK
 #include "network/multi_obj.h"
 #endif
@@ -691,6 +694,7 @@ typedef struct ship {
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
 
+	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
 } ship;
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-11-14 04:18:17 $
+ * $Revision: 2.6 $
+ * $Date: 2002-12-07 01:37:43 $
  * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/11/14 04:18:17  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.4  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -306,6 +311,7 @@
 #include "io/key.h"
 #include "lighting/lighting.h"
 #include "hud/hudshield.h"
+//#include "decals/decals.h"	//shouldn't need it becase it's in ship.h
 
 
 // ------------------------------------------------------------------------------------------------
@@ -2431,6 +2437,15 @@ int beam_collide_ship(obj_pair *pair)
 
 	// reset timestamp to timeout immediately
 	pair->next_check_time = timestamp(0);
+
+/*	decal_point dec;
+	dec.orient.vec = test_collide.orient->vec;
+	dec.pnt = test_collide.hit_point;
+	dec.radius = bwi->impact_explosion_radius*2;
+
+	decal_create_simple(&Objects[shipp->objnum], &dec, bwi->b_info.beam_glow_bitmap);
+*/
+//	mprintf(("a decal should have been made at %0.2f %0.2f %0.2f", dec.pnt.xyz.x, dec.pnt.xyz.y, dec.pnt.xyz.z));
 		
 	return 0;
 }
@@ -2730,12 +2745,30 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 	beam_collision *bc;
 	int idx;
 	int	quadrant_num = -1;
+	weapon_info *bwi = &Weapon_info[b->weapon_info_index];
 
 	// if we haven't reached the limit for beam collisions, just add
 	if(b->f_collision_count < MAX_FRAME_COLLISIONS){
 		bc = &b->f_collisions[b->f_collision_count++];
 		bc->c_objnum = OBJ_INDEX(hit_object);
 		bc->cinfo = *cinfo;
+
+		decal_point dec;
+		vector bfvec;
+		vm_vec_sub(&bfvec, &b->last_shot, &b->last_start);
+		dec.orient.vec.fvec = bfvec;//cinfo->hit_normal;
+		//get a good orientation matrix baised on the normal of the hit face and the orientation of the ship it hit-Bobboau
+		vm_vec_normalize( &dec.orient.vec.fvec );
+		vm_vec_crossprod( &dec.orient.vec.uvec, &cinfo->hit_normal, &dec.orient.vec.fvec);
+		vm_vec_normalize( &dec.orient.vec.uvec );
+		vm_vec_crossprod( &dec.orient.vec.rvec, &dec.orient.vec.uvec, &dec.orient.vec.fvec);
+		vm_vec_normalize( &dec.orient.vec.rvec );
+
+		dec.pnt = cinfo->hit_point;
+		dec.radius = bwi->decal_rad;
+
+//		decal_create_simple(hit_object, &dec, bwi->b_info.beam_glow_bitmap);//this is the old decals, not the new/better ones
+		decal_create(hit_object, &dec, bc->cinfo.hit_submodel, bwi->decal_texture, bwi->decal_backface_texture);
 
 		if( (cinfo->flags & MC_CHECK_SHIELD) && cinfo->num_hits ){ //beam sheild hit code -Bobboau
 			quadrant_num = get_quadrant(&cinfo->hit_point);

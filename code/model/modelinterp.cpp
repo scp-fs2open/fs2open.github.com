@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.8 $
- * $Date: 2002-12-02 23:16:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2002-12-07 01:37:42 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2002/12/02 23:16:45  Goober5000
+ * commented out an unneeded variable (ship *shipp) in model_really_render
+ *
  * Revision 2.7  2002/11/14 06:15:03  bobboau
  * added nameplate code
  *
@@ -359,6 +362,8 @@ static int Interp_objnum = -1;
 // if != -1, use this bitmap when rendering ship insignias
 static int Interp_insignia_bitmap = -1;
 
+static int Interp_nameplate_bitmap = -1;
+int IS_NAMEPLATE = -1;
 // if != -1, use this bitmap when rendering with a forced texture
 static int Interp_forced_bitmap = -1;
 
@@ -369,6 +374,8 @@ float Interp_light = 0.0f;
 
 // forward references
 int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check );
+
+void model_set_nameplate_bitmap(int bmap);
 
 void set_warp_gloabals(float, float, float, int, float);
 
@@ -1002,6 +1009,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					// if we're rendering a nebula background pof, maybe select a custom texture
 					if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)){
 						texture = Interp_forced_bitmap;
+					}else if(IS_NAMEPLATE == 1){
+						texture = Interp_nameplate_bitmap;
 					} else {
 						if (pm->is_ani[w(p+40)]){
 							texture = pm->textures[w(p+40)] + ((timestamp() / (int)(pm->fps[w(p+40)])) % pm->numframes[w(p+40)]);//here is were it picks the texture to render for ani-Bobboau
@@ -1503,6 +1512,12 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 	} else {
 		Interp_thrust_scale_subobj=0;
 	}
+
+	if (pm->submodel[mn].is_nameplate )	{
+		IS_NAMEPLATE = 1;
+	}else{
+		IS_NAMEPLATE = -1;
+	}
 	
 	g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
@@ -1683,6 +1698,7 @@ DoneWithThis:
 
 void model_render_shields( polymodel * pm )
 {
+	model_set_outline_color(255,255,255);
 	int i, j;
 	shield_tri *tri;
 	vertex pnt0, tmp, prev_pnt;
@@ -1723,9 +1739,12 @@ void model_render_insignias(polymodel *pm, int detail_level)
 	int idx, s_idx;
 	vertex vecs[3];
 	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
-	vector t1, t2, t3;
+	vector t1, t2, t3, x;
 	int i1, i2, i3;
 
+	x.xyz.x=0;
+	x.xyz.y=0;
+	x.xyz.z=0;
 	// if the model has no insignias we're done
 	if(pm->num_ins <= 0){
 		return;
@@ -1766,8 +1785,20 @@ void model_render_insignias(polymodel *pm, int detail_level)
 			vecs[1].u = pm->ins[idx].u[s_idx][1];  vecs[1].v = pm->ins[idx].v[s_idx][1];
 			vecs[2].u = pm->ins[idx].u[s_idx][2];  vecs[2].v = pm->ins[idx].v[s_idx][2];
 
+			// vm_vec_avg3(&x, 
+/*
+			for(int k =0; k < 3; k++){
+				if ( D3D_enabled )	{
+					light_apply_rgb( &vecs[k].r, &vecs[k].g, &vecs[k].b, &pm->ins[idx].vecs[k], &pm->ins[idx].norm[k], 0.8f );
+				} else {
+					vecs[k].b = light_apply( &x, &pm->ins[idx].norm[k], 0.8f );
+				}
+			}
+			vecs[k].r = (ubyte)255;*/
+//			gr_printf((0), (0), "r %d, g %d, b %d", (int)vecs[k].r, (int)vecs[k].g, (int)vecs[k].b);
 			// draw the polygon
-			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED);
+			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT );
+		//	g3_draw_poly(3, vlist, 0);
 		}
 	}
 }
@@ -2914,6 +2945,50 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		d3d_zbias(0);	
 	}	
 #endif
+//	object *obj = &Objects[objnum];
+	decal_render_all(&Objects[objnum]);
+//		decal_render_all(&Objects[objnum]);//render decals-Bobboau
+//		mprintf(("out of the decal stuff\n"));
+/*	if(obj->type == OBJ_SHIP){
+
+		vertex vecs[3];
+		vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
+	
+			mprintf(("about to render all decals\n"));
+
+	//	ship *shipp = &Ships[obj->instance];
+
+		for(int h = 0; h < MAX_SHIP_DECALS; h++){
+			decal *dec = &shipp->decals[h];
+			if(dec->is_valid){
+				mprintf(("decal %d is valid, and has %d polys\n",h,dec->n_poly));
+				for(int i = 0; i<dec->n_poly; i++){
+
+	mprintf(("drawing decal poly %d, with bitmap %d\n", i, dec->texture));
+						gr_set_bitmap(dec->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+	
+						vecs[0] = dec->vert[i][0];
+						vecs[1] = dec->vert[i][1];
+						vecs[2] = dec->vert[i][2];
+						g3_rotate_vertex(&vecs[0], &obj->pos);
+						g3_rotate_vertex(&vecs[1], &obj->pos);
+						g3_rotate_vertex(&vecs[2], &obj->pos);
+						g3_project_vertex(&vecs[0]);
+						g3_project_vertex(&vecs[1]);
+						g3_project_vertex(&vecs[2]);
+	mprintf(("vert 1 at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", vecs[0].x, vecs[0].y, vecs[0].z, vecs[0].u, vecs[0].v));
+	mprintf(("vert 2 at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", vecs[1].x, vecs[1].y, vecs[1].z, vecs[1].u, vecs[1].v));
+	mprintf(("vert 3 at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", vecs[2].x, vecs[2].y, vecs[2].z, vecs[2].u, vecs[2].v));
+						gr_set_cull(0);
+						g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT );
+						gr_set_cull(1);
+				}
+			}
+		}
+		mprintf(("decals rendered\n"));
+	}
+*/
+
 //start rendering glow points -Bobboau
 
 		if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
@@ -2989,14 +3064,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 		
 								g3_rotate_vertex( &p, &pnt );
 								
-								//need to rotate the vertex if it's parent is rotated
-								/*if(shipp->subsys_list.submodel_info_1.movement_axis){
-									
-									matrix m;
-	
-									vm_angles_2_matrix(&m, &pm->submodel[submodel_num].angs)
-									
-								}*/
 	
 							//	if(bank->submodel_parent)
 								gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
@@ -3014,10 +3081,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
 								vector fvec, top1, bottom1, top2, bottom2, start, end;
 
-							//	vm_vec_add2();
-			//					vm_vec_sub(&fvec, &bank->norm[j], &bank->pnt[j]);
-			//					vm_vec_normalize(&fvec);
-								
 								vm_vec_add2(&norm, &pnt);
 
 								vm_vec_rotate(&start, &pnt, orient);
@@ -3030,9 +3093,22 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, 1.0f, 1.0f, &Eye_position);	
 
 								int idx = 0;
-								mR_VERTICES();																// rotate and project the vertices
-								mP_VERTICES();						
-								mSTUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
+
+/*R_VERTICES()*/		do { 
+							g3_rotate_vertex(verts[0], &bottom1); 
+							g3_rotate_vertex(verts[1], &bottom2);	
+							g3_rotate_vertex(verts[2], &top2); 
+							g3_rotate_vertex(verts[3], &top1); } while(0);
+/*P_VERTICES()*/		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
+/*STUFF_VERTICES()*/	do { 
+								verts[0]->u = 0.0f; verts[0]->v = 0.0f;	
+								verts[1]->u = 1.0f; verts[1]->v = 0.0f; 
+								verts[2]->u = 1.0f;	verts[2]->v = 1.0f; 
+								verts[3]->u = 0.0f; verts[3]->v = 1.0f; 
+						} while(0);
+//								mR_VERTICES();																// rotate and project the vertices
+//								mP_VERTICES();						
+//								mSTUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
 
 								vm_vec_sub(&tempv,&View_position,&pnt);
 								vm_vec_normalize(&tempv);
@@ -3489,6 +3565,11 @@ void model_set_insignia_bitmap(int bmap)
 	Interp_insignia_bitmap = bmap;
 }
 
+void model_set_nameplate_bitmap(int bmap)
+{
+	Interp_nameplate_bitmap = bmap;
+}
+
 // set the forces bitmap
 void model_set_forced_texture(int bmap)
 {
@@ -3659,3 +3740,42 @@ int model_is_pirate_ship(int modelnum)
 {
 	return 0;
 }
+/*
+void render_all_decal(object * obj){
+	vertex vecs[3];
+	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
+	
+		mprintf(("about to render all decals\n"));
+
+	ship *shipp = &Ships[obj->instance];
+
+	for(int h = 0; h < MAX_SHIP_DECALS; h++){
+		decal *dec = &shipp->decals[h];
+		if(dec->is_valid){
+			mprintf(("decal %d is valid, and has %d polys\n",h,dec->n_poly));
+			for(int i = 0; i<dec->n_poly; i++){
+
+mprintf(("drawing decal poly %d, with bitmap %d\n", i, dec->texture));
+					gr_set_bitmap(dec->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+
+					for( int j = 0; j < 3; j++){
+						vecs[j] = dec->vert[i][j];
+						vector pos;
+						vm_vert2vec(&vecs[j], &pos);
+						vm_vec_add2(&pos, &obj->pos);
+						g3_rotate_vertex(&vecs[j], &pos);
+						g3_project_vertex(&vecs[j]);
+mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, vecs[j].y, vecs[j].z, vecs[j].u, vecs[j].v));
+
+					}
+
+					gr_set_cull(0);
+					g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT );
+					gr_set_cull(1);
+			}
+		}
+	}
+	mprintf(("decals rendered\n"));
+
+}
+*/
