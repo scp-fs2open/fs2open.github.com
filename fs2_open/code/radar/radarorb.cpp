@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-03-21 23:19:55 $
- * $Author: phreak $
+ * $Revision: 1.8 $
+ * $Date: 2005-03-24 23:29:33 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/03/21 23:19:55  phreak
+ * Orb correctly displays in 640x480
+ *
  * Revision 1.6  2005/03/13 08:33:55  taylor
  * gotta use MIN/MAX and not min/max now
  *
@@ -613,7 +616,6 @@ void radar_draw_blips_sorted_orb(int distort)
 	g3_done_instance(false);
 }
 
-static int test_time = 1;
 void radar_draw_range_orb()
 {
 	char buf[32];

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-03-02 21:24:46 $
+ * $Revision: 2.14 $
+ * $Date: 2005-03-24 23:29:33 $
  * $Author: taylor $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/02 21:24:46  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.12  2005/02/04 20:06:07  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -709,7 +712,6 @@ void radar_draw_blips_sorted_std(int distort)
 	draw_radar_blips(RCOL_TAGGED, 0, distort);
 }
 
-static int test_time = 1;
 void radar_draw_range_std()
 {
 	char buf[32];

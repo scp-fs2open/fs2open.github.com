@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-02-23 04:55:08 $
+ * $Revision: 2.12 $
+ * $Date: 2005-03-24 23:29:33 $
  * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/02/23 04:55:08  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.10  2004/10/31 21:53:24  taylor
  * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
  *
@@ -278,6 +281,7 @@ int Ra_flash_y[GR_NUM_RESOLUTIONS] = {
 	200
 };
 
+/*
 static int Ra_flash_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
 		61, 108			// GR_640
@@ -286,6 +290,7 @@ static int Ra_flash_coords[GR_NUM_RESOLUTIONS][2] = {
 		61, 108			// GR_1024
 	}
 };
+*/
 
 #define NUM_BUTTONS						2
 

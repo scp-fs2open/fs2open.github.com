@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-02 21:18:20 $
+ * $Revision: 2.9 $
+ * $Date: 2005-03-24 23:29:33 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.7  2005/02/04 20:06:05  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -154,7 +159,6 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <errno.h>
 
 #define WSAGetLastError()  (errno)
 #endif
@@ -622,10 +626,10 @@ void PSNET_TOP_LAYER_PROCESS()
 // initialize psnet to use the specified port
 void psnet_init( int protocol, int port_num )
 {	
-	char *internet_connection;
 	int idx;
 	Tcp_active = 0;
 #ifdef _WIN32
+	char *internet_connection;
 	WSADATA wsa_data; 		
 	Ipx_active = 0;
 #endif
