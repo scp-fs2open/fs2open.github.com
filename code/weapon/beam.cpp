@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.40 $
- * $Date: 2004-07-26 20:47:56 $
- * $Author: Kazan $
+ * $Revision: 2.41 $
+ * $Date: 2004-11-21 11:38:17 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2004/07/26 20:47:56  Kazan
+ * remove MCD complete
+ *
  * Revision 2.39  2004/07/12 16:33:09  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -1658,7 +1661,12 @@ void beam_render(beam_weapon_info *bwi, vector *start, vector *shot, float shrin
 		verts[3]->a = 255;
 
 		// set the right texture with additive alpha, and draw the poly
-		gr_set_bitmap(bwi->sections[s_idx].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
+		int cur_frame = 0;
+		if (bwi->sections[s_idx].nframes > 1) {
+			cur_frame = ((timestamp() / bwi->sections[s_idx].fps) % bwi->sections[s_idx].nframes);
+		}
+		gr_set_bitmap(bwi->sections[s_idx].texture + cur_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);
+
 		if(Cmdline_nohtl)g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); 
 		else g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); 
 		// added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			

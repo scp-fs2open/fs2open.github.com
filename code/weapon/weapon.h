@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2004/09/10 13:50:09  et1
+ * Implemented "+WeaponMinRange" token
+ *
  * Revision 2.33  2004/08/11 05:06:36  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -559,6 +562,8 @@ typedef struct beam_weapon_section_info {
 	float tile_factor;						// texture tile factor -Bobboau
 	int tile_type;							// is this beam tiled by it's length, or not
 	float translation;						// makes the beam texture move -Bobboau
+	int nframes;							// number of frames for an animation
+	int fps;								// frames per sec, if anim
 } beam_weapon_section_info;
 
 typedef struct beam_weapon_info {
@@ -866,7 +871,7 @@ void weapon_process_pre( object *obj, float frame_time);
 void weapon_process_post( object *obj, float frame_time);
 
 //Call before weapons_page_in to mark a weapon as used
-void mark_weapon_used(int weapon_id);
+void weapon_mark_as_used(int weapon_id);
 
 // Group_id:  If you should quad lasers, they should all have the same group id.  
 // This will be used to optimize lighting, since each group only needs to cast one light.
