@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.37 $
- * $Date: 2004-04-03 02:55:50 $
- * $Author: bobboau $
+ * $Revision: 2.38 $
+ * $Date: 2004-04-06 05:42:49 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2004/04/03 02:55:50  bobboau
+ * commiting recent minor bug fixes
+ *
  * Revision 2.36  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -2200,7 +2203,9 @@ int beam_start_firing(beam *b)
 		b->beam_sound_loop = snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_loop_sound], &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
 
 		// "shot" sound
-	//	snd_play_3d(&Snds[SND_BEAM_SHOT], &b->last_start, &View_position); //I'm sorry this thing has always pissed me off -Bobboau
+		snd_play_3d(&Snds[SND_BEAM_SHOT], &b->last_start, &View_position); //I'm sorry this thing has always pissed me off -Bobboau
+		// GAH - Bobboau, for goodness sake don't delete things flippantly.  If you want to change this kind of thing, add
+		// command-line behavior like Phreak did for his targeting stuff.  The code is not yours to tromp all over like this. -- Goober5000
 	}	
 
 	// success
@@ -2665,10 +2670,11 @@ int beam_collide_ship(obj_pair *pair)
 		beam_add_collision(b, pair->b, &test_collide);
 
 		// if we went through the shield
-	//	if (quad != -1)
-	//	{
-	//		Objects[shipp->objnum].shield_quadrant[quad] = 0.0f;	// Bobboau's addition: now works correctly
-	//	}
+		//Goober5000 - nope, not sure what I was thinking for this
+		//if (quad != -1)
+		//{
+		//	Objects[shipp->objnum].shield_quadrant[quad] = 0.0f;	// Bobboau's addition: now works correctly
+		//}
 	}	
 
 	// add this guy to the lighting list
