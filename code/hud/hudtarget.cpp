@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.42 $
- * $Date: 2004-12-24 05:07:05 $
- * $Author: wmcoolmon $
+ * $Revision: 2.43 $
+ * $Date: 2004-12-24 19:36:12 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2004/12/24 05:07:05  wmcoolmon
+ * NEW_HUD compiles now. :)
+ *
  * Revision 2.41  2004/12/24 00:41:23  wmcoolmon
  * Ballistic primary ammo-gauge to the right of the HUD, support for weapon images in list.
  *
@@ -5028,12 +5031,17 @@ void hud_show_weapon_energy_gauge()
 #ifndef NEW_HUD
 	int x;
 	bool use_new_gauge = false;
-	for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
+
+	// Goober5000 - only check for the new gauge in case of command line + a ballistic-capable ship
+	if (Cmdline_ballistic_gauge && Ship_info[Player_ship->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES)
 	{
-		if(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags2 & WIF2_BALLISTIC)
+		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 		{
-			use_new_gauge = true;
-			break;
+			if(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags2 & WIF2_BALLISTIC)
+			{
+				use_new_gauge = true;
+				break;
+			}
 		}
 	}
 

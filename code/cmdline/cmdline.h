@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.63 $
- * $Date: 2004-11-23 19:29:13 $
- * $Author: taylor $
+ * $Revision: 2.64 $
+ * $Date: 2004-12-24 19:36:12 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2004/11/23 19:29:13  taylor
+ * fix 2d warp in D3D, add cmdline option for 3d warp
+ *
  * Revision 2.62  2004/09/10 13:51:20  et1
  * Command line option for TBP for warp stuff, "-tbpwarpeffects"
  *
@@ -549,6 +552,8 @@ extern float Cmdline_max_subdivide;
 extern int Cmdline_alpha_env;
 extern int Cmdline_env;
 extern int Cmdline_decals;
+
+extern int Cmdline_ballistic_gauge;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif
