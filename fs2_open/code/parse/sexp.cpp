@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.38 $
- * $Date: 2003-01-25 04:17:39 $
+ * $Revision: 2.39 $
+ * $Date: 2003-01-25 04:54:36 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2003/01/25 04:17:39  Goober5000
+ * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
+ * --Ian Warfield
+ *
  * Revision 2.37  2003/01/21 17:24:16  Goober5000
  * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
  * help for the sexps in sexp_tree
@@ -2230,6 +2234,21 @@ int check_sexp_syntax(int index, int return_type, int recursive, int *bad_index,
 
 				if ( i == Num_ship_types )
 					return SEXP_CHECK_INVALID_SHIP_CLASS_NAME;
+
+				// preload the model if needed, just in case there is no other ship of this class
+				// in the mission: this eliminates the slight pause during a mission when loading
+				// a model that hasn't been loaded yet
+				if (!Fred_running)
+				{
+					z = find_parent_operator(index);
+					if (z == OP_CHANGE_SHIP_MODEL || z == OP_CHANGE_SHIP_CLASS)
+					{
+						ship_info *sip = &Ship_info[ship_info_lookup(CTEXT(index))];	// we already know this class exists
+	
+						sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
+					}
+				}
+
 				break;
 
 			case OPF_HUD_GAUGE_NAME:
