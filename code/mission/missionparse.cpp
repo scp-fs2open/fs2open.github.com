@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.41 $
- * $Date: 2003-09-11 19:09:44 $
- * $Author: argv $
+ * $Revision: 2.42 $
+ * $Date: 2003-09-11 23:59:32 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2003/09/11 19:09:44  argv
+ * Singular shield support, beam-free-all ship flag2, negative repeat count means repeat indefinitely.
+ *
  * Revision 2.40  2003/09/06 20:41:52  wmcoolmon
  * Added "+Subsystem Repair Ceiling:" after "+Hull Repair Ceiling:" (formerly "+Support Repair Ceiling:"
  *
@@ -2048,23 +2051,16 @@ int parse_create_object(p_object *objp)
 			}
 
 			// _argv[-1] - free beams by default if appropriate.
-			if (
-			 (
-			  objp->flags2 & P2_SF2_BEAM_FREE_ALL
-			  ||
-			  (
-			   sip->flags2 & SIF2_BEAM_FREE_BY_DEFAULT
-			   &&
-			   ptr->system_info->beam_free_by_default != 0
-			  )
-			  ||
-			  ptr->system_info->beam_free_by_default == 2
-			 )
-			 &&
-			 ptr->system_info->type == SUBSYSTEM_TURRET
-			) {
-				ptr->weapons.flags |= SW_FLAG_BEAM_FREE;
-				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+			// Goober5000 - ugh, made this readable
+			if (ptr->system_info->type == SUBSYSTEM_TURRET)
+			{
+				if ( (objp->flags2 & P2_SF2_BEAM_FREE_ALL)
+					|| (ptr->system_info->beam_free_by_default == 2)
+					|| (sip->flags2 & SIF2_BEAM_FREE_BY_DEFAULT && ptr->system_info->beam_free_by_default != 0) )
+				{
+					ptr->weapons.flags |= SW_FLAG_BEAM_FREE;
+					ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+				}
 			}
 
 			if (!stricmp(ptr->system_info->subobj_name, sssp->name)) {
@@ -2133,8 +2129,10 @@ int parse_create_object(p_object *objp)
 		// Ships[shipnum].hull_hit_points_taken = (float)objp->initial_hull * sip->max_hull_hit_points / 100.0f;
 		Objects[objnum].hull_strength = objp->initial_hull * Ships[shipnum].ship_initial_hull_strength / 100.0f;
 		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
+		{
 			// _argv[-1] - singular shield.
 			Objects[objnum].shield_quadrant[i] = (float)(objp->initial_shields * Ships[shipnum].ship_initial_shield_strength / 100.0f) / (sip->flags2 & SIF2_SINGULAR_SHIELDS ? 1 : MAX_SHIELD_SECTIONS);
+		}
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		if ( !(Game_mode & GM_IN_MISSION) ) {
@@ -3551,6 +3549,9 @@ void parse_event(mission *pm)
 	event->timestamp = timestamp(-1);
 
 	// sanity check on the repeat count variable
+	/* if ( event->repeat_count <= 0 ){
+		Error (LOCATION, "Repeat count for mission event %s is <=0.\nMust be >= 1!", event->name );
+	}*/
 	// _argv[-1] - negative repeat counts are now valid (they mean that the event should repeat indefinitely).
 	if ( event->repeat_count == 0 ){
 		Error (LOCATION, "Repeat count for mission event %s is 0.\nNeeds to be positive or negative.", event->name );
