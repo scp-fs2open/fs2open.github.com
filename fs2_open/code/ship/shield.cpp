@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-03-05 09:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2004-03-08 22:01:29 $
+ * $Author: phreak $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/03/05 09:01:52  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.13  2004/02/04 08:41:02  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -576,7 +580,8 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vector *pos, ubyt
 
 		// Pnt is now the x,y,z world coordinates of this vert.
 		// For this example, I am just drawing a sphere at that point.
-		g3_rotate_vertex(&points[j], &pnt);
+		if (!Cmdline_nohtl) g3_transfer_vertex(&points[j],&pnt);
+		else g3_rotate_vertex(&points[j], &pnt);
 		points[j].u = trip->verts[j].u;
 		points[j].v = trip->verts[j].v;
 		Assert((trip->verts[j].u >= 0.0f) && (trip->verts[j].u <= UV_MAX));
