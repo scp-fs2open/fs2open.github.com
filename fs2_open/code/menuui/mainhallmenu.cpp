@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.15 $
- * $Date: 2004-03-05 09:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2004-03-08 22:02:39 $
+ * $Author: Kazan $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2004/03/05 09:01:53  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.14  2004/02/28 14:14:57  randomtiger
  * Removed a few uneeded if DIRECT3D's.
  * Set laser function to only render the effect one sided.
@@ -844,8 +848,18 @@ void main_hall_do_multi_ready()
 	gameseq_post_event( GS_EVENT_PXO );
 #else
 	
-	// go to the regular join game screen 	
-	gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
+	if (Om_tracker_flag)
+	{
+		Multi_options_g.protocol = NET_TCP;
+		gameseq_post_event( GS_EVENT_NET_CHAT );
+
+	}
+	else
+	{
+		// go to the regular join game screen 	
+		gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
+	}
+
 #endif	
 
 	// select protocol

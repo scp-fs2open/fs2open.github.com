@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-03-08 15:06:24 $
+ * $Revision: 2.15 $
+ * $Date: 2004-03-08 22:02:39 $
  * $Author: Kazan $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/03/08 15:06:24  Kazan
+ * Did, undo
+ *
  * Revision 2.13  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -1394,13 +1397,11 @@ void multi_do_frame()
 				if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
 #endif
 				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
+					ml_printf("Network (FS2OpenPXO): Could not initialize Socket!!\n");
 				}
 		}
 
 		// -------------------- send
-
-
 		if ((clock() - LastSend) >= 60000 || LastSend == -1)
 		{
 			LastSend = clock();
