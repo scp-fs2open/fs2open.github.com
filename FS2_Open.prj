@@ -1,4 +1,4 @@
-# Anjuta Version 1.2.2 
+# Anjuta Version 1.2.1 
 Compatibility Level: 1 
 
 <PROJECT_DESCRIPTION_START>
@@ -22,13 +22,13 @@ FS2 Open: SCP<PROJECT_DESCRIPTION_END>
 
 props.file.type=project
 
-anjuta.version=1.2.2
+anjuta.version=1.2.1
 anjuta.compatibility.level=1
 
 project.name=FS2_Open
 project.type=GENERIC
 project.target.type=EXECUTABLE
-project.version=3.6
+project.version=3.6.5
 project.author=Taylor Richards
 project.source.target=fs2_open
 project.has.gettext=0
@@ -41,13 +41,13 @@ project.config.extra.modules.after=
 project.config.blocked=1
 project.config.disable.overwriting=1 1 1 1 1 1 1 1 1 
 
-project.menu.entry=FS2_Open Version 3.6
+project.menu.entry=FS2_Open Version 3.6.5
 project.menu.group=Application
-project.menu.comment=FS2_Open Version 3.6
+project.menu.comment=FS2_Open Version 3.6.5
 project.menu.icon=
 project.menu.need.terminal=0
 
-project.configure.options=
+project.configure.options=--enable-debug --enable-gprof
 anjuta.program.arguments=
 preferences.build.option.jobs=0
 preferences.build.option.silent=0
@@ -325,7 +325,15 @@ module.include.files=\
 	code/graphics/gropenglextension.h\
 	code/graphics/gropengltexture.h\
 	code/autopilot/autopilot.h\
-	code/hud/hudnavigation.h
+	code/hud/hudnavigation.h\
+	code/mcd/mcd.h\
+	code/cutscene/mvelib.h\
+	code/PreProcDefines.h\
+	code/hud/hudparse.h\
+	code/graphics/gropenglbmpman.h\
+	code/object/objectdock.h\
+	code/sound/ogg/ogg.h\
+	code/camera/camera.h
 
 module.source.name=.
 module.source.type=
@@ -598,7 +606,18 @@ module.source.files=\
 	code/graphics/gropengltexture.cpp\
 	code/sound/audiostr-unix.cpp\
 	code/autopilot/autopilot.cpp\
-	code/hud/hudnavigation.cpp
+	code/hud/hudnavigation.cpp\
+	code/cutscene/decoder16.cpp\
+	code/cutscene/mvelib.cpp\
+	code/cutscene/mveplayer.cpp\
+	code/hud/hudparse.cpp\
+	code/radar/radarorb.cpp\
+	code/radar/radarsetup.cpp\
+	code/graphics/gropenglbmpman.cpp\
+	code/menuui/optionsmenuscp.cpp\
+	code/object/objectdock.cpp\
+	code/sound/ogg/ogg.cpp\
+	code/camera/camera.cpp
 
 module.pixmap.name=.
 module.pixmap.type=

@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.94 $
- * $Date: 2005-01-29 08:04:15 $
- * $Author: wmcoolmon $
+ * $Revision: 2.95 $
+ * $Date: 2005-02-04 23:29:31 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2005/01/29 08:04:15  wmcoolmon
+ * Ahh, the sweet smell of optimized code
+ *
  * Revision 2.93  2005/01/21 08:25:14  taylor
  * fill in gr_opengl_set_texture_addressing()
  * add support for non-power-of-two textures for cards that have it
@@ -692,6 +695,7 @@
 #include "graphics/gropengltexture.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengltnl.h"
+#include "graphics/gropenglbmpman.h"
 
 
 #if defined(_WIN32) && !defined(__GNUC__)
@@ -699,11 +703,12 @@
 #pragma comment (lib, "glu32")
 #endif
 
-#ifndef USE_DEVIL
-#pragma message("WARNING: You have not compiled DevIL into this build (use USE_DEVIL).")
-#endif
 
+#ifdef GL_NO_HTL
+#define REQUIRED_GL_VERSION '1'
+#else
 #define REQUIRED_GL_VERSION '2'
+#endif
 
 extern int Cmdline_nohtl;
 
@@ -745,6 +750,7 @@ static int Gr_opengl_mouse_saved_y2 = 0;
 extern int Cmdline_window;
 extern int Interp_multitex_cloakmap;
 extern int CLOAKMAP;
+extern int SPECMAP;
 extern int Interp_cloakmap_alpha;
 
 static const char* OGL_extensions;
@@ -753,6 +759,8 @@ static float max_aniso=1.0f;			//max anisotropic filtering ratio
 
 void (*gr_opengl_tmapper_internal)( int nv, vertex ** verts, uint flags, int is_scaler ) = NULL;
 void (*gr_opengl_set_tex_src)(gr_texture_source ts);
+
+extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 extern vector G3_user_clip_normal;
 extern vector G3_user_clip_point;
@@ -769,13 +777,10 @@ extern float	Canv_h2;				// Canvas_height / 2
 extern float	View_zoom;
 
 
-
 void opengl_go_fullscreen(HWND wnd)
 {
 	if (Cmdline_window)
 		return;
-
-	mprintf(("opengl_go_fullscreen\n"));
 
 #ifdef _WIN32
 	DEVMODE dm;
@@ -787,14 +792,14 @@ void opengl_go_fullscreen(HWND wnd)
 	SetWindowPos( wnd, HWND_TOPMOST, 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );	
 	SetActiveWindow(wnd);
 	SetForegroundWindow(wnd);
-	
+
 	memset((void*)&dm,0,sizeof(DEVMODE));
 	dm.dmSize=sizeof(DEVMODE);
 	dm.dmPelsHeight=gr_screen.max_h;
 	dm.dmPelsWidth=gr_screen.max_w;
 	dm.dmBitsPerPel=gr_screen.bits_per_pixel;
 	dm.dmFields=DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-	ChangeDisplaySettings(&dm,CDS_FULLSCREEN);
+	ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
 	os_resume();  
 #else
 	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) ) {
@@ -817,11 +822,16 @@ void opengl_minimize()
 	ChangeDisplaySettings(NULL,0);
 	os_resume();
 #else
+	// lets not minimize if we are in windowed mode
+	if (!(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN))
+		return;
+
 	os_suspend();
 	SDL_WM_IconifyWindow();
 	os_resume();
 #endif
 }
+
 /*
 static inline void opengl_set_max_anistropy()
 {
@@ -1007,9 +1017,21 @@ void gr_opengl_activate(int active)
 		GL_activate++;
 		opengl_go_fullscreen(wnd);
 
+#ifdef SCP_UNIX
+		// Check again and if we didn't go fullscreen turn on grabbing if possible
+		if(!Cmdline_no_grab && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN)) {
+			SDL_WM_GrabInput(SDL_GRAB_ON);
+		}
+#endif
 	} else {
 		GL_deactivate++;
 		opengl_minimize();
+
+#ifdef SCP_UNIX
+		// let go of mouse/keyboard
+		if (SDL_WM_GrabInput(SDL_GRAB_QUERY) == SDL_GRAB_ON)
+			SDL_WM_GrabInput(SDL_GRAB_OFF);
+#endif
 	}
 	
 }
@@ -1073,7 +1095,10 @@ void gr_opengl_flip()
 
 	TIMERBAR_END_FRAME();
 	TIMERBAR_START_FRAME();
-	
+
+#ifdef _WIN32
+	int swap_error=0;
+
 	if(!SwapBuffers(dev_context))
 	{
 		opengl_minimize();
@@ -1081,6 +1106,9 @@ void gr_opengl_flip()
 		Error(LOCATION,"Unable to swap buffers\nError code: %d",swap_error);
 		exit(2);
 	}
+#else
+	SDL_GL_SwapBuffers();
+#endif
 
 	opengl_tcache_frame ();
 	
@@ -1311,13 +1339,13 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 
 	float u_scale, v_scale;
 
-	gr_opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-
 	if ( !gr_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale ) )	{
 		// Couldn't set texture
 		mprintf(( "WARNING: Error setting aabitmap texture!\n" ));
 		return;
 	}
+
+	gr_opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
@@ -1650,12 +1678,12 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
 	}
 
 	glBegin (GL_LINES);
-	  glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-	  
-	  glSecondaryColor3ubvEXT(zero);
+		glColor4ub (gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
-	  glVertex3f (sx2, sy2, -0.99f);
-	  glVertex3f (sx1, sy1, -0.99f);
+		glSecondaryColor3ubvEXT(zero);
+
+		glVertex3f (sx2, sy2, -0.99f);
+		glVertex3f (sx1, sy1, -0.99f);
 	glEnd ();
 
 	if ( !Cmdline_nohtl ) {
@@ -2004,23 +2032,20 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 			a=255;
 		}
 
-		ubyte sc[]={(ubyte)(va->spec_r >> 1), (ubyte)(va->spec_g >> 1), (ubyte)(va->spec_b >> 1)};
+		ubyte sc[3] = { va->spec_r, va->spec_g, va->spec_b };
 
 		if (!override_primary)
 		{
-			glColor4ub ((ubyte)r,(ubyte)g,(ubyte)b,(ubyte)a);
-			glSecondaryColor3ubvEXT(sc);
+			glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+			glSecondaryColor3ubvEXT( sc );
 		}
 		else
 		{
 			glColor3ubv(sc);		
 			glSecondaryColor3ubvEXT(sc);
 		}
-		
 
-			
 		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2)){
-		
 			// this is for GL_EXT_FOG_COORD 
 			gr_opengl_stuff_fog_coord(va);
 		}
@@ -2046,13 +2071,11 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 			if (GL_supported_texture_units>2)			glMultiTexCoord2fARB(GL_TEXTURE2_ARB,tu,tv);
 			
 		}
-		
+
 		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
 	}
 	glEnd();
 }
-
-extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage )
 {
@@ -2060,6 +2083,8 @@ void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int 
 		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 		return;
 	}
+
+	gr_opengl_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
 
 	// render with spec lighting only
 	opengl_default_light_settings(0, 0, 1);
@@ -2182,9 +2207,8 @@ void gr_opengl_tmapper_internal_2multitex( int nv, vertex ** verts, uint flags, 
 
 	opengl_setup_render_states(r,g,b,alpha,tmap_type,flags,is_scaler);
 
-
 	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
@@ -2412,25 +2436,26 @@ void gr_opengl_tmapper_internal3d( int nv, vertex ** verts, uint flags, int is_s
 		}
 	}
 
-//	glColor3ub(191,191,191);	//its unlit
-
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	glSecondaryColor3ubvEXT(zero);
 
 	vertex *va;
+	
 	if (flags & TMAP_FLAG_TRISTRIP) glBegin(GL_TRIANGLE_STRIP);
 	else glBegin(GL_TRIANGLE_FAN);
-	for (i=0; i < nv; i++)
-	{
+
+	for (i=0; i < nv; i++) {
 		va=verts[i];
+
 		if(flags & TMAP_FLAG_RGB)
-			glColor3ub((ubyte)Gr_gamma_lookup[va->r], (ubyte)Gr_gamma_lookup[va->g], (ubyte)Gr_gamma_lookup[va->b]);
+			glColor3ub(va->r, va->g, va->b);
+		//	glColor3ub((ubyte)Gr_gamma_lookup[va->r], (ubyte)Gr_gamma_lookup[va->g], (ubyte)Gr_gamma_lookup[va->b]);
+
 		glTexCoord2f(va->u, va->v);
 		glVertex3f(va->x,va->y,va->z);
 	}
 	glEnd();
-
 }
 
 void gr_opengl_tmapper_batch_3d_unlit( int nverts, vertex *verts, uint flags)
@@ -3051,8 +3076,12 @@ int gr_opengl_save_screen()
  		return -1;
  	}
 	
-
+#ifdef _WIN32
 	glReadBuffer(GL_FRONT);
+#else
+	// we need to save BACK here to get a valid shot in-mission under Linux
+	glReadBuffer(GL_BACK);
+#endif
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, fmt, opengl_screen_tmp);
         
    
@@ -3432,15 +3461,21 @@ void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 	glEnd();
 }
 
-void gr_opengl_center_alpha( int type){
-	//do stuff here
-}
-
 void gr_opengl_setup_background_fog(bool set)
 {
 	if (Cmdline_nohtl)
 		return;
 
+}
+
+void gr_opengl_close()
+{
+	if (currently_enabled_lights != NULL) {
+		free(currently_enabled_lights);
+		currently_enabled_lights = NULL;
+	}
+
+	gr_opengl_free_mouse_area();
 }
 
 void opengl_setup_function_pointers()
@@ -3513,7 +3548,6 @@ void opengl_setup_function_pointers()
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
 	gr_screen.gf_get_region = gr_opengl_get_region;
 
-	// now for the bitmap functions
 	gr_screen.gf_bm_free_data				= gr_opengl_bm_free_data;
 	gr_screen.gf_bm_create					= gr_opengl_bm_create;
 	gr_screen.gf_bm_init					= gr_opengl_bm_init;
@@ -3606,9 +3640,10 @@ void gr_opengl_init(int reinit)
 		Cmdline_jpgtga = 0;
 	}
 
-#ifndef USE_DEVIL
-	// turn off jpgtga if DevIL isn't used
-	Cmdline_jpgtga = 0;
+#ifdef GL_NO_HTL
+	// turn off HT&L and VBO if we can't support it with built libs
+	Cmdline_nohtl = 1;
+	Cmdline_novbo = 1;
 #endif
 
 	switch( bpp )	{
@@ -3775,7 +3810,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		exit(1);
 	}
 #else
-	if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0) {
+	if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
+	{
 		fprintf (stderr, "Couldn't init SDL: %s", SDL_GetError());
 		exit (1);
 	}
@@ -3803,7 +3839,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &tmp_blue);
 	SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &tmp_depth);
 	SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &tmp_db);
-	
+
 	mprintf(("Actual SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", tmp_red, tmp_green, tmp_blue, tmp_depth, tmp_db));
 
 	SDL_ShowCursor(0);
@@ -3853,15 +3889,17 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-	if (!Cmdline_window)
+	if (!Cmdline_window && !reinit)
 	{
 		opengl_go_fullscreen(wnd);
 	}
 
 	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
 	glLoadIdentity();
 	glOrtho(0, gr_screen.max_w, gr_screen.max_h,0, 0.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
 	glLoadIdentity();
 	
 	glShadeModel(GL_SMOOTH);
@@ -3873,7 +3911,10 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glEnable(GL_BLEND);
 	
 	glEnable(GL_TEXTURE_2D);
-	
+
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
 	glDepthRange(0.0, 1.0);
 	
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -3938,31 +3979,39 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	if (GL_Extensions[GL_FOG_COORDF].enabled && !Fred_running)
 		OGL_fogmode=2;
 
-	if (GL_Extensions[GL_SECONDARY_COLOR_3UBV].enabled) glEnable(GL_COLOR_SUM_EXT);
+	if (GL_Extensions[GL_SECONDARY_COLOR_3UBV].enabled)
+		glEnable(GL_COLOR_SUM_EXT);
 
 	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &GL_supported_texture_units);
 
-	if (GL_supported_texture_units > 2)	gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_3multitex;
-	else					gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_2multitex;
+	if (GL_supported_texture_units > 2) {
+		gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_3multitex;
+	} else {
+		gr_opengl_tmapper_internal = gr_opengl_tmapper_internal_2multitex;
+	}
 
-	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled)
+	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled) {
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_arb;
-	else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled)
+	} else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled) {
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_ext;
-	else
+	} else {
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_no_combine;
+	}
 
 	// setup the lighting stuff that will get used later
 	opengl_init_light();
 
 	glDisable(GL_LIGHTING); //making sure of it
 
+	/*extern void gr_opengl_setup_env();
+	gr_opengl_setup_env();*/
+
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
 
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
 
-	atexit( gr_opengl_free_mouse_area );
+	atexit( gr_opengl_close );
 }
 
 DCF(min_ogl, "minimizes opengl")
@@ -3986,6 +4035,4 @@ DCF(aniso, "toggles anisotropic filtering")
 	}
 	if (Dc_help) dc_printf("toggles anisotropic filtering");
 }
-
-
 

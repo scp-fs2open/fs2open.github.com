@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.33 $
- * $Date: 2005-01-14 05:28:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.34 $
+ * $Date: 2005-02-04 23:29:31 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/01/14 05:28:57  wmcoolmon
+ * gr_curve
+ *
  * Revision 2.32  2005/01/01 11:24:22  taylor
  * good OpenGL spec mapping
  * fix VBO crash with multitexture using same uv coord data
@@ -603,10 +606,6 @@ HRESULT d3d_CreateVertexBuffer(int vertex_type, int size, DWORD usage, void **bu
 int d3d_get_num_prims(int vertex_count, D3DPRIMITIVETYPE prim_type);
 
 // GrD3Dtexture
-void *d3d_lock_32_pcx(char *real_filename, int type, float *u, float *v);
-bool d3d_read_header_d3dx(char *file, int type, int *w, int *h);
-void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum);
-
 int gr_d3d_preload(int bitmap_num, int is_aabitmap );
 
 bool d3d_init_light();

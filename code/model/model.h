@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.51 $
- * $Date: 2005-01-28 11:57:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.52 $
+ * $Date: 2005-02-04 23:29:32 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/01/28 11:57:36  Goober5000
+ * fixed Bobboau's spelling of 'relative'
+ * --Goober5000
+ *
  * Revision 2.50  2005/01/28 09:56:44  taylor
  * add model_page_out_textures() for use in techroom
  * make model_page_in_textures() load more textures
@@ -485,9 +489,10 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _MODEL_H
 #define _MODEL_H
+
+#include "PreProcDefines.h"
 
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
@@ -1065,6 +1070,8 @@ typedef struct polymodel {
 	int			debug_info_size;
 	char			*debug_info;
 #endif
+
+	int used_this_mission;		// used for page-in system, how many times this model has been loaded per mission - taylor
 
 	int n_glows;							// number of glows on this ship. -Bobboau
 	glow_bank *glows;						// array of glow objects -Bobboau

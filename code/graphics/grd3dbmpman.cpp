@@ -25,6 +25,7 @@
 #include "ddsutils/ddsutils.h"
 #include "tgautils/tgautils.h"
 #include "graphics/grd3dbmpman.h"
+#include "globalincs/systemvars.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -147,7 +148,7 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int bitmapnum, int size, int typ
 }
 
 // read an image file header using D3DX
-bool d3d_read_header_d3dx(char *file, CFILE *img_cfp, int type, int *w, int *h, int *bm_size)
+bool d3d_read_header_d3dx(char *file, CFILE *img_cfp, int type, int *w, int *h, int *bpp, int *bm_size)
 {
 	char filename[MAX_FILENAME_LEN];
 	CFILE *d3dx_file;
@@ -201,6 +202,7 @@ bool d3d_read_header_d3dx(char *file, CFILE *img_cfp, int type, int *w, int *h, 
 
 	if(w) *w = source_desc.Width;
 	if(h) *h = source_desc.Height;
+	if(bpp) *bpp = (source_desc.Depth / 8);
 	if(bm_size) *bm_size = (source_desc.Width * source_desc.Height * (source_desc.Depth / 8));
 	
 	free(img_data);//and right here -Bobboau
@@ -248,10 +250,18 @@ int gr_d3d_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, in
 	}
 	// maybe it's a PCX
 	else if (type == BM_TYPE_PCX) {
-		int pcx_error = pcx_read_header( filename, img_cfp, w, h, NULL );		
+		int pcx_error = pcx_read_header( filename, img_cfp, w, h, bpp, NULL );		
 		if ( pcx_error != PCX_ERROR_NONE )	{
 			DBUGFILE_OUTPUT_1("bm_pcx: Cant load %s",filename);
 			mprintf(( "bm_pcx: Couldn't open '%s'\n", filename ));
+			return -1;
+		}
+	}
+	// maybe it's a JPG
+	else if (type == BM_TYPE_JPG) {
+		int jpg_error = jpeg_read_header( filename, img_cfp, w, h, bpp, NULL );
+		if ( jpg_error != JPEG_ERROR_NONE ) {
+			mprintf(( "jpg: Couldn't open '%s'\n", filename ));
 			return -1;
 		}
 	}
@@ -341,9 +351,20 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 {
 	ubyte c_type = BM_TYPE_NONE;
 	char realname[MAX_FILENAME_LEN];
+	ubyte true_bpp;
 
 	bitmap_entry *be = &bm_bitmaps[bitmapnum];
 	bitmap *bmp = &be->bm;
+
+	if (Is_standalone) {
+		true_bpp = 8;
+	}
+	// not really sure how we this is going to work out in every case but...
+	else if (bmp->true_bpp > bpp) {
+		true_bpp = bmp->true_bpp;
+	} else {
+		true_bpp = bpp;
+	}
 
 	// make sure we use the real graphic type for EFFs
 	if ( be->type == BM_TYPE_EFF ) {
@@ -374,14 +395,14 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 
 			bm_update_memory_used( bitmapnum, be->mem_taken );
 		}
-	} else if ( (bmp->data == 0) && (d3d_bitmap_entry[bitmapnum].tinterface == NULL) || (bpp != bmp->bpp && bmp->bpp != 32)) {
+	} else if ( (bmp->data == 0) && (d3d_bitmap_entry[bitmapnum].tinterface == NULL) || (true_bpp != bmp->bpp && bmp->bpp != 32)) {
 		Assert(be->ref_count == 1);
 
 		if ( c_type != BM_TYPE_USER ) {
 			if ( bmp->data == 0 ) {
 				mprintf (("Loading %s for the first time.\n", filename));
 			} else if ( bpp != bmp->bpp ) {
-				mprintf (("Reloading %s from bitdepth %d to bitdepth %d\n", filename, bmp->bpp, bpp));
+				mprintf (("Reloading %s from bitdepth %d to bitdepth %d\n", filename, bmp->bpp, true_bpp));
 			} 
 		}
 
@@ -389,7 +410,7 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 			if ( c_type != BM_TYPE_USER ) {
 				char flag_text[64];
 				strcpy( flag_text, "--" );							
-				nprintf(( "Paging", "Loading %s (%dx%dx%dx%s)\n", filename, bmp->w, bmp->h, bpp, flag_text ));
+				nprintf(( "Paging", "Loading %s (%dx%dx%dx%s)\n", filename, bmp->w, bmp->h, true_bpp, flag_text ));
 			}
 		}
 
@@ -405,15 +426,15 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 		switch ( c_type ) {
 			case BM_TYPE_PCX:
 				mprintf(("MEMLEAK DEBUG: lock pcx\n"));
-		  		bm_lock_pcx( handle, bitmapnum, be, bmp, bpp, flags );
+		  		bm_lock_pcx( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
 			case BM_TYPE_ANI: 
-				bm_lock_ani( handle, bitmapnum, be, bmp, bpp, flags );
+				bm_lock_ani( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
 			case BM_TYPE_USER:	
-				bm_lock_user( handle, bitmapnum, be, bmp, bpp, flags );
+				bm_lock_user( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 			default:
 				Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", c_type );

@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-01-21 08:25:14 $
+ * $Revision: 1.6 $
+ * $Date: 2005-02-04 23:29:31 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/01/21 08:25:14  taylor
+ * fill in gr_opengl_set_texture_addressing()
+ * add support for non-power-of-two textures for cards that have it
+ * temporary crash fix from multiple mipmap levels in uncompressed formats
+ *
  * Revision 1.4  2004/10/31 21:45:13  taylor
  * Linux tree merge, single array for VBOs/HTL
  *
@@ -140,10 +145,10 @@ int opengl_extension_is_enabled(int idx)
 int opengl_get_extensions()
 {
 	OGL_extension_string = (char*)glGetString(GL_EXTENSIONS);
-	int num_found=0;
+	int i, num_found=0;
 	ogl_extension *cur=NULL;
 
-	for (int i=0; i < GL_NUM_EXTENSIONS; i++)
+	for (i=0; i < GL_NUM_EXTENSIONS; i++)
 	{
 		cur=&GL_Extensions[i];
 		if (opengl_find_extension(cur->extension_name))
@@ -178,7 +183,11 @@ int opengl_get_extensions()
 			mprintf(("did not find extension: %s\n", cur->extension_name));
 			if (cur->required_to_run)
 			{
-				Error(__FILE__,__LINE__,"The required OpenGL extension %s is not supported by your graphics card, please use the Glide or Direct3D rendering engines.\n\n",cur->extension_name);
+#ifdef _WIN32
+				Error(__FILE__,__LINE__,"The required OpenGL extension '%s' is not supported by your graphics card, please use the Glide or Direct3D rendering engines.\n\n",cur->extension_name);
+#else
+				Error(__FILE__,__LINE__,"The required OpenGL extension '%s' is not supported by your graphics card.\n",cur->extension_name);
+#endif
 			}
 		}
 	}

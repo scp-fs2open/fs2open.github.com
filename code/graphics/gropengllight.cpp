@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-01-21 21:12:52 $
+ * $Revision: 1.10 $
+ * $Date: 2005-02-04 23:29:31 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/01/21 21:12:52  taylor
+ * crap
+ *
  * Revision 1.8  2005/01/21 08:29:04  taylor
  * add -rlm cmdline option to switch to local viewpoint lighting calculations (OGL only for now)
  *
@@ -209,7 +212,7 @@ void opengl_change_active_lights(int pos){
 	for(int i = 0; (i < GL_max_lights) && ((pos * GL_max_lights)+i < active_gl_lights); i++){
 		glDisable(GL_LIGHT0+i);
 		move = false;
-		for(k; k<MAX_LIGHTS && !move; k++){
+		for(k=0; k<MAX_LIGHTS && !move; k++){
 			int slot = (pos * GL_max_lights)+l;
 			if(active_light_list[slot]){
 				if(opengl_lights[slot].occupied){
@@ -252,6 +255,23 @@ void gr_opengl_set_light(light_data *light)
 	active_light_list[active_gl_lights++] = true;
 }
 
+// this sets up a light to be pointinf from the eye to the object, 
+// the point being to make the object ether center or edge alphaed with THL
+// this effect is used mostly on shockwave models
+// -1 == edge
+// 1 == center
+// 0 == none
+// should be called after lighting has been set up, 
+// currently not designed for use with lit models
+void gr_opengl_center_alpha(int type)
+{
+	GL_center_alpha = type;
+}
+
+void gr_opengl_set_center_alpha(int type)
+{	
+}
+
 void gr_opengl_reset_lighting()
 {
 	int i;
@@ -264,6 +284,8 @@ void gr_opengl_reset_lighting()
 		active_light_list[i] = false;
 	}
 	active_gl_lights =0;
+
+	GL_center_alpha = 0;
 }
 
 void opengl_init_light()
