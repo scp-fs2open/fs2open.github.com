@@ -11,11 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.10 $
- * $Date: 2004-03-05 09:01:56 $
- * $Author: Goober5000 $
+ * $Revision: 1.11 $
+ * $Date: 2004-03-05 21:19:39 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2004/03/05 09:01:56  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 1.9  2004/02/21 00:59:43  Kazan
  * FS2NETD License Comments
  *
@@ -399,10 +403,10 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 			memcpy(frecs, PacketBuffer + 8, sizeof(file_record) * misreply_ptr->num_files); // packet buffer will be two ints then the array;
 			numTables = misreply_ptr->num_files;
 			
-			for (int i = 0; i < misreply_ptr->num_files; i++)
+			/*for (int i = 0; i < misreply_ptr->num_files; i++)
 			{
 				ml_printf("Tables[%u] = { \"%s\", %u}", i, frecs[i].name, frecs[i].crc32);
-			}
+			}*/
 			return frecs;
 
 		}

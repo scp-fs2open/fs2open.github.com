@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.14 $
- * $Date: 2004-03-05 09:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2004-03-05 21:19:39 $
+ * $Author: Kazan $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2004/03/05 09:02:02  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.13  2003/11/11 02:15:45  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -3384,7 +3388,9 @@ void multi_update_valid_missions()
 			
 			Found = false;
 
+			cfputs("'", mvalid_cfg);
 			cfputs(full_name, mvalid_cfg);
+			cfputs("'", mvalid_cfg);
 
 			for (i = 0; i < numFrecs; i++)
 			{
