@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.6 $
- * $Date: 2002-11-10 16:29:53 $
- * $Author: DTP $
+ * $Revision: 2.7 $
+ * $Date: 2003-08-20 08:12:08 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/11/10 16:29:53  DTP
+ * -DTP reworked mod support,
+ *
  * Revision 2.5  2002/11/02 23:06:59  DTP
  * DOh,uhmm, define error again, this is getting to me.
  *
@@ -479,8 +482,8 @@ int cflush(CFILE *cfile);
 // open a file.  Once set, you can use minimum version numbers with the read functions.
 void cf_set_version( CFILE * cfile, int version );
 
-// Deletes a file.
-void cf_delete( char *filename, int dir_type );
+// Deletes a file. Returns 0 on error, 1 if successful
+int cf_delete( char *filename, int dir_type );
 
 // Same as _access function to read a file's access bits
 int cf_access( char *filename, int dir_type, int mode );

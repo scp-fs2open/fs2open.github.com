@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.8 $
- * $Date: 2003-03-18 10:07:00 $
- * $Author: unknownplayer $
+ * $Revision: 2.9 $
+ * $Date: 2003-08-20 08:12:08 $
+ * $Author: wmcoolmon $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/03/18 10:07:00  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.7  2002/11/10 16:29:53  DTP
  * -DTP reworked mod support,
  *
@@ -633,8 +636,8 @@ char *cf_add_ext(char *filename, char *ext)
 	return path;
 }
 
-// Deletes a file.
-void cf_delete( char *filename, int dir_type )
+// Deletes a file. Returns 0 if an error occurs, 1 on success
+int cf_delete( char *filename, int dir_type )
 {
 	char longname[MAX_PATH_LEN];
 
@@ -646,9 +649,21 @@ void cf_delete( char *filename, int dir_type )
 	if (fp) {
 		// delete the file
 		fclose(fp);
-		_unlink(longname);
+		if(_unlink(longname) == -1)
+		{
+			//ERROR - file is probably read only
+			return 0;
+		}
+		else
+		{
+			return 1;
+		}
 	}
-
+	else
+	{
+		//ERROR - file doesn't exist
+		return 0;
+	}
 }
 
 
