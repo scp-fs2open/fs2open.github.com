@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.67 $
- * $Date: 2004-10-12 22:47:15 $
+ * $Revision: 2.68 $
+ * $Date: 2004-10-15 09:21:55 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/10/12 22:47:15  Goober5000
+ * added toggle-subsystem-scanning ship flag
+ * --Goober5000
+ *
  * Revision 2.66  2004/10/11 22:29:24  Goober5000
  * added the no-bank ship flag (which works) and the affected-by-gravity flag
  * (which won't work until I implement gravity points)
@@ -1744,10 +1748,6 @@ float ship_get_length(ship* shipp);
 // Goober5000 - used by change-ai-class
 extern void ship_set_new_ai_class(int ship_num, int new_ai_class);
 extern void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_class);
-
-// Goober5000 - used by is-iff and change-iff
-extern int ship_is_iff(int ship_num, int check_team);
-extern void ship_change_iff(int ship_num, int new_team);
 
 // wing squad logos - Goober5000
 extern void wing_load_squad_bitmap(wing *w);
