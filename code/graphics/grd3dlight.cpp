@@ -5,6 +5,7 @@
 #include "2d.h"
 #include "math/vecmat.h"
 #include "graphics/grd3dinternal.h"
+#include "cmdline/cmdline.h"
 
 // Constants
 const int MAX_LIGHTS     = 256;
@@ -41,8 +42,37 @@ extern float static_point_factor;
 extern float static_light_factor;
 extern float static_tube_factor;
 
-void FSLight2DXLight(D3DLIGHT8 *DXLight,light_data *FSLight) {
+// Resonable defaults, can change using -ambient_light
+// Also someone should put an a Fred slider or something 
+int Ambient_r_default = 120;
+int Ambient_g_default = 120;
+int Ambient_b_default = 120;
 
+D3DCOLOR ambient_light;
+
+// Initialise the module
+bool d3d_init_light()
+{
+	int factor = (Cmdline_ambient_factor * 2) - 255;
+
+	int r = Ambient_r_default + factor;
+	int g = Ambient_r_default + factor;
+	int b = Ambient_r_default + factor;
+
+	if(r < 0) r = 0;
+	else if( r > 255) r = 255;
+	if(g < 0) g = 0;
+	else if( g > 255) g = 255;
+	if(b < 0) b = 0;
+	else if( b > 255) b = 255;
+
+	// This method gives the user overall control 
+	ambient_light = D3DCOLOR_ARGB(255, r, g, b);
+	return true;
+}
+
+void FSLight2DXLight(D3DLIGHT8 *DXLight,light_data *FSLight) 
+{
 	//Copy the vars into a dx compatible struct
 	DXLight->Diffuse.r = FSLight->r * FSLight->intensity;
 	DXLight->Diffuse.g = FSLight->g * FSLight->intensity;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.53 $
- * $Date: 2004-02-15 06:02:31 $
- * $Author: bobboau $
+ * $Revision: 2.54 $
+ * $Date: 2004-02-16 11:47:33 $
+ * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2004/02/15 06:02:31  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.52  2004/02/15 03:04:25  bobboau
  * fixed bug involving 3d shockwaves, note I wasn't able to compile the directshow file, so I ifdefed everything to an older version,
  * you shouldn't see anything diferent, as the ifdef should be set to the way it should be, if it isn't you will get a warning mesage during compile telling you how to fix it
@@ -886,7 +891,7 @@ void d3d_stop_frame()
 
 	d3d_batch_end_frame();
 						 
-	TIMERBAR_PUSH(4);
+	TIMERBAR_PUSH(1);
 	// Must cope with device being lost
 	if(GlobalD3DVars::lpD3DDevice->Present(NULL,NULL,NULL,NULL) == D3DERR_DEVICELOST)
 	{
@@ -1978,7 +1983,6 @@ void gr_d3d_center_alpha_int(int type);
 
 void gr_d3d_render_buffer(int idx)
 {
-	TIMERBAR_PUSH(3);
 //	GlobalD3DVars::d3d_caps.MaxActiveLights = 1;
 
 //	if(!the_lights_are_on){
@@ -2018,12 +2022,10 @@ void gr_d3d_render_buffer(int idx)
 
 
 		if(!vertex_buffer[idx].ocupied) {
-			TIMERBAR_POP();
 			return;
 		}
 	if(vertex_buffer[idx].type == LINELIST_) {
 		gr_d3d_render_line_buffer(idx); 
-		TIMERBAR_POP(); 
 		return;
 	}
 
@@ -2083,7 +2085,6 @@ void gr_d3d_render_buffer(int idx)
 
 	if(!lighting_enabled)
 	{
-		TIMERBAR_POP();
 		return;
 	}
 	//single pass specmap rendering ends here
@@ -2111,7 +2112,9 @@ void gr_d3d_render_buffer(int idx)
 	d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(0,0,0,0));
 	for(int i = 1; i<passes; i++){
 		shift_active_lights(i);
+		TIMERBAR_PUSH(7);
 		GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , 0, vertex_buffer[idx].n_prim);
+		TIMERBAR_POP();
 	}
 	if(!lighting_enabled){
 		int l = int(255.0f*gr_screen.current_alpha);
@@ -2119,7 +2122,7 @@ void gr_d3d_render_buffer(int idx)
 	}else{
 		d3d_SetRenderState(D3DRS_AMBIENT, ambient_light);
 	}
-
+								    
 	pre_render_lights_init();
 	shift_active_lights(0);
 
@@ -2129,7 +2132,6 @@ void gr_d3d_render_buffer(int idx)
 		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
 				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
 			//	Error(LOCATION, "Not rendering specmap texture because it didn't fit in VRAM!");
-				TIMERBAR_POP();
 				return;
 			}
 
@@ -2149,7 +2151,6 @@ void gr_d3d_render_buffer(int idx)
 	if(gr_screen.current_fog_mode != GR_FOGMODE_NONE)
 		gr_d3d_fog_set(gr_screen.current_fog_mode, old_fog_color.red,old_fog_color.green,old_fog_color.blue, gr_screen.fog_near, gr_screen.fog_far);
 
-	TIMERBAR_POP();
 }
 
 //*******matrix stuff*******//

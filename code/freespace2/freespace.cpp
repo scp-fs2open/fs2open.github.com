@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.69 $
- * $Date: 2004-02-14 00:18:30 $
+ * $Revision: 2.70 $
+ * $Date: 2004-02-16 11:47:32 $
  * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/02/14 00:18:30  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.68  2004/01/29 01:34:01  randomtiger
  * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
  * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
@@ -2481,6 +2492,8 @@ DCF(gamma,"Sets Gamma factor")
 
 void run_launcher()
 {
+	const char *launcher_link = "explorer.exe \"http://www.randomtiger.pwp.blueyonder.co.uk/freespace/Launcher4.rar\"";
+
 	int download = MessageBox((HWND)os_get_window(), 
 		"Run the fs2_open launcher to fix your problem. "
 		"Would you like to download the latest version of the launcher? "
@@ -2490,7 +2503,7 @@ void run_launcher()
 	if(download == IDYES)
 	{
 		// Someone should change this to the offical link
-		WinExec("explorer.exe \"http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar\"",SW_SHOW);
+		WinExec(launcher_link, SW_SHOW);
 		return;
 	}
 
@@ -2523,8 +2536,7 @@ void run_launcher()
 		if(download == IDYES)
 		{
 			// Someone should change this to the offical link
-			WinExec("explorer.exe \"http://mysite.freeserve.com/thomaswhittaker/c_code/freespace/Launcher.rar\"",SW_SHOW);
-
+			WinExec(launcher_link, SW_SHOW);
 		}
 	}
 }

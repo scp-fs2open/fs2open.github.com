@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.21 $
- * $Date: 2004-02-14 00:18:31 $
+ * $Revision: 2.22 $
+ * $Date: 2004-02-16 11:47:33 $
  * $Author: randomtiger $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/02/14 00:18:31  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.20  2004/01/26 20:03:51  randomtiger
  * Fix to blurring of interface bitmaps from TGA and JPG.
  * Changes to the pointsprite system, better but not perfect yet.
@@ -344,6 +355,16 @@ typedef struct
 typedef struct { 
     float sx, sy, sz; 
 	float rhw; 
+    DWORD color; 
+    float tu, tv; 
+
+} D3DVERTEX2D;
+
+// This vertex type tells D3D that it has already been transformed an lit
+// D3D will simply display the polygon with no extra processing
+typedef struct { 
+    float sx, sy, sz; 
+	float rhw; 
 
     DWORD color; 
     DWORD specular; 
@@ -390,6 +411,7 @@ typedef struct {
 
 enum
 {
+	D3DVT_VERTEX2D,
 	D3DVT_TLVERTEX,
 	D3DVT_LVERTEX,
 	D3DVT_VERTEX,
@@ -514,8 +536,8 @@ void *d3d_lock_32_pcx(char *real_filename, int type, float *u, float *v);
 bool d3d_read_header_d3dx(char *file, int type, int *w, int *h);
 void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum);
 
-const D3DCOLOR ambient_dark  = D3DCOLOR_ARGB(255,16,16,16);
-const D3DCOLOR ambient_light = 
-	D3DCOLOR_ARGB(255,125,125,125);
+bool d3d_init_light();
+
+extern D3DCOLOR ambient_light;
 
 #endif //_GRD3DINTERNAL_H

@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.45 $
- * $Date: 2004-01-29 01:34:00 $
+ * $Revision: 2.46 $
+ * $Date: 2004-02-16 11:47:31 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2004/01/29 01:34:00  randomtiger
+ * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
+ * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
+ *
  * Revision 2.44  2004/01/24 14:31:27  randomtiger
  * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
  * Its optional and off by default, use -d3d_particle to activiate.
@@ -450,6 +454,9 @@ extern int Cmdline_ship_choice_3d;
 extern int Cmdline_d3d_particle;
 extern int Cmdline_d3d_notmanaged;
 
+extern int Cmdline_ambient_factor;
 extern int Cmdline_show_mem_usage;
+extern int Cmdline_rt;
+extern char *Cmdline_start_mission;
 
 #endif

@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-02-14 00:18:29 $
+ * $Revision: 2.7 $
+ * $Date: 2004-02-16 11:47:31 $
  * $Author: randomtiger $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/02/14 00:18:29  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.5  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -734,9 +745,9 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		else {
 			g3_rotate_vertex(&image_vertex,instance->world_pos);
 			Assert(instance->radius != 0.0f);
-			g3_draw_bitmap(&image_vertex, 0, instance->radius*1.5f, TMAP_FLAG_TEXTURED );
+			g3_draw_bitmap(&image_vertex, 0, instance->radius*1.5f, TMAP_FLAG_TEXTURED | TMAP_HTL_2D);
 		}
-
+									  
 		//bm_release(bitmap_id);
 		instance->last_bitmap = bitmap_id;
 	}

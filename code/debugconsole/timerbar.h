@@ -8,11 +8,23 @@
 
 /*
  * $Logfile: /Freespace2/code/debugconsole/timerbar.h $
- * $Revision: 1.7 $
- * $Date: 2003-11-19 20:37:23 $
+ * $Revision: 1.8 $
+ * $Date: 2004-02-16 11:47:31 $
  * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2003/11/19 20:37:23  randomtiger
+ * Almost fully working 32 bit pcx, use -pcx32 flag to activate.
+ * Made some commandline variables fit the naming standard.
+ * Changed timerbar system not to run pushes and pops if its not in use.
+ * Put in a note about not uncommenting asserts.
+ * Fixed up a lot of missing POP's on early returns?
+ * Perhaps the motivation for Assert functionality getting commented out?
+ * Fixed up some bad asserts.
+ * Changed nebula poofs to render in 2D in htl, it makes it look how it used to in non htl. (neb.cpp,1248)
+ * Before the poofs were creating a nasty stripe effect where they intersected with ships hulls.
+ * Put in a special check for the signs of that D3D init bug I need to lock down.
+ *
  * Revision 1.6  2003/11/09 06:31:39  Kazan
  * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
  * conflicts in cmdline and timerbar.h log entries
@@ -36,7 +48,7 @@
 
 const int MAX_NUM_TIMERBARS = 20;
 
-#include "../cmdline/cmdline.h"
+#include "cmdline/cmdline.h"
 
 // These functions should never be used directly, always use macros below
 void timerbar_start_frame();
@@ -49,9 +61,6 @@ void timerbar_pop();
 // This function shouldnt not be used any more or it will break push and pop calls
 void timerbar_switch_type(int num);
 
-// Only show timer bars if in debug mode in windows unless TIMERBAR_ON compile flag is set
-#if defined(TIMERBAR_ON)
-
 #define TIMERBAR_SET_DRAW_FUNC(f) if (Cmdline_timerbar) timerbar_set_draw_func(f);
 #define TIMERBAR_START_FRAME()    if (Cmdline_timerbar) timerbar_start_frame();
 #define TIMERBAR_END_FRAME()      if (Cmdline_timerbar) timerbar_end_frame();
@@ -59,18 +68,6 @@ void timerbar_switch_type(int num);
 
 #define TIMERBAR_PUSH(v) if (Cmdline_timerbar) timerbar_push(v);
 #define TIMERBAR_POP()   if (Cmdline_timerbar) timerbar_pop();
-
-#else
-
-#define TIMERBAR_SET_DRAW_FUNC(f) ;
-#define TIMERBAR_START_FRAME()   ;
-#define TIMERBAR_END_FRAME()     ;
-#define TIMERBAR_SWITCH_TYPE(n)  ;
-
-#define TIMERBAR_PUSH(v) ;
-#define TIMERBAR_POP()   ;
-
-#endif
 
 #endif
 

@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.41 $
- * $Date: 2004-02-14 00:18:31 $
+ * $Revision: 2.42 $
+ * $Date: 2004-02-16 11:47:33 $
  * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2004/02/14 00:18:31  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.40  2003/12/08 22:30:02  randomtiger
  * Put render state and other direct D3D calls repetition check back in, provides speed boost.
  * Fixed bug that caused fullscreen only crash with DXT textures
@@ -939,7 +950,7 @@ void gr_d3d_rect_internal(int x, int y, int w, int h, int r, int g, int b, int a
 	v[3].a = (ubyte)a;
 
 	// draw the polys
-	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA, 0.1f);		
+	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA | TMAP_HTL_2D, 0.1f);		
 
 	g3_end_frame();
 
@@ -992,15 +1003,11 @@ float D3D_line_offset = 0.0f;
  *
  * @return void
  */
-void d3d_make_rect( D3DTLVERTEX *a, D3DTLVERTEX *b, int x1, int y1, int x2, int y2 )
+void d3d_make_rect( D3DVERTEX2D *a, D3DVERTEX2D *b, int x1, int y1, int x2, int y2 )
 {
 	// Alan's nvidia riva128 PCI screws up targetting brackets if rhw are uninitialized.
 	a->rhw = 1.0f;
 	b->rhw = 1.0f;
-
-	// just for completeness, initialize specular and sz.
-	a->specular = 0;
-	b->specular = 0;
 
 	a->sz = 0.99f;
 	b->sz = 0.99f;
@@ -1101,8 +1108,6 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	// Some checks to make sure this function isnt used when it shouldnt be
 	Assert(flags & TMAP_HTL_3D_UNLIT);
 
-	TIMERBAR_PUSH(2);
-
 	float u_scale = 1.0f, v_scale = 1.0f;
 	int bw = 1, bh = 1;		
 
@@ -1181,7 +1186,6 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	if ( flags & TMAP_FLAG_TEXTURED )	{
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale))	{
 //			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			TIMERBAR_POP();
 			return;
 		}
 
@@ -1286,10 +1290,225 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		gr_fog_set(GR_FOGMODE_NONE,0,0,0);
 	}
 
-
+	TIMERBAR_PUSH(2);
  	d3d_DrawPrimitive(D3DVT_LVERTEX, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 	TIMERBAR_POP();
+}
 
+void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_scaler )	
+{
+	int i;
+	float u_scale = 1.0f, v_scale = 1.0f;
+	int bw = 1, bh = 1;		
+
+	gr_texture_source texture_source = (gr_texture_source)-1;
+	gr_alpha_blend alpha_blend = (gr_alpha_blend)-1;
+	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)-1;
+
+
+	if ( gr_zbuffering )	{
+		if ( is_scaler || (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER)	)	{
+			zbuffer_type = ZBUFFER_TYPE_READ;
+		} else {
+			zbuffer_type = ZBUFFER_TYPE_FULL;
+		}
+	} else {
+		zbuffer_type = ZBUFFER_TYPE_NONE;
+	}
+
+	int alpha;
+
+	int tmap_type = TCACHE_TYPE_NORMAL;
+
+	int r, g, b;
+
+	if ( flags & TMAP_FLAG_TEXTURED )	{
+		r = 255;
+		g = 255;
+		b = 255;
+	} else {
+		r = gr_screen.current_color.red;
+		g = gr_screen.current_color.green;
+		b = gr_screen.current_color.blue;
+	}
+
+	// want to be in here!
+	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )	{
+
+		if (GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE  )	{
+			tmap_type = TCACHE_TYPE_NORMAL;
+			////////////////////////////////
+			alpha_blend = ALPHA_BLEND_ALPHA_ADDITIVE;
+
+			// Blend with screen pixel using src*alpha+dst
+			float factor = gr_screen.current_alpha;
+
+			alpha = 255;
+
+			if ( factor <= 1.0f )	{
+				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
+				r = (r*tmp_alpha)/255;
+				g = (g*tmp_alpha)/255;
+				b = (b*tmp_alpha)/255;
+			}
+		} else {
+
+			tmap_type = TCACHE_TYPE_XPARENT;
+
+			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
+
+			// Blend with screen pixel using src*alpha+dst
+			float factor = gr_screen.current_alpha;
+
+			if ( factor > 1.0f )	{
+				alpha = 255;
+			} else {
+				alpha = fl2i(gr_screen.current_alpha*255.0f);
+			}
+		}
+	} else {
+		alpha_blend = ALPHA_BLEND_NONE;
+		alpha = 255;
+	}
+
+	if(flags & TMAP_FLAG_BITMAP_SECTION){
+		tmap_type = TCACHE_TYPE_BITMAP_SECTION;
+	}
+
+	texture_source = TEXTURE_SOURCE_NONE;
+ 
+	if ( flags & TMAP_FLAG_TEXTURED )	{
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
+			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
+			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			return;
+		}
+
+		// use nonfiltered textures for bitmap sections
+		if(flags & TMAP_FLAG_BITMAP_SECTION) {
+			texture_source = TEXTURE_SOURCE_NO_FILTERING;
+		} else {
+			texture_source = TEXTURE_SOURCE_DECAL;
+		}
+	}
+	
+	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
+	
+	Assert(nverts < 32);
+
+	D3DVERTEX2D d3d_verts[32];
+	D3DVERTEX2D *src_v = d3d_verts;
+
+	int x1, y1, x2, y2;
+	x1 = gr_screen.clip_left*16;
+	x2 = gr_screen.clip_right*16+15;
+	y1 = gr_screen.clip_top*16;
+	y2 = gr_screen.clip_bottom*16+15;
+
+	float uoffset = 0.0f;
+	float voffset = 0.0f;
+
+	float minu=0.0f, minv=0.0f, maxu=1.0f, maxv=1.0f;
+
+	if ( flags & TMAP_FLAG_TEXTURED )	{								
+		if ( GlobalD3DVars::D3D_rendition_uvs )	{				
+			bm_get_info(gr_screen.current_bitmap, &bw, &bh);			
+				
+			uoffset = 2.0f/i2fl(bw);
+			voffset = 2.0f/i2fl(bh);
+
+			minu = uoffset;
+			minv = voffset;
+
+			maxu = 1.0f - uoffset;
+			maxv = 1.0f - voffset;
+		}				
+	}	
+
+	for (i=0; i<nverts; i++ )	{
+		vertex * va = verts[i];		
+			  
+		src_v->sz = 0.99f;
+
+		// For texture correction 	
+	  	src_v->rhw = ( flags & TMAP_FLAG_CORRECT ) ? va->sw : 1.0f;
+		int a      = ( flags & TMAP_FLAG_ALPHA )   ? verts[i]->a : alpha;
+
+		if ( flags & TMAP_FLAG_NEBULA )	{
+			int pal = (verts[i]->b*(NEBULA_COLORS-1))/255;
+			r = gr_palette[pal*3+0];
+			g = gr_palette[pal*3+1];
+			b = gr_palette[pal*3+2];
+		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) )	{
+			r = verts[i]->b;
+			g = verts[i]->b;
+			b = verts[i]->b;
+		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )	{
+			// Make 0.75 be 256.0f
+			r = verts[i]->r;
+			g = verts[i]->g;
+			b = verts[i]->b;
+		} else {
+			// use constant RGB values...
+		}
+
+		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
+
+		int x, y;
+		x = fl2i(va->sx*16.0f);
+		y = fl2i(va->sy*16.0f);
+
+		x += gr_screen.offset_x*16;
+		y += gr_screen.offset_y*16;
+		
+		src_v->sx = i2fl(x) / 16.0f;
+		src_v->sy = i2fl(y) / 16.0f;
+
+		if ( flags & TMAP_FLAG_TEXTURED )	{
+			// argh. rendition
+			if ( GlobalD3DVars::D3D_rendition_uvs ){				
+				// tiled texture (ships, etc), bitmap sections
+				if(flags & TMAP_FLAG_TILED){					
+				  	src_v->tu = va->u*u_scale;
+				  	src_v->tv = va->v*v_scale;
+				}
+				// sectioned
+				else if(flags & TMAP_FLAG_BITMAP_SECTION){
+					int sw, sh;
+					bm_get_section_size(gr_screen.current_bitmap, 
+						gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &sw, &sh);
+
+				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
+				 	src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
+				 	src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
+				}
+				// all else.
+				else 
+				{				
+			   		src_v->tu = flCAP(va->u, minu, maxu);
+			   		src_v->tv = flCAP(va->v, minv, maxv);
+				}				
+			}
+			// yay. non-rendition
+			else {
+			  	src_v->tu = va->u*u_scale;
+			  	src_v->tv = va->v*v_scale;
+			} 							
+		} else {
+			src_v->tu = 0.0f;
+			src_v->tv = 0.0f;
+		}
+
+		src_v++;
+	}
+
+	d3d_SetTexture(1, NULL);
+	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
+	set_stage_for_defuse();
+	TIMERBAR_PUSH(2);
+	d3d_DrawPrimitive(D3DVT_VERTEX2D, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+	TIMERBAR_POP();
 }
 
 /**
@@ -1312,12 +1531,16 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 {
 //	d3d_set_initial_render_state();
 
+	if(flags & TMAP_HTL_2D)
+	{
+		gr_d3d_tmapper_internal_2d(nverts, verts, flags, is_scaler);
+		return;
+	}
+
 	if(!Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT)) {
 		gr_d3d_tmapper_internal_3d_unlit(nverts, verts, flags, is_scaler);
 		return;
 	}
-
-	TIMERBAR_PUSH(1);
 
 	int i;
 	float u_scale = 1.0f, v_scale = 1.0f;
@@ -1677,7 +1900,9 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 	// Draws just about everything except stars and lines
 
+	TIMERBAR_PUSH(3);
 	d3d_DrawPrimitive(D3DVT_TLVERTEX, (flags & TMAP_FLAG_TRISTRIP)?D3DPT_TRIANGLESTRIP :D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
+	TIMERBAR_POP();
 
 	//spec mapping
 	if(has_spec && (SPECMAP > 0)){
@@ -1711,8 +1936,6 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
 		}
 	}
-
-	TIMERBAR_POP();
 
 }
 
@@ -2132,8 +2355,8 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 		return;
 	}
 
-	D3DTLVERTEX *src_v;
-	D3DTLVERTEX d3d_verts[4];
+	D3DVERTEX2D *src_v;
+	D3DVERTEX2D d3d_verts[4];
 
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
@@ -2211,7 +2434,6 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x1;
 	src_v->sy = y1;
 	src_v->tu = u0;
@@ -2221,7 +2443,6 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x2;
 	src_v->sy = y1;
 	src_v->tu = u1;
@@ -2231,7 +2452,6 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x2;
 	src_v->sy = y2;
 	src_v->tu = u1;
@@ -2241,7 +2461,6 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x1;
 	src_v->sy = y2;
 	src_v->tu = u0;
@@ -2249,11 +2468,10 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy)
 
 	d3d_set_initial_render_state();
 
-	TIMERBAR_PUSH(6);
-  	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+	TIMERBAR_PUSH(4);
+  	d3d_DrawPrimitive(D3DVT_VERTEX2D, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
 	TIMERBAR_POP();
-}
-
+}			 
 /**
  * @param int x
  * @param int y
@@ -2394,9 +2612,6 @@ void gr_d3d_string( int sx, int sy, char *s)
 		return;
 	}
 
-	TIMERBAR_PUSH(5);
-
-
 	if ( !gr_screen.current_color.is_alphacolor ) return;
 
 	gr_set_bitmap(Current_font->bitmap_id);
@@ -2409,7 +2624,6 @@ void gr_d3d_string( int sx, int sy, char *s)
 	float u_scale, v_scale;
 	if ( !gr_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale ) )	{
 		// Couldn't set texture
-		TIMERBAR_POP();
 		return;
 	}
 
@@ -2436,8 +2650,6 @@ void gr_d3d_string( int sx, int sy, char *s)
 
 	d3d_set_initial_render_state();
   	d3d_batch_string(sx, sy, s, bw, bh, u_scale, v_scale, color);
-
-	TIMERBAR_POP();
 }
 
 /**
@@ -2486,15 +2698,14 @@ void gr_d3d_flash(int r, int g, int b)
 		x2 = i2fl(gr_screen.clip_right+gr_screen.offset_x);
 		y2 = i2fl(gr_screen.clip_bottom+gr_screen.offset_y);
 	
-		D3DTLVERTEX *src_v;
-		D3DTLVERTEX d3d_verts[4];
+		D3DVERTEX2D *src_v;
+		D3DVERTEX2D d3d_verts[4];
 
 		src_v = d3d_verts;
 
 		src_v->sz = 0.99f;
 		src_v->rhw = 1.0f;
 		src_v->color = color;	 
-		src_v->specular = 0;
 		src_v->sx = x1;
 		src_v->sy = y1;
 		src_v++;
@@ -2502,7 +2713,6 @@ void gr_d3d_flash(int r, int g, int b)
 		src_v->sz = 0.99f;
 		src_v->rhw = 1.0f;
 		src_v->color = color;	 
-		src_v->specular = 0;
 		src_v->sx = x2;
 		src_v->sy = y1;
 		src_v++;
@@ -2510,7 +2720,6 @@ void gr_d3d_flash(int r, int g, int b)
 		src_v->sz = 0.99f;
 		src_v->rhw = 1.0f;
 		src_v->color = color;	 
-		src_v->specular = 0;
 		src_v->sx = x2;
 		src_v->sy = y2;
 		src_v++;
@@ -2518,15 +2727,14 @@ void gr_d3d_flash(int r, int g, int b)
 		src_v->sz = 0.99f;
 		src_v->rhw = 1.0f;
 		src_v->color = color;	 
-		src_v->specular = 0;
 		src_v->sx = x1;
 		src_v->sy = y2;
 
 		d3d_set_initial_render_state();
 
-	TIMERBAR_PUSH(6);
-		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
-	TIMERBAR_POP();
+		TIMERBAR_PUSH(5);
+		d3d_DrawPrimitive(D3DVT_VERTEX2D, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+		TIMERBAR_POP();
 	}
 }
 
@@ -2675,9 +2883,9 @@ void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize)
 
 	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);
 
-	D3DTLVERTEX d3d_verts[2];
-	D3DTLVERTEX *a = d3d_verts;
-	D3DTLVERTEX *b = d3d_verts+1;
+	D3DVERTEX2D d3d_verts[2];
+	D3DVERTEX2D *a = d3d_verts;
+	D3DVERTEX2D *b = d3d_verts+1;
 
 	d3d_make_rect(a,b,x1,y1,x2,y2);
 
@@ -2686,7 +2894,9 @@ void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize)
 
 	d3d_set_initial_render_state();
 
-	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_LINELIST,(LPVOID)d3d_verts,2);
+	TIMERBAR_PUSH(6);
+	d3d_DrawPrimitive(D3DVT_VERTEX2D, D3DPT_LINELIST,(LPVOID)d3d_verts,2);
+	TIMERBAR_POP();
 }
 
 /**
@@ -2758,9 +2968,9 @@ void gr_d3d_gradient(int x1,int y1,int x2,int y2)
 			D3DCOLOR_ARGB(255,0,0,0) :  color1;
 	}
 
-	D3DTLVERTEX d3d_verts[2];
-	D3DTLVERTEX *a = d3d_verts;
-	D3DTLVERTEX *b = d3d_verts+1;
+	D3DVERTEX2D d3d_verts[2];
+	D3DVERTEX2D *a = d3d_verts;
+	D3DVERTEX2D *b = d3d_verts+1;
 
 	d3d_make_rect( a, b, x1, y1, x2, y2 );
 
@@ -2774,7 +2984,9 @@ void gr_d3d_gradient(int x1,int y1,int x2,int y2)
 
 	d3d_set_initial_render_state();
 
-	d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_LINELIST,(LPVOID)d3d_verts,2);
+	TIMERBAR_PUSH(6);
+	d3d_DrawPrimitive(D3DVT_VERTEX2D, D3DPT_LINELIST,(LPVOID)d3d_verts,2);
+	TIMERBAR_POP();
 }
 
 /**
@@ -3150,7 +3362,7 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 		0xffff0f0f,
 	};
 
-	D3DTLVERTEX d3d_verts[4];
+	D3DVERTEX2D d3d_verts[4];
 
 	static float max_fw = (float) gr_screen.max_w; 
 	static float max_fh = (float) gr_screen.max_h; 
@@ -3179,7 +3391,7 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 
 	d3d_set_initial_render_state();
 
- 	d3d_DrawPrimitive(D3DVT_TLVERTEX,D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+ 	d3d_DrawPrimitive(D3DVT_VERTEX2D,D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
 
 }
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.29 $
- * $Date: 2004-02-15 06:02:31 $
- * $Author: bobboau $
+ * $Revision: 2.30 $
+ * $Date: 2004-02-16 11:47:33 $
+ * $Author: randomtiger $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2004/02/15 06:02:31  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.28  2004/02/14 00:18:32  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -1510,13 +1515,13 @@ bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)
 //leaving it as it will be very useful later, and a pain to remove
 void gr_d3d_set_texture_addressing(int address){
 	if(address == TMAP_ADDRESS_WRAP){
-	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP  );
-	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP  );
+	d3d_SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP  );
+	d3d_SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP  );
 	}else if(address == TMAP_ADDRESS_MIRROR){
-	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_MIRROR  );
-	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_MIRROR  );
+ 	d3d_SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_MIRROR  );
+ 	d3d_SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_MIRROR  );
 	}else if(address == TMAP_ADDRESS_CLAMP){
-	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP  );
-	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP  );
+	d3d_SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP  );
+	d3d_SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP  );
 	}
 }

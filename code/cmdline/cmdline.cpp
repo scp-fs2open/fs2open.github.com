@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.53 $
- * $Date: 2004-02-04 10:14:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.54 $
+ * $Date: 2004-02-16 11:47:31 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2004/02/04 10:14:25  Goober5000
+ * changed spec and glow to be off by default; command lines are now -spec and -glow
+ * --Goober5000
+ *
  * Revision 2.52  2004/01/29 01:34:00  randomtiger
  * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
  * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
@@ -535,6 +539,9 @@ cmdline_parm dxt_arg("-dxt",NULL);
 cmdline_parm d3d_particle_arg("-d3d_particle",NULL);
 cmdline_parm show_mem_usage_arg("-show_mem_usage",NULL);
 cmdline_parm d3d_notmanaged_arg("-d3d_notmanaged",NULL);
+cmdline_parm rt_arg("-rt",NULL);
+cmdline_parm start_mission_arg("-start_mission",NULL);
+cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
@@ -580,9 +587,12 @@ int Cmdline_dxt = 0;
 int Cmdline_cache_ani = 0;
 int Cmdline_d3dmipmap = 0;
 int Cmdline_d3d_notmanaged = 0;
+int Cmdline_rt = 0;
+char *Cmdline_start_mission = NULL;
+int Cmdline_ambient_factor  = 128;
 
 // Lets keep a convention here
-int Cmdline_nohtl = 0;
+int Cmdline_nohtl = 1;
 int Cmdline_jpgtga = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_d3d_no_vsync = 0;
@@ -1020,14 +1030,9 @@ void SetCmdlineParams()
 		Cmdline_nospec = 1;
 	}
 
-
 	if ( htl_arg.found() ) 
 	{
 		Cmdline_nohtl = 0;
-	}
-	else
-	{
-		Cmdline_nohtl = 1;
 	}
 
 	if( jpgtga_arg.found() )
@@ -1089,6 +1094,21 @@ void SetCmdlineParams()
 	if(d3d_notmanaged_arg.found())
 	{
 		Cmdline_d3d_notmanaged	= 1;
+	}
+
+	if(rt_arg.found())
+	{
+		Cmdline_rt = 1;
+	}
+
+	if(start_mission_arg.found())
+	{
+		Cmdline_start_mission = start_mission_arg.str();
+	}
+
+	if(ambient_factor_arg.found())
+	{
+		Cmdline_ambient_factor = ambient_factor_arg.get_int();
 	}
 }
 

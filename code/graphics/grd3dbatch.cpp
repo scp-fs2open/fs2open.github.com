@@ -9,6 +9,17 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2004/02/14 00:18:31  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.10  2004/01/24 15:52:26  randomtiger
  * I have submitted the new movie playing code despite the fact in D3D it sometimes plays behind the main window.
  * In OGL it works perfectly and in both API's it doesnt switch to the desktop anymore so hopefully people will not experience the crashes etc that the old system used to suffer from.
@@ -57,8 +68,8 @@
 #include "graphics/grd3dinternal.h"
 #include "debugconsole/timerbar.h"
 
-const int FONT_VTYPE = D3DVT_TLVERTEX;
-typedef	D3DTLVERTEX FONT_VERTEX;
+const int FONT_VTYPE = D3DVT_VERTEX2D;
+typedef	D3DVERTEX2D FONT_VERTEX;
 
 // BATCH STUFF
 const int MAX_BATCH_BUFFERS = 5;
@@ -365,7 +376,7 @@ void d3d_batch_end_frame()
  *
  * @return void
  */
-void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, int bw, int bh, float u_scale, float v_scale, uint color)
+void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, int bw, int bh, float u_scale, float v_scale, uint color)
 {
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
@@ -427,7 +438,6 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x1;
 	src_v->sy = y1;
 	src_v->tu = u0;
@@ -438,7 +448,6 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x2;
 	src_v->sy = y1;
 	src_v->tu = u1;
@@ -449,7 +458,6 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x2;
 	src_v->sy = y2;
 	src_v->tu = u1;
@@ -460,7 +468,6 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x1;
 	src_v->sy = y1;
 	src_v->tu = u0;
@@ -471,7 +478,6 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x2;
 	src_v->sy = y2;
 	src_v->tu = u1;
@@ -482,7 +488,6 @@ void d3d_stuff_char(D3DTLVERTEX *src_v, int x,int y,int w,int h,int sx,int sy, i
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
-	src_v->specular = 0;
 	src_v->sx = x1;
 	src_v->sy = y2;
 	src_v->tu = u0;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.5 $
- * $Date: 2004-02-15 06:02:32 $
- * $Author: bobboau $
+ * $Revision: 2.6 $
+ * $Date: 2004-02-16 11:47:33 $
+ * $Author: randomtiger $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/02/15 06:02:32  bobboau
+ * fixed sevral asorted matrix errors,
+ * OGL people make sure I didn't break anything,
+ * most of what I did was replaceing falses with (if graphicts_mode == D3D)
+ *
  * Revision 2.4  2003/11/02 05:50:08  bobboau
  * modified trails to render with tristrips now rather than with stinky old trifans,
  * MUCH faster now, at least one order of magnatude.
@@ -155,7 +160,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 // RT Flags added to determine whats being drawn for HT&L
 #define TMAP_HTL_3D_LIT	    (1<<12)	  
 #define TMAP_HTL_3D_UNLIT	(1<<13)	  
-#define TMAP_HTL_2D_UNLIT	(1<<14)	  
+#define TMAP_HTL_2D			(1<<14)	  
 #define TMAP_HTL_PARTICLE  	(1<<15)	  
 #define TMAP_HTL_VIDEO  	(1<<16)
 
