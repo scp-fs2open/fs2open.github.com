@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-08-06 17:39:49 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-11 19:22:52 $
+ * $Author: argv $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/06 17:39:49  phreak
+ * since the afterburners are routed through the physics engine, i needed to route the boost pod through here too
+ *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -875,6 +878,9 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		ci->heading += wash_rot->xyz.y;
 	}
 
+	//if (ci->vertical && ci->forward)
+	//	Int3();
+
 	if (ci->pitch > 1.0f ) ci->pitch = 1.0f;
 	else if (ci->pitch < -1.0f ) ci->pitch = -1.0f;
 
@@ -926,13 +932,13 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.z = ci->forward* pi->booster_max_vel.xyz.z;
 	}
 	else {
-		goal_vel.xyz.x = ci->sideways*pi->max_vel.xyz.x;
-		goal_vel.xyz.y = ci->vertical*pi->max_vel.xyz.y;
+		goal_vel.xyz.x = ci->sideways*pi->max_vel.xyz.x*pi->max_speed_mul;
+		goal_vel.xyz.y = ci->vertical*pi->max_vel.xyz.y*pi->max_speed_mul;
 		goal_vel.xyz.z = ci->forward* pi->max_vel.xyz.z;
 	}
 
-	if ( goal_vel.xyz.z < -pi->max_rear_vel ) 
-		goal_vel.xyz.z = -pi->max_rear_vel;
+	if ( goal_vel.xyz.z < (-pi->max_rear_vel) * pi->max_speed_mul) 
+		goal_vel.xyz.z = (-pi->max_rear_vel) * pi->max_speed_mul;
 
 
 	if ( pi->flags & PF_ACCELERATES )	{

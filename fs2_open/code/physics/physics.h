@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.3 $
- * $Date: 2003-08-06 17:39:49 $
- * $Author: phreak $
+ * $Revision: 2.4 $
+ * $Date: 2003-09-11 19:23:18 $
+ * $Author: argv $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/08/06 17:39:49  phreak
+ * since the afterburners are routed through the physics engine, i needed to route the boost pod through here too
+ *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -216,6 +219,8 @@ typedef struct physics_info {
 	int		afterburner_decay;	// timestamp used to control how long ship shakes after afterburner released
 	int		shockwave_decay;		// timestamp used to control how long ship affected after hit by shockwave
 	int		reduced_damp_decay;	// timestamp used to control how long ship ship has reduced damp physics	
+
+	float	max_speed_mul;		// _argv[-1] - factor to multiply lateral thrust by, affected by engine power.
 } physics_info;
 
 // All of these are numbers from -1.0 to 1.0 indicating
