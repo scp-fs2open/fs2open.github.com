@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 2.3 $
- * $Date: 2003-01-15 07:09:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2003-03-20 08:24:45 $
+ * $Author: unknownplayer $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2003/01/15 07:09:09  Goober5000
+ * changed most references to modelnum to use ship instead of ship_info --
+ * this will help with the change-model sexp and any other instances of model
+ * changing
+ * --Goober5000
+ *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam sheild hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
@@ -1909,12 +1915,22 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// Only attack turret if it sits on current target
 	Assert(weapon_objp->parent >= 0 && weapon_objp->parent < MAX_OBJECTS);
 	parent_objp = &Objects[weapon_objp->parent];
-	if ( (parent_objp->signature != weapon_objp->parent_sig) || (parent_objp->type != OBJ_SHIP) ) {
-		return;
-	}
+	
+	// UnknownPlayer : Decide whether or not this weapon was a beam, in which case it might be a good
+	// idea to go after it even if its not on the current target. This is randomized so
+	// the ai will not always go after different ships firing beams at them.
 
-	if ( aip->target_objnum != OBJ_INDEX(parent_objp) ) {
-		return;
+	if ( Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM ) {
+		// Approx 1/4 chance we'll go after the beam
+		if (frand()*100 > 25.0f) {
+			if ( (parent_objp->signature != weapon_objp->parent_sig) || (parent_objp->type != OBJ_SHIP) ) {
+				return;
+			}
+		
+			if ( aip->target_objnum != OBJ_INDEX(parent_objp) ) {
+				return;
+			}
+		}
 	}
 
 	// attack the turret
