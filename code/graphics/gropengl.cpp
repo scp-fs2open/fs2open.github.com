@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.114 $
- * $Date: 2005-04-05 05:53:17 $
+ * $Revision: 2.115 $
+ * $Date: 2005-04-05 11:50:57 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.114  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.113  2005/04/01 07:25:54  taylor
  * go back to 24-bit depth, 32 didn't help any with ATI bugs
  *
@@ -3911,7 +3914,11 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		//print out extensions
 		OGL_extensions=(const char*)glGetString(GL_EXTENSIONS);
 
-		extlist=(char*)malloc(strlen(OGL_extensions));
+		// we use the "+1" here to have an extra NULL char on the end (with the memset())
+		// this is to fix memory errors when the last char in extlist is the same as the token
+		// we are looking for and ultra evil strtok() may still return non-NULL at EOS
+		extlist = (char*)malloc(strlen(OGL_extensions) + 1);
+		memset(extlist, 0, strlen(OGL_extensions) + 1);
 
 		if (extlist != NULL) {
 			memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
