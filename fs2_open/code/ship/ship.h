@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.77 $
- * $Date: 2005-01-17 23:35:45 $
- * $Author: argv $
+ * $Revision: 2.78 $
+ * $Date: 2005-01-27 04:23:18 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2005/01/17 23:35:45  argv
+ * Surface shields.
+ *
+ * See forum thread:
+ * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ *
+ * -- _argv[-1]
+ *
  * Revision 2.76  2005/01/16 23:18:04  wmcoolmon
  * Added "show ship" ship flag
  *
@@ -1287,6 +1295,8 @@ typedef struct ship_info {
 	int secondary_bank_ammo_capacity[MAX_SHIP_SECONDARY_BANKS];	// Capacity of bank (not number of missiles)
 
 	float	initial_hull_strength;			// Initial hull strength of this class of ship.
+	float	hull_repair_rate_percent;				//How much of the hull is repaired every second
+	float	subsys_repair_rate_percent;		//How fast 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 
 	vector	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and hud target monitor)
