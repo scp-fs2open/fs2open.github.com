@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.52 $
- * $Date: 2004-01-29 01:34:00 $
- * $Author: randomtiger $
+ * $Revision: 2.53 $
+ * $Date: 2004-02-04 10:14:25 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2004/01/29 01:34:00  randomtiger
+ * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
+ * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
+ *
  * Revision 2.51  2004/01/24 14:31:26  randomtiger
  * Added the D3D particle code, its not bugfree but works perfectly on my card and helps with the framerate.
  * Its optional and off by default, use -d3d_particle to activiate.
@@ -513,11 +517,11 @@ cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
 cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
-cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
-cmdline_parm noglow_arg("-noglow", NULL); // skip Bobs glow code
+cmdline_parm spec_arg("-spec", NULL); // use specular highlighting -Sticks
+cmdline_parm glow_arg("-glow", NULL); // use Bobs glow code
 cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
-cmdline_parm nohtl_arg("-htl", NULL); //Use HT&L	  
+cmdline_parm htl_arg("-htl", NULL); //Use HT&L	  
 cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm jpgtga_arg("-jpgtga",NULL);
 cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);
@@ -1007,12 +1011,17 @@ void SetCmdlineParams()
 		Cmdline_cell = 1;
 	}
 
-	if ( nospec_arg.found() ) {
+	if ( spec_arg.found() )
+	{
+		Cmdline_nospec = 0;
+	}
+	else
+	{
 		Cmdline_nospec = 1;
 	}
 
 
-	if ( nohtl_arg.found() ) 
+	if ( htl_arg.found() ) 
 	{
 		Cmdline_nohtl = 0;
 	}
@@ -1041,7 +1050,11 @@ void SetCmdlineParams()
 		Cmdline_pcx32 = 1;
 	}
 
-	if(noglow_arg.found() )
+	if(glow_arg.found() )
+	{
+		Cmdline_noglow = 0;
+	}
+	else
 	{
 		Cmdline_noglow = 1;
 	}
