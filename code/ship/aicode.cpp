@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.89 $
- * $Date: 2005-02-20 23:13:00 $
+ * $Revision: 2.90 $
+ * $Date: 2005-02-28 00:29:52 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2005/02/20 23:13:00  wmcoolmon
+ * Trails stuff, moved ship docking func declaration so FRED could get to it.
+ *
  * Revision 2.88  2005/02/15 00:03:35  taylor
  * don't try and draw starfield bitmaps if they aren't valid
  * make AB thruster stuff in ship_create() a little less weird
@@ -12373,7 +12376,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	int		use_angles, turret_weapon_class;
 	vector	predicted_enemy_pos;
 	object	*objp;
-	ai_info	*aip;
+	//ai_info	*aip;
 
 	if (!Ai_firing_enabled) {
 		return;
@@ -12454,7 +12457,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	Assert((parent_objnum >= 0) && (parent_objnum < MAX_OBJECTS));
 	objp = &Objects[parent_objnum];
 	Assert(objp->type == OBJ_SHIP);
-	aip = &Ai_info[Ships[objp->instance].ai_index];
+	//aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	// Use the turret info for all guns, not one gun in particular.
 	vector	 gvec, gpos;
