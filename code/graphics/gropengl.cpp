@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.22 $
- * $Date: 2003-06-07 20:51:06 $
+ * $Revision: 2.23 $
+ * $Date: 2003-06-08 17:29:51 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2003/06/07 20:51:06  phreak
+ * fixed minor fogging bug
+ *
  * Revision 2.21  2003/05/21 20:23:00  phreak
  * improved glowmap rendering speed
  *
@@ -392,7 +395,6 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"
 #include "graphics/gropengl.h"
-#include "graphics/gropenglbmpman.h"
 #include "graphics/line.h"
 #include "nebula/neb.h"
 #include "io/mouse.h"
