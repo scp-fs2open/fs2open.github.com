@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.15 $
+ * $Revision: 2.16 $
  * $Author: wmcoolmon $
- * $Date: 2003-01-11 01:00:25 $
+ * $Date: 2003-01-13 02:09:12 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/01/11 01:00:25  wmcoolmon
+ * Added code for "Ship Trails override Nebula"
+ *
  * Revision 2.14  2003/01/03 21:58:08  Goober5000
  * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
  * has primitive sensors it can't target anything and objects don't appear
@@ -296,7 +299,7 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define MISSION_FLAG_SHIP_TRAILS			(1<<5)	// Enables ship trails
 #define MISSION_FLAG_SUPPORT_REPAIRS_HULL	(1<<6)	// Toggles support ship repair of ship hulls
 #define MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT	(1<<7)	// Beam-free-all by default - Goober5000
-#define MISSION_FLAG_ST_OVERRIDE_NEB		(1<<8)	//Toggles ship trails overriding nebula
+#define MISSION_FLAG_NO_NEB_TRAILS			(1<<8)	//Disables ship trails in nebula -C
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)

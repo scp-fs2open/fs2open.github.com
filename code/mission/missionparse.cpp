@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.16 $
- * $Date: 2003-01-11 01:00:25 $
+ * $Revision: 2.17 $
+ * $Date: 2003-01-13 02:09:12 $
  * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2003/01/11 01:00:25  wmcoolmon
+ * Added code for "Ship Trails override Nebula"
+ *
  * Revision 2.15  2003/01/06 20:29:28  Goober5000
  * nasssty bugs, we hates them, yesss we do, preciousssss
  * :)
@@ -827,9 +830,14 @@ void parse_mission_info(mission *pm)
 
 	// If ship trails are not explicitly defined and nebula is enabled
 	//enable ship trails as well -Coolmon
-	if (pm->flags & MISSION_FLAG_FULLNEB && !(pm->flags & MISSION_FLAG_ST_OVERRIDE_NEB))
+	if (pm->flags & MISSION_FLAG_FULLNEB)
 	{
-		pm->flags |= MISSION_FLAG_SHIP_TRAILS;
+			pm->flags |= MISSION_FLAG_SHIP_TRAILS;
+	}
+	//If nebula is enabled, enable ship trails too -C
+	else if(pm->flags & MISSION_FLAG_FULLNEB && pm->flags & MISSION_FLAG_NO_NEB_TRAILS)
+	{
+		pm->flags &= ~MISSION_FLAG_SHIP_TRAILS;
 	}
 
 	// get the number of players if in a multiplayer mission
