@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.26 $
- * $Date: 2004-04-11 13:56:33 $
- * $Author: randomtiger $
+ * $Revision: 2.27 $
+ * $Date: 2004-04-26 12:41:46 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2004/04/11 13:56:33  randomtiger
+ * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
+ *
  * Revision 2.25  2004/03/20 14:47:13  randomtiger
  * Added base for a general dynamic batching solution.
  * Fixed NO_DSHOW_CODE code path bug.
@@ -574,6 +577,8 @@ int d3d_get_num_prims(int vertex_count, D3DPRIMITIVETYPE prim_type);
 void *d3d_lock_32_pcx(char *real_filename, int type, float *u, float *v);
 bool d3d_read_header_d3dx(char *file, int type, int *w, int *h);
 void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum);
+
+int gr_d3d_preload(int bitmap_num, int is_aabitmap );
 
 bool d3d_init_light();
 int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslot, int fail_on_full);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.28 $
- * $Date: 2004-04-11 13:56:33 $
- * $Author: randomtiger $
+ * $Revision: 2.29 $
+ * $Date: 2004-04-26 12:41:46 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/04/11 13:56:33  randomtiger
+ * Adding batching functions here and there and into gr_screen for use with OGL when its ready.
+ *
  * Revision 2.27  2004/04/01 15:31:21  taylor
  * don't use interface anis as ship textures
  *
@@ -768,6 +771,9 @@ typedef struct screen {
 	// set the color to be used when clearing the background
 	void (*gf_set_clear_color)(int r, int g, int b);
 
+	// preload a bitmap into texture memory
+	int (*gf_preload)(int bitmap_num, int is_aabitmap);
+
 	// Here be the bitmap functions
 	int (*gf_bm_get_next_handle)();
 	void (*gf_bm_close)();
@@ -999,6 +1005,8 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define gr_tcache_set		GR_CALL(gr_screen.gf_tcache_set)
 
 #define gr_set_clear_color	GR_CALL(gr_screen.gf_set_clear_color)
+
+#define gr_preload			GR_CALL(gr_screen.gf_preload)
 
 #define gr_translate_texture_matrix		GR_CALL(gr_screen.gf_translate_texture_matrix)
 #define gr_push_texture_matrix			GR_CALL(gr_screen.gf_push_texture_matrix)
