@@ -550,7 +550,7 @@ void bm_post_lost(){
 		if(d3d_bitmap_entry[i].flags&DXT_DEFAULT_MEM_POOL){
 			Assert(!d3d_bitmap_entry[i].tinterface);
 
-			bool cube = (d3d_bitmap_entry[i].flags & DXT_CUBEMAP);
+			bool cube = (d3d_bitmap_entry[i].flags & DXT_CUBEMAP) != 0;
 
 			if(cube)GlobalD3DVars::lpD3DDevice->CreateCubeTexture(max(d3d_bitmap_entry[i].x,d3d_bitmap_entry[i].y),1,D3DUSAGE_RENDERTARGET,D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT, (IDirect3DCubeTexture8**)&d3d_bitmap_entry[i].tinterface);
 			else GlobalD3DVars::lpD3DDevice->CreateTexture(d3d_bitmap_entry[i].x,d3d_bitmap_entry[i].y,1,D3DUSAGE_RENDERTARGET,D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT, (IDirect3DTexture8**)&d3d_bitmap_entry[i].tinterface);

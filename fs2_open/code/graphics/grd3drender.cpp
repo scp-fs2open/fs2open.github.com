@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.66 $
- * $Date: 2005-03-08 03:50:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.67 $
+ * $Date: 2005-03-13 08:44:10 $
+ * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/03/08 03:50:19  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.65  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -3317,7 +3321,7 @@ void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize)
 		gr_resize_screen_pos(&x2, &y2);
 	}
 
-	int clipped = 0, swapped=0;
+//	int clipped = 0, swapped=0;
 	DWORD color;
 
 	// Set up Render State - flat shading - alpha blending
@@ -3876,7 +3880,7 @@ void gr_d3d_draw_line_list(colored_vector*lines, int num){
 		// Matrox MGA-G200 doesn't support alpha-blended lines.
 		gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE );
 
-		float alpha_val = gr_screen.current_color.alpha/255.0f;
+//		float alpha_val = gr_screen.current_color.alpha/255.0f;
 		
 	}
 

@@ -527,7 +527,7 @@ BOOL d3d_lost_device(bool force)
 		extern IDirect3DSurface8 *old_render_target;
 
 //		if(background_render_target){background_render_target->Release();background_render_target=NULL;}
-		int r = 0;
+//		int r = 0;
 //		if(cube_map){
 /*			LPDIRECT3DSURFACE8 face;
 			for(int i = 0; i<6; i++){
