@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.5 $
- * $Date: 2002-10-30 06:31:05 $
+ * $Revision: 2.6 $
+ * $Date: 2002-11-04 08:32:38 $
  * $Author: DTP $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2002/10/30 06:31:05  DTP
+ * doh!, used upper case in include, dont know how much it matters for *nix systems, but here it is
+ *
  * Revision 2.4  2002/10/27 23:59:28  DTP
  * DTP; started basic implementation of mod-support
  * plain files only for now. fs2_open.exe -mod X will look for files in fs2/ X /all-legal-subdirectories. no checking/creating dirs yet. directories must be there.
@@ -394,6 +397,10 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 			}
 		}
 	}
+	if(!(Cmdline_mod)) {
+		CF_MAX_PATH_TYPES == CF_TYPE_MOD_ROOT; //DTP set max_path_types to mod_root since we dont want to add the same VP or plain file Twice
+	}
+
 
 	int i;
 
