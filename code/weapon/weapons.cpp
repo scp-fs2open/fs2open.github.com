@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2003/12/17 20:38:26  phreak
+ * fixed some logic when dealing with parsing local ssms
+ *
  * Revision 2.47  2003/12/17 16:41:25  phreak
  * "small only" weapons flag added. weapon shoots at small ships like fighters
  *
@@ -2414,11 +2417,14 @@ void find_homing_object(object *weapon_objp, int num)
 				float		dot;
 				vector	vec_to_object;
 
-				// AL 2-17-98: If ship is immune to sensors, can't home on it (Sandeep says so)!
 				if ( objp->type == OBJ_SHIP ) {
+					/* Goober5000: commented this out because if they home in on stealth,
+					// they should home in on hidden ships too (sorry Sandeep)
+					// AL 2-17-98: If ship is immune to sensors, can't home on it (Sandeep says so)!
 					if ( Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS ) {
 						continue;
 					}
+					*/
 
 					//	MK, 9/4/99.
 					//	If this is a player object, make sure there aren't already too many homers.
