@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.135 $
- * $Date: 2004-07-26 20:47:51 $
+ * $Revision: 2.136 $
+ * $Date: 2004-08-20 05:13:08 $
  * $Author: Kazan $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2004/07/26 20:47:51  Kazan
+ * remove MCD complete
+ *
  * Revision 2.134  2004/07/25 00:31:31  Kazan
  * i have absolutely nothing to say about that subject
  *
@@ -4992,7 +4995,7 @@ void ship_init_thrusters()
 		num_thrust_anims = NUM_THRUST_ANIMS - 2;
 	#endif
 
-#if (MORE_SPECIES)
+#if defined(MORE_SPECIES)
 	for ( i = 0; i < num_thrust_anims && i < (True_NumSpecies * 2); i++ ) {
 #else
 	for ( i = 0; i < num_thrust_anims; i++ ) {
@@ -5016,7 +5019,7 @@ void ship_init_thrusters()
 		num_thrust_glow_anims = NUM_THRUST_GLOW_ANIMS - 2;
 	#endif
 
-#if (MORE_SPECIES)
+#if defined(MORE_SPECIES)
 	for ( i = 0; i < num_thrust_glow_anims && i < (True_NumSpecies * 2); i++ ) {
 #else
 	for ( i = 0; i < num_thrust_glow_anims; i++ ) {

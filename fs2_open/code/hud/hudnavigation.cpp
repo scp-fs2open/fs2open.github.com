@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.7 $
- * $Date: 2004-07-27 18:52:10 $
+ * $Revision: 1.8 $
+ * $Date: 2004-08-20 05:13:07 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/07/27 18:52:10  Kazan
+ * squished another
+ *
  * Revision 1.6  2004/07/26 20:47:32  Kazan
  * remove MCD complete
  *
@@ -37,9 +40,9 @@
  *
  */
 
-#if defined(ENABLE_AUTO_PILOT)
-
 #include "Hud/HUDNavigation.h"
+
+#if defined(ENABLE_AUTO_PILOT)
 #include "Autopilot/Autopilot.h"
 #include "Hud/HUDtarget.h"
 #include "ship/ship.h"
