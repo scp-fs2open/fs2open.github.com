@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.138 $
- * $Date: 2004-10-31 22:04:33 $
+ * $Revision: 2.139 $
+ * $Date: 2004-11-01 20:57:04 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2004/10/31 22:04:33  taylor
+ * be sure to initialize splodeing_texture, fix issue that would cause loading problems for glows
+ *
  * Revision 2.137  2004/10/15 09:21:55  Goober5000
  * cleaned up some sexp stuff and added wing capability to kamikaze sexp
  * --Goober5000
@@ -11625,6 +11628,10 @@ void ship_page_in()
 			sjp = &Ships[i];
 			nprintf(( "Paging","Found ship '%s'\n", sjp->ship_name ));
 			ship_class_used[Ships[i].ship_info_index]++;
+
+			// check if we are going to use a Knossos device and make sure the special warp ani gets pre-loaded
+			if ( Ship_info[Ships[i].ship_info_index].flags & SIF_KNOSSOS_DEVICE )
+				Knossos_warp_ani_used = 1;
 
 			if(Cmdline_load_only_used)
 			{
