@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-09-12 03:17:33 $
+ * $Author: Goober5000 $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -171,6 +174,8 @@
 #define CRUISER_MESSAGES	(ATTACK_TARGET_ITEM | DEPART_ITEM)
 
 #define CAPITAL_MESSAGES	(DEPART_ITEM)				// can't order capitals to do much!!!!
+
+#define SUPERCAP_MESSAGES	0							// supercaps ignore you :)
 
 #define SUPPORT_MESSAGES	(REARM_REPAIR_ME_ITEM | ABORT_REARM_REPAIR_ITEM | STAY_NEAR_ME_ITEM | STAY_NEAR_TARGET_ITEM | KEEP_SAFE_DIST_ITEM | DEPART_ITEM )
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-09-11 19:39:03 $
- * $Author: argv $
+ * $Revision: 2.18 $
+ * $Date: 2003-09-12 03:17:33 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/09/11 19:39:03  argv
+ * New energy system, fixes, apply skill damage scaling to all ships, new energy system.
+ *
  * Revision 2.16  2003/04/29 01:03:21  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -908,8 +911,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 		if ( Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP))
 			return damage;
 		else {
-
-			damage_left = Shockwaves[other_obj->instance].damage/*/4.0f*/;
+			damage_left = Shockwaves[other_obj->instance].damage / 4.0f;
 		}
 		hitpos2 = other_obj->pos;
 	} else {
@@ -1013,11 +1015,11 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vector *hitpos, f
 		// _argv[-1] - this doesn't always seem to work, so I've removed this crap with reducing shockwave damage entirely.
 		// Note that shockwaves still don't affect the subsystems on shielded ships unless the shields are down.
 		// And if the shields are down, the whole ship is going to get blown away, so who cares about subsystems?
-		/*
+		// Goober5000 - *raises hand* The TVWP uses unshielded ships... I commented it back in.
+		// Perhaps you should change the distance check?
 		if ((dist < 10.0f) && ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE))) {
 			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;;
 		}
-		*/
 
 //		if (damage_left > 100.0f)
 //			nprintf(("AI", "Applying %7.3f damage to subsystem %7.3f units away.\n", damage_left, dist));
@@ -2220,7 +2222,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 		weapon_info_index = -1;
 
 	// if this is a weapon
-	if((other_obj != NULL) && ((other_obj->type == OBJ_WEAPON && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS)) || other_obj->type == OBJ_BEAM)){
+	if((other_obj != NULL) && ((other_obj->type == OBJ_WEAPON || other_obj->type == OBJ_BEAM) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS)) {
 		damage *= weapon_get_damage_scale(&Weapon_info[weapon_info_index], other_obj, ship_obj);
 	}
 
@@ -2243,15 +2245,16 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vector *hitpos, 
 		{
 			// Do a little "skill" balancing for the player in single player and coop multiplayer
 			// _argv[-1] - apply damage scaling to all ships.
-			//if (ship_obj->flags & OF_PLAYER_SHIP)	{
-			if (shipp->team == Player_ship->team) {
+			// Goober5000 - um, no... this screws things up
+			if (ship_obj->flags & OF_PLAYER_SHIP)	{
+			/*if (shipp->team == Player_ship->team) {*/
 				damage *= Skill_level_player_damage_scale[Game_skill_level];
-				//subsystem_damage *= Skill_level_player_damage_scale[Game_skill_level];
+				subsystem_damage *= Skill_level_player_damage_scale[Game_skill_level];
 			}		
-			else {
+			/*else {
 				damage /= Skill_level_player_damage_scale[Game_skill_level];
-				//subsystem_damage /= Skill_level_player_damage_scale[Game_skill_level];
-			}
+				subsystem_damage /= Skill_level_player_damage_scale[Game_skill_level];
+			}*/
 		}
 	}
 //mprintf(("skill balencing done\n"));
@@ -2316,7 +2319,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
 	if ( quadrant > -1 && !(ship_obj->flags & OF_NO_SHIELDS) )	{
-//		mprintf(("applying damage ge to shield\n"));
+//		mprintf(("applying damage to shield\n"));
 		float shield_factor = -1.0f;
 		if ( weapon_info_index >= 0 ) {
 			shield_factor = Weapon_info[weapon_info_index].shield_factor;
@@ -2365,8 +2368,9 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 		if(damage > 0.0f){
 			weapon_info_index = shiphit_get_damage_weapon(other_obj);
 			if ( weapon_info_index >= 0 ) {
-				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE)
+				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
 					damage /= 4;
+				}
 
 				damage *= Weapon_info[weapon_info_index].armor_factor;
 			}
@@ -2518,6 +2522,7 @@ Assert((Weapons[other_obj->instance].weapon_info_index > -1) && (Weapons[other_o
 			// default, so we can use that flag. We also have another flag, "drain big ships", which allows modders to
 			// allow this weapon to drain big ships without allowing it to also damage their hulls (for esuck weapons
 			// that also do damage).
+			// FIXME: are you sure you want to test *equality* with a floating point?
 			if (quadrant == -1 && wip->power_output_reduce != 0.04f && (!(Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || wip->wi_flags2 & WIF2_DRAIN_BIG_SHIPS))
 				shipp->effective_power_drain += wip->power_output_reduce;
 		}
