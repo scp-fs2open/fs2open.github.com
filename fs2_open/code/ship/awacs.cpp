@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-27 02:57:50 $
+ * $Revision: 2.4 $
+ * $Date: 2003-01-03 21:58:07 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/27 02:57:50  Goober5000
+ * removed the existing stealth sexps and replaced them with the following...
+ * ship-stealthy
+ * ship-unstealthy
+ * is-ship-stealthy
+ * friendly-stealth-invisible
+ * friendly-stealth-visible
+ * is-friendly-stealth-visible
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/23 05:18:52  Goober5000
  * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
  * one ship would return after only dealing with the first ship.
@@ -255,10 +265,23 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	ship *shipp;
 	ship_info *sip;
 
+	int viewer_has_primitive_sensors = (viewer->flags2 & SF2_PRIMITIVE_SENSORS);
+
+	// calc distance from viewer to target
+	vm_vec_sub(&dist_vec, &target->pos, &Objects[viewer->objnum].pos);
+	int distance = (int) vm_vec_mag_quick(&dist_vec);
+
+// redone by Goober5000
+#define ALWAYS_TARGETABLE		1.5f
+#define MARGINALLY_TARGETABLE	0.5f
+#define UNTARGETABLE			-1.0f
+#define FULLY_TARGETABLE		(viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE)
+
+
 #ifndef NO_NETWORK
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
 	if((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM])){
-		return 1.5f;
+		return ALWAYS_TARGETABLE;
 	}
 #endif
 
@@ -266,16 +289,16 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	sip = &Ship_info[Ships[target->instance].ship_info_index];
 	friendly_invisible = (sip->flags & SIF_STEALTH) && (sip->flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE);
 	
+	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_STEALTH);
+	int nebula_mission = (The_mission.flags & MISSION_FLAG_FULLNEB);
+	int check_huge_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_HUGE_SHIP);
+
 	// ships on the same team are always viewable
 	// not necessarily now! :) -- Goober5000
 	if((target->type == OBJ_SHIP) && (Ships[target->instance].team == viewer->team) && (!friendly_invisible))
 	{
-		return 1.5f;
+		return FULLY_TARGETABLE;
 	}
-
-	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_STEALTH);
-	int nebula_mission = (The_mission.flags & MISSION_FLAG_FULLNEB);
-	int check_huge_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_HUGE_SHIP);
 
 	// only check for Awacs if stealth ship or Nebula mission
 	// determine the closest friendly awacs
@@ -327,7 +350,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	if(target->type == OBJ_SHIP){
 		shipp = &Ships[target->instance];
 		if(shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f){
-			return 1.5f;
+			return FULLY_TARGETABLE;
 		}
 	}
 	
@@ -337,27 +360,27 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		if(closest_index != -1){
 			// if the nebula effect is active, stealth ships are only partially targetable
 			if ( nebula_mission ) {
-				return 0.5f;
+				return MARGINALLY_TARGETABLE;
 			}
 
 			// otherwise its targetable
-			return 1.5f;
+			return FULLY_TARGETABLE;
 		} 
 		// otherwise its completely hidden
 		else {
-			return -1.0f;
+			return UNTARGETABLE;
 		}
 	}
 	// all other ships
 	else {
 		// if this is not a nebula mission, its always targetable
 		if( !nebula_mission ){
-			return 1.5f;
+			return FULLY_TARGETABLE;
 		}
 
 		// if the ship is within range of an awacs, its fully targetable
 		if(closest_index != -1){
-			return 1.5f;
+			return FULLY_TARGETABLE;
 		}
 
 		// fully targetable at half the nebula value
@@ -383,29 +406,29 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		// special case for huge ship - check inside expanded bounding boxes
 		if ( check_huge_ship ) {
 			if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, scan_nebula_range)) {
-				if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, 0.5f*scan_nebula_range)) {
-					return 1.5f;
+				if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, MARGINALLY_TARGETABLE*scan_nebula_range)) {
+					return FULLY_TARGETABLE;
 				}
-				return 0.5f;
+				return MARGINALLY_TARGETABLE;
 			}
 		} 
 		// otherwise check straight up nebula numbers
 		else {
 			vm_vec_sub(&dist_vec, &target->pos, &Objects[viewer->objnum].pos);
 			test = vm_vec_mag_quick(&dist_vec);
-			if(test < (0.5f * scan_nebula_range)){
-				return 1.5f;
+			if(test < (MARGINALLY_TARGETABLE * scan_nebula_range)){
+				return FULLY_TARGETABLE;
 			} else if(test < scan_nebula_range){
-				return 0.5f;
+				return MARGINALLY_TARGETABLE;
 			}
 		}
 
 		// untargetable at longer range
-		return -1.0f;	
+		return UNTARGETABLE;	
 	}		
 
 	Int3();
-	return 1.5f;
+	return FULLY_TARGETABLE;
 }
 
 
@@ -581,6 +604,38 @@ int ship_is_visible_by_team(int ship_num, int team)
 	}
 }
 
+// New version of determine is ship is visible by team - Goober5000
+// accounts for friendly stealth invisible and primitive sensors
+int ship_is_visible_by_team_new(object *target, ship *viewer)
+{
+	Assert(target);
+	Assert(viewer);
+	Assert(target->type == OBJ_SHIP);
+
+	ship_info *target_sip = &Ship_info[Ships[target->instance].ship_info_index];
+
+	// not visible if viewer has primitive sensors
+	if (viewer->flags2 & SF2_PRIMITIVE_SENSORS)
+	{
+		return 0;
+	}
+
+	// friendly stealthed ships are not visible if they have the friendly-stealth-invisible
+	// flag set
+	if (Ships[target->instance].team == viewer->team)
+	{
+		if (target_sip->flags & SIF_STEALTH)
+		{
+			if (target_sip->flags2 & SIF2_FRIENDLY_STEALTH_INVISIBLE)
+			{
+				return 0;
+			}
+		}
+	}
+
+	// now evaluate this the old way
+	return ship_is_visible_by_team(target->instance, viewer->team);
+}
 
 
 		

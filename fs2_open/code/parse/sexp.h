@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.20 $
+ * $Revision: 2.21 $
  * $Author: Goober5000 $
- * $Date: 2003-01-02 00:35:20 $
+ * $Date: 2003-01-03 21:58:07 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/01/02 00:35:20  Goober5000
+ * added don't-collide-invisible and collide-invisible sexps
+ * --Goober5000
+ *
  * Revision 2.19  2003/01/01 23:33:33  Goober5000
  * added ship-vaporize and ship-no-vaporize sexps
  * --Goober5000
@@ -667,6 +671,7 @@
 #define OP_SHIP_NO_VAPORIZE				(0x006d	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_COLLIDE_INVISIBLE			(0x006e	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_DONT_COLLIDE_INVISIBLE		(0x006f	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PRIMITIVE_SENSORS_SET_RANGE	(0x0070	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // debugging sexpressions

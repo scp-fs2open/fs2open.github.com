@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:28 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2003-01-03 21:58:07 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:28  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:12  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -69,5 +72,10 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs=1);
 // return 0 if ship is only partly visible
 int ship_is_visible_by_team(int ship_num, int team);
 
+// Determine if ship is visible by team - new; incorporates friendly stealth invisible
+// and primitive sensors
+// return 1 if ship is fully visible
+// return 0 if ship is only partly visible
+extern int ship_is_visible_by_team_new(object *target, ship *viewer);
 
 #endif

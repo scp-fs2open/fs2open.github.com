@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.4 $
- * $Date: 2002-12-31 18:59:43 $
+ * $Revision: 2.5 $
+ * $Date: 2003-01-03 21:58:08 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/12/31 18:59:43  Goober5000
+ * if it ain't broke, don't fix it
+ * --Goober5000
+ *
  * Revision 2.2  2002/12/10 05:43:34  Goober5000
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
@@ -1270,7 +1274,7 @@ void multi_ingame_handle_timeout()
 
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
-	int offset, sflags, oflags, team, j;
+	int offset, sflags, sflags2, oflags, team, j;
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
@@ -1309,6 +1313,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		GET_STRING( ship_name );
 		GET_DATA( net_signature );
 		GET_DATA( sflags );
+		GET_DATA( sflags2 );
 		GET_DATA( oflags );
 		GET_DATA( team );		
 		GET_DATA( wing_data );
@@ -1342,6 +1347,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		// assign any common data
 		strcpy(Ships[ship_num].ship_name, ship_name);
 		Ships[ship_num].flags = sflags;
+		Ships[ship_num].flags2 = sflags2;
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1433,6 +1439,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_STRING( shipp->ship_name );
 		ADD_DATA( Objects[so->objnum].net_signature );
 		ADD_DATA( shipp->flags );
+		ADD_DATA( shipp->flags2 );
 		ADD_DATA( Objects[so->objnum].flags );
 		ADD_DATA( shipp->team );
 		wing_data = (short)shipp->wingnum;

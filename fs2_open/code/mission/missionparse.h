@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.13 $
+ * $Revision: 2.14 $
  * $Author: Goober5000 $
- * $Date: 2003-01-02 00:35:21 $
+ * $Date: 2003-01-03 21:58:08 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2003/01/02 00:35:21  Goober5000
+ * added don't-collide-invisible and collide-invisible sexps
+ * --Goober5000
+ *
  * Revision 2.12  2003/01/01 23:33:33  Goober5000
  * added ship-vaporize and ship-no-vaporize sexps
  * --Goober5000
@@ -385,6 +389,7 @@ extern char *Species_names[MAX_SPECIES_NAMES];
 extern char *Reinforcement_type_names[];
 extern char *Object_flags[];
 extern char *Parse_object_flags[];
+extern char *Parse_object_flags_2[];
 extern char *Icon_names[];
 
 extern char *Cargo_names[MAX_CARGO];
@@ -459,6 +464,7 @@ typedef struct p_object {
 	int	determination;
 	int	wingnum;								// set to -1 if not in a wing -- Wing array index otherwise
 	int	flags;								// mission savable flags
+	int flags2;								// Goober5000
 	int	escort_priority;					// priority in escort list
 	int	ai_class;
 	int	hotkey;								// hotkey number (between 0 and 9) -1 means no hotkey
@@ -483,9 +489,9 @@ typedef struct p_object {
 	int		nameplate;						// optional nameplate -Bobboau
 } p_object;
 
-// defines for flags used for p_objects when they are created.  Used to help create
-// special circumstances for those ships.  The order that these bitfields appear
-// in this list MUST match the order that they appear in the flags array in MissionParse.cpp!!!!
+// defines for flags used for p_objects when they are created.  Used to help create special
+// circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
+// (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
 #define MAX_PARSE_OBJECT_FLAGS	22
 
@@ -509,6 +515,9 @@ typedef struct p_object {
 #define P_OF_BEAM_PROTECTED			(1<<17)
 #define P_SF_GUARDIAN				(1<<18)
 #define P_KNOSSOS_WARP_IN			(1<<19)
+
+// these flags do not appear in the array; we may want to add them
+// in the future though
 #define P_OF_NO_LASERS				(1<<20)
 #define P_OF_NO_ENGINES				(1<<21)
 #define P_SIF_STEALTH				(1<<22)
@@ -523,6 +532,15 @@ typedef struct p_object {
 #define P_SF_WARP_BROKEN			(1<<29)	// warp engine should be broken for this ship
 #define P_SF_WARP_NEVER				(1<<30)	// warp drive is destroyed
 #define P_SF_PLAYER_START_VALID		(1<<31)	// this is a valid player start object
+
+// more parse flags! -- Goober5000
+// same caveat: This list of bitfield indicators MUST correspond EXACTLY
+// (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
+
+#define MAX_PARSE_OBJECT_FLAGS_2	5
+
+#define P2_SF2_PRIMITIVE_SENSORS		(1<<0)
+
 
 extern p_object ship_arrival_list;			// used by sexpression parser
 

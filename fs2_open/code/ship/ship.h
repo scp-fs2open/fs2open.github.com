@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.17 $
- * $Date: 2002-12-31 18:59:42 $
+ * $Revision: 2.18 $
+ * $Date: 2003-01-03 21:58:06 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2002/12/31 18:59:42  Goober5000
+ * if it ain't broke, don't fix it
+ * --Goober5000
+ *
  * Revision 2.15  2002/12/27 02:57:50  Goober5000
  * removed the existing stealth sexps and replaced them with the following...
  * ship-stealthy
@@ -557,9 +561,16 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 #define	SF_DEPARTING				(SF_DEPART_WARP | SF_DEPART_DOCKBAY)				// ship is departing
 #define	SF_CANNOT_WARP				(SF_WARP_BROKEN | SF_WARP_NEVER | SF_DISABLED)	// ship cannot warp out
 
+
+#define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
+
+
 // Bits for ship.flags2
 // None are in FRED
 #define	SF2_LIGHTS_ON				(1<<0)		// ship has 'GLOW' lights turned on (Bobboau's lights)
+#define SF2_PRIMITIVE_SENSORS		(1<<1)
+
+
 
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
@@ -763,7 +774,8 @@ typedef struct ship {
 	float life_total[MAX_PRIMARY_BANKS];
 	int was_firing_last_frame[MAX_PRIMARY_BANKS];
 
-
+	// Goober5000 - range of primitive sensors
+	int primitive_sensor_range;
 	
 	int nameplate;											//nameplate texture for this ship
 
@@ -846,9 +858,11 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // flags2 -- added by Goober5000
 #define SIF2_FRIENDLY_STEALTH_INVISIBLE		(1 << 0)
 
+
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)
 #define SIF2_DEFAULT_VALUE		0
+
 #define	SIF_ALL_SHIP_TYPES		(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_CRUISER | SIF_FREIGHTER | SIF_CAPITAL | SIF_TRANSPORT | SIF_SUPPORT | SIF_NO_SHIP_TYPE | SIF_NAVBUOY | SIF_SENTRYGUN | SIF_ESCAPEPOD | SIF_SUPERCAP | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS | SIF_KNOSSOS_DEVICE)
 #define	SIF_SMALL_SHIP				(SIF_FIGHTER | SIF_BOMBER | SIF_SUPPORT | SIF_ESCAPEPOD )
 #define	SIF_BIG_SHIP				(SIF_CRUISER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS)
