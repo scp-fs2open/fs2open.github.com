@@ -1,0 +1,893 @@
+2002-07-29 20:48  penguin
+
+	* Ship/shiphit.cpp (2.4):
+	
+	Moved extern declaration of ssm_create outside of block (it
+	wouldn't compile w/ gcc)
+
+2002-07-29 20:12  penguin
+
+	* FREESPACE2/freespace.cpp (2.3), Graphics/font.cpp (2.2),
+	Graphics/gradient.cpp (2.1), Graphics/line.cpp (2.1), Io/key.cpp
+	(2.2), Io/mouse.cpp (2.2), Math/fix.cpp (2.1),
+	Mission/missioncampaign.cpp (2.2), Stats/stats.cpp (2.1),
+	VCodec/codec1.cpp (2.2):
+	
+	added #ifdef _WIN32 around windows-specific system headers
+
+2002-07-29 20:12  penguin
+
+	* OsApi/: osregistry_unix.cpp (2.1), outwnd_unix.cpp (2.1):
+	
+	removed bogus #include windows.h
+
+2002-07-29 19:52  penguin
+
+	* CFile/cfilesystem.cpp (2.2):
+	
+	added #ifdef _WIN32 around windows-specific system headers
+
+2002-07-29 19:37  penguin
+
+	* CFile/cfilelist.cpp (2.1):
+	
+	added #ifdef _WIN32 around windows-specific system headers
+
+2002-07-29 19:17  penguin
+
+	* CFile/cfilearchive.cpp (2.1):
+	
+	added #ifdef _WIN32 around windows-specific system headers
+
+2002-07-29 19:04  penguin
+
+	* CFile/cfile.cpp (2.2):
+	
+	added #ifdef _WIN32 around windows-specific system headers
+
+2002-07-29 08:31  DTP
+
+	* Model/model.h (2.3):
+	
+	Forgot to Bump MAX_MODEL_SUBSYSTEMS from 128 to 200
+
+2002-07-29 08:28  DTP
+
+	* Model/model.h (2.2):
+	
+	BUMPED MAX_POLYGON_MODELS TO 198 , MAX_SHIP_TYPES - 2 = 198
+
+2002-07-29 08:24  DTP
+
+	* Ship/ship.h (2.2):
+	
+	Bumped all MAX_SHIPS, and SHIP_LIMIT to 400.(let the mission
+	designers decide what is good, and what is bad
+
+2002-07-29 08:22  DTP
+
+	* Ship/ship.cpp (2.3):
+	
+	Bumped MAX_SHIP_SUBOBJECTS to 2100(2100 /(average fighter has 7
+	subsystems) = 400 fighters
+
+2002-07-29 08:19  DTP
+
+	* Ship/shiphit.cpp (2.3):
+	
+	Bumped MAX_SUBSYS_LIST from 32 to 200
+
+2002-07-29 08:05  DTP
+
+	* Network/multiui.cpp (2.3):
+	
+	-almission(autoload mission) commandline arguement handling
+	implemented
+
+2002-07-29 07:56  DTP
+
+	* MenuUI/mainhallmenu.cpp (2.1):
+	
+	FIX; Startgame arguement dont go ahead when a singleplayer pilot is
+	selected
+
+2002-07-29 06:35  DTP
+
+	* Cmdline/: cmdline.cpp (2.2), cmdline.h (2.2):
+	
+	added -almission commandline arguement, will autoload mission i.e
+	fs2_open.exe -almission kickass will autoload kickass.fs2 which
+	should be a multiplayer mission.
+
+2002-07-28 15:07  DTP
+
+	* Network/multiui.cpp (2.2):
+	
+	FIX -stargame commandline arguement will now let you quit, a thing
+	not possible before when using the startgame arguement
+
+2002-07-26 16:17  penguin
+
+	* Object/collideshipship.cpp (2.1):
+	
+	renamed 'big' and 'small' (conflict w/ MS include file)
+
+2002-07-26 16:12  penguin
+
+	* Network/psnet2.h (2.3):
+	
+	fixed bug where winsock.h wasn't defined
+
+2002-07-26 03:11  wmcoolmon
+
+	* Weapon/beam.cpp (2.2):
+	
+	Added Bobboau's beam tiling code
+
+2002-07-25 04:50  wmcoolmon
+
+	* Ship/shield.cpp (2.2), Ship/ship.cpp (2.2), Weapon/beam.cpp
+	(2.1), Weapon/beam.h (2.1):
+	
+	Added Bobboau's fighter-beam code.
+
+2002-07-22 01:39  penguin
+
+	* FREESPACE2/freespace.cpp (2.2):
+	
+	Added ifndef NO_STANDALONE
+
+2002-07-22 01:37  penguin
+
+	* Sound/rtvoice.h (2.1):
+	
+	Stub defines for NO_SOUND
+
+2002-07-22 01:22  penguin
+
+	* Network/: multi.cpp (2.1), multi.h (2.1), multi_campaign.cpp
+	(2.1), multi_data.cpp (2.2), multi_endgame.cpp (2.1),
+	multi_options.cpp (2.1), multi_pause.cpp (2.1), multi_pmsg.cpp
+	(2.2), multi_voice.cpp (2.1), multimsgs.cpp (2.1), multiui.cpp
+	(2.1), multiutil.cpp (2.2), psnet.cpp (2.1), psnet2.cpp (2.1),
+	psnet2.h (2.2), stand_gui.cpp (2.1), stand_gui.h (2.1):
+	
+	Linux port -- added NO_STANDALONE ifdefs
+
+2002-07-22 01:14  penguin
+
+	* Makefile (2.2):
+	
+	Made more compatible w/ Win32; defines for NO_SOUND, NO_JOYSTICK,
+	NO_NETWORK
+
+2002-07-22 01:10  penguin
+
+	* windows_stub/stubs.cpp (2.3):
+	
+	Moved the dummy "sound" definitions to main program (freespace.cpp)
+
+2002-07-22 01:06  penguin
+
+	* windows_stub/config.h (2.2):
+	
+	More defines for winsock compatibility
+
+2002-07-22 01:04  penguin
+
+	* GlobalIncs/pstypes.h (2.2):
+	
+	took out GAME_CD_CHECK define
+
+2002-07-20 23:51  DTP
+
+	* Hud/hudshield.cpp (2.1):
+	
+	Bumped Max Shield Icons to 80
+
+2002-07-20 23:50  DTP
+
+	* MissionUI/missiondebrief.cpp (2.1):
+	
+	Fixed multiplayer music. succes music on all Primary goals
+	complete, fail music if otherwise
+
+2002-07-20 23:49  DTP
+
+	* Ship/ship.cpp (2.1):
+	
+	Fixed Secondary bank bug, where next valid secondary bank inherits
+	current valid banks FULL fire delay
+
+2002-07-20 19:21  DTP
+
+	* Parse/parselo.h (2.1):
+	
+	bumped MAX_MISSION_TEXT to 1000000 in code/parse/parselo.h
+
+2002-07-18 20:07  penguin
+
+	* Hud/hudconfig.cpp (2.1):
+	
+	Fixed bug (potential access of unitialized pointer) in
+	hud_config_render_gauges() -- thanks to DTP for finding it!
+
+2002-07-18 14:36  unknownplayer
+
+	* Ship/aicode.cpp (2.6):
+	
+	no message
+
+2002-07-18 09:55  unknownplayer
+
+	* Ship/aicode.cpp (2.5):
+	
+	
+	Revised AI primary selection code again to be more intelligent.
+
+2002-07-18 05:38  unknownplayer
+
+	* Ship/aicode.cpp (2.4):
+	
+	
+	Rewrote my original algorithm to search by proportional hull
+	damage.  Does the same thing a little better.
+
+2002-07-18 03:27  unknownplayer
+
+	* Ship/aicode.cpp (2.3):
+	
+	
+	Fixed AI problems with using the maxim on fighters.
+
+2002-07-18 03:26  unknownplayer
+
+	* Ship/shield.cpp (2.1):
+	
+	
+	Added some commentry to the low detail shield function.
+
+2002-07-18 03:25  unknownplayer
+
+	* Ship/shiphit.cpp (2.2):
+	
+	no message
+
+2002-07-17 23:59  unknownplayer
+
+	* code.dsp (1.2):
+	
+	
+	Altered project files to properly build debug info. Should save you
+	all some time.
+
+2002-07-17 23:58  unknownplayer
+
+	* Ship/aicode.cpp (2.2):
+	
+	
+	Minor commenting added to two functions.
+
+2002-07-17 20:04  wmcoolmon
+
+	* Ship/shiphit.cpp (2.1):
+	
+	Added SSM code for Tag C from Bobboau. Note that strings.tbl may
+	need to be updated.
+
+2002-07-16 14:39  unknownplayer
+
+	* Graphics/gropengl.cpp (2.2):
+	
+	Updated to enable compilation under MSVC++ - all changes are marked
+	with my name ##UnknownPlayer##
+
+2002-07-16 14:37  unknownplayer
+
+	* code.dsp (1.1):
+	
+	This is the code project file. Use the workspace file I included to
+	get at this.
+
+2002-07-15 02:09  wmcoolmon
+
+	* Mission/missionparse.h (2.1), Ship/shipcontrails.cpp (2.1):
+	
+	Added support for toggling ship trails
+
+2002-07-13 09:16  wmcoolmon
+
+	* Parse/: sexp.cpp (2.1), sexp.h (2.1):
+	
+	Added initial code for "ship-lights-on" and "ship-lights-off" SEXPs
+
+2002-07-12 16:59  penguin
+
+	* Ship/ship.h (2.1):
+	
+	Added flags2 (ran out of bits in flags!) to ship struct; bit 0 will
+	be used to toggle Bobboau's lights.
+
+2002-07-12 02:56  penguin
+
+	* windows_stub/: commctrl.h (2.1), conio.h (2.1), crtdbg.h (2.1),
+	d3dcom.h (2.1), direct.h (2.1), initguid.h (2.1), io.h (2.1),
+	mmreg.h (2.1), mmsystem.h (2.1), msacm.h (2.1), objbase.h (2.1),
+	ole2.h (2.1), ole2ver.h (2.1), process.h (2.1), ras.h (2.1),
+	raserror.h (2.1), subwtype.h (2.1), winbase.h (2.1), windows.h
+	(2.1), windowsx.h (2.1), winerror.h (2.1), winioctl.h (2.1),
+	winsock.h (2.1), wsipx.h (2.1):
+	
+	Removed dummy include file
+
+2002-07-12 02:44  penguin
+
+	* Model/modelsinc.h (2.2):
+	
+	Fixed endian-ness of new "GLOW" IDs
+
+2002-07-10 18:42  wmcoolmon
+
+	* Model/: modelsinc.h (2.1), model.h (2.1), modelinterp.cpp (2.2),
+	modelread.cpp (2.2):
+	
+	Added  Bobboau's glow code; all comments include "-Bobboau"
+
+2002-07-07 19:55  penguin
+
+	* Makefile (2.1), Bmpman/bmpman.cpp (2.1), CFile/cfile.cpp (2.1),
+	CFile/cfile.h (2.1), CFile/cfilearchive.h (2.1),
+	CFile/cfilesystem.cpp (2.1), Cmdline/cmdline.cpp (2.1),
+	Cmdline/cmdline.h (2.1), Cutscene/cutscenes.cpp (2.1),
+	Demo/demo.cpp (2.1), DirectX/vd3di.h (2.1), DirectX/vd3drmdef.h
+	(2.1), DirectX/vd3drmwin.h (2.1), DirectX/vd3dtypes.h (2.1),
+	ExceptionHandler/exceptionhandler.h (2.1), FREESPACE2/freespace.cpp
+	(2.1), Glide/3dfx.h (2.1), Glide/fxdll.h (2.1), Glide/fxos.h (2.1),
+	Glide/glide.cpp (2.1), Glide/glide.h (2.1), GlobalIncs/pstypes.h
+	(2.1), Graphics/2d.cpp (2.1), Graphics/aaline.cpp (2.1),
+	Graphics/font.cpp (2.1), Graphics/font.h (2.1),
+	Graphics/gropengl.cpp (2.1), Graphics/grsoft.cpp (2.1),
+	Graphics/scaler.cpp (2.1), Graphics/shade.cpp (2.1),
+	Graphics/tmapper.cpp (2.1), Inetfile/chttpget.cpp (2.1),
+	Io/joy_ff.cpp (2.1), Io/key.cpp (2.1), Io/mouse.cpp (2.1),
+	Io/mouse.h (2.1), Io/timer.cpp (2.1), Io/timer.h (2.1),
+	MenuUI/barracks.cpp (2.1), MenuUI/credits.cpp (2.1),
+	Mission/missioncampaign.cpp (2.1), Mission/missionload.h (2.1),
+	Model/modelinterp.cpp (2.1), Model/modelread.cpp (2.1),
+	Network/multi_data.cpp (2.1), Network/multi_log.cpp (2.1),
+	Network/multi_obj.cpp (2.1), Network/multi_observer.cpp (2.1),
+	Network/multi_pmsg.cpp (2.1), Network/multi_respawn.cpp (2.1),
+	Network/multi_xfer.cpp (2.1), Network/multiteamselect.cpp (2.1),
+	Network/multiutil.cpp (2.1), Network/psnet2.h (2.1),
+	Object/objectsnd.cpp (2.1), OsApi/osapi.cpp (2.1), OsApi/osapi.h
+	(2.1), OsApi/osapi_unix.cpp (2.1), Playerman/managepilot.cpp (2.1),
+	Ship/aicode.cpp (2.1), Sound/ds3d.cpp (2.1), Sound/sound.cpp (2.1),
+	Stats/medals.cpp (2.1), VCodec/codec1.cpp (2.1),
+	windows_stub/config.h (2.1), windows_stub/stubs.cpp (2.2):
+	
+	Back-port to MSVC
+
+2002-06-04 06:38  penguin
+
+	* windows_stub/stubs.cpp (2.1):
+	
+	Added machine-independent version of MulDiv (in case we don't know
+	the processor type)
+
+2002-06-03 04:10  penguin
+
+	* Io/xmouse.cpp (2.0), OsApi/osapi_unix.cpp (2.0),
+	OsApi/osregistry_unix.cpp (2.0), OsApi/outwnd_unix.cpp (2.0)
+	(utags: fs2_open_0_1):
+	
+	Warpcore CVS sync
+
+2002-06-03 04:08  penguin
+
+	* windows_stub/: commctrl.h (2.0), conio.h (2.0), crtdbg.h (2.0),
+	d3dcom.h (2.0), direct.h (2.0), initguid.h (2.0), io.h (2.0),
+	mmreg.h (2.0), mmsystem.h (2.0), msacm.h (2.0), objbase.h (2.0),
+	ole2.h (2.0), ole2ver.h (2.0), process.h (2.0), ras.h (2.0),
+	raserror.h (2.0), subwtype.h (2.0), winbase.h (2.0), windowsx.h
+	(2.0), winerror.h (2.0), winioctl.h (2.0), winsock.h (2.0), wsipx.h
+	(2.0) (utags: fs2_open_0_1):
+	
+	Dummy include file
+
+2002-06-03 04:07  penguin
+
+	* windows_stub/: config.h (2.0), stubs.cpp (2.0), windows.h (2.0)
+	(utags: fs2_open_0_1):
+	
+	Warpcore CVS sync
+
+2002-06-03 04:02  penguin
+
+	* Makefile (2.0), Anim/animplay.cpp (2.0), Anim/animplay.h (2.0),
+	Anim/packunpack.cpp (2.0), Anim/packunpack.h (2.0),
+	Asteroid/asteroid.cpp (2.0), Asteroid/asteroid.h (2.0),
+	Bmpman/bmpman.cpp (2.0), Bmpman/bmpman.h (2.0), CFile/cfile.cpp
+	(2.0), CFile/cfile.h (2.0), CFile/cfilearchive.cpp (2.0),
+	CFile/cfilearchive.h (2.0), CFile/cfilelist.cpp (2.0),
+	CFile/cfilesystem.cpp (2.0), CFile/cfilesystem.h (2.0),
+	CMeasure/cmeasure.cpp (2.0), CMeasure/cmeasure.h (2.0),
+	Cfilearchiver/cfilearchiver.cpp (2.0), Cmdline/cmdline.cpp (2.0),
+	Cmdline/cmdline.h (2.0), ControlConfig/controlsconfig.cpp (2.0),
+	ControlConfig/controlsconfig.h (2.0),
+	ControlConfig/controlsconfigcommon.cpp (2.0),
+	Cryptstring/cryptstring.cpp (2.0), Cutscene/cutscenes.cpp (2.0),
+	Cutscene/cutscenes.h (2.0), Debris/debris.cpp (2.0),
+	Debris/debris.h (2.0), DebugConsole/console.cpp (2.0),
+	Demo/demo.cpp (2.0), Demo/demo.h (2.0), DirectX/vasync.h (2.0),
+	DirectX/vd3d.h (2.0), DirectX/vd3dcaps.h (2.0), DirectX/vd3di.h
+	(2.0), DirectX/vd3drm.h (2.0), DirectX/vd3drmdef.h (2.0),
+	DirectX/vd3drmobj.h (2.0), DirectX/vd3drmwin.h (2.0),
+	DirectX/vd3dtypes.h (2.0), DirectX/vd3dvec.inl (2.0),
+	DirectX/vddraw.h (2.0), DirectX/vddraw.lib (2.0), DirectX/vdinput.h
+	(2.0), DirectX/vdinput.lib (2.0), DirectX/vdplay.h (2.0),
+	DirectX/vdplobby.h (2.0), DirectX/vdsetup.h (2.0),
+	DirectX/vdsound.h (2.0), DirectX/vdsound.lib (2.0), DirectX/vdvp.h
+	(2.0), DirectX/vdxguid.lib (2.0),
+	ExceptionHandler/exceptionhandler.cpp (2.0),
+	ExceptionHandler/exceptionhandler.h (2.0), FREESPACE2/app_icon.ico
+	(2.0), FREESPACE2/freespace.cpp (2.0), FREESPACE2/freespace.h
+	(2.0), FREESPACE2/freespace.rc (2.0),
+	FREESPACE2/freespaceresource.h (2.0), FREESPACE2/goal_com.bmp
+	(2.0), FREESPACE2/goal_fail.bmp (2.0), FREESPACE2/goal_inc.bmp
+	(2.0), FREESPACE2/goal_none.bmp (2.0), FREESPACE2/goal_ord.bmp
+	(2.0), FREESPACE2/levelpaging.cpp (2.0), FREESPACE2/levelpaging.h
+	(2.0), Fireball/fireballs.cpp (2.0), Fireball/fireballs.h (2.0),
+	Fireball/warpineffect.cpp (2.0), GameHelp/contexthelp.cpp (2.0),
+	GameHelp/contexthelp.h (2.0), GameHelp/gameplayhelp.cpp (2.0),
+	GameHelp/gameplayhelp.h (2.0), GameSequence/gamesequence.cpp (2.0),
+	GameSequence/gamesequence.h (2.0), Gamesnd/eventmusic.cpp (2.0),
+	Gamesnd/eventmusic.h (2.0), Gamesnd/gamesnd.cpp (2.0),
+	Gamesnd/gamesnd.h (2.0), Glide/3dfx.h (2.0), Glide/fxdll.h (2.0),
+	Glide/fxglob.h (2.0), Glide/fxos.h (2.0), Glide/glide.cpp (2.0),
+	Glide/glide.h (2.0), Glide/glidesys.h (2.0), Glide/glideutl.h
+	(2.0), Glide/sst1vid.h (2.0), GlobalIncs/alphacolors.cpp (2.0),
+	GlobalIncs/alphacolors.h (2.0), GlobalIncs/crypt.cpp (2.0),
+	GlobalIncs/crypt.h (2.0), GlobalIncs/linklist.h (2.0),
+	GlobalIncs/pstypes.h (2.0), GlobalIncs/systemvars.cpp (2.0),
+	GlobalIncs/systemvars.h (2.0), GlobalIncs/version.cpp (2.0),
+	GlobalIncs/version.h (2.0), GlobalIncs/windebug.cpp (2.0),
+	Graphics/2d.cpp (2.0), Graphics/2d.h (2.0), Graphics/aaline.cpp
+	(2.0), Graphics/bitblt.cpp (2.0), Graphics/bitblt.h (2.0),
+	Graphics/circle.cpp (2.0), Graphics/circle.h (2.0),
+	Graphics/colors.cpp (2.0), Graphics/colors.h (2.0),
+	Graphics/font.cpp (2.0), Graphics/font.h (2.0),
+	Graphics/gradient.cpp (2.0), Graphics/gradient.h (2.0),
+	Graphics/grd3d.cpp (2.0), Graphics/grd3d.h (2.0),
+	Graphics/grd3dinternal.h (2.0), Graphics/grd3drender.cpp (2.0),
+	Graphics/grd3dtexture.cpp (2.0), Graphics/grdirectdraw.cpp (2.0),
+	Graphics/grdirectdraw.h (2.0), Graphics/grglide.cpp (2.0),
+	Graphics/grglide.h (2.0), Graphics/grglideinternal.h (2.0),
+	Graphics/grglidetexture.cpp (2.0), Graphics/grinternal.h (2.0),
+	Graphics/gropengl.h (2.0), Graphics/grsoft.cpp (2.0),
+	Graphics/grsoft.h (2.0), Graphics/grzbuffer.cpp (2.0),
+	Graphics/grzbuffer.h (2.0), Graphics/line.cpp (2.0),
+	Graphics/line.h (2.0), Graphics/pixel.cpp (2.0), Graphics/pixel.h
+	(2.0), Graphics/rect.cpp (2.0), Graphics/rect.h (2.0),
+	Graphics/scaler.cpp (2.0), Graphics/scaler.h (2.0),
+	Graphics/shade.cpp (2.0), Graphics/shade.h (2.0),
+	Graphics/tmapgenericscans.cpp (2.0), Graphics/tmapper.cpp (2.0),
+	Graphics/tmapper.h (2.0), Graphics/tmapscanline.cpp (2.0),
+	Graphics/tmapscanline.h (2.0), Graphics/tmapscantiled128x128.cpp
+	(2.0), Graphics/tmapscantiled16x16.cpp (2.0),
+	Graphics/tmapscantiled256x256.cpp (2.0),
+	Graphics/tmapscantiled32x32.cpp (2.0),
+	Graphics/tmapscantiled64x64.cpp (2.0), Hud/hud.cpp (2.0), Hud/hud.h
+	(2.0), Hud/hudartillery.cpp (2.0), Hud/hudartillery.h (2.0),
+	Hud/hudbrackets.cpp (2.0), Hud/hudbrackets.h (2.0),
+	Hud/hudconfig.cpp (2.0), Hud/hudconfig.h (2.0), Hud/hudescort.cpp
+	(2.0), Hud/hudescort.h (2.0), Hud/hudets.cpp (2.0), Hud/hudets.h
+	(2.0), Hud/hudgauges.h (2.0), Hud/hudlock.cpp (2.0), Hud/hudlock.h
+	(2.0), Hud/hudmessage.cpp (2.0), Hud/hudmessage.h (2.0),
+	Hud/hudobserver.cpp (2.0), Hud/hudobserver.h (2.0),
+	Hud/hudresource.cpp (2.0), Hud/hudresource.h (2.0),
+	Hud/hudreticle.cpp (2.0), Hud/hudreticle.h (2.0), Hud/hudshield.cpp
+	(2.0), Hud/hudshield.h (2.0), Hud/hudsquadmsg.cpp (2.0),
+	Hud/hudsquadmsg.h (2.0), Hud/hudtarget.cpp (2.0), Hud/hudtarget.h
+	(2.0), Hud/hudtargetbox.cpp (2.0), Hud/hudtargetbox.h (2.0),
+	Hud/hudwingmanstatus.cpp (2.0), Hud/hudwingmanstatus.h (2.0),
+	Inetfile/cftp.cpp (2.0), Inetfile/cftp.h (2.0),
+	Inetfile/chttpget.cpp (2.0), Inetfile/chttpget.h (2.0),
+	Inetfile/inetgetfile.cpp (2.0), Inetfile/inetgetfile.h (2.0),
+	Io/joy.cpp (2.0), Io/joy.h (2.0), Io/joy_ff.cpp (2.0), Io/joy_ff.h
+	(2.0), Io/key.cpp (2.0), Io/key.h (2.0), Io/keycontrol.cpp (2.0),
+	Io/keycontrol.h (2.0), Io/mouse.cpp (2.0), Io/mouse.h (2.0),
+	Io/sw_error.hpp (2.0), Io/sw_force.h (2.0), Io/sw_guid.hpp (2.0),
+	Io/swff_lib.cpp (2.0), Io/timer.cpp (2.0), Io/timer.h (2.0),
+	JumpNode/jumpnode.cpp (2.0), JumpNode/jumpnode.h (2.0),
+	Lighting/lighting.cpp (2.0), Lighting/lighting.h (2.0),
+	Localization/fhash.cpp (2.0), Localization/fhash.h (2.0),
+	Localization/localize.cpp (2.0), Localization/localize.h (2.0),
+	Math/fix.cpp (2.0), Math/fix.h (2.0), Math/floating.cpp (2.0),
+	Math/floating.h (2.0), Math/fvi.cpp (2.0), Math/fvi.h (2.0),
+	Math/spline.cpp (2.0), Math/spline.h (2.0), Math/staticrand.cpp
+	(2.0), Math/staticrand.h (2.0), Math/vecmat.cpp (2.0),
+	Math/vecmat.h (2.0), MenuUI/barracks.cpp (2.0), MenuUI/barracks.h
+	(2.0), MenuUI/credits.cpp (2.0), MenuUI/credits.h (2.0),
+	MenuUI/fishtank.cpp (2.0), MenuUI/fishtank.h (2.0),
+	MenuUI/mainhallmenu.cpp (2.0), MenuUI/mainhallmenu.h (2.0),
+	MenuUI/mainhalltemp.cpp (2.0), MenuUI/mainhalltemp.h (2.0),
+	MenuUI/optionsmenu.cpp (2.0), MenuUI/optionsmenu.h (2.0),
+	MenuUI/optionsmenumulti.cpp (2.0), MenuUI/optionsmenumulti.h (2.0),
+	MenuUI/playermenu.cpp (2.0), MenuUI/playermenu.h (2.0),
+	MenuUI/readyroom.cpp (2.0), MenuUI/readyroom.h (2.0),
+	MenuUI/snazzyui.cpp (2.0), MenuUI/snazzyui.h (2.0),
+	MenuUI/techmenu.cpp (2.0), MenuUI/techmenu.h (2.0),
+	MenuUI/trainingmenu.cpp (2.0), MenuUI/trainingmenu.h (2.0),
+	Mission/missionbriefcommon.cpp (2.0), Mission/missionbriefcommon.h
+	(2.0), Mission/missioncampaign.cpp (2.0), Mission/missioncampaign.h
+	(2.0), Mission/missiongoals.cpp (2.0), Mission/missiongoals.h
+	(2.0), Mission/missiongrid.cpp (2.0), Mission/missiongrid.h (2.0),
+	Mission/missionhotkey.cpp (2.0), Mission/missionhotkey.h (2.0),
+	Mission/missionload.cpp (2.0), Mission/missionload.h (2.0),
+	Mission/missionlog.cpp (2.0), Mission/missionlog.h (2.0),
+	Mission/missionmessage.cpp (2.0), Mission/missionmessage.h (2.0),
+	Mission/missionparse.cpp (2.0), Mission/missionparse.h (2.0),
+	Mission/missiontraining.cpp (2.0), Mission/missiontraining.h (2.0),
+	MissionUI/chatbox.cpp (2.0), MissionUI/chatbox.h (2.0),
+	MissionUI/missionbrief.cpp (2.0), MissionUI/missionbrief.h (2.0),
+	MissionUI/missioncmdbrief.cpp (2.0), MissionUI/missioncmdbrief.h
+	(2.0), MissionUI/missiondebrief.cpp (2.0),
+	MissionUI/missiondebrief.h (2.0), MissionUI/missionloopbrief.cpp
+	(2.0), MissionUI/missionloopbrief.h (2.0),
+	MissionUI/missionpause.cpp (2.0), MissionUI/missionpause.h (2.0),
+	MissionUI/missionrecommend.cpp (2.0), MissionUI/missionrecommend.h
+	(2.0), MissionUI/missionscreencommon.cpp (2.0),
+	MissionUI/missionscreencommon.h (2.0),
+	MissionUI/missionshipchoice.cpp (2.0),
+	MissionUI/missionshipchoice.h (2.0), MissionUI/missionstats.cpp
+	(2.0), MissionUI/missionstats.h (2.0),
+	MissionUI/missionweaponchoice.cpp (2.0),
+	MissionUI/missionweaponchoice.h (2.0), MissionUI/redalert.cpp
+	(2.0), MissionUI/redalert.h (2.0), Model/model.h (2.0),
+	Model/modelcollide.cpp (2.0), Model/modelinterp.cpp (2.0),
+	Model/modeloctant.cpp (2.0), Model/modelread.cpp (2.0),
+	Model/modelsinc.h (2.0), Nebula/neb.cpp (2.0), Nebula/neb.h (2.0),
+	Nebula/neblightning.cpp (2.0), Nebula/neblightning.h (2.0),
+	Network/multi.cpp (2.0), Network/multi.h (2.0),
+	Network/multi_campaign.cpp (2.0), Network/multi_campaign.h (2.0),
+	Network/multi_data.cpp (2.0), Network/multi_data.h (2.0),
+	Network/multi_dogfight.cpp (2.0), Network/multi_dogfight.h (2.0),
+	Network/multi_endgame.cpp (2.0), Network/multi_endgame.h (2.0),
+	Network/multi_ingame.cpp (2.0), Network/multi_ingame.h (2.0),
+	Network/multi_kick.cpp (2.0), Network/multi_kick.h (2.0),
+	Network/multi_log.cpp (2.0), Network/multi_log.h (2.0),
+	Network/multi_obj.cpp (2.0), Network/multi_obj.h (2.0),
+	Network/multi_observer.cpp (2.0), Network/multi_observer.h (2.0),
+	Network/multi_oo.cpp (2.0), Network/multi_oo.h (2.0),
+	Network/multi_options.cpp (2.0), Network/multi_options.h (2.0),
+	Network/multi_pause.cpp (2.0), Network/multi_pause.h (2.0),
+	Network/multi_pinfo.cpp (2.0), Network/multi_pinfo.h (2.0),
+	Network/multi_ping.cpp (2.0), Network/multi_ping.h (2.0),
+	Network/multi_pmsg.cpp (2.0), Network/multi_pmsg.h (2.0),
+	Network/multi_rate.cpp (2.0), Network/multi_rate.h (2.0),
+	Network/multi_respawn.cpp (2.0), Network/multi_respawn.h (2.0),
+	Network/multi_team.cpp (2.0), Network/multi_team.h (2.0),
+	Network/multi_update.cpp (2.0), Network/multi_update.h (2.0),
+	Network/multi_voice.cpp (2.0), Network/multi_voice.h (2.0),
+	Network/multi_xfer.cpp (2.0), Network/multi_xfer.h (2.0),
+	Network/multilag.cpp (2.0), Network/multilag.h (2.0),
+	Network/multimsgs.cpp (2.0), Network/multimsgs.h (2.0),
+	Network/multiteamselect.cpp (2.0), Network/multiteamselect.h (2.0),
+	Network/multiui.cpp (2.0), Network/multiui.h (2.0),
+	Network/multiutil.cpp (2.0), Network/multiutil.h (2.0),
+	Network/psnet.cpp (2.0), Network/psnet.h (2.0), Network/psnet2.cpp
+	(2.0), Network/psnet2.h (2.0), Network/stand_gui.cpp (2.0),
+	Network/stand_gui.h (2.0), Object/collidedebrisship.cpp (2.0),
+	Object/collidedebrisweapon.cpp (2.0), Object/collideshipship.cpp
+	(2.0), Object/collideshipweapon.cpp (2.0),
+	Object/collideweaponweapon.cpp (2.0), Object/objcollide.cpp (2.0),
+	Object/objcollide.h (2.0), Object/object.cpp (2.0), Object/object.h
+	(2.0), Object/objectsnd.cpp (2.0), Object/objectsnd.h (2.0),
+	Object/objectsort.cpp (2.0), Observer/observer.cpp (2.0),
+	Observer/observer.h (2.0), OsApi/monopub.h (2.0), OsApi/osapi.cpp
+	(2.0), OsApi/osapi.h (2.0), OsApi/osregistry.cpp (2.0),
+	OsApi/osregistry.h (2.0), OsApi/outwnd.cpp (2.0), OsApi/outwnd.h
+	(2.0), Palman/palman.cpp (2.0), Palman/palman.h (2.0),
+	Parse/encrypt.cpp (2.0), Parse/encrypt.h (2.0), Parse/parselo.cpp
+	(2.0), Parse/parselo.h (2.0), Parse/sexp.cpp (2.0), Parse/sexp.h
+	(2.0), Particle/particle.cpp (2.0), Particle/particle.h (2.0),
+	PcxUtils/pcxutils.cpp (2.0), PcxUtils/pcxutils.h (2.0),
+	Physics/physics.cpp (2.0), Physics/physics.h (2.0),
+	Playerman/managepilot.cpp (2.0), Playerman/managepilot.h (2.0),
+	Playerman/player.h (2.0), Playerman/playercontrol.cpp (2.0),
+	Popup/popup.cpp (2.0), Popup/popup.h (2.0), Popup/popupdead.cpp
+	(2.0), Popup/popupdead.h (2.0), Radar/radar.cpp (2.0),
+	Radar/radar.h (2.0), Render/3d.h (2.0), Render/3dclipper.cpp (2.0),
+	Render/3ddraw.cpp (2.0), Render/3dinternal.h (2.0),
+	Render/3dlaser.cpp (2.0), Render/3dmath.cpp (2.0),
+	Render/3dsetup.cpp (2.0), Scramble/scramble.cpp (2.0),
+	Scramble/scramble.h (2.0), Ship/afterburner.cpp (2.0),
+	Ship/afterburner.h (2.0), Ship/ai.cpp (2.0), Ship/ai.h (2.0),
+	Ship/aibig.cpp (2.0), Ship/aibig.h (2.0), Ship/aicode.cpp (2.0),
+	Ship/aigoals.cpp (2.0), Ship/aigoals.h (2.0), Ship/ailocal.h (2.0),
+	Ship/awacs.cpp (2.0), Ship/awacs.h (2.0), Ship/shield.cpp (2.0),
+	Ship/ship.cpp (2.0), Ship/ship.h (2.0), Ship/shipcontrails.cpp
+	(2.0), Ship/shipcontrails.h (2.0), Ship/shipfx.cpp (2.0),
+	Ship/shipfx.h (2.0), Ship/shiphit.cpp (2.0), Ship/shiphit.h (2.0),
+	Ship/subsysdamage.h (2.0), Sound/acm.cpp (2.0), Sound/acm.h (2.0),
+	Sound/audiostr.cpp (2.0), Sound/audiostr.h (2.0), Sound/channel.h
+	(2.0), Sound/ds.cpp (2.0), Sound/ds.h (2.0), Sound/ds3d.cpp (2.0),
+	Sound/ds3d.h (2.0), Sound/dscap.cpp (2.0), Sound/dscap.h (2.0),
+	Sound/midifile.cpp (2.0), Sound/midifile.h (2.0), Sound/midiseq.h
+	(2.0), Sound/rbaudio.cpp (2.0), Sound/rbaudio.h (2.0),
+	Sound/rtvoice.cpp (2.0), Sound/rtvoice.h (2.0), Sound/sound.cpp
+	(2.0), Sound/sound.h (2.0), Sound/winmidi.cpp (2.0),
+	Sound/winmidi.h (2.0), Sound/winmidi_base.cpp (2.0),
+	Starfield/nebula.cpp (2.0), Starfield/nebula.h (2.0),
+	Starfield/starfield.cpp (2.0), Starfield/starfield.h (2.0),
+	Starfield/supernova.cpp (2.0), Starfield/supernova.h (2.0),
+	Stats/medals.cpp (2.0), Stats/medals.h (2.0), Stats/scoring.cpp
+	(2.0), Stats/scoring.h (2.0), Stats/stats.cpp (2.0), Stats/stats.h
+	(2.0), TgaUtils/tgautils.cpp (2.0), TgaUtils/tgautils.h (2.0),
+	UI/button.cpp (2.0), UI/checkbox.cpp (2.0), UI/gadget.cpp (2.0),
+	UI/icon.cpp (2.0), UI/inputbox.cpp (2.0), UI/keytrap.cpp (2.0),
+	UI/listbox.cpp (2.0), UI/radio.cpp (2.0), UI/scroll.cpp (2.0),
+	UI/slider.cpp (2.0), UI/slider2.cpp (2.0), UI/ui.h (2.0),
+	UI/uidefs.h (2.0), UI/uidraw.cpp (2.0), UI/uimouse.cpp (2.0),
+	UI/window.cpp (2.0), VCodec/codec1.cpp (2.0), VCodec/codec1.h
+	(2.0), Weapon/beam.cpp (2.0), Weapon/beam.h (2.0),
+	Weapon/corkscrew.cpp (2.0), Weapon/corkscrew.h (2.0),
+	Weapon/emp.cpp (2.0), Weapon/emp.h (2.0), Weapon/flak.cpp (2.0),
+	Weapon/flak.h (2.0), Weapon/muzzleflash.cpp (2.0),
+	Weapon/muzzleflash.h (2.0), Weapon/shockwave.cpp (2.0),
+	Weapon/shockwave.h (2.0), Weapon/swarm.cpp (2.0), Weapon/swarm.h
+	(2.0), Weapon/trails.cpp (2.0), Weapon/trails.h (2.0),
+	Weapon/weapon.h (2.0), Weapon/weapons.cpp (2.0) (utags:
+	fs2_open_0_1):
+	
+	Warpcore CVS sync
+
+2002-06-03 03:55  penguin
+
+	* Graphics/gropengl.cpp (2.0, fs2_open_0_1):
+	
+	Warpcore CVS sync
+
+2002-06-03 03:25  penguin
+
+	* Makefile (1.1), Anim/animplay.cpp (1.1), Anim/animplay.h (1.1),
+	Anim/packunpack.cpp (1.1), Anim/packunpack.h (1.1),
+	Asteroid/asteroid.cpp (1.1), Asteroid/asteroid.h (1.1),
+	Bmpman/bmpman.cpp (1.1), Bmpman/bmpman.h (1.1), CFile/cfile.cpp
+	(1.1), CFile/cfile.h (1.1), CFile/cfilearchive.cpp (1.1),
+	CFile/cfilearchive.h (1.1), CFile/cfilelist.cpp (1.1),
+	CFile/cfilesystem.cpp (1.1), CFile/cfilesystem.h (1.1),
+	CMeasure/cmeasure.cpp (1.1), CMeasure/cmeasure.h (1.1),
+	Cfilearchiver/cfilearchiver.cpp (1.1), Cmdline/cmdline.cpp (1.1),
+	Cmdline/cmdline.h (1.1), ControlConfig/controlsconfig.cpp (1.1),
+	ControlConfig/controlsconfig.h (1.1),
+	ControlConfig/controlsconfigcommon.cpp (1.1),
+	Cryptstring/cryptstring.cpp (1.1), Cutscene/cutscenes.cpp (1.1),
+	Cutscene/cutscenes.h (1.1), Debris/debris.cpp (1.1),
+	Debris/debris.h (1.1), DebugConsole/console.cpp (1.1),
+	Demo/demo.cpp (1.1), Demo/demo.h (1.1), DirectX/vasync.h (1.1),
+	DirectX/vd3d.h (1.1), DirectX/vd3dcaps.h (1.1), DirectX/vd3di.h
+	(1.1), DirectX/vd3drm.h (1.1), DirectX/vd3drmdef.h (1.1),
+	DirectX/vd3drmobj.h (1.1), DirectX/vd3drmwin.h (1.1),
+	DirectX/vd3dtypes.h (1.1), DirectX/vd3dvec.inl (1.1),
+	DirectX/vddraw.h (1.1), DirectX/vddraw.lib (1.1), DirectX/vdinput.h
+	(1.1), DirectX/vdinput.lib (1.1), DirectX/vdplay.h (1.1),
+	DirectX/vdplobby.h (1.1), DirectX/vdsetup.h (1.1),
+	DirectX/vdsound.h (1.1), DirectX/vdsound.lib (1.1), DirectX/vdvp.h
+	(1.1), DirectX/vdxguid.lib (1.1),
+	ExceptionHandler/exceptionhandler.cpp (1.1),
+	ExceptionHandler/exceptionhandler.h (1.1), FREESPACE2/app_icon.ico
+	(1.1), FREESPACE2/freespace.cpp (1.1), FREESPACE2/freespace.h
+	(1.1), FREESPACE2/freespace.rc (1.1),
+	FREESPACE2/freespaceresource.h (1.1), FREESPACE2/goal_com.bmp
+	(1.1), FREESPACE2/goal_fail.bmp (1.1), FREESPACE2/goal_inc.bmp
+	(1.1), FREESPACE2/goal_none.bmp (1.1), FREESPACE2/goal_ord.bmp
+	(1.1), FREESPACE2/levelpaging.cpp (1.1), FREESPACE2/levelpaging.h
+	(1.1), Fireball/fireballs.cpp (1.1), Fireball/fireballs.h (1.1),
+	Fireball/warpineffect.cpp (1.1), GameHelp/contexthelp.cpp (1.1),
+	GameHelp/contexthelp.h (1.1), GameHelp/gameplayhelp.cpp (1.1),
+	GameHelp/gameplayhelp.h (1.1), GameSequence/gamesequence.cpp (1.1),
+	GameSequence/gamesequence.h (1.1), Gamesnd/eventmusic.cpp (1.1),
+	Gamesnd/eventmusic.h (1.1), Gamesnd/gamesnd.cpp (1.1),
+	Gamesnd/gamesnd.h (1.1), Glide/3dfx.h (1.1), Glide/fxdll.h (1.1),
+	Glide/fxglob.h (1.1), Glide/fxos.h (1.1), Glide/glide.cpp (1.1),
+	Glide/glide.h (1.1), Glide/glidesys.h (1.1), Glide/glideutl.h
+	(1.1), Glide/sst1vid.h (1.1), GlobalIncs/alphacolors.cpp (1.1),
+	GlobalIncs/alphacolors.h (1.1), GlobalIncs/crypt.cpp (1.1),
+	GlobalIncs/crypt.h (1.1), GlobalIncs/linklist.h (1.1),
+	GlobalIncs/pstypes.h (1.1), GlobalIncs/systemvars.cpp (1.1),
+	GlobalIncs/systemvars.h (1.1), GlobalIncs/version.cpp (1.1),
+	GlobalIncs/version.h (1.1), GlobalIncs/windebug.cpp (1.1),
+	Graphics/2d.cpp (1.1), Graphics/2d.h (1.1), Graphics/aaline.cpp
+	(1.1), Graphics/bitblt.cpp (1.1), Graphics/bitblt.h (1.1),
+	Graphics/circle.cpp (1.1), Graphics/circle.h (1.1),
+	Graphics/colors.cpp (1.1), Graphics/colors.h (1.1),
+	Graphics/font.cpp (1.1), Graphics/font.h (1.1),
+	Graphics/gradient.cpp (1.1), Graphics/gradient.h (1.1),
+	Graphics/grd3d.cpp (1.1), Graphics/grd3d.h (1.1),
+	Graphics/grd3dinternal.h (1.1), Graphics/grd3drender.cpp (1.1),
+	Graphics/grd3dtexture.cpp (1.1), Graphics/grdirectdraw.cpp (1.1),
+	Graphics/grdirectdraw.h (1.1), Graphics/grglide.cpp (1.1),
+	Graphics/grglide.h (1.1), Graphics/grglideinternal.h (1.1),
+	Graphics/grglidetexture.cpp (1.1), Graphics/grinternal.h (1.1),
+	Graphics/gropengl.cpp (1.1), Graphics/gropengl.h (1.1),
+	Graphics/grsoft.cpp (1.1), Graphics/grsoft.h (1.1),
+	Graphics/grzbuffer.cpp (1.1), Graphics/grzbuffer.h (1.1),
+	Graphics/line.cpp (1.1), Graphics/line.h (1.1), Graphics/pixel.cpp
+	(1.1), Graphics/pixel.h (1.1), Graphics/rect.cpp (1.1),
+	Graphics/rect.h (1.1), Graphics/scaler.cpp (1.1), Graphics/scaler.h
+	(1.1), Graphics/shade.cpp (1.1), Graphics/shade.h (1.1),
+	Graphics/tmapgenericscans.cpp (1.1), Graphics/tmapper.cpp (1.1),
+	Graphics/tmapper.h (1.1), Graphics/tmapscanline.cpp (1.1),
+	Graphics/tmapscanline.h (1.1), Graphics/tmapscantiled128x128.cpp
+	(1.1), Graphics/tmapscantiled16x16.cpp (1.1),
+	Graphics/tmapscantiled256x256.cpp (1.1),
+	Graphics/tmapscantiled32x32.cpp (1.1),
+	Graphics/tmapscantiled64x64.cpp (1.1), Hud/hud.cpp (1.1), Hud/hud.h
+	(1.1), Hud/hudartillery.cpp (1.1), Hud/hudartillery.h (1.1),
+	Hud/hudbrackets.cpp (1.1), Hud/hudbrackets.h (1.1),
+	Hud/hudconfig.cpp (1.1), Hud/hudconfig.h (1.1), Hud/hudescort.cpp
+	(1.1), Hud/hudescort.h (1.1), Hud/hudets.cpp (1.1), Hud/hudets.h
+	(1.1), Hud/hudgauges.h (1.1), Hud/hudlock.cpp (1.1), Hud/hudlock.h
+	(1.1), Hud/hudmessage.cpp (1.1), Hud/hudmessage.h (1.1),
+	Hud/hudobserver.cpp (1.1), Hud/hudobserver.h (1.1),
+	Hud/hudresource.cpp (1.1), Hud/hudresource.h (1.1),
+	Hud/hudreticle.cpp (1.1), Hud/hudreticle.h (1.1), Hud/hudshield.cpp
+	(1.1), Hud/hudshield.h (1.1), Hud/hudsquadmsg.cpp (1.1),
+	Hud/hudsquadmsg.h (1.1), Hud/hudtarget.cpp (1.1), Hud/hudtarget.h
+	(1.1), Hud/hudtargetbox.cpp (1.1), Hud/hudtargetbox.h (1.1),
+	Hud/hudwingmanstatus.cpp (1.1), Hud/hudwingmanstatus.h (1.1),
+	Inetfile/cftp.cpp (1.1), Inetfile/cftp.h (1.1),
+	Inetfile/chttpget.cpp (1.1), Inetfile/chttpget.h (1.1),
+	Inetfile/inetgetfile.cpp (1.1), Inetfile/inetgetfile.h (1.1),
+	Io/joy.cpp (1.1), Io/joy.h (1.1), Io/joy_ff.cpp (1.1), Io/joy_ff.h
+	(1.1), Io/key.cpp (1.1), Io/key.h (1.1), Io/keycontrol.cpp (1.1),
+	Io/keycontrol.h (1.1), Io/mouse.cpp (1.1), Io/mouse.h (1.1),
+	Io/sw_error.hpp (1.1), Io/sw_force.h (1.1), Io/sw_guid.hpp (1.1),
+	Io/swff_lib.cpp (1.1), Io/timer.cpp (1.1), Io/timer.h (1.1),
+	JumpNode/jumpnode.cpp (1.1), JumpNode/jumpnode.h (1.1),
+	Lighting/lighting.cpp (1.1), Lighting/lighting.h (1.1),
+	Localization/fhash.cpp (1.1), Localization/fhash.h (1.1),
+	Localization/localize.cpp (1.1), Localization/localize.h (1.1),
+	Math/fix.cpp (1.1), Math/fix.h (1.1), Math/floating.cpp (1.1),
+	Math/floating.h (1.1), Math/fvi.cpp (1.1), Math/fvi.h (1.1),
+	Math/spline.cpp (1.1), Math/spline.h (1.1), Math/staticrand.cpp
+	(1.1), Math/staticrand.h (1.1), Math/vecmat.cpp (1.1),
+	Math/vecmat.h (1.1), MenuUI/barracks.cpp (1.1), MenuUI/barracks.h
+	(1.1), MenuUI/credits.cpp (1.1), MenuUI/credits.h (1.1),
+	MenuUI/fishtank.cpp (1.1), MenuUI/fishtank.h (1.1),
+	MenuUI/mainhallmenu.cpp (1.1), MenuUI/mainhallmenu.h (1.1),
+	MenuUI/mainhalltemp.cpp (1.1), MenuUI/mainhalltemp.h (1.1),
+	MenuUI/optionsmenu.cpp (1.1), MenuUI/optionsmenu.h (1.1),
+	MenuUI/optionsmenumulti.cpp (1.1), MenuUI/optionsmenumulti.h (1.1),
+	MenuUI/playermenu.cpp (1.1), MenuUI/playermenu.h (1.1),
+	MenuUI/readyroom.cpp (1.1), MenuUI/readyroom.h (1.1),
+	MenuUI/snazzyui.cpp (1.1), MenuUI/snazzyui.h (1.1),
+	MenuUI/techmenu.cpp (1.1), MenuUI/techmenu.h (1.1),
+	MenuUI/trainingmenu.cpp (1.1), MenuUI/trainingmenu.h (1.1),
+	Mission/missionbriefcommon.cpp (1.1), Mission/missionbriefcommon.h
+	(1.1), Mission/missioncampaign.cpp (1.1), Mission/missioncampaign.h
+	(1.1), Mission/missiongoals.cpp (1.1), Mission/missiongoals.h
+	(1.1), Mission/missiongrid.cpp (1.1), Mission/missiongrid.h (1.1),
+	Mission/missionhotkey.cpp (1.1), Mission/missionhotkey.h (1.1),
+	Mission/missionload.cpp (1.1), Mission/missionload.h (1.1),
+	Mission/missionlog.cpp (1.1), Mission/missionlog.h (1.1),
+	Mission/missionmessage.cpp (1.1), Mission/missionmessage.h (1.1),
+	Mission/missionparse.cpp (1.1), Mission/missionparse.h (1.1),
+	Mission/missiontraining.cpp (1.1), Mission/missiontraining.h (1.1),
+	MissionUI/chatbox.cpp (1.1), MissionUI/chatbox.h (1.1),
+	MissionUI/missionbrief.cpp (1.1), MissionUI/missionbrief.h (1.1),
+	MissionUI/missioncmdbrief.cpp (1.1), MissionUI/missioncmdbrief.h
+	(1.1), MissionUI/missiondebrief.cpp (1.1),
+	MissionUI/missiondebrief.h (1.1), MissionUI/missionloopbrief.cpp
+	(1.1), MissionUI/missionloopbrief.h (1.1),
+	MissionUI/missionpause.cpp (1.1), MissionUI/missionpause.h (1.1),
+	MissionUI/missionrecommend.cpp (1.1), MissionUI/missionrecommend.h
+	(1.1), MissionUI/missionscreencommon.cpp (1.1),
+	MissionUI/missionscreencommon.h (1.1),
+	MissionUI/missionshipchoice.cpp (1.1),
+	MissionUI/missionshipchoice.h (1.1), MissionUI/missionstats.cpp
+	(1.1), MissionUI/missionstats.h (1.1),
+	MissionUI/missionweaponchoice.cpp (1.1),
+	MissionUI/missionweaponchoice.h (1.1), MissionUI/redalert.cpp
+	(1.1), MissionUI/redalert.h (1.1), Model/model.h (1.1),
+	Model/modelcollide.cpp (1.1), Model/modelinterp.cpp (1.1),
+	Model/modeloctant.cpp (1.1), Model/modelread.cpp (1.1),
+	Model/modelsinc.h (1.1), Nebula/neb.cpp (1.1), Nebula/neb.h (1.1),
+	Nebula/neblightning.cpp (1.1), Nebula/neblightning.h (1.1),
+	Network/multi.cpp (1.1), Network/multi.h (1.1),
+	Network/multi_campaign.cpp (1.1), Network/multi_campaign.h (1.1),
+	Network/multi_data.cpp (1.1), Network/multi_data.h (1.1),
+	Network/multi_dogfight.cpp (1.1), Network/multi_dogfight.h (1.1),
+	Network/multi_endgame.cpp (1.1), Network/multi_endgame.h (1.1),
+	Network/multi_ingame.cpp (1.1), Network/multi_ingame.h (1.1),
+	Network/multi_kick.cpp (1.1), Network/multi_kick.h (1.1),
+	Network/multi_log.cpp (1.1), Network/multi_log.h (1.1),
+	Network/multi_obj.cpp (1.1), Network/multi_obj.h (1.1),
+	Network/multi_observer.cpp (1.1), Network/multi_observer.h (1.1),
+	Network/multi_oo.cpp (1.1), Network/multi_oo.h (1.1),
+	Network/multi_options.cpp (1.1), Network/multi_options.h (1.1),
+	Network/multi_pause.cpp (1.1), Network/multi_pause.h (1.1),
+	Network/multi_pinfo.cpp (1.1), Network/multi_pinfo.h (1.1),
+	Network/multi_ping.cpp (1.1), Network/multi_ping.h (1.1),
+	Network/multi_pmsg.cpp (1.1), Network/multi_pmsg.h (1.1),
+	Network/multi_rate.cpp (1.1), Network/multi_rate.h (1.1),
+	Network/multi_respawn.cpp (1.1), Network/multi_respawn.h (1.1),
+	Network/multi_team.cpp (1.1), Network/multi_team.h (1.1),
+	Network/multi_update.cpp (1.1), Network/multi_update.h (1.1),
+	Network/multi_voice.cpp (1.1), Network/multi_voice.h (1.1),
+	Network/multi_xfer.cpp (1.1), Network/multi_xfer.h (1.1),
+	Network/multilag.cpp (1.1), Network/multilag.h (1.1),
+	Network/multimsgs.cpp (1.1), Network/multimsgs.h (1.1),
+	Network/multiteamselect.cpp (1.1), Network/multiteamselect.h (1.1),
+	Network/multiui.cpp (1.1), Network/multiui.h (1.1),
+	Network/multiutil.cpp (1.1), Network/multiutil.h (1.1),
+	Network/psnet.cpp (1.1), Network/psnet.h (1.1), Network/psnet2.cpp
+	(1.1), Network/psnet2.h (1.1), Network/stand_gui.cpp (1.1),
+	Network/stand_gui.h (1.1), Object/collidedebrisship.cpp (1.1),
+	Object/collidedebrisweapon.cpp (1.1), Object/collideshipship.cpp
+	(1.1), Object/collideshipweapon.cpp (1.1),
+	Object/collideweaponweapon.cpp (1.1), Object/objcollide.cpp (1.1),
+	Object/objcollide.h (1.1), Object/object.cpp (1.1), Object/object.h
+	(1.1), Object/objectsnd.cpp (1.1), Object/objectsnd.h (1.1),
+	Object/objectsort.cpp (1.1), Observer/observer.cpp (1.1),
+	Observer/observer.h (1.1), OsApi/monopub.h (1.1), OsApi/osapi.cpp
+	(1.1), OsApi/osapi.h (1.1), OsApi/osregistry.cpp (1.1),
+	OsApi/osregistry.h (1.1), OsApi/outwnd.cpp (1.1), OsApi/outwnd.h
+	(1.1), Palman/palman.cpp (1.1), Palman/palman.h (1.1),
+	Parse/encrypt.cpp (1.1), Parse/encrypt.h (1.1), Parse/parselo.cpp
+	(1.1), Parse/parselo.h (1.1), Parse/sexp.cpp (1.1), Parse/sexp.h
+	(1.1), Particle/particle.cpp (1.1), Particle/particle.h (1.1),
+	PcxUtils/pcxutils.cpp (1.1), PcxUtils/pcxutils.h (1.1),
+	Physics/physics.cpp (1.1), Physics/physics.h (1.1),
+	Playerman/managepilot.cpp (1.1), Playerman/managepilot.h (1.1),
+	Playerman/player.h (1.1), Playerman/playercontrol.cpp (1.1),
+	Popup/popup.cpp (1.1), Popup/popup.h (1.1), Popup/popupdead.cpp
+	(1.1), Popup/popupdead.h (1.1), Radar/radar.cpp (1.1),
+	Radar/radar.h (1.1), Render/3d.h (1.1), Render/3dclipper.cpp (1.1),
+	Render/3ddraw.cpp (1.1), Render/3dinternal.h (1.1),
+	Render/3dlaser.cpp (1.1), Render/3dmath.cpp (1.1),
+	Render/3dsetup.cpp (1.1), Scramble/scramble.cpp (1.1),
+	Scramble/scramble.h (1.1), Ship/afterburner.cpp (1.1),
+	Ship/afterburner.h (1.1), Ship/ai.cpp (1.1), Ship/ai.h (1.1),
+	Ship/aibig.cpp (1.1), Ship/aibig.h (1.1), Ship/aicode.cpp (1.1),
+	Ship/aigoals.cpp (1.1), Ship/aigoals.h (1.1), Ship/ailocal.h (1.1),
+	Ship/awacs.cpp (1.1), Ship/awacs.h (1.1), Ship/shield.cpp (1.1),
+	Ship/ship.cpp (1.1), Ship/ship.h (1.1), Ship/shipcontrails.cpp
+	(1.1), Ship/shipcontrails.h (1.1), Ship/shipfx.cpp (1.1),
+	Ship/shipfx.h (1.1), Ship/shiphit.cpp (1.1), Ship/shiphit.h (1.1),
+	Ship/subsysdamage.h (1.1), Sound/acm.cpp (1.1), Sound/acm.h (1.1),
+	Sound/audiostr.cpp (1.1), Sound/audiostr.h (1.1), Sound/channel.h
+	(1.1), Sound/ds.cpp (1.1), Sound/ds.h (1.1), Sound/ds3d.cpp (1.1),
+	Sound/ds3d.h (1.1), Sound/dscap.cpp (1.1), Sound/dscap.h (1.1),
+	Sound/midifile.cpp (1.1), Sound/midifile.h (1.1), Sound/midiseq.h
+	(1.1), Sound/rbaudio.cpp (1.1), Sound/rbaudio.h (1.1),
+	Sound/rtvoice.cpp (1.1), Sound/rtvoice.h (1.1), Sound/sound.cpp
+	(1.1), Sound/sound.h (1.1), Sound/winmidi.cpp (1.1),
+	Sound/winmidi.h (1.1), Sound/winmidi_base.cpp (1.1),
+	Starfield/nebula.cpp (1.1), Starfield/nebula.h (1.1),
+	Starfield/starfield.cpp (1.1), Starfield/starfield.h (1.1),
+	Starfield/supernova.cpp (1.1), Starfield/supernova.h (1.1),
+	Stats/medals.cpp (1.1), Stats/medals.h (1.1), Stats/scoring.cpp
+	(1.1), Stats/scoring.h (1.1), Stats/stats.cpp (1.1), Stats/stats.h
+	(1.1), TgaUtils/tgautils.cpp (1.1), TgaUtils/tgautils.h (1.1),
+	UI/button.cpp (1.1), UI/checkbox.cpp (1.1), UI/gadget.cpp (1.1),
+	UI/icon.cpp (1.1), UI/inputbox.cpp (1.1), UI/keytrap.cpp (1.1),
+	UI/listbox.cpp (1.1), UI/radio.cpp (1.1), UI/scroll.cpp (1.1),
+	UI/slider.cpp (1.1), UI/slider2.cpp (1.1), UI/ui.h (1.1),
+	UI/uidefs.h (1.1), UI/uidraw.cpp (1.1), UI/uimouse.cpp (1.1),
+	UI/window.cpp (1.1), VCodec/codec1.cpp (1.1), VCodec/codec1.h
+	(1.1), Weapon/beam.cpp (1.1), Weapon/beam.h (1.1),
+	Weapon/corkscrew.cpp (1.1), Weapon/corkscrew.h (1.1),
+	Weapon/emp.cpp (1.1), Weapon/emp.h (1.1), Weapon/flak.cpp (1.1),
+	Weapon/flak.h (1.1), Weapon/muzzleflash.cpp (1.1),
+	Weapon/muzzleflash.h (1.1), Weapon/shockwave.cpp (1.1),
+	Weapon/shockwave.h (1.1), Weapon/swarm.cpp (1.1), Weapon/swarm.h
+	(1.1), Weapon/trails.cpp (1.1), Weapon/trails.h (1.1),
+	Weapon/weapon.h (1.1), Weapon/weapons.cpp (1.1) (utags:
+	volition_import):
+	
+	Volition sources -- warpcore CVS import
+
+
+# generated by cvs2cl.pl
