@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-01-10 04:45:09 $
+ * $Revision: 2.26 $
+ * $Date: 2005-01-28 03:00:56 $
  * $Author: wmcoolmon $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/01/10 04:45:09  wmcoolmon
+ * Debriefing screen updated to only use memory while open
+ *
  * Revision 2.24  2004/07/26 20:47:38  Kazan
  * remove MCD complete
  *
@@ -2197,14 +2200,14 @@ void debrief_setup_ship_kill_stats(int stage_num)
 	int *kill_arr;	//DTP max ships
 	debrief_stats_kill_info	*kill_info;
 
+	Assert(Current_stage < DEBRIEF_NUM_STATS_PAGES);
+	if ( Current_stage == DEBRIEF_MISSION_STATS || Current_stage == DEBRIEF_ALLTIME_STATS )
+		return;
+
 	if(Debrief_stats_kills == NULL)
 	{
 		Debrief_stats_kills = new debrief_stats_kill_info[Num_ship_types];
 	}
-
-	Assert(Current_stage < DEBRIEF_NUM_STATS_PAGES);
-	if ( Current_stage == DEBRIEF_MISSION_STATS || Current_stage == DEBRIEF_ALLTIME_STATS )
-		return;
 
 	Assert(Debrief_player != NULL);
 
