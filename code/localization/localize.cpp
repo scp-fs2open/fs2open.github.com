@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.10 $
- * $Date: 2004-03-28 17:49:55 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2004-05-10 06:14:40 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/03/28 17:49:55  taylor
+ * runtime language selection, mantis:0000133
+ *
  * Revision 2.9  2004/03/05 09:02:05  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -848,7 +851,7 @@ void lcl_replace_stuff(char *text, unsigned int max_len)
 // XSTR("whee", 20)
 // and these should cover all the externalized string cases
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
-void lcl_ext_localize(char *in, char *out, int max_len, int *id)
+void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 {			
 	char first_four[5];
 	char text_str[PARSE_BUF_SIZE]="";
@@ -858,9 +861,6 @@ void lcl_ext_localize(char *in, char *out, int max_len, int *id)
 
 	Assert(in);
 	Assert(out);
-
-	// Goober5000
-	lcl_replace_stuff(in, max_len);
 
 	// default (non-external string) value
 	if(id != NULL){
@@ -947,6 +947,18 @@ void lcl_ext_localize(char *in, char *out, int max_len, int *id)
 	if(id != NULL){
 		*id = str_id;
 	}
+}
+
+// Goober5000 - wrapper for lcl_ext_localize_sub; used because lcl_replace_stuff has to
+// be called *after* the translation is done, and the original function returned in so
+// many places that it would be messy to call lcl_replace_stuff everywhere
+void lcl_ext_localize(char *in, char *out, int max_len, int *id)
+{
+	// do XSTR translation
+	lcl_ext_localize_sub(in, out, max_len, id);
+
+	// do translation of $callsign, $rank, etc.
+	lcl_replace_stuff(out, max_len);
 }
 
 // translate the specified string based upon the current language
