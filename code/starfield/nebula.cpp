@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-11-11 17:59:27 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2004-02-15 06:02:32 $
+ * $Author: bobboau $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/11/11 17:59:27  phreak
+ * made some g3_start_instance_matrix calls not affect any of the HT&L graphics
+ * calls since they were called for internal calculations for 2D stuff
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -312,7 +316,7 @@ void nebula_render()
 	}	
 
 	// Rotate the nebula.
-	g3_start_instance_matrix( NULL, &Nebula_orient, false);
+	g3_start_instance_matrix( NULL, &Nebula_orient, (gr_screen.mode == GR_DIRECT3D));
 
 	for (i=0; i<num_pts; i++ )	{
 		g3_rotate_faraway_vertex( &nebula_verts[i], &nebula_vecs[i] );
@@ -334,7 +338,7 @@ void nebula_render()
 		g3_draw_poly(3, verts, TMAP_FLAG_RAMP | TMAP_FLAG_GOURAUD | TMAP_FLAG_NEBULA );
 	}		
 
-	g3_done_instance();
+	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
 
 	gr_zbuffer_set(saved_gr_zbuffering);
 

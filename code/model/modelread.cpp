@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.30 $
- * $Date: 2004-02-13 04:17:14 $
- * $Author: randomtiger $
+ * $Revision: 2.31 $
+ * $Date: 2004-02-15 06:02:32 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2004/02/13 04:17:14  randomtiger
+ * Turned off fog in OGL for Fred.
+ * Simulated speech doesnt say tags marked by $ now.
+ * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
+ * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
+ * Error now given on missing briefing icon and bad ship normal data.
+ * Solved more species divide by zero error.
+ * Fixed neb cube crash.
+ *
  * Revision 2.29  2004/02/07 01:25:15  Goober5000
  * hehe, fixed the subsystem compare so it's not destructive :-p
  * and also fixed the model checking routine
@@ -2767,7 +2776,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vector * pos,int *x1, 
 
 	po = model_get(model_num);
 
-	g3_start_instance_matrix(pos,orient,false);
+	g3_start_instance_matrix(pos,orient,(gr_screen.mode == GR_DIRECT3D));
 	
 	n_valid_pts = 0;
 
@@ -2813,7 +2822,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vector * pos,int *x1, 
 	if (x2) *x2 = max_x;
 	if (y2) *y2 = max_y;
 
-	g3_done_instance();
+	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
 
 	return rval;
 }
@@ -2833,7 +2842,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vecto
 	if ( (submodel < 0) || (submodel >= po->n_models ) ) return 1;
 	sm = &po->submodel[submodel];
 	
-	g3_start_instance_matrix(pos,orient,false);
+	g3_start_instance_matrix(pos,orient,(gr_screen.mode == GR_DIRECT3D));
 	
 	n_valid_pts = 0;
 
@@ -2877,7 +2886,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vecto
 	if (x2) *x2 = max_x;
 	if (y2) *y2 = max_y;
 
-	g3_done_instance();
+	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
 
 	return 0;
 }

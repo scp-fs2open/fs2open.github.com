@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.8 $
- * $Date: 2004-02-14 00:18:31 $
- * $Author: randomtiger $
+ * $Revision: 2.9 $
+ * $Date: 2004-02-15 06:02:31 $
+ * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/02/14 00:18:31  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.7  2003/11/17 04:25:56  bobboau
  * made the poly list dynamicly alocated,
  * started work on fixing the node model not rendering,
@@ -171,5 +182,7 @@ void d3d_end_clip();
 extern ID3DXMatrixStack *world_matrix_stack;
 extern ID3DXMatrixStack *view_matrix_stack;
 extern ID3DXMatrixStack *proj_matrix_stack;
+
+void gr_d3d_set_texture_addressing(int);
 
 #endif

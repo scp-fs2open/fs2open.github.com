@@ -878,6 +878,8 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_pop_texture_matrix = gr_d3d_pop_texture_matrix;
 	gr_screen.gf_translate_texture_matrix = gr_d3d_translate_texture_matrix;
 
+	gr_screen.gf_set_texture_addressing = gr_d3d_set_texture_addressing;
+
 	if(!Cmdline_nohtl) {
 		gr_screen.gf_make_buffer = gr_d3d_make_buffer;
 		gr_screen.gf_destroy_buffer = gr_d3d_destroy_buffer;

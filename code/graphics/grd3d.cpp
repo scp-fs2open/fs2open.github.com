@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.52 $
- * $Date: 2004-02-15 03:04:25 $
+ * $Revision: 2.53 $
+ * $Date: 2004-02-15 06:02:31 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2004/02/15 03:04:25  bobboau
+ * fixed bug involving 3d shockwaves, note I wasn't able to compile the directshow file, so I ifdefed everything to an older version,
+ * you shouldn't see anything diferent, as the ifdef should be set to the way it should be, if it isn't you will get a warning mesage during compile telling you how to fix it
+ *
  * Revision 2.51  2004/02/14 00:18:31  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -2034,11 +2038,15 @@ void gr_d3d_render_buffer(int idx)
 	d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0);
 //	if(!gr_zbuffering_mode)
 //		gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_NONE);
-	if(gr_zbuffering_mode == GR_ZBUFF_READ){
+	if(gr_zbuffering_mode == GR_ZBUFF_NONE){
+			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_NONE);
+			d3d_SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
+	}else if(gr_zbuffering_mode == GR_ZBUFF_READ){
 			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_READ);
 			d3d_SetRenderState(D3DRS_ZWRITEENABLE,FALSE);
-	}else
+	}else{
 			gr_d3d_set_state(TEXTURE_SOURCE_DECAL, ab, ZBUFFER_TYPE_DEFAULT);
+	}
 
 	if(GR_center_alpha){
 	pre_render_lights_init();
@@ -2208,11 +2216,11 @@ void gr_d3d_end_view_matrix(){
 //	view_matrix_stack->Pop();
 //	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_VIEW, view_matrix_stack->GetTop());
 }
-
+int matr_depth = 0;
 	//object position and orientation
 void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 
-	D3DXMATRIX *old_world = world_matrix_stack->GetTop(), scale_m;
+	D3DXMATRIX old_world = *world_matrix_stack->GetTop(), scale_m;
 	world_matrix_stack->Push();
 
 	D3DXMATRIX world(
@@ -2221,13 +2229,14 @@ void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
 		orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z, 0,
 		offset->xyz.x, offset->xyz.y, offset->xyz.z, 1);
 
-	D3DXMatrixMultiply(&world, old_world, &world);
+	D3DXMatrixMultiply(&world, &world, &old_world);
 
 //	D3DXMatrixScaling(&scale_m, 3.0f, 3.0f, 3.0f);
 //	D3DXMatrixMultiply(&world, &scale_m, &world);
 
 	world_matrix_stack->LoadMatrix(&world);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
+	matr_depth++;
 }
 
 void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient){
@@ -2249,6 +2258,7 @@ void gr_d3d_start_angles_instance_matrix(vector* offset, angles *orient){
 
 	world_matrix_stack->LoadMatrix(&mat);
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
+	matr_depth++;
 
 }
 
@@ -2256,6 +2266,7 @@ void gr_d3d_end_instance_matrix()
 {
 	world_matrix_stack->Pop();
 	GlobalD3DVars::lpD3DDevice->SetTransform(D3DTS_WORLD, world_matrix_stack->GetTop());
+	matr_depth--;
 
 }
 

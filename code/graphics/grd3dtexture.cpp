@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-02-14 00:18:32 $
- * $Author: randomtiger $
+ * $Revision: 2.29 $
+ * $Date: 2004-02-15 06:02:31 $
+ * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/02/14 00:18:32  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.27  2004/01/29 01:34:02  randomtiger
  * Added malloc montoring system, use -show_mem_usage, debug exes only to get an ingame list of heap usage.
  * Also added -d3d_notmanaged flag to activate non managed D3D path, in experimental stage.
@@ -1495,4 +1506,17 @@ bool d3d_read_header_d3dx(char *file, int type, int *w, int *h)
 	return true;
 }
 
-
+//added this to fix AA lines, but then found I didn't need to, 
+//leaving it as it will be very useful later, and a pain to remove
+void gr_d3d_set_texture_addressing(int address){
+	if(address == TMAP_ADDRESS_WRAP){
+	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP  );
+	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP  );
+	}else if(address == TMAP_ADDRESS_MIRROR){
+	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_MIRROR  );
+	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_MIRROR  );
+	}else if(address == TMAP_ADDRESS_CLAMP){
+	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP  );
+	GlobalD3DVars::lpD3DDevice->SetTextureStageState( 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP  );
+	}
+}

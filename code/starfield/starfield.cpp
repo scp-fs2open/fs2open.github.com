@@ -9,14 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-02-14 00:18:36 $
- * $Author: randomtiger $
+ * $Revision: 2.25 $
+ * $Date: 2004-02-15 06:02:32 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/02/14 00:18:36  randomtiger
+ * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
+ * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
+ * Removal of many files from project.
+ * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
+ * Removal of redundant Fred paths that arent needed for Fred OGL.
+ * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
+ * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
+ * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
+ *
  * Revision 2.23  2004/01/19 00:56:10  randomtiger
  * Some more small changes for Fred OGL
  *
@@ -305,6 +316,7 @@
 #include "nebula/neb.h"
 #include "globalincs/alphacolors.h"
 #include "starfield/supernova.h"
+#include "cmdline\cmdline.h"
 
 #define MAX_DEBRIS_VCLIPS	4
 #define DEBRIS_ROT_MIN				10000
@@ -1647,6 +1659,7 @@ void stars_draw_background()
 
 	// draw the model at the player's eye wif no z-buffering
 	model_set_alpha(1.0f);	
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
 
 	if (Nmodel_bitmap > -1) model_set_forced_texture(-1);

@@ -9,18 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.21 $
- * $Date: 2004-02-15 03:04:25 $
+ * $Revision: 2.22 $
+ * $Date: 2004-02-15 06:02:31 $
  * $Author: bobboau $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2004/02/15 03:04:25  bobboau
+ * fixed bug involving 3d shockwaves, note I wasn't able to compile the directshow file, so I ifdefed everything to an older version,
+ * you shouldn't see anything diferent, as the ifdef should be set to the way it should be, if it isn't you will get a warning mesage during compile telling you how to fix it
+ *
  * Revision 2.20  2004/02/14 00:18:31  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
  * Removal of many files from project.
- * Removal of meanless Gr_bitmap_poly variable.
+ * Removal of meanless .
+ _poly variable.
  * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
  * Removal of redundant Fred paths that arent needed for Fred OGL.
  * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
@@ -763,6 +768,8 @@ typedef struct screen {
 	void (*gf_push_texture_matrix)(int unit);
 	void (*gf_pop_texture_matrix)(int unit);
 
+	void (*gf_set_texture_addressing)(int);
+
 	int	 (*gf_make_buffer)(poly_list*);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_render_buffer)(int);
@@ -987,6 +994,8 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 #define bm_page_in_nondarkening_texture  GR_CALL(*gr_screen.gf_bm_page_in_nondarkening_texture)
 #define bm_page_in_xparent_texture 		 GR_CALL(*gr_screen.gf_bm_page_in_xparent_texture)     
 #define bm_page_in_aabitmap				 GR_CALL(*gr_screen.gf_bm_page_in_aabitmap)            
+
+#define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
 #define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)            

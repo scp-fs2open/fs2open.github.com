@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.69 $
- * $Date: 2004-02-15 03:04:25 $
+ * $Revision: 2.70 $
+ * $Date: 2004-02-15 06:02:32 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/02/15 03:04:25  bobboau
+ * fixed bug involving 3d shockwaves, note I wasn't able to compile the directshow file, so I ifdefed everything to an older version,
+ * you shouldn't see anything diferent, as the ifdef should be set to the way it should be, if it isn't you will get a warning mesage during compile telling you how to fix it
+ *
  * Revision 2.68  2004/02/14 00:18:34  randomtiger
  * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
  * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
@@ -2101,7 +2105,7 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
 
 
-	g3_done_instance();
+	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
 }
 
 // Returns one of the following
@@ -3375,7 +3379,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	bool is_outlines_only = !Cmdline_nohtl && (flags & MR_NO_POLYS) && ((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));  
 
 
-	g3_start_instance_matrix(pos,orient, !is_outlines_only);
+	g3_start_instance_matrix(pos,orient, !is_outlines_only && (gr_screen.mode == GR_DIRECT3D));
 
 	if ( Interp_flags & MR_SHOW_RADIUS )	{
 		if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
@@ -3471,7 +3475,7 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
 		vector auto_back = pm->autocenter;				
 		vm_vec_scale(&auto_back, -1.0f);		
-		g3_start_instance_matrix(&auto_back, NULL);		
+		g3_start_instance_matrix(&auto_back, NULL, true);		
 	}	
 
 #ifndef NO_DIRECT3D
@@ -4093,12 +4097,12 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 	}
 
 	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
-		g3_done_instance(!is_outlines_only);
+		g3_done_instance(!is_outlines_only && (gr_screen.mode == GR_DIRECT3D));
 	}
 
 //	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
-	g3_done_instance(!is_outlines_only);
+	g3_done_instance(!is_outlines_only && (gr_screen.mode == GR_DIRECT3D));
 	
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
@@ -5153,7 +5157,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 		}else{
 		//	gr_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
 			gr_set_bitmap( texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0 );
-			gr_zbuffer_set(GR_ZBUFF_FULL);
+	//		gr_zbuffer_set(GR_ZBUFF_FULL);
 		}
 		if((Interp_flags & MR_EDGE_ALPHA))gr_center_alpha(-1);
 		else if((Interp_flags & MR_CENTER_ALPHA))gr_center_alpha(1);

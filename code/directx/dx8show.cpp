@@ -1,4 +1,4 @@
-#if 1 //change this to 1, if you are not me, change it to one,realy do it now
+#if 0 //change this to 1, if you are not me, change it to one,realy do it now
 #include <dshow.h>
 #include <stdio.h>
 
