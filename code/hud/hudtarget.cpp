@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.15 $
- * $Date: 2003-08-06 17:44:20 $
- * $Author: phreak $
+ * $Revision: 2.16 $
+ * $Date: 2003-08-21 06:18:52 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2003/08/06 17:44:20  phreak
+ * changed the weapon ammo gauges to show additional ammo if a tertiary ammo pod is being used
+ *
  * Revision 2.14  2003/06/11 02:59:47  phreak
  * local ssm stuff for hud.
  * they are always in lock range due to the subspace drive on them
@@ -4988,6 +4991,7 @@ void hud_show_secondary_weapon(int count, ship_weapon *sw, int dual_fire)
 			strcpy(weapon_name, wip->name);
 		}
 
+		// get rid of #
 		end_string_at_first_hash_symbol(weapon_name);
 		
 		if ( sw->current_secondary_bank == i ) {
@@ -5039,6 +5043,10 @@ void hud_show_primary_weapon_ammo(int count, ship_weapon *sw)
 		{
 			// print out the ammo right justified
 			sprintf(ammo_str, "%d", sw->primary_bank_ammo[i]);
+
+			// get rid of #
+			end_string_at_first_hash_symbol(ammo_str);
+
 			hud_num_make_mono(ammo_str);
 			gr_get_string_size(&w, &h, ammo_str);
 
