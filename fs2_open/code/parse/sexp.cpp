@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.57 $
- * $Date: 2003-03-29 11:23:46 $
- * $Author: sesquipedalian $
+ * $Revision: 2.58 $
+ * $Date: 2003-03-30 04:34:38 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2003/03/29 11:23:46  sesquipedalian
+ * Aaaand nevermind...
+ *
  * Revision 2.56  2003/03/29 08:52:59  sesquipedalian
  * Added is-missile-locked sexp
  *
@@ -618,6 +621,7 @@
 #include "weapon/emp.h"
 #include "sound/audiostr.h"
 #include "cmdline/cmdline.h"
+#include "ship/ai.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -833,30 +837,30 @@ sexp_oper Operators[] = {
 	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
 
 	{ "set-ship-position",			OP_SET_SHIP_POSITION,			4,	4	},	// Goober5000
-	{ "set-ship-facing",			OP_SET_SHIP_FACING,				4,	4	},	// Goober5000
-	{ "set-ship-facing-object",		OP_SET_SHIP_FACING_OBJECT,		2,	2	},	// Goober5000
+	{ "set-ship-facing",			OP_SET_SHIP_FACING,				4,	6	},	// Goober5000
+	{ "set-ship-facing-object",		OP_SET_SHIP_FACING_OBJECT,		2,	4	},	// Goober5000
 
-	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
-	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
-	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 6 },	// Goober5000
-	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3, INT_MAX },					//phreak
-	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
-	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
-	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
-	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
-	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
-	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
-	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
-	{ "ship-lights-on",					OP_SHIP_LIGHTS_ON,					1, 1			}, //-WMCoolmon
-	{ "ship-lights-off",					OP_SHIP_LIGHTS_OFF,					1, 1			}, //-WMCoolmon
-	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
-	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
-	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
-	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
 	{ "play-sound-from-file",		OP_PLAY_SOUND_FROM_FILE,		1, 1 },		// Goober5000
 	{ "close-sound-from-file",		OP_CLOSE_SOUND_FROM_FILE,	1, 1 },		// Goober5000
+
+	{ "modify-variable",				OP_MODIFY_VARIABLE,			2,	2,			},
+	{ "add-remove-escort",			OP_ADD_REMOVE_ESCORT,			2, 2			},
+	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,		3, INT_MAX },					//phreak
+	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,	1, MAX_COMPLETE_ESCORT_LIST },					// Goober5000
+	{ "awacs-set-radius",			OP_AWACS_SET_RADIUS,				3,	3			},
+	{ "primitive-sensors-set-range",OP_PRIMITIVE_SENSORS_SET_RANGE,	2,	2 },	// Goober5000
+	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 6 },	// Goober5000
+	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
+	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
+	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
+	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
+	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
+	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
+	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
+	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
+	{ "toggle-hud",					OP_TOGGLE_HUD,					0, 0 },		// Goober5000
 
 	{ "error",	OP_INT3,	0, 0 },
 
@@ -4671,13 +4675,28 @@ void sexp_set_ship_position(int n)
 }
 
 // Goober5000
-void sexp_set_ship_orient(int ship_num, vector *location)
+void sexp_set_ship_orient(int ship_num, vector *location, int turn_time, int bank)
 {
 	vector v_orient;
 	matrix m_orient;
 	object *obj;
 
 	obj = &Objects[Ships[ship_num].objnum];
+
+
+	// are we doing this via ai? -------------------
+	if (turn_time)
+	{
+		// set flag
+		bank = bank ? AITTV_IGNORE_BANK : 0;
+
+		// turn
+		ai_turn_towards_vector(location, obj, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bank));
+
+		// return
+		return;
+	}
+
 
 	// calculate orientation matrix ----------------
 	memset(&v_orient, 0, sizeof(vector));
@@ -4686,7 +4705,7 @@ void sexp_set_ship_orient(int ship_num, vector *location)
 
 	if (IS_VEC_NULL(&v_orient))
 	{
-		Warning(LOCATION, "error in warp-effect: warp can't point to itself; quitting the warp...\n");
+		Warning(LOCATION, "error in sexp setting ship orientation: can't point to self; quitting...\n");
 		return;
 	}
 
@@ -4702,7 +4721,7 @@ void sexp_set_ship_facing(int n)
 {
 	vector location;
 	char *ship_name;
-	int ship_num;
+	int ship_num, turn_time, bank;
 	
 	ship_name = CTEXT(n);
 	n = CDR(n);
@@ -4712,6 +4731,19 @@ void sexp_set_ship_facing(int n)
 	location.xyz.y = (float)sexp_get_val(n);
 	n = CDR(n);
 	location.xyz.z = (float)sexp_get_val(n);
+	n = CDR(n);
+
+	// get optional turn time and bank
+	turn_time = bank = 0;
+	if (n != -1)
+	{
+		turn_time = sexp_get_val(n);
+		n = CDR(n);
+	}
+	if (n != -1)
+	{
+		bank = sexp_get_val(n);
+	}
 
 	// check to see if the ship was destroyed or departed.  If so, then make this node known false
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ) 
@@ -4724,7 +4756,7 @@ void sexp_set_ship_facing(int n)
 	if (ship_num < 0)
 		return;
 
-	sexp_set_ship_orient(ship_num, &location);
+	sexp_set_ship_orient(ship_num, &location, turn_time, bank);
 }
 
 // Goober5000
@@ -4734,9 +4766,25 @@ void sexp_set_ship_facing_object(int n)
 	char *ship_name;
 	char *target_name;
 	int ship_num, team, obj;
+	int turn_time, bank;
 
 	ship_name = CTEXT(n);
-	target_name = CTEXT(CDR(n));
+	n = CDR(n);
+	target_name = CTEXT(n);
+	n = CDR(n);
+
+	// get optional turn_time and bank
+	turn_time = bank = 0;
+	if (n != -1)
+	{
+		turn_time = sexp_get_val(n);
+		n = CDR(n);
+	}
+	if (n != -1)
+	{
+		bank = sexp_get_val(n);
+		n = CDR(n);
+	}
 
 	// check to see if either ship was destroyed or departed.  If so, then make this node known false
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ||
@@ -4762,7 +4810,7 @@ void sexp_set_ship_facing_object(int n)
 		{
 			if (Ships[Objects[so->objnum].instance].team == team)
 			{
-				sexp_set_ship_orient(ship_num, &Objects[so->objnum].pos);
+				sexp_set_ship_orient(ship_num, &Objects[so->objnum].pos, turn_time, bank);
 				return;
 			}
 
@@ -4776,7 +4824,7 @@ void sexp_set_ship_facing_object(int n)
 	obj = ship_name_lookup(target_name);
 	if (obj >= 0)
 	{
-		sexp_set_ship_orient(ship_num, &Objects[Ships[obj].objnum].pos);
+		sexp_set_ship_orient(ship_num, &Objects[Ships[obj].objnum].pos, turn_time, bank);
 		return;
 	}
 
@@ -4784,7 +4832,7 @@ void sexp_set_ship_facing_object(int n)
 	obj = waypoint_lookup(target_name);
 	if (obj >= 0)
 	{
-		sexp_set_ship_orient(ship_num, &Objects[obj].pos);
+		sexp_set_ship_orient(ship_num, &Objects[obj].pos, turn_time, bank);
 		return;
 	}
 		
@@ -4798,7 +4846,7 @@ void sexp_set_ship_facing_object(int n)
 		return;
 
 	// point to wing leader
-	sexp_set_ship_orient(ship_num, &Objects[Ships[Wings[obj].ship_index[0]].objnum].pos);
+	sexp_set_ship_orient(ship_num, &Objects[Ships[Wings[obj].ship_index[0]].objnum].pos, turn_time, bank);
 }
 
 // funciton to determine when the last meaningful order was given to one or more ships.  Returns
@@ -5993,6 +6041,12 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 	}
 
 	message_send_unique_to_player( name, shipp, source, ipriority, group, delay );
+}
+
+// Goober5000
+void sexp_toggle_hud()
+{
+	hud_toggle_draw();
 }
 
 // Goober5000
@@ -10486,16 +10540,6 @@ int eval_sexp(int cur_node)
 				sexp_val = 1;
 				break;
 
-			case OP_SHIP_LIGHTS_ON: //-WMCoolmon
-				sexp_ship_lights_on(node);
-				sexp_val = 1;
-				break;
-
-			case OP_SHIP_LIGHTS_OFF: //-WMCoolmon
-				sexp_ship_lights_off(node);
-				sexp_val = 1;
-				break;
-
 			//-Sesquipedalian
 			case OP_SHIELDS_ON: 
 			case OP_SHIELDS_OFF:
@@ -10538,6 +10582,11 @@ int eval_sexp(int cur_node)
 
 			case OP_CLOSE_SOUND_FROM_FILE:
 				sexp_close_sound_from_file(node);
+				sexp_val = 1;
+				break;
+
+			case OP_TOGGLE_HUD:
+				sexp_toggle_hud();
 				sexp_val = 1;
 				break;
 
@@ -11312,8 +11361,6 @@ int query_operator_return_type(int op)
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_VANISH:
-		case OP_SHIP_LIGHTS_ON:
-		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
@@ -11366,6 +11413,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SHIP_POSITION:
 		case OP_SET_SHIP_FACING:
 		case OP_SET_SHIP_FACING_OBJECT:
+		case OP_TOGGLE_HUD:
 			return OPR_NULL;
 
 		case OP_GET_OBJECT_X:
@@ -11500,8 +11548,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_VANISH:
-		case OP_SHIP_LIGHTS_ON:
-		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_STEALTHY:
@@ -11586,10 +11632,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 
 		case OP_SET_SHIP_FACING:
-			return OPF_NUMBER;
+			if (argnum==0)
+				return OPF_SHIP;
+			else if (argnum<4)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
 
 		case OP_SET_SHIP_FACING_OBJECT:
-			return OPF_SHIP_WING_POINT;
+			if (argnum==0)
+				return OPF_SHIP;
+			else
+				return OPF_SHIP_WING_POINT;
 
 		case OP_MODIFY_VARIABLE:
 			if (argnum == 0) {
@@ -11769,6 +11823,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CLOSE_SOUND_FROM_FILE:
 			return OPF_BOOL;
+
+		case OP_TOGGLE_HUD:
+			return OPF_NONE;
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -13090,6 +13147,12 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SHIP_FACING_OBJECT:
 			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
 
+		case OP_CHANGE_SOUNDTRACK:
+		case OP_PLAY_SOUND_FROM_TABLE:
+		case OP_PLAY_SOUND_FROM_FILE:
+		case OP_CLOSE_SOUND_FROM_FILE:
+			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
+
 		case OP_MODIFY_VARIABLE:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_AWACS_SET_RADIUS:
@@ -13100,19 +13163,14 @@ int get_subcategory(int sexp_id)
 		case OP_SUPERNOVA_START:
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
-		case OP_SHIP_LIGHTS_ON:
-		case OP_SHIP_LIGHTS_OFF:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
-		case OP_CHANGE_SOUNDTRACK:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_PLAY_SOUND_FROM_TABLE:
-		case OP_PLAY_SOUND_FROM_FILE:
-		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_TOGGLE_HUD:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 		
 		default:

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.37 $
- * $Author: sesquipedalian $
- * $Date: 2003-03-29 11:23:46 $
+ * $Revision: 2.38 $
+ * $Author: Goober5000 $
+ * $Date: 2003-03-30 04:34:38 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2003/03/29 11:23:46  sesquipedalian
+ * Aaaand nevermind...
+ *
  * Revision 2.36  2003/03/29 08:52:59  sesquipedalian
  * Added is-missile-locked sexp
  *
@@ -579,6 +582,7 @@
 #define CHANGE_SUBCATEGORY_SPECIAL							(0x0006 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES				(0x0007 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION			(0x0008	| OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_MUSIC_AND_SOUND					(0x0009 | OP_CATEGORY_CHANGE)
 
 #define	OP_PLUS									(0x0000 | OP_CATEGORY_ARITHMETIC)
 #define	OP_MINUS								(0x0001 | OP_CATEGORY_ARITHMETIC)
@@ -740,8 +744,6 @@
 #define OP_CARGO_NO_DEPLETE					(0x0053 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SET_SPECIAL_WARPOUT_NAME			(0X0054 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SHIP_VANISH						(0X0055 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_SHIP_LIGHTS_ON					(0x0056 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-WMCoolmon
-#define OP_SHIP_LIGHTS_OFF					(0x0057 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-WMCoolmon
 #define OP_SHIELDS_ON						(0x0058 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_SHIELDS_OFF						(0x0059 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
 #define OP_CHANGE_AI_LEVEL					(0x0060 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Sesquipedalian
@@ -781,6 +783,7 @@
 #define OP_PLAY_SOUND_FROM_TABLE			(0x0082	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_PLAY_SOUND_FROM_FILE				(0x0083	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CLOSE_SOUND_FROM_FILE			(0x0084 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_TOGGLE_HUD						(0x0085	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // debugging sexpressions
 #define	OP_INT3									(0x0000 | OP_CATEGORY_DEBUG)

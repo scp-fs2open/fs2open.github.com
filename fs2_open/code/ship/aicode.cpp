@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 2.28 $
- * $Date: 2003-03-19 09:05:25 $
+ * $Revision: 2.29 $
+ * $Date: 2003-03-30 04:34:37 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2003/03/19 09:05:25  Goober5000
+ * more housecleaning, this time for debug warnings
+ * --Goober5000
+ *
  * Revision 2.27  2003/03/18 01:44:30  Goober5000
  * fixed some misspellings
  * --Goober5000
@@ -1558,8 +1562,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 
 //	If rvec != NULL, use it to match bank by calling vm_matrix_interpolate.
 //	(rvec defaults to NULL)
-void ai_turn_towards_vector(vector *dest, object *objp, 
-									 float frametime, float turn_time, vector *slide_vec, vector *rel_pos, float bank_override, int flags, vector *rvec)
+void ai_turn_towards_vector(vector *dest, object *objp, float frametime, float turn_time, vector *slide_vec, vector *rel_pos, float bank_override, int flags, vector *rvec, int sexp_flags)
 {
 	//matrix	goal_orient;
 	matrix	curr_orient;
@@ -1571,7 +1574,7 @@ void ai_turn_towards_vector(vector *dest, object *objp,
 
 	//	Don't allow a ship to turn if it has no engine strength.
 	// AL 3-12-98: objp may not always be a ship!
-	if ( objp->type == OBJ_SHIP ) {
+	if ( (objp->type == OBJ_SHIP) && !(sexp_flags & AITTV_VIA_SEXP) ) {
 		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
 			return;
 	}
@@ -1586,7 +1589,7 @@ void ai_turn_towards_vector(vector *dest, object *objp,
 	Assert(turn_time > 0.0f);
 	
 	//	Scale turn_time based on skill level and team.
-	if (!(flags & AITTV_FAST)){
+	if (!(flags & AITTV_FAST) && !(sexp_flags & AITTV_VIA_SEXP) ){
 		if (objp->type == OBJ_SHIP){
 			if (Ships[objp->instance].team != Ships[Player_obj->instance].team){
 				turn_time *= Turn_time_skill_level_scale[Game_skill_level];
@@ -1624,7 +1627,8 @@ void ai_turn_towards_vector(vector *dest, object *objp,
 	}
 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
-	if (objp->type == OBJ_WEAPON)
+	// Goober5000 - don't bank if sexp says not to
+	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) )
 		delta_bank = 0.0f;
 	else if ((bank_override) && (Ships[objp->instance].team & opposing_team_mask(Player_ship->team))) {	//	Theoretically, this will only happen for Shivans.
 		delta_bank = bank_override;
@@ -5700,7 +5704,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			bank_index = swp->current_primary_bank;
 
-			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_PIERCE) 
+			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_PIERCE_SHIELDS) 
 			{
 				return swp->current_primary_bank;
 			}
@@ -5713,7 +5717,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			if (weapon_info_index > -1)
 			{
-				if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_PIERCE) 
+				if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) 
 				{
 					swp->current_primary_bank = i;
 					return i;

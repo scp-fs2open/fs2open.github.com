@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 2.8 $
- * $Date: 2003-01-19 22:20:22 $
+ * $Revision: 2.9 $
+ * $Date: 2003-03-30 04:34:37 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/01/19 22:20:22  Goober5000
+ * fixed a bunch of bugs -- the support ship sexp, the "no-subspace-drive" flag,
+ * and departure into hangars should now all work properly
+ * --Goober5000
+ *
  * Revision 2.7  2003/01/19 07:02:15  Goober5000
  * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
  * all ships, and all ships who have their departure anchor set to a capital ship
@@ -271,6 +276,8 @@
 
 //	Flags to ai_turn_towards_vector().
 #define	AITTV_FAST					(1<<0)	//	Turn fast, not slowed down based on skill level.
+#define AITTV_VIA_SEXP				(1<<1)	//	Goober5000 - via sexp
+#define AITTV_IGNORE_BANK			(1<<2)	//	Goober5000 - ignore bank when turning
 
 #define	KAMIKAZE_HULL_ON_DEATH	-1000.0f	//	Hull strength ship gets set to if it crash-dies.
 
@@ -694,7 +701,7 @@ extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, int waypoint_list_index, int wp_flags);
 extern void ai_ship_hit(object *objp_ship, object *hit_objp, vector *hitpos, int shield_quadrant, vector *hit_normal);
 extern void ai_ship_destroy(int shipnum, int method);
-extern void ai_turn_towards_vector(vector *dest, object *objp, float frametime, float turn_time, vector *slide_vec, vector *rel_pos, float bank_override, int flags, vector *rvec = NULL);
+extern void ai_turn_towards_vector(vector *dest, object *objp, float frametime, float turn_time, vector *slide_vec, vector *rel_pos, float bank_override, int flags, vector *rvec = NULL, int sexp_flags = 0);
 extern void init_ai_object(int objnum);
 extern void ai_init(void);				//	Call this one to parse ai.tbl.
 extern void ai_level_init(void);		//	Call before each level to reset AI
