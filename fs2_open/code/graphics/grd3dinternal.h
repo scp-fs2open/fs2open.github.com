@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.36 $
- * $Date: 2005-02-18 09:51:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.37 $
+ * $Date: 2005-02-23 05:11:13 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/02/18 09:51:06  wmcoolmon
+ * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
+ *
  * Revision 2.35  2005/02/10 04:01:42  wmcoolmon
  * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
  *
@@ -496,27 +499,6 @@ enum
 };
 
 typedef float D3DVALUE;
-
-typedef enum gr_texture_source {
-	TEXTURE_SOURCE_NONE,
-	TEXTURE_SOURCE_DECAL,
-	TEXTURE_SOURCE_NO_FILTERING,
-} gr_texture_source;
-
-typedef enum gr_alpha_blend {
-	ALPHA_BLEND_NONE,							// 1*SrcPixel + 0*DestPixel
-	ALPHA_BLEND_ALPHA_ADDITIVE,			// Alpha*SrcPixel + 1*DestPixel
-	ALPHA_BLEND_ALPHA_BLEND_ALPHA,		// Alpha*SrcPixel + (1-Alpha)*DestPixel
-	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
-} gr_alpha_blend;
-
-typedef enum gr_zbuffer_type {
-	ZBUFFER_TYPE_NONE,
-	ZBUFFER_TYPE_READ,
-	ZBUFFER_TYPE_WRITE,
-	ZBUFFER_TYPE_FULL,
-	ZBUFFER_TYPE_DEFAULT,
-} gr_zbuffer_type;
 
 /* External vars - booo! */
 

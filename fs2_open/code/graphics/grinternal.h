@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.7 $
- * $Date: 2005-02-15 00:06:27 $
+ * $Revision: 2.8 $
+ * $Date: 2005-02-23 05:11:13 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/15 00:06:27  taylor
+ * clean up some model related globals
+ * code to disable individual thruster glows
+ * fix issue where 1 extra OGL light pass didn't render
+ *
  * Revision 2.6  2005/01/31 10:34:38  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -252,6 +257,30 @@ extern int Ambient_b_default;
 #define MAX_SUBOBJECTS 64
 
 #define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
+
+#define NEBULA_COLORS 20
+
+typedef enum gr_texture_source {
+	TEXTURE_SOURCE_NONE,
+	TEXTURE_SOURCE_DECAL,
+	TEXTURE_SOURCE_NO_FILTERING,
+	TEXTURE_SOURCE_MODULATE4X,
+} gr_texture_source;
+
+typedef enum gr_alpha_blend {
+	ALPHA_BLEND_NONE,							// 1*SrcPixel + 0*DestPixel
+	ALPHA_BLEND_ALPHA_ADDITIVE,			// Alpha*SrcPixel + 1*DestPixel
+	ALPHA_BLEND_ALPHA_BLEND_ALPHA,		// Alpha*SrcPixel + (1-Alpha)*DestPixel
+	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
+} gr_alpha_blend;
+
+typedef enum gr_zbuffer_type {
+	ZBUFFER_TYPE_NONE,
+	ZBUFFER_TYPE_READ,
+	ZBUFFER_TYPE_WRITE,
+	ZBUFFER_TYPE_FULL,
+	ZBUFFER_TYPE_DEFAULT,
+} gr_zbuffer_type;
 
 
 #endif

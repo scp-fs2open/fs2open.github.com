@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-02-18 09:51:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.59 $
+ * $Date: 2005-02-23 05:11:13 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/02/18 09:51:06  wmcoolmon
+ * Updates for better nonstandard res support, as well as a fix to the Perseus crash bug I've been experiencing. Bobb, you might want to take a look at my change to grd3d.cpp
+ *
  * Revision 2.57  2005/02/10 04:01:42  wmcoolmon
  * Low-level code for better hi-res support; better error reporting for vertex errors on model load.
  *
@@ -1152,7 +1155,6 @@ float flCAP( float x, float minx, float maxx)
 	return x;
 }
 
-#define NEBULA_COLORS 20
 static float Interp_fog_level;
 int w_factor = 256;
 

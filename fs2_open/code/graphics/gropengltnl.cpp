@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-02-15 00:06:27 $
+ * $Revision: 1.16 $
+ * $Date: 2005-02-23 05:11:13 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/02/15 00:06:27  taylor
+ * clean up some model related globals
+ * code to disable individual thruster glows
+ * fix issue where 1 extra OGL light pass didn't render
+ *
  * Revision 1.14  2005/02/12 10:44:10  taylor
  * fix possible crash in bm_get_section_size()
  * get jpeg_read_header() working properly
@@ -113,9 +118,11 @@ extern vector G3_user_clip_point;
 extern int Interp_multitex_cloakmap;
 extern int Interp_cloakmap_alpha;
 
-int GL_modelview_matrix_depth = 1;
-int GL_htl_projection_matrix_set = 0;
-int GL_htl_view_matrix_set = 0;
+static int GL_modelview_matrix_depth = 1;
+static int GL_htl_projection_matrix_set = 0;
+static int GL_htl_view_matrix_set = 0;
+static int GL_htl_2d_matrix_depth = 0;
+static int GL_htl_2d_matrix_set = 0;
 
 struct opengl_vertex_buffer
 {
@@ -666,6 +673,52 @@ void gr_opengl_end_view_matrix()
 
 	GL_modelview_matrix_depth = 1;
 	GL_htl_view_matrix_set = 0;
+}
+
+// set a view and projection matrix for a 2D element
+// TODO: this probably needs to accept values
+void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
+{
+	if (Cmdline_nohtl)
+		return;
+
+	Assert( GL_htl_2d_matrix_set == 0 );
+	Assert( GL_htl_2d_matrix_depth == 0 );
+
+	glMatrixMode( GL_PROJECTION );
+	glPushMatrix();
+	glLoadIdentity();
+
+	// the top and bottom positions are reversed on purpose
+	glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, 0, 1 );
+
+	glMatrixMode( GL_MODELVIEW );
+	glPushMatrix();
+	glLoadIdentity();
+
+	// the viewport needs to be the full screen size since glOrtho() is relative to it
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+	GL_htl_2d_matrix_set++;
+	GL_htl_2d_matrix_depth++;
+}
+
+// ends a previously set 2d view and projection matrix
+void gr_opengl_end_2d_matrix()
+{
+	if (Cmdline_nohtl)
+		return;
+
+	Assert( GL_htl_2d_matrix_set );
+	Assert( GL_htl_2d_matrix_depth == 1 );
+
+	glMatrixMode( GL_PROJECTION );
+	glPopMatrix();
+	glMatrixMode( GL_MODELVIEW );
+	glPopMatrix();
+
+	GL_htl_2d_matrix_set = 0;
+	GL_htl_2d_matrix_depth = 0;
 }
 
 void gr_opengl_push_scale_matrix(vector *scale_factor)

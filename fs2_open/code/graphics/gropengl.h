@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.5 $
- * $Date: 2005-01-01 11:24:23 $
+ * $Revision: 2.6 $
+ * $Date: 2005-02-23 05:11:13 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/01 11:24:23  taylor
+ * good OpenGL spec mapping
+ * fix VBO crash with multitexture using same uv coord data
+ * little speedup of opengl_tcache_frame()
+ * error message to make sure hardware supports the minimum texture size
+ * move OpenGL version check out of the extention printout code
+ * disable 2d_poof with OpenGL
+ *
  * Revision 2.4  2004/10/31 21:42:31  taylor
  * Linux tree merge, use linear mag filter, small FRED fix, AA lines (disabled), use rgba colors for 3dunlit, proper gamma adjustment, bmpman merge
  *
@@ -48,9 +56,11 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _GROPENGL_H
 #define _GROPENGL_H
+
+#include "PreProcDefines.h"
+
 
 #ifdef _WIN32
 	#include <windows.h>
@@ -76,27 +86,7 @@
 #endif
 
 #include "globalincs/pstypes.h"
-
-typedef enum gr_texture_source {
-	TEXTURE_SOURCE_NONE=0,
-	TEXTURE_SOURCE_DECAL,
-	TEXTURE_SOURCE_NO_FILTERING,
-	TEXTURE_SOURCE_MODULATE4X,
-} gr_texture_source;
-
-typedef enum gr_alpha_blend {
-        ALPHA_BLEND_NONE=0,			// 1*SrcPixel + 0*DestPixel
-        ALPHA_BLEND_ALPHA_ADDITIVE,             // Alpha*SrcPixel + 1*DestPixel
-        ALPHA_BLEND_ALPHA_BLEND_ALPHA,          // Alpha*SrcPixel + (1-Alpha)*DestPixel
-        ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,      // Alpha*SrcPixel + (1-SrcPixel)*DestPixel
-} gr_alpha_blend;
-
-typedef enum gr_zbuffer_type {
-        ZBUFFER_TYPE_NONE=0,
-        ZBUFFER_TYPE_READ,
-        ZBUFFER_TYPE_WRITE,
-        ZBUFFER_TYPE_FULL,
-} gr_zbuffer_type;
+#include "graphics/grinternal.h"
 
 void gr_opengl_init(int reinit=0);
 void gr_opengl_cleanup(int minimize=1);

@@ -1,7 +1,10 @@
-#include "PreProcDefines.h"
 
 #ifndef _GRD3DBATCH_H_
 #define _GRD3DBATCH_H_
+
+#include "PreProcDefines.h"
+
+#include "graphics/grbatch.h"
 
 bool d3d_batch_init();
 void d3d_batch_deinit();
