@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.12 $
- * $Date: 2004-03-07 23:07:20 $
+ * $Revision: 1.13 $
+ * $Date: 2004-03-09 00:02:16 $
  * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2004/03/07 23:07:20  Kazan
+ * [Incomplete] Readd of Software renderer so Standalone server works
+ *
  * Revision 1.11  2004/03/05 09:01:56  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -76,7 +79,6 @@ struct net_server
 	  char  ip[16]; // "255.255.255.255"
 	  int port;
 };
-
 
 
 #if !defined(PXO_TCP)
