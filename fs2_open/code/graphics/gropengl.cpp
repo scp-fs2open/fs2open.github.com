@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.59 $
- * $Date: 2004-02-03 18:29:30 $
+ * $Revision: 2.60 $
+ * $Date: 2004-02-05 01:41:33 $
  * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2004/02/03 18:29:30  randomtiger
+ * Fixed OGL fogging in HTL
+ * Changed htl laser function to work in D3D, commented out until function flat bug is fixed
+ *
  * Revision 2.58  2004/01/24 12:47:48  randomtiger
  * Font and other small changes for Fred
  *
@@ -2937,6 +2941,7 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	  	if (OGL_fogmode==3)
 			glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
 
+		// Um.. this is not the correct way to fog in software, probably doesnt matter though
 		else if (OGL_fogmode==2 && Cmdline_nohtl)
 		{
 			glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);

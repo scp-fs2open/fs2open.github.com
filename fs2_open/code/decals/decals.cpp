@@ -831,4 +831,5 @@ mprintf(("vert %d at x %0.2f y %0.2f z %0.2f u %0.2f v %0.2f\n", j, vecs[j].x, v
 //	mprintf(("decals rendered\n"));
 #endif
 }
+
 */
