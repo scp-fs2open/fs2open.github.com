@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.10 $
- * $Date: 2003-11-17 04:25:58 $
- * $Author: bobboau $
+ * $Revision: 2.11 $
+ * $Date: 2003-11-19 20:37:25 $
+ * $Author: randomtiger $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2003/11/17 04:25:58  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.9  2003/11/16 04:09:20  Goober5000
  * language
  *
@@ -411,7 +417,11 @@ void trail_render( trail * trailp )
 //	if(!Cmdline_nohtl)gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
 	trail_info *ti;	
 
-	if ( trailp->tail == trailp->head ) return;
+	if ( trailp->tail == trailp->head ) 
+	{
+		TIMERBAR_POP();
+		return;
+	}
 
 	ti = &trailp->info;	
 
@@ -542,7 +552,10 @@ void trail_render( trail * trailp )
 		v_list[nv] = top;
 		v_list[nv+1] = bot;
 	}
-	if(!nv)return;
+	if(!nv) {
+		TIMERBAR_POP();
+		return;
+	}
 	if(nv<3)Error( LOCATION, "too few verts in trail render\n" );
 	if(nv>MAX_TRAIL_POLYS-1)Error( LOCATION, "too many verts in trail render\n" );
 	if(nv%2 != 1)Error( LOCATION, "even number of verts verts in trail render\n" );//there should always be three virts in the last section and 2 everyware else, therefore there should always be an odd number of verts

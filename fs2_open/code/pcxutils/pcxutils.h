@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-11-19 20:37:24 $
+ * $Author: randomtiger $
  *
  * header file for PCX utilities
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -84,7 +87,7 @@ extern int pcx_read_bitmap_8bpp( char * filename, ubyte *org_data, ubyte *palett
 extern int pcx_read_bitmap_16bpp( char * filename, ubyte *org_data );
 extern int pcx_read_bitmap_16bpp_aabitmap( char *filename, ubyte *org_data );
 extern int pcx_read_bitmap_16bpp_nondark( char *filename, ubyte *org_data );
-
+extern int pcx_read_bitmap_32(char *real_filename, ubyte *data );
 
 // Dumps a 8bpp bitmap to a file.
 // Set rowoff to -w for upside down bitmaps.

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.45 $
- * $Date: 2003-11-16 04:09:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.46 $
+ * $Date: 2003-11-19 20:37:23 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
  * Revision 2.44  2003/11/15 18:09:33  randomtiger
@@ -22,7 +22,7 @@
  * Speech now chooses voice based on reg value set by launcher v3.1
  *
  * Revision 2.43  2003/11/11 03:56:10  bobboau
- * lots of bug fixing, much of it in nebula and bitmap drawing
+ * shit load of bug fixing, much of it in nebula and bitmap drawing
  *
  * Revision 2.42  2003/11/09 06:31:38  Kazan
  * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
@@ -469,15 +469,16 @@ cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
 cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
 cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
 cmdline_parm nospec_arg("-nospec", NULL); // skip specular highlighting -Sticks
+cmdline_parm noglow_arg("-noglow", NULL); // skip Bobs glow code
 cmdline_parm MissionCRCs("-missioncrcs", NULL);
 cmdline_parm TableCRCs("-tablecrcs", NULL);
 cmdline_parm nohtl_arg("-htl", NULL); //Use HT&L	  
 cmdline_parm cell_arg("-cell", NULL);
-cmdline_parm textures_32bit("-t32",NULL);
-cmdline_parm no_set_gamma("-no_set_gamma",NULL);
-cmdline_parm d3d_no_vsync("-d3d_no_vsync", NULL);
-cmdline_parm pcx32("-pcx32",NULL);
-cmdline_parm timerbar("-timerbar", NULL);
+cmdline_parm textures_32bit_arg("-t32",NULL);
+cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);
+cmdline_parm d3d_no_vsync_arg("-d3d_no_vsync", NULL);
+cmdline_parm pcx32_arg("-pcx32",NULL);
+cmdline_parm timerbar_arg("-timerbar", NULL);
 
 int Cmdline_timerbar = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
@@ -508,13 +509,13 @@ int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
 int Cmdline_SpewTable_CRCs = 0;
 
 int Cmdline_window = 0;
-int Cmdline_gf4fix = 0; // DTP for randomstigers GF4 fix.
 int Cmdline_allslev = 0;
 int Cmdline_phreak	= 0;
 int Cmdline_dnoshowvid = 0;
 int Cmdline_show_fps = 0;
 int Cmdline_safeloading = 0;
 int Cmdline_nospec = 0;
+int Cmdline_noglow = 0;
 
 int Cmdline_d3dlowmem = 0;
 int Cmdline_d3dmipmap = 0;
@@ -756,7 +757,7 @@ void SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
 
-	if (timerbar.found()) {
+	if (timerbar_arg.found()) {
 		Cmdline_timerbar = 1;
 	}
 
@@ -878,9 +879,6 @@ void SetCmdlineParams()
 		Cmdline_use_last_pilot = 1;
 		Cmdline_start_netgame = 1;
 	}
-	if (gf4fix_arg.found() ) {
-		Cmdline_gf4fix = 1;
-	}
 
 	if (allslev_arg.found() ) {
 		Cmdline_allslev = 1;
@@ -960,24 +958,29 @@ void SetCmdlineParams()
 		Cmdline_nohtl = 1;
 	}
 
-	if( textures_32bit.found() )
+	if( textures_32bit_arg.found() )
 	{	  
 		Cmdline_32bit_textures = 1;
 	}
 
-	if( no_set_gamma.found() )
+	if( no_set_gamma_arg.found() )
 	{
 		Cmdline_no_set_gamma = 1;
 	}
 
-	if(d3d_no_vsync.found() )
+	if(d3d_no_vsync_arg.found() )
 	{
 		Cmdline_d3d_no_vsync = 1;
 	}
 
-	if(pcx32.found() )
+	if(pcx32_arg.found() )
 	{
 		Cmdline_pcx32 = 1;
+	}
+
+	if(noglow_arg.found() )
+	{
+		Cmdline_noglow = 1;
 	}
 }
 

@@ -10,13 +10,20 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.8 $
- * $Date: 2003-11-07 18:31:01 $
+ * $Revision: 2.9 $
+ * $Date: 2003-11-19 20:37:22 $
  * $Author: randomtiger $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2003/11/07 18:31:01  randomtiger
+ * Fixed a nohtl call to htl funcs (crash with NULL pointer)
+ * Fixed a bug with 32bit PCX code.
+ * Fixed a bug in the d3d_string batch system that was messing up screen shaking.
+ * Added a couple of checks to try and stop timerbar push and pop overloads, check returns missing pops if you use the system.
+ * Put in a higher res icon until we get something better sorted out.
+ *
  * Revision 2.7  2003/10/24 17:35:04  randomtiger
  * Implemented support for 32bit TGA and JPG for D3D
  * Also 32 bit PCX, but it still has some bugs to be worked out
@@ -271,7 +278,6 @@ enum
 	BM_TYPE_32_BIT_FORMATS,
 	BM_TYPE_TGA,				
 	BM_TYPE_JPG,					
-	BM_TYPE_PCX_32,			
 };
 
 /// Moved from cpp file ///////////////////

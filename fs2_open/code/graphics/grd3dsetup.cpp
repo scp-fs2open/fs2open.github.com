@@ -1153,8 +1153,21 @@ bool d3d_init_device()
 		}
 	}
 
-	if (have_device == false) {
+	// This is bad, the mode hasnt initialised
+  	if (have_device == false) 
+	{
+
 		sprintf(Device_init_error, "Failed to get init mode");
+	
+		// Lets draw attension to this bug which we dont yet understand
+		if(got_caps == false) 
+		{
+			sprintf(Device_init_error, 
+				"Failed to get init mode AND GETCAPS FAILED\n"
+				"Please contact Random Tiger about this problem directly\n"
+				"tlwhittaker2000@hotmail.com");
+		}
+
 		return false;
 	} 
 

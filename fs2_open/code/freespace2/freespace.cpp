@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.61 $
- * $Date: 2003-11-17 06:52:51 $
- * $Author: bobboau $
+ * $Revision: 2.62 $
+ * $Date: 2003-11-19 20:37:23 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2003/11/17 06:52:51  bobboau
+ * got assert to work again
+ *
  * Revision 2.60  2003/11/16 04:09:25  Goober5000
  * language
  *
@@ -2711,6 +2714,8 @@ void game_init()
 		extern int Gr_inited;
 
 		if(!Gr_inited) {
+			ClipCursor(NULL);
+			ShowWindow((HWND)os_get_window(),SW_MINIMIZE);
 			extern char Device_init_error[512];		
 			MessageBox( NULL, Device_init_error, "Error intializing Direct3D", MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
 			exit(1);

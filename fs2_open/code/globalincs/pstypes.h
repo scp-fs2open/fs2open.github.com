@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.14 $
- * $Date: 2003-11-17 06:52:51 $
- * $Author: bobboau $
- * $Revision: 2.14 $
- * $Date: 2003-11-17 06:52:51 $
- * $Author: bobboau $
+ * $Revision: 2.15 $
+ * $Date: 2003-11-19 20:37:23 $
+ * $Author: randomtiger $
+ * $Revision: 2.15 $
+ * $Date: 2003-11-19 20:37:23 $
+ * $Author: randomtiger $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2003/11/17 06:52:51  bobboau
+ * got assert to work again
+ *
  * Revision 2.13  2003/09/26 14:37:13  bobboau
  * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
  * still needs a lot of work, ubt the frame rates were getting with it are incredable
@@ -479,12 +482,20 @@ extern void _cdecl Warning( char * filename, int line, char * format, ... );
 // or, 
 // Error( LOCATION, "Error opening %s", filename );
 
+/*******************NEVER UNCOMMENT Assert ************************************************/
+// Please never uncomment the functionality of Assert in debug
+// The code, as with all developement like this is littered with Asserts which are designed to throw
+// up an error message if variables are out of range.
+
+// Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
+// the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
 #define Assert(x) do {} while (0)
 #else
 void gr_activate(int);
 #define Assert(x) do { if (!(x)){ gr_activate(0); WinAssert(#x,__FILE__,__LINE__); gr_activate(1); } } while (0)
 #endif
+/*******************NEVER UNCOMMENT Assert ************************************************/
 
 //#define Int3() _asm { int 3 }
 

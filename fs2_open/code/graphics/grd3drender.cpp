@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-11-17 04:25:56 $
- * $Author: bobboau $
+ * $Revision: 2.37 $
+ * $Date: 2003-11-19 20:37:24 $
+ * $Author: randomtiger $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/11/17 04:25:56  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.35  2003/11/11 02:15:44  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -1147,6 +1153,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 	if ( flags & TMAP_FLAG_TEXTURED )	{
 		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale))	{
 //			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
+			TIMERBAR_POP();
 			return;
 		}
 
@@ -1542,7 +1549,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	//BEGIN FINAL SETTINGS
 	if(Cmdline_cell && cell_enabled){
 	
-		if(GLOWMAP < 0){
+		if(GLOWMAP < 0 || Cmdline_noglow){
 			d3d_SetTexture(2, NULL);
 			d3d_SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	
@@ -1593,7 +1600,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		}
 	}
 
-	if(GLOWMAP < 0){
+	if(GLOWMAP < 0 || Cmdline_noglow){
 		d3d_SetTexture(1, NULL);
 		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	}else{
