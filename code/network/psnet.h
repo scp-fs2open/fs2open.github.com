@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:08 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2003-11-14 22:47:37 $
+ * $Author: Kazan $
  *
  * Header file for the application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:08  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:27  penguin
  * Warpcore CVS sync
  *
@@ -189,7 +192,9 @@
 #define NET_IPX		2
 #define NET_VMT		3
 
-#define MAX_PACKET_SIZE		512
+// kazan - I think this should raise the ships limit across the network
+#define MAX_PACKET_SIZE 4096
+//#define MAX_PACKET_SIZE		512
 
 #define PSNET_FLAG_CHECKSUM	(1<<0)		// this packet is checksummed
 #define PSNET_FLAG_RAW			(1<<1)		// send or receive raw data. don't do any checksumming, sequencing, etc
