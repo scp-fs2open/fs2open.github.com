@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.36 $
- * $Date: 2003-10-18 01:22:39 $
+ * $Revision: 2.37 $
+ * $Date: 2003-10-19 01:10:05 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2003/10/18 01:22:39  phreak
+ * hardware transformation is working.  now lighting needs to be done
+ *
  * Revision 2.35  2003/10/14 17:39:13  randomtiger
  * Implemented hardware fog for the HT&L code path.
  * It doesnt use the backgrounds anymore but its still an improvement.
@@ -4133,8 +4136,8 @@ void gr_opengl_render_buffer(int idx)
 	float u_scale,v_scale;
 
 	glFrontFace(GL_CW);
-	glColor3ub(128,128,128);
-	
+	glColor3ub(191,191,191);
+		
 	opengl_vertex_buffer *vbp=&vertex_buffers[idx];
 
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -4234,8 +4237,11 @@ void gr_opengl_start_instance_matrix(vector *offset, matrix* rotation)
 		gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,-Eye_position.xyz.z,
 		fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
 		uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
+
 		glScalef(1,1,-1);
+
 	}
+	
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -4294,27 +4300,32 @@ void gr_opengl_set_light(light_data *light){
 void gr_opengl_end_clip_plane()
 {
 	glDisable(GL_CLIP_PLANE0);
-	gr_opengl_end_instance_matrix();
+	
+	if (depth==1)
+		gr_opengl_end_instance_matrix();
 }
 
 void gr_opengl_start_clip_plane()
-{
-	vector n=G3_user_clip_normal;
+{	
+	double clip_equation[4];
+	vector n;
+	vector p;
+
+	n=G3_user_clip_normal;
 //	n.xyz.z*=-1;
+	
+	p=G3_user_clip_point;
+//	p.xyz.z*=-1;
 
-	vector p=G3_user_clip_point;
-	p.xyz.z*=-1;
+	if (depth==0)
+		gr_opengl_start_instance_matrix(NULL,NULL);
 
-	gr_opengl_start_instance_matrix(&vmd_zero_vector,&vmd_identity_matrix);
-
-	double equation[4]={n.xyz.x,
-						n.xyz.y,
-						n.xyz.z,
-						vm_vec_dot(&p,&n)};
-
-	glClipPlane(GL_CLIP_PLANE0,equation);
+	clip_equation[0]=n.xyz.x;
+	clip_equation[1]=n.xyz.y;
+	clip_equation[2]=n.xyz.z;
+	clip_equation[3]=-vm_vec_dot(&p, &n);
+	glClipPlane(GL_CLIP_PLANE0, clip_equation);
 	glEnable(GL_CLIP_PLANE0);
-
 }
 
 void gr_opengl_set_lighting(bool state)
