@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.3 $
- * $Author: penguin $
- * $Date: 2002-08-01 01:41:07 $
+ * $Revision: 2.4 $
+ * $Author: bobboau $
+ * $Date: 2002-11-14 06:15:02 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.2  2002/07/30 17:35:22  wmcoolmon
  * Added mission flag "MISSION_FLAG_SUPPORT_REPAIRS_HULL" for toggling Support Ship hull repair on and off
  *
@@ -426,6 +429,7 @@ typedef struct p_object {
 	int	respawn_priority;					// priority this ship has for controlling respawn points
 
 	char	alt_type_index;					// optional alt type index
+	int		nameplate;						// optional nameplate -Bobboau
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:07 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-11-14 06:15:02 $
+ * $Author: bobboau $
  *
  * main upper level code for pasring stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:07  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -1472,6 +1475,7 @@ int parse_create_object(p_object *objp)
 	Ships[shipnum].hotkey = objp->hotkey;
 	Ships[shipnum].score = objp->score;
 	Ships[shipnum].persona_index = objp->persona_index;
+	Ships[shipnum].nameplate = objp->nameplate;
 
 	// set the orders that this ship will accept.  It will have already been set to default from the
 	// ship create code, so only set them if the parse object flags say they are unique
@@ -2100,6 +2104,22 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	} else {
 		objp->persona_index = -1;
 	}
+
+	if ( optional_string("+nameplate:")){
+		char tempname[64];
+		stuff_string(tempname, F_NAME, NULL);
+		mprintf(("ship %s should have nameplate texture %s",objp->name,tempname));
+		objp->nameplate = bm_load(tempname);
+	
+		if(objp->nameplate >-1)
+			mprintf((" and it does, number %d\n",objp->nameplate));
+		else
+			mprintf((" but it failed :(\n"));
+
+	} else {
+		objp->persona_index = -1;
+	}
+
 
 	objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
 
@@ -5063,6 +5083,7 @@ void mission_warp_in_support_ship( object *requester_objp )
 	pobj->wing_status_wing_pos = -1;
 	pobj->respawn_count = 0;
 	pobj->alt_type_index = -1;
+	pobj->nameplate = -1;
 
 }
 

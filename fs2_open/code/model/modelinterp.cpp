@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.6 $
- * $Date: 2002-11-14 04:18:16 $
+ * $Revision: 2.7 $
+ * $Date: 2002-11-14 06:15:03 $
  * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2002/11/14 04:18:16  bobboau
+ * added warp model and type 1 glow points
+ * and well as made the new glow file type,
+ * some general improvement to fighter beams,
+ *
  * Revision 2.5  2002/10/22 23:02:40  randomtiger
  * Made Phreaks alternative scanning style optional under the command line tag "-phreak"
  * Fixed bug that changes HUD colour when targetting debris in a full nebula. - RT
@@ -3031,7 +3036,11 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 								
 
 							gr_set_cull(0);
+							if(The_mission.flags & MISSION_FLAG_FULLNEB){
+								gr_set_bitmap(bank->glow_neb_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+							}else{
 								gr_set_bitmap(bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+							}
 								g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
 							gr_set_cull(1);
 						}
