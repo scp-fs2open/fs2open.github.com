@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-06-11 02:59:48 $
+ * $Revision: 2.3 $
+ * $Date: 2003-06-25 03:13:02 $
  * $Author: phreak $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/06/11 02:59:48  phreak
+ * local ssm stuff for hud.
+ * they are always in lock range due to the subspace drive on them
+ * they also can't be targeted when in stage 3.
+ *
  * Revision 2.1  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -530,13 +535,15 @@ int hud_lock_world_pos_in_range(vector *target_world_pos, vector *vec_to_target)
 	vm_vec_sub(vec_to_target, target_world_pos, &Player_obj->pos);
 	dist_to_target = vm_vec_mag(vec_to_target);
 
-	// calculate the range of the weapon, and only display the lead target indicator when
-	// if the weapon can actually hit the target
-	weapon_range = wip->max_speed * wip->lifetime;
-
 	//local ssms are always in range :)
 	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
-		return 1;
+		weapon_range=wip->lssm_lock_range;
+	else
+		// calculate the range of the weapon, and only display the lead target indicator when
+		// if the weapon can actually hit the target
+		weapon_range = wip->max_speed * wip->lifetime;
+
+	
 
 	// reduce firing range in nebula
 	if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
