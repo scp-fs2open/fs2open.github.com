@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.34 $
- * $Date: 2003-10-27 23:04:21 $
+ * $Revision: 2.35 $
+ * $Date: 2003-10-29 02:09:17 $
  * $Author: randomtiger $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2003/10/27 23:04:21  randomtiger
+ * Added -no_set_gamma flags
+ * Fixed up some more non standard res stuff
+ * Improved selection of device type, this includes using a pure device when allowed which means dev should not use Get* functions in D3D
+ * Made fade in credits work
+ * Stopped a call to gr_reser_lighting() in non htl mode when the pointer was NULL, was causing a crash loading a fogged level
+ * Deleted directx8 directory content, has never been needed.
+ *
  * Revision 2.33  2003/10/25 06:56:05  bobboau
  * adding FOF stuff,
  * and fixed a small error in the matrix code,
@@ -820,12 +828,14 @@ void d3d_stop_frame()
 		return;
 	}
 	TIMERBAR_START_FRAME();
-
+						 
+	TIMERBAR_PUSH(4);
 	// Must cope with device being lost
 	if(GlobalD3DVars::lpD3DDevice->Present(NULL,NULL,NULL,NULL) == D3DERR_DEVICELOST)
 	{
 		d3d_lost_device();
 	}
+	TIMERBAR_POP();
 }
 
 
@@ -1246,14 +1256,7 @@ void gr_d3d_flip()
 		gr_reset_clip();
 		mouse_get_pos( &mx, &my );
 		
-		if ( Gr_cursor == -1 )	{
-			#ifndef NDEBUG
-				gr_set_color(255,255,255);
-				gr_line( mx, my, mx+7, my + 7 );
-				gr_line( mx, my, mx+5, my );
-				gr_line( mx, my, mx, my+5 );
-			#endif
-		} else {	
+		if ( Gr_cursor != -1 )	{
 			gr_set_bitmap(Gr_cursor);				
 			gr_bitmap( mx, my, false);
 		}		
@@ -1816,6 +1819,8 @@ bool the_lights_are_on;
 extern bool lighting_enabled;
 void gr_d3d_render_buffer(int idx)
 {
+	TIMERBAR_PUSH(3);
+
 	if(!the_lights_are_on){
 		d3d_SetVertexShader(D3DVT_VERTEX);
 		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
@@ -1929,7 +1934,7 @@ void gr_d3d_render_buffer(int idx)
 	// Revert back to old fog state
 	gr_d3d_fog_set(gr_screen.current_fog_mode, old_fog_color.red,old_fog_color.green,old_fog_color.blue, gr_screen.fog_near, gr_screen.fog_far);
 
-
+	TIMERBAR_POP();
 }
 
 void gr_d3d_start_instance_matrix(vector* offset, matrix *orient){
