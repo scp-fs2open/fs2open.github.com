@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.51 $
- * $Date: 2003-03-03 04:28:37 $
+ * $Revision: 2.52 $
+ * $Date: 2003-03-03 17:15:16 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2003/03/03 04:28:37  Goober5000
+ * fixed the tech room bug!  yay!
+ * --Goober5000
+ *
  * Revision 2.50  2003/03/01 01:15:38  Goober5000
  * fixed the initial status bug
  *
@@ -1513,7 +1517,7 @@ strcpy(temp_error, parse_error_text);
 			b = 1;
 			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )allowed_weapons[i] = -1;
 		
-		while(optional_string(":")){
+		while(check_for_string("(")){
 			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 			for ( i = 0; i < MAX_WEAPON_TYPES; i++ )sip->allowed_weapons[i][b] = 0;
 			for ( i = 0; i < num_allowed; i++ ) {
