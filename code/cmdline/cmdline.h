@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
- * $Revision: 2.14 $
- * $Date: 2002-12-17 02:22:34 $
+ * $Revision: 2.15 $
+ * $Date: 2002-12-17 03:08:18 $
  * $Author: DTP $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2002/12/17 02:22:34  DTP
+ * wrong name :)
+ *
  * Revision 2.13  2002/12/17 02:21:06  DTP
  * cleaned up after phreak :). it will make a mess in debug builds. added a couple of ifndef _debugs.
  *
@@ -233,7 +236,7 @@ extern int Cmdline_allslev;
 extern int Cmdline_phreak;
 extern char *Cmdline_mod; //DTP for mod support
 
-#ifndef _DEBUG //will make a mess if show_frame is allowed during debug builds
+#ifndef FRED //will call an unresolved link error during fred builds
 extern int Show_framerate;//DTP moved here because it is the correct place for it to be.
 #endif
 
