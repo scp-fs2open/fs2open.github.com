@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.75 $
- * $Date: 2003-09-06 20:40:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.76 $
+ * $Date: 2003-09-11 19:33:07 $
+ * $Author: argv $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2003/09/06 20:40:01  wmcoolmon
+ * Added ability to limit subsystem repairs
+ *
  * Revision 2.74  2003/09/06 19:14:50  wmcoolmon
  * Minor bugfix (changed an == to >=)
  *
@@ -1071,6 +1074,7 @@
 #include "math/staticrand.h"
 #include "missionui/missionshipchoice.h"
 #include "hud/hudartillery.h"
+#include "cmdline/cmdline.h" // _argv[-1] - needed for Argv_options.
 
 #include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
 
@@ -1546,7 +1550,9 @@ int parse_ship()
 	stuff_vector(&sip->max_vel);
 
 	// calculate the max speed from max_velocity
-	sip->max_speed = vm_vec_mag(&sip->max_vel);
+	// _argv[-1] - whaaaaaaat?! This screws with max oclk speed. Badly.
+	//sip->max_speed = vm_vec_mag(&sip->max_vel);
+	sip->max_speed = sip->max_vel.xyz.z;
 
 	required_string("$Rotation Time:");
 	stuff_vector(&sip->rotation_time);
@@ -1886,6 +1892,7 @@ strcpy(parse_error_text, temp_error);
 	// The next three fields are used for the ETS
 	required_string("$Power Output:");
 	stuff_float(&sip->power_output);
+	sip->full_power_output = sip->power_output; // _argv[-1] - calculate part of full power output.
 
 	required_string("$Max Oclk Speed:");
 	stuff_float(&sip->max_overclocked_speed);
@@ -1900,6 +1907,9 @@ strcpy(parse_error_text, temp_error);
 	char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
 	int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
 	sip->flags = SIF_DEFAULT_VALUE;
+	sip->flags2 = SIF2_DEFAULT_VALUE; // _argv[-1] - moved up here to avoid nuking any flags2 that are in the table.
+	if (Argv_options.singular_shields)
+		sip->flags2 |= SIF2_SINGULAR_SHIELDS;
 	for ( i=0; i<num_strings; i++ )
 	{
 		if (!stricmp(NOX("no_collide"), ship_strings[i]))
@@ -1912,10 +1922,14 @@ strcpy(parse_error_text, temp_error);
 			sip->flags |= SIF_SUPPORT;
 		else if ( !stricmp(NOX("cargo"), ship_strings[i]))
 			sip->flags |= SIF_CARGO;
-		else if ( !stricmp( NOX("fighter"), ship_strings[i]))
+		else if ( !stricmp( NOX("fighter"), ship_strings[i])) {
 			sip->flags |= SIF_FIGHTER;
-		else if ( !stricmp( NOX("bomber"), ship_strings[i]))
+			sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on fighters by default.
+		}
+		else if ( !stricmp( NOX("bomber"), ship_strings[i])) {
 			sip->flags |= SIF_BOMBER;
+			sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on bombers by default.
+		}
 		else if ( !stricmp( NOX("transport"), ship_strings[i]))
 			sip->flags |= SIF_TRANSPORT;
 		else if ( !stricmp( NOX("freighter"), ship_strings[i]))
@@ -1930,8 +1944,10 @@ strcpy(parse_error_text, temp_error);
 			sip->flags |= SIF_CRUISER;
 		else if ( !stricmp( NOX("navbuoy"), ship_strings[i]))
 			sip->flags |= SIF_NAVBUOY;
-		else if ( !stricmp( NOX("sentrygun"), ship_strings[i]))
+		else if ( !stricmp( NOX("sentrygun"), ship_strings[i])) {
 			sip->flags |= SIF_SENTRYGUN;
+			sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT; // _argv[-1] - free beam turrets on sentry guns by default.
+		}
 		else if ( !stricmp( NOX("escapepod"), ship_strings[i]))
 			sip->flags |= SIF_ESCAPEPOD;
 		else if ( !stricmp( NOX("no type"), ship_strings[i]))
@@ -1958,6 +1974,14 @@ strcpy(parse_error_text, temp_error);
 			sip->flags |= SIF_NO_FRED;
 		else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
 			sip->flags |= SIF_BALLISTIC_PRIMARIES;
+		else if ( !stricmp( NOX("big guns in front"), ship_strings[i]))
+			sip->flags2 |= SIF2_BIG_GUNS_IN_FRONT;
+		else if ( !stricmp( NOX("beam free by default"), ship_strings[i]))
+			sip->flags2 |= SIF2_BEAM_FREE_BY_DEFAULT;
+		else if ( !stricmp( NOX("beam lock by default"), ship_strings[i]))
+			sip->flags2 &= ~SIF2_BEAM_FREE_BY_DEFAULT;
+		else if ( !stricmp( NOX("singular shields"), ship_strings[i]))
+			sip->flags2 |= SIF2_SINGULAR_SHIELDS;
 		else
 			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 	}
@@ -2169,6 +2193,14 @@ strcpy(parse_error_text, temp_error);
 				sp->turret_turning_rate = 0.0f;		
 			}
 
+			// _argv[-1] - display name.
+			sp->use_display_name = 0;
+
+			if (optional_string("$Display Name:")) {
+				stuff_string_white(sp->display_name);
+				sp->use_display_name = 1;
+			}
+
 			for (i=0; i<MAX_PRIMARY_BANKS; i++) {
 				sp->primary_banks[i] = -1;
 				sp->primary_bank_capacity[i] = 0;
@@ -2222,6 +2254,27 @@ strcpy(parse_error_text, temp_error);
 				stuff_float(&sp->awacs_intensity);
 				stuff_float(&sp->awacs_radius);
 				sip->flags |= SIF_HAS_AWACS;
+			}
+
+			// _argv[-1] - power output info.
+			sp->power_output = 0.0f;
+			if (optional_string("$Power Output:")) {
+				stuff_float(&sp->power_output);
+				sip->full_power_output += sp->power_output;
+			}
+
+			// _argv[-1] - flags.
+			sp->beam_free_by_default = 1;
+
+			if (optional_string("$Flags:")) {
+				char subsys_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
+				int num_subsys_strings = stuff_string_list(subsys_strings, MAX_SHIP_FLAGS);
+				for (int it = 0; it < num_subsys_strings; it++) {
+					if (!stricmp(NOX("beam free by default"), subsys_strings[it]))
+						sp->beam_free_by_default = 2;
+					else if (!stricmp(NOX("beam lock by default"), subsys_strings[it]))
+						sp->beam_free_by_default = 0;
+				}
 			}
 
 			sp->turret_weapon_type = sp->primary_banks[0];  // temporary, will be obsolete later.
@@ -2356,7 +2409,7 @@ void ship_init()
 	if ( !ships_inited ) {
 		
 		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing 'ships.tbl'\r\nError code = %i.\r\n", rval);
+			Error(LOCATION, "Error parsing 'ships.tbl'\r\nError code = %i (%s).\r\n", rval, strerror(rval));
 		} else {			
 			parse_shiptbl();
 			ships_inited = 1;
@@ -2553,6 +2606,7 @@ void physics_ship_init(object *objp)
 	pi->rotdamp = sinfo->rotdamp;
 	pi->max_vel = sinfo->max_vel;
 	pi->afterburner_max_vel = sinfo->afterburner_max_vel;
+	pi->max_speed_mul = 1.0f; // _argv[-1] - init this field.
 	pi->max_rotvel = sinfo->max_rotvel;
 	pi->max_rear_vel = sinfo->max_rear_vel;
 	pi->flags |= PF_ACCELERATES;
@@ -2593,7 +2647,7 @@ int ship_get_default_orders_accepted( ship_info *sip )
 		return CRUISER_MESSAGES;
 	else if ( ship_info_flag & SIF_FREIGHTER )
 		return FREIGHTER_MESSAGES;
-	else if ( ship_info_flag & SIF_CAPITAL )
+	else if ( ship_info_flag & (SIF_CAPITAL | SIF_SUPERCAP) )
 		return CAPITAL_MESSAGES;
 	else if ( ship_info_flag & SIF_TRANSPORT )
 		return TRANSPORT_MESSAGES;
@@ -2919,10 +2973,13 @@ void ship_recalc_subsys_strength( ship *shipp )
 
 	// set any ship flags which should be set.  unset the flags since we might be repairing a subsystem
 	// through sexpressions.
+	// _argv[-1] - this is now handled in hudets.cpp. (my new playground ;)
+	/*
 	shipp->flags &= ~SF_DISABLED;
 	if ( (shipp->subsys_info[SUBSYSTEM_ENGINE].num > 0) && (shipp->subsys_info[SUBSYSTEM_ENGINE].current_hits == 0.0f) ){
 		shipp->flags |= SF_DISABLED;
 	}
+	*/
 
 	/*
 	shipp->flags &= ~SF_DISARMED;
@@ -2985,6 +3042,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 	ship_subsys *ship_system;
 	int i, j, k;
 
+	shipp->power_output = sinfo->full_power_output; // _argv[-1] - copy initial effective power output.
+
 	// set up the subsystems for this ship.  walk through list of subsystems in the ship-info array.
 	// for each subsystem, get a new ship_subsys instance and set up the pointers and other values
 	list_init ( &shipp->subsys_list );								// initialize the ship's list of subsystems
@@ -3024,7 +3083,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_next_fire_stamp = timestamp(0);
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;
-		ship_system->turret_next_fire_stamp = timestamp((int) frand_range(1.0f, 500.0f));	// next time this turret can fire
+		// _argv[-1] - gah! delaying turret fire for up to 500 seconds?!?
+		//ship_system->turret_next_fire_stamp = timestamp((int) frand_range(1.0f, 500.0f));	// next time this turret can fire
 		ship_system->turret_last_fire_direction = sp->turret_norm;
 		ship_system->turret_next_fire_pos = 0;
 		ship_system->turret_time_enemy_in_range = 0.0f;
@@ -3035,6 +3095,9 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->subsys_cargo_name = -1;
 		ship_system->subsys_cargo_revealed = 0;
 		ship_system->time_subsys_cargo_revealed = 0;
+
+		// _argv[-1] - copy initial power output.
+		ship_system->power_output = sp->power_output;
 		
 		// zero flags
 		ship_system->weapons.flags = 0;
@@ -3307,8 +3370,10 @@ void ship_render(object * obj)
 			if (ft.xyz.y < -1.0f)
 				ft.xyz.y = -1.0f;
 
-			model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
-			render_flags |= MR_SHOW_THRUSTERS;
+			if (ft.xyz.x || ft.xyz.y || ft.xyz.z) {
+				model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
+				render_flags |= MR_SHOW_THRUSTERS;
+			}
 		}
 
 		// fill the model flash lighting values in
@@ -3651,6 +3716,8 @@ void ship_destroyed( int num )
 		if(temp_subsys->system_info->type == SUBSYSTEM_TURRET)
 		{
 			temp_subsys->weapons.flags &= ~SW_FLAG_BEAM_FREE;
+			// _argv[-1] - lock turrets too.
+			temp_subsys->weapons.flags |= SW_FLAG_TURRET_LOCK;
 		}
 
 		// next item
@@ -4436,7 +4503,8 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
 		// rate = 0.5f + objp->phys_info.forward_thrust / 2.0f;
-		rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
+		// _argv[-1] - forward_thrust may be negative, so use fabs.
+		rate = 0.67f * (1.0f + fl_abs(objp->phys_info.forward_thrust));
 	}
 
 //	rate = 0.1f;
@@ -4518,7 +4586,8 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 	// If thrust at 0, go at half as fast, full thrust; full framerate
 	// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
 	// rate = 0.5f + objp->phys_info.forward_thrust / 2.0f;
-	rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
+	// _argv[-1] - forward_thrust may be negative, so use fabs.
+	rate = 0.67f * (1.0f + fl_abs(objp->phys_info.forward_thrust));
 
 	Assert( anim_index > -1 );
 	Assert( anim_index < NUM_THRUST_ANIMS );
@@ -6399,7 +6468,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}
 		}
 		
+		// _argv[-1] - allow this to be turned off, but only at build time.
+#ifndef FS2_NO_LINKED_ROF_PENALTY
 		next_fire_delay *= 1.0f + (num_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
+#endif
 
 		//	MK, 2/4/98: Since you probably were allowed to fire earlier, but couldn't fire until your frame interval
 		//	rolled around, subtract out up to half the previous frametime.
@@ -8602,10 +8674,13 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
+			// _argv[-1] - this is now handled in hudets.cpp.
+			/*
 			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (shipp->flags & SF_DISABLED) ) {
 				shipp->flags &= ~SF_DISABLED;
 				ship_reset_disabled_physics(objp, shipp->ship_info_index);
 			}
+			*/
 			break;
 		}
 		ssp = GET_NEXT( ssp );
@@ -9058,11 +9133,14 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 				Dc_help = 1;
 			} else {
 				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_ENGINE, Dc_arg_float );
+				// _argv[-1] - this is now handled in hudets.cpp.
+				/*
 				if ( Dc_arg_float < ENGINE_MIN_STR )	{
 					Player_ship->flags |= SF_DISABLED;				// add the disabled flag
 				} else {
 					Player_ship->flags &= (~SF_DISABLED);				// add the disabled flag
 				}
+				*/
 			} 
 		} else if ( !stricmp( Dc_arg, "sensors" ))	{
 			dc_get_arg(ARG_FLOAT);
@@ -9793,13 +9871,17 @@ float ship_quadrant_shield_strength(object *hit_objp, vector *hitpos)
 	// convert hitpos to position in model coordinates
 	vm_vec_sub(&tmpv1, hitpos, &hit_objp->pos);
 	vm_vec_rotate(&tmpv2, &tmpv1, &hit_objp->orient);
-	quadrant_num = get_quadrant(&tmpv2);
+	// _argv[-1] - singular shield.
+	if (Ship_info[Ships[hit_objp->instance].ship_info_index].flags2 & SIF2_SINGULAR_SHIELDS)
+		quadrant_num = 0;
+	else
+		quadrant_num = get_quadrant(&tmpv2);
 	//nprintf(("Alan","Quadrant hit: %d\n", quadrant_num));
 
 	if ( quadrant_num < 0 )
 		quadrant_num = 0;
 
-	max_quadrant = Ships[hit_objp->instance].ship_initial_shield_strength / 4.0f;
+	max_quadrant = Ships[hit_objp->instance].ship_initial_shield_strength /*/ 4.0f*/;
 	if ( max_quadrant <= 0 ) {
 		return 0.0f;
 	}
