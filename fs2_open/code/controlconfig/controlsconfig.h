@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:21 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-10-17 20:40:50 $
+ * $Author: randomtiger $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:21  penguin
+ * Warpcore CVS sync
+ *
  * Revision 1.1  2002/05/02 18:03:04  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -445,8 +448,10 @@ typedef struct config_item {
 
 #define MULTI_SELF_DESTRUCT							106
 
+#define TOGGLE_HUD							107
+
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 107
+#define CCFG_MAX 108
 
 extern int Failed_key_index;
 extern int Invert_heading;

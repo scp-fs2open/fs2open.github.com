@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-17 20:40:50 $
+ * $Author: randomtiger $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -535,6 +538,9 @@ config_item Control_config[CCFG_MAX + 1] = {
 
 	{				  KEY_SHIFTED | KEY_N,				-1, COMPUTER_TAB, "(Multiplayer) Toggle network info"},
 	{				  KEY_SHIFTED | KEY_END,			-1, COMPUTER_TAB, "(Multiplayer) Self destruct"},
+
+	// Misc
+	{				  KEY_SHIFTED | KEY_O,			-1, COMPUTER_TAB, "Toggle HUD"},
 
 	{                           -1,					-1, -1,				"" }
 };

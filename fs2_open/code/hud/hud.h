@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:05 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2002-10-17 20:40:50 $
+ * $Author: randomtiger $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:05  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:23  penguin
  * Warpcore CVS sync
  *
@@ -404,6 +407,7 @@ void	hud_subspace_notify_abort();
 // render multiplayer text message currently being entered if any
 void hud_maybe_render_multi_text();
 
+void hud_toggle_draw();
 int	hud_disabled();
 int hud_support_find_closest( int objnum );
 

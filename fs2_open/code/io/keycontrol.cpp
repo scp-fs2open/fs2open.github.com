@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.2 $
- * $Date: 2002-08-06 16:49:22 $
- * $Author: phreak $
+ * $Revision: 2.3 $
+ * $Date: 2002-10-17 20:40:51 $
+ * $Author: randomtiger $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2002/08/06 16:49:22  phreak
+ * added keybing for wireframe hud,
+ * fixed previous missile cheat
+ *
  *
  * Revision 2.2  2002/08/04 23:15:40  PhReAk
  * Fixed previous missile cheat, commented out beam_test(x) lines
@@ -520,7 +524,9 @@ int Normal_key_set[] = {
 	TOGGLE_HUD_CONTRAST,
 
 	MULTI_TOGGLE_NETINFO,
-	MULTI_SELF_DESTRUCT
+	MULTI_SELF_DESTRUCT,
+
+	TOGGLE_HUD
 };
 
 int Dead_key_set[] = {
@@ -644,7 +650,9 @@ int Non_critical_key_set[] = {
 	TOGGLE_HUD_CONTRAST,
 
 	MULTI_TOGGLE_NETINFO,
-	MULTI_SELF_DESTRUCT
+	MULTI_SELF_DESTRUCT,
+
+	TOGGLE_HUD
 };
 
 
@@ -1881,6 +1889,7 @@ void game_process_keys()
 			case KEY_PAUSE:
 				game_process_pause_key();
 				break;
+
 		} // end switch
 	} while (k);
 
@@ -2176,6 +2185,8 @@ int button_function_critical(int n, net_player *p = NULL)
 // return !0 if the action is allowed, otherwise return 0
 int button_allowed(int n)
 {
+	// RT Commented this out cos it was disabling use off keys when HUD is off
+#if 0
 	if ( hud_disabled() ) {
 		switch (n) {
 		case SHOW_GOALS:
@@ -2194,6 +2205,7 @@ int button_allowed(int n)
 			return 0;
 		}
 	}
+#endif
 
 	return 1;
 }
@@ -2849,6 +2861,10 @@ int button_function(int n)
 			}
 			break;
 #endif
+		case TOGGLE_HUD:
+			gamesnd_play_iface(SND_USER_SELECT);
+			hud_toggle_draw();
+			break;
 
 		// following are not handled here, but we need to bypass the Int3()
 		case LAUNCH_COUNTERMEASURE:
