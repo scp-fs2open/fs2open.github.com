@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2003/12/15 21:30:24  phreak
+ * upped MAX_WEAPON_TYPES to 300 when INF_BUILD is defined
+ *
  * Revision 2.25  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -459,6 +462,7 @@
 #define WIF2_TAGGED_ONLY				(1 << 4)	// can only fire if target is tagged
 #define WIF2_BEAM_NO_WHACK				(1 << 5)	// this beam doesn't "whack" -- Kazan
 #define WIF2_CYCLE						(1 << 6)	// will only fire from (shots (defalts to 1)) points at a time
+#define WIF2_SMALL_ONLY					(1 << 7)	// can only be used against small ships like fighters or bombers
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
@@ -726,9 +730,9 @@ typedef struct weapon_info {
 #define TWT_BOOST_POD		3			//one-shot (or multi-shot) fast afterburner
 #define TWT_RADAR_JAMMER	4			//makes your ship untargetable on radar. unless there is an awacs. effectiveness increased at range
 #define TWT_SUPER_JAMMER	5			//scrambles all hostile's radars within a certain range. awacs effectiveness limited
-#define TWT_CAPACITOR		6			//stores extra energy to quickly replenish afterburner, shield, and laser energy. unused energy will replenish the pod
+#define TWT_EXTRA_REACTOR	6			//energy output is increased
 #define TWT_TURBOCHARGER	7			//souped up engine. top speed will increase. afterburner will replenish faster.  now i need a 6" exhaust pipe :p
-#define TWT_EXTRA_REACTOR	8			//energy output is increased
+
 
 #define MAX_TERTIARY_WEAPON_TYPES	25	//number of allowed tertiary weapons. this allows for variations of same effect
 
@@ -756,10 +760,6 @@ typedef struct weapon_info {
 
 
 //jammer and super jammer -- none
-
-//capcitor
-#define TWF_CAP_CHARGE_STILL		(1<<0)  //capacitor recharges only when ship isn't moving
-#define TWF_CAP_CHARGE_SUPPORT		(1<<1)	//capacitor can be quickly recharged by support ship
 
 //turbocharger
 #define TWF_TURBO_DISABLE_ABURN		(1<<0)	//disable the afterburner ???
@@ -793,11 +793,8 @@ typedef struct tertiary_weapon_info {
 	//jammer and super-jammer info
 	float jammer_min_effectiveness;	//distance where jammed ship is always targetable
 	float jammer_max_range;			//distance where jammed ship is always blurred
-	float jammer_awacs_multiplier;	//how awacs effect this. should be less than 1
-
-	//capacitor
-	float capacitor_capacity;		//how much energy this thing stores
-
+	float jammer_awacs_multiplier;	//factor that hostile awacs ships reduce effectiveness should be less than 1
+									//use the inverse to calc how much the range is boosted by friendly awacs
 	//turbocharger
 	float turbo_speed_multiplier;	//how much more speed is gained in normal flight
 	float turbo_speed_accel_mult;	//how much faster the ship accelerates in normal flight
@@ -808,6 +805,7 @@ typedef struct tertiary_weapon_info {
 	//reactor
 	float reactor_add_weap_pwr;		//additional weapon power
 	float reactor_add_shield_pwr;	//additional shield power
+	float reactor_add_aburn_fuel;	//additional aburn fuel.  allows for longer burns and quicker recharges
 
 } tertiary_weapon_info;
 

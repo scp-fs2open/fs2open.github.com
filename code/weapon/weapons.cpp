@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2003/12/02 03:16:16  Goober5000
+ * fixed CVS log header so that changes would update more cleanly
+ * --Goober5000
+ *
  * Revision 2.45  2003/11/22 10:36:31  fryday
  * Changed default alpha value for lasers in OpenGL to be like in D3D
  * Fixed Glowmaps being rendered with GL_NEAREST instead of GL_LINEAR.
@@ -900,6 +904,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_BEAM_NO_WHACK;
 		else if (!stricmp(NOX("cycle"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_CYCLE;
+		else if (!stricmp(NOX("small only"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_SMALL_ONLY;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 
@@ -935,6 +941,11 @@ void parse_wi_flags(weapon_info *weaponp)
 		{
 			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
 		}
+	}
+
+	if ((weaponp->wi_flags2 & WIF2_SMALL_ONLY) && (weaponp->wi_flags & WIF_HUGE))
+	{
+		Warning(LOCATION,"\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon",weaponp->name);
 	}
 
 }
@@ -1930,13 +1941,6 @@ void parse_tertiary_turbo(tertiary_weapon_info* twip)
 {
 }
 
-void parse_tertiary_capacitor(tertiary_weapon_info* twip)
-{
-	required_string("+Capacity:");
-	stuff_float(&twip->capacitor_capacity);
-
-}
-
 void parse_tertiary_reactor(tertiary_weapon_info* twip)
 {
 	required_string("+Additional Weapon Power:");
@@ -1973,10 +1977,6 @@ void parse_tertiary()
 		case TWT_RADAR_JAMMER:
 		case TWT_SUPER_JAMMER:
 			parse_tertiary_jammer(twip);
-			break;
-
-		case TWT_CAPACITOR:
-			parse_tertiary_capacitor(twip);
 			break;
 
 		case TWT_TURBOCHARGER:
