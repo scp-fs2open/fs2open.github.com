@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-01-19 22:45:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2003-03-02 06:37:24 $
+ * $Author: penguin $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/01/19 22:45:35  Goober5000
+ * cleaned up build output a bit
+ * --Goober5000
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -325,6 +329,7 @@
 #include "sound/acm.h"
 #include "osapi/osapi.h"
 #include "sound/dscap.h"
+#include "mm/mmreg.h"
 
 #include <objbase.h>
 #include <initguid.h>
