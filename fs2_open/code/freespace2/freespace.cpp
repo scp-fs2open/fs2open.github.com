@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.14 $
- * $Date: 2002-11-18 21:34:16 $
+ * $Revision: 2.15 $
+ * $Date: 2002-12-18 22:21:23 $
  * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2002/11/18 21:34:16  phreak
+ * made ogl be used if "NDEBUG" is not defined and "USE_OPENGL" is defined  - phreak
+ *
  * Revision 2.13  2002/10/22 17:42:09  randomtiger
  * Fixed lighting bug that caused special pause to crash on debug build.
  * Also added TAB functionality for special pause that toggles HUD. - RT
@@ -2372,52 +2375,38 @@ void game_init()
 	int trying_d3d = 0;
 	
 	if (!Is_standalone && ptr && (strstr(ptr, NOX("3DFX Glide")))) {
-#ifdef E3_BUILD
-		// always 640 for E3
-		gr_init(GR_640, GR_GLIDE);
-#else
 		// regular or hi-res ?
-#ifdef NDEBUG
 		if(has_sparky_hi && strstr(ptr, NOX("(1024x768)"))){
-#else
-		if(strstr(ptr, NOX("(1024x768)"))){
-#endif
 			gr_init(GR_1024, GR_GLIDE);
 		} else {			
 			gr_init(GR_640, GR_GLIDE);
 		}
-#endif
+
 	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("Direct 3D -") )))	{
-#ifdef E3_BUILD		
-		// always 640 for E3
-		trying_d3d = 1;
-		gr_init(GR_640, GR_DIRECT3D, depth);		
-#else
 		// regular or hi-res ?
-#ifdef NDEBUG
 		if(has_sparky_hi && strstr(ptr, NOX("(1024x768)"))){
-#else
-		if(strstr(ptr, NOX("(1024x768)"))){
-#endif
 			// Direct 3D
 			trying_d3d = 1;
-#if (!defined(NDEBUG) && defined(USE_OPENGL))
-			gr_init(GR_1024, GR_OPENGL);
-#else
 			gr_init(GR_1024, GR_DIRECT3D, depth);
-#endif
+
 		} else {
 			// Direct 3D
 			trying_d3d = 1;
-#if (!defined(NDEBUG) && defined(USE_OPENGL))
-			gr_init(GR_640, GR_OPENGL);
-#else
 			gr_init(GR_640, GR_DIRECT3D, depth);
-#endif
+
 		}
-#endif
+	} else if (!Is_standalone && ptr && (strstr(ptr, NOX("OpenGL -") ))){
+		if (has_sparky_hi && strstr(ptr,NOX("1024x768"))){
+			gr_init(GR_1024, GR_OPENGL, depth);
+		} else {
+			gr_init(GR_640, GR_OPENGL, depth);
+		}
+
 	} else {
 		// Software
+		//NOT USED ANYMORE
+		Error(LOCATION,"Software mode is unsupported, use hardware acceleration.  If not using software mode, then something was misspelled.  GET A PROGRAMMER!!");
+		/*
 		#ifndef NDEBUG
 			if ( Use_fullscreen_at_startup && !Is_standalone)	{		
 				gr_init(GR_640, GR_DIRECTDRAW);
@@ -2431,6 +2420,7 @@ void game_init()
 				gr_init(GR_640, GR_SOFTWARE);
 			}
 		#endif
+		*/
 	}
 
 	// tried d3d ?
