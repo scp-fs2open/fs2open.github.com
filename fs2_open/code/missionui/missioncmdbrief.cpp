@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-04-05 08:51:04 $
+ * $Revision: 2.6 $
+ * $Date: 2003-04-05 11:09:22 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/04/05 08:51:04  Goober5000
+ * arg - forgot something
+ * --Goober5000
+ *
  * Revision 2.4  2003/04/05 08:46:51  Goober5000
  * command briefing scroll buttons implemented :)
  * --Goober5000
@@ -332,7 +336,7 @@ int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
 
 int Top_cmd_brief_text_line;
 int Cmd_brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
-	10, 17
+	8, 15
 };
 
 #define MAX_CMD_BRIEF_BUTTONS	10

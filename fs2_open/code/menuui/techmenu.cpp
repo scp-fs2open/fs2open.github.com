@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.6 $
+ * $Date: 2003-04-05 11:09:22 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.4  2003/03/03 04:28:37  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -279,7 +282,7 @@
 
 #define NUM_BUTTONS	16
 #define NUM_TABS		3
-#define LIST_BUTTONS_MAX	41
+#define LIST_BUTTONS_MAX	42
 
 #define SHIPS_DATA_MODE		(1<<0)
 #define WEAPONS_DATA_MODE	(1<<1)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-18 10:07:03 $
- * $Author: unknownplayer $
+ * $Revision: 2.5 $
+ * $Date: 2003-04-05 11:09:22 $
+ * $Author: Goober5000 $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 10:07:03  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.3  2003/03/03 04:28:37  Goober5000
  * fixed the tech room bug!  yay!
  * --Goober5000
@@ -136,7 +139,7 @@ int Mission_list_coords[GR_NUM_RESOLUTIONS][4] = {
 		33, 108, 402, 279
 	},
 	{ // GR_1024
-		43, 175, 402, 279
+		43, 175, 402, 459
 	}
 };
 
@@ -145,14 +148,14 @@ int Campaign_list_coords[GR_NUM_RESOLUTIONS][4] = {
 		491, 108, 115, 279
 	},
 	{ // GR_1024
-		491, 175, 115, 279
+		491, 175, 115, 459
 	}
 };
 
 
+#define C_SUBTEXT_X	19
 // x coordinate offsets for data when campaign tab active
 #define C_TEXT_X		0
-#define C_SUBTEXT_X	19
 
 // x coordinate offsets for data when mission tab active
 #define M_TEXT_X		0
@@ -163,7 +166,7 @@ int Campaign_list_coords[GR_NUM_RESOLUTIONS][4] = {
 #define MAX_LINES					200
 #define MAX_DESC_LINES			200
 #define NUM_BUTTONS				11
-#define LIST_BUTTONS_MAX		40
+#define LIST_BUTTONS_MAX		42
 
 #define SCROLL_UP_BUTTON		0
 #define SCROLL_DOWN_BUTTON		1
@@ -1406,7 +1409,7 @@ int Cr_list_coords[GR_NUM_RESOLUTIONS][4] = {
 		47, 21, 565, 233
 	},
 	{ // GR_1024
-		64, 34, 916, 373
+		64, 34, 916, 459
 	}
 };
 
