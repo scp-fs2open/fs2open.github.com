@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/LinkList.h $
- * $Revision: 2.4 $
- * $Date: 2005-03-26 07:53:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2005-03-29 03:40:15 $
+ * $Author: phreak $
  *
  * Macros to handle doubly linked lists
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/03/26 07:53:32  wmcoolmon
+ * Some fixes
+ *
  * Revision 2.3  2005/03/25 06:57:33  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -140,23 +143,44 @@ template <class StoreType> class linked_list
 protected:
 	StoreType *m_next;
 	StoreType *m_prev;
+
+	int n_elem;
 public:
-	linked_list(){m_next=(StoreType*)this;m_prev=(StoreType*)this;}
-	~linked_list(){}
+	linked_list()
+	{
+		m_next=(StoreType*)this;
+		m_prev=(StoreType*)this;
+		n_elem=0;
+	}
+
+	~linked_list(){n_elem=0;}
 
 	//Getting
 	StoreType *get_first(){return m_next;}
 	
 	//Setting
-	void append(StoreType *ptr){ptr->m_prev=m_prev; ptr->m_next=(StoreType*)this; m_prev->m_next=ptr; m_prev=ptr;}
-	void remove(StoreType *ptr){	ptr->m_prev->m_next=ptr->m_next;
-									ptr->m_next->m_prev=ptr->m_prev;
-									ptr->m_next = 0;		//These should both be 0
-									ptr->m_prev = 0;	}	//But stupid MSVC doesn't like a NULL here
+	void append(StoreType *ptr)
+	{
+		ptr->m_prev=m_prev;
+		ptr->m_next=(StoreType*)this;
+		m_prev->m_next=ptr; m_prev=ptr;
+		n_elem++;
+	}
+
+	void remove(StoreType *ptr)
+	{	
+		ptr->m_prev->m_next=ptr->m_next;
+		ptr->m_next->m_prev=ptr->m_prev;
+		ptr->m_next = 0;		//These should both be 0
+		ptr->m_prev = 0;		//But stupid MSVC doesn't like a NULL here
+		n_elem--;
+	}	
+
 	StoreType *get_next(){return m_next;}
 
 	//Querying
 	bool is_end(StoreType *ptr){return (ptr==this);}
+	int get_num_elements() { return n_elem;}
 };
 
 #endif
