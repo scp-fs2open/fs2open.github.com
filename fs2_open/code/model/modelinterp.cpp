@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.17 $
- * $Date: 2003-01-30 23:19:14 $
- * $Author: phreak $
+ * $Revision: 2.18 $
+ * $Date: 2003-03-02 05:55:51 $
+ * $Author: penguin $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/01/30 23:19:14  phreak
+ * enabled RGB lighting for OpenGL
+ *
  * Revision 2.16  2003/01/21 17:24:16  Goober5000
  * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
  * help for the sexps in sexp_tree
@@ -329,6 +332,7 @@ int modelstats_num_boxes = 0;
 int glow_maps_active = 1;
 
 extern int OGL_inited;
+extern int Gr_scaler_zbuffering;
 
 // a lighting object
 typedef struct model_light_object {
@@ -3133,7 +3137,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 
 								gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 							//	mprintf(( "rendering glow with texture %d\n", bank->glow_bitmap ));
-								extern int Gr_scaler_zbuffering;
 								Gr_scaler_zbuffering = 1;
 								g3_draw_bitmap(&p,0,w*0.5f, TMAP_FLAG_TEXTURED );
 								//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
@@ -3297,7 +3300,6 @@ void model_really_render(int model_num, matrix *orient, vector * pos, uint flags
 					g3_rotate_vertex( &p, &bank->pnt[j] );
 					gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
 					{
-						extern int Gr_scaler_zbuffering;
 						Gr_scaler_zbuffering = 1;
 						g3_draw_bitmap(&p,0,w*0.5f, TMAP_FLAG_TEXTURED );
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
