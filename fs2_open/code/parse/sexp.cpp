@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.79 $
- * $Date: 2003-11-09 04:09:18 $
+ * $Revision: 2.80 $
+ * $Date: 2003-11-24 18:18:00 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2003/11/09 04:09:18  Goober5000
+ * edited for language
+ * --Goober5000
+ *
  * Revision 2.78  2003/11/08 04:31:02  Goober5000
  * fixed a bug in my sexp code
  * --Goober5000
@@ -7650,6 +7654,10 @@ void sexp_tech_add_intel(int node)
 // Goober5000 - reset all the tech entries to their default states
 void sexp_tech_reset_to_default()
 {
+	// this function doesn't mean anything when not in campaign mode
+	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
+		return;
+
 	tech_reset_to_default();
 }
 
