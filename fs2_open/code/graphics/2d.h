@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.49 $
- * $Date: 2005-03-10 08:00:04 $
- * $Author: taylor $
+ * $Revision: 2.50 $
+ * $Date: 2005-03-11 01:27:17 $
+ * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/03/10 08:00:04  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.48  2005/03/07 13:10:20  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -1179,7 +1188,7 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 #define gr_bm_lock					GR_CALL(*gr_screen.gf_bm_lock)          
 
 #define gr_make_render_target					GR_CALL(*gr_screen.gf_make_render_target)          
-
+//#define gr_set_render_target					GR_CALL(*gr_screen.gf_set_render_target)          
 __inline bool gr_set_render_target(int n, int face = -1)
 {
 	return (*gr_screen.gf_set_render_target)(n, face);
