@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.4 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.5 $
+ * $Date: 2003-08-05 23:45:18 $
+ * $Author: bobboau $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.3  2003/03/02 05:43:48  penguin
  * ANSI C++ - fixed non-compliant casts to unsigned short and unsigned char
  *  - penguin
@@ -904,6 +907,7 @@ bool d3d_preload_texture_func(int bitmap_id)
 	return 1;
 }
 
+
 int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force )
 {
 	bitmap *bmp = NULL;
@@ -914,6 +918,12 @@ int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scal
 		D3D_last_bitmap_id  = -1;
 		return 0;
 	}
+
+	if(bitmap_id != GLOWMAP){
+		d3d_SetTexture(1, NULL);
+		d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+	}
+	//turn off glowmapping right away, if it's needed turn it back on later
 
 	int n = bm_get_cache_slot( bitmap_id, 1 );
 
@@ -1005,7 +1015,13 @@ int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scal
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 
-		d3d_SetTexture(0, t->d3d8_thandle);
+		if(bitmap_id != GLOWMAP){
+			d3d_SetTexture(0, t->d3d8_thandle);
+		}else if(GLOWMAP > 0){
+			d3d_SetTexture(1, t->d3d8_thandle);
+			d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD);
+		}
+		//glowmapping stuff-Bobboau
 		
 		D3D_last_bitmap_id = t->bitmap_id;
 		D3D_last_bitmap_type = bitmap_type;
@@ -1018,6 +1034,11 @@ int d3d_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scal
 	else {	
 	 	return 0;
    	}	
+
+	//glowmapping stuff-Bobboau
+	if((GLOWMAP > 0) && (bitmap_id != GLOWMAP)){
+		d3d_tcache_set(GLOWMAP, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force);
+	}
 
 	return 1;
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.12 $
- * $Date: 2003-07-15 02:35:59 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2003-08-05 23:45:18 $
+ * $Author: bobboau $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2003/07/15 02:35:59  phreak
+ * added a debug key to cloak targeted ship ~+shift+x
+ *
  * Revision 2.11  2003/07/04 02:26:15  phreak
  * tilde + x cloaks a ship
  *
@@ -838,6 +841,11 @@ extern int Framerate_delay;
 
 extern void snd_stop_any_sound();
 
+extern float Viewer_zoom;
+extern vector Eye_position;
+extern matrix Eye_matrix;
+extern void g3_set_view_matrix(vector *view_pos,matrix *view_matrix,float zoom);
+
 void process_debug_keys(int k)
 {
 #ifdef INTERPLAYQA
@@ -1486,6 +1494,23 @@ void process_debug_keys(int k)
 
 			break;
 		}
+		case KEY_DEBUGGED + KEY_ALTED + KEY_EQUAL:
+		case KEY_DEBUGGED1 + KEY_ALTED + KEY_EQUAL:
+			{
+			Viewer_zoom += 0.1f;
+			g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "viewer zoom raised to %0.2f" , Viewer_zoom);
+			}
+			break;
+
+		case KEY_DEBUGGED + KEY_ALTED + KEY_MINUS:
+		case KEY_DEBUGGED1 + KEY_ALTED + KEY_MINUS:
+			{
+			Viewer_zoom -= 0.1f;
+			g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "viewer zoom lowered to %0.2f" , Viewer_zoom);
+			}
+			break;
 
 	}	// end switch
 
