@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.109 $
- * $Date: 2005-03-20 00:09:07 $
+ * $Revision: 2.110 $
+ * $Date: 2005-03-20 18:05:04 $
  * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2005/03/20 00:09:07  phreak
+ * Added gr_draw_htl_line and gr_draw_htl sphere
+ * There still needs to be D3D versions implemented, but OGL is done.
+ * Follow that or ask phreak about how its implemented/
+ *
  * Revision 2.108  2005/03/19 21:03:54  wmcoolmon
  * OpenGL display lists
  *
@@ -875,10 +880,10 @@ void opengl_minimize()
 #ifdef _WIN32
 	HWND wnd=(HWND)os_get_window();
 
-	os_suspend();
+//	os_suspend();
 	ShowWindow(wnd, SW_MINIMIZE);
 	ChangeDisplaySettings(NULL,0);
-	os_resume();
+//	os_resume();
 #else
 	// lets not minimize if we are in windowed mode
 	if (!(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN))
@@ -3618,10 +3623,12 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_make_render_target = gr_ogl_make_render_target;
 	gr_screen.gf_set_render_target = gr_ogl_set_render_target;
 
-
 	gr_screen.gf_start_state_block = gr_opengl_start_state_block;
 	gr_screen.gf_end_state_block = gr_opengl_end_state_block;
 	gr_screen.gf_set_state_block = gr_opengl_set_state_block;
+
+	gr_screen.gf_draw_htl_line = gr_opengl_draw_htl_line;
+	gr_screen.gf_draw_htl_sphere = gr_opengl_draw_htl_sphere;
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************
