@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-03-23 20:08:33 $
- * $Author: phreak $
+ * $Revision: 2.38 $
+ * $Date: 2005-03-25 22:36:01 $
+ * $Author: Goober5000 $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/03/23 20:08:33  phreak
+ * Some specular values in g3_draw_perspective_bitmap() were being incorrectly set.  fixed that
+ *
  * Revision 2.36  2005/03/20 00:11:27  phreak
  * high-level implementation for gr_draw_htl_line and gr_draw_htl_sphere
  *
@@ -2739,9 +2742,9 @@ void flash_ball::initalise(int number, float min_ray_width, float max_ray_width,
 #define vp(p)	((vector *) (p))
 #define fl(p)	(*((float *) (p)))
 
-void flash_ball::defpoint(int off, ubyte *bsp_data){
-
-	int i, n;
+void flash_ball::defpoint(int off, ubyte *bsp_data)
+{
+	int n;
 //	off+=4;
 	int nverts = w(off+bsp_data+8);	
 	int offset = w(off+bsp_data+16);
