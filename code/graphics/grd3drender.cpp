@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.11 $
- * $Date: 2003-03-18 10:07:02 $
- * $Author: unknownplayer $
+ * $Revision: 2.12 $
+ * $Date: 2003-07-04 02:27:48 $
+ * $Author: phreak $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2003/03/18 10:07:02  unknownplayer
+ * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
+ *
  * Revision 2.10  2003/03/02 05:43:48  penguin
  * ANSI C++ - fixed non-compliant casts to unsigned short and unsigned char
  *  - penguin
@@ -2769,3 +2772,10 @@ void d3d_render_timer_bar(int colour, float x, float y, float w, float h)
 	// The correct call now is:-
 	d3d_DrawPrimitive(D3DVT_TLVERTEX,D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
 }
+
+void gr_d3d_push_texture_matrix(int unit)
+{}
+void gr_d3d_pop_texture_matrix(int unit)
+{}
+void gr_d3d_translate_texture_matrix(int unit, vector *shift)
+{}
