@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.6 $
- * $Date: 2003-04-29 01:03:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2003-05-21 20:27:07 $
+ * $Author: phreak $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2003/04/29 01:03:23  Goober5000
+ * implemented the custom hitpoints mod
+ * --Goober5000
+ *
  * Revision 2.5  2003/03/18 10:07:03  unknownplayer
  * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
  *
@@ -1240,7 +1244,7 @@ void hud_show_radar()
 		return;
 	}
 
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | /*VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
 		if ( Game_detail_flags & DETAIL_FLAG_HUD )	{
 			if ( hud_gauge_active(HUD_RADAR) ) {
 				HUD_reset_clip();
@@ -1260,7 +1264,7 @@ void hud_show_target_model()
 	// display the miniature model of the target in the target box and shade
 	// RT Might be faster to use full detail model
 	if ( Game_detail_flags & DETAIL_FLAG_HUD )	{
-		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | /*VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
 			hud_render_target_model();
 	}
 }
@@ -1292,7 +1296,7 @@ void HUD_render_3d(float frametime)
 		return;
 	}
 
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) {
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) {
 
 		hud_show_common_3d_gauges(frametime, 1);
 
@@ -1302,7 +1306,7 @@ void HUD_render_3d(float frametime)
 			hud_show_homing_missiles();
 		}
 
-	} else if ( Viewer_mode & (VM_CHASE | VM_EXTERNAL | VM_WARP_CHASE | VM_PADLOCK_ANY ) ) {
+	} else if ( Viewer_mode & (/*VM_CHASE |*/ VM_EXTERNAL | VM_WARP_CHASE | VM_PADLOCK_ANY ) ) {
 		// If the player is warping out, don't draw the targeting gauges
 		Assert(Player != NULL);
 		if ( Player->control_mode != PCM_NORMAL ) {
@@ -1514,7 +1518,8 @@ void HUD_render_2d(float frametime)
 		return;
 	}
 
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {		
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {		
+	
 		// display Energy Transfer System gauges
 		if ( hud_gauge_active(HUD_ETS_GAUGE) ) {
 			show_gauge_flag=1;
