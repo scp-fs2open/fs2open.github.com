@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.h $
- * $Revision: 2.0 $
- * $Date: 2002-06-03 04:02:23 $
- * $Author: penguin $
+ * $Revision: 2.1 $
+ * $Date: 2002-08-06 16:50:13 $
+ * $Author: phreak $
  *
  * Header file for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.0  2002/06/03 04:02:23  penguin
+ * Warpcore CVS sync
+ *
+ * Revision 1.2 2002/08/04  22:46:55  PhReAk
+ * Added "Targetbox_wire" variable to toggle if wireframes are on=1 or off=0
+ *
+ *
  * Revision 1.1  2002/05/02 18:03:08  mharris
  * Initial checkin - converted filenames and includes to lower case
  *
@@ -144,6 +151,9 @@ extern int Target_window_coords[GR_NUM_RESOLUTIONS][4];
 // The HUD_config controls whether this can be shown... but the player can still toggle it on/off
 // during the game.
 extern int Targetbox_show_extra_info;
+
+//used to track if the player has wireframe hud target box turned on
+extern int Targetbox_wire;
 
 void	hud_targetbox_init();
 void	hud_targetbox_init_flash();
