@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.41 $
- * $Date: 2005-03-07 13:10:21 $
- * $Author: bobboau $
+ * $Revision: 2.42 $
+ * $Date: 2005-03-20 00:09:07 $
+ * $Author: phreak $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.40  2005/03/04 03:24:44  bobboau
  * made all the gr_d3d_tmapper variants use dynamic a vertex buffer rather
  * than drawprimitiveup, this also means that these functions can now
@@ -594,6 +598,9 @@ void gr_d3d_pop_texture_matrix(int unit);
 void gr_d3d_translate_texture_matrix(int unit, vector *shift);
 void gr_d3d_zbias(int zbias);
 void gr_d3d_set_fill_mode(int mode);
+
+void gr_d3d_draw_htl_line(vector *start, vector* end);
+void gr_d3d_draw_htl_sphere(float rad);
 
 void d3d_render_timer_bar(int colour, float x, float y, float w, float h);
 
