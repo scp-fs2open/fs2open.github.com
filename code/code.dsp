@@ -543,23 +543,27 @@ SOURCE=.\Graphics\GrD3DTexture.cpp
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\Graphics\GrOpenGL.h
+SOURCE=.\graphics\gropengl.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrOpenglExtension.h
+SOURCE=.\graphics\gropenglbmpman.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrOpenGLlight.h
+SOURCE=.\graphics\gropenglextension.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrOpenglTexture.h
+SOURCE=.\graphics\gropengllight.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrOpenGLTNL.h
+SOURCE=.\graphics\gropengltexture.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\gropengltnl.h
 # End Source File
 # End Group
 # Begin Group "OpenGL CPPs"
@@ -567,23 +571,27 @@ SOURCE=.\graphics\GrOpenGLTNL.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\Graphics\GrOpenGL.cpp
+SOURCE=.\graphics\gropengl.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrOpenglExtension.cpp
+SOURCE=.\graphics\gropenglbmpman.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrOpenGLlight.cpp
+SOURCE=.\graphics\gropenglextension.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrOpenglTexture.cpp
+SOURCE=.\graphics\gropengllight.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\graphics\GrOpenGLTNL.cpp
+SOURCE=.\graphics\gropengltexture.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graphics\gropengltnl.cpp
 # End Source File
 # End Group
 # End Group
