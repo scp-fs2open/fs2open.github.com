@@ -46,8 +46,14 @@ bool movie_play(char *name)
 
 	fclose(fp);
 
+	// This is a bit of a hack but it works nicely
  	if(gr_screen.mode == GR_DIRECT3D)
+	{
    		GlobalD3DVars::D3D_activate = 0;
+		GlobalD3DVars::lpD3DDevice->EndScene();
+	  	GlobalD3DVars::lpD3DDevice->Present(NULL,NULL,NULL,NULL);
+		d3d_lost_device();
+	}
 
 	process_messages();
 
