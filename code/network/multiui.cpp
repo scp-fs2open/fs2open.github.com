@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-02-04 09:02:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2004-03-04 05:57:45 $
+ * $Author: Kazan $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/02/04 09:02:44  Goober5000
+ * got rid of unnecessary double semicolons
+ * --Goober5000
+ *
  * Revision 2.15  2003/11/13 03:59:54  Kazan
  * PXO_SID changed from unsigned to signed
  *
@@ -1513,10 +1517,11 @@ void multi_join_game_init()
 			}
 
 		}
-	}
+	
 
+	}
 	
-	
+	// this isn't fs2open PXO explicitly -- i've just cleaned it up a bit and it's _compatable_ with fs2openPXO
 	char textbuffer[17];
 	memset(textbuffer, 0, 17);
 	ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
@@ -4881,63 +4886,6 @@ void multi_create_button_pressed(int n)
 void multi_create_do_netstuff()
 {
 
-	/*// send Heartbeat to the FS2OpenPXO master server
-
-
-	static int LastSend = -1;
-	static int NetSpeed;
-	if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
-	{
-		NetSpeed = multi_get_connection_speed();
-		if (PXO_port == -1)
-		{
-			CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-			if(file == NULL){
-				ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
-				return;
-			}
-				
-
-			char Port[32];
-			if (cfgets(PXO_Server, 32, file) == NULL)
-			{
-				ml_printf("Network", "No Masterserver definition!\n");
-				return;
-			}
-
-			if (strstr(PXO_Server, "\n"))
-				*strstr(PXO_Server, "\n") = '\0';
-
-			if (cfgets(Port, 32, file) != NULL)
-				PXO_port = atoi(Port);
-			else
-				PXO_port = 12000;
-		}
-
-		//FS2OpenPXO code
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-#if !defined(PXO_TCP)
-					if (!FS2OpenPXO_Socket.InitSocket())
-#else
-					if (!FS2OpenPXO_Socket.InitSocket(PXOServer, PXO_port))
-#endif
-					{
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize UDP_Socket!!\n");
-				}
-		}
-
-		if ((clock() - LastSend) >= 60000 || LastSend == -1)
-		{
-			LastSend = clock();
-
-			// finish implementation!
-			//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
-
-			SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, NetSpeed, Netgame.game_state, Netgame.type_flags, Netgame.max_players);
-		}
-	}*/
 }
 
 // if not on a standalone
@@ -9465,26 +9413,6 @@ void multi_debrief_init()
 void multi_debrief_do_frame()
 {
 	Multi_debrief_time += flFrametime;
-
-	/* FS2NetD Heartbeat Continue */
-
-	/*if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
-	{
-		static int LastSend = -1;
-		if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
-		{
-
-			if ((clock() - LastSend) >= 60000 || LastSend == -1)
-			{
-				LastSend = clock();
-
-				// finish implementation!
-				//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
-
-				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, multi_get_connection_speed(), Netgame.game_state, Netgame.type_flags, Netgame.max_players);
-			}
-		}
-	}*/
 
 	// set the netgame state to be debriefing when appropriate
 	if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Netgame.game_state != NETGAME_STATE_DEBRIEF) && multi_netplayer_state_check3(NETPLAYER_STATE_DEBRIEF, NETPLAYER_STATE_DEBRIEF_ACCEPT, NETPLAYER_STATE_DEBRIEF_REPLAY)){

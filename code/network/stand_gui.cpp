@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.7 $
- * $Date: 2003-11-11 02:15:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2004-03-04 05:57:45 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2003/11/11 02:15:46  Goober5000
+ * ubercommit - basically spelling and language fixes with some additional
+ * warnings disabled
+ * --Goober5000
+ *
  * Revision 2.6  2003/11/06 20:22:14  Kazan
  * slight change to .dsp - leave the release target as fs2_open_r.exe already
  * added myself to credit
@@ -2009,59 +2014,7 @@ void std_do_gui_frame()
 
 
 	// ========================= Fs2NetD support =========================
-	/*static int LastSend = -1;
-	static char Server[32];
-	static int NetSpeed;
-	static int port;
-	if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
-	{
-		NetSpeed = multi_get_connection_speed();
-		if (LastSend == -1)
-		{
-			CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-			if(file == NULL){
-				std_notify_tracker_login_fail();
-				return;
-			}
-				
-
-			char Port[32];
-			if (cfgets(Server, 32, file) == NULL)
-			{
-				std_notify_tracker_login_fail();
-				return;
-			}
-
-			if (cfgets(Port, 32, file) != NULL)
-				port = atoi(Port);
-			else
-				port = 12000;
-		}
-
-		//FS2OpenPXO code
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{
-#if !defined(PXO_TCP)
-					if (!FS2OpenPXO_Socket.InitSocket())
-#else
-					if (!FS2OpenPXO_Socket.InitSocket(PXOServer, PXO_port))
-#endif
-					{
-				{
-					std_notify_tracker_login_fail();
-				}
-		}
-
-		if ((clock() - LastSend) >= 60000 || LastSend == -1)
-		{
-			LastSend = clock();
-
-			// finish implementation!
-			//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
-
-			SendHeartBeat(Server, port, FS2OpenPXO_Socket, Netgame.name, NetSpeed, Netgame.game_state, Netgame.type_flags, Netgame.max_players);
-		}
-	}*/
+	// nothing needed here - kazan
 }
 
 
