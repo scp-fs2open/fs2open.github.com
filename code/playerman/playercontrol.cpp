@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.17 $
- * $Date: 2004-07-26 20:47:49 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2004-10-12 22:47:14 $
+ * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2004/07/26 20:47:49  Kazan
+ * remove MCD complete
+ *
  * Revision 2.16  2004/07/25 18:46:29  Kazan
  * -fred_no_warn has become -no_warn and applies to both fred and fs2
  * added new ai directive (last commit) and disabled afterburners while performing AIM_WAYPOINTS or AIM_FLY_TO_SHIP
@@ -1693,6 +1696,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 	ship_info	*cargo_sip;
 	vector		vec_to_cargo;
 	float			dot;
+	int scan_subsys;
 
 	outstr[0] = 0;
 
@@ -1705,9 +1709,12 @@ int player_inspect_cargo(float frametime, char *outstr)
 	cargo_sp = &Ships[cargo_objp->instance];
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
-	if (cargo_sip->flags & SIF_HUGE_SHIP) {
+	// Goober5000 - possibly swap cargo scan behavior
+	scan_subsys = (cargo_sip->flags & SIF_HUGE_SHIP);
+	if (cargo_sp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
+		scan_subsys = !scan_subsys;
+	if (scan_subsys)
 		return player_inspect_cap_subsys_cargo(frametime, outstr);
-	}
 
 	// check if target is ship class that can be inspected
 	// MWA -- 1/27/98 -- added fighters/bombers to this list.  For multiplayer, we
@@ -1839,7 +1846,8 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	cargo_sp = &Ships[cargo_objp->instance];
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
-	Assert(cargo_sip->flags & SIF_HUGE_SHIP);
+	// commented by Goober5000
+	//Assert(cargo_sip->flags & SIF_HUGE_SHIP);
 
 	if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
 		return 0;
@@ -1873,11 +1881,19 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	vector	subsys_pos;
 	float		subsys_rad;
 	int		subsys_in_view, x, y;
+	float scan_dist;
 
 	get_subsystem_world_pos(cargo_objp, Player_ai->targeted_subsys, &subsys_pos);
 	subsys_rad = subsys->system_info->radius;
 
-	if ( Player_ai->current_target_distance < max(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA)) ) {
+	// Goober5000
+	if (cargo_sip->flags & SIF_HUGE_SHIP) {
+		scan_dist = max(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA));
+	} else {
+		scan_dist = max(CARGO_REVEAL_MIN_DIST, (subsys_rad + CARGO_RADIUS_DELTA));
+	}
+
+	if ( Player_ai->current_target_distance < scan_dist ) {
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.67 $
- * $Date: 2004-10-12 07:34:45 $
+ * $Revision: 2.68 $
+ * $Date: 2004-10-12 22:47:14 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2004/10/12 07:34:45  Goober5000
+ * added contrail speed threshold
+ * --Goober5000
+ *
  * Revision 2.66  2004/10/11 22:29:25  Goober5000
  * added the no-bank ship flag (which works) and the affected-by-gravity flag
  * (which won't work until I implement gravity points)
@@ -913,7 +917,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"no-subspace-drive",
 	"nav-carry-status",
 	"no-bank",
-	"affected-by-gravity"
+	"affected-by-gravity",
+	"toggle-subsystem-scanning"
 };
 
 
@@ -2057,6 +2062,9 @@ int parse_create_object(p_object *objp)
 
 	if ( objp->flags2 & P2_SF2_AFFECTED_BY_GRAVITY )
 		Ships[shipnum].flags2 |= SF2_AFFECTED_BY_GRAVITY;
+
+	if ( objp->flags2 & P2_SF2_TOGGLE_SUBSYSTEM_SCANNING )
+		Ships[shipnum].flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
 
 #if defined(ENABLE_AUTO_PILOT)
 	if ( objp->flags2 & P2_SF2_NAV_CARRY_STATUS )

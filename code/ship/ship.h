@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.66 $
- * $Date: 2004-10-11 22:29:24 $
+ * $Revision: 2.67 $
+ * $Date: 2004-10-12 22:47:15 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2004/10/11 22:29:24  Goober5000
+ * added the no-bank ship flag (which works) and the affected-by-gravity flag
+ * (which won't work until I implement gravity points)
+ * --Goober5000
+ *
  * Revision 2.65  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -768,15 +773,16 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 
 
 // Bits for ship.flags2
-#define	SF2_LIGHTS_ON				(1<<0)		// ship has 'GLOW' lights turned on (Bobboau's lights)
-#define SF2_PRIMITIVE_SENSORS		(1<<1)		// Goober5000 - primitive sensor display
-#define SF2_FRIENDLY_STEALTH_INVIS	(1<<2)		// Goober5000 - when stealth, don't appear on radar even if friendly
-#define SF2_STEALTH					(1<<3)		// Goober5000 - is this particular ship stealth
-#define SF2_DONT_COLLIDE_INVIS		(1<<4)		// Goober5000 - is this particular ship don't-collide-invisible
-#define SF2_NO_SUBSPACE_DRIVE		(1<<5)		// Goober5000 - this ship has no subspace drive
-#define SF2_NAVPOINT_CARRY			(1<<6)		// Kazan      - This ship autopilots with the player
-#define SF2_NO_BANK					(1<<7)		// Goober5000 - ship doesn't bank when turning
-#define SF2_AFFECTED_BY_GRAVITY		(1<<8)		// Goober5000 - ship affected by gravity points
+#define	SF2_LIGHTS_ON						(1<<0)		// ship has 'GLOW' lights turned on (Bobboau's lights)
+#define SF2_PRIMITIVE_SENSORS				(1<<1)		// Goober5000 - primitive sensor display
+#define SF2_FRIENDLY_STEALTH_INVIS			(1<<2)		// Goober5000 - when stealth, don't appear on radar even if friendly
+#define SF2_STEALTH							(1<<3)		// Goober5000 - is this particular ship stealth
+#define SF2_DONT_COLLIDE_INVIS				(1<<4)		// Goober5000 - is this particular ship don't-collide-invisible
+#define SF2_NO_SUBSPACE_DRIVE				(1<<5)		// Goober5000 - this ship has no subspace drive
+#define SF2_NAVPOINT_CARRY					(1<<6)		// Kazan      - This ship autopilots with the player
+#define SF2_NO_BANK							(1<<7)		// Goober5000 - ship doesn't bank when turning
+#define SF2_AFFECTED_BY_GRAVITY				(1<<8)		// Goober5000 - ship affected by gravity points
+#define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<9)		// Goober5000 - switch whether subsystems are scanned
 
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
@@ -1640,6 +1646,7 @@ void ship_secondary_changed(ship *sp);
 // get the Ship_info flags for a given ship
 int ship_get_SIF(ship *shipp);
 int ship_get_SIF(int sh);
+
 extern void ship_do_cargo_revealed( ship *shipp, int from_network = 0 );
 extern void ship_do_cargo_hidden( ship *shipp, int from_network = 0 );
 extern void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int from_network = 0);
