@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.4 $
- * $Author: bobboau $
- * $Date: 2002-11-14 06:15:02 $
+ * $Revision: 2.5 $
+ * $Author: Goober5000 $
+ * $Date: 2002-12-03 23:05:13 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2002/11/14 06:15:02  bobboau
+ * added nameplate code
+ *
  * Revision 2.3  2002/08/01 01:41:07  penguin
  * The big include file move
  *
@@ -235,6 +238,7 @@ extern char *Starting_wing_names[MAX_STARTING_WINGS+1];
 #define MISSION_FLAG_NO_TRAITOR				(1<<4)	// player cannot become a traitor
 #define MISSION_FLAG_SHIP_TRAILS			(1<<5)	// Enables ship trails
 #define MISSION_FLAG_SUPPORT_REPAIRS_HULL	(1<<6)	// Toggles support ship repair of ship hulls
+#define MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT	(1<<7)	// Beam-free-all by default - Goober5000
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
@@ -364,6 +368,7 @@ typedef struct subsys_status {
 	char	name[NAME_LENGTH];
 	float	percent;  // percent damaged
 	int	primary_banks[MAX_PRIMARY_BANKS];
+	int primary_ammo[MAX_PRIMARY_BANKS];
 	int	secondary_banks[MAX_SECONDARY_BANKS];
 	int	secondary_ammo[MAX_SECONDARY_BANKS];
 	int	ai_class;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.3 $
- * $Date: 2002-12-03 00:00:52 $
+ * $Revision: 2.4 $
+ * $Date: 2002-12-03 23:05:13 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2002/12/03 00:00:52  Goober5000
+ * fixed player entry delay bug
+ *
  * Revision 2.2  2002/11/14 06:15:02  bobboau
  * added nameplate code
  *
@@ -324,7 +327,7 @@
  * $NoKeywords: $
  */
 
-#include	<stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -1411,6 +1414,7 @@ int parse_create_object(p_object *objp)
 	int	i, j, k, objnum, shipnum;
 	ai_info *aip;
 	ship_subsys *ptr;
+	ship_subsys *temp_subsys;
 	ship_info *sip;
 	subsys_status *sssp;
 	ship_weapon *wp;
@@ -1503,6 +1507,24 @@ int parse_create_object(p_object *objp)
 			}
 		}
 #endif
+	}
+
+	// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
+	if (The_mission.flags & MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT)
+	{
+		temp_subsys = GET_FIRST(&Ships[shipnum].subsys_list);
+		while(temp_subsys != END_OF_LIST(&Ships[shipnum].subsys_list))
+		{
+			// just mark all turrets as beam free
+			if(temp_subsys->system_info->type == SUBSYSTEM_TURRET)
+			{
+				temp_subsys->weapons.flags |= SW_FLAG_BEAM_FREE;
+				temp_subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+			}
+
+			// next item
+			temp_subsys = GET_NEXT(temp_subsys);
+		}
 	}
 	
 	// check the parse object's flags for possible flags to set on this newly created ship
