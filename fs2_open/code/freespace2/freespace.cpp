@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.86 $
- * $Date: 2004-04-08 05:00:13 $
- * $Author: righteous1 $
+ * $Revision: 2.87 $
+ * $Date: 2004-04-14 23:17:26 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2004/04/08 05:00:13  righteous1
+ * Backing out mainhall audio fix attempt.
+ *
  * Revision 2.85  2004/04/07 03:31:53  righteous1
  * Updated to add alt_tab_pause() function to draw pause screen and discontinue sounds when the game is minimized. -R1
  *
@@ -9363,6 +9366,10 @@ int detect_lang()
 {
 	uint file_checksum;
 	int idx;
+
+	// if the reg is set then let lcl_init() figure out what to do
+	if (os_config_read_string( NULL, NOX("Language"), NULL ) != NULL)
+		return -1;
 
 	// try and open the file to verify
 	CFILE *detect = cfopen("font01.vf", "rb");
