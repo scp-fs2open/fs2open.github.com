@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.17 $
- * $Date: 2003-11-17 04:25:55 $
- * $Author: bobboau $
+ * $Revision: 2.18 $
+ * $Date: 2003-12-16 20:42:36 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2003/11/17 04:25:55  bobboau
+ * made the poly list dynamicly alocated,
+ * started work on fixing the node model not rendering,
+ * but most of that got commented out so I wouldn't have to deal with it
+ * while mucking about with the polylist
+ *
  * Revision 2.16  2003/11/16 04:09:24  Goober5000
  * language
  *
@@ -438,6 +444,8 @@ gr_line(x1,y1,x2,y2)
 
 //MAX_POLYGON_NORMS
 #define MAX_POLYGON_TRI_POINTS 15000
+#define MAX_DRAW_DISTANCE 250000.0f
+#define MIN_DRAW_DISTANCE 1.0f
 
 // This is a structure used by the shader to keep track
 // of the values you want to use in the shade primitive.
