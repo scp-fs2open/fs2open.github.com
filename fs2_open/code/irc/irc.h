@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.4 $
- * $Date: 2004-04-03 18:11:21 $
- * $Author: Kazan $
+ * $Revision: 1.5 $
+ * $Date: 2004-05-25 00:24:00 $
+ * $Author: wmcoolmon $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/04/03 18:11:21  Kazan
+ * FRED fixes
+ *
  * Revision 1.3  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
  * for #pragma warning disable to indicate the message being disabled
@@ -42,7 +45,7 @@
 #include <vector>
 #pragma warning(pop)
 
-#include <fstream.h>
+#include <fstream>
 
 struct irc_user
 {
@@ -95,7 +98,7 @@ class irc_channel
 		// logging
 		bool Log;
 		std::vector<std::string> logfile;
-		ofstream LogStream;
+		std::ofstream LogStream;
 
 		// utility functions
 		void RemoveFirstMessage();
