@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.69 $
- * $Date: 2004-10-15 09:21:55 $
+ * $Revision: 2.70 $
+ * $Date: 2004-10-31 02:04:34 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2004/10/15 09:21:55  Goober5000
+ * cleaned up some sexp stuff and added wing capability to kamikaze sexp
+ * --Goober5000
+ *
  * Revision 2.68  2004/10/12 22:47:14  Goober5000
  * added toggle-subsystem-scanning ship flag
  * --Goober5000
@@ -2832,6 +2836,12 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		Player_start_pobject.flags |= P_SF_PLAYER_START_VALID;
 	}
 	
+
+	// Goober5000 - preload stuff for certain object flags
+	// (done after parsing object, but before creating it)
+	if (objp->flags & P_KNOSSOS_WARP_IN)
+		Knossos_warp_ani_used = 1;
+
 
 // Now create the object.
 // Don't create the new ship blindly.  First, check the sexp for the arrival cue

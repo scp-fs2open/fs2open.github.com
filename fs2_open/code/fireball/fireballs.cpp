@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.16 $
- * $Date: 2004-09-17 07:12:22 $
+ * $Revision: 2.17 $
+ * $Date: 2004-10-31 02:04:33 $
  * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2004/09/17 07:12:22  Goober5000
+ * changed around the logic for the 3D warp effect
+ * --Goober5000
+ *
  * Revision 2.15  2004/08/23 04:32:39  Goober5000
  * warp effect is back to FS2 default
  * --Goober5000
@@ -577,6 +581,9 @@ void fireball_init()
 	for (i=0; i<MAX_FIREBALLS; i++ )	{
 		Fireballs[i].objnum	= -1;
 	}
+
+	// Goober5000 - reset Knossos warp flag
+	Knossos_warp_ani_used = 0;
 
 	mprintf(("loading warp model"));
 	Warp_model = -1;
@@ -1205,7 +1212,10 @@ void fireballs_page_in()
 	for ( i = 0; i < MAX_FIREBALL_TYPES ; i++ ) {
 		fd = &Fireball_info[i];
 
-		for(idx=0; idx<fd->lod_count; idx++){
+		for(idx=0; idx<fd->lod_count; idx++) {
+
+			// if this is a Knossos ani, only load if Knossos_warp_ani_used is true
+
 			bm_page_in_texture( fd->lod[idx].bitmap_id, fd->lod[idx].num_frames );
 		}
 	}

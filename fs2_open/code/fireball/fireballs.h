@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.10 $
- * $Date: 2004-09-17 07:12:22 $
+ * $Revision: 2.11 $
+ * $Date: 2004-10-31 02:04:33 $
  * $Author: Goober5000 $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2004/09/17 07:12:22  Goober5000
+ * changed around the logic for the 3D warp effect
+ * --Goober5000
+ *
  * Revision 2.9  2004/08/23 04:32:39  Goober5000
  * warp effect is back to FS2 default
  * --Goober5000
@@ -280,5 +284,8 @@ extern void warpin_render(object *obj, matrix *orient, vector *pos, int texture_
 extern int Warp_glow_bitmap;			// Internal
 
 extern int Warp_model;
+
+// Goober5000
+extern int Knossos_warp_ani_used;
 
 #endif /* _FIREBALLS_H */
