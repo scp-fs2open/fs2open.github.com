@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.57 $
- * $Date: 2004-01-20 22:59:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.58 $
+ * $Date: 2004-01-24 12:47:48 $
+ * $Author: randomtiger $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/01/20 22:59:09  Goober5000
+ * got rid of some warnings... it actually looks like Gr_gamma_lookup can be changed
+ * from int to ubyte, because everything that accesses it converts to a ubyte  O.o
+ * --Goober5000
+ *
  * Revision 2.56  2004/01/19 00:56:09  randomtiger
  * Some more small changes for Fred OGL
  *
@@ -543,6 +548,7 @@ This file combines penguin's, phreak's and the Icculus OpenGL code
 #include "ddsutils/ddsutils.h"
 #include "model/model.h"
 #include "debugconsole/timerbar.h"
+#include "debugconsole/dbugfile.h"
 
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
@@ -1868,6 +1874,7 @@ void gr_opengl_aabitmap(int x, int y)
 void gr_opengl_string( int sx, int sy, char *s )
 {
 	TIMERBAR_PUSH(4);
+
 	int width, spacing, letter;
 	int x, y;
 
@@ -2865,7 +2872,7 @@ void gr_opengl_cleanup(int minimize)
 	HWND wnd=(HWND)os_get_window();
 	if ( !OGL_inited )	return;
 
-
+#ifndef FRED_OGL
 	gr_reset_clip();
 	gr_clear();
 	gr_flip();
@@ -2876,22 +2883,27 @@ void gr_opengl_cleanup(int minimize)
 	gr_reset_clip();
 	gr_clear();
 	gr_flip();
+#endif
 
 	OGL_inited = 0;
 
+	DBUGFILE_OUTPUT_0("");
 	if (rend_context)
 	{
 		if (!wglMakeCurrent(NULL, NULL))
 		{
+			DBUGFILE_OUTPUT_0("");
 			MessageBox(wnd, "SHUTDOWN ERROR", "error", MB_OK);
 		}
 		if (!wglDeleteContext(rend_context))
 		{
+			DBUGFILE_OUTPUT_0("");
 			MessageBox(wnd, "Unable to delete rendering context", "error", MB_OK);
 		}
 		rend_context=NULL;
 	}
 
+	DBUGFILE_OUTPUT_0("opengl_minimize");
 	opengl_minimize();
 	if (minimize)
 	{
@@ -5069,13 +5081,10 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glGetIntegerv(GL_MAX_LIGHTS, &max_gl_lights); //Get the max number of lights supported
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-#ifndef FRED_OGL
-
 	if (!Cmdline_window)
 	{
 		opengl_go_fullscreen(wnd);
 	}
-#endif
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -5324,6 +5333,9 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_no_combine;
 
 	glDisable(GL_LIGHTING); //making sure of it
+
+	// This stops fred crashing if no textures are set
+	gr_screen.current_bitmap = -1;
 
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
 }

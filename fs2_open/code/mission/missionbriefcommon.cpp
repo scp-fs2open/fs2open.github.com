@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.5 $
- * $Date: 2003-11-16 04:08:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2004-01-24 12:47:48 $
+ * $Author: randomtiger $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2003/11/16 04:08:47  Goober5000
+ * fixed briefing scroll and display of "more"
+ * --Goober5000
+ *
  * Revision 2.4  2003/10/15 22:03:25  Kazan
  * Da Species Update :D
  *
@@ -1200,10 +1204,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-
+#ifndef FRED_OGL
 			if ( Fred_running )	{
 				gr_aascaler(&va, &vb);
-			} else {
+			} else 
+#endif
+			{
 				// Don't bother scaling for the game
 				gr_aabitmap(bx, by);
 			}
