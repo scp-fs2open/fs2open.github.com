@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.24 $
- * $Date: 2004-07-26 20:47:38 $
- * $Author: Kazan $
+ * $Revision: 2.25 $
+ * $Date: 2005-01-10 04:45:09 $
+ * $Author: wmcoolmon $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2004/07/26 20:47:38  Kazan
+ * remove MCD complete
+ *
  * Revision 2.23  2004/07/17 18:46:08  taylor
  * various OGL and memory leak fixes
  *
@@ -792,7 +795,7 @@ debriefing	Traitor_debriefing;				// used when player is a traitor
 // pointers to the active stages for this debriefing
 static debrief_stage *Debrief_stages[MAX_DEBRIEF_STAGES];
 static debrief_stage Promotion_stage, Badge_stage;
-static debrief_stats_kill_info Debrief_stats_kills[MAX_SHIP_TYPES];
+static debrief_stats_kill_info *Debrief_stats_kills = NULL;
 static debrief_multi_list_info Multi_list[MAX_PLAYERS];
 int Multi_list_select;
 
@@ -2009,6 +2012,9 @@ void debrief_stats_render()
 						gr_printf(0, y, XSTR( "All-time Kills by Ship Type", 448));
 
 				} else if (i > 1) {
+					//Assert: Was debrief_setup_ship_kill_stats called?
+					Assert(Debrief_stats_kills != NULL);
+
 					gr_printf(0, y, "%s", Debrief_stats_kills[i - 2].text);
 					gr_printf(Debrief_text_x2[gr_screen.res], y, "%d", Debrief_stats_kills[i - 2].num);
 				}
@@ -2190,6 +2196,11 @@ void debrief_setup_ship_kill_stats(int stage_num)
 	//ushort *kill_arr;
 	int *kill_arr;	//DTP max ships
 	debrief_stats_kill_info	*kill_info;
+
+	if(Debrief_stats_kills == NULL)
+	{
+		Debrief_stats_kills = new debrief_stats_kill_info[Num_ship_types];
+	}
 
 	Assert(Current_stage < DEBRIEF_NUM_STATS_PAGES);
 	if ( Current_stage == DEBRIEF_MISSION_STATS || Current_stage == DEBRIEF_ALLTIME_STATS )
@@ -2743,6 +2754,11 @@ void debrief_close()
 		multi_debrief_close();
 	}
 #endif
+	if(Debrief_stats_kills != NULL)
+	{
+		delete[] Debrief_stats_kills;
+		Debrief_stats_kills = NULL;
+	}
 	game_flush();
 
 	Debrief_inited = 0;
