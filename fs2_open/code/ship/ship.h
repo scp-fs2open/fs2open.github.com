@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.32 $
- * $Date: 2003-02-25 06:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.33 $
+ * $Date: 2003-03-01 01:15:38 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2003/02/25 06:22:49  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.31  2003/01/27 07:46:32  Goober5000
  * finished up my fighterbay code - ships will not be able to arrive from or depart into
  * fighterbays that have been destroyed (but you have to explicitly say in the tables
@@ -1248,7 +1254,7 @@ extern void ship_level_init();		// called before the start of each level
 
 //returns -1 if failed
 extern int ship_create(matrix * orient, vector * pos, int ship_type, char *ship_name = NULL);
-extern void change_ship_type(int n, int ship_type);
+extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_model_change(int n, int ship_type, int force_ship_info_stuff = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );

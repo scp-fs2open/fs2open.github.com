@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.49 $
- * $Date: 2003-02-25 06:22:49 $
- * $Author: bobboau $
+ * $Revision: 2.50 $
+ * $Date: 2003-03-01 01:15:38 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2003/02/25 06:22:49  bobboau
+ * fixed a bunch of fighter beam bugs,
+ * most notabley the sound now works corectly,
+ * and they have limeted range with atenuated damage (table option)
+ * added bank specific compatabilities
+ *
  * Revision 2.48  2003/02/16 05:14:29  bobboau
  * added glow map nebula bug fix for d3d, someone should add a fix for glide too
  * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
@@ -5532,7 +5538,7 @@ void ship_model_change(int n, int ship_type, int force_ship_info_stuff)
 // input:	n				=>		index of ship in Ships[] array
 //				ship_type	=>		ship class (index into Ship_info[])
 //
-void change_ship_type(int n, int ship_type)
+void change_ship_type(int n, int ship_type, int by_sexp)
 {
 	ship_info	*sip;
 	ship			*sp;
@@ -5566,16 +5572,22 @@ void change_ship_type(int n, int ship_type)
 	if (Fred_running) {
 		objp->hull_strength = 100.0f;
 	} else {
-		// commented by Goober5000: we want to maintain hull strength
-		//objp->hull_strength = sip->initial_hull_strength;
+		// Goober5000: don't set hull strength if called by sexp
+		if (!by_sexp)
+		{
+			objp->hull_strength = sip->initial_hull_strength;
+		}
 	}
 
 	// set the correct shields strength
 	if (Fred_running) {
 		objp->shields[0] = 100.0f;
 	} else {
-		// Goober5000 - again, we want to maintain shield strength
-		//set_shield_strength(objp, sip->shields);
+		// Goober5000: don't set shield strength if called by sexp
+		if (!by_sexp)
+		{
+			set_shield_strength(objp, sip->shields);
+		}
 	}
 
 	sp->afterburner_fuel = sip->afterburner_fuel_capacity;

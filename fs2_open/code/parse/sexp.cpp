@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.40 $
- * $Date: 2003-01-26 18:37:19 $
+ * $Revision: 2.41 $
+ * $Date: 2003-03-01 01:15:38 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2003/01/26 18:37:19  Goober5000
+ * changed change-music to change-soundtrack
+ * --Goober5000
+ *
  * Revision 2.39  2003/01/25 04:54:36  Goober5000
  * added preloader to change-ship-model and change-ship-class so that the game
  * doesn't hesitate when switching models in the middle of missions
@@ -7875,7 +7879,7 @@ void sexp_change_ship_class(int n)
 			// don't mess with a ship that's occupied
 			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
 			{
-				change_ship_type(ship_num, class_num);
+				change_ship_type(ship_num, class_num, 1);
 			}
 		}
 	}
