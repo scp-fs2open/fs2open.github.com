@@ -837,31 +837,12 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_preload = gr_d3d_preload;
 
 	// now for the bitmap functions
-	gr_screen.gf_bm_get_next_handle         = bm_d3d_get_next_handle;         
-	gr_screen.gf_bm_close                   = bm_d3d_close;                   
-	gr_screen.gf_bm_init                    = bm_d3d_init;                    
-	gr_screen.gf_bm_get_frame_usage         = bm_d3d_get_frame_usage;         
-	gr_screen.gf_bm_create                  = bm_d3d_create;                  
-	gr_screen.gf_bm_load                    = bm_d3d_load;                   
-	gr_screen.gf_bm_load_duplicate          = bm_d3d_load_duplicate;          
-	gr_screen.gf_bm_load_animation          = bm_d3d_load_animation;          
-	gr_screen.gf_bm_get_info                = bm_d3d_get_info;                
-	gr_screen.gf_bm_lock                    = bm_d3d_lock;                    
-	gr_screen.gf_bm_unlock                  = bm_d3d_unlock;                  
-	gr_screen.gf_bm_get_palette             = bm_d3d_get_palette;             
-	gr_screen.gf_bm_release                 = bm_d3d_release;                 
-	gr_screen.gf_bm_unload                  = bm_d3d_unload;                  
-	gr_screen.gf_bm_unload_all              = bm_d3d_unload_all;              
-	gr_screen.gf_bm_page_in_texture         = bm_d3d_page_in_texture;         
-	gr_screen.gf_bm_page_in_start           = bm_d3d_page_in_start;           
-	gr_screen.gf_bm_page_in_stop            = bm_d3d_page_in_stop;            
-	gr_screen.gf_bm_get_cache_slot          = bm_d3d_get_cache_slot;          
-	gr_screen.gf_bm_get_components          = bm_d3d_get_components;          
-	gr_screen.gf_bm_get_section_size        = bm_d3d_get_section_size;      
-	
-	gr_screen.gf_bm_page_in_nondarkening_texture = bm_d3d_page_in_nondarkening_texture; 
-	gr_screen.gf_bm_page_in_xparent_texture		 = bm_d3d_page_in_xparent_texture;		 
-	gr_screen.gf_bm_page_in_aabitmap			 = bm_d3d_page_in_aabitmap;	 
+	gr_screen.gf_bm_free_data				= gr_d3d_bm_free_data;
+	gr_screen.gf_bm_create					= gr_d3d_bm_create;
+	gr_screen.gf_bm_init					= gr_d3d_bm_init;
+	gr_screen.gf_bm_load					= gr_d3d_bm_load;
+	gr_screen.gf_bm_page_in_start			= gr_d3d_bm_page_in_start;
+	gr_screen.gf_bm_lock					= gr_d3d_bm_lock;
 	
 	gr_screen.gf_push_texture_matrix = gr_d3d_push_texture_matrix;
 	gr_screen.gf_pop_texture_matrix = gr_d3d_pop_texture_matrix;
