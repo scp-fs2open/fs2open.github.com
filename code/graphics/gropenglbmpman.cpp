@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.3 $
- * $Date: 2004-12-05 01:28:39 $
+ * $Revision: 1.4 $
+ * $Date: 2005-01-21 08:54:53 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/12/05 01:28:39  taylor
+ * support uncompressed DDS images
+ * use TexSubImage2D for video anis
+ *
  * Revision 1.2  2004/11/23 00:10:06  taylor
  * try and protect the bitmap_entry stuff a bit better
  * fix the transparent support ship, again, but correctly this time
@@ -43,6 +47,12 @@
 void gr_opengl_bm_free_data(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
+
+	// might as well free up the on card texture data too in order to get rid
+	// of old interface stuff but don't free USER types since we can reuse
+	// ANI slots for faster and less resource intensive rendering - taylor
+	if (bm_bitmaps[n].type != BM_TYPE_USER)
+		opengl_free_texture_slot( n );
 }
 
 // API specifics for creating a user bitmap
