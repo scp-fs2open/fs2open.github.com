@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.20 $
- * $Date: 2003-05-04 20:21:00 $
+ * $Revision: 2.21 $
+ * $Date: 2003-07-15 02:39:59 $
  * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2003/05/04 20:21:00  phreak
+ * beams can't fire when disrupted.
+ * cycle ends if the beam is firing and shooting ship is disrupted
+ *
  * Revision 2.19  2003/04/29 01:03:22  Goober5000
  * implemented the custom hitpoints mod
  * --Goober5000
@@ -2910,9 +2914,14 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo)
 			quadrant_num = get_quadrant(&cinfo->hit_point);
 			if (!(hit_object->flags & SF_DYING) ) {
 				add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
-				bc->quadrant=quadrant_num;
 				hud_shield_quadrant_hit(hit_object, quadrant_num);
 			}
+		}
+		else
+		{
+			bc->quadrant=-1;
+			quadrant_num = get_quadrant(&cinfo->hit_point);
+			hit_object->shield_quadrant[quadrant_num]=0.0f;
 		}
 
 		// done
@@ -3335,7 +3344,7 @@ float beam_get_ship_damage(beam *b, object *objp, vector *hit_pos)
 
 	//atenuated damage, if I did everything right this should act like normal 
 	//unless you specificly specify it in the tables -Bobboau
-	return Weapon_info[b->weapon_info_index].damage * aten;
+	return Weapon_info[b->weapon_info_index].damage /* aten*/;
 }
 
 // if the beam is likely to tool a given target before its lifetime expires
