@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-03-12 06:03:07 $
- * $Author: phreak $
+ * $Revision: 1.6 $
+ * $Date: 2005-03-13 08:33:55 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/03/12 06:03:07  phreak
+ * Fixed a bug where the orb would incorrectly render under alternate FOVs.
+ * Updated the functions that scramble the contacts so the blips show up
+ * somewhat near where they should be.
+ *
  * Revision 1.4  2005/03/02 21:24:46  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -474,7 +479,7 @@ void radar_blip_draw_distorted_orb(blip *b)
 	if(emp_active_local()){
 		scale = emp_current_intensity();
 		distortion_angle *= frand_range(-3.0f,3.0f)*frand_range(0.0f, scale);
-		dist *= frand_range(max(0.75f, 0.75f*scale), min(1.25f, 1.25f*scale));
+		dist *= frand_range(MAX(0.75f, 0.75f*scale), MIN(1.25f, 1.25f*scale));
 
 		if (dist > 1.25f) dist = 1.25f;
 		if (dist < 0.75f) dist = 0.75f;
