@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.57 $
- * $Date: 2004-05-03 21:22:22 $
- * $Author: Kazan $
+ * $Revision: 2.58 $
+ * $Date: 2004-05-10 08:03:30 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2004/05/03 21:22:22  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.56  2004/04/13 05:42:45  Goober5000
  * fixed the custom hitpoints subsystem bug
  * --Goober5000
@@ -867,11 +872,9 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 
 char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"primitive-sensors",
-#if defined(ENABLE_AUTO_PILOT)
-	"no-subspace-drive",
-	"nav-carry-status"
-#else
 	"no-subspace-drive"
+#if defined(ENABLE_AUTO_PILOT)
+	"nav-carry-status"
 #endif
 };
 
@@ -1942,15 +1945,6 @@ int parse_create_object(p_object *objp)
 
 	if (objp->flags & P_OF_NO_SHIELDS || objp->ship_initial_shield_strength == 0.0f )
 		Objects[objnum].flags |= OF_NO_SHIELDS;
-
-	// Goober5000
-	// (to avoid round-off errors, weapon reserve is not tested for zero)
-	if (objp->flags & P_OF_NO_LASERS || Ship_info[objp->ship_class].max_weapon_reserve < WEAPON_RESERVE_THRESHOLD)
-		Objects[objnum].flags |= OF_NO_LASERS;
-
-	// Goober5000
-	if (objp->flags & P_OF_NO_ENGINES || sip->max_speed == 0 )
-		Objects[objnum].flags |= OF_NO_ENGINES;
 
 	if (objp->flags & P_SF_ESCORT)
 		Ships[shipnum].flags |= SF_ESCORT;

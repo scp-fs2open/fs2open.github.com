@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.61 $
- * $Date: 2004-05-03 21:22:23 $
- * $Author: Kazan $
+ * $Revision: 2.62 $
+ * $Date: 2004-05-10 08:03:31 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2004/05/03 21:22:23  Kazan
+ * Abandon strdup() usage for mod list processing - it was acting odd and causing crashing on free()
+ * Fix condition where alt_tab_pause() would flipout and trigger failed assert if game minimizes during startup (like it does a lot during debug)
+ * Nav Point / Auto Pilot code (All disabled via #ifdefs)
+ *
  * Revision 2.60  2004/03/17 04:07:32  bobboau
  * new fighter beam code
  * fixed old after burner trails
@@ -1739,5 +1744,9 @@ extern int ship_fire_tertiary(object *objp);
 
 // Goober5000 - handles submodel rotation, incorporating conditions such as gun barrels when firing
 extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss);
+
+// Goober5000 - shortcut hud stuff
+extern int ship_has_energy_weapons(ship *shipp);
+extern int ship_has_engine_power(ship *shipp);
 
 #endif

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.118 $
- * $Date: 2004-05-02 03:05:23 $
+ * $Revision: 2.119 $
+ * $Date: 2004-05-10 08:03:31 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2004/05/02 03:05:23  Goober5000
+ * added a comment
+ * --Goober5000
+ *
  * Revision 2.117  2004/04/30 22:20:27  Goober5000
  * extra insurance
  * --Goober5000
@@ -12447,4 +12451,17 @@ void ship_info_close(){
 		safe_kill(Ship_info[i].gun_mounts);
 		safe_kill(Ship_info[i].missile_banks);
 	}
+}
+
+// Goober5000
+int ship_has_energy_weapons(ship *shipp)
+{
+	// (to avoid round-off errors, weapon reserve is not tested for zero)
+	return (Ship_info[shipp->ship_info_index].max_weapon_reserve > WEAPON_RESERVE_THRESHOLD);
+}
+
+// Goober5000
+int ship_has_engine_power(ship *shipp)
+{
+	return (Ship_info[shipp->ship_info_index].max_speed > 0 );
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.5 $
- * $Date: 2004-03-05 09:01:57 $
+ * $Revision: 2.6 $
+ * $Date: 2004-05-10 08:03:30 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/03/05 09:01:57  Goober5000
+ * Uber pass at reducing #includes
+ * --Goober5000
+ *
  * Revision 2.4  2004/02/04 08:41:02  Goober5000
  * made code more uniform and simplified some things,
  * specifically shield percentage and quadrant stuff
@@ -436,8 +440,6 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_BEAM_PROTECTED	(1<<12)	// don't fire beam weapons at this type of object, probably mission critical.
 #define OF_GUARDIAN			(1<<13)	// Don't allow ship to die, keep at least 1% hull
 #define OF_SPECIAL_WARP		(1<<14)	// Object has special warp-in enabled.
-#define OF_NO_LASERS		(1<<15)	// object has no laser energy management system
-#define OF_NO_ENGINES		(1<<16)	// object has no engine power
 
 // Flags used by Fred
 #define OF_MARKED          (1<<17)   //Object is marked (Fred).  Can be reused in Freespace for anything that won't be used by Fred.

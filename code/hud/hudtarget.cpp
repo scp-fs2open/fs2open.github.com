@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.28 $
- * $Date: 2004-05-07 19:06:45 $
+ * $Revision: 2.29 $
+ * $Date: 2004-05-10 08:03:30 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2004/05/07 19:06:45  Goober5000
+ * added Righteous1's Y bug hack
+ * --Goober5000
+ *
  * Revision 2.27  2004/03/31 04:24:49  Goober5000
  * got rid of Bobboau's SAFEPOINTs in hudtarget.cpp
  * --Goober5000
@@ -4948,10 +4952,8 @@ void hud_show_weapon_energy_gauge()
 	}
 
 	// also leave if no energy can be stored for weapons - Goober5000
-	if (Objects[Player_ship->objnum].flags & OF_NO_LASERS)
-	{
+	if (!ship_has_energy_weapons(Player_ship))
 		return;
-	}
 
 	percent_left = Player_ship->weapon_energy/Ship_info[Player_ship->ship_info_index].max_weapon_reserve;
 	if ( percent_left > 1 )
