@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.2 $
- * $Date: 2003-05-04 20:50:06 $
+ * $Revision: 2.3 $
+ * $Date: 2003-07-15 16:07:12 $
  * $Author: phreak $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2003/05/04 20:50:06  phreak
+ * bumped MAX_TRAILS to 500 because of afterburner trails
+ *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move
  *
@@ -224,6 +227,8 @@ int trail_is_on_ship(int trail_index, ship *shipp)
 	return 0;
 }
 
+extern int OGL_inited;
+
 // Render the trail behind a missile.
 // Basically a queue of points that face the viewer.
 void trail_render( trail * trailp )
@@ -323,7 +328,7 @@ void trail_render( trail * trailp )
 				vlist[2]->u = 1.0f;  vlist[2]->v = 0.5f;
 
 				gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, l/255.0f );
-				if ( D3D_enabled )	{
+				if ( D3D_enabled || OGL_inited )	{
 					g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD );
 				} else {
 					g3_draw_poly( 3, vlist, TMAP_FLAG_TEXTURED );
@@ -343,7 +348,7 @@ void trail_render( trail * trailp )
 				vlist[3]->u = 0.0f;  vlist[3]->v = 1.0f;
 
 				gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, l/255.0f );
-				if ( D3D_enabled )	{
+				if ( D3D_enabled || OGL_inited )	{
 					g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD );
 				} else {
 					g3_draw_poly( 4, vlist, TMAP_FLAG_TEXTURED );
