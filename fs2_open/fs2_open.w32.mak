@@ -1088,13 +1088,13 @@ LINK32_OBJS= \
 <<
 
 
-!IF "$(NO_EXTERNAL_DEPS)" != "1"
-!IF EXISTS("fs2_open.dep")
-!INCLUDE "fs2_open.dep"
-!ELSE 
-!MESSAGE Warning: cannot find "fs2_open.dep"
-!ENDIF 
-!ENDIF 
+# !IF "$(NO_EXTERNAL_DEPS)" != "1"
+# !IF EXISTS("fs2_open.dep")
+# !INCLUDE "fs2_open.dep"
+# !ELSE 
+# !MESSAGE Warning: cannot find "fs2_open.dep"
+# !ENDIF 
+# !ENDIF 
 
 
 !IF "$(CFG)" == "Release" || "$(CFG)" == "Debug"
