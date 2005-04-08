@@ -1,6 +1,15 @@
 /* hudparse.cpp
 *	Contains code to parse hud gauge locations
 */
+
+/*
+ * $Logfile:
+ * $Revision:
+ * $Date:
+ * $Author:
+ *
+ * $Log:
+ */
 #include <cstddef>
 
 #include "parse/parselo.h"
