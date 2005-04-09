@@ -30,7 +30,7 @@ project.type=GENERIC
 project.target.type=EXECUTABLE
 project.version=3.6.5
 project.author=Taylor Richards
-project.source.target=../../fs2_open
+project.source.target=fs2_open_d
 project.has.gettext=0
 project.gui.command=
 project.programming.language=C++
@@ -47,12 +47,12 @@ project.menu.comment=FS2_Open Version 3.6.5
 project.menu.icon=
 project.menu.need.terminal=0
 
-project.configure.options=
+project.configure.options=--srcdir=../../
 anjuta.program.arguments=
 preferences.build.option.jobs=0
 preferences.build.option.silent=0
 preferences.build.option.autosave=0
-preferences.anjuta.make.options=-k --directory=../../
+preferences.anjuta.make.options=-k --directory=../
 preferences.make=make
 preferences.build.option.keep.going=1
 preferences.build.option.warn.undef=0
@@ -671,3 +671,4 @@ compiler.options.other.l.flags=
 compiler.options.other.l.libs=
 
 project.src.paths=../../
+
