@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-03-10 08:00:06 $
+ * $Revision: 2.15 $
+ * $Date: 2005-04-11 05:42:02 $
  * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/03/10 08:00:06  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.13  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -547,10 +556,8 @@ struct HC_gauge_region	HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES] =
 		HC_gauge_region("none",		1,		1,		-1,	0,	0,	-1, 0,	0),			// attacking target count
 		HC_gauge_region("HCB_38",	342,	138,	38,	0,	0,	-1, 0,	0),			// text flash gauge
 		HC_gauge_region("HCB_52",	465,	8,		52,	0,	0,	-1, 0,	0),			// comm menu
-#ifndef FS2_DEMO
 		HC_gauge_region("HCB_46",	324,	264,	46,	0,	0,	-1, 0,	0),			// support view gauge
 		HC_gauge_region("HCB_47",	418,	262,	47,	0,	0,	-1, 0,	0),			// netlag icon gauge
-#endif
 	//XSTR:ON
 	},
 	{ // GR_1024
@@ -592,10 +599,8 @@ struct HC_gauge_region	HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES] =
 		HC_gauge_region("none",			1,		1,		-1,	0,	0,	-1, 0,	0),			// attacking target count
 		HC_gauge_region("2_HCB_38",	548,	222,	38,	0,	0,	-1, 0,	0),			// text flash gauge
 		HC_gauge_region("2_HCB_52",	744,	14,	52,	0,	0,	-1, 0,	0),			// comm menu
-#ifndef FS2_DEMO
 		HC_gauge_region("2_HCB_46",	520,	422,	46,	0,	0,	-1, 0,	0),			// support view gauge
 		HC_gauge_region("2_HCB_47",	670,	419,	47,	0,	0,	-1, 0,	0),			// netlag icon gauge
-#endif
 	//XSTR:ON
 	}
 };

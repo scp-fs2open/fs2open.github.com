@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDgauges.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:25 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-11 05:42:02 $
+ * $Author: taylor $
  *
  * HUD data common to FRED and FreeSpace
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:25  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2003/01/15 21:29:04  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
  *
@@ -87,11 +90,7 @@
 #define __HUD_COMMON_H__
 
 // HUD gauge types
-#ifdef FS2_DEMO
-#define NUM_HUD_GAUGES							37
-#else
 #define NUM_HUD_GAUGES							39
-#endif
 
 #define HUD_LEAD_INDICATOR						0
 #define HUD_ORIENTATION_TEE					1

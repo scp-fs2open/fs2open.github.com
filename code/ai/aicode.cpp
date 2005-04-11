@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-04-05 05:53:13 $
+ * $Revision: 1.6 $
+ * $Date: 2005-04-11 05:42:01 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/04/05 05:53:13  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.4  2005/03/29 07:03:15  wmcoolmon
  * Removed some warnings under Linux/GCC
  *
@@ -1477,7 +1480,9 @@ void parse_difftbl()
 
 	reset_parse();
 
+#ifndef FS2_DEMO
 	extern int Max_incoming_asteroids[NUM_SKILL_LEVELS];
+#endif
 	extern float Skill_level_cmeasure_life_scale[NUM_SKILL_LEVELS];
 	extern float Skill_level_weapon_energy_scale[NUM_SKILL_LEVELS];
 	extern float Skill_level_shield_energy_scale[NUM_SKILL_LEVELS];
@@ -1487,10 +1492,12 @@ void parse_difftbl()
 	extern float Beam_friendly_cap[NUM_SKILL_LEVELS];
 
 	required_string("#Difficulty Settings");
+#ifndef FS2_DEMO
 	if (optional_string("$Max Incoming Asteroids:"))
 	{
 		parse_int_list(Max_incoming_asteroids);
 	}
+#endif
 	if (optional_string("$Player Countermeasure Life Scale:"))
 	{
 		parse_float_list(Skill_level_cmeasure_life_scale);
