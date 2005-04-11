@@ -1,15 +1,19 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.10 2005-04-05 11:41:33 taylor Exp $
+dnl $Id: configure.ac,v 1.11 2005-04-11 05:40:21 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
+
+dnl we need at least version 2.54 of autoconf
+AC_PREREQ(2.54)
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
-AM_INIT_AUTOMAKE([ no-define ])
+dnl we need at least version 1.6.1 of automake, well it's as far down as has been tested anyway
+AM_INIT_AUTOMAKE([ 1.6.1 no-define ])
 
 AC_DEFINE([NO_CD_CHECK])
 
@@ -184,27 +188,32 @@ if test "$fs2_speech" = "yes" ; then
 	AC_DEFINE([FS2_SPEECH])
 fi
 
+if test "$fs2_fred" = "yes" ; then
+	AM_OPTIONS_WXCONFIG
+	AM_PATH_WXCONFIG(2.4.2, wxWin=1)
+
+	if test "$wxWin" != 1; then
+		AC_MSG_ERROR([
+			wxWindows must be installed on your system
+			but wx-config script couldn't be found.
+
+			Please check that wx-config is in path, the directory
+			where wxWindows libraries are installed (returned by
+			'wx-config --libs' command) is in LD_LIBRARY_PATH or
+			equivalent variable and wxWindows version is 2.3.4 or above.
+		])
+	fi
+
+	FS2_CXXFLAGS="$FS2_CXXFLAGS $WX_CXXFLAGS_ONLY"
+	FS2_LDFLAGS="$FS2_LDFLAGS $WX_LIBS"
+fi
+
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
 	FS2_CXXFLAGS="$FS2_CXXFLAGS -O0 -g -Wall"
 	FS2_LDFLAGS="$FS2_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		AM_OPTIONS_WXCONFIG
-		AM_PATH_WXCONFIG(2.4.2, wxWin=1)
-		if test "$wxWin" != 1; then
-			AC_MSG_ERROR([
-				wxWindows must be installed on your system
-				but wx-config script couldn't be found.
-
-				Please check that wx-config is in path, the directory
-				where wxWindows libraries are installed (returned by
-				'wx-config --libs' command) is in LD_LIBRARY_PATH or
-				equivalent variable and wxWindows version is 2.3.4 or above.
-			])
-		fi
-		FS2_CXXFLAGS="$FS2_CXXFLAGS $WX_CXXFLAGS_ONLY"
-		FS2_LDFLAGS="$FS2_LDFLAGS $WX_LIBS"
 		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
 	else
 		AC_SUBST(FS2_BINARY, ["fs2_open_d"])
@@ -215,21 +224,6 @@ else
 	FS2_LDFLAGS="$FS2_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
-		AM_OPTIONS_WXCONFIG
-		AM_PATH_WXCONFIG(2.4.2, wxWin=1)
-		if test "$wxWin" != 1; then
-			AC_MSG_ERROR([
-				wxWindows must be installed on your system
-				but wx-config script couldn't be found.
-
-				Please check that wx-config is in path, the directory
-				where wxWindows libraries are installed (returned by
-				'wx-config --libs' command) is in LD_LIBRARY_PATH or
-				equivalent variable and wxWindows version is 2.3.4 or above.
-			])
-		fi
-		FS2_CXXFLAGS="$FS2_CXXFLAGS $WX_CXXFLAGS_ONLY"
-		FS2_LDFLAGS="$FS2_LDFLAGS $WX_LIBS"
 		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
 	else
 		AC_SUBST(FS2_BINARY, ["fs2_open_r"])
