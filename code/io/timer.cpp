@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-04-11 05:50:35 $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-11 10:15:11 $
  * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/11 05:50:35  taylor
+ * some limits.h fixes to make GCC happier
+ * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
+ *
  * Revision 2.8  2005/03/27 08:57:52  taylor
  * will hopefully fix the slowdown from mission to mission (thanks Alpha0)
  *
@@ -230,7 +234,7 @@ sub_again:
 		 "mov   %1, %%edx;"		  // temp_large.HighPart
 		 "mov   %2, %%eax;"		  // temp_large.LowPart
 
-		 "shld  $16,%%edx,%%eax;"			 // Keep 32+11 bits
+		 "shld  $16,%%eax,%%edx;"			 // Keep 32+11 bits
 		 "shl   $16,%%eax;"
 		 // edx:eax = number of 1.19Mhz pulses elapsed.
 		 "mov   %3,%%ebx;"		  // Timer_freq
