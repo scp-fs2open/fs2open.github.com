@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-04-05 05:53:17 $
+ * $Revision: 2.19 $
+ * $Date: 2005-04-11 05:42:02 $
  * $Author: taylor $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.17  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -883,6 +886,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				end_string_at_first_hash_symbol(buffer);
 				tinfo_name = buffer;
 				break;
+#ifndef FS2_DEMO
 			case OBJ_ASTEROID:
 				switch(Asteroids[t_objp->instance].type)
 				{
@@ -895,6 +899,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 						tinfo_name = XSTR( "Debris", 348);
 				}
 				break;
+#endif
 			case OBJ_JUMP_NODE:
 				tinfo_name = t_objp->jnp->get_name_ptr();
 				break;
