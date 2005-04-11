@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.144 $
- * $Date: 2005-04-05 05:53:22 $
+ * $Revision: 2.145 $
+ * $Date: 2005-04-11 05:48:33 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.144  2005/04/05 05:53:22  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.143  2005/03/27 13:00:40  Goober5000
  * two new sexps
  * --Goober5000
@@ -7393,7 +7396,7 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 	for (i = Num_builtin_messages; i < Num_messages; i++)
 	{
 		// match
-		if (!strcmp(Messages[i].name, name))
+		if (!stricmp(Messages[i].name, name))
 		{
 			message_index = i;
 			break;
@@ -10423,7 +10426,7 @@ void sexp_send_training_message(int node)
 	for (i = Num_builtin_messages; i < Num_messages; i++)
 	{
 		// match
-		if (!strcmp(Messages[i].name, name))
+		if (!stricmp(Messages[i].name, name))
 		{
 			message_index = i;
 			break;

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-03-02 21:24:45 $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-11 05:48:34 $
  * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.5  2004/07/26 20:47:38  Kazan
  * remove MCD complete
  *
@@ -1038,10 +1041,9 @@ void message_training_que(char *text, int timestamp, int length)
 
 	Assert(Training_msg_que_count < TRAINING_MSG_QUE_MAX);
 	if (Training_msg_que_count < TRAINING_MSG_QUE_MAX) {
-		if (!stricmp(text, NOX("none")))
+		if (!stricmp(text, NOX("none"))) {
 			m = -1;
-
-		else {
+		} else {
 			for (m=0; m<Num_messages; m++)
 				if (!stricmp(text, Messages[m].name))
 					break;
