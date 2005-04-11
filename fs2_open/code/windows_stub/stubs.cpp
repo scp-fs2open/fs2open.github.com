@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.11 $
- * $Date: 2005-03-27 08:51:25 $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-11 05:45:38 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/27 08:51:25  taylor
+ * this is what coding on an empty stomach will get you
+ *
  * Revision 2.10  2005/03/27 06:17:54  taylor
  * fill in some stuff for timer and mmio calls, not 100% but it works ok
  *
@@ -328,9 +331,8 @@ void _splitpath (char *path, char *drive, char *dir, char *fname, char *ext)
 	if ( (path == NULL) || (fname == NULL) )
 		return;
 
-	// this is really just to get rid of compiler warnings
-	if ( (drive == NULL) && (dir == NULL) && (ext == NULL) ) 
-		mprintf(("_splitpath = path: %s, fname: %s\n", path, fname));
+	// stop at these in case they ever get used, we need to support them at that point
+	Assert( (dir == NULL) && (ext == NULL) );
 
 	/* fs2 only uses fname */
 	if (fname != NULL) {

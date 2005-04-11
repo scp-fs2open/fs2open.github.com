@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.137 $
- * $Date: 2005-04-05 05:53:16 $
+ * $Revision: 2.138 $
+ * $Date: 2005-04-11 05:45:38 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2005/04/05 05:53:16  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.136  2005/03/25 06:57:33  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -5933,7 +5936,9 @@ void game_set_frametime(int state)
 
 //	Frametime = F1_0 / 30;
 
+#ifndef NDEBUG
 	fix	debug_frametime = Frametime;	//	Just used to display frametime.
+#endif
 
 	//	If player hasn't entered mission yet, make frame take 1/4 second.
 	if ((Pre_player_entry) && (state == GS_STATE_GAME_PLAY))
@@ -5989,9 +5994,6 @@ void game_set_frametime(int state)
 	if (Frametime > MAX_FRAMETIME)	{
 #ifndef NDEBUG
 		mprintf(("Frame %2i too long!!: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
-#else 
-		// to remove warnings in release build
-		debug_frametime = fl2f(flFrametime);
 #endif
 		Frametime = MAX_FRAMETIME;
 	}
@@ -6488,7 +6490,7 @@ void end_demo_campaign_do()
 // that you should change the state of the game.
 void game_process_event( int current_state, int event )
 {
-	mprintf(("Got event %s (%d) in state %s (%d)\n", GS_event_text[event], event, GS_state_text[current_state], event));
+	mprintf(("Got event %s (%d) in state %s (%d)\n", GS_event_text[event], event, GS_state_text[current_state], current_state));
 
 	switch (event) {
 		case GS_EVENT_SIMULATOR_ROOM:

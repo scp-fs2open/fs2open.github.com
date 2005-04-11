@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.7 $
- * $Date: 2005-03-27 08:51:25 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-11 05:45:38 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/27 08:51:25  taylor
+ * this is what coding on an empty stomach will get you
+ *
  * Revision 2.6  2005/03/27 06:17:54  taylor
  * fill in some stuff for timer and mmio calls, not 100% but it works ok
  *
@@ -233,7 +236,7 @@ int MessageBox(HWND h, const char *s1, const char *s2, int i);
 
 // thread/process related stuff
 #define _beginthread(x, y, z)
-#define _endthread(x)
+#define _endthread()
 
 typedef SDL_mutex* CRITICAL_SECTION;
 
