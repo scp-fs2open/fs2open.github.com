@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-03-02 21:18:19 $
+ * $Revision: 2.20 $
+ * $Date: 2005-04-11 05:50:36 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/03/02 21:18:19  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.18  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -371,6 +376,8 @@
 
 #ifndef NO_NETWORK
 
+#include <limits.h>		// this is need even when not building debug!!
+
 #include "globalincs/globals.h"
 #include "object/object.h"
 #include "ship/ship.h"
@@ -402,10 +409,6 @@
 #include "io/timer.h"
 #include "playerman/player.h"
 #include "network/multi_log.h"
-
-#ifndef NDEBUG
-#include <limits.h>
-#endif
 
 
 // --------------------------------------------------------------------------------------------------

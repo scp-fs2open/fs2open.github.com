@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.21 $
+ * $Date: 2005-04-11 05:50:36 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.19  2005/04/03 08:48:30  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -351,6 +354,8 @@
 
 #include "PreProcDefines.h"
 
+#include <limits.h>		// this is need even when not building debug!!
+
 #include "gamesnd/eventmusic.h"
 #include "io/key.h"
 #include "missionui/missionscreencommon.h"
@@ -380,10 +385,6 @@
 #include "network/multiteamselect.h"
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
-#endif
-
-#ifndef NDEBUG
-#include <limits.h>
 #endif
 
 

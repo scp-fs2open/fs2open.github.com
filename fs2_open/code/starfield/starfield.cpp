@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-04-05 05:53:25 $
+ * $Revision: 2.52 $
+ * $Date: 2005-04-11 05:50:36 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.50  2005/03/23 20:09:23  phreak
  * Starfield bitmaps should now draw in non-htl mode
  *
@@ -405,6 +408,8 @@
  * $NoKeywords: $
  */
 
+#include <limits.h>
+
 #include "math/vecmat.h"
 #include "render/3d.h"
 #include "starfield/starfield.h"
@@ -417,7 +422,6 @@
 #include "starfield/supernova.h"
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
-#include	"limits.h"
 
 
 #define MAX_DEBRIS_VCLIPS	4

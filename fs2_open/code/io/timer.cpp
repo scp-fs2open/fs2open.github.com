@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-27 08:57:52 $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-11 05:50:35 $
  * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/27 08:57:52  taylor
+ * will hopefully fix the slowdown from mission to mission (thanks Alpha0)
+ *
  * Revision 2.7  2005/03/03 16:18:19  taylor
  * lockup fixes, and it's Linux friendly too :)
  *
@@ -107,7 +110,8 @@
 #include <windows.h>
 #endif
 
-#include	"limits.h"
+#include <limits.h>
+
 #include "globalincs/pstypes.h"
 #include "io/timer.h"
 #include "graphics/2d.h"
@@ -226,7 +230,7 @@ sub_again:
 		 "mov   %1, %%edx;"		  // temp_large.HighPart
 		 "mov   %2, %%eax;"		  // temp_large.LowPart
 
-		 "shld  $16,%%eax,%%edx;"			 // Keep 32+11 bits
+		 "shld  $16,%%edx,%%eax;"			 // Keep 32+11 bits
 		 "shl   $16,%%eax;"
 		 // edx:eax = number of 1.19Mhz pulses elapsed.
 		 "mov   %3,%%ebx;"		  // Timer_freq
