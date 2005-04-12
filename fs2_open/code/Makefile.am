@@ -1,6 +1,19 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.13 2005-04-11 10:16:26 taylor Exp $
+## $Id: Makefile.am,v 1.14 2005-04-12 05:24:48 taylor Exp $
+
+
+EXTRA_DIST =	\
+	freespace2/FreeSpace.aps	\
+	freespace2/app_icon.ico	\
+	freespace2/freespace.rc	\
+	freespace2/freespaceresource.h	\
+	freespace2/goal_com.bmp	\
+	freespace2/goal_fail.bmp	\
+	freespace2/goal_inc.bmp	\
+	freespace2/goal_none.bmp	\
+	freespace2/goal_ord.bmp
+
 
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
@@ -625,7 +638,7 @@ fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a
 fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a
 
 ##
-## End MAIN library
+## End MAIN binary
 ##
 ###############################################################################
 
@@ -652,6 +665,6 @@ wxFRED2_d_LDADD = libcode.a ../libjpeg/libjpeg.a
 wxFRED2_r_LDADD = libcode.a ../libjpeg/libjpeg.a
 
 ##
-## End MAIN library
+## End wxFRED2 binary
 ##
 ###############################################################################
