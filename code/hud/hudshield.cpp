@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-04-05 05:53:17 $
+ * $Revision: 2.31 $
+ * $Date: 2005-04-12 05:26:36 $
  * $Author: taylor $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.29  2005/03/29 07:03:16  wmcoolmon
  * Removed some warnings under Linux/GCC
  *
@@ -812,7 +815,7 @@ void hud_ship_icon_page_in(ship_info *sip)
 	}
 
 	// load in shield frames if not already loaded
-	Assert(sip->shield_icon_index >= 0 && sip->shield_icon_index < Hud_shield_filename_count);
+	Assert(sip->shield_icon_index < Hud_shield_filename_count);
 	sgp = &Shield_gauges[sip->shield_icon_index];
 
 	if ( sgp->first_frame == -1 ) {

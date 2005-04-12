@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.22 $
+ * $Date: 2005-04-12 05:26:36 $
  * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.20  2005/03/10 08:00:08  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -2446,9 +2449,11 @@ grid *brief_create_default_grid(void)
 	grid	*rgrid;
 	vec3d	fvec, rvec, cvec;
 
-	rgrid = brief_create_grid(&Global_grid, vm_vec_make(&fvec, 0.0f, 0.0f, 1.0f),
-		vm_vec_make(&rvec, 1.0f, 0.0f, 0.0f),
-		vm_vec_make(&cvec, 0.0f, -10.0f, 0.0f), 100, 100, 5.0f);
+	vm_vec_make(&fvec, 0.0f, 0.0f, 1.0f);
+	vm_vec_make(&rvec, 1.0f, 0.0f, 0.0f);
+	vm_vec_make(&cvec, 0.0f, -10.0f, 0.0f);
+
+	rgrid = brief_create_grid(&Global_grid, &fvec, &rvec, &cvec, 100, 100, 5.0f);
 
 	physics_init(&rgrid->physics);
 	rgrid->physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);

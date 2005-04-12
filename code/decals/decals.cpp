@@ -822,7 +822,7 @@ check_ship_decals();
 SAFEPOINT("leaveing deecal_list_controle::clear");
 };
 
-decal_list_controle::decal_list_controle():n_decals(0),buffer(-1),texture(-1),d_list(NULL),end(NULL),modifyed(false){
+decal_list_controle::decal_list_controle():n_decals(0),buffer(-1),texture(-1),modifyed(false),d_list(NULL),end(NULL){
 }
 
 decal_list_controle::~decal_list_controle(){

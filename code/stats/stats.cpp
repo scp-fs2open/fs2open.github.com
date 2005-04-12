@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-02 21:24:47 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-12 05:26:38 $
  * $Author: taylor $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/02 21:24:47  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.6  2005/02/04 10:12:33  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -226,6 +229,7 @@
 #define ALLTIME_STATS_START_Y 270
 #define MULTIPLAYER_LIST_START 20
 
+/*
 static int Mission_stats_start_y[GR_NUM_RESOLUTIONS] = {
 	80,	// GR_640
 	80		// GR_1024
@@ -240,6 +244,7 @@ static int Multiplayer_list_start[GR_NUM_RESOLUTIONS] = {
 	20,	// GR_640
 	20		// GR_1024
 };
+*/
 
 // static UI_WINDOW Player_stats_window;
 

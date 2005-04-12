@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-12 05:26:36 $
+ * $Author: taylor $
  *
  * Low-level floating point math routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:32:52  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -91,8 +94,6 @@ typedef float FLOAT;
 #define GET_EMANT(a)	(((a) >> LOOKUP_POS) & LOOKUP_MASK )
 #define SET_MANTSEED(a)	(((unsigned long)(a)) << SEED_POS )
 
-static unsigned char iSqrt[TABLE_SIZE];
-static int iSqrt_inited = 0;
 
 int fl_magic = 0x59C00000;		//representation of 2^51 + 2^52
 const float *p_fl_magic = (const float *)&fl_magic;
@@ -103,6 +104,9 @@ union _flint {
 } fi, fo;
 
 /*
+static unsigned char iSqrt[TABLE_SIZE];
+static int iSqrt_inited = 0;
+
 static void MakeInverseSqrtLookupTable()
 {
 	long f;

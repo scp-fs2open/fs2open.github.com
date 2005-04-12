@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-04-05 05:53:21 $
+ * $Revision: 2.32 $
+ * $Date: 2005-04-12 05:26:37 $
  * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.30  2005/04/03 08:48:31  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -468,6 +471,8 @@
 #include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
+
+#include <limits.h>
 
 #include "globalincs/pstypes.h"
 #include "network/multimsgs.h"

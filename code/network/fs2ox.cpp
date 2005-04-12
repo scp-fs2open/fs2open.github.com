@@ -9,13 +9,18 @@
 
 /*
  * $Logfile$
- * $Revision: 1.14 $
- * $Date: 2005-03-02 21:18:19 $
+ * $Revision: 1.15 $
+ * $Date: 2005-04-12 05:26:37 $
  * $Author: taylor $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/03/02 21:18:19  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 1.13  2005/02/23 04:55:09  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -409,7 +414,7 @@ std::string strip_ansi_codes(std::string str)
 void fs2ox_do_frame()
 {
 
-	static bool firstrecv = true;
+//	static bool firstrecv = true;
 	char text[128];
 	memset(text, 0, 128);
 
