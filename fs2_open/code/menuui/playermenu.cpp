@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.21 $
+ * $Date: 2005-04-12 19:22:48 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.19  2005/03/10 08:00:08  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -284,6 +287,9 @@
 // --------------------------------------------------------------------------------------------------------
 // Demo title screen
 #ifdef FS2_DEMO
+#include "io/mouse.h"
+#include "io/timer.h"
+
 static int Demo_title_active = 0;
 static int Demo_title_bitmap = -1;
 static int Demo_title_expire_timestamp = 0;

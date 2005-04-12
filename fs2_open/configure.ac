@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.12 2005-04-12 05:24:48 taylor Exp $
+dnl $Id: configure.ac,v 1.13 2005-04-12 19:22:48 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -52,6 +52,13 @@ AC_ARG_ENABLE(debug,
 		[Build in DEBUG mode (default = no)]),
 		[fs2_debug=$enableval],
 		[fs2_debug=no],
+)
+
+AC_ARG_ENABLE[demo,
+	AC_HELP_STRING([--enable-demo],
+		[Build DEMO version (default = no)]),
+		[fs2_demo=$enableval],
+		[fs2_demo=no],
 )
 
 AC_ARG_ENABLE(wxfred2,
@@ -178,6 +185,10 @@ fi
 if ! test "$fs2_networking" = "yes" ; then
 	AC_DEFINE([NO_NETWORK])
 	AC_DEFINE([NO_STANDALONE])
+fi
+
+if test "fs2_demo" = "yes" ; then
+	AC_DEFINE([FS2_DEMO])
 fi
 
 if ! test "$fs2_sound" = "yes" ; then
@@ -482,6 +493,7 @@ echo Sound enabled .......... : $fs2_sound
 echo Text-to-speech enabled . : $fs2_speech
 echo
 echo Debug build ............ : $fs2_debug
+echo DEMO build ............. : $fs2_demo
 echo SCP Lite ............... : $fs2_lite
 echo Inferno build .......... : $fs2_inferno
 echo GProf support .......... : $fs2_gprof
