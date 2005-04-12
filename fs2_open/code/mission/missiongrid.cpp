@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-12 05:26:36 $
  * $Author: taylor $
  *
  * C module for grid specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.5  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -294,9 +297,11 @@ grid *create_default_grid(void)
 	grid	*rgrid;
 	vec3d	fvec, rvec, cvec;
 
-	rgrid = create_grid(&Global_grid, vm_vec_make(&fvec, 0.0f, 0.0f, 1.0f),
-		vm_vec_make(&rvec, 1.0f, 0.0f, 0.0f),
-		vm_vec_make(&cvec, 0.0f, 0.0f, 0.0f), 100, 100, 5.0f);
+	vm_vec_make(&fvec, 0.0f, 0.0f, 1.0f);
+	vm_vec_make(&rvec, 1.0f, 0.0f, 0.0f);
+	vm_vec_make(&cvec, 0.0f, 0.0f, 0.0f);
+
+	rgrid = create_grid(&Global_grid, &fvec, &rvec, &cvec, 100, 100, 5.0f);
 
 	physics_init(&rgrid->physics);
 	return rgrid;

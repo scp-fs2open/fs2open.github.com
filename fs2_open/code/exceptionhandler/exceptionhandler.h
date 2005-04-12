@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:22 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-12 05:26:36 $
+ * $Author: taylor $
  *
  * Header file for program exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:22  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -38,13 +41,12 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
-#ifdef _MSC_VER
-#pragma once		// Include this file only once
-#endif
 
 #ifndef __EXCEPTION_HANDLER_H
 #define __EXCEPTION_HANDLER_H
+
+#include "PreProcDefines.h"
+
 
 // --------------------
 //

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-04-03 08:48:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2005-04-12 05:26:36 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/04/03 08:48:30  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 2.20  2005/03/27 06:12:38  taylor
  * some pilot file fixing when going between multi and single (partial fix)
  *
@@ -1337,8 +1342,9 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		type_sig = cfread_int( fp );
 	else
 		type_sig = (int)CAMPAIGN_SINGLE_PLAYER_SIG;
+
 	// the actual check
-	Assert( ((Game_mode & GM_MULTIPLAYER) && (type_sig==CAMPAIGN_MULTI_PLAYER_SIG)) || (!(Game_mode & GM_MULTIPLAYER) && (type_sig==CAMPAIGN_SINGLE_PLAYER_SIG)) );
+	Assert( ((Game_mode & GM_MULTIPLAYER) && (type_sig == (int)CAMPAIGN_MULTI_PLAYER_SIG)) || (!(Game_mode & GM_MULTIPLAYER) && (type_sig == (int)CAMPAIGN_SINGLE_PLAYER_SIG)) );
 
 	Campaign.type = type_sig == (int)CAMPAIGN_SINGLE_PLAYER_SIG ? CAMPAIGN_TYPE_SINGLE : CAMPAIGN_TYPE_MULTI_COOP;
 

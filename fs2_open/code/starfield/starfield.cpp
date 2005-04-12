@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-04-11 05:50:36 $
+ * $Revision: 2.53 $
+ * $Date: 2005-04-12 05:26:37 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/04/11 05:50:36  taylor
+ * some limits.h fixes to make GCC happier
+ * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
+ *
  * Revision 2.51  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1792,7 +1796,7 @@ class star_point_list{
 	int n_points;
 	star_point *point_list;
 public:
-	star_point_list():point_list(NULL),n_points(0){};
+	star_point_list():n_points(0),point_list(NULL){};
 	~star_point_list(){if(point_list)delete[]point_list;};
 
 	void allocate(int size){

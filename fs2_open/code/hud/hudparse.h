@@ -1,8 +1,25 @@
+
+/*
+ * $Logfile: /Freespace2/code/hud/hudparse.h $
+ * $Revision: 2.18 $
+ * $Date: 2005-04-12 05:26:36 $
+ * $Author: taylor $
+ *
+ * Header file for HUD tbl parsing
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ * $NoKeywords: $
+ */
+
+
+#ifndef _HUDPARSE_H
+#define _HUDPARSE_H
+
 //Define or undefine NEW_HUD here so you don't have to recompile everything.
 //#define NEW_HUD
 
 #include "PreProcDefines.h"
-#pragma once
 #include "globalincs/globals.h"
 #include "hud/hudescort.h"
 #include "ai/ai.h"
@@ -313,3 +330,5 @@ void set_current_hud(ship* owner = Player_ship);
 #else
 void set_current_hud(int player_ship_num);
 #endif
+
+#endif // _HUDPARSE_H

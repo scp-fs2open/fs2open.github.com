@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-04-05 05:53:23 $
+ * $Revision: 2.40 $
+ * $Date: 2005-04-12 05:26:37 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.38  2005/03/25 22:36:01  Goober5000
  * removed unreferenced variable
  * --Goober5000
@@ -2752,7 +2755,7 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 //	off+=4;
 	int nverts = w(off+bsp_data+8);	
 	int offset = w(off+bsp_data+16);
-	int next_norm = 0;
+//	int next_norm = 0;
 
 	ubyte * normcount = off+bsp_data+20;
 	vec3d *src = vp(off+bsp_data+offset);

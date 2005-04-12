@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.7 $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-12 05:26:36 $
  * $Author: taylor $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.6  2005/03/19 18:02:34  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -230,7 +233,7 @@
 */
 extern void vm_set_identity(matrix *m);
 
-#define vm_vec_make(v,_x,_y,_z) (((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z)), (v))
+#define vm_vec_make(v,_x,_y,_z) ((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z))
 
 //Global constants
 

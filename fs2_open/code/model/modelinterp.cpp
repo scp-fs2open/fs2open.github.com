@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.113 $
- * $Date: 2005-04-05 05:53:20 $
+ * $Revision: 2.114 $
+ * $Date: 2005-04-12 05:26:37 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.112  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -5320,7 +5323,7 @@ void alocate_poly_list(){
 		alocate_poly_list_nvert = htl_nverts;
 	}
 	if(htl_nnorms > alocate_poly_list_nnorm){
-		if(htl_nnorms)free(htl_norms);
+		if(htl_norms)free(htl_norms);
 		htl_norms = (vec3d**)malloc(sizeof(vec3d*)*htl_nnorms);
 		alocate_poly_list_nnorm = htl_nnorms;
 	}
@@ -5792,9 +5795,11 @@ void recode_tmap(int offset, ubyte *bsp_data){
 
 	int pof_tex = bsp_data[offset+40];
 	int n_vert = bsp_data[offset+36];
-	if(pof_tex == 4){
-		1;
-	}
+
+//	if(pof_tex == 4){
+//		1;
+//	}
+
 	//int n_tri = n_vert - 2;
 	ubyte *temp_verts;
 	//ubyte *p = &bsp_data[offset];
