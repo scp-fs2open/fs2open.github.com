@@ -5,13 +5,59 @@
 SUBDIRS = libjpeg code
 
 
+EXTRA_DIST =	\
+	FS2OpenSCPReadMe.doc	\
+	projects/MSVC_2005/Freespace2.sln	\
+	projects/MSVC_2005/Freespace2.vcproj	\
+	projects/MSVC_2005/code.vcproj	\
+	projects/MSVC_6/Freespace2.dsp	\
+	projects/MSVC_6/Freespace2.dsw	\
+	projects/MSVC_6/code.dsp	\
+	projects/MSVC_6/libjpeg.dsp	\
+	projects/MSVC_6/wxFRED2.dsp	\
+	projects/anjuta1/FS2_Open.prj	\
+	projects/anjuta1/README
 
-cfilearchiver:
-	$(CXX) $(AM_CXXFLAGS) -I./code -o cfilearchiver code/cfilearchiver/cfilearchiver.cpp
 
-cryptstring:
-	$(CXX) $(AM_CXXFLAGS) -I./code -o cryptstring code/cryptstring/cryptstring.cpp
+EXTRA_PROGRAMS = cfilearchiver cryptstring scramble
 
-scramble:
-	$(CXX) $(AM_CXXFLAGS) -I./code -c -o code/encrypt.o code/parse/encrypt.cpp
-	$(CXX) $(AM_CXXFLAGS) -I./code -o scramble	code/scramble/scramble.cpp code/encrypt.o
+
+###############################################################################
+##
+## Begin utilitites
+##
+
+# cfilearchiver -- to create VPs
+cfilearchiver_SOURCES =	\
+	code/cfilearchiver/cfilearchiver.cpp
+
+# cryptstring -- to encrypt strings that are used as cheat codes
+cryptstring_SOURCES =	\
+	code/cryptstring/cryptstring.cpp
+
+# scramble -- to encrypt tables
+scramble_SOURCES =	\
+	code/parse/encrypt.cpp	\
+	code/scramble/scramble.cpp	\
+	code/scramble/scramble.h
+
+
+# catch all to build utilitites
+tools: cfilearchiver cryptstring scramble
+
+
+# cleaning
+clean-tools:
+	-test -z "$(EXTRA_PROGRAMS)" || rm -f $(EXTRA_PROGRAMS)
+
+##
+## End utilitites
+##
+###############################################################################
+
+
+# make sure we get this stuff cleaned up
+clean-generic: clean-tools
+
+
+AM_CXXFLAGS = -I./code

@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.11 2005-04-11 05:40:21 taylor Exp $
+dnl $Id: configure.ac,v 1.12 2005-04-12 05:24:48 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -13,7 +13,7 @@ AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
 dnl we need at least version 1.6.1 of automake, well it's as far down as has been tested anyway
-AM_INIT_AUTOMAKE([ 1.6.1 no-define ])
+AM_INIT_AUTOMAKE([ 1.6.1 no-define dist-bzip2 ])
 
 AC_DEFINE([NO_CD_CHECK])
 

@@ -1,7 +1,9 @@
 ## libjpeg/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.1 2005-03-10 16:13:53 taylor Exp $
+## $Id: Makefile.am,v 1.2 2005-04-12 05:24:48 taylor Exp $
 
+
+EXTRA_DIST = README
 
 noinst_LIBRARIES = libjpeg.a
 
@@ -11,16 +13,21 @@ noinst_LIBRARIES = libjpeg.a
 ##
 
 libjpeg_a_SOURCES = \
+	cderror.h	\
+	cdjpeg.h	\
 	jcapimin.c	\
 	jcapistd.c	\
 	jccoefct.c	\
 	jccolor.c	\
 	jcdctmgr.c	\
 	jchuff.c	\
+	jchuff.h	\
 	jcinit.c	\
 	jcmainct.c	\
 	jcmarker.c	\
 	jcmaster.c	\
+	jconfig_lnx.h	\
+	jconfig_vc.h	\
 	jcomapi.c	\
 	jcparam.c	\
 	jcphuff.c	\
@@ -33,8 +40,10 @@ libjpeg_a_SOURCES = \
 	jdatasrc.c	\
 	jdcoefct.c	\
 	jdcolor.c	\
+	jdct.h	\
 	jddctmgr.c	\
 	jdhuff.c	\
+	jdhuff.h	\
 	jdinput.c	\
 	jdmainct.c	\
 	jdmarker.c	\
@@ -45,6 +54,7 @@ libjpeg_a_SOURCES = \
 	jdsample.c	\
 	jdtrans.c	\
 	jerror.c	\
+	jerror.h	\
 	jfdctflt.c	\
 	jfdctfst.c	\
 	jfdctint.c	\
@@ -52,11 +62,18 @@ libjpeg_a_SOURCES = \
 	jidctfst.c	\
 	jidctint.c	\
 	jidctred.c	\
+	jinclude.h	\
 	jmemansi.c	\
 	jmemmgr.c	\
+	jmemsys.h	\
+	jmorecfg.h	\
+	jpegint.h	\
+	jpeglib.h	\
 	jquant1.c	\
 	jquant2.c	\
-	jutils.c
+	jutils.c	\
+	jversion.h	\
+	transupp.h
 
 ##
 ## End JPEG library
