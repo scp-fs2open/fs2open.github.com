@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.87 $
- * $Date: 2005-04-05 05:53:19 $
- * $Author: taylor $
+ * $Revision: 2.88 $
+ * $Date: 2005-04-12 02:07:00 $
+ * $Author: phreak $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.86  2005/03/27 12:28:33  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -4086,9 +4089,13 @@ void parse_bitmaps(mission *pm)
 	if (Num_stars >= MAX_STARS)
 		Num_stars = MAX_STARS;
 
-	int Ambient_light_level;
 	required_string("$Ambient light level:");
-	stuff_int(&Ambient_light_level);
+	stuff_int(&pm->ambient_light_level);
+
+	if (pm->ambient_light_level == 0)
+	{
+		pm->ambient_light_level = 0x00787878;
+	}
 
 	// This should call light_set_ambient() to
 	// set the ambient light
