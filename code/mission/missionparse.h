@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.58 $
- * $Author: taylor $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.59 $
+ * $Author: phreak $
+ * $Date: 2005-04-12 02:07:00 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.57  2005/03/27 12:28:33  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -526,6 +529,7 @@ typedef struct mission {
 	char	loading_screen[GR_NUM_RESOLUTIONS][NAME_LENGTH];
 	char	skybox_model[NAME_LENGTH];
 	int		contrail_threshold;
+	int		ambient_light_level;
 } mission;
 
 // cargo defines
