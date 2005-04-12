@@ -1,10 +1,9 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.14 2005-04-12 05:24:48 taylor Exp $
+## $Id: Makefile.am,v 1.15 2005-04-12 19:22:00 taylor Exp $
 
 
 EXTRA_DIST =	\
-	freespace2/FreeSpace.aps	\
 	freespace2/app_icon.ico	\
 	freespace2/freespace.rc	\
 	freespace2/freespaceresource.h	\
