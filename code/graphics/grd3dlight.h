@@ -12,5 +12,6 @@ void gr_d3d_set_light(light_data *light);
 void gr_d3d_reset_lighting();
 void gr_d3d_lighting(bool set, bool state);
 void gr_d3d_center_alpha(int);
+void gr_d3d_set_ambient_light(int r, int g, int b);
 
 #endif

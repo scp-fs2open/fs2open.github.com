@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.115 $
- * $Date: 2005-04-05 11:50:57 $
- * $Author: taylor $
+ * $Revision: 2.116 $
+ * $Date: 2005-04-12 02:04:56 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2005/04/05 11:50:57  taylor
+ * fix memory error from GL extension list that occurs in certain circumstances
+ *
  * Revision 2.114  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -3623,6 +3626,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_destroy_light = gr_opengl_destroy_light;
 	gr_screen.gf_set_light = gr_opengl_set_light;
 	gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
+	gr_screen.gf_set_ambient_light = gr_opengl_set_ambient_light;
 
 	gr_screen.gf_start_clip_plane = gr_opengl_start_clip_plane;
 	gr_screen.gf_end_clip_plane = gr_opengl_end_clip_plane;

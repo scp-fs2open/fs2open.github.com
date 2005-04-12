@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.4 $
- * $Date: 2005-02-04 10:12:29 $
- * $Author: taylor $
+ * $Revision: 1.5 $
+ * $Date: 2005-04-12 02:04:56 $
+ * $Author: phreak $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/02/04 10:12:29  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 1.3  2005/01/03 18:45:22  taylor
  * dynamic allocation of num supported OpenGL lights
  * add config option for more realistic light settings
@@ -98,5 +101,6 @@ void opengl_change_active_lights(int);
 void opengl_init_light();
 void gr_opengl_center_alpha(int type);
 void gr_opengl_set_center_alpha(int type);
+void gr_opengl_set_ambient_light(int red, int green, int blue);
 
 #endif //_GROPENGLLIGHT_H

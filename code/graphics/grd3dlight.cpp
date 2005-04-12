@@ -46,9 +46,12 @@ extern float static_tube_factor;
 
 // Resonable defaults, can change using -ambient_light
 // Also someone should put an a Fred slider or something 
-int Ambient_r_default = 120;
-int Ambient_g_default = 120;
-int Ambient_b_default = 120;
+
+const int Ambient_default = 120;
+
+int Ambient_red = Ambient_default;
+int Ambient_green = Ambient_default;
+int Ambient_blue = Ambient_default;
 
 D3DCOLOR ambient_light;
 
@@ -57,9 +60,9 @@ bool d3d_init_light()
 {
 	int factor = (Cmdline_ambient_factor * 2) - 255;
 
-	int r = Ambient_r_default + factor;
-	int g = Ambient_r_default + factor;
-	int b = Ambient_r_default + factor;
+	int r = Ambient_red + factor;
+	int g = Ambient_green + factor;
+	int b = Ambient_blue + factor;
 
 	if(r < 0) r = 0;
 	else if( r > 255) r = 255;
@@ -360,4 +363,13 @@ void gr_d3d_center_alpha_int(int type){
 		GlobalD3DVars::lpD3DDevice->SetMaterial(&material);*/
 		GR_center_alpha = 0;
 		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
+}
+
+void gr_d3d_set_ambient_light(int r, int g, int b)
+{
+	Ambient_red=r;
+	Ambient_green=g;
+	Ambient_blue=b;
+
+	d3d_init_light();
 }
