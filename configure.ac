@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.13 2005-04-12 19:22:48 taylor Exp $
+dnl $Id: configure.ac,v 1.14 2005-04-12 19:53:44 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -54,7 +54,7 @@ AC_ARG_ENABLE(debug,
 		[fs2_debug=no],
 )
 
-AC_ARG_ENABLE[demo,
+AC_ARG_ENABLE(demo,
 	AC_HELP_STRING([--enable-demo],
 		[Build DEMO version (default = no)]),
 		[fs2_demo=$enableval],
