@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.138 $
- * $Date: 2005-04-11 05:45:38 $
- * $Author: taylor $
+ * $Revision: 2.139 $
+ * $Date: 2005-04-12 02:10:09 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2005/04/11 05:45:38  taylor
+ * _endthread() doesn't take an argument so do support one (Jens Granseuer)
+ * debug variable fixes in freespace.cpp (Jens Granseuer)
+ * as a safety catch we should Assert() on future usage of things we don't yet support in *nix _splitpath()
+ *
  * Revision 2.137  2005/04/05 05:53:16  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -4803,6 +4808,10 @@ void game_render_frame( vec3d * eye_pos, matrix * eye_orient )
 		stars_draw(1,1,1,0,0);
 	}
 
+	gr_set_ambient_light(The_mission.ambient_light_level & 0xff, 
+							(The_mission.ambient_light_level >> 8) & 0xff,
+							(The_mission.ambient_light_level >> 16) & 0xff);
+
 	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
 		setup_environment_mapping(eye_pos, eye_orient);
 		cube_map_drawen = true;
@@ -4832,6 +4841,7 @@ void game_render_frame( vec3d * eye_pos, matrix * eye_orient )
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 #endif
+	gr_set_ambient_light(120,120,120);
 
 	beam_render_all();						// render all beam weapons
 	trail_render_all();						// render missilie trails after everything else.	
