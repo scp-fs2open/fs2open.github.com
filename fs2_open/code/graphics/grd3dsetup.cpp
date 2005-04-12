@@ -899,6 +899,7 @@ void d3d_setup_function_pointers()
 		gr_screen.gf_destroy_light = gr_d3d_destroy_light;
 		gr_screen.gf_set_light = gr_d3d_set_light;
 		gr_screen.gf_reset_lighting = gr_d3d_reset_lighting;
+		gr_screen.gf_set_ambient_light = gr_d3d_set_ambient_light;
 
 		gr_screen.gf_lighting = gr_d3d_lighting;
 		gr_screen.gf_center_alpha = gr_d3d_center_alpha;

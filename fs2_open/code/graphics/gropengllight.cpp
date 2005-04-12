@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2005-04-12 02:04:56 $
+ * $Author: phreak $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.11  2005/02/05 00:30:49  taylor
  * fix a few things post merge
  *
@@ -117,7 +120,6 @@ static const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 static float GL_light_ambient_value = 0.47f;
 static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
-
 
 void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 
@@ -295,22 +297,29 @@ void gr_opengl_reset_lighting()
 	GL_center_alpha = 0;
 }
 
-void opengl_init_light()
+static float clamp(float value, float min, float max)
+{
+	if (value < min) return min;
+	if (value > max) return max;
+	return value;
+}
+
+void opengl_calculate_ambient_factor()
 {
 	float amb_user = 0.0f;
 
-	amb_user = (float)((Cmdline_ambient_factor * 2) - 255) / 255.0f;
-
-	GL_light_ambient_value += amb_user;
-		
-	if (GL_light_ambient_value > 1.0f) {
-		GL_light_ambient_value = 1.0f;
-	} else if (GL_light_ambient_value < 0.02f) {
-		GL_light_ambient_value = 0.02f;
-	}
+	amb_user = (float)((Cmdline_ambient_factor * 2) / 255.0f);
 
 	// set the ambient light
-	GL_light_ambient[0] = GL_light_ambient[1] = GL_light_ambient[2] = GL_light_ambient_value;
+	GL_light_ambient[0] = clamp(GL_light_ambient[0] * amb_user, 0.02f, 1.0f);
+	GL_light_ambient[1] = clamp(GL_light_ambient[1] * amb_user, 0.02f, 1.0f);
+	GL_light_ambient[2] = clamp(GL_light_ambient[2] * amb_user, 0.02f, 1.0f);
+	GL_light_ambient[3] = 1.0f;
+}
+
+void opengl_init_light()
+{
+	opengl_calculate_ambient_factor();
 
 	// only on front, tends to be more believable
 	glMaterialf(GL_FRONT, GL_SHININESS, 80.0f );
@@ -380,4 +389,13 @@ void gr_opengl_set_lighting(bool set, bool state)
 		glDisable(GL_LIGHTING);
 	}
 
+}
+
+void gr_opengl_set_ambient_light(int red, int green, int blue)
+{
+	GL_light_ambient[0] = i2fl(red)/255.0f;
+	GL_light_ambient[1] = i2fl(green)/255.0f;
+	GL_light_ambient[2] = i2fl(blue)/255.0f;
+	GL_light_ambient[3] = 1.0f;
+	opengl_calculate_ambient_factor();
 }

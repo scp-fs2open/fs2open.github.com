@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.54 $
- * $Date: 2005-04-05 05:53:16 $
- * $Author: taylor $
+ * $Revision: 2.55 $
+ * $Date: 2005-04-12 02:04:56 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/04/05 05:53:16  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.53  2005/03/20 00:09:07  phreak
  * Added gr_draw_htl_line and gr_draw_htl sphere
  * There still needs to be D3D versions implemented, but OGL is done.
@@ -1010,6 +1013,7 @@ typedef struct screen {
 	void (*gf_destroy_light)(int);
 	void (*gf_set_light)(light_data*);
 	void (*gf_reset_lighting)();
+	void (*gf_set_ambient_light)(int,int,int);
 
 	void (*gf_lighting)(bool,bool);
 	void (*gf_center_alpha)(int);
@@ -1295,6 +1299,7 @@ __inline bool gr_set_render_target(int n, int face = -1)
 #define	gr_destroy_light GR_CALL		(*gr_screen.gf_destroy_light)
 #define	gr_set_light GR_CALL			(*gr_screen.gf_set_light)
 #define gr_reset_lighting GR_CALL		(*gr_screen.gf_reset_lighting)
+#define gr_set_ambient_light			GR_CALL(*gr_screen.gf_set_ambient_light)
 
 #define	gr_set_lighting GR_CALL			(*gr_screen.gf_lighting)
 #define	gr_center_alpha GR_CALL			(*gr_screen.gf_center_alpha)
