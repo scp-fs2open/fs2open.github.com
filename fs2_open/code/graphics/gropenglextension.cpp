@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.6 $
- * $Date: 2005-02-04 23:29:31 $
- * $Author: taylor $
+ * $Revision: 1.7 $
+ * $Date: 2005-04-13 23:24:21 $
+ * $Author: phreak $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/02/04 23:29:31  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
  * Revision 1.5  2005/01/21 08:25:14  taylor
  * fill in gr_opengl_set_texture_addressing()
  * add support for non-power-of-two textures for cards that have it
@@ -184,7 +187,7 @@ int opengl_get_extensions()
 			if (cur->required_to_run)
 			{
 #ifdef _WIN32
-				Error(__FILE__,__LINE__,"The required OpenGL extension '%s' is not supported by your graphics card, please use the Glide or Direct3D rendering engines.\n\n",cur->extension_name);
+				Error(__FILE__,__LINE__,"The required OpenGL extension '%s' is not supported by your graphics card.  You can either use the Direct3D rendering engine (non-FRED builds only) or update your video card drivers.\n\n",cur->extension_name);
 #else
 				Error(__FILE__,__LINE__,"The required OpenGL extension '%s' is not supported by your graphics card.\n",cur->extension_name);
 #endif
