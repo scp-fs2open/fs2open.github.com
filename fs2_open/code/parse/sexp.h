@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.86 $
+ * $Revision: 2.87 $
  * $Author: Goober5000 $
- * $Date: 2005-03-27 13:00:40 $
+ * $Date: 2005-04-14 20:03:16 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2005/03/27 13:00:40  Goober5000
+ * two new sexps
+ * --Goober5000
+ *
  * Revision 2.85  2005/03/15 07:26:52  Goober5000
  * *fixed some sexp declaration formatting
  * *implemented string comparison sexps
@@ -660,14 +664,14 @@ struct ship_subsys;
 #ifdef FS2_DEMO
 	#define	MAX_SEXP_NODES	1600
 #else
-	#define	MAX_SEXP_NODES	3500	// Reduced from 2000 to 1200 by MK on 4/1/98.
-											//	Most used nodes is 698 in sm1-10a.  Sandeep thinks that's the most complex mission.
+	#define	MAX_SEXP_NODES	4000			// Reduced from 2000 to 1200 by MK on 4/1/98.
+											// Most used nodes is 698 in sm1-10a.  Sandeep thinks that's the most complex mission.
 											// AL 2-4-98: upped to 1600, btm03 ran out of sexps, since campaign took a bunch
 											// DA 12/15 bumped up to 2000 - Dan ran out
 											// DaveB 9/02/99 bumped to 2200
 											// Goober5000 01/20/2004 bumped to 3000
 											// WMCoolmon 06/15/2004 bumped to 3500
-
+											// Goober5000 04/14/2005 bumped to 4000 for WCS
 #endif
 
 #define MAX_SEXP_VARIABLES 100
