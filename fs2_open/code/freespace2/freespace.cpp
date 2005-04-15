@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.139 $
- * $Date: 2005-04-12 02:10:09 $
- * $Author: phreak $
+ * $Revision: 2.140 $
+ * $Date: 2005-04-15 06:59:05 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2005/04/12 02:10:09  phreak
+ * ambient light is set in mission
+ *
  * Revision 2.138  2005/04/11 05:45:38  taylor
  * _endthread() doesn't take an argument so do support one (Jens Granseuer)
  * debug variable fixes in freespace.cpp (Jens Granseuer)
@@ -3321,6 +3324,7 @@ void game_init()
 
 	obj_init();	
 	mflash_game_init();	
+	armor_init();
 	weapon_init();	
 	ai_init();		
 	ship_init();						// read in ships.tbl	
@@ -10689,4 +10693,3 @@ void alt_tab_pause()
 		}
 	}
 }
-
