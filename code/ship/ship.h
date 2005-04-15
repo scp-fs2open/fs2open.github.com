@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.87 $
- * $Date: 2005-04-15 06:23:17 $
+ * $Revision: 2.88 $
+ * $Date: 2005-04-15 06:59:05 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2005/04/15 06:23:17  wmcoolmon
+ * Local codebase commit; adds armor system.
+ *
  * Revision 2.86  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1961,3 +1964,5 @@ void ship_vanished(object *objp);
 int get_armor_by_name(char* name);
 
 #endif
+
+void armor_init();
