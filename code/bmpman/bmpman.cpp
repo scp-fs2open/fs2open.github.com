@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.50 $
- * $Date: 2005-03-08 02:31:51 $
- * $Author: bobboau $
+ * $Revision: 2.51 $
+ * $Date: 2005-04-15 06:23:16 $
+ * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/03/08 02:31:51  bobboau
+ * minor change to high level render target code
+ *
  * Revision 2.49  2005/03/07 13:10:19  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.

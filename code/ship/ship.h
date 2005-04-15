@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.86 $
- * $Date: 2005-04-05 05:53:24 $
- * $Author: taylor $
+ * $Revision: 2.87 $
+ * $Date: 2005-04-15 06:23:17 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.85  2005/03/27 12:28:35  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -609,6 +612,7 @@
 #endif
 #include "hud/hudparse.h"
 #include "render/3d.h"
+#include <vector>
 
 struct object;
 
@@ -718,6 +722,30 @@ typedef struct ship_weapon {
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
+class ArmorType
+{
+private:
+	char Name[NAME_LENGTH];
+	int Type;
+	int NumRows;
+	int NumColumns;
+
+	std::vector< std::vector<float> >	Data;
+public:
+	ArmorType(char* in_name, int Type);
+
+	//Get
+	char *GetNamePtr(){return Name;}
+	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
+	bool IsValidShipArmorIndex(int idx){return (idx > 0 && idx < NumRows);}
+	bool IsValidWeapDamageIndex(int idx){return (idx > 0 && idx < NumColumns);}
+	float GetDamage(float damage_applied, struct ship_info *sip, struct weapon_info *wip);
+	
+	//Set
+	void ParseData();
+};
+
+extern std::vector<ArmorType> Armor_types;
 
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
@@ -1234,7 +1262,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_SHOW_SHIP_MODEL				(1 << 3)	// Show ship model even in first person view
 #define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
-
+#define SIF2_DISABLE_WEAP_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)
@@ -1442,6 +1470,9 @@ typedef struct ship_info {
 	bool draw_secondary_models[MAX_SHIP_SECONDARY_BANKS];
 	bool draw_models; //any weapon mode will be drawn
 	float weapon_model_draw_distance;
+	
+	int					armor_index;
+	std::vector<int>	armor_types;
 } ship_info;
 
 extern int num_wings;
@@ -1926,5 +1957,7 @@ int ship_squadron_wing_lookup(char *wing_name);
 int ship_tvt_wing_lookup(char *wing_name);
 
 void ship_vanished(object *objp);
+
+int get_armor_by_name(char* name);
 
 #endif

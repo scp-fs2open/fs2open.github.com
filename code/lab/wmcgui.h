@@ -185,6 +185,7 @@ public:
 #define GS_NOAUTORESIZEX		(1<<0)
 #define	GS_NOAUTORESIZEY		(1<<1)
 #define GS_HIDDEN				(1<<2)
+#define GS_INTERNALCHILD		(1<<3)
 
 //DoFrame return values
 #define OF_TRUE					-1
@@ -204,6 +205,12 @@ class GUIObject : public LinkedList
 	friend class GUIScreen;
 	friend class GUISystem;
 private:
+	class GUISystem		*OwnerSystem;			//What system this object is associated with
+	class GUIScreen		*OwnerScreen;
+
+	int Coords[4];					//Upper left corner (x, y) and lower right corner (x, y)
+	int	ChildCoords[4];				//Coordinates where children may frolick
+	
 	int Type;
 	std::string Name;
 	
@@ -220,13 +227,8 @@ private:
 
 	int GetOIECoords(int *x1, int *y1, int *x2, int *y2);
 	void DeleteChildren(GUIObject* exception = NULL);
+	GUIObject *AddChildInternal(GUIObject* cgp);
 protected:
-	class GUISystem		*OwnerSystem;			//What system this object is associated with
-	class GUIScreen		*OwnerScreen;
-
-	int Coords[4];					//Upper left corner (x, y) and lower right corner (x, y)
-	int	ChildCoords[4];				//Coordinates where children may frolick
-
 	//ON FUNCTIONS
 	//These handle the calling of do functions, mostly.
 	void OnDraw(float frametime);

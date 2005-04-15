@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-04-05 05:53:24 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2005-04-15 06:23:17 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.38  2005/03/27 12:28:35  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -2304,6 +2307,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	float subsystem_damage = damage;			// damage to be applied to subsystems
 	int other_obj_is_weapon;
 	int other_obj_is_shockwave;
+	uint i, num;
 
 	Assert(ship_obj);	// Goober5000
 	Assert(hitpos);		// Goober5000
@@ -2336,7 +2340,19 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	// if this is a weapon
 	if (other_obj_is_weapon)
 	{
-		damage *= weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_obj);
+		ship_info* sip = &Ship_info[shipp->ship_info_index];
+		weapon_info *wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
+		if(!(sip->flags & SIF2_DISABLE_WEAP_DAMAGE_SCALING))
+			damage *= weapon_get_damage_scale(wip, other_obj, ship_obj);
+		
+		if(sip->armor_index != -1)
+		{
+			num = sip->armor_types.size();
+			for(i = 0; i < num; i++)
+			{
+				Armor_types[sip->armor_types[i]].GetDamage(damage, sip, wip)
+			}
+		}
 	}
 
 	MONITOR_INC( ShipHits, 1 );

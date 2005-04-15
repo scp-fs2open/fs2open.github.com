@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.104  2005/04/02 21:34:08  phreak
  * put First_secondary_index back in so FRED can compile.
  * The weapons list is also sorted whenever all loading is done so lasers and beams always
@@ -1399,6 +1402,12 @@ int parse_weapon(int subtype, bool replace)
 
 	required_string("$Damage:");
 	stuff_float(&wip->damage);
+	
+	wip->armor_damage_index = -1;
+	if(optional_string("$Armor Damage Index:"))
+		stuff_int(&wip->armor_damage_index);
+	//This is checked for validity on every armor type
+	//If it's invalid (or -1), then armor has no effect
 
 	// secondary weapons require these values
 	wip->blast_force = 0;

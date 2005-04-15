@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.46  2005/04/02 21:34:08  phreak
  * put First_secondary_index back in so FRED can compile.
  * The weapons list is also sorted whenever all loading is done so lasers and beams always
@@ -806,6 +809,8 @@ typedef struct weapon_info {
 
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;
+	
+	int armor_damage_index;
 
 
 } weapon_info;
