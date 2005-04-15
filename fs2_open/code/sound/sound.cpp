@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-04-05 11:48:23 $
+ * $Revision: 2.22 $
+ * $Date: 2005-04-15 11:28:41 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/04/05 11:48:23  taylor
+ * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
+ * better error handling for OpenAL functions
+ * Windows can now build properly with OpenAL
+ * extra check to make sure we don't try and use too many hardware bases sources
+ * fix memory error from OpenAL extension list in certain instances
+ *
  * Revision 2.20  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1562,8 +1569,12 @@ int snd_size(int handle, int *size)
 void snd_get_format(int handle, int *bits_per_sample, int *frequency)
 {
 	Assert(handle >= 0 && handle < Num_sounds);
-	*bits_per_sample = Sounds[handle].info.bits;
-	*frequency = Sounds[handle].info.sample_rate;
+
+	if (bits_per_sample)
+		*bits_per_sample = Sounds[handle].info.bits;
+
+	if (frequency)
+		*frequency = Sounds[handle].info.sample_rate;
 }
 
 // given a sound sig (handle) return the index in Sounds[] for that sound
@@ -1620,6 +1631,22 @@ int snd_time_remaining(int handle)
 
 	if ( (bits_per_sample <= 0) || (frequency <= 0) )
 		return 0;
+
+	// handle ADPCM properly.  It's always 16bit for OpenAL but should be 8 or 16
+	// for Windows.  We can't leave it as 4 here (the ADPCM rate) because that is the
+	// compressed bps and the math is against the uncompressed bps.
+	if ( bits_per_sample == 4 ) {
+#ifdef USE_OPENAL
+		bits_per_sample = 16;
+#else
+		if ( UserSampleBits >= 16 )
+			bits_per_sample = 16;
+		else
+			bits_per_sample = 8;
+#endif
+	}
+
+	Assert( bits_per_sample >= 8 );
 
 	current_offset = ds_get_play_position(channel);
 	max_offset = ds_get_channel_size(channel);
