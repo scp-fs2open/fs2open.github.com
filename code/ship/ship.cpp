@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.184 $
- * $Date: 2005-04-15 07:19:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.185 $
+ * $Date: 2005-04-15 11:32:26 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.184  2005/04/15 07:19:29  wmcoolmon
+ * It's amazing how many possible bugs you can catch simply by doing something completely different than coding
+ *
  * Revision 2.183  2005/04/15 06:40:54  wmcoolmon
  * Er, oops
  *
@@ -1541,6 +1544,7 @@ ship	Ships[MAX_SHIPS];
 ship	*Player_ship;
 wing	Wings[MAX_WINGS];
 int	ships_inited = 0;
+int armor_inited = 0;
 
 int	Starting_wings[MAX_STARTING_WINGS];  // wings player starts a mission with (-1 = none)
 
@@ -14357,18 +14361,21 @@ void armor_parse_table(char* filename)
 
 void armor_init()
 {
-	armor_parse_table("armor.tbl");
+	if (!armor_inited) {
+		armor_parse_table("armor.tbl");
 	
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
-	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-amr.tbm", CF_SORT_REVERSE);
+		char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+		char *tbl_file_names[MAX_TBL_PARTS];
+		int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-amr.tbm", CF_SORT_REVERSE);
 	
-	for(int i = 0; i < num_files; i++)
-	{
-		//HACK HACK HACK
-		modular_tables_loaded = true;
-		strcat(tbl_file_names[i], ".tbm");
-		armor_parse_table(tbl_file_names[i]);
+		for(int i = 0; i < num_files; i++)
+		{
+			//HACK HACK HACK
+			modular_tables_loaded = true;
+			strcat(tbl_file_names[i], ".tbm");
+			armor_parse_table(tbl_file_names[i]);
+		}
+
+		armor_inited = 1;
 	}
-	ships_inited = 1;
 }
