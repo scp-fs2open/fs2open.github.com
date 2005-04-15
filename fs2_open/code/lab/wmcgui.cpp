@@ -51,17 +51,6 @@ bool ObjectClassInfoEntry::Parse()
 		stuff_string(buf, F_NAME, ">", sizeof(buf)/sizeof(char));
 		parse_advance(1);	//skip the end ">"
 
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
-
-		//This is where you add specific classes to parse.
-		//Follow the current classes' example, this basically involves
-		//a !stricmp(), a resize() (to the number of entries) and multiple Entries[ID].Parse()
-
 		if(optional_string("+Name:"))
 		{
 			stuff_string(buf2, F_NAME, NULL, NAME_LENGTH);
@@ -76,6 +65,17 @@ bool ObjectClassInfoEntry::Parse()
 			stuff_int_list(&Coords[2], 2, RAW_INTEGER_TYPE);
 		}
 
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+		//LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK LOOK
+
+		//This is where you add specific classes to parse.
+		//Follow the current classes' example, this basically involves
+		//a !stricmp(), a resize() (to the number of entries) and multiple Entries[ID].Parse()
+		
 		if(!stricmp(buf, "Window"))
 		{
 			Object = GT_WINDOW;
@@ -798,9 +798,43 @@ void GUIObject::DeleteChildren(GUIObject* exception)
 	}
 }
 
+GUIObject* GUIObject::AddChildInternal(GUIObject *cgp)
+{
+	if(cgp == NULL)
+		return NULL;
+	
+	cgp->Style |= GS_INTERNALCHILD;
+
+	//Add to end of child list
+	list_append(&Children, cgp);
+
+	cgp->Parent = this;
+	cgp->OwnerSystem = OwnerSystem;
+	cgp->OwnerScreen = OwnerScreen;
+
+	//Update coordinates (Should be relative x/y and width/height) to absolute coordinates
+	cgp->Coords[0] += Coords[0];
+	cgp->Coords[1] += Coords[1];
+	cgp->Coords[2] += Coords[0];
+	cgp->Coords[3] += Coords[1];
+
+	//For skinning
+	cgp->SetCIPointer();
+	//Check position
+	cgp->GetOIECoords(&cgp->Coords[0], &cgp->Coords[1], &cgp->Coords[2], &cgp->Coords[3]);
+	//In case we need to resize
+	cgp->OnRefreshSize();
+	
+	return cgp;
+}
+
 GUIObject* GUIObject::AddChild(GUIObject* cgp)
 {
 	if(cgp == NULL)
+		return NULL;
+	
+	//AddInternalChild must be used
+	if(cgp->Style & GS_INTERNALCHILD)
 		return NULL;
 
 	//Add to end of child list
