@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-04-15 11:36:54 $
+ * $Revision: 2.16 $
+ * $Date: 2005-04-15 11:41:27 $
  * $Author: taylor $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/04/15 11:36:54  taylor
+ * new GCC = new warning messages, yippeeee!!
+ *
  * Revision 2.14  2005/03/27 12:28:33  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000

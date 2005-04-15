@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-04-15 11:36:55 $
+ * $Revision: 2.13 $
+ * $Date: 2005-04-15 11:41:28 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/15 11:36:55  taylor
+ * new GCC = new warning messages, yippeeee!!
+ *
  * Revision 2.11  2005/04/05 05:53:14  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *

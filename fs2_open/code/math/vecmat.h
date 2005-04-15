@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.9 $
- * $Date: 2005-04-15 11:36:54 $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-15 11:41:27 $
  * $Author: taylor $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/15 11:36:54  taylor
+ * new GCC = new warning messages, yippeeee!!
+ *
  * Revision 2.8  2005/04/12 05:26:36  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
