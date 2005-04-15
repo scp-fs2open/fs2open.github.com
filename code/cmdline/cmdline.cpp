@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.100 $
- * $Date: 2005-04-15 11:36:55 $
+ * $Revision: 2.101 $
+ * $Date: 2005-04-15 11:41:27 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2005/04/15 11:36:55  taylor
+ * new GCC = new warning messages, yippeeee!!
+ *
  * Revision 2.99  2005/03/25 06:57:33  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
