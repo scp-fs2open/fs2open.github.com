@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.182 $
- * $Date: 2005-04-15 06:23:17 $
+ * $Revision: 2.183 $
+ * $Date: 2005-04-15 06:40:54 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.182  2005/04/15 06:23:17  wmcoolmon
+ * Local codebase commit; adds armor system.
+ *
  * Revision 2.181  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -14192,7 +14195,7 @@ float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wi
 				real_damage *= atp->Data[sip->armor_index][wip->armor_damage_index];
 				break;
 			case AT_TYPE_EXPONENTIAL:
-				real_damage = real_damage * expf(atp->Data[sip->armor_index][wip->armor_damage_index]);
+				real_damage = powf(real_damage, atp->Data[sip->armor_index][wip->armor_damage_index]);
 				break;
 		}
 	}
