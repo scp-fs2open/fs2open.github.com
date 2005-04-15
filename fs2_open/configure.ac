@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.14 2005-04-12 19:53:44 taylor Exp $
+dnl $Id: configure.ac,v 1.15 2005-04-15 11:27:53 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -18,9 +18,22 @@ AM_INIT_AUTOMAKE([ 1.6.1 no-define dist-bzip2 ])
 AC_DEFINE([NO_CD_CHECK])
 
 dnl Check for programs
+dnl save current vars first
+CXXFLAGS_save="$CXXFLAGS"
+CFLAGS_save="$CFLAGS"
+LDFLAGS_save="$LDFLAGS"
+
 AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_CXX
+
+dnl ok we want to replace any defaults with our own since it's probably less freaky that way
+CXXFLAGS="$CXXFLAGS_save"
+CFLAGS="$CFLAGS_save"
+LDFLAGS="$LDFLAGS_save"
+AC_SUBST(CXXFLAGS)
+AC_SUBST(CFLAGS)
+AC_SUBST(LDFLAGS)
 
 
 dnl The configuration options
@@ -146,7 +159,7 @@ case "$target" in
         # linux
         echo "Using 64-bit Unix defines (for $host_os)"
         fs2_os_unix="yes"
-		FS2_CXXFLAGS="$FS2_CXXFLAGS -m64"
+		D_CFLAGS="$D_CFLAGS -m64"
         ;;
 	*-*-linux*)
 		# linux
@@ -157,7 +170,7 @@ case "$target" in
 		# OSX
 		echo "Using OSX defines (for $host_os)"
 		fs2_os_osx="yes"
-		FS2_LDFLAGS="$FS2_LDFLAGS -lobjc -fPIC -Wl,-noprebind"
+		D_LDFLAGS="$D_LDFLAGS -lobjc -fPIC -Wl,-noprebind"
 		;;
 	*)
 		# Unknown
@@ -221,8 +234,8 @@ fi
 
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -O0 -g -Wall"
-	FS2_LDFLAGS="$FS2_LDFLAGS -g"
+	D_CFLAGS="$D_CFLAGS -O0 -g -Wall"
+	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
 		AC_SUBST(FS2_BINARY, ["wxFRED2_d"])
@@ -231,8 +244,8 @@ if test "$fs2_debug" = "yes" ; then
 	fi
 else
 	AC_DEFINE([NDEBUG])
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -g -O2 -Wall"
-	FS2_LDFLAGS="$FS2_LDFLAGS -g"
+	D_CFLAGS="$D_CFLAGS -g -O2 -Wall"
+	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
 		AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
@@ -240,13 +253,6 @@ else
 		AC_SUBST(FS2_BINARY, ["fs2_open_r"])
 	fi
 fi
-
-dnl if test "$fs2_fred" = "yes" ; then
-dnl 	AC_DEFINE([NDEBUG])
-dnl 	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/usr/lib64/wx/include/gtk-2.4 -DGTK_NO_CHECK_CASTS -D__WXGTK__ -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -O2 -Wall"
-dnl 	FS2_LDFLAGS="$FS2_LDFLAGS -L/usr/lib64 -pthread -lwx_gtk-2.4"
-dnl 	AC_SUBST(FS2_BINARY, ["wxFRED2_r"])
-dnl fi
 
 if test "$fs2_lite" = "yes" ; then
 	AC_DEFINE([GL_NO_HTL])
@@ -414,18 +420,9 @@ elif test "$fs2_os_osx" = "yes" ; then
 			AC_MSG_ERROR([*** Cannot find SDL which is required! ***]))])])
 fi
 
-dnl add SDL settings to our flags
-FS2_CXXFLAGS=$FS2_CXXFLAGS" $SDL_CFLAGS"
+dnl add SDL settings to our flags, only CFLAGS are default, libs are game specific
+D_CFLAGS=$D_CFLAGS" $SDL_CFLAGS"
 FS2_LDFLAGS=$FS2_LDFLAGS" $SDL_LIBS"
-
-dnl libjpeg
-dnl if test "$fs2_os_unix" = "yes" ; then
-dnl 	if test "x$fs2_static_jpeg" != "x" ; then
-dnl 		FS2_LIBS="$FS2_LIBS $fs2_static_jpeg/libjpeg.a"
-dnl 	else
-dnl 		FS2_LDFLAGS="$FS2_LDFLAGS -ljpeg"
-dnl 	fi
-dnl fi
 
 dnl OGG Vorbis
 if test "$fs2_os_unix" = "yes" ; then
@@ -441,11 +438,11 @@ fi
 
 dnl any extra optimization or warning flags
 if test "$fs2_os_win32" = "yes" ; then
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -fexceptions"
+	D_CFLAGS="$D_CFLAGS -fexceptions"
 elif test "$fs2_os_unix" = "yes" ; then
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -fsigned-char -Wno-deprecated -Wno-unknown-pragmas"
+	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-deprecated -Wno-unknown-pragmas"
 elif test "$fs2_os_osx" = "yes" ; then
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -fsigned-char"
+	D_CFLAGS="$D_CFLAGS -fsigned-char"
 fi
 
 dnl extra OSX frameworks
@@ -453,16 +450,15 @@ if test "$fs2_os_osx" = "yes" ; then
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework AppKit -framework Foundation"
 fi
 
-dnl For SDLMain.m on OSX
-OBJC="$CC"
-AC_SUBST(OBJC)
-OBJCFLAGS="$SDL_CFLAGS"
-AC_SUBST(OBJCFLAGS)
 
 
-dnl prevent automake from overwriting our stuff or using extra
-CXXFLAGS="$FS2_CXXFLAGS"
-LDFLAGS="$FS2_LDFLAGS"
+dnl substitute our default flags
+AC_SUBST(D_CFLAGS)
+AC_SUBST(D_LDFLAGS)
+
+dnl substitute out game specific flags
+AC_SUBST(FS2_CXXFLAGS)
+AC_SUBST(FS2_LDFLAGS)
 LIBS="$FS2_LIBS"
 
 

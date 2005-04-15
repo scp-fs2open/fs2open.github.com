@@ -19,8 +19,11 @@ EXTRA_DIST =	\
 	projects/anjuta1/README
 
 
-EXTRA_PROGRAMS = cfilearchiver cryptstring scramble
+# D_ variants are defaults and should always be used
+AM_CXXFLAGS = -I./code @D_CFLAGS@
+AM_LDFLAGS = @D_LDFLAGS@
 
+EXTRA_PROGRAMS = cfilearchiver cryptstring scramble
 
 ###############################################################################
 ##
@@ -59,5 +62,3 @@ clean-tools:
 # make sure we get this stuff cleaned up
 clean-generic: clean-tools
 
-
-AM_CXXFLAGS = -I./code

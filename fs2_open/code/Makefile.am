@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.15 2005-04-12 19:22:00 taylor Exp $
+## $Id: Makefile.am,v 1.16 2005-04-15 11:27:53 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -13,6 +13,11 @@ EXTRA_DIST =	\
 	freespace2/goal_none.bmp	\
 	freespace2/goal_ord.bmp
 
+
+# D_ variants are defaults and should always be used
+# FS2_ variants are for game building and wxFRED
+AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@
+AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 
 noinst_LIBRARIES = libcode.a
 noinst_PROGRAMS = @FS2_BINARY@
