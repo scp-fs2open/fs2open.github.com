@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.183 $
- * $Date: 2005-04-15 06:40:54 $
+ * $Revision: 2.184 $
+ * $Date: 2005-04-15 07:19:29 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.183  2005/04/15 06:40:54  wmcoolmon
+ * Er, oops
+ *
  * Revision 2.182  2005/04/15 06:23:17  wmcoolmon
  * Local codebase commit; adds armor system.
  *
@@ -14244,10 +14247,12 @@ void ArmorType::ParseData()
 		
 		if(check_for_string("("))
 		{
+			parse_advance(1);
 			while(!check_for_string(")"))
 			{
 				stuff_float(&temp_float);
 				temp_float_data.push_back(temp_float);
+				ignore_white_space();
 			}
 		}
 		
