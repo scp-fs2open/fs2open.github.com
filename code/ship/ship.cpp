@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.185 $
- * $Date: 2005-04-15 11:32:26 $
- * $Author: taylor $
+ * $Revision: 2.186 $
+ * $Date: 2005-04-15 23:19:13 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.185  2005/04/15 11:32:26  taylor
+ * proposes that WMC be subject to a breathalyzer test before commit ;)
+ *
  * Revision 2.184  2005/04/15 07:19:29  wmcoolmon
  * It's amazing how many possible bugs you can catch simply by doing something completely different than coding
  *
@@ -14159,20 +14162,23 @@ int ship_tvt_wing_lookup(char *wing_name)
 //****************************Calculation type addition
 
 //Armor types
-#define AT_TYPE_ADDITIVE	0
-#define AT_TYPE_MULTIPLICATIVE	1
-#define AT_TYPE_EXPONENTIAL	2
+#define AT_TYPE_ADDITIVE			0
+#define AT_TYPE_MULTIPLICATIVE		1
+#define AT_TYPE_EXPONENTIAL			2
+#define AT_TYPE_EXPONENTIAL_BASE	3
 
 char *TypeNames[] = {
 	"additive",
 	"mulitplicative",
 	"exponentional",
+	"exponential base",
 };
 
 float TypeDefaultValues[] = {
 	0.0f,
 	1.0f,
 	1.0f,
+	1.0f, //Damage will always be one (No mathematical way to do better)
 };
 
 const int Num_armor_calculation_types = sizeof(TypeNames)/sizeof(char*);
@@ -14203,6 +14209,9 @@ float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wi
 				break;
 			case AT_TYPE_EXPONENTIAL:
 				real_damage = powf(real_damage, atp->Data[sip->armor_index][wip->armor_damage_index]);
+				break;
+			case AT_TYPE_EXPONENTIAL_BASE:
+				real_damage = powf(atp->Data[sip->armor_index][wip->armor_damage_index], real_damage);
 				break;
 		}
 	}
