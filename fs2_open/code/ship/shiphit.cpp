@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-04-15 06:56:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.42 $
+ * $Date: 2005-04-15 11:32:26 $
+ * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/04/15 06:56:02  wmcoolmon
+ * Another oops.
+ *
  * Revision 2.40  2005/04/15 06:23:17  wmcoolmon
  * Local codebase commit; adds armor system.
  *
@@ -2353,7 +2356,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			num = sip->armor_types.size();
 			for(i = 0; i < num; i++)
 			{
-				damage = Armor_types[sip->armor_types[i]].GetDamage(damage, sip, wip)
+				damage = Armor_types[sip->armor_types[i]].GetDamage(damage, sip, wip);
 			}
 		}
 	}
