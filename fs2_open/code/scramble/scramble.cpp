@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/scramble/scramble.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:09 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2005-04-15 11:35:18 $
+ * $Author: taylor $
  *
  * Module for file scrambler
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:09  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:28  penguin
  * Warpcore CVS sync
  *
@@ -55,15 +58,39 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <io.h>
 #include <string.h>
+
+#ifndef SCP_UNIX
+#include <io.h>
+#endif
 
 #include "parse/encrypt.h"
 #include "scramble/scramble.h"
 
+#ifdef SCP_UNIX
+#include <sys/stat.h>
+
+#define strnicmp(s1, s2, n)		strncasecmp((s1), (s2), (n))
+#define stricmp(s1, s2)			strcasecmp((s1), (s2))
+
+// find the size of a file
+int _filelength(int fd)
+{
+	struct stat buf;
+
+	if (fstat (fd, &buf) == -1)
+		return -1;
+
+	return buf.st_size;
+}
+#endif
+
+
 #define MAX_LINE_LEN	512
 
 static int Use_8bit = 0;	// set to 1 to disable 7bit character packing
+static bool fs2 = true;			// use fs2 type encryption by default
+
 
 // strip out any ships tbl data not used in demo (ie entries without @ preceding name)
 void scramble_read_ships_tbl(char **text, int *text_len, FILE *fp)
@@ -183,6 +210,25 @@ void scramble_read_default(char **text, int *text_len, FILE *fp)
 	fread( *text, *text_len, 1, fp );
 }
 
+// tries to figure out what type of scramble has been used on a file
+void scramble_identify(char *filename)
+{
+	FILE	*fp;
+	char	tenbytes[10];
+
+	fp = fopen(filename, "rb");
+	if ( !fp ) {
+		return;
+	}
+
+	// read in first 10 bytes
+	fread( tenbytes, 10, 1, fp );
+
+	fclose(fp);
+
+	printf("%s:  %s\n", filename, encrypt_type(tenbytes));
+}
+
 // scramble a file
 //
 // input:	src_filename	=>	filename of text to scramble
@@ -227,7 +273,7 @@ void scramble_file(char *src_filename, char *dest_filename, int preprocess)
 
 	scramble_text = (char*)malloc(text_len+32);
 
-	encrypt(text, text_len, scramble_text, &scramble_len, Use_8bit);
+	encrypt(text, text_len, scramble_text, &scramble_len, Use_8bit, fs2);
 	
 	// write out scrambled data
 	fwrite( scramble_text, scramble_len, 1, fp );
@@ -283,25 +329,54 @@ void unscramble_file(char *src_filename, char *dest_filename)
 
 void print_instructions()
 {
-	printf("Encrypt: scramble [-st] [-wt] <filename_in> [filename_out] \n");
-	printf("Decrypt: scramble -u <filename_in> [filename_out] \n");
+	printf("Encrypt:   scramble [-st | -wt | -fs1 | -8bit] <filename_in> [filename_out] \n");
+	printf("Decrypt:   scramble -u <filename_in> [filename_out] \n");
+	printf("Identify:  scramble -i <filename_in>\n\n");
+	printf("Encrypt Options (you can only use one option at the time):\n");
+	printf("   -st		Preprocess ships.tbl (for FS1 Demo version only!!)\n");
+	printf("   -wt		Preprocess weapons.tbl (for FS1 Demo version only!!)\n");
+	printf("   -fs1		Use 7bit, Freespace 1 style encryption (default=no)\n");
+	printf("   -8bit	Use 8bit, Freespace 1 style encryption (default=no)\n\n");
 }
 
+#ifdef SCP_UNIX
+int main(int argc, char *argv[])
+#else
 void main(int argc, char *argv[])
+#endif
 {
 	switch (argc) {
 	case 2:
 		encrypt_init();
-		scramble_file(argv[1]);
+		if ( !stricmp("-u", argv[1]) || !stricmp("-i", argv[1]) || !stricmp("-st", argv[1]) ||
+				!stricmp("-wt", argv[1]) || !stricmp("-fs1", argv[1]) || !stricmp("-8bit", argv[1]) ) {
+			print_instructions();
+		} else {
+			scramble_file(argv[1]);
+		}
 		break;
 	case 3:
 		encrypt_init();
 		if ( !stricmp("-u", argv[1]) ) {
 			unscramble_file(argv[2]);
+		} else if ( !stricmp("-i", argv[1]) ) {
+			scramble_identify(argv[2]);
 		} else if ( !stricmp("-st", argv[1]) ) {
+			Use_8bit = 0;
+			fs2 = false;
 			scramble_file(argv[2], argv[2], PREPROCESS_SHIPS_TBL);
 		} else if ( !stricmp("-wt", argv[1]) ) {
+			Use_8bit = 0;
+			fs2 =false;
 			scramble_file(argv[2], argv[2], PREPROCESS_WEAPONS_TBL);
+		} else if ( !stricmp("-fs1", argv[1]) ) {
+			Use_8bit = 0;
+			fs2 = false;
+			scramble_file(argv[2], argv[2]);
+		} else if ( !stricmp("-8bit", argv[1]) ) {
+			Use_8bit = 1;
+			fs2 = false;
+			scramble_file(argv[2], argv[2]);
 		} else {
 			scramble_file(argv[1], argv[2]);
 		}
@@ -311,16 +386,32 @@ void main(int argc, char *argv[])
 		if ( !stricmp("-u", argv[1]) ) {
 			unscramble_file(argv[2], argv[3]);
 		} else if ( !stricmp("-st", argv[1]) ) {
+			Use_8bit = 0;
+			fs2 = false;
 			scramble_file(argv[2], argv[3], PREPROCESS_SHIPS_TBL);
 		} else if ( !stricmp("-wt", argv[1]) ) {
+			Use_8bit = 0;
+			fs2 = false;
 			scramble_file(argv[2], argv[3], PREPROCESS_WEAPONS_TBL);
+		} else if ( !stricmp("-fs1", argv[1]) ) {
+			Use_8bit = 0;
+			fs2 = false;
+			scramble_file(argv[2], argv[3]);
+		} else if ( !stricmp("-8bit", argv[1]) ) {
+			Use_8bit = 1;
+			fs2 = false;
+			scramble_file(argv[2], argv[3]);
 		} else {
 			print_instructions();
 		}
 		break;
 	default:
 		print_instructions();
+#ifdef SCP_UNIX
+		return 1;
+#else
 		return;
+#endif
 	}
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-01-31 10:34:38 $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-15 11:35:18 $
  * $Author: taylor $
  *
  * Module for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/31 10:34:38  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.5  2004/07/26 20:47:47  Kazan
  * remove MCD complete
  *
@@ -124,11 +127,18 @@ ushort chksum_add_short(ushort seed, char *buffer, int size)
 //				scrambled_text	=>	storage for scrambled text (malloc at least text_len)
 //				scrambled_len	=>	size of text after getting scrambled
 //				use_8bit => flag to indicate that chars are stored using 8 bits (default value is 0)
-void encrypt(char *text, int text_len, char *scrambled_text, int *scrambled_len, int use_8bit)
+//				new_encrypt => flag to switch between old and new encryption styles (default = yes)
+void encrypt(char *text, int text_len, char *scrambled_text, int *scrambled_len, int use_8bit, bool new_encrypt)
 {
 #ifdef ENCRYPT_NEW
-	encrypt_new(text, text_len, scrambled_text, scrambled_len);
-#else
+	// new_encrypt, when set, is for FS2 style encryption
+	// when not set it's either of two FS1 styles, 8bit or 7bit
+	if (new_encrypt == true) {
+		encrypt_new(text, text_len, scrambled_text, scrambled_len);
+		return;
+	}
+#endif
+
 	int i;
 	int byte_offset = 0;
 	int bit_offset = 0;
@@ -225,7 +235,6 @@ void encrypt(char *text, int text_len, char *scrambled_text, int *scrambled_len,
 	for ( i =0; i < len; i++ ) {
 		scrambled_text[i] ^= i;
 	}
-#endif
 }
 
 //	input:	scrambled_text	=>	scrambled text
@@ -235,8 +244,13 @@ void encrypt(char *text, int text_len, char *scrambled_text, int *scrambled_len,
 void unencrypt(char *scrambled_text, int scrambled_len, char *text, int *text_len)
 {
 #ifdef ENCRYPT_NEW
-	unencrypt_new(scrambled_text, scrambled_len, text, text_len);
-#else
+	// check if we are an old FS1 style encryption before moving to new type
+	if ( !is_old_encrypt(scrambled_text) ) {
+		unencrypt_new(scrambled_text, scrambled_len, text, text_len);
+		return;
+	}
+#endif
+
 	int i, num_runs;
 	int scramble_offset = 0;
 	int byte_offset = 0;
@@ -342,7 +356,6 @@ void unencrypt(char *scrambled_text, int scrambled_len, char *text, int *text_le
 	}
 
 	*text_len = byte_offset;
-#endif
 }
 
 #define NUM_LVL1_KEYS					11
@@ -469,6 +482,38 @@ int is_encrypted(char *scrambled_text)
 	}
 
 	return 0;
+}
+
+// Returns 1 if the data uses a FS1 style encryption, 0 if FS2 style
+int is_old_encrypt(char *scrambled_text)
+{
+	uint	encrypt_id;
+
+	memcpy(&encrypt_id, scrambled_text, 4);
+
+	if ( (encrypt_id == Encrypt_signature) || (encrypt_id == Encrypt_signature_8bit) ) {
+		return 1;
+	}
+
+	return 0;
+}
+
+// return text description of the encrypted text type
+const char *encrypt_type(char *scrambled_text)
+{
+	uint encrypt_id;
+
+	memcpy(&encrypt_id, scrambled_text, 4);
+
+	if (encrypt_id == Encrypt_signature) {
+		return "Freespace 1 type encryption, 7-bit";
+	} else if (encrypt_id == Encrypt_signature_8bit) {
+		return "Freespace 1 type encryption, 8-bit";
+	} else if (encrypt_id == Encrypt_new_signature) {
+		return "Freespace 2 type encryption";
+	} else {
+		return "Not encrypted or unknown encryption type";
+	}
 }
 
 // initialize encryption
