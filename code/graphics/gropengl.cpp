@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.116 $
- * $Date: 2005-04-12 02:04:56 $
- * $Author: phreak $
+ * $Revision: 2.117 $
+ * $Date: 2005-04-15 11:36:54 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.116  2005/04/12 02:04:56  phreak
+ * gr_set_ambient_light() function for the ambient light sliders in FRED
+ *
  * Revision 2.115  2005/04/05 11:50:57  taylor
  * fix memory error from GL extension list that occurs in certain circumstances
  *
@@ -3447,15 +3450,15 @@ void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 {
 	static float pre_set_colours[MAX_NUM_TIMERBARS][3] = 
 	{
-		1.0,0,
-		0,1.0,
-		0,0,1,
+		{ 1.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.0f, 1.0f },
+		{ 0.0f, 0.0f, 1.0f },
 
-		0.2f,1.0f,0.8f, 
-		1.0f,0.0f,8.0f, 
-		1.0f,0.0f,1.0f,
-		1.0f,0.2f,0.2f,
-		1.0f,1.0f,1.0f
+		{ 0.2f, 1.0f, 0.8f }, 
+		{ 1.0f, 0.0f, 8.0f }, 
+		{ 1.0f, 0.0f, 1.0f },
+		{ 1.0f, 0.2f, 0.2f },
+		{ 1.0f, 1.0f, 1.0f }
 	};
 
 	static float max_fw = (float) gr_screen.max_w; 

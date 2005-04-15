@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-04-05 05:53:14 $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-15 11:36:55 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/04/05 05:53:14  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.10  2005/03/02 21:24:43  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -353,46 +356,46 @@ asteroid_obj	Asteroid_obj_list;						// head of linked list of asteroid_obj stru
 // Asteroid editor requires first set of entries to be "None" and then "Asteroid XXX"
 // Any changes to this will require changes to the asteroid editor
 debris_struct Field_debris_info[] = {
-	-1,						"None",
-	ASTEROID_TYPE_SMALL,	"Asteroid Small",
-	ASTEROID_TYPE_MEDIUM,	"Asteroid Medium",
-	ASTEROID_TYPE_BIG,		"Asteroid Large",
+	{ -1,						"None", },
+	{ ASTEROID_TYPE_SMALL,	"Asteroid Small", },
+	{ ASTEROID_TYPE_MEDIUM,	"Asteroid Medium", },
+	{ ASTEROID_TYPE_BIG,		"Asteroid Large", },
 
-	DEBRIS_TERRAN_SMALL,	"Terran Small",
-	DEBRIS_TERRAN_MEDIUM,	"Terran Medium",
-	DEBRIS_TERRAN_LARGE,	"Terran Large",
+	{ DEBRIS_TERRAN_SMALL,	"Terran Small", },
+	{ DEBRIS_TERRAN_MEDIUM,	"Terran Medium", },
+	{ DEBRIS_TERRAN_LARGE,	"Terran Large", },
 
-	DEBRIS_VASUDAN_SMALL,	"Vasudan Small",
-	DEBRIS_VASUDAN_MEDIUM,	"Vasudan Medium",
-	DEBRIS_VASUDAN_LARGE,	"Vasudan Large",
+	{ DEBRIS_VASUDAN_SMALL,	"Vasudan Small", },
+	{ DEBRIS_VASUDAN_MEDIUM,	"Vasudan Medium", },
+	{ DEBRIS_VASUDAN_LARGE,	"Vasudan Large", },
 
-	DEBRIS_SHIVAN_SMALL,	"Shivan Small",
-	DEBRIS_SHIVAN_MEDIUM,	"Shivan Medium",
+	{ DEBRIS_SHIVAN_SMALL,	"Shivan Small", },
+	{ DEBRIS_SHIVAN_MEDIUM,	"Shivan Medium", },
 
 #if !defined(MORE_SPECIES)
-	DEBRIS_SHIVAN_LARGE,	"Shivan Large"
+	{ DEBRIS_SHIVAN_LARGE,	"Shivan Large" }
 #else
-	DEBRIS_SHIVAN_LARGE,	"Shivan Large",
+	{ DEBRIS_SHIVAN_LARGE,	"Shivan Large", },
 
-	DEBRIS_ANCIENT_SMALL,	"Ancient Small",
-	DEBRIS_ANCIENT_MEDIUM,	"Ancient Medium",
-	DEBRIS_ANCIENT_LARGE,	"Ancient Large",
+	{ DEBRIS_ANCIENT_SMALL,	"Ancient Small", },
+	{ DEBRIS_ANCIENT_MEDIUM,	"Ancient Medium", },
+	{ DEBRIS_ANCIENT_LARGE,	"Ancient Large", },
 
-	DEBRIS_USER1_SMALL,		"User1 Small",
-	DEBRIS_USER1_MEDIUM,	"User1 Medium",
-	DEBRIS_USER1_LARGE,		"User1 Large",
+	{ DEBRIS_USER1_SMALL,		"User1 Small", },
+	{ DEBRIS_USER1_MEDIUM,	"User1 Medium", },
+	{ DEBRIS_USER1_LARGE,		"User1 Large", },
 
-	DEBRIS_USER2_SMALL,		"User2 Small",
-	DEBRIS_USER2_MEDIUM,	"User2 Medium",
-	DEBRIS_USER2_LARGE,		"User2 Large",
+	{ DEBRIS_USER2_SMALL,		"User2 Small", },
+	{ DEBRIS_USER2_MEDIUM,	"User2 Medium", },
+	{ DEBRIS_USER2_LARGE,		"User2 Large", },
 
-	DEBRIS_USER3_SMALL,		"User3 Small",
-	DEBRIS_USER3_MEDIUM,	"User3 Medium",
-	DEBRIS_USER3_LARGE,		"User3 Large",
+	{ DEBRIS_USER3_SMALL,		"User3 Small", },
+	{ DEBRIS_USER3_MEDIUM,	"User3 Medium", },
+	{ DEBRIS_USER3_LARGE,		"User3 Large", },
 
-	DEBRIS_USER4_SMALL,		"User4 Small",
-	DEBRIS_USER4_MEDIUM,	"User4 Medium",
-	DEBRIS_USER4_LARGE,		"User4 Large",
+	{ DEBRIS_USER4_SMALL,		"User4 Small", },
+	{ DEBRIS_USER4_MEDIUM,	"User4 Medium", },
+	{ DEBRIS_USER4_LARGE,		"User4 Large", }
 #endif
 };
 
