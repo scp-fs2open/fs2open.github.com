@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.188 $
- * $Date: 2005-04-16 04:16:57 $
+ * $Revision: 2.189 $
+ * $Date: 2005-04-16 04:19:21 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.188  2005/04/16 04:16:57  wmcoolmon
+ * More optional tag-making for ships.tbl
+ *
  * Revision 2.187  2005/04/16 03:36:13  wmcoolmon
  * Minor changes; made even more fields in ships.tbl optional.
  *
@@ -2603,11 +2606,17 @@ strcpy(parse_error_text, temp_error);
 	else
 		sip->max_weapon_reserve = 0.0f;
 
-	required_string("$Hitpoints:");
-	stuff_float(&sip->max_hull_strength);
-	if (sip->max_hull_strength == 0.0f)
+	if(optional_string("$Hitpoints:"))
 	{
-		Warning(LOCATION, "Max hull strength on ship %s cannot be 0.  Defaulting to 100.\n", sip->name);
+		stuff_float(&sip->max_hull_strength);
+		if (sip->max_hull_strength < 0.0f)
+		{
+			Warning(LOCATION, "Max hull strength on ship %s cannot be %f.  Defaulting to 100.\n", sip->name, sip->max_hull_strength);
+			sip->max_hull_strength = 100.0f;
+		}
+	}
+	else
+	{
 		sip->max_hull_strength = 100.0f;
 	}
 
