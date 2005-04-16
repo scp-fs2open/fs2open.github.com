@@ -24,17 +24,13 @@ void storybook_options(Button *caller)
 
 void storybook_init()
 {
-	if(SB_screen != NULL)
-	{
-		GUI_system->PushScreen(SB_screen);
-		return;
-	}
-
 	SB_screen = GUI_system->PushScreen(new GUIScreen("Storybook"));
 
-	SB_screen->Add(new Button("Continue", 50, 50, storybook_command_briefing));
-	SB_screen->Add(new Button("Help", 50, 100, storybook_help));
-	SB_screen->Add(new Button("Options", 50, 150, storybook_options));
+	int x = 0;
+	x += SB_screen->Add(new Button("Continue", 0, 0, storybook_command_briefing))->GetWidth() + 10;
+	x += SB_screen->Add(new Button("Help", x, 0, storybook_help))->GetWidth() + 10;
+	SB_screen->Add(new Button("Options", x, 0, storybook_options));
+
 	SB_screen->Add(new ImageAnim("Image", "boom", 90, 100));
 
 	char* string = "Altair\n\n\tWith a final blast from the landing rockets, the modified Omega transport settled down into the earth. There was a moment of relative peace, then the airlock hummed, made a large clunk, and with the hiss of pressurized air escaping, it swung downward and landed on the ground. Twelve heavily armed young men ran out, quickly forming a perimeter around the open door. All of them scanned the surrounding trees for a moment, before saying anything.\n\n\t\"Clear!\" the Sergeant in charge reported. \"Marines, fan out! Team C, investigate that building!\" He jerked his head in the direction of the large grey-green tower some 250 meters away.\n\n\t\"Yes, sir,\" one of the men said over the comm system, as they and four of the twelve soldiers moved off towards the structure, their eyes alert and their fingers ready on the triggers of their guns.\n\n\tBack at the Omega, Captain Roemig and five professional-looking specialists emerged from the transport. None of them looked particularly at ease; whatever had destroyed the Triton and its escort fighters had still not been found. The vessels had been identified as part of a mining operation, and they'd confirmed the identity of the landing craft, Darwin's Folly. All nine members of the expedition - seven on board the Triton, and two mercs driving the Perseuses - were found dead, killed long before the Trinity had arrived.\n\n\tAs the four soldiers moved across the terrain separating the tower from the transport, the Head of Security for the Trinity scoffed. \"They'd better hope they're not moving into a minefield. With their proximity to one another, they'd all be killed by a single well-placed Golan M-47.\"";
@@ -49,5 +45,7 @@ void storybook_do_frame(float frametime)
 
 void storybook_close()
 {
-	GUI_system->PullScreen(SB_screen);
+	//We don't need to call PullScreen(); deletion does it for us
+	//How nifty is that? :)
+	delete SB_screen;
 }

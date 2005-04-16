@@ -15,11 +15,6 @@
 
 static GUIScreen *Lab_screen = NULL;
 
-static Window* DescWin = NULL;
-static Text* DescText = NULL;
-static Window* ShipOptWin = NULL;
-static Window* ShipVarWin = NULL;
-
 static int ShipSelectShipIndex = -1;
 static int ShipSelectModelNum = -1;
 static int ModelLOD = 0;
@@ -27,6 +22,7 @@ static int ModelFlags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
 void change_lod(Tree* caller);
 
 //*****************************Ship Options Window*******************************
+static Window* ShipOptWin = NULL;
 
 #define NUM_SHIP_OPTIONS	50
 Checkbox *soc[NUM_SHIP_OPTIONS];
@@ -152,6 +148,8 @@ void ship_options_window(Button *caller)
 	cwp->SetCloseFunction(zero_ship_opt_win);
 }
 //*****************************Ship Variables Window*******************************
+static Window* ShipVarWin = NULL;
+
 #define NUM_SHIP_VARIABLES		25
 Text *svt[NUM_SHIP_OPTIONS];
 
@@ -207,15 +205,15 @@ void set_ship_variables_ship(ship_info *sip)
 	SVW_SET_SI_VAR(closeup_pos.xyz.y);
 	SVW_SET_SI_VAR(closeup_pos.xyz.z);
 
+	//Test
+	/*
 	SVW_SET_VAR(Objects[Ships[0].objnum].pos.xyz.x);
 	SVW_SET_VAR(Objects[Ships[0].objnum].pos.xyz.y);
 	SVW_SET_VAR(Objects[Ships[0].objnum].pos.xyz.z);
 
 	SVW_SET_VAR(Objects[Ships[0].objnum].phys_info.vel.xyz.x);
 	SVW_SET_VAR(Objects[Ships[0].objnum].phys_info.vel.xyz.y);
-	SVW_SET_VAR(Objects[Ships[0].objnum].phys_info.vel.xyz.z);
-
-	//ShipOptWin->SetCaption
+	SVW_SET_VAR(Objects[Ships[0].objnum].phys_info.vel.xyz.z);*/
 }
 
 #define SVW_LEFTWIDTH		150
@@ -229,7 +227,7 @@ void zero_ship_var_win(GUIObject *caller)
 #define SVW_ADD_TEXT_HEADER(name) y += (cwp->AddChild(new Text(name, name, SVW_RIGHTX/2, y + 10, SVW_RIGHTWIDTH))->GetHeight() + 15)
 
 #define SVW_ADD_TEXT(name) cwp->AddChild(new Text(name, name, 0, y, SVW_LEFTWIDTH));			\
-	svt[i] = (Text*) cwp->AddChild(new Text(std::string (name, "Editbox"), "", SVW_RIGHTX, y, SVW_RIGHTWIDTH, 12, T_EDITTABLE));	\
+	svt[i] = (Text*) cwp->AddChild(new Text(std::string (name) + std::string("Editbox"), "", SVW_RIGHTX, y, SVW_RIGHTWIDTH, 12, T_EDITTABLE));	\
 	y += svt[i++]->GetHeight() + 5														\
 
 void ship_variables_window(Button *caller)
@@ -292,6 +290,7 @@ void ship_variables_window(Button *caller)
 	SVW_ADD_TEXT("Closeup pos (z)");
 
 	//Test
+	/*
 	SVW_ADD_TEXT_HEADER(Ships[0].ship_name);
 	SVW_ADD_TEXT("Mission pos (x)");
 	SVW_ADD_TEXT("Mission pos (y)");
@@ -299,6 +298,7 @@ void ship_variables_window(Button *caller)
 	SVW_ADD_TEXT("Mission vel (x)");
 	SVW_ADD_TEXT("Mission vel (y)");
 	SVW_ADD_TEXT("Mission vel (z)");
+	*/
 
 	if(ShipSelectShipIndex != -1)
 		set_ship_variables_ship(&Ship_info[ShipSelectShipIndex]);
@@ -416,6 +416,9 @@ void make_new_window(Button* caller)
 }
 
 //*****************************Description Window*******************************
+static Window* DescWin = NULL;
+static Text* DescText = NULL;
+
 void zero_descwin(GUIObject* caller)
 {
 	DescWin = NULL;
@@ -566,14 +569,31 @@ void get_out_of_lab(Button* caller)
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
+//***************************************
+static bool Lab_in_mission;
+
 void lab_init()
 {
+	if(gameseq_get_pushed_state() == GS_STATE_GAME_PLAY)
+		Lab_in_mission = true;
+	else
+		Lab_in_mission = false;
+
 	beam_pause_sounds();
 
 	//If we were viewing a ship, load 'er up
 	if(ShipSelectShipIndex != -1)
 	{
 		ShipSelectModelNum = model_load(Ship_info[ShipSelectShipIndex].pof_file, 0, NULL);
+	}
+
+	//If you want things to stay as you left them, uncomment this and "delete Lab_screen"
+	//of course, you still need to delete it somewhere else (ie when Freespace closes)
+	
+	if(Lab_screen != NULL)
+	{
+		GUI_system->PushScreen(Lab_screen);
+		return;
 	}
 
 	//We start by creating the screen/toolbar
@@ -583,19 +603,20 @@ void lab_init()
 	cwp = Lab_screen->Add(new Window("Toolbar", 0, 0, -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 //	cwp->AddChild(new Button("File", 0, 0, file_menu));
 	int x = 0;
-	cbp = cwp->AddChild(new Button("Show ships", 0, 0, make_new_window));
+	cbp = cwp->AddChild(new Button("Ship classes", 0, 0, make_new_window));
 	x += cbp->GetWidth() + 10;
-	cbp = cwp->AddChild(new Button("Description", x, 0, make_another_window));
+	cbp = cwp->AddChild(new Button("Class Description", x, 0, make_another_window));
 	x += cbp->GetWidth() + 10;
-	cbp = cwp->AddChild(new Button("Options", x, 0, make_options_window));
+	if(!Lab_in_mission)
+	{
+		cbp = cwp->AddChild(new Button("Render options", x, 0, make_options_window));
+		x += cbp->GetWidth() + 10;
+	}
+	cbp = cwp->AddChild(new Button("Class options", x, 0, ship_options_window));
 	x += cbp->GetWidth() + 10;
-	cbp = cwp->AddChild(new Button("Ship Options", x, 0, ship_options_window));
-	x += cbp->GetWidth() + 10;
-	cbp = cwp->AddChild(new Button("Ship Variables", x, 0, ship_variables_window));
+	cbp = cwp->AddChild(new Button("Class variables", x, 0, ship_variables_window));
 	x += cbp->GetWidth() + 10;
 	cbp = cwp->AddChild(new Button("Exit", x, 0, get_out_of_lab));
-
-	cbp->SetPosition(gr_screen.clip_right - cbp->GetWidth() - 2, 1);
 }
 
 extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);
@@ -603,7 +624,7 @@ extern void game_render_frame(vec3d *eye_pos, matrix *eye_orient);
 void lab_do_frame(float frametime)
 {
 	gr_clear();
-	if(gameseq_get_pushed_state() == GS_STATE_GAME_PLAY)
+	if(Lab_in_mission)
 	{
 		vec3d eye_pos;
 		matrix eye_orient;
