@@ -2510,12 +2510,21 @@ ImageAnim::ImageAnim(std::string in_name, std::string in_imagename, int x_coord,
 {
 	//Load the image
 	IsSet = false;
+	ImageHandle = -1;
+	ImageFlags = 0;
+	TotalFrames = 0;
+	FPS = 0;
+	Stop();
 
 	Type = GT_IMAGEANIM;
 }
 
 void ImageAnim::DoDraw(float frametime)
 {
+	//Do nothing if nothing to draw
+	if(ImageHandle == -1)
+		return;
+
 	if(PlayType != PT_STOPPED)
 	{
 		if(PlayType == PT_PLAYING)
