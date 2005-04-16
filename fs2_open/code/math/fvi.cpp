@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:18 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-16 03:36:13 $
+ * $Author: wmcoolmon $
  *
  * Routines to find intersections of various 3d things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 05:53:18  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.4  2004/07/26 20:47:36  Kazan
  * remove MCD complete
  *
@@ -1165,7 +1168,7 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 		float t_sphere_hit, temp;
 
 		// solve for sphere time
-		double A, B, C, root, discriminant;
+		float A, B, C, root, discriminant;	//WMC - changed to float 4/15/2005
 		float root1, root2;
 		A = ve_dot_vs*ve_dot_vs - ve_sqr*vs_sqr;
 		B = 2 * (delta_x_dot_ve*ve_dot_vs - delta_x_dot_vs*ve_sqr);

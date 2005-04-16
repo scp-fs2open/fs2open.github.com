@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.140 $
- * $Date: 2005-04-15 06:59:05 $
+ * $Revision: 2.141 $
+ * $Date: 2005-04-16 03:36:12 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2005/04/15 06:59:05  wmcoolmon
+ * One final oops (hopefully).
+ *
  * Revision 2.139  2005/04/12 02:10:09  phreak
  * ambient light is set in mission
  *
@@ -4773,7 +4776,7 @@ extern float View_zoom, Canv_h2, Canv_w2;
 extern int Cmdline_nohtl;
 
 // Does everything needed to render a frame
-void game_render_frame( vec3d * eye_pos, matrix * eye_orient )
+void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 {
 	int dont_offset;
 

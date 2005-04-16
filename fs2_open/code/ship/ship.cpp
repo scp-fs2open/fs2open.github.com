@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.186 $
- * $Date: 2005-04-15 23:19:13 $
+ * $Revision: 2.187 $
+ * $Date: 2005-04-16 03:36:13 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.186  2005/04/15 23:19:13  wmcoolmon
+ * Added type "exponential base"; equation is 'final_damage = (x^damage)'
+ *
  * Revision 2.185  2005/04/15 11:32:26  taylor
  * proposes that WMC be subject to a breathalyzer test before commit ;)
  *
@@ -2127,8 +2130,10 @@ int parse_ship(bool replace)
 	stuff_float( &(sip->rotdamp) );
 	diag_printf ("Ship rotdamp -- %7.3f\n", sip->rotdamp);
 
-	required_string("$Max Velocity:");
-	stuff_vector(&sip->max_vel);
+	if(optional_string("$Max Velocity:"))
+		stuff_vector(&sip->max_vel);
+	else
+		vm_vec_zero(&sip->max_vel);
 
 	// calculate the max speed from max_velocity
 	sip->max_speed = vm_vec_mag(&sip->max_vel);
@@ -2149,11 +2154,15 @@ int parse_ship(bool replace)
 		sip->max_rear_vel = 0.0f;
 
 	// get the accelerations
-	required_string("$Forward accel:");
-	stuff_float(&sip->forward_accel );
+	if(optional_string("$Forward accel:"))
+		stuff_float(&sip->forward_accel );
+	else
+		sip->forward_accel = 0.0f;
 
-	required_string("$Forward decel:");
-	stuff_float(&sip->forward_decel );
+	if(optional_string("$Forward decel:"))
+		stuff_float(&sip->forward_decel );
+	else
+		sip->forward_decel = 0.0f;
 
 	if(optional_string("$Slide accel:"))
 		stuff_float(&sip->slide_accel );
@@ -2172,8 +2181,10 @@ int parse_ship(bool replace)
 	required_string("$Expl outer rad:");
 	stuff_float(&sip->outer_rad);
 
-	required_string("$Expl damage:");
-	stuff_float(&sip->damage);
+	if(optional_string("$Expl damage:"))
+		stuff_float(&sip->damage);
+	else
+		sip->damage = 0.0f;
 
 	required_string("$Expl blast:");
 	stuff_float(&sip->blast);
@@ -2310,21 +2321,27 @@ strcpy(parse_error_text, temp_error);
 		sip->primary_bank_weapons[i] = -1;
 	}
 
-	required_string("$Default PBanks:");
-strcat(parse_error_text,"'s default primary banks");
-	sip->num_primary_banks = stuff_int_list(sip->primary_bank_weapons, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
-strcpy(parse_error_text, temp_error);
-
-	// error checking
-	for ( i = 0; i < sip->num_primary_banks; i++ )
+	if(optional_string("$Default PBanks:"))
 	{
-		Assert(sip->primary_bank_weapons[i] >= 0);
+		strcat(parse_error_text,"'s default primary banks");
+		sip->num_primary_banks = stuff_int_list(sip->primary_bank_weapons, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+		strcpy(parse_error_text, temp_error);
+
+		// error checking
+		for ( i = 0; i < sip->num_primary_banks; i++ )
+		{
+			Assert(sip->primary_bank_weapons[i] >= 0);
+		}
+
+		// set primary capacities to zero first - in case of bugs :) 
+		for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+		{
+			sip->primary_bank_ammo_capacity[i] = 0;
+		}
 	}
-
-	// set primary capacities to zero first - in case of bugs :) 
-	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+	else
 	{
-		sip->primary_bank_ammo_capacity[i] = 0;
+		sip->num_primary_banks = 0;
 	}
 
 	// optional ballistic primary imformation (Goober5000)......
@@ -2526,14 +2543,20 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// The next three fields are used for the ETS
-	required_string("$Power Output:");
-	stuff_float(&sip->power_output);
+	if(optional_string("$Power Output:"))
+		stuff_float(&sip->power_output);
+	else
+		sip->power_output = 0.0f;
 
-	required_string("$Max Oclk Speed:");
-	stuff_float(&sip->max_overclocked_speed);
+	if(optional_string("$Max Oclk Speed:"))
+		stuff_float(&sip->max_overclocked_speed);
+	else
+		sip->max_overclocked_speed = sip->max_vel.xyz.z * 1.5f;
 
-	required_string("$Max Weapon Eng:");
-	stuff_float(&sip->max_weapon_reserve);
+	if(optional_string("$Max Weapon Eng:"))
+		stuff_float(&sip->max_weapon_reserve);
+	else
+		sip->max_weapon_reserve = 0.0f;
 
 	required_string("$Hitpoints:");
 	stuff_float(&sip->max_hull_strength);
@@ -2579,87 +2602,89 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
-	required_string("$Flags:");
-	char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
-	int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
 	sip->flags = SIF_DEFAULT_VALUE;
-	for ( i=0; i<num_strings; i++ )
+	if(optional_string("$Flags:"))
 	{
-		if (!stricmp(NOX("no_collide"), ship_strings[i]))
-			sip->flags &= ~SIF_DO_COLLISION_CHECK;
-		else if (!stricmp(NOX("player_ship"), ship_strings[i]))
-			sip->flags |= SIF_PLAYER_SHIP;
-		else if (!stricmp(NOX("default_player_ship"), ship_strings[i]))
-			sip->flags |= SIF_DEFAULT_PLAYER_SHIP;
-		else if ( !stricmp(NOX("repair_rearm"), ship_strings[i]))
-			sip->flags |= SIF_SUPPORT;
-		else if ( !stricmp(NOX("cargo"), ship_strings[i]))
-			sip->flags |= SIF_CARGO;
-		else if ( !stricmp( NOX("fighter"), ship_strings[i]))
-			sip->flags |= SIF_FIGHTER;
-		else if ( !stricmp( NOX("bomber"), ship_strings[i]))
-			sip->flags |= SIF_BOMBER;
-		else if ( !stricmp( NOX("transport"), ship_strings[i]))
-			sip->flags |= SIF_TRANSPORT;
-		else if ( !stricmp( NOX("freighter"), ship_strings[i]))
-			sip->flags |= SIF_FREIGHTER;
-		else if ( !stricmp( NOX("capital"), ship_strings[i]))
-			sip->flags |= SIF_CAPITAL;
-		else if (!stricmp( NOX("supercap"), ship_strings[i]))
-			sip->flags |= SIF_SUPERCAP;
-		else if (!stricmp( NOX("drydock"), ship_strings[i]))
-			sip->flags |= SIF_DRYDOCK;
-		else if ( !stricmp( NOX("cruiser"), ship_strings[i]))
-			sip->flags |= SIF_CRUISER;
-		else if ( !stricmp( NOX("navbuoy"), ship_strings[i]))
-			sip->flags |= SIF_NAVBUOY;
-		else if ( !stricmp( NOX("sentrygun"), ship_strings[i]))
-			sip->flags |= SIF_SENTRYGUN;
-		else if ( !stricmp( NOX("escapepod"), ship_strings[i]))
-			sip->flags |= SIF_ESCAPEPOD;
-		else if ( !stricmp( NOX("no type"), ship_strings[i]))
-			sip->flags |= SIF_NO_SHIP_TYPE;
-		else if ( !stricmp( NOX("ship copy"), ship_strings[i]))
-			sip->flags |= SIF_SHIP_COPY;
-		else if ( !stricmp( NOX("in tech database"), ship_strings[i]))
-			sip->flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
-		else if ( !stricmp( NOX("in tech database multi"), ship_strings[i]))
-			sip->flags |= SIF_IN_TECH_DATABASE_M;
-		else if ( !stricmp( NOX("dont collide invisible"), ship_strings[i]))
-			sip->flags |= SIF_SHIP_CLASS_DONT_COLLIDE_INVIS;
-		else if ( !stricmp( NOX("big damage"), ship_strings[i]))
-			sip->flags |= SIF_BIG_DAMAGE;
-		else if ( !stricmp( NOX("corvette"), ship_strings[i]))
-			sip->flags |= SIF_CORVETTE;
-		else if ( !stricmp( NOX("gas miner"), ship_strings[i]))
-			sip->flags |= SIF_GAS_MINER;
-		else if ( !stricmp( NOX("awacs"), ship_strings[i]))
-			sip->flags |= SIF_AWACS;
-		else if ( !stricmp( NOX("knossos"), ship_strings[i]))
-			sip->flags |= SIF_KNOSSOS_DEVICE;
-		else if ( !stricmp( NOX("no_fred"), ship_strings[i]))
-			sip->flags |= SIF_NO_FRED;
-		else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
-			sip->flags |= SIF_BALLISTIC_PRIMARIES;
-		else if( !stricmp( NOX("flash"), ship_strings[i]))
-			sip->flags2 |= SIF2_FLASH;
-		else if ( !stricmp( NOX("surface shields"), ship_strings[i]))
-			sip->flags2 |= SIF2_SURFACE_SHIELDS;
-		else if( !stricmp( NOX("show ship"), ship_strings[i]))
-			sip->flags2 |= SIF2_SHOW_SHIP_MODEL;
-		else if( !stricmp( NOX("generate icon"), ship_strings[i]))
-			sip->flags2 |= SIF2_GENERATE_HUD_ICON;
-		else if( !stricmp( NOX("no weapon damage scaling"), ship_strings[i]))
-			sip->flags2 |= SIF2_DISABLE_WEAP_DAMAGE_SCALING;
-		else
-			Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
-	}
+		char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
+		int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
+		for ( i=0; i<num_strings; i++ )
+		{
+			if (!stricmp(NOX("no_collide"), ship_strings[i]))
+				sip->flags &= ~SIF_DO_COLLISION_CHECK;
+			else if (!stricmp(NOX("player_ship"), ship_strings[i]))
+				sip->flags |= SIF_PLAYER_SHIP;
+			else if (!stricmp(NOX("default_player_ship"), ship_strings[i]))
+				sip->flags |= SIF_DEFAULT_PLAYER_SHIP;
+			else if ( !stricmp(NOX("repair_rearm"), ship_strings[i]))
+				sip->flags |= SIF_SUPPORT;
+			else if ( !stricmp(NOX("cargo"), ship_strings[i]))
+				sip->flags |= SIF_CARGO;
+			else if ( !stricmp( NOX("fighter"), ship_strings[i]))
+				sip->flags |= SIF_FIGHTER;
+			else if ( !stricmp( NOX("bomber"), ship_strings[i]))
+				sip->flags |= SIF_BOMBER;
+			else if ( !stricmp( NOX("transport"), ship_strings[i]))
+				sip->flags |= SIF_TRANSPORT;
+			else if ( !stricmp( NOX("freighter"), ship_strings[i]))
+				sip->flags |= SIF_FREIGHTER;
+			else if ( !stricmp( NOX("capital"), ship_strings[i]))
+				sip->flags |= SIF_CAPITAL;
+			else if (!stricmp( NOX("supercap"), ship_strings[i]))
+				sip->flags |= SIF_SUPERCAP;
+			else if (!stricmp( NOX("drydock"), ship_strings[i]))
+				sip->flags |= SIF_DRYDOCK;
+			else if ( !stricmp( NOX("cruiser"), ship_strings[i]))
+				sip->flags |= SIF_CRUISER;
+			else if ( !stricmp( NOX("navbuoy"), ship_strings[i]))
+				sip->flags |= SIF_NAVBUOY;
+			else if ( !stricmp( NOX("sentrygun"), ship_strings[i]))
+				sip->flags |= SIF_SENTRYGUN;
+			else if ( !stricmp( NOX("escapepod"), ship_strings[i]))
+				sip->flags |= SIF_ESCAPEPOD;
+			else if ( !stricmp( NOX("no type"), ship_strings[i]))
+				sip->flags |= SIF_NO_SHIP_TYPE;
+			else if ( !stricmp( NOX("ship copy"), ship_strings[i]))
+				sip->flags |= SIF_SHIP_COPY;
+			else if ( !stricmp( NOX("in tech database"), ship_strings[i]))
+				sip->flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
+			else if ( !stricmp( NOX("in tech database multi"), ship_strings[i]))
+				sip->flags |= SIF_IN_TECH_DATABASE_M;
+			else if ( !stricmp( NOX("dont collide invisible"), ship_strings[i]))
+				sip->flags |= SIF_SHIP_CLASS_DONT_COLLIDE_INVIS;
+			else if ( !stricmp( NOX("big damage"), ship_strings[i]))
+				sip->flags |= SIF_BIG_DAMAGE;
+			else if ( !stricmp( NOX("corvette"), ship_strings[i]))
+				sip->flags |= SIF_CORVETTE;
+			else if ( !stricmp( NOX("gas miner"), ship_strings[i]))
+				sip->flags |= SIF_GAS_MINER;
+			else if ( !stricmp( NOX("awacs"), ship_strings[i]))
+				sip->flags |= SIF_AWACS;
+			else if ( !stricmp( NOX("knossos"), ship_strings[i]))
+				sip->flags |= SIF_KNOSSOS_DEVICE;
+			else if ( !stricmp( NOX("no_fred"), ship_strings[i]))
+				sip->flags |= SIF_NO_FRED;
+			else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
+				sip->flags |= SIF_BALLISTIC_PRIMARIES;
+			else if( !stricmp( NOX("flash"), ship_strings[i]))
+				sip->flags2 |= SIF2_FLASH;
+			else if ( !stricmp( NOX("surface shields"), ship_strings[i]))
+				sip->flags2 |= SIF2_SURFACE_SHIELDS;
+			else if( !stricmp( NOX("show ship"), ship_strings[i]))
+				sip->flags2 |= SIF2_SHOW_SHIP_MODEL;
+			else if( !stricmp( NOX("generate icon"), ship_strings[i]))
+				sip->flags2 |= SIF2_GENERATE_HUD_ICON;
+			else if( !stricmp( NOX("no weapon damage scaling"), ship_strings[i]))
+				sip->flags2 |= SIF2_DISABLE_WEAP_DAMAGE_SCALING;
+			else
+				Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
+		}
 
-	// set original status of tech database flags - Goober5000
-	if (sip->flags & SIF_IN_TECH_DATABASE)
-		sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE;
-	if (sip->flags & SIF_IN_TECH_DATABASE_M)
-		sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE_M;
+		// set original status of tech database flags - Goober5000
+		if (sip->flags & SIF_IN_TECH_DATABASE)
+			sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE;
+		if (sip->flags & SIF_IN_TECH_DATABASE_M)
+			sip->flags2 |= SIF2_DEFAULT_IN_TECH_DATABASE_M;
+	}
 
 	// Goober5000 - ensure number of banks checks out
 	if (sip->num_primary_banks > MAX_SHIP_PRIMARY_BANKS)
@@ -2766,8 +2791,10 @@ strcpy(parse_error_text, temp_error);
 	else
 		sip->cmeasure_max = 0;
 
-	required_string("$Scan time:");
-	stuff_int(&sip->scan_time);
+	if(optional_string("$Scan time:"))
+		stuff_int(&sip->scan_time);
+	else
+		sip->scan_time = 2000;
 
 	sip->engine_snd = -1;
 	if(optional_string("$EngineSnd:"))
