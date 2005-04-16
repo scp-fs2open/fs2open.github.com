@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.6 $
- * $Date: 2005-04-11 05:42:01 $
- * $Author: taylor $
+ * $Revision: 1.7 $
+ * $Date: 2005-04-16 04:16:57 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/04/11 05:42:01  taylor
+ * some demo related fixes (Jens Granseuer)
+ *
  * Revision 1.5  2005/04/05 05:53:13  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1985,21 +1988,26 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 	curr_orient = objp->orient;
 	delta_time = flFrametime;
 
-	Assert(turn_time > 0.0f);
-	
-	//	Scale turn_time based on skill level and team.
-	if (!(flags & AITTV_FAST) && !(sexp_flags & AITTV_VIA_SEXP) ){
-		if (objp->type == OBJ_SHIP){
-			if (Ships[objp->instance].team != Ships[Player_obj->instance].team){
-				turn_time *= Turn_time_skill_level_scale[Game_skill_level];
+	if(turn_time > 0.0f)
+	{
+		//	Scale turn_time based on skill level and team.
+		if (!(flags & AITTV_FAST) && !(sexp_flags & AITTV_VIA_SEXP) ){
+			if (objp->type == OBJ_SHIP){
+				if (Ships[objp->instance].team != Ships[Player_obj->instance].team){
+					turn_time *= Turn_time_skill_level_scale[Game_skill_level];
+				}
 			}
 		}
-	}
 
-	//	Set max turn rate.
-	vel_limit.xyz.x = 2*PI/turn_time;
-	vel_limit.xyz.y = 2*PI/turn_time;
-	vel_limit.xyz.z = 2*PI/turn_time;
+		//	Set max turn rate.
+		vel_limit.xyz.x = 2*PI/turn_time;
+		vel_limit.xyz.y = 2*PI/turn_time;
+		vel_limit.xyz.z = 2*PI/turn_time;
+	}
+	else
+	{
+		vm_vec_zero(&vel_limit);
+	}
 
 	//	Set rate at which ship can accelerate to its rotational velocity.
 	//	For now, weapons just go much faster.

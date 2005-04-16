@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.187 $
- * $Date: 2005-04-16 03:36:13 $
+ * $Revision: 2.188 $
+ * $Date: 2005-04-16 04:16:57 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.187  2005/04/16 03:36:13  wmcoolmon
+ * Minor changes; made even more fields in ships.tbl optional.
+ *
  * Revision 2.186  2005/04/15 23:19:13  wmcoolmon
  * Added type "exponential base"; equation is 'final_damage = (x^damage)'
  *
@@ -2011,8 +2014,23 @@ int parse_ship(bool replace)
 		Num_ship_types++;
 	}
 
-	required_string("$Short name:");
-	stuff_string(sip->short_name, F_NAME, NULL);
+	if(optional_string("$Short name:"))
+		stuff_string(sip->short_name, F_NAME, NULL);
+	else
+	{
+		char *srcpos, *srcend, *destpos, *destend;
+		srcpos = sip->name;
+		destpos = sip->short_name;
+		srcend = srcpos + strlen(sip->name);
+		destend = destpos + sizeof(sip->short_name) - 1;
+		while(srcpos < srcend)
+		{
+			if(*srcpos != ' ')
+				*destpos++ = *srcpos++;
+			else
+				srcpos++;
+		}
+	}
 	diag_printf ("Ship short name -- %s\n", sip->short_name);
 
 #if defined(MORE_SPECIES)
@@ -2094,8 +2112,15 @@ int parse_ship(bool replace)
 		stuff_string(sip->pof_file_hud, F_NAME, NULL);
 	}
 
-	required_string("$Detail distance:");
-	sip->num_detail_levels = stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+	if(optional_string("$Detail distance:"))
+	{
+		sip->num_detail_levels = stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+	}
+	else
+	{
+		sip->num_detail_levels = 1;
+		sip->detail_distance[0] = 0;
+	}
 
 	// check for optional pixel colors
 	sip->num_nondark_colors = 0;
@@ -2118,16 +2143,22 @@ int parse_ship(bool replace)
 		stuff_boolean(&bogus_bool);
 	}
 
-	required_string("$Density:");
-	stuff_float( &(sip->density) );
+	if(optional_string("$Density:"))
+		stuff_float( &(sip->density) );
+	else
+		sip->density = 1.0f;
 	diag_printf ("Ship density -- %7.3f\n", sip->density);
 
-	required_string("$Damp:");
-	stuff_float( &(sip->damp) );
+	if(optional_string("$Damp:"))
+		stuff_float( &(sip->damp) );
+	else
+		sip->damp = 0.0f;
 	diag_printf ("Ship damp -- %7.3f\n", sip->damp);
 
-	required_string("$Rotdamp:");
-	stuff_float( &(sip->rotdamp) );
+	if(optional_string("$Rotdamp:"))
+		stuff_float( &(sip->rotdamp) );
+	else
+		sip->rotdamp = 0.0f;
 	diag_printf ("Ship rotdamp -- %7.3f\n", sip->rotdamp);
 
 	if(optional_string("$Max Velocity:"))
@@ -2138,14 +2169,22 @@ int parse_ship(bool replace)
 	// calculate the max speed from max_velocity
 	sip->max_speed = vm_vec_mag(&sip->max_vel);
 
-	required_string("$Rotation Time:");
-	stuff_vector(&sip->rotation_time);
+	if(optional_string("$Rotation Time:"))
+	{
+		stuff_vector(&sip->rotation_time);
 
-	sip->srotation_time = (sip->rotation_time.xyz.x + sip->rotation_time.xyz.y)/2.0f;
+		sip->srotation_time = (sip->rotation_time.xyz.x + sip->rotation_time.xyz.y)/2.0f;
 
-	sip->max_rotvel.xyz.x = (2 * PI) / sip->rotation_time.xyz.x;
-	sip->max_rotvel.xyz.y = (2 * PI) / sip->rotation_time.xyz.y;
-	sip->max_rotvel.xyz.z = (2 * PI) / sip->rotation_time.xyz.z;
+		sip->max_rotvel.xyz.x = (2 * PI) / sip->rotation_time.xyz.x;
+		sip->max_rotvel.xyz.y = (2 * PI) / sip->rotation_time.xyz.y;
+		sip->max_rotvel.xyz.z = (2 * PI) / sip->rotation_time.xyz.z;
+	}
+	else
+	{
+		vm_vec_zero(&sip->rotation_time);
+		vm_vec_zero(&sip->max_rotvel);
+		sip->srotation_time = 0.0f;
+	}
 
 	// get the backwards velocity;
 	if(optional_string("$Rear Velocity:"))
@@ -2175,19 +2214,25 @@ int parse_ship(bool replace)
 		sip->slide_decel = 0.0f;
 
 	// get ship explosion info
-	required_string("$Expl inner rad:");
-	stuff_float(&sip->inner_rad);
+	if(optional_string("$Expl inner rad:"))
+		stuff_float(&sip->inner_rad);
+	else
+		sip->inner_rad = 0.0f;
 
-	required_string("$Expl outer rad:");
-	stuff_float(&sip->outer_rad);
+	if(optional_string("$Expl outer rad:"))
+		stuff_float(&sip->outer_rad);
+	else
+		sip->outer_rad = 0.0f;
 
 	if(optional_string("$Expl damage:"))
 		stuff_float(&sip->damage);
 	else
 		sip->damage = 0.0f;
 
-	required_string("$Expl blast:");
-	stuff_float(&sip->blast);
+	if(optional_string("$Expl blast:"))
+		stuff_float(&sip->blast);
+	else
+		sip->blast = 0.0f;
 
 	if(optional_string("$Expl Propagates:"))
 		stuff_boolean(&sip->explosion_propagates);
@@ -2814,11 +2859,32 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
-	required_string("$Closeup_pos:");
-	stuff_vector(&sip->closeup_pos);
+	if(optional_string("$Closeup_pos:"))
+		stuff_vector(&sip->closeup_pos);
+	else
+	{
+		//Calculate from the model file. This is inefficient, but whatever
+		int model_idx = model_load(sip->pof_file, 0, NULL);
+		polymodel *pm = model_get(model_idx);
 
-	required_string("$Closeup_zoom:");
-	stuff_float(&sip->closeup_zoom);
+		//Go through, find best
+		sip->closeup_pos.xyz.z = fabsf(pm->maxs.xyz.z);
+
+		float temp = fabsf(pm->mins.xyz.z);
+		if(temp > sip->closeup_pos.xyz.z)
+			sip->closeup_pos.xyz.z = temp;
+
+		//Now multiply by 2
+		sip->closeup_pos.xyz.z *= -2.0f;
+
+		//We're done with the model.
+		model_unload(model_idx);
+	}
+
+	if(optional_string("$Closeup_zoom:"))
+		stuff_float(&sip->closeup_zoom);
+	else
+		sip->closeup_zoom = 0.5f;
 
 	sip->shield_icon_index = 255;		// stored as ubyte
 	if (optional_string("$Shield_icon:")) {
