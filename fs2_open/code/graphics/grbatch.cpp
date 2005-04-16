@@ -481,18 +481,18 @@ float geometry_batcher::draw_laser(vec3d *p0,float width1,vec3d *p1,float width2
 	g3_transfer_vertex( &pts[4], &vecs[2] );
 	g3_transfer_vertex( &pts[5], &vecs[3] );
 
-	pts[0].u = 0.0f;
+	pts[0].u = 1.0f;
 	pts[0].v = 0.0f;
-	pts[1].u = 1.0f;
+	pts[1].u = 0.0f;
 	pts[1].v = 0.0f;
-	pts[2].u = 1.0f;
+	pts[2].u = 0.0f;
 	pts[2].v = 1.0f;
 
-	pts[3].u = 0.0f;
+	pts[3].u = 1.0f;
 	pts[3].v = 0.0f;
-	pts[4].u = 1.0f;
+	pts[4].u = 0.0f;
 	pts[4].v = 1.0f;
-	pts[5].u = 0.0f;
+	pts[5].u = 1.0f;
 	pts[5].v = 1.0f;
 
 	pts[0].r = (ubyte)r;
