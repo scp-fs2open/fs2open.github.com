@@ -15,7 +15,7 @@
 #define IMG_LOAD_ANIM(f,n,fps)		bm_load_animation(f,n,fps)
 #define IMG_UNLOAD(a)				bm_unload(a)
 #define IMG_SET(h)					gr_set_bitmap(h)
-#define IMG_SET_FRAME(h, f)			gr_set_bitmap(h + f);
+#define IMG_SET_FRAME(h, f)			gr_set_bitmap(h + f)
 #define IMG_DRAW(x,y)				gr_bitmap(x,y,false)
 #define IMG_INFO(ha,w,h)			bm_get_info(ha,w,h)
 #endif
