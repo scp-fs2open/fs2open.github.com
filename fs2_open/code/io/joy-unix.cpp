@@ -20,8 +20,10 @@
 #include "SDL.h"
 
 static int Joy_inited = 0;
-int joy_num_sticks = 0;
-int joy_num_buttons = 0;
+static int joy_num_sticks = 0;
+static int joy_num_buttons = 0;
+static int joy_num_axes = 0;
+static int joy_num_hats = 0;
 int Dead_zone_size = 10;
 int Cur_joystick = -1;
 int Joy_sensitivity = 9;
@@ -58,6 +60,7 @@ void joy_close()
 	
 	if (sdljoy)
 		SDL_JoystickClose(sdljoy);
+
 	sdljoy = NULL;
 	
 	SDL_QuitSubSystem (SDL_INIT_JOYSTICK);
@@ -107,9 +110,9 @@ int joy_down_count(int btn, int reset_count)
 	if ( (btn < 0) || (btn >= JOY_TOTAL_BUTTONS)) return 0;
 
 	tmp = joy_buttons[btn].down_count;
-	if ( reset_count ) {
+
+	if ( reset_count )
 		joy_buttons[btn].down_count = 0;
-	}
 
 	return tmp;
 }
@@ -151,14 +154,16 @@ void joy_flush()
 	int                     i;
 	joy_button_info *bi;
 
-	if ( joy_num_sticks < 1 ) return;
+	if ( joy_num_sticks < 1 )
+		return;
 
 	for ( i = 0; i < JOY_TOTAL_BUTTONS; i++) {
 		bi = &joy_buttons[i];
-		bi->state               = 0;
-		bi->down_count  = 0;
-		bi->up_count    = 0;
-		bi->down_time   = 0;
+		bi->actual_state = 0;
+		bi->state = 0;
+		bi->down_count = 0;
+		bi->up_count = 0;
+		bi->down_time = 0;
 		bi->last_down_check = timer_get_milliseconds();
 	}
 }
@@ -183,7 +188,7 @@ int joy_get_unscaled_reading(int raw, int axn)
 	if (raw > rng)
 		raw = rng;
 
-	return (int) ((unsigned int) raw * (unsigned int) F1_0 / (unsigned int) rng);  // convert to 0 - F1_0 range.
+	return (int) ((uint) raw * (uint) F1_0 / (uint) rng);  // convert to 0 - F1_0 range.
 }
 
 // --------------------------------------------------------------
@@ -293,11 +298,13 @@ int joy_get_pos(int *x, int *y, int *z, int *rx)
 
 void joy_process(int time_delta)
 {
-	int i;
+	STUB_FUNCTION;
+
+/*	int i;
 	
 	if (!Joy_inited)
 		return;
-	
+
 	int hat = SDL_JoystickGetHat(sdljoy, 0);
 	
 	for (i=0; i < JOY_TOTAL_BUTTONS; i++) {
@@ -351,12 +358,96 @@ void joy_process(int time_delta)
 				joy_buttons[i].down_time += time_delta;
 			}
 		}	
+	} */
+}
+
+
+void joy_set_button_state(int button, int state)
+{
+	if (!Joy_inited)
+		return;
+
+	if (state != joy_buttons[button].actual_state) {
+		// Button position physically changed.
+		joy_buttons[button].actual_state = state;
+
+		if ( state )    {
+			// went from up to down
+			joy_buttons[button].down_count++;
+			joy_buttons[button].down_time = 0;
+
+			joy_buttons[button].state = 1;
+		} else {
+			// went from down to up
+			if ( joy_buttons[button].state )
+				joy_buttons[button].up_count++;
+
+			joy_buttons[button].state = 0;
+		}
+	} else {
+		// Didn't move... increment time down if down.
+		if (joy_buttons[button].state)
+			joy_buttons[button].down_time += joy_pollrate;
 	}
+}
+
+void joy_set_hat_state(int position)
+{
+	int state = 0;
+
+	if (!Joy_inited)
+		return;
+
+	for (int i=JOY_NUM_BUTTONS-1; i<JOY_TOTAL_BUTTONS; i++) {
+		switch (i) {
+			case JOY_HATBACK:
+				state = (position == SDL_HAT_DOWN) ? 1 : 0;
+				break;
+			case JOY_HATFORWARD:
+				state = (position == SDL_HAT_UP) ? 1 : 0;
+				break;
+			case JOY_HATLEFT:
+				state = (position == SDL_HAT_LEFT) ? 1 : 0;
+				break;
+			case JOY_HATRIGHT:
+				state = (position == SDL_HAT_RIGHT) ? 1 : 0;
+				break;
+			default:
+				break;
+		}
+
+		if (state != joy_buttons[i].actual_state) {
+			// Button position physically changed.
+			joy_buttons[i].actual_state = state;
+			
+			if ( state )    {
+				// went from up to down
+				joy_buttons[i].down_count++;
+				joy_buttons[i].down_time = 0;
+				
+				joy_buttons[i].state = 1;
+			} else {
+				// went from down to up
+				if ( joy_buttons[i].state )     {
+					joy_buttons[i].up_count++;
+				}
+				
+				joy_buttons[i].state = 0;
+			}
+		} else {
+			// Didn't move... increment time down if down.
+			if (joy_buttons[i].state) {
+				joy_buttons[i].down_time += joy_pollrate;
+			}
+		}
+	} 
 }
 
 void joy_poll()
 {
-	if (!Joy_inited)
+	STUB_FUNCTION;
+
+/*	if (!Joy_inited)
 		return;
 
 	uint lasttic = 0;
@@ -369,7 +460,7 @@ void joy_poll()
 		lasttic += joy_pollrate;
 
 		delta = curtic - lasttic;
-	}
+	} */
 }
 
 int joy_init()
@@ -379,22 +470,27 @@ int joy_init()
 	if (Joy_inited)
 		return 0;
 
-	if (SDL_InitSubSystem (SDL_INIT_JOYSTICK)<0)
-	{
+	if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0) {
 		mprintf(("Could not initialize joystick\n"));
 		return 0;
 	}
 
-	n = SDL_NumJoysticks ();
+	// enable event processing of the joystick
+	if ( (SDL_JoystickEventState(SDL_ENABLE)) != SDL_ENABLE ) {
+		mprintf(("ERROR: Unable to initialize joystick event processing!\n"));
+		return 0;
+	}
 
-	Cur_joystick = os_config_read_uint (NULL, "CurrentJoystick", JOYSTICKID1);
-
-	joy_get_caps(n);
+	n = SDL_NumJoysticks();
 
 	if (n < 1) {
 		mprintf(("No joysticks found\n"));
 		return 0;
 	}
+
+	joy_get_caps(n);
+
+	Cur_joystick = os_config_read_uint(NULL, "CurrentJoystick", JOYSTICKID1);
 
 	sdljoy = SDL_JoystickOpen(Cur_joystick);
 
@@ -402,17 +498,25 @@ int joy_init()
 		mprintf(("Unable to init joystick %d\n", Cur_joystick));
 		return 0;
 	}
-	
-	joy_flush ();
+
+	joy_flush();
 
 	joy_num_sticks = n;
 
 	joy_num_buttons = SDL_JoystickNumButtons(sdljoy);
+	joy_num_axes = SDL_JoystickNumAxes(sdljoy);
+	joy_num_hats = SDL_JoystickNumHats(sdljoy);
+
+	mprintf(( "\nJoystick INITTED!\n\n" ));
+	mprintf(( "Using '%s' as the primary joystick:\n", SDL_JoystickName(Cur_joystick) ));
+	mprintf(( "  Number of axes: %i\n", joy_num_axes ));
+	mprintf(( "  Number of buttons: %i\n", joy_num_buttons ));
+	mprintf(( "  Number of hats: %i\n", joy_num_hats ));
+	mprintf(( "  Number of trackballs: %i\n\n", SDL_JoystickNumBalls(sdljoy) ));
 
 	// Fake a calibration
 	if (joy_num_sticks > 0) {
-		// joy_set_cen();
-		for (i=0; i<4; i++) {
+		for (i=0; i<JOY_NUM_AXES; i++) {
 			joystick.axis_center[i] = 32768;
 			joystick.axis_min[i] = 0;
 			joystick.axis_max[i] = 65536;
@@ -432,15 +536,14 @@ void joy_set_cen()
 int joystick_read_raw_axis(int num_axes, int *axis)
 {
 	int i;
-	int num;
 	
 	if (!Joy_inited)
 		return 0;
-	
-	num = SDL_JoystickNumAxes(sdljoy);
+
+	Assert( num_axes <= JOY_NUM_AXES );
 	
 	for (i = 0; i < num_axes; i++) {
-		if (i < num) {
+		if (i < joy_num_axes) {
 			axis[i] = SDL_JoystickGetAxis(sdljoy, i) + 32768;
 		} else {
 			axis[i] = 32768;

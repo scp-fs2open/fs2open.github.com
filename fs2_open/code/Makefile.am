@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.16 2005-04-15 11:27:53 taylor Exp $
+## $Id: Makefile.am,v 1.17 2005-04-17 05:38:28 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -465,8 +465,6 @@ FS2_SOURCES =	\
 ## conditional includes follow:
 
 ## joystic support sources
-if FS2_JOYSTICK
-
 if FS2_OS_WIN32
 JOY_SOURCES =	\
 	io/joy.cpp	\
@@ -483,8 +481,6 @@ if FS2_OS_UNIX
 JOY_SOURCES =	\
 	io/joy.h	\
 	io/joy-unix.cpp
-endif
-
 endif
 
 ## networking support sources

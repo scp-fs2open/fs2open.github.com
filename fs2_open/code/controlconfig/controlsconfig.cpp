@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-03-02 21:24:43 $
+ * $Revision: 2.11 $
+ * $Date: 2005-04-17 05:38:28 $
  * $Author: taylor $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/03/02 21:24:43  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.9  2004/07/29 19:37:50  Kazan
  * unbug the JS bug i caused --- kazan
  *
@@ -1196,15 +1199,12 @@ int control_config_clear_all()
 	return 0;
 }
 
-#ifndef NO_JOYSTICK
 extern Joy_info joystick;
-#endif
 
 int control_config_axis_default(int axis)
 {
 	Assert(axis >= 0);
 
-#ifndef NO_JOYSTICK
 	if ( axis > 1 ) {
 		if (Axis_map_to_defaults[axis] < 0)
 			return -1;
@@ -1214,9 +1214,6 @@ int control_config_axis_default(int axis)
 	}
 
 	return Axis_map_to_defaults[axis];
-#else
-	return -1;
-#endif
 }
 
 int control_config_do_reset()
