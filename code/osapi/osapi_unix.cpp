@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-11 14:16:02 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-17 05:38:29 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/11 14:16:02  taylor
+ * was causing strange hangs due to really large values, don't know if this will help but SDL should take care of error checking this way
+ *
  * Revision 2.6  2005/03/10 08:00:11  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -258,6 +261,8 @@ void os_resume()
 //
 
 extern int SDLtoFS2[SDLK_LAST];
+extern void joy_set_button_state(int button, int state);
+extern void joy_set_hat_state(int position);
 
 DWORD unix_process(DWORD lparam)
 {
@@ -273,31 +278,11 @@ DWORD unix_process(DWORD lparam)
 				break;
 
 			case SDL_KEYDOWN:
-			/*	if( (event.key.keysym.mod & KMOD_ALT) && (event.key.keysym.sym == SDLK_RETURN) ) {
+				/*if( (event.key.keysym.mod & KMOD_ALT) && (event.key.keysym.sym == SDLK_RETURN) ) {
 					Gr_screen_mode_switch = 1;
 					gr_activate(1);
 					break;
 				}*/
-
-				/* these key combos are used in game so don't capture them here
-				if( (event.key.keysym.mod & KMOD_CTRL) && (event.key.keysym.sym == SDLK_g) )
-				{
-					// DDOI - ignore grab changes when fullscreen
-					if( !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) )
-					{
-						if( SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_ON )
-							SDL_WM_GrabInput(SDL_GRAB_OFF);
-						else
-							SDL_WM_GrabInput(SDL_GRAB_ON);
-					}
-					break;
-				}
-
-				if( (event.key.keysym.mod & KMOD_CTRL) && (event.key.keysym.sym == SDLK_z) ) {
-					gr_activate(0);
-					break;
-				}
-				*/
 
 				if( SDLtoFS2[event.key.keysym.sym] ) {
 					key_mark( SDLtoFS2[event.key.keysym.sym], 1, 0 );
@@ -305,29 +290,35 @@ DWORD unix_process(DWORD lparam)
 				break;
 
 			case SDL_KEYUP:
-			/*	if( (event.key.keysym.mod & KMOD_ALT) && (event.key.keysym.sym == SDLK_RETURN) ) {
+				/*if( (event.key.keysym.mod & KMOD_ALT) && (event.key.keysym.sym == SDLK_RETURN) ) {
 					Gr_screen_mode_switch = 0;
 					break;
 				}*/
 
 				if (SDLtoFS2[event.key.keysym.sym]) {
-					key_mark (SDLtoFS2[event.key.keysym.sym], 0, 0);
+					key_mark( SDLtoFS2[event.key.keysym.sym], 0, 0 );
 				}
 				break;
 
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEBUTTONUP:
 				if (event.button.button <= HIGHEST_MOUSE_BUTTON) {
-					mouse_mark_button(event.button.button, event.button.state);
+					mouse_mark_button( event.button.button, event.button.state );
+				}
+				break;
+
+			case SDL_JOYHATMOTION:
+				joy_set_hat_state( event.jhat.value );
+				break;
+
+			case SDL_JOYBUTTONDOWN:
+			case SDL_JOYBUTTONUP:
+				if (event.jbutton.button < JOY_NUM_BUTTONS) {
+					joy_set_button_state( event.jbutton.button, event.jbutton.state );
 				}
 				break;
 		}
 	}
-
-#ifndef NO_JOYSTICK
-	extern void joy_poll();
-	joy_poll();
-#endif
 
 	return 0;
 }

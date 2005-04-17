@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy_ff.h $
- * $Revision: 2.3 $
- * $Date: 2005-04-05 05:53:18 $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-17 05:38:28 $
  * $Author: taylor $
  *
  * Code for joystick Force Feedback.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/04/05 05:53:18  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.2  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -56,8 +59,6 @@
 #ifndef __JOY_FF_H__
 #define __JOY_FF_H__
 
-#ifndef NO_JOYSTICK
-
 #include "globalincs/pstypes.h"
 
 int joy_ff_init();
@@ -78,28 +79,5 @@ void joy_ff_afterburn_off();
 void joy_ff_explode();
 void joy_ff_fly_by(int mag);
 void joy_ff_deathroll();
-
-#else
-
-#define joy_ff_init()						 (0)
-#define joy_ff_shutdown()
-#define joy_ff_stop_effects()
-#define joy_ff_mission_init(v)			 ((void)(v))
-#define joy_reacquire_ff()
-#define joy_unacquire_ff()
-#define joy_ff_play_vector_effect(v, scaler)		((void)((v), (scaler)))
-#define joy_ff_play_dir_effect(x, y)				((void)((x), (y)))
-#define joy_ff_play_primary_shoot(gain)			((void)(gain))
-#define joy_ff_play_secondary_shoot(gain)			((void)(gain))
-#define joy_ff_adjust_handling(speed)				((void)(speed))
-#define joy_ff_docked()
-#define joy_ff_play_reload_effect()
-#define joy_ff_afterburn_on()
-#define joy_ff_afterburn_off()
-#define joy_ff_explode()
-#define joy_ff_fly_by(mag)								((void)(mag))
-#define joy_ff_deathroll()
-
-#endif // ifndef NO_JOYSTICK
 
 #endif

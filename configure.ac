@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.15 2005-04-15 11:27:53 taylor Exp $
+dnl $Id: configure.ac,v 1.16 2005-04-17 05:38:28 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -38,13 +38,6 @@ AC_SUBST(LDFLAGS)
 
 dnl The configuration options
 dnl -------------------------
-
-AC_ARG_ENABLE(joystick, 
-	AC_HELP_STRING([--disable-joystick],
-		[TEST: disable joystick support]),
-		[fs2_joystick=$enableval],
-		[fs2_joystick=yes],
-)
 
 AC_ARG_ENABLE(networking, 
 	AC_HELP_STRING([--disable-networking],
@@ -186,10 +179,6 @@ esac
 
 dnl define compiler switches
 
-if ! test "$fs2_joystick" = "yes" ; then
-	AC_DEFINE([NO_JOYSTICK])
-fi
-
 if test "$fs2_inferno" = "yes" ; then
 	AC_DEFINE([INF_BUILD])
 	fs2_networking=no
@@ -269,7 +258,6 @@ AM_CONDITIONAL(FS2_OS_WIN32,   test "$fs2_os_win32" = "yes")
 AM_CONDITIONAL(FS2_OS_UNIX,    test "$fs2_os_unix"  = "yes" || test "$fs2_os_osx" = "yes")
 AM_CONDITIONAL(FS2_OS_OSX,     test "$fs2_os_osx"   = "yes")
 
-AM_CONDITIONAL(FS2_JOYSTICK,   test "$fs2_joystick"   = "yes")
 AM_CONDITIONAL(FS2_SOUND,      test "$fs2_sound"      = "yes")
 AM_CONDITIONAL(FS2_DEVIL,      test "$fs2_devil"      = "yes")
 AM_CONDITIONAL(FS2_SPEECH,     test "$fs2_speech"     = "yes")
@@ -440,7 +428,8 @@ dnl any extra optimization or warning flags
 if test "$fs2_os_win32" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fexceptions"
 elif test "$fs2_os_unix" = "yes" ; then
-	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-deprecated -Wno-unknown-pragmas"
+	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-unknown-pragmas"
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -Wno-deprecated"
 elif test "$fs2_os_osx" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fsigned-char"
 fi
@@ -483,7 +472,6 @@ if test "x$fs2_static_ogg" != "x" ; then
 	echo Static OGG Vorbis from . : $fs2_static_ogg
 fi
 echo
-echo Joystick enabled ....... : $fs2_joystick
 echo Networking enabled ..... : $fs2_networking
 echo Sound enabled .......... : $fs2_sound
 echo Text-to-speech enabled . : $fs2_speech

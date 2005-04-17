@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-04-03 08:48:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2005-04-17 05:38:29 $
+ * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/04/03 08:48:30  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 2.16  2005/03/02 21:24:46  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1051,13 +1056,8 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	Use_mouse_to_fly = cfread_int(file);
 	Mouse_sensitivity = cfread_int(file);
-#ifndef NO_JOYSTICK
 	Joy_sensitivity = cfread_int(file);
 	Dead_zone_size = cfread_int(file);
-#else
-	(void) cfread_int(file);
-	(void) cfread_int(file);
-#endif
 
 	// Goober5000 - read in player-persistent variables
 	// maintain compatibility with previous file versions
@@ -1385,13 +1385,8 @@ int write_pilot_file_core(player *p)
 
 	cfwrite_int(Use_mouse_to_fly, file);
 	cfwrite_int(Mouse_sensitivity, file);
-#ifndef NO_JOYSTICK
 	cfwrite_int(Joy_sensitivity, file);
 	cfwrite_int(Dead_zone_size, file);
-#else
-	cfwrite_int(0, file);
-	cfwrite_int(0, file);
-#endif
 
 	// write out player-persistent variables - Goober5000
 	cfwrite_int( Player->num_variables, file );

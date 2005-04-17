@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy.h $
- * $Revision: 2.1 $
- * $Date: 2004-08-11 05:06:25 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2005-04-17 05:38:28 $
+ * $Author: taylor $
  *
  * Include file for joystick stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/08/11 05:06:25  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.0  2002/06/03 04:02:24  penguin
  * Warpcore CVS sync
  *
@@ -110,7 +113,6 @@ typedef struct Joy_info {
 extern int Joy_sensitivity;
 extern int Dead_zone_size;  // percentage of range that is dead zone
 
-#ifndef NO_JOYSTICK
 int	joy_init();
 void	joy_flush();
 int	joy_get_pos(int * x, int * y, int *z, int *r);
@@ -129,32 +131,5 @@ void joy_get_delta(int *dx, int *dy);
 int joy_get_scaled_reading(int raw, int axn);
 int joy_get_unscaled_reading(int raw, int axn);
 void joy_close();
-#else
-#define	joy_init()          (1)
-#define	joy_flush()
-inline int joy_get_pos(int * x, int * y, int *z, int *r)
-{ 
-	if (x) *x = 0;  if (y) *y = 0;
-	if (z) *z = 0;  if (r) *r = 0;
-	return 0;
-}
-#define	joy_down_count(btn, reset_count)			((btn), (reset_count), 0)
-#define	joy_down(btn)									((btn), 0)
-#define	joy_up_count(btn)								((btn), 0)
-#define	joy_down_time(btn)							((btn), 0.0f)
-#define	joy_get_cal_vals(axis_min, axis_center, axis_max) \
-		  ((void) ((axis_min), (axis_center), (axis_max)))
-#define	joy_set_cal_vals(axis_min, axis_center, axis_max) \
-		  ((void) ((axis_min), (axis_center), (axis_max)))
-#define	joy_set_ul()
-#define	joy_set_lr()
-#define	joy_set_cen()
-#define	joy_cheap_cal();
-#define	joystick_read_raw_axis(num_axes, axis)	((num_axes), (axis), 0)
-#define	joy_get_delta(dx, dy)						((void)((dx), (dy)))
-#define	joy_get_scaled_reading(raw, axn)			((raw), (axn), 0)
-#define	joy_get_unscaled_reading(raw, axn)		((raw), (axn), 0)
-#define  joy_close()
-#endif // ifndef NO_JOYSTICK
 
 #endif	/* __JOY_H__ */

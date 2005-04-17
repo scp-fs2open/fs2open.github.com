@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-03-02 21:24:44 $
+ * $Revision: 2.14 $
+ * $Date: 2005-04-17 05:38:29 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/02 21:24:44  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.12  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -1187,7 +1190,6 @@ void options_sliders_update()
 		gamesnd_play_iface(SND_USER_SELECT);
 	}
 
-#ifndef NO_JOYSTICK
 	if (Joy_sensitivity != Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos) {
 		Joy_sensitivity = Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos;
 		gamesnd_play_iface(SND_USER_SELECT);
@@ -1197,7 +1199,6 @@ void options_sliders_update()
 		Dead_zone_size = Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5;
 		gamesnd_play_iface(SND_USER_SELECT);
 	}
-#endif
 
 	if (Game_skill_level != Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos) {
 		Game_skill_level = Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos;
@@ -1345,13 +1346,8 @@ void options_menu_init()
 	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = 0;
 #endif
 
-#ifndef NO_JOYSTICK
 	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = Joy_sensitivity;	
 	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = Dead_zone_size / 5;	
-#else
-	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = 0;	
-	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = 0;	
-#endif
 	Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos = Mouse_sensitivity;
 	Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos = Game_skill_level;
 
