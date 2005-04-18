@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-04-13 22:31:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2005-04-18 03:30:05 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/04/13 22:31:53  Goober5000
+ * fixed the compile errors (thanks Phreak)
+ * --Goober5000
+ *
  * Revision 2.21  2005/04/05 11:48:22  taylor
  * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
  * better error handling for OpenAL functions
@@ -3417,16 +3421,32 @@ void ds_set_position(int channel, DWORD offset)
 DWORD ds_get_play_position(int channel)
 {
 #ifdef USE_OPENAL
-	ALint pos;
+	ALint pos = -1;
+	int buf_id;
 
 	if (!AL_play_position)
 		return 0;
 
-	OpenAL_ErrorPrint( alGetSourcei(Channels[channel].source_id, AL_BYTE_LOKI, &pos) );
+	buf_id = Channels[channel].buf_id;
+
+	if (buf_id == -1)
+		return 0;
+
+	OpenAL_ErrorCheck( alGetSourcei( Channels[channel].source_id, AL_BYTE_LOKI, &pos), return 0 );
 
 
-	if ( pos < 0 )
+	if ( pos < 0 ) {
 		pos = 0;
+	} else if ( pos > 0 ) {
+		// AL_BYTE_LOKI returns position in canon format which may differ
+		// from our sample, so we may have to scale it
+		ALuint buf = sound_buffers[buf_id].buf_id;
+		ALint size;
+
+		OpenAL_ErrorCheck( alGetBufferi(buf, AL_SIZE, &size), return 0 );
+
+		pos /= (size / sound_buffers[buf_id].nbytes);
+	}
 
 	return pos;
 #else
