@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.147 $
- * $Date: 2005-04-18 05:27:26 $
+ * $Revision: 2.148 $
+ * $Date: 2005-04-18 08:35:28 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.147  2005/04/18 05:27:26  Goober5000
+ * removed ship->alt_modelnum as it was essentially duplicates of ship->modelnum; changed the alt modelnum stuff accordingly
+ * fixes for ship_model_change and change_ship_type
+ * --Goober5000
+ *
  * Revision 2.146  2005/04/18 03:16:57  Goober5000
  * more sexp goodness
  * --Goober5000
@@ -10681,7 +10686,7 @@ void sexp_change_ship_model(int n)
 			// don't mess with a ship that's occupied
 			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
 			{
-				ship_model_change(ship_num, class_num, 1);
+				ship_model_change(ship_num, class_num);
 			}
 		}
 	}

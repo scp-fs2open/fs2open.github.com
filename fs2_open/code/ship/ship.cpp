@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.190 $
- * $Date: 2005-04-18 05:27:26 $
+ * $Revision: 2.191 $
+ * $Date: 2005-04-18 08:35:27 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.190  2005/04/18 05:27:26  Goober5000
+ * removed ship->alt_modelnum as it was essentially duplicates of ship->modelnum; changed the alt modelnum stuff accordingly
+ * fixes for ship_model_change and change_ship_type
+ * --Goober5000
+ *
  * Revision 2.189  2005/04/16 04:19:21  wmcoolmon
  * Eh, what the hey. Maybe I should've taken the breathalyzer test. :)
  *
@@ -7303,7 +7308,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 // input:	n				=>		index of ship in Ships[] array
 //				ship_type	=>		ship class (index into Ship_info[])
 //
-void ship_model_change(int n, int ship_type, int by_sexp, int force_ship_info_stuff)
+void ship_model_change(int n, int ship_type, int changing_ship_class)
 {
 	int			i;
 	ship_info	*sip;
@@ -7314,11 +7319,18 @@ void ship_model_change(int n, int ship_type, int by_sexp, int force_ship_info_st
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
 
+	// make sure we can actually change models
+	if (Ship_info[sp->ship_info_index].n_subsystems != sip->n_subsystems)
+	{
+		Warning(LOCATION, "Ship model change failed for %s.  Subsystems must match between models.\n", sp->ship_name);
+		return;
+	}
+
 	// reset model subsys stuff
 	ship_model_subsystems_delete(sp);
 
-	// load new model
-	sp->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
+	// get new model
+	sp->modelnum = sip->modelnum;
 	pm = model_get(sp->modelnum);
 
 	Objects[sp->objnum].radius = model_get_radius(sp->modelnum);
@@ -7329,25 +7341,61 @@ void ship_model_change(int n, int ship_type, int by_sexp, int force_ship_info_st
 	}
 
 	// this is only done when changing ship classes
-	if (force_ship_info_stuff)
+	if (changing_ship_class)
 	{
-		// Goober5000 - this is used for ship class change (it's in the original source)
-		sip->modelnum = sp->modelnum;
 		ship_copy_subsystem_fixup(sip);
 	}
 	// this we want to do in game if there's not a ship class change
 	else
 	{
-		// redo the subsystems
-		sp->n_subsystems = sip->n_subsystems;
-		if ( sp->n_subsystems > 0 )
+		ship_subsys *ss;
+
+		// different from our ship class model?
+		if (sp->modelnum != Ship_info[sp->ship_info_index].modelnum)
 		{
-			sp->subsystems = (model_subsystem *)malloc(sizeof(model_subsystem) * sp->n_subsystems );
-			Assert( sp->subsystems != NULL );
-		}
+			// redo the subsystems
+			sp->n_subsystems = sip->n_subsystems;
+			if ( sp->n_subsystems > 0 )
+			{
+				sp->subsystems = (model_subsystem *)malloc(sizeof(model_subsystem) * sp->n_subsystems );
+				Assert( sp->subsystems != NULL );
+			}
 		
-		// recopy from ship_info
-		model_copy_subsystems( sp->n_subsystems, sp->subsystems, sip->subsystems );
+			// recopy from ship_info
+			for ( i = 0; i < sp->n_subsystems; i++ )
+			{
+				sp->subsystems[i] = sip->subsystems[i];
+				sp->subsystems[i].model_num = sp->modelnum;
+			}
+
+			// link into the new model
+			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss))
+			{
+				for (i = 0; i < sp->n_subsystems; i++)
+				{
+					if (!subsystem_stricmp(ss->system_info->subobj_name, sp->subsystems[i].subobj_name))
+					{
+						ss->system_info = &sp->subsystems[i];
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			// link into our original model
+			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss))
+			{
+				for (i = 0; i < sip->n_subsystems; i++)
+				{
+					if (!subsystem_stricmp(ss->system_info->subobj_name, sip->subsystems[i].subobj_name))
+					{
+						ss->system_info = &sip->subsystems[i];
+						break;
+					}
+				}
+			}
+		}
 	}
 
 
@@ -7387,7 +7435,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// point to new ship data
 	sp->ship_info_index = ship_type;
 
-	ship_model_change(n, ship_type, by_sexp, 1);
+	ship_model_change(n, ship_type, 1);
 
 	// set the correct hull strength
 	if (Fred_running) {
@@ -9679,24 +9727,23 @@ void ship_model_start(object *objp)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 		switch (psub->type) {
-		case SUBSYSTEM_RADAR:
-		case SUBSYSTEM_NAVIGATION:
-		case SUBSYSTEM_COMMUNICATION:
-		case SUBSYSTEM_UNKNOWN:
-		case SUBSYSTEM_ENGINE:
-		case SUBSYSTEM_SENSORS:
-		case SUBSYSTEM_WEAPONS:
-		case SUBSYSTEM_SOLAR:
-		case SUBSYSTEM_GAS_COLLECT:
-		case SUBSYSTEM_ACTIVATION:
-			break;
-		case SUBSYSTEM_TURRET:
-			Assert( !(psub->flags & MSS_FLAG_ROTATES) ); // Turrets can't rotate!!! See John!
-			break;
-		default:
-			Error(LOCATION, "Illegal subsystem type.\n");
+			case SUBSYSTEM_RADAR:
+			case SUBSYSTEM_NAVIGATION:
+			case SUBSYSTEM_COMMUNICATION:
+			case SUBSYSTEM_UNKNOWN:
+			case SUBSYSTEM_ENGINE:
+			case SUBSYSTEM_SENSORS:
+			case SUBSYSTEM_WEAPONS:
+			case SUBSYSTEM_SOLAR:
+			case SUBSYSTEM_GAS_COLLECT:
+			case SUBSYSTEM_ACTIVATION:
+				break;
+			case SUBSYSTEM_TURRET:
+				Assert( !(psub->flags & MSS_FLAG_ROTATES) ); // Turrets can't rotate!!! See John!
+				break;
+			default:
+				Error(LOCATION, "Illegal subsystem type.\n");
 		}
-
 
 		if ( psub->subobj_num >= 0 )	{
 			model_set_instance(shipp->modelnum, psub->subobj_num, &pss->submodel_info_1 );
