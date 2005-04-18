@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.36 $
- * $Author: taylor $
- * $Date: 2005-04-05 05:53:22 $
+ * $Revision: 2.37 $
+ * $Author: Goober5000 $
+ * $Date: 2005-04-18 06:59:16 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/04/05 05:53:22  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.35  2005/03/25 06:57:37  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -2351,8 +2354,14 @@ int subsystem_stricmp(char *s1, char *s2)
 	if (tolower(*(s2+len2-2) == 's'))
 		len2--;
 
+	// once we remove the trailing s on both names, they should be the same length
+	if (len1 > len2)
+		return 1;
+	if (len1 < len2)
+		return -1;
+
 	// now do the comparison
-	return strnicmp(s1, s2, MIN(len1, len2));
+	return strnicmp(s1, s2, len1);
 }
 
 // Goober5000
