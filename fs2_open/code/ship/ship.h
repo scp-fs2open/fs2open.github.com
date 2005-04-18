@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.89 $
- * $Date: 2005-04-15 11:32:26 $
- * $Author: taylor $
+ * $Revision: 2.90 $
+ * $Date: 2005-04-18 05:27:26 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2005/04/15 11:32:26  taylor
+ * proposes that WMC be subject to a breathalyzer test before commit ;)
+ *
  * Revision 2.88  2005/04/15 06:59:05  wmcoolmon
  * One final oops (hopefully).
  *
@@ -938,7 +941,6 @@ typedef struct ship {
 	int	ai_index;			// Index in Ai_info of ai_info associated with this ship.
 	int	ship_info_index;	// Index in ship_info for this ship
 	int	modelnum;
-	int alt_modelnum;	// Goober5000
 	int	hotkey;
 	int	escort_priority;
 	int	score;
@@ -1618,7 +1620,7 @@ extern void ship_level_init();		// called before the start of each level
 //returns -1 if failed
 extern int ship_create(matrix * orient, vec3d * pos, int ship_type, char *ship_name = NULL);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
-extern void ship_model_change(int n, int ship_type, int force_ship_info_stuff = 0);
+extern void ship_model_change(int n, int ship_type, int by_sexp = 0, int force_ship_info_stuff = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * objp );
