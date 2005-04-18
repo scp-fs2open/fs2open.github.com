@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.90 $
- * $Date: 2005-04-18 05:27:26 $
+ * $Revision: 2.91 $
+ * $Date: 2005-04-18 08:35:27 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2005/04/18 05:27:26  Goober5000
+ * removed ship->alt_modelnum as it was essentially duplicates of ship->modelnum; changed the alt modelnum stuff accordingly
+ * fixes for ship_model_change and change_ship_type
+ * --Goober5000
+ *
  * Revision 2.89  2005/04/15 11:32:26  taylor
  * proposes that WMC be subject to a breathalyzer test before commit ;)
  *
@@ -1620,7 +1625,7 @@ extern void ship_level_init();		// called before the start of each level
 //returns -1 if failed
 extern int ship_create(matrix * orient, vec3d * pos, int ship_type, char *ship_name = NULL);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
-extern void ship_model_change(int n, int ship_type, int by_sexp = 0, int force_ship_info_stuff = 0);
+extern void ship_model_change(int n, int ship_type, int changing_ship_class = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * objp );
