@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-04-15 11:28:41 $
+ * $Revision: 2.23 $
+ * $Date: 2005-04-18 03:31:27 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/04/15 11:28:41  taylor
+ * div-by-zero fix for snd_time_remaining()
+ *
  * Revision 2.21  2005/04/05 11:48:23  taylor
  * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
  * better error handling for OpenAL functions
@@ -1449,6 +1452,9 @@ void snd_rewind(int snd_handle, game_snd *gs, float seconds)
 	if(!snd_is_playing(snd_handle))
 		return;
 
+	if (gs->id < 0)
+		return;
+
 	snd = &Sounds[gs->id].info;
 	
 	current_offset = ds_get_play_position(ds_get_channel(snd_handle));	// current offset into the sound
@@ -1468,15 +1474,15 @@ void snd_rewind(int snd_handle, game_snd *gs, float seconds)
 // this could probably be optimized a bit
 void snd_ffwd(int snd_handle, game_snd *gs, float seconds)
 {
-	if(!snd_is_playing(snd_handle))
-		return;
-
 	float current_time,desired_time;
 	float bps;
 	DWORD current_offset,desired_offset;
 	sound_info *snd;
 
 	if(!snd_is_playing(snd_handle))
+		return;
+
+	if (gs->id < 0)
 		return;
 
 	snd = &Sounds[gs->id].info;
@@ -1498,12 +1504,16 @@ void snd_ffwd(int snd_handle, game_snd *gs, float seconds)
 // this could probably be optimized a bit
 void snd_set_pos(int snd_handle, game_snd *gs, float val,int as_pct)
 {
+	sound_info *snd;
+
 	if(!snd_is_playing(snd_handle))
 		return;
 
-	sound_info *snd;
+	if (gs->id < 0)
+		return;
 
-	snd = &Sounds[gs->id].info;		
+	snd = &Sounds[gs->id].info;
+
 	// set position as an absolute from 0 to 1
 	if(as_pct){
 		Assert((val >= 0.0) && (val <= 1.0));
