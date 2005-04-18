@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.146 $
- * $Date: 2005-04-18 03:16:57 $
+ * $Revision: 2.147 $
+ * $Date: 2005-04-18 05:27:26 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.146  2005/04/18 03:16:57  Goober5000
+ * more sexp goodness
+ * --Goober5000
+ *
  * Revision 2.145  2005/04/11 05:48:33  taylor
  * make sure use an insensitive case check for Messages[] names (Jens Granseuer)
  * little clarification of if-else block in message_training_que()
@@ -10677,7 +10681,7 @@ void sexp_change_ship_model(int n)
 			// don't mess with a ship that's occupied
 			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
 			{
-				ship_model_change(ship_num, class_num);
+				ship_model_change(ship_num, class_num, 1);
 			}
 		}
 	}

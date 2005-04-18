@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-04-15 11:32:26 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2005-04-18 05:27:26 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/04/15 11:32:26  taylor
+ * proposes that WMC be subject to a breathalyzer test before commit ;)
+ *
  * Revision 2.41  2005/04/15 06:56:02  wmcoolmon
  * Another oops.
  *
@@ -781,7 +784,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 			break;
 
 		// check alt stuff too - Goober5000
-		if ( ship_p->alt_modelnum != -1 )
+		if ( ship_p->modelnum != sip->modelnum )
 			if ( &(ship_p->subsystems[i]) == psub )
 				break;
 	}

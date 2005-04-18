@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.189 $
- * $Date: 2005-04-16 04:19:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.190 $
+ * $Date: 2005-04-18 05:27:26 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.189  2005/04/16 04:19:21  wmcoolmon
+ * Eh, what the hey. Maybe I should've taken the breathalyzer test. :)
+ *
  * Revision 2.188  2005/04/16 04:16:57  wmcoolmon
  * More optional tag-making for ships.tbl
  *
@@ -4301,7 +4304,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 {	
 	ship	*shipp = &Ships[Objects[objnum].instance];
 	ship_info	*sinfo = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
-	model_subsystem *sp;
+	model_subsystem *model_system;
 	ship_subsys *ship_system;
 	int i, j, k;
 
@@ -4311,20 +4314,20 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 	for ( i = 0; i < sinfo->n_subsystems; i++ )
 	{
-		// if duplicate, use the duplicate info
-		if (shipp->alt_modelnum != -1)
+		// maybe use the duplicate info
+		if (shipp->modelnum != sinfo->modelnum)
 		{
 			Assert(shipp->subsystems);
 
-			sp = &(shipp->subsystems[i]);
+			model_system = &(shipp->subsystems[i]);
 		}
 		else
 		{
-			sp = &(sinfo->subsystems[i]);
+			model_system = &(sinfo->subsystems[i]);
 		}
 
-		if ( sp->model_num == -1 ) {
-			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem %s on ship type %s.\nNot linking into ship!\n\n(This warning means that a subsystem was present in %s and not present in the model\nit should probably be removed from the table or added to the model.)\n", sp->subobj_name, sinfo->name, current_ship_table );
+		if ( model_system->model_num == -1 ) {
+			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem %s on ship type %s.\nNot linking into ship!\n\n(This warning means that a subsystem was present in %s and not present in the model\nit should probably be removed from the table or added to the model.)\n", model_system->subobj_name, sinfo->name, current_ship_table );
 			continue;
 		}
 
@@ -4334,14 +4337,14 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		list_remove( ship_subsys_free_list, ship_system );	// remove the element from the array
 		list_append( &shipp->subsys_list, ship_system );		// link the element into the ship
 
-		ship_system->system_info = sp;						// set the system_info pointer to point to the data read in from the model
+		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 
 		ship_system->subsys_guardian_threshold = 0;
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
 		// previous things... ugh.
-		ship_system->max_hits = sp->max_subsys_strength;	// * shipp->ship_max_hull_strength / sinfo->max_hull_strength;
+		ship_system->max_hits = model_system->max_subsys_strength;	// * shipp->ship_max_hull_strength / sinfo->max_hull_strength;
 
 		if ( !Fred_running ){
 			ship_system->current_hits = ship_system->max_hits;		// set the current hits
@@ -4353,7 +4356,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;
 		ship_system->turret_next_fire_stamp = timestamp((int) frand_range(1.0f, 500.0f));	// next time this turret can fire
-		ship_system->turret_last_fire_direction = sp->turret_norm;
+		ship_system->turret_last_fire_direction = model_system->turret_norm;
 		ship_system->turret_next_fire_pos = 0;
 		ship_system->turret_time_enemy_in_range = 0.0f;
 		ship_system->disruption_timestamp=timestamp(0);
@@ -4369,9 +4372,9 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		j = 0;
 		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++){
-			if (sp->primary_banks[k] != -1) {
-				ship_system->weapons.primary_bank_weapons[j] = sp->primary_banks[k];
-				ship_system->weapons.primary_bank_capacity[j] = sp->primary_bank_capacity[k];	// added by Goober5000
+			if (model_system->primary_banks[k] != -1) {
+				ship_system->weapons.primary_bank_weapons[j] = model_system->primary_banks[k];
+				ship_system->weapons.primary_bank_capacity[j] = model_system->primary_bank_capacity[k];	// added by Goober5000
 				ship_system->weapons.next_primary_fire_stamp[j++] = timestamp(0);
 			}
 		}
@@ -4380,9 +4383,9 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		j = 0;
 		for (k=0; k<MAX_SHIP_SECONDARY_BANKS; k++){
-			if (sp->secondary_banks[k] != -1) {
-				ship_system->weapons.secondary_bank_weapons[j] = sp->secondary_banks[k];
-				ship_system->weapons.secondary_bank_capacity[j] = sp->secondary_bank_capacity[k];
+			if (model_system->secondary_banks[k] != -1) {
+				ship_system->weapons.secondary_bank_weapons[j] = model_system->secondary_banks[k];
+				ship_system->weapons.secondary_bank_capacity[j] = model_system->secondary_bank_capacity[k];
 				ship_system->weapons.next_secondary_fire_stamp[j++] = timestamp(0);
 			}
 		}
@@ -4412,8 +4415,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_swarm_info_index = -1;
 
 		// AWACS stuff
-		ship_system->awacs_intensity = sp->awacs_intensity;
-		ship_system->awacs_radius = sp->awacs_radius;
+		ship_system->awacs_intensity = model_system->awacs_intensity;
+		ship_system->awacs_radius = model_system->awacs_radius;
 		if (ship_system->awacs_intensity > 0) {
 			ship_system->system_info->flags |= MSS_FLAG_AWACS;
 		}
@@ -4428,7 +4431,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		// turn_rate, turn_accel
 		// model_set_instance_info
 		float turn_accel = 0.5f;
-		model_set_instance_info(&ship_system->submodel_info_1, sp->turn_rate, turn_accel);
+		model_set_instance_info(&ship_system->submodel_info_1, model_system->turn_rate, turn_accel);
 
 		// model_clear_instance_info( &ship_system->submodel_info_1 );
 		model_clear_instance_info( &ship_system->submodel_info_2 );
@@ -4961,24 +4964,31 @@ void ship_render(object * obj)
 	}
 }
 
-void ship_subsystem_delete(ship *shipp)
+void ship_subsystems_delete(ship *shipp)
 {
-	ship_subsys *systemp, *temp;
+	if ( NOT_EMPTY(&shipp->subsys_list) )
+	{
+		ship_subsys *systemp, *temp;
 
-	systemp = GET_FIRST( &shipp->subsys_list );
-	while ( systemp != END_OF_LIST(&shipp->subsys_list) ) {
-		temp = GET_NEXT( systemp );								// use temporary since pointers will get screwed with next operation
-		list_remove( shipp->subsys_list, systemp );			// remove the element
-		list_append( &ship_subsys_free_list, systemp );		// and place back onto free list
-		systemp = temp;												// use the temp variable to move right along
+		systemp = GET_FIRST( &shipp->subsys_list );
+		while ( systemp != END_OF_LIST(&shipp->subsys_list) ) {
+			temp = GET_NEXT( systemp );								// use temporary since pointers will get screwed with next operation
+			list_remove( shipp->subsys_list, systemp );			// remove the element
+			list_append( &ship_subsys_free_list, systemp );		// and place back onto free list
+			systemp = temp;												// use the temp variable to move right along
+		}
 	}
+}
 
-	// Goober5000 - free stuff used for alt models if we have an alt model
-	if (shipp->alt_modelnum != -1)
+// Goober5000
+void ship_model_subsystems_delete(ship *shipp)
+{
+	if (shipp->n_subsystems > 0)
 	{
 		for(int n = 0; n<shipp->n_subsystems; n++)
 			if(shipp->subsystems[n].n_triggers)
 				free(shipp->subsystems[n].triggers);
+
 		free(shipp->subsystems);
 		shipp->n_subsystems = 0;
 		shipp->subsystems = NULL;
@@ -5022,7 +5032,10 @@ void ship_delete( object * obj )
 
 	// free up the list of subsystems of this ship.  walk through list and move remaining subsystems
 	// on ship back to the free list for other ships to use.
-	ship_subsystem_delete(&Ships[num]);
+	ship_subsystems_delete(&Ships[num]);
+
+	// Goober5000 - free model subsys info
+	ship_model_subsystems_delete(&Ships[num]);
 
 	shipp->objnum = -1;
 	// mwa 11/24/97 num_ships--;
@@ -7015,8 +7028,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	sip->shockwave_moddel = model_load(sip->shockwave_pof_file, 0, NULL);
 	else sip->shockwave_moddel = -1;
 
-	// alt stuff
-	shipp->alt_modelnum = -1;
+	// model stuff
 	shipp->n_subsystems = 0;
 	shipp->subsystems = NULL;
 
@@ -7044,7 +7056,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 				// now load the duplicate model
 				shipp->modelnum = model_load(sip->pof_file, shipp->n_subsystems, &shipp->subsystems[0], 1, 1);
-				shipp->alt_modelnum = shipp->modelnum;
 				model_duplicate_reskin(shipp->modelnum, ship_name);
 				break;
 			}
@@ -7069,9 +7080,9 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	polymodel *pm_orig = model_get(sip->modelnum);
 	polymodel *pm_alt = NULL;
 
-	if (shipp->alt_modelnum != -1)
+	if (shipp->modelnum != sip->modelnum)
 	{
-		pm_alt = model_get(shipp->alt_modelnum);
+		pm_alt = model_get(shipp->modelnum);
 	}
 
 
@@ -7292,17 +7303,23 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 // input:	n				=>		index of ship in Ships[] array
 //				ship_type	=>		ship class (index into Ship_info[])
 //
-void ship_model_change(int n, int ship_type, int force_ship_info_stuff)
+void ship_model_change(int n, int ship_type, int by_sexp, int force_ship_info_stuff)
 {
 	int			i;
 	ship_info	*sip;
 	ship			*sp;
+	polymodel * pm;
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
 
+	// reset model subsys stuff
+	ship_model_subsystems_delete(sp);
+
+	// load new model
 	sp->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
+	pm = model_get(sp->modelnum);
 
 	Objects[sp->objnum].radius = model_get_radius(sp->modelnum);
 
@@ -7311,55 +7328,18 @@ void ship_model_change(int n, int ship_type, int force_ship_info_stuff)
 		model_page_in_textures(sp->modelnum, ship_type);
 	}
 
-	// usually don't do this stuff in-game, it'll mess up existing ship info stuff
-	if (Fred_running || force_ship_info_stuff)
+	// this is only done when changing ship classes
+	if (force_ship_info_stuff)
 	{
+		// Goober5000 - this is used for ship class change (it's in the original source)
 		sip->modelnum = sp->modelnum;
-
-		// reset alt stuff
-		sp->alt_modelnum = -1;
-		sp->n_subsystems = 0;
-		if (sp->subsystems != NULL)
-		{
-			for(int n = 0; n<sp->n_subsystems; n++)
-				if(sp->subsystems[n].n_triggers)
-					free(sp->subsystems[n].triggers);
-			free(sp->subsystems);
-			sp->subsystems = NULL;
-		}
-
-		polymodel * pm;
-		pm = model_get(sp->modelnum);
-
 		ship_copy_subsystem_fixup(sip);
-
-		if ( sip->num_detail_levels < pm->n_detail_levels )	{
-			Warning(LOCATION, "For ship '%s', detail level\nmismatch (POF needs %d)", sip->name, pm->n_detail_levels );
-
-			for (i=0; i<pm->n_detail_levels; i++ )	{
-				sip->detail_distance[i] = 0;
-			}
-		}
-
-		for (i=0; i<sip->num_detail_levels; i++ )	{
-			pm->detail_depth[i] = i2fl(sip->detail_distance[i]);
-		}
 	}
 	// this we want to do in game if there's not a ship class change
 	else
 	{
-		sp->alt_modelnum = sp->modelnum;
+		// redo the subsystems
 		sp->n_subsystems = sip->n_subsystems;
-
-		// redo the memory thing with subsystems
-		if (sp->subsystems != NULL)
-		{
-			for(int n = 0; n<sp->n_subsystems; n++)
-				if(sp->subsystems[n].n_triggers)
-					free( sp->subsystems[n].triggers);
-			free( sp->subsystems );
-			sp->subsystems = NULL;
-		}
 		if ( sp->n_subsystems > 0 )
 		{
 			sp->subsystems = (model_subsystem *)malloc(sizeof(model_subsystem) * sp->n_subsystems );
@@ -7367,13 +7347,20 @@ void ship_model_change(int n, int ship_type, int force_ship_info_stuff)
 		}
 		
 		// recopy from ship_info
-		for ( i = 0; i < sp->n_subsystems; i++ )
-		{
-			sp->subsystems[i] = sip->subsystems[i];
-		}
-
-		// set subsystem model data
 		model_copy_subsystems( sp->n_subsystems, sp->subsystems, sip->subsystems );
+	}
+
+
+	if ( sip->num_detail_levels < pm->n_detail_levels )	{
+		Warning(LOCATION, "For ship '%s', detail level\nmismatch (POF needs %d)", sip->name, pm->n_detail_levels );
+
+		for (i=0; i<pm->n_detail_levels; i++ )	{
+			sip->detail_distance[i] = 0;
+		}
+	}
+
+	for (i=0; i<sip->num_detail_levels; i++ )	{
+		pm->detail_depth[i] = i2fl(sip->detail_distance[i]);
 	}
 }
 
@@ -7400,7 +7387,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// point to new ship data
 	sp->ship_info_index = ship_type;
 
-	ship_model_change(n, ship_type, 1);
+	ship_model_change(n, ship_type, by_sexp, 1);
 
 	// set the correct hull strength
 	if (Fred_running) {
@@ -7446,16 +7433,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// subsys stuff done only after hull stuff is set
 
 	// if the subsystem list is not currently empty, then we need to clear it out first.
-	if ( NOT_EMPTY(&sp->subsys_list) ) {
-		ship_subsys *ship_system, *tmp;
+	ship_subsystems_delete(sp);
 
-		for ( ship_system = GET_FIRST(&sp->subsys_list); ship_system != END_OF_LIST(&sp->subsys_list);  ) {
-			tmp = GET_NEXT(ship_system);
-			list_remove( sp->subsys_list, ship_system );
-			list_append( &ship_subsys_free_list, ship_system );
-			ship_system = tmp;
-		}
-	}
 	// fix up the subsystems
 	subsys_set( sp->objnum );
 
@@ -7468,7 +7447,18 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// was trashing mode in ai_info when it was valid due to goals.
 	//ai_object_init(&Objects[sp->objnum], sp->ai_index);
 //	Ai_info[sp->ai_index].ai_class = sip->ai_class;
+
+	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
+	ship_set_new_ai_class(n, sip->ai_class);
 	
+
+/*
+	Goober5000 (4/17/2005) - I'm commenting this out for the time being; it looks like a whole bunch of unneeded
+	code.  It should be (and probably is) handled elsewhere, like ship_set or ship_create or something.  Contact
+	me if you want to discuss this.
+
+
+
 	sip->thruster_glow1 = bm_load(sip->thruster_bitmap1);
 	sip->thruster_glow1a = bm_load(sip->thruster_bitmap1a);
 	sip->thruster_glow2 = bm_load(sip->thruster_bitmap2);
@@ -7478,8 +7468,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	//load it's thruster graphics
 
 	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
-	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
-	ship_set_new_ai_class(n, sip->ai_class);
 
 	sp->ab_count = 0;
 	if(sip->flags & SIF_AFTERBURNER)
@@ -7540,7 +7528,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->reload_time[i] = 1.0f/Weapon_info[swp->secondary_bank_weapons[i]].fire_wait;
 		}
 	}
-
+*/
 }
 
 #ifndef NDEBUG
@@ -12903,14 +12891,12 @@ void ship_page_in()
 			}
 
 			// do we have a replacement model?
-			if ( Ships[i].alt_modelnum != -1 )
+			if ( Ships[i].modelnum != Ship_info[Ships[i].ship_info_index].modelnum )
 			{
-				Assert(Ships[i].modelnum == Ships[i].alt_modelnum);
-
 				nprintf(( "Paging", "Paging in textures for model duplicate for ship '%s'\n", Ships[i].ship_name ));
 				mprintf(( "Paging in textures for model duplicate for ship '%s'\n", Ships[i].ship_name ));
 
-				ship_page_in_model_textures(Ships[i].alt_modelnum);		
+				ship_page_in_model_textures(Ships[i].modelnum);		
 			}
 		}
 	}
