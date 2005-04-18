@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.145 $
- * $Date: 2005-04-11 05:48:33 $
- * $Author: taylor $
+ * $Revision: 2.146 $
+ * $Date: 2005-04-18 03:16:57 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.145  2005/04/11 05:48:33  taylor
+ * make sure use an insensitive case check for Messages[] names (Jens Granseuer)
+ * little clarification of if-else block in message_training_que()
+ *
  * Revision 2.144  2005/04/05 05:53:22  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1568,6 +1572,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Assert(i != Locked_sexp_true);
 	Assert(i != Locked_sexp_false);
 	if (i == MAX_SEXP_NODES){
+		Error(LOCATION, "Out of sexp nodes!");
 		return -1;
 	}
 
