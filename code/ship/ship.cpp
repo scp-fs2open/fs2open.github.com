@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.191 $
- * $Date: 2005-04-18 08:35:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.192 $
+ * $Date: 2005-04-19 06:27:54 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.191  2005/04/18 08:35:27  Goober5000
+ * model and class changes should be all set now
+ * --Goober5000
+ *
  * Revision 2.190  2005/04/18 05:27:26  Goober5000
  * removed ship->alt_modelnum as it was essentially duplicates of ship->modelnum; changed the alt modelnum stuff accordingly
  * fixes for ship_model_change and change_ship_type
@@ -7330,6 +7334,9 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 	ship_model_subsystems_delete(sp);
 
 	// get new model
+	if (sip->modelnum == -1) {
+		sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	}
 	sp->modelnum = sip->modelnum;
 	pm = model_get(sp->modelnum);
 
