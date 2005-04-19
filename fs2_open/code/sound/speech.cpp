@@ -8,13 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-03-29 06:36:37 $
- * $Author: wmcoolmon $
+ * $Revision: 1.19 $
+ * $Date: 2005-04-19 06:29:28 $
+ * $Author: taylor $
  *
  * Platform specific text-to-speech functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/03/29 06:36:37  wmcoolmon
+ * Added some comments to #defines to make reading easier
+ *
  * Revision 1.17  2005/03/27 08:12:53  wmcoolmon
  * Bizarre combo of fopen() and close()
  *
@@ -49,10 +52,11 @@
 
 	ISpVoice *Voice_device;
 #elif defined(SCP_UNIX)
-	#include <stdio.h>
+	#include <fcntl.h>
+//	#include <stdio.h>
 
-//	int speech_dev = -1;
-	FILE *speech_dev = NULL;
+	int speech_dev = -1;
+//	FILE *speech_dev = NULL;
 #else 
 	#pragma error( "ERROR: Unknown platform, speech (FS2_SPEECH) is not supported" )
 #endif	//_WIN32
@@ -75,11 +79,12 @@ bool speech_init()
 	Speech_init = SUCCEEDED(hr);
 #else
 
-//	speech_dev = open("/dev/speech", O_WRONLY | O_NONBLOCK);
-	speech_dev = fopen("/dev/speech", "w");
+	speech_dev = open("/dev/speech", O_WRONLY | O_DIRECT);
+//	speech_dev = fopen("/dev/speech", "w");
 
-	if (speech_dev == NULL) {
-		printf("Couldn't open '/dev/speech', turning text-to-speech off...\n");
+	if (speech_dev == -1) {
+//	if (speech_dev == NULL) {
+		mprintf(("Couldn't open '/dev/speech', turning text-to-speech off...\n"));
 		return false;
 	}
 
@@ -96,7 +101,8 @@ void speech_deinit()
 #ifdef _WIN32
 	Voice_device->Release();
 #else
-	fclose(speech_dev);
+	close(speech_dev);
+//	fclose(speech_dev);
 #endif
 }
 
@@ -149,10 +155,12 @@ bool speech_play(char *text)
 
 	Conversion_buffer[count] = '\0';
 
-	if (fwrite(Conversion_buffer, count, 1, speech_dev))
-		fflush(speech_dev);
-	else
+	if ( write(speech_dev, Conversion_buffer, count) == -1 )
 		return false;
+//	if (fwrite(Conversion_buffer, count, 1, speech_dev))
+//		fflush(speech_dev);
+//	else
+//		return false;
 
 	return true;
 #endif	//_WIN32
