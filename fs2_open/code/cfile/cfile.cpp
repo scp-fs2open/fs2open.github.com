@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-04-05 05:53:14 $
+ * $Revision: 2.30 $
+ * $Date: 2005-04-19 06:22:20 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/04/05 05:53:14  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.28  2005/03/02 03:13:00  taylor
  * that one should never have slipped passed me (Linux specific)
  *
@@ -1236,7 +1239,7 @@ float cfread_float(CFILE *file, int ver, float deflt)
 	if (cfread( &f, sizeof(f), 1, file) != 1)
 		return deflt;
 
-//	i = INTEL_INT(i);			//  hmm, not sure what to do here
+	f = INTEL_FLOAT(&f);
 	return f;
 }
 
@@ -1382,7 +1385,7 @@ void cfread_string_len(char *buf,int n, CFILE *file)
 
 int cfwrite_float(float f, CFILE *file)
 {
-//	i = INTEL_INT(i);			//  hmm, not sure what to do here
+	f = INTEL_FLOAT(&f);
 	return cfwrite(&f, sizeof(f), 1, file);
 }
 
