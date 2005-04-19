@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-04-12 05:26:37 $
+ * $Revision: 2.33 $
+ * $Date: 2005-04-19 06:26:56 $
  * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/04/12 05:26:37  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.31  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -3308,7 +3312,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	aip = &Ai_info[shipp->ai_index];
 
 	current_bank = (ubyte)shipp->weapons.current_secondary_bank;
-	Assert( (current_bank >= 0) && (current_bank < MAX_SHIP_SECONDARY_BANKS) );
+	Assert( (current_bank < MAX_SHIP_SECONDARY_BANKS) );
 
 	// build up the header portion
 	BUILD_HEADER( SECONDARY_FIRED_AI );
@@ -3466,7 +3470,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 
 	// find out the current bank
 	current_bank = (ubyte)(sinfo & 0x3);
-	Assert( (current_bank >= 0) && (current_bank < MAX_SHIP_SECONDARY_BANKS) );
+	Assert( (current_bank < MAX_SHIP_SECONDARY_BANKS) );
 	shipp->weapons.current_secondary_bank = current_bank;
 
 	// make it so we can fire this ship's secondary bank immediately!!!
@@ -8379,7 +8383,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	mprintf(("PAIN!\n"));
 
 	// get weapon info pointer
-	Assert((windex >= 0) && (windex < Num_weapon_types) && (Weapon_info[windex].subtype == WP_LASER));
+	Assert((windex < Num_weapon_types) && (Weapon_info[windex].subtype == WP_LASER));
 	if(! ((windex < Num_weapon_types) && (Weapon_info[windex].subtype == WP_LASER)) ){
 		return;
 	}
