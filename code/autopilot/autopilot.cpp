@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-04-05 05:53:14 $
- * $Author: taylor $
+ * $Revision: 1.19 $
+ * $Date: 2005-04-19 23:03:42 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/04/05 05:53:14  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.17  2005/03/25 06:57:32  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -226,6 +229,7 @@ bool CanAutopilot()
 // This does:
 //        * Control switched from player to AI
 //        * Time compression to 32x
+//        * Lock time compression -WMC
 //        * Tell AI to fly to targetted Nav Point (for all nav-status wings/ships)
 //		  * Sets max waypoint speed to the best-speed of the slowest ship tagged
 void StartAutopilot()
@@ -237,6 +241,7 @@ void StartAutopilot()
 
 	Player_use_ai = 1;
 	set_time_compression(1);
+	lock_time_compression(true);
 
 	// determine speed cap
 	int i,j;
@@ -381,6 +386,7 @@ void EndAutoPilot()
 	AutoPilotEngaged = false;
 
 	set_time_compression(1);
+	lock_time_compression(false);
 	Player_use_ai = 0;
 	//Clear AI Goals
 
