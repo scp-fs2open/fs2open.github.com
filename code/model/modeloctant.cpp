@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-04-05 05:53:20 $
+ * $Revision: 2.7 $
+ * $Date: 2005-04-19 06:25:23 $
  * $Author: taylor $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.5  2004/07/26 20:47:41  Kazan
  * remove MCD complete
  *
@@ -160,6 +163,13 @@ void model_octant_find_shields( polymodel * pm, model_octant * oct )
 	//mprintf(( "Octant has %d shield polys in it\n", n ));
 
 	oct->nshield_tris = n;
+
+	// if we don't have any shield polys then don't bother continuing - taylor
+	if (oct->nshield_tris <= 0) {
+		oct->shield_tris = NULL;
+		return;
+	}
+
 	oct->shield_tris = (shield_tri **)malloc( sizeof(shield_tri *) * oct->nshield_tris );
 	Assert(oct->shield_tris!=NULL);
 
