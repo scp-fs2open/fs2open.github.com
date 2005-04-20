@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-04-05 05:53:18 $
- * $Author: taylor $
+ * $Revision: 2.50 $
+ * $Date: 2005-04-20 04:34:01 $
+ * $Author: phreak $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/04/05 05:53:18  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.48  2005/03/27 13:23:05  Goober5000
  * rewrote the weapon cheat cycle functions to avoid recursion
  * --Goober5000
@@ -1016,7 +1019,7 @@ int get_prev_weapon_looped(int current_weapon, int subtype)
 
 		if(Weapon_info[new_index].subtype == subtype)
 		{
-			return i;
+			return new_index;
 		}
 	}
 
@@ -1033,7 +1036,7 @@ int get_next_weapon_looped(int current_weapon, int subtype)
 
 		if(Weapon_info[new_index].subtype == subtype)
 		{
-			return i;
+			return new_index;
 		}
 	}
 
@@ -1369,11 +1372,12 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_9: {
 		case KEY_DEBUGGED1 + KEY_9:
 			ship* shipp;
-
+			
 			shipp = &Ships[Player_obj->instance];
-			shipp->weapons.current_secondary_bank = get_next_weapon_looped(shipp->weapons.current_secondary_bank, WP_MISSILE);
+			int *weap = &shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank];
+			*weap = get_next_weapon_looped(*weap, WP_MISSILE);
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].name);
 			break;
 		}
 
@@ -1383,9 +1387,10 @@ void process_debug_keys(int k)
 			ship* shipp;
 
 			shipp = &Ships[Player_obj->instance];
-			shipp->weapons.current_secondary_bank = get_prev_weapon_looped(shipp->weapons.current_secondary_bank, WP_MISSILE);
+			int *weap = &shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank];
+			*weap = get_prev_weapon_looped(*weap, WP_MISSILE);
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].name);
 			break;
 		}
 		
@@ -1412,9 +1417,10 @@ void process_debug_keys(int k)
 			ship* shipp;
 
 			shipp = &Ships[Player_obj->instance];
-			shipp->weapons.current_primary_bank = get_next_weapon_looped(shipp->weapons.current_secondary_bank, WP_LASER);
-
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name);
+			int *weap = &shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank];
+			*weap = get_next_weapon_looped(*weap, WP_LASER);
+			
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].name);
 			break;
 		}
 
@@ -1423,9 +1429,10 @@ void process_debug_keys(int k)
 			ship* shipp;
 
 			shipp = &Ships[Player_obj->instance];
-			shipp->weapons.current_primary_bank = get_prev_weapon_looped(shipp->weapons.current_secondary_bank, WP_LASER);
-
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name);
+			int *weap = &shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank];
+			*weap = get_prev_weapon_looped(*weap, WP_LASER);
+		
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].name);
 			break;
 		}
 
