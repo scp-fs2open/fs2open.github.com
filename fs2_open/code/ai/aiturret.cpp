@@ -1029,9 +1029,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		wait *= frand_range(0.9f, 1.1f);
 	}
 
-	(*fs_dest) = timestamp((int) wait);
-	if((*fs_dest) < turret->turret_next_fire_stamp)
-		turret->turret_next_fire_stamp = (*fs_dest);
+	(*fs_dest) = timestamp((int)wait);
 }
 
 // Decide  if a turret should launch an aspect seeking missile
@@ -1311,6 +1309,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
 
 	if ( !timestamp_elapsed(ss->turret_next_fire_stamp)){
+	//	static int i=1;
+	//	mprintf(("turret timestamp hasn't elapsed: %d!\n", i));
 		return;
 	}
 
@@ -1340,7 +1340,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				continue;
 			}
 			if ( !timestamp_elapsed(swp->next_primary_fire_stamp[i]))
-				continue;
+			{
+					continue;
+			}
 			wip = &Weapon_info[swp->primary_bank_weapons[i]];
 		}
 		else
@@ -1349,7 +1351,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			if(secnum >= swp->num_secondary_banks)
 				break;	//we are done.
 			if ( !timestamp_elapsed(swp->next_secondary_fire_stamp[secnum]))
+			{
 				continue;
+			}
 			wip = &Weapon_info[swp->secondary_bank_weapons[secnum]];
 		}
 
@@ -1489,6 +1493,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	}
 
 	if ( lep == NULL ){
+		mprintf(("last enemy is null\n"));
 		return;
 	}
 
@@ -1561,9 +1566,40 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		if(!something_was_ok_to_fire)
 		{
+			mprintf(("nothing ok to fire\n"));
 			//Impose a penalty on turret accuracy for losing site of its goal, or just not being able to fire.
 			turret_update_enemy_in_range(ss, -4*Weapon_info[ss->turret_best_weapon].fire_wait);
 			ss->turret_next_fire_stamp = timestamp(500);
+		}
+		else
+		{
+			ss->turret_next_fire_stamp = INT_MAX;
+			//something did fire, get the lowest valid timestamp 
+			for (i = 0; i < MAX_SHIP_WEAPONS; i++)
+			{
+				if (i < MAX_SHIP_PRIMARY_BANKS)
+				{
+					//timestamp range is 2 to INT_MAX/2
+					if (swp->next_primary_fire_stamp[i] < 2) continue;
+					
+					if (swp->next_primary_fire_stamp[i] < ss->turret_next_fire_stamp)
+					{
+						ss->turret_next_fire_stamp = swp->next_primary_fire_stamp[i];
+					}
+				}
+				else
+				{
+					//timestamp range is 2 to INT_MAX/2
+					if (swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS] < 2) continue;
+
+					if (swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS] < ss->turret_next_fire_stamp)
+					{
+						ss->turret_next_fire_stamp = swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS];
+					}
+
+				}
+
+			}
 		}
 	}
 	else
