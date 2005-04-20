@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-04-05 05:53:16 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2005-04-20 08:32:01 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/04/05 05:53:16  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.41  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1480,7 +1483,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
 
 		// I will tidy this up later - RT
-		if(allow_scaling && gr_screen.rendering_to_texture != -1)
+		if(allow_scaling || gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&x, &y);
 			gr_resize_screen_pos(&w, &h);
@@ -1561,7 +1564,7 @@ void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL, NULL);
 		// I will tidy this up later - RT
 		//I doubt it, seeing as you've been gone for nearly half a year :)
-		if(allow_scaling && gr_screen.rendering_to_texture != -1)
+		if(allow_scaling || gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&l->x, &l->y);
 			gr_resize_screen_pos(&l->w, &l->h);
@@ -1590,7 +1593,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 		//I doubt it, seeing as you've been gone for nearly half a year :)
 
 		//resize for diferent screen resolutions if needed.
-		if(allow_scaling && gr_screen.rendering_to_texture != -1)
+		if(allow_scaling || gr_screen.rendering_to_texture != -1)
 		{
 			gr_resize_screen_pos(&l->x, &l->y);
 			gr_resize_screen_pos(&l->w, &l->h);
