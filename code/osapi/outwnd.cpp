@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-03-03 06:05:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.14 $
+ * $Date: 2005-04-20 04:34:42 $
+ * $Author: phreak $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/03 06:05:30  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.12  2004/07/26 20:47:46  Kazan
  * remove MCD complete
  *
@@ -1308,12 +1311,12 @@ void close_mono()
 #define NMONO
 void outwnd_init(int display_under_freespace_window)
 {
-#ifndef NMONO
+
 	if (!outwnd_inited)	{
 		outwnd_inited = TRUE;
  		hOutputThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)outwnd_thread, (LPVOID)display_under_freespace_window, 0, &OutputThreadID);
 		//SetThreadPriority(hOutputThread, THREAD_PRIORITY_TIME_CRITICAL);
-
+#ifndef NMONO
 		// set up the monochrome drivers
     if ( (mono_driver = CreateFile("\\\\.\\MONO", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) == ((HANDLE)-1))	{
 		 outwnd_printf2("Cannot get handle to monochrome driver.\n");
@@ -1321,8 +1324,9 @@ void outwnd_init(int display_under_freespace_window)
 		}
 
 	 atexit(close_mono);
-	}
 #endif
+	}
+
 
 #ifndef NDEBUG
 	if ( Log_fp == NULL ) {
