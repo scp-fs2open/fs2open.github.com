@@ -1,3 +1,16 @@
+/*
+ * $Logfile: /Freespace2/code/ai/aiturret.cpp $
+ * $Revision: 1.7 $
+ * $Date: 2005-04-20 04:29:50 $
+ * $Author: phreak $
+ *
+ * Functions for AI control of turrets
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ * $NoKeywords: $
+ */
+
 #include "globalincs/systemvars.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
