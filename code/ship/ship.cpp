@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.192 $
- * $Date: 2005-04-19 06:27:54 $
- * $Author: taylor $
+ * $Revision: 2.193 $
+ * $Date: 2005-04-20 08:26:49 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.192  2005/04/19 06:27:54  taylor
+ * we might actually be needing to load a model here ;)
+ *
  * Revision 2.191  2005/04/18 08:35:27  Goober5000
  * model and class changes should be all set now
  * --Goober5000
@@ -14409,6 +14412,7 @@ void ArmorType::ParseData()
 				temp_float_data.push_back(temp_float);
 				ignore_white_space();
 			}
+			parse_advance(1);
 		}
 		
 		num = temp_float_data.size();
