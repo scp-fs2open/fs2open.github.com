@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.141 $
- * $Date: 2005-04-16 03:36:12 $
- * $Author: wmcoolmon $
+ * $Revision: 2.142 $
+ * $Date: 2005-04-21 15:58:07 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.141  2005/04/16 03:36:12  wmcoolmon
+ * Minor changes; made even more fields in ships.tbl optional.
+ *
  * Revision 2.140  2005/04/15 06:59:05  wmcoolmon
  * One final oops (hopefully).
  *
@@ -2174,6 +2177,8 @@ void game_level_init(int seed)
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 		model_page_in_start();		// mark any existing models as unused but don't unload them yet
+		mprintf(( "Beginning level bitmap paging...\n" ));
+		bm_page_in_start();
 	} else {
 		model_free_all();			// Free all existing models if standalone server
 	}
@@ -2586,34 +2591,34 @@ void freespace_mission_load_stuff()
 	
 		mprintf(( "=================== STARTING LEVEL DATA LOAD ==================\n" ));
 
-		game_loading_callback_init();
-		
+	//	game_loading_callback_init();
+
+		game_busy( NOX("** setting up event music **") );
 		event_music_level_init(-1);	// preloads the first 2 seconds for each event music track
-		game_busy(NOX("** even music is set up **"));
 
+		game_busy( NOX("** unloading interface sounds **") );
 		gamesnd_unload_interface_sounds();		// unload interface sounds from memory
-		game_busy(NOX("** interface sounds unloaded **"));
 
+		game_busy( NOX("** preloading common game sounds **") );
 		gamesnd_preload_common_sounds();			// load in sounds that are expected to play
-		game_busy(NOX("** done loading sounds **"));
 
 		if (Cmdline_snd_preload) {
+			game_busy( NOX("** preloading gameplay sounds **") );
 			gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
-			game_busy(NOX("** finished preloading sounds **"));
 		}
 
+		game_busy( NOX("** assigning sound environment for mission **") );
 		ship_assign_sound_all();	// assign engine sounds to ships
 		game_assign_sound_environment();	 // assign the sound environment for this mission
-		game_busy(NOX("** assigned sound environment for mission **"));
 
 		// call function in missionparse.cpp to fixup player/ai stuff.
+		game_busy( NOX("** fixing up player/ai stuff **") );
 		mission_parse_fixup_players();
-		game_busy(NOX("** done fixing up player/ai stuff **"));
 
 		// Load in all the bitmaps for this level
 		level_page_in();
 
-		game_busy(NOX("** finished with level_page_in() **"));
+		game_busy( NOX("** finished with level_page_in() **") );
 
 		game_loading_callback_close();	
 	} 
@@ -2636,7 +2641,10 @@ uint load_mission_stuff;
 int game_start_mission()
 {	
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
-	
+
+	game_loading_callback_init();
+
+	game_busy( NOX("** starting game_level_init() **") );
 	load_gl_init = time(NULL);
 	game_level_init();
 	load_gl_init = time(NULL) - load_gl_init;
@@ -2650,6 +2658,7 @@ int game_start_mission()
 	}
 #endif
 
+	game_busy( NOX("** starting mission_load() **") );
 	load_mission_load = time(NULL);
 	if (mission_load()) {
 #ifndef NO_NETWORK
@@ -2678,6 +2687,7 @@ int game_start_mission()
 		// game_load_palette();
 	}
 
+	game_busy( NOX("** starting game_post_level_init() **") );
 	load_post_level_init = time(NULL);
 	game_post_level_init();
 	load_post_level_init = time(NULL) - load_post_level_init;
@@ -8733,9 +8743,12 @@ void game_shutdown(void)
 	audiostream_close();
 	snd_close();
 	event_music_close();
+	gamesnd_close();		// close out gamesnd, needs to happen *after* other sounds are closed
 #ifndef NO_NETWORK
 	psnet_close();
 #endif
+
+	model_free_all();
 
 	os_cleanup();
 

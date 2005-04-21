@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-04 20:06:03 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-21 15:58:07 $
  * $Author: taylor $
  *
  * Code to page in all the bitmaps at the beginning of a level.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/04 20:06:03  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 2.6  2004/07/26 20:47:29  Kazan
  * remove MCD complete
  *
@@ -102,11 +105,12 @@ extern void model_page_in_stop();
 void level_page_in()
 {
 
-	mprintf(( "Beginning level bitmap paging...\n" ));
-
-	if(!(Game_mode & GM_STANDALONE_SERVER)){		
-		bm_page_in_start();
-	}
+	// moved to freespace.cpp on 2005/04/18 - taylor
+//	mprintf(( "Beginning level bitmap paging...\n" ));
+//
+//	if(!(Game_mode & GM_STANDALONE_SERVER)){		
+//		bm_page_in_start();
+//	}
 
 	// Most important ones first
 	ship_page_in();
