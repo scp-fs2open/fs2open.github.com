@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-04-17 05:38:29 $
+ * $Revision: 2.19 $
+ * $Date: 2005-04-21 15:51:40 $
  * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/04/17 05:38:29  taylor
+ * updated Linux joystick code that's a bit less insane speed wise
+ * remove ability to build without joystick support, no reason to keep it around
+ * fix unusable warning flag with libjpeg building
+ *
  * Revision 2.17  2005/04/03 08:48:30  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -892,8 +897,11 @@ int read_pilot_file(char *callsign, int single, player *p)
 	// write out the image file name
 	p->insignia_texture = -1;
 	cfread_string_len(p->squad_name, NAME_LENGTH, file);
-	cfread_string_len(p->squad_filename, MAX_FILENAME_LEN - 1, file);
-	player_set_squad_bitmap(p, p->squad_filename);
+
+	// squad image filename
+	char fname[MAX_FILENAME_LEN];
+	cfread_string_len(fname, MAX_FILENAME_LEN - 1, file);
+	player_set_squad_bitmap(p, fname);
 
 	// deal with campaign stuff.  The way we store the information in the file is to first store the
 	// name of the current campaign that the player is playing.  Next we store the info regarding the campaigns
