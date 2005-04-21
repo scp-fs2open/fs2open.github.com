@@ -10,13 +10,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-03-10 08:00:05 $
+ * $Revision: 1.18 $
+ * $Date: 2005-04-21 15:50:47 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/03/10 08:00:05  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 1.16  2005/01/30 09:27:40  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs
  * --Goober5000
@@ -949,7 +958,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	tslot->bpp = bmp->bpp;
 	
 	   // DDOI - TODO
-	if ( (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_BITMAP_SECTION) )      {
+	if ( (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_BITMAP_SECTION) && (bitmap_type != TCACHE_TYPE_COMPRESSED) )      {
 		// max_w /= D3D_texture_divider;
 		// max_h /= D3D_texture_divider;
 
