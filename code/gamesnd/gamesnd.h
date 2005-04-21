@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.8 $
- * $Date: 2005-03-30 02:32:40 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-21 15:58:08 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/30 02:32:40  wmcoolmon
+ * Made it so *Snd fields in ships.tbl and weapons.tbl take the sound name
+ * as well as its index (ie "L_sidearm.wav" instead of "76")
+ *
  * Revision 2.7  2005/03/24 23:31:46  taylor
  * make sounds.tbl dynamic
  * "filename" will never be larger than 33 chars so having it 260 is a waste (freespace.cpp)
@@ -354,6 +358,7 @@
 
 void gamesnd_parse_soundstbl();	// Loads in general game sounds from sounds.tbl
 void gamesnd_init_sounds();		// initializes the Snds[] and Snds_iface[] array
+void gamesnd_close();	// close out gamesnd... only call from game_shutdown()!
 void gamesnd_load_gameplay_sounds();
 void gamesnd_unload_gameplay_sounds();
 void gamesnd_load_interface_sounds();
