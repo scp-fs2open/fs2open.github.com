@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.88 $
- * $Date: 2005-04-12 02:07:00 $
- * $Author: phreak $
+ * $Revision: 2.89 $
+ * $Date: 2005-04-21 15:59:41 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2005/04/12 02:07:00  phreak
+ * ambient_light_level added to the mission structure
+ *
  * Revision 2.87  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1316,6 +1319,7 @@ void parse_mission_info(mission *pm)
 		stuff_string(pm->loading_screen[GR_1024],F_NAME,NULL);
 	}
 
+	strcpy(pm->skybox_model, "");
 	if (optional_string("$Skybox model:"))
 	{
 		stuff_string(pm->skybox_model,F_NAME,NULL);
