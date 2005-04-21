@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.51 $
- * $Date: 2005-04-15 06:23:16 $
- * $Author: wmcoolmon $
+ * $Revision: 2.52 $
+ * $Date: 2005-04-21 15:49:20 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/04/15 06:23:16  wmcoolmon
+ * Local codebase commit; adds armor system.
+ *
  * Revision 2.50  2005/03/08 02:31:51  bobboau
  * minor change to high level render target code
  *
@@ -837,7 +840,11 @@ static void bm_free_data(int n)
 	#ifdef BMPMAN_NDEBUG
 		bm_texture_ram -= be->data_size;
 	#endif
-	free((void *)bmp->data);
+	VM_FREE((void *)bmp->data);
+
+	// reset the load_count to at least 1, don't do this in SkipFree though
+	// since the real count ends up wrong
+	be->load_count = 1;
 
 SkipFree:
 
@@ -859,8 +866,7 @@ int Bm_ram_freed = 0;
 
 static void bm_free_some_ram( int n, int size )
 {
-/*
-	if ( Bm_max_ram < 1 ) return;
+/*	if ( Bm_max_ram < 1 ) return;
 	if ( bm_texture_ram + size < Bm_max_ram ) return;
 
 	int current_time = timer_get_milliseconds();
@@ -889,8 +895,7 @@ static void bm_free_some_ram( int n, int size )
 			//mprintf(( "Couldn't free enough! %d\n", bm_texture_ram ));
 			break;
 		}
-	}	
-*/
+	}	*/
 }
 
 #endif
@@ -905,7 +910,7 @@ void *bm_malloc( int n, int size )
 	bm_bitmaps[n].data_size += size;
 	bm_texture_ram += size;
 	#endif
-	return malloc(size);
+	return VM_MALLOC(size);
 }
 
 // kinda like bm_malloc but only keeps track of how much memory is getting used
@@ -957,6 +962,7 @@ void bm_init()
 			bm_bitmaps[i].used_last_frame = 0;
 			bm_bitmaps[i].used_this_frame = 0;
 		#endif
+		bm_bitmaps[i].load_count = 0;
 
 		gr_bm_init(i);
 
@@ -1069,6 +1075,8 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
 	bm_bitmaps[n].last_used = -1;
 
+	bm_bitmaps[n].load_count++;
+
 	bm_update_memory_used( n, w * h * (bpp / 8) );
 
 	gr_bm_create(n);
@@ -1129,6 +1137,7 @@ int bm_load_sub_fast(char *real_filename, const char *ext, int *handle, int dir_
 	for (i = 0; i < MAX_BITMAPS; i++) {
 		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && !stricmp(filename, bm_bitmaps[i].filename) && (bm_bitmaps[i].dir_type == dir_type) ) {
 			nprintf (("BmpMan", "Found bitmap %s -- number %d\n", filename, i));
+			bm_bitmaps[i].load_count++;
 			*handle = bm_bitmaps[i].handle;
 			return 1;
 		}
@@ -1279,6 +1288,8 @@ int bm_load( char * real_filename )
 	bm_bitmaps[n].palette_checksum = 0;
 	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
 	bm_bitmaps[n].last_used = -1;
+
+	bm_bitmaps[n].load_count++;
 
 	// fill in section info
 	bm_calc_sections(&bm_bitmaps[n].bm);
@@ -1613,6 +1624,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		bm_bitmaps[n+i].num_mipmaps = mm_lvl;
 		bm_bitmaps[n+i].mem_taken = img_size;
 		bm_bitmaps[n+i].dir_type = dir_type;
+
+		bm_bitmaps[n+i].load_count++;
 
 		// fill in section info
 		bm_calc_sections(&bm_bitmaps[n+i].bm);
@@ -2067,7 +2080,7 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		// Error( LOCATION, "Couldn't open '%s'\n", be->filename );
 		//Error( LOCATION, "Couldn't open '%s'\n", filename );
 		//return -1;
-		data = NULL;
+		bm_free_data( bitmapnum );
 		return;
 	}
 
@@ -2088,17 +2101,21 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	ubyte dds_bpp = 0;
 	char filename[MAX_FILENAME_LEN];
 
+	// free any existing data
+	bm_free_data( bitmapnum );
+
 	Assert(Texture_compression_enabled);
 	Assert(be->mem_taken > 0);
+	Assert( &be->bm == bmp );
 
 	data = (ubyte*)bm_malloc(bitmapnum, be->mem_taken);
 
 	if ( data == NULL )
 		return;
 
-	#ifdef BMPMAN_NDEBUG
-	Assert( be->data_size > 0 );
-	#endif
+	bmp->bpp = dds_bpp;
+	bmp->data = (ptr_u)data;
+	bmp->flags = 0;
 
 	memset( data, 0, be->mem_taken );
 
@@ -2106,15 +2123,17 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	error = dds_read_bitmap( filename, &data, &dds_bpp );
+	error = dds_read_bitmap( filename, data, &dds_bpp );
 
 	if (error != DDS_ERROR_NONE) {
-		Error(LOCATION, "error loading %s -- %s", filename, dds_error_string(error));
+	//	Error(LOCATION, "error loading %s -- %s", filename, dds_error_string(error));
+		bm_free_data( bitmapnum );
+		return;
 	}
 
-	bmp->bpp = dds_bpp;
-	bmp->data = (ptr_u)data;
-	bmp->flags = 0;
+	#ifdef BMPMAN_NDEBUG
+	Assert( be->data_size > 0 );
+	#endif
 }
 
 // lock a JPEG file
@@ -2157,13 +2176,11 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	jpg_error = jpeg_read_bitmap( filename, data, NULL, d_size);
  
 	if ( jpg_error != JPEG_ERROR_NONE )	{
-		if (data != NULL) {
-			free(data);
-			data = NULL;
-		}
+		bm_free_data( bitmapnum );
 		return;
 	}
 
+	
 	#ifdef BMPMAN_NDEBUG
 	Assert( be->data_size > 0 );
 	#endif
@@ -2364,16 +2381,27 @@ void bm_release(int handle)
 		return;	// Already been released?
 	}
 
-	if ( bm_bitmaps[n].type != BM_TYPE_USER )	{
-		nprintf(("BmpMan", "Releasing bitmap %s in slot %i with handle %i\n", bm_bitmaps[n].filename, n, handle));
-	}
-
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0) {
-		nprintf(("BmpMan", "tried to unload %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
+		nprintf(("BmpMan", "Tried to release %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
 		return;
+	}
+
+	// kind of like ref_count except it gets around the lock/unlock usage problem
+	// this gets set for each bm_load() call so we can make sure and not unload it
+	// from memory, even if we *can*, until it's really not needed anymore
+	if ( be->load_count > 0 )
+		be->load_count--;
+
+	if ( be->load_count != 0 ) {
+		nprintf(("BmpMan", "Tried to release %s that has a load count of %d.. not unloading\n", be->filename, be->load_count));
+		return;
+	}
+
+	if ( bm_bitmaps[n].type != BM_TYPE_USER )	{
+		nprintf(("BmpMan", "Releasing bitmap %s in slot %i with handle %i\n", bm_bitmaps[n].filename, n, handle));
 	}
 
 	// be sure that all frames of an ani are unloaded - taylor
@@ -2483,7 +2511,18 @@ int bm_unload( int handle, bool clear_render_targets )
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0) {
-		nprintf(("BmpMan", "tried to unload %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
+		nprintf(("BmpMan", "Tried to unload %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
+		return 0;
+	}
+
+	// kind of like ref_count except it gets around the lock/unlock usage problem
+	// this gets set for each bm_load() call so we can make sure and not unload it
+	// from memory, even if we *can*, until it's really not needed anymore
+	if ( be->load_count > 0 )
+		be->load_count--;
+
+	if ( be->load_count != 0 ) {
+		nprintf(("BmpMan", "Tried to unload %s that has a load count of %d.. not unloading\n", be->filename, be->load_count));
 		return 0;
 	}
 
@@ -2497,11 +2536,11 @@ int bm_unload( int handle, bool clear_render_targets )
 			return 1;
 
 		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
-			nprintf(("BmpMan", "unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
+			nprintf(("BmpMan", "Unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
 			bm_free_data(first+i);		// clears flags, bbp, data, etc
 		}
 	} else {
-		nprintf(("BmpMan", "unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
+		nprintf(("BmpMan", "Unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
 		bm_free_data(n);		// clears flags, bbp, data, etc
 	}
 
@@ -2790,21 +2829,31 @@ void bm_page_in_stop()
 }
 
 // for unloading bitmaps while a mission is going
-void bm_page_out( int bitmap_id )
+int bm_page_out( int bitmap_id )
 {
 	int n = bitmap_id % MAX_BITMAPS;
 
 	Assert( n >= 0 && n < MAX_BITMAPS );
+
+	// in case it's already been released
+	if ( bm_bitmaps[n].type == BM_TYPE_NONE )
+		return 0;
+
+
 	Assert( bm_bitmaps[n].handle == bitmap_id );	// INVALID BITMAP HANDLE
-	
-	if (bm_bitmaps[n].preload_count < 1)
-		return;
 
-	mprintf(("PAGE-OUT: %s - preload_count: %d\n", bm_bitmaps[n].filename, bm_bitmaps[n].preload_count - 1));
+	// it's possible to hit < 0 here when model_page_out_textures() is called from
+	// anywhere other than in a mission
+	if ( bm_bitmaps[n].preload_count > 0 ) {
+		nprintf(("BmpMan", "PAGE-OUT: %s - preload_count remaining: %d\n", bm_bitmaps[n].filename, bm_bitmaps[n].preload_count));
 
-	if ( --bm_bitmaps[n].preload_count == 0 ) {
-		bm_unload( bitmap_id );
+		// lets decrease it for next time around
+		bm_bitmaps[n].preload_count--;
+
+		return 0;
 	}
+
+	return ( bm_unload( bitmap_id) == 1 );
 }
 
 int bm_get_cache_slot( int bitmap_id, int separate_ani_frames )

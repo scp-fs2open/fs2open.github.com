@@ -81,7 +81,7 @@ int dds_read_header(char *filename, CFILE *img_cfp = NULL, int *width = 0, int *
 
 //reads bitmap
 //size of the data it stored in size
-int dds_read_bitmap(char *filename, ubyte **data, ubyte *bpp = NULL);
+int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp = NULL);
 
 //returns a string from a DDS error code
 const char* dds_error_string(int code);

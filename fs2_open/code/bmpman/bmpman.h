@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.20 $
- * $Date: 2005-03-07 13:10:19 $
- * $Author: bobboau $
+ * $Revision: 2.21 $
+ * $Date: 2005-04-21 15:49:20 $
+ * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/03/07 13:10:19  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.19  2005/02/10 14:38:50  taylor
  * fix an issue with bm_set_components()
  * abs is for ints fabsf is for floats (camera.cpp)
@@ -318,8 +322,20 @@
 
 // this is causing problems - let's UP IT -- Kazan
 // bumped from 3500 to 4500 2004/09/21 - taylor
+// bumped to 4750 2005/02/03 - taylor
 //#define MAX_BITMAPS 3500			// How many bitmaps the game can handle
-#define MAX_BITMAPS 4500			// How many bitmaps the game can handle
+#define MAX_BITMAPS 4750			// How many bitmaps the game can handle
+// NOTE:  MAX_BITMAPS shouldn't need to be bumped again.  With the fixed bm_release() and it's
+// proper use even the largest missions should stay under this number.  With the largest retail
+// missions and wasteful content we should still have about 20% of the slots free.  If it still
+// goes over then it's something the artists need to fix.  For instance the Terran Mara fighter,
+// with -spec and -glow and using the Shinepack, needs 117 bitmap slots alone.  111 of those is
+// just for the glowmaps.  This number can be greatly reduced if the number of ani frames for
+// another LOD than LOD0 has fewer or no ani frames.  A 37 frame glow ani for LOD2 is little
+// more than a waste of resources.  Future reports of texture corruption should be initially
+// approached with content as the cause and not code.  If anything we could/should reduce
+// MAX_BITMAPS in the future.  Where it's at now should accomidate even the largest mods.
+//  --  Taylor
 
 
 // 16 bit pixel formats
@@ -497,7 +513,7 @@ void bm_page_in_xparent_texture( int bitmapnum, int num_frames=1 );
 void bm_page_in_aabitmap( int bitmapnum, int num_frames=1 );
 
 // unload a texture that was paged in
-void bm_page_out( int handle );
+int bm_page_out( int handle );
 
 // 
 // Mode: 0 = High memory

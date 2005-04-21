@@ -135,7 +135,7 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 }
 
 //reads pixel info from a dds file
-int dds_read_bitmap(char *filename, ubyte **data, ubyte *bpp)
+int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp)
 {
 	int retval;
 	int w,h,ct,lvl;
@@ -172,7 +172,7 @@ int dds_read_bitmap(char *filename, ubyte **data, ubyte *bpp)
 	cfseek(cfp, DDS_OFFSET, CF_SEEK_SET);
 
 	// read in the data
-	cfread(*data, 1, size, cfp);
+	cfread(data, size, 1, cfp);
 
 	if (bpp)
 		*bpp = (ubyte)bits;

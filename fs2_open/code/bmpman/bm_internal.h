@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/bmpman/bm_internal.h $
- * $Revision: 2.2 $
- * $Date: 2005-03-03 14:29:37 $
- * $Author: bobboau $
+ * $Revision: 2.3 $
+ * $Date: 2005-04-21 15:49:20 $
+ * $Author: taylor $
  *
  * bmpman info that's internal to bmpman related files only
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/03/03 14:29:37  bobboau
+ * fixed a small error from my earlier commit.
+ *
  * Revision 2.1  2004/11/23 00:10:06  taylor
  * try and protect the bitmap_entry stuff a bit better
  * fix the transparent support ship, again, but correctly this time
@@ -102,6 +105,7 @@ typedef struct bitmap_entry	{
 	ubyte		preloaded;									// If set, then this was loaded from the lst file
 	int			preload_count;								// how many times this gets used in game, for unlocking
 	ubyte		used_flags;									// What flags it was accessed thru
+	int			load_count;
 
 	// Bitmap info
 	bitmap	bm;
