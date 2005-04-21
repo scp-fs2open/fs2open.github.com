@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.59 $
- * $Date: 2005-04-05 05:53:20 $
+ * $Revision: 2.60 $
+ * $Date: 2005-04-21 15:49:20 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.58  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1579,10 +1582,10 @@ int model_find_texture(int model_num, int bitmap);
 float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *box_obj, vec3d *start_point, int *is_inside, float delta);
 
 // given a newly loaded model, page in all textures
-void model_page_in_textures(int modelnum, int ship_info_index);
+void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
-void model_page_out_textures( int model_num );
+void model_page_out_textures( int model_num, bool release = false );
 
 // is the given model a pirate ship?
 int model_is_pirate_ship(int modelnum);

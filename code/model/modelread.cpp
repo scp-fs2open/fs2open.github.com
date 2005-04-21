@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.63 $
- * $Date: 2005-04-05 05:53:20 $
+ * $Revision: 2.64 $
+ * $Date: 2005-04-21 15:49:21 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.62  2005/03/24 23:36:14  taylor
  * fix compiler warnings with mismatched types and unused variables
  * cleanup some debug messages so they can be turned off if needed
@@ -1058,11 +1061,16 @@ void model_unload(int modelnum, int force)
 
 	Assert( pm->used_this_mission >= 0 );
 
-	if (!force && (--pm->used_this_mission > 0)) {
+	if (!force && (--pm->used_this_mission > 0))
 		return;
-	}
 
-	//model_page_out_textures(pm->id);
+
+	// so that the textures can be released
+	pm->used_this_mission = 0;
+
+	// we want to call bm_release() from here rather than just bm_unload() in order
+	// to get the slots back so we set "release" to true.
+	model_page_out_textures(pm->id, true);
 
 #ifndef NDEBUG
 	Model_ram -= pm->ram_used;

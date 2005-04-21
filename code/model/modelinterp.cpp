@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.114 $
- * $Date: 2005-04-12 05:26:37 $
+ * $Revision: 2.115 $
+ * $Date: 2005-04-21 15:49:20 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.114  2005/04/12 05:26:37  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.113  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -4881,12 +4885,6 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 	int i, idx;
 	ship_info *sip;
 
-	// valid ship type?
-	if((ship_info_index < 0) || (ship_info_index >= Num_ship_types)){
-		return;
-	}
-	sip = &Ship_info[ship_info_index];
-
 	polymodel *pm = model_get(modelnum);
 
 	// bogus
@@ -4894,27 +4892,37 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 		return;
 	}
 
-	// set nondarkening pixels	
-	if(sip->num_nondark_colors){		
-		palman_set_nondarkening(sip->nondark_colors, sip->num_nondark_colors);
-	}
-	// use the colors from the default table
-	else {		
-		palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
+	if ((ship_info_index >= 0) && (ship_info_index < Num_ship_types)) {
+		sip = &Ship_info[ship_info_index];
+
+		// set nondarkening pixels	
+		if(sip->num_nondark_colors){		
+			palman_set_nondarkening(sip->nondark_colors, sip->num_nondark_colors);
+		}
+		// use the colors from the default table
+		else {		
+			palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
+		}
 	}
 
 	for (idx=0; idx<pm->n_textures; idx++ ){
 		if ( pm->original_textures[idx] > -1 )	{
+			// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
+			bm_page_in_texture(pm->original_textures[idx]);
 			bm_lock(pm->original_textures[idx], 16, BMP_TEX_OTHER);
 			bm_unlock(pm->original_textures[idx]);
 		}
 
 		if ( pm->glow_original_textures[idx] > -1 ) {
+			// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
+			bm_page_in_texture(pm->glow_original_textures[idx]);
 			bm_lock(pm->glow_original_textures[idx], 16, BMP_TEX_OTHER);
 			bm_unlock(pm->glow_original_textures[idx]);
 		}
 
 		if ( pm->specular_original_textures[idx] > -1 ) {
+			// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
+			bm_page_in_texture(pm->specular_original_textures[idx]);
 			bm_lock(pm->specular_original_textures[idx], 16, BMP_TEX_OTHER);
 			bm_unlock(pm->specular_original_textures[idx]);
 		}
@@ -4925,11 +4933,15 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 			glow_bank *bank = &pm->glows[i];
 
 			if (bank->glow_bitmap > -1) {
+				// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
+				bm_page_in_texture(bank->glow_bitmap);
 				bm_lock(bank->glow_bitmap, 16, BMP_TEX_OTHER);
 				bm_unlock(bank->glow_bitmap);
 			}
 
 			if (bank->glow_neb_bitmap > -1) {
+				// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
+				bm_page_in_texture(bank->glow_neb_bitmap);
 				bm_lock(bank->glow_neb_bitmap, 16, BMP_TEX_OTHER);
 				bm_unlock(bank->glow_neb_bitmap);
 			}
@@ -4938,7 +4950,8 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 }
 
 // unload all textures for a given model
-void model_page_out_textures(int model_num)
+// "release" should only be set if called from model_unload()!!!
+void model_page_out_textures(int model_num, bool release)
 {
 	int i, j;
 
@@ -4950,30 +4963,54 @@ void model_page_out_textures(int model_num)
 	if (pm == NULL)
 		return;
 
+	if (release && (pm->used_this_mission > 0))
+		return;
+
 	for (i=0; i<pm->n_textures; i++) {
 		if ( pm->original_textures[i] > -1 ) {
-			bm_unload( pm->original_textures[i] );
+			if (release) {
+				bm_release( pm->original_textures[i] );
+			} else {
+				bm_unload( pm->original_textures[i] );
+			}
 		}
 
 		if ( pm->glow_original_textures[i] > -1 ) {
-			bm_unload( pm->glow_original_textures[i] );
+			if (release) {
+				bm_release( pm->glow_original_textures[i] );
+			} else {
+				bm_unload( pm->glow_original_textures[i] );
+			}
 		}
 
 		if ( pm->specular_original_textures[i] > -1 ) {
-			bm_unload( pm->specular_original_textures[i] );
+			if (release) {
+				bm_release( pm->specular_original_textures[i] );
+			} else {
+				bm_unload( pm->specular_original_textures[i] );
+			}
 		}
 	}
 
 	if (pm->n_glows) {
+		// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
 		for (j=0; j<pm->n_glows; j++) {
 			glow_bank *bank = &pm->glows[j];
 
 			if (bank->glow_bitmap > -1) {
-				bm_unload( bank->glow_bitmap );
+			//	if (release) {
+			//		bm_release( bank->glow_bitmap );
+			//	} else {
+					bm_unload( bank->glow_bitmap );
+			//	}
 			}
 
 			if (bank->glow_neb_bitmap > -1) {
-				bm_unload( bank->glow_neb_bitmap );
+			//	if (release) {
+			//		bm_release( bank->glow_neb_bitmap );
+			//	} else {
+					bm_unload( bank->glow_neb_bitmap );
+			//	}
 			}
 		}
 	}
