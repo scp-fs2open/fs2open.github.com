@@ -1,13 +1,18 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.12 $
- * $Date: 2005-04-11 05:45:38 $
+ * $Revision: 2.13 $
+ * $Date: 2005-04-21 15:52:24 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/11 05:45:38  taylor
+ * _endthread() doesn't take an argument so do support one (Jens Granseuer)
+ * debug variable fixes in freespace.cpp (Jens Granseuer)
+ * as a safety catch we should Assert() on future usage of things we don't yet support in *nix _splitpath()
+ *
  * Revision 2.11  2005/03/27 08:51:25  taylor
  * this is what coding on an empty stomach will get you
  *
@@ -422,11 +427,6 @@ char *itoa(int value, char *str, int radix)
 	return str;
 }
 
-// use system versions of this stuff rather than the vm_* versions
-#undef malloc
-#undef free
-#undef strdup
-#undef realloc
 
 
 /* *************************************
@@ -434,6 +434,12 @@ char *itoa(int value, char *str, int radix)
  * memory handling functions
  *
  * *************************************/
+
+// make sure to use system versions of this stuff here rather than the vm_* versions
+#undef malloc
+#undef free
+#undef strdup
+#undef realloc
 
 // RamTable stuff comes out of icculus.org
 #ifndef NDEBUG
