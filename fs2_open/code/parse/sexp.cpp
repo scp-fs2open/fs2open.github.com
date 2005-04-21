@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.148 $
- * $Date: 2005-04-18 08:35:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.149 $
+ * $Date: 2005-04-21 15:59:41 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.148  2005/04/18 08:35:28  Goober5000
+ * model and class changes should be all set now
+ * --Goober5000
+ *
  * Revision 2.147  2005/04/18 05:27:26  Goober5000
  * removed ship->alt_modelnum as it was essentially duplicates of ship->modelnum; changed the alt modelnum stuff accordingly
  * fixes for ship_model_change and change_ship_type
@@ -974,6 +978,7 @@
 #include "sound/audiostr.h"
 #include "cmdline/cmdline.h"
 #include "hud/hudparse.h"
+#include "starfield/starfield.h"
 #include "hud/hudartillery.h"
 #include "object/objectdock.h"
 #include "globalincs/systemvars.h"
@@ -1286,6 +1291,7 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
+	{ "set-skybox-model",			OP_SET_SKYBOX_MODEL,			1, INT_MAX },	// taylor
 
 	//HUD funcs -C
 	{ "hud-disable",				OP_HUD_DISABLE,					1, 1 },	// Goober5000
@@ -1434,10 +1440,8 @@ char *HUD_gauge_text[NUM_HUD_GAUGES] =
 	"ATTACKING TARGET COUNT",
 	"TEXT FLASH",
 	"MESSAGE BOX",
-#ifndef FS2_DEMO
 	"SUPPORT GUAGE",
 	"LAG GUAGE"
-#endif
 };
 
 
@@ -1459,6 +1463,8 @@ int distance_to_nav(int node);
 void set_nav_carry_status(int node);
 void unset_nav_carry_status(int node);
 #endif
+
+void sexp_set_skybox_model_preload(char *name); // taylor
 
 int	Directive_count;
 int	Sexp_useful_number;  // a variable to pass useful info in from external modules
@@ -2986,6 +2992,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				
 				break;
 
+			case OPF_SKYBOX_MODEL_NAME:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if ( stricmp(CTEXT(node), NOX("default")) && !strstr(CTEXT(node), NOX(".pof")) )
+					return SEXP_CHECK_INVALID_SKYBOX_NAME;
+
+				break;
+
 			case OPF_JUMP_NODE_NAME:
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -3213,6 +3228,12 @@ int get_sexp(char *token)
 				else if (atoi(CTEXT(n)) == 1)	// if it's the Knossos type
 					Knossos_warp_ani_used = 1;		// set flag for sure
 
+				break;
+
+			case OP_SET_SKYBOX_MODEL:
+				n = CDR(start);
+
+				sexp_set_skybox_model_preload( CTEXT(n) );
 				break;
 		}
 	}
@@ -10811,6 +10832,38 @@ void sexp_activate_deactivate_glow_point_bank(int n, int activate)
 
 }
 
+// taylor - load and set a skybox model
+void sexp_set_skybox_model(int n)
+{
+	for ( ; n != -1; n = CDR(n)) {
+		if ( !stricmp("default", CTEXT(n)) ) {
+			stars_set_background_model( The_mission.skybox_model, NULL );
+		} else {
+			// stars_level_init() will set the actual mission skybox after this gets
+			// evaluated during parse. by setting it now we get everything loaded so
+			// there is less slowdown when it actually swaps out - taylor
+			stars_set_background_model( CTEXT(n), NULL );
+		}
+	}
+}
+
+// taylor - preload a skybox model.  this doesn't set anything as viewable, just loads it into memory
+void sexp_set_skybox_model_preload(char *name)
+{
+	int i;
+
+	if ( !stricmp("default", name) ) {
+		// if there isn't a mission skybox model then don't load one
+		if ( strlen(The_mission.skybox_model) ) {
+			i = model_load( The_mission.skybox_model, 0, NULL );
+			model_page_in_textures( i );
+		}
+	} else {
+		i = model_load( name, 0, NULL );
+		model_page_in_textures( i );
+	}
+}
+
 void sexp_beam_fire(int node)
 {
 	int sindex;
@@ -14007,6 +14060,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = 1;
 				break;
 
+			// taylor
+			case OP_SET_SKYBOX_MODEL:
+				sexp_set_skybox_model(node);
+				sexp_val = 1;
+				break;
+
 			case OP_TURRET_TAGGED_SPECIFIC:
 				sexp_turret_tagged_specific(node);
 				sexp_val = 1;
@@ -14573,6 +14632,7 @@ int query_operator_return_type(int op)
 		case OP_ACTIVATE_GLOW_MAPS:
 		case OP_DEACTIVATE_GLOW_POINT_BANK:
 		case OP_ACTIVATE_GLOW_POINT_BANK:
+		case OP_SET_SKYBOX_MODEL:
 		case OP_SET_SUPPORT_SHIP:
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_PLAY_SOUND_FROM_FILE:
@@ -15616,6 +15676,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;		//the ship
 			else
 				return OPF_POSITIVE;		//the glow bank to disable
+
+		// taylor
+		case OP_SET_SKYBOX_MODEL:
+			if (argnum == 0)
+				return OPF_SKYBOX_MODEL_NAME;
+			else
+				return OPF_STRING;
 
 		// Goober5000 - this is complicated :)
 		case OP_SET_SUPPORT_SHIP:
@@ -16785,6 +16852,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
+		case OP_SET_SKYBOX_MODEL:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_HUD_DISABLE:

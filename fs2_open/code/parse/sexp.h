@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.88 $
- * $Author: Goober5000 $
- * $Date: 2005-04-18 03:16:57 $
+ * $Revision: 2.89 $
+ * $Author: taylor $
+ * $Date: 2005-04-21 15:59:42 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2005/04/18 03:16:57  Goober5000
+ * more sexp goodness
+ * --Goober5000
+ *
  * Revision 2.87  2005/04/14 20:03:16  Goober5000
  * bumped sexp limit
  * --Goober5000
@@ -742,6 +746,8 @@ struct ship_subsys;
 #define OPF_FLEXIBLE_ARGUMENT	51		// Goober5000 - special to match for when-argument
 #define OPF_ANYTHING			52		// Goober5000 - anything goes
 
+#define OPF_SKYBOX_MODEL_NAME	53		// taylor - changing skybox model
+
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
 #define	OPR_BOOL				2	// returns true/false value
@@ -1105,6 +1111,7 @@ struct ship_subsys;
 #define OP_SHIP_GUARDIAN_THRESHOLD			(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD	(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
+#define OP_SET_SKYBOX_MODEL					(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // taylor
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1366,6 +1373,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_ARRIVAL_ANCHOR_ALL	-135
 #define SEXP_CHECK_INVALID_SOUNDTRACK_NAME		-136
 #define SEXP_CHECK_INVALID_INTEL_NAME			-137
+#define SEXP_CHECK_INVALID_SKYBOX_NAME			-138
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
