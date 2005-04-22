@@ -24,10 +24,10 @@ void change_lod(Tree* caller);
 //*****************************Ship Options Window*******************************
 static Window* ShipOptWin = NULL;
 
-#define NUM_SHIP_OPTIONS	50
-Checkbox *soc[NUM_SHIP_OPTIONS];
+#define NUM_SHIP_FLAGS	50
+Checkbox *soc[NUM_SHIP_FLAGS];
 
-void set_ship_options_ship(ship_info *sip)
+void set_ship_flags_ship(ship_info *sip)
 {
 	unsigned int i=0;
 	soc[i++]->SetFlag(&sip->flags, SIF_SUPPORT);
@@ -65,12 +65,12 @@ void set_ship_options_ship(ship_info *sip)
 	//ShipOptWin->SetCaption(sip->name);
 }
 
-void zero_ship_opt_win(GUIObject *caller)
+void zero_ship_flags_win(GUIObject *caller)
 {
 	ShipOptWin = NULL;
 }
 
-void ship_options_window(Button *caller)
+void ship_flags_window(Button *caller)
 {
 	if(ShipOptWin != NULL)
 		return;
@@ -143,15 +143,15 @@ void ship_options_window(Button *caller)
 	soc[i] = (Checkbox*) cwp->AddChild(new Checkbox("IN TECH DATABASE MULTI", 0, y));
 
 	if(ShipSelectShipIndex != -1)
-		set_ship_options_ship(&Ship_info[ShipSelectShipIndex]);
+		set_ship_flags_ship(&Ship_info[ShipSelectShipIndex]);
 
-	cwp->SetCloseFunction(zero_ship_opt_win);
+	cwp->SetCloseFunction(zero_ship_flags_win);
 }
 //*****************************Ship Variables Window*******************************
 static Window* ShipVarWin = NULL;
 
-#define NUM_SHIP_VARIABLES		25
-Text *svt[NUM_SHIP_OPTIONS];
+#define NUM_SHIP_VARIABLES		50
+Text *svt[NUM_SHIP_VARIABLES];
 
 #define SVW_SET_SI_VAR(var)	svt[i]->SetText(sip->var);	\
 	svt[i++]->SetSaveLoc(&sip->var, T_ST_ONENTER)
@@ -464,7 +464,7 @@ void change_lod(Tree* caller)
 
 	if(ShipOptWin != NULL)
 	{
-		set_ship_options_ship(&Ship_info[ShipSelectShipIndex]);
+		set_ship_flags_ship(&Ship_info[ShipSelectShipIndex]);
 	}
 
 	if(ShipVarWin != NULL)
@@ -612,7 +612,7 @@ void lab_init()
 		cbp = cwp->AddChild(new Button("Render options", x, 0, make_options_window));
 		x += cbp->GetWidth() + 10;
 	}
-	cbp = cwp->AddChild(new Button("Class options", x, 0, ship_options_window));
+	cbp = cwp->AddChild(new Button("Class options", x, 0, ship_flags_window));
 	x += cbp->GetWidth() + 10;
 	cbp = cwp->AddChild(new Button("Class variables", x, 0, ship_variables_window));
 	x += cbp->GetWidth() + 10;

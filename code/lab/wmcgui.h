@@ -477,6 +477,7 @@ class Tree : public GUIObject
 	TreeItem Items;
 	void *AssociatedItem;
 
+	int StartLine;
 	TreeItem *SelectedItem;
 	TreeItem *HighlightedItem;
 
