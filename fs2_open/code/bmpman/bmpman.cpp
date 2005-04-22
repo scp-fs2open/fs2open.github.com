@@ -10,13 +10,22 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.52 $
- * $Date: 2005-04-21 15:49:20 $
+ * $Revision: 2.53 $
+ * $Date: 2005-04-22 02:32:18 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/04/21 15:49:20  taylor
+ * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
+ *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
+ *  - a little "stupid" fix for dds bitmap reading
+ *  - fix it so that memory is released properly on bitmap read errors
+ *  - some cleanup to model texture loading
+ *  - allow model textures to get released rather than just unloaded, saves bitmap slots
+ *  - bump MAX_BITMAPS to 4750, should be able to decrease after public testing of new code
+ *
  * Revision 2.51  2005/04/15 06:23:16  wmcoolmon
  * Local codebase commit; adds armor system.
  *
@@ -2113,10 +2122,6 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	if ( data == NULL )
 		return;
 
-	bmp->bpp = dds_bpp;
-	bmp->data = (ptr_u)data;
-	bmp->flags = 0;
-
 	memset( data, 0, be->mem_taken );
 
 	// make sure we are using the correct filename in the case of an EFF.
@@ -2124,6 +2129,10 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	EFF_FILENAME_CHECK;
 
 	error = dds_read_bitmap( filename, data, &dds_bpp );
+
+	bmp->bpp = dds_bpp;
+	bmp->data = (ptr_u)data;
+	bmp->flags = 0;
 
 	if (error != DDS_ERROR_NONE) {
 	//	Error(LOCATION, "error loading %s -- %s", filename, dds_error_string(error));
