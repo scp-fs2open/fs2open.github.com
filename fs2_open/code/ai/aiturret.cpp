@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-04-20 04:29:50 $
- * $Author: phreak $
+ * $Revision: 1.8 $
+ * $Date: 2005-04-22 00:34:54 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/04/20 04:29:50  phreak
+ * CVS file header. take 1
+ *
  *
  * $NoKeywords: $
  */
@@ -181,11 +184,7 @@ int turret_select_best_weapon(ship_subsys *turret, object *target)
 	else if(turret->weapons.num_secondary_banks > 0)
 		return MAX_SHIP_PRIMARY_BANKS;
 	else
-	{
-		//WMC-if this happens, this is bad. It shouldn't happen.
-		Int3();
 		return -1;
-	}
 }
 
 //doesn't work for WIF2
@@ -789,6 +788,7 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 		//This turret doesn't have any good weapons
 		if(best_weapon_tidx < 0)
 			return;
+
 		weapon_info *wip = get_turret_weapon_wip(&ss->weapons, best_weapon_tidx);
 
 		//	weapon_system_strength scales time enemy in range in 0..1.  So, the lower this is, the worse the aiming will be.

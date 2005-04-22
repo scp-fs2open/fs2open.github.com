@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-04-12 05:26:36 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2005-04-22 00:34:55 $
+ * $Author: wmcoolmon $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/04/12 05:26:36  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.21  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1248,6 +1252,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		
 		scaled_w = icon_w * w_scale_factor;
 		scaled_h = icon_h * h_scale_factor;
+		gr_resize_screen_posf(&scaled_w, &scaled_h);
 		bxf = tv.sx - scaled_w / 2.0f + 0.5f;
 		byf = tv.sy - scaled_h / 2.0f + 0.5f;
 		bx = fl2i(bxf);
@@ -1285,7 +1290,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, false);
+				gr_unsize_screen_pos(&ha->sx, &ha->sy);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, true);
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
@@ -1304,7 +1310,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 //				hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1,false) == 0 ) {
+				gr_unsize_screen_pos(&ha->sx, &ha->sy);
+				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, true) == 0 ) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1317,7 +1324,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 //guessing the false shouldnt have been there was getting a compile error -Bobboau
 			//This would've saved me soooo much time if this 'fix' hadn't got commited.
 			//Generally I don't run around breaking random files for no reason. -C
-			gr_aabitmap(bx, by, false);
+			gr_unsize_screen_pos(&bx, &by);
+			gr_aabitmap(bx, by, true);
 			//gr_aabitmap(bx, by);
 
 			// draw text centered over the icon (make text darker)
