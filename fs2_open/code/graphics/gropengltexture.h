@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.7 $
- * $Date: 2005-01-21 08:54:53 $
- * $Author: taylor $
+ * $Revision: 1.8 $
+ * $Date: 2005-04-23 01:17:09 $
+ * $Author: wmcoolmon $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/01/21 08:54:53  taylor
+ * slightly better memory management
+ *
  * Revision 1.6  2005/01/21 08:25:15  taylor
  * fill in gr_opengl_set_texture_addressing()
  * add support for non-power-of-two textures for cards that have it
@@ -76,9 +79,6 @@ typedef struct tcache_slot_opengl {
 	ubyte bpp;
 
 	// sections
-#ifdef GL_SECTIONS
-	tcache_slot_opengl	*data_sections[MAX_BMAP_SECTIONS_X][MAX_BMAP_SECTIONS_Y];
-#endif
 	tcache_slot_opengl	*parent;
 } tcache_slot_opengl;
 

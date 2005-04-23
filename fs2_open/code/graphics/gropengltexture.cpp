@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-04-21 15:50:47 $
- * $Author: taylor $
+ * $Revision: 1.19 $
+ * $Date: 2005-04-23 01:17:09 $
+ * $Author: wmcoolmon $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/04/21 15:50:47  taylor
+ * we can't resize compressed textures so... don't, fixes rendering problems when not at max texture detail
+ *
  * Revision 1.17  2005/03/10 08:00:05  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -123,10 +126,6 @@ static tcache_slot_opengl *Textures = NULL;
 // TODO: this needs to be usable for GL_SECTIONS as well - taylor
 ubyte Tex_used_this_frame[MAX_BITMAPS];
 
-#ifdef GL_SECTIONS
-static void *Texture_sections = NULL;
-int GL_texture_sections = 0;
-#endif // GL_SECTIONS
 int GL_texture_ram = 0;
 int GL_frame_count = 0;
 int GL_min_texture_width = 0;
@@ -249,9 +248,6 @@ void opengl_switch_arb(int unit, int state)
 
 void opengl_tcache_init (int use_sections)
 {
-#ifdef GL_SECTIONS
-	int idx, s_idx;
-#endif
 	int i;
 
 	// DDOI - FIXME skipped a lot of stuff here
@@ -277,13 +273,6 @@ void opengl_tcache_init (int use_sections)
 
 	mprintf(("max texture size is: %dx%d\n", GL_max_texture_width,GL_max_texture_height));
 
-#ifndef GL_SECTIONS
-	// if we are not using sections then make sure we have the min texture size available to us
-	// 1024 is what we need with the standard resolutions - taylor
-	if (GL_max_texture_width < 1024)
-		Error(LOCATION, "A minimum texture size of \"1024x1024\" is required for FS2_Open but only \"%ix%i\" was found.  Can not continue.", GL_max_texture_width, GL_max_texture_height);
-#endif
-
 	GL_square_textures = 0;
 
 	Textures = (tcache_slot_opengl *)malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
@@ -294,20 +283,7 @@ void opengl_tcache_init (int use_sections)
 
 	memset( Tex_used_this_frame, 0, MAX_BITMAPS * sizeof(ubyte) );
 
-#ifdef GL_SECTIONS
-	if(use_sections){
-		Texture_sections = (tcache_slot_opengl*)malloc(MAX_BITMAPS * MAX_BMAP_SECTIONS_X * MAX_BMAP_SECTIONS_Y * sizeof(tcache_slot_opengl));
-		if(!Texture_sections){
-			exit(1);
-		}
-		memset(Texture_sections, 0, MAX_BITMAPS * MAX_BMAP_SECTIONS_X * MAX_BMAP_SECTIONS_Y * sizeof(tcache_slot_opengl));
-	}
-#endif // GL_SECTIONS
-
 	// Init the texture structures
-#ifdef GL_SECTIONS
-	int section_count = 0;
-#endif // GL_SECTIONS
 	for( i=0; i<MAX_BITMAPS; i++ )  {
 		/*
 		Textures[i].vram_texture = NULL;
@@ -322,38 +298,7 @@ void opengl_tcache_init (int use_sections)
 		Textures[i].parent = NULL;
 		*/
 		Textures[i].bitmap_id = -1;
-
-#ifdef GL_SECTIONS
-		// allocate sections
-		if(use_sections){
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					Textures[i].data_sections[idx][s_idx] = &((tcache_slot_opengl*)Texture_sections)[section_count++];
-					Textures[i].data_sections[idx][s_idx]->parent = &Textures[i];
-					/*
-					Textures[i].data_sections[idx][s_idx]->vram_texture = NULL;
-					Textures[i].data_sections[idx][s_idx]->vram_texture_surface = NULL;
-					*/
-					Textures[i].data_sections[idx][s_idx]->texture_handle = 0;
-					Textures[i].data_sections[idx][s_idx]->bitmap_id = -1;
-					Textures[i].data_sections[idx][s_idx]->size = 0;
-				//	Textures[i].data_sections[idx][s_idx]->used_this_frame = 0;
-					Textures[i].data_sections[idx][s_idx]->bpp = 0;
-				}
-			}
-		} else {
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					Textures[i].data_sections[idx][s_idx] = NULL;
-				}
-			}
-		}
-#endif // GL_SECTIONS
 	}
-
-#ifdef GL_SECTIONS
-	GL_texture_sections = use_sections;
-#endif // GL_SECTIONS
 
 	//GL_last_detail = Detail.hardware_textures;
 	GL_last_bitmap_id = -1;
@@ -405,20 +350,10 @@ void opengl_tcache_cleanup ()
 		free(Textures);
 		Textures = NULL;
 	}
-
-#ifdef GL_SECTIONS
-	if( Texture_sections != NULL ){
-		free(Texture_sections);
-		Texture_sections = NULL;
-	}
-#endif // GL_SECTIONS
 }
 
 void opengl_tcache_frame ()
 {
-#ifdef GL_SECTIONS
-	int idx, s_idx;
-#endif // GL_SECTIONS
 
 	GL_last_bitmap_id = -1;
 	GL_textures_in_frame = 0;
@@ -432,22 +367,6 @@ void opengl_tcache_frame ()
 	int i;
 	for( i=0; i<MAX_BITMAPS; i++ )  {
 		Textures[i].used_this_frame = 0;
-
-#ifdef GL_SECTIONS
-		// data sections
-		if(Textures[i].data_sections[0][0] != NULL){
-			Assert(GL_texture_sections);
-			if(GL_texture_sections){
-				for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-					for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-						if(Textures[i].data_sections[idx][s_idx] != NULL){
-							Textures[i].data_sections[idx][s_idx]->used_this_frame = 0;
-						}
-					}
-				}
-			}
-		}
-#endif // GL_SECTIONS
 	}
 */
 
@@ -466,10 +385,6 @@ void opengl_free_texture_slot( int n )
 
 int opengl_free_texture ( tcache_slot_opengl *t )
 {
-#ifdef GL_SECTIONS
-	int idx, s_idx;
-#endif // GL_SECTIONS
-
 	// Bitmap changed!!     
 	if ( t->bitmap_id > -1 )        {
 		// if I, or any of my children have been used this frame, bail  
@@ -479,16 +394,6 @@ int opengl_free_texture ( tcache_slot_opengl *t )
 			return 0;
 		}
 
-#ifdef GL_SECTIONS
-		for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-			for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-				if((t->data_sections[idx][s_idx] != NULL) && (t->data_sections[idx][s_idx]->used_this_frame)){
-					return 0;
-				}
-			}
-		}
-#endif // GL_SECTIONS
-
 		// ok, now we know its legal to free everything safely
 		glDeleteTextures (1, &t->texture_handle);
 	//	t->texture_handle = 0;
@@ -496,18 +401,6 @@ int opengl_free_texture ( tcache_slot_opengl *t )
 		if ( GL_last_bitmap_id == t->bitmap_id )       {
 			GL_last_bitmap_id = -1;
 		}
-
-#ifdef GL_SECTIONS
-		// if this guy has children, free them too, since the children
-		// actually make up his size
-		for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-			for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-				if(t->data_sections[idx][s_idx] != NULL){
-					opengl_free_texture(t->data_sections[idx][s_idx]);
-				}
-			}
-		}
-#endif // GL_SECTIONS
 
 		GL_textures_in -= t->size;
 		memset( t, 0, sizeof(tcache_slot_opengl) );
@@ -637,18 +530,9 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	mipmap_w = tex_w;
 	mipmap_h = tex_h;
 
-#ifdef GL_SECTIONS
-	if ( bitmap_type == TCACHE_TYPE_AABITMAP )      {
-		t->u_scale = (float)bmap_w / (float)tex_w;
-		t->v_scale = (float)bmap_h / (float)tex_h;
-	} else if(bitmap_type == TCACHE_TYPE_BITMAP_SECTION){
-		t->u_scale = (float)src_w / (float)tex_w;
-		t->v_scale = (float)src_h / (float)tex_h;
-#else
 	if ( (bitmap_type == TCACHE_TYPE_AABITMAP) || (bitmap_type == TCACHE_TYPE_BITMAP_SECTION) ) {
 		t->u_scale = (float)bmap_w / (float)tex_w;
 		t->v_scale = (float)bmap_h / (float)tex_h;
-#endif
 	} else {
 		t->u_scale = 1.0f;
 		t->v_scale = 1.0f;
@@ -912,11 +796,6 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 		case TCACHE_TYPE_XPARENT:
 			flags |= BMP_TEX_XPARENT;
 			break;
-#ifndef GL_SECTIONS
-		case TCACHE_TYPE_BITMAP_SECTION:
-			flags |= BMP_TEX_XPARENT;
-			break;
-#endif // !GL_SECTIONS
 		case TCACHE_TYPE_NONDARKENING:
 			Int3();
 			flags |= BMP_TEX_NONDARK;
@@ -994,68 +873,8 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	return ret_val;
 }
 
-#ifdef GL_SECTIONS
-int opengl_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot, int sx, int sy, int fail_on_full)
-{
-	ubyte flags;
-	bitmap *bmp;
-	int final_w, final_h;
-	int section_x, section_y;
-	int reload = 0;
-
-	// setup texture/bitmap flags
-	Assert(bitmap_type == TCACHE_TYPE_BITMAP_SECTION);
-	if(bitmap_type != TCACHE_TYPE_BITMAP_SECTION){
-		bitmap_type = TCACHE_TYPE_BITMAP_SECTION;
-	}
-	flags = BMP_TEX_XPARENT;
-
-	// lock the bitmap in the proper format
-	bmp = bm_lock(bitmap_handle, 16, flags);
-	if ( bmp == NULL ) {
-		mprintf(("Couldn't lock bitmap %d.\n", bitmap_handle ));
-		return 0;
-	}
-
-	// set the bits per pixel
-	tslot->bpp = bmp->bpp;
-
-	// determine the width and height of this section
-	bm_get_section_size(bitmap_handle, sx, sy, &section_x, &section_y);
-
-	// get final texture size as it will be allocated as an opengl texture
-	opengl_tcache_get_adjusted_texture_size(section_x, section_y, &final_w, &final_h);
-
-	// if this tcache slot has no bitmap
-	if ( tslot->bitmap_id < 0) {
-		reload = 0;
-	}
-	// different bitmap altogether - determine if the new one can use the old one's slot
-	else if (tslot->bitmap_id != bitmap_handle)     {
-		if((final_w == tslot->w) && (final_h == tslot->h)){
-			reload = 1;
-		} else {
-			reload = 0;
-		}
-	}
-
-	// call the helper
-	int ret_val = opengl_create_texture_sub(bitmap_type, bitmap_handle, (ushort*)bmp->data, bmp->sections.sx[sx], bmp->sections.sy[sy], section_x, section_y, bmp->w, bmp->h, section_x, section_y, tslot, reload, fail_on_full);
-
-	// unlock the bitmap
-	bm_unlock(bitmap_handle);
-
-	return ret_val;
-}
-#endif // GL_SECTIONS
-
 int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int tex_unit = 0)
 {
-#ifdef GL_SECTIONS
-	bitmap *bmp = NULL;
-
-	int idx, s_idx;
-#endif // GL_SECTIONS
 	int ret_val = 1;
 
 	if ( GL_last_detail != Detail.hardware_textures )      {
@@ -1074,19 +893,6 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 		//t->used_this_frame++;
 		Tex_used_this_frame[n]++;
 
-#ifdef GL_SECTIONS
-		// mark all children as used
-		if(GL_texture_sections){
-			for(idx=0; idx<MAX_BMAP_SECTIONS_X; idx++){
-				for(s_idx=0; s_idx<MAX_BMAP_SECTIONS_Y; s_idx++){
-					if(t->data_sections[idx][s_idx] != NULL){
-						t->data_sections[idx][s_idx]->used_this_frame++;
-					}
-				}
-			}
-		}
-#endif // GL_SECTIONS
-
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 		return 1;
@@ -1097,65 +903,6 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 
 	opengl_set_max_anistropy();
 
-#ifdef GL_SECTIONS
-	if (bitmap_type == TCACHE_TYPE_BITMAP_SECTION){
-		Assert((sx >= 0) && (sy >= 0) && (sx < MAX_BMAP_SECTIONS_X) && (sy < MAX_BMAP_SECTIONS_Y));
-		if(!((sx >= 0) && (sy >= 0) && (sx < MAX_BMAP_SECTIONS_X) && (sy < MAX_BMAP_SECTIONS_Y))){
-			return 0;
-		}
-
-		ret_val = 1;
-
-		// if the texture sections haven't been created yet
-		if((t->bitmap_id < 0) || (t->bitmap_id != bitmap_id)){
-
-			// lock the bitmap in the proper format
-			bmp = bm_lock(bitmap_id, 16, BMP_TEX_XPARENT);
-
-			// set the bits per pixel
-			t->bpp = bmp->bpp;
-
-			// now lets do something for each texture
-
-			for(idx=0; idx<bmp->sections.num_x; idx++){
-				for(s_idx=0; s_idx<bmp->sections.num_y; s_idx++){
-					// hmm. i'd rather we didn't have to do it this way...
-					if(!opengl_create_texture_sectioned(bitmap_id, bitmap_type, t->data_sections[idx][s_idx], idx, s_idx, fail_on_full)){
-						ret_val = 0;
-					}
-
-					// not used this frame
-					t->data_sections[idx][s_idx]->used_this_frame = 0;
-				}
-			}
-
-			// unlock the bitmap now that we're good and done with it
-			bm_unlock(bitmap_id);
-
-			// zero out pretty much everything in the parent struct since he's just the root
-			t->bitmap_id = bitmap_id;
-			t->texture_handle = 0;
-			t->time_created = t->data_sections[sx][sy]->time_created;
-			//t->used_this_frame = 0;
-			/*
-			t->vram_texture = NULL;
-			t->vram_texture_surface = NULL
-			*/
-		}
-
-		// argh. we failed to upload. free anything we can
-		if(!ret_val){
-			opengl_free_texture(t);
-		}
-		// swap in the texture we want
-		else {
-			t = t->data_sections[sx][sy];
-		}
-	}
-
-	// all other "normal" textures
-	else
-#endif // GL_SECTIONS
 		 if((t->bitmap_id < 0) || (bitmap_id != t->bitmap_id)){
 		ret_val = opengl_create_texture( bitmap_id, bitmap_type, t, fail_on_full );
 	}

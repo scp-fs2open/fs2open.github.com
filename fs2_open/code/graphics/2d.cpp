@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-04-20 08:32:01 $
+ * $Revision: 2.44 $
+ * $Date: 2005-04-23 01:17:09 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/04/20 08:32:01  wmcoolmon
+ * Nonstandard res fix.
+ *
  * Revision 2.42  2005/04/05 05:53:16  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1469,10 +1472,6 @@ int gr_get_cursor_bitmap()
 // new bitmap functions
 void gr_bitmap(int x, int y, bool allow_scaling)
 {
-#ifdef GL_SECTIONS
-	int section_x, section_y;	
-	int x_line, y_line;
-#endif
 	int w, h;
 
 	if(gr_screen.mode == GR_DIRECT3D){
@@ -1493,7 +1492,6 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_BITMAP_SECTION);
 	}
 	else if((gr_screen.mode == GR_OPENGL)) {
-#ifndef GL_SECTIONS
 		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL, NULL);
 
 		// get the section as a texture in vram					
@@ -1508,46 +1506,6 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 
 		// RT draws all hall interface stuff
 		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_BITMAP_SECTION);
-#else
-		int idx, s_idx;
-		// float u_scale, v_scale;
-		bitmap_section_info *sections;			
-
-		// render all sections
-		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL, &sections);
-
-		y_line = 0;
-		section_y = 0;
-
-		for(idx=0; idx<sections->num_y; idx++){
-			x_line = 0;
-			for(s_idx=0; s_idx<sections->num_x; s_idx++){
-
-				// get the section as a texture in vram					
-				gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha, s_idx, idx);
-
-				// determine the width and height of this section
-				bm_get_section_size(gr_screen.current_bitmap, s_idx, idx, &section_x, &section_y);
-
-				int px1 = x + x_line;
-				int py1 = y + y_line;
-				int px2 = section_x;
-				int py2 = section_y;
-
-				// I will tidy this up later - RT
-				if(allow_scaling || gr_screen.rendering_to_texture != -1)
-				{
-					gr_resize_screen_pos(&px1, &py1);
-					gr_resize_screen_pos(&px2, &py2);
-				}
-
-				// RT draws all hall interface stuff
-			   	g3_draw_2d_poly_bitmap(px1, py1, px2, py2, TMAP_FLAG_BITMAP_SECTION | TMAP_HTL_2D);
-				x_line += section_x;
-			}
-			y_line += section_y;
-		}
-#endif
 	}
 }
 
