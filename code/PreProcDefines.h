@@ -5,12 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.11 $
- * $Date: 2005-03-25 06:57:32 $
- * $Author: wmcoolmon $
+ * $Revision: 1.12 $
+ * $Date: 2005-04-24 12:44:25 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/03/25 06:57:32  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 1.10  2005/03/02 21:18:18  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -91,8 +94,13 @@
 #define _REPORT_MEM_LEAKS	1
 #endif
 
+#ifndef SCP_UNIX
+// this needs to be a configure option on Linux/OSX
+
 #ifndef FS2_SPEECH
 #define FS2_SPEECH			1
+#endif
+
 #endif
 
 // _argv[-1], 27 Dec 2004: Turns off the 50% rate-of-fire penalty
