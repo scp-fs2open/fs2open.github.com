@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-02-05 00:30:49 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2005-04-24 06:52:23 $
+ * $Author: wmcoolmon $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/02/05 00:30:49  taylor
+ * fix a few things post merge
+ *
  * Revision 2.23  2004/11/27 10:42:18  taylor
  * this should get movies working again in D3D and help OGL too
  *
@@ -121,7 +124,8 @@ bool movie_play(char *name)
 	extern int Is_standalone;
 	if(Is_standalone) return false;
  	if(Cmdline_dnoshowvid) return false;
- 	if(Cmdline_window) return false;
+	//Commented this out since we have dnoshowvid -WMC
+ 	//if(Cmdline_window) return false;
 
 	char full_name[MAX_PATH];
 	int rc = 0;
