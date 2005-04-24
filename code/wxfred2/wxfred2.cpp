@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/wxFRED2/wxFRED2.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-04-13 22:17:27 $
+ * $Revision: 1.6 $
+ * $Date: 2005-04-24 14:42:27 $
  * $Author: Goober5000 $
  *
  * New cross-platform version of FRED2
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/04/13 22:17:27  Goober5000
+ * removed spurious folder
+ * --Goober5000
+ *
  * Revision 1.4  2005/03/30 16:06:26  taylor
  * a little Linux happiness
  *
@@ -36,21 +40,29 @@
 
 #include "wx/wxprec.h"
 
+#ifdef __BORLANDC__
+    #pragma hdrstop
+#endif
+
 #ifndef WX_PRECOMP
-#include "wx/wx.h"
+	#include "wx/wx.h"
 #endif
 
 #include "wxfred2.h"
+#include <wx/xrc/xmlres.h>
 #include "fredframe.h"
-
+#include "wxfred_xrc.h"
 
 IMPLEMENT_APP(wxFRED2)
 
 bool wxFRED2::OnInit()
 {
+	wxXmlResource::Get()->InitAllHandlers();
+	InitXmlResource();
+
 	FREDFrame *frame = new FREDFrame(_T("Untitled - FRED2_OPEN 3.6.5 - FreeSpace 2 Mission Editor"), 50, 50, 800, 600);
-	frame->Show(TRUE);
 	SetTopWindow(frame);
+	frame->Show(TRUE);
 
 	return true;
 }
