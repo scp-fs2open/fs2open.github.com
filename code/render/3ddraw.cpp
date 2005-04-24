@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-04-24 02:40:40 $
- * $Author: wmcoolmon $
+ * $Revision: 2.42 $
+ * $Date: 2005-04-24 12:56:43 $
+ * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/04/24 02:40:40  wmcoolmon
+ * Lowlevel (ie vertex buffer-mapping) functions for _rect and _shade
+ *
  * Revision 2.40  2005/04/12 05:26:37  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -2464,15 +2467,11 @@ int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flag
 	vertex *vertlist[4] = { &v[0], &v[1], &v[2], &v[3] };
 	memset(v,0,sizeof(vertex)*4);
 
-//	int bw, bh;
-
 	g3_start_frame(1);
 
 	// turn off zbuffering	
 	saved_zbuffer_mode = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);	
-
-	//bm_get_section_size(gr_screen.current_bitmap, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &bw, &bh);
 
 	// stuff coords	
 	v[0].sx = (float)x;
@@ -2559,15 +2558,11 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 		memset(bitmap_2d_poly_list,0,sizeof(vertex)*6*n_bm);
 	}
 
-	int bw, bh;
-
 	g3_start_frame(1);
 
 	// turn off zbuffering	
 	saved_zbuffer_mode = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);	
-
-	bm_get_section_size(gr_screen.current_bitmap, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &bw, &bh);
 
 	for(int i = 0; i<n_bm;i++){
 		// stuff coords	
@@ -2661,15 +2656,11 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 	//	memset(bitmap_2d_poly_list,0,sizeof(vertex)*6*n_bm);
 	}
 
-	int bw, bh;
-
 	g3_start_frame(1);
 
 	// turn off zbuffering	
 	saved_zbuffer_mode = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);	
-
-	bm_get_section_size(gr_screen.current_bitmap, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &bw, &bh);
 
 	for(int i = 0; i<n_bm;i++){
 		// stuff coords	

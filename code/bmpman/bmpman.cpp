@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.53 $
- * $Date: 2005-04-22 02:32:18 $
+ * $Revision: 2.54 $
+ * $Date: 2005-04-24 12:56:42 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/04/22 02:32:18  taylor
+ * wurrps
+ *
  * Revision 2.52  2005/04/21 15:49:20  taylor
  * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
  *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
@@ -760,8 +763,6 @@ int Bm_low_mem = 0;
 // Set to <1 to make it use all it wants.
 int Bm_max_ram = 0;		//16*1024*1024;			// Only use 16 MB for textures
 
-#define MAX_BMAP_SECTION_SIZE 256
-
 #define EFF_FILENAME_CHECK { if ( be->type == BM_TYPE_EFF ) strncpy( filename, be->info.eff.filename, MAX_FILENAME_LEN ); else strncpy( filename, be->filename, MAX_FILENAME_LEN ); }
 
 /* - no longer used but keep around just in case - tyalor
@@ -1003,32 +1004,6 @@ void bm_get_frame_usage(int *ntotal, int *nnew)
 #endif
 }
 
-// given a loaded bitmap with valid info, calculate sections
-void bm_calc_sections(bitmap *be)
-{
-#ifdef BMP_SECTIONS
-	int idx;
-
-	// number of x and y sections
-	be->sections.num_x = (ubyte)(be->w / MAX_BMAP_SECTION_SIZE);
-	if((be->sections.num_x * MAX_BMAP_SECTION_SIZE) < be->w){
-		be->sections.num_x++;
-	}
-	be->sections.num_y = (ubyte)(be->h / MAX_BMAP_SECTION_SIZE);
-	if((be->sections.num_y * MAX_BMAP_SECTION_SIZE) < be->h){
-		be->sections.num_y++;
-	}
-
-	// calculate the offsets for each section
-	for(idx=0; idx<be->sections.num_x; idx++){
-		be->sections.sx[idx] = (ushort)(MAX_BMAP_SECTION_SIZE * idx);
-	}
-	for(idx=0; idx<be->sections.num_y; idx++){
-		be->sections.sy[idx] = (ushort)(MAX_BMAP_SECTION_SIZE * idx);
-	}
-#endif // BMP_SECTIONS
-}
-
 // Creates a bitmap that exists in RAM somewhere, instead
 // of coming from a disk file.  You pass in a pointer to a
 // block of 32 (or 8)-bit-per-pixel data.  Right now, the only
@@ -1090,9 +1065,6 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 
 	gr_bm_create(n);
 
-	// fill in section info
-	bm_calc_sections(&bm_bitmaps[n].bm);
-	
 	return bm_bitmaps[n].handle;
 }
 
@@ -1299,9 +1271,6 @@ int bm_load( char * real_filename )
 	bm_bitmaps[n].last_used = -1;
 
 	bm_bitmaps[n].load_count++;
-
-	// fill in section info
-	bm_calc_sections(&bm_bitmaps[n].bm);
 
 	if (img_cfp != NULL)
 		cfclose(img_cfp);
@@ -1636,9 +1605,6 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 
 		bm_bitmaps[n+i].load_count++;
 
-		// fill in section info
-		bm_calc_sections(&bm_bitmaps[n+i].bm);
-
 		if ( i == 0 )	{
 			sprintf( bm_bitmaps[n+i].filename, "%s", filename );
 		} else {
@@ -1660,7 +1626,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 }
 
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
-void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *fps, bitmap_section_info **sections )
+void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *fps )
 {
 	bitmap * bmp;
 
@@ -1676,7 +1642,6 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 		if (flags) *flags = 0;
 		if (nframes) *nframes=0;
 		if (fps) *fps=0;
-		if (sections != NULL) *sections = NULL;
 		return;
 	}
 
@@ -1685,6 +1650,7 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 	if (w) *w = bmp->w;
 	if (h) *h = bmp->h;
 	if (flags) *flags = bmp->flags;
+
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_ANI) || (bm_bitmaps[bitmapnum].type == BM_TYPE_EFF) )	{
 		if (nframes) {
 			*nframes = bm_bitmaps[bitmapnum].info.ani.num_frames;
@@ -1699,9 +1665,6 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 		if (fps) {
 			*fps= 0;
 		}
-	}
-	if(sections != NULL){
-		*sections = &bm_bitmaps[bitmapnum].bm.sections;
 	}
 }
 
@@ -3155,31 +3118,6 @@ void bm_get_filename(int bitmapnum, char *filename)
 	strcpy(filename, bm_bitmaps[n].filename);
 }
 
-// given a bitmap and a section, return the size (w, h)
-void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h)
-{
-	int bw, bh;
-	bitmap_section_info *sections;
-
-	// bogus input?
-	Assert((w != NULL) && (h != NULL));
-	if((w == NULL) || (h == NULL)){
-		return;
-	}
-
-	// get bitmap info
-	bm_get_info(bitmapnum, &bw, &bh, NULL, NULL, NULL, &sections);
-
-	// determine the width and height of this section
-	if (sections == NULL) {
-		*w = bw;
-		*h = bw;
-	} else {
-		*w = sx < (sections->num_x - 1) ? MAX_BMAP_SECTION_SIZE : bw - sections->sx[sx];
-		*h = sy < (sections->num_y - 1) ? MAX_BMAP_SECTION_SIZE : bh - sections->sy[sy];										
-	}
-}
-
 // needed only for compressed bitmaps
 int bm_is_compressed(int num)
 {
@@ -3323,9 +3261,6 @@ int bm_make_render_target( int &x_res, int &y_res, int flags )
 	bm_bitmaps[n].palette_checksum = 0;
 	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
 	bm_bitmaps[n].last_used = -1;
-
-	// fill in section info
-	bm_calc_sections(&bm_bitmaps[n].bm);
 
 	return bm_bitmaps[n].handle;
 }

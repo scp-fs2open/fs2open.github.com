@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-04-24 03:02:43 $
- * $Author: wmcoolmon $
+ * $Revision: 2.47 $
+ * $Date: 2005-04-24 12:56:42 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/04/24 03:02:43  wmcoolmon
+ * Added resizing option to gr_shade. We can probably merge gr_shade and gr_rect; they do the same thing.
+ *
  * Revision 2.45  2005/04/24 02:38:31  wmcoolmon
  * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
  *
@@ -1482,7 +1485,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 
 	if(gr_screen.mode == GR_DIRECT3D){
 
-		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL, NULL);
+		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL);
 
 		// get the section as a texture in vram					
 		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
@@ -1495,10 +1498,10 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		}
 
 		// RT draws all hall interface stuff
-		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_BITMAP_SECTION);
+		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_INTERFACE);
 	}
 	else if((gr_screen.mode == GR_OPENGL)) {
-		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL, NULL);
+		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL);
 
 		// get the section as a texture in vram					
 		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
@@ -1511,7 +1514,7 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 		}
 
 		// RT draws all hall interface stuff
-		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_BITMAP_SECTION);
+		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_INTERFACE);
 	}
 }
 
@@ -1525,7 +1528,7 @@ void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 
 		bitmap_2d_list* l = &list[i];
 
-		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL, NULL);
+		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
 		// I will tidy this up later - RT
 		//I doubt it, seeing as you've been gone for nearly half a year :)
 		if(allow_scaling || gr_screen.rendering_to_texture != -1)
@@ -1534,7 +1537,7 @@ void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 			gr_resize_screen_pos(&l->w, &l->h);
 		}
 	}
-	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_BITMAP_SECTION);
+	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_INTERFACE);
 
 	//screw bm sections, screw them all to hell, I realy doubt anyone will have any problems with this
 }
@@ -1552,7 +1555,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 
 		//if no valid hight or width values were given get some from the bitmap
 		if(l->w <= 0 || l->h <= 0)
-		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL, NULL);
+		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
 		// I will tidy this up later - RT
 		//I doubt it, seeing as you've been gone for nearly half a year :)
 
@@ -1564,7 +1567,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 		}
 
 	}
-	g3_draw_2d_poly_bitmap_rect_list(list, n_bm, TMAP_FLAG_BITMAP_SECTION);
+	g3_draw_2d_poly_bitmap_rect_list(list, n_bm, TMAP_FLAG_INTERFACE);
 
 	//screw bm sections, screw them all to hell, I realy doubt anyone will have any problems with this
 }

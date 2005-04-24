@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.28 $
- * $Date: 2005-04-05 05:53:16 $
+ * $Revision: 2.29 $
+ * $Date: 2005-04-24 12:56:42 $
  * $Author: taylor $
- * $Revision: 2.28 $
- * $Date: 2005-04-05 05:53:16 $
+ * $Revision: 2.29 $
+ * $Date: 2005-04-24 12:56:42 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/04/05 05:53:16  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.27  2005/03/10 08:00:04  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -514,7 +517,7 @@ extern int spec;
 #define BMP_TEX_DXT5						(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
 #define BMP_TEX_STATIC_RENDER_TARGET		(1<<7)				// a texture made for being rendered to infreqently
 #define BMP_TEX_DYNAMIC_RENDER_TARGET		(1<<8)				// a texture made for being rendered to freqently
-#define BMP_TEX_CUBEMAP						(1<<8)				// a texture made for cubic environment map
+#define BMP_TEX_CUBEMAP						(1<<9)				// a texture made for cubic environment map
 
 //compressed texture types
 #define BMP_TEX_COMP			( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )
@@ -525,17 +528,6 @@ extern int spec;
 // any texture type
 #define	BMP_TEX_ANY				( BMP_TEX_COMP | BMP_TEX_NONCOMP )
 
-// max res == 1024x768. max texture size == 256
-#define MAX_BMAP_SECTIONS_X				4
-#define MAX_BMAP_SECTIONS_Y				3
-
-typedef struct bitmap_section_info {
-	ushort sx[MAX_BMAP_SECTIONS_X];		// x offset of each section
-	ushort sy[MAX_BMAP_SECTIONS_Y];		// y offset of each section
-
-	ubyte num_x, num_y;						// number of x and y sections
-} bitmap_section_info;
-
 typedef struct bitmap {
 	short	w, h;		// Width and height
 	short	rowsize;	// What you need to add to go to next row
@@ -545,8 +537,6 @@ typedef struct bitmap {
 	ptr_u	data;		// Pointer to data, or maybe offset into VRAM.
 	ubyte *palette;	// If bpp==8, this is pointer to palette.   If the BMP_NO_PALETTE_MAP flag
 							// is not set, this palette just points to the screen palette. (gr_palette)
-
-	bitmap_section_info sections;
 } bitmap;
 
 //This are defined in MainWin.c
