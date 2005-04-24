@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.149 $
- * $Date: 2005-04-21 15:59:41 $
- * $Author: taylor $
+ * $Revision: 2.150 $
+ * $Date: 2005-04-24 02:10:53 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2005/04/21 15:59:41  taylor
+ * sexp to swap the skybox in mission, not tested in FRED, hopefully I didn't mess this up too much
+ *
  * Revision 2.148  2005/04/18 08:35:28  Goober5000
  * model and class changes should be all set now
  * --Goober5000
@@ -2272,6 +2275,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_CHANGE_AI_CLASS:
 					case OP_IS_AI_CLASS:
 					case OP_MISSILE_LOCKED:
+					case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 						ship_index = Sexp_nodes[Sexp_nodes[op_node].rest].rest;
 						break;
 
