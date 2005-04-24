@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2005/04/24 07:31:34  Goober5000
+ * made swarm/corkscrew/flak conflict more friendly
+ * --Goober5000
+ *
  * Revision 2.106  2005/04/15 06:23:18  wmcoolmon
  * Local codebase commit; adds armor system.
  *
@@ -2771,7 +2775,7 @@ float weapon_glow_scale_l = 1.5f;
 float weapon_glow_alpha = 0.85f;
 void weapon_render(object *obj)
 {
-	int num;
+	int num, frame = 0;
 	weapon_info *wip;
 	weapon *wp;
 	color c;
@@ -2791,23 +2795,17 @@ void weapon_render(object *obj)
 
 			if (wip->laser_bitmap >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
-				int tex;
 				if(wip->laser_bitmap_nframes > 1){
-					wp->frame = (timestamp() / (int)(wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
-				//	wp->frame = (int)(wp->frame + ((int)(flFrametime * 1000) / wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
+					frame = (timestamp() / (int)(wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
 		//			HUD_printf("frame %d", wp->frame);
-					tex = wip->laser_bitmap + wp->frame;
-				//	gr_set_bitmap(wip->laser_bitmap + wp->frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
-				}else{
-					tex = wip->laser_bitmap;
-				//	gr_set_bitmap(wip->laser_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 				}
+			//	gr_set_bitmap(wip->laser_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
-//				if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT) ) {
-				if(	add_laser(tex, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, 255, 255, 255)){
+			//	if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT) ) {
+				if(	add_laser(wip->laser_bitmap + frame, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, 255, 255, 255)){
 					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
 				}
 			}			
@@ -2831,16 +2829,15 @@ void weapon_render(object *obj)
 
 
 				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
-					wp->gframe = (timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
-				//	wp->gframe = (int)(wp->gframe + ((int)(flFrametime * 1000) / wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
-			//		gr_set_bitmap(wip->laser_glow_bitmap + wp->gframe, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
-				}else{
-			//		gr_set_bitmap(wip->laser_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
+					frame = (timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
 				}
+			//	gr_set_bitmap(wip->laser_glow_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 
-//				g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
-				add_laser(wip->laser_glow_bitmap, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, fl2i(c.red*weapon_glow_alpha), fl2i(c.green*weapon_glow_alpha), fl2i(c.blue*weapon_glow_alpha));
-			}						
+				int alpha = fl2i(weapon_glow_alpha * 255.0f);
+			//	g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+			//	add_laser(wip->laser_glow_bitmap + frame, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, fl2i(c.red*weapon_glow_alpha), fl2i(c.green*weapon_glow_alpha), fl2i(c.blue*weapon_glow_alpha));
+				add_laser(wip->laser_glow_bitmap + frame, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+			}					
 			break;
 		}
 
@@ -2917,7 +2914,7 @@ void weapon_render(object *obj)
 			Warning(LOCATION, "Unknown weapon rendering type = %i\n", wip->render_type);
 	}
 
-	batch_render();
+//	batch_render();		// why is this here? - taylor
 }
 
 void weapon_delete(object *obj)
