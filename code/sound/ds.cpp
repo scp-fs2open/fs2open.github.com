@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-04-18 03:30:05 $
+ * $Revision: 2.24 $
+ * $Date: 2005-04-24 12:45:14 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/04/18 03:30:05  taylor
+ * more accurate play position for OpenAL when AL_BYTE_LOKI is used (Jens Granseuer)
+ *
  * Revision 2.22  2005/04/13 22:31:53  Goober5000
  * fixed the compile errors (thanks Phreak)
  * --Goober5000
@@ -3445,7 +3448,7 @@ DWORD ds_get_play_position(int channel)
 
 		OpenAL_ErrorCheck( alGetBufferi(buf, AL_SIZE, &size), return 0 );
 
-		pos /= (size / sound_buffers[buf_id].nbytes);
+		pos = (ALint)(pos * ((float)sound_buffers[buf_id].nbytes / size));
 	}
 
 	return pos;
