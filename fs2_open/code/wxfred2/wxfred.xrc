@@ -1,0 +1,553 @@
+<?xml version="1.0" ?>
+<resource version="2.3.0.1">
+  <object class="wxMenuBar" name="FREDMenu">
+    <object class="wxMenu" name="mnuFile">
+      <label>File</label>
+      <object class="wxMenuItem" name="mnuFileNew">
+        <label>New\tCtrl+N</label>
+        <help>Create a new mission</help>
+      </object>
+      <object class="wxMenuItem" name="mnuFileOpen">
+        <label>Open...\tCtrl+O</label>
+        <help>Open an existing mission</help>
+      </object>
+      <object class="wxMenuItem" name="mnuFileSave">
+        <label>Save\tCtrl+S</label>
+        <help>Save the current mission</help>
+      </object>
+      <object class="wxMenuItem" name="mnuFileSaveAs">
+        <label>Save As...</label>
+        <help>Save the current mission with a new name</help>
+      </object>
+      <object class="wxMenuItem" name="mnuFileRevert">
+        <label>Revert</label>
+        <help>Revert to the saved version of the mission</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenu" name="mnuFileSaveFormat">
+        <label>Save Format</label>
+        <object class="wxMenuItem" name="mnuFileSaveFormatFs2Open">
+          <label>FS2 open</label>
+          <help>Change to the Freespace 2 Open save format</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuFileSaveFormatFs2Retail">
+          <label>FS2 retail</label>
+          <help>Change to the Freespace 2 Retail save format</help>
+          <radio>1</radio>
+        </object>
+      </object>
+      <object class="wxMenu" name="mnuFileImport">
+        <label>Import</label>
+        <object class="wxMenuItem" name="mnuFileImportFreespace1Mission">
+          <label>FS1 mission...</label>
+          <help>Import a Freespace 1 mission into Freespace 2 format</help>
+        </object>
+        <object class="wxMenuItem" name="mnuFileImportWeaponLoadouts">
+          <label>FS1 weapon loadouts...</label>
+          <help>Import Freespace 1 weapon loadouts</help>
+        </object>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuFileRunFreespace">
+        <label>Run Freespace\tAlt+R</label>
+        <help>Run Freespace</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuFileRecentFileList">
+        <label>Recent File List</label>
+        <help>Open this mission</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuFileExit">
+        <label>Exit</label>
+        <help>Exit the mission editor</help>
+      </object>
+    </object>
+    <object class="wxMenu" name="mnuEdit">
+      <label>Edit</label>
+      <object class="wxMenuItem" name="mnuEditUndo">
+        <label>Undo\tCtrl+Z</label>
+        <help>Undo the last action</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditDelete">
+        <label>Delete\tDel</label>
+        <help>Delete the selected object(s)</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditDeleteWing">
+        <label>Delete Wing\tCtrl+Del</label>
+        <help>Delete the selected wing</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuEditDisableUndo">
+        <label>Disable Undo</label>
+        <help>Disable or enable the Undo command</help>
+        <checkable>1</checkable>
+      </object>
+    </object>
+    <object class="wxMenu" name="mnuView">
+      <label>View</label>
+      <object class="wxMenuItem" name="mnuViewToolbar">
+        <label>Toolbar</label>
+        <help>Show the toolbar</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="wxMenuItem" name="mnuViewStatusBar">
+        <label>Status Bar</label>
+        <help>Show the status bar</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenu" name="mnuViewDisplayFiter">
+        <label>Display Filter</label>
+        <object class="wxMenuItem" name="mnuViewDisplayFilterShowShips">
+          <label>Show Ships</label>
+          <help>Display ships</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="wxMenuItem" name="mnuViewDisplayFilterShowPlayerStarts">
+          <label>Show Player Starts</label>
+          <help>Display player start positions</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="wxMenuItem" name="mnuViewDisplayFilterShowWaypoints">
+          <label>Show Waypoints</label>
+          <help>Display waypoints</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="mnuViewDisplayFilterShowFriendly">
+          <label>Show Friendly</label>
+          <help>Display friendly objects</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="wxMenuItem" name="mnuViewDisplayFilterShowHostile">
+          <label>Show Hostile</label>
+          <help>Display hostile objects</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuViewHideMarkedObjects">
+        <label>Hide Marked Objects</label>
+        <help>Hide the selected objects</help>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowHiddenObjects">
+        <label>Show Hidden Objects</label>
+        <help>Show all hidden objects</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuViewShowShipModels">
+        <label>Show Ship Models\tShift+Alt+M</label>
+        <help>Show actual polygon models for visible ships</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowOutlines">
+        <label>Show Outlines\tShift+Alt+O</label>
+        <help>Show outlines for visible ships</help>
+        <checkable>1</checkable>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowShipInfo">
+        <label>Show Ship Info\tShift+Alt+I</label>
+        <help>Display ship names and ship types for visible ships</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowCoordinates">
+        <label>Show Coordinates\tShift+Alt+C</label>
+        <help>Display the coordinates of objects</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowGridPositions">
+        <label>Show Grid Positions\tShift+Alt+P</label>
+        <help>Show grid positions for visible objects</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowDistances">
+        <label>Show Distances\tD</label>
+        <help>Show distances between marked objects</help>
+        <checkable>1</checkable>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowModelPaths">
+        <label>Show Model Paths</label>
+        <help>Draw paths for visible objects</help>
+        <checkable>1</checkable>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowModelDockPoints">
+        <label>Show Model Dock Points</label>
+        <help>Draw dock points for visible objects</help>
+        <checkable>1</checkable>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuViewShowGrid">
+        <label>Show Grid\tShift+Alt+G</label>
+        <help>Show grid</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowHorizon">
+        <label>Show Horizon\tShift+Alt+H</label>
+        <help>Show the horizon line</help>
+        <checkable>1</checkable>
+      </object>
+      <object class="wxMenuItem" name="mnuViewDoubleFineGridlines">
+        <label>Double Fine Gridlines</label>
+        <help>Show double fine gridlines</help>
+        <checkable>1</checkable>
+      </object>
+      <object class="wxMenuItem" name="mnuViewAntiAliasedGridlines">
+        <label>Anti-Aliased Gridlines</label>
+        <help>Show anti-aliased gridlines</help>
+        <checkable>1</checkable>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShow3DCompass">
+        <label>Show 3-D Compass\tShift+Alt+3</label>
+        <help>Display the three-dimensional compass</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="wxMenuItem" name="mnuViewShowBackground">
+        <label>Show Background\tShift+Alt+B</label>
+        <help>Display background images</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenu" name="mnuViewViewpoint">
+        <label>Viewpoint\tShift+V</label>
+        <object class="wxMenuItem" name="mnuViewViewpointCamera">
+          <label>Camera</label>
+          <help>Change viewpoint to camera</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuViewViewpointCurrentShip">
+          <label>Current Ship</label>
+          <help>Change viewpoint to current ship</help>
+          <radio>1</radio>
+        </object>
+      </object>
+      <object class="wxMenuItem" name="mnuViewSaveCameraPos">
+        <label>Save Camera Pos\tCtrl+P</label>
+        <help>Save current camera position</help>
+      </object>
+      <object class="wxMenuItem" name="mnuViewRestoreCameraPos">
+        <label>Restore Camera Pos\tCtrl+R</label>
+        <help>Restore saved camera position</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuViewLightingFromSuns">
+        <label>Lighting From Suns</label>
+        <help>Toggle lighting effects from suns</help>
+        <checkable>1</checkable>
+        <checked>1</checked>
+      </object>
+    </object>
+    <object class="wxMenu" name="mnuSpeed">
+      <label>Speed</label>
+      <object class="wxMenu" name="mnuSpeedMovement">
+        <label>Movement</label>
+        <object class="wxMenuItem" name="mnuSpeedMovementX1">
+          <label>x1\t1</label>
+          <help>Change movement speed to 1x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedMovementX2">
+          <label>x2\t2</label>
+          <help>Change movement speed to 2x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedMovementX3">
+          <label>x3\t3</label>
+          <help>Change movement speed to 3x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedMovementX5">
+          <label>x5\t4</label>
+          <help>Change movement speed to 5x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedMovementX8">
+          <label>x8\t5</label>
+          <help>Change movement speed to 8x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedMovementX10">
+          <label>x10\t6</label>
+          <help>Change movement speed to 10x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedMovementX50">
+          <label>x50\t7</label>
+          <help>Change movement speed to 50x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedMovementX100">
+          <label>x100\t8</label>
+          <help>Change movement speed to 100x normal</help>
+          <radio>1</radio>
+        </object>
+      </object>
+      <object class="wxMenu" name="mnuSpeedRotation">
+        <label>Rotation</label>
+        <object class="wxMenuItem" name="mnuSpeedRotationX1">
+          <label>x1\tShift+1</label>
+          <help>Change rotation speed to 1x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedRotationX5">
+          <label>x5\tShift+2</label>
+          <help>Change rotation speed to 5x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedRotationX12">
+          <label>x12\tShift+3</label>
+          <help>Change rotation speed to 12x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedRotationX25">
+          <label>x25\tShift+4</label>
+          <help>Change rotation speed to 25x normal</help>
+          <radio>1</radio>
+        </object>
+        <object class="wxMenuItem" name="mnuSpeedRotationX50">
+          <label>x50\tShift+5</label>
+          <help>Change rotation speed to 50x normal</help>
+          <radio>1</radio>
+        </object>
+      </object>
+    </object>
+    <object class="wxMenu" name="mnuEditors">
+      <label>Editors</label>
+      <object class="wxMenuItem" name="mnuEditorsShips">
+        <label>Ships\tShift+S</label>
+        <help>Display ship editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsWings">
+        <label>Wings\tShift+W</label>
+        <help>Display wing editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsObjects">
+        <label>Objects\tShift+O</label>
+        <help>Display object editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsWaypointPaths">
+        <label>Waypoint Paths\tShift+Y</label>
+        <help>Display waypoint path editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsMissionObjectives">
+        <label>Mission Objectives\tShift+G</label>
+        <help>Display mission objectives editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsEvents">
+        <label>Events\tShift+E</label>
+        <help>Display event editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsTeamLoadout">
+        <label>Team Loadout\tShift+P</label>
+        <help>Display team loadout editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsBackground">
+        <label>Background\tShift+I</label>
+        <help>Display background editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsReinforcements">
+        <label>Reinforcements\tShift+R</label>
+        <help>Display reinforcements editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsAsteroidField">
+        <label>Asteroid Field\tShift+A</label>
+        <help>Display asteroid field editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsMissionSpecs">
+        <label>Mission Specs\tShift+N</label>
+        <help>Display mission specs editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsBriefing">
+        <label>Briefing\tShift+B</label>
+        <help>Display briefing editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsDebriefing">
+        <label>Debriefing\tShift+D</label>
+        <help>Display debriefing editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsShieldSystem">
+        <label>Shield System</label>
+        <help>Display shield system editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsCommandBriefing">
+        <label>Command Briefing</label>
+        <help>Display command briefing editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsSetGlobalShipFlags">
+        <label>Set Global Ship Flags</label>
+        <help>Display global flags editor</help>
+      </object>
+      <object class="wxMenuItem" name="mnuEditorsVoiceActingManager">
+        <label>Voice Manager</label>
+        <help>Display voice manager editor</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuEditorsCampaign">
+        <label>Campaign\tShift+C</label>
+        <help>Display campaign editor</help>
+      </object>
+    </object>
+    <object class="wxMenu" name="mnuGroups">
+      <label>Groups</label>
+      <object class="wxMenuItem" name="mnuGroupsGroup1">
+        <label>Group 1\tCtrl+1</label>
+        <help>Display group 1</help>
+      </object>
+      <object class="wxMenuItem" name="mnuGroupsGroup2">
+        <label>Group 2\tCtrl+2</label>
+        <help>Display group 2</help>
+      </object>
+      <object class="wxMenuItem" name="mnuGroupsGroup3">
+        <label>Group 3\tCtrl+3</label>
+        <help>Display group 3</help>
+      </object>
+      <object class="wxMenuItem" name="mnuGroupsGroup4">
+        <label>Group 4\tCtrl+4</label>
+        <help>Display group 4</help>
+      </object>
+      <object class="wxMenuItem" name="mnuGroupsGroup5">
+        <label>Group 5\tCtrl+5</label>
+        <help>Display group 5</help>
+      </object>
+      <object class="wxMenuItem" name="mnuGroupsGroup6">
+        <label>Group 6\tCtrl+6</label>
+        <help>Display group 6</help>
+      </object>
+      <object class="wxMenuItem" name="mnuGroupsGroup7">
+        <label>Group 7\tCtrl+7</label>
+        <help>Display group 7</help>
+      </object>
+      <object class="wxMenuItem" name="mnuGroupsGroup8">
+        <label>Group 8\tCtrl+8</label>
+        <help>Display group 8</help>
+      </object>
+      <object class="wxMenuItem" name="mnuGroupsGroup9">
+        <label>Group 9\tCtrl+9</label>
+        <help>Display group 9</help>
+      </object>
+      <object class="wxMenu" name="mnuGroupsSetGroup">
+        <label>Set Group</label>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup1">
+          <label>Group 1</label>
+          <help>Assign marked objects to group 1</help>
+        </object>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup2">
+          <label>Group 2</label>
+          <help>Assign marked objects to group 2</help>
+        </object>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup3">
+          <label>Group 3</label>
+          <help>Assign marked objects to group 3</help>
+        </object>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup4">
+          <label>Group 4</label>
+          <help>Assign marked objects to group 4</help>
+        </object>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup5">
+          <label>Group 5</label>
+          <help>Assign marked objects to group 5</help>
+        </object>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup6">
+          <label>Group 6</label>
+          <help>Assign marked objects to group 6</help>
+        </object>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup7">
+          <label>Group 7</label>
+          <help>Assign marked objects to group 7</help>
+        </object>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup8">
+          <label>Group 8</label>
+          <help>Assign marked objects to group 8</help>
+        </object>
+        <object class="wxMenuItem" name="mnuGroupsSetGroupGroup9">
+          <label>Group 9</label>
+          <help>Assign marked objects to group 9</help>
+        </object>
+      </object>
+    </object>
+    <object class="wxMenu" name="mnuMisc">
+      <label>Misc</label>
+      <object class="wxMenuItem" name="mnuMiscLevelObject">
+        <label>Level Object\tL</label>
+        <help>Align object's (or camera's, if no object is marked) x-axis with global x-axis</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscAlignObject">
+        <label>Align Object\tCtrl+L</label>
+        <help>Align object's (or camera's, if no object is marked) y-axis with global y-axis</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscMarkWing">
+        <label>Mark Wing\tW</label>
+        <help>Mark selected object's entire wing</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscControlObject">
+        <label>Control Object\tT</label>
+        <help>Toggle movement keys controlling marked object or camera</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscNextObject">
+        <label>Next Object\tTab</label>
+        <help>Select the next object</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscPreviousObject">
+        <label>Prev Object\tCtrl+Tab</label>
+        <help>Select the previous object</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscAdjustGrid">
+        <label>Adjust Grid</label>
+        <help>Adjust orientaition and level of grid</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscNextSubsystem">
+        <label>Next Subsystem\tK</label>
+        <help>Select the next subsystem on the selected object</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscPrevSubsystem">
+        <label>Prev Subsystem\tShift+K</label>
+        <help>Select the previous subsystem on the selected object</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscCancelSubsystem">
+        <label>Cancel Subsystem\tAlt+K</label>
+        <help>Deselect any subsystems on the selected object</help>
+      </object>
+      <object class="wxMenuItem" name="mnuMiscMissionStatistics">
+        <label>Mission Statistics\tCtrl+Shift+D</label>
+        <help>Display mission statistics</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuMiscErrorChecker">
+        <label>Error Checker\tShift+H</label>
+        <help>Check mission for errors</help>
+        <checkable>1</checkable>
+      </object>
+    </object>
+    <object class="wxMenu" name="mnuHelp">
+      <label>Help</label>
+      <object class="wxMenuItem" name="mnuHelpHelpTopics">
+        <label>Help Topics\tF1</label>
+        <help>List Help topics</help>
+      </object>
+      <object class="separator"/>
+      <object class="wxMenuItem" name="mnuHelpAboutFred2">
+        <label>About FRED2</label>
+        <help>Display program information and copyright</help>
+      </object>
+      <object class="wxMenuItem" name="mnuHelpShowSexpHelp">
+        <label>Show SEXP Help</label>
+        <help>Toggle display of SEXP help</help>
+      </object>
+    </object>
+  </object>
+</resource>
