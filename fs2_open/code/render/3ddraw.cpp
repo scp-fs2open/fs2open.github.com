@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-04-12 05:26:37 $
- * $Author: taylor $
+ * $Revision: 2.41 $
+ * $Date: 2005-04-24 02:40:40 $
+ * $Author: wmcoolmon $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/04/12 05:26:37  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.39  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -2374,6 +2378,83 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	return 1;
 }
 
+void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
+{
+	int saved_zbuf;
+	vertex v[4];
+	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
+
+	memset(v,0,sizeof(vertex)*4);
+	saved_zbuf = gr_zbuffer_get();
+	
+	// start the frame, no zbuffering, no culling
+	if (!Fred_running)
+		g3_start_frame(1);
+
+	gr_zbuffer_set(GR_ZBUFF_NONE);		
+	gr_set_cull(0);		
+
+	// stuff coords		
+	v[0].sx = i2fl(x);
+	v[0].sy = i2fl(y);
+	v[0].sw = 0.0f;
+	v[0].u = 0.0f;
+	v[0].v = 0.0f;
+	v[0].flags = PF_PROJECTED;
+	v[0].codes = 0;
+	v[0].r = (ubyte)r;
+	v[0].g = (ubyte)g;
+	v[0].b = (ubyte)b;
+	v[0].a = (ubyte)a;
+
+	v[1].sx = i2fl(x + w);
+	v[1].sy = i2fl(y);	
+	v[1].sw = 0.0f;
+	v[1].u = 0.0f;
+	v[1].v = 0.0f;
+	v[1].flags = PF_PROJECTED;
+	v[1].codes = 0;
+	v[1].r = (ubyte)r;
+	v[1].g = (ubyte)g;
+	v[1].b = (ubyte)b;
+	v[1].a = (ubyte)a;
+
+	v[2].sx = i2fl(x + w);
+	v[2].sy = i2fl(y + h);
+	v[2].sw = 0.0f;
+	v[2].u = 0.0f;
+	v[2].v = 0.0f;
+	v[2].flags = PF_PROJECTED;
+	v[2].codes = 0;
+	v[2].r = (ubyte)r;
+	v[2].g = (ubyte)g;
+	v[2].b = (ubyte)b;
+	v[2].a = (ubyte)a;
+
+	v[3].sx = i2fl(x);
+	v[3].sy = i2fl(y + h);
+	v[3].sw = 0.0f;
+	v[3].u = 0.0f;
+	v[3].v = 0.0f;
+	v[3].flags = PF_PROJECTED;
+	v[3].codes = 0;				
+	v[3].r = (ubyte)r;
+	v[3].g = (ubyte)g;
+	v[3].b = (ubyte)b;
+	v[3].a = (ubyte)a;
+
+	// draw the polys
+	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA, 0.1f);		
+
+	if (!Fred_running)
+		g3_end_frame();
+
+
+	// restore zbuffer and culling
+	gr_zbuffer_set(saved_zbuf);
+	gr_set_cull(1);
+}
+
 // draw a 2d bitmap on a poly
 int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flags)
 {
@@ -2383,7 +2464,7 @@ int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flag
 	vertex *vertlist[4] = { &v[0], &v[1], &v[2], &v[3] };
 	memset(v,0,sizeof(vertex)*4);
 
-	int bw, bh;
+//	int bw, bh;
 
 	g3_start_frame(1);
 
@@ -2391,7 +2472,7 @@ int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flag
 	saved_zbuffer_mode = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);	
 
-	bm_get_section_size(gr_screen.current_bitmap, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &bw, &bh);
+	//bm_get_section_size(gr_screen.current_bitmap, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &bw, &bh);
 
 	// stuff coords	
 	v[0].sx = (float)x;

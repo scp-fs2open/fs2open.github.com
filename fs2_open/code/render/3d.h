@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.14 $
- * $Date: 2005-04-05 05:53:23 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-04-24 02:40:40 $
+ * $Author: wmcoolmon $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.13  2005/03/20 00:11:27  phreak
  * high-level implementation for gr_draw_htl_line and gr_draw_htl_sphere
  *
@@ -362,6 +365,9 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float radius, uint tmap_flag
 
 // draw a perspective bitmap based on angles and radius
 int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags);
+
+//Draws a 2D rectangle
+void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a);
 
 // draw a 2d bitmap on a poly
 int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flags = 0);
