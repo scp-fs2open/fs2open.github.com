@@ -60,7 +60,7 @@ InputPath=.\Release\fs2_open_r.exe
 SOURCE="$(InputPath)"
 
 "$(FS2PATH)/fs2_open_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) $(FS2PATH)/fs2_open_r.exe
+	copy $(InputPath) "$(FS2PATH)/fs2_open_r.exe"
 
 # End Custom Build
 
@@ -95,7 +95,7 @@ InputPath=.\Debug\fs2_open_d.exe
 SOURCE="$(InputPath)"
 
 "$(FS2PATH)/fs2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) $(FS2PATH)/fs2_open_d.exe
+	copy $(InputPath) "$(FS2PATH)/fs2_open_d.exe"
 
 # End Custom Build
 
