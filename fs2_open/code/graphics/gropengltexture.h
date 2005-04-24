@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.8 $
- * $Date: 2005-04-23 01:17:09 $
- * $Author: wmcoolmon $
+ * $Revision: 1.9 $
+ * $Date: 2005-04-24 12:56:43 $
+ * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/04/23 01:17:09  wmcoolmon
+ * Removed GL_SECTIONS
+ *
  * Revision 1.7  2005/01/21 08:54:53  taylor
  * slightly better memory management
  *
@@ -77,9 +80,6 @@ typedef struct tcache_slot_opengl {
 	int	time_created;
 	ushort	w,h;
 	ubyte bpp;
-
-	// sections
-	tcache_slot_opengl	*parent;
 } tcache_slot_opengl;
 
 extern int GL_texture_sections;
@@ -113,7 +113,6 @@ void opengl_tcache_frame();
 void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
 int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_opengl *t, int reload, int fail_on_full);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot, int fail_on_full);
-int opengl_create_texture_sectioned(int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot, int sx, int sy, int fail_on_full);
 int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
 void gr_opengl_set_additive_tex_env();
 void gr_opengl_set_modulate_tex_env();

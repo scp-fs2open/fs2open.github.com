@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.8 $
- * $Date: 2005-02-23 05:11:13 $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-24 12:56:42 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/02/23 05:11:13  taylor
+ * more consolidation of various graphics variables
+ * some header cleaning
+ * only one tmapper_internal for OGL, don't use more than two tex/pass now
+ * seperate out 2d matrix mode to allow -2d_poof in OGL and maybe fix missing
+ *    interface when set 3d matrix stuff doesn't have corresponding end
+ * add dump_frame stuff for OGL, mostly useless but allows trailer recording
+ *
  * Revision 2.7  2005/02/15 00:06:27  taylor
  * clean up some model related globals
  * code to disable individual thruster glows
@@ -245,10 +253,10 @@ extern int Gr_gamma_lookup[256];
 
 #define TCACHE_TYPE_AABITMAP				0		// HUD bitmap.  All Alpha.
 #define TCACHE_TYPE_NORMAL					1		// Normal bitmap. Alpha = 0.
-#define TCACHE_TYPE_XPARENT				2		// Bitmap with 0,255,0 = transparent.  Alpha=0 if transparent, 1 if not.
+#define TCACHE_TYPE_XPARENT					2		// Bitmap with 0,255,0 = transparent.  Alpha=0 if transparent, 1 if not.
 #define TCACHE_TYPE_NONDARKENING			3		// Bitmap with 255,255,255 = non-darkening.  Alpha=1 if non-darkening, 0 if not.
-#define TCACHE_TYPE_BITMAP_SECTION		4		// section of a bitmap
-#define TCACHE_TYPE_COMPRESSED			(1<<31)
+#define TCACHE_TYPE_INTERFACE				4		// for graphics that are using in the interface (for special filtering or sizing)
+#define TCACHE_TYPE_COMPRESSED				5		// Compressed bitmap type (DXT1, DXT3, DXT5)
 
 extern int Ambient_r_default;
 extern int Ambient_g_default;

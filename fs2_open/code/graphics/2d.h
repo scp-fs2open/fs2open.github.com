@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.57 $
- * $Date: 2005-04-24 03:02:43 $
- * $Author: wmcoolmon $
+ * $Revision: 2.58 $
+ * $Date: 2005-04-24 12:56:42 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/04/24 03:02:43  wmcoolmon
+ * Added resizing option to gr_shade. We can probably merge gr_shade and gr_rect; they do the same thing.
+ *
  * Revision 2.56  2005/04/24 02:38:31  wmcoolmon
  * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
  *
@@ -1054,7 +1057,7 @@ extern int Gr_cpu;
 extern int Gr_mmx;
 
 // handy macro
-#define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(0);
+#define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(0);
 
 //Window's interface to set up graphics:
 //--------------------------------------

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-04-05 05:53:23 $
+ * $Revision: 1.11 $
+ * $Date: 2005-04-24 12:56:43 $
  * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.9  2005/03/25 06:57:37  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -665,7 +668,7 @@ void radar_orb_setup_view()
 	g3_end_frame();
 
 	int w,h;
-	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL, NULL);
+	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
 	
 	HUD_set_clip(Current_radar_global->Radar_coords[gr_screen.res][0], Current_radar_global->Radar_coords[gr_screen.res][1],w, h);
 	g3_start_frame(1);

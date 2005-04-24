@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.13 $
- * $Date: 2005-03-10 08:00:05 $
+ * $Revision: 2.14 $
+ * $Date: 2005-04-24 12:56:43 $
  * $Author: taylor $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/03/10 08:00:05  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.12  2005/03/09 03:23:31  bobboau
  * added a new interface render funtion
  *
@@ -184,11 +193,11 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 #define TMAP_FLAG_ALPHA				(1<<8)	// Has an alpha component
 #define TMAP_FLAG_NONDARKENING	(1<<9)	// RGB=255,255,255 doesn't darken
 
-// flags for full nebula effect
-#define TMAP_FLAG_PIXEL_FOG		(1<<10)	// fog the polygon based upon the average pixel colors of the backbuffer behind it
+// Interface specific stuff (for separate filtering, sizing, etc.), replaces old TMAP_FLAG_BITMAP_SECTION 
+#define TMAP_FLAG_INTERFACE		(1<<10)
 
-// bitmap section
-#define TMAP_FLAG_BITMAP_SECTION	(1<<11)
+// flags for full nebula effect
+#define TMAP_FLAG_PIXEL_FOG		(1<<11)	// fog the polygon based upon the average pixel colors of the backbuffer behind it
 
 // RT Flags added to determine whats being drawn for HT&L
 #define TMAP_HTL_3D_LIT	    (1<<12)	  

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.8 $
- * $Date: 2005-03-24 23:42:21 $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-24 12:56:42 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/24 23:42:21  taylor
+ * s/gr_ogl_/gr_opengl_/g
+ * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
+ * make gr_opengl_draw_htl_sphere() just use GLU so we don't need yet another friggin API
+ *
  * Revision 2.7  2005/03/20 00:09:07  phreak
  * Added gr_draw_htl_line and gr_draw_htl sphere
  * There still needs to be D3D versions implemented, but OGL is done.
@@ -102,6 +107,8 @@
 #include "graphics/grinternal.h"
 
 const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
+
+#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(0)
 
 
 void gr_opengl_init(int reinit=0);

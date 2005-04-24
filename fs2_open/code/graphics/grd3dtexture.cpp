@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-03-10 08:00:05 $
+ * $Revision: 2.48 $
+ * $Date: 2005-04-24 12:56:42 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/03/10 08:00:05  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.46  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -729,7 +738,7 @@ void d3d_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h
 void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *data, int src_w, int src_h, int *tex_w, int *tex_h, float *u_scale, float *v_scale, int reload)
 {
 	// Dont prepare
-	bool use_mipmapping = (bitmap_type != TCACHE_TYPE_BITMAP_SECTION);
+	bool use_mipmapping = (bitmap_type != TCACHE_TYPE_INTERFACE);
 
 	if(Cmdline_d3dmipmap == 0) {
 		use_mipmapping = 0;
@@ -758,7 +767,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 	// get final texture size
 	d3d_tcache_get_adjusted_texture_size(*tex_w, *tex_h, tex_w, tex_h);
 
-	if ( bitmap_type == TCACHE_TYPE_AABITMAP || bitmap_type == TCACHE_TYPE_BITMAP_SECTION) 
+	if ( (bitmap_type == TCACHE_TYPE_AABITMAP) || (bitmap_type == TCACHE_TYPE_INTERFACE) ) 
 	{
 		*u_scale = (float)src_w / (float)*tex_w;
 		*v_scale = (float)src_h / (float)*tex_h;
@@ -856,8 +865,8 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 					}
 				}
 			break;
-		
-		case TCACHE_TYPE_BITMAP_SECTION:  
+
+		case TCACHE_TYPE_INTERFACE:  
 			for (j = 0; j < src_h; j++) {
 				// the proper line in the temp ram
   				lpSP = dest_data_start + (pitch * j);
@@ -869,7 +878,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 				}			
 			}
 			break;
-		
+
 		// Stretches bitmaps to 2 power of n format
 		default: {	// normal:		
 				fix u, utmp, v, du, dv;
@@ -911,7 +920,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 
 			case TCACHE_TYPE_AABITMAP: Assert(0); break; 
 
-			case TCACHE_TYPE_BITMAP_SECTION: 
+			case TCACHE_TYPE_INTERFACE: 
 			{
 				for (j = 0; j < src_h; j++) {
 					// the proper line in the temp ram
@@ -1047,8 +1056,8 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 		Int3();
 		flags |= BMP_TEX_NONDARK;
 		break;
-	case TCACHE_TYPE_BITMAP_SECTION:
-		flags = BMP_TEX_XPARENT;   
+	case TCACHE_TYPE_INTERFACE:
+		flags |= BMP_TEX_XPARENT;   
 		break;
 	}
 	
@@ -1062,7 +1071,7 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 	int max_w = bmp->w;
 	int max_h = bmp->h; 
 		
-	if ( bitmap_type != TCACHE_TYPE_AABITMAP && bitmap_type != TCACHE_TYPE_BITMAP_SECTION)	{
+	if ( (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE) && (bitmap_type != TCACHE_TYPE_COMPRESSED) )	{
 		// Detail.debris_culling goes from 0 to 4.
 		max_w /= 16 >> Detail.hardware_textures;
 		max_h /= 16 >> Detail.hardware_textures;

@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-02 21:18:19 $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-24 12:56:43 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/02 21:18:19  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.6  2005/02/04 20:06:05  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -600,7 +605,7 @@ void multi_pinfo_blit_pilot_image()
 
 		// get width and heigh
 		int bm_w, bm_h;
-		bm_get_info(Mp_pilot.bitmap, &bm_w, &bm_h, NULL, NULL, NULL, NULL);
+		bm_get_info(Mp_pilot.bitmap, &bm_w, &bm_h, NULL, NULL, NULL);
 
 		gr_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - bm_w)/2), 
 					 Multi_pinfo_pilot_coords[gr_screen.res][1] + ((Multi_pinfo_pilot_coords[gr_screen.res][3] - bm_h)/2));
@@ -647,7 +652,7 @@ void multi_pinfo_blit_squadron_logo()
 
 		// get width and heigh
 		int bm_w, bm_h;
-		bm_get_info(Mp_squad.bitmap, &bm_w, &bm_h, NULL, NULL, NULL, NULL);
+		bm_get_info(Mp_squad.bitmap, &bm_w, &bm_h, NULL, NULL, NULL);
 
 		gr_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - bm_w)/2), 
 					 Multi_pinfo_squad_coords[gr_screen.res][1] + ((Multi_pinfo_squad_coords[gr_screen.res][3] - bm_h)/2));

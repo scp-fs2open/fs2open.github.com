@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.70 $
- * $Date: 2005-04-24 02:38:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.71 $
+ * $Date: 2005-04-24 12:56:42 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2005/04/24 02:38:31  wmcoolmon
+ * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
+ *
  * Revision 2.69  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1292,7 +1295,7 @@ void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint fla
 		alpha = 255;
 	}
 
-	Assert(!(flags & TMAP_FLAG_BITMAP_SECTION));
+	Assert(!(flags & TMAP_FLAG_INTERFACE));
 
 	texture_source = TEXTURE_SOURCE_NONE;
  
@@ -1369,8 +1372,8 @@ void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint fla
 					src_v->tu = va->u*u_scale;
 					src_v->tv = va->v*v_scale;
 				}
-				// sectioned
-				else if(flags & TMAP_FLAG_BITMAP_SECTION){
+				// interface graphics
+				else if(flags & TMAP_FLAG_INTERFACE){
 					int sw, sh;
 					bm_get_info(gr_screen.current_bitmap, &sw, &sh, NULL, NULL, NULL);
 
@@ -1378,8 +1381,7 @@ void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint fla
 				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
 					src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
 					src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
-				}										   
-
+				}	
 				// all else.
 				else {				
 					src_v->tu = flCAP(va->u, minu, maxu);
@@ -1511,7 +1513,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		alpha = 255;
 	}
 
-	Assert(!(flags & TMAP_FLAG_BITMAP_SECTION));
+	Assert(!(flags & TMAP_FLAG_INTERFACE));
 
 	texture_source = TEXTURE_SOURCE_NONE;
  
@@ -1589,17 +1591,15 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 					src_v->tu = va->u*u_scale;
 					src_v->tv = va->v*v_scale;
 				}
-				// sectioned
-				else if(flags & TMAP_FLAG_BITMAP_SECTION){
+				// interface graphics
+				else if(flags & TMAP_FLAG_INTERFACE){
 					int sw, sh;
 					bm_get_info(gr_screen.current_bitmap, &sw, &sh, NULL, NULL, NULL);
-
 
 				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
 					src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
 					src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
-				}										   
-
+				}	
 				// all else.
 				else {				
 					src_v->tu = flCAP(va->u, minu, maxu);
@@ -1711,8 +1711,8 @@ void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_
 		alpha = 255;
 	}
 
-	if(flags & TMAP_FLAG_BITMAP_SECTION){
-		tmap_type = TCACHE_TYPE_BITMAP_SECTION;
+	if(flags & TMAP_FLAG_INTERFACE){
+		tmap_type = TCACHE_TYPE_INTERFACE;
 	}
 
 	texture_source = TEXTURE_SOURCE_NONE;
@@ -1724,8 +1724,8 @@ void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_
 			return;
 		}
 
-		// use nonfiltered textures for bitmap sections
-		if(flags & TMAP_FLAG_BITMAP_SECTION) {
+		// use nonfiltered textures for interface graphics
+		if(flags & TMAP_FLAG_INTERFACE) {
 			texture_source = TEXTURE_SOURCE_NO_FILTERING;
 		} else {
 			texture_source = TEXTURE_SOURCE_DECAL;
@@ -1814,11 +1814,10 @@ void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_
 				  	src_v->tu = va->u*u_scale;
 				  	src_v->tv = va->v*v_scale;
 				}
-				// sectioned
-				else if(flags & TMAP_FLAG_BITMAP_SECTION){
+				// interface graphics
+				else if(flags & TMAP_FLAG_INTERFACE){
 					int sw, sh;
-					bm_get_section_size(gr_screen.current_bitmap, 
-						gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &sw, &sh);
+					bm_get_info(gr_screen.current_bitmap, &sw, &sh, NULL, NULL, NULL);
 
 				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
 				 	src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
@@ -1966,8 +1965,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		alpha = 255;
 	}
 
-	if(flags & TMAP_FLAG_BITMAP_SECTION){
-		tmap_type = TCACHE_TYPE_BITMAP_SECTION;
+	if(flags & TMAP_FLAG_INTERFACE){
+		tmap_type = TCACHE_TYPE_INTERFACE;
 	}
 
 	texture_source = TEXTURE_SOURCE_NONE;
@@ -1979,8 +1978,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 			return;
 		}
 
-		// use nonfiltered textures for bitmap sections
-		if(flags & TMAP_FLAG_BITMAP_SECTION) {
+		// use nonfiltered textures for interface graphics
+		if(flags & TMAP_FLAG_INTERFACE) {
 			texture_source = TEXTURE_SOURCE_NO_FILTERING;
 		} else {
 			texture_source = TEXTURE_SOURCE_DECAL;
@@ -2087,11 +2086,10 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 				  	src_v->tu = va->u*u_scale;
 				  	src_v->tv = va->v*v_scale;
 				}
-				// sectioned
-				else if(flags & TMAP_FLAG_BITMAP_SECTION){
+				// interface graphics
+				else if(flags & TMAP_FLAG_INTERFACE){
 					int sw, sh;
-					bm_get_section_size(gr_screen.current_bitmap, 
-						gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, &sw, &sh);
+					bm_get_info(gr_screen.current_bitmap, &sw, &sh, NULL, NULL, NULL);
 
 				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
 				 	src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;

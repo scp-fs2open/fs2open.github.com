@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-04-15 11:42:27 $
+ * $Revision: 1.15 $
+ * $Date: 2005-04-24 12:56:42 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/04/15 11:42:27  taylor
+ * fix ambient light
+ *
  * Revision 1.13  2005/04/12 02:04:56  phreak
  * gr_set_ambient_light() function for the ambient light sliders in FRED
  *
@@ -300,13 +303,6 @@ void gr_opengl_reset_lighting()
 	GL_center_alpha = 0;
 }
 
-static float clamp(float value, float min, float max)
-{
-	if (value < min) return min;
-	if (value > max) return max;
-	return value;
-}
-
 void opengl_calculate_ambient_factor()
 {
 	float amb_user = 0.0f;
@@ -314,9 +310,14 @@ void opengl_calculate_ambient_factor()
 	amb_user = (float)((Cmdline_ambient_factor * 2) - 255) / 255.0f;
 
 	// set the ambient light
-	GL_light_ambient[0] = clamp(GL_light_ambient[0] + amb_user, 0.02f, 1.0f);
-	GL_light_ambient[1] = clamp(GL_light_ambient[1] + amb_user, 0.02f, 1.0f);
-	GL_light_ambient[2] = clamp(GL_light_ambient[2] + amb_user, 0.02f, 1.0f);
+	GL_light_ambient[0] += amb_user;
+	GL_light_ambient[1] += amb_user;
+	GL_light_ambient[2] += amb_user;
+	
+	CLAMP( GL_light_ambient[0], 0.02f, 1.0f );
+	CLAMP( GL_light_ambient[1], 0.02f, 1.0f );
+	CLAMP( GL_light_ambient[2], 0.02f, 1.0f );
+
 	GL_light_ambient[3] = 1.0f;
 }
 

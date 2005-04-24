@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.119 $
- * $Date: 2005-04-24 02:38:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.120 $
+ * $Date: 2005-04-24 12:56:42 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2005/04/24 02:38:31  wmcoolmon
+ * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
+ *
  * Revision 2.118  2005/04/15 11:41:27  taylor
  * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
  *
@@ -1442,28 +1445,15 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 	u1 = u_scale*i2fl(sx+w)/i2fl(bw);
 	v1 = v_scale*i2fl(sy+h)/i2fl(bh);
 
-	if(gr_screen.custom_size == -1)
+	x1 = i2fl(x+gr_screen.offset_x);
+	y1 = i2fl(y+gr_screen.offset_y);
+	x2 = i2fl(x+w+gr_screen.offset_x);
+	y2 = i2fl(y+h+gr_screen.offset_y);
+
+	if( (gr_screen.custom_size != -1) && (resize || (gr_screen.rendering_to_texture != -1)) )
 	{
-		x1 = i2fl(x+gr_screen.offset_x);
-		y1 = i2fl(y+gr_screen.offset_y);
-		x2 = i2fl(x+w+gr_screen.offset_x);
-		y2 = i2fl(y+h+gr_screen.offset_y);
-	} else {
-		int nx = x+gr_screen.offset_x;
-		int ny = y+gr_screen.offset_y;
-		int nw = x+w+gr_screen.offset_x;
-		int nh = y+h+gr_screen.offset_y;
-
-		if(resize || gr_screen.rendering_to_texture != -1)
-		{
-			gr_resize_screen_pos(&nx, &ny);
-			gr_resize_screen_pos(&nw, &nh);
-		}
-
-		x1 = i2fl(nx);
-		y1 = i2fl(ny);
-		x2 = i2fl(nw);
-		y2 = i2fl(nh);
+		gr_resize_screen_posf(&x1, &y1);
+		gr_resize_screen_posf(&x2, &y2);
 	}
 
 	if ( gr_screen.current_color.is_alphacolor )	{
@@ -2221,17 +2211,15 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 		alpha = 255;
 	}
 
-	if(flags & TMAP_FLAG_BITMAP_SECTION){
-		tmap_type = TCACHE_TYPE_BITMAP_SECTION;
+	if(flags & TMAP_FLAG_INTERFACE){
+		tmap_type = TCACHE_TYPE_INTERFACE;
 	}
-	
+
 	texture_source = TEXTURE_SOURCE_NONE;
 	
 	if ( flags & TMAP_FLAG_TEXTURED )       {
-		texture_source=TEXTURE_SOURCE_DECAL;
-			
-		// use nonfiltered textures for bitmap sections
-		if(flags & TMAP_FLAG_BITMAP_SECTION){
+		// use nonfiltered textures for interface graphics
+		if(flags & TMAP_FLAG_INTERFACE){
 			texture_source = TEXTURE_SOURCE_NO_FILTERING;
 		} else {
 			texture_source = TEXTURE_SOURCE_DECAL;
@@ -2934,7 +2922,6 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 
 
 #define MAX_MOUSE_SAVE_SIZE (32*32)
-#define CLAMP(x,r1,r2) do { if ( (x) < (r1) ) (x) = (r1); else if ((x) > (r2)) (x) = (r2); } while(0)
 
 void gr_opengl_save_mouse_area(int x, int y, int w, int h)
 {

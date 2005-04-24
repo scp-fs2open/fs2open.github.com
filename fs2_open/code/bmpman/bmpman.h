@@ -10,13 +10,22 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.21 $
- * $Date: 2005-04-21 15:49:20 $
+ * $Revision: 2.22 $
+ * $Date: 2005-04-24 12:56:42 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/04/21 15:49:20  taylor
+ * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
+ *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
+ *  - a little "stupid" fix for dds bitmap reading
+ *  - fix it so that memory is released properly on bitmap read errors
+ *  - some cleanup to model texture loading
+ *  - allow model textures to get released rather than just unloaded, saves bitmap slots
+ *  - bump MAX_BITMAPS to 4750, should be able to decrease after public testing of new code
+ *
  * Revision 2.20  2005/03/07 13:10:19  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -420,7 +429,7 @@ extern uint bm_get_signature( int bitmapnum);
 extern void bm_unlock( int bitmapnum );
 
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
-extern void bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL, bitmap_section_info **sections = NULL );
+extern void bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL );
 
 // get filename
 extern void bm_get_filename(int bitmapnum, char *filename);	 
@@ -539,13 +548,6 @@ void bm_set_components_argb_d3d_32_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *
 
 // get the rgba components of a pixel, any of the parameters can be NULL
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
-
-//============================================================================
-// section info stuff
-//============================================================================
-
-// given a bitmap and a section, return the size (w, h)
-void bm_get_section_size(int bitmapnum, int sx, int sy, int *w, int *h);
 
 extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
 extern int SPECMAP;	//this holds a reference to a map that is for specular mapping -Bobboau

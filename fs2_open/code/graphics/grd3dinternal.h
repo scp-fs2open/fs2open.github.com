@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.44 $
- * $Date: 2005-04-24 02:38:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.45 $
+ * $Date: 2005-04-24 12:56:42 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/04/24 02:38:31  wmcoolmon
+ * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
+ *
  * Revision 2.43  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -455,10 +458,6 @@ typedef struct tcache_slot_d3d {
 	char						used_this_frame;
 	int							time_created;
 	ushort						w, h;
-
-	// sections
-	tcache_slot_d3d			*data_sections[MAX_BMAP_SECTIONS_X][MAX_BMAP_SECTIONS_Y];
-	tcache_slot_d3d			*parent;
 } tcache_slot_d3d;
 
 // This vertex type tells D3D that it has already been transformed an lit

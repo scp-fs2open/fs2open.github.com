@@ -125,7 +125,7 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int bitmapnum, int size, int typ
 
 	*uscale = *vscale = 1.0;
 
-	if(flags == TCACHE_TYPE_BITMAP_SECTION) {
+	if(flags == TCACHE_TYPE_INTERFACE) {
 		use_mipmapping = 0;
 	  	filter = D3DX_FILTER_NONE; 
 		*uscale = ((float) source_desc.Width)  / ((float) d3d_get_valid_texture_size(source_desc.Width, true));
