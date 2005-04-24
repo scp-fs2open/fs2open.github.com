@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-04-23 01:17:09 $
+ * $Revision: 2.45 $
+ * $Date: 2005-04-24 02:38:31 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/04/23 01:17:09  wmcoolmon
+ * Removed GL_SECTIONS
+ *
  * Revision 2.43  2005/04/20 08:32:01  wmcoolmon
  * Nonstandard res fix.
  *
@@ -1587,7 +1590,7 @@ void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
 // Moreover, it is _really_ intended for use with 45 degree angles. 
-void gr_pline_special(vec3d **pts, int num_pts, int thickness)
+void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 {				
 	vec3d s1, s2, e1, e2, dir;
 	vec3d last_e1, last_e2;
@@ -1619,6 +1622,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness)
 	// draw each section
 	last_e1 = vmd_zero_vector;
 	last_e2 = vmd_zero_vector;
+	int j;
 	for(idx=0; idx<num_pts-1; idx++){		
 		// get the start and endpoints		
 		s1 = *pts[idx];														// start 1 (on the line)
@@ -1672,6 +1676,15 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness)
 		v[3].g = gr_screen.current_color.green;
 		v[3].b = gr_screen.current_color.blue;		
 
+		//We could really do this better...but oh well. _WMC
+		if(resize)
+		{
+			for(j=0;j<4;j++)
+			{
+				gr_resize_screen_posf(&v[j].sx,&v[j].sy);
+			}
+		}
+
 		// draw the polys
 		g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);		
 
@@ -1711,6 +1724,15 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness)
 			v[2].r = gr_screen.current_color.red;
 			v[2].g = gr_screen.current_color.green;
 			v[2].b = gr_screen.current_color.blue;
+
+			//Inefficiency or flexibility? you be the judge -WMC
+			if(resize)
+			{
+				for(j=0;j<3;j++)
+				{
+					gr_resize_screen_posf(&v[j].sx,&v[j].sy);
+				}
+			}
 
 			g3_draw_poly_constant_sw(3, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);		
 		}
@@ -1824,4 +1846,52 @@ poly_list& poly_list::operator = (poly_list &other_list){
 	return *this;
 }
 
+void gr_rect(int x, int y, int w, int h, bool resize)
+{
+	if(gr_screen.mode == GR_STUB)
+		return;
 
+	if(resize)
+	{
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
+	}
+
+	g3_draw_2d_rect(x,y,w,h,
+		gr_screen.current_color.red,
+		gr_screen.current_color.green,
+		gr_screen.current_color.blue,
+		gr_screen.current_color.alpha);
+}
+
+void gr_shade(int x, int y, int w, int h)
+{
+	int r,g,b,a;
+
+	//WMC - this is the original shade code.
+	//Lots of silly unneccessary calcs.
+	/*
+	float shade1 = 1.0f;
+	float shade2 = 6.0f;
+
+	r = fl2i(gr_screen.current_shader.r*255.0f*shade1);
+	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
+	g = fl2i(gr_screen.current_shader.g*255.0f*shade1);
+	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
+	b = fl2i(gr_screen.current_shader.b*255.0f*shade1);
+	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
+	a = fl2i(gr_screen.current_shader.c*255.0f*shade2);
+	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
+	*/
+
+	r = fl2i(gr_screen.current_shader.r);
+	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
+	g = fl2i(gr_screen.current_shader.g);
+	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
+	b = fl2i(gr_screen.current_shader.b);
+	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
+	a = fl2i(gr_screen.current_shader.c);
+	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
+
+	g3_draw_2d_rect(x,y,w,h,r,g,b,a);
+}

@@ -785,8 +785,8 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_aabitmap = gr_d3d_aabitmap;
 	gr_screen.gf_aabitmap_ex = gr_d3d_aabitmap_ex;
 
-	gr_screen.gf_rect = gr_d3d_rect;
-	gr_screen.gf_shade = gr_d3d_shade;
+//	gr_screen.gf_rect = gr_d3d_rect;
+//	gr_screen.gf_shade = gr_d3d_shade;
 	gr_screen.gf_string = gr_d3d_string;
 	gr_screen.gf_circle = gr_d3d_circle;
 	gr_screen.gf_curve = gr_d3d_curve;

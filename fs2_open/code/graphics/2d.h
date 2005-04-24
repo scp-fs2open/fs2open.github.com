@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.55 $
- * $Date: 2005-04-12 02:04:56 $
- * $Author: phreak $
+ * $Revision: 2.56 $
+ * $Date: 2005-04-24 02:38:31 $
+ * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/04/12 02:04:56  phreak
+ * gr_set_ambient_light() function for the ambient light sliders in FRED
+ *
  * Revision 2.54  2005/04/05 05:53:16  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -864,8 +867,8 @@ typedef struct screen {
 	void (*gf_aabitmap)(int x, int y, bool resize);
 	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize);
 
-	void (*gf_rect)(int x, int y, int w, int h,bool resize);
-	void (*gf_shade)(int x, int y, int w, int h);
+//	void (*gf_rect)(int x, int y, int w, int h,bool resize);
+//	void (*gf_shade)(int x, int y, int w, int h);
 	void (*gf_string)(int x, int y, char * text,bool resize);
 
 	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
@@ -1171,13 +1174,11 @@ __inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool re
 {
 	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize);
 }
-//#define gr_rect				GR_CALL(gr_screen.gf_rect)
-__inline void gr_rect(int x, int y, int w, int h, bool resize = false)
-{
-	//As of yet, resize does nothing
-	(*gr_screen.gf_rect)(x,y,w,h,resize);
-}
-#define gr_shade				GR_CALL(gr_screen.gf_shade)
+
+void gr_rect(int x, int y, int w, int h, bool resize = false);
+void gr_shade(int x, int y, int w, int h);
+
+//#define gr_shade				GR_CALL(gr_screen.gf_shade)
 //#define gr_string				GR_CALL(gr_screen.gf_string)
 __inline void gr_string(int x, int y, char* string, bool resize = true)
 {
@@ -1339,7 +1340,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling);
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
 // Moreover, it is _really_ intended for use with 45 degree angles. 
-void gr_pline_special(vec3d **pts, int num_pts, int thickness);
+void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize=true);
 
 #define VERTEX_FLAG_POSITION	 (1<<0)	
 #define VERTEX_FLAG_RHW			 (1<<1)	//incompatable with the next normal

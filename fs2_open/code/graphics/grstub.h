@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.16 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-04-24 02:38:31 $
+ * $Author: wmcoolmon $
  *
  * $NoKeywords: $
  */
@@ -35,7 +35,7 @@ void gr_stub_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, f
 void gr_stub_create_shader(shader * shade, float r, float g, float b, float c ) {}
 void gr_stub_rect_internal(int x, int y, int w, int h, int r, int g, int b, int a) {}
 void gr_stub_rect(int x,int y,int w,int h,bool resize) {}
-void gr_stub_shade(int x,int y,int w,int h) {}
+//void gr_stub_shade(int x,int y,int w,int h) {}
 void gr_stub_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy) {}
 void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize) {}
 void gr_stub_aabitmap(int x, int y,bool resize) {}
@@ -154,8 +154,8 @@ void gr_stub_init()
 	gr_screen.gf_aabitmap = gr_stub_aabitmap;
 	gr_screen.gf_aabitmap_ex = gr_stub_aabitmap_ex;
 	
-	gr_screen.gf_rect = gr_stub_rect;
-	gr_screen.gf_shade = gr_stub_shade;
+//	gr_screen.gf_rect = gr_stub_rect;
+//	gr_screen.gf_shade = gr_stub_shade;
 	gr_screen.gf_string = gr_stub_string;
 	gr_screen.gf_circle = gr_stub_circle;
 	gr_screen.gf_curve	= gr_stub_curve;

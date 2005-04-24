@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.118 $
- * $Date: 2005-04-15 11:41:27 $
- * $Author: taylor $
+ * $Revision: 2.119 $
+ * $Date: 2005-04-24 02:38:31 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2005/04/15 11:41:27  taylor
+ * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
+ *
  * Revision 2.117  2005/04/15 11:36:54  taylor
  * new GCC = new warning messages, yippeeee!!
  *
@@ -1305,7 +1308,8 @@ void gr_opengl_set_shader( shader * shade )
 		gr_create_shader( &gr_screen.current_shader, 0.0f, 0.0f, 0.0f, 0.0f );
 	}
 }
-
+//WMC - removed for gr_rect in 2d.cpp
+/*
 void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, int a)
 {
 	int saved_zbuf;
@@ -1387,23 +1391,11 @@ void gr_opengl_rect(int x,int y,int w,int h,bool resize)
 {
 	gr_opengl_rect_internal(x, y, w, h, gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 }
-
+*/
+/*
 void gr_opengl_shade(int x,int y,int w,int h)
 {
 	int r,g,b,a;
-	
-	/*
-	float shade1 = 1.0f;
-	float shade2 = 6.0f;
-
-	r = fl2i(gr_screen.current_shader.r*255.0f*shade1);
-	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
-	g = fl2i(gr_screen.current_shader.g*255.0f*shade1);
-	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
-	b = fl2i(gr_screen.current_shader.b*255.0f*shade1);
-	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
-	a = fl2i(gr_screen.current_shader.c*255.0f*shade2);
-	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;*/
 
 	r = fl2i(gr_screen.current_shader.r);
 	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
@@ -1414,8 +1406,9 @@ void gr_opengl_shade(int x,int y,int w,int h)
 	a = fl2i(gr_screen.current_shader.c);
 	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
 
-       gr_opengl_rect_internal(x, y, w, h, r, g, b, a);	
+	g3_draw_2d_rect(x,y,w,h,r,g,b,a);
 }
+*/
 
 void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize=false)
 {
@@ -3540,8 +3533,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_aabitmap = gr_opengl_aabitmap;
 	gr_screen.gf_aabitmap_ex = gr_opengl_aabitmap_ex;
 	
-	gr_screen.gf_rect = gr_opengl_rect;
-	gr_screen.gf_shade = gr_opengl_shade;
+//	gr_screen.gf_rect = gr_opengl_rect;
+//	gr_screen.gf_shade = gr_opengl_shade;
 	gr_screen.gf_string = gr_opengl_string;
 	gr_screen.gf_circle = gr_opengl_circle;
 	gr_screen.gf_curve = gr_opengl_curve;

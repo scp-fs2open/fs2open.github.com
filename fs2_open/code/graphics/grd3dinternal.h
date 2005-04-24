@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.43 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 2.44 $
+ * $Date: 2005-04-24 02:38:31 $
+ * $Author: wmcoolmon $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.42  2005/03/20 00:09:07  phreak
  * Added gr_draw_htl_line and gr_draw_htl sphere
  * There still needs to be D3D versions implemented, but OGL is done.
@@ -583,10 +586,10 @@ void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, fl
 void gr_d3d_bitmap(int x, int y);
 void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize);
 void gr_d3d_aabitmap(int x, int y, bool resize);
-void gr_d3d_rect(int x,int y,int w,int h,bool resize);
+//void gr_d3d_rect(int x,int y,int w,int h,bool resize);
 void gr_d3d_create_shader(shader * shade, float r, float g, float b, float c );
 void gr_d3d_set_shader( shader * shade );
-void gr_d3d_shade(int x,int y,int w,int h);
+//void gr_d3d_shade(int x,int y,int w,int h);
 void gr_d3d_create_font_bitmap();
 void gr_d3d_char(int x,int y,int letter);
 void gr_d3d_string( int sx, int sy, char *s, bool resize = true );
