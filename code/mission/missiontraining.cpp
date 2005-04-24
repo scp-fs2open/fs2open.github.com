@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-11 05:48:34 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-24 03:01:56 $
+ * $Author: wmcoolmon $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/11 05:48:34  taylor
+ * make sure use an insensitive case check for Messages[] names (Jens Granseuer)
+ * little clarification of if-else block in message_training_que()
+ *
  * Revision 2.6  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1125,7 +1129,7 @@ void message_training_display()
 
 	height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
-	gr_shade(Training_msg_window_coords[gr_screen.res][0], Training_msg_window_coords[gr_screen.res][1], TRAINING_MSG_WINDOW_WIDTH, Training_num_lines * height + height);
+	gr_shade(Training_msg_window_coords[gr_screen.res][0], Training_msg_window_coords[gr_screen.res][1], TRAINING_MSG_WINDOW_WIDTH, Training_num_lines * height + height,true);
 
 	gr_set_color_fast(&Color_bright_blue);
 	mode = count = 0;
