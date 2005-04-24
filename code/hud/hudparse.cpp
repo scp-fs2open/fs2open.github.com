@@ -1,15 +1,107 @@
-/* hudparse.cpp
-*	Contains code to parse hud gauge locations
-*/
+/*
+ * Created by WMCoolmon for the Freespace2 Source Code Project.
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ *
+ */
 
 /*
- * $Logfile:
- * $Revision:
- * $Date:
- * $Author:
+ * $Logfile: /Freespace2/code/hud/hudparse.cpp $
+ * $Revision: 2.28 $
+ * $Date: 2005-04-24 08:27:17 $
+ * $Author: Goober5000 $
  *
- * $Log:
- */
+ * Contains code to parse hud gauge locations
+ *
+ * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/04/08 20:03:59  wmcoolmon
+ * *crosses fingers*
+ *
+ * Revision 2.26  2005/03/06 11:23:45  wmcoolmon
+ * RE-fixed stuff. Ogg support. Briefings.
+ *
+ * Revision 2.25  2005/02/27 23:27:50  wmcoolmon
+ * Some HUD work
+ *
+ * Revision 2.24  2005/02/14 23:59:23  taylor
+ * make hudparse GCC 3.4 friendly (WMCoolmon way want to check this with tbl)
+ * fix OSX compile problem
+ * debug message in weapons_page_in() should have been real debug message
+ *
+ * Revision 2.23  2005/02/04 23:29:32  taylor
+ * merge with Linux/OSX tree - p0204-3
+ *
+ * Revision 2.22  2005/01/12 00:18:00  phreak
+ * nude hud?  was this some kind of freudian slip of a sort or what?
+ *
+ * Revision 2.21  2005/01/01 19:37:05  wmcoolmon
+ * Erg, always make sure CVS is completely up-to-date.
+ *
+ * Revision 2.20  2005/01/01 07:18:47  wmcoolmon
+ * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
+ *
+ * Revision 2.19  2004/12/25 09:27:41  wmcoolmon
+ * Fix to modular tables workaround with Fs2NetD + Sync to current NEW_HUD code
+ *
+ * Revision 2.18  2004/12/24 05:07:05  wmcoolmon
+ * NEW_HUD compiles now. :)
+ *
+ * Revision 2.17  2004/12/23 23:26:35  wmcoolmon
+ * Proposed HUD system stuffs - within NEW_HUD defines.
+ *
+ * Revision 2.16  2004/12/22 09:09:38  wmcoolmon
+ * Quick fix to hudparse.cpp; If this causes any problems, roll it back and I'll take another look at it.
+ *
+ * Revision 2.15  2004/11/27 10:50:32  taylor
+ * correct positions for default graphics with no table
+ * compiler warning fix
+ *
+ * Revision 2.14  2004/09/05 19:23:24  Goober5000
+ * fixed a few warnings
+ * --Goober5000
+ *
+ * Revision 2.13  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
+ * Revision 2.12  2004/07/17 09:25:59  taylor
+ * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
+ *
+ * Revision 2.11  2004/07/12 16:32:49  Kazan
+ * MCD - define _MCD_CHECK to use memory tracking
+ *
+ * Revision 2.10  2004/06/26 03:19:53  wmcoolmon
+ * Displayed escorts now settable up to MAX_COMPLETE_ESCORT_LIST via "$Max Escort Ships:" in hud_gauges.tbl
+ * Escort list is now hud_gauges.tbl compatible.
+ *
+ * Revision 2.9  2004/06/18 04:59:54  wmcoolmon
+ * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
+ *
+ * Revision 2.8  2004/06/08 01:12:58  wmcoolmon
+ * Fix0red the current target's hud info appearing in the corner of the screen.
+ *
+ * Revision 2.7  2004/06/08 00:35:43  wmcoolmon
+ * Added +Color: option for custom gauges.
+ *
+ * Revision 2.6  2004/06/05 23:31:12  wmcoolmon
+ * More HUD update stuff. Coordinates are now floats, addparent is now obsolete.
+ *
+ * Revision 2.5  2004/06/01 07:31:56  wmcoolmon
+ * Lotsa stuff. Custom gauges w/ ANIs support added, SEXPs to set gauge text, gauge image frames, and gauge coords. These SEXPs and toggle-hud reside in the Hud/change category.
+ *
+ * Revision 2.4  2004/05/31 08:32:25  wmcoolmon
+ * Custom HUD support, better loading, etc etc.
+ *
+ * Revision 2.3  2004/05/30 08:04:49  wmcoolmon
+ * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
+ *
+ * Revision 2.2  2004/05/29 04:09:04  wmcoolmon
+ * First bugfix in this!: Don't want Freespace exiting if it can't load a hud_gauge file.
+ *
+ * Revision 2.1  2004/05/29 03:02:53  wmcoolmon
+ * Added HUD gauges placement table, "hud_gauges.tbl" or "*-hdg.tbm" table module
+ *
+ */ 
+
 #include <cstddef>
 
 #include "parse/parselo.h"
