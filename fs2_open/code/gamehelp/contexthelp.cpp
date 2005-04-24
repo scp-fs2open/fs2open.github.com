@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-05 05:53:16 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2005-04-24 02:39:36 $
+ * $Author: wmcoolmon $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/05 05:53:16  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.7  2005/01/29 08:05:31  wmcoolmon
  * Update to work with optimized shader func
  *
@@ -650,7 +653,7 @@ void help_overlay_blit(int overlay_id)
 	for (idx = 0; idx < textcount; idx++) {
 		gr_set_color_fast(&Color_black);
 		gr_get_string_size(&width, &height, help_overlaylist[overlay_id].textlist[GR_640][idx].string, strlen(help_overlaylist[overlay_id].textlist[GR_640][idx].string));
-		gr_rect(help_overlaylist[overlay_id].textlist[gr_screen.res][idx].x_coord-2*HELP_PADDING, help_overlaylist[overlay_id].textlist[gr_screen.res][idx].y_coord-3*HELP_PADDING, width+4*HELP_PADDING, height+4*HELP_PADDING);
+		gr_rect(help_overlaylist[overlay_id].textlist[gr_screen.res][idx].x_coord-2*HELP_PADDING, help_overlaylist[overlay_id].textlist[gr_screen.res][idx].y_coord-3*HELP_PADDING, width+4*HELP_PADDING, height+4*HELP_PADDING,true);
 		gr_set_color_fast(&Color_bright_white);
 		gr_printf(help_overlaylist[overlay_id].textlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].textlist[gr_screen.res][idx].y_coord, help_overlaylist[overlay_id].textlist[GR_640][idx].string);
 	}
