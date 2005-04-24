@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/04/15 06:23:18  wmcoolmon
+ * Local codebase commit; adds armor system.
+ *
  * Revision 2.47  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -585,8 +588,6 @@ typedef struct weapon {
 
 	// flak info
 	short flak_index;							// flak info index
-	int frame;				//for animated laser bitmaps
-	int gframe;				//for animated laser glow bitmaps
 
 	//local ssm stuff		
 	fix lssm_warpout_time;		//time at which the missile warps out
