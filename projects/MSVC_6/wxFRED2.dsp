@@ -61,7 +61,7 @@ InputPath=.\Release\fred2_open_wx_r.exe
 SOURCE="$(InputPath)"
 
 "$(FS2PATH)/fred2_open_wx_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) $(FS2PATH)/fred2_open_wx_r.exe
+	copy $(InputPath) "$(FS2PATH)/fred2_open_wx_r.exe"
 
 # End Custom Build
 
@@ -96,7 +96,7 @@ InputPath=.\Debug\fred2_open_wx_d.exe
 SOURCE="$(InputPath)"
 
 "$(FS2PATH)/fred2_open_wx_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) $(FS2PATH)/fred2_open_wx_d.exe
+	copy $(InputPath) "$(FS2PATH)/fred2_open_wx_d.exe"
 
 # End Custom Build
 
