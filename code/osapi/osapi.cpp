@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-03-08 03:50:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2005-04-24 03:06:29 $
+ * $Author: phreak $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/03/08 03:50:24  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.25  2005/03/03 16:18:19  taylor
  * lockup fixes, and it's Linux friendly too :)
  *
@@ -807,11 +811,18 @@ BOOL win32_create_window()
 			height =480;
 		}
 
+		RECT r;
+		GetWindowRect(GetDesktopWindow(),&r);
+		int start_x = (r.right - width - x_add) / 2;
+		int start_y = (r.bottom - height - y_add) / 2;
+
+		if (start_x < 0) start_x = 0;
+		if (start_y < 0) start_y = 0;
 
 		hwndApp = CreateWindow( szWinClass, szWinTitle,
 									style,   
-									CW_USEDEFAULT,
-									CW_USEDEFAULT,
+									start_x,
+									start_y,
 									width + x_add,
 									height + y_add,
 									NULL, (HMENU)NULL, hInst, (LPSTR)NULL);	
