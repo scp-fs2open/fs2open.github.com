@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-04-24 02:38:31 $
+ * $Revision: 2.46 $
+ * $Date: 2005-04-24 03:02:43 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/04/24 02:38:31  wmcoolmon
+ * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
+ *
  * Revision 2.44  2005/04/23 01:17:09  wmcoolmon
  * Removed GL_SECTIONS
  *
@@ -1864,9 +1867,18 @@ void gr_rect(int x, int y, int w, int h, bool resize)
 		gr_screen.current_color.alpha);
 }
 
-void gr_shade(int x, int y, int w, int h)
+void gr_shade(int x, int y, int w, int h, bool resize)
 {
-	int r,g,b,a;
+	if(gr_screen.mode == GR_STUB)
+		return;
+
+		int r,g,b,a;
+
+	if(resize)
+	{
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
+	}
 
 	//WMC - this is the original shade code.
 	//Lots of silly unneccessary calcs.

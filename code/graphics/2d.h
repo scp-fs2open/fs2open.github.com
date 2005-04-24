@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.56 $
- * $Date: 2005-04-24 02:38:31 $
+ * $Revision: 2.57 $
+ * $Date: 2005-04-24 03:02:43 $
  * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/04/24 02:38:31  wmcoolmon
+ * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
+ *
  * Revision 2.55  2005/04/12 02:04:56  phreak
  * gr_set_ambient_light() function for the ambient light sliders in FRED
  *
@@ -1176,7 +1179,7 @@ __inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool re
 }
 
 void gr_rect(int x, int y, int w, int h, bool resize = false);
-void gr_shade(int x, int y, int w, int h);
+void gr_shade(int x, int y, int w, int h, bool resize = false);
 
 //#define gr_shade				GR_CALL(gr_screen.gf_shade)
 //#define gr_string				GR_CALL(gr_screen.gf_string)
