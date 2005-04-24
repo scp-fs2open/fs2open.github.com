@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2005/04/15 06:23:18  wmcoolmon
+ * Local codebase commit; adds armor system.
+ *
  * Revision 2.105  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1149,15 +1152,24 @@ void parse_wi_flags(weapon_info *weaponp)
 		weaponp->wi_flags2 |= WIF2_DEFAULT_IN_TECH_DATABASE;
 
 	// SWARM, CORKSCREW and FLAK should be mutually exclusive
-	if(weaponp->wi_flags & WIF_FLAK){
-		Assert(!(weaponp->wi_flags & WIF_CORKSCREW) && !(weaponp->wi_flags & WIF_SWARM));
+	if (weaponp->wi_flags & WIF_FLAK)
+	{
+		if ((weaponp->wi_flags & WIF_SWARM) || (weaponp->wi_flags & WIF_CORKSCREW))
+		{
+			Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes.\n");
+			weaponp->wi_flags &= ~WIF_SWARM;
+			weaponp->wi_flags &= ~WIF_CORKSCREW;
+		}
 	}
-	if(weaponp->wi_flags & WIF_CORKSCREW){
-		Assert(!(weaponp->wi_flags & WIF_FLAK) && !(weaponp->wi_flags & WIF_SWARM));
+	else
+	{
+		if ((weaponp->wi_flags & WIF_SWARM) && (weaponp->wi_flags & WIF_CORKSCREW))
+		{
+			Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm.\n");
+			weaponp->wi_flags &= ~WIF_CORKSCREW;
+		}
 	}
-	if(weaponp->wi_flags & WIF_SWARM){
-		Assert(!(weaponp->wi_flags & WIF_CORKSCREW) && !(weaponp->wi_flags & WIF_FLAK));
-	}
+
 	if (weaponp->wi_flags2 & WIF2_LOCAL_SSM)
 	{
 		if (!(weaponp->wi_flags & WIF_HOMING) || (weaponp->subtype !=WP_MISSILE))
