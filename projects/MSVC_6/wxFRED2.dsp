@@ -54,16 +54,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo /o"Release/Profile/wxFRED2.bsc" "Release\Profile\*.sbr"
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw.lib png.lib zlib.lib jpeg.lib tiff.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"C:\games\freespace2\fred2_open_r.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/contrib/lib"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw.lib png.lib zlib.lib jpeg.lib tiff.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"$(FS2PATH)\fred2_open_wx_r.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/contrib/lib"
 # SUBTRACT LINK32 /nodefaultlib
-# Begin Custom Build - Copying build...
-InputPath=\games\freespace2\fred2_open_r.exe
-SOURCE="$(InputPath)"
-
-"c:\games\freespace2\fred2_open_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) c:\games\freespace2\fred2_open_r.exe
-
-# End Custom Build
 
 !ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug"
 
@@ -89,16 +81,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo /o"Debug/Profile/wxFRED2.bsc" "Debug\Profile\*.sbr"
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmswd.lib pngd.lib zlibd.lib jpegd.lib tiffd.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libcd.lib" /nodefaultlib:"libcid.lib" /out:"C:\games\freespace2\fred2_open_d.exe" /pdbtype:sept /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/contrib/lib"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmswd.lib pngd.lib zlibd.lib jpegd.lib tiffd.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libcd.lib" /nodefaultlib:"libcid.lib" /out:"$(FS2PATH)\fred2_open_wx_d.exe" /pdbtype:sept /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/contrib/lib"
 # SUBTRACT LINK32 /nodefaultlib
-# Begin Custom Build - Copying build...
-InputPath=\games\freespace2\fred2_open_d.exe
-SOURCE="$(InputPath)"
-
-"c:\games\freespace2\fred2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) c:\games\freespace2\fred2_open_d.exe
-
-# End Custom Build
 
 !ENDIF 
 
