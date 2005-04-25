@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-04-11 05:50:36 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2005-04-25 00:28:17 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/04/11 05:50:36  taylor
+ * some limits.h fixes to make GCC happier
+ * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
+ *
  * Revision 2.19  2005/03/02 21:18:19  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -927,7 +931,7 @@ void multi_ingame_load_icons()
 	Multi_ingame_num_ship_icons = 0;
 
 	// traverse through all ship types
-	for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+	for(idx=0;idx<Num_ship_types;idx++){
 		// if there is a valid icon for this ship
 		if((strlen(Ship_info[idx].icon_filename) > 0) && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)){
 			// set the ship class

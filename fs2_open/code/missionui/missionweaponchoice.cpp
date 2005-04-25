@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-04-05 05:53:20 $
- * $Author: taylor $
+ * $Revision: 2.51 $
+ * $Date: 2005-04-25 00:25:46 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.49  2005/04/03 11:47:01  Goober5000
  * tweaks
  * --Goober5000
@@ -1918,7 +1921,7 @@ void wl_load_all_anims()
 	}
 
 	// init anim member for overhead ship animations
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < Num_ship_types; i++ ) {
 		Wl_ships[i].wl_anim = NULL;
 		Wl_ships[i].wl_anim_instance = NULL;
 	}
@@ -1946,7 +1949,7 @@ void wl_unload_all_anim_instances()
 	}
 
 	// stop any overhead anim instances
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < Num_ship_types; i++ ) {
 		if ( Wl_ships[i].wl_anim_instance ) {
 			anim_release_render_instance(Wl_ships[i].wl_anim_instance);
 			Wl_ships[i].wl_anim_instance = NULL;
@@ -1960,7 +1963,7 @@ void wl_unload_all_anims()
 	int i;
 
 	// unload overhead anim instances
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < Num_ship_types; i++ ) {
 		if ( Wl_ships[i].wl_anim ) {
 			anim_free(Wl_ships[i].wl_anim);
 			Wl_ships[i].wl_anim = NULL;
@@ -2048,7 +2051,7 @@ void wl_free_ship_class_data()
 	int i;
 	wl_ship_class_info	*wl_ship;
 
-	for ( i=0; i<MAX_SHIP_TYPES; i++ ) {
+	for ( i=0; i<Num_ship_types; i++ ) {
 		wl_ship = &Wl_ships[i];
 
 		if ( wl_ship->overhead_bitmap != -1 ) {
@@ -2264,7 +2267,7 @@ void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count)
 	ship_info	*sip;
 	int i;
 
-	Assert(ship_class >= 0 && ship_class < MAX_SHIP_TYPES);
+	Assert(ship_class >= 0 && ship_class < Num_ship_types);
 	sip = &Ship_info[ship_class];
 
 	// reset weapons arrays
@@ -2870,7 +2873,7 @@ void wl_check_for_stopped_ship_anims()
 {
 	int i;
 	anim_instance *ai;
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < Num_ship_types; i++ ) {
 		ai = Wl_ships[i].wl_anim_instance;
 		if ( ai != NULL ) {
 			if ( !anim_playing(ai) ) {

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-04-12 05:26:36 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2005-04-25 00:25:15 $
+ * $Author: wmcoolmon $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/04/12 05:26:36  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.21  2005/04/03 08:48:30  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -573,7 +577,7 @@ void mission_campaign_get_sw_info()
 
 	// set allowable ships to the SIF_PLAYER_SHIPs
 	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
-	for (i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for (i = 0; i < Num_ship_types; i++ ) {
 		if ( Ship_info[i].flags & SIF_PLAYER_SHIP )
 			Campaign.ships_allowed[i] = 1;
 	}
@@ -582,7 +586,7 @@ void mission_campaign_get_sw_info()
 		Campaign.weapons_allowed[i] = 1;
 
 	if ( optional_string("+Starting Ships:") ) {
-		for (i = 0; i < MAX_SHIP_TYPES; i++ )
+		for (i = 0; i < Num_ship_types; i++ )
 			Campaign.ships_allowed[i] = 0;
 
 		count = stuff_int_list(ship_list, MAX_SHIP_TYPES, SHIP_INFO_TYPE);
