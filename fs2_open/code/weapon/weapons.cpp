@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2005/04/24 12:47:36  taylor
+ * little cleanup of laser rendering
+ *  - fix animated glows
+ *  - proper alpha modification (still messed up somewhere though, shows in neb missions)
+ *  - remove excess batch_render()
+ *
  * Revision 2.107  2005/04/24 07:31:34  Goober5000
  * made swarm/corkscrew/flak conflict more friendly
  * --Goober5000
@@ -1604,61 +1610,15 @@ int parse_weapon(int subtype, bool replace)
 
 	}
 
-	wip->launch_snd = -1;
-	if(optional_string("$LaunchSnd:"))
-	{
-		stuff_string(buf, F_NAME, NULL);
-		idx = gamesnd_get_by_name(buf);
-		if(idx != -1)
-			wip->launch_snd = idx;
-		else
-			wip->launch_snd = atoi(buf);
-		
-		// bah: ensure the sounds are in range
-		if (wip->launch_snd < -1 || wip->launch_snd >= Num_game_sounds)
-		{
-			Warning(LOCATION, "$LaunchSnd sound index out of range on weapon %s.  Must be between 0 and %d.  Forcing to -1.\n", wip->name, Num_game_sounds);
-			wip->launch_snd = -1;
-		}
-	}
+	//Launch sound
+	parse_sound("$LaunchSnd:", &wip->launch_snd, wip->name);
 
-	wip->impact_snd = -1;
-	if(optional_string("$ImpactSnd:"))
-	{
-		stuff_string(buf, F_NAME, NULL);
-		idx = gamesnd_get_by_name(buf);
-		if(idx != -1)
-			wip->impact_snd = idx;
-		else
-			wip->impact_snd = atoi(buf);
-		
-		// bah: ensure the sounds are in range
-		if (wip->impact_snd < -1 || wip->impact_snd >= Num_game_sounds)
-		{
-			Warning(LOCATION, "$ImpactSnd sound index out of range on weapon %s.  Must be between 0 and %d.  Forcing to -1.\n", wip->name, Num_game_sounds);
-			wip->impact_snd = -1;
-		}
-	}
+	//Impact sound
+	parse_sound("$ImpactSnd:", &wip->impact_snd, wip->name);
 
 	if (subtype == WP_MISSILE)
 	{
-		wip->flyby_snd = -1;
-		if(optional_string("$FlyBySnd:"))
-		{
-			stuff_string(buf, F_NAME, NULL);
-			idx = gamesnd_get_by_name(buf);
-			if(idx != -1)
-				wip->flyby_snd = idx;
-			else
-				wip->flyby_snd = atoi(buf);
-			
-			// bah: ensure the sounds are in range
-			if (wip->flyby_snd < -1 || wip->flyby_snd >= Num_game_sounds)
-			{
-				Warning(LOCATION, "$FlyBySnd sound index out of range on weapon %s.  Must be between 0 and %d.  Forcing to -1.\n", wip->name, Num_game_sounds);
-				wip->flyby_snd = -1;
-			}
-		}
+		parse_sound("$FlyBySnd:", &wip->flyby_snd, wip->name);
 	}
 	else
 	{
@@ -2325,25 +2285,8 @@ $LaunchSnd:				counter_1.wav,	.8, 10, 300	;; countermeasure 1 fired (sound is 3d
 	required_string("$Lifetime Max:");
 	stuff_float(&cmeasurep->life_max);
 
-	char buf[MAX_FILENAME_LEN];
-	int idx;
-	cmeasurep->launch_sound = -1;
-	if(optional_string("$LaunchSnd:"))
-	{
-		stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
-		idx = gamesnd_get_by_name(buf);
-		if(idx != -1)
-			cmeasurep->launch_sound = idx;
-		else
-			cmeasurep->launch_sound = atoi(buf);
-		
-		// bah: ensure the sounds are in range
-		if (cmeasurep->launch_sound < -1 || cmeasurep->launch_sound >= Num_game_sounds)
-		{
-			Warning(LOCATION, "$LaunchSnd sound index out of range on weapon %s.  Must be between 0 and %d.  Forcing to -1.\n", cmeasurep->cmeasure_name, Num_game_sounds);
-			cmeasurep->launch_sound = -1;
-		}
-	}
+	//Launching sound
+	parse_sound("$LaunchSnd:", &cmeasurep->launch_sound, cmeasurep->cmeasure_name);
 
 	required_string("$Model:");
 	stuff_string(cmeasurep->pof_name, F_NAME, NULL);
