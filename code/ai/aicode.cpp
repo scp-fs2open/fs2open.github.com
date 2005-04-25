@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-04-16 04:16:57 $
+ * $Revision: 1.8 $
+ * $Date: 2005-04-25 00:04:30 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/04/16 04:16:57  wmcoolmon
+ * More optional tag-making for ships.tbl
+ *
  * Revision 1.6  2005/04/11 05:42:01  taylor
  * some demo related fixes (Jens Granseuer)
  *
@@ -2092,7 +2095,7 @@ void init_ship_info()
 	if (Ship_info_inited)
 		return;
 
-	for (i=0; i<MAX_SHIP_TYPES; i++) {
+	for (i=0; i<Num_ship_types; i++) {
 		Ship_info[i].min_speed = - Ship_info[i].max_rear_vel;
 		Ship_info[i].max_accel = Ship_info[i].max_vel.xyz.z;
 	}
@@ -5945,7 +5948,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 	ship_info *sip;
 
 	//Assert( other_objp != NULL );
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types);
 
 	sip = &Ship_info[shipp->ship_info_index];
 
@@ -6042,7 +6045,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types);
 	// Debugging //
 	
 	sip = &Ship_info[shipp->ship_info_index];
@@ -6341,7 +6344,7 @@ int ai_fire_primary_weapon(object *objp)
 	ai_info		*aip;
 	object		*enemy_objp;
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types);
 	sip = &Ship_info[shipp->ship_info_index];
 
 	aip = &Ai_info[shipp->ai_index];
@@ -6738,7 +6741,7 @@ int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
 	shipp = &Ships[objp->instance];
 	swp = &shipp->weapons;
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types);
 	sip = &Ship_info[shipp->ship_info_index];
 
 	//	Select secondary weapon.
