@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-03-27 06:12:38 $
+ * $Revision: 2.16 $
+ * $Date: 2005-04-25 06:36:01 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/03/27 06:12:38  taylor
+ * some pilot file fixing when going between multi and single (partial fix)
+ *
  * Revision 2.14  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -572,7 +575,7 @@ int sim_room_campaign_mission_filter(char *filename)
 {
 	int num;
 
-	num = mission_campaign_get_mission_list(filename, &Campaign_missions[Num_campaign_missions], MAX_CAMPAIGN_MISSIONS - Num_campaign_missions);
+	num = mission_campaign_get_mission_list(filename, &Campaign_missions[Num_campaign_missions], MAX_MISSIONS - Num_campaign_missions);
 	if (num < 0)
 		return 0;
 
