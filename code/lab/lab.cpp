@@ -10,6 +10,7 @@
 #include "model/model.h"
 #include "missionui/missionscreencommon.h"
 #include "weapon/beam.h"
+#include "mission/missionparse.h"
 
 //All sorts of globals
 
@@ -308,111 +309,154 @@ void ship_variables_window(Button *caller)
 
 
 //*****************************Options Window*******************************
+static Window* RenderOptWin = NULL;
+void zero_render_opt_win(GUIObject *caller)
+{
+	RenderOptWin = NULL;
+}
+
 void make_options_window(Button *caller)
 {
+	if(RenderOptWin != NULL)
+		return;
+
 	GUIObject* ccp;
-	GUIObject* cwp = Lab_screen->Add(new Window("Options", gr_screen.max_w - 300, 200));
+	RenderOptWin = (Window*)Lab_screen->Add(new Window("Options", gr_screen.max_w - 300, 200));
 	int y = 0;
-	ccp = cwp->AddChild(new Checkbox("No lighting", 0,  y));
+	ccp = RenderOptWin->AddChild(new Checkbox("No lighting", 0,  y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_LIGHTING);
 
 	/*y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("No texturing", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("No texturing", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_TEXTURING);*/
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("No smoothing", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("No smoothing", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_SMOOTHING);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("No Z-buffer", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("No Z-buffer", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_ZBUFFER);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("No culling", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("No culling", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_CULL);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("No Fogging", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("No Fogging", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_FOGGING);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Wireframe", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Wireframe", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_OUTLINE | MR_NO_POLYS);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Transparent", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Transparent", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_ALL_XPARENT);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Away norms transparent", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Away norms transparent", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_EDGE_ALPHA);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Toward norms transparent", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Toward norms transparent", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_CENTER_ALPHA);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Show pivots", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Show pivots", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_PIVOTS);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Show paths", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Show paths", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_PATHS);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Show bay paths", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Show bay paths", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_BAY_PATHS);
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Show radius", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Show radius", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_RADIUS);
 
 	/*y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Show damage", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Show damage", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_DAMAGE);*/
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Show shields", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Show shields", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_SHIELDS);
 
 	/*y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Show thrusters", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Show thrusters", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_THRUSTERS);*/
 
 	y += ccp->GetHeight() + 10;
-	ccp = cwp->AddChild(new Checkbox("Show invisible faces", 0, y));
+	ccp = RenderOptWin->AddChild(new Checkbox("Show invisible faces", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_INVISIBLE_FACES);
+
+	RenderOptWin->SetCloseFunction(zero_render_opt_win);
 }
 
 //*****************************Shiplist Window*******************************
+static Window* ShipClassWin = NULL;
+void zero_ship_class_win(GUIObject *caller)
+{
+	ShipClassWin = NULL;
+}
 void make_new_window(Button* caller)
 {
-	static int total = 0;
-	GUIObject* cgp;
-	char buf[8];
-	itoa(total, buf, 10);
 
-	std::string caption = "Ship list ";
-	caption += buf;
-	cgp = Lab_screen->Add(new Window(caption, 50 + total*15, 50 + total*15));
-	total++;
+	if(ShipClassWin != NULL)
+		return;
 
-	Tree* cmp = (Tree*)cgp->AddChild(new Tree("Ship tree", 0, 0));
-	TreeItem *ctip;
-	int j;
-	for(int i = 0; i < Num_ship_types; i++)
+	//GUIObject* cgp;
+	ShipClassWin = (Window*)Lab_screen->Add(new Window("Ship classes", 50, 50));
+
+	Tree* cmp = (Tree*)ShipClassWin->AddChild(new Tree("Ship tree", 0, 0));
+	TreeItem *ctip, *stip;
+	TreeItem **species_nodes = new TreeItem*[True_NumSpecies+1];
+	int i,j;
+
+	//Add species nodes
+	for(i = 0; i < True_NumSpecies; i++)
 	{
-		ctip = cmp->AddItem(NULL, Ship_info[i].name, (void*)i, false);
+		species_nodes[i] = cmp->AddItem(NULL, Species_names[i], NULL, false);
+	}
+	//Just in case. I don't actually think this is possible though.
+	species_nodes[True_NumSpecies] = cmp->AddItem(NULL, "Other", NULL, false);
+
+	//Now add the ships
+	std::string lod_name;
+	char buf[8];
+	for(i = 0; i < Num_ship_types; i++)
+	{
+		if(Ship_info[i].species >= 0 && Ship_info[i].species < True_NumSpecies)
+			stip = species_nodes[Ship_info[i].species];
+		else
+			stip = species_nodes[True_NumSpecies];
+
+		ctip = cmp->AddItem(stip, Ship_info[i].name, (void*)i, false);
 		for(j = 0; j < Ship_info[i].num_detail_levels; j++)
 		{
 			itoa(j, buf, 10);
-			caption = "LOD ";
-			caption += buf;
+			lod_name = "LOD ";
+			lod_name += buf;
 
-			cmp->AddItem(ctip, caption, (void*)j, false, change_lod);
+			cmp->AddItem(ctip, lod_name, (void*)j, false, change_lod);
 		}
 	}
+
+	//Get rid of any empty nodes
+	//No the <= is not a mistake :)
+	for(i = 0; i <= True_NumSpecies; i++)
+	{
+		if(!species_nodes[i]->HasChildren())
+		{
+			delete species_nodes[i];
+		}
+	}
+
+	ShipClassWin->SetCloseFunction(zero_ship_class_win);
 }
 
 //*****************************Description Window*******************************
@@ -451,8 +495,8 @@ void change_lod(Tree* caller)
 		model_page_out_textures(ShipSelectModelNum);
 		//model_unload(ShipSelectModelNum);
 	}
-	ShipSelectShipIndex = (int)(caller->GetSelectedItem()->Parent->Data);
-	ModelLOD = (int)(caller->GetSelectedItem()->Data);
+	ShipSelectShipIndex = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
+	ModelLOD = (int)(caller->GetSelectedItem()->GetData());
 	ShipSelectModelNum = model_load(Ship_info[ShipSelectShipIndex].pof_file, 0, NULL);
 
 	if(DescText != NULL && DescWin != NULL)
@@ -589,12 +633,13 @@ void lab_init()
 
 	//If you want things to stay as you left them, uncomment this and "delete Lab_screen"
 	//of course, you still need to delete it somewhere else (ie when Freespace closes)
-	
+	/*
 	if(Lab_screen != NULL)
 	{
 		GUI_system->PushScreen(Lab_screen);
 		return;
 	}
+	*/
 
 	//We start by creating the screen/toolbar
 	Lab_screen = GUI_system->PushScreen(new GUIScreen("Lab"));

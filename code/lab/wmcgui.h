@@ -300,7 +300,7 @@ public:
 	ObjectClassInfoEntry *GetObjectClassInfo(GUIObject *cgp);
 
 	//Set funcs
-	GUIObject *Add(GUIObject* cgp);
+	GUIObject *Add(GUIObject* new_gauge);
 
 	//On funcs
 	int OnFrame(float frametime, bool doevents);
@@ -455,6 +455,8 @@ public:
 
 struct TreeItem : public LinkedList
 {
+	friend class Tree;
+private:
 	std::string Name;
 	void (*Function)(Tree *caller);
 	void *Data;
@@ -467,6 +469,11 @@ struct TreeItem : public LinkedList
 
 	TreeItem *Parent;
 	LinkedList Children;
+public:
+	//Get
+	TreeItem *	GetParentItem(){return Parent;}
+	void	 *	GetData(){return Data;}
+	bool		HasChildren(){return NOT_EMPTY(&Children);}
 
 	TreeItem();
 	~TreeItem();
