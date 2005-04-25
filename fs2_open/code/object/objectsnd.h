@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.h $
- * $Revision: 2.3 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-25 00:28:58 $
+ * $Author: wmcoolmon $
  *
  * Header file for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.2  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -97,10 +100,13 @@ void	obj_snd_do_frame();
 // model coords of the location of the engine
 // by passing vmd_zero_vector here, you get a sound centered directly on the object
 // NOTE : if main is true, the attentuation factors don't apply if you're within the radius of the object
-int	obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main);
+int	obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, struct ship_subsys *associated_sub=NULL);
+
+//Delete specific persistent sound on object
+void obj_snd_delete(int objnum, int index);
 
 // if sndnum is not -1, deletes all instances of the given sound within the object
-void	obj_snd_delete(int objnum, int sndnum = -1);
+void	obj_snd_delete_type(int objnum, int sndnum = -1, struct ship_subsys *ss = NULL);
 
 void	obj_snd_delete_all();
 void	obj_snd_stop_all();

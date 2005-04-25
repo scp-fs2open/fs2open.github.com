@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.13 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-04-25 00:28:58 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.12  2005/03/27 12:28:32  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -476,7 +479,8 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 
 
 // max # of object sounds per object
-#define MAX_OBJECT_SOUNDS	4
+//WMC - bumped this to 32 :D
+#define MAX_OBJECT_SOUNDS	32
 
 struct dock_instance;
 
