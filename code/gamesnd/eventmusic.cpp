@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-03-27 12:28:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-04-25 00:22:34 $
+ * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/03/27 12:28:32  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.18  2005/02/23 05:05:39  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -553,8 +557,9 @@ void event_music_do_frame()
 	if ( timestamp_elapsed(Pattern_timer_id) ) {
 		Pattern_timer_id = 0;
 		Event_music_begun = TRUE;
-		if ( Current_pattern != -1 ) {
-			Assert(Patterns[Current_pattern].handle >= 0 );
+		if ( Current_pattern != -1  && Patterns[Current_pattern].handle >= 0) {
+			//WMC - removed in favor of if
+			//Assert(Patterns[Current_pattern].handle >= 0 );
 			audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
 			audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 		}

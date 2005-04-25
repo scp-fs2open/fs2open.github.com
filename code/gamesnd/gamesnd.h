@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.9 $
- * $Date: 2005-04-21 15:58:08 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-25 00:22:34 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/21 15:58:08  taylor
+ * initial changes to mission loading and status in debug builds
+ *  - move bmpman page in init to an earlier stage to avoid unloading sexp loaded images
+ *  - small changes to progress reports in debug builds so that it's easier to tell what's slow
+ *  - initialize the loading screen before mission_parse() so that we'll be about to get a more accurate load time
+ * fix memory leak in gamesnd (yes, I made a mistake ;))
+ * make sure we unload models on game shutdown too
+ *
  * Revision 2.8  2005/03/30 02:32:40  wmcoolmon
  * Made it so *Snd fields in ships.tbl and weapons.tbl take the sound name
  * as well as its index (ie "L_sidearm.wav" instead of "76")
@@ -365,11 +373,8 @@ void gamesnd_load_interface_sounds();
 void gamesnd_unload_interface_sounds();
 void gamesnd_preload_common_sounds();
 void gamesnd_play_iface(int n);
-int gamesnd_get_by_name(char* name);
-
 void gamesnd_play_error_beep();
-
-void common_play_highlight_sound();	// called from interface code
+int gamesnd_get_by_name(char* name);
 
 #else
 
@@ -382,11 +387,16 @@ void common_play_highlight_sound();	// called from interface code
 #define gamesnd_preload_common_sounds()
 #define gamesnd_play_iface(n)							((void)(n))
 #define gamesnd_play_error_beep()
+#define gamesnd_get_by_name(n)							(-1)
+
+#endif  // ifndef NO_SOUND
+
+//This should handle NO_SOUND just fine since it doesn't directly access lowlevel code
+//Does all parsing for a sound
+void parse_sound(char* tag, int *idx_dest, char* object_name);
 
 // this is a callback, so it needs to be a real function
 void common_play_highlight_sound();
-
-#endif  // ifndef NO_SOUND
 
 
 // Misc_sounds[] holds handles for misc sounds in the game (list appears in sounds.tbl)

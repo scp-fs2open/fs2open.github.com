@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-04-21 15:58:08 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-04-25 00:22:34 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/04/21 15:58:08  taylor
+ * initial changes to mission loading and status in debug builds
+ *  - move bmpman page in init to an earlier stage to avoid unloading sexp loaded images
+ *  - small changes to progress reports in debug builds so that it's easier to tell what's slow
+ *  - initialize the loading screen before mission_parse() so that we'll be about to get a more accurate load time
+ * fix memory leak in gamesnd (yes, I made a mistake ;))
+ * make sure we unload models on game shutdown too
+ *
  * Revision 2.9  2005/03/30 02:32:40  wmcoolmon
  * Made it so *Snd fields in ships.tbl and weapons.tbl take the sound name
  * as well as its index (ie "L_sidearm.wav" instead of "76")
@@ -248,6 +256,34 @@ int gamesnd_get_by_name(char* name)
 		}
 	}
 	return -1;
+}
+
+//Takes a tag, a sound index destination, and the object name being parsed
+//tag and object_name are mostly so that we can debug stuff
+//This also means you shouldn't use optional_string or required_string,
+//just make sure the destination sound index can handle -1 if things
+//don't work out.
+void parse_sound(char* tag, int *idx_dest, char* object_name)
+{
+	char buf[256];
+	int idx;
+
+	(*idx_dest) = -1;
+	if(optional_string(tag))
+	{
+		stuff_string(buf, F_NAME, NULL, sizeof(buf)/sizeof(char));
+		idx = gamesnd_get_by_name(buf);
+		if(idx != -1)
+			(*idx_dest) = idx;
+		else
+			(*idx_dest) = atoi(buf);
+
+		//Ensure sound is in range
+		if((*idx_dest) < -1 || (*idx_dest) >= Num_game_sounds)
+		{
+			Warning(LOCATION, "%s sound index out of range on '%s'. Must be between 0 and %d. Forcing to -1 (Nonexistant sound).\n", tag, object_name, Num_game_sounds);
+		}
+	}
 }
 
 // load in sounds that we expect will get played
