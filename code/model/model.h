@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.60 $
- * $Date: 2005-04-21 15:49:20 $
- * $Author: taylor $
+ * $Revision: 2.61 $
+ * $Date: 2005-04-25 00:26:53 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/04/21 15:49:20  taylor
+ * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
+ *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
+ *  - a little "stupid" fix for dds bitmap reading
+ *  - fix it so that memory is released properly on bitmap read errors
+ *  - some cleanup to model texture loading
+ *  - allow model textures to get released rather than just unloaded, saves bitmap slots
+ *  - bump MAX_BITMAPS to 4750, should be able to decrease after public testing of new code
+ *
  * Revision 2.59  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -601,13 +610,13 @@ typedef struct submodel_instance_info {
 													// when reading in ships.tbl
 
 #define MSS_FLAG_ROTATES			(1<<0)		// This means the object rotates automatically with "turn_rate"
-#define MSS_FLAG_STEPPED_ROTATE	(1<<1)		// This means that the rotation occurs in steps
+#define MSS_FLAG_STEPPED_ROTATE		(1<<1)		// This means that the rotation occurs in steps
 #define MSS_FLAG_AI_ROTATE			(1<<2)		// This means that the rotation is controlled by ai
 #define MSS_FLAG_CREWPOINT			(1<<3)		// If set, this is a crew point.
-#define MSS_FLAG_TURRET_MATRIX	(1<<4)		// If set, this has it's turret matrix created correctly.
+#define MSS_FLAG_TURRET_MATRIX		(1<<4)		// If set, this has it's turret matrix created correctly.
 #define MSS_FLAG_AWACS				(1<<5)		// If set, this subsystem has AWACS capability
-#define MSS_FLAG_ARTILLERY		(1<<6)		// if this rotates when weapons are fired - Goober5000
-#define MSS_FLAG_TRIGGERED		(1<<7)		// rotates when triggered by something
+#define MSS_FLAG_ARTILLERY			(1<<6)		// if this rotates when weapons are fired - Goober5000
+#define MSS_FLAG_TRIGGERED			(1<<7)		// rotates when triggered by something
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -733,18 +742,23 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
-	char		crewspot[MAX_NAME_LEN];				// unique identifying name for this turret -- used to assign AI class and multiplayer people
-	//int		turret_weapon_type;					// index in Weapon_info of weapon this fires
-	vec3d	turret_norm;							//	direction this turret faces
-	matrix	turret_matrix;							// turret_norm converted to a matrix.
-	float		turret_fov;								//	dot of turret_norm:vec_to_enemy > this means can see
+	char	crewspot[MAX_NAME_LEN];				// unique identifying name for this turret -- used to assign AI class and multiplayer people
+	vec3d	turret_norm;						//	direction this turret faces
+	matrix	turret_matrix;						// turret_norm converted to a matrix.
+	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
-	int		turret_gun_sobj;						// Which subobject in this model the firing points are linked to.
-	float		turret_turning_rate;					// How fast the turret turns. Read from ships.tbl
+	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
+	float	turret_turning_rate;				// How fast the turret turns. Read from ships.tbl
+	int		turret_rotation_snd;				// Sound to make when the turret moves
+
+	//Sound stuff
+	int		alive_snd;		//Sound to make while the subsystem is not-dead
+	int		dead_snd;		//Sound to make when the subsystem is dead.
+	int		rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
 
 	// engine wash info
-	char		engine_wash_index;					// index into Engine_wash_info
+	struct engine_wash_info		*engine_wash_pointer;					// index into Engine_wash_info
 
 	// rotation specific info
 	float		turn_rate;							// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
@@ -921,7 +935,7 @@ typedef struct thruster_bank {
 	glow_point point[MAX_THRUSTER_SLOTS];
 
 	// Engine wash info
-	char		wash_info_index;			// index into Engine_wash_info
+	struct engine_wash_info	*wash_info_pointer;			// index into Engine_wash_info
 
 	int		obj_num;		// what subsystem number this thruster is on
 } thruster_bank;
