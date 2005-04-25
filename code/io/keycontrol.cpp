@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-04-20 04:34:01 $
- * $Author: phreak $
+ * $Revision: 2.51 $
+ * $Date: 2005-04-25 00:23:23 $
+ * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/04/20 04:34:01  phreak
+ * get the cheat keys for "force weapon" working again
+ *
  * Revision 2.49  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -873,11 +876,11 @@ void debug_cycle_player_ship(int delta)
 	ship_info	*sip;
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index > MAX_SHIP_TYPES ){
+		if ( si_index > Num_ship_types ){
 			si_index = 0;
 		}
 		if ( si_index < 0 ){
-			si_index = MAX_SHIP_TYPES - 1;
+			si_index = Num_ship_types - 1;
 		}
 		sip = &Ship_info[si_index];
 		if ( sip->flags & SIF_PLAYER_SHIP ){
@@ -886,7 +889,7 @@ void debug_cycle_player_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity > MAX_SHIP_TYPES ){
+		if ( sanity > Num_ship_types ){
 			break;
 		}
 	}
@@ -918,10 +921,10 @@ void debug_cycle_targeted_ship(int delta)
 
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index > MAX_SHIP_TYPES )
+		if ( si_index > Num_ship_types )
 			si_index = 0;
 		if ( si_index < 0 )
-			si_index = MAX_SHIP_TYPES-1;
+			si_index = Num_ship_types-1;
 
 	
 		sip = &Ship_info[si_index];
@@ -937,7 +940,7 @@ void debug_cycle_targeted_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity > MAX_SHIP_TYPES )
+		if ( sanity > Num_ship_types )
 			break;
 	}
 

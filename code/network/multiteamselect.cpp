@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-04-03 08:48:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-04-25 00:28:17 $
+ * $Author: wmcoolmon $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/04/03 08:48:31  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 2.9  2005/03/02 21:18:20  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -980,7 +985,7 @@ void multi_ts_sync_interface()
 	
 	// item 1 - determine how many ship types are available in the ship pool
 	Multi_ts_avail_count = 0;
-	for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+	for(idx=0;idx<Num_ship_types;idx++){
 		if(Ss_pool[idx] > 0){
 			Multi_ts_avail_count++;
 		}
@@ -1494,7 +1499,7 @@ void multi_ts_blit_avail_ships()
 	// blit the availability of all ship counts
 	display_count = 0;
 	ship_count = 0;
-	for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+	for(idx=0;idx<Num_ship_types;idx++){
 		if(Ss_pool[idx] > 0){
 			// if our starting display index is after this, then skip it
 			if(ship_count < Multi_ts_avail_start){

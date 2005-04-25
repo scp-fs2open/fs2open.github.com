@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-04-11 05:50:36 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-04-25 00:28:17 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/11 05:50:36  taylor
+ * some limits.h fixes to make GCC happier
+ * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
+ *
  * Revision 2.8  2005/03/02 21:18:19  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -435,7 +439,7 @@ void multi_campaign_client_store_goals(int mission_num)
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN PACKET HANDLERS
 //
-
+extern int Num_ship_types;
 // process a campaign update packet
 void multi_campaign_process_update(ubyte *data, header *hinfo)
 {
@@ -462,12 +466,12 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 		// if we're not in campaign mode, bash all weapons and ships to be "allowed"
 		if(!val){
 			// all ships
-			for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+			for(idx=0;idx<Num_ship_types;idx++){
 				Campaign.ships_allowed[idx] = 1;
 			}
 
 			// all weapons
-			for(idx=0;idx<MAX_WEAPON_TYPES;idx++){
+			for(idx=0;idx<Num_ship_types;idx++){
 				Campaign.weapons_allowed[idx] = 1;
 			}
 		} else {
@@ -643,7 +647,7 @@ void multi_campaign_send_pool_status()
 
 		// determine how many ship types we're going to add
 		spool_size = 0;
-		for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+		for(idx=0;idx<Num_ship_types;idx++){
 			if(Campaign.ships_allowed[idx]){
 				spool_size++;
 			}
@@ -651,7 +655,7 @@ void multi_campaign_send_pool_status()
 		
 		// determine how many weapon types we're going to add
 		wpool_size = 0;
-		for(idx=0;idx<MAX_WEAPON_TYPES;idx++){
+		for(idx=0;idx<Num_ship_types;idx++){
 			if(Campaign.weapons_allowed[idx]){
 				wpool_size++;
 			}
@@ -663,7 +667,7 @@ void multi_campaign_send_pool_status()
 		// add all ship types
 		val = (ubyte)spool_size;
 		ADD_DATA(val);
-		for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+		for(idx=0;idx<Num_ship_types;idx++){
 			if(Campaign.ships_allowed[idx]){
 				val = (ubyte)idx;
 				ADD_DATA(val);
@@ -673,7 +677,7 @@ void multi_campaign_send_pool_status()
 		// add all weapon types
 		val = (ubyte)wpool_size;
 		ADD_DATA(val);
-		for(idx=0;idx<MAX_WEAPON_TYPES;idx++){
+		for(idx=0;idx<Num_ship_types;idx++){
 			if(Campaign.weapons_allowed[idx]){
 				val = (ubyte)idx;
 				ADD_DATA(val);
