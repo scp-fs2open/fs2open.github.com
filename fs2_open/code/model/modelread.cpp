@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.64 $
- * $Date: 2005-04-21 15:49:21 $
- * $Author: taylor $
+ * $Revision: 2.65 $
+ * $Date: 2005-04-25 00:26:53 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/04/21 15:49:21  taylor
+ * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
+ *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
+ *  - a little "stupid" fix for dds bitmap reading
+ *  - fix it so that memory is released properly on bitmap read errors
+ *  - some cleanup to model texture loading
+ *  - allow model textures to get released rather than just unloaded, saves bitmap slots
+ *  - bump MAX_BITMAPS to 4750, should be able to decrease after public testing of new code
+ *
  * Revision 2.63  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -2246,7 +2255,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					bank ->obj_num = -1;
 
 					if (pm->version < 2117) {
-						bank->wash_info_index = -1;
+						bank->wash_info_pointer = NULL;
 					} else {
 						cfread_string_len( props, MAX_PROP_LEN, fp );
 						// look for $engine_subsystem=xxx
@@ -2264,11 +2273,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 							// set wash_info_index to invalid
 							int table_error = 1;
-							bank->wash_info_index = -1;
+							bank->wash_info_pointer = NULL;
 							for (int k=0; k<n_subsystems; k++) {
 								if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
-									bank->wash_info_index = subsystems[k].engine_wash_index;
-									if (bank->wash_info_index >= 0) {
+									bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
+									if (bank->wash_info_pointer != NULL) {
 										table_error = 0;
 									}
 									// also set what subsystem this is attached to
@@ -2277,7 +2286,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 								}
 							}
 
-							if ( (bank->wash_info_index == -1) && (n_subsystems > 0) ) {
+							if ( (bank->wash_info_pointer == NULL) && (n_subsystems > 0) ) {
 								if (table_error) {
 								//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
 								} else {
@@ -2285,7 +2294,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 								}
 							}
 						} else {
-							bank->wash_info_index = -1;
+							bank->wash_info_pointer = NULL;
 						}
 					}
 
