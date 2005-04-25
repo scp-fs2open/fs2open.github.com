@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/DebugConsole/Console.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:27 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-04-25 00:07:22 $
+ * $Author: wmcoolmon $
  *
  * Routines for managing the debug console window.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:27  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:44  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -629,7 +632,7 @@ void debug_output( char c )
 
 void dc_printf(char *format, ...)
 {
-	char tmp[DCOLS*2];
+	char tmp[DCOLS*DROWS];
 	va_list args;
 	
 	va_start(args, format);
@@ -637,7 +640,7 @@ void dc_printf(char *format, ...)
 	va_end(args);
 
 	char *p = tmp;
-	while( *p )	{
+	while( *p != '\0' )	{
 		debug_output(*p);
 		p++;
 	} 
