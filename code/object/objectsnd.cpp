@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-25 00:28:58 $
+ * $Author: wmcoolmon $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.6  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -299,6 +302,7 @@ typedef struct _obj_snd {
 	int		freq;				// valid range: 100 -> 100000 Hz
 	int		flags;			
 	vec3d	offset;			// offset from the center of the object where the sound lives
+	ship_subsys *ss;		//Associated subsystem
 } obj_snd;
 
 #define VOL_PAN_UPDATE			50						// time in ms to update a persistant sound vol/pan
@@ -917,9 +921,9 @@ void obj_snd_do_frame()
 //
 // returns:     -1			=> sound could not be assigned (possible, since only MAX_OBJECT_SOUNDS persistant
 //										sound can be assigned per object).  
-//               0			=> sound was successfully assigned
+//               >= 0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, int i, vec3d *pos, int main)
+int obj_snd_assign(int objnum, int i, vec3d *pos, int main, ship_subsys *associated_sub)
 {
 	obj_snd	*snd;
 	object	*objp;
@@ -966,14 +970,14 @@ int obj_snd_assign(int objnum, int i, vec3d *pos, int main)
 	snd->objnum = OBJ_INDEX(objp);
 	snd->next_update = 1;
 	snd->offset = *pos;
+	snd->ss = associated_sub;
 	// vm_vec_sub(&snd->offset, pos, &objp->pos);	
 
 	// add objp to the obj_snd_list
 	list_append( &obj_snd_list, snd );
 
-	return 0;
+	return sound_index;
 }
-
 
 // ---------------------------------------------------------------------------------------
 // obj_snd_delete()
@@ -981,9 +985,39 @@ int obj_snd_assign(int objnum, int i, vec3d *pos, int main)
 // Remove a persistant sound that has been assigned to an object.
 //
 // parameters:  objnum		=> index of object that sound is being removed from.
+//				index		=> index of sound in objsnd_num
+//
+void obj_snd_delete(int objnum, int index)
+{
+	//Sanity checking
+	Assert(objnum > -1 && objnum < MAX_OBJECTS);
+	Assert(index > -1 && index < MAX_OBJECT_SOUNDS);
+
+	object *objp = &Objects[objnum];
+	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
+
+	//Stop the sound
+	obj_snd_stop(objp, index);
+
+	// remove objp from the obj_snd_list
+	list_remove( &obj_snd_list, osp );
+	osp->objnum = -1;
+	osp->flags = 0;
+	osp = NULL;
+	objp->objsnd_num[index] = -1;
+}
+
+// ---------------------------------------------------------------------------------------
+// obj_snd_delete_type()
+//
+// Remove every similar persistant sound that has been assigned to an object.
+//
+// parameters:  objnum		=> index of object that sound is being removed from.
+//				sndnum		=> index of sound that we're trying to completely get rid of
+//								-1 to delete all persistent sounds on ship.
 //
 //
-void	obj_snd_delete(int objnum, int sndnum)
+void	obj_snd_delete_type(int objnum, int sndnum, ship_subsys *ss)
 {
 	object	*objp;
 	obj_snd	*osp;
@@ -992,7 +1026,7 @@ void	obj_snd_delete(int objnum, int sndnum)
 	Assert(objnum >= 0 && objnum < MAX_OBJECTS);
 	objp = &Objects[objnum];
 
-	// delete all object sounds for this guy
+	//Go through the list and get sounds that match criteria
 	for(idx=0; idx<MAX_OBJECT_SOUNDS; idx++){
 		// no sound
 		if ( objp->objsnd_num[idx] == -1 ){
@@ -1003,18 +1037,13 @@ void	obj_snd_delete(int objnum, int sndnum)
 
 		// if we're just deleting a specific sound type
 		// and this is not one of them. skip it.
-		if((sndnum != -1) && (osp->id != sndnum)){
+		//Also check if this is assigned to the right subsystem, if one has been given.
+		if(((sndnum != -1) && (osp->id != sndnum))
+			|| ((ss != NULL) && (osp->ss != ss))){
 			continue;
 		}
 
-		obj_snd_stop(objp, -1);
-
-		// remove objp from the obj_snd_list
-		list_remove( &obj_snd_list, osp );
-		osp->objnum = -1;
-		osp->flags = 0;
-		osp = NULL;
-		objp->objsnd_num[idx] = -1;
+		obj_snd_delete(objnum, idx);
 	}
 }
 
@@ -1033,7 +1062,7 @@ void obj_snd_delete_all()
 		temp = GET_NEXT(osp);
 		Assert( osp->objnum != -1 );
 
-		obj_snd_delete( osp->objnum );
+		obj_snd_delete_type( osp->objnum );
 
 		osp = temp;
 	}
@@ -1042,7 +1071,7 @@ void obj_snd_delete_all()
 	int idx;
 	for(idx=0; idx<MAX_OBJ_SNDS; idx++){
 		if(Objsnds[idx].flags & OS_USED){
-			obj_snd_delete(Objsnds[idx].objnum);
+			obj_snd_delete_type(Objsnds[idx].objnum);
 		}
 	}
 }

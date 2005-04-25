@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2005-04-25 00:28:58 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.36  2005/03/27 12:28:32  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -1132,9 +1135,8 @@ void obj_delete(int objnum)
 			}
 
 			physics_init(&objp->phys_info);
-
 #ifndef NO_SOUND			
-			obj_snd_delete(OBJ_INDEX(objp));
+			obj_snd_delete_type(OBJ_INDEX(objp));
 #endif
 			return;
 		} else
@@ -1185,7 +1187,7 @@ void obj_delete(int objnum)
 
 #ifndef NO_SOUND			
 	// if a persistant sound has been created, delete it
-	obj_snd_delete(OBJ_INDEX(objp));		
+	obj_snd_delete_type(OBJ_INDEX(objp));		
 #endif
 
 	objp->type = OBJ_NONE;		//unused!
