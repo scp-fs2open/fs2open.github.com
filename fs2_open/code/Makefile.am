@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.17 2005-04-17 05:38:28 taylor Exp $
+## $Id: Makefile.am,v 1.18 2005-04-25 06:33:56 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -11,7 +11,9 @@ EXTRA_DIST =	\
 	freespace2/goal_fail.bmp	\
 	freespace2/goal_inc.bmp	\
 	freespace2/goal_none.bmp	\
-	freespace2/goal_ord.bmp
+	freespace2/goal_ord.bmp	\
+	wxfred2/res/FRED.ico	\
+	wxfred2/wxfred.xrc
 
 
 # D_ variants are defaults and should always be used
@@ -620,18 +622,18 @@ libcode_a_SOURCES = ${FS2_SOURCES} ${JOY_SOURCES} ${SOUND_SOURCES}	\
 ## Begin MAIN fs2 binary
 ##
 
-fs2_open_d_SOURCES =	\
+FS2OPEN_SOURCES = \
 	freespace2/freespace.cpp	\
 	freespace2/freespace.h	\
 	freespace2/levelpaging.cpp	\
-	freespace2/levelpaging.h	\
+	freespace2/levelpaging.h
+
+fs2_open_d_SOURCES =	\
+	${FS2OPEN_SOURCES}	\
 	${PLATFORM_SOURCES}
 
 fs2_open_r_SOURCES =	\
-	freespace2/freespace.cpp	\
-	freespace2/freespace.h	\
-	freespace2/levelpaging.cpp	\
-	freespace2/levelpaging.h	\
+	${FS2OPEN_SOURCES}	\
 	${PLATFORM_SOURCES}
 
 fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a
@@ -647,18 +649,20 @@ fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a
 ## Begin wxFRED2 binary
 ##
 
-wxFRED2_d_SOURCES = \
+wxFRED_SOURCES = \
 	wxfred2/wxfred2.cpp	\
 	wxfred2/wxfred2.h	\
 	wxfred2/fredframe.cpp	\
 	wxfred2/fredframe.h	\
+	wxfred2/wxfred_xrc.cpp	\
+	wxfred2/wxfred_xrc.h
+
+wxFRED2_d_SOURCES = \
+	${wxFRED_SOURCES}	\
 	${PLATFORM_SOURCES}
 
 wxFRED2_r_SOURCES =	\
-	wxfred2/wxfred2.cpp	\
-	wxfred2/wxfred2.h	\
-	wxfred2/fredframe.cpp	\
-	wxfred2/fredframe.h	\
+	${wxFRED_SOURCES}	\
 	${PLATFORM_SOURCES}
 
 wxFRED2_d_LDADD = libcode.a ../libjpeg/libjpeg.a
