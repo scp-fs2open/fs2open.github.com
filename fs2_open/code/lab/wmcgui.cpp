@@ -461,26 +461,136 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 	return NULL;
 }
 
-GUIObject* GUIScreen::Add(GUIObject* cgp)
+//Adds objects to a screen
+//IMPORTANT: Options added with the same name as
+//older objects will make this function return
+//a pointer to the original object with that name
+GUIObject* GUIScreen::Add(GUIObject* new_gauge)
 {
-	if(cgp == NULL)
+	if(new_gauge == NULL)
 		return NULL;
 
 	Assert(this != NULL);
 
+	//First - do we have anything with the same name.
+	for(GUIObject *tgp = (GUIObject*) GET_FIRST(&Guiobjects); tgp != END_OF_LIST(&Guiobjects); tgp = (GUIObject*) GET_NEXT(tgp))
+	{
+		if(tgp->Name == new_gauge->Name)
+		{
+			//Get rid of the new gauge
+			//We don't want it; breaks skinning
+			delete new_gauge;
+
+			if(tgp->Type == new_gauge->Type)
+			{
+				//If the type of the existing object is the same
+				//as the new one, we can safely pass this one off
+				delete new_gauge;
+				return tgp;
+			}
+			else
+			{
+				//This is icky; we might cast a pointer after this.
+				//So return NULL with a warning
+				Warning(LOCATION, "Attempt to create another object with name '%s'; new object type was %d, existing object type was %d. This may cause null pointer issues.",tgp->Name, new_gauge->Type, tgp->Type);
+				delete new_gauge;
+				return NULL;
+			}
+		}
+	}
+
 	//Add to the end of the list
-	list_append(&Guiobjects, cgp);
-	cgp->OwnerSystem = OwnerSystem;
-	cgp->OwnerScreen = this;
+	list_append(&Guiobjects, new_gauge);
+	new_gauge->OwnerSystem = OwnerSystem;
+	new_gauge->OwnerScreen = this;
+
+	//If no position specified, try to find an empty spot.
+	//ALTERNATE IDEA:
+	//Try corners of windows.
+	/*
+	int TempX = -1;
+	int TempY = -1;
+	int TempTotal = 0;
+	GUIObject *agp, *bgp, *dgp;
+	bool problem = false;
+	//Do X first
+	if(new_gauge->Coords[0] < 0)
+	{
+		for(GUIObject *agp = (GUIObject*) GET_FIRST(&Guiobjects); agp != END_OF_LIST(&Guiobjects); agp = (GUIObject*) GET_NEXT(agp))
+		{
+			problem = false;
+			
+			TempX = agp->Coords[2] + 1;
+			
+			//More than 50% offscreen? This is unacceptable.
+			TempTotal = TempX + new_gauge->Coords[2];
+			if(TempTotal > gr_screen.max_w)
+			{
+				if((float)(TempTotal - gr_screen.max_w)/(float)TempTotal < 0.5f)
+					continue;
+			}
+
+			if(new_gauge->Coords[1] < 0)
+			{
+				for(GUIObject *bgp = (GUIObject*) GET_FIRST(&Guiobjects); bgp != END_OF_LIST(&Guiobjects); bgp = (GUIObject*) GET_NEXT(bgp))
+				{
+					problem = false;
+					
+					TempY = bgp->Coords[3] + 1;
+					for(GUIObject *dgp = (GUIObject*) GET_FIRST(&Guiobjects); dgp != END_OF_LIST(&Guiobjects); dgp = (GUIObject*) GET_NEXT(dgp))
+					{
+							if(TempX > dgp->Coords[0] && TempX < dgp->Coords[2])
+							{
+								problem = true;
+								break;
+							}
+					}
+				}
+			}
+			else
+			{
+				for(GUIObject *dgp = (GUIObject*) GET_FIRST(&Guiobjects); dgp != END_OF_LIST(&Guiobjects); dgp = (GUIObject*) GET_NEXT(dgp))
+				{
+					if(		TempX > dgp->Coords[0]
+						&& TempX < dgp->Coords[2]
+						&& new_gauge->Coords[1] > dgp->Coords[1]
+						&& new_gauge->Coords[1] < dgp->Coords[3])
+					{
+						problem = true;
+						break;
+					}
+				}
+			}
+
+			if(!problem)
+				break;
+		}
+	}
+
+	//Set actual coordinates
+	if(Coords[0] < 0)
+	{
+		if(TempX < 0)
+			Coords[0] = 0;
+		else
+			Coords[0] = TempX;
+	}
+	if(Coords[1] < 0)
+	{
+		if(TempY < 0)
+			Coords[1] = 0;
+		else
+			Coords[1] = TempY;
+	}*/
 
 	//For skinning
-	cgp->SetCIPointer();
+	new_gauge->SetCIPointer();
 	//Set position and stuff
-	cgp->GetOIECoords(&cgp->Coords[0], &cgp->Coords[1], &cgp->Coords[2], &cgp->Coords[3]);
+	new_gauge->GetOIECoords(&new_gauge->Coords[0], &new_gauge->Coords[1], &new_gauge->Coords[2], &new_gauge->Coords[3]);
 	//In case we need to resize
-	cgp->OnRefreshSize();
+	new_gauge->OnRefreshSize();
 
-	return cgp;
+	return new_gauge;
 }
 
 int GUIScreen::OnFrame(float frametime, bool doevents)
@@ -753,7 +863,8 @@ GUIObject::GUIObject(std::string in_Name, int x_coord, int y_coord, int x_width,
 	CloseFunction = NULL;
 
 	//These would make no sense
-	if(x_coord < 0 || y_coord < 0 || x_width == 0 || y_height == 0)
+	//x_coord and y_coord of < 0 mean to let the parent handle placement.
+	if(x_width == 0 || y_height == 0)
 		return;
 	
 	//No! Bad!
@@ -1218,10 +1329,34 @@ int Window::DoRefreshSize()
 	//Find caption coordinates
 	if(!(Style & WS_NOTITLEBAR))
 	{
+		int close_w,close_h,hide_w,hide_h;
+
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE)))
+			IMG_INFO(GetCIEImageHandle(WCI_CLOSE), &close_w, &close_h);
+		else
+			gr_get_string_size(&close_w, &close_h, "X");
+
+		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE)))
+			IMG_INFO(GetCIEImageHandle(WCI_HIDE), &hide_w, &hide_h);
+		else
+			gr_get_string_size(&hide_w, &hide_h, "-");
+		
+		int caption_min_size;
 		if(Caption.size() > 0)
 		{
 			gr_get_string_size(&w, &h, (char *)Caption.c_str());
+			caption_min_size = w + close_w + hide_w;
+		}
+		else
+		{
+			caption_min_size = close_w + hide_w;
+		}
 
+		if((Coords[2] - Coords[0]) < (caption_min_size))
+				Coords[2] = Coords[0] + caption_min_size + BorderSizes[0] + BorderSizes[2];
+
+		if(Caption.size() > 0)
+		{
 			if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION)))
 			{
 				int cw, ch;
@@ -1246,28 +1381,18 @@ int Window::DoRefreshSize()
 		}
 
 		//Find close coordinates now
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CLOSE)))
-			IMG_INFO(GetCIEImageHandle(WCI_CLOSE), &w, &h);
-		else
-			gr_get_string_size(&w, &h, "X");
-
-		CloseCoords[0] = Coords[2] - w;
+		CloseCoords[0] = Coords[2] - close_w;
 		CloseCoords[1] = Coords[1] + BorderSizes[1];
 		GetCIECoords(WCI_CLOSE, &CloseCoords[0], &CloseCoords[1]);
-		CloseCoords[2] = CloseCoords[0] + w;
-		CloseCoords[3] = CloseCoords[1] + h;
+		CloseCoords[2] = CloseCoords[0] + close_w;
+		CloseCoords[3] = CloseCoords[1] + close_h;
 
 		//Find hide coordinates now
-		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_HIDE)))
-			IMG_INFO(GetCIEImageHandle(WCI_HIDE), &w, &h);
-		else
-			gr_get_string_size(&w, &h, "-");
-
-		HideCoords[0] = CloseCoords[0] - w;
+		HideCoords[0] = CloseCoords[0] - hide_w;
 		HideCoords[1] = CloseCoords[1];
 		GetCIECoords(WCI_HIDE, &HideCoords[0], &HideCoords[1]);
-		HideCoords[2] = HideCoords[0] + w;
-		HideCoords[3] = HideCoords[1] + h;
+		HideCoords[2] = HideCoords[0] + hide_w;
+		HideCoords[3] = HideCoords[1] + hide_h;
 	}
 
 	//Do bitmap stuff
