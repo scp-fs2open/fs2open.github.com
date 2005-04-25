@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-04-05 05:53:20 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2005-04-25 00:27:32 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.34  2005/03/03 06:05:30  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -333,6 +336,8 @@ float max_rotation = 3.75f;
 float neb2_flash_fade = 0.3f;
 
 // fog values for different ship types
+//Why the heck is this still here? Commenting out. -WMC
+/*
 float Neb_ship_fog_vals_glide[MAX_SHIP_TYPE_COUNTS][2] = {
 	{0.0f, 0.0f},				// SHIP_TYPE_NONE
 	{10.0f, 500.0f},			// SHIP_TYPE_CARGO
@@ -355,6 +360,7 @@ float Neb_ship_fog_vals_glide[MAX_SHIP_TYPE_COUNTS][2] = {
 	{10.0f, 600.0f},			// SHIP_TYPE_CORVETTE
 	{10.0f, 1000.0f},			// SHIP_TYPE_KNOSSOS_DEVICE
 };
+*/
 float Neb_ship_fog_vals_d3d[MAX_SHIP_TYPE_COUNTS][2] = {
 	{0.0f, 0.0f},				// SHIP_TYPE_NONE
 	{10.0f, 500.0f},			// SHIP_TYPE_CARGO
