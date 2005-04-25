@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/wxFRED2/FREDFrame.cpp $
- * $Revision: 1.2 $
- * $Date: 2005-04-24 14:42:27 $
+ * $Revision: 1.3 $
+ * $Date: 2005-04-25 12:14:21 $
  * $Author: Goober5000 $
  *
  * FRED app frame
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/04/24 14:42:27  Goober5000
+ * wxFRED now uses XRC-based resources
+ * --Goober5000
+ *
  * Revision 1.1  2005/03/29 13:35:53  Goober5000
  * set up the main menu options
  * --Goober5000
@@ -24,14 +28,14 @@
  */
 
 // precompiled header for compilers that support it
-#include "wx/wxprec.h"
+#include <wx/wxprec.h>
 
 #ifdef __BORLANDC__
     #pragma hdrstop
 #endif
 
 #ifndef WX_PRECOMP
-	#include "wx/wx.h"
+	#include <wx/wx.h>
 #endif
 
 #include "fredframe.h"
