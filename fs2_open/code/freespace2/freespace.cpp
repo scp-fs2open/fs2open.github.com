@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.142 $
- * $Date: 2005-04-21 15:58:07 $
- * $Author: taylor $
+ * $Revision: 2.143 $
+ * $Date: 2005-04-25 00:21:30 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2005/04/21 15:58:07  taylor
+ * initial changes to mission loading and status in debug builds
+ *  - move bmpman page in init to an earlier stage to avoid unloading sexp loaded images
+ *  - small changes to progress reports in debug builds so that it's easier to tell what's slow
+ *  - initialize the loading screen before mission_parse() so that we'll be about to get a more accurate load time
+ * fix memory leak in gamesnd (yes, I made a mistake ;))
+ * make sure we unload models on game shutdown too
+ *
  * Revision 2.141  2005/04/16 03:36:12  wmcoolmon
  * Minor changes; made even more fields in ships.tbl optional.
  *
@@ -1681,12 +1689,7 @@ static char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
 	"2_Loading.ani"		// GR_1024
 };
 
-#if defined(FS2_DEMO)
-static char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
-	"PreLoad",
-	"2_PreLoad"
-};
-#elif defined(OEM_BUILD)
+#if defined(OEM_BUILD)
 static char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"OEMPreLoad",
 	"2_OEMPreLoad"
@@ -6896,9 +6899,9 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_GAME_INIT:
-	#if defined(FS2_DEMO) || defined(OEM_BUILD)
+#ifdef OEM_BUILD
 			gameseq_set_state(GS_STATE_INITIAL_PLAYER_SELECT);
-	#else			
+#else			
 			// see if the command line option has been set to use the last pilot, and act acoordingly
 			if( player_select_get_last_pilot() ) {	
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
@@ -10643,9 +10646,10 @@ void display_title_screen()
 		//Get bitmap's width and height
 		int width, height;
 		bm_get_info(title_bitmap, &width, &height);
+		gr_resize_screen_pos(&width, &height);
 
 		//Draw it in the center of the screen
-		gr_bitmap(0,0);//(gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
+		gr_bitmap((gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
 	}
 
 	if(title_logo != -1)
