@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-04-05 05:53:24 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2005-04-25 00:31:14 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.40  2005/03/27 12:28:35  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -3088,17 +3091,17 @@ void engine_wash_ship_process(ship *shipp)
 			thruster_bank *bank = &pm->thrusters[idx];
 
 			// check if thruster bank has engine wash
-			if (bank->wash_info_index < 0) {
+			if (bank->wash_info_pointer == NULL) {
 				// if huge, give default engine wash
-				if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_HUGE_SHIP) {
-					bank->wash_info_index = 0;
+				if ((Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_HUGE_SHIP) && Engine_wash_info.size()) {
+					bank->wash_info_pointer = &Engine_wash_info[0];
 					nprintf(("wash", "Adding default engine wash to ship %s", Ship_info[Ships[ship_objp->instance].ship_info_index].name));
 				} else {
 					continue;
 				}
 			}
 
-			engine_wash_info *ewp = &Engine_wash_info[bank->wash_info_index];
+			engine_wash_info *ewp = bank->wash_info_pointer;
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 
@@ -3196,7 +3199,7 @@ void engine_wash_ship_process(ship *shipp)
 	else {
 		if(shipp != Player_ship){
 #ifndef NO_SOUND			
-			obj_snd_delete(shipp->objnum, SND_ENGINE_WASH);
+			obj_snd_delete_type(shipp->objnum, SND_ENGINE_WASH);
 #endif
 		} else {
 			snd_stop(Player_engine_wash_loop);

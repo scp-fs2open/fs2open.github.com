@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-02 21:24:46 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-25 00:31:14 $
+ * $Author: wmcoolmon $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/02 21:24:46  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.10  2004/07/26 20:47:50  Kazan
  * remove MCD complete
  *
@@ -272,7 +275,7 @@ void afterburners_start(object *objp)
 		return;
 
 	shipp = &Ships[objp->instance];
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types );
 	sip = &Ship_info[shipp->ship_info_index];
 	
 	if ( !(sip->flags & SIF_AFTERBURNER) )	{
@@ -342,7 +345,7 @@ void afterburners_update(object *objp, float fl_frametime)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags & OF_PLAYER_SHIP ) && (Game_mode & GM_DEAD) ) {
@@ -462,7 +465,7 @@ void afterburners_stop(object *objp, int key_released)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < MAX_SHIP_TYPES );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags & OF_PLAYER_SHIP) && key_released ) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.193 $
- * $Date: 2005-04-20 08:26:49 $
+ * $Revision: 2.194 $
+ * $Date: 2005-04-25 00:31:14 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.193  2005/04/20 08:26:49  wmcoolmon
+ * Fix silly armor.tbl parse error.
+ *
  * Revision 2.192  2005/04/19 06:27:54  taylor
  * we might actually be needing to load a model here ;)
  *
@@ -1584,8 +1587,9 @@ char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
-engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
-char get_engine_wash_index(char *engine_wash_name);
+std::vector<engine_wash_info> Engine_wash_info;
+//char get_engine_wash_index(char *engine_wash_name);
+engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
 
 // information for ships which have exited the game
 exited_ship Ships_exited[MAX_EXITED_SHIPS];
@@ -1608,10 +1612,10 @@ ship_subsys		ship_subsys_free_list;
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
 
 std::vector<ArmorType> Armor_types;
-
+/*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
 int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship types, precedence list for player ship/wing selection
-
+*/
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
 static int Missile_out_snd_timer;	// timer so we play out of laser sound effect periodically
 
@@ -1895,32 +1899,32 @@ int ship_get_num_ships()
 // parse an engine wash info record
 void parse_engine_wash(bool replace)
 {
+	engine_wash_info ewt;
 	engine_wash_info *ewp;
-	ewp = &Engine_wash_info[Num_engine_wash_types];
+
 	// name of engine wash info
 	required_string("$Name:");
-	stuff_string(ewp->name, F_NAME, NULL);
+	stuff_string(ewt.name, F_NAME, NULL);
 
 	//Does this engine wash exist already?
 	//If so, load this new info into it
 	//Otherwise, increment Num_engine_wash_types
-	int e_w_id;
-	e_w_id = get_engine_wash_index(ewp->name);
-	if(e_w_id != -1)
+	ewp = get_engine_wash_pointer(ewt.name);
+	if(ewp != NULL)
 	{
 		if(replace)
 		{
-			nprintf(("Warning", "More than one version of engine wash %s exists; using newer version.", ewp->name));
-			ewp = &Engine_wash_info[e_w_id];
+			nprintf(("Warning", "More than one version of engine wash %s exists; using newer version.", ewt.name));
 		}
 		else
 		{
-			Error(LOCATION, "Error:  Engine wash %s already exists.  All engine wash names must be unique.", ewp->name);
+			Error(LOCATION, "Error:  Engine wash %s already exists.  All engine wash names must be unique.", ewt.name);
 		}
 	}
 	else
 	{
-		Num_engine_wash_types++;
+		Engine_wash_info.push_back(ewt);
+		ewp = &Engine_wash_info[Num_engine_wash_types++];
 	}
 
 
@@ -2865,23 +2869,8 @@ strcpy(parse_error_text, temp_error);
 	else
 		sip->scan_time = 2000;
 
-	sip->engine_snd = -1;
-	if(optional_string("$EngineSnd:"))
-	{
-		stuff_string(buf, F_NAME, NULL);
-		i = gamesnd_get_by_name(buf);
-		if(i != -1)
-			sip->engine_snd = i;
-		else
-			sip->engine_snd = atoi(buf);
-		
-		// bah: ensure the sounds are in range
-		if (sip->engine_snd < -1 || sip->engine_snd >= Num_game_sounds)
-		{
-			Warning(LOCATION, "$EngineSnd sound index out of range on ship %s.  Must be between 0 and %d.  Forcing to -1.\n", sip->name, Num_game_sounds);
-			sip->engine_snd = -1;
-		}
-	}
+	//Parse the engine sound
+	parse_sound("$EngineSnd:", &sip->engine_snd, sip->name);
 
 	if(optional_string("$Closeup_pos:"))
 		stuff_vector(&sip->closeup_pos);
@@ -3165,10 +3154,14 @@ strcpy(parse_error_text, temp_error);
 				char engine_wash_name[32];
 				stuff_string(engine_wash_name, F_NAME, NULL);
 				// get and set index
-				sp->engine_wash_index = get_engine_wash_index(engine_wash_name);
+				sp->engine_wash_pointer = get_engine_wash_pointer(engine_wash_name);
 			} else {
-				sp->engine_wash_index = -1;
+				sp->engine_wash_pointer = NULL;
 			}
+
+			parse_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
+			parse_sound("$DeadSnd:", &sp->dead_snd, sp->subobj_name);
+			parse_sound("$RotationSnd:", &sp->rotation_snd, sp->subobj_name);
 				
 			// Get any AWACS info
 			sp->awacs_intensity = 0.0f;
@@ -3177,13 +3170,6 @@ strcpy(parse_error_text, temp_error);
 				stuff_float(&sp->awacs_radius);
 				sip->flags |= SIF_HAS_AWACS;
 			}
-
-			/* Go away -WMC
-			sp->turret_weapon_type = sp->primary_banks[0];  // temporary, will be obsolete later.
-			if ( sp->turret_weapon_type < 0 ) {
-				sp->turret_weapon_type = sp->secondary_banks[0];
-			}
-			*/
 
 			if(optional_string("+non-targetable"))
 				sp->targetable = 0;
@@ -3383,6 +3369,7 @@ strcpy(parse_error_text, temp_error);
 	return rtn;
 }
 
+/*
 char get_engine_wash_index(char *engine_wash_name)
 {
 	int i;
@@ -3395,6 +3382,20 @@ char get_engine_wash_index(char *engine_wash_name)
 
 	// not found, so return -1
 	return -1;
+}*/
+
+engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
+{
+	for(int i = 0; i < Num_engine_wash_types; i++)
+	{
+		if(!stricmp(engine_wash_name, Engine_wash_info[i].name))
+		{
+			return &Engine_wash_info[i];
+		}
+	}
+
+	//Didn't find anything.
+	return NULL;
 }
 
 void parse_shiptbl(char* longname, bool is_chunk)
@@ -3415,9 +3416,8 @@ void parse_shiptbl(char* longname, bool is_chunk)
 		required_string("#End");
 
 		required_string("#Engine Wash Info");
-		while (required_string_either("#End", "$Name:")) {
-			Assert( Num_engine_wash_types < MAX_ENGINE_WASH_TYPES );
-
+		while (required_string_either("#End", "$Name:"))
+		{
 			parse_engine_wash(false);
 		}
 
@@ -3450,8 +3450,6 @@ void parse_shiptbl(char* longname, bool is_chunk)
 		{
 			while (required_string_either("#End", "$Name:"))
 			{
-				Assert( Num_engine_wash_types < MAX_ENGINE_WASH_TYPES );
-
 				parse_engine_wash(true);
 			}
 
@@ -3479,6 +3477,8 @@ void parse_shiptbl(char* longname, bool is_chunk)
 	// Read in a list of ship_info indicies that are an ordering of the player ship precedence.
 	// This list is used to select an alternate ship when a particular ship is not available
 	// during ship selection.
+	// Guess it isn't -WMC
+	/*
 	strcpy(parse_error_text,"'player ship precedence");
 	if(!is_chunk)
 	{
@@ -3493,6 +3493,7 @@ void parse_shiptbl(char* longname, bool is_chunk)
 		}
 	}
 	strcpy(parse_error_text, "");
+	*/
 
 	// close localization
 	lcl_ext_close();
@@ -4249,6 +4250,22 @@ void ship_recalc_subsys_strength( ship *shipp )
 		shipp->subsys_info[type].num++;
 		shipp->subsys_info[type].total_hits += ship_system->max_hits;
 		shipp->subsys_info[type].current_hits += ship_system->current_hits;
+
+		//Get rid of any persistent sounds on the subsystem
+		//This is inefficient + sloppy but there's not really an easy way to handle things
+		//if a subsystem is brought back from the dead, other than this
+		if(ship_system->current_hits < ship_system->max_hits)
+		{
+			obj_snd_delete_type(shipp->objnum, -1, ship_system);
+			if(ship_system->system_info->dead_snd != -1)
+				obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, 1);
+		}
+		else
+		{
+			obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
+			if(ship_system->system_info->alive_snd != -1)
+				obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, 1);
+		}
 	}
 
 	// set any ship flags which should be set.  unset the flags since we might be repairing a subsystem
@@ -4264,7 +4281,6 @@ void ship_recalc_subsys_strength( ship *shipp )
 		shipp->flags |= SF_DISARMED;
 	}
 	*/
-
 }
 
 // routine to possibly fixup the model subsystem information for this ship pointer.  Needed when
@@ -10670,6 +10686,9 @@ void ship_close()
 //
 void ship_assign_sound(ship *sp)
 {
+#ifdef NO_SOUND
+	return;
+#endif
 	ship_info	*sip;	
 	object *objp;
 	vec3d engine_pos;
@@ -10679,28 +10698,37 @@ void ship_assign_sound(ship *sp)
 	if(sp->objnum < 0){
 		return;
 	}
+
 	objp = &Objects[sp->objnum];
 	sip = &Ship_info[sp->ship_info_index];
 
 	if ( sip->engine_snd != -1 ) {
 		vm_vec_copy_scale(&engine_pos, &objp->orient.vec.fvec, -objp->radius/2.0f);		
-
-#ifndef NO_SOUND			
+		
 		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, 1);
-#endif
 	}
 
-	// if he's got any specific engine subsystems. go for it.	
+	// Do subsystem sounds	
 	moveup = GET_FIRST(&sp->subsys_list);
 	while(moveup != END_OF_LIST(&sp->subsys_list)){
-		// check the name of the subsystem
-#ifndef NO_SOUND			
+		// Check for any engine sounds		
 		if(strstr(moveup->system_info->name, "enginelarge")){
 			obj_snd_assign(sp->objnum, SND_ENGINE_LOOP_LARGE, &moveup->system_info->pnt, 0);
 		} else if(strstr(moveup->system_info->name, "enginehuge")){
 			obj_snd_assign(sp->objnum, SND_ENGINE_LOOP_HUGE, &moveup->system_info->pnt, 0);
 		}
-#endif
+
+		//Do any normal subsystem sounds
+		if(moveup->current_hits < moveup->max_hits)
+		{
+			if(moveup->system_info->alive_snd != -1)
+				obj_snd_assign(sp->objnum, moveup->system_info->alive_snd, &moveup->system_info->pnt, 1);
+		}
+		else 
+		{
+			if(moveup->system_info->dead_snd != -1)
+				obj_snd_assign(sp->objnum, moveup->system_info->dead_snd, &moveup->system_info->pnt, 1);
+		}
 
 		// next
 		moveup = GET_NEXT(moveup);
@@ -14314,7 +14342,7 @@ int ship_tvt_wing_lookup(char *wing_name)
 
 char *TypeNames[] = {
 	"additive",
-	"mulitplicative",
+	"multiplicative",
 	"exponentional",
 	"exponential base",
 };
@@ -14369,11 +14397,11 @@ float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wi
 ArmorType::ArmorType(char* in_name, int in_type)
 {
 	uint len = strlen(in_name);
-	if(len > NAME_LENGTH)
+	if(len >= NAME_LENGTH)
 	{
 		Warning(LOCATION, "Armor name %s is %d characters too long, and will be truncated", in_name, len - NAME_LENGTH);
 	}
-	strncpy(Name, in_name, sizeof(in_name)/sizeof(char));
+	strncpy(Name, in_name, NAME_LENGTH-1);
 	
 	if(in_type > Num_armor_calculation_types || in_type < 0)
 	{
@@ -14400,6 +14428,7 @@ void ArmorType::ParseData()
 	//Now read in the table
 	while(optional_string("$"))
 	{
+		temp_float_data.clear();
 		stuff_string(trashy_buf, F_NAME, ":", 1);
 		parse_advance(1);
 		
@@ -14427,7 +14456,7 @@ void ArmorType::ParseData()
 		}
 		else if(NumRows > 0 && num > NumColumns)
 		{
-			Warning(LOCATION, "Armor class %s row %u is long; chopping off the last %u columns", Name, NumRows, num - NumColumns);
+			Warning(LOCATION, "Armor class '%s' row %u is too long; chopping off the last %u columns", Name, NumRows, num - NumColumns);
 			temp_float_data.resize(NumColumns);
 		}
 		else if(NumRows == 0)

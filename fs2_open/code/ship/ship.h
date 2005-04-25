@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.91 $
- * $Date: 2005-04-18 08:35:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.92 $
+ * $Date: 2005-04-25 00:31:14 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2005/04/18 08:35:27  Goober5000
+ * model and class changes should be all set now
+ * --Goober5000
+ *
  * Revision 2.90  2005/04/18 05:27:26  Goober5000
  * removed ship->alt_modelnum as it was essentially duplicates of ship->modelnum; changed the alt modelnum stuff accordingly
  * fixes for ship_model_change and change_ship_type
@@ -1501,15 +1505,14 @@ extern ship_obj Ship_obj_list;
 
 typedef struct engine_wash_info
 {
-	char		name[32];
+	char		name[NAME_LENGTH];
 	float		angle;			// half angle of cone around engine thruster
 	float		radius_mult;	// multiplier for radius 
 	float		length;			// length of engine wash, measured from thruster
 	float		intensity;		// intensity of engine wash
 } engine_wash_info;
 
-#define MAX_ENGINE_WASH_TYPES	20
-extern engine_wash_info Engine_wash_info[MAX_ENGINE_WASH_TYPES];
+extern std::vector<engine_wash_info> Engine_wash_info;
 
 // flags defined for wings
 #define MAX_WING_FLAGS				8				// total number of flags in the wing structure -- used for parsing wing flags
@@ -1680,9 +1683,10 @@ extern int wing_name_lookup(char *name, int ignore_count = 0);
 extern int Player_ship_class;
 
 #define MAX_PLAYER_SHIP_CHOICES	15
+/*
 extern int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
 extern int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship types, precedence list for player ship/wing selection
-
+*/
 // ----------------------------------------------------------------------------
 // Moved from ship.cpp because this is needed over in species_defs
 // 10/15/2003, Kazan
