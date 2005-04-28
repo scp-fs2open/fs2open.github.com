@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.89 $
- * $Date: 2005-04-21 15:59:41 $
- * $Author: taylor $
+ * $Revision: 2.90 $
+ * $Date: 2005-04-28 01:35:26 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2005/04/21 15:59:41  taylor
+ * sexp to swap the skybox in mission, not tested in FRED, hopefully I didn't mess this up too much
+ *
  * Revision 2.88  2005/04/12 02:07:00  phreak
  * ambient_light_level added to the mission structure
  *
@@ -3934,10 +3937,10 @@ void parse_waypoints(mission *pm)
 
 		if(optional_string("+Alphacolor:")) {
 			ubyte r,g,b,a;
-			stuff_byte(&r);
-			stuff_byte(&g);
-			stuff_byte(&b);
-			stuff_byte(&a);
+			stuff_ubyte(&r);
+			stuff_ubyte(&g);
+			stuff_ubyte(&b);
+			stuff_ubyte(&a);
 			jnp->set_alphacolor(r, g, b, a);
 		}
 

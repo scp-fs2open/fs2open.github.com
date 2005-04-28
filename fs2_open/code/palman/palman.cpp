@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Palman/PalMan.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-04 10:12:32 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-28 01:36:09 $
+ * $Author: wmcoolmon $
  *
  * Palette manager routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/04 10:12:32  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.6  2004/10/31 22:00:57  taylor
  * new bmpman merge support, add PreProcDefines.h a few new places
  *
@@ -283,9 +286,9 @@ void palman_load_pixels()
 	while(!optional_string("#END")){
 		// nondarkening pixel
 		if(required_string("+ND")){
-			stuff_byte(&Palman_non_darkening_default[Palman_num_nondarkening_default][0]);
-			stuff_byte(&Palman_non_darkening_default[Palman_num_nondarkening_default][1]);
-			stuff_byte(&Palman_non_darkening_default[Palman_num_nondarkening_default++][2]);
+			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][0]);
+			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][1]);
+			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default++][2]);
 		}
 	}
 

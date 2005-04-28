@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-04-25 00:25:15 $
+ * $Revision: 2.24 $
+ * $Date: 2005-04-28 01:35:26 $
  * $Author: wmcoolmon $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/04/25 00:25:15  wmcoolmon
+ * MAX_SHIP_TYPES > Num_ship_types
+ *
  * Revision 2.22  2005/04/12 05:26:36  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -741,7 +744,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 			// specify up to 256 main halls :)
 			if (optional_string("+Main Hall:"))
-				stuff_byte(&cm->main_hall);
+				stuff_ubyte(&cm->main_hall);
 
 			cm->formula = -1;
 			if ( optional_string("+Formula:") ) {
