@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.h $
- * $Revision: 2.3 $
- * $Date: 2005-04-05 05:53:15 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2005-04-28 05:29:29 $
+ * $Author: wmcoolmon $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/04/05 05:53:15  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.2  2004/08/11 05:06:20  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -190,11 +193,7 @@ typedef struct debris {
 #define	DEBRIS_EXPIRE			(1<<1)	// debris can expire (ie hull chunks from small ships)
 
 
-#ifdef FS2_DEMO
-	#define	MAX_DEBRIS_PIECES	48
-#else
-	#define	MAX_DEBRIS_PIECES	64
-#endif
+#define	MAX_DEBRIS_PIECES	64
 
 extern	debris Debris[MAX_DEBRIS_PIECES];
 

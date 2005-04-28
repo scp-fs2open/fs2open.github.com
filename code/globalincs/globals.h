@@ -7,13 +7,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.9 $
- * $Date: 2005-04-03 08:48:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.10 $
+ * $Date: 2005-04-28 05:29:29 $
+ * $Author: wmcoolmon $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/04/03 08:48:31  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 1.8  2005/02/15 00:06:26  taylor
  * clean up some model related globals
  * code to disable individual thruster glows
@@ -102,11 +107,7 @@
 #define MAX_SHIP_TYPES		130
 #endif
 
-#ifdef FS2_DEMO
-	#define MAX_WINGS				15
-#else
-	#define MAX_WINGS				25
-#endif
+#define MAX_WINGS				25
 
 #define MAX_SHIPS_PER_WING			6
 
@@ -143,12 +144,8 @@
              
 
 // from weapon.h
-#ifdef FS2_DEMO
-	#define MAX_WEAPONS	100
-#else
-	// upped 5/6/98 from 200 - DB
-	#define MAX_WEAPONS	350
-#endif
+// upped 5/6/98 from 200 - DB
+#define MAX_WEAPONS	350
 
 #ifdef INF_BUILD
 #define MAX_WEAPON_TYPES				300
@@ -198,11 +195,7 @@
 
 
 // object.h
-#ifdef FS2_DEMO
-	#define MAX_OBJECTS			300		
-#else
-	#define MAX_OBJECTS			1000		
-#endif
+#define MAX_OBJECTS			1000		
 
 
 

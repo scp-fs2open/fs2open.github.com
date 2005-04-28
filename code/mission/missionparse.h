@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.59 $
- * $Author: phreak $
- * $Date: 2005-04-12 02:07:00 $
+ * $Revision: 2.60 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-04-28 05:29:30 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/04/12 02:07:00  phreak
+ * ambient_light_level added to the mission structure
+ *
  * Revision 2.58  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -814,13 +817,9 @@ typedef struct p_object {
 
 extern p_object ship_arrival_list;			// used by sexpression parser
 
-#ifdef FS2_DEMO
-	#define MAX_SHIP_ARRIVALS		45
-	#define MAX_WING_ARRIVALS		10
-#else 
-	#define MAX_SHIP_ARRIVALS		90			// maximum of 90 objects can arrive later
-	#define MAX_WING_ARRIVALS		20			// maximum of 20 wings can arrive later
-#endif
+
+#define MAX_SHIP_ARRIVALS		90			// maximum of 90 objects can arrive later
+#define MAX_WING_ARRIVALS		20			// maximum of 20 wings can arrive later
 
 extern p_object ship_arrivals[MAX_SHIP_ARRIVALS];
 extern int num_ship_arrivals;

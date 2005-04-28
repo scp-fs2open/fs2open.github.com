@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-04-25 00:04:30 $
+ * $Revision: 1.9 $
+ * $Date: 2005-04-28 05:29:28 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/04/25 00:04:30  wmcoolmon
+ * MAX_SHIP_TYPES -> Num_ship_types
+ *
  * Revision 1.7  2005/04/16 04:16:57  wmcoolmon
  * More optional tag-making for ships.tbl
  *
@@ -1486,9 +1489,7 @@ void parse_difftbl()
 
 	reset_parse();
 
-#ifndef FS2_DEMO
 	extern int Max_incoming_asteroids[NUM_SKILL_LEVELS];
-#endif
 	extern float Skill_level_cmeasure_life_scale[NUM_SKILL_LEVELS];
 	extern float Skill_level_weapon_energy_scale[NUM_SKILL_LEVELS];
 	extern float Skill_level_shield_energy_scale[NUM_SKILL_LEVELS];
@@ -1498,12 +1499,10 @@ void parse_difftbl()
 	extern float Beam_friendly_cap[NUM_SKILL_LEVELS];
 
 	required_string("#Difficulty Settings");
-#ifndef FS2_DEMO
 	if (optional_string("$Max Incoming Asteroids:"))
 	{
 		parse_int_list(Max_incoming_asteroids);
 	}
-#endif
 	if (optional_string("$Player Countermeasure Life Scale:"))
 	{
 		parse_float_list(Skill_level_cmeasure_life_scale);

@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-04-22 00:34:54 $
+ * $Revision: 1.9 $
+ * $Date: 2005-04-28 05:29:28 $
  * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/04/22 00:34:54  wmcoolmon
+ * Minor updates to the GUI, and added some code that will (hopefully) resize HUD images in nonstandard resolutions. I couldn't test it; got an out of memory error.
+ *
  * Revision 1.7  2005/04/20 04:29:50  phreak
  * CVS file header. take 1
  *
@@ -355,9 +358,11 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		}
 
 		// check if protected
+		//WMC - Don't need this here.
+		/*
 		if (objp->flags & OF_PROTECTED) {
 			return;
-		}
+		}*/
 
 		// check if beam protected
 		if(!is_target_beam_valid(&eeo->turret_subsys->weapons, objp))
@@ -505,7 +510,6 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	}
 #endif
 */
-#ifndef FS2_DEMO
 	// check if object is an asteroid attacking the turret parent - taylor
 	if (objp->type == OBJ_ASTEROID) {
 		if ( eeo->turret_parent_objnum == asteroid_collide_objnum(objp) ) {
@@ -520,7 +524,6 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			}
 		}
 	} // end asteroid selection
-#endif
 }
 
 //	Given an object and an enemy team, return the index of the nearest enemy object.
@@ -608,7 +611,6 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 		return eeo.nearest_attacker_objnum;
 	 }
 
-#ifndef FS2_DEMO
 	// asteroid check - taylor
 	asteroid_obj *ao;
 
@@ -628,7 +630,6 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 			evaluate_obj_as_target(objp, &eeo);
 		}
 	}
-#endif
 
 	return eeo.nearest_objnum;										// lowest priority is the closest enemy objnum
 }
@@ -1548,21 +1549,30 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			//		heat seeking and target in a fairly wide cone.
 			//		aspect seeking and target is locked.
 			//turret_weapon_class = tp->turret_weapon_type;
-			if ( !(wip->wi_flags & WIF_HOMING) ) {
-				if ((dist_to_enemy < 75.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE )) {
+			if ( !(wip->wi_flags & WIF_HOMING) )
+			{
+				if ((dist_to_enemy < 75.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 					ok_to_fire = true;
 				}
-			} else if ( wip->wi_flags & WIF_HOMING_HEAT ) {	// if heat seekers
-				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_HEATSEEK_ANGLE )) {
+			}
+			else if ( wip->wi_flags & WIF_HOMING_HEAT )
+			{	// if heat seekers
+				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_HEATSEEK_ANGLE ))
+				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 					ok_to_fire = true;
 				}
-			} else if ( wip->wi_flags & WIF_HOMING_ASPECT ) {	// if aspect seeker
-				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE )) {
+			}
+			else if ( wip->wi_flags & WIF_HOMING_ASPECT )
+			{	// if aspect seeker
+				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				{
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 				}
-				if ( turret_should_fire_aspect(ss, dot, wip) ) {
+				if ( turret_should_fire_aspect(ss, dot, wip) )
+				{
 					ok_to_fire = true;
 				}
 			}

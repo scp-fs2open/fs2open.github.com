@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 2.50 $
+ * $Date: 2005-04-28 05:29:29 $
+ * $Author: wmcoolmon $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.48  2005/03/27 12:28:33  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -985,7 +988,6 @@ void hud_render_target_jump_node(object *target_objp)
 //
 void hud_render_target_asteroid(object *target_objp)
 {
-#ifndef FS2_DEMO
 	vec3d		obj_pos = {0.0f,0.0f,0.0f};
 	vec3d		camera_eye = {0.0f,0.0f,0.0f};
 	matrix		camera_orient = IDENTITY_MATRIX;
@@ -1081,7 +1083,6 @@ void hud_render_target_asteroid(object *target_objp)
 	if ( time_to_impact >= 0.0f ) {
 		emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, NOX("impact: %.1f sec"), time_to_impact);	
 	}
-#endif
 }
 
 //from aicode.cpp. Less include...problems...this way.

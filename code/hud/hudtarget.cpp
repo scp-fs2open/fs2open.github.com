@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 2.59 $
+ * $Date: 2005-04-28 05:29:29 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.57  2005/03/29 07:03:16  wmcoolmon
  * Removed some warnings under Linux/GCC
  *
@@ -2948,11 +2951,9 @@ void hud_target_in_reticle_new()
 			break;
 		case OBJ_ASTEROID:
 			{
-#ifndef FS2_DEMO
-			int subtype = 0;
-			subtype = Asteroids[A->instance].asteroid_subtype;
-			mc.model_num = Asteroid_info[Asteroids[A->instance].type].model_num[subtype];
-#endif
+				int subtype = 0;
+				subtype = Asteroids[A->instance].asteroid_subtype;
+				mc.model_num = Asteroid_info[Asteroids[A->instance].type].model_num[subtype];
 			}
 			break;
 		case OBJ_JUMP_NODE:
@@ -3904,7 +3905,6 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
 
-#ifndef FS2_DEMO
 		case OBJ_ASTEROID:
 			{
 			int subtype = 0;
@@ -3913,7 +3913,6 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			}
 			break;
-#endif
 
 		case OBJ_JUMP_NODE:
 			modelnum = targetp->jnp->get_modelnum();

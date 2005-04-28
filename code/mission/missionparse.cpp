@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.90 $
- * $Date: 2005-04-28 01:35:26 $
+ * $Revision: 2.91 $
+ * $Date: 2005-04-28 05:29:30 $
  * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2005/04/28 01:35:26  wmcoolmon
+ * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
+ *
  * Revision 2.89  2005/04/21 15:59:41  taylor
  * sexp to swap the skybox in mission, not tested in FRED, hopefully I didn't mess this up too much
  *
@@ -4258,8 +4261,6 @@ void parse_bitmaps(mission *pm)
 
 void parse_asteroid_fields(mission *pm)
 {
-#ifndef FS2_DEMO
-
 	int i, count, subtype;
 
 	Assert(pm != NULL);
@@ -4353,7 +4354,6 @@ void parse_asteroid_fields(mission *pm)
 		}
 		i++;
 	}
-#endif // DEMO
 }
 
 void parse_variables()
