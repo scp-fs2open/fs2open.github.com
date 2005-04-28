@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-04-15 11:41:28 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-04-28 01:32:57 $
+ * $Author: wmcoolmon $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/04/15 11:41:28  taylor
+ * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
+ *
  * Revision 2.12  2005/04/15 11:36:55  taylor
  * new GCC = new warning messages, yippeeee!!
  *
@@ -2141,14 +2144,14 @@ void asteroid_parse_section()
 	stuff_string(asip->name, F_NAME, NULL);
 
 	required_string( "$POF file1:" );
-	stuff_string_white( asip->pof_files[0] );
+	stuff_string(asip->pof_files[0], F_NAME, NULL);
 
 	required_string( "$POF file2:" );
-	stuff_string_white( asip->pof_files[1] );
+	stuff_string(asip->pof_files[1], F_NAME, NULL);
 
 	if ( (strstr(asip->name,"Asteroid") != NULL) || (strstr(asip->name, "asteroid") != NULL) ) {
 		required_string( "$POF file3:" );
-		stuff_string_white( asip->pof_files[2] );
+		stuff_string(asip->pof_files[2], F_NAME, NULL);
 	}
 
 	asip->num_detail_levels = 0;
