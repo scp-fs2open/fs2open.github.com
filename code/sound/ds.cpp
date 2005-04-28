@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-04-24 12:45:14 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2005-04-28 05:12:26 $
+ * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/04/24 12:45:14  taylor
+ * possible dev/0 bug fix (Jens Granseuer)
+ *
  * Revision 2.23  2005/04/18 03:30:05  taylor
  * more accurate play position for OpenAL when AL_BYTE_LOKI is used (Jens Granseuer)
  *
@@ -3028,7 +3031,7 @@ void ds_set_pan( int channel, int pan )
 	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &state), return );
 
 	if (state == AL_PLAYING) {
-		ALfloat alpan = (pan != 0) ? ((float)pan / MAX_PAN) : 0.0;
+		ALfloat alpan = (pan != 0) ? ((float)pan / MAX_PAN) : 0.0f;
 		OpenAL_ErrorPrint( alSource3f(Channels[channel].source_id, AL_POSITION, alpan, 0.0, 1.0) );
 	}
 #else
@@ -3110,7 +3113,7 @@ void ds_set_pitch(int channel, int pitch)
 	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return );
 
 	if (status == AL_PLAYING) {
-		ALfloat alpitch = log10(pitch) - 2.0;
+		ALfloat alpitch = log10((float)pitch) - 2.0f;
 		OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_PITCH, alpitch) );
 	}
 #else
