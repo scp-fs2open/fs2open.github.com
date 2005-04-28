@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-04-24 08:27:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2005-04-28 01:34:33 $
+ * $Author: wmcoolmon $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/04/24 08:27:17  Goober5000
+ * fix0red the CVS log
+ * --Goober5000
+ *
  * Revision 2.27  2005/04/08 20:03:59  wmcoolmon
  * *crosses fingers*
  *
@@ -632,16 +636,16 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 	{
 		if(cg->color_dest)
 		{
-			stuff_byte(&HUD_COLOR(dest_hud, cg->color_dest)->red);
-			stuff_byte(&HUD_COLOR(dest_hud, cg->color_dest)->green);
-			stuff_byte(&HUD_COLOR(dest_hud, cg->color_dest)->blue);
+			stuff_ubyte(&HUD_COLOR(dest_hud, cg->color_dest)->red);
+			stuff_ubyte(&HUD_COLOR(dest_hud, cg->color_dest)->green);
+			stuff_ubyte(&HUD_COLOR(dest_hud, cg->color_dest)->blue);
 		}
 		else
 		{
 			ubyte junk_byte;
-			stuff_byte(&junk_byte);
-			stuff_byte(&junk_byte);
-			stuff_byte(&junk_byte);
+			stuff_ubyte(&junk_byte);
+			stuff_ubyte(&junk_byte);
+			stuff_ubyte(&junk_byte);
 		}
 	}
 	return 1;

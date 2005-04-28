@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-04-11 05:42:02 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2005-04-28 01:34:33 $
+ * $Author: wmcoolmon $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/04/11 05:42:02  taylor
+ * some demo related fixes (Jens Granseuer)
+ *
  * Revision 2.14  2005/03/10 08:00:06  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -1921,10 +1924,10 @@ void hud_config_color_load(char *name)
 		stuff_string(str, F_NAME, NULL, 1023);
 
 		required_string("+RGBA:");
-		stuff_byte(&HUD_config.clr[idx].red);
-		stuff_byte(&HUD_config.clr[idx].green);
-		stuff_byte(&HUD_config.clr[idx].blue);
-		stuff_byte(&HUD_config.clr[idx].alpha);
+		stuff_ubyte(&HUD_config.clr[idx].red);
+		stuff_ubyte(&HUD_config.clr[idx].green);
+		stuff_ubyte(&HUD_config.clr[idx].blue);
+		stuff_ubyte(&HUD_config.clr[idx].alpha);
 	}	
 }
 
