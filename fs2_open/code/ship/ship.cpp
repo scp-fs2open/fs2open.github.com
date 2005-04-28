@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.195 $
- * $Date: 2005-04-28 01:38:32 $
+ * $Revision: 2.196 $
+ * $Date: 2005-04-28 05:29:30 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.195  2005/04/28 01:38:32  wmcoolmon
+ * parse_ship uses stuff_bool_list; stuff_byte to stuff_ubyte
+ *
  * Revision 2.194  2005/04/25 00:31:14  wmcoolmon
  * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
  *
@@ -1540,15 +1543,12 @@
 #endif
 
 
-#ifdef FS2_DEMO
-	#define MAX_SHIP_SUBOBJECTS		360
-#else
-	#define MAX_SHIP_SUBOBJECTS		2100 			//Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
+
+#define MAX_SHIP_SUBOBJECTS		2100 			//Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
 																// Highest I saw was 164 in sm2-03a which Sandeep says has a lot of ships.
 																// JAS: sm3-01 needs 460.   You cannot know this number until *all* ships
 																// have warped in.   So I put code in the paging code which knows all ships
 																// that will warp in.
-#endif
 
 extern bool splodeing;
 
@@ -1997,6 +1997,8 @@ int parse_ship(bool replace)
 	strcat(parse_error_text, sip->name);
 	// AL 28-3-98: If this is a demo build, we only want to parse weapons that are preceded with
 	//             the '@' symbol
+	// WMC 27-4-05: Not needed
+/*
 #ifdef DEMO // not needed FS2_DEMO (using separate table file)
 	if ( sip->name[0] != '@' ) {
 		// advance to next weapon, and return -1
@@ -2006,6 +2008,7 @@ int parse_ship(bool replace)
 		return -1;
 	}
 #endif
+*/
 
 #ifdef NDEBUG
 	if (get_pointer_to_first_hash_symbol(sip->name) && Fred_running)

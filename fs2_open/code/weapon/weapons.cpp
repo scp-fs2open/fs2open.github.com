@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2005/04/28 01:39:14  wmcoolmon
+ * stuff_byte to stuff_ubyte
+ *
  * Revision 2.109  2005/04/25 00:34:00  wmcoolmon
  * Use parse_sound instead of code chunks
  *
@@ -1224,7 +1227,8 @@ int parse_weapon(int subtype, bool replace)
 	strcat(parse_error_text, wip->name);
 	// AL 28-3-98: If this is a demo build, we only want to parse weapons that are preceded with
 	//             the '@' symbol
-	#ifdef DEMO // not needed FS2_DEMO (separate table file)
+	// WMC 27-4-05: No need now. :)
+/*	#ifdef DEMO // not needed FS2_DEMO (separate table file)
 		if ( wip->name[0] != '@' ) {
 			// advance to next weapon, and return -1
 
@@ -1234,6 +1238,7 @@ int parse_weapon(int subtype, bool replace)
 			return -1;
 		}
 	#endif
+*/
 
 	if ( wip->name[0] == '@' ) {
 		char old_name[NAME_LENGTH];

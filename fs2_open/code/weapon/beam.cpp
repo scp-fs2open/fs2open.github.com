@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
+ * $Revision: 2.50 $
+ * $Date: 2005-04-28 05:29:30 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.48  2005/03/08 03:50:17  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -2189,7 +2192,6 @@ int beam_get_model(object *objp)
 		}
 		return Debris[objp->instance].model_num;		
 
-#ifndef FS2_DEMO
 	case OBJ_ASTEROID:
 		subtype = Asteroids[objp->instance].asteroid_subtype;
 		Assert(Asteroids[objp->instance].type >= 0);
@@ -2197,7 +2199,6 @@ int beam_get_model(object *objp)
 			return -1;
 		}
 		return Asteroid_info[Asteroids[objp->instance].type].model_num[subtype];
-#endif
 
 	default:
 		// this shouldn't happen too often

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-04-28 01:32:57 $
+ * $Revision: 2.15 $
+ * $Date: 2005-04-28 05:29:28 $
  * $Author: wmcoolmon $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/04/28 01:32:57  wmcoolmon
+ * Switch stuff_string_white to stuff_string (I don't see why _white was used in the first place)
+ *
  * Revision 2.13  2005/04/15 11:41:28  taylor
  * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
  *
@@ -351,8 +354,8 @@
 #endif
 
 
-
-#ifndef FS2_DEMO
+//WMC - we want asteroid ability with demo!!
+//#ifndef FS2_DEMO
 
 #define			ASTEROID_OBJ_USED	(1<<0)				// flag used in asteroid_obj struct
 #define			MAX_ASTEROID_OBJS	MAX_ASTEROIDS		// max number of asteroids tracked in asteroid list
@@ -2429,7 +2432,7 @@ void asteroid_page_in()
 		} 
 	}
 }
-
+/*
 #else
 
 // stubbed out functions not used in the demo
@@ -2455,3 +2458,4 @@ void	asteroid_frame() {}
 
 
 #endif
+*/

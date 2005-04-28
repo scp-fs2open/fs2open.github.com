@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-04-17 05:38:28 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-04-28 05:29:28 $
+ * $Author: wmcoolmon $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/04/17 05:38:28  taylor
+ * updated Linux joystick code that's a bit less insane speed wise
+ * remove ability to build without joystick support, no reason to keep it around
+ * fix unusable warning flag with libjpeg building
+ *
  * Revision 2.10  2005/03/02 21:24:43  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -741,6 +746,8 @@ int control_config_detect_axis()
 
 int control_config_valid_action(int n)
 {
+//WMC - Invalid_demo_keys is never even filled!!
+/*
 #ifdef FS2_DEMO
 	int i;
 
@@ -748,7 +755,7 @@ int control_config_valid_action(int n)
 		if (n == Invalid_demo_keys[i])
 			return 0;
 #endif
-
+*/
 	return 1;
 }
 

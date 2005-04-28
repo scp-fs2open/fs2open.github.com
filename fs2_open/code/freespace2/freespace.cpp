@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.143 $
- * $Date: 2005-04-25 00:21:30 $
+ * $Revision: 2.144 $
+ * $Date: 2005-04-28 05:29:29 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2005/04/25 00:21:30  wmcoolmon
+ * Center title screen, removal of unnecessary #ifdefs
+ *
  * Revision 2.142  2005/04/21 15:58:07  taylor
  * initial changes to mission loading and status in debug builds
  *  - move bmpman page in init to an earlier stage to avoid unloading sexp loaded images
@@ -2790,15 +2793,7 @@ DCF(show_cpu,"Toggles showing cpu usage")
 	}
 }
 
-#else
-
-	// AL 4-8-98: always allow players to display their framerate
-
-	#ifdef FS2_DEMO
-		DCF_BOOL( show_framerate, Show_framerate )
-	#endif
-
-#endif	// NDEBUG
+#endif
 
 			int Game_init_seed;
 
@@ -3032,9 +3027,7 @@ void game_init()
 	Use_fullscreen_at_startup = os_config_read_uint( NULL, NOX("ForceFullscreen"), 1 );
 #endif
 
-#ifndef FS2_DEMO
 	Asteroids_enabled = 1;		
-#endif
 
 /////////////////////////////
 // SOUND INIT START
