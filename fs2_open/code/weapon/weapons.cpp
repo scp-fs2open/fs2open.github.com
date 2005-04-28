@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2005/04/25 00:34:00  wmcoolmon
+ * Use parse_sound instead of code chunks
+ *
  * Revision 2.108  2005/04/24 12:47:36  taylor
  * little cleanup of laser rendering
  *  - fix animated glows
@@ -1390,13 +1393,13 @@ int parse_weapon(int subtype, bool replace)
 		}
 		
 		required_string("@Laser Color:");
-		stuff_byte(&r);	stuff_byte(&g);	stuff_byte(&b);
+		stuff_ubyte(&r);	stuff_ubyte(&g);	stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_1, r, g, b );
 
 		// optional string for cycling laser colors
 		gr_init_color(&wip->laser_color_2, 0, 0, 0);
 		if(optional_string("@Laser Color2:")){
-			stuff_byte(&r);	stuff_byte(&g);	stuff_byte(&b);
+			stuff_ubyte(&r);	stuff_ubyte(&g);	stuff_ubyte(&b);
 			gr_init_color( &wip->laser_color_2, r, g, b );
 		}
 
@@ -2109,17 +2112,17 @@ int parse_weapon(int subtype, bool replace)
 
 			// rgba inner
 			required_string("+RGBA Inner:");
-			stuff_byte(&i.rgba_inner[0]);
-			stuff_byte(&i.rgba_inner[1]);
-			stuff_byte(&i.rgba_inner[2]);
-			stuff_byte(&i.rgba_inner[3]);
+			stuff_ubyte(&i.rgba_inner[0]);
+			stuff_ubyte(&i.rgba_inner[1]);
+			stuff_ubyte(&i.rgba_inner[2]);
+			stuff_ubyte(&i.rgba_inner[3]);
 
 			// rgba outer
 			required_string("+RGBA Outer:");
-			stuff_byte(&i.rgba_outer[0]);
-			stuff_byte(&i.rgba_outer[1]);
-			stuff_byte(&i.rgba_outer[2]);
-			stuff_byte(&i.rgba_outer[3]);
+			stuff_ubyte(&i.rgba_outer[0]);
+			stuff_ubyte(&i.rgba_outer[1]);
+			stuff_ubyte(&i.rgba_outer[2]);
+			stuff_ubyte(&i.rgba_outer[3]);
 
 			// flicker
 			required_string("+Flicker:");
