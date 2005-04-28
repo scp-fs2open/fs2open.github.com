@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.37 $
- * $Author: Goober5000 $
- * $Date: 2005-04-18 06:59:16 $
+ * $Revision: 2.38 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-04-28 01:12:19 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/04/18 06:59:16  Goober5000
+ * better subsystem comparison
+ * --Goober5000
+ *
  * Revision 2.36  2005/04/05 05:53:22  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1007,6 +1011,11 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 	int tag_id;
 
 	switch (type) {
+		case F_RAW:
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp, read_len);
+			drop_trailing_white_space(read_str);
+			break;
 		case F_NAME:
 			if (!len){
 				final_len = NAME_LENGTH;
@@ -1083,11 +1092,14 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 	}
 
 	// now we want to do any final localization
-	lcl_ext_localize(read_str, pstr, final_len, &tag_id);
+	if(type != F_RAW)
+	{
+		lcl_ext_localize(read_str, pstr, final_len, &tag_id);
 
-	// if the hash localized text hash table is active and we have a valid external string - hash it
-	if(fhash_active() && (tag_id > -2)){
-		fhash_add_str(pstr, tag_id);
+		// if the hash localized text hash table is active and we have a valid external string - hash it
+		if(fhash_active() && (tag_id > -2)){
+			fhash_add_str(pstr, tag_id);
+		}
 	}
 
 	diag_printf("Stuffed string = [%.30s]\n", pstr);
@@ -1693,41 +1705,122 @@ void stuff_int_ex(int *i)
 //	diag_printf("Stuffed int: %i\n", *i);
 }
 
-// Stuffs a boolean value pointed at by Mp.  
-// YES/NO (supporting 1/0 now as well)
-//
+//Stuffs boolean value.
+//Passes things off to stuff_boolean(bool)
 void stuff_boolean(int *i)
 {
-	char token[512];
-	ignore_white_space();
-	copy_to_eoln(token, NULL, Mp, 512);
-	drop_trailing_white_space(token);
-	advance_to_eoln(NULL);
+	bool tempb;
+	stuff_boolean(&tempb);
+	if(tempb)
+		*i = 1;
+	else
+		*i = 0;
+}
 
-	if ( isdigit(token[0]) ) {					// using 1/0 instead of YES/NO
-		int int_value;
-		int_value = atoi(token);
-		if ( int_value )
-			*i = 1;
+// Stuffs a boolean value pointed at by Mp.  
+// YES/NO (supporting 1/0 now as well)
+// Now supports localization :) -WMC
+
+void stuff_boolean(bool *b)
+{
+	char token[512];
+	stuff_string(token, F_RAW, NULL, sizeof(token)/sizeof(char));
+
+	if( isdigit(token[0]))
+	{
+		if(token[0] != '0')
+			*b = true;
 		else
-			*i = 0;
+			*b = false;
 	}
-	else {
-		if ( !stricmp(token, "yes") ) {
-			*i = 1;
+	else
+	{
+		if(!stricmp(token, "yes")
+			|| !stricmp(token, "true")
+			|| !stricmp(token, "ja")		//German
+			|| !stricmp(token, "Oui")		//French
+			|| !stricmp(token, "si")		//Spanish
+			|| !stricmp(token, "ita vero")	//Latin
+			|| !stricmp(token, "HIja'") || !stricmp(token, "HISlaH"))	//Klingon
+		{
+			*b = true;
 		}
-		else if ( !stricmp(token, "no") ) {
-			*i = 0;
+		else if(!stricmp(token, "no")
+			|| !stricmp(token, "false")
+			|| !stricmp(token, "nein")		//German
+			|| !stricmp(token, "Non")		//French
+			//I don't know spanish for "no"
+			//But according to altavista, spanish for "No" is "no"
+			//Go figure.
+			|| !stricmp(token, "minime")	//Latin
+			|| !stricmp(token, "ghobe'"))	//Klingon
+		{
+			*b = false;
 		}
 		else
-			Assert(0);	// can't happen
+		{
+			*b = false;
+			Warning(LOCATION, "Boolean '%s' type unknown; assuming 'no/false'",token);
+		}
 	}
+
+	diag_printf("Stuffed bool: %b\n", *b);
+}
+
+int stuff_bool_list(bool *blp, int max_bools)
+{
+	int count = 0;
+	bool trash_buf = false;
+
+	ignore_white_space();
+	
+	if (*Mp != '(') {
+		error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
+		longjmp(parse_abort, 6);
+	}
+
+	Mp++;
+
+	ignore_white_space();
+
+	while(*Mp != ')')
+	{
+		if(count < max_bools)
+		{
+			stuff_boolean(&blp[count++]);
+			ignore_white_space();
+			
+			//Since Bobb has set a precedent, allow commas for bool lists -WMC
+			if(*Mp == ',')
+			{
+				Mp++;
+				ignore_white_space();
+			}
+		}
+		else
+		{
+			trash_buf = true;
+			break;
+		}
+	}
+
+	if(trash_buf)
+	{
+		error_display(0, "Boolean list has more than allowed arguments; max is %d. Arguments over max will be ignored.", max_bools);
+		while(*Mp != ')')
+		{
+			stuff_boolean(&trash_buf);
+			ignore_white_space();
+		}
+	}
+
+	return count;
 }
 
 
 //	Stuff an integer value pointed at by Mp.
 //	Advances past integer characters.
-void stuff_byte(ubyte *i)
+void stuff_ubyte(ubyte *i)
 {
 	int	temp;
 
