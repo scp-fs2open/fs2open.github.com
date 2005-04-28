@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.38 $
+ * $Revision: 2.39 $
  * $Author: wmcoolmon $
- * $Date: 2005-04-28 01:12:19 $
+ * $Date: 2005-04-28 01:36:46 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/04/28 01:12:19  wmcoolmon
+ * Added stuff_bool_list; Internationalized stuff_boolean.
+ *
  * Revision 2.37  2005/04/18 06:59:16  Goober5000
  * better subsystem comparison
  * --Goober5000
@@ -993,10 +996,12 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 
 // stuffs a string into a buffer.  Can get a string between " marks and stops
 // when whitespace in encounted -- not to end of line
-void stuff_string_white(char *pstr)
+void stuff_string_white(char *pstr, int len)
 {
+	if(!len)
+		len = NAME_LENGTH-1;
 	ignore_white_space();
-	copy_to_next_white(pstr, Mp, NAME_LENGTH-1);
+	copy_to_next_white(pstr, Mp, len);
 	advance_to_next_white();
 }
 
@@ -1015,6 +1020,7 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
 			break;
 		case F_NAME:
 			if (!len){
@@ -1707,10 +1713,10 @@ void stuff_int_ex(int *i)
 
 //Stuffs boolean value.
 //Passes things off to stuff_boolean(bool)
-void stuff_boolean(int *i)
+void stuff_boolean(int *i, bool a_to_eol)
 {
 	bool tempb;
-	stuff_boolean(&tempb);
+	stuff_boolean(&tempb, a_to_eol);
 	if(tempb)
 		*i = 1;
 	else
@@ -1721,10 +1727,12 @@ void stuff_boolean(int *i)
 // YES/NO (supporting 1/0 now as well)
 // Now supports localization :) -WMC
 
-void stuff_boolean(bool *b)
+void stuff_boolean(bool *b, bool a_to_eol)
 {
-	char token[512];
-	stuff_string(token, F_RAW, NULL, sizeof(token)/sizeof(char));
+	char token[32];
+	stuff_string_white(token, sizeof(token)/sizeof(char));
+	if(a_to_eol)
+		advance_to_eoln(NULL);
 
 	if( isdigit(token[0]))
 	{
@@ -1787,7 +1795,7 @@ int stuff_bool_list(bool *blp, int max_bools)
 	{
 		if(count < max_bools)
 		{
-			stuff_boolean(&blp[count++]);
+			stuff_boolean(&blp[count++], false);
 			ignore_white_space();
 			
 			//Since Bobb has set a precedent, allow commas for bool lists -WMC
@@ -1809,7 +1817,7 @@ int stuff_bool_list(bool *blp, int max_bools)
 		error_display(0, "Boolean list has more than allowed arguments; max is %d. Arguments over max will be ignored.", max_bools);
 		while(*Mp != ')')
 		{
-			stuff_boolean(&trash_buf);
+			stuff_boolean(&trash_buf, false);
 			ignore_white_space();
 		}
 	}

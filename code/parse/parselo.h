@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.24 $
+ * $Revision: 2.25 $
  * $Author: wmcoolmon $
- * $Date: 2005-04-28 01:12:19 $
+ * $Date: 2005-04-28 01:36:46 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/04/28 01:12:19  wmcoolmon
+ * Added stuff_bool_list; Internationalized stuff_boolean.
+ *
  * Revision 2.23  2005/04/05 05:53:22  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -417,7 +420,7 @@ extern int required_string_3(char *str1, char *str2, char *str3);
 // stuff
 extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);
 extern void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars);
-extern void stuff_string_white(char *pstr);
+extern void stuff_string_white(char *pstr, int len = 0);
 extern void stuff_string(char *pstr, int type, char *terminators, int len = 0);
 extern void stuff_string_line(char *pstr, int len);
 
@@ -443,8 +446,8 @@ extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist
 	int max, char *description);
 extern int get_string(char *str);
 extern void stuff_parenthesized_vector(vec3d *vp);
-void stuff_boolean(int *i);
-void stuff_boolean(bool *b);
+void stuff_boolean(int *i, bool a_to_eol=true);
+void stuff_boolean(bool *b, bool a_to_eol=true);
 int check_for_string(char *pstr);
 int check_for_string_raw(char *pstr);
 
