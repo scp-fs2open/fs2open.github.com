@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.194 $
- * $Date: 2005-04-25 00:31:14 $
+ * $Revision: 2.195 $
+ * $Date: 2005-04-28 01:38:32 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.194  2005/04/25 00:31:14  wmcoolmon
+ * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
+ *
  * Revision 2.193  2005/04/20 08:26:49  wmcoolmon
  * Fix silly armor.tbl parse error.
  *
@@ -2148,9 +2151,9 @@ int parse_ship(bool replace)
 	sip->num_nondark_colors = 0;
 	while(optional_string("$ND:")){		
 		ubyte nr, ng, nb;
-		stuff_byte(&nr);
-		stuff_byte(&ng);
-		stuff_byte(&nb);
+		stuff_ubyte(&nr);
+		stuff_ubyte(&ng);
+		stuff_ubyte(&nb);
 
 		if(sip->num_nondark_colors < MAX_NONDARK_COLORS){
 			sip->nondark_colors[sip->num_nondark_colors][0] = nr;
@@ -2432,17 +2435,7 @@ strcpy(parse_error_text, temp_error);
 	if(optional_string("$Show Weapon Models:"))
 	{
 		sip->draw_models = true;
-		required_string("(");
-		if(optional_string("yes") || optional_string("Yes") || optional_string("YES"))sip->draw_primary_models[0] = true;
-		else {required_string_3("no","NO","No"); parse_advance(2);}
-
-		i = 1;
-		while(optional_string(",") && i<sip->num_primary_banks){
-		if(optional_string("yes") || optional_string("Yes") || optional_string("YES"))sip->draw_primary_models[i] = true;
-			else {required_string_3("no","NO","No"); parse_advance(2);}
-			i++;
-		}
-		required_string(")");
+		stuff_bool_list(sip->draw_primary_models, sip->num_primary_banks);
 	}
 
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
@@ -2569,17 +2562,7 @@ strcpy(parse_error_text, temp_error);
 	{
 
 		sip->draw_models = true;
-		required_string("(");
-		if(optional_string("yes") || optional_string("Yes") || optional_string("YES"))sip->draw_secondary_models[0] = true;
-		else {required_string_3("no","NO","No"); parse_advance(2);}		
-		
-		i = 1;
-		while(optional_string(",") && i<sip->num_secondary_banks){
-			if(optional_string("yes") || optional_string("Yes") || optional_string("YES"))sip->draw_secondary_models[i] = true;
-			else {required_string_3("no","NO","No"); parse_advance(2);}
-			i++;
-		}
-		required_string(")");
+		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
 	}
 	// copy to regular allowed_weapons array
 	for (i=0; i<MAX_SHIP_WEAPONS; i++)
@@ -2604,9 +2587,9 @@ strcpy(parse_error_text, temp_error);
 	sip->shield_color[1] = 255;
 	sip->shield_color[2] = 255;
 	if(optional_string("$Shield Color:")){
-		stuff_byte(&sip->shield_color[0]);
-		stuff_byte(&sip->shield_color[1]);
-		stuff_byte(&sip->shield_color[2]);
+		stuff_ubyte(&sip->shield_color[0]);
+		stuff_ubyte(&sip->shield_color[1]);
+		stuff_ubyte(&sip->shield_color[2]);
 	}
 
 	// The next three fields are used for the ETS
