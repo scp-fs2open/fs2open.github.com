@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2005/04/28 05:29:30  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.110  2005/04/28 01:39:14  wmcoolmon
  * stuff_byte to stuff_ubyte
  *
@@ -2571,9 +2574,9 @@ void create_weapon_names()
 
 void sort_weapons_by_type()
 {
-	weapon_info lasers[MAX_WEAPON_TYPES]; int num_lasers=0;
-	weapon_info beams[MAX_WEAPON_TYPES]; int num_beams=0;
-	weapon_info missiles[MAX_WEAPON_TYPES]; int num_missiles=0;
+	weapon_info* lasers = new weapon_info[MAX_WEAPON_TYPES]; int num_lasers=0;
+	weapon_info* beams = new weapon_info[MAX_WEAPON_TYPES]; int num_beams=0;
+	weapon_info* missiles = new weapon_info[MAX_WEAPON_TYPES]; int num_missiles=0;
 	int i;
 
 	for (i=0; i < MAX_WEAPON_TYPES; i++)
@@ -2612,6 +2615,10 @@ void sort_weapons_by_type()
 	{
 		Weapon_info[i+num_lasers+num_beams] = missiles[i];
 	}
+
+	delete [] lasers;
+	delete [] beams;
+	delete [] missiles;
 }
 
 void reset_weapon_info()
