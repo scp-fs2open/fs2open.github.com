@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.196 $
- * $Date: 2005-04-28 05:29:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.197 $
+ * $Date: 2005-04-30 18:18:46 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.196  2005/04/28 05:29:30  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.195  2005/04/28 01:38:32  wmcoolmon
  * parse_ship uses stuff_bool_list; stuff_byte to stuff_ubyte
  *
@@ -2838,7 +2841,7 @@ strcpy(parse_error_text, temp_error);
 		stuff_float(&sip->ABlife);
 	}else{
 //		mprintf(("no ABtrails\n"));
-		sip->ABbitmap = -2;	//defalts for no ABtrails-Bobboau
+		sip->ABbitmap = -1;	//defalts for no ABtrails-Bobboau
 		sip->ABwidth_factor = 1.0f;
 		sip->ABAlpha_factor = 1.0f;
 		sip->ABlife = 5.0f;
