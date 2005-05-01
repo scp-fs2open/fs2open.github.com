@@ -91,6 +91,9 @@ D3DFORMAT default_compressed_format = D3DFMT_UNKNOWN;
 
 void d3d_clip_cursor()
 {
+	if (Cmdline_window) return;
+
+	GetWindowRect((HWND)os_get_window(), &D3D_cursor_clip_rect);
  	ClipCursor(&D3D_cursor_clip_rect);
 }
 
@@ -132,6 +135,7 @@ void gr_d3d_activate(int active)
 			if(!Cmdline_window){
 				d3d_lost_device(true);
 			}
+			GetWindowRect(hwnd, &D3D_cursor_clip_rect);
 			d3d_clip_cursor();
 			ShowCursor(FALSE);
 		}
@@ -214,6 +218,7 @@ void d3d_release_rendering_objects()
 bool d3d_init_win32(int screen_width, int screen_height)
 {
 	HWND hwnd = (HWND)os_get_window();
+	RECT rect;
 
 	if ( !hwnd )	{
 		strcpy(Device_init_error, "Could not get application window handle");
@@ -223,12 +228,8 @@ bool d3d_init_win32(int screen_width, int screen_height)
 	// windowed
 	if(GlobalD3DVars::D3D_window)
 	{
-		SetWindowPos(hwnd, HWND_TOP, 0, 0, gr_screen.max_w, gr_screen.max_h, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME); 
-		
-		D3D_cursor_clip_rect.left = 0;
-		D3D_cursor_clip_rect.top = 0;
-		D3D_cursor_clip_rect.right = gr_screen.max_w-1;
-		D3D_cursor_clip_rect.bottom = gr_screen.max_h-1;
+		GetClientRect(hwnd, &rect);
+		SetWindowPos(hwnd, HWND_TOP, rect.left, rect.top, rect.bottom, rect.right, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE | SWP_DRAWFRAME); 
 	} else {
 		// Prepare the window to go full screen
 	#ifndef NDEBUG
@@ -239,19 +240,11 @@ bool d3d_init_win32(int screen_width, int screen_height)
 		RECT work_rect;
 		SystemParametersInfo( SPI_GETWORKAREA, 0, &work_rect, 0 );
 		SetWindowPos( hwnd, HWND_TOPMOST, work_rect.left, work_rect.top, gr_screen.max_w, gr_screen.max_h, 0 );	
-		D3D_cursor_clip_rect.left = work_rect.left;
-		D3D_cursor_clip_rect.top = work_rect.top;
-		D3D_cursor_clip_rect.right = work_rect.left + gr_screen.max_w - 1;
-		D3D_cursor_clip_rect.bottom = work_rect.top + gr_screen.max_h - 1;
 	#else
 		SetWindowLong( hwnd, GWL_EXSTYLE, 0 );
 		SetWindowLong( hwnd, GWL_STYLE, WS_POPUP );
 		ShowWindow(hwnd, SW_SHOWNORMAL );
 		SetWindowPos( hwnd, HWND_TOPMOST, 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );	
-		D3D_cursor_clip_rect.left = 0;
-		D3D_cursor_clip_rect.top = 0;
-		D3D_cursor_clip_rect.right = gr_screen.max_w - 1;
-		D3D_cursor_clip_rect.bottom = gr_screen.max_h - 1;
 	#endif
 	}
 
