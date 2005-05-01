@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.89 $
- * $Author: taylor $
- * $Date: 2005-04-21 15:59:42 $
+ * $Revision: 2.90 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-05-01 06:18:58 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2005/04/21 15:59:42  taylor
+ * sexp to swap the skybox in mission, not tested in FRED, hopefully I didn't mess this up too much
+ *
  * Revision 2.88  2005/04/18 03:16:57  Goober5000
  * more sexp goodness
  * --Goober5000
@@ -1527,5 +1530,25 @@ extern void sexp_music_close();
 
 // Goober5000
 extern int Knossos_warp_ani_used;
+
+//WMC - moved here from FRED
+typedef struct sexp_help_struct {
+	int id;
+	char *help;
+} sexp_help_struct;
+
+sexp_help_struct Sexp_help[];
+
+typedef struct op_menu_struct {
+	char *name;
+	int id;
+} op_menu_struct;
+
+extern op_menu_struct op_menu[];
+extern op_menu_struct op_submenu[];
+
+extern int Num_sexp_help;
+extern int Num_op_menus;
+extern int Num_submenus;
 
 #endif

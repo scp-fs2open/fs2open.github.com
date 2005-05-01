@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.150 $
- * $Date: 2005-04-24 02:10:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.151 $
+ * $Date: 2005-05-01 06:18:58 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2005/04/24 02:10:53  Goober5000
+ * subsystem fix
+ * --Goober5000
+ *
  * Revision 2.149  2005/04/21 15:59:41  taylor
  * sexp to swap the skybox in mission, not tested in FRED, hopefully I didn't mess this up too much
  *
@@ -2922,12 +2926,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				for (i = 0; i < NUM_MEDALS; i++) {
+				for (i = 0; i < Num_medals; i++) {
 					if ( !stricmp(CTEXT(node), Medals[i].name) )
 						break;
 				}
 
-				if ( i == NUM_MEDALS )
+				if ( i == Num_medals )
 					return SEXP_CHECK_INVALID_MEDAL_NAME;
 				break;
 
@@ -5972,12 +5976,12 @@ int sexp_was_medal_granted(int n)
 	}
 
 	medal_name = CTEXT(n);
-	for (i=0; i<NUM_MEDALS; i++) {
+	for (i=0; i<Num_medals; i++) {
 		if (!stricmp(medal_name, Medals[i].name))
 			break;
 	}
 
-	if ( (i < NUM_MEDALS) && (Player->stats.m_medal_earned == i) )
+	if ( (i < Num_medals) && (Player->stats.m_medal_earned == i) )
 		return 1;
 
 	return 0;
@@ -8802,12 +8806,12 @@ void sexp_grant_medal( int n )
 
 	Assert(Player->stats.m_medal_earned < 0);  // Mission has problems.  Tried to grant 2 medals in 1 mission.
 	medal_name = CTEXT(n);
-	for (i = 0; i < NUM_MEDALS; i++ ) {
+	for (i = 0; i < Num_medals; i++ ) {
 		if ( !stricmp(medal_name, Medals[i].name) )
 			break;
 	}
 
-	if ( i < NUM_MEDALS ) {
+	if ( i < Num_medals ) {
 		Player->stats.m_medal_earned = i;
 #ifndef NO_NETWORK
 		if ( Game_mode & GM_MULTIPLAYER ) {
@@ -16896,3 +16900,2054 @@ int get_subcategory(int sexp_id)
 			return -1;		// sexp doesn't have a subcategory
 	}
 }
+
+sexp_help_struct Sexp_help[] = {
+	{ OP_PLUS, "Plus (Arithmetic operator)\r\n"
+		"\tAdds numbers and returns results.\r\n\r\n"
+		"Returns a number.  Takes 2 or more numeric arguments." },
+
+	{ OP_MINUS, "Minus (Arithmetic operator)\r\n"
+		"\tSubtracts numbers and returns results.\r\n\r\n"
+		"Returns a number.  Takes 2 or more numeric arguments." },
+
+	{ OP_MOD, "Mod (Arithmetic operator)\r\n"
+		"\tDivides numbers and returns the remainer.\r\n\r\n"
+		"Returns a number.  Takes 2 or more numeric arguments." },
+
+	{ OP_MUL, "Multiply (Arithmetic operator)\r\n"
+		"\tMultiplies numbers and returns results.\r\n\r\n"
+		"Returns a number.  Takes 2 or more numeric arguments." },
+
+	{ OP_DIV, "Divide (Arithmetic operator)\r\n"
+		"\tDivides numbers and returns results.\r\n\r\n"
+		"Returns a number.  Takes 2 or more numeric arguments." },
+
+	{ OP_RAND, "Rand (Arithmetic operator)\r\n"
+		"\tGets a random number.  This number will not change on successive calls to this sexp.\r\n\r\n"
+		"Returns a number.  Takes 2 numeric arguments...\r\n"
+		"\t1:\tLow range of random number.\r\n"
+		"\t2:\tHigh range of random number." },
+
+	// Goober5000
+	{ OP_RAND_MULTIPLE, "Rand-multiple (Arithmetic operator)\r\n"
+		"\tGets a random number.  This number can and will change between successive calls to this sexp.\r\n\r\n"
+		"Returns a number.  Takes 2 numeric arguments...\r\n"
+		"\t1:\tLow range of random number.\r\n"
+		"\t2:\tHigh range of random number." },
+
+	// -------------------------- Nav Points --- Kazan -------------------------- 
+	{ OP_NAV_ISVISITED, "Takes 1 argument: The Nav Point Name\r\n"
+		"Returns whether that nav point has been visited (player within 1000 meters)" },
+
+	{ OP_NAV_DISTANCE, "Takes 1 argument: The Nav point Name\r\n"
+		"Returns the distance from the player ship to that nav point" },
+
+	{ OP_NAV_ADD_WAYPOINT, "Takes 3 Arguments: NavPoint Name, Waypoint Path Name, Waypoint Path Point #\r\n"
+		"IE Setting up 'Nav 1' to be on the first Waypoint on Wapoint Path 'Intercept' the arguments would be:\r\n"
+		"'Nav 1', 'Intercept', '1'" },
+
+	{ OP_NAV_ADD_SHIP, "Takes 2 Arguments: NavPoint Name, Ship Name\r\n"
+		"Binds the named navpoint to the named ship - when the ship moves, the waypoint moves with it\r\n" },
+
+	{ OP_NAV_DEL, "Takes 1 Argument: NavPoint Name, and deletes that NavPoint" },
+
+	{ OP_NAV_HIDE, "Takes 1 Argument: NavPoint Name, it then 'hides' that Nav Point\n\r"
+		"This causes the nav point to be unselectable, if in the future the Nav Map screen is implemented\r\n" 
+		"then a hidden nav point will not be displayed on it\r\n" },
+
+	{ OP_NAV_RESTRICT, "Takes 1 Argument: NavPoint Name, it then 'restricts' that Nav Point\n\r"
+		"This causes the nav point to be unselectable, if in the future the Nav Map screen is implemented\r\n" 
+		"then a restrict nav point will be displayed on it, but unselectable\r\n"  },
+
+	{ OP_NAV_UNHIDE, "Takes 1 Argument: NavPoint Name, it then unhides it\r\n" },
+
+	{ OP_NAV_UNRESTRICT, "Takes 1 Argument: NavPoint Name, it then unrestricts it\r\n" },
+
+	{ OP_NAV_SET_VISITED, "Takes 1 Argument: NavPoint Name, it then sets its visited flag\r\n" },
+
+	{ OP_NAV_UNSET_VISITED, "Takes 1 Argument: NavPoint Name, it then unsets its visited flag\r\n" },
+
+	{ OP_NAV_SET_CARRY, "Takes at least 1 argument, but can take as many as you give it.\r\n"
+		"It takes ship and/or wing names as sets their Nav Carry flag -- a ship with the nav carry flag\r\n" 
+		"will autopilot with the player\r\n" },
+
+	{ OP_NAV_UNSET_CARRY, "Takes atleast 1 argument, but can take as many as you give it.\r\n"
+		"It takes ship and/or wing names and unsets their Nav Carry flag\r\n" },
+
+	// -------------------------- -------------------------- -------------------------- 
+
+
+	// For the mission designer to enforce a -radar_reduce
+	{ OP_RADAR_SET_MAXRANGE, "Takes 1 arguement: The Radar Range\r\n"
+		"It sets the 'infinite' radar range value to the argument\r\n"
+		"This has the same effect as the -radar_reduce command line option: except the player cannot skip it\r\n"
+		"Useful for enforcing game balance" },
+
+	// Goober5000
+	{ OP_ABS, "Absolute value (Arithmetic operator)\r\n"
+		"\tReturns the absolute value of a number.  Takes 1 numeric argument.\r\n" },
+
+	// Goober5000
+	{ OP_MIN, "Minimum value (Arithmetic operator)\r\n"
+		"\tReturns the minimum of a set of numbers.  Takes 1 or more numeric arguments.\r\n" },
+
+	// Goober5000
+	{ OP_MAX, "Maximum value (Arithmetic operator)\r\n"
+		"\tReturns the maximum of a set of numbers.  Takes 1 or more numeric arguments.\r\n" },
+
+	// Goober5000
+	{ OP_AVG, "Average value (Arithmetic operator)\r\n"
+		"\tReturns the average (rounded to the nearest integer) of a set of numbers.  Takes 1 or more numeric arguments.\r\n" },
+
+	// Goober5000
+	{ OP_GET_OBJECT_X, "get-object-x\r\n"
+		"\tReturns the X position of a ship, wing, waypoint, or ship subsystem.  "
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t2: A ship subsystem (optional; ignored if the first argument is not a ship)." },
+
+	// Goober5000
+	{ OP_GET_OBJECT_Y, "get-object-y\r\n"
+		"\tReturns the Y position of a ship, wing, waypoint, or ship subsystem.  "
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1: The name of a ship.\r\n"
+		"\t2: A ship subsystem (optional; ignored if the first argument is not a ship)." },
+
+	// Goober5000
+	{ OP_GET_OBJECT_Z, "get-object-z\r\n"
+		"\tReturns the Z position of a ship, wing, waypoint, or ship subsystem.  "
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1: The name of a ship.\r\n"
+		"\t2: A ship subsystem (optional; ignored if the first argument is not a ship)." },
+
+	// Goober5000
+	{ OP_GET_OBJECT_RELATIVE_X, "get-object-relative-x\r\n"
+		"\tReturns the absolute X coordinate of a set of coordinates relative to a particular object.  "
+		"In other words, the input coordinates are the coordinates relative to the object's position and orientation.  "
+		"The coordinate returned is the absolute spatial coordinate.  Takes 4 or 5 arguments...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t2: The relative X coordinate.\r\n"
+		"\t3: The relative Y coordinate.\r\n"
+		"\t4: The relative Z coordinate.\r\n"
+		"\t5: The name of a ship subsystem (optional)." },
+
+	// Goober5000
+	{ OP_GET_OBJECT_RELATIVE_Y, "get-object-relative-y\r\n"
+		"\tReturns the absolute Y coordinate of a set of coordinates relative to a particular object.  "
+		"In other words, the input coordinates are the coordinates relative to the object's position and orientation.  "
+		"The coordinate returned is the absolute spatial coordinate.  Takes 4 or 5 arguments...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t2: The relative X coordinate.\r\n"
+		"\t3: The relative Y coordinate.\r\n"
+		"\t4: The relative Z coordinate.\r\n"
+		"\t5: The name of a ship subsystem (optional)." },
+
+	// Goober5000
+	{ OP_GET_OBJECT_RELATIVE_Z, "get-object-relative-z\r\n"
+		"\tReturns the absolute Z coordinate of a set of coordinates relative to a particular object.  "
+		"In other words, the input coordinates are the coordinates relative to the object's position and orientation.  "
+		"The coordinate returned is the absolute spatial coordinate.  Takes 4 or 5 arguments...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t2: The relative X coordinate.\r\n"
+		"\t3: The relative Y coordinate.\r\n"
+		"\t4: The relative Z coordinate.\r\n"
+		"\t5: The name of a ship subsystem (optional)." },
+
+	// Goober5000
+	{ OP_SET_SHIP_POSITION, "set-ship-position\r\n"
+		"\tInstantaneously sets a ship's spatial coordinates."
+		"Takes 4 arguments...\r\n"
+		"\t1: The name of a ship.\r\n"
+		"\t2: The desired new X coordinate.\r\n"
+		"\t3: The desired new Y coordinate.\r\n"
+		"\t4: The desired new Z coordinate." },
+
+	{ OP_TRUE, "True (Boolean operator)\r\n"
+		"\tA true boolean state\r\n\r\n"
+		"Returns a boolean value." },
+
+	{ OP_FALSE, "False (Boolean operator)\r\n"
+		"\tA false boolean state\r\n\r\n"
+		"Returns a boolean value." },
+
+	{ OP_AND, "And (Boolean operator)\r\n"
+		"\tAnd is true if all of its arguments are true.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more boolean arguments." },
+
+	{ OP_OR, "Or (Boolean operator)\r\n"
+		"\tOr is true if any of its arguments are true.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more boolean arguments." },
+
+	{ OP_EQUALS, "Equals (Boolean operator)\r\n"
+		"\tIs true if all of its arguments are equal.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more numeric arguments." },
+
+	{ OP_GREATER_THAN, "Greater Than (Boolean operator)\r\n"
+		"\tTrue if the first argument is greater than the second argument.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 numeric arguments." },
+
+	{ OP_LESS_THAN, "Less Than (Boolean operator)\r\n"
+		"\tTrue if the first argument is less than the second argument.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 numeric arguments." },
+
+	// Goober5000
+	{ OP_STRING_EQUALS, "String Equals (Boolean operator)\r\n"
+		"\tIs true if all of its arguments are equal.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more string arguments." },
+
+	// Goober5000
+	{ OP_STRING_GREATER_THAN, "String Greater Than (Boolean operator)\r\n"
+		"\tTrue if the first argument is greater than the second argument.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 string arguments." },
+
+	// Goober5000
+	{ OP_STRING_LESS_THAN, "String Less Than (Boolean operator)\r\n"
+		"\tTrue if the first argument is less than the second argument.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 string arguments." },
+
+	// Goober5000 - added wing capability
+	{ OP_IS_IFF, "Is IFF (Boolean operator)\r\n"
+		"\tTrue if ship(s) or wing(s) are all of the specified team.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tTeam (\"friendly\", \"hostile\", \"neutral\", or \"unknown\").\r\n"
+		"\tRest:\tName of ship or wing to check." },
+
+	// Goober5000
+	{ OP_IS_AI_CLASS, "Is AI Class (Boolean operator)\r\n"
+		"\tTrue if ship or ship subsystem(s) is/are all of the specified AI class.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tAI class (\"None\", \"Coward\", \"Lieutenant\", etc.)\r\n"
+		"\t2:\tName of ship to check.\r\n"
+		"\tRest:\tName of ship subsystem(s) to check (optional)" },
+
+	// Goober5000
+	{ OP_IS_SHIP_TYPE, "Is Ship Type (Boolean operator)\r\n"
+		"\tTrue if ship or ships is/are all of the specified ship type.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tShip type (\"fighter\", \"bomber\", etc.)\r\n"
+		"\t2:\tName of ship to check.\r\n" },
+
+	// Goober5000
+	{ OP_IS_SHIP_CLASS, "Is Ship Class (Boolean operator)\r\n"
+		"\tTrue if ship or ships is/are all of the specified ship class.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tShip class\r\n"
+		"\t2:\tName of ship to check.\r\n" },
+
+	{ OP_HAS_TIME_ELAPSED, "Has time elapsed (Boolean operator)\r\n"
+		"\tBecomes true when the specified amount of time has elapsed (Mission time "
+		"becomes greater than the specified time).\r\n"
+		"Returns a boolean value.  Takes 1 numeric argument...\r\n"
+		"\t1:\tThe amount of time in seconds." },
+
+	{ OP_NOT, "Not (Boolean operator)\r\n"
+		"\tReturns opposite boolean value of argument (True becomes false, and "
+		"false becomes true).\r\n\r\n"
+		"Returns a boolean value.  Takes 1 boolean argument." },
+
+	{ OP_PREVIOUS_GOAL_TRUE, "Previous Mission Goal True (Boolean operator)\r\n"
+		"\tReturns true if the specified goal in the specified mission is true "
+		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the mission.\r\n"
+		"\t2:\tName of the goal in the mission.\r\n"
+		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"this mission is played as a single mission." },
+
+	{ OP_PREVIOUS_GOAL_FALSE, "Previous Mission Goal False (Boolean operator)\r\n"
+		"\tReturns true if the specified goal in the specified mission "
+		"is false (or failed).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the mission.\r\n"
+		"\t2:\tName of the goal in the mission.\r\n"
+		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"this mission is played as a single mission." },
+
+	{ OP_PREVIOUS_GOAL_INCOMPLETE, "Previous Mission Goal Incomplete (Boolean operator)\r\n"
+		"\tReturns true if the specified goal in the specified mission "
+		"is incomplete (not true or false).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the mission.\r\n"
+		"\t2:\tName of the goal in the mission.\r\n"
+		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"this mission is played as a single mission." },
+
+	{ OP_PREVIOUS_EVENT_TRUE, "Previous Mission Event True (Boolean operator)\r\n"
+		"\tReturns true if the specified event in the specified mission is true "
+		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the mission.\r\n"
+		"\t2:\tName of the event in the mission.\r\n"
+		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"this mission is played as a single mission." },
+
+	{ OP_PREVIOUS_EVENT_FALSE, "Previous Mission Event False (Boolean operator)\r\n"
+		"\tReturns true if the specified event in the specified mission "
+		"is false (or failed).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the mission.\r\n"
+		"\t2:\tName of the event in the mission.\r\n"
+		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"this mission is played as a single mission." },
+
+	{ OP_PREVIOUS_EVENT_INCOMPLETE, "Previous Mission Event Incomplete (Boolean operator)\r\n"
+		"\tReturns true if the specified event in the specified mission "
+		"is incomplete (not true or false).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the mission.\r\n"
+		"\t2:\tName of the event in the mission.\r\n"
+		"\t3:\t(Optional) True/False which signifies what this sexpession should return when "
+		"this mission is played as a single mission." },
+
+	{ OP_GOAL_TRUE_DELAY, "Mission Goal True (Boolean operator)\r\n"
+		"\tReturns true N seconds after the specified goal in the this mission is true "
+		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the event in the mission.\r\n"
+		"\t2:\tNumber of seconds to delay before returning true."},
+
+	{ OP_GOAL_FALSE_DELAY, "Mission Goal False (Boolean operator)\r\n"
+		"\tReturns true N seconds after the specified goal in the this mission is false "
+		"(or failed).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
+		"\t1:\tName of the event in the mission.\r\n"
+		"\t2:\tNumber of seconds to delay before returning true."},
+
+	{ OP_GOAL_INCOMPLETE, "Mission Goal Incomplete (Boolean operator)\r\n"
+		"\tReturns true if the specified goal in the this mission is incomplete.  This "
+		"sexpression will only be useful in conjunction with another sexpression like"
+		"has-time-elapsed.  Used alone, it will return true upon misison startup."
+		"Returns a boolean value.  Takes 1 argument...\r\n"
+		"\t1:\tName of the event in the mission."},
+
+	{ OP_EVENT_TRUE_DELAY, "Mission Event True (Boolean operator)\r\n"
+		"\tReturns true N seconds after the specified event in the this mission is true "
+		"(or succeeded).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 arguments...\r\n"
+		"\t1:\tName of the event in the mission.\r\n"
+		"\t2:\tNumber of seconds to delay before returning true."},
+
+	{ OP_EVENT_FALSE_DELAY, "Mission Event False (Boolean operator)\r\n"
+		"\tReturns true N seconds after the specified event in the this mission is false "
+		"(or failed).  It returns false otherwise.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 arguments...\r\n"
+		"\t1:\tName of the event in the mission.\r\n"
+		"\t2:\tNumber of seconds to delay before returning true."},
+
+	{ OP_EVENT_INCOMPLETE, "Mission Event Incomplete (Boolean operator)\r\n"
+		"\tReturns true if the specified event in the this mission is incomplete.  This "
+		"sexpression will only be useful in conjunction with another sexpression like"
+		"has-time-elapsed.  Used alone, it will return true upon misison startup."
+		"Returns a boolean value.  Takes 1 argument...\r\n"
+		"\t1:\tName of the event in the mission."},
+
+	{ OP_IS_DESTROYED_DELAY, "Is destroyed delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after all specified ships have been destroyed.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tTime delay in seconds (see above).\r\n"
+		"\tRest:\tName of ship (or wing) to check status of." },
+
+	{ OP_IS_SUBSYSTEM_DESTROYED_DELAY, "Is subsystem destroyed delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after the specified subsystem of the specified "
+		"ship is destroyed.\r\n\r\n"
+		"Returns a boolean value.  Takes 3 arguments...\r\n"
+		"\t1:\tName of ship the subsystem we are checking is on.\r\n"
+		"\t2:\tThe name of the subsystem we are checking status of.\r\n"
+		"\t3:\tTime delay in seconds (see above)." },
+
+	{ OP_IS_DISABLED_DELAY, "Is disabled delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after the specified ship(s) are disabled.  A "
+		"ship is disabled when all of its engine subsystems are destroyed.  All "
+		"ships must be diabled for this function to return true.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tTime delay is seconds (see above).\r\n"
+		"\tRest:\tNames of ships to check disabled status of." },
+
+	{ OP_IS_DISARMED_DELAY, "Is disarmed delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after the specified ship(s) are disarmed.  A "
+		"ship is disarmed when all of its turret subsystems are destroyed.  All "
+		"ships must be disarmed for this function to return true.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tTime delay is seconds (see above).\r\n"
+		"\tRest:\tNames of ships to check disarmed status of." },
+
+	{ OP_HAS_DOCKED_DELAY, "Has docked delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after the specified ships have docked the "
+		"specified number of times.\r\n\r\n"
+		"Returns a boolean value.  Takes 4 arguments...\r\n"
+		"\t1:\tThe name of the docker ship\r\n"
+		"\t2:\tThe name of the dockee ship\r\n"
+		"\t3:\tThe number of times they have to have docked\r\n"
+		"\t4:\tTime delay in seconds (see above)." },
+
+	{ OP_HAS_UNDOCKED_DELAY, "Has undocked delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after the specified ships have undocked the "
+		"specified number of times.\r\n\r\n"
+		"Returns a boolean value.  Takes 4 arguments...\r\n"
+		"\t1:\tThe name of the docker ship\r\n"
+		"\t2:\tThe name of the dockee ship\r\n"
+		"\t3:\tThe number of times they have to have undocked\r\n"
+		"\t4:\tTime delay in seconds (see above)." },
+
+	{ OP_HAS_ARRIVED_DELAY, "Has arrived delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after the specified ship(s) have arrived into the mission\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tTime delay in seconds (see above).\r\n"
+		"\tRest:\tName of ship (or wing) we want to check has arrived." },
+
+	{ OP_HAS_DEPARTED_DELAY, "Has departed delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after the specified ship(s) or wing(s) have departed "
+		"from the mission by warping out.  If any ship was destroyed, this operator will "
+		"never be true.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tTime delay in seconds (see above).\r\n"
+		"\tRest:\tName of ship (or wing) we want to check has departed." },
+
+	{ OP_WAYPOINTS_DONE_DELAY, "Waypoints done delay (Boolean operator)\r\n"
+		"\tBecomes true <delay> seconds after the specified ship has completed flying the "
+		"specified waypoint path.\r\n\r\n"
+		"Returns a boolean value.  Takes 3 arguments...\r\n"
+		"\t1:\tName of ship we are checking.\r\n"
+		"\t2:\tWaypoint path we want to check if ship has flown.\r\n"
+		"\t3:\tTime delay in seconds (see above)." },
+
+	{ OP_SHIP_TYPE_DESTROYED, "Ship Type Destroyed (Boolean operator)\r\n"
+		"\tBecomes true when the specified percentage of ship types in this mission "
+		"have been destroyed.  The ship type is a generic type such as fighter/bomber, "
+		"transport, etc.  Fighters and bombers count as the same type.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 arguments...\r\n"
+		"\t1:\tPercentage of ships that must be destroyed.\r\n"
+		"\t2:\tShip type to check for." },
+
+	{ OP_TIME_SHIP_DESTROYED, "Time ship destroyed (Time operator)\r\n"
+		"\tReturns the time the specified ship was destroy.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship we want to check." },
+
+	{ OP_TIME_SHIP_ARRIVED, "Time ship arrived (Time operator)\r\n"
+		"\tReturns the time the specified ship arrived into the mission.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship we want to check." },
+
+	{ OP_TIME_SHIP_DEPARTED, "Time ship departed (Time operator)\r\n"
+		"\tReturns the time the specified ship departed the mission by warping out.  Being "
+		"destroyed doesn't count departed.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship we want to check." },
+
+	{ OP_TIME_WING_DESTROYED, "Time wing destroyed (Time operator)\r\n"
+		"\tReturns the time the specified wing was destroy.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of wing we want to check." },
+
+	{ OP_TIME_WING_ARRIVED, "Time wing arrived (Time operator)\r\n"
+		"\tReturns the time the specified wing arrived into the mission.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of wing we want to check." },
+
+	{ OP_TIME_WING_DEPARTED, "Time wing departed (Time operator)\r\n"
+		"\tReturns the time the specified wing departed the mission by warping out.  All "
+		"ships in the wing have to have warped out.  If any are destroyed, the wing can "
+		"never be considered departed.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship we want to check." },
+
+	{ OP_MISSION_TIME, "Mission time (Time operator)\r\n"
+		"\tReturns the current time into the mission.\r\n\r\n"
+		"Returns a numeric value." },
+
+	{ OP_TIME_DOCKED, "Time docked (Time operator)\r\n"
+		"\tReturns the time the specified ships docked.\r\n\r\n"
+		"Returns a numeric value.  Takes 3 arguments...\r\n"
+		"\t1:\tThe name of the docker ship.\r\n"
+		"\t2:\tThe name of the dockee ship.\r\n"
+		"\t3:\tThe number of times they must have docked to be true." },
+
+	{ OP_TIME_UNDOCKED, "Time undocked (Time operator)\r\n"
+		"\tReturns the time the specified ships undocked.\r\n\r\n"
+		"Returns a numeric value.  Takes 3 arguments...\r\n"
+		"\t1:\tThe name of the docker ship.\r\n"
+		"\t2:\tThe name of the dockee ship.\r\n"
+		"\t3:\tThe number of times they must have undocked to be true." },
+
+	{ OP_SHIELDS_LEFT, "Shields left (Status operator)\r\n"
+		"\tReturns the current level of the specified ship's shields as a percentage.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship to check." },
+
+	{ OP_HITS_LEFT, "Hits left (Status operator)\r\n"
+		"\tReturns the current level of the specified ship's hull as a percentage.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship to check." },
+
+	{ OP_HITS_LEFT_SUBSYSTEM, "Hits left subsystem (Status operator)\r\n"
+		"\tReturns the current level of the specified ship's subsystem integrity as a percentage.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship to check.\r\n"
+		"\t2:\tName of subsystem on ship to check." },
+
+	{ OP_DISTANCE, "Distance (Status operator)\r\n"
+		"\tReturns the distance between two objects.  These objects can be either a ship, "
+		"a wing, or a waypoint.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tThe name of one of the objects.\r\n"
+		"\t2:\tThe name of the other object." },
+
+	{ OP_DISTANCE_SUBSYSTEM, "Distance from ship subsystem (Status operator)\r\n"
+		"\tReturns the distance between an object and a ship subsystem.  The object can be either a ship, "
+		"a wing, or a waypoint.\r\n\r\n"
+		"Returns a numeric value.  Takes 3 arguments...\r\n"
+		"\t1:\tThe name of the object.\r\n"
+		"\t2:\tThe name of the ship which houses the subsystem.\r\n"
+		"\t3:\tThe name of the subsystem." },
+
+	{ OP_LAST_ORDER_TIME, "Last order time (Status operator)\r\n"
+		"\tReturns true if <count> seconds have elapsed since one or more ships have received "
+		"a meaningful order from the player.  A meaningful order is currently any order that "
+		"is not the warp out order.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
+		"\t1:\tTime in seconds that must elapse.\r\n"
+		"\tRest:\tName of ship or wing to check for having received orders." },
+
+	{ OP_WHEN, "When (Conditional operator)\r\n"
+		"\tPerforms specified actions when a condition becomes true\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tBoolean expression that must be true for actions to take place.\r\n"
+		"\tRest:\tActions to take when boolean expression becomes true." },
+
+	{ OP_COND, "Blah" },
+
+	// Goober5000
+	{ OP_WHEN_ARGUMENT, "When-argument (Conditional operator)\r\n"
+		"\tPerforms specified actions when a condition, given a set of arguments, becomes true.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tThe arguments to evaluate (see any-of, every-of, random-of, etc.).\r\n"
+		"\t2:\tBoolean expression that must be true for actions to take place.\r\n"
+		"\tRest:\tActions to take when the boolean expression becomes true." },
+
+	// Goober5000
+	{ OP_EVERY_TIME, "Every-time (Conditional operator)\r\n"
+		"\tThis is a version of \"when\" that will always evaluate its arguments.  It's useful "
+		"in situations where you need to repeatedly check things that may become true more than "
+		"once.  Since this sexp will execute every time it's evaluated, you may need to use it as "
+		"an argument to \"when\" if you want to impose restrictions on how it's called.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tBoolean expression that must be true for actions to take place.\r\n"
+		"\tRest:\tActions to take when boolean expression is true." },
+
+	// Goober5000
+	{ OP_EVERY_TIME_ARGUMENT, "Every-time-argument (Conditional operator)\r\n"
+		"\tThis is a version of \"when-argument\" that will always evaluate its arguments.  It's useful "
+		"in situations where you need to repeatedly check things that may become true more than "
+		"once.  Since this sexp will execute every time it's evaluated, you may need to use it as "
+		"an argument to \"when\" (not \"when-argument\") if you want to impose restrictions on how it's called.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tThe arguments to evaluate (see any-of, all-of, random-of, etc.).\r\n"
+		"\t2:\tBoolean expression that must be true for actions to take place.\r\n"
+		"\tRest:\tActions to take when the boolean expression becomes true." },
+
+	// Goober5000
+	{ OP_ANY_OF, "Any-of (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any of the supplied arguments can satisfy the expression(s) "
+		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
+
+	// Goober5000
+	{ OP_EVERY_OF, "Every-of (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Every one of the supplied arguments will be evaluated to satisfy the expression(s) "
+		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
+
+	// Goober5000
+	{ OP_RANDOM_OF, "Random-of (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  A random supplied argument will be selected to satisfy the expression(s) "
+		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
+
+	// Goober5000
+	{ OP_NUMBER_OF, "Number-of (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any [number] of the supplied arguments can satisfy the expression(s) "
+		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tNumber of arguments, as above\r\n"
+		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
+
+	// Goober5000
+	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
+		"\tRemoves an argument from future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tThe argument to remove from the preceding argument list." },
+
+	// Goober5000 - added wing capability
+	{ OP_CHANGE_IFF, "Change IFF (Action operator)\r\n"
+		"\tSets the specified ship(s) or wing(s) to the specified team.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tTeam to change to (\"friendly\", \"hostile\" or \"unknown\").\r\n"
+		"\tRest:\tName of ship or wing to change team status of." },
+
+	// Goober5000
+	{ OP_CHANGE_AI_CLASS, "Change AI Class (Action operator)\r\n"
+		"\tSets the specified ship or ship subsystem(s) to the specified ai class.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tAI Class to change to (\"None\", \"Coward\", \"Lieutenant\", etc.)\r\n"
+		"\t2:\tName of ship to change AI class of\r\n"
+		"\tRest:\tName of subsystem to change AI class of (optional)" },
+
+	{ OP_MODIFY_VARIABLE, "Modify-variable (Misc. operator)\r\n"
+		"\tModifies variable to specified value\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of Variable.\r\n"
+		"\t2:\tValue to be set." },
+
+	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
+		"\tProtects a ship from being attacked by any enemy ship.  Any ship"
+		"that is protected will not come under enemy fire.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ship(s) to protect." },
+
+	{ OP_UNPROTECT_SHIP, "Unprotect ship (Action operator)\r\n"
+		"\tUnprotects a ship from being attacked by any enemy ship.  Any ship"
+		"that is not protected can come under enemy fire.  This function is the opposite"
+		"of protect-ship.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ship(s) to protect." },
+
+	{ OP_BEAM_PROTECT_SHIP, "Beam Protect ship (Action operator)\r\n"
+		"\tProtects a ship from being attacked with beam weapon.  Any ship"
+		"that is beam protected will not come under enemy beam fire.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ship(s) to protect." },
+
+	{ OP_BEAM_UNPROTECT_SHIP, "Beam Unprotect ship (Action operator)\r\n"
+		"\tUnprotects a ship from being attacked with beam weapon.  Any ship"
+		"that is not beam protected can come under enemy beam fire.  This function is the opposite"
+		"of beam-protect-ship.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ship(s) to protect." },
+
+	{ OP_SEND_MESSAGE, "Send message (Action operator)\r\n"
+		"\tSends a message to the player.  Can be send by a ship, wing, or special "
+		"source.  To send it from a special source, make the first character of the first "
+		"argument a \"#\".\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tName of who the message is from.\r\n"
+		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
+		"\t3:\tName of message (from message editor)." },
+
+	{ OP_SELF_DESTRUCT, "Self destruct (Action operator)\r\n"
+		"\tCauses the specified ship(s) to self destruct.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ship to self destruct." },
+
+	{ OP_NEXT_MISSION, "Next Mission (Action operator)\r\n"
+		"\tThe next mission operator is used for campaign branching in the campaign editor.  "
+		"It specifies which mission should played be next in the campaign.  This operator "
+		"generally follows a 'when' or 'cond' statment in the campaign file.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of mission (filename) to proceed to." },
+
+	{ OP_CLEAR_GOALS, "Clear goals (Action operator)\r\n"
+		"\tClears the goals for the specified ships and/or wings.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ship or wing." },
+
+	{ OP_ADD_GOAL, "Add goal (Action operator)\r\n"
+		"\tAdds a goal to a ship or wing.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship or wing to all goal to.\r\n"
+		"\t2:\tGoal to add." },
+
+	{ OP_SABOTAGE_SUBSYSTEM, "Sabotage subystem (Action operator)\r\n"
+		"\tReduces the specified subsystem integrity by the specified percentage."
+		"If the percntage strength of the subsystem (after completion) is less than 0%,"
+		"subsystem strength is set to 0%.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tName of ship subsystem is on.\r\n"
+		"\t2:\tName of subsystem to sabotage.\r\n"
+		"\t3:\tPercentage to reduce subsystem integrity by." },
+
+	{ OP_REPAIR_SUBSYSTEM, "Repair Subystem (Action operator)\r\n"
+		"\tIncreases the specified subsystem integrity by the specified percentage."
+		"If the percntage strength of the subsystem (after completion) is greater than 100%,"
+		"subsystem strength is set to 100%.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tName of ship subsystem is on.\r\n"
+		"\t2:\tName of subsystem to repair.\r\n"
+		"\t3:\tPercentage to increase subsystem integrity by." },
+
+	{ OP_SET_SUBSYSTEM_STRNGTH, "Set Subsystem Strength (Action operator)\r\n"
+		"\tSets the specified subsystem to the the specified percentage."
+		"If the percentage specified is < 0, strength is set to 0.  If the percentage is "
+		"> 100 % the subsystem strength is set to 100%.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tName of ship subsystem is on.\r\n"
+		"\t2:\tName of subsystem to set strength.\r\n"
+		"\t3:\tPercentage to set subsystem integrity to." },
+
+	{ OP_INVALIDATE_GOAL, "Invalidate goal (Action operator)\r\n"
+		"\tMakes a mission goal invalid, which causes it to now show up on mission goals "
+		"screen, or be evaluated.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of mission goal to invalidate." },
+
+	{ OP_VALIDATE_GOAL, "Validate goal (Action operator)\r\n"
+		"\tMakes a mission goal valid again, so it shows up on mission goals screen.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of mission goal to validate." },
+
+	{ OP_SEND_RANDOM_MESSAGE, "Send random message (Action operator)\r\n"
+		"\tSends a random message to the player from those supplied.  Can be send by a "
+		"ship, wing, or special source.  To send it from a special source, make the first "
+		"character of the first argument a \"#\".\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of who the message is from.\r\n"
+		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\")."
+		"\tRest:\tName of message (from message editor)." },
+
+	{ OP_TRANSFER_CARGO, "Transfer Cargo (Action operator)\r\n"
+		"\tTransfers the cargo from one ship to another ship.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship that cargo is being transferred from.\r\n"
+		"\t2:\tName of ship that cargo is being transferred to." },
+
+	{ OP_EXCHANGE_CARGO, "Exchange Cargo (Action operator)\r\n"
+		"\tExchanges the cargos of two ships.  If one of the two ships contains no cargo, "
+		"the cargo is transferred instead.\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of one of the ships.\r\n"
+		"\t2:\tName of the other ship." },
+
+	// Goober5000
+	{ OP_SET_CARGO, "Set Cargo (Action operator)\r\n"
+		"\tSets the cargo on a ship or ship subsystem.  The cargo-no-deplete flag status is carried through to the new cargo.\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of the cargo\r\n"
+		"\t2:\tName of the ship\r\n"
+		"\t3:\tName of the ship subsystem (optional)" },
+
+	// Goober5000
+	{ OP_IS_CARGO, "Is Cargo (Status operator)\r\n"
+		"\tChecks whether the specified ship or ship subsystem contains a particular cargo.\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of the cargo\r\n"
+		"\t2:\tName of the ship\r\n"
+		"\t3:\tName of the ship subsystem (optional)" },
+
+	// Goober5000
+	{ OP_CHANGE_SOUNDTRACK, "change-soundtrack\r\n"
+		"\tChanges the mission music.  Takes 1 argument...\r\n"
+		"\1: Name of the music selection (taken from music.tbl)" },
+
+	// Goober5000
+	{ OP_PLAY_SOUND_FROM_TABLE, "play-sound-from-table\r\n"
+		"\tPlays a sound listed in the Game Sounds section of sounds.tbl.  Takes 4 arguments...\r\n"
+		"\t1: Origin X\r\n"
+		"\t2: Origin Y\r\n"
+		"\t3: Origin Z\r\n"
+		"\t4: Sound (index into sounds.tbl)" },
+
+	// Goober5000
+	{ OP_PLAY_SOUND_FROM_FILE, "play-sound-from-file\r\n"
+		"\tPlays a sound, such as a music soundtrack, from a file.  Important: Only one sound at a time can be played with this sexp!\r\n"
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1: Sound (file name)\r\n"
+		"\t2: Enter a non-zero number to loop. default is off (optional)."
+	},
+
+	// Goober5000
+	{ OP_CLOSE_SOUND_FROM_FILE, "close-sound-from-file\r\n"
+		"\tCloses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 argument...\r\n"
+		"\t1: Fade (default is true)" },
+
+	// Goober5000
+	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
+		"\tCauses an explosion at a given origin, with the given parameters.  "
+		"Takes 11 or 13 arguments...\r\n"
+		"\t1:  Origin X\r\n"
+		"\t2:  Origin Y\r\n"
+		"\t3:  Origin Z\r\n"
+		"\t4:  Damage\r\n"
+		"\t5:  Blast force\r\n"
+		"\t6:  Size of explosion (if 0, explosion will not be visible)\r\n"
+		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
+		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
+		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
+		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"
+		"\t11: Sound (index into sounds.tbl)\r\n"
+		"\t12: EMP intensity (optional)\r\n"
+		"\t13: EMP duration in seconds (optional)" },
+
+	// Goober5000
+	{ OP_WARP_EFFECT, "warp-effect\r\n"
+		"\tCauses a subspace warp effect at a given origin, facing toward a given location, with the given parameters.\r\n"
+		"Takes 12 arguments...\r\n"
+		"\t1:  Origin X\r\n"
+		"\t2:  Origin Y\r\n"
+		"\t3:  Origin Z\r\n"
+		"\t4:  Location X\r\n"
+		"\t5:  Location Y\r\n"
+		"\t6:  Location Z\r\n"
+		"\t7:  Radius\r\n"
+		"\t8:  Duration in seconds\r\n"
+		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
+		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
+		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
+		"\t12: Shape (0 for 2-D [default], 1 for 3-D)" },
+
+	// Goober5000
+	{ OP_SET_SHIP_FACING, "set-ship-facing\r\n"
+		"\tSets a ship's orientation to face the specified coordinates.  "
+		"Takes 4 arguments...\r\n"
+		"\t1: The name of a ship.\r\n"
+		"\t2: The X coordinate to face.\r\n"
+		"\t3: The Y coordinate to face.\r\n"
+		"\t4: The Z coordinate to face." },
+
+	// Goober5000
+	{ OP_SET_SHIP_FACING_OBJECT, "set-ship-facing-object\r\n"
+		"\tSets a ship's orientation to face the specified object.  "
+		"Takes 2 arguments...\r\n"
+		"\t1: The name of a ship.\r\n"
+		"\t2: The object to face." },
+
+	// Goober5000
+	{ OP_SHIP_TAG, "ship-tag\r\n"
+		"\tTags a ship.  Takes 3 or 7 arguments...\r\n"
+		"\t1: The name of a ship.\r\n"
+		"\t2: The tag level (currently 1, 2, or 3).\r\n"
+		"\t3: The tag time (in seconds).\r\n"
+		"\t4: A SSM missile (optional - used only for TAG-C).\r\n"
+		"\t5: The X origin of the SSM missile (optional - used only for TAG-C).\r\n"
+		"\t6: The Y origin of the SSM missile (optional - used only for TAG-C).\r\n"
+		"\t7: The Z origin of the SSM missile (optional - used only for TAG-C)." },
+
+/*	made obsolete by Goober5000 - it only works in debug builds anyway
+	{ OP_INT3, "Error (Debug directive)\r\n"
+		"Causes the game to halt with an error." },
+*/
+
+	{ OP_AI_CHASE, "Ai-chase (Ship goal)\r\n"
+		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to chase.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_DOCK, "Ai-dock (Ship goal)\r\n"
+		"\tCauses one ship to dock with another ship.\r\n\r\n"
+		"Takes 4 arguments...\r\n"
+		"\t1:\tName of dockee ship (The ship that \"docker\" will dock with).\r\n"
+		"\t2:\tDocker's docking point - Which dock point docker uses to dock.\r\n"
+		"\t3:\tDockee's docking point - Which dock point on dockee docker will move to.\r\n"
+		"\t4:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_UNDOCK, "Ai-undock (Ship goal)\r\n"
+		"\tCauses the specified ship to undock from who it is currently docked with.\r\n\r\n"
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1:\tGoal priority (number between 0 and 89).\r\n"
+		"\t2 (optional):\tShip to undock from.  If none is specified, the code will pick the first docked ship." },
+
+	{ OP_AI_WARP_OUT, "Ai-warp-out (Ship/Wing Goal)\r\n"
+		"\tCauses the specified ship/wing to warp out of the mission.  Currently, the ship will "
+		"warp out at its current location.  This behavior will change.  Currently, the first "
+		"argument means nothing.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of waypoint path to follow to warp out (not used).\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_WAYPOINTS, "Ai-waypoints (Ship goal)\r\n"
+		"\tCauses the specified ship to fly a waypoint path continuously.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of waypoint path to fly.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_WAYPOINTS_ONCE, "Ai-waypoints once (Ship goal)\r\n"
+		"\tCauses the specified ship to fly a waypoint path.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of waypoint path to fly.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_DESTROY_SUBSYS, "Ai-destroy subsys (Ship goal)\r\n"
+		"\tCauses the specified ship to attack and try and destroy the specified subsystem "
+		"on the specified ship.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tName of ship subsystem is on.\r\n"
+		"\t2:\tName of subsystem on the ship to attack and destroy.\r\n"
+		"\t3:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_CHASE_WING, "Ai-chase wing (Ship goal)\r\n"
+		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of wing to chase.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_DISABLE_SHIP, "Ai-disable-ship (Ship/wing goal)\r\n"
+		"\tThis AI goal causes a ship/wing to destroy all of the engine subsystems on "
+		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
+		"may have multiple engine subsystems requiring the use of > 1 ai-destroy-subsystem "
+		"goals.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship whose engine subsystems should be destroyed\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_DISARM_SHIP, "Ai-disarm-ship (Ship/wing goal)\r\n"
+		"\tThis AI goal causes a ship/wing to destroy all of the turret subsystems on "
+		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
+		"may have multiple turret subsystems requiring the use of > 1 ai-destroy-subsystem "
+		"goals.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship whose turret subsystems should be destroyed\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_GUARD, "Ai-guard (Ship goal)\r\n"
+		"\tCauses the specified ship to guard a ship from other ships not on the same team.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to guard.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_CHASE_ANY, "Ai-chase-any (Ship goal)\r\n"
+		"\tCauses the specified ship to chase and attack any ship on the opposite team.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tGoal priority (number between 0 and 89)." },
+
+	// Goober5000
+	{ OP_AI_CHASE_ANY_EXCEPT, "Ai-chase-any-except (Ship goal)\r\n"
+		"\tCauses the specified ship to chase and attack any ship on the opposite team except those listed.\r\n\r\n"
+		"Takes between 1 and 33 arguments...\r\n"
+		"\t1:\tGoal priority (number between 0 and 89).\r\n"
+		"\tRest:\tList (up to 32 entries) of ships or wings to exclude from consideration as attackable targets (optional).\r\n\r\n"
+		"NOTE: If no ships or wings are specified, this will function just like the regular ai-chase-any sexp." },
+
+	{ OP_AI_GUARD_WING, "Ai-guard wing (Ship goal)\r\n"
+		"\tCauses the specified ship to guard a wing of ships from other ships not on the "
+		"same team.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of wing to guard.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_NOP, "Do-nothing (Action operator)\r\n"
+		"\tDoes nothing.  This is used as the default for any required action arguments "
+		"of an operator." },
+
+	{ OP_KEY_PRESSED, "Key-pressed (Boolean training operator)\r\n"
+		"\tBecomes true when the specified default key has been pressed.  Default key "
+		"refers to the what the key normally is when not remapped.  FreeSpace will "
+		"automatically account for any keys that have been remapped.  If the optional "
+		"delay is specified, becomes true that many seconds after the key has been pressed.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 or 2 arguments...\r\n"
+		"\t1:\tDefault key to check for.\r\n"
+		"\t2:\tDelay before operator registers as true (optional).\r\n" },
+
+	{ OP_KEY_RESET, "Key-reset (Training operator)\r\n"
+		"\tMarks the specified default key as having not been pressed, so key-pressed will be false "
+		"until the player presses it again.  See key-pressed help for more information about "
+		"what a default key is.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 argument...\r\n"
+		"\t1:\tDefault key to reset." },
+
+	{ OP_TARGETED, "Targeted (Boolean training operator)\r\n"
+		"\tIs true as long as the player has the specified ship (or ship's subsystem) targeted, "
+		"or has been targeted for the specified amount of time.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 to 3 arguments (first required, rest optional):\r\n"
+		"\t1:\tName of ship to check if targeted by player.\r\n"
+		"\t2:\tLength of time target should have been kept for (optional).\r\n"
+		"\t3:\tName of subsystem on ship to check if targeted (optional)." },
+
+	// Sesquipedalian
+	{ OP_MISSILE_LOCKED, "Missile-locked (Boolean training operator)\r\n"
+		"\tIs true as long as the player has had a missile lock for the specified amount of time. "
+		"Optional arguments require lock to be maintained on a specified ship (or ship's subsystem).\r\n\r\n"
+		"Returns a boolean value.  Takes 1 to 3 arguments (first required, rest optional):\r\n"
+		"\t1:\tLength of time missile lock should have been kept for.\r\n"
+		"\t2:\tName of ship to check if locked onto by player (optional).\r\n"
+		"\t3:\tName of subsystem on ship to check if locked onto (optional)." },
+
+	{ OP_SPEED, "Speed (Boolean training operator)\r\n"
+		"\tBecomes true when the player has been within the specified speed range set by "
+		"set-training-context-speed for the specified amount of time.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 argument...\r\n"
+		"\t1:\tTime in seconds." },
+
+	{ OP_FACING, "Facing (Boolean training operator)\r\n"
+		"\tIs true as long as the specified ship is within the player's specified "
+		"forward cone.  A forward cone is defined as any point that the angle between the "
+		"vector of the point and the player, and the forward facing vector is within the "
+		"given angle.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 argument...\r\n"
+		"\t1:\tShip to check is withing forward cone.\r\n"
+		"\t2:\tAngle in degrees of the forward cone." },
+
+	{ OP_FACING2, "Facing Waypoint(Boolean training operator)\r\n"
+		"\tIs true as long as the specified first waypoint is within the player's specified "
+		"forward cone.  A forward cone is defined as any point that the angle between the "
+		"vector of the point and the player, and the forward facing vector is within the "
+		"given angle.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 argument...\r\n"
+		"\t1:\tName of waypoint path whose first point is withing forward cone.\r\n"
+		"\t2:\tAngle in degrees of the forward cone." },
+
+	// fixed by Goober5000
+	{ OP_ORDER, "Order (Boolean training operator)\r\n"
+		"\tBecomes true when the player had given the specified ship or wing the specified order.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of ship or wing to check if given order to.\r\n"
+		"\t2:\tName of order to check if player has given.\r\n"
+		"\t3:\tName of the target of the order (optional)." },
+
+	{ OP_WAYPOINT_MISSED, "Waypoint-missed (Boolean training operator)\r\n"
+		"\tBecomes true when a waypoint is flown, but the waypoint is ahead of the one "
+		"they are supposed to be flying.  The one they are supposed to be flying is the "
+		"next one in sequence in the path after the last one they have hit.\r\n\r\n"
+		"Returns a boolean value.  Takes no arguments." },
+
+	{ OP_PATH_FLOWN, "Path-flown (Boolean training operator)\r\n"
+		"\tBecomes true when all the waypoints in the path have been flown, in sequence.\r\n\r\n"
+		"Returns a boolean value.  Takes no arguments." },
+
+	{ OP_WAYPOINT_TWICE, "Waypoint-twice (Boolean training operator)\r\n"
+		"\tBecomes true when a waypoint is hit that is before the last one hit, which "
+		"indicates they have flown a waypoint twice.\r\n\r\n"
+		"Returns a boolean value.  Takes no arguments." },
+
+	{ OP_TRAINING_MSG, "Training-msg (Action training operator)\r\n"
+		"\tSends the player a training message.  Uses the same messages as normal messages, "
+		"only they get displayed differently using this operator.  If a secondary message "
+		"is specified, it is sent the last time, while the primary message is sent all other "
+		"times (event should have a repeat count greater than 1).\r\n\r\n"
+		"Takes 1-3 arguments...\r\n"
+		"\t1:\tName of primary message to send.\r\n"
+		"\t2:\tName of secondary message to send (optional).\r\n"
+		"\t3:\tDelay (in seconds) to wait before sending message. (optional)\r\n"
+		"\t4:\tAmount of Time (in seconds) to display message (optional)." },
+
+	{ OP_SET_TRAINING_CONTEXT_FLY_PATH, "Set-training-context-fly-path (Training context operator)\r\n"
+		"\tTells FreeSpace that the player is expected to fly a waypoint path.  This must be "
+		"executed before waypoint-missed, waypoint-twice and path-flown operators become valid.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of waypoint path player should fly.\r\n"
+		"\t2:\tDistance away a player needs to be from a waypoint for it to be registered as flown." },
+
+	{ OP_SET_TRAINING_CONTEXT_SPEED, "Set-training-context-speed (Training context operator)\r\n"
+		"\tTells FreeSpace that the player is expected to fly within a certain speed range.  Once "
+		"this operator has been executed, you can measure how long they have been within this "
+		"speed range with the speed operator.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tMinimum speed of range player is to fly between.\r\n"
+		"\t2:\tMaximum speed of range player is to fly between." },
+
+	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
+		"\tIn a single player game, this function grants a player an automatic promotion to the "
+		"next rank which the player can obtain.  If he is already at the highest rank, this "
+		"operator has no effect.  It takes no arguments." },
+
+	{ OP_GRANT_MEDAL, "Grant medal (Action operator)\r\n"
+		"\tIn single player missions, this function grants the given medal to the player.  "
+		"Currently, only 1 medal will be allowed to be given per mission.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of medal to grant to player." },
+
+	{ OP_GOOD_SECONDARY_TIME, "Set prefered secondary weapons\r\n"
+		"\tThis sexpression is used to inform the AI about prefered secondary weapons to "
+		"fire during combat.  When this expression is evaulated, any AI ships of the given "
+		"team prefer to fire the given weapon at the given ship. (Prefered over other "
+		"secondary weapons)\r\n\r\n"
+		"Takes 4 argument...\r\n"
+		"\t1:\tTeam name which will prefer firing given weapon\r\n"
+		"\t2:\tMaximum number of this type of weapon above team can fire.\r\n"
+		"\t3:\tWeapon name (list includes only the valid weapons for this expression\r\n"
+		"\t4:\tShip name at which the above named team should fire the above named weapon." },
+
+	{ OP_AND_IN_SEQUENCE, "And in sequence (Boolean operator)\r\n"
+		"\tReturns true if all of its arguments have become true in the order they are "
+		"listed in.\r\n\r\n"
+		"Returns a boolean value.  Takes 2 or more boolean arguments." },
+
+	{ OP_SKILL_LEVEL_AT_LEAST, "Skill level at least (Boolean operator)\r\n"
+		"\tReturns true if the player has selected the given skill level or higher.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 argument...\r\n"
+		"\t1:\tName of the skill level to check." },
+
+	{ OP_NUM_PLAYERS, "Num players (Status operator)\r\n"
+		"\tReturns the current number of players (multiplayer) playing in the current mission.\r\n\r\n"
+		"Returns a numeric value.  Takes no arguments." },
+
+	{ OP_IS_CARGO_KNOWN, "Is cargo known (Boolean operator)\r\n"
+		"\tReturns true if all of the specified objects' cargo is known by the player (i.e. they "
+		"have scanned each one.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ship to check if its cargo is known." },
+
+	{ OP_HAS_BEEN_TAGGED_DELAY, "Has ship been tagged (delay) (Boolean operator)\r\n"
+		"\tReturns true if all of the specified ships have been tagged.\r\n\r\n"
+		"Returns a boolean value after <delay> seconds when all ships have been tagged.  Takes 2 or more arguments...\r\n"
+		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned."
+		"\tRest:\tNames of ships to check if tagged.." },
+
+	{ OP_CAP_SUBSYS_CARGO_KNOWN_DELAY, "Is capital ship subsystem cargo known (delay) (Boolean operator)\r\n"
+		"\tReturns true if all of the specified subsystem cargo is known by the player.\r\n"
+		"\tNote: Cargo must be explicitly named.\r\n\r\n"
+		"Returns a boolean value after <delay> seconds when all cargo is known.  Takes 3 or more arguments...\r\n"
+		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned.\r\n"
+		"\t2:\tName of capital ship\r\n"
+		"\tRest:\tNames of subsystems to check for cargo known.." },
+
+	{ OP_CARGO_KNOWN_DELAY, "Is cargo known (delay) (Boolean operator)\r\n"
+		"\tReturns true if all of the specified objects' cargo is known by the player (i.e. they "
+		"have scanned each one.\r\n\r\n"
+		"Returns a boolean value after <delay> seconds when all cargo is known.  Takes 2 or more arguments...\r\n"
+		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned."
+		"\tRest:\tNames of ships/cargo to check for cargo known.." },
+
+	{ OP_WAS_PROMOTION_GRANTED, "Was promotion granted (Boolean operator)\r\n"
+		"\tReturns true if a promotion was granted via the 'Grant promotion' operator in the mission.\r\n\r\n"
+		"Returns a boolean value.  Takes no arguments." },
+
+	{ OP_WAS_MEDAL_GRANTED, "Was medal granted (Boolean operator)\r\n"
+		"\tReturns true if a medal was granted via via the 'Grant medal' operator in the mission.  "
+		"If you provide the optional argument to this operator, then true is only returned if the "
+		"specified medal was granted.\r\n\r\n"
+		"Returns a boolean value.  Takes 0 or 1 arguments...\r\n"
+		"\t1:\tName of medal to specifically check for (optional)." },
+
+	{ OP_GOOD_REARM_TIME, "Good rearm time (Action operator)\r\n"
+		"\tInforms the game logic that right now is a good time for a given team to attempt to "
+		"rearm their ships.  The time parameter specified how long the \"good time\" will last.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tTeam Name\r\n"
+		"\t2:\tTime in seconds rearm window should last" },
+
+	{ OP_ALLOW_SHIP, "Allow ship (Action operator)\r\n"
+		"\tThis operator makes the given ship type available to the Terran team.  Players will be "
+		"able to have ships of this type in their starting wings in all future missions of this "
+		"campaign.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of ship type (or ship class) to allow." },
+
+	{ OP_ALLOW_WEAPON, "Allow weapon (Action operator)\r\n"
+		"\tThis operator makes the given weapon available to the Terran team.  Players will be "
+		"able to equip ships with in all future missions of this campaign.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of weapon (primary or secondary) to allow." },
+
+	{ OP_TECH_ADD_SHIP, "Tech add ship (Action operator)\r\n"
+		"\tThis operator makes the given ship type available in the techroom database.  Players will "
+		"then be able to view this ship's specs there.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ship type (or ship class) to add." },
+
+	{ OP_TECH_ADD_WEAPON, "Tech add weapon (Action operator)\r\n"
+		"\tThis operator makes the given weapon available in the techroom database.  Players will "
+		"then be able to view this weapon's specs there.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of weapon (primary or secondary) to add." },
+
+	{ OP_TECH_ADD_INTEL, "Tech add intel (Action operator)\r\n"
+		"\tThis operator makes the given intel entry available in the techroom database.  Players will "
+		"then be able to view this intel entry there.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of intel entry to add." },
+
+	{ OP_TECH_RESET_TO_DEFAULT, "Tech reset to default (Action operator)\r\n"
+		"\tThis operator resets the tech room to the default represented in the tables.  This is "
+		"useful for starting new campaigns, so that the player will not see tech entries carried over "
+		"from previous campaigns.\r\n\r\n"
+		"Takes no arguments." },
+
+	{ OP_AI_EVADE_SHIP, "Ai-evade ship (Ship goal)\r\n"
+		"\tCauses the specified ship to go into evade mode and run away like the weak "
+		"sally-boy it is.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to evade from.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_STAY_NEAR_SHIP, "Ai-stay near ship (Ship goal)\r\n"
+		"\tCauses the specified ship to keep itself near the given ship and not stray too far "
+		"away from it.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to stay near.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_KEEP_SAFE_DISTANCE, "Ai-keep safe distance (Ship goal)\r\n"
+		"\tTells the specified ship to stay a safe distance away from any ship that isn't on the "
+		"same team as it.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_IGNORE, "Ai-ignore (Ship goal)\r\n"
+		"\tTells the specified ship to ignore the given ship and not consider it as a valid "
+		"target to attack.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to ignore.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_STAY_STILL, "Ai-stay still (Ship goal)\r\n"
+		"\tCauses the specified ship to stay still.  The ship will do nothing until attacked at "
+		"which time the ship will come to life and defend itself.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tShip or waypoint the ship staying still will directly face (currently not implemented)\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_PLAY_DEAD, "Ai-play dead (Ship goal)\r\n"
+		"\tCauses the specified ship to pretend that it is dead and not do anything.  This "
+		"expression should be used to indicate that a ship has no pilot and cannot respond "
+		"to any enemy threats.  A ship playing dead will not respond to any attack.  This "
+		"should really be named ai-is-dead\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_FLASH_HUD_GAUGE, "Ai-flash hud gauge (Training goal)\r\n"
+		"\tCauses the specified hud gauge to flash to draw the player's attention to it.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of hud gauge to flash." },
+
+	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
+		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to make visible to sensors." },
+
+	{ OP_SHIP_INVISIBLE, "ship-invisible\r\n"
+		"\tCauses the ships listed in this sexpression to be invisible to player sensors.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to make invisible to sensors." },
+
+	{ OP_SHIP_VULNERABLE, "ship-vulnerable\r\n"
+		"\tCauses the ship listed in this sexpression to be vulnerable to weapons.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to make vulnerable to weapons." },
+
+	{ OP_SHIP_INVULNERABLE, "ship-invulnerable\r\n"
+		"\tCauses the ships listed in this sexpression to be invulnerable to weapons.  Use with caution!!!!\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to make invulnerable to weapons." },
+
+	{ OP_SHIELDS_ON, "shields-on\r\n" //-Sesquipedalian
+		"\tCauses the ship listed in this sexpression to have their shields activated.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to activate shields on." },
+
+	{ OP_SHIELDS_OFF, "shields-off\r\n" //-Sesquipedalian
+		"\tCauses the ships listed in this sexpression to have their shields deactivated.  \r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to deactivate shields on." },
+
+	{ OP_SHIP_GUARDIAN, "ship-guardian\r\n"
+		"\tCauses the ships listed in this sexpression to not be killable by weapons.  Use with caution!!!!\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to make unkillable." },
+
+	{ OP_SHIP_NO_GUARDIAN, "ship-no-guardian\r\n"
+		"\tCauses the ships listed in this sexpression to be killable by weapons, if not invulnerable.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to make killable." },
+
+	// Goober5000
+ 	{ OP_SHIP_GUARDIAN_THRESHOLD, "ship-guardian-threshold\r\n"
+ 		"\tSame as ship-guardian, except the lowest possible hull value is specified by the sexp rather than defaulting to 1.\r\n"
+ 		"Call with a threshold of 0 (or use ship-no-guardian) to deactivate.\r\n\r\n"
+ 		"Takes 2 or more arguments...\r\n"
+ 		"\t1:\tThreshold value.\r\n"
+ 		"\t2+:\tName of ships to make unkillable." },
+ 
+ 	// Goober5000
+	{ OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD, "ship-subsys-guardian-threshold\r\n"
+		"\tSame as ship-guardian-threshold, but works on subsystems.\r\n"
+		"Call with a threshold of 0 to deactivate.\r\n\r\n"
+ 		"Takes 3 or more arguments...\r\n"
+		"\t1:\tThreshold value.\r\n"
+		"\t2:\tShip housing the subsystem(s).\r\n"
+		"\t3+:\tSubsystems to make unkillable." },
+
+	// Goober5000
+	{ OP_SHIP_STEALTHY, "ship-stealthy\r\n"
+		"\tCauses the ships listed in this sexpression to become stealth ships (i.e. invisible to radar).\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ships to make stealthy." },
+
+	// Goober5000
+	{ OP_SHIP_UNSTEALTHY, "ship-unstealthy\r\n"
+		"\tCauses the ships listed in this sexpression to become non-stealth ships (i.e. visible to radar).\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ships to make non-stealthy." },
+
+	// Goober5000
+	{ OP_FRIENDLY_STEALTH_INVISIBLE, "friendly-stealth-invisible\r\n"
+		"\tCauses the friendly ships listed in this sexpression to be invisible to radar, just like hostile stealth ships."
+		"It doesn't matter if the ship is friendly at the time this sexp executes: as long as it is a stealth ship, it will"
+		"be invisible to radar both as hostile and as friendly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ships" },
+
+	// Goober5000
+	{ OP_FRIENDLY_STEALTH_VISIBLE, "friendly-stealth-visible\r\n"
+		"\tCauses the friendly ships listed in this sexpression to resume their normal behavior of being visible to radar as"
+		"stealth friendlies.  Does not affect their visibility as stealth hostiles.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of ships" },
+
+	// Goober5000
+	{ OP_SHIP_CHANGE_ALT_NAME, "ship-change-alt-name\r\n"
+		"\tChanges the alternate ship class name displayed in the HUD target window.  Takes 2 or more arguments...\r\n"
+		"\t1:The ship class name to display\r\n"
+		"\tRest: The ships to display the new class name" },
+
+	{ OP_PERCENT_SHIPS_DEPARTED, "percent-ships-departed\r\n"
+		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
+		"which have departed is greater or equal to the given percentage.  For wings, all ships of all waves "
+		"are used for calculation for the total possible ships to depart.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tPercentge of departed ships at which this function will return true.\r\n"
+		"\t2+:\tList of ships/wings whose departure status should be determined." },
+
+	{ OP_PERCENT_SHIPS_DESTROYED, "percent-ships-destroyed\r\n"
+		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "
+		"which have been destroyed is greater or equal to the given percentage.  For wings, all ships of all waves "
+		"are used for calculation for the total possible ships to be destroyed.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tPercentge of destroyed ships at which this function will return true.\r\n"
+		"\t2+:\tList of ships/wings whose destroyed status should be determined." },
+
+	// Goober5000
+	{ OP_PERCENT_SHIPS_DISARMED, "percent-ships-disarmed\r\n"
+		"\tBoolean function which returns true if the percentage of ships in the listed ships "
+		"which have been disarmed is greater or equal to the given percentage.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tPercentge of disarmed ships at which this function will return true.\r\n"
+		"\t2+:\tList of ships whose disarmed status should be determined." },
+
+	// Goober5000
+	{ OP_PERCENT_SHIPS_DISABLED, "percent-ships-disabled\r\n"
+		"\tBoolean function which returns true if the percentage of ships in the listed ships "
+		"which have been disabled is greater or equal to the given percentage.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tPercentge of disabled ships at which this function will return true.\r\n"
+		"\t2+:\tList of ships whose disabled status should be determined." },
+
+	{ OP_RED_ALERT, "red-alert\r\n"
+		"\tCauses Red Alert status in a mission.  This function ends the current mission, and moves to "
+		"the next mission in the campaign under red alert status.  There should only be one branch from "
+		"a mission that uses this expression\r\n\r\n"
+		"Takes no arguments."},
+
+	//-Sesquipedalian
+	{ OP_END_MISSION, "end-mission\r\n" 
+		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
+		"Takes no arguments." },
+
+	// Goober5000
+	{ OP_FORCE_JUMP, "force-jump\r\n"
+		"\tForces activation of the player's subspace drive, thus ending the mission.  Takes no arguments."
+	},
+
+	// Goober5000
+	{ OP_SET_SCANNED, "set-scanned\r\n"
+		"\tSets the cargo on the specified ship or ship subsystem as known or scanned.  Takes 1 or more arguments...\r\n"
+		"\t1:\tName of a ship\r\n"
+		"\tRest:\tName of a subsystem on that ship (optional)\r\n" },
+
+	// Goober5000
+	{ OP_SET_UNSCANNED, "set-unscanned\r\n"
+		"\tSets the cargo on the specified ship or ship subsystem as unknown or unscanned.  Takes 1 or more arguments...\r\n"
+		"\t1:\tName of a ship\r\n"
+		"\tRest:\tName of a subsystem on that ship (optional)\r\n" },
+
+	{ OP_DEPART_NODE_DELAY, "depart-node-delay\r\n"
+		"\tReturns true N seconds after the listed ships depart, if those ships depart within the "
+		"radius of the given jump node.  The delay value is given in seconds.\r\n\r\n"
+		"Takes 3 or more arguments...r\n"
+		"\t1:\tDelay in seconds after the last ship listed departe before this expression can return true.\r\n"
+		"\t2:\tName of a jump node\r\n"
+		"\t3+:\tList of ships to check for departure within radius of the jump node." },
+
+	{ OP_DESTROYED_DEPARTED_DELAY, "destroyed-or-departed-delay\r\n"
+		"\tReturns true N seconds after all the listed ships or wings have been destroyed or have "
+		"departed.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tDelay in seconda after the last ship/wing is destroyed or departerd this expression can return true.\r\n"
+		"\t2+:\tName of a ship or wing" },
+
+	// description added by Goober5000
+	{ OP_SPECIAL_CHECK, "Special-check\r\n"
+		"\tMike K.'s special training sexp.  Returns a boolean value.  Takes 1 argument as follows:\r\n"
+		"\t0:    Ship \"Freighter 1\" is aspect locked by the player\r\n"
+		"\t1:    Player has fired Interceptor#Weak at Freighter 1\r\n"
+		"\t2:    Ship \"Freighter 1\", subsystem \"Weapons\" is aspect locked by the player\r\n"
+		"\t3:    Apply 10 points of damage to player's forward shields (action operator)\r\n"
+		"\t4:    Player's front shields are nearly gone\r\n"
+		"\t5:    Quickly recharge player's front shields (action operator)\r\n"
+		"\t6:    Reduce all shield quadrants except front to 0 (action operator)\r\n"
+		"\t7:    Front shield quadrant is near maximum strength\r\n"
+		"\t8:    Rear shield quadrant is near maximum strength\r\n"
+		"\t9:    Reduce left and right shield quadrants to 0 (action operator)\r\n"
+		"\t10:   Player has fewer than 8 missiles left\r\n"
+		"\t11:   Player has 8 or more missiles left\r\n"
+		"\t12:   Player has fewer than 4 missiles left\r\n"
+		"\t13:   Reduce front shield quadrant to 0 (action operator)\r\n"
+		"\t100:  Player is out of countermeasures\r\n"
+		"\t2000: Training failed"
+	},
+
+	{ OP_END_CAMPAIGN, "end-campaign\r\n"
+		"\tEnds the builtin campaign.  Should only be used by the main FreeSpace campaign\r\n" },
+
+	{ OP_SHIP_VAPORIZE, "ship-vaporize\r\n"
+		"\tSets the ship to vaporize when it is destroyed.  Does not actually destroy the ship - use self-destruct for that.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tList of ships on which to set the vaporize flag" },
+
+	{ OP_SHIP_NO_VAPORIZE, "ship-no-vaporize\r\n"
+		"\tSets the ship to not vaporize when it is destroyed.  Does not actually destroy the ship - use self-destruct for that.\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tList of ships on which to unset the vaporize flag" },
+
+	{ OP_DONT_COLLIDE_INVISIBLE, "don't-collide-invisible\r\n"
+		"\tSets the \"dont collide invisible\" flag on a list of ships.  Takes 1 or more arguments..."
+		"\tAll:\tList of ships on which to set the \"dont collide invisible\" flag" },
+
+	{ OP_COLLIDE_INVISIBLE, "collide-invisible\r\n"
+		"\tUnsets the \"dont collide invisible\" flag on a list of ships.  Takes 1 or more arguments..."
+		"\tAll:\tList of ships on which to unset the \"dont collide invisible\" flag" },
+
+	{ OP_WARP_BROKEN, "break-warp\r\n"
+		"\tBreak the warp drive on the specified ship.  A broken warp drive can be repaired by "
+		"a repair ship.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tList of ships to break the warp drive on" },
+
+	{ OP_WARP_NOT_BROKEN, "fix-warp\r\n"
+		"\tFixes a broken warp drive instantaneously.  This option applies to warp drives broken with "
+		"the break-warp sepxression.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tList of ships whose warp drive should be fixed"},
+
+	{ OP_WARP_NEVER, "never-warp\r\n"
+		"\tNever allows a ship to warp out.  When this sexpression is used, the given ships will "
+		"never be able to warp out.  The warp drive cannot be repaired.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tList of ships whose are not allowed to warp out under any condition"},
+
+	{ OP_WARP_ALLOWED, "allow-warp\r\n"
+		"\tAllows a ship which was previously not allowed to warp out to do so.  When this sexpression is "
+		"used, the given ships will be able to warp out again.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tList of ships whose are allowed to warp out"},
+
+	{ OP_JETTISON_CARGO, "jettison-cargo-delay\r\n"
+		"\tCauses a cargo carrying ship to jettison its cargo without the undocking procedure. Takes 2 or more arguments...\r\n"
+		"\t1: Ship to jettison cargo\r\n"
+		"\t2: Delay after which to jettison cargo (note that this isn't actually used)\r\n"
+		"\tRest (optional): Cargo to jettison.  If no optional arguments are specified, the ship jettisons all cargo.\r\n"
+	},
+
+	{ OP_BEAM_FIRE, "beam-fire\r\n"
+		"\tFire a beam weapon from a specified subsystem\r\n"
+		"\t1:\tShip which will be firing\r\n"
+		"\t2:\tTurret which will fire the beam (note, this turret must have at least 1 beam weapon on it)\r\n"
+		"\t3:\tShip which will be targeted\r\n"
+		"Use add-data to add a specific subsystem to target on the specified target ship"},
+
+	{ OP_IS_TAGGED, "is-tagged\r\n"
+		"\tReturns whether a given ship is tagged or not\r\n"},
+
+	{ OP_NUM_KILLS, "num-kills\r\n"
+		"\tReturns the # of kills a player has. The ship specified in the first field should be the ship the player is in.\r\n"
+		"\tSo, for single player, this would be Alpha 1. For multiplayer, it can be any ship with a player in it. If, at any\r\n"
+		"\ttime there is no player in a given ship, this sexpression will return 0"},
+
+	{ OP_NUM_TYPE_KILLS, "num-type-kills\r\n"
+		"\tReturns the # of kills a player has on a given ship type (fighter, bomber, cruiser, etc).\r\n"
+		"The ship specified in the first field should be the ship the player is in.\r\n"
+		"\tSo, for single player, this would be Alpha 1. For multiplayer, it can be any ship with a player in it. If, at any\r\n"
+		"\ttime there is no player in a given ship, this sexpression will return 0"},
+
+	{ OP_NUM_CLASS_KILLS, "num-class-kills\r\n"
+		"\tReturns the # of kills a player has on a specific ship class (Ulysses, Hercules, etc).\r\n"
+		"The ship specified in the first field should be the ship the player is in.\r\n"
+		"\tSo, for single player, this would be Alpha 1. For multiplayer, it can be any ship with a player in it. If, at any\r\n"
+		"\ttime there is no player in a given ship, this sexpression will return 0"},	
+
+	{ OP_BEAM_FREE, "beam-free\r\n"
+		"\tSets one or more beam weapons to allow firing for a given ship\r\n"
+		"\t1: Ship to be operated on\r\n"
+		"\t2, 3, etc : List of turrets to activate\r\n"},
+
+	{ OP_BEAM_FREE_ALL, "beam-free-all\r\n"
+		"\tSets all beam weapons on the specified ship to be active\r\n"},
+
+	{ OP_BEAM_LOCK, "beam-lock\r\n"
+		"\tSets one or more beam weapons to NOT allow firing for a given ship\r\n"
+		"\t1: Ship to be operated on\r\n"
+		"\t2, 3, etc : List of turrets to deactivate\r\n"},
+
+	{ OP_BEAM_LOCK_ALL, "beam-lock-all\r\n"
+		"\tSets all beam weapons on the specified ship to be deactivated\r\n"},
+
+	{ OP_TURRET_FREE, "turret-free\r\n"
+		"\tSets one or more turret weapons to allow firing for a given ship\r\n"
+		"\t1: Ship to be operated on\r\n"
+		"\t2, 3, etc : List of turrets to activate\r\n"},
+
+	{ OP_TURRET_FREE_ALL, "turret-free-all\r\n"
+		"\tSets all turret weapons on the specified ship to be active\r\n"},
+
+	{ OP_TURRET_LOCK, "turret-lock\r\n"
+		"\tSets one or more turret weapons to NOT allow firing for a given ship\r\n"
+		"\t1: Ship to be operated on\r\n"
+		"\t2, 3, etc : List of turrets to deactivate\r\n"},
+
+	{ OP_TURRET_LOCK_ALL, "turret-lock-all\r\n"
+		"\tSets all turret weapons on the specified ship to be deactivated\r\n"},
+
+	{ OP_ADD_REMOVE_ESCORT, "add-remove-escort\r\n"
+		"\tAdds or removes a ship from an escort list.\r\n"
+		"\t1: Ship to be added or removed\r\n"
+		"\t2: 0 to remove from the list, any positive value to add to the list\r\n"
+		"NOTE : it _IS_ safe to add a ship which may already be on the list or remove\r\n"
+		"a ship which is not on the list\r\n"},
+
+	{ OP_AWACS_SET_RADIUS, "awacs-set-radius\r\n"
+		"\tSets the awacs radius for a given ship subsystem. NOTE : does not work properly in multiplayer\r\n"
+		"\t1: Ship which has the awacs subsystem\r\n"
+		"\t2: Awacs subsystem\r\n"
+		"\t3: New radius\r\n"},
+
+	// Goober5000
+	{ OP_PRIMITIVE_SENSORS_SET_RANGE, "primitive-sensors-set-range\r\n"
+		"\tSets the range of the primitive sensors on a ship.  Ships outside of this range will not appear on "
+		"sensors.  Has no effect on ships that do not have the \"primitive-sensors\" flag2 set.  Takes 2 arguments...\r\n"
+		"\t1: Ship on which to set range\r\n"
+		"\t2: Range, in meters\r\n" },
+
+	{ OP_SEND_MESSAGE_LIST, "send-message-list\r\n"
+		"\tSends a series of delayed messages. All times are accumulated"
+		"\t1:\tName of who the message is from.\r\n"
+		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
+		"\t3:\tName of message (from message editor).\r\n"
+		"\t4:\tDelay in ms\r\n"
+		"Use Add-Data for multiple messages"
+		"IMPORTANT : each additional message in the list MUST HAVE 4 entries;\r\n"
+		"any message without the 4 proper fields will be ignored, as will any\r\n"
+		"successive messages"},
+
+	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
+		"\tSets the maximum speed of a ship while flying waypoints.\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Maximum speed while flying waypoints\r\n"
+		"\tNOTE: This will only work if the ship is already in the game\r\n"
+		"\tNOTE: Set to -1 to reset\r\n"},
+
+	{ OP_TURRET_TAGGED_ONLY_ALL, "turret-tagged-only\r\n"
+		"\tMakes turrets target and hence fire strictly at tagged objects\r\n"
+		"\t1: Ship name\r\n"
+		"\tNOTE: Will not stop a turret already firing at an untagged ship\r\n"},
+
+	{ OP_TURRET_TAGGED_CLEAR_ALL, "turret-tagged-clear\r\n"
+		"\tRelaxes restriction on turrets targeting only tagged ships\r\n"
+		"\t1: Ship name\r\n"},
+
+	{ OP_PRIMARIES_DEPLETED, "primaries-depleted\r\n"
+		"\tReturns true if ship is out of primary weapons\r\n"
+		"\t1: Ship name\r\n"},
+
+	{ OP_SECONDARIES_DEPLETED, "secondaries-depleted\r\n"
+		"\tReturns true if ship is out of secondary weapons\r\n"
+		"\t1: Ship name\r\n"},
+
+	{ OP_SUBSYS_SET_RANDOM, "subsys-set-random\r\n"
+		"\tSets ship subsystem strength in a given range\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Low range\r\n"
+		"\t3: High range\r\n"
+		"\t4: List of subsys names not to be randomized\r\n"},
+
+	{ OP_SUPERNOVA_START, "supernova-start\r\n"
+		"\t1: Time in seconds until the supernova shockwave hits the player\r\n"},
+
+	{ OP_SHIELD_RECHARGE_PCT, "shield-recharge-pct\r\n"
+		"\tReturns a percentage from 0 to 100\r\n"
+		"\t1: Ship name\r\n" },
+
+	{ OP_ENGINE_RECHARGE_PCT, "engine-recharge-pct\r\n"
+		"\tReturns a percentage from 0 to 100\r\n"
+		"\t1: Ship name\r\n" },
+
+	{ OP_WEAPON_RECHARGE_PCT, "weapon-recharge-pct\r\n"
+		"\tReturns a percentage from 0 to 100\r\n"
+		"\t1: Ship name\r\n" },
+
+	{ OP_CARGO_NO_DEPLETE, "cargo-no-deplete\r\n"
+		"\tCauses the named ship to have unlimited cargo.\r\n"
+		"\tNote:  only applies to BIG or HUGE ships\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\tName of one of the ships.\r\n"
+		"\t2:\toptional: 1 disallow depletion, 0 allow depletion." },
+
+	{ OP_SHIELD_QUAD_LOW, "shield-quad-low\r\n"
+		"\tReturns true if the specified ship has a shield quadrant below\r\n"
+		"\tthe specified threshold percentage\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Percentage\r\n" },
+
+	{ OP_PRIMARY_AMMO_PCT, "primary-ammo-pct\r\n"
+		"\tReturns the percentage of ammo remaining in the specified ballistic primary bank (0 to 100).  Non-ballistic primary banks return as 100%.\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Bank to check (0 and 1 are legal banks. 2 will return the cumulative average for all banks" },
+
+	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
+		"\tReturns the percentage of ammo remaining in the specified bank (0 to 100)\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Bank to check (0, 1, 2 are legal banks. 3 will return the cumulative average for all banks" },
+
+	{ OP_IS_SECONDARY_SELECTED, "is-secondary-selected\r\n"
+		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Bank to check (0 .. num_banks - 1)\r\n"},
+
+	{ OP_IS_PRIMARY_SELECTED, "is-primary-selected\r\n"
+		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Bank to check (0 .. num_banks - 1)\r\n"},
+
+	{ OP_SPECIAL_WARP_DISTANCE, "special-warp-dist\r\n"
+		"\tReturns distance to the plane of the knossos device in percent length of ship\r\n"
+		"\t(ie, 100 means front of ship is 1 ship length from plane of knossos device)\r\n"
+		"\t1: Ship name\r\n"}, 
+
+	{ OP_SET_SPECIAL_WARPOUT_NAME, "special-warpout-name\r\n"
+		"\tSets the name of the knossos device to be used for warpout\r\n"
+		"\t1: Ship name to exit\r\n"
+		"\t2: Name of knossos device\r\n"},
+
+	{ OP_SHIP_VANISH, "ship-vanish\r\n"
+		"\tMakes the named ship vanish (no log and vanish)\r\n"
+		"\tSingle Player Only!  Warning: This will cause ship exit not to be logged, so 'has-departed', etc. will not work\r\n"
+		"\t1: List of ship names to vanish\r\n"},
+
+	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
+		"\tCheck whether ship is visible on Player's radar\r\n"
+		"\tSingle Player Only!  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
+		"\t1: Name of ship to check\r\n"},
+
+	// Goober5000
+	{ OP_IS_SHIP_STEALTHY, "is-ship-stealthy\r\n"
+		"\tCheck whether ship is currently stealthy.\r\n"
+		"\tTrue if stealth flag set, false otherwise.  Takes 1 argument...\r\n"
+		"\t1: Name of ship to check\r\n"},
+
+	// Goober5000
+	{ OP_IS_FRIENDLY_STEALTH_VISIBLE, "is-friendly-stealth-visible\r\n"
+		"\tCheck whether ship will be visible to radar as a stealth friendly.\r\n"
+		"\tTakes 1 argument...\r\n"
+		"\t1: Name of ship to check\r\n"},
+
+	{ OP_TEAM_SCORE, "team-score\r\n"
+		"\tGet the score of a multi team vs team game.\r\n"
+		"\t1: Team index (1 for team 1 and 2 for team 2)\r\n"},
+
+	// phreak
+	{ OP_DAMAGED_ESCORT_LIST, "damaged-escort-list\r\n"
+		"\tSets the most damaged ship in <ship list> to <priority1>, sets the others to <priority2>.  Don't use this sexp in the same mission as damaged-escort-list-all, or strange results might occur.\r\n"
+		"\t1: Priority1\r\n"
+		"\t2: Priority2\r\n"
+		"\tRest: <ship_list>\r\n\r\n"
+	},
+
+	// Goober5000
+	{ OP_DAMAGED_ESCORT_LIST_ALL, "damaged-escort-list-all\r\n"
+		"\tSets the most damaged ship in the entire existing escort list (even what's not shown onscreen) to <priority1>, the next most damaged to <priority2>, and so on.  "
+		"If there are more ships than priorities, the least most damaged ships are all set to the last priority in the list.  Don't use this sexp in the same mission as damaged-escort-list, or strange results might occur.\r\n"
+		"\tTakes between 1 and MAX_COMPLETE_ESCORT_LIST (currently 20) arguments...\r\n"
+		"\t1: Priority 1\r\n"
+		"\tRest: Priorities 2 through 20 (optional)\r\n\r\n"
+	},
+
+	// Goober5000
+	{ OP_CHANGE_SHIP_MODEL, "change-ship-model\r\n"
+		"\tCauses the listed ships' models to be changed to the specified ship class's model.  Takes 2 or more arguments...\r\n"
+		"\t1: The name of the new model's ship class\r\n"
+		"\tRest: The list of ships to change the models of"
+	},
+
+	// Goober5000
+	{ OP_CHANGE_SHIP_CLASS, "change-ship-class\r\n"
+		"\tCauses the listed ships' classes to be changed to the specified ship class.  Takes 2 or more arguments...\r\n"
+		"\t1: The name of the new ship class\r\n"
+		"\tRest: The list of ships to change the classes of"
+	},
+
+	// Goober5000
+	{ OP_SET_SUPPORT_SHIP, "set-support-ship\r\n"
+		"\tSets information for all support ships in a mission.  Takes 6 arguments...\r\n"
+		"\t1: Arrival location\r\n"
+		"\t2: Arrival anchor\r\n"
+		"\t3: Departure location\r\n"
+		"\t4: Departure anchor\r\n"
+		"\t5: Ship class\r\n"
+		"\t6: Maximum number of support ships in this mission (use a negative number for infinity)\r\n"
+		"\r\n"
+		"Note: The support ship will emerge from or depart into hyperspace if the location is set as hyperspace *or* the anchor is set as <no anchor>."
+	},
+
+	// Bobboau
+	{ OP_DEACTIVATE_GLOW_POINTS, "deactivate-glow-points\r\n"
+		"\tDeactivates all glow points on a ship.  Takes 1 or more arguments...\r\n"
+		"\tAll: Name of ship on which to deactivate glow points\r\n"
+	},
+
+	// Bobboau
+	{ OP_ACTIVATE_GLOW_POINTS, "activate-glow-points\r\n"
+		"\tActivates all glow points on a ship.  Takes 1 or more arguments...\r\n"
+		"\tAll: Name of ship on which to activate glow points\r\n"
+	},
+
+	// Bobboau
+	{ OP_DEACTIVATE_GLOW_MAPS, "deactivate-glow-maps\r\n"
+		"\tDeactivates the glow maps for a ship.  Takes 1 or more arguments...\r\n"
+		"\tAll: Name of ship on which to deactivate glow maps\r\n"
+	},
+
+	// Bobboau
+	{ OP_ACTIVATE_GLOW_MAPS, "activate-glow-maps\r\n"
+		"\tActivates the glow maps for a ship.  Takes 1 or more arguments...\r\n"
+		"\tAll: Name of ship on which to activate glow maps\r\n"
+	},
+
+	// Bobboau
+	{ OP_DEACTIVATE_GLOW_POINT_BANK, "deactivate-glow-point-bank\r\n"
+		"\tDeactivates one or more glow point bank(s) on a ship.  Takes 2 or more arguments...\r\n"
+		"\t1: Name of ship on which to deactivate glow point bank(s)\r\n"
+		"\tRest: Name of glow point bank to deactivate\r\n"
+	},
+
+	// Bobboau
+	{ OP_ACTIVATE_GLOW_POINT_BANK, "activate-glow-point-bank\r\n"
+		"\tActivates one or more glow point bank(s) on a ship.  Takes 2 or more arguments...\r\n"
+		"\t1: Name of ship on which to activate glow point bank(s)\r\n"
+		"\tRest: Name of glow point bank to activate\r\n"
+	},
+
+	//-Sesquipedalian
+	{ OP_KAMIKAZE, "kamikaze\r\n"
+		"\tTells ships to perform a kamikaze on its current target. Takes 2 or more arguments...\r\n"
+		"\t1: Damage dealt when kamikaze is done\r\n"
+		"\tRest: Names of ships to perform kamikaze\r\n"
+	},
+	
+	//-Sesquipedalian
+	{ OP_NOT_KAMIKAZE, "not-kamikaze\r\n"
+		"\tTells ships abort a kamikaze run  Takes 1 or more arguments....\r\n"
+		"\tAll: Names of ships to abort kamikaze\r\n"
+	},
+
+	//phreak
+	{ OP_TURRET_TAGGED_SPECIFIC, "turret-tagged-specific\r\n"
+		"\tSpecific turrets on a ship only fire at tagged targets, as opposed to all turrets doing this using turret-tagged-only\r\n"
+		"\tIt is safe to slave turrets already slaved\r\n"
+		"\tTakes 2 or more arguments...\r\n"
+		"\t1: Name of ship to slave some turrets to target only tagged ships\r\n"
+		"\tRest: Turrets to slave\r\n"
+	},
+
+	//phreak
+	{ OP_TURRET_TAGGED_CLEAR_SPECIFIC, "turret-tagged-clear-specific\r\n"
+		"\tSpecific turrets on a ship are free to fire on untagged ships, as opposed to all turrets doing this using turret-tagged-clear\r\n"
+		"\tIt is safe to unslave turrets already free\r\n"
+		"\tTakes 2 or more arguments...\r\n"
+		"\t1: Name of ship to unslave some turrets to target any hostile ship\r\n"
+		"\tRest: Turrets to unslave\r\n"
+	},
+
+	// Goober5000
+	{ OP_LOCK_ROTATING_SUBSYSTEM, "lock-rotating-subsystem\r\n"
+		"\tInstantaneously locks a rotating subsystem so that it cannot rotate unless freed by free-rotating-subsystem.  "
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\tRest:\tName of the rotating subsystem to lock"
+	},
+
+	// Goober5000
+	{ OP_FREE_ROTATING_SUBSYSTEM, "free-rotating-subsystem\r\n"
+		"\tInstantaneously frees a rotating subsystem previously locked by lock-rotating-subsystem.  "
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\tRest:\tName of the rotating subsystem to free"
+	},
+
+	// Goober5000
+	{ OP_REVERSE_ROTATING_SUBSYSTEM, "reverse-rotating-subsystem\r\n"
+		"\tInstantaneously reverses the rotation direction of a rotating subsystem.  "
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\tRest:\tName of the rotating subsystem to reverse"
+	},
+
+	// Goober5000
+	{ OP_ROTATING_SUBSYS_SET_TURN_TIME, "rotating-subsys-set-turn-time\r\n"
+		"\tSets the turn time of a rotating subsystem.  "
+		"Takes 3 or 4 arguments...\r\n"
+		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t2:\tName of the rotating subsystem to configure\r\n"
+		"\t3:\tThe time for one complete rotation, in milliseconds (positive is counterclockwise, negative is clockwise)\r\n"
+		"\t4:\tThe acceleration (x1000, just as #3 is seconds x1000) to change from the current turn rate to the desired turn rate.  "
+		"Not sure of the units on this one.  (FS2 defaults to 0.5, which would be 500 in this sexp.)  Omit this argument if you want an instantaneous change."
+	},
+
+	//phreak
+	{ OP_NUM_SHIPS_IN_BATTLE, "num-ships-in-battle\r\n"
+		"\tReturns the number of ships in battle or the number of ships in battle for a given team.  Takes 1 argument...\r\n"
+		"\t1:\tTeam to query (optional)"
+	},
+
+	// Goober5000
+	{ OP_HUD_DISABLE, "hud-disable\r\n"
+		"\tSets whether the hud is disabled.  Takes 1 argument...\r\n"
+		"\t1: Flag (1 to disable, 0 to re-enable)"
+	},
+	
+	// Goober5000
+	{ OP_HUD_DISABLE_EXCEPT_MESSAGES, "hud-disable-except-messages\r\n"
+		"\tSets whether the hud (except for messages) is disabled.  Takes 1 argument...\r\n"
+		"\t1: Flag (1 to disable, 0 to re-enable)"
+	},
+
+	// Goober5000
+	{ OP_PLAYER_USE_AI, "player-use-ai\r\n"
+		"\tCauses the player's ship to be controlled by the Freespace AI.  Takes 0 arguments.\r\n"
+	},
+
+	// Goober5000
+	{ OP_PLAYER_NOT_USE_AI, "player-not-use-ai\r\n"
+		"\tCauses the player's ship to not be controlled by the Freespace AI.  Takes 0 arguments.\r\n"
+	},
+
+	//WMC
+	{ OP_HUD_SET_TEXT, "hud-set-text\r\n"
+		"\tSets the text value of a given HUD gauge. Works for custom and certain retail gauges. Takes 2 arguments...\r\n"
+		"\t1:\tHUD gauge to be modified\r\n"
+		"\t2:\tText to be set"
+	},
+
+	{ OP_HUD_SET_TEXT_NUM, "hud-set-text-num\r\n"
+		"\tSets the text value of a given HUD gauge to a number. Works for custom and certain retail gauges. Takes 2 arguments...\r\n"
+		"\t1:\tHUD gauge to be modified\r\n"
+		"\t2:\tNumber to be set"
+	},
+
+	//WMC
+	{ OP_HUD_SET_COORDS, "hud-set-coord\r\n"
+		"\tSets the coordinates of a given HUD gauge. Works for custom and retail gauges. Takes 3 arguments...\r\n"
+		"\t1:\tHUD gauge to be modified\r\n"
+		"\t2:\tCoordinate X component\r\n"
+		"\t2:\tCoordinate Y component"
+	},
+
+	//WMC
+	{ OP_HUD_SET_FRAME, "hud-set-frame\r\n"
+		"\tSets the frame of a given HUD gauge's associated image. Works for custom and certain retail gauges. Takes 2 arguments...\r\n"
+		"\t1:\tHUD gauge to be modified\r\n"
+		"\t2:\tFrame number to be changed to"
+	},
+
+	//WMC
+	{ OP_HUD_SET_COLOR, "hud-set-color\r\n"
+		"\tSets the color of a given HUD gauge. Works only for custom gauges Takes 4 arguments...\r\n"
+		"\t1:\tHUD gauge to be modified\r\n"
+		"\t2:\tRed component (0-255)\r\n"
+		"\t3:\tGreen component (0-255)\r\n"
+		"\t4:\tBlue component (0-255)"
+	},
+
+	//WMC
+	{ OP_CURRENT_SPEED, "current-speed\r\n"
+		"\tReturns the speed of the given object. Takes 1 argument...\r\n"
+		"\t1:\tHUD gauge to be modified"
+	},
+
+	//phreak
+	{ OP_SCRAMBLE_MESSAGES, "scramble-messages\r\n"
+		"\tCauses messages to be send as if the player has sustained communications subsystem or EMP damage.  Takes no arguments.\r\n"
+		"\tThis effect can be reversed using unscramble-messages."
+	},
+
+	//phreak
+	{ OP_UNSCRAMBLE_MESSAGES, "unscramble-messages\r\n"
+		"\tUndoes the effects of scramble-messages, causing messages to be sent clearly.  Takes no arguments."
+	},
+
+	{ OP_CUTSCENES_SET_CUTSCENE_BARS, "set-cutscene-bars\r\n"
+		"\tShows bars at the top and bottom of screen  "
+		"Takes 0 or 1 arguments...\r\n"
+		"\t1:\tMilliseconds for bars to slide in\r\n"
+	},
+
+	{ OP_CUTSCENES_UNSET_CUTSCENE_BARS, "unset-cutscene-bars\r\n"
+		"\tRemoves cutscene bars  "
+		"Takes 0 or 1 arguments...\r\n"
+		"\t1:\tMilliseconds for bars to slide out\r\n"
+	},
+
+	{ OP_CUTSCENES_FADE_IN, "fade-in\r\n"
+		"\tFades in  "
+		"Takes 0 or 1 arguments...\r\n"
+		"\t1:\tTime to fade in\r\n"
+	},
+
+	{ OP_CUTSCENES_FADE_OUT, "fade-out\r\n"
+		"\tFades in  "
+		"Takes 0 to 2 arguments...\r\n"
+		"\t1:\tTime to fade in\r\n"
+		"\t2:\tColor to fade to - 1 for white, 2 for red, default is black\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_POSITION, "set-camera-position\r\n"
+		"\tSets the camera position to a spot in mission space  "
+		"Takes 3 arguments...\r\n"
+		"\t1:\tX position\r\n"
+		"\t2:\tY position\r\n"
+		"\t3:\tZ position\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_ROTATION, "set-camera-rotation\r\n"
+		"\tSets the camera rotation  "
+		"Takes 3 to 5 arguments...\r\n"
+		"\t1:\tPitch (degrees)\r\n"
+		"\t2:\tBank (degrees)\r\n"
+		"\t3:\tHeading (degrees)\r\n"
+		"\t4:\tTotal turn time\r\n"
+		"\t5:\tTime to spend accelerating/decelerating\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_FACING, "set-camera-facing\r\n"
+		"\tMakes the camera face the given point  "
+		"Takes 3 to 5 arguments...\r\n"
+		"\t1:\tX position to face\r\n"
+		"\t2:\tY position to face\r\n"
+		"\t3:\tZ position to face\r\n"
+		"\t4:\tTotal turn time\r\n"
+		"\t5:\tTime to spend accelerating/decelerating\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_CAMERA_FACING_OBJECT, "set-camera-facing-object\r\n"
+		"\tMakes the camera face the given object  "
+		"Takes 1 to 3 arguments...\r\n"
+		"\t1:\tObject to face\r\n"
+		"\t2:\tTotal turn time\r\n"
+		"\t3:\tTime to spend accelerating/decelerating\r\n"
+	},
+
+	{ OP_CUTSCENES_SET_FOV, "set-fov\r\n"
+		"\tSets the field of view  "
+		"Takes 1 argument...\r\n"
+		"\t1:\tNew FOV (degrees)\r\n"
+	},
+
+	{ OP_CUTSCENES_RESET_FOV, "reset-fov\r\n"
+		"\tResets the field of view  "
+	},
+
+	{ OP_CUTSCENES_RESET_CAMERA, "reset-camera\r\n"
+		"\tResets the camera position and rotation  "
+	},
+
+	{ OP_CUTSCENES_SHOW_SUBTITLE, "show-subtitle\r\n"
+		"\tShows a subtitle  "
+		"Takes 4 to 12 arguments...\r\n"
+		"\t1:\tX position (negative value to be from right of screen)\r\n"
+		"\t2:\tY position (negative value to be from bottom of screen)\r\n"
+		"\t3:\tTime to be displayed, not including fadein/out\r\n"
+		"\t4:\tText to display"
+		"\t5:\tImage name\r\n"
+		"\t6:\tFade in time\r\n"
+		"\t7:\tCenter horizontally?\r\n"
+		"\t8:\tCenter vertically?"
+		"\t9:\tWidth\r\n"
+		"\t10:\tText red component (0-255)\r\n"
+		"\t11:\tText green component (0-255)\r\n"
+		"\t12:\tText blue component (0-255)"
+	},
+
+	{ OP_CUTSCENES_SET_TIME_COMPRESSION, "set-time-compression\r\n"
+		"\tSets the time compression  "
+		"Takes 1 to 3 arguments...\r\n"
+		"\t1:\tNew time compression (% of 1x)\r\n"
+		"\t2:\tTime in ms for change to take\r\n"
+		"\t3:\tTime compression to start from\r\n"
+	},
+
+	{ OP_CUTSCENES_RESET_TIME_COMPRESSION, "reset-time-compression\r\n"
+		"\tResets the time compression; always call when done with set-time-compression  "
+	},
+
+	{ OP_CUTSCENES_FORCE_PERSPECTIVE, "lock-perspective\r\n"
+		"\tPrevents or allows the player from changing the view mode  "
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1:\tTrue to lock the view mode, false to unlock it\r\n"
+		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down"
+	},
+
+	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
+		"\tSets the color of a jump node  "
+		"Takes 5 arguments...\r\n"
+		"\t1:\tJump node to change color for\r\n"
+		"\t2:\tRed value\r\n"
+		"\t3:\tGreen value\r\n"
+		"\t4:\tBlue value\r\n"
+		"\t5:\tAlpha value\r\n"
+	},
+
+	{ OP_JUMP_NODE_SET_JUMPNODE_MODEL, "set-jumpnode-model\r\n"
+		"\tSets the model of a jump node  "
+		"Takes 3 arguments...\r\n"
+		"\t1:\tJump node to change model for\r\n"
+		"\t2:\tModel filename\r\n"
+		"\t3:\tShow as normal model\r\n"
+	},
+
+	{ OP_JUMP_NODE_SHOW_JUMPNODE, "show-jumpnode\r\n"
+		"\tSets the model of a jump node  "
+		"Takes 1 arguments..\r\n"
+		"\t1:\tJump node to show\r\n"
+	},
+
+	{ OP_JUMP_NODE_HIDE_JUMPNODE, "hide-jumpnode\r\n"
+		"\tSets the model of a jump node  "
+		"Takes 1 arguments...\r\n"
+		"\t1:\tJump node to hide\r\n"
+	},
+};
+
+
+op_menu_struct op_menu[] =
+{
+	{ "Objectives",		OP_CATEGORY_OBJECTIVE },
+	{ "Time",			OP_CATEGORY_TIME },
+	{ "Logical",		OP_CATEGORY_LOGICAL },
+	{ "Arithmetic",		OP_CATEGORY_ARITHMETIC },
+	{ "Status",			OP_CATEGORY_STATUS },
+	{ "Change",			OP_CATEGORY_CHANGE },
+	{ "Conditionals",	OP_CATEGORY_CONDITIONAL },
+/*	{ "Debugging",		OP_CATEGORY_DEBUG },	discontinued by Goober5000 */
+	{ "Ai goals",		OP_CATEGORY_AI },
+	{ "Event/Goals",	OP_CATEGORY_GOAL_EVENT },
+	{ "Autopilot/NavPoints", OP_CATEGORY_NAVPOINTS},
+	{ "Training",		OP_CATEGORY_TRAINING },
+};
+
+// Goober5000's subcategorization of the Change menu (and possibly other menus in the future,
+// if people so choose - see sexp.h)
+op_menu_struct op_submenu[] =
+{
+	{	"Messaging and Mission Goals",	CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		},
+	{	"AI and IFF",					CHANGE_SUBCATEGORY_AI_AND_IFF						},
+	{	"Subsystems and Cargo",			CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO				},
+	{	"Ship Status",					CHANGE_SUBCATEGORY_SHIP_STATUS						},
+	{	"Beams and Turrets",			CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS				},
+	{	"Mission and Campaign",			CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN				},
+	{	"Models and Textures",			CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES				},
+	{	"Coordinate Manipulation",		CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION			},
+	{	"Music and Sound",				CHANGE_SUBCATEGORY_MUSIC_AND_SOUND					},
+	{	"Hud",							CHANGE_SUBCATEGORY_HUD								},
+	{	"Cutscenes",					CHANGE_SUBCATEGORY_CUTSCENES						},
+	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
+	{	"Special",						CHANGE_SUBCATEGORY_SPECIAL							},
+};
+int Num_sexp_help = sizeof(Sexp_help) / sizeof(sexp_help_struct);
+int Num_op_menus = sizeof(op_menu) / sizeof(op_menu_struct);
+int Num_submenus = sizeof(op_submenu) / sizeof(op_menu_struct);
