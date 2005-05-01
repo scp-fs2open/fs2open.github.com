@@ -159,7 +159,7 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
     return hr;
 }
 
-
+extern int Cmdline_window;
 HRESULT InitVideoWindow(HWND ghApp, long video_w, long video_h)
 {
     HRESULT hr = S_OK;
@@ -175,6 +175,12 @@ HRESULT InitVideoWindow(HWND ghApp, long video_w, long video_h)
 
 	int extra_w = (screen_w - video_rescale_w) / 2;
 	int extra_h = (screen_h - video_rescale_h) / 2;
+	
+	if (Cmdline_window)
+	{
+		rect.right += GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
+		rect.bottom += 2 * GetSystemMetrics(SM_CYFIXEDFRAME) + GetSystemMetrics(SM_CYCAPTION);
+	}
 
     if(SetWindowPos(ghApp, 0, 0, 0, rect.right, rect.bottom, SWP_NOMOVE | SWP_NOOWNERZORDER) == FALSE) {
 
