@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-04-24 03:06:29 $
+ * $Revision: 2.28 $
+ * $Date: 2005-05-01 23:17:46 $
  * $Author: phreak $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/04/24 03:06:29  phreak
+ * centered the window on the desktop if the -window command line is used.
+ *
  * Revision 2.26  2005/03/08 03:50:24  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -780,7 +783,7 @@ BOOL win32_create_window()
 	int x_add = 0;
 	int y_add = 0;
 	x_add += GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
-	y_add += GetSystemMetrics(SM_CYFIXEDFRAME) + GetSystemMetrics(SM_CYCAPTION);
+	y_add += 2*GetSystemMetrics(SM_CYFIXEDFRAME) + GetSystemMetrics(SM_CYCAPTION);
 
 	// Make a 32x32 window.  It never should get shown, because the graphics code
 	// will then size it.
