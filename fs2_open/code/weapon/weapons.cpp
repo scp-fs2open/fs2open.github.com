@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2005/04/30 18:20:57  phreak
+ * buckets in sort_weapons_by_type() allocated on the heap instead of the stack.
+ *
  * Revision 2.111  2005/04/28 05:29:30  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -841,7 +844,11 @@ int     First_secondary_index = -1;
 extern int Cmdline_load_only_used;
 static int *used_weapons = NULL;
 
+#ifdef INF_BUILD
+#define MAX_SPAWN_WEAPONS	30
+#else
 #define	MAX_SPAWN_WEAPONS	10			//	Up to 10 weapons can spawn weapons.
+#endif
 
 int	Num_spawn_types;
 char	Spawn_names[MAX_SPAWN_WEAPONS][NAME_LENGTH];
