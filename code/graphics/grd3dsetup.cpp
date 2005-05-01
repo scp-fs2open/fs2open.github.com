@@ -5,7 +5,13 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
+
+/*
+ * $Log: not supported by cvs2svn $
+ *
+*/
+ 
 
 #include "grd3dsetup.h"
 #include <d3d8.h>
