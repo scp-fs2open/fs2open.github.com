@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.101 $
- * $Date: 2005-04-15 11:41:27 $
- * $Author: taylor $
+ * $Revision: 2.102 $
+ * $Date: 2005-05-01 07:13:59 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2005/04/15 11:41:27  taylor
+ * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
+ *
  * Revision 2.100  2005/04/15 11:36:55  taylor
  * new GCC = new warning messages, yippeeee!!
  *
@@ -650,6 +653,10 @@
 #include "network/multi.h"
 #include "species_defs/species_defs.h"
 #include "hud/hudconfig.h"
+//WMC - added these for show-SEXP command line
+#include <vector>
+#include "globalincs/version.h"
+#include "parse/sexp.h"
 
 #ifdef SCP_UNIX
 #include "osapi/osapi.h"
@@ -792,7 +799,8 @@ Flag exe_params[] =
 	{ "-tablecrcs",	  "",								true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.tablecrcs", },
 	{ "-missioncrcs",   "",								true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.missioncrcs", },
 	{ "-dis_collisions","Disable collisions",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
-	{ "-dis_weapons",   "Disable weapon rendering",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"", }
+	{ "-dis_weapons",   "Disable weapon rendering",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
+	{ "-output_sexps",	"Outputs SEXPs to sexps.html",	true,		0,				EASY_DEFAULT,		"Dev Tool",		"", },
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -862,6 +870,7 @@ cmdline_parm ingamejoin_arg("-ingame", NULL);
 cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 cmdline_parm get_flags_arg("-get_flags",NULL);
+cmdline_parm output_sexp_arg("-output_sexps",NULL);	//WMC - outputs all SEXPs to sexps.html
 cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 cmdline_parm fred2_htl_arg("-fredhtl",NULL);
@@ -1231,6 +1240,47 @@ cmdline_parm::~cmdline_parm()
 int cmdline_parm::found()
 {
 	return name_found;
+}
+
+void output_sexp_html(int sexp_idx, FILE *fp)
+{
+	if(sexp_idx < 0 || sexp_idx > Num_operators)
+		return;
+
+	bool printed=false;
+
+	for(int i = 0; i < Num_sexp_help; i++)
+	{
+		if(Sexp_help[i].id == Operators[sexp_idx].value)
+		{
+			char* new_buf = new char[2*strlen(Sexp_help[i].help)];
+			char* dest_ptr = new_buf;
+			char* curr_ptr = Sexp_help[i].help;
+			char* end_ptr = curr_ptr + strlen(Sexp_help[i].help);
+			while(curr_ptr < end_ptr)
+			{
+				if(*curr_ptr == '\n')
+				{
+					strcpy(dest_ptr, "\n<br>");
+					dest_ptr+=5;
+				}
+				else
+				{
+					*dest_ptr++ = *curr_ptr;
+				}
+				curr_ptr++;
+			}
+			*dest_ptr = '\0';
+
+			fprintf(fp, "<dt><b>%s</b></dt>\n<dd>%s</dd>\n", Operators[sexp_idx].text, new_buf);
+			delete[] new_buf;
+
+			printed = true;
+		}
+	}
+
+	if(!printed)
+		fprintf(fp, "<dt><b>%s</b></dt>\n<dd>Min arguments: %d, Max arguments: %d</dd>\n", Operators[sexp_idx].text, Operators[sexp_idx].min, Operators[sexp_idx].max);
 }
 
 
@@ -1670,6 +1720,94 @@ bool SetCmdlineParams()
 	if(ambient_factor_arg.found())
 	{
 		Cmdline_ambient_factor = ambient_factor_arg.get_int();
+	}
+
+	if(output_sexp_arg.found())
+	{
+		extern int Num_op_menus;
+		extern int Num_submenus;
+
+		FILE *fp = fopen("sexps.html","w");
+
+		if(fp == NULL)
+		{
+			MessageBox(NULL,"Error creating SEXP operator list", "Error", MB_OK);
+			return false; 
+		}
+
+		//Header
+		fprintf(fp, "<html>\n<head>\n\t<title>SEXP Output: %d.%d.%d</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+		fputs("<body>", fp);
+		fprintf(fp,"\t<h1>Sexp Output - Build %d.%d.%d</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+
+		std::vector<int> done_sexp_ids;
+		int x,y,z;
+
+		//Output an overview
+		fputs("<dl>", fp);
+		for(x = 0; x < Num_op_menus; x++)
+		{
+			fprintf(fp, "<dt><a href=\"#%d\">%s</a></dt>", (op_menu[x].id & OP_CATEGORY_MASK), op_menu[x].name);
+			for(y = 0; y < Num_submenus; y++)
+			{
+				if(((op_submenu[y].id & OP_CATEGORY_MASK) == op_menu[x].id))
+				{
+					fprintf(fp, "<dd><a href=\"#%d\">%s</a></dd>", op_submenu[y].id & (OP_CATEGORY_MASK | SUBCATEGORY_MASK), op_submenu[y].name);
+				}
+			}
+		}
+		fputs("</dl>", fp);
+
+		//Output the full descriptions
+		fputs("<dl>", fp);
+		for(x = 0; x < Num_op_menus; x++)
+		{
+			fprintf(fp, "<dt id=\"%d\"><h2>%s</h2></dt>\n", (op_menu[x].id & OP_CATEGORY_MASK), op_menu[x].name);
+			fputs("<dd>", fp);
+			fputs("<dl>", fp);
+			for(y = 0; y < Num_submenus; y++)
+			{
+				if(((op_submenu[y].id & OP_CATEGORY_MASK) == op_menu[x].id))
+				{
+					fprintf(fp, "<dt id=\"%d\"><h3>%s</h3></dt>\n", op_submenu[y].id & (OP_CATEGORY_MASK | SUBCATEGORY_MASK), op_submenu[y].name);
+					fputs("<dd>", fp);
+					fputs("<dl>", fp);
+					for(z = 0; z < Num_operators; z++)
+					{
+						if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+							&& (get_subcategory(Operators[z].value) != -1)
+							&& (get_subcategory(Operators[z].value) == op_submenu[y].id))
+						{
+							output_sexp_html(z, fp);
+						}
+					}
+					fputs("</dl>", fp);
+					fputs("</dd>", fp);
+				}
+			}
+			for(z = 0; z < Num_operators; z++)
+			{
+				if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+					&& (get_subcategory(Operators[z].value) == -1))
+				{
+					output_sexp_html(z, fp);
+				}
+			}
+			fputs("</dl>", fp);
+			fputs("</dd>", fp);
+		}
+		for(z = 0; z < Num_operators; z++)
+		{
+			if(!(Operators[z].value & OP_CATEGORY_MASK))
+			{
+				output_sexp_html(z, fp);
+			}
+		}
+		fputs("</dl>", fp);
+		fputs("</body>\n</html>\n", fp);
+
+		fclose(fp);
+		return false;
 	}
 
 	if(get_flags_arg.found())
