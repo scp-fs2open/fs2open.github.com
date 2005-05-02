@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.90 $
+ * $Revision: 2.91 $
  * $Author: wmcoolmon $
- * $Date: 2005-05-01 06:18:58 $
+ * $Date: 2005-05-02 22:36:54 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2005/05/01 06:18:58  wmcoolmon
+ * Added (up-to-date) SEXP description info.
+ *
  * Revision 2.89  2005/04/21 15:59:42  taylor
  * sexp to swap the skybox in mission, not tested in FRED, hopefully I didn't mess this up too much
  *
@@ -1537,7 +1540,7 @@ typedef struct sexp_help_struct {
 	char *help;
 } sexp_help_struct;
 
-sexp_help_struct Sexp_help[];
+extern sexp_help_struct Sexp_help[];
 
 typedef struct op_menu_struct {
 	char *name;
