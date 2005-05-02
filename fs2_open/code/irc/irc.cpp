@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-03-27 21:13:05 $
+ * $Revision: 1.15 $
+ * $Date: 2005-05-02 15:33:17 $
  * $Author: mrduckman $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/03/27 21:13:05  mrduckman
+ * Syntax correction
+ *
  * Revision 1.13  2005/03/27 21:06:31  mrduckman
  * Added /kill IRC Command
  *
@@ -517,7 +520,12 @@ void irc_client::ParseForCommand(std::string UserInput)
 		//KILL <nick> <cause>
 		params = ExtractParams(parts[1], 2);
 		Kill(params[0], params[1]);
-	} 
+	}
+	else if (StrIcmp(parts[0], "/names"))
+	{
+		//NAMES <#channel>
+		Names(parts[1]);
+	}
 	else if (StrIcmp(parts[0], "/raw"))
 	{
 		//RAW command
@@ -675,6 +683,14 @@ void irc_client::Kill(std::string nick, std::string message)
 //KILL <nick> <cause>
 {
 	std::string command = "KILL " + nick + " " + message;
+	PutRaw(command);
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+void irc_client::Names(std::string channel)
+//NAMES <#channel>
+{
+	std::string command = "NAMES " + channel;
 	PutRaw(command);
 }
 
