@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.8 $
- * $Date: 2005-03-27 21:06:31 $
+ * $Revision: 1.9 $
+ * $Date: 2005-05-02 15:33:17 $
  * $Author: mrduckman $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/03/27 21:06:31  mrduckman
+ * Added /kill IRC Command
+ *
  * Revision 1.7  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -167,6 +170,7 @@ class irc_client
 		void Oper(std::string user, std::string pass);
 		void Kill(std::string nick, std::string message);
 		void UserHost(std::string target);
+		void Names(std::string channel);
 
 
 
