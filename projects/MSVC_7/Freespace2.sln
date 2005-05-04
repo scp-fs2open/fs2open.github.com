@@ -1,0 +1,42 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Freespace2", "..\MSVC_7\Freespace2.vcproj", "{871402E4-741F-4220-A860-0B56DE119C7C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "code", "..\MSVC_7\code.vcproj", "{7CEAC05C-7687-4AD1-9A33-D2BF2832F090}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libjpeg", "..\MSVC_7\libjpeg.vcproj", "{24816D95-432B-45F7-BAC6-CD69D7B7FDD7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wxFRED2", "..\MSVC_7\wxFRED2.vcproj", "{E4BFEB7F-E1CC-4233-95B5-B0A9647E5824}"
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = Debug
+		ConfigName.1 = Release
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+		{871402E4-741F-4220-A860-0B56DE119C7C}.0 = {24816D95-432B-45F7-BAC6-CD69D7B7FDD7}
+		{871402E4-741F-4220-A860-0B56DE119C7C}.1 = {7CEAC05C-7687-4AD1-9A33-D2BF2832F090}
+		{E4BFEB7F-E1CC-4233-95B5-B0A9647E5824}.0 = {7CEAC05C-7687-4AD1-9A33-D2BF2832F090}
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{871402E4-741F-4220-A860-0B56DE119C7C}.Debug.ActiveCfg = Debug|Win32
+		{871402E4-741F-4220-A860-0B56DE119C7C}.Debug.Build.0 = Debug|Win32
+		{871402E4-741F-4220-A860-0B56DE119C7C}.Release.ActiveCfg = Release|Win32
+		{871402E4-741F-4220-A860-0B56DE119C7C}.Release.Build.0 = Release|Win32
+		{7CEAC05C-7687-4AD1-9A33-D2BF2832F090}.Debug.ActiveCfg = Debug|Win32
+		{7CEAC05C-7687-4AD1-9A33-D2BF2832F090}.Debug.Build.0 = Debug|Win32
+		{7CEAC05C-7687-4AD1-9A33-D2BF2832F090}.Release.ActiveCfg = Release|Win32
+		{7CEAC05C-7687-4AD1-9A33-D2BF2832F090}.Release.Build.0 = Release|Win32
+		{24816D95-432B-45F7-BAC6-CD69D7B7FDD7}.Debug.ActiveCfg = Debug|Win32
+		{24816D95-432B-45F7-BAC6-CD69D7B7FDD7}.Debug.Build.0 = Debug|Win32
+		{24816D95-432B-45F7-BAC6-CD69D7B7FDD7}.Release.ActiveCfg = Release|Win32
+		{24816D95-432B-45F7-BAC6-CD69D7B7FDD7}.Release.Build.0 = Release|Win32
+		{E4BFEB7F-E1CC-4233-95B5-B0A9647E5824}.Debug.ActiveCfg = Debug|Win32
+		{E4BFEB7F-E1CC-4233-95B5-B0A9647E5824}.Debug.Build.0 = Debug|Win32
+		{E4BFEB7F-E1CC-4233-95B5-B0A9647E5824}.Release.ActiveCfg = Release|Win32
+		{E4BFEB7F-E1CC-4233-95B5-B0A9647E5824}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
