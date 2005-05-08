@@ -265,6 +265,9 @@ public:
 	GUIObject(std::string in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
 	~GUIObject();
 
+	//OPERATORS
+	void operator delete(void *dgp);
+
 	//CHILD FUNCTIONS
 	//Used for managing children. :)
 	GUIObject *AddChild(GUIObject* cgp);
@@ -293,6 +296,7 @@ private:
 
 	ScreenClassInfoEntry* ScreenClassInfo;
 	GUIObject Guiobjects;
+	std::vector<GUIObject*> DeletionCache;
 public:
 	GUIScreen(std::string in_Name="");
 	~GUIScreen();
@@ -301,6 +305,7 @@ public:
 
 	//Set funcs
 	GUIObject *Add(GUIObject* new_gauge);
+	void DeleteObject(GUIObject* dgp){DeletionCache.push_back(dgp);}
 
 	//On funcs
 	int OnFrame(float frametime, bool doevents);
@@ -330,10 +335,9 @@ private:
 	int KeyPressed;
 	int Status, LastStatus;
 
-	void ParseClassInfo(char* section);
 	void DestroyClassInfo();
 public:
-	GUISystem(char *section);
+	GUISystem();
 	~GUISystem();
 
 	//-----
@@ -344,6 +348,7 @@ public:
 	//-----
 
 	//Set stuff
+	void ParseClassInfo(char* section);
 	void SetActiveObject(GUIObject *cgp);
 	void SetGraspedObject(GUIObject *cgp, int button);
 
@@ -651,4 +656,4 @@ public:
 };
 
 //GLOBALS
-extern GUISystem *GUI_system;
+extern GUISystem GUI_system;

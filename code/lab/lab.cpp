@@ -642,7 +642,7 @@ void lab_init()
 	*/
 
 	//We start by creating the screen/toolbar
-	Lab_screen = GUI_system->PushScreen(new GUIScreen("Lab"));
+	Lab_screen = GUI_system.PushScreen(new GUIScreen("Lab"));
 	GUIObject *cwp;
 	GUIObject *cbp;
 	cwp = Lab_screen->Add(new Window("Toolbar", 0, 0, -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
@@ -680,7 +680,7 @@ void lab_do_frame(float frametime)
 	{
 		show_ship(frametime);
 	}
-	if(GUI_system->OnFrame(frametime, Trackball_active==0 ? true : false, false) == GSOF_NOTHINGPRESSED && mouse_down(MOUSE_LEFT_BUTTON))
+	if(GUI_system.OnFrame(frametime, Trackball_active==0 ? true : false, false) == GSOF_NOTHINGPRESSED && mouse_down(MOUSE_LEFT_BUTTON))
 	{
 		Trackball_active = 1;
 		Trackball_mode = 1;
