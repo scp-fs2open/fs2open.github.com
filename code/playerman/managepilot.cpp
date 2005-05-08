@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-04-21 15:51:40 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2005-05-08 20:22:38 $
+ * $Author: wmcoolmon $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/04/21 15:51:40  taylor
+ * fix source/dest memory overwrite that Valgrind was complaining about
+ *
  * Revision 2.18  2005/04/17 05:38:29  taylor
  * updated Linux joystick code that's a bit less insane speed wise
  * remove ability to build without joystick support, no reason to keep it around
@@ -1144,7 +1147,7 @@ void read_stats_block(CFILE *file, int pfile_version, scoring_struct *stats)
 			}
 		} else {
 			// read the usual way
-			for (i=0; i < NUM_MEDALS; i++) {
+			for (i=0; i < MAX_MEDALS; i++) {
 				stats->medals[i] = cfread_int(file);
 			}
 		}
@@ -1453,8 +1456,15 @@ void write_stats_block(CFILE *file,scoring_struct *stats, int multi)
 	cfwrite_int(stats->score, file);
 	cfwrite_int(stats->rank, file);
 	cfwrite_int(stats->assists, file);
-	for (i=0; i<NUM_MEDALS; i++){
+
+	//WMC - pilot files don't support different numbers of medals
+	Assert(Num_medals == MAX_MEDALS);
+	for (i=0; i<Num_medals; i++){
 		cfwrite_int(stats->medals[i], file);
+	}
+
+	for(;i<MAX_MEDALS;i++){
+		cfwrite_int(0, file);
 	}
 
 	total = MAX_SHIP_TYPES;

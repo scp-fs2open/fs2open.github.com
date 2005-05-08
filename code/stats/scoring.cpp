@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-02 21:24:47 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-08 20:20:46 $
+ * $Author: wmcoolmon $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/02 21:24:47  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.7  2005/02/04 20:06:09  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -332,7 +335,7 @@ void init_scoring_element(scoring_struct *s)
 	s->kill_count = 0;
 	s->kill_count_ok = 0;
 
-	for (i=0; i<NUM_MEDALS; i++){
+	for (i=0; i<MAX_MEDALS; i++){
 		s->medals[i] = 0;
 	}
 
@@ -468,7 +471,7 @@ void scoring_eval_rank( scoring_struct *sc )
 // which medal is awarded.
 void scoring_eval_badges(scoring_struct *sc)
 {
-	int i, total_kills, badge;
+	int i, total_kills;
 
 	// to determine badges, we count kills based on fighter/bomber types.  We must count kills in
 	// all time stats + current mission stats.  And, only for enemy fighters/bombers
@@ -482,17 +485,22 @@ void scoring_eval_badges(scoring_struct *sc)
 
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
 	// against badge kill numbers, and return the badge index if we would get a new one.
-	badge = -1;
-	for (i = 0; i < MAX_BADGES; i++ ) {
-		if ( total_kills >= Medals[Badge_index[i]].kills_needed ){
+	int badge = -1;
+	int last_badge_kills = 0;
+	for (i = 0; i < Num_medals; i++ ) {
+		if ( total_kills >= Medals[i].kills_needed
+			&& Medals[i].kills_needed > last_badge_kills
+			&& Medals[i].kills_needed > 0 )
+		{
+			last_badge_kills = Medals[i].kills_needed;
 			badge = i;
 		}
 	}
 
 	// if player could have a badge based on kills, and doesn't currently have this badge, then
 	// return the badge id.
-	if ( (badge != -1 ) && (sc->medals[Badge_index[badge]] < 1) ) {
-		sc->medals[Badge_index[badge]] = 1;
+	if ( (badge != -1 ) && (sc->medals[badge] < 1) ) {
+		sc->medals[badge] = 1;
 		sc->m_badge_earned = badge;
 	}
 }
@@ -553,7 +561,7 @@ void scoring_backout_accept( scoring_struct *score )
 
 	// if a badge was earned, take it back
 	if ( score->m_badge_earned != -1){
-		score->medals[Badge_index[score->m_badge_earned]] = 0;
+		score->medals[score->m_badge_earned] = 0;
 	}
 
 	// return when in training mission.  We can grant a medal in training, but don't
@@ -644,7 +652,7 @@ void scoring_level_close(int accepted)
 
 			// if a badge was earned, take it back
 			if ( Player->stats.m_badge_earned != -1){
-				Player->stats.medals[Badge_index[Player->stats.m_badge_earned]] = -1;
+				Player->stats.medals[Player->stats.m_badge_earned] = -1;
 				Player->stats.m_badge_earned = -1;
 			}
 		}
