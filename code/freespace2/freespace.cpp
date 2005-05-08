@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.144 $
- * $Date: 2005-04-28 05:29:29 $
+ * $Revision: 2.145 $
+ * $Date: 2005-05-08 20:33:42 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.144  2005/04/28 05:29:29  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.143  2005/04/25 00:21:30  wmcoolmon
  * Center title screen, removal of unnecessary #ifdefs
  *
@@ -3289,7 +3292,7 @@ void game_init()
 	//This may seem scary, but it should take up 0 processing time and very little memory
 	//as long as it's not being used.
 	//Otherwise, it just keeps the parsed interface.tbl in memory.
-	GUI_system = new GUISystem("interface.tbl");
+	GUI_system.ParseClassInfo("interface.tbl");
 
 	// load non-darkening pixel defs
 	palman_load_pixels();
@@ -3304,8 +3307,11 @@ void game_init()
 	parse_rank_tbl();
 #ifndef FS2_DEMO
 	parse_medal_tbl();
+	//WMC - gave badge_stuff a deconstructor
+/*
 	void medal_close();
 	atexit(medal_close);
+*/
 #endif
 	cutscene_init();
 	key_init();
@@ -3420,7 +3426,33 @@ void game_get_framerate()
  //		gr_set_color(0,0,255);
  //	else
 	gr_set_color_fast(&HUD_color_debug);
+#ifdef WMC
+	//WMC - this code spits out the target of all turrets
+	if(Player_ai->target_objnum != NULL
+		&& Objects[Player_ai->target_objnum].type == OBJ_SHIP)
+	{
+		//Debug crap
+		int t = 0;
+		ship_subsys	*pss;
+		ship *target_ship = &Ships[Objects[Player_ai->target_objnum].instance];
 
+		object *objp = &Objects[Player_ai->target_objnum];
+		for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) )
+		{
+			if(pss->system_info->type == SUBSYSTEM_TURRET)
+			{
+				if(pss->turret_enemy_objnum == -1)
+					gr_printf(10, t*10, "Turret %d: <None>", t);
+				else if(Objects[pss->turret_enemy_objnum].type == OBJ_SHIP)
+					gr_printf(10, t*10, "Turret %d: %s", t, Ships[Objects[pss->turret_enemy_objnum].instance].ship_name);
+				else
+					gr_printf(10, t*10, "Turret %d: <Object %d>", t, pss->turret_enemy_objnum);
+
+				t++;
+			}
+		}
+	}
+#endif
 	char text[128] = "";
 
 	//Show the viewin pos
