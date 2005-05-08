@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-03-08 03:50:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2005-05-08 20:25:04 $
+ * $Author: wmcoolmon $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/03/08 03:50:21  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.30  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -950,7 +954,7 @@ char *debrief_tooltip_handler(char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Badge_index[Player->stats.m_badge_earned]].name;
+			return Medals[Player->stats.m_badge_earned].name;
 		}
 	}
 
@@ -1358,7 +1362,7 @@ void debrief_choose_badge_voice()
 
 	if(Campaign.current_mission < 0){
 		// default to petrarch
-		sprintf(Badge_stage.voice, NOX("9_%s"), Badge_info[Player->stats.m_badge_earned].voice_base);
+		sprintf(Badge_stage.voice, NOX("9_%s"), Medals[Player->stats.m_badge_earned].voice_base);
 	}
 
 	if ((Campaign.missions[Campaign.current_mission].name) && (Campaign.filename)) {
@@ -1369,7 +1373,7 @@ void debrief_choose_badge_voice()
 				for (j=0; j<Campaign.num_missions; j++) {
 					if ((Campaign.missions[Campaign.current_mission].name != NULL) && !stricmp(Campaign.missions[Campaign.current_mission].name, Debrief_promotion_voice_mapping[i][j].mission_file)) {
 						// found it!  set the persona and bail
-						sprintf(Badge_stage.voice, NOX("%d_%s"), Debrief_promotion_voice_mapping[i][j].persona_index, Badge_info[Player->stats.m_badge_earned].voice_base);
+						sprintf(Badge_stage.voice, NOX("%d_%s"), Debrief_promotion_voice_mapping[i][j].persona_index, Medals[Player->stats.m_badge_earned].voice_base);
 						return;
 					}
 				}
@@ -1378,7 +1382,7 @@ void debrief_choose_badge_voice()
 	}
 
 	// default to petrarch
-	sprintf(Badge_stage.voice, NOX("9_%s"), Badge_info[Player->stats.m_badge_earned].voice_base);
+	sprintf(Badge_stage.voice, NOX("9_%s"), Medals[Player->stats.m_badge_earned].voice_base);
 }
 
 
@@ -1441,13 +1445,13 @@ void debrief_award_init()
 		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_BADGE], i + 1);
 		Badge_bitmap = bm_load(buf);
 
-		Badge_stage.new_text = Badge_info[i].promotion_text;
+		Badge_stage.new_text = Medals[i].promotion_text;
 		Badge_stage.new_recommendation_text = NULL;
 
 		// choose appropriate voice
 		debrief_choose_badge_voice();
 
-		debrief_add_award_text(Medals[Badge_index[i]].name);
+		debrief_add_award_text(Medals[i].name);
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0) || (Wings_bitmap >= 0) || (Crest_bitmap >= 0)) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-04-28 01:35:26 $
+ * $Revision: 2.25 $
+ * $Date: 2005-05-08 20:26:00 $
  * $Author: wmcoolmon $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/04/28 01:35:26  wmcoolmon
+ * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
+ *
  * Revision 2.23  2005/04/25 00:25:15  wmcoolmon
  * MAX_SHIP_TYPES > Num_ship_types
  *
@@ -1051,7 +1054,7 @@ int mission_campaign_savefile_save()
 			stats_tmp.s_bonehead_hits = INTEL_INT(Campaign.missions[i].stats.s_bonehead_hits);
 			stats_tmp.bonehead_kills = INTEL_INT(Campaign.missions[i].stats.bonehead_kills);
 
-			for ( j = 0; j < NUM_MEDALS; j++ )
+			for ( j = 0; j < MAX_MEDALS; j++ )
 				stats_tmp.medals[j] = INTEL_INT(Campaign.missions[i].stats.medals[j]);
 
 			// save to file
@@ -1126,8 +1129,14 @@ int mission_campaign_savefile_save()
 	cfwrite_int(pl->stats.rank, fp);
 	cfwrite_int(pl->stats.assists, fp);
 
-	for (i=0; i<NUM_MEDALS; i++){
+	Assert(Num_medals == MAX_MEDALS);
+
+	for (i=0; i<Num_medals; i++){
 		cfwrite_int(pl->stats.medals[i], fp);
+	}
+
+	for(;i<MAX_MEDALS;i++){
+		cfwrite_int(0, fp);
 	}
 
 	int total = MAX_SHIP_TYPES;
@@ -1512,7 +1521,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			Campaign.missions[num].stats.s_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.s_bonehead_hits);
 			Campaign.missions[num].stats.bonehead_kills = INTEL_INT(Campaign.missions[num].stats.bonehead_kills);
 
-			for (j=0; j < NUM_MEDALS; j++) {
+			for (j=0; j < MAX_MEDALS; j++) {
 				Campaign.missions[num].stats.medals[j] = INTEL_INT(Campaign.missions[num].stats.medals[j]);
 			}
 		}
@@ -1646,7 +1655,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		pl->stats.rank = cfread_int(fp);
 		pl->stats.assists = cfread_int(fp);
 
-		for (i=0; i < NUM_MEDALS; i++) {
+		for (i=0; i < Num_medals; i++) {
 			pl->stats.medals[i] = cfread_int(fp);
 		}
 
@@ -1782,7 +1791,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			Campaign.missions[num].stats.s_bonehead_hits = INTEL_INT(Campaign.missions[num].stats.s_bonehead_hits);
 			Campaign.missions[num].stats.bonehead_kills = INTEL_INT(Campaign.missions[num].stats.bonehead_kills);
 
-			for (j=0; j < NUM_MEDALS; j++) {
+			for (j=0; j < MAX_MEDALS; j++) {
 				Campaign.missions[num].stats.medals[j] = INTEL_INT(Campaign.missions[num].stats.medals[j]);
 			}
 		}

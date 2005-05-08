@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.h $
- * $Revision: 2.5 $
- * $Date: 2005-02-04 10:12:33 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-05-08 20:20:46 $
+ * $Author: wmcoolmon $
  *
  * Scoring system structures, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/02/04 10:12:33  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.4  2004/08/11 05:06:35  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -251,7 +254,7 @@ typedef struct scoring_struct {
 	// All-time total
 	int score;								// all time score
 	int rank;								// all time rank
-	int medals[NUM_MEDALS];				// all time medal counts
+	int medals[MAX_MEDALS];				// all time medal counts
 
 	//ushort kills[MAX_SHIP_TYPES];		// only valid kills (i.e. not on friendlies).
 	int kills[MAX_SHIP_TYPES];		//DTP for bumped max_ships

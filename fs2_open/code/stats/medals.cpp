@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-02-23 04:57:29 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-05-08 20:20:46 $
+ * $Author: wmcoolmon $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/02/23 04:57:29  taylor
+ * even more bm_unload() -> bm_release() changes
+ *
  * Revision 2.9  2005/01/31 10:34:40  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -193,7 +196,7 @@
 #include "cmdline/cmdline.h"
 #endif
 
-
+int Num_medals = 0;
 
 //#define MAX_MEDAL_TYPES 63 // the # of medals which exist so far
 
@@ -205,8 +208,8 @@
 */
 
 // define for the medal information
-medal_stuff Medals[NUM_MEDALS];
-badge_stuff Badge_info[MAX_BADGES];
+std::vector<medal_stuff> Medals;
+//badge_stuff Badge_info[MAX_BADGES];
 
 // holds indices into Medals array of the badges for # kills
 int Badge_index[MAX_BADGES];
@@ -215,7 +218,7 @@ int Badge_index[MAX_BADGES];
 #define RANK_MEDAL_REGION		12			// region number of the rank medal
 
 // coords for indiv medal bitmaps
-int Medal_coords[GR_NUM_RESOLUTIONS][NUM_MEDALS][2] = {
+int Medal_coords[GR_NUM_RESOLUTIONS][MAX_MEDALS][2] = {
 	{				// GR_640
 		{ 89, 47 },					// eps. peg. lib
 		{ 486, 47 },				// imp. order o' vasuda
@@ -311,14 +314,14 @@ player *Medals_player;
 // -----------------------------------------------------------------------------
 // Main medals screen state
 //
-#define NUM_MEDAL_REGIONS			NUM_MEDALS + 1				// the extra one is for the rank medal
+#define NUM_MEDAL_REGIONS			MAX_MEDALS + 1				// the extra one is for the rank medal
 
 static bitmap *Medals_mask;
 int Medals_mask_w, Medals_mask_h;
 //static int Medal_palette;              // Medal palette bitmap
 static int Medals_bitmap_mask;         // the mask for the medal case
 static int Medals_bitmap;              // the medal case itself
-static int Medal_bitmaps[NUM_MEDALS];  // bitmaps for the individual medals
+static std::vector<int> Medal_bitmaps;  // bitmaps for the individual medals
 static int Rank_bm;							// bitmap for the rank medal
 
 static MENU_REGION Medal_regions[NUM_MEDAL_REGIONS]; // a semi-hack for now because we only have 4 medals, but we also include the close button
@@ -351,7 +354,7 @@ int Init_flags;
 
 void parse_medal_tbl()
 {
-	int rval, num_medals, i, bi;
+	int rval, i;
 
 	if ((rval = setjmp(parse_abort)) != 0) {
 		Error(LOCATION, "Error parsing 'medals.tbl'\r\nError code = %i.\r\n", rval);
@@ -365,67 +368,76 @@ void parse_medal_tbl()
 	reset_parse();
 
 	// parse in all the rank names
-	num_medals = 0;
-	bi = 0;
+	medal_stuff temp_medal;
+	Num_medals = 0;
 	required_string("#Medals");
-	while ( required_string_either("#End", "$Name:") ) {
-		Assert ( num_medals < NUM_MEDALS);
+	while ( required_string_either("#End", "$Name:") )
+	{
+		//Clear this
+		temp_medal = medal_stuff();
+
 		required_string("$Name:");
-		stuff_string( Medals[num_medals].name, F_NAME, NULL );
+		stuff_string( temp_medal.name, F_NAME, NULL );
+
 		required_string("$Bitmap:");
-		stuff_string( Medals[num_medals].bitmap, F_NAME, NULL );
+		stuff_string( temp_medal.bitmap, F_NAME, NULL );
+
 		required_string("$Num mods:");
-		stuff_int( &Medals[num_medals].num_versions);
+		stuff_int( &temp_medal.num_versions);
 
 		// some medals are based on kill counts.  When string +Num Kills: is present, we know that
 		// this medal is a badge and should be treated specially
-		Medals[num_medals].kills_needed = 0;
 		if ( optional_string("+Num Kills:") ) {
-			char buf[MULTITEXT_LENGTH + 1];
+			char buf[MULTITEXT_LENGTH];
 
-			Assert( bi < MAX_BADGES );
-			stuff_int( &Medals[num_medals].kills_needed );
-			Badge_index[bi] = num_medals;
+			stuff_int( &temp_medal.kills_needed );
 #ifdef FS2_DEMO
 			required_string("$Wavefile 1:");
-			stuff_string(Badge_info[bi].voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
 			required_string("$Wavefile 2:");
-			stuff_string(Badge_info[bi].voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
 			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
 #else
 			required_string("$Wavefile Base:");
-			stuff_string(Badge_info[bi].voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
 #endif
 			//required_string("$Wavefile 2:");
 			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
 
 			required_string("$Promotion Text:");
 			stuff_string(buf, F_MULTITEXT, NULL);
-			Badge_info[bi].promotion_text = strdup(buf);
-
-			bi++;
+			temp_medal.promotion_text = strdup(buf);
 		}
-
-		num_medals++;
+		Medals.push_back(temp_medal);
 	}
 
 	required_string("#End");
-	Assert( num_medals == NUM_MEDALS );
+
+	Num_medals = Medals.size();
 
 	// be sure that the badges kill numbers show up in order
-	for (i = 0; i < MAX_BADGES-1; i++ ) {
-		if ( Medals[Badge_index[i]].kills_needed >= Medals[Badge_index[i+1]].kills_needed ){
+	//WMC - I don't think this is needed anymore due to my changes to post-mission functions
+	//but I'm keeping it here to be sure.
+	int prev_badge_kills = 0;
+	for (i = 0; i < Num_medals; i++ )
+	{
+		if ( Medals[i].kills_needed < prev_badge_kills && Medals[i].kills_needed != 0)
 			Error(LOCATION, "Badges must appear sorted by lowest kill # first in medals.tbl\nFind Allender for most information.");
-		}
+
+		if(Medals[i].kills_needed > 0)
+			prev_badge_kills = Medals[i].kills_needed;
 	}
 
 	// close localization
 	lcl_ext_close();
 }
 
+//WMC - not needed anymore
+//badge_stuff has a deconstructor
+/*
 void medal_close(){
 	for(int i = 0; i<MAX_BADGES; i++)if(Badge_info[i].promotion_text)free(Badge_info[i].promotion_text);
-}
+}*/
 
 void medal_main_init(player *pl, int mode)
 {
@@ -439,7 +451,7 @@ void medal_main_init(player *pl, int mode)
 #ifndef NDEBUG
 	if(Cmdline_gimme_all_medals){
 		//int idx;
-		for(idx=0; idx < NUM_MEDALS; idx++){
+		for(idx=0; idx < MAX_MEDALS; idx++){
 			Medals_player->stats.medals[idx] = 1;		
 		}
 	}
@@ -684,10 +696,11 @@ void medal_main_close()
 		bm_release(Medals_bitmap_mask);
 	}
 
-   for (idx=0; idx < NUM_MEDALS; idx++) {
+   for (idx=Medal_bitmaps.size()-1; idx >= 0; idx--) {
 		if (Medal_bitmaps[idx] > -1){
 			bm_release(Medal_bitmaps[idx]);
 		}
+		Medal_bitmaps.pop_back();
 	}
 
    Player_score = NULL;
@@ -717,8 +730,8 @@ void init_medal_bitmaps()
 	int idx;
 	Assert(Player_score);
 
-	for (idx=0; idx<NUM_MEDALS; idx++) {
-		Medal_bitmaps[idx] = -1;
+	for (idx=0; idx<Num_medals; idx++) {
+		Medal_bitmaps.push_back(-1);
 		if (Player_score->medals[idx] > 0) {
 			int num_medals;
 			char filename[NAME_LENGTH], base[NAME_LENGTH];
@@ -770,7 +783,7 @@ void init_snazzy_regions()
 	int idx;
 
 	// snazzy regions for the medals/ranks, etc.
-	for (idx=0; idx<NUM_MEDALS; idx++) {
+	for (idx=0; idx<MAX_MEDALS; idx++) {
 		if (idx == RANK_MEDAL_REGION) 
 			continue;
 
@@ -787,7 +800,7 @@ void blit_medals()
 {
 	int idx;
 
-	for (idx=0; idx<NUM_MEDALS; idx++) {
+	for (idx=0; idx<Num_medals; idx++) {
 		if (Player_score->medals[idx] > 0) {
 			gr_set_bitmap(Medal_bitmaps[idx]);
 			gr_bitmap(Medal_coords[gr_screen.res][idx][0], Medal_coords[gr_screen.res][idx][1]);

@@ -11,11 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.27 $
- * $Date: 2005-03-08 03:50:25 $
- * $Author: Goober5000 $
+ * $Revision: 1.28 $
+ * $Date: 2005-05-08 20:28:57 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2005/03/08 03:50:25  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 1.26  2005/03/02 21:18:18  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -244,7 +248,7 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 	p_update->SecHits =			pl->stats.s_shots_hit; 
 	p_update->SecFHits =		pl->stats.s_bonehead_hits;
 	p_update->ship_types =		MAX_SHIP_TYPES;
-	p_update->num_medals =		NUM_MEDALS;
+	p_update->num_medals =		MAX_MEDALS;
 	p_update->rank	=			pl->stats.rank;
 
 	int i;
@@ -256,15 +260,14 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 	}
 			
 	
-	for (i = 0; i < NUM_MEDALS; i++)
+	for (i = 0; i < MAX_MEDALS; i++)
 	{
-
 		medals[i] = pl->stats.medals[i];
 	}
 
 	int packet_size = 204; // size of all the ints only
 	packet_size += sizeof(fs2open_ship_typekill) * MAX_SHIP_TYPES; // add the size of the ship_kills array
-	packet_size += sizeof(int) * NUM_MEDALS; // add the size of the ship_kills array
+	packet_size += sizeof(int) * MAX_MEDALS; // add the size of the ship_kills array
 
 	// send Packet
 	if (Socket.SendData(PacketBuffer, packet_size) == -1)
@@ -403,11 +406,11 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 			}
          
 			if (p_reply->num_medals == 0)
-				memset(pl->stats.medals, 0, sizeof(int) * NUM_MEDALS);
+				memset(pl->stats.medals, 0, sizeof(int) * MAX_MEDALS);
 			else
 			{
 				// i should really assert p_reply->ship_types == MAX_SHIP_TYPES
-				for (i = 0; i < NUM_MEDALS && p_reply->num_medals; i++)
+				for (i = 0; i < MAX_MEDALS && p_reply->num_medals; i++)
 				{
 					pl->stats.medals[i] = medals[i];
 				}

@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.10 $
- * $Date: 2005-04-28 05:29:29 $
+ * $Revision: 1.11 $
+ * $Date: 2005-05-08 20:28:29 $
  * $Author: wmcoolmon $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/04/28 05:29:29  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 1.9  2005/04/03 08:48:31  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -186,13 +189,14 @@
 // ARGH. IMPORTANT : do not change NUM_MEDALS without talking to DaveB first. It will affect the size of the scoring struct and hence, will break
 // a lot of PXO related stuff. SEE ALSO : MAX_SHIP_TYPES
 #ifdef FS2_DEMO
-	#define NUM_MEDALS			16
-	#define NUM_MEDALS_FS1		16
+	//#define NUM_MEDALS			16
 #else 
-	#define NUM_MEDALS			18
-	#define NUM_MEDALS_FS1		16
+	//#define NUM_MEDALS			18
 #endif
 
+#define MAX_MEDALS			18
+#define NUM_MEDALS_FS1		16
+extern int Num_medals;
 
 // object.h
 #define MAX_OBJECTS			1000		

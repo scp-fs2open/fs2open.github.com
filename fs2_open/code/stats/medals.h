@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:35 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-05-08 20:20:46 $
+ * $Author: wmcoolmon $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:35  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2004/03/05 09:02:05  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -73,6 +76,8 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
+#include <vector>
+
 struct scoring_struct;
 struct player;
 
@@ -84,20 +89,31 @@ extern scoring_struct *Player_score;
 // NUM_MEDALS stored in scoring.h since needed for player scoring structure
 
 typedef struct medal_stuff {
-	char	name[NAME_LENGTH+1];
+	char	name[NAME_LENGTH];
 	char	bitmap[NAME_LENGTH];
 	int	num_versions;
 	int	kills_needed;
-} medal_stuff;
 
-typedef struct badge_stuff {
-	char voice_base[MAX_FILENAME_LEN + 1];
+	//If this is a badge (kills_needed > 1)
+	char voice_base[MAX_FILENAME_LEN];
 	char *promotion_text;
-} badge_stuff;
 
-extern medal_stuff Medals[NUM_MEDALS];
-extern badge_stuff Badge_info[MAX_BADGES];
-extern int Badge_index[MAX_BADGES];				// array which contains indices into Medals to indicate which medals are badges
+	medal_stuff(){name[0]='\0';bitmap[0]='\0';num_versions=1;kills_needed=0;voice_base[0]='\0';promotion_text=NULL;}
+	~medal_stuff(){if(promotion_text != NULL)free(promotion_text);}
+} medal_stuff;
+/*
+typedef struct badge_stuff {
+	char voice_base[MAX_FILENAME_LEN];
+	char *promotion_text;
+
+	badge_stuff(){voice_base[0]='\0';promotion_text=NULL;}
+	~badge_stuff(){if(promotion_text != NULL)free(promotion_text);};
+} badge_stuff;
+*/
+
+extern std::vector<medal_stuff> Medals;
+//extern badge_stuff Badge_info[MAX_BADGES];
+//extern int Badge_index[MAX_BADGES];				// array which contains indices into Medals to indicate which medals are badges
 
 extern void parse_medal_tbl();
 
