@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.25 $
+ * $Revision: 2.26 $
  * $Author: wmcoolmon $
- * $Date: 2005-04-28 01:36:46 $
+ * $Date: 2005-05-08 20:23:28 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/04/28 01:36:46  wmcoolmon
+ * More parsing flexibility
+ *
  * Revision 2.24  2005/04/28 01:12:19  wmcoolmon
  * Added stuff_bool_list; Internationalized stuff_boolean.
  *
@@ -484,6 +487,9 @@ extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_l
 
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
+
+//WMC - backspaces the first character of given char pointer
+void backspace(char *src);
 
 inline void parse_advance(int s){Mp+=s;}
 #endif
