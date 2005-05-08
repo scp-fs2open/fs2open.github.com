@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.39 $
+ * $Revision: 2.40 $
  * $Author: wmcoolmon $
- * $Date: 2005-04-28 01:36:46 $
+ * $Date: 2005-05-08 20:23:28 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/04/28 01:36:46  wmcoolmon
+ * More parsing flexibility
+ *
  * Revision 2.38  2005/04/28 01:12:19  wmcoolmon
  * Added stuff_bool_list; Internationalized stuff_boolean.
  *
@@ -2572,4 +2575,19 @@ int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int
 	}
 
 	return (val < 0) ? val : tally;
+}
+
+//WMC
+void backspace(char* src)
+{
+	Assert(src!= NULL);		//this would be bad
+
+	char *dest = src;
+	src++;
+
+	while(*src != '\0') {
+		*dest++ = *src++;
+	}
+
+	*dest = '\0';
 }
