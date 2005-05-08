@@ -8,7 +8,7 @@
 #include "localization/localize.h"
 
 //Gobals
-GUISystem *GUI_system = NULL;
+GUISystem GUI_system;
 
 //*****************************ClassInfoEntry*******************************
 ClassInfoEntry::ClassInfoEntry()
@@ -635,6 +635,12 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 		}
 	}
 
+	for(uint i = DeletionCache.size(); i > -1; i--)
+	{
+		::operator delete(DeletionCache[i]);
+		DeletionCache.pop_back();
+	}
+
 	//Draw now. This prevents problems from an object deleting itself or moving around in the list
 	for(cgp = (GUIObject*)GET_LAST(&Guiobjects); cgp != END_OF_LIST(&Guiobjects); cgp = (GUIObject*)GET_PREV(cgp))
 	{
@@ -650,7 +656,7 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 }
 
 //*****************************GUISystem*******************************
-GUISystem::GUISystem(char *info_filename)
+GUISystem::GUISystem()
 {
 	GraspedGuiobject=ActiveObject=NULL;
 	Status=LastStatus=0;
@@ -675,7 +681,6 @@ GUISystem::GUISystem(char *info_filename)
 		ClassInfo[i] = NULL;
 	}*/
 	ClassInfoParsed = false;
-	ParseClassInfo(info_filename);
 }
 GUISystem::~GUISystem()
 {
@@ -969,6 +974,14 @@ GUIObject* GUIObject::AddChild(GUIObject* cgp)
 	cgp->OnRefreshSize();
 	
 	return cgp;
+}
+
+void GUIObject::operator delete(void *dgp)
+{
+	if(((GUIObject*) dgp)->OwnerScreen != NULL)
+		((GUIObject*) dgp)->OwnerScreen->DeleteObject((GUIObject*)dgp);
+	else
+		::operator delete(dgp);
 }
 
 void GUIObject::OnDraw(float frametime)
