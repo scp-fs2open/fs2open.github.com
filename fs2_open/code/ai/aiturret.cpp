@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-04-28 05:29:28 $
+ * $Revision: 1.10 $
+ * $Date: 2005-05-08 20:35:26 $
  * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/04/28 05:29:28  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 1.8  2005/04/22 00:34:54  wmcoolmon
  * Minor updates to the GUI, and added some code that will (hopefully) resize HUD images in nonstandard resolutions. I couldn't test it; got an out of memory error.
  *
@@ -63,8 +66,8 @@ typedef struct eval_enemy_obj_struct {
 	float			weapon_travel_dist;				// max targeting range of turret weapon
 	int			enemy_team_mask;
 	int			weapon_system_ok;					// is the weapon subsystem of turret ship ok
-	bool		big_only_flag;						// turret fires only at big and huge ships
-	bool		small_only_flag;					// turret fires only at small ships
+//	bool		big_only_flag;						// turret fires only at big and huge ships
+//	bool		small_only_flag;					// turret fires only at small ships
 	vec3d		*tpos;
 	vec3d		*tvec;
 	ship_subsys *turret_subsys;
@@ -83,60 +86,6 @@ typedef struct eval_enemy_obj_struct {
 	float			nearest_dist;						// nearest ship attacking this turret
 	int			nearest_objnum;
 }	eval_enemy_obj_struct;
-
-// return !0 if objp can be considered for a turret target, 0 otherwise
-// input:	objp				=>	object that turret is considering as an enemy
-//				turret_parent	=>	object index for ship that turret sits on
-int valid_turret_enemy(object *objp, object *turret_parent)
-{
-	if ( objp == turret_parent ) {
-		return 0;
-	}
-
-	if ( objp->type == OBJ_ASTEROID ) {
-		return 1;
-	}
-
-	if ( (objp->type == OBJ_SHIP) ) {
-		ship *shipp;
-		shipp = &Ships[objp->instance];
-
-		// don't fire at ships with protected bit set!!!
-		if ( objp->flags & OF_PROTECTED ) {
-			return 0;
-		}
-
-		// Goober5000 - don't fire at cargo containers, otherwise you have the absurd
-		// possibility of a transport firing at a cargo container it's docking with,
-		// which happened to me on one mission
-		if ( Ship_info[shipp->ship_info_index].flags & SIF_CARGO ) {
-			return 0;
-		}
-
-		if ( !(Ship_info[shipp->ship_info_index].flags & SIF_DO_COLLISION_CHECK)) {
-			return 0;
-		}
-
-		if (shipp->flags & SF_ARRIVING) {
-			return 0;
-		}
-
-		return 1;
-	}
-
-	if ( objp->type == OBJ_WEAPON ) {
-		if ( Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB ) {
-			if ( Weapons[objp->instance].lssm_stage==3){
-				return 0;
-			}
-			if ( obj_team(turret_parent) != Weapons[objp->instance].team ) {
-				return 1;
-			}
-		}
-	}
-
-	return 0;
-}
 
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
@@ -325,12 +274,116 @@ bool is_target_beam_valid(ship_weapon *swp, object *objp)
 	return true;
 }
 
-// evaluate obj as posssible target for turret
+// return !0 if objp can be considered for a turret target, 0 otherwise
+// input:	objp				=>	object that turret is considering as an enemy
+//				turret_parent	=>	object index for ship that turret sits on
+//				turret			=>	turret pointer
 extern int	Player_attacking_enabled;
+bool valid_turret_enemy(object *eobjp, object *turret_parent, ship_subsys *turret)
+{
+#ifndef NDEBUG
+	if (!Player_attacking_enabled && (eobjp == Player_obj)) {
+		return false;
+	}
+#endif
+
+	if ( eobjp == turret_parent ) {
+		return false;
+	}
+
+	if ( eobjp->type == OBJ_ASTEROID ) {
+		return true;
+	}
+
+	int enemy_mask = get_enemy_team_mask(OBJ_INDEX(turret_parent));
+
+	if ( (eobjp->type == OBJ_SHIP) ) {
+		ship *shipp			= &Ships[eobjp->instance];
+		ship_info *sip		= &Ship_info[shipp->ship_info_index];
+
+		// don't fire at ships with protected bit set!!!
+		if ( eobjp->flags & OF_PROTECTED ) {
+			return false;
+		}
+
+		//Are they even an enemy?
+		if(!(shipp->team & enemy_mask))
+			return false;
+
+		//We can't shoot at them
+		if(!is_target_beam_valid(&turret->weapons, eobjp))
+			return false;
+
+		// Goober5000 - don't fire at cargo containers, otherwise you have the absurd
+		// possibility of a transport firing at a cargo container it's docking with,
+		// which happened to me on one mission
+		if ( Ship_info[shipp->ship_info_index].flags & SIF_CARGO ) {
+			return false;
+		}
+
+		//Don't shoot at small ships if all turret weapons are big only
+		if(all_turret_weapons_have_flags(&turret->weapons, WIF_HUGE) && !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)))
+			return false;
+
+		//Don't shoot at big ships if all turret weapons are small-only
+		if(all_turret_weapons_have_flags(&turret->weapons, WIF2_SMALL_ONLY)
+			&& Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))
+		{
+			return false;
+		}
+
+		//Don't shoot at ships without collision check
+		if ( !(Ship_info[shipp->ship_info_index].flags & SIF_DO_COLLISION_CHECK)) {
+			return false;
+		}
+
+		//Don't shoot at arriving ships
+		if (shipp->flags & SF_ARRIVING) {
+			return false;
+		}
+
+		// check if	turret flagged to only target tagged ships
+		if ( (turret->weapons.flags & SW_FLAG_TAGGED_ONLY) && !ship_is_tagged(eobjp) ) {
+			return false;
+		}
+
+		//Make sure we can target object
+		if ( !object_is_targetable(eobjp, &Ships[turret_parent->instance]) ) {
+			// BYPASS ocassionally for stealth
+			int try_anyway = FALSE;
+			if ( is_object_stealth_ship(eobjp) ) {
+				float turret_stealth_find_chance = 0.5f;
+				float speed_mod = -0.1f + vm_vec_mag_quick(&eobjp->phys_info.vel) / 70.0f;
+				if (frand() > (turret_stealth_find_chance + speed_mod)) {
+					try_anyway = TRUE;
+				}
+			}
+
+			if (!try_anyway) {
+				return false;
+			}
+		}
+	}
+
+	if ( eobjp->type == OBJ_WEAPON ) {
+		if ( Weapon_info[Weapons[eobjp->instance].weapon_info_index].wi_flags & WIF_BOMB ) {
+			if ( Weapons[eobjp->instance].lssm_stage==3){
+				return false;
+			}
+			if ( obj_team(turret_parent) == Weapons[eobjp->instance].team ) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+// evaluate obj as posssible target for turret
 void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 {
 	object	*turret_parent_obj = &Objects[eeo->turret_parent_objnum];
-	ship		*shipp;
+	ship		*shipp = NULL;
 	model_subsystem *tp = eeo->turret_subsys->system_info;
 	float dist;
 
@@ -339,78 +392,13 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		return;
 	}
 
-	if ( !valid_turret_enemy(objp, turret_parent_obj) ) {
+	if ( !valid_turret_enemy(objp, turret_parent_obj, eeo->turret_subsys) ) {
 		return;
 	}
 
-#ifndef NDEBUG
-	if (!Player_attacking_enabled && (objp == Player_obj)) {
-		return;
-	}
-#endif
-
-	if ( objp->type == OBJ_SHIP ) {
+	if(objp->type == OBJ_SHIP)
+	{
 		shipp = &Ships[objp->instance];
-
-		// check on enemy team
-		if ( !(shipp->team & eeo->enemy_team_mask) ) {
-			return;
-		}
-
-		// check if protected
-		//WMC - Don't need this here.
-		/*
-		if (objp->flags & OF_PROTECTED) {
-			return;
-		}*/
-
-		// check if beam protected
-		if(!is_target_beam_valid(&eeo->turret_subsys->weapons, objp))
-			return;
-		
-		/* WMC-OTC
-		if (Weapon_info[tp->turret_weapon_type].wi_flags & WIF_BEAM) {
-			if (objp->flags & OF_BEAM_PROTECTED) {
-				return;
-			}
-		}*/
-
-		if (eeo->big_only_flag) {
-			if (!(Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
-				return;
-			}
-		}
-
-		if (eeo->small_only_flag)
-		{
-			if (Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))
-				return;
-		}
-
-		// check if	turret flagged to only target tagged ships
-		if ( (eeo->turret_subsys->weapons.flags & SW_FLAG_TAGGED_ONLY) && !ship_is_tagged(objp) ) {
-			return;
-		}
-
-		// check if valid target in nebula
-		if ( !object_is_targetable(objp, &Ships[Objects[eeo->turret_parent_objnum].instance]) ) {
-			// BYPASS ocassionally for stealth
-			int try_anyway = FALSE;
-			if ( is_object_stealth_ship(objp) ) {
-				float turret_stealth_find_chance = 0.5f;
-				float speed_mod = -0.1f + vm_vec_mag_quick(&objp->phys_info.vel) / 70.0f;
-				if (frand() > (turret_stealth_find_chance + speed_mod)) {
-					try_anyway = TRUE;
-				}
-			}
-
-			if (!try_anyway) {
-				return;
-			}
-		}
-
-	} else {
-		shipp = NULL;
 	}
 
 	// modify dist for BIG|HUGE, getting closest point on bbox, if not inside
@@ -447,7 +435,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 //	}
 
 	// check for nearest attcker
-	if ( (shipp) && (dist < eeo->weapon_travel_dist) ) {
+	if ( (shipp != NULL) && (dist < eeo->weapon_travel_dist) ) {
 		ai_info *aip = &Ai_info[shipp->ai_index];
 
 		// modify distance based on number of turrets from my ship attacking enemy (add 10% per turret)
@@ -535,7 +523,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 //				tpos						=> position of turret (world coords)
 //				tvec						=> forward vector of turret (world coords)
 //				current_enemy			=>	objnum of current turret target
-int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vec3d *tpos, vec3d *tvec, int current_enemy, bool big_flag)
+int get_nearest_enemy_objnum(int turret_parent_objnum, ship_subsys *turret_subsys, int enemy_team_mask, vec3d *tpos, vec3d *tvec, int current_enemy, bool big_flag)
 {
 	//float					weapon_travel_dist;
 	int					weapon_system_ok;
@@ -563,8 +551,8 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	eeo.turret_parent_objnum = turret_parent_objnum;
 	eeo.weapon_system_ok = weapon_system_ok;
 	eeo.weapon_travel_dist = longest_turret_weapon_range(swp);
-	eeo.big_only_flag = big_flag;
-	eeo.small_only_flag = all_turret_weapons_have_flags(swp, WIF2_SMALL_ONLY);
+//	eeo.big_only_flag = big_flag;
+//	eeo.small_only_flag = all_turret_weapons_have_flags(swp, WIF2_SMALL_ONLY);
 	eeo.enemy_team_mask = enemy_team_mask;
 	eeo.current_enemy = current_enemy;
 	eeo.tpos = tpos;
@@ -713,7 +701,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 		}
 	}
 
-	enemy_objnum = get_nearest_turret_objnum(objnum, turret_subsys, enemy_team_mask, tpos, tvec, current_enemy, big_flag);
+	enemy_objnum = get_nearest_enemy_objnum(objnum, turret_subsys, enemy_team_mask, tpos, tvec, current_enemy, big_flag);
 	if ( enemy_objnum >= 0 ) {
 		Assert( !((Objects[enemy_objnum].flags & OF_BEAM_PROTECTED) && beam_flag) );
 		if ( Objects[enemy_objnum].flags & OF_PROTECTED ) {
@@ -970,20 +958,18 @@ int turret_should_pick_new_target(ship_subsys *turret)
 		return 1;
 	}
 
-	return 0;
 
-/*
 	if ( turret->turret_enemy_objnum == -1 ) {
 		return 1;
 	}
-		
+/*		
 	target_type = Objects[turret->turret_enemy_objnum].type;
 	if ( (target_type != OBJ_SHIP) && (target_type != OBJ_ASTEROID) ) {
 		return 1;
 	}
-
-	return 0;
 */
+	return 0;
+
 }
 
 // Set the next fire timestamp for a turret, based on weapon type and ai class
