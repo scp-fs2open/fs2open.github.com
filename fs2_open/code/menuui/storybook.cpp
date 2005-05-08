@@ -24,7 +24,7 @@ void storybook_options(Button *caller)
 
 void storybook_init()
 {
-	SB_screen = GUI_system->PushScreen(new GUIScreen("Storybook"));
+	SB_screen = GUI_system.PushScreen(new GUIScreen("Storybook"));
 
 	int x = 0;
 	x += SB_screen->Add(new Button("Continue", 0, 0, storybook_command_briefing))->GetWidth() + 10;
@@ -40,7 +40,7 @@ void storybook_init()
 
 void storybook_do_frame(float frametime)
 {
-	GUI_system->OnFrame(frametime, true, true);
+	GUI_system.OnFrame(frametime, true, true);
 }
 
 void storybook_close()
