@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2005/05/01 23:40:44  phreak
+ * bumped MAX_SPAWN_WEAPONS to 30 for inferno builds
+ *
  * Revision 2.112  2005/04/30 18:20:57  phreak
  * buckets in sort_weapons_by_type() allocated on the heap instead of the stack.
  *
@@ -1443,9 +1446,12 @@ int parse_weapon(int subtype, bool replace)
 	required_string("$Damage:");
 	stuff_float(&wip->damage);
 	
-	wip->armor_damage_index = -1;
-	if(optional_string("$Armor Damage Index:"))
-		stuff_int(&wip->armor_damage_index);
+	wip->damage_type_idx = -1;
+	if(optional_string("$Damage Type:"))
+	{
+		stuff_string(buf, F_NAME, NULL);
+		wip->damage_type_idx = damage_type_add(buf);
+	}
 	//This is checked for validity on every armor type
 	//If it's invalid (or -1), then armor has no effect
 

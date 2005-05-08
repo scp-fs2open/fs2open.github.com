@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/04/24 12:47:36  taylor
+ * little cleanup of laser rendering
+ *  - fix animated glows
+ *  - proper alpha modification (still messed up somewhere though, shows in neb missions)
+ *  - remove excess batch_render()
+ *
  * Revision 2.48  2005/04/15 06:23:18  wmcoolmon
  * Local codebase commit; adds armor system.
  *
@@ -811,7 +817,7 @@ typedef struct weapon_info {
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;
 	
-	int armor_damage_index;
+	int damage_type_idx;
 
 
 } weapon_info;
