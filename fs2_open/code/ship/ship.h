@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.92 $
- * $Date: 2005-04-25 00:31:14 $
+ * $Revision: 2.93 $
+ * $Date: 2005-05-08 20:21:48 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2005/04/25 00:31:14  wmcoolmon
+ * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
+ *
  * Revision 2.91  2005/04/18 08:35:27  Goober5000
  * model and class changes should be all set now
  * --Goober5000
@@ -740,23 +743,40 @@ typedef struct ship_weapon {
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
 
+//**************************************************************
+//WMC - Damage type handling code
+
+int damage_type_add(char *name);
+
+//**************************************************************
+//WMC - Armor stuff
+
+struct ArmorDamageType
+{
+	friend class ArmorType;
+private:
+	//Rather than make an extra struct,
+	//I just made two arrays
+	int					DamageTypeIndex;
+	std::vector<int>	Calculations;
+	std::vector<float>	Arguments;
+
+public:
+	void clear(){DamageTypeIndex=-1;Calculations.clear();Arguments.clear();}
+};
+
 class ArmorType
 {
 private:
 	char Name[NAME_LENGTH];
-	int Type;
-	int NumRows;
-	int NumColumns;
 
-	std::vector< std::vector<float> >	Data;
+	std::vector<ArmorDamageType> DamageTypes;
 public:
-	ArmorType(char* in_name, int Type);
+	ArmorType(char* in_name);
 
 	//Get
 	char *GetNamePtr(){return Name;}
 	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
-	bool IsValidShipArmorIndex(int idx){return (idx > 0 && idx < NumRows);}
-	bool IsValidWeapDamageIndex(int idx){return (idx > 0 && idx < NumColumns);}
 	float GetDamage(float damage_applied, struct ship_info *sip, struct weapon_info *wip);
 	
 	//Set
@@ -1488,8 +1508,7 @@ typedef struct ship_info {
 	bool draw_models; //any weapon mode will be drawn
 	float weapon_model_draw_distance;
 	
-	int					armor_index;
-	std::vector<int>	armor_types;
+	int armor_type_idx;
 } ship_info;
 
 extern int num_wings;
@@ -1975,7 +1994,7 @@ int ship_tvt_wing_lookup(char *wing_name);
 
 void ship_vanished(object *objp);
 
-int get_armor_by_name(char* name);
+int armor_get_name_idx(char* name);
 
 void armor_init();
 

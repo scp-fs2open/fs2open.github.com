@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
@@ -9,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.197 $
- * $Date: 2005-04-30 18:18:46 $
- * $Author: phreak $
+ * $Revision: 2.198 $
+ * $Date: 2005-05-08 20:21:48 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.197  2005/04/30 18:18:46  phreak
+ * ABbitmap should default to -1
+ *
  * Revision 2.196  2005/04/28 05:29:30  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -2019,9 +2023,7 @@ int parse_ship(bool replace)
 #endif
 
 	if ( sip->name[0] == '@' ) {
-		char old_name[NAME_LENGTH];
-		strcpy(old_name, sip->name);
-		strcpy(sip->name, old_name+1);
+		backspace(sip->name);
 	}
 
 	diag_printf ("Ship name -- %s\n", sip->name);
@@ -2628,40 +2630,24 @@ strcpy(parse_error_text, temp_error);
 		sip->max_hull_strength = 100.0f;
 	}
 
-	if(optional_string("+Hull Repair Rate:"))
+	if(optional_string("$Hull Repair Rate:"))
 		stuff_float(&sip->hull_repair_rate_percent);
 	else
 		sip->hull_repair_rate_percent = 0.0f;
 
-	if(optional_string("+Subsystem Repair Rate:"))
+	if(optional_string("$Subsystem Repair Rate:"))
 		stuff_float(&sip->subsys_repair_rate_percent);
 	else
 		sip->subsys_repair_rate_percent = 0.01f;	//Old SHIP_REPAIR_SUBSYSTEM_RATE define
 	
-	sip->armor_index = -1;
-	if(optional_string("$Armor Index:"))
+	sip->armor_type_idx = -1;
+	if(optional_string("$Armor Type:"))
 	{
-		stuff_int(&sip->armor_index);
-		while(optional_string("+Armor Type:"))
-		{
-			stuff_string(buf, F_NAME, NULL, NAME_LENGTH);
-			idx = get_armor_by_name(buf);
-			if(idx != -1)
-			{
-				if(Armor_types[idx].IsValidShipArmorIndex(sip->armor_index))
-				{
-					sip->armor_types.push_back(idx);
-				}
-				else
-				{
-					Warning(LOCATION, "In ship %s, armor indice %d is invalid for armor type %s",sip->name,sip->armor_index,Armor_types[idx].GetNamePtr());
-				}
-			}
-			else
-			{
-				Warning(LOCATION,"Invalid armor name %s specified in ship class %s", buf, sip->name);
-			}
-		}
+		stuff_string(buf, F_NAME, NULL);
+		sip->armor_type_idx = armor_get_name_idx(buf);
+
+		if(sip->armor_type_idx == -1)
+			Warning(LOCATION,"Invalid armor name %s specified in ship class %s", buf, sip->name);
 	}
 
 	sip->flags = SIF_DEFAULT_VALUE;
@@ -14319,6 +14305,47 @@ int ship_tvt_wing_lookup(char *wing_name)
 }
 
 //**************************************************************
+//WMC - Damage type handling code
+
+typedef struct DamageTypeStruct
+{
+	char name[NAME_LENGTH];
+} DamageTypeStruct;
+
+std::vector<DamageTypeStruct>	Damage_types;
+
+int damage_type_get_idx(char *name)
+{
+	//This should never be bigger than INT_MAX anyway
+	for(int i = 0; i < (int)Damage_types.size(); i++)
+	{
+		if(!stricmp(name, Damage_types[i].name))
+			return i;
+	}
+
+	return -1;
+}
+
+int damage_type_add(char *name)
+{
+	int i = damage_type_get_idx(name);
+	if(i != -1)
+		return i;
+
+	DamageTypeStruct dts;
+
+	strncpy(dts.name, name, NAME_LENGTH-1);
+
+	if(strlen(name) > NAME_LENGTH - 1)
+	{
+		Warning(LOCATION, "Damage type name '%s' is too long and has been truncated to '%s'", name, dts.name);
+	}
+
+	Damage_types.push_back(dts);
+	return Damage_types.size()-1;
+}
+
+//**************************************************************
 //WMC - All the extra armor crap
 
 //****************************Calculation type addition
@@ -14328,12 +14355,14 @@ int ship_tvt_wing_lookup(char *wing_name)
 #define AT_TYPE_MULTIPLICATIVE		1
 #define AT_TYPE_EXPONENTIAL			2
 #define AT_TYPE_EXPONENTIAL_BASE	3
+#define AT_TYPE_CUTOFF				4
 
 char *TypeNames[] = {
 	"additive",
 	"multiplicative",
 	"exponentional",
 	"exponential base",
+	"cutoff",
 };
 
 float TypeDefaultValues[] = {
@@ -14341,49 +14370,64 @@ float TypeDefaultValues[] = {
 	1.0f,
 	1.0f,
 	1.0f, //Damage will always be one (No mathematical way to do better)
+	0.0f,
 };
 
 const int Num_armor_calculation_types = sizeof(TypeNames)/sizeof(char*);
 
 float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wip)
 {
-	if(wip->armor_damage_index < 0)
+	if(wip->damage_type_idx < 0)
 		return damage_applied;
 	
-	float real_damage = damage_applied;
 	uint i,num;
-	ArmorType *atp;
-	num = sip->armor_types.size();
+	ArmorDamageType *adtp = NULL;
+
+	num = DamageTypes.size();
 	for(i = 0; i < num; i++)
 	{
-		atp = &Armor_types[i];
-		
-		if(wip->armor_damage_index >= atp->NumColumns)
-			continue;
-		
-		switch(atp->Type)
+		if(DamageTypes[i].DamageTypeIndex == wip->damage_type_idx)
 		{
-			case AT_TYPE_ADDITIVE:
-				real_damage += atp->Data[sip->armor_index][wip->armor_damage_index];
-				break;
-			case AT_TYPE_MULTIPLICATIVE:
-				real_damage *= atp->Data[sip->armor_index][wip->armor_damage_index];
-				break;
-			case AT_TYPE_EXPONENTIAL:
-				real_damage = powf(real_damage, atp->Data[sip->armor_index][wip->armor_damage_index]);
-				break;
-			case AT_TYPE_EXPONENTIAL_BASE:
-				real_damage = powf(atp->Data[sip->armor_index][wip->armor_damage_index], real_damage);
-				break;
+			adtp = &DamageTypes[i];
+			break;
+		}
+	}
+
+	float	*curr_arg = NULL;
+	if(adtp != NULL)
+	{
+		num = adtp->Calculations.size();
+		for(i = 0; i < num; i++)
+		{
+			curr_arg = &adtp->Arguments[i];
+			switch(adtp->Calculations[i])
+			{
+				case AT_TYPE_ADDITIVE:
+					damage_applied += *curr_arg;
+					break;
+				case AT_TYPE_MULTIPLICATIVE:
+					damage_applied *= *curr_arg;
+					break;
+				case AT_TYPE_EXPONENTIAL:
+					damage_applied = powf(damage_applied, *curr_arg);
+					break;
+				case AT_TYPE_EXPONENTIAL_BASE:
+					damage_applied = powf(*curr_arg, damage_applied);
+					break;
+				case AT_TYPE_CUTOFF:
+					if(damage_applied < *curr_arg)
+						damage_applied = 0;
+					break;
+			}
 		}
 	}
 	
-	return real_damage;
+	return damage_applied;
 }
 
 //***********************************Member functions
 
-ArmorType::ArmorType(char* in_name, int in_type)
+ArmorType::ArmorType(char* in_name)
 {
 	uint len = strlen(in_name);
 	if(len >= NAME_LENGTH)
@@ -14391,77 +14435,60 @@ ArmorType::ArmorType(char* in_name, int in_type)
 		Warning(LOCATION, "Armor name %s is %d characters too long, and will be truncated", in_name, len - NAME_LENGTH);
 	}
 	strncpy(Name, in_name, NAME_LENGTH-1);
-	
-	if(in_type > Num_armor_calculation_types || in_type < 0)
-	{
-		Type = 0;
-		Warning(LOCATION, "Armor '%s': Armor calculation type index %d is invalid, and has been reset to default calculation type '%s'", Name, in_type, TypeNames[Type]);
-	}
-	else
-	{
-		Type = in_type;
-	}
 }
 
 void ArmorType::ParseData()
 {
+	ArmorDamageType adt;
+	char buf[NAME_LENGTH];
+	int i;
 	float temp_float;
-	int num;
-	std::vector<float> temp_float_data;
-	char trashy_buf[2];
-	
-	//Init values
-	NumRows = 0;
-	NumColumns = 0;
-	
-	//Now read in the table
-	while(optional_string("$"))
+
+	required_string("$Damage Type:");
+	do
 	{
-		temp_float_data.clear();
-		stuff_string(trashy_buf, F_NAME, ":", 1);
-		parse_advance(1);
-		
-		if(check_for_string("("))
+		DamageTypes.clear();
+
+		stuff_string(buf, F_NAME, NULL);
+		adt.DamageTypeIndex = damage_type_add(buf);
+
+		required_string("+Calculation:");
+		do
 		{
-			parse_advance(1);
-			while(!check_for_string(")"))
+			//+Calculation
+			stuff_string(buf, F_NAME, NULL);
+
+			for(i = 0; i < Num_armor_calculation_types; i++)
 			{
-				stuff_float(&temp_float);
-				temp_float_data.push_back(temp_float);
-				ignore_white_space();
+				if(!stricmp(TypeNames[i], buf))
+					break;
 			}
-			parse_advance(1);
-		}
-		
-		num = temp_float_data.size();
-		if(NumRows > 0 && num < NumColumns)
-		{
-			Warning(LOCATION, "Armor class %s row %u is short; padding with %u default values", Name, NumRows, NumColumns - num);
-			while(num < NumColumns)
+
+			if(i == Num_armor_calculation_types)
 			{
-				temp_float_data.push_back(TypeDefaultValues[Type]);
-				num++;
+				adt.Calculations.push_back(0);
+				Warning(LOCATION, "Armor '%s': Armor calculation type '%s' is invalid, and has been reset to default calculation type '%s'", Name, buf, TypeNames[adt.Calculations[adt.Calculations.size()-1]]);
 			}
-		}
-		else if(NumRows > 0 && num > NumColumns)
-		{
-			Warning(LOCATION, "Armor class '%s' row %u is too long; chopping off the last %u columns", Name, NumRows, num - NumColumns);
-			temp_float_data.resize(NumColumns);
-		}
-		else if(NumRows == 0)
-		{
-			NumColumns = num;
-		}
-		
-		//yay
-		Data.push_back(temp_float_data);
-		NumRows++;
-	}
+			else
+			{
+				adt.Calculations.push_back(i);
+			}
+
+			//+Value
+			required_string("+Value:");
+			stuff_float(&temp_float);
+			adt.Arguments.push_back(temp_float);
+
+		} while(optional_string("+Calculation:"));
+
+		DamageTypes.push_back(adt);
+
+	} while(optional_string("$Damage Type"));
 }
 
 //********************************Global functions
 
-int get_armor_by_name(char* name)
+int armor_get_name_idx(char* name)
 {
 	int i, num;
 	num = Armor_types.size();
@@ -14477,30 +14504,13 @@ int get_armor_by_name(char* name)
 
 void parse_armor_type()
 {
-	char buf[32],name_buf[32];
-	int i,int_buf;
-	ArmorType tat("",0);
+	char name_buf[NAME_LENGTH];
+	ArmorType tat("");
 	
 	required_string("$Name:");
-	stuff_string(name_buf, F_NAME, NULL, sizeof(buf)/sizeof(char));
+	stuff_string(name_buf, F_NAME, NULL);
 	
-	required_string("$Type:");
-	stuff_string(buf, F_NAME, NULL, sizeof(buf)/sizeof(char));
-	
-	int_buf = -1;
-	for(i = 0; i < Num_armor_calculation_types; i++)
-	{
-		if(!stricmp(TypeNames[i], buf))
-		{
-			int_buf = i;
-		}
-	}
-	if(int_buf == -1)
-	{
-		int_buf = 0;
-		Warning(LOCATION, "Invalid calculation type specified for armor %s; setting default type %s.", name_buf, TypeNames[int_buf]);
-	}
-	tat = ArmorType(name_buf, int_buf);
+	tat = ArmorType(name_buf);
 	
 	//now parse the actual table
 	tat.ParseData();
@@ -14552,3 +14562,4 @@ void armor_init()
 		armor_inited = 1;
 	}
 }
+

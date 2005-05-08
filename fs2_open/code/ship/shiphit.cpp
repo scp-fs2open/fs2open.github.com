@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-04-18 05:27:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2005-05-08 20:21:48 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/04/18 05:27:26  Goober5000
+ * removed ship->alt_modelnum as it was essentially duplicates of ship->modelnum; changed the alt modelnum stuff accordingly
+ * fixes for ship_model_change and change_ship_type
+ * --Goober5000
+ *
  * Revision 2.42  2005/04/15 11:32:26  taylor
  * proposes that WMC be subject to a breathalyzer test before commit ;)
  *
@@ -2316,7 +2321,6 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	float subsystem_damage = damage;			// damage to be applied to subsystems
 	int other_obj_is_weapon;
 	int other_obj_is_shockwave;
-	uint i, num;
 
 	Assert(ship_obj);	// Goober5000
 	Assert(hitpos);		// Goober5000
@@ -2354,13 +2358,9 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		if(!(sip->flags & SIF2_DISABLE_WEAP_DAMAGE_SCALING))
 			damage *= weapon_get_damage_scale(wip, other_obj, ship_obj);
 		
-		if(sip->armor_index != -1)
+		if(sip->armor_type_idx != -1)
 		{
-			num = sip->armor_types.size();
-			for(i = 0; i < num; i++)
-			{
-				damage = Armor_types[sip->armor_types[i]].GetDamage(damage, sip, wip);
-			}
+			damage = Armor_types[sip->armor_type_idx].GetDamage(damage, sip, wip);
 		}
 	}
 
