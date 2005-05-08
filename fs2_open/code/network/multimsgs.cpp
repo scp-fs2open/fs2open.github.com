@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-04-19 06:26:56 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2005-05-08 20:38:32 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/04/19 06:26:56  taylor
+ * small compiler warning fixes, more 'always true' stuff
+ *
  * Revision 2.32  2005/04/12 05:26:37  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -6711,7 +6714,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 			ADD_USHORT(u_tmp);
 		}
 		// medal information
-		for(idx=0;idx<NUM_MEDALS;idx++){
+		for(idx=0;idx<MAX_MEDALS;idx++){
 			i_tmp = sc->medals[idx];
 			ADD_INT(i_tmp);
 		}
@@ -6831,7 +6834,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		}
 
 		// read in the stats
-		for (idx=0; idx<NUM_MEDALS; idx++) {
+		for (idx=0; idx<MAX_MEDALS; idx++) {
 			GET_INT(i_tmp);
 			sc->medals[idx] = i_tmp;
 		}
