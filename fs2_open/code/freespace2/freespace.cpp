@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.145 $
- * $Date: 2005-05-08 20:33:42 $
+ * $Revision: 2.146 $
+ * $Date: 2005-05-08 20:39:10 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.145  2005/05/08 20:33:42  wmcoolmon
+ * Turret debugging code; Medals stuff; GUI_system change
+ *
  * Revision 2.144  2005/04/28 05:29:29  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -3428,13 +3431,12 @@ void game_get_framerate()
 	gr_set_color_fast(&HUD_color_debug);
 #ifdef WMC
 	//WMC - this code spits out the target of all turrets
-	if(Player_ai->target_objnum != NULL
+	if(Player_ai->target_objnum != -1
 		&& Objects[Player_ai->target_objnum].type == OBJ_SHIP)
 	{
 		//Debug crap
 		int t = 0;
 		ship_subsys	*pss;
-		ship *target_ship = &Ships[Objects[Player_ai->target_objnum].instance];
 
 		object *objp = &Objects[Player_ai->target_objnum];
 		for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) )
