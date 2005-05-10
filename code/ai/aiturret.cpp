@@ -1,12 +1,17 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-05-10 01:47:34 $
+ * $Revision: 1.12 $
+ * $Date: 2005-05-10 02:44:40 $
  * $Author: phreak $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/05/10 01:47:34  phreak
+ * when finding valid weapons, set i to MAX_SHIP_PRIMARY_BANKS - 1 since i
+ * is incremented at the top of the loop.  otherwise, we would pass over the first secondary
+ * weapon in the bank.
+ *
  * Revision 1.10  2005/05/08 20:35:26  wmcoolmon
  * Various turret code changes in a vain attempt to make things more readable/work properly
  *
@@ -155,6 +160,23 @@ bool all_turret_weapons_have_flags(ship_weapon *swp, int flags)
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
 		if(!(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags & flags))
+			return false;
+	}
+
+	return true;
+}
+
+bool all_turret_weapons_have_flags_wif2(ship_weapon *swp, int flags)
+{
+	int i;
+	for(i = 0; i < swp->num_primary_banks; i++)
+	{
+		if(!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & flags))
+			return false;
+	}
+	for(i = 0; i < swp->num_secondary_banks; i++)
+	{
+		if(!(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & flags))
 			return false;
 	}
 
@@ -329,7 +351,7 @@ bool valid_turret_enemy(object *eobjp, object *turret_parent, ship_subsys *turre
 			return false;
 
 		//Don't shoot at big ships if all turret weapons are small-only
-		if(all_turret_weapons_have_flags(&turret->weapons, WIF2_SMALL_ONLY)
+		if(all_turret_weapons_have_flags_wif2(&turret->weapons, WIF2_SMALL_ONLY)
 			&& Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))
 		{
 			return false;
@@ -1446,7 +1468,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		int objnum = find_turret_enemy(ss, parent_objnum, &gpos, &gvec, ss->turret_enemy_objnum, tp->turret_fov);
 		//Assert(objnum < 0 || is_target_beam_valid(tp, objnum));
 
-		if (objnum > 0 && is_target_beam_valid(&ss->weapons, &Objects[objnum])) {
+		if (objnum >= 0 && is_target_beam_valid(&ss->weapons, &Objects[objnum])) {
 			if (ss->turret_enemy_objnum == -1) {
 				ss->turret_enemy_objnum = objnum;
 				ss->turret_enemy_sig = Objects[objnum].signature;
