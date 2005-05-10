@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-05-08 20:35:26 $
- * $Author: wmcoolmon $
+ * $Revision: 1.11 $
+ * $Date: 2005-05-10 01:47:34 $
+ * $Author: phreak $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/05/08 20:35:26  wmcoolmon
+ * Various turret code changes in a vain attempt to make things more readable/work properly
+ *
  * Revision 1.9  2005/04/28 05:29:28  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -1336,7 +1339,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		{
 			if(i >= swp->num_primary_banks)
 			{
-				i = MAX_SHIP_PRIMARY_BANKS;	//we are done with primaries
+				//set to MAX_SHIP_PRIMARY_BANKS - 1 since i is incremented at the top of the loop
+				//otherwise, we would pass over the first secondary weapon in the bank
+				i = MAX_SHIP_PRIMARY_BANKS - 1;	//we are done with primaries
 				continue;
 			}
 			if ( !timestamp_elapsed(swp->next_primary_fire_stamp[i]))
