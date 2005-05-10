@@ -1,12 +1,19 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-05-10 02:44:40 $
+ * $Revision: 1.13 $
+ * $Date: 2005-05-10 15:49:04 $
  * $Author: phreak $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/05/10 02:44:40  phreak
+ * if you're using all_turret_weapons_have_flags() with a WIF2_** flag, use
+ * all_turret_weapons_have_flags_wif2().
+ *
+ * Corrected some logic that would dump a valid target for turrets if its objnum is 0, as
+ * opposed to -1.
+ *
  * Revision 1.11  2005/05/10 01:47:34  phreak
  * when finding valid weapons, set i to MAX_SHIP_PRIMARY_BANKS - 1 since i
  * is incremented at the top of the loop.  otherwise, we would pass over the first secondary
@@ -1426,7 +1433,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		if(lep != NULL)
 		{
-			if( dist_to_enemy <= weapon_firing_range || dist_to_enemy >= (WeaponMinRange - lep->radius) )
+			if( (dist_to_enemy <= weapon_firing_range) && ((dist_to_enemy - lep->radius) >= WeaponMinRange) )
 			{
 				if ( wip->wi_flags & WIF_HUGE ) {
 					if ( lep->type != OBJ_SHIP ) {
