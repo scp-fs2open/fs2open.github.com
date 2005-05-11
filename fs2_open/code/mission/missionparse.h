@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.60 $
- * $Author: wmcoolmon $
- * $Date: 2005-04-28 05:29:30 $
+ * $Revision: 2.61 $
+ * $Author: phreak $
+ * $Date: 2005-05-11 22:15:26 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/04/28 05:29:30  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.59  2005/04/12 02:07:00  phreak
  * ambient_light_level added to the mission structure
  *
@@ -486,6 +489,7 @@ struct wing;
 #define MISSION_FLAG_USE_NEW_AI				(1<<12)	// use SCP AI fixes.  Allows old missions to be balanced. -phreak
 #define MISSION_FLAG_ALLOW_DOCK_TREES		(1<<13)	// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
 #define MISSION_FLAG_2D_MISSION				(1<<14) // Mission is meant to be played top-down style; 2D physics and movement.
+#define MISSION_FLAG_NO_ENEMY_WING_NAMES	(1<<15)	// Hide hostile wing names ("Cancer 1", "Pisces 4", etc) to the player on request of WC:S -phreak
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-04-28 05:29:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2005-05-11 22:15:49 $
+ * $Author: phreak $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/04/28 05:29:29  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.19  2005/04/11 05:42:02  taylor
  * some demo related fixes (Jens Granseuer)
  *
@@ -862,11 +865,23 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		char* tinfo_name = NULL;
 		char* tinfo_class = NULL;
 		char buffer[NAME_LENGTH];
+		char empty='\0';
 
 		switch(t_objp->type)
 		{
 			case OBJ_SHIP:
-				tinfo_name = Ships[t_objp->instance].ship_name;
+				if ((The_mission.flags & MISSION_FLAG_NO_ENEMY_WING_NAMES) &&
+					(Ships[t_objp->instance].wingnum != -1) && 
+					(Ships[t_objp->instance].team != Player_ship->team)) 
+				{
+					tinfo_name = &empty;
+				}
+				else
+				{
+					tinfo_name = Ships[t_objp->instance].ship_name;
+				}
+
+				
 				tinfo_class = Ship_info[Ships[t_objp->instance].ship_info_index].name;
 				
 				// if this ship has an alternate type name
