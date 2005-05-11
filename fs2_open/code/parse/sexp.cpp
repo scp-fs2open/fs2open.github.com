@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.152 $
- * $Date: 2005-05-11 08:10:20 $
+ * $Revision: 2.153 $
+ * $Date: 2005-05-11 09:28:32 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.152  2005/05/11 08:10:20  Goober5000
+ * variables should now work properly in messages that are sent multiple times
+ * --Goober5000
+ *
  * Revision 2.151  2005/05/01 06:18:58  wmcoolmon
  * Added (up-to-date) SEXP description info.
  *
@@ -16395,17 +16399,17 @@ void sexp_modify_variable(int n)
 {
 	int sexp_variable_index;
 	int new_number;
-//	char *new_char_var;
+	char *new_text;
 	char number_as_str[TOKEN_LENGTH];
 
 #ifndef NO_NETWORK
 	// Only do single player of multi host
-	if ( MULTIPLAYER_CLIENT ) {
+	if ( MULTIPLAYER_CLIENT )
 		return;
-	}
 #endif
 
-	if (n != -1) {
+	if (n != -1)
+	{
 		// get sexp_variable index
 		Assert(Sexp_nodes[n].first == -1);
 		sexp_variable_index = atoi(Sexp_nodes[n].text);
@@ -16413,18 +16417,26 @@ void sexp_modify_variable(int n)
 		// verify variable set
 		Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
 
-		if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER) {
+		if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER)
+		{
 			// get new numerical value
-			new_number = eval_sexp(Sexp_nodes[n].rest);
-
+			new_number = eval_sexp(CDR(n));
 			sprintf(number_as_str, "%d", new_number);
-			sexp_modify_variable(number_as_str, sexp_variable_index);
-		} else {
-			// get new string
-			Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
-			char *new_text = Sexp_nodes[Sexp_nodes[n].rest].text;
+			// assign to variable
+			sexp_modify_variable(number_as_str, sexp_variable_index);
+		}
+		else if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING)
+		{
+			// get new string
+			new_text = CTEXT(CDR(n));
+
+			// assign to variable
 			sexp_modify_variable(new_text, sexp_variable_index);
+		}
+		else
+		{
+			Error(LOCATION, "Invalid variable type.\n");
 		}
 	}
 }
