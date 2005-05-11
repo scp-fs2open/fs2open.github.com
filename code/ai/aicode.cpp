@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-04-28 05:29:28 $
- * $Author: wmcoolmon $
+ * $Revision: 1.10 $
+ * $Date: 2005-05-11 11:38:03 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/04/28 05:29:28  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 1.8  2005/04/25 00:04:30  wmcoolmon
  * MAX_SHIP_TYPES -> Num_ship_types
  *
@@ -3979,6 +3982,15 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 	else
 	{
 		int path_num = ai_return_path_num_from_dockbay(dockee, dockee_index);
+
+		// make sure we have a path
+		if (path_num < 0)
+		{
+			Error(LOCATION, "Cannot find a dock path for ship %s, dock index %d.  Aborting dock.\n", Ships[dockee->instance].ship_name, dockee_index);
+			ai_mission_goal_complete(aip);
+			return;
+		}
+
 		ai_find_path(docker, OBJ_INDEX(dockee), path_num, 0);
 	}
 }
@@ -11209,8 +11221,7 @@ void ai_dock()
 
 			// set up the path points for the undocking procedure
 			path_num = ai_return_path_num_from_dockbay(goal_objp, dockee_index);
-			if(path_num == -1)
-				break;	//fail gracefully. we called undock twice, methinks -WMC
+			Assert(path_num >= 0);
 			ai_find_path(Pl_objp, OBJ_INDEX(goal_objp), path_num, 0);
 
 			// Play a ship docking detach sound
