@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.1 $
- * $Date: 2005-03-25 06:45:13 $
- * $Author: wmcoolmon $
+ * $Revision: 1.2 $
+ * $Date: 2005-05-11 11:38:03 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/03/25 06:45:13  wmcoolmon
+ * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
+ *
  * Revision 2.24  2005/03/02 21:24:47  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -2390,6 +2393,15 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 			// can get destroyed while docked with a freighter.)  We should just remove this goal and
 			// let this ship pick up it's next goal.
 			ai_mission_goal_complete( aip );		// mark as complete, so we can remove it and move on!!!
+			break;
+		}
+
+		// Goober5000 - Sometimes a ship will be assigned a new goal before it can finish undocking.  Later,
+		// when the ship returns to this goal, it will try to resume undocking from a ship it's not attached
+		// to.  If this happens, remove the goal as above.
+		if (!dock_check_find_direct_docked_object(objp, other_obj))
+		{
+			ai_mission_goal_complete( aip );
 			break;
 		}
 
