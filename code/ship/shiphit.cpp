@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-05-08 20:21:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.45 $
+ * $Date: 2005-05-11 09:27:35 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/05/08 20:21:48  wmcoolmon
+ * armor.tbl revamp
+ *
  * Revision 2.43  2005/04/18 05:27:26  Goober5000
  * removed ship->alt_modelnum as it was essentially duplicates of ship->modelnum; changed the alt modelnum stuff accordingly
  * fixes for ship_model_change and change_ship_type
@@ -1018,7 +1021,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	float hitpos_dist = vm_vec_dist( hitpos, &ship_obj->pos );	
 	if ( hitpos_dist > ship_obj->radius * 2.0f )	{
 		mprintf(( "BOGUS HITPOS PASSED TO DO_SUBOBJ_HIT_STUFF (%.1f > %.1f)!\n", hitpos_dist, ship_obj->radius * 2.0f ));
-		Assert(false);
+		Error(LOCATION, "BOGUS HITPOS PASSED TO DO_SUBOBJ_HIT_STUFF (%.1f > %.1f)!\n", hitpos_dist, ship_obj->radius * 2.0f ));
 		// Int3();	// Get John ASAP!!!!  Someone passed a local coordinate instead of world for hitpos probably.
 	}
 #endif
