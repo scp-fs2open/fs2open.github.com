@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-24 03:01:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-11 08:10:20 $
+ * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/24 03:01:56  wmcoolmon
+ * Might as well fix trainer messages too.
+ *
  * Revision 2.7  2005/04/11 05:48:34  taylor
  * make sure use an insensitive case check for Messages[] names (Jens Granseuer)
  * little clarification of if-else block in message_training_que()
@@ -352,7 +355,7 @@ typedef struct {
 	int length;
 } training_msg_que;
 
-char Training_buf[8192], Training_text[8192];
+char Training_buf[TRAINING_MESSAGE_LENGTH], Training_text[TRAINING_MESSAGE_LENGTH];
 char *Training_lines[MAX_TRAINING_MSG_LINES];  // Training message split into lines
 char Training_voice_filename[NAME_LENGTH];
 int Training_msg_timestamp;
@@ -1100,6 +1103,7 @@ void message_training_que_check()
 void message_training_display()
 {
 	char *str, buf[256];
+	char text_to_display[TRAINING_MESSAGE_LENGTH];
 	int i, z, x, y, height, mode, count;
 
 	Training_msg_visible = 0;
@@ -1114,8 +1118,12 @@ void message_training_display()
 		return;
 	}
 
-	message_translate_tokens(Training_buf, Training_text);
-	training_process_msg(Training_text);
+	// Goober5000 - replace any variable in this message
+	strcpy(text_to_display, Training_text);
+	sexp_replace_variable_names_with_values(text_to_display, TRAINING_MESSAGE_LENGTH);
+
+	message_translate_tokens(Training_buf, text_to_display);
+	training_process_msg(text_to_display);
 	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MSG_LINES);
 	Assert(Training_num_lines > 0);
 	for (i=0; i<Training_num_lines; i++) {
@@ -1192,7 +1200,7 @@ void message_training_display()
 void training_process_msg(char *msg)
 {
 	int count;
-	char *src, *dest, buf[8192];
+	char *src, *dest, buf[TRAINING_MESSAGE_LENGTH];
 
 	message_translate_tokens(buf, msg);
 	count = 0;

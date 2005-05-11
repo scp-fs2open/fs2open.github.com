@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.11 $
- * $Date: 2005-05-08 20:28:29 $
- * $Author: wmcoolmon $
+ * $Revision: 1.12 $
+ * $Date: 2005-05-11 08:10:20 $
+ * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/05/08 20:28:29  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 1.10  2005/04/28 05:29:29  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -76,6 +79,7 @@
 #define	MULTITEXT_LENGTH		4096
 #define	FILESPEC_LENGTH			64
 #define	MESSAGE_LENGTH			512
+#define TRAINING_MESSAGE_LENGTH	512
 
 // from missionparse.h
 #define MISSION_DESC_LENGTH		512
