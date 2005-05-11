@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-04-28 05:29:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.51 $
+ * $Date: 2005-05-11 22:15:49 $
+ * $Author: phreak $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/04/28 05:29:29  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.49  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1153,7 +1156,16 @@ void hud_render_target_ship_info(object *target_objp)
 	target_shipp = &Ships[target_objp->instance];
 	target_sip = &Ship_info[target_shipp->ship_info_index];
 
-	strcpy( outstr, target_shipp->ship_name );
+	if ((The_mission.flags & MISSION_FLAG_NO_ENEMY_WING_NAMES) &&
+		(target_shipp->wingnum != -1) && 
+		(target_shipp->team != Player_ship->team)) 
+	{
+		strcpy( outstr, "");
+	}
+	else
+	{
+		strcpy( outstr, target_shipp->ship_name );
+	}
 
 	if ( hud_gauge_maybe_flash(HUD_TARGET_MONITOR) == 1 ) {
 		hud_set_iff_color(target_objp, 1);
