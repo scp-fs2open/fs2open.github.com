@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.65 $
- * $Date: 2005-04-25 00:26:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.66 $
+ * $Date: 2005-05-11 00:25:42 $
+ * $Author: phreak $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/04/25 00:26:53  wmcoolmon
+ * Dynamically allocated engine washes; subsystem sounds
+ *
  * Revision 2.64  2005/04/21 15:49:21  taylor
  * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
  *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
@@ -4184,10 +4187,10 @@ void model_clear_instance(int model_num)
 void model_clear_instance_info( submodel_instance_info * sii )
 {
 	sii->blown_off = 0;
-	sii->angs.p = PI/2.0f;
+	sii->angs.p = 0.0f;
 	sii->angs.b = 0.0f;
 	sii->angs.h = 0.0f;
-	sii->prev_angs.p = PI/2.0f;
+	sii->prev_angs.p = 0.0f;
 	sii->prev_angs.b = 0.0f;
 	sii->prev_angs.h = 0.0f;
 
