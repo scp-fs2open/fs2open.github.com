@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.146 $
- * $Date: 2005-05-08 20:39:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.147 $
+ * $Date: 2005-05-11 02:15:07 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.146  2005/05/08 20:39:10  wmcoolmon
+ * Code betterness
+ *
  * Revision 2.145  2005/05/08 20:33:42  wmcoolmon
  * Turret debugging code; Medals stuff; GUI_system change
  *
@@ -1926,7 +1929,7 @@ void game_sunspot_process(float frametime)
 			Assert(Viewer_obj);
 			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, 0 ) )	{
 				// draw the glow for this sun
-				stars_draw_sun_glow(0);	
+				if (Viewer_shader.c == 0) stars_draw_sun_glow(0);	
 			}
 
 			Supernova_last_glare = Sun_spot_goal;
@@ -1985,7 +1988,7 @@ void game_sunspot_process(float frametime)
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
 					// draw the glow for this sun
-					stars_draw_sun_glow(idx);				
+					if (Viewer_shader.c == 0) stars_draw_sun_glow(idx);				
 				} else {
 					Sun_spot_goal = 0.0f;
 				}
