@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.147 $
- * $Date: 2005-05-11 02:15:07 $
+ * $Revision: 2.148 $
+ * $Date: 2005-05-11 02:16:17 $
  * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.147  2005/05/11 02:15:07  phreak
+ * fix the problem where the fade in/out doesn't work if looking at a sun.
+ *
  * Revision 2.146  2005/05/08 20:39:10  wmcoolmon
  * Code betterness
  *
@@ -5680,41 +5683,6 @@ void game_frame(int paused)
 				Net_player->s_info.eye_orient = eye_orient;
 			}
 #endif  // ifndef NO_NETWORK
-/*
-			static int cp_model = -1;
-			//Do 3D cockpit model
-			if(cp_model != -2)
-			{
-				
-				vec3d		camera_eye = {0.0f,0.0f,0.0f};
-				vec3d orient_vec = {0.0f,0.0f,0.0f};
-				vec3d obj_pos = {0.0f,0.0f,0.0f};
-				vec3d up_vector = {0.0f,0.0f,0.0f};
-				matrix camera_orient = IDENTITY_MATRIX;
-				float factor = 2;
-				float Hud_target_object_factor = 2.2f;
-
-				vm_vec_normalize(&orient_vec);
-				vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
-				vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
-
-				
-				if(cp_model == -1)
-				{
-					cp_model = model_load("cockpitTest.pof", 0, NULL, 0);
-					if(cp_model == -1)
-					{
-						cp_model = -2;
-					}
-				}
-
-	//			hud_render_target_setup(&camera_eye, &camera_orient, 0.5f * Hud_target_object_factor);
-	//			model_clear_instance(cp_model);
-				model_render( cp_model, &View_matrix, &View_position, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER);
-	//			hud_render_target_close();
-				//End 3d model
-			}
-			*/
 
 			if(!(Viewer_mode & VM_FREECAMERA))
 			{
