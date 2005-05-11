@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.151 $
- * $Date: 2005-05-01 06:18:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.152 $
+ * $Date: 2005-05-11 08:10:20 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2005/05/01 06:18:58  wmcoolmon
+ * Added (up-to-date) SEXP description info.
+ *
  * Revision 2.150  2005/04/24 02:10:53  Goober5000
  * subsystem fix
  * --Goober5000
@@ -7429,29 +7432,6 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 		return;
 	}
 
-
-	// Goober5000 - possibly do on-the-fly string replacement
-	// this is only for dynamic replacement such as values of variables... static replacement (stuff that
-	// doesn't change over the course of a mission) should be done in lcl_replace_stuff
-
-	// find the message
-	int i, message_index = -1;
-	for (i = Num_builtin_messages; i < Num_messages; i++)
-	{
-		// match
-		if (!stricmp(Messages[i].name, name))
-		{
-			message_index = i;
-			break;
-		}
-	}
-
-	// message had better exist
-	Assert(message_index >= 0);
-
-	// replace any variable in this message
-	sexp_replace_variable_names_with_values(Messages[message_index].message, MESSAGE_LENGTH);
-
 	// determine the priority of the message
 	if ( !stricmp(priority, "low") )
 		ipriority = MESSAGE_PRIORITY_LOW;
@@ -10436,7 +10416,6 @@ int sexp_path_flown()
 
 void sexp_send_training_message(int node)
 {
-	char *name = NULL;
 	int t = -1, delay = 0;
 
 	if(physics_paused){
@@ -10455,35 +10434,10 @@ void sexp_send_training_message(int node)
 	}
 
 	if ((Mission_events[Event_index].repeat_count > 1) || (CDR(node) < 0)){
-		name = CTEXT(node);
+		message_training_que(CTEXT(node), timestamp(delay), t);
 	} else {
-		name = CTEXT(CDR(node));
+		message_training_que(CTEXT(CDR(node)), timestamp(delay), t);
 	}
-
-	// Goober5000 - possibly do on-the-fly string replacement
-	// this is only for dynamic replacement such as values of variables... static replacement (stuff that
-	// doesn't change over the course of a mission) should be done in lcl_replace_stuff
-
-	// find the message
-	int i, message_index = -1;
-	for (i = Num_builtin_messages; i < Num_messages; i++)
-	{
-		// match
-		if (!stricmp(Messages[i].name, name))
-		{
-			message_index = i;
-			break;
-		}
-	}
-
-	// message had better exist
-	Assert(message_index >= 0);
-
-	// replace any variable in this message
-	sexp_replace_variable_names_with_values(Messages[message_index].message, MESSAGE_LENGTH);
-
-	// send the message
-	message_training_que(name, timestamp(delay), t);
 
 //	if (Training_msg_method)
 //		gameseq_post_event(GS_EVENT_TRAINING_PAUSE);
