@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.149 $
- * $Date: 2005-05-12 03:51:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.150 $
+ * $Date: 2005-05-12 17:40:48 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2005/05/12 03:51:17  Goober5000
+ * whoops
+ * --Goober5000
+ *
  * Revision 2.148  2005/05/11 02:16:17  phreak
  * clean out some old code
  *
@@ -3687,12 +3691,17 @@ void game_show_framerate()
 #endif
 
 #ifndef NO_DIRECT3D
-		{
+		if ( gr_screen.mode == GR_DIRECT3D ) {
 			extern int D3D_textures_in;
 			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (D3D_textures_in)/1024 );
 			sy += dy;
-		}
+		} else
 #endif
+		{
+			extern int GL_textures_in;
+			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (GL_textures_in)/1024 );
+			sy += dy;
+		}
 	}
 
 
@@ -8273,7 +8282,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 	*out_destroyed_total += sub_total_destroyed;
 }
 
-#define BAIL()			do { int _idx; for(_idx=0; _idx<num_files; _idx++){ if(pof_list[_idx] != NULL){free(pof_list[_idx]); pof_list[_idx] = NULL;}} return;} while(0);
+#define BAIL()			do { int _idx; for(_idx=0; _idx<num_files; _idx++){ if(pof_list[_idx] != NULL){vm_free(pof_list[_idx]); pof_list[_idx] = NULL;}} return;} while(0);
 void game_spew_pof_info()
 {
 	char *pof_list[1000];
@@ -8417,13 +8426,13 @@ int WinMainSub(int argc, char *argv[])
 		return 0;
 	}
 		
-	char *tmp_mem = (char *) malloc(16 * 1024 * 1024);
+	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
 	if (!tmp_mem) {
 		MessageBox(NULL, XSTR( "Not enough memory to run Freespace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK);
 		return 0;
 	}
 
-	free(tmp_mem);
+	vm_free(tmp_mem);
 	tmp_mem = NULL;
 
 	//=====================================================
@@ -9437,7 +9446,7 @@ if ( FS_VERSION_BUILD == 0 ) {
 	namelen = GetModuleFileName( hMod, myname, _MAX_PATH );
 
 	version_size = GetFileVersionInfoSize(myname, &bogus_handle );
-	infop = (char *)malloc(version_size);
+	infop = (char *)vm_malloc(version_size);
 	result = GetFileVersionInfo( myname, 0, version_size, (LPVOID)infop );
 
 	// get the product version
