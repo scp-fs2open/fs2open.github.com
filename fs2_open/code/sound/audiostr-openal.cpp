@@ -1,12 +1,19 @@
 /*
  * $Logfile: $
- * $Revision: 1.4 $
- * $Date: 2005-04-05 11:48:22 $
+ * $Revision: 1.5 $
+ * $Date: 2005-05-12 17:47:57 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/04/05 11:48:22  taylor
+ * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
+ * better error handling for OpenAL functions
+ * Windows can now build properly with OpenAL
+ * extra check to make sure we don't try and use too many hardware bases sources
+ * fix memory error from OpenAL extension list in certain instances
+ *
  * Revision 1.3  2005/04/01 07:33:08  taylor
  * fix hanging on exit with OpenAL
  * some better error handling on OpenAL init and make it more Windows friendly too
@@ -354,7 +361,7 @@ void WaveFile::Close(void)
 {
 	// Free memory
 	if (m_pwfmt_original) {
-		free(m_pwfmt_original);
+		vm_free(m_pwfmt_original);
 		m_pwfmt_original = NULL;
 	}
 
@@ -462,7 +469,7 @@ BOOL WaveFile::Open (char *pszFilename)
 				}
 
 				// Allocate memory for WAVEFORMATEX structure + extra bytes
-				if ( (m_pwfmt_original = (WAVEFORMATEX *) malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
+				if ( (m_pwfmt_original = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
 					Assert(m_pwfmt_original != NULL);
 					// Copy bytes from temporary format structure
 					memcpy (m_pwfmt_original, &pcmwf, sizeof(pcmwf));
@@ -547,7 +554,7 @@ OPEN_ERROR:
 	}
 	if (m_pwfmt_original)
 	{
-		free(m_pwfmt_original);
+		vm_free(m_pwfmt_original);
 		m_pwfmt_original = NULL;
 	}
 
@@ -880,7 +887,7 @@ BOOL AudioStream::Create (char *pszFilename)
 
 	if (pszFilename) {
 		// Create a new WaveFile object
-		m_pwavefile = (WaveFile *)malloc(sizeof(WaveFile));
+		m_pwavefile = (WaveFile *)vm_malloc(sizeof(WaveFile));
 		Assert(m_pwavefile);
 
 		if (m_pwavefile) {
@@ -918,7 +925,7 @@ BOOL AudioStream::Create (char *pszFilename)
 				// Error opening file
 				nprintf(("SOUND", "SOUND => Failed to open wave file: %s\n\r", pszFilename));
 				m_pwavefile->Close();
-				free(m_pwavefile);
+				vm_free(m_pwavefile);
 				m_pwavefile = NULL;
 				fRtn = FAILURE;
 			}   
@@ -955,7 +962,7 @@ BOOL AudioStream::Destroy (void)
 	// Delete WaveFile object
 	if (m_pwavefile) {
 		m_pwavefile->Close();
-		free(m_pwavefile);
+		vm_free(m_pwavefile);
 		m_pwavefile = NULL;
 	}
 
@@ -1024,11 +1031,14 @@ BOOL AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 				format = AL_FORMAT_STEREO16;
 		}
 
-		ALuint bid = 0;
+		// unqueue and recycle processed buffers
+		ALint p = 0;
+		ALuint bid[MAX_STREAM_BUFFERS];
 
 		// it's quite possible for this to give us an error so don't fail if it does
-		// and rembmer to clear the error queue before moving on to the next commands
-		OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, 1, &bid) );
+		// and remember to clear the error queue before moving on to the next commands
+		OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &p) );
+		OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, p, bid) );
 
 		OpenAL_ErrorCheck( alBufferData(m_buffer_ids[m_play_buffer_id], format, uncompressed_wave_data, num_bytes_read, m_pwavefile->m_wfmt.nSamplesPerSec), return FAILURE );
 
@@ -1165,11 +1175,12 @@ BOOL AudioStream::ServiceBuffer (void)
 				m_bPastLimit = TRUE;
 			}
 
-			ALint n;
-			// get the number of buffers processed to see if we're done
-			OpenAL_ErrorCheck( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &n), return FALSE );
+			ALint n = 0;
+			// get the number of buffers still queued to see if we're done
+			OpenAL_ErrorCheck( alGetSourcei(m_source_id, AL_BUFFERS_QUEUED, &n), return FALSE );
 
-			if ( m_bReadingDone && (n == MAX_STREAM_BUFFERS) ) {
+		//	if ( m_bReadingDone && (n == MAX_STREAM_BUFFERS) ) {
+			if ( m_bReadingDone && (n == 0) ) {
 				if ( m_bDestroy_when_faded == TRUE ) {
 					LEAVE_CRITICAL_SECTION( write_lock );
 
@@ -1223,7 +1234,9 @@ void AudioStream::Cue (void)
 		m_pwavefile->Cue ();
 
 		// Unqueue all buffers
-		alSourceUnqueueBuffers(m_source_id, MAX_STREAM_BUFFERS, m_buffer_ids);
+		ALint p = 0;
+		OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &p) );
+		OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, p, m_buffer_ids) );
 
 		// Fill buffer with wave data
 		WriteWaveData (m_cbBufSize, &num_bytes_written, 0);
@@ -1357,7 +1370,7 @@ void AudioStream::Set_Volume(long vol)
 
 	ALfloat alvol = (vol != -10000) ? powf(10.0f, (float)vol / (-600.0f / log10f(.5f))): 0.0f;
 
-	alSourcef(m_source_id, AL_GAIN, alvol);
+	OpenAL_ErrorPrint( alSourcef(m_source_id, AL_GAIN, alvol) );
 
 	m_lVolume = vol;
 	if ( h_result != 0 )
@@ -1390,25 +1403,25 @@ void audiostream_init()
 	// Allocate memory for the buffer which holds the uncompressed wave data that is streamed from the
 	// disk during a load/cue
 	if ( Wavedata_load_buffer == NULL ) {
-		Wavedata_load_buffer = (ubyte*)malloc(BIGBUF_SIZE);
+		Wavedata_load_buffer = (ubyte*)vm_malloc(BIGBUF_SIZE);
 		Assert(Wavedata_load_buffer != NULL);
 	}
 
 	// Allocate memory for the buffer which holds the uncompressed wave data that is streamed from the
 	// disk during a service interval
 	if ( Wavedata_service_buffer == NULL ) {
-		Wavedata_service_buffer = (ubyte*)malloc(BIGBUF_SIZE);
+		Wavedata_service_buffer = (ubyte*)vm_malloc(BIGBUF_SIZE);
 		Assert(Wavedata_service_buffer != NULL);
 	}
 
 	// Allocate memory for the buffer which holds the compressed wave data that is read from the hard disk
 	if ( Compressed_buffer == NULL ) {
-		Compressed_buffer = (ubyte*)malloc(COMPRESSED_BUFFER_SIZE);
+		Compressed_buffer = (ubyte*)vm_malloc(COMPRESSED_BUFFER_SIZE);
 		Assert(Compressed_buffer != NULL);
 	}
 
 	if ( Compressed_service_buffer == NULL ) {
-		Compressed_service_buffer = (ubyte*)malloc(COMPRESSED_BUFFER_SIZE);
+		Compressed_service_buffer = (ubyte*)vm_malloc(COMPRESSED_BUFFER_SIZE);
 		Assert(Compressed_service_buffer != NULL);
 	}
 
@@ -1445,22 +1458,22 @@ void audiostream_close()
 
 	// free global buffers
 	if ( Wavedata_load_buffer ) {
-		free(Wavedata_load_buffer);
+		vm_free(Wavedata_load_buffer);
 		Wavedata_load_buffer = NULL;
 	}
 
 	if ( Wavedata_service_buffer ) {
-		free(Wavedata_service_buffer);
+		vm_free(Wavedata_service_buffer);
 		Wavedata_service_buffer = NULL;
 	}
 
 	if ( Compressed_buffer ) {
-		free(Compressed_buffer);
+		vm_free(Compressed_buffer);
 		Compressed_buffer = NULL;
 	}
 
 	if ( Compressed_service_buffer ) {
-		free(Compressed_service_buffer);
+		vm_free(Compressed_service_buffer);
 		Compressed_service_buffer = NULL;
 	}
 
