@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.153 $
- * $Date: 2005-05-11 09:28:32 $
+ * $Revision: 2.154 $
+ * $Date: 2005-05-12 03:50:09 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.153  2005/05/11 09:28:32  Goober5000
+ * fixed a few of karajorma's bugs
+ * --Goober5000
+ *
  * Revision 2.152  2005/05/11 08:10:20  Goober5000
  * variables should now work properly in messages that are sent multiple times
  * --Goober5000
@@ -10438,9 +10442,9 @@ void sexp_send_training_message(int node)
 	}
 
 	if ((Mission_events[Event_index].repeat_count > 1) || (CDR(node) < 0)){
-		message_training_que(CTEXT(node), timestamp(delay), t);
+		message_training_queue(CTEXT(node), timestamp(delay), t);
 	} else {
-		message_training_que(CTEXT(CDR(node)), timestamp(delay), t);
+		message_training_queue(CTEXT(CDR(node)), timestamp(delay), t);
 	}
 
 //	if (Training_msg_method)
@@ -16490,8 +16494,9 @@ int get_index_sexp_variable_name_special(const char *startpos)
 }
 
 // Goober5000
-void sexp_replace_variable_names_with_values(char *text, int max_len)
+bool sexp_replace_variable_names_with_values(char *text, int max_len)
 {
+	bool replaced_anything = false;
 	char *pos = text;
 	do {
 		// look for the meta-character
@@ -16511,6 +16516,7 @@ void sexp_replace_variable_names_with_values(char *text, int max_len)
 
 				// replace it
 				pos = text + replace_one(text, what_to_replace, Sexp_variables[var_index].text, max_len);
+				replaced_anything = true;
 			}
 			// no match... so keep iterating along the string
 			else
@@ -16519,6 +16525,8 @@ void sexp_replace_variable_names_with_values(char *text, int max_len)
 			}
 		}
 	} while (pos != NULL);
+
+	return replaced_anything;
 }
 
 // counts number of sexp_variables that are set

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-05-12 01:34:50 $
+ * $Revision: 2.30 $
+ * $Date: 2005-05-12 03:50:10 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/05/12 01:34:50  Goober5000
+ * removed variables in messages for now
+ * --Goober5000
+ *
  * Revision 2.28  2005/05/11 08:10:20  Goober5000
  * variables should now work properly in messages that are sent multiple times
  * --Goober5000
@@ -511,6 +515,7 @@
 #include "hud/hudconfig.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
+#include "parse/sexp.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -625,7 +630,8 @@ typedef struct message_q {
 	int	window_timestamp;			// timestamp which will tell us how long we have to play the message
 	int	priority;					// priority of the message
 	int	message_num;				// index into the Messages[] array
-	char	who_from[NAME_LENGTH];	// who this message is from
+	char *special_message;			// Goober5000 - message to play if we've replaced stuff (like variables)
+	char who_from[NAME_LENGTH];		// who this message is from
 	int	source;						// who the source of the message is (HUD_SOURCE_* type)
 	int	builtin_type;				// type of builtin message (-1 if mission message)
 	int	flags;						// should this message entry be converted to Terran Command head/wave file
@@ -973,6 +979,9 @@ void messages_init()
 		MessageQ[i].builtin_type = -1;
 		MessageQ[i].min_delay_stamp = -1;
 		MessageQ[i].group = 0;
+
+		// Goober5000
+		MessageQ[i].special_message = NULL;
 	}
 	
 	// this forces a reload of the AVI's and waves for builtin messages.  Needed because the flic and
@@ -1060,6 +1069,14 @@ void message_mission_shutdown()
 	// free up remaining anim data - taylor
 	for (i=0; i<Num_message_avis; i++) {
 		message_mission_free_avi(i);
+	}
+
+	// Goober5000 - free up special messages
+	for (i = 0; i < MAX_MESSAGE_Q; i++)
+	{
+		if (MessageQ[i].special_message != NULL)
+			free(MessageQ[i].special_message);
+		MessageQ[i].special_message = NULL;
 	}
 }
 
@@ -1240,7 +1257,12 @@ void message_remove_from_queue(message_q *q)
 	q->message_num = -1;
 	q->builtin_type = -1;
 	q->min_delay_stamp = -1;
-	q->group = 0;	
+	q->group = 0;
+
+	// Goober5000
+	if (q->special_message != NULL);
+		free(q->special_message);
+	q->special_message = NULL;
 
 	if ( MessageQ_num > 0 ) {
 		qsort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
@@ -1743,7 +1765,10 @@ void message_queue_process()
 	Message_wave_duration = 0;
 
 	// translate tokens in message to the real things
-	message_translate_tokens(buf, m->message);
+	if (q->special_message == NULL)
+		message_translate_tokens(buf, m->message);
+	else
+		message_translate_tokens(buf, q->special_message);
 
 	// AL: added 07/14/97.. only play avi/sound if in gameplay
 	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
@@ -1800,6 +1825,7 @@ all_done:
 void message_queue_message( int message_num, int priority, int timing, char *who_from, int source, int group, int delay, int builtin_type )
 {
 	int i, m_persona;
+	char temp_buf[MESSAGE_LENGTH];
 
 	if ( message_num < 0 ) return;
 
@@ -1841,6 +1867,19 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	MessageQ[i].min_delay_stamp = timestamp(delay);
 	MessageQ[i].group = group;
 	strcpy(MessageQ[i].who_from, who_from);
+
+	// Goober5000 - this shouldn't happen, but let's be safe
+	if (MessageQ[i].special_message != NULL)
+	{
+		Int3();
+		free(MessageQ[i].special_message);
+	}
+	MessageQ[i].special_message = NULL;
+
+	// Goober5000 - replace variables if necessary
+	strcpy(temp_buf, Messages[message_num].message);
+	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
+		MessageQ[i].special_message = strdup(temp_buf);
 
 	// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
 	// to this message, then set a bit to tell the wave/anim playing code to play the command version

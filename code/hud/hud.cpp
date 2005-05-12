@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2005-05-12 03:50:10 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.43  2005/03/27 12:28:33  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -2102,7 +2105,7 @@ void hud_show_damage_popup()
 		return;
 	}
 
-	if ( (The_mission.game_type & MISSION_TYPE_TRAINING) && Training_msg_visible ){
+	if ( (The_mission.game_type & MISSION_TYPE_TRAINING) && Training_message_visible ){
 		return;
 	}
 		
