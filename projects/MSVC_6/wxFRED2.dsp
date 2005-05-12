@@ -127,7 +127,47 @@ BuildCmds= \
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=..\..\code\wxfred2\aboutbox.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\asteroidfieldeditor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\campaigneditor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\commandbriefingeditor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\debriefingeditor.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\wxfred2\fredframe.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\missionspecseditor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\setglobalshipflagseditor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\shieldsystemeditor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\voiceactingmanagereditor.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\voicefilemanager.cpp
 # End Source File
 # Begin Source File
 
@@ -143,7 +183,47 @@ SOURCE=..\..\code\wxfred2\wxfred_xrc.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
+SOURCE=..\..\code\wxfred2\aboutbox.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\asteroidfieldeditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\campaigneditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\commandbriefingeditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\debriefingeditor.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\wxfred2\fredframe.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\missionspecseditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\setglobalshipflagseditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\shieldsystemeditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\voiceactingmanagereditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\wxfred2\voicefilemanager.h
 # End Source File
 # Begin Source File
 
