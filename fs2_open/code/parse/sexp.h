@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.91 $
- * $Author: wmcoolmon $
- * $Date: 2005-05-02 22:36:54 $
+ * $Revision: 2.92 $
+ * $Author: Goober5000 $
+ * $Date: 2005-05-12 03:50:09 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2005/05/02 22:36:54  wmcoolmon
+ * Bah, stupid externs. :P
+ *
  * Revision 2.90  2005/05/01 06:18:58  wmcoolmon
  * Added (up-to-date) SEXP description info.
  *
@@ -1514,7 +1517,7 @@ void sexp_modify_variable(int);
 void sexp_modify_variable(char *text, int index);
 int get_index_sexp_variable_name(const char *temp_name);
 int get_index_sexp_variable_name_special(const char *text);	// Goober5000
-void sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober5000
+bool sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober5000
 int sexp_variable_count();
 int sexp_campaign_persistent_variable_count();	// Goober5000
 void sexp_variable_delete(int index);

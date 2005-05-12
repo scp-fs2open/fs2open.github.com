@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-05-12 01:34:50 $
+ * $Revision: 2.11 $
+ * $Date: 2005-05-12 03:50:10 $
  * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/05/12 01:34:50  Goober5000
+ * removed variables in messages for now
+ * --Goober5000
+ *
  * Revision 2.9  2005/05/11 08:10:20  Goober5000
  * variables should now work properly in messages that are sent multiple times
  * --Goober5000
@@ -26,7 +30,7 @@
  *
  * Revision 2.7  2005/04/11 05:48:34  taylor
  * make sure use an insensitive case check for Messages[] names (Jens Granseuer)
- * little clarification of if-else block in message_training_que()
+ * little clarification of if-else block in message_training_queue()
  *
  * Revision 2.6  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
@@ -42,7 +46,7 @@
  * --Goober5000
  *
  * Revision 2.2  2002/12/23 01:47:17  Goober5000
- * removed stipulation that "Instructor" be present for training-msg sexp to work
+ * removed stipulation that "Instructor" be present for training-message sexp to work
  * --Goober5000
  *
  * (This is fun! :))
@@ -130,7 +134,7 @@
  * using nprintf((Warning,...)) when audiostream can't be opened
  * 
  * 50    4/27/98 11:20a Hoffoss
- * Doubled TRAINING_MSG_QUE_MAX.
+ * Doubled TRAINING_MESSAGE_QUEUE_MAX.
  * 
  * 49    4/22/98 3:21p Hoffoss
  * Fixed slight training message problems with training_failure state.
@@ -144,7 +148,7 @@
  * Fix application of subsystem damage.
  * 
  * 46    4/15/98 5:25p Lawrance
- * only show damage gauge when training msg not visible
+ * only show damage gauge when training message not visible
  * 
  * 45    4/03/98 2:52p Allender
  * use Missiontime insteadof timestamp() for objective display
@@ -205,7 +209,7 @@
  * Made objective key text appear in Green.
  * 
  * 28    1/06/98 2:07p Lawrance
- * strip leading whitespace on training msg lines
+ * strip leading whitespace on training message lines
  * 
  * 27    1/05/98 11:05p Lawrance
  * Clear primary/secondary linking if playing a training mission.
@@ -214,7 +218,7 @@
  * Fix HUD gauge flag that didn't get changed.
  * 
  * 25    1/05/98 4:04p Hoffoss
- * Changed training-msg sexp operator to allow it to control the length of
+ * Changed training-message sexp operator to allow it to control the length of
  * time a message is displayed for.
  * 
  * 24    1/05/98 11:16a Mike
@@ -268,7 +272,7 @@
  * ALAN: if wave file doesn't exist, don't play it
  * 
  * 8     10/17/97 6:39p Hoffoss
- * Added delayability to key-pressed operator and training-msg operator.
+ * Added delayability to key-pressed operator and training-message operator.
  * 
  * 7     10/17/97 10:23a Hoffoss
  * Added more comments.
@@ -313,6 +317,7 @@
 #include "weapon/emp.h"
 #include "globalincs/alphacolors.h"
 #include "ship/ship.h"
+#include "parse/sexp.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -320,10 +325,10 @@
 
 
 
-#define MAX_TRAINING_MSG_LINES		10
-//#define TRAINING_MSG_WINDOW_X			174
-//#define TRAINING_MSG_WINDOW_Y			40
-#define TRAINING_MSG_WINDOW_WIDTH	266
+#define MAX_TRAINING_MESSAGE_LINES		10
+//#define TRAINING_MESSAGE_WINDOW_X			174
+//#define TRAINING_MESSAGE_WINDOW_Y			40
+#define TRAINING_MESSAGE_WINDOW_WIDTH	266
 #define TRAINING_LINE_WIDTH			250  // width in pixels of actual text
 #define TRAINING_TIMING					150  // milliseconds per character to display messages
 #define TRAINING_TIMING_BASE			1000  // Minimum milliseconds to display any message
@@ -334,8 +339,8 @@
 #define TRAINING_OBJ_LINE_WIDTH		150	// number of pixels wide text can be
 #define TRAINING_OBJ_LINES				50		// number of lines to track in objective list
 #define TRAINING_OBJ_DISPLAY_LINES	5		// only display this many lines on screen max
-#define MAX_TRAINING_MSG_MODS			20
-#define TRAINING_MSG_QUE_MAX			40
+#define MAX_TRAINING_MESSAGE_MODS			20
+#define TRAINING_MESSAGE_QUEUE_MAX			40
 
 #define TRAINING_OBJ_STATUS_UNKNOWN		(1 << 28)	// directive status is unknown
 #define TRAINING_OBJ_STATUS_KNOWN		(1 << 29)	// directive status is known (satisfied or failed)
@@ -350,33 +355,34 @@
 typedef struct {
 	char *pos;
 	int mode;  // what function to perform at given position (TMMOD_*)
-} training_msg_mods;  // training message modifiers
+} training_message_mods;  // training message modifiers
 
 typedef struct {
 	int num;
 	int timestamp;
 	int length;
-} training_msg_que;
+	char *special_message;
+} training_message_queue;
 
-char Training_buf[TRAINING_MESSAGE_LENGTH], Training_text[TRAINING_MESSAGE_LENGTH];
-char *Training_lines[MAX_TRAINING_MSG_LINES];  // Training message split into lines
+char Training_buf[TRAINING_MESSAGE_LENGTH];
+char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
 char Training_voice_filename[NAME_LENGTH];
-int Training_msg_timestamp;
-int Training_line_sizes[MAX_TRAINING_MSG_LINES];
-int Training_msg_method = 1;
+int Training_message_timestamp;
+int Training_line_sizes[MAX_TRAINING_MESSAGE_LINES];
+int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
 int Training_voice_type;
 int Training_voice_handle;
 int Training_flag = 0;
 int Training_failure = 0;
-int Training_msg_que_count = 0;
+int Training_message_queue_count = 0;
 int Training_bind_warning = -1;  // Missiontime at which we last gave warning
-int Training_msg_visible;
-training_msg_que Training_msg_que[TRAINING_MSG_QUE_MAX];
+int Training_message_visible;
+training_message_queue Training_message_queue[TRAINING_MESSAGE_QUEUE_MAX];
 
 // coordinates for training messages
-int Training_msg_window_coords[GR_NUM_RESOLUTIONS][2] = {
+int Training_message_window_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ 174, 40 },
 	{ 379, 125 }
 };
@@ -391,10 +397,10 @@ int Training_obj_window_coords[GR_NUM_RESOLUTIONS][2] = {
 // training objectives global vars.
 int Training_obj_num_lines;
 int Training_obj_lines[TRAINING_OBJ_LINES];
-training_msg_mods Training_msg_mods[MAX_TRAINING_MSG_MODS];
+training_message_mods Training_message_mods[MAX_TRAINING_MESSAGE_MODS];
 
 // local module prototypes
-void training_process_msg(char *msg);
+void training_process_message(char *message);
 void message_translate_tokens(char *buf, char *text);
 
 
@@ -588,10 +594,14 @@ void training_mission_init()
 
 	Assert(!Training_num_lines);
 	Training_obj_num_lines = 0;
-	Training_msg_que_count = 0;
+	Training_message_queue_count = 0;
 	Training_failure = 0;
 	for (i=0; i<TRAINING_OBJ_LINES; i++)
 		Training_obj_lines[i] = -1;
+
+	// Goober5000
+	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
+		Training_message_queue[i].special_message = NULL;
 
 	if ( !Directive_frames_loaded ) {
 		for ( i = 0; i < NUM_DIRECTIVE_GAUGES; i++ ) {
@@ -817,6 +827,8 @@ void training_check_objectives()
 // called to do cleanup when leaving a mission
 void training_mission_shutdown()
 {
+	int i;
+
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
 			audiostream_close_file(Training_voice_handle, 0);
@@ -826,13 +838,22 @@ void training_mission_shutdown()
 		}
 	}
 
+	// Goober5000
+	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
+	{
+		if (Training_message_queue[i].special_message != NULL)
+			free(Training_message_queue[i].special_message);
+		Training_message_queue[i].special_message = NULL;
+	}
+
 	Training_voice = -1;
 	Training_num_lines = Training_obj_num_lines = 0;
-	*Training_text = 0;
+
+	*Training_buf = 0;
 }
 
 // translates special tokens.  Handles one token only.
-char *translate_msg_token(char *str)
+char *translate_message_token(char *str)
 {
 	if (!stricmp(str, NOX("wp"))) {
 		sprintf(str, "%d", Training_context_goal_waypoint + 1);
@@ -898,7 +919,7 @@ void message_translate_tokens(char *buf, char *text)
 
 			strncpy(temp, text, toke1 - text);  // isolate token into seperate buffer
 			temp[toke1 - text] = 0;  // null terminate string
-			ptr = translate_msg_token(temp);  // try and translate key
+			ptr = translate_message_token(temp);  // try and translate key
 			if (ptr) {  // was key translated properly?
 				buf--;  // erase the #
 				strcpy(buf, ptr);  // put translated key in place of token
@@ -1008,25 +1029,29 @@ int message_play_training_voice(int index)
 // one time initializations done when we want to display a new training mission.  This does
 // all the processing and setup required to actually display it, including starting the
 // voice file playing
-void message_training_setup(int m, int length)
+void message_training_setup(int m, int length, char *special_message)
 {
 	if ((m < 0) || !Messages[m].message[0]) {  // remove current message from the screen
 		Training_num_lines = 0;
 		return;
 	}
 
-	message_translate_tokens(Training_buf, Messages[m].message);
+	// translate tokens in message to the real things
+	if (special_message == NULL)
+		message_translate_tokens(Training_buf, Messages[m].message);
+	else
+		message_translate_tokens(Training_buf, special_message);
+
 	HUD_add_to_scrollback(Training_buf, HUD_SOURCE_TRAINING);
-	strcpy(Training_text, Messages[m].message);
 
 	if (message_play_training_voice(Messages[m].wave_info.index) < 0) {
 		if (length > 0)
-			Training_msg_timestamp = timestamp(length * 1000);
+			Training_message_timestamp = timestamp(length * 1000);
 		else
-			Training_msg_timestamp = timestamp(TRAINING_TIMING_BASE + strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
+			Training_message_timestamp = timestamp(TRAINING_TIMING_BASE + strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
 
 	} else
-		Training_msg_timestamp = 0;
+		Training_message_timestamp = 0;
 }
 
 // adds simple text to the directives display
@@ -1034,23 +1059,24 @@ void message_training_setup(int m, int length)
 {
 	int i;
 
-	training_process_msg(text);
+	training_process_message(text);
 	HUD_add_to_scrollback(Training_buf, HUD_SOURCE_TRAINING);
-	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MSG_LINES);
+	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
 	Assert(Training_num_lines > 0);
 	for (i=0; i<Training_num_lines; i++)
 		Training_lines[i][Training_line_sizes[i]] = 0;
 
-	Training_msg_timestamp = timestamp(5000);
+	Training_message_timestamp = timestamp(5000);
 } */
 
-// add a message to the que to be sent later.
-void message_training_que(char *text, int timestamp, int length)
+// add a message to the queue to be sent later.
+void message_training_queue(char *text, int timestamp, int length)
 {
 	int m;
+	char temp_buf[TRAINING_MESSAGE_LENGTH];
 
-	Assert(Training_msg_que_count < TRAINING_MSG_QUE_MAX);
-	if (Training_msg_que_count < TRAINING_MSG_QUE_MAX) {
+	Assert(Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX);
+	if (Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX) {
 		if (!stricmp(text, NOX("none"))) {
 			m = -1;
 		} else {
@@ -1063,18 +1089,48 @@ void message_training_que(char *text, int timestamp, int length)
 				return;
 		}
 
-		Training_msg_que[Training_msg_que_count].num = m;
-		Training_msg_que[Training_msg_que_count].timestamp = timestamp;
-		Training_msg_que[Training_msg_que_count].length = length;
-		Training_msg_que_count++;
+		Training_message_queue[Training_message_queue_count].num = m;
+		Training_message_queue[Training_message_queue_count].timestamp = timestamp;
+		Training_message_queue[Training_message_queue_count].length = length;
+
+		// Goober5000 - this shouldn't happen, but let's be safe
+		if (Training_message_queue[Training_message_queue_count].special_message != NULL)
+		{
+			Int3();
+			free(Training_message_queue[Training_message_queue_count].special_message);
+		}
+		Training_message_queue[Training_message_queue_count].special_message = NULL;
+
+		// Goober5000 - replace variables if necessary
+		strcpy(temp_buf, Messages[m].message);
+		if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
+			Training_message_queue[Training_message_queue_count].special_message = strdup(temp_buf);
+
+		Training_message_queue_count++;
 	}
 }
 
-// check the training message que to see if we should play a new message yet or not.
+// Goober5000 - removes current message from the queue
+void message_training_remove_from_queue(int idx)
+{	
+	Training_message_queue[idx].length = -1;
+	Training_message_queue[idx].num = -1;
+	Training_message_queue[idx].timestamp = -1;
+
+	if (Training_message_queue[idx].special_message != NULL);
+		free(Training_message_queue[idx].special_message);
+	Training_message_queue[idx].special_message = NULL;
+
+	for (int j=idx+1; j<Training_message_queue_count; j++)
+		Training_message_queue[j - 1] = Training_message_queue[j];
+	Training_message_queue_count--;
+}
+
+// check the training message queue to see if we should play a new message yet or not.
 // Goober5000: removed stipulation of instructor being present
-void message_training_que_check()
+void message_training_queue_check()
 {
-	int i, j, iship_num;
+	int i, iship_num;
 
 	// get the instructor's ship.
 	iship_num = ship_name_lookup(NOX("instructor"));
@@ -1089,15 +1145,13 @@ void message_training_que_check()
 	if (Training_failure)
 		return;
 
-	for (i=0; i<Training_msg_que_count; i++) {
-		if (timestamp_elapsed(Training_msg_que[i].timestamp)) {
-			message_training_setup(Training_msg_que[i].num, Training_msg_que[i].length);
-			// remove this message from the que now.
-			for (j=i+1; j<Training_msg_que_count; j++)
-				Training_msg_que[j - 1] = Training_msg_que[j];
+	for (i=0; i<Training_message_queue_count; i++) {
+		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {
+			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message);
 
+			// remove this message from the queue now.
+			message_training_remove_from_queue(i);
 			i--;
-			Training_msg_que_count--;
 		}
 	}
 }
@@ -1108,21 +1162,20 @@ void message_training_display()
 	char *str, buf[256];
 	int i, z, x, y, height, mode, count;
 
-	Training_msg_visible = 0;
-	message_training_que_check();
+	Training_message_visible = 0;
+	message_training_queue_check();
 	training_obj_display();
 
 	if (Training_failure){
 		return;
 	}
 
-	if (timestamp_elapsed(Training_msg_timestamp) || !strlen(Training_text)){
+	if (timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf)){
 		return;
 	}
 
-	message_translate_tokens(Training_buf, Training_text);
-	training_process_msg(Training_text);
-	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MSG_LINES);
+	training_process_message(Training_buf);
+	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
 	Assert(Training_num_lines > 0);
 	for (i=0; i<Training_num_lines; i++) {
 		Training_lines[i][Training_line_sizes[i]] = 0;
@@ -1135,26 +1188,26 @@ void message_training_display()
 
 	height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
-	gr_shade(Training_msg_window_coords[gr_screen.res][0], Training_msg_window_coords[gr_screen.res][1], TRAINING_MSG_WINDOW_WIDTH, Training_num_lines * height + height,true);
+	gr_shade(Training_message_window_coords[gr_screen.res][0], Training_message_window_coords[gr_screen.res][1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height,true);
 
 	gr_set_color_fast(&Color_bright_blue);
 	mode = count = 0;
-	Training_msg_visible = 1;
+	Training_message_visible = 1;
 	for (i=0; i<Training_num_lines; i++) {  // loop through all lines of message
 		str = Training_lines[i];
 		z = 0;
-		x = Training_msg_window_coords[gr_screen.res][0] + (TRAINING_MSG_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
-		y = Training_msg_window_coords[gr_screen.res][1] + i * height + height / 2 + 1;
+		x = Training_message_window_coords[gr_screen.res][0] + (TRAINING_MESSAGE_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
+		y = Training_message_window_coords[gr_screen.res][1] + i * height + height / 2 + 1;
 
 		while (*str) {  // loop through each character of each line
-			if ((count < MAX_TRAINING_MSG_MODS) && (str == Training_msg_mods[count].pos)) {
+			if ((count < MAX_TRAINING_MESSAGE_MODS) && (str == Training_message_mods[count].pos)) {
 				buf[z] = 0;
 				gr_printf(x, y, buf);
 				gr_get_string_size(&z, NULL, buf);
 				x += z;
 				z = 0;
 
-				mode = Training_msg_mods[count++].mode;
+				mode = Training_message_mods[count++].mode;
 				switch (mode) {
 					case TMMOD_NORMAL:
 						gr_set_color_fast(&Color_bright_blue);
@@ -1175,49 +1228,49 @@ void message_training_display()
 		}
 	}
 
-	Training_msg_method = 0;
-//	if (Training_msg_method) {
-//		char *msg = "Press a key to continue";
+	Training_message_method = 0;
+//	if (Training_message_method) {
+//		char *message = "Press a key to continue";
 
-//		gr_get_string_size(&i, NULL, msg);
-//		gr_printf(TRAINING_MSG_WINDOW_X + TRAINING_MSG_WINDOW_WIDTH / 2 - i / 2, TRAINING_MSG_WINDOW_Y + (Training_num_lines + 2) * height, msg);
+//		gr_get_string_size(&i, NULL, message);
+//		gr_printf(TRAINING_MESSAGE_WINDOW_X + TRAINING_MESSAGE_WINDOW_WIDTH / 2 - i / 2, TRAINING_MESSAGE_WINDOW_Y + (Training_num_lines + 2) * height, message);
 //	}
 
-	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_msg_timestamp)) {
+	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
 		if (Training_voice_type)
 			z = audiostream_is_playing(Training_voice_handle);
 		else
 			z = snd_is_playing(Training_voice_handle);
 
 		if (!z)
-			Training_msg_timestamp = timestamp(2000);  // 2 second delay
+			Training_message_timestamp = timestamp(2000);  // 2 second delay
  	}
 }
 
 // processes a new training message to get hilighting information and store it in internal structures.
-void training_process_msg(char *msg)
+void training_process_message(char *message)
 {
 	int count;
 	char *src, *dest, buf[TRAINING_MESSAGE_LENGTH];
 
-	message_translate_tokens(buf, msg);
+	message_translate_tokens(buf, message);
 	count = 0;
 	src = buf;
 	dest = Training_buf;
 	while (*src) {
 		if (!strnicmp(src, NOX("<b>"), 3)) {
-			Assert(count < MAX_TRAINING_MSG_MODS);
+			Assert(count < MAX_TRAINING_MESSAGE_MODS);
 			src += 3;
-			Training_msg_mods[count].pos = dest;
-			Training_msg_mods[count].mode = TMMOD_BOLD;
+			Training_message_mods[count].pos = dest;
+			Training_message_mods[count].mode = TMMOD_BOLD;
 			count++;
 		}
 
 		if (!strnicmp(src, NOX("</b>"), 4)) {
-			Assert(count < MAX_TRAINING_MSG_MODS);
+			Assert(count < MAX_TRAINING_MESSAGE_MODS);
 			src += 4;
-			Training_msg_mods[count].pos = dest;
-			Training_msg_mods[count].mode = TMMOD_NORMAL;
+			Training_message_mods[count].pos = dest;
+			Training_message_mods[count].mode = TMMOD_NORMAL;
 			count++;
 		}
 
@@ -1225,8 +1278,8 @@ void training_process_msg(char *msg)
 	}
 
 	*dest = 0;
-	if (count < MAX_TRAINING_MSG_MODS)
-		Training_msg_mods[count].pos = NULL;
+	if (count < MAX_TRAINING_MESSAGE_MODS)
+		Training_message_mods[count].pos = NULL;
 }
 
 void training_fail()
