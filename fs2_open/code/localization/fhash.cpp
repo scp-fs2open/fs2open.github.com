@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/localization/fhash.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:36 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-05-12 17:49:13 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:36  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:32:52  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -120,9 +123,9 @@ void fhash_flush()
 
 				// free up this element
 				if(backup->str != NULL){
-					free(backup->str);
+					vm_free(backup->str);
 				}
-				free(backup);
+				vm_free(backup);
 			}
 
 			// null this element
@@ -221,14 +224,14 @@ void fhash_insert(char *str, int id, int n)
 	fhash_node *moveup;
 
 	// allocate the new node
-	new_node = (fhash_node*)malloc(sizeof(fhash_node));
+	new_node = (fhash_node*)vm_malloc(sizeof(fhash_node));
 	Assert(new_node);
 	if(new_node == NULL){
 		return;
 	}
 
 	// fill in the node
-	new_node->str = strdup(str);
+	new_node->str = vm_strdup(str);
 	new_node->id = id;
 	new_node->next = NULL;
 	new_node->prev = NULL;

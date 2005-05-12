@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-05-12 03:50:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2005-05-12 17:49:14 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/05/12 03:50:10  Goober5000
+ * repeating messages with variables should work properly now
+ * --Goober5000
+ *
  * Revision 2.29  2005/05/12 01:34:50  Goober5000
  * removed variables in messages for now
  * --Goober5000
@@ -705,13 +709,8 @@ void persona_parse()
 	int i;
 	char type[NAME_LENGTH];
 
-/* it's dynamic now - taylor
-	Assert ( Num_personas < MAX_PERSONAS );
-
-	Personas[Num_personas].flags = 0;
-*/
 	// this way should cause the least amount of problems on the various platforms - taylor
-	Personas = (Persona*)realloc( Personas, sizeof(Persona) * (Num_personas + 1) );
+	Personas = (Persona*)vm_realloc( Personas, sizeof(Persona) * (Num_personas + 1) );
 
 	if (Personas == NULL)
 		Error(LOCATION, "Not enough memory to allocate Personas!" );
@@ -866,7 +865,7 @@ void message_parse( )
 		if ( !Fred_running ) {
 			msgp->avi_info.index = add_avi(avi_name);
 		} else {
-			msgp->avi_info.name = strdup(avi_name);
+			msgp->avi_info.name = vm_strdup(avi_name);
 		}
 	}
 
@@ -882,7 +881,7 @@ void message_parse( )
 		if ( !Fred_running ) {
 			msgp->wave_info.index = add_wave(wave_name);
 		} else {
-			msgp->wave_info.name = strdup(wave_name);
+			msgp->wave_info.name = vm_strdup(wave_name);
 		}
 	}
 
@@ -1085,7 +1084,7 @@ void message_mission_close()
 {
 	// free the persona data
 	if (Personas != NULL) {
-		free( Personas );
+		vm_free( Personas );
 		Personas = NULL;
 	}
 }

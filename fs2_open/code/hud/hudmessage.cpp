@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-29 07:03:16 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-05-12 17:49:12 $
+ * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/29 07:03:16  wmcoolmon
+ * Removed some warnings under Linux/GCC
+ *
  * Revision 2.10  2005/03/05 18:59:28  taylor
  * don't let hud messages walk off screen when res is GR_640
  *
@@ -1104,7 +1107,7 @@ void hud_add_line_to_scrollback(char *text, int source, int t, int x, int y, int
 	if ( EMPTY(&Msg_scrollback_free_list) ) {
 		new_line = GET_FIRST(&Msg_scrollback_used_list);
 		list_remove(&Msg_scrollback_used_list, new_line);
-		free(new_line->text);
+		vm_free(new_line->text);
 
 	} else {
 		new_line = GET_FIRST(&Msg_scrollback_free_list);
@@ -1116,7 +1119,7 @@ void hud_add_line_to_scrollback(char *text, int source, int t, int x, int y, int
 	new_line->underline_width = underline_width;
 	new_line->time = t;
 	new_line->source = source;
-	new_line->text = (char *) malloc( strlen(text) + 1 );
+	new_line->text = (char *) vm_malloc( strlen(text) + 1 );
 	strcpy(new_line->text, text);
 	list_append(&Msg_scrollback_used_list, new_line);
 }
@@ -1173,7 +1176,7 @@ void hud_free_scrollback_list()
 	A = GET_FIRST(&Msg_scrollback_used_list);
 	while( A !=END_OF_LIST(&Msg_scrollback_used_list) )	{
 		if ( A->text != NULL ) {
-			free(A->text);
+			vm_free(A->text);
 			A->text = NULL;
 		}
 

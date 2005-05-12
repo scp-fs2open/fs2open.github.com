@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.66 $
- * $Date: 2005-05-11 00:25:42 $
- * $Author: phreak $
+ * $Revision: 2.67 $
+ * $Date: 2005-05-12 17:49:14 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/05/11 00:25:42  phreak
+ * reverted a change that WMC made.  It made Goober mad and delayed the release of
+ * 3.6.6 by two months.
+ *
  * Revision 2.65  2005/04/25 00:26:53  wmcoolmon
  * Dynamically allocated engine washes; subsystem sounds
  *
@@ -1094,49 +1098,49 @@ void model_unload(int modelnum, int force)
 		for (i=0; i<pm->n_paths; i++ )	{
 			for (j=0; j<pm->paths[i].nverts; j++ )	{
 				if ( pm->paths[i].verts[j].turret_ids )	{
-					free(pm->paths[i].verts[j].turret_ids);
+					vm_free(pm->paths[i].verts[j].turret_ids);
 				}
 			}
 			if (pm->paths[i].verts)	{
-				free(pm->paths[i].verts);
+				vm_free(pm->paths[i].verts);
 			}
 		}
-		free(pm->paths);
+		vm_free(pm->paths);
 	}
 
 	if ( pm->shield.verts )	{
-		free( pm->shield.verts );
+		vm_free( pm->shield.verts );
 	}
 
 	if ( pm->shield.tris )	{
-		free(pm->shield.tris);
+		vm_free(pm->shield.tris);
 	}
 
 	if ( pm->missile_banks )	{
-		free(pm->missile_banks);
+		vm_free(pm->missile_banks);
 	}
 
 	if ( pm->docking_bays )	{
 		for (i=0; i<pm->n_docks; i++ )	{
 			if ( pm->docking_bays[i].splines )	{
-				free( pm->docking_bays[i].splines );
+				vm_free( pm->docking_bays[i].splines );
 			}
 		}
-		free(pm->docking_bays);
+		vm_free(pm->docking_bays);
 	}
 
 
 	if ( pm->thrusters )	{
-		free(pm->thrusters);
+		vm_free(pm->thrusters);
 	}
 
 	if ( pm->glows )	{ // free the glows!!! -Bobboau
-		free(pm->glows);
+		vm_free(pm->glows);
 	}
 
 #ifndef NDEBUG
 	if ( pm->debug_info )	{
-		free(pm->debug_info);
+		vm_free(pm->debug_info);
 	}
 #endif
 
@@ -1152,27 +1156,27 @@ void model_unload(int modelnum, int force)
 			}
 			
 			if ( pm->submodel[i].bsp_data )	{
-				free(pm->submodel[i].bsp_data);
+				vm_free(pm->submodel[i].bsp_data);
 			}
 		}
-		free(pm->submodel);
+		vm_free(pm->submodel);
 	}
 
 	if ( pm->xc ) {
-		free(pm->xc);
+		vm_free(pm->xc);
 	}
 
 	if ( pm->lights )	{
-		free(pm->lights);
+		vm_free(pm->lights);
 	}
 
 	if ( pm->gun_banks )	{
-		free(pm->gun_banks);
+		vm_free(pm->gun_banks);
 	}
 
 	pm->id = 0;
 	memset( pm, 0, sizeof(polymodel));
-	free( pm );
+	vm_free( pm );
 
 	Polygon_models[num] = NULL;	
 }
@@ -1789,7 +1793,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 //				mprintf(( "Num models = %d\n", pm->n_models ));
 #endif
 				
-				pm->submodel = (bsp_info *)malloc( sizeof(bsp_info)*pm->n_models );
+				pm->submodel = (bsp_info *)vm_malloc( sizeof(bsp_info)*pm->n_models );
 				Assert(pm->submodel != NULL );
 				memset( pm->submodel, 0, sizeof(bsp_info)*pm->n_models );
 
@@ -1867,7 +1871,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				if ( pm->version >= 2014 ) {
 					pm->num_xc = cfread_int(fp);
 					if (pm->num_xc > 0) {
-						pm->xc = (cross_section*) malloc(pm->num_xc*sizeof(cross_section));
+						pm->xc = (cross_section*) vm_malloc(pm->num_xc*sizeof(cross_section));
 						for (i=0; i<pm->num_xc; i++) {
 							pm->xc[i].z = cfread_float(fp);
 							pm->xc[i].radius = cfread_float(fp);
@@ -1881,7 +1885,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->num_lights = cfread_int(fp);
 					//mprintf(( "Found %d lights!\n", pm->num_lights ));
 
-					pm->lights = (bsp_light *)malloc( sizeof(bsp_light)*pm->num_lights );
+					pm->lights = (bsp_light *)vm_malloc( sizeof(bsp_light)*pm->num_lights );
 					for (i=0; i<pm->num_lights; i++ )	{			
 						cfread_vector(&pm->lights[i].pos,fp);
 						pm->lights[i].type = cfread_int(fp);
@@ -2036,7 +2040,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 				pm->submodel[n].bsp_data_size = cfread_int(fp);
 				if ( pm->submodel[n].bsp_data_size > 0 )	{
-					pm->submodel[n].bsp_data = (ubyte *)malloc(pm->submodel[n].bsp_data_size);
+					pm->submodel[n].bsp_data = (ubyte *)vm_malloc(pm->submodel[n].bsp_data_size);
 					cfread(pm->submodel[n].bsp_data,1,pm->submodel[n].bsp_data_size,fp);
 					swap_bsp_data( pm, pm->submodel[n].bsp_data );
 				} else {
@@ -2073,14 +2077,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					nverts = cfread_int( fp );		// get the number of vertices in the list
 					pm->shield.nverts = nverts;
-					pm->shield.verts = (shield_vertex *)malloc(nverts * sizeof(shield_vertex) );
+					pm->shield.verts = (shield_vertex *)vm_malloc(nverts * sizeof(shield_vertex) );
 					Assert( pm->shield.verts );
 					for ( i = 0; i < nverts; i++ )							// read in the vertex list
 						cfread_vector( &(pm->shield.verts[i].pos), fp );
 
 					ntris = cfread_int( fp );		// get the number of triangles that compose the shield
 					pm->shield.ntris = ntris;
-					pm->shield.tris = (shield_tri *)malloc(ntris * sizeof(shield_tri) );
+					pm->shield.tris = (shield_tri *)vm_malloc(ntris * sizeof(shield_tri) );
 					Assert( pm->shield.tris );
 					for ( i = 0; i < ntris; i++ ) {
 						cfread_vector( &(pm->shield.tris[i].norm), fp );
@@ -2108,7 +2112,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 			case ID_GPNT:
 				pm->n_guns = cfread_int(fp);
-				pm->gun_banks = (w_bank *)malloc(sizeof(w_bank) * pm->n_guns);
+				pm->gun_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_guns);
 				Assert( pm->gun_banks != NULL );
 
 				for (i = 0; i < pm->n_guns; i++ ) {
@@ -2125,7 +2129,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			
 			case ID_MPNT:
 				pm->n_missiles = cfread_int(fp);
-				pm->missile_banks = (w_bank *)malloc(sizeof(w_bank) * pm->n_missiles);
+				pm->missile_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_missiles);
 				Assert( pm->missile_banks != NULL );
 
 				for (i = 0; i < pm->n_missiles; i++ ) {
@@ -2144,7 +2148,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				char props[MAX_PROP_LEN];
 
 				pm->n_docks = cfread_int(fp);
-				pm->docking_bays = (dock_bay *)malloc(sizeof(dock_bay) * pm->n_docks);
+				pm->docking_bays = (dock_bay *)vm_malloc(sizeof(dock_bay) * pm->n_docks);
 				Assert( pm->docking_bays != NULL );
 
 				for (i = 0; i < pm->n_docks; i++ ) {
@@ -2158,7 +2162,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
 					bay->num_spline_paths = cfread_int( fp );
 					if ( bay->num_spline_paths > 0 ) {
-						bay->splines = (int *)malloc(sizeof(int) * bay->num_spline_paths);
+						bay->splines = (int *)vm_malloc(sizeof(int) * bay->num_spline_paths);
 						for ( j = 0; j < bay->num_spline_paths; j++ )
 							bay->splines[j] = cfread_int(fp);
 					} else {
@@ -2185,7 +2189,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				//
 				char props[MAX_PROP_LEN];
 				pm->n_glows = cfread_int(fp);
-				pm->glows = (glow_bank *)malloc(sizeof(glow_bank) * pm->n_glows);
+				pm->glows = (glow_bank *)vm_malloc(sizeof(glow_bank) * pm->n_glows);
 				Assert( pm->glows != NULL );
 
 				for (int q = 0; q < pm->n_glows; q++ ) {
@@ -2247,7 +2251,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			case ID_FUEL:
 				char props[MAX_PROP_LEN];
 				pm->n_thrusters = cfread_int(fp);
-				pm->thrusters = (thruster_bank *)malloc(sizeof(thruster_bank) * pm->n_thrusters);
+				pm->thrusters = (thruster_bank *)vm_malloc(sizeof(thruster_bank) * pm->n_thrusters);
 				Assert( pm->thrusters != NULL );
 
 				for (i = 0; i < pm->n_thrusters; i++ ) {
@@ -2434,7 +2438,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 /*			case ID_IDTA:		//Interpreter data
 				//mprintf(0,"Got chunk IDTA, len=%d\n",len);
 
-				pm->model_data = (ubyte *)malloc(len);
+				pm->model_data = (ubyte *)vm_malloc(len);
 				pm->model_data_size = len;
 				Assert(pm->model_data != NULL );
 			
@@ -2447,7 +2451,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				#ifndef NDEBUG
 					pm->debug_info_size = len;
-					pm->debug_info = (char *)malloc(pm->debug_info_size+1);
+					pm->debug_info = (char *)vm_malloc(pm->debug_info_size+1);
 					Assert(pm->debug_info!=NULL);
 					memset(pm->debug_info,0,len+1);
 					cfread( pm->debug_info, 1, len, fp );
@@ -2459,7 +2463,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 			case ID_PATH:
 				pm->n_paths = cfread_int( fp );
-				pm->paths = (model_path *)malloc(sizeof(model_path)*pm->n_paths);
+				pm->paths = (model_path *)vm_malloc(sizeof(model_path)*pm->n_paths);
 				Assert( pm->paths != NULL );
 					
 				for (i=0; i<pm->n_paths; i++ )	{
@@ -2485,7 +2489,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->paths[i].parent_submodel = -1;
 					}
 					pm->paths[i].nverts = cfread_int( fp );
-					pm->paths[i].verts = (mp_vert *)malloc( sizeof(mp_vert) * pm->paths[i].nverts );
+					pm->paths[i].verts = (mp_vert *)vm_malloc( sizeof(mp_vert) * pm->paths[i].nverts );
 					pm->paths[i].goal = pm->paths[i].nverts - 1;
 					pm->paths[i].type = MP_TYPE_UNUSED;
 					pm->paths[i].value = 0;
@@ -2499,7 +2503,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 							nturrets = cfread_int( fp );
 							pm->paths[i].verts[j].nturrets = nturrets;
-							pm->paths[i].verts[j].turret_ids = (int *)malloc( sizeof(int) * nturrets );
+							pm->paths[i].verts[j].turret_ids = (int *)vm_malloc( sizeof(int) * nturrets );
 							for ( k = 0; k < nturrets; k++ )
 								pm->paths[i].verts[j].turret_ids[k] = cfread_int( fp );
 						} 
@@ -2792,7 +2796,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	mprintf(( "Loading model '%s'\n", filename ));
 
-	polymodel * pm = (polymodel *)malloc( sizeof(polymodel) );
+	polymodel * pm = (polymodel *)vm_malloc( sizeof(polymodel) );
 	
 	Polygon_models[num] = pm;
 	

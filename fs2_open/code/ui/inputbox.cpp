@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-01-31 23:27:55 $
+ * $Revision: 2.6 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/31 23:27:55  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.4  2004/07/26 20:47:55  Kazan
  * remove MCD complete
  *
@@ -316,7 +319,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 	}
 
 	base_create( wnd, UI_KIND_INPUTBOX, _x, _y, _w, th+4 );
-	text = (char *) malloc( _text_len + 1);
+	text = (char *) vm_malloc( _text_len + 1);
 
 	// input boxes no longer use background
 	_flags |= UI_INPUTBOX_FLAG_NO_BACK;
@@ -324,7 +327,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 	// if its in "password" mode, allocate a second string
 	// and copy it
 	if (_flags & UI_INPUTBOX_FLAG_PASSWD) {
-		passwd_text = (char *) malloc(_text_len + 1);
+		passwd_text = (char *) vm_malloc(_text_len + 1);
 		memset(passwd_text, INPUTBOX_PASSWD_CHAR, strlen(_text));
 		passwd_text[strlen(_text)] = 0;
 
@@ -355,45 +358,45 @@ void UI_INPUTBOX::set_valid_chars(char *vchars)
 {
 	// free up any existing string
 	if(valid_chars != NULL){
-		free(valid_chars);
+		vm_free(valid_chars);
 		valid_chars = NULL;
 	}
 
-	valid_chars = strdup(vchars);
+	valid_chars = vm_strdup(vchars);
 }
 
 void UI_INPUTBOX::set_invalid_chars(char *ichars)
 {
 	// free up any existing string
 	if(invalid_chars != NULL){
-		free(invalid_chars);
+		vm_free(invalid_chars);
 		invalid_chars = NULL;
 	}
 	
-	invalid_chars = strdup(ichars);
+	invalid_chars = vm_strdup(ichars);
 }
 
 void UI_INPUTBOX::destroy()
 {
 	if (text) {
-		free(text);
+		vm_free(text);
 		text = NULL;
 	}
 
 	// free any valid chars
 	if(valid_chars != NULL){
-		free(valid_chars);
+		vm_free(valid_chars);
 		valid_chars = NULL;
 	}
 
 	// free any invalid chars
 	if(invalid_chars != NULL){
-		free(invalid_chars);
+		vm_free(invalid_chars);
 		invalid_chars = NULL;
 	}
 
 	if ((flags & UI_INPUTBOX_FLAG_PASSWD) && passwd_text) {
-		free(passwd_text);
+		vm_free(passwd_text);
 		passwd_text = NULL;
 	}
 

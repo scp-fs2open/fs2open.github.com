@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.49 $
+ * $Date: 2005-05-12 17:49:12 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.47  2005/03/10 08:00:05  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -1217,7 +1230,7 @@ void d3d_tcache_init()
 
 	DBUGFILE_OUTPUT_2("Max textures: %d %d",D3D_max_texture_width,D3D_max_texture_height);
 	
-	Textures = (tcache_slot_d3d *) malloc(MAX_BITMAPS * sizeof(tcache_slot_d3d));
+	Textures = (tcache_slot_d3d *) vm_malloc(MAX_BITMAPS * sizeof(tcache_slot_d3d));
 
 	if ( !Textures ) {
 		DBUGFILE_OUTPUT_0("exit");
@@ -1268,7 +1281,7 @@ void d3d_tcache_cleanup()
 	D3D_textures_in_frame = 0;
 
 	if ( Textures )	{
-		free(Textures);
+		vm_free(Textures);
 		Textures = NULL;
 	}
 }

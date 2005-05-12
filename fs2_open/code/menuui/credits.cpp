@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-02-23 04:51:56 $
+ * $Revision: 2.24 $
+ * $Date: 2005-05-12 17:49:13 $
  * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/02/23 04:51:56  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.22  2005/02/14 23:54:11  taylor
  * make loading screen shader a bit taller
  * add i.o to credits for Linux and OSX code
@@ -546,7 +549,7 @@ void credits_init()
 	if(fp != NULL){
 		int size;
 		size = cfilelength(fp);
-		Credit_text = (char *) malloc(size + 200 + strlen(fs2_open_credit_text) + strlen(unmodified_credits));
+		Credit_text = (char *) vm_malloc(size + 200 + strlen(fs2_open_credit_text) + strlen(unmodified_credits));
 		if (Credit_text == NULL) {
 			return;
 		} else {
@@ -782,7 +785,7 @@ void credits_close()
 
 	if (Credit_text) {
 		if (Credit_text_malloced){
-			free(Credit_text);
+			vm_free(Credit_text);
 		}
 
 		Credit_text = NULL;

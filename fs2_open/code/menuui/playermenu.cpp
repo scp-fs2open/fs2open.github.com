@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-04-12 19:22:48 $
+ * $Revision: 2.22 $
+ * $Date: 2005-05-12 17:49:13 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/04/12 19:22:48  taylor
+ * more demo support (Jens Granseuer)
+ *
  * Revision 2.20  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1675,7 +1678,7 @@ void player_tips_close()
 
 	for (i=0; i<MAX_PLAYER_TIPS; i++) {
 		if (Player_tips[i] != NULL) {
-			free(Player_tips[i]);
+			vm_free(Player_tips[i]);
 			Player_tips[i] = NULL;
 		}
 	}

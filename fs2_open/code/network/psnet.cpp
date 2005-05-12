@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-02 21:18:20 $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-12 17:49:15 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.7  2005/01/31 23:27:55  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -2568,7 +2573,7 @@ int psnet_reliable_init()
 	// initialize all outgoing buffers
 	for(idx=0;idx<PSNET_RELIABLE_NUM_OUT_BUFFERS;idx++){
 		Psnet_reliable_out[idx] = NULL;
-		Psnet_reliable_out[idx] = (reliable_packet_out*)malloc(sizeof(reliable_packet_out));
+		Psnet_reliable_out[idx] = (reliable_packet_out*)vm_malloc(sizeof(reliable_packet_out));
 
 		// if we failed to allocate the buffer, return failure
 		if(Psnet_reliable_out[idx] == NULL){
@@ -2581,7 +2586,7 @@ int psnet_reliable_init()
 	// initialize all incoming buffers
 	for(idx=0;idx<PSNET_RELIABLE_NUM_IN_BUFFERS;idx++){
 		Psnet_reliable_in[idx] = NULL;
-		Psnet_reliable_in[idx] = (reliable_packet_in*)malloc(sizeof(reliable_packet_in));
+		Psnet_reliable_in[idx] = (reliable_packet_in*)vm_malloc(sizeof(reliable_packet_in));
 
 		// if we failed to allocate the buffer, return failure
 		if(Psnet_reliable_in[idx] == NULL){
@@ -2840,7 +2845,7 @@ void psnet_reliable_free_all_buffers()
 	for(idx=0;idx<PSNET_RELIABLE_NUM_OUT_BUFFERS;idx++){
 		// if the buffer is not null, free it
 		if(Psnet_reliable_out[idx] != NULL){
-			free(Psnet_reliable_out[idx]);
+			vm_free(Psnet_reliable_out[idx]);
 			Psnet_reliable_out[idx] = NULL;
 		}
 	}
@@ -2849,7 +2854,7 @@ void psnet_reliable_free_all_buffers()
 	for(idx=0;idx<PSNET_RELIABLE_NUM_IN_BUFFERS;idx++){
 		// if the buffer is not null, free it
 		if(Psnet_reliable_in[idx] != NULL){
-			free(Psnet_reliable_in[idx]);
+			vm_free(Psnet_reliable_in[idx]);
 			Psnet_reliable_in[idx] = NULL;
 		}
 	}

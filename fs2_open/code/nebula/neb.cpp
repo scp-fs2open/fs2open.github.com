@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-04-25 00:27:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.37 $
+ * $Date: 2005-05-12 17:49:15 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/04/25 00:27:32  wmcoolmon
+ * Commented out unneeded array (Glide)
+ *
  * Revision 2.35  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -612,7 +615,7 @@ void neb2_level_init()
 			{
 				bool loaded = false;
 				Neb2_max_fog_value = width * height;
-				Neb2_htl_fog_data = (ubyte *) malloc(Neb2_max_fog_value * 4);
+				Neb2_htl_fog_data = (ubyte *) vm_malloc(Neb2_max_fog_value * 4);
 
 				if(Neb2_htl_fog_data)
 				{
@@ -644,7 +647,7 @@ void neb2_level_init()
 					}
 					else 
 					{
-						free(Neb2_htl_fog_data);
+						vm_free(Neb2_htl_fog_data);
 						Neb2_htl_fog_data = NULL;
 					}
 				}
@@ -708,7 +711,7 @@ void neb2_level_close()
 
 	if(Neb2_htl_fog_data)
 	{
-		free(Neb2_htl_fog_data);
+		vm_free(Neb2_htl_fog_data);
 		Neb2_htl_fog_data = NULL;
 	}
 }

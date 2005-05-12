@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.114  2005/05/08 20:20:06  wmcoolmon
+ * armor.tbl revamp
+ *
  * Revision 2.113  2005/05/01 23:40:44  phreak
  * bumped MAX_SPAWN_WEAPONS to 30 for inferno builds
  *
@@ -1286,7 +1289,7 @@ int parse_weapon(int subtype, bool replace)
 	wip->desc = NULL;
 	if (optional_string("+Description:")) {
 		stuff_string(buf, F_MULTITEXT, NULL);
-		wip->desc = strdup(buf);
+		wip->desc = vm_strdup(buf);
 	}
 
 	wip->tech_title[0] = 0;
@@ -1302,7 +1305,7 @@ int parse_weapon(int subtype, bool replace)
 	wip->tech_desc = NULL;
 	if (optional_string("+Tech Description:")) {
 		stuff_string(buf, F_MULTITEXT, NULL, WEAPONS_MULTITEXT_LENGTH);
-		wip->tech_desc = strdup(buf);
+		wip->tech_desc = vm_strdup(buf);
 	}
 
 	if(optional_string("$Tech Model:"))
@@ -5423,8 +5426,8 @@ int weapon_get_expl_handle(int weapon_expl_index, vec3d *pos, float size)
 
 void weapons_info_close(){
 	for(int i = 0; i<MAX_WEAPON_TYPES; i++){
-		if(Weapon_info[i].desc)free(Weapon_info[i].desc);
-		if(Weapon_info[i].tech_desc)free(Weapon_info[i].tech_desc);
+		if(Weapon_info[i].desc)vm_free(Weapon_info[i].desc);
+		if(Weapon_info[i].tech_desc)vm_free(Weapon_info[i].tech_desc);
 	}
 
 	if (used_weapons != NULL) {

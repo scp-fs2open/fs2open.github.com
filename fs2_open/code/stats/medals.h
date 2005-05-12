@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.4 $
- * $Date: 2005-05-08 20:20:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2005-05-12 17:49:17 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/05/08 20:20:46  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 2.3  2004/08/11 05:06:35  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -93,13 +96,14 @@ typedef struct medal_stuff {
 	char	bitmap[NAME_LENGTH];
 	int	num_versions;
 	int	kills_needed;
+	int i;
 
 	//If this is a badge (kills_needed > 1)
 	char voice_base[MAX_FILENAME_LEN];
 	char *promotion_text;
 
-	medal_stuff(){name[0]='\0';bitmap[0]='\0';num_versions=1;kills_needed=0;voice_base[0]='\0';promotion_text=NULL;}
-	~medal_stuff(){if(promotion_text != NULL)free(promotion_text);}
+	medal_stuff(){name[0]='\0';bitmap[0]='\0';num_versions=1;kills_needed=0;i=0;voice_base[0]='\0';promotion_text=NULL;}
+	~medal_stuff(){if(promotion_text != NULL)vm_free(promotion_text);}
 } medal_stuff;
 /*
 typedef struct badge_stuff {
@@ -107,7 +111,7 @@ typedef struct badge_stuff {
 	char *promotion_text;
 
 	badge_stuff(){voice_base[0]='\0';promotion_text=NULL;}
-	~badge_stuff(){if(promotion_text != NULL)free(promotion_text);};
+	~badge_stuff(){if(promotion_text != NULL)vm_free(promotion_text);};
 } badge_stuff;
 */
 

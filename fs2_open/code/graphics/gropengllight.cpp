@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 1.16 $
+ * $Date: 2005-05-12 17:49:12 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 1.14  2005/04/15 11:42:27  taylor
  * fix ambient light
  *
@@ -336,7 +349,7 @@ void opengl_init_light()
 
 	// allocate memory for enabled lights
 	Verify(GL_max_lights > 0);
-	currently_enabled_lights = (int*)malloc(GL_max_lights * sizeof(int));
+	currently_enabled_lights = (int*)vm_malloc(GL_max_lights * sizeof(int));
 
 	if (currently_enabled_lights == NULL)
 		Error( LOCATION, "Unable to allocate memory for lights!\n");

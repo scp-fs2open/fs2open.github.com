@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-04-25 06:36:01 $
+ * $Revision: 2.17 $
+ * $Date: 2005-05-12 17:49:13 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/04/25 06:36:01  taylor
+ * use full size of Campaign_missions[] for simroom filtering, fixes the problem of campaign
+ *   missions still showing up in the single list even after filtering
+ *
  * Revision 2.15  2005/03/27 06:12:38  taylor
  * some pilot file fixing when going between multi and single (partial fix)
  *
@@ -557,14 +561,14 @@ int campaign_room_campaign_filter(char *filename)
 	if ( mission_campaign_get_info(filename, name, &type, &max_players, &desc) ) {
 	#endif
 		if ( type == CAMPAIGN_TYPE_SINGLE ) {			
-			Campaign_file_names_temp[Num_campaigns] = strdup(filename);
+			Campaign_file_names_temp[Num_campaigns] = vm_strdup(filename);
 			Campaign_descs_temp[Num_campaigns++] = desc;
 			return 1;			
 		}
 	}
 
 	if (desc){
-		free(desc);
+		vm_free(desc);
 	}
 
 	return 0;
@@ -635,7 +639,7 @@ int build_standalone_mission_list_do_frame()
 			// tack on an extension
 			strcat(filename, FS_MISSION_FILE_EXT);
 			if (!get_mission_info(filename)) {			
-				Standalone_mission_names[Num_standalone_missions_with_info] = strdup(The_mission.name);
+				Standalone_mission_names[Num_standalone_missions_with_info] = vm_strdup(The_mission.name);
 				Standalone_mission_flags[Num_standalone_missions_with_info] = The_mission.game_type;
 				int y = Num_lines * (font_height + 2);
 
@@ -693,7 +697,7 @@ int build_campaign_mission_list_do_frame()
 		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name)) 
 		{
 			// add to list
-			Campaign_mission_names[Num_campaign_missions_with_info] = strdup(The_mission.name);
+			Campaign_mission_names[Num_campaign_missions_with_info] = vm_strdup(The_mission.name);
 			Campaign_mission_flags[Num_campaign_missions_with_info] = The_mission.game_type;
 			int y = Num_campaign_missions_with_info * (font_height + 2);
 
@@ -1236,7 +1240,7 @@ void sim_room_close()
 
 	for (i=0; i<Num_campaign_missions; i++) {
 		if (Campaign_missions[i]) {
-			free(Campaign_missions[i]);
+			vm_free(Campaign_missions[i]);
 			Campaign_missions[i] = NULL;
 		}
 	}
@@ -1247,7 +1251,7 @@ void sim_room_close()
 	if (Standalone_mission_names_inited){
 		for (i=0; i<Num_standalone_missions; i++){
 			if (Standalone_mission_names[i] != NULL){
-				free(Standalone_mission_names[i]);
+				vm_free(Standalone_mission_names[i]);
 				Standalone_mission_names[i] = NULL;
 			}
 			Standalone_mission_flags[i] = 0;
@@ -1257,7 +1261,7 @@ void sim_room_close()
 	if (Campaign_names_inited) {
 		for (i=0; i<Num_campaigns; i++) {
 			if (Campaign_names[i] != NULL) {
-				free(Campaign_names[i]);
+				vm_free(Campaign_names[i]);
 				Campaign_names[i] = NULL;
 			}
 		}
@@ -1266,19 +1270,19 @@ void sim_room_close()
 	if (Campaign_mission_names_inited) {
 		for (i=0; i<Campaign.num_missions; i++) {
 			if (Campaign_mission_names[i]) {
-				free(Campaign_mission_names[i]);
+				vm_free(Campaign_mission_names[i]);
 				Campaign_mission_names[i] = NULL;
 			}
 		}
 	}
 
 	for (i=0; i<Num_campaigns; i++) {
-		free(Campaign_file_names[i]);
+		vm_free(Campaign_file_names[i]);
 		Campaign_file_names[i] = NULL;
 	}
 
 	for (i=0; i<Num_standalone_missions; i++) {
-		free(Mission_filenames[i]);
+		vm_free(Mission_filenames[i]);
 		Mission_filenames[i] = NULL;
 	}
 
@@ -1597,11 +1601,11 @@ void campaign_room_build_listing()
 				if((game_find_builtin_mission(name) == NULL) && !strstr(name, "peterdrake")){
 					continue;
 				} else {
-					Campaign_names[i] = strdup(name);
+					Campaign_names[i] = vm_strdup(name);
 				}
 #else
 				if (type == CAMPAIGN_TYPE_SINGLE){
-					Campaign_names[i] = strdup(name);
+					Campaign_names[i] = vm_strdup(name);
 				}
 #endif
 			}
@@ -1672,7 +1676,7 @@ int campaign_room_reset_campaign(int n)
 	// z = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_CANCEL, POPUP_OK, XSTR( "Warning\nThis will cause all progress in your\ncurrent campaign to be lost", 110), Campaign_names[n]);
 	z = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_CANCEL, POPUP_OK, XSTR( "Warning\nThis will cause all progress in your\ncurrent campaign to be lost", 110));
 	if (z == 1) {
-		filename = (char *) malloc(strlen(Campaign_file_names[n]) + 5);
+		filename = (char *) vm_malloc(strlen(Campaign_file_names[n]) + 5);
 		strcpy(filename, Campaign_file_names[n]);
 		strcat(filename, FS_CAMPAIGN_FILE_EXT);
 
@@ -1856,7 +1860,7 @@ void campaign_room_init()
 			if (Campaign_file_names_temp[j]) {
 				if (!strncmp(Campaign_file_names[i], Campaign_file_names_temp[j], strlen(Campaign_file_names_temp[j]) - 4)) {
 					Campaign_descs[i] = Campaign_descs_temp[j];
-					free(Campaign_file_names_temp[j]);
+					vm_free(Campaign_file_names_temp[j]);
 					Campaign_file_names_temp[j] = NULL;
 					break;
 				}
@@ -1886,7 +1890,7 @@ void campaign_room_close()
 
 	for (i=0; i<Num_campaigns; i++)
 		if (Campaign_descs[i])
-			free(Campaign_descs[i]);
+			vm_free(Campaign_descs[i]);
 
 	if (Background_bitmap >= 0)
 		bm_release(Background_bitmap);
@@ -1894,10 +1898,10 @@ void campaign_room_close()
 	if (Campaign_names_inited)
 		for (i=0; i<Num_campaigns; i++)
 			if (Campaign_names[i])
-				free(Campaign_names[i]);
+				vm_free(Campaign_names[i]);
 
 	for (i=0; i<Num_campaigns; i++)
-		free(Campaign_file_names[i]);
+		vm_free(Campaign_file_names[i]);
 
 	// unload the overlay bitmap
 	help_overlay_unload(CAMPAIGN_ROOM_OVERLAY);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/Popup.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-01-31 10:34:39 $
+ * $Revision: 2.7 $
+ * $Date: 2005-05-12 17:49:16 $
  * $Author: taylor $
  *
  * Code for displaying pop-up dialog boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/31 10:34:39  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.5  2004/07/26 20:47:49  Kazan
  * remove MCD complete
  *
@@ -755,7 +758,7 @@ void popup_close(popup_info *pi, int screen_id)
 
 	for (i=0; i<pi->nchoices; i++ )	{
 		if ( pi->button_text[i] != NULL ) {
-			free(pi->button_text[i]);
+			vm_free(pi->button_text[i]);
 			pi->button_text[i] = NULL;
 		}
 	}
@@ -1133,7 +1136,7 @@ void popup_maybe_assign_keypress(popup_info *pi, int n, char *str)
 
 	len=strlen(str)+1;
 
-	pi->button_text[n] = (char*)malloc(len);
+	pi->button_text[n] = (char*)vm_malloc(len);
 	memset(pi->button_text[n], 0, len);
 
 	j=0;

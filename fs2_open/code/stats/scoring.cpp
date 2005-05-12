@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-05-08 20:20:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10 $
+ * $Date: 2005-05-12 17:49:17 $
+ * $Author: taylor $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/05/08 20:20:46  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 2.8  2005/03/02 21:24:47  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -299,7 +302,7 @@ void parse_rank_tbl()
 		stuff_string(buf, F_MULTITEXT, NULL);
 		drop_white_space(buf);
 		compact_multitext_string(buf);
-		Ranks[idx].promotion_text = strdup(buf);
+		Ranks[idx].promotion_text = vm_strdup(buf);
 		idx++;
 	}
 
@@ -1295,6 +1298,6 @@ void scoreing_close()
 {
 	for(int i = 0; i<NUM_RANKS; i++) {
 		if(Ranks[i].promotion_text)
-			free(Ranks[i].promotion_text);
+			vm_free(Ranks[i].promotion_text);
 	}
 }

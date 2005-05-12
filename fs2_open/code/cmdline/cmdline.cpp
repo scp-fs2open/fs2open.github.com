@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.102 $
- * $Date: 2005-05-01 07:13:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.103 $
+ * $Date: 2005-05-12 17:49:10 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2005/05/01 07:13:59  wmcoolmon
+ * -output_sexps command line
+ *
  * Revision 2.101  2005/04/15 11:41:27  taylor
  * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
  *
@@ -2005,7 +2008,7 @@ int parse_cmdline(int argc, char *argv[])
 		int i;
 		int len = 1;
 
-		argptr = (char *)malloc(1);
+		argptr = (char *)vm_malloc(1);
 		*argptr = 0;
 
 		for (i = 1; i < argc; i++) {
@@ -2013,7 +2016,7 @@ int parse_cmdline(int argc, char *argv[])
 
 			len += strlen(argv[i])+1;
 
-			argptr = (char *)realloc(argptr, len);
+			argptr = (char *)vm_realloc(argptr, len);
 			if (argptr == NULL) {
 				fprintf(stderr, "ERROR: out of memory in parse_cmdline!\n");
 				exit(1);
@@ -2025,7 +2028,7 @@ int parse_cmdline(int argc, char *argv[])
 		os_init_cmdline(argptr);
 
 		if (argptr != NULL) {
-			free(argptr);
+			vm_free(argptr);
 			argptr = NULL;
 		}
    #endif

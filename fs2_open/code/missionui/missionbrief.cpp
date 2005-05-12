@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.25 $
+ * $Date: 2005-05-12 17:49:14 $
  * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.23  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1194,18 +1197,18 @@ void brief_compact_stages()
 		result = eval_sexp( Briefing->stages[num].formula );
 		if ( !result ) {
 			if ( Briefing->stages[num].new_text != NULL ) {
-				free( Briefing->stages[num].new_text );
+				vm_free( Briefing->stages[num].new_text );
 				Briefing->stages[num].new_text = NULL;
 			}
 
 			if ( Briefing->stages[num].icons != NULL ) {
-				free( Briefing->stages[num].icons );
+				vm_free( Briefing->stages[num].icons );
 				Briefing->stages[num].icons = NULL;
 			}
 
 
 			if ( Briefing->stages[num].lines != NULL ) {
-				free( Briefing->stages[num].lines );
+				vm_free( Briefing->stages[num].lines );
 				Briefing->stages[num].lines = NULL;
 			}
 

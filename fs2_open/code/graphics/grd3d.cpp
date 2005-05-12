@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.81 $
- * $Date: 2005-04-05 05:53:16 $
+ * $Revision: 2.82 $
+ * $Date: 2005-05-12 17:49:12 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/04/05 05:53:16  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.80  2005/03/07 13:10:20  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -1695,7 +1698,7 @@ void gr_d3d_dump_frame_start(int first_frame, int frames_between_dumps)
 	
 	if ( !D3d_dump_buffer ) {
 		int size = D3d_dump_frame_count_max * D3d_dump_frame_size;
-		D3d_dump_buffer = (ubyte *)malloc(size);
+		D3d_dump_buffer = (ubyte *)vm_malloc(size);
 		if ( !D3d_dump_buffer )	{
 			Error(LOCATION, "Unable to malloc %d bytes for dump buffer", size );
 		}
@@ -1769,7 +1772,7 @@ void gr_d3d_dump_frame_stop()
 	
 	D3d_dump_frames = 0;
 	if ( D3d_dump_buffer )	{
-		free(D3d_dump_buffer);
+		vm_free(D3d_dump_buffer);
 		D3d_dump_buffer = NULL;
 	}
 }

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-05-08 20:20:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-05-12 17:49:17 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/05/08 20:20:46  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 2.10  2005/02/23 04:57:29  taylor
  * even more bm_unload() -> bm_release() changes
  *
@@ -406,7 +409,7 @@ void parse_medal_tbl()
 
 			required_string("$Promotion Text:");
 			stuff_string(buf, F_MULTITEXT, NULL);
-			temp_medal.promotion_text = strdup(buf);
+			temp_medal.promotion_text = vm_strdup(buf);
 		}
 		Medals.push_back(temp_medal);
 	}
@@ -436,7 +439,7 @@ void parse_medal_tbl()
 //badge_stuff has a deconstructor
 /*
 void medal_close(){
-	for(int i = 0; i<MAX_BADGES; i++)if(Badge_info[i].promotion_text)free(Badge_info[i].promotion_text);
+	for(int i = 0; i<MAX_BADGES; i++)if(Badge_info[i].promotion_text)vm_free(Badge_info[i].promotion_text);
 }*/
 
 void medal_main_init(player *pl, int mode)

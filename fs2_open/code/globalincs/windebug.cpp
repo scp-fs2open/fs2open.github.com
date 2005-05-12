@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-03-08 04:41:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-05-12 17:49:12 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/03/08 04:41:39  Goober5000
+ * whoops
+ *
  * Revision 2.18  2005/03/08 03:50:25  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -434,7 +437,7 @@ void InitSymbols()
 {
 	Num_symbols = 0;
 	Max_symbols = 5000;
-	Symbols = (MemSymbol *)malloc(Max_symbols*sizeof(MemSymbol));
+	Symbols = (MemSymbol *)vm_malloc(Max_symbols*sizeof(MemSymbol));
 	if ( !Symbols )	{
 		Max_symbols = 0;
 	}
@@ -524,7 +527,7 @@ void DumpSymbols()
 
 	fclose(fp);
 	
-	free( Symbols );
+	vm_free( Symbols );
 	Symbols = NULL;
 	_asm int 3
 }
@@ -1503,9 +1506,9 @@ void unregister_malloc(char *filename, int size, void *ptr)
 #endif
 
 #ifndef NDEBUG
-void *vm_malloc( int size, char *filename, int line )
+void *_vm_malloc( int size, char *filename, int line )
 #else
-void *vm_malloc( int size )
+void *_vm_malloc( int size )
 #endif
 {
 	void *ptr = NULL;
@@ -1546,18 +1549,15 @@ void *vm_malloc( int size )
 }
 
 #ifndef NDEBUG
-char *vm_strdup( const char *ptr, char *filename, int line )
+char *_vm_strdup( const char *ptr, char *filename, int line )
 #else
-char *vm_strdup( const char *ptr )
+char *_vm_strdup( const char *ptr )
 #endif
 {
 	char *dst;
 	int len = strlen(ptr);
-	#ifndef NDEBUG
-		dst = (char *)vm_malloc( len+1, filename, line );
-	#else
-		dst = (char *)vm_malloc( len+1 );
-	#endif
+
+	dst = (char *)vm_malloc( len+1 );
 
 	if (!dst)
 		return NULL;
@@ -1567,9 +1567,9 @@ char *vm_strdup( const char *ptr )
 }
 
 #ifndef NDEBUG
-void vm_free( void *ptr, char *filename, int line )
+void _vm_free( void *ptr, char *filename, int line )
 #else
-void vm_free( void *ptr )
+void _vm_free( void *ptr )
 #endif
 {
 	if ( !ptr ) {
@@ -1612,19 +1612,14 @@ void vm_free_all()
 }
 
 #ifndef NDEBUG
-void *vm_realloc( void *ptr, int size, char *filename, int line )
+void *_vm_realloc( void *ptr, int size, char *filename, int line )
 #else
-void *vm_realloc( void *ptr, int size )
+void *_vm_realloc( void *ptr, int size )
 #endif
 {
 	// if this is the first time it's used then we need to malloc it first
-	if ( ptr == NULL ) {
-#ifndef NDEBUG
-		return vm_malloc(size, filename, line);
-#else
+	if ( ptr == NULL )
 		return vm_malloc(size);
-#endif
-	}
 
 	void *ret_ptr = NULL;
 

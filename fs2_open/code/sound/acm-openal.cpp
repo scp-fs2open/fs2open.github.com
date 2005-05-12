@@ -4,13 +4,20 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/acm-openal.cpp $
- * $Revision: 2.1 $
- * $Date: 2005-04-05 11:48:22 $
+ * $Revision: 2.2 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  * OS independant ADPCM decoder
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2005/04/05 11:48:22  taylor
+ * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
+ * better error handling for OpenAL functions
+ * Windows can now build properly with OpenAL
+ * extra check to make sure we don't try and use too many hardware bases sources
+ * fix memory error from OpenAL extension list in certain instances
+ *
  *
  * $NoKeywords: $
  */
@@ -291,17 +298,17 @@ static uint read_sample_fmt_adpcm(ubyte *data, HMMIO rw, adpcm_fmt_t *fmt)
 static void adpcm_memory_free(adpcm_fmt_t *fmt)
 {
 	if (fmt->adpcm.aCoef != NULL) {
-		free(fmt->adpcm.aCoef);
+		vm_free(fmt->adpcm.aCoef);
 		fmt->adpcm.aCoef = NULL;
 	}
 	
 	if (fmt->header != NULL) {
-		free(fmt->header);
+		vm_free(fmt->header);
 		fmt->header = NULL;
 	}
 	
 	if (fmt != NULL) {
-		free(fmt);
+		vm_free(fmt);
 		fmt = NULL;
 	}
 }
@@ -369,14 +376,14 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 
 	// DO NOT free() here, *estimated size*
 	if ( *dest == NULL ) {
-		*dest = (ubyte *)malloc(new_size);
+		*dest = (ubyte *)vm_malloc(new_size);
 		
 		IF_ERR(*dest == NULL, -1);
 		
 		memset(*dest, 0x00, new_size);	// silence (for 16 bits/sec which will be our output)
 	}
 
-	adpcm_fmt_t *fmt = (adpcm_fmt_t *)malloc(sizeof(adpcm_fmt_t));
+	adpcm_fmt_t *fmt = (adpcm_fmt_t *)vm_malloc(sizeof(adpcm_fmt_t));
 	IF_ERR(fmt == NULL, -1);
 	memset(fmt, '\0', sizeof(adpcm_fmt_t));
 
@@ -393,7 +400,7 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	IF_ERR(!read_word_s(hdr, &fmt->adpcm.wNumCoef), -1);
 
 	// allocate memory for COEF struct and fill it
-	fmt->adpcm.aCoef = (ADPCMCOEFSET *)malloc(sizeof(ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
+	fmt->adpcm.aCoef = (ADPCMCOEFSET *)vm_malloc(sizeof(ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
 	IF_ERR(fmt->adpcm.aCoef == NULL, -1);
 
 	for (int i=0; i<fmt->adpcm.wNumCoef; i++) {
@@ -402,7 +409,7 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	}
 
 	// allocate memory for the ADPCM block header that's to be filled later
-	fmt->header = (ADPCMBLOCKHEADER *)malloc(sizeof(ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
+	fmt->header = (ADPCMBLOCKHEADER *)vm_malloc(sizeof(ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
 	IF_ERR(fmt->header == NULL, -1);
 
 	// buffer to estimated size since we have to process the whole thing at once
@@ -471,7 +478,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 			return -1;
 	}
 
-	adpcm_fmt_t *fmt = (adpcm_fmt_t *)malloc(sizeof(adpcm_fmt_t));
+	adpcm_fmt_t *fmt = (adpcm_fmt_t *)vm_malloc(sizeof(adpcm_fmt_t));
 	IF_ERR(fmt == NULL, -1);
 	memset(fmt, '\0', sizeof(adpcm_fmt_t));
 
@@ -488,7 +495,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	IF_ERR(!read_word_s(hdr, &fmt->adpcm.wNumCoef), -1);
 
 	// allocate memory for COEF struct and fill it
-	fmt->adpcm.aCoef = (ADPCMCOEFSET *)malloc(sizeof(ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
+	fmt->adpcm.aCoef = (ADPCMCOEFSET *)vm_malloc(sizeof(ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
 	IF_ERR(fmt->adpcm.aCoef == NULL, -1);
 
 	for (int i=0; i<fmt->adpcm.wNumCoef; i++) {
@@ -497,7 +504,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	}
 
 	// allocate memory for the ADPCM block header that's to be filled later
-	fmt->header = (ADPCMBLOCKHEADER *)malloc(sizeof(ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
+	fmt->header = (ADPCMBLOCKHEADER *)vm_malloc(sizeof(ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
 	IF_ERR(fmt->header == NULL, -1);
 
 	// sanity check, should always be 4
@@ -510,7 +517,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 
 	fmt->sample_frame_size = dest_bps/8*pwfxSrc->nChannels;
 	
-	acm_stream_t *str = (acm_stream_t *)malloc(sizeof(acm_stream_t));
+	acm_stream_t *str = (acm_stream_t *)vm_malloc(sizeof(acm_stream_t));
 	IF_ERR(str == NULL, -1);
 	str->fmt = fmt;
 	str->dest_bps = dest_bps;
@@ -528,7 +535,7 @@ int ACM_stream_close(void *stream)
 	Assert(stream != NULL);
 	acm_stream_t *str = (acm_stream_t *)stream;
 	adpcm_memory_free(str->fmt);
-	free(str);
+	vm_free(str);
 
 	return 0;
 }

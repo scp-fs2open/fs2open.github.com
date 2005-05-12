@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-01-30 12:50:08 $
+ * $Revision: 2.26 $
+ * $Date: 2005-05-12 17:49:10 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/01/30 12:50:08  taylor
+ * merge with Linux/OSX tree - p0130
+ *
  * Revision 2.24  2004/11/21 11:27:31  taylor
  * some 64-bit OS comaptibility fixes
  *
@@ -283,7 +286,7 @@ cf_file *cf_create_file()
 	int offset = Num_files % CF_NUM_FILES_PER_BLOCK;
 	
 	if ( File_blocks[block] == NULL )	{
-		File_blocks[block] = (cf_file_block *)malloc( sizeof(cf_file_block) );
+		File_blocks[block] = (cf_file_block *)vm_malloc( sizeof(cf_file_block) );
 		Assert( File_blocks[block] != NULL);
 	}
 
@@ -314,7 +317,7 @@ cf_root *cf_create_root()
 	int offset = Num_roots % CF_NUM_ROOTS_PER_BLOCK;
 	
 	if ( Root_blocks[block] == NULL )	{
-		Root_blocks[block] = (cf_root_block *)malloc( sizeof(cf_root_block) );
+		Root_blocks[block] = (cf_root_block *)vm_malloc( sizeof(cf_root_block) );
 		Assert(Root_blocks[block] != NULL);
 	}
 
@@ -415,7 +418,7 @@ void cf_build_pack_list( cf_root *root )
 	}
 
 	// allocate a temporary array of temporary roots so we can easily sort them
-	temp_roots_sort = (cf_root_sort*)malloc(sizeof(cf_root_sort) * temp_root_count);
+	temp_roots_sort = (cf_root_sort*)vm_malloc(sizeof(cf_root_sort) * temp_root_count);
 	if(temp_roots_sort == NULL){
 		Int3();
 		return;
@@ -517,7 +520,7 @@ void cf_build_pack_list( cf_root *root )
 	}
 
 	// free up the temp list
-	free(temp_roots_sort);
+	vm_free(temp_roots_sort);
 }
 
 
@@ -582,7 +585,7 @@ void cf_build_root_list(char *cdrom_dir)
 		{
 			
 			//strdup was not behaving reliably
-			//str_temp = strdup(cur_pos);
+			//str_temp = vm_strdup(cur_pos);
 
 			memset(str_temp, 0, 128);
 			strcpy(str_temp, cur_pos);
@@ -937,7 +940,7 @@ void cf_free_secondary_filelist()
 	// Free the root blocks
 	for (i=0; i<CF_MAX_ROOT_BLOCKS; i++ )	{
 		if ( Root_blocks[i] )	{
-			free( Root_blocks[i] );
+			vm_free( Root_blocks[i] );
 			Root_blocks[i] = NULL;
 		}
 	}
@@ -946,7 +949,7 @@ void cf_free_secondary_filelist()
 	// Init the file blocks	
 	for (i=0; i<CF_MAX_FILE_BLOCKS; i++ )	{
 		if ( File_blocks[i] )	{
-			free( File_blocks[i] );
+			vm_free( File_blocks[i] );
 			File_blocks[i] = NULL;
 		}
 	}
@@ -1235,7 +1238,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 	Assert(list);
 
 	if (!info && (sort == CF_SORT_TIME)) {
-		info = (file_list_info *) malloc(sizeof(file_list_info) * max);
+		info = (file_list_info *) vm_malloc(sizeof(file_list_info) * max);
 		own_flag = 1;
 	}
 
@@ -1262,7 +1265,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 					else
 						l = strlen(find.name);
 
-					list[num_files] = (char *)malloc(l + 1);
+					list[num_files] = (char *)vm_malloc(l + 1);
 					strncpy(list[num_files], find.name, l);
 					list[num_files][l] = 0;
 					if (info)
@@ -1313,7 +1316,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 				else
 					l = strlen(dir->d_name);
 
-				list[num_files] = (char *)malloc(l + 1);
+				list[num_files] = (char *)vm_malloc(l + 1);
 				strncpy(list[num_files], dir->d_name, l);
 				list[num_files][l] = 0;
 				if (info)
@@ -1358,7 +1361,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 					else
 						l = strlen(f->name_ext);
 
-					list[num_files] = (char *)malloc(l + 1);
+					list[num_files] = (char *)vm_malloc(l + 1);
 					strncpy(list[num_files], f->name_ext, l);
 					list[num_files][l] = 0;
 
@@ -1378,7 +1381,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 	}
 
 	if (own_flag)	{
-		free(info);
+		vm_free(info);
 	}
 
 	Get_file_list_filter = NULL;
@@ -1429,8 +1432,10 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	}
 
 	if (!info && (sort == CF_SORT_TIME)) {
-		info = (file_list_info *) malloc(sizeof(file_list_info) * max);
-		own_flag = 1;
+		info = (file_list_info *) vm_malloc(sizeof(file_list_info) * max);
+
+		if ( info )
+			own_flag = 1;
 	}
 
 	char filespec[MAX_PATH_LEN];
@@ -1569,7 +1574,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	}
 
 	if (own_flag)	{
-		free(info);
+		vm_free(info);
 	}
 
 	Get_file_list_filter = NULL;

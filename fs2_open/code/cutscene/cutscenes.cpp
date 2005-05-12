@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-02-23 04:51:55 $
+ * $Revision: 2.16 $
+ * $Date: 2005-05-12 17:49:11 $
  * $Author: taylor $
- * $Revision: 2.15 $
- * $Date: 2005-02-23 04:51:55 $
+ * $Revision: 2.16 $
+ * $Date: 2005-05-12 17:49:11 $
  * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/02/23 04:51:55  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.14  2005/01/31 23:27:51  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -249,7 +252,7 @@ cutscene_info Cutscenes[MAX_CUTSCENES];
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 void cutsceen_close(){
 	for(int i = 0; i<MAX_CUTSCENES; i++)
-	if(Cutscenes[i].description)free(Cutscenes[i].description);
+	if(Cutscenes[i].description)vm_free(Cutscenes[i].description);
 }
 
 // initialization stuff for cutscenes
@@ -283,7 +286,7 @@ void cutscene_init()
 		stuff_string(buf, F_MULTITEXT, NULL);
 		drop_white_space(buf);
 		compact_multitext_string(buf);
-		Cutscenes[Num_cutscenes].description = strdup(buf);
+		Cutscenes[Num_cutscenes].description = vm_strdup(buf);
 		required_string("$cd:");
 		stuff_int( &Cutscenes[Num_cutscenes].cd );
 

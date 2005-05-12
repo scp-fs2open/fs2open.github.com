@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/LISTBOX.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-05-12 17:49:17 $
+ * $Author: taylor $
  *
  * Code to implement a listbox gadget.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -650,7 +653,7 @@ int UI_LISTBOX::add_string(char *str)
 			return 0;                     // we've reached our limit
 
 		else {
-			list[num_items] = strdup(str);
+			list[num_items] = vm_strdup(str);
 			num_items++;
 			return 1;
 		}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-12 05:26:36 $
+ * $Revision: 2.8 $
+ * $Date: 2005-05-12 17:49:13 $
  * $Author: taylor $
  *
  * C module for grid specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/12 05:26:36  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.6  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -214,7 +218,7 @@ grid *create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int 
 		d = 2;
 
 	if (gridp == NULL)
-		gridp = (grid *) malloc(sizeof(grid));
+		gridp = (grid *) vm_malloc(sizeof(grid));
 
 	Assert(gridp);
 

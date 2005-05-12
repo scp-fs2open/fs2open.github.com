@@ -15,9 +15,9 @@ static int get_new_state_block(){
 		if(state_block[i] == 0xFFFFFFFF)return i;
 
 	DWORD *old_states = state_block;
-	state_block = (DWORD*)malloc(sizeof(DWORD)*n_state_blocks+1);
+	state_block = (DWORD*)vm_malloc(sizeof(DWORD)*n_state_blocks+1);
 	memcpy(state_block, old_states, n_state_blocks);
-	if(old_states)free(old_states);
+	if(old_states)vm_free(old_states);
 
 	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &state_block[n_state_blocks++]);
 

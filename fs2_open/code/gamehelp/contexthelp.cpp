@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-04-24 02:39:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10 $
+ * $Date: 2005-05-12 17:49:11 $
+ * $Author: taylor $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/24 02:39:36  wmcoolmon
+ * Context help fixing goodness
+ *
  * Revision 2.8  2005/04/05 05:53:16  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -585,7 +588,7 @@ void parse_helptbl()
 
 					// get string (always use the GR_640 one)
 					stuff_string(buf, F_MESSAGE, NULL);
-					help_overlaylist[overlay_id].textlist[GR_640][currcount].string = strdup(buf);
+					help_overlaylist[overlay_id].textlist[GR_640][currcount].string = vm_strdup(buf);
 
 					//mprintf(("Found text %d on overlay %d - location (%d,%d) @ 640x480 :: location (%d,%d) @ 1024x768\n", currcount, overlay_id, help_overlaylist[overlay_id].textlist[GR_640][currcount].x_coord, help_overlaylist[overlay_id].textlist[GR_640][currcount].y_coord, help_overlaylist[overlay_id].textlist[GR_1024][currcount].x_coord, help_overlaylist[overlay_id].textlist[GR_1024][currcount].x_coord));
 					help_overlaylist[overlay_id].textcount++;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/rtvoice.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-02-02 10:36:23 $
+ * $Revision: 2.5 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  * C module file for real-time voice
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/02/02 10:36:23  taylor
+ * merge with Linux/OSX tree - p0202
+ *
  * Revision 2.3  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -240,7 +243,7 @@ int rtvoice_init_recording(int qos)
 		Rtv_capture_raw_buffer_size = Rtv_formats[Rtv_recording_format].frequency * (RTV_BUFFER_TIME) * fl2i(Rtv_formats[Rtv_recording_format].bits_per_sample/8.0f);
 
 		if ( Encode_buffer1 ) {
-			free(Encode_buffer1);
+			vm_free(Encode_buffer1);
 			Encode_buffer1=NULL;
 		}
 
@@ -248,30 +251,30 @@ int rtvoice_init_recording(int qos)
 			return -1;
 		}
 
-		Encode_buffer1 = (unsigned char*)malloc(Rtv_capture_raw_buffer_size);
+		Encode_buffer1 = (unsigned char*)vm_malloc(Rtv_capture_raw_buffer_size);
 		Assert(Encode_buffer1);
 
 		if ( Encode_buffer2 ) {
-			free(Encode_buffer2);
+			vm_free(Encode_buffer2);
 			Encode_buffer2=NULL;
 		}
-		Encode_buffer2 = (unsigned char*)malloc(Rtv_capture_raw_buffer_size);
+		Encode_buffer2 = (unsigned char*)vm_malloc(Rtv_capture_raw_buffer_size);
 		Assert(Encode_buffer2);
 
 		// malloc out the voice data buffer for raw (uncompressed) recorded sound
 		if ( Rtv_capture_raw_buffer ) {
-			free(Rtv_capture_raw_buffer);
+			vm_free(Rtv_capture_raw_buffer);
 			Rtv_capture_raw_buffer=NULL;
 		}
-		Rtv_capture_raw_buffer = (unsigned char*)malloc(Rtv_capture_raw_buffer_size);
+		Rtv_capture_raw_buffer = (unsigned char*)vm_malloc(Rtv_capture_raw_buffer_size);
 
 		// malloc out voice data buffer for compressed recorded sound
 		if ( Rtv_capture_compressed_buffer ) {
-			free(Rtv_capture_compressed_buffer);
+			vm_free(Rtv_capture_compressed_buffer);
 			Rtv_capture_compressed_buffer=NULL;
 		}
 		Rtv_capture_compressed_buffer_size=Rtv_capture_raw_buffer_size;	// be safe and allocate same as uncompressed
-		Rtv_capture_compressed_buffer = (unsigned char*)malloc(Rtv_capture_compressed_buffer_size);
+		Rtv_capture_compressed_buffer = (unsigned char*)vm_malloc(Rtv_capture_compressed_buffer_size);
 
 		InitEncoder(e_cCodec1, qos, Encode_buffer1, Encode_buffer2);
 
@@ -309,22 +312,22 @@ void rtvoice_close_recording()
 	}
 
 	if ( Encode_buffer1 ) {
-		free(Encode_buffer1);
+		vm_free(Encode_buffer1);
 		Encode_buffer1=NULL;
 	}
 
 	if ( Encode_buffer2 ) {
-		free(Encode_buffer2);
+		vm_free(Encode_buffer2);
 		Encode_buffer2=NULL;
 	}
 
 	if ( Rtv_capture_raw_buffer ) {
-		free(Rtv_capture_raw_buffer);
+		vm_free(Rtv_capture_raw_buffer);
 		Rtv_capture_raw_buffer=NULL;
 	}
 
 	if ( Rtv_capture_compressed_buffer ) {
-		free(Rtv_capture_compressed_buffer);
+		vm_free(Rtv_capture_compressed_buffer);
 		Rtv_capture_compressed_buffer=NULL;
 	}
 
@@ -539,12 +542,12 @@ void rtvoice_uncompress(unsigned char *data_in, int size_in, double gain, unsign
 void rtvoice_close_playback()
 {
 	if ( Decode_buffer ) {
-		free(Decode_buffer);
+		vm_free(Decode_buffer);
 		Decode_buffer=NULL;
 	}
 
 	if ( Rtv_playback_uncompressed_buffer ) {
-		free(Rtv_playback_uncompressed_buffer);
+		vm_free(Rtv_playback_uncompressed_buffer);
 		Rtv_playback_uncompressed_buffer=NULL;
 	}
 
@@ -578,20 +581,20 @@ int rtvoice_init_playback()
 		Decode_buffer_size = rtvf->frequency * (RTV_BUFFER_TIME) * fl2i(rtvf->bits_per_sample/8.0f);
 
 		if ( Decode_buffer ) {
-			free(Decode_buffer);
+			vm_free(Decode_buffer);
 			Decode_buffer=NULL;
 		}
 
-		Decode_buffer = (unsigned char*)malloc(Decode_buffer_size);
+		Decode_buffer = (unsigned char*)vm_malloc(Decode_buffer_size);
 		Assert(Decode_buffer);
 
 		if ( Rtv_playback_uncompressed_buffer ) {
-			free(Rtv_playback_uncompressed_buffer);
+			vm_free(Rtv_playback_uncompressed_buffer);
 			Rtv_playback_uncompressed_buffer=NULL;
 		}
 
 		Rtv_playback_uncompressed_buffer_size=Decode_buffer_size;
-		Rtv_playback_uncompressed_buffer = (unsigned char*)malloc(Rtv_playback_uncompressed_buffer_size);
+		Rtv_playback_uncompressed_buffer = (unsigned char*)vm_malloc(Rtv_playback_uncompressed_buffer_size);
 		Assert(Rtv_playback_uncompressed_buffer);
 
 		InitDecoder(1, Decode_buffer); 

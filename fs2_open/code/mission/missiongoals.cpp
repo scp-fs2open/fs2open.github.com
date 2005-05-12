@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-03-02 21:24:45 $
+ * $Revision: 2.13 $
+ * $Date: 2005-05-12 17:49:13 $
  * $Author: taylor $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.11  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -762,11 +765,11 @@ void mission_event_shutdown()
 
 	for (i=0; i<Num_mission_events; i++) {
 		if (Mission_events[i].objective_text) {
-			free(Mission_events[i].objective_text);
+			vm_free(Mission_events[i].objective_text);
 			Mission_events[i].objective_text = NULL;
 		}
 		if (Mission_events[i].objective_key_text) {
-			free(Mission_events[i].objective_key_text);
+			vm_free(Mission_events[i].objective_key_text);
 			Mission_events[i].objective_key_text = NULL;
 		}
 	}

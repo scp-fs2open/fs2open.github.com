@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-04-05 05:53:21 $
+ * $Revision: 2.34 $
+ * $Date: 2005-05-12 17:49:15 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.32  2005/03/11 14:14:05  taylor
  * forgot to remove this with the MIN/MAX change
  *
@@ -1934,7 +1937,7 @@ active_game *multi_new_active_game( void )
 {
 	active_game *new_game;
 
-	new_game = (active_game *)malloc(sizeof(active_game));
+	new_game = (active_game *)vm_malloc(sizeof(active_game));
 	if ( new_game == NULL ) {
 		nprintf(("Network", "Cannot allocate space for new active game structure\n"));
 		return NULL;
@@ -2059,7 +2062,7 @@ void multi_free_active_games()
 			backup = moveup;
 			moveup = moveup->next;
 			
-			free(backup);
+			vm_free(backup);
 			backup = NULL;
 		} while(moveup != Active_game_head);
 		Active_game_head = NULL;
@@ -2071,7 +2074,7 @@ server_item *multi_new_server_item( void )
 {
 	server_item *new_game;
 
-	new_game = (server_item *)malloc(sizeof(server_item));
+	new_game = (server_item *)vm_malloc(sizeof(server_item));
 	if ( new_game == NULL ) {
 		nprintf(("Network", "Cannot allocate space for new server_item structure\n"));
 		return NULL;
@@ -2101,7 +2104,7 @@ void multi_free_server_list()
 			backup = moveup;
 			moveup = moveup->next;
 			
-			free(backup);
+			vm_free(backup);
 			backup = NULL;
 		} while(moveup != Game_server_head);
 		Game_server_head = NULL;
@@ -3505,7 +3508,7 @@ void multi_update_valid_missions()
 //	FILE *out;
 
 	// allocate filename space	
-	file_names = (char**)malloc(sizeof(char*) * 1024); // 1024 files should be safe!
+	file_names = (char**)vm_malloc(sizeof(char*) * 1024); // 1024 files should be safe!
 	if(file_names != NULL){
 		memset(wild_card, 0, 256);
 		strcpy(wild_card, NOX("*"));
@@ -3564,7 +3567,7 @@ void multi_update_valid_missions()
 		}
 
 		cfclose(mvalid_cfg);
-		free(file_names);
+		vm_free(file_names);
 	
 	}
 
@@ -3662,7 +3665,7 @@ void multi_update_valid_tables()
 //	FILE *out;
 
 	// allocate filename space	
-	file_names = (char**)malloc(sizeof(char*) * 1024); // 1024 files should be safe!
+	file_names = (char**)vm_malloc(sizeof(char*) * 1024); // 1024 files should be safe!
 	if(file_names != NULL){
 		memset(wild_card, 0, 256);
 		strcpy(wild_card, NOX("*"));
@@ -3736,7 +3739,7 @@ void multi_update_valid_tables()
 		}
 
 		cfclose(tvalid_cfg);
-		free(file_names);
+		vm_free(file_names);
 	
 	}
 
@@ -3850,7 +3853,7 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 			strcpy(modname, Cmdline_mod);
 		
 	// allocate filename space	
-	file_names = (char**)malloc(sizeof(char*) * max_files);
+	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
 	if(file_names != NULL){
 		memset(wild_card, 0, 256);
 		strcpy(wild_card, NOX("*"));
@@ -3875,7 +3878,7 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 		}
 
 		fclose(out);
-		free(file_names);
+		vm_free(file_names);
 	}
 }
 
@@ -3899,7 +3902,7 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 		
 
 	// allocate filename space	
-	file_names = (char**)malloc(sizeof(char*) * max_files);
+	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
 	if(file_names != NULL){
 		memset(wild_card, 0, 256);
 		strcpy(wild_card, NOX("*"));
@@ -3924,7 +3927,7 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 		}
 
 		fclose(out);
-		free(file_names);
+		vm_free(file_names);
 	}
 }
 

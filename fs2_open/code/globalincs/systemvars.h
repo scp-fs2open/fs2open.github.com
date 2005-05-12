@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.8 $
- * $Date: 2005-03-03 06:05:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-12 17:49:12 $
+ * $Author: taylor $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.7  2005/01/16 22:39:09  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -416,7 +419,7 @@ enum
 #define MAX_LIGHTS 256
 #define MAX_LIGHT_LEVELS 16
 
-#define safe_kill(a) if(a)free(a)
+#define safe_kill(a) if(a)vm_free(a)
 
 
 #endif

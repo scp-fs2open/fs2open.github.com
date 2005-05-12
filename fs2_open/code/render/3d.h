@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.15 $
- * $Date: 2005-04-24 02:40:40 $
- * $Author: wmcoolmon $
+ * $Revision: 2.16 $
+ * $Date: 2005-05-12 17:49:16 $
+ * $Author: taylor $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/04/24 02:40:40  wmcoolmon
+ * Lowlevel (ie vertex buffer-mapping) functions for _rect and _shade
+ *
  * Revision 2.14  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -424,7 +427,7 @@ public:
 	flash_ball(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255)
 		:ray(NULL),n_rays(0)
 		{initalise(number, min_ray_width, max_ray_width , dir , center , outer , inner , max_r , max_g , max_b , min_r , min_g ,min_b);}
-	~flash_ball(){if(ray)free(ray);}
+	~flash_ball(){if(ray)vm_free(ray);}
 
 	void initalise(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
 	void initalise(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-05-08 20:25:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.33 $
+ * $Date: 2005-05-12 17:49:14 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/05/08 20:25:04  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 2.31  2005/03/08 03:50:21  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -2321,7 +2324,7 @@ void debrief_text_stage_init(char *src, int type)
 		line[n_chars[i]] = 0;
 		drop_white_space(line);
 		Text_type[Num_text_lines] = type;
-		Text[Num_text_lines++] = strdup(line);
+		Text[Num_text_lines++] = vm_strdup(line);
 	}
 
 	return;
@@ -2333,7 +2336,7 @@ void debrief_free_text()
 
 	for (i=0; i<Num_debrief_lines; i++)
 		if (Text[i])
-			free(Text[i]);
+			vm_free(Text[i]);
 
 	Num_debrief_lines = 0;
 }
@@ -2721,7 +2724,7 @@ void debrief_close()
 	if (Num_debrief_lines) {
 		for (i=0; i<Num_debrief_lines; i++){
 			if (Text[i]){
-				free(Text[i]);
+				vm_free(Text[i]);
 			}
 		}
 	}

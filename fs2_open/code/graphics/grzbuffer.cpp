@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrZbuffer.cpp $
- * $Revision: 2.4 $
- * $Date: 2004-07-26 20:47:32 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-05-12 17:49:12 $
+ * $Author: taylor $
  *
  * Code for the software renderer's zbuffer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/07/26 20:47:32  Kazan
+ * remove MCD complete
+ *
  * Revision 2.3  2004/07/12 16:32:48  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -85,12 +88,12 @@ void gr8_zbuffer_clear(int mode)
 		if ( (!gr_zbuffer) || (gr_screen.max_w!=gr_zbuffer_w) || (gr_screen.max_h!=gr_zbuffer_h) )	{
 			//mprintf(( "Allocating a %d x %d zbuffer\n", gr_screen.max_w, gr_screen.max_h ));
 			if ( gr_zbuffer )	{
-				free(gr_zbuffer);
+				vm_free(gr_zbuffer);
 				gr_zbuffer = NULL;
 			}
 			gr_zbuffer_w = gr_screen.max_w;
 			gr_zbuffer_h = gr_screen.max_h;
-			gr_zbuffer = (uint *)malloc(gr_zbuffer_w*gr_zbuffer_h*sizeof(uint));
+			gr_zbuffer = (uint *)vm_malloc(gr_zbuffer_w*gr_zbuffer_h*sizeof(uint));
 			if ( !gr_zbuffer )	{
 				Error( LOCATION, "Couldn't allocate zbuffer\n" );
 				gr_zbuffering = 0;

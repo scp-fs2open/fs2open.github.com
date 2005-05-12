@@ -2,13 +2,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.120 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.121 $
+ * $Date: 2005-05-12 17:49:12 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.119  2005/04/24 02:38:31  wmcoolmon
  * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
  *
@@ -2611,7 +2624,7 @@ void gr_opengl_print_screen(char *filename)
 	cfwrite_ubyte( 24, f );	//PixelDepth;
 	cfwrite_ubyte( 0, f );	//ImageDesc;
 
-	buf = (ubyte*)malloc(gr_screen.max_w * gr_screen.max_h * 3);
+	buf = (ubyte*)vm_malloc(gr_screen.max_w * gr_screen.max_h * 3);
 
 	if (buf == NULL)
 		return;
@@ -2624,7 +2637,7 @@ void gr_opengl_print_screen(char *filename)
 
 	cfclose(f);
 
-	free(buf);
+	vm_free(buf);
 }
 
 int gr_opengl_supports_res_ingame(int res)
@@ -2959,7 +2972,7 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h)
         
 	// this should really only have to be malloc'd once
 	if (GL_saved_mouse_data == NULL)
-		GL_saved_mouse_data = (ubyte*)malloc(cursor_size * gr_screen.bytes_per_pixel);
+		GL_saved_mouse_data = (ubyte*)vm_malloc(cursor_size * gr_screen.bytes_per_pixel);
 
 	if (GL_saved_mouse_data == NULL)
 		return;
@@ -2973,7 +2986,7 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h)
 void gr_opengl_free_mouse_area()
 {
 	if (GL_saved_mouse_data != NULL) {
-		free(GL_saved_mouse_data);
+		vm_free(GL_saved_mouse_data);
 		GL_saved_mouse_data = NULL;
 	}
 }
@@ -2994,7 +3007,7 @@ int gr_opengl_save_screen()
 	}
 
 	if (!GL_saved_screen)
-		GL_saved_screen = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel);
+		GL_saved_screen = (ubyte*)vm_malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
 
 	if (!GL_saved_screen) 
  	{
@@ -3002,7 +3015,7 @@ int gr_opengl_save_screen()
  		return -1;
  	}
 
-	opengl_screen_tmp = (ubyte*)malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
+	opengl_screen_tmp = (ubyte*)vm_malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
 
 	if (!opengl_screen_tmp) 
  	{
@@ -3016,7 +3029,6 @@ int gr_opengl_save_screen()
 	glReadBuffer(GL_BACK);
 #endif
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, fmt, opengl_screen_tmp);
-        
    
 	sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w*gr_screen.max_h*gr_screen.bytes_per_pixel];
 	dptr = (ubyte *)GL_saved_screen;
@@ -3028,7 +3040,7 @@ int gr_opengl_save_screen()
 		dptr += gr_screen.max_w*gr_screen.bytes_per_pixel;
 	}
         
-	free(opengl_screen_tmp);
+	vm_free(opengl_screen_tmp);
 
 	if (Gr_opengl_mouse_saved && GL_saved_mouse_data)
 	{
@@ -3066,7 +3078,7 @@ void gr_opengl_free_screen(int bmp_id)
 	if (!GL_saved_screen)
 		return;
 
-	free(GL_saved_screen);
+	vm_free(GL_saved_screen);
 	GL_saved_screen = NULL;
 
 	bm_release(bmp_id);
@@ -3126,7 +3138,7 @@ void gr_opengl_dump_frame_start(int first_frame, int frames_between_dumps)
 	if ( !GL_dump_buffer ) {
 		int size = GL_dump_frame_count_max * GL_dump_frame_size;
 
-		GL_dump_buffer = (ubyte *)malloc(size);
+		GL_dump_buffer = (ubyte *)vm_malloc(size);
 
 		if ( !GL_dump_buffer )	{
 			Error(LOCATION, "Unable to malloc %d bytes for dump buffer", size );
@@ -3147,7 +3159,7 @@ void gr_opengl_dump_frame_stop()
 	GL_dump_frames = 0;
 
 	if ( GL_dump_buffer )	{
-		free(GL_dump_buffer);
+		vm_free(GL_dump_buffer);
 		GL_dump_buffer = NULL;
 	}
 }
@@ -3482,7 +3494,7 @@ void gr_opengl_draw_line_list(colored_vector *lines, int num)
 void gr_opengl_close()
 {
 	if (currently_enabled_lights != NULL) {
-		free(currently_enabled_lights);
+		vm_free(currently_enabled_lights);
 		currently_enabled_lights = NULL;
 	}
 
@@ -3907,7 +3919,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		// we use the "+1" here to have an extra NULL char on the end (with the memset())
 		// this is to fix memory errors when the last char in extlist is the same as the token
 		// we are looking for and ultra evil strtok() may still return non-NULL at EOS
-		extlist = (char*)malloc(strlen(OGL_extensions) + 1);
+		extlist = (char*)vm_malloc(strlen(OGL_extensions) + 1);
 		memset(extlist, 0, strlen(OGL_extensions) + 1);
 
 		if (extlist != NULL) {
@@ -3921,7 +3933,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 				curext=strtok(NULL, " ");
 			}
 
-			free(extlist);
+			vm_free(extlist);
 			extlist = NULL;
 		}
 	}
