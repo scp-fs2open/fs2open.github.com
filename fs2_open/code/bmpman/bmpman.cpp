@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.55 $
- * $Date: 2005-04-30 18:17:17 $
- * $Author: phreak $
+ * $Revision: 2.56 $
+ * $Date: 2005-05-12 17:36:59 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/04/30 18:17:17  phreak
+ * bm_page_in_textures() should return if bitmap_num is any negative value, instead of just -1
+ *
  * Revision 2.54  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -863,7 +866,7 @@ static void bm_free_data(int n)
 	#ifdef BMPMAN_NDEBUG
 		bm_texture_ram -= be->data_size;
 	#endif
-	VM_FREE((void *)bmp->data);
+	vm_free((void *)bmp->data);
 
 	// reset the load_count to at least 1, don't do this in SkipFree though
 	// since the real count ends up wrong
@@ -933,7 +936,7 @@ void *bm_malloc( int n, int size )
 	bm_bitmaps[n].data_size += size;
 	bm_texture_ram += size;
 	#endif
-	return VM_MALLOC(size);
+	return vm_malloc(size);
 }
 
 // kinda like bm_malloc but only keeps track of how much memory is getting used
@@ -1985,7 +1988,7 @@ void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, uby
 		/*
 		Assert(flags & BMP_AABITMAP);
 		bmp->bpp = 16;
-		bmp->data = (uint)malloc(bmp->w * bmp->h * 2);
+		bmp->data = (uint)vm_malloc(bmp->w * bmp->h * 2);
 		bmp->flags = be->info.user.flags;
 		bmp->palette = NULL;
 
@@ -2731,6 +2734,12 @@ void bm_page_in_stop()
 {	
 	int i;	
 	int ship_info_index;
+	char *busy_text = NULL;
+
+#ifndef NDEBUG
+	busy_text = new char[MAX_PATH_LEN];
+	Assert( busy_text != NULL );
+#endif
 
 	nprintf(( "BmpInfo","BMPMAN: Loading all used bitmaps.\n" ));
 
@@ -2793,7 +2802,15 @@ void bm_page_in_stop()
 				bm_unload(bm_bitmaps[i].handle);
 			}
 		}
-		game_busy(bm_bitmaps[i].filename);
+#ifndef NDEBUG
+		memset(busy_text, 0, MAX_PATH_LEN);
+#ifdef _WIN32
+		_snprintf(busy_text, MAX_PATH_LEN-1, "** %s: %s **", NOX("BmpMan"), bm_bitmaps[i].filename);
+#else
+		snprintf(busy_text, MAX_PATH_LEN-1, "** %s: %s **", NOX("BmpMan"), bm_bitmaps[i].filename);
+#endif // _WIN32
+#endif // NDEBUG
+		game_busy(busy_text);
 	}
 	nprintf(( "BmpInfo","BMPMAN: Loaded %d bitmaps that are marked as used for this level.\n", n ));
 
@@ -2809,6 +2826,11 @@ void bm_page_in_stop()
 
 	mprintf(( "Bmpman: %d/%d bitmap slots in use.\n", total_bitmaps, MAX_BITMAPS ));
 	//mprintf(( "Bmpman: Usage went from %d KB to %d KB.\n", usage_before/1024, usage_after/1024 ));
+
+#ifndef NDEBUG
+	if ( busy_text != NULL )
+		delete[] busy_text;
+#endif
 
 	Bm_paging = 0;
 }
