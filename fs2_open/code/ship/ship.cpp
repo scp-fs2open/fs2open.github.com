@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.198 $
- * $Date: 2005-05-08 20:21:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.199 $
+ * $Date: 2005-05-12 17:45:53 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.198  2005/05/08 20:21:48  wmcoolmon
+ * armor.tbl revamp
+ *
  * Revision 2.197  2005/04/30 18:18:46  phreak
  * ABbitmap should default to -1
  *
@@ -2081,34 +2084,34 @@ int parse_ship(bool replace)
 	sip->type_str = sip->maneuverability_str = sip->armor_str = sip->manufacturer_str = NULL;
 	if (optional_string("+Type:")) {
 		stuff_string(buf, F_MESSAGE, NULL);
-		sip->type_str = strdup(buf);
+		sip->type_str = vm_strdup(buf);
 	}
 
 	if (optional_string("+Maneuverability:")) {
 		stuff_string(buf, F_MESSAGE, NULL);
-		sip->maneuverability_str = strdup(buf);
+		sip->maneuverability_str = vm_strdup(buf);
 	}
 
 	if (optional_string("+Armor:")) {
 		stuff_string(buf, F_MESSAGE, NULL);
-		sip->armor_str = strdup(buf);
+		sip->armor_str = vm_strdup(buf);
 	}
 
 	if (optional_string("+Manufacturer:")) {
 		stuff_string(buf, F_MESSAGE, NULL);
-		sip->manufacturer_str = strdup(buf);
+		sip->manufacturer_str = vm_strdup(buf);
 	}
 
 	sip->desc = NULL;
 	if (optional_string("+Description:")) {
 		stuff_string(buf, F_MULTITEXT, NULL);
-		sip->desc = strdup(buf);
+		sip->desc = vm_strdup(buf);
 	}
 
 	sip->tech_desc = NULL;
 	if (optional_string("+Tech Description:")) {
 		stuff_string(buf, F_MULTITEXT, NULL, SHIP_MULTITEXT_LENGTH);
-		sip->tech_desc = strdup(buf);
+		sip->tech_desc = vm_strdup(buf);
 	}
 
 	// Code added here by SS to parse the optional strings for length, gun_mounts, missile_banks
@@ -2116,19 +2119,19 @@ int parse_ship(bool replace)
 	sip->ship_length = NULL;
 	if (optional_string("+Length:")) {
 		stuff_string(buf, F_MESSAGE, NULL);
-		sip->ship_length = strdup(buf);
+		sip->ship_length = vm_strdup(buf);
 	}
 	
 	sip->gun_mounts = NULL;
 	if (optional_string("+Gun Mounts:")) {
 		stuff_string(buf, F_MESSAGE, NULL);
-		sip->gun_mounts = strdup(buf);
+		sip->gun_mounts = vm_strdup(buf);
 	}
 	
 	sip->missile_banks = NULL;
 	if (optional_string("+Missile Banks:")) {
 		stuff_string(buf, F_MESSAGE, NULL);
-		sip->missile_banks = strdup(buf);
+		sip->missile_banks = vm_strdup(buf);
 	}
 
 
@@ -3151,16 +3154,12 @@ strcpy(parse_error_text, temp_error);
 			else
 				sp->targetable = 1;
 
-			queued_animation *old_triggers = NULL;
 			sp->n_triggers = 0;
 			sp->triggers = NULL;
 			while(optional_string("$animation=triggered")){
 				queued_animation *current_trigger;
 
-				old_triggers = sp->triggers;
-				sp->triggers = (queued_animation*)malloc(sizeof(queued_animation)*(sp->n_triggers+1));
-				if(sp->n_triggers)memcpy(sp->triggers,old_triggers,sizeof(queued_animation)*sp->n_triggers);
-				if(sp->n_triggers)free(old_triggers);
+				sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
 				current_trigger = &sp->triggers[sp->n_triggers];
 				sp->n_triggers++;
 				//add a new trigger
@@ -3311,7 +3310,7 @@ strcpy(parse_error_text, temp_error);
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	sip->n_subsystems = n_subsystems;
 	if ( n_subsystems > 0 ) {
-		sip->subsystems = (model_subsystem *)malloc(sizeof(model_subsystem) * n_subsystems );
+		sip->subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * n_subsystems );
 		Assert( sip->subsystems != NULL );
 	}
 	else {
@@ -4990,9 +4989,9 @@ void ship_model_subsystems_delete(ship *shipp)
 	{
 		for(int n = 0; n<shipp->n_subsystems; n++)
 			if(shipp->subsystems[n].n_triggers)
-				free(shipp->subsystems[n].triggers);
+				vm_free(shipp->subsystems[n].triggers);
 
-		free(shipp->subsystems);
+		vm_free(shipp->subsystems);
 		shipp->n_subsystems = 0;
 		shipp->subsystems = NULL;
 	}
@@ -5044,7 +5043,7 @@ void ship_delete( object * obj )
 	// mwa 11/24/97 num_ships--;
 
 	if (model_get(shipp->modelnum)->shield.ntris) {
-		free(shipp->shield_integrity);
+		vm_free(shipp->shield_integrity);
 		shipp->shield_integrity = NULL;
 	}
 
@@ -6882,7 +6881,7 @@ void ship_set_bay_path_nums(ship_info *sip, polymodel *pm)
 	char	bay_num_str[3];
 
 	if ( pm->ship_bay != NULL ) {
-		free(pm->ship_bay);
+		vm_free(pm->ship_bay);
 		pm->ship_bay = NULL;
 	}
 
@@ -6894,7 +6893,7 @@ void ship_set_bay_path_nums(ship_info *sip, polymodel *pm)
 	//tbp have been haveing crashes useing bombers with fighter bays, this might explaine why
 
 	// malloc out storage for the path information
-	pm->ship_bay = (ship_bay*)malloc(sizeof(ship_bay));
+	pm->ship_bay = (ship_bay*)vm_malloc(sizeof(ship_bay));
 	Assert(pm->ship_bay != NULL);
 
 	pm->ship_bay->num_paths = 0;
@@ -7047,7 +7046,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 				shipp->n_subsystems = sip->n_subsystems;
 				if ( shipp->n_subsystems > 0 )
 				{
-					shipp->subsystems = (model_subsystem *)malloc(sizeof(model_subsystem) * shipp->n_subsystems );
+					shipp->subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * shipp->n_subsystems );
 					Assert( shipp->subsystems != NULL );
 				}
 		
@@ -7163,7 +7162,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	//	Allocate shield and initialize it.
 	if (pm_orig->shield.ntris) {
-		shipp->shield_integrity = (float *)malloc(sizeof(float)*pm_orig->shield.ntris);
+		shipp->shield_integrity = (float *)vm_malloc(sizeof(float)*pm_orig->shield.ntris);
 		for (i=0; i<pm_orig->shield.ntris; i++)
 			shipp->shield_integrity[i] = 1.0f;
 
@@ -7286,8 +7285,8 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	ship_animation_set_inital_states(shipp);
 /*
 	polymodel *pm = model_get(shipp->modelnum);
-	if(shipp->debris_flare)free(shipp->debris_flare);
-	shipp->debris_flare = (flash_ball*)malloc(sizeof(flash_ball)*pm->num_debris_objects);
+	if(shipp->debris_flare)vm_free(shipp->debris_flare);
+	shipp->debris_flare = (flash_ball*)vm_malloc(sizeof(flash_ball)*pm->num_debris_objects);
 	shipp->n_debris_flare = pm->num_debris_objects;
 
 	for(i = 0; i<shipp->n_debris_flare; i++){
@@ -7358,7 +7357,7 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 			sp->n_subsystems = sip->n_subsystems;
 			if ( sp->n_subsystems > 0 )
 			{
-				sp->subsystems = (model_subsystem *)malloc(sizeof(model_subsystem) * sp->n_subsystems );
+				sp->subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * sp->n_subsystems );
 				Assert( sp->subsystems != NULL );
 			}
 		
@@ -10547,7 +10546,7 @@ void ship_close()
 
 	for (i=0; i<MAX_SHIPS; i++ )	{
 		if ( Ships[i].shield_integrity != NULL && Ships[i].objnum != -1 ) {
-			free( Ships[i].shield_integrity );
+			vm_free( Ships[i].shield_integrity );
 			Ships[i].shield_integrity = NULL;
 		}
 	}
@@ -10557,55 +10556,55 @@ void ship_close()
 		if ( Ship_info[i].subsystems != NULL ) {
 			for(int n = 0; n<Ship_info[i].n_subsystems; n++)
 				if(Ship_info[i].subsystems[n].n_triggers)
-					free(Ship_info[i].subsystems[n].triggers);
-			free(Ship_info[i].subsystems);
+					vm_free(Ship_info[i].subsystems[n].triggers);
+			vm_free(Ship_info[i].subsystems);
 		}
 
 		
 
 		// free info from parsed table data
 		if (Ship_info[i].type_str != NULL) {
-			free(Ship_info[i].type_str);
+			vm_free(Ship_info[i].type_str);
 			Ship_info[i].type_str = NULL;
 		}
 
 		if (Ship_info[i].maneuverability_str != NULL) {
-			free(Ship_info[i].maneuverability_str);
+			vm_free(Ship_info[i].maneuverability_str);
 			Ship_info[i].maneuverability_str = NULL;
 		}
 
 		if (Ship_info[i].armor_str != NULL) {
-			free(Ship_info[i].armor_str);
+			vm_free(Ship_info[i].armor_str);
 			Ship_info[i].armor_str = NULL;
 		}
 
 		if (Ship_info[i].manufacturer_str != NULL) {
-			free(Ship_info[i].manufacturer_str);
+			vm_free(Ship_info[i].manufacturer_str);
 			Ship_info[i].manufacturer_str = NULL;
 		}
 
 		if (Ship_info[i].desc != NULL) {
-			free(Ship_info[i].desc);
+			vm_free(Ship_info[i].desc);
 			Ship_info[i].desc = NULL;
 		}
 
 		if (Ship_info[i].tech_desc != NULL) {
-			free(Ship_info[i].tech_desc);
+			vm_free(Ship_info[i].tech_desc);
 			Ship_info[i].tech_desc = NULL;
 		}
 
 		if (Ship_info[i].ship_length != NULL) {
-			free(Ship_info[i].ship_length);
+			vm_free(Ship_info[i].ship_length);
 			Ship_info[i].ship_length = NULL;
 		}
 
 		if (Ship_info[i].gun_mounts != NULL) {
-			free(Ship_info[i].gun_mounts);
+			vm_free(Ship_info[i].gun_mounts);
 			Ship_info[i].gun_mounts = NULL;
 		}
 
 		if (Ship_info[i].missile_banks != NULL) {
-			free(Ship_info[i].missile_banks);
+			vm_free(Ship_info[i].missile_banks);
 			Ship_info[i].missile_banks = NULL;
 		}
 	}
@@ -10613,39 +10612,39 @@ void ship_close()
 	// free info from parsed table data
 	for (i=0; i<MAX_SHIP_TYPES; i++) {
 		if(Ship_info[i].type_str != NULL){
-			free(Ship_info[i].type_str);
+			vm_free(Ship_info[i].type_str);
 			Ship_info[i].type_str = NULL;
 		}
 		if(Ship_info[i].maneuverability_str != NULL){
-			free(Ship_info[i].maneuverability_str);
+			vm_free(Ship_info[i].maneuverability_str);
 			Ship_info[i].maneuverability_str = NULL;
 		}
 		if(Ship_info[i].armor_str != NULL){
-			free(Ship_info[i].armor_str);
+			vm_free(Ship_info[i].armor_str);
 			Ship_info[i].armor_str = NULL;
 		}
 		if(Ship_info[i].manufacturer_str != NULL){
-			free(Ship_info[i].manufacturer_str);
+			vm_free(Ship_info[i].manufacturer_str);
 			Ship_info[i].manufacturer_str = NULL;
 		}
 		if(Ship_info[i].desc != NULL){
-			free(Ship_info[i].desc);
+			vm_free(Ship_info[i].desc);
 			Ship_info[i].desc = NULL;
 		}
 		if(Ship_info[i].tech_desc != NULL){
-			free(Ship_info[i].tech_desc);
+			vm_free(Ship_info[i].tech_desc);
 			Ship_info[i].tech_desc = NULL;
 		}
 		if(Ship_info[i].ship_length != NULL){
-			free(Ship_info[i].ship_length);
+			vm_free(Ship_info[i].ship_length);
 			Ship_info[i].ship_length = NULL;
 		}
 		if(Ship_info[i].gun_mounts != NULL){
-			free(Ship_info[i].gun_mounts);
+			vm_free(Ship_info[i].gun_mounts);
 			Ship_info[i].gun_mounts = NULL;
 		}
 		if(Ship_info[i].missile_banks != NULL){
-			free(Ship_info[i].missile_banks);
+			vm_free(Ship_info[i].missile_banks);
 			Ship_info[i].missile_banks = NULL;
 		}
 	}
