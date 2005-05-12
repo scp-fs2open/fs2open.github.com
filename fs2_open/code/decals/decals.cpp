@@ -128,6 +128,8 @@ texture for the list is set, then a call is made to render the vertex buffer.
 
 */
 
+#include "PreProcDefines.h"
+
 #include "object/object.h"
 #include "globalincs/linklist.h"
 #include "decals/decals.h"
@@ -165,8 +167,8 @@ int decal_points_alocated = 0;
 void free_decal_stuff(){
 	if(decal_points_alocated){
 		//if either one of these arn't NULL than someone allocated something to them
-		if(decal_point_list)free(decal_point_list);
-		if(decal__poly)free(decal__poly);
+		if(decal_point_list)vm_free(decal_point_list);
+		if(decal__poly)vm_free(decal__poly);
 	}
 }
 
@@ -175,11 +177,11 @@ void free_decal_stuff(){
 void decal_realc_pointlist(int n){
 	if(decal_points_alocated < n){
 		//if they've been allocated already free what they have
-		if(decal_point_list)free(decal_point_list);
-		if(decal__poly)free(decal__poly);
+		if(decal_point_list)vm_free(decal_point_list);
+		if(decal__poly)vm_free(decal__poly);
 		//then reallocate with the new point count
-		decal_point_list = (vec3d**) malloc(sizeof(vec3d *)*n); 
-		decal__poly = (int*) malloc(sizeof(int)*n); 
+		decal_point_list = (vec3d**) vm_malloc(sizeof(vec3d *)*n); 
+		decal__poly = (int*) vm_malloc(sizeof(int)*n); 
 		decal_points_alocated = n;
 	}
 }
@@ -852,18 +854,9 @@ SAFEPOINT("entering decal_find_next");
 	if(list == NULL){	
 		//if it couldn't find the texture, this means we need to 
 		//realocate the array and add one
-		decal_list_controle* old_list = system->decals;
-		//save the current list
-		system->decals = (decal_list_controle *) malloc(sizeof(decal_list_controle)*++system->n_decal_textures); 
+		system->decals = (decal_list_controle*)vm_realloc(system->decals, sizeof(decal_list_controle) * ++system->n_decal_textures);
 
 		if(!system->decals)Error(LOCATION, "unable to malloc new decal list");
-		//reallocate
-
-		memcpy(system->decals, old_list, sizeof(decal_list_controle)*(system->n_decal_textures-1));
-		//copy the contents of the old list into the new one
-
-		free(old_list);
-		//free the old list
 
 		list = &system->decals[system->n_decal_textures-1];
 		list->buffer = -1;
@@ -934,7 +927,7 @@ void clear_decals(decal_system	*system){
 	for( i = 0; i<system->n_decal_textures; i++)system->decals[i].clear();
 	for( i = 0; i<system->n_decal_textures; i++)Assert(!system->decals[i].n_decals);
 	system->n_decal_textures = 0;
-	free(system->decals);
+	vm_free(system->decals);
 	system->decals = NULL;
 #endif
 }
