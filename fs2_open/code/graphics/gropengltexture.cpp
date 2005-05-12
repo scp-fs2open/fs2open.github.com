@@ -10,13 +10,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 1.21 $
+ * $Date: 2005-05-12 17:42:13 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 1.19  2005/04/23 01:17:09  wmcoolmon
  * Removed GL_SECTIONS
  *
@@ -281,7 +294,7 @@ void opengl_tcache_init (int use_sections)
 
 	GL_square_textures = 0;
 
-	Textures = (tcache_slot_opengl *)malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
+	Textures = (tcache_slot_opengl *)vm_malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
 	if ( !Textures )        {
 		exit(1);
 	}
@@ -335,7 +348,7 @@ void opengl_tcache_cleanup ()
 	GL_textures_in_frame = 0;
 
 	if ( Textures ) {
-		free(Textures);
+		vm_free(Textures);
 		Textures = NULL;
 	}
 }
@@ -597,8 +610,11 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	
 		case TCACHE_TYPE_AABITMAP:
 		{
+			// this is 16-bit so just set to 2 in order to get the size right
+			byte_mult = 2;
+
 			ubyte *bmp_data = ((ubyte*)data);
-			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*2);
+			ubyte *texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
 			ubyte *texmemp = texmem;
 			ubyte xlat[256];
 			
@@ -629,14 +645,14 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 			else // faster anis
 				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, tex_w, tex_h, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
 
-			free (texmem);
+			vm_free (texmem);
 		}
 		break;
 
 		case TCACHE_TYPE_INTERFACE:
 		{
 			ubyte *bmp_data = ((ubyte*)data);
-			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
+			ubyte *texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
 			ubyte *texmemp = texmem;
 
 			for (i=0;i<tex_h;i++)
@@ -670,14 +686,14 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				mipmap_w /= 2;
 			}
 
-			free(texmem);
+			vm_free(texmem);
 			break;
 		}
 
 		default:
 		{
 			ubyte *bmp_data = ((ubyte*)data);
-			ubyte *texmem = (ubyte *) malloc (tex_w*tex_h*byte_mult);
+			ubyte *texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
 			ubyte *texmemp = texmem;
 
 			fix u, utmp, v, du, dv;
@@ -715,7 +731,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				mipmap_w /= 2;
 			}
 
-			free(texmem);
+			vm_free(texmem);
 			break;
 		}
 	}//end switch
