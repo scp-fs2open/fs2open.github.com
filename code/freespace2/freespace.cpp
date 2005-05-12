@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.148 $
- * $Date: 2005-05-11 02:16:17 $
- * $Author: phreak $
+ * $Revision: 2.149 $
+ * $Date: 2005-05-12 03:51:17 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.148  2005/05/11 02:16:17  phreak
+ * clean out some old code
+ *
  * Revision 2.147  2005/05/11 02:15:07  phreak
  * fix the problem where the fade in/out doesn't work if looking at a sun.
  *
@@ -2762,7 +2765,7 @@ DCF_BOOL( show_waypoints, Show_waypoints )
 DCF_BOOL( show_area_effect, Show_area_effect )
 DCF_BOOL( show_net_stats, Show_net_stats )
 DCF_BOOL( log, Log_debug_output_to_file )
-DCF_BOOL( training_msg_method, Training_msg_method )
+DCF_BOOL( training_msg_method, Training_message_method )
 DCF_BOOL( show_player_pos, Show_player_pos )
 DCF_BOOL(i_framerate, Interface_framerate )
 
