@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-04-25 00:22:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-05-12 17:49:11 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/04/25 00:22:34  wmcoolmon
+ * Added parse_sound; replaced Assert() with an if() (The latter may not be a good idea, but it keeps missions from being un-debuggable)
+ *
  * Revision 2.10  2005/04/21 15:58:08  taylor
  * initial changes to mission loading and status in debug builds
  *  - move bmpman page in init to an earlier stage to avoid unloading sexp loaded images
@@ -509,7 +512,7 @@ void gamesnd_init_sounds()
 	int		i;
 
 	if (Snds == NULL) {
-		Snds = (game_snd *) malloc (sizeof(game_snd) * MIN_GAME_SOUNDS);
+		Snds = (game_snd *) vm_malloc (sizeof(game_snd) * MIN_GAME_SOUNDS);
 		Verify( Snds != NULL );
 		Num_game_sounds += MIN_GAME_SOUNDS;
 	}
@@ -520,12 +523,12 @@ void gamesnd_init_sounds()
 	}
 
 	if (Snds_iface == NULL) {
-		Snds_iface = (game_snd *) malloc (sizeof(game_snd) * MIN_INTERFACE_SOUNDS);
+		Snds_iface = (game_snd *) vm_malloc (sizeof(game_snd) * MIN_INTERFACE_SOUNDS);
 		Verify( Snds_iface != NULL );
 		Num_iface_sounds += MIN_INTERFACE_SOUNDS;
 
 		Assert( Snds_iface_handle == NULL );
-		Snds_iface_handle = (int *) malloc (sizeof(int) * Num_iface_sounds);
+		Snds_iface_handle = (int *) vm_malloc (sizeof(int) * Num_iface_sounds);
 		Verify( Snds_iface_handle != NULL );
 	}
 
@@ -540,17 +543,17 @@ void gamesnd_init_sounds()
 void gamesnd_close()
 {
 	if (Snds != NULL) {
-		free(Snds);
+		vm_free(Snds);
 		Snds = NULL;
 	}
 
 	if (Snds_iface != NULL) {
-		free(Snds_iface);
+		vm_free(Snds_iface);
 		Snds_iface = NULL;
 	}
 
 	if (Snds_iface_handle != NULL) {
-		free(Snds_iface_handle);
+		vm_free(Snds_iface_handle);
 		Snds_iface_handle = NULL;
 	}
 }
@@ -577,7 +580,7 @@ void gamesnd_add_sound_slot(int type, int num)
 			Assert( num < (Num_game_sounds + increase_by) );
 
 			if (num >= Num_game_sounds) {
-				Snds = (game_snd *) realloc (Snds, sizeof(game_snd) * (Num_game_sounds + increase_by));
+				Snds = (game_snd *) vm_realloc (Snds, sizeof(game_snd) * (Num_game_sounds + increase_by));
 				Verify( Snds != NULL );
 				Num_game_sounds += increase_by;
 			}
@@ -590,12 +593,12 @@ void gamesnd_add_sound_slot(int type, int num)
 			Assert( num < (Num_game_sounds + increase_by) );
 
 			if (num >= Num_iface_sounds) {
-				Snds_iface = (game_snd *) realloc (Snds_iface, sizeof(game_snd) * (Num_iface_sounds + increase_by));
+				Snds_iface = (game_snd *) vm_realloc (Snds_iface, sizeof(game_snd) * (Num_iface_sounds + increase_by));
 				Verify( Snds_iface != NULL );
 				Num_iface_sounds += increase_by;
 
 				Assert( Snds_iface_handle != NULL );
-				Snds_iface_handle = (int *) realloc (Snds_iface_handle, sizeof(int) * Num_iface_sounds);
+				Snds_iface_handle = (int *) vm_realloc (Snds_iface_handle, sizeof(int) * Num_iface_sounds);
 				Verify( Snds_iface_handle != NULL );
 
 				// make sure new handle slots are set to -1

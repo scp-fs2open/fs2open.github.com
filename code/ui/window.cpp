@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-01-31 23:27:55 $
+ * $Revision: 2.5 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  * Routines to handle UI windows.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/01/31 23:27:55  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.3  2004/07/26 20:47:55  Kazan
  * remove MCD complete
  *
@@ -341,9 +344,9 @@ void UI_WINDOW::destroy()
 		// free up this struct
 		if(xstrs[idx] != NULL){
 			if(xstrs[idx]->xstr != NULL){
-				free(xstrs[idx]->xstr);
+				vm_free(xstrs[idx]->xstr);
 			}
-			free(xstrs[idx]);
+			vm_free(xstrs[idx]);
 			xstrs[idx] = NULL;
 		}
 	}
@@ -625,16 +628,16 @@ void UI_WINDOW::add_XSTR(char *string, int _xstr_id, int _x, int _y, UI_GADGET *
 	}
 
 	// allocate a new struct
-	xstrs[idx] = (UI_XSTR*)malloc(sizeof(UI_XSTR));
+	xstrs[idx] = (UI_XSTR*)vm_malloc(sizeof(UI_XSTR));
 	if(xstrs[idx] == NULL){
 		return;
 	}
 	ui_x = xstrs[idx];	
 
 	// fill in the data
-	ui_x->xstr = strdup(string);		
+	ui_x->xstr = vm_strdup(string);		
 	if(ui_x->xstr == NULL){
-		free(ui_x);
+		vm_free(ui_x);
 		xstrs[idx] = NULL;
 		return;
 	}
@@ -671,16 +674,16 @@ void UI_WINDOW::add_XSTR(UI_XSTR *xstr)
 	}
 
 	// allocate a new struct
-	xstrs[idx] = (UI_XSTR*)malloc(sizeof(UI_XSTR));
+	xstrs[idx] = (UI_XSTR*)vm_malloc(sizeof(UI_XSTR));
 	if(xstrs[idx] == NULL){
 		return;
 	}
 	ui_x = xstrs[idx];	
 
 	// fill in the data
-	ui_x->xstr = strdup(xstr->xstr);
+	ui_x->xstr = vm_strdup(xstr->xstr);
 	if(ui_x->xstr == NULL){
-		free(ui_x);
+		vm_free(ui_x);
 		xstrs[idx] = NULL;
 		return;
 	}
@@ -860,7 +863,7 @@ void parse_tooltip(int n)
 
 	stuff_int(&Tooltips[n].hotspot);
 	stuff_string(buf, F_MESSAGE, NULL);
-	Tooltips[n].text = strdup(buf);
+	Tooltips[n].text = vm_strdup(buf);
 }
 
 int parse_tooltips_group(int group, int n)
@@ -870,7 +873,7 @@ int parse_tooltips_group(int group, int n)
 	Assert(group < MAX_TOOLTIP_GROUPS);
 	required_string("$Mask Filename:");
 	stuff_string(buf, F_NAME, NULL);
-	Tooltip_groups[group].mask = strdup(buf);
+	Tooltip_groups[group].mask = vm_strdup(buf);
 	Tooltip_groups[group].start = n;
 
 	while (1) {

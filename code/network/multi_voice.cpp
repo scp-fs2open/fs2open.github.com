@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_voice.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-02 21:18:20 $
+ * $Revision: 2.8 $
+ * $Date: 2005-05-12 17:49:15 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.6  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -532,7 +537,7 @@ void multi_voice_init()
 	Multi_voice_pre_sound_size = 0;
 	if(Multi_voice_can_play){
 		// attempt to allocate the buffer
-		Multi_voice_playback_buffer = (char*)malloc(MULTI_VOICE_MAX_BUFFER_SIZE);
+		Multi_voice_playback_buffer = (char*)vm_malloc(MULTI_VOICE_MAX_BUFFER_SIZE);
 		if(Multi_voice_playback_buffer == NULL){
 			nprintf(("Network","MULTI VOICE : Error allocating playback buffer - playback will not be possible\n"));		
 			Multi_voice_can_play = 0;		
@@ -574,7 +579,7 @@ void multi_voice_init()
 			// allocate the accum buffer
 			for(s_idx=0;s_idx<MULTI_VOICE_ACCUM_BUFFER_COUNT;s_idx++){
 				Multi_voice_stream[idx].accum_buffer[s_idx] = NULL;
-				Multi_voice_stream[idx].accum_buffer[s_idx] = (ubyte*)malloc(MULTI_VOICE_ACCUM_BUFFER_SIZE);
+				Multi_voice_stream[idx].accum_buffer[s_idx] = (ubyte*)vm_malloc(MULTI_VOICE_ACCUM_BUFFER_SIZE);
 				if(Multi_voice_stream[idx].accum_buffer[s_idx] == NULL){
 					nprintf(("Network","MULTI VOICE : Error allocating accum buffer - playback will not be possible\n"));
 					multi_voice_free_all();
@@ -1266,7 +1271,7 @@ void multi_voice_free_all()
 
 	// free up the playback buffer
 	if(Multi_voice_playback_buffer != NULL){
-		free(Multi_voice_playback_buffer);
+		vm_free(Multi_voice_playback_buffer);
 		Multi_voice_playback_buffer = NULL;
 	}
 
@@ -1274,7 +1279,7 @@ void multi_voice_free_all()
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_VOICE_ACCUM_BUFFER_COUNT;s_idx++){
 			if(Multi_voice_stream[idx].accum_buffer[s_idx] != NULL){
-				free(Multi_voice_stream[idx].accum_buffer[s_idx]);
+				vm_free(Multi_voice_stream[idx].accum_buffer[s_idx]);
 				Multi_voice_stream[idx].accum_buffer[s_idx] = NULL;
 			}
 		}

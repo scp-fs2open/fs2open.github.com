@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-03-15 17:10:58 $
+ * $Revision: 2.15 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/03/15 17:10:58  taylor
+ * make sure w,h,bpp are useable before trying to assign values to them
+ *
  * Revision 2.13  2005/03/13 23:07:36  taylor
  * enable 32-bit to 16-bit TGA conversion with -tga16 cmdline option (experimental)
  * fix crash when upgrading from original campaign stats file to current
@@ -749,7 +752,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 	Assert(bytes_remaining>0);
 
-	ubyte *fileptr = (ubyte*)malloc(bytes_remaining);
+	ubyte *fileptr = (ubyte*)vm_malloc(bytes_remaining);
 	Assert(fileptr);
 	if(fileptr == NULL){
 		return TARGA_ERROR_READING;
@@ -794,7 +797,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 	}
 
-	free(fileptr);
+	vm_free(fileptr);
 	cfclose(targa_file);
 	targa_file = NULL;
 
@@ -868,7 +871,7 @@ int targa_write_bitmap(char *real_filename, ubyte *data, ubyte *palette, int w, 
 	// f.write_ubyte(0x20);				// ImageDesc  ( 0x20 = Origin at upper left )
 
 	ubyte *compressed_data;
-	compressed_data = (ubyte*)malloc(w * h * bytes_per_pixel);
+	compressed_data = (ubyte*)vm_malloc(w * h * bytes_per_pixel);
 	Assert(compressed_data);
 	if(compressed_data == NULL){
 		cfclose(f);
@@ -878,7 +881,7 @@ int targa_write_bitmap(char *real_filename, ubyte *data, ubyte *palette, int w, 
 	int compressed_data_len;
 	compressed_data_len = targa_compress((char*)compressed_data, (char*)data, 3, bytes_per_pixel, w * h * bytes_per_pixel);
 	if (compressed_data_len < 0) {
-		free(compressed_data);
+		vm_free(compressed_data);
 		cfclose(f);		
 		return -1;
 	}

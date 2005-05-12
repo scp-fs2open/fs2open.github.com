@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-04-28 01:34:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.17 $
+ * $Date: 2005-05-12 17:49:12 $
+ * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/04/28 01:34:33  wmcoolmon
+ * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
+ *
  * Revision 2.15  2005/04/11 05:42:02  taylor
  * some demo related fixes (Jens Granseuer)
  *
@@ -1521,7 +1524,7 @@ void hud_config_button_do(int n)
 		} else {
 			out = cf_add_ext(name, ".hcf");
 		}
-		HC_filenames[HC_num_files++] = strdup(out);
+		HC_filenames[HC_num_files++] = vm_strdup(out);
 		hud_config_color_save(out);		
 
 		HC_fname_input.set_text(out);
@@ -2078,7 +2081,7 @@ void hud_config_color_close()
 	// free all 
 	for(idx=0; idx<HC_num_files; idx++){
 		if(HC_filenames[idx] != NULL){
-			free(HC_filenames[idx]);
+			vm_free(HC_filenames[idx]);
 			HC_filenames[idx] = NULL;
 		}
 	}

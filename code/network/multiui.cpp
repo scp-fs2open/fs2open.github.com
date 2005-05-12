@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-03-08 03:50:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.37 $
+ * $Date: 2005-05-12 17:49:15 $
+ * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/03/08 03:50:23  Goober5000
+ * edited for language ;)
+ * --Goober5000
+ *
  * Revision 2.35  2005/03/02 21:18:20  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -2626,7 +2630,7 @@ void multi_join_cull_timeouts()
 						// handle any gui details related to deleting this item
 						multi_join_handle_item_cull(Active_game_head, count);
 						
-						free(Active_game_head);
+						vm_free(Active_game_head);
 						Active_game_head = NULL;						
 						return;
 					} 
@@ -2638,7 +2642,7 @@ void multi_join_cull_timeouts()
 						Active_game_head = moveup->next;
 						Active_game_head->prev = moveup->prev;
 						Active_game_head->prev->next = Active_game_head;
-						free(moveup);
+						vm_free(moveup);
 						moveup = Active_game_head;											
 					}
 				}
@@ -2653,11 +2657,11 @@ void multi_join_cull_timeouts()
 					
 					// if it was the last element on the list, return
 					if(moveup->next == Active_game_head){
-						free(moveup);
+						vm_free(moveup);
 						return;
 					} else {
 						backup = moveup->next;
-						free(moveup);
+						vm_free(moveup);
 						moveup = backup;						
 					}
 				}

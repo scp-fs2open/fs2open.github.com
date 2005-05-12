@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/BUTTON.cpp $
- * $Revision: 2.3 $
- * $Date: 2005-01-31 23:27:55 $
+ * $Revision: 2.4 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  * Code for pushbuttons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/01/31 23:27:55  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.2  2003/11/11 02:15:42  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -219,7 +222,7 @@ void UI_BUTTON::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int 
 
 	if (_text) {
 		if ( strlen(_text) > 0 ) {
-			text = strdup(_text);
+			text = vm_strdup(_text);
 		}
 	}
 
@@ -252,7 +255,7 @@ void UI_BUTTON::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int 
 void UI_BUTTON::destroy()
 {
 	if (text) {
-		free(text);
+		vm_free(text);
 		text = NULL;
 	}
 

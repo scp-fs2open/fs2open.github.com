@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-01-31 23:27:53 $
+ * $Revision: 2.13 $
+ * $Date: 2005-05-12 17:49:12 $
  * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/01/31 23:27:53  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.11  2004/07/26 20:47:31  Kazan
  * remove MCD complete
  *
@@ -753,32 +756,32 @@ void gr_font_close()
 
 	for (i=0; i<Num_fonts; i++) {
 		if (fnt->kern_data) {
-			free(fnt->kern_data);
+			vm_free(fnt->kern_data);
 			fnt->kern_data = NULL;
 		}
 
 		if (fnt->char_data) {
-			free(fnt->char_data);
+			vm_free(fnt->char_data);
 			fnt->char_data = NULL;
 		}
 
 		if (fnt->pixel_data) {
-			free(fnt->pixel_data);
+			vm_free(fnt->pixel_data);
 			fnt->pixel_data = NULL;
 		}
 
 		if (fnt->bm_data) {
-			free(fnt->bm_data);
+			vm_free(fnt->bm_data);
 			fnt->bm_data = NULL;
 		}
 
 		if (fnt->bm_u) {
-			free(fnt->bm_u);
+			vm_free(fnt->bm_u);
 			fnt->bm_u = NULL;
 		}
 
 		if (fnt->bm_v) {
-			free(fnt->bm_v);
+			vm_free(fnt->bm_v);
 			fnt->bm_v = NULL;
 		}
 
@@ -846,14 +849,14 @@ int gr_create_font(char * typeface)
 	fnt->pixel_data_size = INTEL_INT( fnt->pixel_data_size );
 
 	if ( fnt->kern_data_size )	{
-		fnt->kern_data = (font_kernpair *)malloc( fnt->kern_data_size );
+		fnt->kern_data = (font_kernpair *)vm_malloc( fnt->kern_data_size );
 		Assert(fnt->kern_data!=NULL);
 		cfread( fnt->kern_data, fnt->kern_data_size, 1, fp );
 	} else {
 		fnt->kern_data = NULL;
 	}
 	if ( fnt->char_data_size )	{
-		fnt->char_data = (font_char *)malloc( fnt->char_data_size );
+		fnt->char_data = (font_char *)vm_malloc( fnt->char_data_size );
 		Assert( fnt->char_data != NULL );
 		cfread( fnt->char_data, fnt->char_data_size, 1, fp );
 
@@ -868,7 +871,7 @@ int gr_create_font(char * typeface)
 		fnt->char_data = NULL;
 	}
 	if ( fnt->pixel_data_size )	{
-		fnt->pixel_data = (ubyte *)malloc( fnt->pixel_data_size );
+		fnt->pixel_data = (ubyte *)vm_malloc( fnt->pixel_data_size );
 		Assert(fnt->pixel_data!=NULL);
 		cfread( fnt->pixel_data, fnt->pixel_data_size, 1, fp );
 	} else {
@@ -890,9 +893,9 @@ int gr_create_font(char * typeface)
 
 	fnt->bm_w = w;
 	fnt->bm_h = h;
-	fnt->bm_data = (ubyte *)malloc(fnt->bm_w*fnt->bm_h);
-	fnt->bm_u = (int *)malloc(sizeof(int)*fnt->num_chars);
-	fnt->bm_v = (int *)malloc(sizeof(int)*fnt->num_chars);
+	fnt->bm_data = (ubyte *)vm_malloc(fnt->bm_w*fnt->bm_h);
+	fnt->bm_u = (int *)vm_malloc(sizeof(int)*fnt->num_chars);
+	fnt->bm_v = (int *)vm_malloc(sizeof(int)*fnt->num_chars);
 
 	int i,x,y;
 	x = y = 0;

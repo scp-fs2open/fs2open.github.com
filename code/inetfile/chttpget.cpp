@@ -9,13 +9,16 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/Chttpget.cpp $
-* $Revision: 2.5 $
-* $Date: 2004-07-26 20:47:33 $
-* $Author: Kazan $
+* $Revision: 2.6 $
+* $Date: 2005-05-12 17:49:13 $
+* $Author: taylor $
 *
 * HTTP Client class (get only)
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.5  2004/07/26 20:47:33  Kazan
+* remove MCD complete
+*
 * Revision 2.4  2004/07/12 16:32:50  Kazan
 * MCD - define _MCD_CHECK to use memory tracking
 *
@@ -719,7 +722,7 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 			http_lastaslu->abort = true;
 
 		async_dns_lookup *newaslu;
-		newaslu = (async_dns_lookup *)malloc(sizeof(async_dns_lookup));
+		newaslu = (async_dns_lookup *)vm_malloc(sizeof(async_dns_lookup));
 		memset(&newaslu->ip,0,sizeof(unsigned int));
 		newaslu->host = hostname;
 		newaslu->done = false;
@@ -755,14 +758,14 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 			return -1;
 		if(httpaslu.done)
 		{
-			//free(http_lastaslu);
+			//vm_free(http_lastaslu);
 			http_lastaslu = NULL;
 			memcpy(ip,&httpaslu.ip,sizeof(unsigned int));
 			return 1;
 		}
 		else if(httpaslu.error)
 		{
-			free(http_lastaslu);
+			vm_free(http_lastaslu);
 			http_lastaslu = NULL;
 			return -1;
 		}
@@ -799,7 +802,7 @@ void *http_gethostbynameworker(void *parm)
 		lookup->done = true;
 		memcpy(&httpaslu,lookup,sizeof(async_dns_lookup));
 	}
-	free(lookup);
+	vm_free(lookup);
 
 #ifdef __LINUX__
 	return NULL;

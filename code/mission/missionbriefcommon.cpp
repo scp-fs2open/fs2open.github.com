@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-04-22 00:34:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.24 $
+ * $Date: 2005-05-12 17:49:13 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/04/22 00:34:55  wmcoolmon
+ * Minor updates to the GUI, and added some code that will (hopefully) resize HUD images in nonstandard resolutions. I couldn't test it; got an out of memory error.
+ *
  * Revision 2.22  2005/04/12 05:26:36  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -577,11 +580,11 @@ void mission_brief_common_init()
 		// If Fred is running malloc out max space
 		for (i=0; i<MAX_TEAMS; i++ )	{
 			for (j=0; j<MAX_BRIEF_STAGES; j++ )	{
-				Briefings[i].stages[j].new_text = (char *)malloc(MAX_BRIEF_LEN);
+				Briefings[i].stages[j].new_text = (char *)vm_malloc(MAX_BRIEF_LEN);
 				Assert(Briefings[i].stages[j].new_text!=NULL);
-				Briefings[i].stages[j].icons = (brief_icon *)malloc(sizeof(brief_icon)*MAX_STAGE_ICONS);
+				Briefings[i].stages[j].icons = (brief_icon *)vm_malloc(sizeof(brief_icon)*MAX_STAGE_ICONS);
 				Assert(Briefings[i].stages[j].icons!=NULL);
-				Briefings[i].stages[j].lines = (brief_line *)malloc(sizeof(brief_line)*MAX_BRIEF_STAGE_LINES);
+				Briefings[i].stages[j].lines = (brief_line *)vm_malloc(sizeof(brief_line)*MAX_BRIEF_STAGE_LINES);
 				Assert(Briefings[i].stages[j].lines!=NULL);
 				Briefings[i].stages[j].num_icons = 0;
 				Briefings[i].stages[j].num_lines = 0;
@@ -590,9 +593,9 @@ void mission_brief_common_init()
 
 		for (i=0; i<MAX_TEAMS; i++ )	{
 			for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
-				Debriefings[i].stages[j].new_text = (char *)malloc(MAX_DEBRIEF_LEN);
+				Debriefings[i].stages[j].new_text = (char *)vm_malloc(MAX_DEBRIEF_LEN);
 				Assert(Debriefings[i].stages[j].new_text!=NULL);
-				Debriefings[i].stages[j].new_recommendation_text = (char *)malloc(MAX_RECOMMENDATION_LEN);
+				Debriefings[i].stages[j].new_recommendation_text = (char *)vm_malloc(MAX_RECOMMENDATION_LEN);
 				Assert(Debriefings[i].stages[j].new_recommendation_text!=NULL);
 			}
 		}
@@ -635,17 +638,17 @@ void mission_brief_common_reset()
 	for (i=0; i<MAX_TEAMS; i++ )	{
 		for (j=0; j<MAX_BRIEF_STAGES; j++ )	{
 			if ( Briefings[i].stages[j].new_text )	{
-				free(Briefings[i].stages[j].new_text);
+				vm_free(Briefings[i].stages[j].new_text);
 				Briefings[i].stages[j].new_text = NULL;			
 			}
 	
 			if ( Briefings[i].stages[j].icons )	{
-				free(Briefings[i].stages[j].icons);
+				vm_free(Briefings[i].stages[j].icons);
 				Briefings[i].stages[j].icons = NULL;
 			}
 
 			if ( Briefings[i].stages[j].lines )	{
-				free(Briefings[i].stages[j].lines);
+				vm_free(Briefings[i].stages[j].lines);
 				Briefings[i].stages[j].lines = NULL;
 			}
 		}
@@ -664,12 +667,12 @@ void mission_debrief_common_reset()
 	for (i=0; i<MAX_TEAMS; i++ )	{
 		for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
 			if ( Debriefings[i].stages[j].new_text )	{
-				free(Debriefings[i].stages[j].new_text);
+				vm_free(Debriefings[i].stages[j].new_text);
 				Debriefings[i].stages[j].new_text = NULL;
 			}
 
 			if ( Debriefings[i].stages[j].new_recommendation_text )	{
-				free(Debriefings[i].stages[j].new_recommendation_text);
+				vm_free(Debriefings[i].stages[j].new_recommendation_text);
 				Debriefings[i].stages[j].new_recommendation_text = NULL;
 			}
 		}
@@ -2374,7 +2377,7 @@ grid *brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center
 		d = 2;
 
 	if (gridp == NULL)
-		gridp = (grid *) malloc(sizeof(grid));
+		gridp = (grid *) vm_malloc(sizeof(grid));
 
 	Assert(gridp);
 
@@ -2711,7 +2714,7 @@ void cmd_brief_reset()
 		for (i=0; i<MAX_TEAMS; i++) {
 			for (j=0; j<Cmd_briefs[i].num_stages; j++) {
 				if (Cmd_briefs[i].stage[j].text)
-					free(Cmd_briefs[i].stage[j].text);
+					vm_free(Cmd_briefs[i].stage[j].text);
 			}
 		}
 	}

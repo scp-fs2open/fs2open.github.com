@@ -9,11 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-24 12:56:43 $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-12 17:49:15 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/24 12:56:43  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.7  2005/03/02 21:18:19  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -455,15 +468,15 @@ void multi_pinfo_popup_init(net_player *np)
 #endif
 
 	// initialize strings	
-	Multi_pinfo_stats_labels[0] = strdup(XSTR("Rank", 1007));
-	Multi_pinfo_stats_labels[1] = strdup(XSTR("Missions Flown", 1008));
-	Multi_pinfo_stats_labels[2] = strdup(XSTR("Flight Time", 1009));
-	Multi_pinfo_stats_labels[3] = strdup(XSTR("Last Flown",1010));
-	Multi_pinfo_stats_labels[4] = strdup(XSTR("Total Kills", 115));
-	Multi_pinfo_stats_labels[5] = strdup(XSTR("Primary Shots Fired", 1012));
-	Multi_pinfo_stats_labels[6] = strdup(XSTR("Primary Hit %", 1013));
-	Multi_pinfo_stats_labels[7] = strdup(XSTR("Secondary Shots Fired",	1014));
-	Multi_pinfo_stats_labels[8] = strdup(XSTR("Secondary Hit %", 1015));				
+	Multi_pinfo_stats_labels[0] = vm_strdup(XSTR("Rank", 1007));
+	Multi_pinfo_stats_labels[1] = vm_strdup(XSTR("Missions Flown", 1008));
+	Multi_pinfo_stats_labels[2] = vm_strdup(XSTR("Flight Time", 1009));
+	Multi_pinfo_stats_labels[3] = vm_strdup(XSTR("Last Flown",1010));
+	Multi_pinfo_stats_labels[4] = vm_strdup(XSTR("Total Kills", 115));
+	Multi_pinfo_stats_labels[5] = vm_strdup(XSTR("Primary Shots Fired", 1012));
+	Multi_pinfo_stats_labels[6] = vm_strdup(XSTR("Primary Hit %", 1013));
+	Multi_pinfo_stats_labels[7] = vm_strdup(XSTR("Secondary Shots Fired",	1014));
+	Multi_pinfo_stats_labels[8] = vm_strdup(XSTR("Secondary Hit %", 1015));				
 }
 
 // run the popup in a tight loop (no states)
@@ -550,7 +563,7 @@ void multi_pinfo_popup_close()
 	// free up strings
 	for(idx=0; idx<MULTI_PINFO_NUM_STATS_LABELS; idx++){
 		if(Multi_pinfo_stats_labels[idx] != NULL){
-			free(Multi_pinfo_stats_labels[idx]);
+			vm_free(Multi_pinfo_stats_labels[idx]);
 			Multi_pinfo_stats_labels[idx] = NULL;
 		}
 	}	

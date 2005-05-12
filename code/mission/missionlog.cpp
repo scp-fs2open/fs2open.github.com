@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-02 21:24:45 $
+ * $Revision: 2.8 $
+ * $Date: 2005-05-12 17:49:13 $
  * $Author: taylor $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/02 21:24:45  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.6  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -717,9 +720,9 @@ void message_log_add_seg(int n, int x, int color, char *text, int flags = 0)
 	while (*parent)
 		parent = &((*parent)->next);
 
-	seg = (log_text_seg *) malloc(sizeof(log_text_seg));
+	seg = (log_text_seg *) vm_malloc(sizeof(log_text_seg));
 	Assert(seg);
-	seg->text = strdup(text);
+	seg->text = vm_strdup(text);
 	seg->color = color;
 	seg->x = x;
 	seg->flags = flags;
@@ -777,7 +780,7 @@ void message_log_remove_segs(int n)
 	ptr = Log_lines[n];
 	while (ptr) {
 		ptr2 = ptr->next;
-		free(ptr);
+		vm_free(ptr);
 		ptr = ptr2;
 	}
 

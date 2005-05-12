@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-01-31 23:27:53 $
+ * $Revision: 2.15 $
+ * $Date: 2005-05-12 17:49:13 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/01/31 23:27:53  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.13  2004/07/26 20:47:36  Kazan
  * remove MCD complete
  *
@@ -541,7 +544,7 @@ void lcl_close()
 {
 	// if the filename exists, free it up
 	if(Lcl_ext_filename != NULL){
-		free(Lcl_ext_filename);
+		vm_free(Lcl_ext_filename);
 	}
 };
 
@@ -645,7 +648,7 @@ void lcl_xstr_init()
 				if (Xstr_table[index].str != NULL) {
 					Warning(LOCATION, "Strings table index %d used more than once", index);
 				}
-				Xstr_table[index].str = strdup(buf);
+				Xstr_table[index].str = vm_strdup(buf);
 			}
 
 			// read offset information, assume 0 if nonexistant
@@ -679,11 +682,11 @@ void lcl_xstr_close()
 {
 	for (int i=0; i<XSTR_SIZE; i++){
 		if (Xstr_table[i].str != NULL) {
-			free(Xstr_table[i].str);
+			vm_free(Xstr_table[i].str);
 			Xstr_table[i].str = NULL;
 		}
 	}
-	free(Lcl_ext_filename);
+	vm_free(Lcl_ext_filename);
 }
 
 
@@ -1013,11 +1016,11 @@ void lcl_ext_associate(char *filename)
 {
 	// if the filename already exists, free it up
 	if(Lcl_ext_filename != NULL){
-		free(Lcl_ext_filename);
+		vm_free(Lcl_ext_filename);
 	}
 
 	// set the new filename
-	Lcl_ext_filename = strdup(filename);
+	Lcl_ext_filename = vm_strdup(filename);
 }
 
 // given a valid XSTR() tag piece of text, extract the string portion, return it in out, nonzero on success

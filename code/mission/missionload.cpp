@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-01 07:31:10 $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-12 17:49:13 $
  * $Author: taylor $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/01 07:31:10  taylor
+ * *that blasted Enter key*, just fixing the log... nothing to see here...
+ *
  * Revision 2.7  2005/04/01 07:27:32  taylor
  * some minor Linux fixage
  *
@@ -559,14 +562,14 @@ void mission_load_menu_close()
 
 	for (i=0; i<mlm_nfiles; i++ )	{
 		if (mlm_missions[i] )	{
-			free(mlm_missions[i]);
+			vm_free(mlm_missions[i]);
 			mlm_missions[i] = NULL;
 		}
 	}
 
 	for (i=0; i<jtmp_nfiles; i++ )	{
 		if (jtmp_missions[i] )	{
-			free(jtmp_missions[i]);
+			vm_free(jtmp_missions[i]);
 			jtmp_missions[i] = NULL;
 		}
 	}

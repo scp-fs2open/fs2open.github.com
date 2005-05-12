@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-01-30 12:50:08 $
+ * $Revision: 2.15 $
+ * $Date: 2005-05-12 17:49:10 $
  * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/01/30 12:50:08  taylor
+ * merge with Linux/OSX tree - p0130
+ *
  * Revision 2.13  2004/12/20 20:18:30  fryday
  * Commented out ATL dependencies (And changed one macro to an swprintf instead)
  * Tiny change in animplay ( pow(2.0, ...) instead of pow(2, ...)) because VS2K5
@@ -443,7 +446,7 @@ anim_instance *anim_play(anim_play_struct *aps)
 	if ( anim_instance_is_streamed(instance) ) {
 		instance->file_offset = instance->parent->file_offset;
 	}
-	instance->frame = (ubyte *) malloc(instance->parent->width * instance->parent->height * 2);
+	instance->frame = (ubyte *) vm_malloc(instance->parent->width * instance->parent->height * 2);
 	Assert( instance->frame != NULL );
 	instance->time_elapsed = 0.0f;
 	instance->stop_at = aps->stop_at;
@@ -815,7 +818,7 @@ void anim_release_render_instance(anim_instance* instance)
 {
 	Assert( instance != NULL );
 	Assert(instance->frame);
-	free(instance->frame);
+	vm_free(instance->frame);
 	instance->frame = NULL;
 	instance->parent->instance_count--;
 
@@ -998,7 +1001,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 		if ( !fp )
 			return NULL;
 
-		ptr = (anim *) malloc(sizeof(anim));
+		ptr = (anim *) vm_malloc(sizeof(anim));
 		Assert(ptr);
 
 		ptr->flags = 0;
@@ -1016,7 +1019,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 		anim_read_header(ptr, fp);
 
 		if(ptr->num_keys > 0){
-			ptr->keys = (key_frame*)malloc(sizeof(key_frame) * ptr->num_keys);
+			ptr->keys = (key_frame*)vm_malloc(sizeof(key_frame) * ptr->num_keys);
 			Assert(ptr->keys != NULL);
 		} 			
 
@@ -1034,7 +1037,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 		/*prev_keyp = &ptr->keys;
 		count = ptr->num_keys;
 		while (count--) {
-			keyp = (key_frame *) malloc(sizeof(key_frame));
+			keyp = (key_frame *) vm_malloc(sizeof(key_frame));
 			keyp->next = *prev_keyp;
 			*prev_keyp = keyp;
 			prev_keyp = &keyp->next;
@@ -1075,7 +1078,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 			if ( ptr->flags & ANF_STREAMED ) {
 				ptr->data = NULL;
 				ptr->cache_file_offset = ptr->file_offset;
-				ptr->cache = (ubyte*)malloc(ANI_STREAM_CACHE_SIZE+2);
+				ptr->cache = (ubyte*)vm_malloc(ANI_STREAM_CACHE_SIZE+2);
 				Assert(ptr->cache);
 				cfseek(ptr->cfile_ptr, offset, CF_SEEK_SET);
 				cfread(ptr->cache, ANI_STREAM_CACHE_SIZE, 1, ptr->cfile_ptr);
@@ -1086,7 +1089,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 			// Not a memory mapped file (or streamed)
 			ptr->flags &= ~ANF_MEM_MAPPED;
 			ptr->flags &= ~ANF_STREAMED;
-			ptr->data = (ubyte *) malloc(count);
+			ptr->data = (ubyte *) vm_malloc(count);
 			ptr->file_offset = -1;
 			cfread(ptr->data, count, 1, fp);
 		}
@@ -1134,27 +1137,27 @@ int anim_free(anim *ptr)
 		return -1;
 
 	if(ptr->keys != NULL){
-		free(ptr->keys);
+		vm_free(ptr->keys);
 		ptr->keys = NULL;
 	}
 
 	if ( ptr->flags & (ANF_MEM_MAPPED|ANF_STREAMED) ) {
 		cfclose(ptr->cfile_ptr);
 		if ( ptr->cache ) {
-			free(ptr->cache);
+			vm_free(ptr->cache);
 			ptr->cache = NULL;
 		}
 	}
 	else {
 		Assert(ptr->data);
 		if ( ptr->data ) {
-			free(ptr->data);
+			vm_free(ptr->data);
 			ptr->data = NULL;
 		}
 	}
 
 	*prev_anim = ptr->next;
-	free(ptr);
+	vm_free(ptr);
 	return 0;
 }
 
@@ -1222,7 +1225,7 @@ int anim_write_frames_out(char *filename)
 
 	ai = init_anim_instance(source_anim, 16);
 
-	row_data = (ubyte**)malloc((source_anim->height+1) * 4);
+	row_data = (ubyte**)vm_malloc((source_anim->height+1) * 4);
 
 	for ( i = 0; i < source_anim->total_frames; i++ ) {
 		anim_get_next_raw_buffer(ai, 0, 0, 16);
@@ -1245,7 +1248,7 @@ int anim_write_frames_out(char *filename)
 
 	}
 	printf("\n");
-	free(row_data);
+	vm_free(row_data);
 	return 0;
 }
 
@@ -1278,7 +1281,7 @@ void anim_display_info(char *real_filename)
 
 	anim_read_header(&A, fp);
 	// read the keyframe frame nums and offsets
-	key_frame_nums = (int*)malloc(sizeof(int)*A.num_keys);
+	key_frame_nums = (int*)vm_malloc(sizeof(int)*A.num_keys);
 	Assert(key_frame_nums != NULL);
 	for ( i = 0; i < A.num_keys; i++ ) {
 		key_frame_nums[i] = 0;
@@ -1319,7 +1322,7 @@ void anim_display_info(char *real_filename)
 	printf("ac version:                %d\n", A.version);
 
 	if ( key_frame_nums != NULL ) {
-		free(key_frame_nums);
+		vm_free(key_frame_nums);
 	}
 
 	cfclose(fp);

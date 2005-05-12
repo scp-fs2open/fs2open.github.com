@@ -9,6 +9,10 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/03/07 13:10:21  bobboau
+ * commit of render target code, d3d should be totaly functional,
+ * OGL still needs implementation.
+ *
  * Revision 2.20  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -185,7 +189,7 @@ bool d3d_batch_init()
 {
 	Assert(batch_array == NULL);
 
-	batch_array = (Batch *) malloc(MAX_BATCH_BUFFERS * sizeof(Batch));
+	batch_array = (Batch *) vm_malloc(MAX_BATCH_BUFFERS * sizeof(Batch));
 
 	if(batch_array == NULL) return false;
 
@@ -205,7 +209,7 @@ void d3d_batch_deinit()
 		}
 	}
 
-	free(batch_array);
+	vm_free(batch_array);
 
 	d3d_batch_string_deinit();
 }
@@ -552,7 +556,7 @@ bool d3d_batch_string_init()
 	int size;
 
 	size = MAX_LG_STRINGS * sizeof(StringBatch);
-	long_str_array = (StringBatch *) malloc(size);
+	long_str_array = (StringBatch *) vm_malloc(size);
 	if(long_str_array == NULL) return false;
 
 	ZeroMemory(long_str_array, size); 
@@ -571,7 +575,7 @@ bool d3d_batch_string_init()
 	}
 
 	size = MAX_SM_STRINGS * sizeof(StringBatch);
-	small_str_array = (StringBatch *) malloc(size);
+	small_str_array = (StringBatch *) vm_malloc(size);
 	if(small_str_array == NULL) return false;
 
 	ZeroMemory(small_str_array, size); 
@@ -604,7 +608,7 @@ void d3d_batch_string_deinit()
 				long_str_array[i].vbuffer = NULL;
 		}
 
-		free(long_str_array);
+		vm_free(long_str_array);
 	}
 
 	if(small_str_array) {	
@@ -615,7 +619,7 @@ void d3d_batch_string_deinit()
 				small_str_array[i].vbuffer = NULL;
 		}
 
-		free(small_str_array);
+		vm_free(small_str_array);
 	}
 }
 

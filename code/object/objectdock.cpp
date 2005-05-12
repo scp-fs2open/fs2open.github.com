@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-04-05 05:53:21 $
+ * $Revision: 2.7 $
+ * $Date: 2005-05-12 17:49:16 $
  * $Author: taylor $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.5  2005/03/03 06:05:30  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -656,7 +659,7 @@ void dock_add_instance(object *objp, int dockpoint, object *other_objp)
 	dock_instance *item;
 
 	// create item
-	item = (dock_instance *) malloc(sizeof(dock_instance));
+	item = (dock_instance *) vm_malloc(sizeof(dock_instance));
 	item->dockpoint_used = dockpoint;
 	item->docked_objp = other_objp;
 
@@ -703,7 +706,7 @@ void dock_remove_instance(object *objp, object *other_objp)
 		}
 
 		// delete it
-		free(ptr);
+		vm_free(ptr);
 	}
 }
 

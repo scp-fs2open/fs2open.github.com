@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.58 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.59 $
+ * $Date: 2005-05-12 17:49:12 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.57  2005/04/24 03:02:43  wmcoolmon
  * Added resizing option to gr_shade. We can probably merge gr_shade and gr_rect; they do the same thing.
  *
@@ -646,8 +659,8 @@ typedef struct color {
 
 struct index_list{
 	index_list():index_buffer(NULL){};
-	~index_list(){if(index_buffer)free(index_buffer);};
-	void allocate_index_buffer(int size){if(index_buffer)free(index_buffer); index_buffer = (short*)malloc(sizeof(short) * size);};
+	~index_list(){if(index_buffer)vm_free(index_buffer);};
+	void allocate_index_buffer(int size){if(index_buffer)vm_free(index_buffer); index_buffer = (short*)vm_malloc(sizeof(short) * size);};
 	short* index_buffer;
 };
 
@@ -678,7 +691,7 @@ class geometry_batcher{
 	//you need to figure out how many verts are going to be requiered
 public:
 	geometry_batcher():n_to_render(0),n_allocated(0),vert(NULL){};
-	~geometry_batcher(){if(vert)free((void*)vert);if(vert_list)free(vert_list);};
+	~geometry_batcher(){if(vert)vm_free((void*)vert);if(vert_list)vm_free(vert_list);};
 
 	void add_alocate(int quad, int n_tri=0);//add this many without loseing what we have
 	void allocate(int quad, int n_tri=0);

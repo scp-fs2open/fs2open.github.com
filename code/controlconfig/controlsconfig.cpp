@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-04-28 05:29:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2005-05-12 17:49:11 $
+ * $Author: taylor $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/28 05:29:28  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.11  2005/04/17 05:38:28  taylor
  * updated Linux joystick code that's a bit less insane speed wise
  * remove ability to build without joystick support, no reason to keep it around
@@ -907,16 +910,16 @@ config_item_undo *get_undo_block(int size)
 {
 	config_item_undo *ptr;
 
-	ptr = (config_item_undo *) malloc( sizeof(config_item_undo) );
+	ptr = (config_item_undo *) vm_malloc( sizeof(config_item_undo) );
 	Assert(ptr);
 	ptr->next = Config_item_undo;
 	Config_item_undo = ptr;
 
 	ptr->size = size;
 	if (size) {
-		ptr->index = (int *) malloc( sizeof(int) * size );
+		ptr->index = (int *) vm_malloc( sizeof(int) * size );
 		Assert(ptr->index);
-		ptr->list = (config_item *) malloc( sizeof(config_item) * size );
+		ptr->list = (config_item *) vm_malloc( sizeof(config_item) * size );
 		Assert(ptr->list);
 
 	} else {
@@ -938,11 +941,11 @@ void free_undo_block()
 
 	Config_item_undo = ptr->next;
 	if (ptr->size) {
-		free(ptr->list);
-		free(ptr->index);
+		vm_free(ptr->list);
+		vm_free(ptr->index);
 	}
 
-	free(ptr);
+	vm_free(ptr);
 }
 
 // undo the most recent binding changes
@@ -1657,26 +1660,26 @@ void control_config_init()
 	control_config_conflict_check();
 
 	// setup strings					
-	Joy_axis_action_text[0] = strdup(XSTR("Turn (Yaw) Axis", 1016));
-	Joy_axis_action_text[1] = strdup(XSTR("Pitch Axis", 1017));
-	Joy_axis_action_text[2] = strdup(XSTR("Bank Axis", 1018));
-	Joy_axis_action_text[3] = strdup(XSTR("Absolute Throttle Axis", 1019));
-	Joy_axis_action_text[4] = strdup(XSTR("Relative Throttle Axis", 1020));
-	Joy_axis_text[0] = strdup(XSTR("Joystick/Mouse X Axis", 1021));
-	Joy_axis_text[1] = strdup(XSTR("Joystick/Mouse Y Axis", 1022));
-	Joy_axis_text[2] = strdup(XSTR("Joystick Z Axis", 1023));
-	Joy_axis_text[3] = strdup(XSTR("Joystick rX Axis", 1024));
-	Joy_axis_text[4] = strdup(XSTR("Joystick rY Axis", 1025));
-	Joy_axis_text[5] = strdup(XSTR("Joystick rZ Axis", 1026));
-	Mouse_button_text[0] = strdup("");
-	Mouse_button_text[1] = strdup(XSTR("Left Button", 1027));
-	Mouse_button_text[2] = strdup(XSTR("Right Button", 1028));
-	Mouse_button_text[3] = strdup(XSTR("Mid Button", 1029));
-	Mouse_button_text[4] = strdup("");
-	Mouse_axis_text[0] = strdup(XSTR("L/R", 1030));
-	Mouse_axis_text[1] = strdup(XSTR("U/B", 1031));
-	Invert_text[0] = strdup(XSTR("N", 1032));
-	Invert_text[1] = strdup(XSTR("Y", 1033));
+	Joy_axis_action_text[0] = vm_strdup(XSTR("Turn (Yaw) Axis", 1016));
+	Joy_axis_action_text[1] = vm_strdup(XSTR("Pitch Axis", 1017));
+	Joy_axis_action_text[2] = vm_strdup(XSTR("Bank Axis", 1018));
+	Joy_axis_action_text[3] = vm_strdup(XSTR("Absolute Throttle Axis", 1019));
+	Joy_axis_action_text[4] = vm_strdup(XSTR("Relative Throttle Axis", 1020));
+	Joy_axis_text[0] = vm_strdup(XSTR("Joystick/Mouse X Axis", 1021));
+	Joy_axis_text[1] = vm_strdup(XSTR("Joystick/Mouse Y Axis", 1022));
+	Joy_axis_text[2] = vm_strdup(XSTR("Joystick Z Axis", 1023));
+	Joy_axis_text[3] = vm_strdup(XSTR("Joystick rX Axis", 1024));
+	Joy_axis_text[4] = vm_strdup(XSTR("Joystick rY Axis", 1025));
+	Joy_axis_text[5] = vm_strdup(XSTR("Joystick rZ Axis", 1026));
+	Mouse_button_text[0] = vm_strdup("");
+	Mouse_button_text[1] = vm_strdup(XSTR("Left Button", 1027));
+	Mouse_button_text[2] = vm_strdup(XSTR("Right Button", 1028));
+	Mouse_button_text[3] = vm_strdup(XSTR("Mid Button", 1029));
+	Mouse_button_text[4] = vm_strdup("");
+	Mouse_axis_text[0] = vm_strdup(XSTR("L/R", 1030));
+	Mouse_axis_text[1] = vm_strdup(XSTR("U/B", 1031));
+	Invert_text[0] = vm_strdup(XSTR("N", 1032));
+	Invert_text[1] = vm_strdup(XSTR("Y", 1033));
 
 	control_config_list_prepare();
 }
@@ -1693,7 +1696,7 @@ void control_config_close()
 	help_overlay_unload(CONTROL_CONFIG_OVERLAY);
 	
 	if (Background_bitmap){
-		bm_unload(Background_bitmap);
+		bm_release(Background_bitmap);
 	}
 
 	Ui_window.destroy();
@@ -1705,31 +1708,31 @@ void control_config_close()
 	// free strings	
 	for(idx=0; idx<NUM_JOY_AXIS_ACTIONS; idx++){
 		if(Joy_axis_action_text[idx] != NULL){
-			free(Joy_axis_action_text[idx]);
+			vm_free(Joy_axis_action_text[idx]);
 			Joy_axis_action_text[idx] = NULL;
 		}
 	}
 	for(idx=0; idx<NUM_AXIS_TEXT; idx++){
 		if(Joy_axis_text[idx] != NULL){
-			free(Joy_axis_text[idx]);
+			vm_free(Joy_axis_text[idx]);
 			Joy_axis_text[idx] = NULL;
 		}
 	}
 	for(idx=0; idx<NUM_MOUSE_TEXT; idx++){
 		if(Mouse_button_text[idx] != NULL){
-			free(Mouse_button_text[idx]);
+			vm_free(Mouse_button_text[idx]);
 			Mouse_button_text[idx] = NULL;
 		}
 	}
 	for(idx=0; idx<NUM_MOUSE_AXIS_TEXT; idx++){
 		if(Mouse_axis_text[idx] != NULL){
-			free(Mouse_axis_text[idx]);
+			vm_free(Mouse_axis_text[idx]);
 			Mouse_axis_text[idx] = NULL;
 		}
 	}
 	for(idx=0; idx<NUM_INVERT_TEXT; idx++){
 		if(Invert_text[idx] != NULL){
-			free(Invert_text[idx]);
+			vm_free(Invert_text[idx]);
 			Invert_text[idx] = NULL;
 		}
 	}

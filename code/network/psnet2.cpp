@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-03-24 23:29:33 $
+ * $Revision: 2.10 $
+ * $Date: 2005-05-12 17:49:15 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/03/24 23:29:33  taylor
+ * (re)move some uneeded variables to fix compiler warnings
+ *
  * Revision 2.8  2005/03/02 21:18:20  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -1274,14 +1277,14 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 	for(i=0;i<MAXNETBUFFERS;i++){
 		if(Reliable_sockets[*sockp].rbuffers[i]){
 			if(Reliable_sockets[*sockp].rbuffers[i] != NULL){
-				free(Reliable_sockets[*sockp].rbuffers[i]);
+				vm_free(Reliable_sockets[*sockp].rbuffers[i]);
 			}
 			Reliable_sockets[*sockp].rbuffers[i] = NULL;
 			Reliable_sockets[*sockp].rsequence[i] = 0;
 		}
 		if(Reliable_sockets[*sockp].sbuffers[i]){
 			if(Reliable_sockets[*sockp].sbuffers[i] != NULL){
-				free(Reliable_sockets[*sockp].sbuffers[i]);
+				vm_free(Reliable_sockets[*sockp].sbuffers[i]);
 			}
 			Reliable_sockets[*sockp].sbuffers[i] = NULL;
 			Reliable_sockets[*sockp].rsequence[i] = 0;
@@ -1356,7 +1359,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 			int send_this_packet=1;			
 			
 			rsocket->send_len[i] = length;
-			rsocket->sbuffers[i] = (reliable_net_sendbuffer *)malloc(sizeof(reliable_net_sendbuffer));
+			rsocket->sbuffers[i] = (reliable_net_sendbuffer *)vm_malloc(sizeof(reliable_net_sendbuffer));
 		
 			memcpy(rsocket->sbuffers[i]->buffer,data,length);	
 
@@ -1435,7 +1438,7 @@ int psnet_rel_get(PSNET_SOCKET socketid, ubyte *buffer, int max_len)
 	for(i=0; i<MAXNETBUFFERS; i++){
 		if((rsocket->rsequence[i] == rsocket->oursequence) && rsocket->rbuffers[i]){
 			memcpy(buffer,rsocket->rbuffers[i]->buffer, rsocket->recv_len[i]);
-			free(rsocket->rbuffers[i]);
+			vm_free(rsocket->rbuffers[i]);
 			rsocket->rbuffers[i] = NULL;
 			rsocket->rsequence[i] = 0;			
 			rsocket->oursequence++;
@@ -1686,7 +1689,7 @@ void psnet_rel_work()
 						if(rsocket->sbuffers[i]){
 							if(rsocket->ssequence[i] == *acksig){								
 								Assert(rsocket->sbuffers[i] != NULL);
-								free(rsocket->sbuffers[i]);
+								vm_free(rsocket->sbuffers[i]);
 								rsocket->sbuffers[i] = NULL;	
 								rsocket->ssequence[i] = 0;
 							}
@@ -1741,7 +1744,7 @@ void psnet_rel_work()
 							} else {
 								rsocket->recv_len[i] = rcv_buff.data_len; 
 							}
-							rsocket->rbuffers[i] = (reliable_net_rcvbuffer *)malloc(sizeof(reliable_net_rcvbuffer));
+							rsocket->rbuffers[i] = (reliable_net_rcvbuffer *)vm_malloc(sizeof(reliable_net_rcvbuffer));
 							memcpy(rsocket->rbuffers[i]->buffer,rcv_buff.data,rsocket->recv_len[i]);	
 							rsocket->rsequence[i] = rcv_buff.seq;							
 							break;

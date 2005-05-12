@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-19 06:25:23 $
+ * $Revision: 2.8 $
+ * $Date: 2005-05-12 17:49:14 $
  * $Author: taylor $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/19 06:25:23  taylor
+ * don't try to allocate 0 bytes of memory when there are no shield tris, weird memory stuff frightens me
+ *
  * Revision 2.6  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -170,7 +173,7 @@ void model_octant_find_shields( polymodel * pm, model_octant * oct )
 		return;
 	}
 
-	oct->shield_tris = (shield_tri **)malloc( sizeof(shield_tri *) * oct->nshield_tris );
+	oct->shield_tris = (shield_tri **)vm_malloc( sizeof(shield_tri *) * oct->nshield_tris );
 	Assert(oct->shield_tris!=NULL);
 
 	n = 0;
@@ -404,7 +407,7 @@ void model_octant_find_faces( polymodel * pm, model_octant * oct )
 		return;
 	}
 
-	oct->verts = (vec3d **)malloc( sizeof(vec3d *) * oct->nverts );
+	oct->verts = (vec3d **)vm_malloc( sizeof(vec3d *) * oct->nverts );
 	Assert(oct->verts!=NULL);
 
 	oct->nverts = 0;
@@ -471,12 +474,12 @@ void model_octant_free( polymodel * pm )
 		model_octant * oct = &pm->octants[i];
 
 		if ( oct->verts )	{
-			free(oct->verts);
+			vm_free(oct->verts);
 			oct->verts = NULL;
 		}
 
 		if ( oct->shield_tris )	{
-			free( oct->shield_tris );
+			vm_free( oct->shield_tris );
 			oct->shield_tris = NULL;
 		}
 

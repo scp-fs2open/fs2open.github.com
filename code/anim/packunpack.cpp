@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.7 $
- * $Date: 2004-07-26 20:47:23 $
- * $Author: Kazan $
+ * $Revision: 2.8 $
+ * $Date: 2005-05-12 17:49:10 $
+ * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2004/07/26 20:47:23  Kazan
+ * remove MCD complete
+ *
  * Revision 2.6  2004/07/12 16:32:41  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -236,7 +239,7 @@ anim_instance *init_anim_instance(anim *ptr, int bpp)
 	}
 
 	ptr->instance_count++;
-	inst = (anim_instance *) malloc(sizeof(anim_instance));
+	inst = (anim_instance *) vm_malloc(sizeof(anim_instance));
 	Assert(inst);
 	inst->frame_num = -1;
 	inst->last_frame_num = -1;
@@ -247,9 +250,9 @@ anim_instance *init_anim_instance(anim *ptr, int bpp)
 	inst->aa_color = NULL;
 
 	if(bpp == 16){
-		inst->frame = (ubyte *) malloc(inst->parent->width * inst->parent->height * 2);
+		inst->frame = (ubyte *) vm_malloc(inst->parent->width * inst->parent->height * 2);
 	} else {
-		inst->frame = (ubyte *) malloc(inst->parent->width * inst->parent->height);
+		inst->frame = (ubyte *) vm_malloc(inst->parent->width * inst->parent->height);
 	}
 	return inst;
 }
@@ -257,14 +260,14 @@ anim_instance *init_anim_instance(anim *ptr, int bpp)
 void free_anim_instance(anim_instance *inst)
 {
 	Assert(inst->frame);
-	free(inst->frame);
+	vm_free(inst->frame);
 	inst->frame = NULL;
 	inst->parent->instance_count--;	
 	inst->parent = NULL;
 	inst->data = NULL;
 	inst->file_offset = -1;
 
-	free(inst);	
+	vm_free(inst);	
 }
 
 int anim_get_next_frame(anim_instance *inst)

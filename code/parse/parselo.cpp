@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.40 $
- * $Author: wmcoolmon $
- * $Date: 2005-05-08 20:23:28 $
+ * $Revision: 2.41 $
+ * $Author: taylor $
+ * $Date: 2005-05-12 17:49:16 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/05/08 20:23:28  wmcoolmon
+ * "backspace" function
+ *
  * Revision 2.39  2005/04/28 01:36:46  wmcoolmon
  * More parsing flexibility
  *
@@ -1533,13 +1536,13 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 	if ( file_is_encrypted ) {
 		int	unscrambled_len;
 		char	*scrambled_text;
-		scrambled_text = (char*)malloc(file_len+1);
+		scrambled_text = (char*)vm_malloc(file_len+1);
 		Assert(scrambled_text);
 		cfread(scrambled_text, file_len, 1, mf);
 		// unscramble text
 		unencrypt(scrambled_text, file_len, raw_text, &unscrambled_len);
 		file_len = unscrambled_len;
-		free(scrambled_text);
+		vm_free(scrambled_text);
 	} else {
 		cfread(raw_text, file_len, 1, mf);
 	}
@@ -2533,7 +2536,7 @@ int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int
 		}
 
 		// allocate temp string to hold extra stuff
-		char *temp = (char *) malloc(sizeof(char) * max_len);
+		char *temp = (char *) vm_malloc(sizeof(char) * max_len);
 
 		// ensure allocation was successful
 		if (temp)
@@ -2549,7 +2552,7 @@ int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int
 		}
 
 		// free temp string
-		free(temp);
+		vm_free(temp);
 	}
 	// not found
 	else

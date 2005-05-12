@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.115 $
- * $Date: 2005-04-21 15:49:20 $
+ * $Revision: 2.116 $
+ * $Date: 2005-05-12 17:49:14 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2005/04/21 15:49:20  taylor
+ * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
+ *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
+ *  - a little "stupid" fix for dds bitmap reading
+ *  - fix it so that memory is released properly on bitmap read errors
+ *  - some cleanup to model texture loading
+ *  - allow model textures to get released rather than just unloaded, saves bitmap slots
+ *  - bump MAX_BITMAPS to 4750, should be able to decrease after public testing of new code
+ *
  * Revision 2.114  2005/04/12 05:26:37  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -3042,7 +3051,7 @@ void model_cache_reset()
 		for (i=0; i<MAX_MODEL_CACHE; i++ )	{
 			Model_cache[i].cached_valid = 0;
 			if ( Model_cache[i].data )	{
-				free(Model_cache[i].data);
+				vm_free(Model_cache[i].data);
 				Model_cache[i].data = NULL;
 			}
 			if ( Model_cache[i].bitmap_id != -1 )	{
@@ -3343,7 +3352,7 @@ RedrawIt:
 
 
 //	if ( mc->data != NULL )	{
-//		free(mc->data);
+//		vm_free(mc->data);
 //		mc->data = NULL;
 //	}
 
@@ -3426,7 +3435,7 @@ RedrawIt:
 //	mprintf(( "Mallocing a %dx%d bitmap\n", w, h ));
 
 	if ( mc->data == NULL )	{
-		mc->data = (ubyte *)malloc( MODEL_MAX_BITMAP_SIZE * MODEL_MAX_BITMAP_SIZE );
+		mc->data = (ubyte *)vm_malloc( MODEL_MAX_BITMAP_SIZE * MODEL_MAX_BITMAP_SIZE );
 	}
 
 //	mprintf(( "Done mallocing a %dx%d bitmap\n", w, h ));
@@ -5341,9 +5350,9 @@ vec3d *htl_norms;
 */
 
 void dealc_model_loadstuf(){
-	if(htl_verts)free(htl_verts);
+	if(htl_verts)vm_free(htl_verts);
 	htl_verts= NULL;
-	if(htl_norms)free(htl_norms);
+	if(htl_norms)vm_free(htl_norms);
 	htl_norms= NULL;
 }
 
@@ -5354,14 +5363,15 @@ void alocate_poly_list(){
 	for(int i = 0; i<MAX_MODEL_TEXTURES; i++){
 		list[i].allocate(tri_count[i]*3);
 	}
+
 	if(htl_nverts > alocate_poly_list_nvert){
-		if(htl_verts)free(htl_verts);
-		htl_verts = (vec3d**)malloc(sizeof(vec3d*)*htl_nverts);
+		if(htl_verts)vm_free(htl_verts);
+		htl_verts = (vec3d**)vm_malloc(sizeof(vec3d*)*htl_nverts);
 		alocate_poly_list_nvert = htl_nverts;
 	}
 	if(htl_nnorms > alocate_poly_list_nnorm){
-		if(htl_norms)free(htl_norms);
-		htl_norms = (vec3d**)malloc(sizeof(vec3d*)*htl_nnorms);
+		if(htl_norms)vm_free(htl_norms);
+		htl_norms = (vec3d**)vm_malloc(sizeof(vec3d*)*htl_nnorms);
 		alocate_poly_list_nnorm = htl_nnorms;
 	}
 
@@ -6122,7 +6132,7 @@ struct silhouette_index{
 	int n_in_list;
 	void allocate(int size){
 		if(size <= silhouette_n_allocated)return;
-		short* new_buffer = (short*)malloc(sizeof(short)* size);
+		short* new_buffer = (short*)vm_malloc(sizeof(short)* size);
 		if(silhouette_n_allocated){memcpy(new_buffer, silhouette_index, sizeof(short)*silhouette_n_allocated );}
 		silhouette_n_allocated = size;
 	};
@@ -6140,7 +6150,7 @@ struct silhouette_index{
 		}
 	};
 	silhouette_index(){silhouette_n_allocated=0; n_in_list=0;};
-	~silhouette_index(){free(silhouette_index);};
+	~silhouette_index(){vm_free(silhouette_index);};
 };
 
 

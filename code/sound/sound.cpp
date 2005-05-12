@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-04-18 03:31:27 $
+ * $Revision: 2.24 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/04/18 03:31:27  taylor
+ * some extra checks to make sure we don't act on invalid gamesnds (fix for WCS)
+ *
  * Revision 2.22  2005/04/15 11:28:41  taylor
  * div-by-zero fix for snd_time_remaining()
  *
@@ -725,11 +728,11 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 
 	// free the header if needed
 	if (header != NULL)
-		free(header);
+		vm_free(header);
 
 	// we don't need to keep si->data around anymore, this should be NULL for OGG files
 	if (si->data != NULL) {
-		free(si->data);
+		vm_free(si->data);
 		si->data = NULL;
  	}
  

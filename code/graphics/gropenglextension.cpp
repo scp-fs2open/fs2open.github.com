@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-04-13 23:24:21 $
- * $Author: phreak $
+ * $Revision: 1.8 $
+ * $Date: 2005-05-12 17:49:12 $
+ * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/04/13 23:24:21  phreak
+ * Updated the message of a required extension that hasn't been found.
+ * It was referencing the old Glide engine.
+ *
  * Revision 1.6  2005/02/04 23:29:31  taylor
  * merge with Linux/OSX tree - p0204-3
  *
@@ -125,7 +129,7 @@ void opengl_print_extensions()
 	char *extlist;
 	char *curext;
 
-	extlist=(char*)malloc(strlen(OGL_extensions));
+	extlist=(char*)vm_malloc(strlen(OGL_extensions));
 	memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
 	
 	curext=strtok(extlist, " ");
@@ -134,7 +138,7 @@ void opengl_print_extensions()
 		mprintf(( "%s\n", curext ));
 		curext=strtok(NULL, " ");
 	}
-	free(extlist);
+	vm_free(extlist);
 }
 
 int opengl_extension_is_enabled(int idx)

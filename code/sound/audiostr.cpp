@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-03-27 06:14:30 $
+ * $Revision: 2.17 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/03/27 06:14:30  taylor
+ * update for streaming support and platform independance
+ *
  * Revision 2.15  2005/03/10 08:00:16  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -544,7 +547,7 @@ BOOL AudioStream::Create (LPSTR pszFilename, AudioStreamServices * pass)
 	if (pszFilename && m_pass) {
 		// Create a new WaveFile object
 	
-		m_pwavefile = (WaveFile *)malloc(sizeof(WaveFile));
+		m_pwavefile = (WaveFile *)vm_malloc(sizeof(WaveFile));
 		Assert(m_pwavefile);
 
 		if (m_pwavefile) {
@@ -590,7 +593,7 @@ BOOL AudioStream::Create (LPSTR pszFilename, AudioStreamServices * pass)
 				// Error opening file
 				nprintf(("SOUND", "SOUND => Failed to open wave file: %s\n\r", pszFilename));
 				m_pwavefile->Close();
-				free(m_pwavefile);
+				vm_free(m_pwavefile);
 				m_pwavefile = NULL;
 				fRtn = FAILURE;
 			}   
@@ -630,7 +633,7 @@ BOOL AudioStream::Destroy (void)
 	// Delete WaveFile object
 	if (m_pwavefile) {
 		m_pwavefile->Close();
-		free(m_pwavefile);
+		vm_free(m_pwavefile);
 		m_pwavefile = NULL;
 	}
 
@@ -1211,7 +1214,7 @@ void WaveFile::Close(void)
 {
 	// Free memory
 	if (m_pwfmt_original) {
-		free(m_pwfmt_original);
+		vm_free(m_pwfmt_original);
 		m_pwfmt_original = NULL;
 	}
 
@@ -1327,7 +1330,7 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 				}
 
 				// Allocate memory for WAVEFORMATEX structure + extra bytes
-				if ( (m_pwfmt_original = (WAVEFORMATEX *) malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
+				if ( (m_pwfmt_original = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
 					Assert(m_pwfmt_original != NULL);
 					// Copy bytes from temporary format structure
 					memcpy (m_pwfmt_original, &pcmwf, sizeof(pcmwf));
@@ -1416,7 +1419,7 @@ OPEN_ERROR:
 	}
 	if (m_pwfmt_original)
 	{
-		free(m_pwfmt_original);
+		vm_free(m_pwfmt_original);
 		m_pwfmt_original = NULL;
 	}
 
@@ -1711,7 +1714,7 @@ void audiostream_init()
 	// Create and initialize AudioStreamServices object.
 	// This must be done once and only once for each window that uses
 	// streaming services.
-	m_pass = (AudioStreamServices *)malloc(sizeof(AudioStreamServices));
+	m_pass = (AudioStreamServices *)vm_malloc(sizeof(AudioStreamServices));
 
 	if (m_pass)	{
 		m_pass->Constructor();
@@ -1725,25 +1728,25 @@ void audiostream_init()
 	// Allocate memory for the buffer which holds the uncompressed wave data that is streamed from the
 	// disk during a load/cue
 	if ( Wavedata_load_buffer == NULL ) {
-		Wavedata_load_buffer = (unsigned char*)malloc(BIGBUF_SIZE);
+		Wavedata_load_buffer = (unsigned char*)vm_malloc(BIGBUF_SIZE);
 		Assert(Wavedata_load_buffer != NULL);
 	}
 
 	// Allocate memory for the buffer which holds the uncompressed wave data that is streamed from the
 	// disk during a service interval
 	if ( Wavedata_service_buffer == NULL ) {
-		Wavedata_service_buffer = (unsigned char*)malloc(BIGBUF_SIZE);
+		Wavedata_service_buffer = (unsigned char*)vm_malloc(BIGBUF_SIZE);
 		Assert(Wavedata_service_buffer != NULL);
 	}
 
 	// Allocate memory for the buffer which holds the compressed wave data that is read from the hard disk
 	if ( Compressed_buffer == NULL ) {
-		Compressed_buffer = (unsigned char*)malloc(COMPRESSED_BUFFER_SIZE);
+		Compressed_buffer = (unsigned char*)vm_malloc(COMPRESSED_BUFFER_SIZE);
 		Assert(Compressed_buffer != NULL);
 	}
 
 	if ( Compressed_service_buffer == NULL ) {
-		Compressed_service_buffer = (unsigned char*)malloc(COMPRESSED_BUFFER_SIZE);
+		Compressed_service_buffer = (unsigned char*)vm_malloc(COMPRESSED_BUFFER_SIZE);
 		Assert(Compressed_service_buffer != NULL);
 	}
 
@@ -1775,28 +1778,28 @@ void audiostream_close()
 
 	// Destroy AudioStreamServices object
 	if (m_pass)	{
-		free(m_pass);
+		vm_free(m_pass);
 		m_pass = NULL;
 	}
 
 	// free global buffers
 	if ( Wavedata_load_buffer ) {
-		free(Wavedata_load_buffer);
+		vm_free(Wavedata_load_buffer);
 		Wavedata_load_buffer = NULL;
 	}
 
 	if ( Wavedata_service_buffer ) {
-		free(Wavedata_service_buffer);
+		vm_free(Wavedata_service_buffer);
 		Wavedata_service_buffer = NULL;
 	}
 
 	if ( Compressed_buffer ) {
-		free(Compressed_buffer);
+		vm_free(Compressed_buffer);
 		Compressed_buffer = NULL;
 	}
 
 	if ( Compressed_service_buffer ) {
-		free(Compressed_service_buffer);
+		vm_free(Compressed_service_buffer);
 		Compressed_service_buffer = NULL;
 	}
 

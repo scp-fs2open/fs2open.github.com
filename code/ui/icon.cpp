@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/icon.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-05-12 17:49:17 $
+ * $Author: taylor $
  *
  * C++ class implementation for icon UI element
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -73,7 +76,7 @@
 void UI_ICON::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int _h)
 {
 	if (_text)	
-		text = strdup(_text);
+		text = vm_strdup(_text);
 	else
 		text = NULL;
 
@@ -84,7 +87,7 @@ void UI_ICON::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int _h
 void UI_ICON::destroy()
 {
 	if (text) {
-		free(text);
+		vm_free(text);
 		text = NULL;
 	}
 

@@ -9,16 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.29 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.30 $
+ * $Date: 2005-05-12 17:49:11 $
  * $Author: taylor $
- * $Revision: 2.29 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.30 $
+ * $Date: 2005-05-12 17:49:11 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.28  2005/04/05 05:53:16  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -383,9 +396,6 @@
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
 #include <memory.h>
-#if defined(_WIN32) || defined(HAVE_MALLOC_H)
-#include <malloc.h>
-#endif
 #include <string.h>
 
 #if defined( __x86_64__ ) || defined( _WIN64 )
@@ -919,67 +929,53 @@ template <class T> void CAP( T& v, T mn, T mx )
 // Memory management functions
 //=========================================================
 
+// Returns 0 if not enough RAM.
+int vm_init(int min_heap_size);
+
+// Frees all RAM.
+void vm_free_all();
+
 #ifndef NDEBUG
 	// Debug versions
 
-	// Returns 0 if not enough RAM.
-	int vm_init(int min_heap_size);
-
 	// Allocates some RAM.
-	void *vm_malloc( int size, char *filename=NULL, int line=-1 );
+	void *_vm_malloc( int size, char *filename=NULL, int line=-1 );
 
-	// 
-	char *vm_strdup( const char *ptr, char *filename, int line );
+	// allocates some RAM for a string
+	char *_vm_strdup( const char *ptr, char *filename, int line );
 
 	// Frees some RAM. 
-	void vm_free( void *ptr, char *filename=NULL, int line=-1 );
-
-	// Frees all RAM.
-	void vm_free_all();
+	void _vm_free( void *ptr, char *filename=NULL, int line=-1 );
 
 	// reallocates some RAM
-	void *vm_realloc( void *ptr, int size, char *filename = NULL, int line=-1);
+	void *_vm_realloc( void *ptr, int size, char *filename = NULL, int line=-1);
 
 	// Easy to use macros
-	#define VM_MALLOC(size) vm_malloc((size),__FILE__,__LINE__)
-	#define VM_FREE(ptr) vm_free((ptr),__FILE__,__LINE__)
-	#define VM_REALLOC(ptr, size) vm_realloc((ptr),(size),__FILE__,__LINE__)
-
-	#define malloc(size) vm_malloc((size),__FILE__,__LINE__)
-	#define free(ptr) vm_free((ptr),__FILE__,__LINE__)
-	#define strdup(ptr) vm_strdup((ptr),__FILE__,__LINE__)
-	#define realloc(ptr, size) vm_realloc((ptr),(size),__FILE__,__LINE__)
+	#define vm_malloc(size) _vm_malloc((size),__FILE__,__LINE__)
+	#define vm_free(ptr) _vm_free((ptr),__FILE__,__LINE__)
+	#define vm_strdup(ptr) _vm_strdup((ptr),__FILE__,__LINE__)
+	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size),__FILE__,__LINE__)
 	
 #else
 	// Release versions
 
-	// Returns 0 if not enough RAM.
-	int vm_init(int min_heap_size);
-
 	// Allocates some RAM.
-	void *vm_malloc( int size );
+	void *_vm_malloc( int size );
 
-	// 
-	char *vm_strdup( const char *ptr );
+	// allocates some RAM for a string
+	char *_vm_strdup( const char *ptr );
 
 	// Frees some RAM. 
-	void vm_free( void *ptr );
-
-	// Frees all RAM.
-	void vm_free_all();
+	void _vm_free( void *ptr );
 
 	// reallocates some RAM
-	void *vm_realloc( void *ptr, int size );
+	void *_vm_realloc( void *ptr, int size );
 
 	// Easy to use macros
-	#define VM_MALLOC(size) vm_malloc(size)
-	#define VM_FREE(ptr) vm_free(ptr)
-	#define VM_REALLOC(ptr, size) vm_realloc((ptr),(size))
-
-	#define malloc(size) vm_malloc(size)
-	#define free(ptr) vm_free(ptr)
-	#define strdup(ptr) vm_strdup(ptr)
-	#define realloc(ptr, size) vm_realloc((ptr),(size))
+	#define vm_malloc(size) _vm_malloc(size)
+	#define vm_free(ptr) _vm_free(ptr)
+	#define vm_strdup(ptr) _vm_strdup(ptr)
+	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size))
 
 
 #endif

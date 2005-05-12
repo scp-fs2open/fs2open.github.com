@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.91 $
- * $Date: 2005-04-28 05:29:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.92 $
+ * $Date: 2005-05-12 17:49:14 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2005/04/28 05:29:30  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.90  2005/04/28 01:35:26  wmcoolmon
  * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
  *
@@ -1665,7 +1668,7 @@ void parse_briefing(mission *pm)
 					Assert(bs->lines!=NULL);
 				} else {
 					if ( bs->num_lines > 0 )	{
-						bs->lines = (brief_line *)malloc(sizeof(brief_line)*bs->num_lines);
+						bs->lines = (brief_line *)vm_malloc(sizeof(brief_line)*bs->num_lines);
 						Assert(bs->lines!=NULL);
 					}
 				}
@@ -1688,7 +1691,7 @@ void parse_briefing(mission *pm)
 				Assert(bs->icons!=NULL);
 			} else {
 				if ( bs->num_icons > 0 )	{
-					bs->icons = (brief_icon *)malloc(sizeof(brief_icon)*bs->num_icons);
+					bs->icons = (brief_icon *)vm_malloc(sizeof(brief_icon)*bs->num_icons);
 					Assert(bs->icons!=NULL);
 				}
 			}
@@ -3801,14 +3804,14 @@ void parse_event(mission *pm)
 
 	if ( optional_string("+Objective:") ) {
 		stuff_string(buf, F_NAME, NULL);
-		event->objective_text = strdup(buf);
+		event->objective_text = vm_strdup(buf);
 	} else {
 		event->objective_text = NULL;
 	}
 
 	if ( optional_string("+Objective key:") ) {
 		stuff_string(buf, F_NAME, NULL);
-		event->objective_key_text = strdup(buf);
+		event->objective_key_text = vm_strdup(buf);
 	} else {
 		event->objective_key_text = NULL;
 	}
@@ -4439,7 +4442,7 @@ void parse_mission(mission *pm, int flag)
 	Subsys_status_size = 0;
 
 	if (Subsys_status != NULL) {
-		free( Subsys_status );
+		vm_free( Subsys_status );
 		Subsys_status = NULL;
 	}
 
@@ -5835,7 +5838,7 @@ int allocate_subsys_status()
 		Assert( MIN_SUBSYS_STATUS_SIZE > 0 );
 
 		Subsys_status_size += MIN_SUBSYS_STATUS_SIZE;
-		Subsys_status = (subsys_status*)realloc(Subsys_status, sizeof(subsys_status) * Subsys_status_size );
+		Subsys_status = (subsys_status*)vm_realloc(Subsys_status, sizeof(subsys_status) * Subsys_status_size );
 	}
 
 	Verify( Subsys_status != NULL );

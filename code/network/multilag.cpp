@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multilag.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-03-02 21:18:20 $
+ * $Revision: 2.6 $
+ * $Date: 2005-05-12 17:49:15 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.4  2004/07/26 20:47:42  Kazan
  * remove MCD complete
  *
@@ -208,7 +213,7 @@ void multi_lag_init()
 
 	// try and allocate lag bufs
 	for(idx=0; idx<MAX_LAG_BUFFERS; idx++){
-		Lag_buffers[idx] = (lag_buf*)malloc(sizeof(lag_buf));
+		Lag_buffers[idx] = (lag_buf*)vm_malloc(sizeof(lag_buf));
 		if(Lag_buffers[idx] == NULL){
 			return;
 		}
@@ -252,7 +257,7 @@ void multi_lag_close()
 	// free up lag buffers
 	for(idx=0; idx<MAX_LAG_BUFFERS; idx++){
 		if(Lag_buffers[idx] != NULL){
-			free(Lag_buffers[idx]);
+			vm_free(Lag_buffers[idx]);
 			Lag_buffers[idx] = NULL;
 		}
 	}

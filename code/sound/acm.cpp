@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/acm.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-03-27 06:14:30 $
+ * $Revision: 2.6 $
+ * $Date: 2005-05-12 17:49:17 $
  * $Author: taylor $
  *
  * C file for interface to Audio Compression Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/03/27 06:14:30  taylor
+ * update for streaming support and platform independance
+ *
  * Revision 2.4  2004/07/26 20:47:52  Kazan
  * remove MCD complete
  *
@@ -292,7 +295,7 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	if ( rc != 0 ) return -1;
 
 	if ( *dest == NULL ) {
-		*dest = (ubyte*)malloc(*dest_len);
+		*dest = (ubyte*)vm_malloc(*dest_len);
 		Assert( *dest != NULL );
 	}
 

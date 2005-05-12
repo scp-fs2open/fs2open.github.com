@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/scramble/scramble.cpp $
- * $Revision: 2.2 $
- * $Date: 2005-04-15 11:35:18 $
+ * $Revision: 2.3 $
+ * $Date: 2005-05-12 17:49:16 $
  * $Author: taylor $
  *
  * Module for file scrambler
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/04/15 11:35:18  taylor
+ * add scramble port
+ * support both FS1 (8bit and 7bit) and FS2 style encryption
+ *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
  *
@@ -103,7 +107,7 @@ void scramble_read_ships_tbl(char **text, int *text_len, FILE *fp)
 	char	*token;
 
 	*text_len = _filelength(fileno(fp));
-	*text = (char*)malloc(*text_len+1);
+	*text = (char*)vm_malloc(*text_len+1);
 
 	dest = *text;
 
@@ -159,7 +163,7 @@ void scramble_read_weapons_tbl(char **text, int *text_len, FILE *fp)
 	char	*token = NULL;
 
 	*text_len = _filelength(fileno(fp));
-	*text = (char*)malloc(*text_len+1);
+	*text = (char*)vm_malloc(*text_len+1);
 
 	dest = *text;
 
@@ -206,7 +210,7 @@ void scramble_read_weapons_tbl(char **text, int *text_len, FILE *fp)
 void scramble_read_default(char **text, int *text_len, FILE *fp)
 {
 	*text_len = _filelength(fileno(fp));
-	*text = (char*)malloc(*text_len+1);
+	*text = (char*)vm_malloc(*text_len+1);
 	fread( *text, *text_len, 1, fp );
 }
 
@@ -271,15 +275,15 @@ void scramble_file(char *src_filename, char *dest_filename, int preprocess)
 		return;
 	}
 
-	scramble_text = (char*)malloc(text_len+32);
+	scramble_text = (char*)vm_malloc(text_len+32);
 
 	encrypt(text, text_len, scramble_text, &scramble_len, Use_8bit, fs2);
 	
 	// write out scrambled data
 	fwrite( scramble_text, scramble_len, 1, fp );
 
-	free(text);
-	free(scramble_text);
+	vm_free(text);
+	vm_free(scramble_text);
 	fclose(fp);
 }
 
@@ -300,7 +304,7 @@ void unscramble_file(char *src_filename, char *dest_filename)
 
 	// read in the scrambled data
 	scramble_len = _filelength(fileno(fp));
-	scramble_text = (char*)malloc(scramble_len+1);
+	scramble_text = (char*)vm_malloc(scramble_len+1);
 	fread( scramble_text, scramble_len, 1, fp );
 	fclose(fp);
 
@@ -315,15 +319,15 @@ void unscramble_file(char *src_filename, char *dest_filename)
 	}
 
 	// assume original text no larger than double scrambled size
-	text = (char*)malloc(scramble_len*2);
+	text = (char*)vm_malloc(scramble_len*2);
 
 	unencrypt(scramble_text, scramble_len, text, &text_len);
 
 	// write out unscrambled data
 	fwrite( text, text_len, 1, fp );
 
-	free(text);
-	free(scramble_text);
+	vm_free(text);
+	vm_free(scramble_text);
 	fclose(fp);
 }
 

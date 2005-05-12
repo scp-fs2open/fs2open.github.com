@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.13 $
- * $Date: 2005-04-21 15:52:24 $
+ * $Revision: 2.14 $
+ * $Date: 2005-05-12 17:49:18 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/04/21 15:52:24  taylor
+ * stupid little comment fix, no big deal
+ *
  * Revision 2.12  2005/04/11 05:45:38  taylor
  * _endthread() doesn't take an argument so do support one (Jens Granseuer)
  * debug variable fixes in freespace.cpp (Jens Granseuer)
@@ -52,6 +55,10 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include "SDL.h"
+
+#if defined(HAVE_MALLOC_H)
+#include <malloc.h>
+#endif
 
 #include "globalincs/pstypes.h"
 
@@ -435,12 +442,6 @@ char *itoa(int value, char *str, int radix)
  *
  * *************************************/
 
-// make sure to use system versions of this stuff here rather than the vm_* versions
-#undef malloc
-#undef free
-#undef strdup
-#undef realloc
-
 // RamTable stuff comes out of icculus.org
 #ifndef NDEBUG
 typedef struct RAM {
@@ -463,9 +464,9 @@ int vm_init(int min_heap_size)
 }
 
 #ifndef NDEBUG
-void *vm_malloc( int size, char *filename, int line )
+void *_vm_malloc( int size, char *filename, int line )
 #else
-void *vm_malloc( int size )
+void *_vm_malloc( int size )
 #endif
 {
 	void *ptr = malloc( size );
@@ -494,11 +495,14 @@ void *vm_malloc( int size )
 }
 
 #ifndef NDEBUG
-void *vm_realloc( void *ptr, int size, char *filename, int line )
+void *_vm_realloc( void *ptr, int size, char *filename, int line )
 #else
-void *vm_realloc( void *ptr, int size )
+void *_vm_realloc( void *ptr, int size )
 #endif
 {
+	if (ptr == NULL)
+		return vm_malloc(size);
+
 	void *ret_ptr = realloc( ptr, size );
 
 	if (!ret_ptr)	{
@@ -522,19 +526,15 @@ void *vm_realloc( void *ptr, int size )
 }
 
 #ifndef NDEBUG
-char *vm_strdup( const char *ptr, char *filename, int line )
+char *_vm_strdup( const char *ptr, char *filename, int line )
 #else
-char *vm_strdup( const char *ptr )
+char *_vm_strdup( const char *ptr )
 #endif
 {
 	char *dst;
 	int len = strlen(ptr);
 
-#ifndef NDEBUG
-	dst = (char *)vm_malloc( len+1, filename, line );
-#else
 	dst = (char *)vm_malloc( len+1 );
-#endif
 
 	if (!dst)
 		return NULL;
@@ -545,9 +545,9 @@ char *vm_strdup( const char *ptr )
 }
 
 #ifndef NDEBUG
-void vm_free( void *ptr, char *filename, int line )
+void _vm_free( void *ptr, char *filename, int line )
 #else
-void vm_free( void *ptr )
+void _vm_free( void *ptr )
 #endif
 {
 	if ( !ptr ) {

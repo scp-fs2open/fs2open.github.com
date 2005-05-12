@@ -203,7 +203,7 @@ bool d3d_read_header_d3dx(char *file, CFILE *img_cfp, int type, int *w, int *h, 
 
 	D3DXIMAGE_INFO source_desc;
 	if(FAILED(D3DXGetImageInfoFromFileInMemory(img_data, size,	&source_desc))) {
-		free(img_data);//right here -Bobboau
+		vm_free(img_data);//right here -Bobboau
 		return false;
 	} 
 
@@ -212,7 +212,7 @@ bool d3d_read_header_d3dx(char *file, CFILE *img_cfp, int type, int *w, int *h, 
 	if(bpp) *bpp = (source_desc.Depth / 8);
 	if(bm_size) *bm_size = (source_desc.Width * source_desc.Height * (source_desc.Depth / 8));
 	
-	free(img_data);//and right here -Bobboau
+	vm_free(img_data);//and right here -Bobboau
 	return true;
 }
 
@@ -349,7 +349,7 @@ void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum)
 
 	IDirect3DTexture8 *ptexture = d3d_make_texture(tga_data, bitmapnum, size, type, flags);
 
-	free(tga_data);
+	vm_free(tga_data);
 
 	return ptexture;
 }
@@ -509,7 +509,7 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 	 		d3d_bitmap_entry[bitmapnum].vscale = t.v_scale;
 		  	d3d_bitmap_entry[bitmapnum].tinterface = t.d3d8_thandle;
 
-			free((void *) bm_bitmaps[bitmapnum].bm.data);
+			vm_free((void *) bm_bitmaps[bitmapnum].bm.data);
 			bm_bitmaps[bitmapnum].bm.data = NULL;
 		}
 

@@ -14,10 +14,6 @@
 #include "osapi/osregistry.h"
 #include "cfile/cfile.h"
 #include "osapi/osapi.h"
-#undef malloc
-#undef free
-#undef strdup
-#undef realloc
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,7 +87,7 @@ static char *read_line_from_file(CFILE *fp)
 	int buflen, len, eol;
 	
 	buflen = 80;
-	buf = (char *)malloc(buflen);
+	buf = (char *)vm_malloc(buflen);
 	buf_start = buf;
 	eol = 0;
 	
@@ -102,7 +98,7 @@ static char *read_line_from_file(CFILE *fp)
 		
 		if (cfgets(buf_start, 80, fp) == NULL) {
 			if (buf_start == buf) {
-				free(buf);
+				vm_free(buf);
 				return NULL;
 			} else {
 				*buf_start = 0;
@@ -118,7 +114,7 @@ static char *read_line_from_file(CFILE *fp)
 		} else {
 			buflen += 80;
 			
-			buf = (char *)realloc(buf, buflen);
+			buf = (char *)vm_realloc(buf, buflen);
 			
 			/* be sure to skip over the proper amount of nulls */
 			buf_start = buf+(buflen-80)-(buflen/80)+1;
@@ -175,7 +171,7 @@ static Profile *profile_read(char *file)
 	if (fp == NULL)
 		return NULL;
 
-	Profile *profile = (Profile *)malloc(sizeof(Profile));
+	Profile *profile = (Profile *)vm_malloc(sizeof(Profile));
 	profile->sections = NULL;
 	
 	Section **sp_ptr = &(profile->sections);
@@ -197,10 +193,10 @@ static Profile *profile_read(char *file)
 				*pend = 0;				
 				
 				if (*ptr) {
-					sp = (Section *)malloc(sizeof(Section));
+					sp = (Section *)vm_malloc(sizeof(Section));
 					sp->next = NULL;
 				
-					sp->name = strdup(ptr);
+					sp->name = vm_strdup(ptr);
 					sp->pairs = NULL;
 					
 					*sp_ptr = sp;
@@ -224,10 +220,10 @@ static Profile *profile_read(char *file)
 				
 				if (key && *key && value /* && *value */) {
 					if (sp != NULL) {
-						KeyValue *kvp = (KeyValue *)malloc(sizeof(KeyValue));
+						KeyValue *kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
 						
-						kvp->key = strdup(key);
-						kvp->value = strdup(value);
+						kvp->key = vm_strdup(key);
+						kvp->value = vm_strdup(value);
 						
 						kvp->next = NULL;
 						
@@ -238,7 +234,7 @@ static Profile *profile_read(char *file)
 			} // else it's just a comment or empty string
 		}
 				
-		free(str);
+		vm_free(str);
 	}
 	
 	cfclose(fp);
@@ -259,26 +255,26 @@ static void profile_free(Profile *profile)
 		while (kvp != NULL) {
 			KeyValue *kvt = kvp;
 			
-			free(kvp->key);
-			free(kvp->value);
+			vm_free(kvp->key);
+			vm_free(kvp->value);
 			
 			kvp = kvp->next;
-			free(kvt);
+			vm_free(kvt);
 		}
 		
-		free(sp->name);
+		vm_free(sp->name);
 		
 		sp = sp->next;
-		free(st);
+		vm_free(st);
 	}
 	
-	free(profile);
+	vm_free(profile);
 }
 
 static Profile *profile_update(Profile *profile, char *section, char *key, char *value)
 {
 	if (profile == NULL) {
-		profile = (Profile *)malloc(sizeof(Profile));
+		profile = (Profile *)vm_malloc(sizeof(Profile));
 		
 		profile->sections = NULL;
 	}
@@ -294,15 +290,15 @@ static Profile *profile_update(Profile *profile, char *section, char *key, char 
 			
 			while (kvp != NULL) {
 				if (strcmp(key, kvp->key) == 0) {
-					free(kvp->value);
+					vm_free(kvp->value);
 					
 					if (value == NULL) {
 						*kvp_ptr = kvp->next;
 						
-						free(kvp->key);
-						free(kvp);
+						vm_free(kvp->key);
+						vm_free(kvp);
 					} else {
-						kvp->value = strdup(value);
+						kvp->value = vm_strdup(value);
 					}
 					
 					/* all done */
@@ -315,10 +311,10 @@ static Profile *profile_update(Profile *profile, char *section, char *key, char 
 			
 			if (value != NULL) {
 				/* key not found */
-				kvp = (KeyValue *)malloc(sizeof(KeyValue));
+				kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
 				kvp->next = NULL;
-				kvp->key = strdup(key);
-				kvp->value = strdup(value);
+				kvp->key = vm_strdup(key);
+				kvp->value = vm_strdup(value);
 			}
 					
 			*kvp_ptr = kvp;
@@ -332,14 +328,14 @@ static Profile *profile_update(Profile *profile, char *section, char *key, char 
 	}
 	
 	/* section not found */
-	sp = (Section *)malloc(sizeof(Section));
+	sp = (Section *)vm_malloc(sizeof(Section));
 	sp->next = NULL;
-	sp->name = strdup(section);
+	sp->name = vm_strdup(section);
 	
-	kvp = (KeyValue *)malloc(sizeof(KeyValue));
+	kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
 	kvp->next = NULL;
-	kvp->key = strdup(key);
-	kvp->value = strdup(value);
+	kvp->key = vm_strdup(key);
+	kvp->value = vm_strdup(value);
 	
 	sp->pairs = kvp;
 	

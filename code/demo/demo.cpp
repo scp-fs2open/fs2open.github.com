@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-05 05:53:15 $
+ * $Revision: 2.8 $
+ * $Date: 2005-05-12 17:49:11 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/05 05:53:15  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.6  2005/01/31 23:27:52  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -301,7 +304,7 @@ int demo_start_record(char *file)
 	char full_name[MAX_FILENAME_LEN] = "";	
 
 	// try and allocate the buffer
-	Demo_buf = (char*)malloc(DEMO_BUF_SIZE);
+	Demo_buf = (char*)vm_malloc(DEMO_BUF_SIZE);
 	if(Demo_buf == NULL){
 		DEMO_ERROR(DEMO_ERROR_DISK_ACCESS);
 		return 0;
@@ -345,7 +348,7 @@ int demo_start_playback(char *file)
 	char full_name[MAX_FILENAME_LEN] = "";
 
 	// try and allocate the buffer
-	Demo_buf = (char*)malloc(DEMO_BUF_SIZE);
+	Demo_buf = (char*)vm_malloc(DEMO_BUF_SIZE);
 	if(Demo_buf == NULL){		
 		DEMO_ERROR(DEMO_ERROR_DISK_ACCESS);
 		return 0;
@@ -395,7 +398,7 @@ void demo_close()
 
 	// free the buffer
 	if(Demo_buf != NULL){
-		free(Demo_buf);
+		vm_free(Demo_buf);
 		Demo_buf = NULL;
 	}
 

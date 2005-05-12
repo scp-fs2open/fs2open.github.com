@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-04-24 12:56:43 $
+ * $Revision: 2.43 $
+ * $Date: 2005-05-12 17:49:16 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/04/24 12:56:43  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.41  2005/04/24 02:40:40  wmcoolmon
  * Lowlevel (ie vertex buffer-mapping) functions for _rect and _shade
  *
@@ -2764,8 +2777,8 @@ void flash_ball::initalise(int number, float min_ray_width, float max_ray_width,
 	center = *pcenter;
 
 	if(n_rays < number){
-		if(ray)free(ray);
-		ray = (flash_beam*)malloc(sizeof(flash_beam)*number);
+		if(ray)vm_free(ray);
+		ray = (flash_beam*)vm_malloc(sizeof(flash_beam)*number);
 		n_rays = number;
 	}
 
@@ -2834,8 +2847,8 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 
 
 	if(n_rays < nverts){
-		if(ray)free(ray);
-		ray = (flash_beam*)malloc(sizeof(flash_beam)*nverts);
+		if(ray)vm_free(ray);
+		ray = (flash_beam*)vm_malloc(sizeof(flash_beam)*nverts);
 		n_rays = nverts;
 	}
 

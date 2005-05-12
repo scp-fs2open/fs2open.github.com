@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-05-08 20:26:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2005-05-12 17:49:13 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/05/08 20:26:00  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 2.24  2005/04/28 01:35:26  wmcoolmon
  * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
  *
@@ -484,7 +487,7 @@ int mission_campaign_get_mission_list(char *filename, char **list, int max)
 	if ((rval = setjmp(parse_abort)) != 0) {
 		// since we can't return count of allocated elements, free them instead
 		for (i=0; i<num; i++)
-			free(list[i]);
+			vm_free(list[i]);
 
 		return -1;
 
@@ -495,7 +498,7 @@ int mission_campaign_get_mission_list(char *filename, char **list, int max)
 		while (skip_to_string("$Mission:") > 0) {
 			stuff_string(name, F_NAME, NULL);
 			if (num < max)
-				list[num++] = strdup(name);
+				list[num++] = vm_strdup(name);
 		}
 	}
 
@@ -509,8 +512,8 @@ void mission_campaign_maybe_add( char *filename, int multiplayer )
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players) ) {
 		if ( !multiplayer && ( type == CAMPAIGN_TYPE_SINGLE) ) {
-			Campaign_names[Num_campaigns] = strdup(name);
-			Campaign_file_names[Num_campaigns] = strdup(filename);
+			Campaign_names[Num_campaigns] = vm_strdup(name);
+			Campaign_file_names[Num_campaigns] = vm_strdup(filename);
 			Num_campaigns++;
 		}
 	}
@@ -728,7 +731,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			required_string("$Mission:");
 			stuff_string(name, F_NAME, NULL);
 			cm = &Campaign.missions[Campaign.num_missions];
-			cm->name = strdup(name);
+			cm->name = vm_strdup(name);
 
 			cm->briefing_cutscene[0] = 0;
 			if ( optional_string("+Briefing Cutscene:") )
@@ -1261,7 +1264,7 @@ void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi )
 		strcpy(filename, names[i]);
 		strcat(filename, ext);
 		cf_delete(filename, dir_type);
-		free(names[i]);
+		vm_free(names[i]);
 	}
 }
 
@@ -1434,7 +1437,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		// be sure to malloc out space for the goals stuff, then zero the memory!!!  Don't do malloc
 		// if there are no goals
 		if ( Campaign.missions[num].num_goals > 0 ) {
-			Campaign.missions[num].goals = (mgoal *)malloc( Campaign.missions[num].num_goals * sizeof(mgoal) );
+			Campaign.missions[num].goals = (mgoal *)vm_malloc( Campaign.missions[num].num_goals * sizeof(mgoal) );
 
 			Assert( Campaign.missions[num].goals != NULL );
 
@@ -1456,7 +1459,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 //		if (Campaign.missions[num].events < 0)
 //			Campaign.missions[num].events = 0;
 		if ( Campaign.missions[num].num_events > 0 ) {
-			Campaign.missions[num].events = (mevent *)malloc( Campaign.missions[num].num_events * sizeof(mevent) );
+			Campaign.missions[num].events = (mevent *)vm_malloc( Campaign.missions[num].num_events * sizeof(mevent) );
 
 			Assert( Campaign.missions[num].events != NULL );
 
@@ -1477,7 +1480,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			// be sure to malloc out space for the variables stuff, then zero the memory!!!  Don't do malloc
 			// if there are no variables
 			if ( Campaign.missions[num].num_saved_variables > 0 ) {
-				Campaign.missions[num].saved_variables = (sexp_variable *)malloc( Campaign.missions[num].num_saved_variables * sizeof(sexp_variable) );
+				Campaign.missions[num].saved_variables = (sexp_variable *)vm_malloc( Campaign.missions[num].num_saved_variables * sizeof(sexp_variable) );
 
 				Assert( Campaign.missions[num].saved_variables != NULL );
 
@@ -1901,12 +1904,12 @@ int mission_campaign_eval_next_mission( int store_stats )
 	// can save the campaign save file
 	// we might have goal and event status if the player replayed a mission
 	if ( mission->num_goals > 0 ) {
-		free( mission->goals );
+		vm_free( mission->goals );
 	}
 
 	mission->num_goals = Num_goals;
 	if ( mission->num_goals > 0 ) {
-		mission->goals = (mgoal *)malloc( sizeof(mgoal) * Num_goals );
+		mission->goals = (mgoal *)vm_malloc( sizeof(mgoal) * Num_goals );
 		Assert( mission->goals != NULL );
 	}
 
@@ -1927,12 +1930,12 @@ int mission_campaign_eval_next_mission( int store_stats )
 	// do the same thing for events as we did for goals
 	// we might have goal and event status if the player replayed a mission
 	if ( mission->num_events > 0 ) {
-		free( mission->events );
+		vm_free( mission->events );
 	}
 
 	mission->num_events = Num_mission_events;
 	if ( mission->num_events > 0 ) {
-		mission->events = (mevent *)malloc( sizeof(mevent) * Num_mission_events );
+		mission->events = (mevent *)vm_malloc( sizeof(mevent) * Num_mission_events );
 		Assert( mission->events != NULL );
 	}
 
@@ -1962,12 +1965,12 @@ int mission_campaign_eval_next_mission( int store_stats )
 
 	// Goober5000 - handle campaign-persistent variables -------------------------------------
 	if (mission->num_saved_variables > 0) {
-		free( mission->saved_variables );
+		vm_free( mission->saved_variables );
 	}
 
 	mission->num_saved_variables = sexp_campaign_persistent_variable_count();
 	if ( mission->num_saved_variables > 0) {
-		mission->saved_variables = (sexp_variable *)malloc( sizeof(sexp_variable) * mission->num_saved_variables);
+		mission->saved_variables = (sexp_variable *)vm_malloc( sizeof(sexp_variable) * mission->num_saved_variables);
 		Assert( mission->saved_variables != NULL );
 	}
 
@@ -2083,13 +2086,13 @@ void mission_campaign_store_goals_and_events_and_variables()
 	// can save the campaign save file
 	// we might have goal and event status if the player replayed a mission
 	if ( mission->goals != NULL ) {
-		free( mission->goals );
+		vm_free( mission->goals );
 		mission->goals = NULL;
 	}
 
 	mission->num_goals = Num_goals;
 	if ( mission->num_goals > 0 ) {
-		mission->goals = (mgoal *)malloc( sizeof(mgoal) * Num_goals );
+		mission->goals = (mgoal *)vm_malloc( sizeof(mgoal) * Num_goals );
 		Assert( mission->goals != NULL );
 	}
 
@@ -2110,13 +2113,13 @@ void mission_campaign_store_goals_and_events_and_variables()
 	// do the same thing for events as we did for goals
 	// we might have goal and event status if the player replayed a mission
 	if ( mission->events != NULL ) {
-		free( mission->events );
+		vm_free( mission->events );
 		mission->events = NULL;
 	}
 
 	mission->num_events = Num_mission_events;
 	if ( mission->num_events > 0 ) {
-		mission->events = (mevent *)malloc( sizeof(mevent) * Num_mission_events );
+		mission->events = (mevent *)vm_malloc( sizeof(mevent) * Num_mission_events );
 		Assert( mission->events != NULL );
 	}
 
@@ -2146,13 +2149,13 @@ void mission_campaign_store_goals_and_events_and_variables()
 
 	// Goober5000 - handle campaign-persistent variables -------------------------------------
 	if (mission->saved_variables != NULL) {
-		free( mission->saved_variables );
+		vm_free( mission->saved_variables );
 		mission->saved_variables = NULL;
 	}
 
 	mission->num_saved_variables = sexp_campaign_persistent_variable_count();
 	if ( mission->num_saved_variables > 0) {
-		mission->saved_variables = (sexp_variable *)malloc( sizeof(sexp_variable) * mission->num_saved_variables);
+		mission->saved_variables = (sexp_variable *)vm_malloc( sizeof(sexp_variable) * mission->num_saved_variables);
 		Assert( mission->saved_variables != NULL );
 	}
 
@@ -2229,20 +2232,20 @@ void mission_campaign_mission_over()
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
 		// that the player played this mission in the campaign.
 		if (mission->goals != NULL) {
-			free( mission->goals );
+			vm_free( mission->goals );
 			mission->goals = NULL;
 		}
 		mission->num_goals = 0;
 
 		if (mission->events != NULL) {
-			free( mission->events );
+			vm_free( mission->events );
 			mission->events = NULL;
 		}
 		mission->num_events = 0;
 
 		// Goober5000
 		if (mission->saved_variables != NULL) {
-			free( mission->saved_variables );
+			vm_free( mission->saved_variables );
 			mission->saved_variables = NULL;
 		}
 		mission->num_saved_variables = 0;
@@ -2263,7 +2266,7 @@ void mission_campaign_close()
 	int i;
 
 	if (Campaign.desc != NULL) {
-		free(Campaign.desc);
+		vm_free(Campaign.desc);
 		Campaign.desc = NULL;
 	}
 
@@ -2271,44 +2274,44 @@ void mission_campaign_close()
 	// we must also free any goal stuff that was from a previous campaign
 	for ( i=0; i<Campaign.num_missions; i++ ) {
 		if ( Campaign.missions[i].name != NULL ) {
-			free(Campaign.missions[i].name);
+			vm_free(Campaign.missions[i].name);
 			Campaign.missions[i].name = NULL;
 		}
 
 		if (Campaign.missions[i].notes != NULL) {
-			free(Campaign.missions[i].notes);
+			vm_free(Campaign.missions[i].notes);
 			Campaign.missions[i].notes = NULL;
 		}
 
 		if ( Campaign.missions[i].goals != NULL ) {
-			free ( Campaign.missions[i].goals );
+			vm_free ( Campaign.missions[i].goals );
 			Campaign.missions[i].goals = NULL;
 		}
 
 		if ( Campaign.missions[i].events != NULL ) {
-			free ( Campaign.missions[i].events );
+			vm_free ( Campaign.missions[i].events );
 			Campaign.missions[i].events = NULL;
 		}
 
 		// Goober5000
 		if ( Campaign.missions[i].saved_variables != NULL ) {
-			free ( Campaign.missions[i].saved_variables );
+			vm_free ( Campaign.missions[i].saved_variables );
 			Campaign.missions[i].saved_variables = NULL;
 		}
 
 		// the next three are strdup'd return values from parselo.cpp - taylor
 		if (Campaign.missions[i].mission_loop_desc != NULL) {
-			free(Campaign.missions[i].mission_loop_desc);
+			vm_free(Campaign.missions[i].mission_loop_desc);
 			Campaign.missions[i].mission_loop_desc = NULL;
 		}
 
 		if (Campaign.missions[i].mission_loop_brief_anim != NULL) {
-			free(Campaign.missions[i].mission_loop_brief_anim);
+			vm_free(Campaign.missions[i].mission_loop_brief_anim);
 			Campaign.missions[i].mission_loop_brief_anim = NULL;
 		}
 
 		if (Campaign.missions[i].mission_loop_brief_sound != NULL) {
-			free(Campaign.missions[i].mission_loop_brief_sound);
+			vm_free(Campaign.missions[i].mission_loop_brief_sound);
 			Campaign.missions[i].mission_loop_brief_sound = NULL;
  		}
 
@@ -2384,10 +2387,10 @@ void read_mission_goal_list(int num)
 		if (skip_to_string("$Notes:")) {
 			stuff_string(notes, F_NOTES, NULL);
 			if (Campaign.missions[num].notes){
-				free(Campaign.missions[num].notes);
+				vm_free(Campaign.missions[num].notes);
 			}
 
-			Campaign.missions[num].notes = (char *) malloc(strlen(notes) + 1);
+			Campaign.missions[num].notes = (char *) vm_malloc(strlen(notes) + 1);
 			strcpy(Campaign.missions[num].notes, notes);
 		}
 	}
@@ -2441,7 +2444,7 @@ void read_mission_goal_list(int num)
 
 	Campaign.missions[num].num_goals = count;
 	if (count) {
-		Campaign.missions[num].goals = (mgoal *) malloc(count * sizeof(mgoal));
+		Campaign.missions[num].goals = (mgoal *) vm_malloc(count * sizeof(mgoal));
 		Assert(Campaign.missions[num].goals);  // make sure we got the memory
 		memset(Campaign.missions[num].goals, 0, count * sizeof(mgoal));
 
@@ -2452,7 +2455,7 @@ void read_mission_goal_list(int num)
 		// copy the events
 	Campaign.missions[num].num_events = event_count;
 	if (event_count) {
-		Campaign.missions[num].events = (mevent *)malloc(event_count * sizeof(mevent));
+		Campaign.missions[num].events = (mevent *)vm_malloc(event_count * sizeof(mevent));
 		Assert ( Campaign.missions[num].events );
 		memset(Campaign.missions[num].events, 0, event_count * sizeof(mevent));
 

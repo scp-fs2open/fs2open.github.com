@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-04-25 00:28:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2005-05-12 17:49:15 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/04/25 00:28:17  wmcoolmon
+ * MAX_SHIP_TYPES > Num_ship_types
+ *
  * Revision 2.9  2005/04/11 05:50:36  taylor
  * some limits.h fixes to make GCC happier
  * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
@@ -505,16 +508,16 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 
 		// add the filename		
 		GET_STRING(fname);
-		Campaign.missions[cur_mission].name = strdup(fname);
+		Campaign.missions[cur_mission].name = vm_strdup(fname);
 	
 		// add the # of goals and events
 		GET_DATA(val);
 		Campaign.missions[cur_mission].num_goals = val;
-		Campaign.missions[cur_mission].goals = (mgoal*)malloc(sizeof(mgoal) * val);
+		Campaign.missions[cur_mission].goals = (mgoal*)vm_malloc(sizeof(mgoal) * val);
 
 		GET_DATA(val);
 		Campaign.missions[cur_mission].num_events = val;
-		Campaign.missions[cur_mission].events = (mevent*)malloc(sizeof(mevent) * val);
+		Campaign.missions[cur_mission].events = (mevent*)vm_malloc(sizeof(mevent) * val);
 
 		// add the goals
 		for(idx=0;idx<Campaign.missions[cur_mission].num_goals;idx++){
@@ -546,7 +549,7 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 		// read in the mission filenames
 		for(idx=0;idx<Campaign.num_missions;idx++){
 			GET_STRING(fname);
-			Campaign.missions[idx].name = strdup(fname);
+			Campaign.missions[idx].name = vm_strdup(fname);
 		}
 		break;
 	}
@@ -910,7 +913,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 		GET_INT(Campaign.num_missions);
 		for( i = 0; i < Campaign.num_missions ; i++) {
 			GET_STRING(fname);
-			Campaign.missions[i].name = strdup(fname);
+			Campaign.missions[i].name = vm_strdup(fname);
 		}
 
 		break;
@@ -923,7 +926,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 		Assert( Campaign.missions[mission_num].num_goals == 0 );
 		Campaign.missions[mission_num].num_goals = num_goals;
 		if ( num_goals > 0 ){
-			Campaign.missions[mission_num].goals = (mgoal *)malloc( sizeof(mgoal) * num_goals );
+			Campaign.missions[mission_num].goals = (mgoal *)vm_malloc( sizeof(mgoal) * num_goals );
 		}
 		for ( i = 0; i < num_goals; i++ ) {
 			GET_DATA(status);
@@ -940,7 +943,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 		Assert( Campaign.missions[mission_num].num_events == 0 );
 		Campaign.missions[mission_num].num_events = num_events;
 		if ( num_events > 0 ){
-			Campaign.missions[mission_num].events = (mevent *)malloc( sizeof(mevent) * num_events );
+			Campaign.missions[mission_num].events = (mevent *)vm_malloc( sizeof(mevent) * num_events );
 		}
 
 		for ( i = 0; i < num_events; i++ ) {

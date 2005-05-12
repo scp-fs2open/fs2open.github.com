@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.48 $
+ * $Date: 2005-05-12 17:49:12 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.46  2005/04/24 03:02:43  wmcoolmon
  * Added resizing option to gr_shade. We can probably merge gr_shade and gr_rect; they do the same thing.
  *
@@ -1801,17 +1814,17 @@ short find_first_index_vb(poly_list *plist, int idx, poly_list *v){
 
 void poly_list::allocate(int virts){
 		if(virts <= currently_allocated)return;
-		if(vert!=NULL){free((void*)vert); vert = NULL;}
-		if(norm!=NULL){free((void*)norm); norm = NULL;}
-		if(virts)vert = (vertex*)malloc(sizeof(vertex)*virts);
-		if(virts)norm = (vec3d*)malloc(sizeof(vec3d)*virts);
+		if(vert!=NULL){vm_free((void*)vert); vert = NULL;}
+		if(norm!=NULL){vm_free((void*)norm); norm = NULL;}
+		if(virts)vert = (vertex*)vm_malloc(sizeof(vertex)*virts);
+		if(virts)norm = (vec3d*)vm_malloc(sizeof(vec3d)*virts);
 		n_verts = 0;
 		currently_allocated = virts;
 }
 
 poly_list::~poly_list(){
-	if(vert!=NULL)free(vert); 
-	if(norm!=NULL)free(norm);
+	if(vert!=NULL)vm_free(vert); 
+	if(norm!=NULL)vm_free(norm);
 }
 
 poly_list poly_list_index_bufer_internal_list;

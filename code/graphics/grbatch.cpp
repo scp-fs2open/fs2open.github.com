@@ -35,7 +35,7 @@ bool batch_init()
 	if(!Cmdline_batch_3dunlit) return true;
 
 	Batch_vertex_array	= (vertex *)	malloc(sizeof(vertex) * BATCH_MAX_VERTEX);
-	Batch_array			= (BatchNode *) malloc(sizeof(vertex) * BATCH_MAX);
+	Batch_array			= (BatchNode *) vm_malloc(sizeof(vertex) * BATCH_MAX);
 
 	return (Batch_array != 0); 
 }
@@ -45,12 +45,12 @@ void batch_deinit()
 	if(!Cmdline_batch_3dunlit) return;
 
 	if (Batch_array != NULL) {
-		free(Batch_array);
+		vm_free(Batch_array);
 		Batch_array = NULL;
 	}
 
 	if (Batch_vertex_array != NULL) {
-		free(Batch_vertex_array);
+		vm_free(Batch_vertex_array);
 		Batch_vertex_array = NULL;
 	}
 }
@@ -158,10 +158,10 @@ void geometry_batcher::allocate_internal(int n_verts){
 	//to store all the geometry, 
 	//then you clear out the memory and set the number of primitives to 0
 	if(n_verts>n_allocated){
-		if(vert)free(vert);
-		if(vert_list)free(vert_list);
-		vert = (vertex*)malloc(sizeof(vertex)*n_verts);
-		vert_list = (vertex**)malloc(sizeof(vertex*)*n_verts);
+		if(vert)vm_free(vert);
+		if(vert_list)vm_free(vert_list);
+		vert = (vertex*)vm_malloc(sizeof(vertex)*n_verts);
+		vert_list = (vertex**)vm_malloc(sizeof(vertex*)*n_verts);
 		for(int i = 0; i<n_verts; i++)vert_list[i] = &vert[i];
 		memset(vert,0,sizeof(vertex)*n_verts);
 		n_allocated = n_verts;
@@ -190,17 +190,17 @@ void geometry_batcher::add_alocate(int quad, int n_tri){
 	vertex* old_vert = vert;
 
 	if(to_aloc>n_allocated){
-		if(vert_list)free(vert_list);
+		if(vert_list)vm_free(vert_list);
 
-		vert = (vertex*)malloc(sizeof(vertex)*to_aloc);
-		vert_list = (vertex**)malloc(sizeof(vertex*)*to_aloc);
+		vert = (vertex*)vm_malloc(sizeof(vertex)*to_aloc);
+		vert_list = (vertex**)vm_malloc(sizeof(vertex*)*to_aloc);
 
 		for(int i = 0; i<to_aloc; i++)vert_list[i] = &vert[i];
 		memset(vert,0,sizeof(vertex)*to_aloc);
 
 		if(old_vert){
 			memcpy(vert,old_vert,sizeof(vertex)*n_to_render*3);
-			free(old_vert);
+			vm_free(old_vert);
 		}
 		n_allocated = to_aloc;
 	}
