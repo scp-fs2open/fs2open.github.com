@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.22 $
- * $Date: 2005-04-05 05:53:17 $
+ * $Revision: 1.23 $
+ * $Date: 2005-05-12 17:43:20 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.21  2005/03/27 02:59:27  wmcoolmon
  * Forgot to define 'i' outside of for scope...ironically, in the OGL code.
  *
@@ -151,6 +154,7 @@ static int GL_htl_projection_matrix_set = 0;
 static int GL_htl_view_matrix_set = 0;
 static int GL_htl_2d_matrix_depth = 0;
 static int GL_htl_2d_matrix_set = 0;
+int GL_vertex_data_in = 0;
 
 struct opengl_vertex_buffer
 {
@@ -162,6 +166,7 @@ struct opengl_vertex_buffer
 	float *array_list;	// interleaved array
 	uint vbo;			// buffer for VBO
 	uint flags;			// FVF
+	int vbo_size;
 };
 
 
@@ -238,7 +243,7 @@ uint opengl_create_vbo(uint size, GLfloat *data)
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer_name);
 		glBufferDataARB(GL_ARRAY_BUFFER_ARB, size, data, GL_STATIC_DRAW_ARB );
-				
+
 		// just in case
 		if (opengl_check_for_errors()) {
 			return 0;
@@ -296,7 +301,7 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		list_size = vbp->stride * list->n_verts;
 
 		// allocate the storage list
-		vbp->array_list = (float*)malloc(list_size);
+		vbp->array_list = (float*)vm_malloc(list_size);
 
 		// return invalid if we don't have the memory
 		if (vbp->array_list == NULL)
@@ -346,7 +351,10 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 			vbp->vbo = opengl_create_vbo( list_size, vbp->array_list );
 
 			if (vbp->vbo) {
-				free(vbp->array_list);
+				// figure up the size so we can know how much VBO data is in card memory
+				vbp->vbo_size = list_size;
+				GL_vertex_data_in += list_size;
+				vm_free(vbp->array_list);
 				vbp->array_list = NULL;
 			}
 		}
@@ -369,19 +377,18 @@ void gr_opengl_destroy_buffer(int idx)
 
 	opengl_vertex_buffer *vbp = g_vbp;
 
-	if (vbp->array_list) {
-		free(vbp->array_list);
-		vbp->array_list = NULL;
-	}
+	if (vbp->array_list)
+		vm_free(vbp->array_list);
 
-	if (vbp->vbo)
+	if (vbp->vbo) {
 		glDeleteBuffersARB(1, &vbp->vbo);
+		GL_vertex_data_in -= vbp->vbo_size;
+	}
 
 	memset(vbp, 0, sizeof(opengl_vertex_buffer));
 
 #endif // GL_NO_HTL
 }
-
 
 //#define DRAW_DEBUG_LINES
 extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
@@ -834,7 +841,7 @@ int opengl_get_new_state_block_internal()
 
 	//oh crap, we need more state blocks
 	//"i" should be n_state_blocks + 1 since we got here.
-	state_blocks = (GLuint*)realloc(state_blocks, i);
+	state_blocks = (GLuint*)vm_realloc(state_blocks, i);
 
 	state_blocks[n_state_blocks]=0;
 	n_state_blocks++;
