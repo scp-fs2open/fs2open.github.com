@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-05-11 08:10:20 $
+ * $Revision: 2.29 $
+ * $Date: 2005-05-12 01:34:50 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/05/11 08:10:20  Goober5000
+ * variables should now work properly in messages that are sent multiple times
+ * --Goober5000
+ *
  * Revision 2.27  2005/03/24 23:38:49  taylor
  * make sure we don't go one over the number of message avis
  *
@@ -507,7 +511,6 @@
 #include "hud/hudconfig.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
-#include "parse/sexp.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1741,9 +1744,6 @@ void message_queue_process()
 
 	// translate tokens in message to the real things
 	message_translate_tokens(buf, m->message);
-
-	// Goober5000 - replace any variable in this message
-	sexp_replace_variable_names_with_values(buf, MESSAGE_LENGTH);
 
 	// AL: added 07/14/97.. only play avi/sound if in gameplay
 	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
