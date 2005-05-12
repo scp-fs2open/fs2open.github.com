@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-04-24 06:52:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2005-05-12 17:37:48 $
+ * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/04/24 06:52:23  wmcoolmon
+ * Enabled movies in windowed mode; if this causes problems for people, they can always use -dnoshowvid
+ *
  * Revision 2.24  2005/02/05 00:30:49  taylor
  * fix a few things post merge
  *
@@ -154,6 +157,7 @@ bool movie_play(char *name)
 	// reset the gr_* stuff before trying to play a movie
 	gr_flip(); // in the case of D3D this should recover the device
 	gr_clear();
+	gr_flip(); // need an extra flip here to cycle in the clear'd buffer
 
 	// This clears the screen
  	InvalidateRect((HWND) os_get_window(), NULL, TRUE);
