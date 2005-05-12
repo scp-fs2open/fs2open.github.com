@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/wxFRED2/FREDFrame.h $
- * $Revision: 1.3 $
- * $Date: 2005-04-25 06:36:25 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2005-05-12 14:00:14 $
+ * $Author: Goober5000 $
  *
  * FRED app frame
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/04/25 06:36:25  taylor
+ * newline fix
+ *
  * Revision 1.2  2005/04/24 14:42:27  Goober5000
  * wxFRED now uses XRC-based resources
  * --Goober5000
@@ -38,7 +41,20 @@ class FREDFrame : public wxFrame
 		~FREDFrame();
 
 		// event handlers
-		void OnExit(wxCommandEvent &WXUNUSED(event));
+		void OnFileNew(wxCommandEvent &WXUNUSED(event));
+		void OnFileOpen(wxCommandEvent &WXUNUSED(event));
+		void OnFileSave(wxCommandEvent &WXUNUSED(event));
+		void OnFileSaveAs(wxCommandEvent &WXUNUSED(event));
+		void OnFileExit(wxCommandEvent &WXUNUSED(event));
+		void OnEditorsAsteroidField(wxCommandEvent &WXUNUSED(event));
+		void OnEditorsMissionSpecs(wxCommandEvent &WXUNUSED(event));
+		void OnEditorsDebriefing(wxCommandEvent &WXUNUSED(event));
+		void OnEditorsShieldSystem(wxCommandEvent &WXUNUSED(event));
+		void OnEditorsCommandBriefing(wxCommandEvent &WXUNUSED(event));
+		void OnEditorsSetGlobalShipFlags(wxCommandEvent &WXUNUSED(event));
+		void OnEditorsVoiceActingManager(wxCommandEvent &WXUNUSED(event));
+		void OnEditorsCampaign(wxCommandEvent &WXUNUSED(event));
+		void OnHelpAboutFRED2(wxCommandEvent &WXUNUSED(event));
 
 	protected:		
 		// events
@@ -47,6 +63,9 @@ class FREDFrame : public wxFrame
 	private:
 		// menubar
 		wxMenuBar	*myMenuBar;
+
+		// member variables
+		wxString currentFilename;
 };
 
 #endif
