@@ -492,7 +492,7 @@ GUIObject* GUIScreen::Add(GUIObject* new_gauge)
 			{
 				//This is icky; we might cast a pointer after this.
 				//So return NULL with a warning
-				Warning(LOCATION, "Attempt to create another object with name '%s'; new object type was %d, existing object type was %d. This may cause null pointer issues.",tgp->Name, new_gauge->Type, tgp->Type);
+				Warning(LOCATION, "Attempt to create another object with name '%s'; new object type was %d, existing object type was %d. This may cause null pointer issues.", tgp->Name.c_str(), new_gauge->Type, tgp->Type);
 				delete new_gauge;
 				return NULL;
 			}
@@ -2470,9 +2470,9 @@ bool Text::Save()
 			&& len < uSaveMax)
 		{
 			if(*chpSavePointer != NULL)
-				free(*chpSavePointer);
+				vm_free(*chpSavePointer);
 
-			*chpSavePointer = (char*)malloc(sizeof(char) * (len + 1));
+			*chpSavePointer = (char*)vm_malloc(sizeof(char) * (len + 1));
 
 			strcpy(*chpSavePointer, Content.c_str());
 			return true;
