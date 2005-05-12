@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-04-28 05:12:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2005-05-12 17:47:57 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/04/28 05:12:26  wmcoolmon
+ * Cleared up some ambiguity that made MSVC 2003 go on strike
+ *
  * Revision 2.24  2005/04/24 12:45:14  taylor
  * possible dev/0 bug fix (Jens Granseuer)
  *
@@ -555,19 +558,6 @@ GUID DSPROPSETID_EAXBUFFER_ReverbProperties_Def = {0x4a4e6fc0, 0xc341, 0x11d1, {
 void ds_get_soundcard_caps(DSCAPS *dscaps);
 
 #elif defined(USE_OPENAL)
-/* -- moved to ds.h
-typedef struct channel
-{
-    int   sig;		// uniquely identifies the sound playing on the channel
-   	int   snd_id;		// identifies which kind of sound is playing
-	ALuint   source_id;	// OpenAL source id
-	int   buf_id;		// currently bound buffer index (-1 if none)
-    int   looping;		// flag to indicate that the sound is looping
-    int   vol;
-	int   priority;		// implementation dependant priority
-	bool  is_voice_msg;
-    DWORD last_position;
-} channel; */
 
 typedef struct sound_buffer
 {
@@ -754,7 +744,7 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 		// got one, now read all of the needed header info
 		ov_info(ovf, -1);
 
-		if ( (*header = (WAVEFORMATEX *) malloc ( sizeof(WAVEFORMATEX) )) != NULL ) {
+		if ( (*header = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX) )) != NULL ) {
 			(*header)->wFormatTag = OGG_FORMAT_VORBIS;
 			(*header)->nChannels = (ushort)ovf->vi->channels;
 			(*header)->nSamplesPerSec = ovf->vi->rate;
@@ -807,7 +797,7 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 			}
 
 			// Allocate memory for WAVEFORMATEX structure + extra bytes
-			if ( (*header = (WAVEFORMATEX *) malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
+			if ( (*header = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
 				// Copy bytes from temporary format structure
 				memcpy (*header, &PCM_header, sizeof(PCM_header));
 				(*header)->cbSize = cbExtra;
@@ -824,7 +814,7 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 			break;
 		case 0x61746164:		// the 'data' tag
 			*dest_size = size;
-			(*dest) = (ubyte *)malloc(size);
+			(*dest) = (ubyte *)vm_malloc(size);
 			Assert( *dest != NULL );
 			cfread( *dest, size, 1, fp );
 			break;
@@ -924,7 +914,6 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	Assert( final_size != NULL );
 	Assert( header != NULL );
 	Assert( si != NULL );
-	Assert( si->data != NULL );
 
 	// All sounds are required to have a software buffer
 
@@ -954,6 +943,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 
 	switch (si->format) {
 		case WAVE_FORMAT_PCM:
+			Assert( si->data != NULL );
 			bits = si->bits;
 			bps  = si->avg_bytes_per_sec;
 			size = si->size;
@@ -972,6 +962,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 			break;
 
 		case WAVE_FORMAT_ADPCM:
+			Assert( si->data != NULL );
 			// this ADPCM decoder decodes to 16-bit only so keep that in mind
 			nprintf(( "Sound", "SOUND ==> converting sound from ADPCM to PCM\n" ));
 			rc = ACM_convert_ADPCM_to_PCM(pwfx, si->data, si->size, &convert_buffer, 0, &convert_len, &src_bytes_used, 16);
@@ -997,7 +988,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 
 			int garbage;
 			src_bytes_used = 0;
-			convert_buffer = (ubyte*)malloc(si->size);
+			convert_buffer = (ubyte*)vm_malloc(si->size);
 			Assert(convert_buffer != NULL);
 
 			while(src_bytes_used < si->size) {
@@ -1009,7 +1000,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 #endif
 
 				if (rc == OV_EBADLINK) {
-					free(convert_buffer);
+					vm_free(convert_buffer);
 					convert_buffer = NULL;
 					return -1;
 				} else if(rc == 0) {
@@ -1072,7 +1063,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	sound_buffers[*sid].nbytes = size;
 
 	if ( convert_buffer )
-		free( convert_buffer );
+		vm_free( convert_buffer );
 
 	return 0;
 #else
@@ -1167,7 +1158,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 			nprintf(( "Sound", "SOUND ==> converting sound from OGG to PCM\n" ));
 
 			src_bytes_used = 0;
-			convert_buffer = (byte*) malloc(si->size);
+			convert_buffer = (byte*) vm_malloc(si->size);
 			Assert(convert_buffer != NULL);
 			while(final_sound_size < (int) si->size)
 			{
@@ -1176,7 +1167,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 				rc = ov_read(&si->ogg_info, (char *) convert_buffer + src_bytes_used, si->size - src_bytes_used, 0, si->bits / 8, 1, &garbage);
 				if(rc == OV_EBADLINK)
 				{
-					free(convert_buffer);
+					vm_free(convert_buffer);
 					convert_buffer = NULL;
 					DSOUND_load_buffer_result = -1;
 					goto DSOUND_load_buffer_done;
@@ -1267,7 +1258,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 
 	DSOUND_load_buffer_done:
 	if ( convert_buffer )
-		free( convert_buffer );
+		vm_free( convert_buffer );
 	return DSOUND_load_buffer_result;
 #endif
 }
@@ -1323,7 +1314,7 @@ void ds_init_channels()
 	// ... End crazy little error check
 	// -------------------------------------------------------------------------
 
-	Channels = (channel*) malloc(sizeof(channel) * MAX_CHANNELS);
+	Channels = (channel*) vm_malloc(sizeof(channel) * MAX_CHANNELS);
 	if (Channels == NULL) {
 		Error(LOCATION, "Unable to allocate %d bytes for %d audio channels.", sizeof(channel) * MAX_CHANNELS, MAX_CHANNELS);
 	}
@@ -1354,7 +1345,7 @@ void ds_init_channels()
 	}
 
 	// allocate the channels array
-	Channels = (channel*) malloc(sizeof(channel) * MAX_CHANNELS);
+	Channels = (channel*) vm_malloc(sizeof(channel) * MAX_CHANNELS);
 	if (Channels == NULL) {
 		Error(LOCATION, "Unable to allocate %d bytes for %d audio channels.", sizeof(channel) * MAX_CHANNELS, MAX_CHANNELS);
 	}
@@ -1587,7 +1578,13 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	nprintf(( "Sound", "SOUND ==> Initializing OpenAL...\n" ));
 
 	// load OpenAL
+#ifdef _WIN32
+	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
+	// type problems (FIXME for a later date since I don't like this with future code) - taylor
+	ds_sound_device = alcOpenDevice( NOX("DirectSound") );
+#else
 	ds_sound_device = alcOpenDevice( NULL );
+#endif
 
 	if (ds_sound_device == NULL) {
 		nprintf(("Sound", "SOUND ==> Couldn't open OpenAL device\n"));
@@ -1623,7 +1620,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	// we use the "+1" here to have an extra NULL char on the end (with the memset())
 	// this is to fix memory errors when the last char in extlist is the same as the token
 	// we are looking for and ultra evil strtok() may still return non-NULL at EOS
-	extlist = (char*)malloc( strlen(OAL_extensions) + 1 );
+	extlist = (char*)vm_malloc( strlen(OAL_extensions) + 1 );
 	memset( extlist, 0, strlen(OAL_extensions) + 1);
 
 	if (extlist != NULL) {
@@ -1636,7 +1633,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 			curext = strtok(NULL, " ");
 		}
 
-		free(extlist);
+		vm_free(extlist);
 		extlist = NULL;
 	}
 
@@ -2109,7 +2106,7 @@ void ds_close()
 	}
 #endif
 	// free the Channels[] array, since it was dynamically allocated
-	free(Channels);
+	vm_free(Channels);
 	Channels = NULL;
 
 #ifdef USE_OPENAL
