@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.41 $
- * $Author: taylor $
- * $Date: 2005-05-12 17:49:16 $
+ * $Revision: 2.42 $
+ * $Author: phreak $
+ * $Date: 2005-05-13 02:41:24 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/05/12 17:49:16  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.40  2005/05/08 20:23:28  wmcoolmon
  * "backspace" function
  *
@@ -1255,7 +1259,7 @@ char *stuff_and_malloc_string( int type, char *terminators, int len)
 	if (l < 1)
 		return NULL;
 
-	return strdup(tmp_result);
+	return vm_strdup(tmp_result);
 }
 
 // After reading a multitext string, you can call this function to convert any newlines into
