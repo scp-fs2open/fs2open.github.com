@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.13 $
- * $Date: 2005-05-10 15:49:04 $
+ * $Revision: 1.14 $
+ * $Date: 2005-05-13 02:50:47 $
  * $Author: phreak $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/05/10 15:49:04  phreak
+ * fixed a minimum weapon range bug that was causing turrets to fire at ships beyond
+ * the actual range of a weapon.
+ *
  * Revision 1.12  2005/05/10 02:44:40  phreak
  * if you're using all_turret_weapons_have_flags() with a WIF2_** flag, use
  * all_turret_weapons_have_flags_wif2().
@@ -1353,7 +1357,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	//WMC - build a list of valid weapons. Fire spawns if there are any.
 	float dist_to_enemy = 0.0f;
 	if(lep != NULL)
-		dist_to_enemy = vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &gpos) - lep->radius;
+		dist_to_enemy = MAX(0,vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &gpos) - lep->radius);
 
 	int valid_weapons[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int num_valid = 0;
@@ -1433,7 +1437,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		if(lep != NULL)
 		{
-			if( (dist_to_enemy <= weapon_firing_range) && ((dist_to_enemy - lep->radius) >= WeaponMinRange) )
+			if( (dist_to_enemy <= weapon_firing_range) && (dist_to_enemy >= WeaponMinRange) )
 			{
 				if ( wip->wi_flags & WIF_HUGE ) {
 					if ( lep->type != OBJ_SHIP ) {
