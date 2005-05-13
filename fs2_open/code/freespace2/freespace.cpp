@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.150 $
- * $Date: 2005-05-12 17:40:48 $
- * $Author: taylor $
+ * $Revision: 2.151 $
+ * $Date: 2005-05-13 20:55:19 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2005/05/12 17:40:48  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ * use correct GL VRAM texture number in OGL mode rather than the D3D number
+ *
  * Revision 2.149  2005/05/12 03:51:17  Goober5000
  * whoops
  * --Goober5000
@@ -1939,7 +1944,7 @@ void game_sunspot_process(float frametime)
 			Assert(Viewer_obj);
 			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, 0 ) )	{
 				// draw the glow for this sun
-				if (Viewer_shader.c == 0) stars_draw_sun_glow(0);	
+				stars_draw_sun_glow(0);	
 			}
 
 			Supernova_last_glare = Sun_spot_goal;
@@ -1998,7 +2003,7 @@ void game_sunspot_process(float frametime)
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
 					// draw the glow for this sun
-					if (Viewer_shader.c == 0) stars_draw_sun_glow(idx);				
+					stars_draw_sun_glow(idx);				
 				} else {
 					Sun_spot_goal = 0.0f;
 				}
@@ -4872,6 +4877,9 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	} else {
 		stars_draw(1,1,1,0,0);
 	}
+	// Do the sunspot
+	game_sunspot_process(flFrametime);
+	
 
 	gr_set_ambient_light(The_mission.ambient_light_level & 0xff, 
 							(The_mission.ambient_light_level >> 8) & 0xff,
@@ -5494,9 +5502,6 @@ void game_render_hud_3d(vec3d *eye_pos, matrix *eye_orient)
 	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_active() < 3)/* && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) )*/ ) {
 		HUD_render_3d(flFrametime);
 	}
-
-	// Do the sunspot
-	game_sunspot_process(flFrametime);
 
 	// Diminish the palette effect
 	game_flash_diminish(flFrametime);
