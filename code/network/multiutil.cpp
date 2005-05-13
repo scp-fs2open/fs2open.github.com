@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-05-12 17:49:15 $
+ * $Revision: 2.35 $
+ * $Date: 2005-05-13 23:10:17 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/05/12 17:49:15  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.33  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -2268,8 +2272,8 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}
 
 	// check to make sure we are otherwise in a state to accept
-	if((Netgame.game_state != NETGAME_STATE_FORMING && !Cmdline_ingamejoin)
-		|| (Netgame.game_state != NETGAME_STATE_IN_MISSION || Netgame.game_state != NETGAME_STATE_FORMING)){
+	if((Netgame.game_state != NETGAME_STATE_FORMING) &&
+		((Netgame.game_state != NETGAME_STATE_IN_MISSION) || !Cmdline_ingamejoin)){
 		return JOIN_DENY_JR_STATE;
 	}
 	
