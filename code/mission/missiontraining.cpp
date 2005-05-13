@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-05-12 03:50:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-05-13 02:56:34 $
+ * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/05/12 03:50:10  Goober5000
+ * repeating messages with variables should work properly now
+ * --Goober5000
+ *
  * Revision 2.10  2005/05/12 01:34:50  Goober5000
  * removed variables in messages for now
  * --Goober5000
@@ -842,7 +846,7 @@ void training_mission_shutdown()
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
 	{
 		if (Training_message_queue[i].special_message != NULL)
-			free(Training_message_queue[i].special_message);
+			vm_free(Training_message_queue[i].special_message);
 		Training_message_queue[i].special_message = NULL;
 	}
 
@@ -1097,14 +1101,14 @@ void message_training_queue(char *text, int timestamp, int length)
 		if (Training_message_queue[Training_message_queue_count].special_message != NULL)
 		{
 			Int3();
-			free(Training_message_queue[Training_message_queue_count].special_message);
+			vm_free(Training_message_queue[Training_message_queue_count].special_message);
 		}
 		Training_message_queue[Training_message_queue_count].special_message = NULL;
 
 		// Goober5000 - replace variables if necessary
 		strcpy(temp_buf, Messages[m].message);
 		if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
-			Training_message_queue[Training_message_queue_count].special_message = strdup(temp_buf);
+			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf);
 
 		Training_message_queue_count++;
 	}
@@ -1118,7 +1122,7 @@ void message_training_remove_from_queue(int idx)
 	Training_message_queue[idx].timestamp = -1;
 
 	if (Training_message_queue[idx].special_message != NULL);
-		free(Training_message_queue[idx].special_message);
+		vm_free(Training_message_queue[idx].special_message);
 	Training_message_queue[idx].special_message = NULL;
 
 	for (int j=idx+1; j<Training_message_queue_count; j++)
