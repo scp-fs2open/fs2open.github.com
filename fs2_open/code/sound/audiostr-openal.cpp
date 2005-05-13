@@ -1,12 +1,19 @@
 /*
  * $Logfile: $
- * $Revision: 1.5 $
- * $Date: 2005-05-12 17:47:57 $
+ * $Revision: 1.6 $
+ * $Date: 2005-05-13 23:09:28 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/05/12 17:47:57  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ * fix a few streaming errors in OpenAL code (Jens Granseuer)
+ * temporary change to help deal with missing music in OpenAL Windows builds
+ * don't assert when si->data is NULL unless we really need to check (OpenAL only)
+ *
  * Revision 1.4  2005/04/05 11:48:22  taylor
  * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
  * better error handling for OpenAL functions
@@ -1031,14 +1038,14 @@ BOOL AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 				format = AL_FORMAT_STEREO16;
 		}
 
-		// unqueue and recycle processed buffers
+		// unqueue and recycle a processed buffer
 		ALint p = 0;
-		ALuint bid[MAX_STREAM_BUFFERS];
+		ALuint bid;
 
-		// it's quite possible for this to give us an error so don't fail if it does
-		// and remember to clear the error queue before moving on to the next commands
 		OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &p) );
-		OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, p, bid) );
+		if ( p > 0 ) {
+			OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, 1, &bid) );
+		}
 
 		OpenAL_ErrorCheck( alBufferData(m_buffer_ids[m_play_buffer_id], format, uncompressed_wave_data, num_bytes_read, m_pwavefile->m_wfmt.nSamplesPerSec), return FAILURE );
 
@@ -1176,11 +1183,10 @@ BOOL AudioStream::ServiceBuffer (void)
 			}
 
 			ALint n = 0;
-			// get the number of buffers still queued to see if we're done
-			OpenAL_ErrorCheck( alGetSourcei(m_source_id, AL_BUFFERS_QUEUED, &n), return FALSE );
+			// get the number of buffers processed to see if we're done
+			OpenAL_ErrorCheck( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &n), return FALSE );
 
-		//	if ( m_bReadingDone && (n == MAX_STREAM_BUFFERS) ) {
-			if ( m_bReadingDone && (n == 0) ) {
+			if ( m_bReadingDone && (n == MAX_STREAM_BUFFERS) ) {
 				if ( m_bDestroy_when_faded == TRUE ) {
 					LEAVE_CRITICAL_SECTION( write_lock );
 
