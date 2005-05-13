@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-05-12 17:49:14 $
+ * $Revision: 2.32 $
+ * $Date: 2005-05-13 02:47:58 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/05/12 17:49:14  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.30  2005/05/12 03:50:10  Goober5000
  * repeating messages with variables should work properly now
  * --Goober5000
@@ -1878,7 +1882,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	// Goober5000 - replace variables if necessary
 	strcpy(temp_buf, Messages[message_num].message);
 	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
-		MessageQ[i].special_message = strdup(temp_buf);
+		MessageQ[i].special_message = vm_strdup(temp_buf);
 
 	// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
 	// to this message, then set a bit to tell the wave/anim playing code to play the command version
