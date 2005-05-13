@@ -189,7 +189,7 @@ bool d3d_read_header_d3dx(char *file, CFILE *img_cfp, int type, int *w, int *h, 
 
 	size = cfilelength(d3dx_file);
 
-	img_data = malloc(size); //I freed this - Bobboau
+	img_data = vm_malloc(size); //I freed this - Bobboau
 
 	if (img_data == NULL)
 		return false;
@@ -337,7 +337,7 @@ void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum)
 	}
 
 	int size = cfilelength(targa_file);
-	void *tga_data = malloc(size);
+	void *tga_data = vm_malloc(size);
 
 	if  (tga_data == NULL)
 		return NULL;
