@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-05-12 17:49:17 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2005-05-14 21:34:17 $
+ * $Author: phreak $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.23  2005/04/18 03:31:27  taylor
  * some extra checks to make sure we don't act on invalid gamesnds (fix for WCS)
  *
@@ -963,7 +967,7 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 
 	MONITOR_INC( Num3DSoundsStarted, 1 );
 
-	if ( gs->id == -1 ) {
+	if ( gs->id < 0 ) {
 		gs->id = snd_load(gs);
 		MONITOR_INC( Num3DSoundsLoaded, 1 );
 	}else if ( gs->id_sig != Sounds[gs->id].sig ) {
