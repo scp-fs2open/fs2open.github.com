@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-05-13 02:50:47 $
+ * $Revision: 1.15 $
+ * $Date: 2005-05-14 21:35:04 $
  * $Author: phreak $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/05/13 02:50:47  phreak
+ * fixed another minimum range bug that prevented the Colossus and the Beast from
+ * properly engaging one another in the mission: Their Finest Hour (SM3-08)
+ *
  * Revision 1.13  2005/05/10 15:49:04  phreak
  * fixed a minimum weapon range bug that was causing turrets to fire at ships beyond
  * the actual range of a weapon.
@@ -613,7 +617,12 @@ int get_nearest_enemy_objnum(int turret_parent_objnum, ship_subsys *turret_subsy
 		// Missile_obj_list
 		for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 			objp = &Objects[mo->objnum];
-			evaluate_obj_as_target(objp, &eeo);
+			
+			Assert(objp->type == OBJ_WEAPON);
+			if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+			{
+				evaluate_obj_as_target(objp, &eeo);
+			}
 		}
 		// highest priority
 		if ( eeo.nearest_homing_bomb_objnum != -1 ) {					// highest priority is an incoming homing bomb
@@ -1462,7 +1471,22 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
 					}
+
+					// check if we're using a tagged only type weapon and the target ship isn't tagged
+					if (((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY)) && !ship_is_tagged(lep)) 
+					{
+						continue;
+					}
 				}
+				else
+				{
+					//can't tag anything else
+					if ((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY))
+					{
+						continue;
+					}
+				}
+
 				//Add it to the list
 				valid_weapons[num_valid++] = i;
 			}
