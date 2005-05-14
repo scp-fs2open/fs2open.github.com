@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.5 $
- * $Date: 2005-05-12 17:49:17 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-05-14 16:16:48 $
+ * $Author: phreak $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.4  2005/05/08 20:20:46  wmcoolmon
  * Dynamically allocated medals
  *
@@ -102,8 +106,57 @@ typedef struct medal_stuff {
 	char voice_base[MAX_FILENAME_LEN];
 	char *promotion_text;
 
-	medal_stuff(){name[0]='\0';bitmap[0]='\0';num_versions=1;kills_needed=0;i=0;voice_base[0]='\0';promotion_text=NULL;}
-	~medal_stuff(){if(promotion_text != NULL)vm_free(promotion_text);}
+	medal_stuff()
+	{
+		name[0]='\0';
+		bitmap[0]='\0';
+		num_versions=1;
+		kills_needed=0;
+		i=0;
+		voice_base[0]='\0';
+		promotion_text=NULL;
+	}
+
+	medal_stuff(const medal_stuff &cpy)
+	{
+		*this = cpy;
+	}
+
+	~medal_stuff()
+	{
+		free_promotion_text();
+	}
+
+	medal_stuff& operator=(const medal_stuff& ms)
+	{
+		strcpy(name, ms.name);
+		strcpy(bitmap, ms.bitmap);
+		num_versions = ms.num_versions;
+		kills_needed = ms.kills_needed;
+		i = ms.i;
+		strcpy(voice_base, ms.voice_base);
+		
+		if (ms.promotion_text && (ms.promotion_text != (char*)0xbaadf00d))
+		{
+			free_promotion_text();
+			promotion_text = vm_strdup(ms.promotion_text);
+		}
+		else
+		{
+			free_promotion_text();			
+			promotion_text = NULL;
+		}
+
+		return *this;
+	}
+
+	private:
+
+		void free_promotion_text()
+		{
+			if (promotion_text && (promotion_text != (char*)0xbaadf00d))
+				vm_free(promotion_text);
+		}
 } medal_stuff;
 /*
 typedef struct badge_stuff {
