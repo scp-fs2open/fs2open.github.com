@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-05-14 21:35:04 $
+ * $Revision: 1.16 $
+ * $Date: 2005-05-14 21:48:22 $
  * $Author: phreak $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/05/14 21:35:04  phreak
+ * stop turrets from targeting non-bombs.  also some tagged-only fixes.
+ *
  * Revision 1.14  2005/05/13 02:50:47  phreak
  * fixed another minimum range bug that prevented the Colossus and the Beast from
  * properly engaging one another in the mission: Their Finest Hour (SM3-08)
@@ -384,6 +387,11 @@ bool valid_turret_enemy(object *eobjp, object *turret_parent, ship_subsys *turre
 
 		// check if	turret flagged to only target tagged ships
 		if ( (turret->weapons.flags & SW_FLAG_TAGGED_ONLY) && !ship_is_tagged(eobjp) ) {
+			return false;
+		}
+
+		//dont look at ships that aren't tagged and all weapons on this turret require a ship to be tagged.
+		if (all_turret_weapons_have_flags_wif2(&turret->weapons, WIF2_TAGGED_ONLY) && !ship_is_tagged(eobjp) ) {
 			return false;
 		}
 
