@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.151 $
- * $Date: 2005-05-13 20:55:19 $
+ * $Revision: 2.152 $
+ * $Date: 2005-05-15 21:40:31 $
  * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2005/05/13 20:55:19  phreak
+ * possible fix for seeing suns through ships.  shouldn't break anything.
+ *
  * Revision 2.150  2005/05/12 17:40:48  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -2671,6 +2674,12 @@ uint load_mission_stuff;
 int game_start_mission()
 {	
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
+
+
+	char temp_fname[MAX_FILENAME_LEN];
+	strcpy(temp_fname, Game_current_mission_filename);
+	strcat(temp_fname, ".fs2");
+	get_mission_info(temp_fname, &The_mission);
 
 	game_loading_callback_init();
 
