@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-05-14 21:34:17 $
- * $Author: phreak $
+ * $Revision: 2.26 $
+ * $Date: 2005-05-15 06:47:57 $
+ * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/05/14 21:34:17  phreak
+ * fixed an out-of-bounds array bug
+ *
  * Revision 2.24  2005/05/12 17:49:17  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -740,7 +743,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		si->data = NULL;
  	}
  
-	// make sure the file handle is closed, OGG should take of this itself
+	// make sure the file handle is closed
 	if (fp != NULL)
 		cfclose(fp);
 

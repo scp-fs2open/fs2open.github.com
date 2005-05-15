@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.6 $
- * $Date: 2005-05-13 23:09:28 $
+ * $Revision: 1.7 $
+ * $Date: 2005-05-15 06:47:57 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/05/13 23:09:28  taylor
+ * Ooops!  Added the wrong version of the streaming patch from Jens
+ *
  * Revision 1.5  2005/05/12 17:47:57  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -379,11 +382,10 @@ void WaveFile::Close(void)
 
 	// Close file
 	if (cfp) {
-		if(m_wave_format == OGG_FORMAT_VORBIS) {
+		if (m_wave_format == OGG_FORMAT_VORBIS)
 			ov_clear(&m_ogg_info);
-		} else {
-			mmioClose( cfp, 0 );
-		}
+
+		mmioClose( cfp, 0 );
 		cfp = NULL;
 	}
 }

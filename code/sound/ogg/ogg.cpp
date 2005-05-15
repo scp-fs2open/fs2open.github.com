@@ -23,7 +23,8 @@ int ogg_cfseek(void* cfile, ogg_int64_t offset, int where)
 
 int ogg_cfclose(void* cfile)
 {
-	return cfclose((CFILE*) cfile);
+	// we don't close here so that it's safe to do it ourselves
+	return 0;
 }
 
 long ogg_cftell(void* cfile)
@@ -44,7 +45,8 @@ int ogg_mmio_seek(void* mmfp, ogg_int64_t offset, int where)
 
 int ogg_mmio_close(void* mmfp)
 {
-	return mmioClose((HMMIO) mmfp, 0);
+	// we don't close here so that it's safe to do it ourselves
+	return 0;
 }
 
 long ogg_mmio_tell(void* mmfp)

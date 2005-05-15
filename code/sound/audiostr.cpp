@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.18 $
+ * $Date: 2005-05-15 06:47:57 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.16  2005/03/27 06:14:30  taylor
  * update for streaming support and platform independance
  *
@@ -1226,14 +1230,10 @@ void WaveFile::Close(void)
 	// Close file
 	if (cfp) {
 		//cfclose(cfp);
-		if(m_wave_format == OGG_FORMAT_VORBIS)
-		{
+		if (m_wave_format == OGG_FORMAT_VORBIS)
 			ov_clear(&m_ogg_info);
-		}
-		else
-		{
-			mmioClose( cfp, 0 );
-		}
+
+		mmioClose( cfp, 0 );
 		cfp = NULL;
 	}
 }
