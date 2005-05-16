@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-05-14 21:48:22 $
+ * $Revision: 1.17 $
+ * $Date: 2005-05-16 15:40:43 $
  * $Author: phreak $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/05/14 21:48:22  phreak
+ * another tagged only turret fix
+ *
  * Revision 1.15  2005/05/14 21:35:04  phreak
  * stop turrets from targeting non-bombs.  also some tagged-only fixes.
  *
@@ -1479,16 +1482,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
 					}
-
-					// check if we're using a tagged only type weapon and the target ship isn't tagged
-					if (((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY)) && !ship_is_tagged(lep)) 
-					{
-						continue;
-					}
 				}
 				else
 				{
-					//can't tag anything else
+					//can't tag anything else, other than asteroids
+					//but we don't want to waste this type of
+					//weaponary on asteroids now do we?
 					if ((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY))
 					{
 						continue;
