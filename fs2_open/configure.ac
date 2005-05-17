@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.16 2005-04-17 05:38:28 taylor Exp $
+dnl $Id: configure.ac,v 1.17 2005-05-17 20:57:05 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -265,7 +265,6 @@ AM_CONDITIONAL(FS2_DEBUG,      test "$fs2_debug"      = "yes")
 
 AM_CONDITIONAL([am__fastdepOBJC],  test "$fs2_os_osx"  = "yes")
 
-AC_CHECK_HEADER(malloc.h)
 AC_CHECK_HEADER(stdlib.h)
 
 dnl From licq: Copyright (c) 2000 Dirk Mueller
