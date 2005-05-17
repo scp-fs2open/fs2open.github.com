@@ -49,16 +49,6 @@ DIE=0
   DIE=1
 }
 
-(grep "^AM_PROG_LIBTOOL" $srcdir/configure.ac >/dev/null) && {
-  (libtool --version) < /dev/null > /dev/null 2>&1 || {
-    echo
-    echo "**Error**: You must have \`libtool' installed."
-    echo "Get ftp://ftp.gnu.org/pub/gnu/"
-    echo "(or a newer version if it is available)"
-    DIE=1
-  }
-}
-
 for AM in automake-1.9 automake-1.8 automake-1.7 automake-1.6 automake; do
   (check_version "$AM" 1 6 1) && {
     AUTOMAKE="$AM"
@@ -126,38 +116,10 @@ do
 	##  echo "**Warning**: No such directory \`$k'.  Ignored."
         fi
       done
-      if grep "^AM_GNU_GETTEXT" configure.ac >/dev/null; then
-	if grep "sed.*POTFILES" configure.ac >/dev/null; then
-	  : do nothing -- we still have an old unmodified configure.ac
-	else
-	  echo "Creating $dr/aclocal.m4 ..."
-	  test -r $dr/aclocal.m4 || touch $dr/aclocal.m4
-	  echo "Running gettextize...  Ignore non-fatal messages."
-	  ./setup-gettext
-	  echo "Making $dr/aclocal.m4 writable ..."
-	  test -r $dr/aclocal.m4 && chmod u+w $dr/aclocal.m4
-        fi
-      fi
-      if grep "^AM_GNOME_GETTEXT" configure.ac >/dev/null; then
-	echo "Creating $dr/aclocal.m4 ..."
-	test -r $dr/aclocal.m4 || touch $dr/aclocal.m4
-	echo "Running gettextize...  Ignore non-fatal messages."
-	./setup-gettext
-	echo "Making $dr/aclocal.m4 writable ..."
-	test -r $dr/aclocal.m4 && chmod u+w $dr/aclocal.m4
-      fi
-      if grep "^AM_PROG_LIBTOOL" configure.ac >/dev/null; then
-	echo "Running libtoolize..."
-	libtoolize --force --copy
-      fi
       echo "Running $ACLOCAL $aclocalinclude ..."
       "$ACLOCAL" $aclocalinclude
-      if grep "^AM_CONFIG_HEADER" configure.ac >/dev/null; then
-	echo "Running autoheader..."
-	autoheader
-      fi
-      echo "Running $AUTOMAKE --add-missing --copy --gnu $am_opt ..."
-      "$AUTOMAKE" --add-missing --copy --gnu $am_opt
+      echo "Running $AUTOMAKE --add-missing --copy --foreign $am_opt ..."
+      "$AUTOMAKE" --add-missing --copy --foreign $am_opt
       echo "Running autoconf..."
       autoconf
     )
