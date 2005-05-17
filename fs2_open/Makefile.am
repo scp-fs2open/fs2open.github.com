@@ -23,7 +23,7 @@ EXTRA_DIST =	\
 AM_CXXFLAGS = -I./code @D_CFLAGS@
 AM_LDFLAGS = @D_LDFLAGS@
 
-EXTRA_PROGRAMS = cfilearchiver cryptstring scramble
+EXTRA_PROGRAMS = cfilearchiver cfileextractor cryptstring scramble
 
 ###############################################################################
 ##
@@ -33,6 +33,10 @@ EXTRA_PROGRAMS = cfilearchiver cryptstring scramble
 # cfilearchiver -- to create VPs
 cfilearchiver_SOURCES =	\
 	code/cfilearchiver/cfilearchiver.cpp
+
+# cfileextractor -- to extract files from VPs
+cfileextractor_SOURCES = \
+	code/cfileextractor/cfileextractor.cpp
 
 # cryptstring -- to encrypt strings that are used as cheat codes
 cryptstring_SOURCES =	\
@@ -46,7 +50,7 @@ scramble_SOURCES =	\
 
 
 # catch all to build utilitites
-tools: cfilearchiver cryptstring scramble
+tools: cfilearchiver cfileextractor cryptstring scramble
 
 
 # cleaning
