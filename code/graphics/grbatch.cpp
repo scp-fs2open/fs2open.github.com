@@ -34,7 +34,7 @@ bool batch_init()
 {
 	if(!Cmdline_batch_3dunlit) return true;
 
-	Batch_vertex_array	= (vertex *)	malloc(sizeof(vertex) * BATCH_MAX_VERTEX);
+	Batch_vertex_array	= (vertex *)	vm_malloc(sizeof(vertex) * BATCH_MAX_VERTEX);
 	Batch_array			= (BatchNode *) vm_malloc(sizeof(vertex) * BATCH_MAX);
 
 	return (Batch_array != 0); 

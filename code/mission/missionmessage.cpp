@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-05-13 02:47:58 $
+ * $Revision: 2.33 $
+ * $Date: 2005-05-17 20:57:05 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/05/13 02:47:58  taylor
+ * missed a strdup to vm_strdup conversion
+ *
  * Revision 2.31  2005/05/12 17:49:14  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1078,7 +1081,7 @@ void message_mission_shutdown()
 	for (i = 0; i < MAX_MESSAGE_Q; i++)
 	{
 		if (MessageQ[i].special_message != NULL)
-			free(MessageQ[i].special_message);
+			vm_free(MessageQ[i].special_message);
 		MessageQ[i].special_message = NULL;
 	}
 }
@@ -1264,7 +1267,7 @@ void message_remove_from_queue(message_q *q)
 
 	// Goober5000
 	if (q->special_message != NULL);
-		free(q->special_message);
+		vm_free(q->special_message);
 	q->special_message = NULL;
 
 	if ( MessageQ_num > 0 ) {
@@ -1875,7 +1878,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	if (MessageQ[i].special_message != NULL)
 	{
 		Int3();
-		free(MessageQ[i].special_message);
+		vm_free(MessageQ[i].special_message);
 	}
 	MessageQ[i].special_message = NULL;
 
