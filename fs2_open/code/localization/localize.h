@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:27 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-05-18 14:01:31 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:27  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2004/03/05 09:02:05  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -76,10 +79,11 @@
 //
 
 // language defines
-#define LCL_NUM_LANGUAGES				3							// keep this up to date
+#define LCL_NUM_LANGUAGES				4							// keep this up to date
 #define LCL_ENGLISH						0
 #define LCL_GERMAN						1
 #define LCL_FRENCH						2
+#define LCL_POLISH						3
 
 #define LCL_DEFAULT_LANGUAGE			LCL_ENGLISH
 
@@ -93,6 +97,7 @@ extern int Lcl_special_chars;
 // only 1 will be active at a time
 extern int Lcl_fr;
 extern int Lcl_gr;
+extern int Lcl_pl;
 extern int Lcl_english;
 
 
@@ -161,6 +166,9 @@ int lcl_get_xstr_offset(int index, int res);
 #define LCL_TO_ASCII	1
 char* lcl_fix_umlauts(char *str, int which_way);
 
+// covert some polish characters
+void lcl_fix_polish(char *str);
+
 // macro for launcher xstrs
 #if defined(GERMAN_BUILD)
 #define LXSTR(str, i)		(lcl_fix_umlauts(XSTR(str, i), LCL_TO_ANSI))
@@ -171,6 +179,8 @@ char* lcl_fix_umlauts(char *str, int which_way);
 void lcl_translate_wep_name(char *name);
 void lcl_translate_ship_name(char *name);
 void lcl_translate_brief_icon_name(char *name);
+void lcl_translate_brief_icon_name_pl(char *name);
 void lcl_translate_targetbox_name(char *name);
+void lcl_translate_targetbox_name_pl(char *name);
 
 #endif	// defined __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
