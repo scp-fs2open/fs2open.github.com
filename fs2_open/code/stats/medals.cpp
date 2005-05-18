@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.13 $
+ * $Date: 2005-05-18 14:03:27 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.11  2005/05/08 20:20:46  wmcoolmon
  * Dynamically allocated medals
  *
@@ -355,6 +359,35 @@ static int Medal_button_masks[MAX_MEDALS_BUTTONS] = {
 #define MASK_BITMAP_INIT  (1<<1)
 int Init_flags;
 
+void medal_stuff::clone(const medal_stuff &m)
+{
+	memcpy(name, m.name, NAME_LENGTH);
+	memcpy(bitmap, m.bitmap, NAME_LENGTH);
+	num_versions = m.num_versions;
+	kills_needed = m.kills_needed;
+	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
+
+	if (m.promotion_text)
+		promotion_text = vm_strdup(m.promotion_text);
+	else
+		promotion_text = NULL;
+}
+
+// assignment operator
+const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
+{
+	if (this != &m) {
+		if (promotion_text) {
+			vm_free(promotion_text);
+			promotion_text = NULL;
+		}
+		clone(m);
+	}
+
+	return *this;
+}
+
+
 void parse_medal_tbl()
 {
 	int rval, i;
@@ -371,13 +404,11 @@ void parse_medal_tbl()
 	reset_parse();
 
 	// parse in all the rank names
-	medal_stuff temp_medal;
 	Num_medals = 0;
 	required_string("#Medals");
 	while ( required_string_either("#End", "$Name:") )
 	{
-		//Clear this
-		temp_medal = medal_stuff();
+		medal_stuff temp_medal;
 
 		required_string("$Name:");
 		stuff_string( temp_medal.name, F_NAME, NULL );
@@ -411,6 +442,7 @@ void parse_medal_tbl()
 			stuff_string(buf, F_MULTITEXT, NULL);
 			temp_medal.promotion_text = vm_strdup(buf);
 		}
+
 		Medals.push_back(temp_medal);
 	}
 
@@ -814,4 +846,3 @@ void blit_medals()
 	gr_set_bitmap(Rank_bm);
 	gr_bitmap(Medal_coords[gr_screen.res][RANK_MEDAL_REGION][0], Medal_coords[gr_screen.res][RANK_MEDAL_REGION][1]);
 }
-
