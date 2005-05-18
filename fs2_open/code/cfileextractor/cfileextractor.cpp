@@ -5,13 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.1 $
- * $Date: 2005-05-17 21:00:57 $
+ * $Revision: 1.2 $
+ * $Date: 2005-05-18 01:57:54 $
  * $Author: taylor $
  *
  * Cross-platform cmdline extractor for VP files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/05/17 21:00:57  taylor
+ * Initial import of cfileextractor, still needs some work but does what it needs to
+ *
  *
  * $NoKeywords: $
  */
@@ -160,7 +163,7 @@ void read_header()
 		print_error(ERR_INVALID_VP);
 
 	// the index_offset needs to be greater than the size of vp_header at the very least and there should be at least one file
-	if ( !(VP_Header.index_offset > sizeof(vp_header)) || !(VP_Header.num_files > 1) )
+	if ( !(VP_Header.index_offset > (int)sizeof(vp_header)) || !(VP_Header.num_files > 1) )
 		print_error(ERR_INVALID_VP);
 
 	
@@ -237,7 +240,7 @@ void extract_all_files(char *file)
 	else if (!have_index)
 		print_error(ERR_NO_INDEX);
 
-	int i, status, m_error, nbytes, nbytes_remaining;
+	int status, m_error, nbytes, nbytes_remaining;
 	char path[CF_MAX_PATHNAME_LENGTH+CF_MAX_FILENAME_LENGTH+1]; // path length + filename length + extra NULL
 	char *c;
 
@@ -245,7 +248,7 @@ void extract_all_files(char *file)
 	printf("\n");
 	printf("Extracting: %s...\n", file);
 
-	for (i = 0; i < VP_FileInfo.size(); i++) {
+	for (uint i = 0; i < VP_FileInfo.size(); i++) {
 		// save the file path to a temp location and recursively make the needed directories
 		sprintf(path, "%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
 
@@ -303,7 +306,6 @@ void extract_all_files(char *file)
 // TODO: the formatting of this is a bit loco but I don't care enough to make it better...
 void list_all_files(char *file)
 {
-	int i;
 	char out_time[20];
 	float one_k = 1024.0f;
 	float one_m = 1048576.0f;
@@ -323,7 +325,7 @@ void list_all_files(char *file)
 
 	printf("  Name                          Size     Offset      Date/Time         Path\n");
 	printf("-------------------------------------------------------------------------------\n");
-	for (i = 0; i < VP_FileInfo.size(); i++) {
+	for (uint i = 0; i < VP_FileInfo.size(); i++) {
 		plat_time = VP_FileInfo[i].write_time;  // gets rid of some platform strangeness this way
 		strftime(out_time, 32, "%F %H:%M", localtime(&plat_time)); // YYYY-mm-dd HH:mm  (ISO 8601 date format, 24-hr time)
 
@@ -344,7 +346,7 @@ void list_all_files(char *file)
 	// we use the vector size here since VP_Header.num_files would include each entry
 	// in the directory tree as well as individual files and that artificially inflates
 	// the number of files that we show or would extract
-	printf("Total files: %i\n", VP_FileInfo.size());
+	printf("Total files: %i\n", (int)VP_FileInfo.size());
 
 	// yeah, I'm just that cheap
 	if (VP_Header.index_offset > (int)one_m) {
@@ -366,13 +368,13 @@ void help()
 	printf("\n");
 	printf("Usage:  cfileextractor [-x | -l] [-L] <vp_filename>\n");
 	printf("\n");
-	printf(" Commands (only one at the itme):\n");
-	printf("  -x | --extract        Extract all files into current directory\n");
-	printf("  -l | --list           List all files in VP archive\n");
-	printf("  -h | --help           Show this help text\n");
+	printf(" Commands (only one at the time):\n");
+	printf("  -x | --extract        Extract all files into current directory.\n");
+	printf("  -l | --list           List all files in VP archive.\n");
+	printf("  -h | --help           Show this help text.\n");
 	printf("\n");
 	printf(" Options:\n");
-	printf("  -L | --lowercase      Force all filenames to be lowercase\n");
+	printf("  -L | --lowercase      Force all filenames to be lower case.\n");
 	printf("\n");
 	printf("  (No command specified will list all files in the VP archive.)\n");
 	printf("\n");
