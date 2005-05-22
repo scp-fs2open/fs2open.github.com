@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-04-05 05:53:15 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-05-22 22:47:19 $
+ * $Author: phreak $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/04/05 05:53:15  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.25  2005/03/25 06:57:33  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -336,7 +339,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 			int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
 			r *= (0.40f + Noise[noise_frame]*0.30f);
-			float adg = pow((2.0f*life_percent) - 1.0f,24.0f)*max_radius*2.0f;
+			float adg = (float)pow((2.0f*life_percent) - 1.0f,24.0f)*max_radius*2.0f;
 
 						
 			g3_draw_bitmap( &verts[4], 0,r+adg, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
@@ -455,7 +458,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 			g3_start_instance_matrix(pos,orient, true);
 		gr_set_bitmap(Warp_ball_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
 		float adg = (2.0f*life_percent) - 1.0f;
-		float pct= (pow(adg,4.0f)-pow(adg,128.0f))*4.0f;
+		float pct= (float)(pow(adg,4.0f)-pow(adg,128.0f))*4.0f;
 		if(pct > 0.00001f)
 		warp_ball.render(max_radius*pct/2.0f,adg*adg,adg*adg*6.0f);
 			g3_done_instance(true);
