@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2005/05/12 17:49:18  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.114  2005/05/08 20:20:06  wmcoolmon
  * armor.tbl revamp
  *
@@ -2749,7 +2753,7 @@ float weapon_glow_scale_l = 1.5f;
 float weapon_glow_alpha = 0.85f;
 void weapon_render(object *obj)
 {
-	int num, frame = 0;
+	int num, frame;
 	weapon_info *wip;
 	weapon *wp;
 	color c;
@@ -2772,6 +2776,8 @@ void weapon_render(object *obj)
 				if(wip->laser_bitmap_nframes > 1){
 					frame = (timestamp() / (int)(wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
 		//			HUD_printf("frame %d", wp->frame);
+				} else {
+					frame = 0;
 				}
 			//	gr_set_bitmap(wip->laser_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 
@@ -2804,6 +2810,8 @@ void weapon_render(object *obj)
 
 				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
 					frame = (timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
+				} else {
+					frame = 0;
 				}
 			//	gr_set_bitmap(wip->laser_glow_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 

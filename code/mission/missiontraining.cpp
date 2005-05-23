@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-05-13 02:56:34 $
+ * $Revision: 2.13 $
+ * $Date: 2005-05-23 05:55:13 $
  * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/05/13 02:56:34  taylor
+ * more malloc->vm_malloc, free->vm_free, strdup->vm_strdup fixage
+ *
  * Revision 2.11  2005/05/12 03:50:10  Goober5000
  * repeating messages with variables should work properly now
  * --Goober5000
@@ -1048,6 +1051,11 @@ void message_training_setup(int m, int length, char *special_message)
 
 	HUD_add_to_scrollback(Training_buf, HUD_SOURCE_TRAINING);
 
+	// moved from message_training_display() because we got rid of an extra buffer and we have to determine
+	// the number of lines earlier to avoid inadvertant modification of Training_buf.  - taylor
+	training_process_message(Training_buf);
+	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
+
 	if (message_play_training_voice(Messages[m].wave_info.index) < 0) {
 		if (length > 0)
 			Training_message_timestamp = timestamp(length * 1000);
@@ -1178,8 +1186,10 @@ void message_training_display()
 		return;
 	}
 
-	training_process_message(Training_buf);
-	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
+	// next two lines moved to message_training_setup() - taylor
+//	training_process_message(Training_buf);
+//	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
+
 	Assert(Training_num_lines > 0);
 	for (i=0; i<Training_num_lines; i++) {
 		Training_lines[i][Training_line_sizes[i]] = 0;
