@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.56 $
- * $Date: 2005-05-12 17:36:59 $
+ * $Revision: 2.57 $
+ * $Date: 2005-05-23 05:56:26 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/05/12 17:36:59  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ * for the game_busy() text during page in add a "BmpMan" so we know better what's going on
+ *
  * Revision 2.55  2005/04/30 18:17:17  phreak
  * bm_page_in_textures() should return if bitmap_num is any negative value, instead of just -1
  *
@@ -1037,7 +1042,7 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 
 	if ( !bm_inited ) bm_init();
 
-	int n = MAX_BITMAPS;
+	int n = -1;
 
 	for (int i = MAX_BITMAPS-1; i >= 0; i-- ) {
 		if ( bm_bitmaps[i].type == BM_TYPE_NONE )	{
@@ -1061,8 +1066,7 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 	bm_bitmaps[n].bm.h = (short) h;
 	bm_bitmaps[n].bm.rowsize = (short) w;
 	bm_bitmaps[n].bm.bpp = (unsigned char) bpp;
-	bm_bitmaps[n].bm.flags = 0;
-	bm_bitmaps[n].bm.flags |= flags;
+	bm_bitmaps[n].bm.flags = flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 
@@ -1147,11 +1151,11 @@ int bm_load_sub_fast(char *real_filename, const char *ext, int *handle, int dir_
 // This loads a bitmap so we can draw with it later.
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
-// number.  Function doesn't acutally load the data, only
+// number.  Function doesn't actually load the data, only
 // width, height, and possibly flags.
 int bm_load( char * real_filename )
 {
-	int i, n, first_slot = MAX_BITMAPS;
+	int i, n, first_slot = -1;
 	int w, h, bpp = 8;
 	int rc = 0;
 	int bm_size = 0, mm_lvl = 0;
@@ -1232,16 +1236,16 @@ int bm_load( char * real_filename )
 	// Error( LOCATION, "Unknown bitmap type %s\n", filename );
 
 	// Find an open slot
-	for (i = 0; i < MAX_BITMAPS; i++) {
-		if ( (bm_bitmaps[i].type == BM_TYPE_NONE) && (first_slot == MAX_BITMAPS) ){
+	for (i = 0; (i < MAX_BITMAPS) && (first_slot == -1); i++) {
+		if (bm_bitmaps[i].type == BM_TYPE_NONE) {
 			first_slot = i;
 		}
 	}
 
 	n = first_slot;
-	Assert( n < MAX_BITMAPS );	
+	Assert( n != -1 );	
 
-	if ( n == MAX_BITMAPS ) return -1;
+	if ( n == -1 ) return -1;
 
 
 	rc = gr_bm_load( type, n, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
@@ -1424,7 +1428,7 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	}
 
 	// make sure we can use the format in question
-	if ( !Cmdline_jpgtga && (c_type == BM_TYPE_TGA) || (c_type == BM_TYPE_JPG) ) {
+	if ( !Cmdline_jpgtga && ((c_type == BM_TYPE_TGA) || (c_type == BM_TYPE_JPG)) ) {
 		mprintf(("BMPMAN: EFF is of JPG/TGA format and can't be used!\n"));
 		return -1;
 	}
@@ -2365,7 +2369,7 @@ void bm_release(int handle)
 	Assert(n >= 0 && n < MAX_BITMAPS);
 	be = &bm_bitmaps[n];
 
-	if ( bm_bitmaps[n].type == BM_TYPE_NONE ) {
+	if ( be->type == BM_TYPE_NONE ) {
 		return;	// Already been released?
 	}
 
@@ -2388,13 +2392,13 @@ void bm_release(int handle)
 		return;
 	}
 
-	if ( bm_bitmaps[n].type != BM_TYPE_USER )	{
-		nprintf(("BmpMan", "Releasing bitmap %s in slot %i with handle %i\n", bm_bitmaps[n].filename, n, handle));
+	if ( be->type != BM_TYPE_USER )	{
+		nprintf(("BmpMan", "Releasing bitmap %s in slot %i with handle %i\n", be->filename, n, handle));
 	}
 
 	// be sure that all frames of an ani are unloaded - taylor
 	if ( be->type == BM_TYPE_ANI ) {
-		int i,first = bm_bitmaps[n].info.ani.first_frame;
+		int i,first = be->info.ani.first_frame;
 
 		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
 			bm_free_data(first+i);		// clears flags, bbp, data, etc
@@ -2516,11 +2520,11 @@ int bm_unload( int handle, bool clear_render_targets )
 
 	// be sure that all frames of an ani are unloaded - taylor
 	if ( be->type == BM_TYPE_ANI ) {
-		int i,first = bm_bitmaps[n].info.ani.first_frame;
+		int i,first = be->info.ani.first_frame;
 
 		// for the unload all case, don't try to unload every frame of every frame
 		// all additional frames automatically get unloaded with the first one
-		if (n > bm_bitmaps[n].info.ani.first_frame)
+		if (n > be->info.ani.first_frame)
 			return 1;
 
 		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
