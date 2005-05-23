@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-05-15 06:47:57 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-05-23 04:58:43 $
+ * $Author: phreak $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/05/15 06:47:57  taylor
+ * don't let the ogg callbacks close the file handle on us, let us do it ourselves to keep things straight
+ *
  * Revision 2.25  2005/05/14 21:34:17  phreak
  * fixed an out-of-bounds array bug
  *
@@ -772,9 +775,9 @@ int snd_unload( int n )
 {
 	if (!ds_initialized)
 		return 0;
-/*
-	if ( (n < 0) || ( n >= MAX_SOUNDS) )
-		return 0;*/
+
+	if (n < 0)
+		return 0;
 
 	if ( !(Sounds[n].flags & SND_F_USED) )
 	{
