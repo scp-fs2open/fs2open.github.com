@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-05-12 17:49:10 $
+ * $Revision: 2.16 $
+ * $Date: 2005-05-23 05:58:31 $
  * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/05/12 17:49:10  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.14  2005/01/30 12:50:08  taylor
  * merge with Linux/OSX tree - p0130
  *
@@ -716,6 +720,14 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 			// always go back to screen format
 			BM_SELECT_SCREEN_FORMAT();
 
+			// see if we had an error during decode (corrupted anim stream)
+			if ( (temp == NULL) || (temp_file_offset < 0) ) {
+				mprintf(("ANI: Fatal ERROR at frame %i!!  Aborting playback of \"%s\"...\n", instance->frame_num, instance->parent->name));
+
+				// return -1 to end all playing of this anim instanc
+				return -1;
+			}
+
 			if(instance->direction == ANIM_DIRECT_FORWARD){
 				if ( anim_instance_is_streamed(instance) ) {
 					instance->file_offset = temp_file_offset;
@@ -817,8 +829,10 @@ int anim_stop_playing(anim_instance* instance)
 void anim_release_render_instance(anim_instance* instance)
 {
 	Assert( instance != NULL );
-	Assert(instance->frame);
-	vm_free(instance->frame);
+
+	if (instance->frame != NULL)
+		vm_free(instance->frame);
+
 	instance->frame = NULL;
 	instance->parent->instance_count--;
 
