@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-05-12 17:49:10 $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-23 05:58:31 $
  * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,10 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/05/12 17:49:10  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.7  2004/07/26 20:47:23  Kazan
  * remove MCD complete
  *
@@ -1112,7 +1116,8 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 		}
 	}
 	else {
-		Assert(0);  // unknown packing method
+	//	Assert(0);  // unknown packing method
+		return NULL;
 	}
 
 	return ptr;
@@ -1302,7 +1307,8 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 		}
 	}
 	else {
-		Int3();  // unknown packing method
+	//	Int3();  // unknown packing method
+		return -1;
 	}
 
 	return ai->file_offset + offset;
