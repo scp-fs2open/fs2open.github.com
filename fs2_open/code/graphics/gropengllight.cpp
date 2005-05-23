@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 1.17 $
+ * $Date: 2005-05-23 05:56:26 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 1.15  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -137,7 +141,6 @@ int GL_max_lights = 0;
 static const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 static const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-static float GL_light_ambient_value = 0.47f;
 static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 
 void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
