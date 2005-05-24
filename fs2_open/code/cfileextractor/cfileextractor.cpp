@@ -5,13 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.2 $
- * $Date: 2005-05-18 01:57:54 $
+ * $Revision: 1.3 $
+ * $Date: 2005-05-24 03:12:27 $
  * $Author: taylor $
  *
  * Cross-platform cmdline extractor for VP files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/05/18 01:57:54  taylor
+ * a few help text adjustments and fix some compiler warnings
+ *
  * Revision 1.1  2005/05/17 21:00:57  taylor
  * Initial import of cfileextractor, still needs some work but does what it needs to
  *
@@ -412,12 +415,12 @@ int main(int argc, char *argv[])
 			}
 			extract = 1;
 		} else if (!strcmp(argv[i], "-L") || !strcmp(argv[i], "--lowercase")) {
+			lc = 1;
+		} else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--list")) {
 			if (extract) {
 				help();
 				exit(0);
 			}
-			lc = 1;
-		} else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--list")) {
 			list = 1;
 		} else {
 			help();
