@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-05 05:53:22 $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-24 20:55:21 $
  * $Author: taylor $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/05 05:53:22  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.7  2005/03/25 06:57:37  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -403,14 +406,15 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		(*render_function)(os->obj);
 	}
 
-//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
-	extern void batch_render_lasers();
-	batch_render_lasers();
-
 	// if we're fullneb, switch off the fog effet
 	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
+
+//	if(!Cmdline_nohtl)gr_set_lighting(false,false);
+	// lasers have to be drawn without fog! - taylor
+	extern void batch_render_lasers();
+	batch_render_lasers();
 
 /*	Show spheres where wingmen should be flying
 	{
