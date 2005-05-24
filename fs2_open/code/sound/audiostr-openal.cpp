@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.7 $
- * $Date: 2005-05-15 06:47:57 $
+ * $Revision: 1.8 $
+ * $Date: 2005-05-24 03:11:38 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/05/15 06:47:57  taylor
+ * don't let the ogg callbacks close the file handle on us, let us do it ourselves to keep things straight
+ *
  * Revision 1.6  2005/05/13 23:09:28  taylor
  * Ooops!  Added the wrong version of the streaming patch from Jens
  *
@@ -895,6 +898,10 @@ BOOL AudioStream::Create (char *pszFilename)
 	Init_Data();
 
 	if (pszFilename) {
+		// make 100% sure we got a good filename
+		if ( !strlen(pszFilename) )
+			return FAILURE;
+
 		// Create a new WaveFile object
 		m_pwavefile = (WaveFile *)vm_malloc(sizeof(WaveFile));
 		Assert(m_pwavefile);
