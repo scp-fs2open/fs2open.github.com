@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-03-25 07:35:22 $
- * $Author: wmcoolmon $
+ * $Revision: 2.29 $
+ * $Date: 2005-05-24 20:54:06 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/03/25 07:35:22  wmcoolmon
+ * Small change now that the storybook is in CVS
+ *
  * Revision 2.27  2005/03/25 06:57:35  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1283,6 +1286,11 @@ void main_hall_do(float frametime)
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			game_feature_not_in_demo_popup();
 #else
+			if (Campaign_file_missing) {
+				// error popup for a missing campaign file, don't try to enter tech room in this case
+				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
+				break;
+			}
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			gameseq_post_event( GS_EVENT_TECH_MENU );
 #endif
@@ -1384,6 +1392,11 @@ void main_hall_do(float frametime)
 
 		// clicked on the barracks region
 		case BARRACKS_REGION:			
+			if (Campaign_file_missing) {
+				// error popup for a missing campaign file, don't try to enter barracks in this case
+				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
+				break;
+			}
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			gameseq_post_event( GS_EVENT_BARRACKS_MENU );
 			break;
