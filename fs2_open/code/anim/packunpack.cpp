@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-05-23 05:58:31 $
+ * $Revision: 2.10 $
+ * $Date: 2005-05-24 03:13:36 $
  * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,10 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/05/23 05:58:31  taylor
+ * quick catch for some corrupted anis, only a partial fix but it will do until something
+ *  a bit more heavy duty comes along in the near future
+ *
  * Revision 2.8  2005/05/12 17:49:10  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1012,6 +1016,9 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 				count = value & (~STD_RLE_CODE);
 				value = *ptr++;
 
+				if (count > size)
+					count = size;
+
 				size -= count;
 				Assert(size >= 0);
 
@@ -1097,6 +1104,9 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 			} else {
 				count = value & (~STD_RLE_CODE);
 				value = *ptr++;
+
+				if (count > size)
+					count = size;
 
 				size -= count;
 				Assert(size >= 0);
@@ -1199,6 +1209,9 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 				value = anim_instance_get_byte(ai,offset);
 				offset++;
 
+				if (count > size)
+					count = size;
+
 				size -= count;
 				Assert(size >= 0);
 
@@ -1288,6 +1301,9 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 				count = value & (~STD_RLE_CODE);
 				value = anim_instance_get_byte(ai,offset);
 				offset++;
+
+				if (count > size)
+					count = size;
 
 				size -= count;
 				Assert(size >= 0);
