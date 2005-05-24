@@ -5,13 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.3 $
- * $Date: 2005-05-24 03:12:27 $
+ * $Revision: 1.4 $
+ * $Date: 2005-05-24 20:52:10 $
  * $Author: taylor $
  *
  * Cross-platform cmdline extractor for VP files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/05/24 03:12:27  taylor
+ * get command sanity check right, fixes lowercase on extract too
+ *
  * Revision 1.2  2005/05/18 01:57:54  taylor
  * a few help text adjustments and fix some compiler warnings
  *
@@ -255,9 +258,12 @@ void extract_all_files(char *file)
 		// save the file path to a temp location and recursively make the needed directories
 		sprintf(path, "%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
 
-		// not the best way but avoids many memory allocations with other methods
-		for ( c = &path[0]; *c; ++c ) {
-			if (*c == DIR_SEPARATOR_CHAR) {
+		c = &path[0];
+
+		while (c++) {
+			c = strchr(c, DIR_SEPARATOR_CHAR);
+
+			if (c) {
 				*c = '\0';	// NULL at DIR_SEP char
 
 				status = mkdir(path, 0777);
