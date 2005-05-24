@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.103 $
- * $Date: 2005-05-12 17:49:10 $
- * $Author: taylor $
+ * $Revision: 2.104 $
+ * $Date: 2005-05-24 07:05:49 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2005/05/12 17:49:10  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.102  2005/05/01 07:13:59  wmcoolmon
  * -output_sexps command line
  *
@@ -771,8 +775,8 @@ Flag exe_params[] =
 	{ "-clientdamage",  "",								false,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.clientdamage", },
 	{ "-mpnoreturn",	  "Disables flight deck option",	true,	0,					EASY_DEFAULT,		"Multi",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php/Command-Line%20Reference#-mpnoreturn", },
 #ifdef WIN32
-	{ "-fixbugs",       "Fix bugs",						true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
-	{ "-nocrash",       "Disable crashing",				true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
+//	{ "-fixbugs",       "Fix bugs",						true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
+//	{ "-nocrash",       "Disable crashing",				true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 #endif
 	{ "-oldfire",		  "",								true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.oldfire", },
 	{ "-nohtl",		  "Software mode (very slow)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nohtl", },
@@ -2042,4 +2046,3 @@ int parse_cmdline(int argc, char *argv[])
 }
 
 //float global_scaleing_factor = 3.0f;
-
