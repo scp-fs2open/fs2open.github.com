@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-05-23 04:58:43 $
- * $Author: phreak $
+ * $Revision: 2.28 $
+ * $Date: 2005-05-24 03:11:38 $
+ * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/05/23 04:58:43  phreak
+ * fix out of bounds error
+ *
  * Revision 2.26  2005/05/15 06:47:57  taylor
  * don't let the ogg callbacks close the file handle on us, let us do it ourselves to keep things straight
  *
@@ -1108,7 +1111,10 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	if ( gs->id == -1 ) {
 		gs->id = snd_load(gs);
 	}
-	
+
+	if (gs->id == -1)
+		return -1;
+
 	snd = &Sounds[gs->id];
 	if ( !(snd->flags & SND_F_USED) )
 		return -1;
