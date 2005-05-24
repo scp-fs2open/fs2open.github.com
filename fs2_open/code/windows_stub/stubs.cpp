@@ -1,13 +1,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.14 $
- * $Date: 2005-05-12 17:49:18 $
+ * $Revision: 2.15 $
+ * $Date: 2005-05-24 20:52:10 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/05/12 17:49:18  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.13  2005/04/21 15:52:24  taylor
  * stupid little comment fix, no big deal
  *
@@ -325,15 +329,32 @@ int _chdir(const char *path)
 // make specified directory
 int _mkdir(const char *path)
 {
-	int status = mkdir(path, 0777);
+	int status;
+	char *c, tmp_path[MAX_PATH];
+
+	memset(tmp_path, 0, MAX_PATH);
+	strncpy(tmp_path, path, MAX_PATH-1);
+
+	c = &tmp_path[1];
+
+	while (c++) {
+		c = strchr(c, '/');
+
+		if (c) {
+			*c = '\0';
+
+			status = mkdir(tmp_path, 0777);
 
 #ifndef NDEBUG
-	int m_error = errno;
+			int m_error = errno;
 
-	if (status && (m_error != EEXIST) ) {
-		Warning(__FILE__, __LINE__, "Cannot mkdir %s: %s", path, strerror(m_error));
-	}
+			if (status && (m_error != EEXIST) ) {
+				Warning(__FILE__, __LINE__, "Cannot mkdir %s: %s", tmp_path, strerror(m_error));
+			}
 #endif
+			*c = '/';
+		}
+	}
 
 	return status;
 }
