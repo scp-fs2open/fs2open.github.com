@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-04-11 10:15:11 $
+ * $Revision: 2.11 $
+ * $Date: 2005-05-26 04:27:11 $
  * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/04/11 10:15:11  taylor
+ * un-revert previous revert since it does apparently affect MinGW (Alpha0)
+ *
  * Revision 2.9  2005/04/11 05:50:35  taylor
  * some limits.h fixes to make GCC happier
  * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
@@ -131,8 +134,7 @@
 #endif
 
 #if defined _WIN32
-static longlong Timer_last_value, Timer_base;
-static uint Timer_freq=0;
+static longlong Timer_last_value = 0, Timer_base = 0, Timer_freq = 0;
 #endif
 
 static int Timer_inited = 0;
@@ -152,12 +154,14 @@ void timer_init()
 	if ( !Timer_inited )	{
 #if defined _WIN32
 		LARGE_INTEGER tmp;
-		QueryPerformanceFrequency(&tmp);
-		Assert( tmp.HighPart == 0 );
-		Timer_freq = tmp.LowPart;
 
-		QueryPerformanceCounter((LARGE_INTEGER *)&Timer_base);
-		QueryPerformanceCounter((LARGE_INTEGER *)&Timer_last_value);
+		if ( !QueryPerformanceFrequency(&tmp) )
+			Error( LOCATION, "Unable to use High Performance Timer!  Aborting...\n" );
+
+		Timer_freq = tmp.QuadPart;
+
+		QueryPerformanceCounter(&tmp);
+		Timer_base = Timer_last_value = tmp.QuadPart;
 #endif
 		INITIALIZE_CRITICAL_SECTION( Timer_lock );
 
@@ -173,20 +177,20 @@ static void timer_get(LARGE_INTEGER * out)
 {
 	ENTER_CRITICAL_SECTION( Timer_lock );
 
-	longlong time_tmp;
+	LARGE_INTEGER time_tmp;
 	longlong Time_now;
 
-	QueryPerformanceCounter((LARGE_INTEGER *)&time_tmp);
-	if ( time_tmp < Timer_last_value )	{
+	QueryPerformanceCounter(&time_tmp);
+	if ( time_tmp.QuadPart < Timer_last_value )	{
 		// The clock has rolled!
-		Timer_base = time_tmp;
+		Timer_base = time_tmp.QuadPart;
 		mprintf(( "TIMER ROLLED!\n" ));
 		// Hack: I'm not accounting for the time before roll occured,
 		// since I'm not sure at what value this timer is going to roll at.
-		Time_now = time_tmp;
+	//	Time_now = time_tmp.QuadPart;
 	}
-	Time_now = time_tmp - Timer_base;
-	Timer_last_value = time_tmp;
+	Time_now = time_tmp.QuadPart - Timer_base;
+	Timer_last_value = time_tmp.QuadPart;
 
 	out->QuadPart = Time_now;
 	
@@ -202,9 +206,17 @@ fix timer_get_fixed_seconds()
 	}
 
 #if defined(_WIN32)
-	int tmp;
 	LARGE_INTEGER temp_large;
+
 	timer_get(&temp_large);
+
+	temp_large.QuadPart /= Timer_freq;
+
+
+	return (fix)temp_large.QuadPart;
+
+/*
+	int tmp;
 
 #if defined(_MSC_VER)
 	// Timing in fixed point (16.16) seconds.
@@ -256,7 +268,7 @@ sub_again:
 #endif
 
 	return tmp;
-
+*/
 #elif defined(SCP_UNIX)
 
 	__extension__ long long a = SDL_GetTicks();
@@ -287,10 +299,18 @@ int timer_get_milliseconds()
 	}
 
 #if defined(_WIN32)
-	int tmp;
 	LARGE_INTEGER temp_large;
+
 	timer_get(&temp_large);
+
 	temp_large.QuadPart *= (longlong)1000;
+	temp_large.QuadPart /= Timer_freq;
+
+
+	return (int)temp_large.QuadPart;
+
+/*
+	int tmp;
 
 #if defined(_MSC_VER)
 	// Timing in milliseconds.
@@ -310,6 +330,7 @@ sub_again:
 	//eax = milliseconds elapsed...
 	_asm mov tmp, eax
 
+//	tmp = (int)timeGetTime();
 #elif defined(__GNUC__)
 	// Timing in milliseconds.
 	asm(
@@ -333,8 +354,7 @@ sub_again:
 #endif
 
 	return tmp;
-
-
+*/
 #elif defined(SCP_UNIX)
 
 	return SDL_GetTicks();
@@ -353,10 +373,18 @@ int timer_get_microseconds()
 	}
 
 #if defined(_WIN32)
-	int tmp;
 	LARGE_INTEGER temp_large;
+
 	timer_get(&temp_large);
+
 	temp_large.QuadPart *= (longlong)1000000;
+	temp_large.QuadPart /= Timer_freq;
+
+
+	return (int)temp_large.QuadPart;
+
+/*
+	int tmp;
 
 #if defined(_MSC_VER)
 
@@ -396,12 +424,13 @@ sub_again:
 		 : "=g" (tmp)
 		 : "g" (temp_large.HighPart), "g" (temp_large.LowPart), "g" (Timer_freq)
 		 : "edx", "eax", "ebx");
+
 #else
 #error unknown Win32 compiler
 #endif
 
 	return tmp;
-
+*/
 #elif defined(SCP_UNIX)
 
 	return SDL_GetTicks() * 1000;
