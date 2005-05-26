@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-05-23 05:55:13 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-05-26 05:07:19 $
+ * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/05/23 05:55:13  taylor
+ * more from Jens...
+ *  - make sure that a frame number doesn't get carried over to non-animated weapon glows
+ *  - move the line splitting code in missiontraining.cpp so that we don't have to worry about EOS chars
+ *
  * Revision 2.12  2005/05/13 02:56:34  taylor
  * more malloc->vm_malloc, free->vm_free, strdup->vm_strdup fixage
  *
@@ -849,8 +854,10 @@ void training_mission_shutdown()
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
 	{
 		if (Training_message_queue[i].special_message != NULL)
+		{
 			vm_free(Training_message_queue[i].special_message);
-		Training_message_queue[i].special_message = NULL;
+			Training_message_queue[i].special_message = NULL;
+		}
 	}
 
 	Training_voice = -1;
@@ -1110,8 +1117,8 @@ void message_training_queue(char *text, int timestamp, int length)
 		{
 			Int3();
 			vm_free(Training_message_queue[Training_message_queue_count].special_message);
+			Training_message_queue[Training_message_queue_count].special_message = NULL;
 		}
-		Training_message_queue[Training_message_queue_count].special_message = NULL;
 
 		// Goober5000 - replace variables if necessary
 		strcpy(temp_buf, Messages[m].message);
@@ -1129,9 +1136,11 @@ void message_training_remove_from_queue(int idx)
 	Training_message_queue[idx].num = -1;
 	Training_message_queue[idx].timestamp = -1;
 
-	if (Training_message_queue[idx].special_message != NULL);
+	if (Training_message_queue[idx].special_message != NULL)
+	{
 		vm_free(Training_message_queue[idx].special_message);
-	Training_message_queue[idx].special_message = NULL;
+		Training_message_queue[idx].special_message = NULL;
+	}
 
 	for (int j=idx+1; j<Training_message_queue_count; j++)
 		Training_message_queue[j - 1] = Training_message_queue[j];
