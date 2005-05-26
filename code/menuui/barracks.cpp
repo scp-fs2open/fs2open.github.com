@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-03-27 06:12:38 $
+ * $Revision: 2.19 $
+ * $Date: 2005-05-26 04:28:45 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/03/27 06:12:38  taylor
+ * some pilot file fixing when going between multi and single (partial fix)
+ *
  * Revision 2.17  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -673,6 +676,14 @@ int barracks_new_pilot_selected()
 		// had to change this to import the values to a specific player rather than global
 		if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 			mission_load_up_campaign(Cur_pilot);
+
+			if (Campaign_file_missing) {
+				// error popup for a missing campaign file, abort loading of pilot in this case
+				// TODO: need to handle reading of info without the risk of saving improper data later
+				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign for this pilot cannot be found.  Unable to safely open pilot.", -1));
+				Cur_pilot->callsign[0] = 0; // this indicates no pilot active
+				return -1;
+			}
 		}
 	}
 
@@ -1138,7 +1149,11 @@ void barracks_button_pressed(int n)
 		case B_PILOT_SET_ACTIVE_BUTTON:
 			if (barracks_new_pilot_selected()){
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				
+
+				// if it's just the missing campaign file that failed for us then don't give the second popup
+				if (Campaign_file_missing)
+					break;
+
 				// throw up a popup telling the player that he should create a pilot first
 				if(Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
 					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must create a single player pilot.", 66));
@@ -1156,6 +1171,10 @@ void barracks_button_pressed(int n)
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
 			} else {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
+
+				// if it's just the missing campaign file that failed for us then don't give the second popup
+				if (Campaign_file_missing)
+					break;
 
 				// throw up a popup telling the player that he should create a pilot first
 				if(Player_sel_mode == PLAYER_SELECT_MODE_SINGLE){
