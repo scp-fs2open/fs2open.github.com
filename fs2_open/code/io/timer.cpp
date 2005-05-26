@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-05-26 04:27:11 $
+ * $Revision: 2.12 $
+ * $Date: 2005-05-26 09:21:28 $
  * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/05/26 04:27:11  taylor
+ * timer changes to fix game_busy() on the loading screen and 100% incorrect values on some machines,
+ *   don't know if this is going to work that great but it's more like the Linux SDL code now which
+ *   has worked for years without major problems
+ *
  * Revision 2.10  2005/04/11 10:15:11  taylor
  * un-revert previous revert since it does apparently affect MinGW (Alpha0)
  *
@@ -210,6 +215,7 @@ fix timer_get_fixed_seconds()
 
 	timer_get(&temp_large);
 
+	temp_large.QuadPart *= 65536;
 	temp_large.QuadPart /= Timer_freq;
 
 
