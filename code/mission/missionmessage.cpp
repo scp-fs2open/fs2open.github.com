@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-05-17 20:57:05 $
+ * $Revision: 2.34 $
+ * $Date: 2005-05-26 04:29:23 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/05/17 20:57:05  taylor
+ * more missed stuff from the vm_* macro change (thanks Alpha0)
+ *
  * Revision 2.32  2005/05/13 02:47:58  taylor
  * missed a strdup to vm_strdup conversion
  *
@@ -1266,9 +1269,10 @@ void message_remove_from_queue(message_q *q)
 	q->group = 0;
 
 	// Goober5000
-	if (q->special_message != NULL);
+	if (q->special_message != NULL) {
 		vm_free(q->special_message);
-	q->special_message = NULL;
+		q->special_message = NULL;
+	}
 
 	if ( MessageQ_num > 0 ) {
 		qsort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
