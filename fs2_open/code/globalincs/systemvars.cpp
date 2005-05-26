@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-03-03 06:05:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-05-26 04:27:10 $
+ * $Author: taylor $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.6  2005/02/04 10:12:29  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -368,12 +371,12 @@ void game_busy(char *filename)
 
 	int t1 = timer_get_milliseconds();
 
-	if ( (t1 > cf_timestamp) || ((cb_counter>cb_last_counter+155)&&(cb_delta_step>0)) )	{
+	if ( (t1 > cf_timestamp) || ((cb_counter > cb_last_counter+155) && (cb_delta_step > 0)) )	{
 		cb_last_counter = cb_counter;
 		cf_in_callback++;
 		(*cf_callback)(cb_counter);
 		cf_in_callback--;
-		cf_timestamp = t1 + +(1000/10);
+		cf_timestamp = t1 + (1000/10);
 	}
 }
 
