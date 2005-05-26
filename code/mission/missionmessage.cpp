@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-05-26 04:29:23 $
- * $Author: taylor $
+ * $Revision: 2.35 $
+ * $Date: 2005-05-26 05:07:19 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/05/26 04:29:23  taylor
+ * those crazy semi-colons
+ *
  * Revision 2.33  2005/05/17 20:57:05  taylor
  * more missed stuff from the vm_* macro change (thanks Alpha0)
  *
@@ -1084,8 +1087,10 @@ void message_mission_shutdown()
 	for (i = 0; i < MAX_MESSAGE_Q; i++)
 	{
 		if (MessageQ[i].special_message != NULL)
+		{
 			vm_free(MessageQ[i].special_message);
-		MessageQ[i].special_message = NULL;
+			MessageQ[i].special_message = NULL;
+		}
 	}
 }
 
@@ -1269,7 +1274,8 @@ void message_remove_from_queue(message_q *q)
 	q->group = 0;
 
 	// Goober5000
-	if (q->special_message != NULL) {
+	if (q->special_message != NULL)
+	{
 		vm_free(q->special_message);
 		q->special_message = NULL;
 	}
@@ -1883,8 +1889,8 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	{
 		Int3();
 		vm_free(MessageQ[i].special_message);
+		MessageQ[i].special_message = NULL;
 	}
-	MessageQ[i].special_message = NULL;
 
 	// Goober5000 - replace variables if necessary
 	strcpy(temp_buf, Messages[message_num].message);
