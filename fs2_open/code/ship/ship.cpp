@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.199 $
- * $Date: 2005-05-12 17:45:53 $
+ * $Revision: 2.200 $
+ * $Date: 2005-05-26 04:30:48 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.199  2005/05/12 17:45:53  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ * reallocate sp->triggers with the real vm_realloc() rather than that manual method
+ *
  * Revision 2.198  2005/05/08 20:21:48  wmcoolmon
  * armor.tbl revamp
  *
@@ -5059,7 +5064,7 @@ void ship_delete( object * obj )
 	ct_ship_delete(shipp);
 
 	// remove textures from memory if we are done with them - taylor
-	ship_page_out_model_textures( shipp->modelnum, shipp->ship_info_index );
+//	ship_page_out_model_textures( shipp->modelnum, shipp->ship_info_index );
 	
 	ship_clear_decals(shipp);
 }
