@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-05-12 17:47:57 $
+ * $Revision: 2.27 $
+ * $Date: 2005-05-26 04:32:31 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/05/12 17:47:57  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ * fix a few streaming errors in OpenAL code (Jens Granseuer)
+ * temporary change to help deal with missing music in OpenAL Windows builds
+ * don't assert when si->data is NULL unless we really need to check (OpenAL only)
+ *
  * Revision 2.25  2005/04/28 05:12:26  wmcoolmon
  * Cleared up some ambiguity that made MSVC 2003 go on strike
  *
@@ -1638,7 +1645,9 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	}
 
 	// make sure we can actually use AL_BYTE_LOKI (Mac OpenAL doesn't have it)
+#ifndef _WIN32
 	AL_play_position = alIsExtensionPresent( (ALubyte*)"AL_LOKI_play_position" );
+#endif
 
 	// not a big deal here, but for consitancy sake
 	if (Ds_use_ds3d && ds3d_init(0) != 0)
