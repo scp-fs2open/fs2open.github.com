@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.3 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2005-05-27 02:37:29 $
+ * $Author: Goober5000 $
  *
  * New docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.2  2005/03/03 06:05:30  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -136,11 +139,5 @@ void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoi
 
 // remove objp1 and objp2 from each others' dock lists; currently only called by ai_do_objects_undocked_stuff
 void dock_undock_objects(object *objp1, object *objp2);
-
-//Removes other_objp from objp's docking list
-void dock_remove_instance(object *objp, object *other_objp);
-
-//Finds objp's dock instance to other_objp
-dock_instance *dock_find_instance(object *objp, object *other_objp);
 
 #endif	// _OBJECT_DOCK_H
