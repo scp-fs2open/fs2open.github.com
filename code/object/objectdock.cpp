@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-05-12 17:49:16 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-05-27 03:37:53 $
+ * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/05/12 17:49:16  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.6  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -72,6 +76,8 @@ bool dock_check_assume_hub();
 object *dock_get_hub(object *objp);
 
 void dock_add_instance(object *objp, int dockpoint, object *other_objp);
+void dock_remove_instance(object *objp, object *other_objp);
+dock_instance *dock_find_instance(object *objp, object *other_objp);
 dock_instance *dock_find_instance(object *objp, int dockpoint);
 int dock_count_instances(object *objp);
 
