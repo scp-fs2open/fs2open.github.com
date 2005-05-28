@@ -1,13 +1,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.15 $
- * $Date: 2005-05-24 20:52:10 $
+ * $Revision: 2.16 $
+ * $Date: 2005-05-28 19:44:17 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/05/24 20:52:10  taylor
+ * make sure that we recursively create directories for Linux/OSX
+ * replace older recursive mkdir method in cfileextractor with new method
+ *
  * Revision 2.14  2005/05/12 17:49:18  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -192,22 +196,12 @@ HMMIO mmioOpen(LPSTR szFilename, LPMMIOINFO lpmmioinfo, DWORD dwOpenFlags)
 
 	char *mode = "rb";
 
-	switch (dwOpenFlags) {
-		case MMIO_READ:
-			mode = "rb";
-			break;
-
-		case MMIO_READWRITE:
-			mode = "r+b";
-			break;
-
-		case MMIO_WRITE:
-			mode = "wb";
-			break;
-
-		default:
-			STUB_FUNCTION;
-	}
+	if (dwOpenFlags & MMIO_READ)
+		mode = "rb";
+	else if (dwOpenFlags & MMIO_READWRITE)
+		mode = "r+b";
+	else if (dwOpenFlags & MMIO_WRITE)
+		mode = "wb";
 
 	if ( szFilename != NULL ) {
 		Assert( lpmmioinfo == NULL );
