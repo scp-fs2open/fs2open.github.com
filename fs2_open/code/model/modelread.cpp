@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.67 $
- * $Date: 2005-05-12 17:49:14 $
+ * $Revision: 2.68 $
+ * $Date: 2005-05-28 19:41:56 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/05/12 17:49:14  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.66  2005/05/11 00:25:42  phreak
  * reverted a change that WMC made.  It made Goober mad and delayed the release of
  * 3.6.6 by two months.
@@ -3068,6 +3072,7 @@ polymodel * model_get(int model_num)
 	
 	Assert( num > -1 );
 	Assert( num < MAX_POLYGON_MODELS );
+	Assert( Polygon_models[num] );
 	Assert( Polygon_models[num]->id == model_num );
 
 	return Polygon_models[num];
