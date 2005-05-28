@@ -1,12 +1,16 @@
 /*
  * $Logfile: $
- * $Revision: 1.8 $
- * $Date: 2005-05-24 03:11:38 $
+ * $Revision: 1.9 $
+ * $Date: 2005-05-28 19:43:28 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/05/24 03:11:38  taylor
+ * an extra bounds check in sound.cpp
+ * fix audiostr error when filename is !NULL but 0 in len might hit on SDL debug code
+ *
  * Revision 1.7  2005/05/15 06:47:57  taylor
  * don't let the ogg callbacks close the file handle on us, let us do it ourselves to keep things straight
  *
@@ -528,7 +532,7 @@ BOOL WaveFile::Open (char *pszFilename)
 				break;
 
 			default:
-				nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n"));
+				nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n", m_pwfmt_original->wFormatTag));
 				//Int3();
 				goto OPEN_ERROR;
 				break;
@@ -589,14 +593,11 @@ BOOL WaveFile::Cue (void)
 
 	//Ogg is special...
 	if (m_wave_format == OGG_FORMAT_VORBIS) {
-		mmioSeek((HMMIO)m_ogg_info.datasource, m_data_offset, SEEK_SET);
-		m_data_bytes_left = m_nDataSize;
-		m_abort_next_read = FALSE;
-
-		return fRtn;
+		rval = mmioSeek((HMMIO)m_ogg_info.datasource, m_data_offset, SEEK_SET);
+	} else {
+		rval = mmioSeek( cfp, m_data_offset, SEEK_SET );
 	}
 
-	rval = mmioSeek( cfp, m_data_offset, SEEK_SET );
 	if ( rval == -1 ) {
 		fRtn = FAILURE;
 	}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-05-15 06:47:57 $
+ * $Revision: 2.19 $
+ * $Date: 2005-05-28 19:43:28 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/05/15 06:47:57  taylor
+ * don't let the ogg callbacks close the file handle on us, let us do it ourselves to keep things straight
+ *
  * Revision 2.17  2005/05/12 17:49:17  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1381,7 +1384,7 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 				break;
 
 			default:
-				nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n"));
+				nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n", m_pwfmt_original->wFormatTag));
 				//Int3();
 				goto OPEN_ERROR;
 				break;
