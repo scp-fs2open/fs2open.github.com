@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-05-23 05:58:31 $
+ * $Revision: 2.17 $
+ * $Date: 2005-05-28 19:40:59 $
  * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/05/23 05:58:31  taylor
+ * quick catch for some corrupted anis, only a partial fix but it will do until something
+ *  a bit more heavy duty comes along in the near future
+ *
  * Revision 2.15  2005/05/12 17:49:10  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -698,7 +702,7 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 			}
 
 			ubyte *temp = NULL;
-			int temp_file_offset = 0;			
+			int temp_file_offset = -1;			
 
 			// if we're using bitmap polys
 			BM_SELECT_TEX_FORMAT();
@@ -721,7 +725,7 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 			BM_SELECT_SCREEN_FORMAT();
 
 			// see if we had an error during decode (corrupted anim stream)
-			if ( (temp == NULL) || (temp_file_offset < 0) ) {
+			if ( (temp == NULL) && (temp_file_offset < 0) ) {
 				mprintf(("ANI: Fatal ERROR at frame %i!!  Aborting playback of \"%s\"...\n", instance->frame_num, instance->parent->name));
 
 				// return -1 to end all playing of this anim instanc
