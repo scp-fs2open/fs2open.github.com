@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-05-12 17:49:13 $
+ * $Revision: 2.25 $
+ * $Date: 2005-05-30 05:33:11 $
  * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.23  2005/04/22 00:34:55  wmcoolmon
  * Minor updates to the GUI, and added some code that will (hopefully) resize HUD images in nonstandard resolutions. I couldn't test it; got an out of memory error.
  *
@@ -702,16 +706,11 @@ void brief_reset()
 //
 void debrief_reset()
 {
-	int i,j;
+	int i;
 
 	Debriefing = NULL;
 	for ( i = 0; i < MAX_TEAMS; i++ ) {
 		Debriefings[i].num_stages = 0;
-		for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
-			if ( Debriefings[i].stages[j].new_recommendation_text )	{
-				Debriefings[i].stages[j].new_recommendation_text[0] = 0;
-			}
-		}
 	}
 
 	// MWA 4/27/98 -- must initialize this variable here since we cannot do it as debrief

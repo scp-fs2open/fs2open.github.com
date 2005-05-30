@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-05-12 17:49:14 $
+ * $Revision: 2.26 $
+ * $Date: 2005-05-30 05:33:11 $
  * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/05/12 17:49:14  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.24  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1569,22 +1573,25 @@ void brief_render(float frametime)
 	gr_bitmap(Brief_infobox_coords[gr_screen.res][0], Brief_infobox_coords[gr_screen.res][1]);
 	brief_blit_stage_num(Current_brief_stage, Num_brief_stages);
 
-	z = brief_render_text(Top_brief_text_line, Brief_text_coords[gr_screen.res][0], Brief_text_coords[gr_screen.res][1], Brief_text_coords[gr_screen.res][3], frametime);
-	if (z) {
-		brief_voice_play(Current_brief_stage);
-	}
+	// only try to render text and play audio if there is really something here - taylor
+	if (Briefing->num_stages > 0) {
+		z = brief_render_text(Top_brief_text_line, Brief_text_coords[gr_screen.res][0], Brief_text_coords[gr_screen.res][1], Brief_text_coords[gr_screen.res][3], frametime);
+		if (z) {
+			brief_voice_play(Current_brief_stage);
+		}
 
-	// maybe output the "more" indicator
-	if ( (Brief_text_max_lines[gr_screen.res] + Top_brief_text_line) < Num_brief_text_lines[0] ) {
-		// can be scrolled down
-		int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
-		int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered
+		// maybe output the "more" indicator
+		if ( (Brief_text_max_lines[gr_screen.res] + Top_brief_text_line) < Num_brief_text_lines[0] ) {
+			// can be scrolled down
+			int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
+			int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered
 
-		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
-		gr_set_color_fast(&Color_black);
-		gr_rect(more_txt_x-2, more_txt_y, w+3, h);
-		gr_set_color_fast(&Color_red);
-		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469));  // base location on the input x and y?
+			gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
+			gr_set_color_fast(&Color_black);
+			gr_rect(more_txt_x-2, more_txt_y, w+3, h);
+			gr_set_color_fast(&Color_red);
+			gr_string(more_txt_x, more_txt_y, XSTR("more", 1469));  // base location on the input x and y?
+		}
 	}
 
 	brief_maybe_blit_scene_cut(frametime);	
