@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-05-11 11:38:03 $
+ * $Revision: 1.11 $
+ * $Date: 2005-05-30 04:38:33 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/05/11 11:38:03  Goober5000
+ * fixed a docking bug
+ * --Goober5000
+ *
  * Revision 1.9  2005/04/28 05:29:28  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -10769,7 +10773,6 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 void ai_cleanup_rearm_mode(object *objp)
 {
 	ai_info *aip = &Ai_info[Ships[objp->instance].ai_index];
-	aip->mode = AIM_NONE;
 
 	if (aip->ai_flags & AIF_REPAIRING) {
 		Assert( aip->goal_objnum != -1 );
@@ -10791,12 +10794,19 @@ void ai_cleanup_rearm_mode(object *objp)
 				ai_do_objects_repairing_stuff( objp, NULL, REPAIR_INFO_ABORT );
 		}
 	}
+
+	// Goober5000 - yep, this looks like it's needed here too; thanks taylor!
+	// if the support ship is in dock mode, force them to near last stage
+	if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_UNDOCK_3) )
+		aip->submode = AIS_UNDOCK_3;
 }
 
 // Goober5000 - this function should ONLY need to be called from a ship doing a deathroll.  It
 // ensures that any ship docking or undocking with it will finish gracefully.
 void ai_cleanup_dock_mode(object *dying_objp)
 {
+	Ai_info[Ships[dying_objp->instance].ai_index].mode = AIM_NONE;
+
 	// process all directly docked objects
 	for (dock_instance *ptr = dying_objp->dock_list; ptr != NULL; ptr = ptr->next)
 	{
