@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-04-12 05:26:36 $
- * $Author: taylor $
+ * $Revision: 2.32 $
+ * $Date: 2005-05-30 23:41:36 $
+ * $Author: wmcoolmon $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/04/12 05:26:36  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.30  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -641,7 +645,7 @@ void hud_shield_show(object *objp)
 		}
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 
 		if ( hud_color_index < 0 ) {
