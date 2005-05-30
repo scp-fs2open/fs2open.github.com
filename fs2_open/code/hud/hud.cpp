@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-05-12 03:50:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.46 $
+ * $Date: 2005-05-30 05:31:19 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/05/12 03:50:10  Goober5000
+ * repeating messages with variables should work properly now
+ * --Goober5000
+ *
  * Revision 2.44  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1442,17 +1446,21 @@ void hud_show_target_model()
 
 void hud_show_common_3d_gauges(float frametime, int in_cockpit)
 {
+	// draw the targeting data around any message sender
+	hud_show_message_sender();
+
+	// if messages are disabled then skip everything else
+	if ( hud_disabled_except_messages() ) {
+		return;
+	}
 
 #if defined(ENABLE_AUTO_PILOT)
 	// Draw Navigation stuff
 	HUD_Draw_Navigation();
 #endif
-	
+
 	// draw boxes around current selection set, if any
 	hud_show_selection_set();
-
-	// draw the targeting data around any message sender
-	hud_show_message_sender();
 
 	// draw brackets around asteroids is necessary
 	hud_show_asteroid_brackets();
@@ -1482,7 +1490,7 @@ void HUD_render_3d(float frametime)
 
 		//	Show all homing missiles locked onto the player.
 		//	Currently not supporting a way to toggle this as I'm not sure we'll stick wtih this gauge. -- MK, 3/17/97.
-		if ( hud_gauge_active(HUD_MISSILE_WARNING_ARROW) ) {
+		if ( hud_gauge_active(HUD_MISSILE_WARNING_ARROW) && !hud_disabled_except_messages() ) {
 			hud_show_homing_missiles();
 		}
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-04-28 05:29:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.60 $
+ * $Date: 2005-05-30 05:31:19 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/04/28 05:29:29  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.58  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -3991,10 +3994,6 @@ void hud_show_targeting_gauges(float frametime, int in_cockpit)
 {
 	vertex target_point;					// temp vertex used to find screen position for 3-D object;
 	vec3d target_pos;
-
-	if ( hud_disabled_except_messages() ) {
-		return;
-	}
 
 	// draw the triangle that points to the closest hostile ship that is firing on the player
 	// This is always drawn, even if there is no current target.  There is also a hook that will
