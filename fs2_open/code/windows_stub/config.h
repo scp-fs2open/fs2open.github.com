@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.8 $
- * $Date: 2005-04-11 05:45:38 $
+ * $Revision: 2.9 $
+ * $Date: 2005-05-30 05:27:30 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/11 05:45:38  taylor
+ * _endthread() doesn't take an argument so do support one (Jens Granseuer)
+ * debug variable fixes in freespace.cpp (Jens Granseuer)
+ * as a safety catch we should Assert() on future usage of things we don't yet support in *nix _splitpath()
+ *
  * Revision 2.7  2005/03/27 08:51:25  taylor
  * this is what coding on an empty stomach will get you
  *
@@ -285,10 +290,10 @@ typedef MMIOINFO *LPMMIOINFO;
 
 #define FOURCC_MEM	0
 
-#define MMIO_READ		0
-#define MMIO_READWRITE	1
-#define MMIO_WRITE		2
-#define MMIO_ALLOCBUF	3
+#define MMIO_READ		(1<<0)
+#define MMIO_READWRITE	(1<<1)
+#define MMIO_WRITE		(1<<2)
+#define MMIO_ALLOCBUF	(1<<3)
 
 #define MMIOERR_CANNOTWRITE		1
 
