@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.152 $
- * $Date: 2005-05-15 21:40:31 $
- * $Author: phreak $
+ * $Revision: 2.153 $
+ * $Date: 2005-05-30 05:30:02 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.152  2005/05/15 21:40:31  phreak
+ * custom loading screen fixage.
+ *
  * Revision 2.151  2005/05/13 20:55:19  phreak
  * possible fix for seeing suns through ships.  shouldn't break anything.
  *
@@ -7063,6 +7066,9 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_RED_ALERT:
 			red_alert_close();
+			if (new_state == GS_STATE_MAIN_MENU) {
+				freespace_stop_mission();
+			}
 			break;
 
 		case GS_STATE_STORYBOOK:
