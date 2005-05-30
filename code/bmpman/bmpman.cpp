@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.57 $
- * $Date: 2005-05-23 05:56:26 $
+ * $Revision: 2.58 $
+ * $Date: 2005-05-30 05:29:17 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/05/23 05:56:26  taylor
+ * Jens, again:
+ *  - compiler warning fixes
+ *  - sanity and readability fixes for bmpman
+ *
  * Revision 2.56  2005/05/12 17:36:59  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -2398,9 +2403,9 @@ void bm_release(int handle)
 
 	// be sure that all frames of an ani are unloaded - taylor
 	if ( be->type == BM_TYPE_ANI ) {
-		int i,first = be->info.ani.first_frame;
+		int i, first = be->info.ani.first_frame, total = bm_bitmaps[first].info.ani.num_frames;
 
-		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
+		for (i = 0; i < total; i++)	{
 			bm_free_data(first+i);		// clears flags, bbp, data, etc
 
 			bm_bitmaps[first+i].bm.true_bpp = 0;
