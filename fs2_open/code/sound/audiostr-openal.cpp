@@ -1,12 +1,16 @@
 /*
  * $Logfile: $
- * $Revision: 1.9 $
- * $Date: 2005-05-28 19:43:28 $
+ * $Revision: 1.10 $
+ * $Date: 2005-06-01 09:41:14 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/05/28 19:43:28  taylor
+ * debug message fixing
+ * a little bit of code clarity
+ *
  * Revision 1.8  2005/05/24 03:11:38  taylor
  * an extra bounds check in sound.cpp
  * fix audiostr error when filename is !NULL but 0 in len might hit on SDL debug code
@@ -178,7 +182,7 @@ public:
 	void Close(void);
 	BOOL Open (char *pszFilename);
 	BOOL Cue (void);
-	int	Read (ubyte *pbDest, ushort cbSize, int service=1);
+	int	Read (ubyte *pbDest, uint cbSize, int service=1);
 	uint GetNumBytesRemaining (void) { return (m_nDataSize - m_nBytesPlayed); }
 	uint GetUncompressedAvgDataRate (void) { return (m_nUncompressedAvgDataRate); }
 	uint GetDataSize (void) { return (m_nDataSize); }
@@ -252,11 +256,11 @@ protected:
 	BOOL m_fCued;                  // semaphore (stream cued)
 	BOOL m_fPlaying;               // semaphore (stream playing)
 	long m_lInService;             // reentrancy semaphore
-	ushort m_cbBufOffset;            // last write position
-	ushort m_nBufLength;             // length of sound buffer in msec
-	ushort m_cbBufSize;              // size of sound buffer in bytes
-	ushort m_nBufService;            // service interval in msec
-	ushort m_nTimeStarted;           // time (in system time) playback started
+	uint m_cbBufOffset;            // last write position
+	uint m_nBufLength;             // length of sound buffer in msec
+	uint m_cbBufSize;              // size of sound buffer in bytes
+	uint m_nBufService;            // service interval in msec
+	uint m_nTimeStarted;           // time (in system time) playback started
 
 	BOOL	m_bLooping;						// whether or not to loop playback
 	BOOL	m_bFade;							// fade out music 
@@ -401,7 +405,7 @@ void WaveFile::Close(void)
 // Open
 BOOL WaveFile::Open (char *pszFilename)
 {
-	int done = FALSE;
+	int done = FALSE, rc = 0;
 	WORD cbExtra = 0;
 	BOOL fRtn = SUCCESS;    // assume success
 	PCMWAVEFORMAT pcmwf;
@@ -422,12 +426,23 @@ BOOL WaveFile::Open (char *pszFilename)
 		goto OPEN_ERROR;
 	}
 
-	//Try to open the OGG
-	if( !ov_open_callbacks(cfp, &m_ogg_info, NULL, 0, mmio_callbacks) ) {
-		//It's an OGG
-		ov_info(&m_ogg_info, -1);
-		m_wave_format = OGG_FORMAT_VORBIS;
+	// if in a VP then position the stream at the start of the file
+	if (FileOffset > 0) {
+		mmioSeek( cfp, FileOffset, SEEK_SET );
+	}
 
+	// first check for an OGG
+	if( (rc = ov_open_callbacks(cfp, &m_ogg_info, NULL, 0, mmio_callbacks)) == 0 ) {
+		// got an OGG so lets read the info in
+		ov_info(&m_ogg_info, -1);
+
+		// we only support one logical bitstream
+		if ( ov_streams(&m_ogg_info) != 1 ) {
+			mprintf(("AUDIOSTR => OGG reading error:  We don't handle bitstream changes!\n"));
+			goto OPEN_ERROR;
+		}
+
+		m_wave_format = OGG_FORMAT_VORBIS;
 		m_wfmt.wFormatTag = WAVE_FORMAT_PCM;
 		m_wfmt.nChannels = (WORD) m_ogg_info.vi->channels;
 		m_wfmt.nSamplesPerSec = m_ogg_info.vi->rate;
@@ -440,20 +455,28 @@ BOOL WaveFile::Open (char *pszFilename)
 		else
 			m_wfmt.wBitsPerSample = 8;
 		
-		m_wfmt.nBlockAlign = (unsigned short)(( m_wfmt.nChannels * m_wfmt.wBitsPerSample ) / 8);
+		m_wfmt.nBlockAlign = (ushort)(( m_wfmt.nChannels * m_wfmt.wBitsPerSample ) / 8);
 		m_wfmt.nAvgBytesPerSec = m_wfmt.nSamplesPerSec * m_wfmt.nBlockAlign;
 
 		m_nBlockAlign = m_wfmt.nBlockAlign;
 		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
 
-		//Unfortunately, OGG is rather immature and wants to keep reading past the current file
-		//These let us stop it
 		m_data_offset = FileOffset;
 		m_nDataSize = m_data_bytes_left = FileSize;
-	
+
+		// Cue for streaming
+		Cue();
+
+		// successful open
 		goto OPEN_DONE;
 
-	} else {
+	}
+	// not an OGG so assume that it's WAVE
+	else {
+		// extra check, if it's not ogg then continue but if the error was a bad ogg then bail
+		if ( rc && (rc != OV_ENOTVORBIS) )
+			goto OPEN_ERROR;
+
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
 		mmioSeek( cfp, 12+FileOffset, SEEK_SET );
@@ -591,7 +614,6 @@ BOOL WaveFile::Cue (void)
 	m_total_uncompressed_bytes_read = 0;
 	m_max_uncompressed_bytes_to_read = AS_HIGHEST_MAX;
 
-	//Ogg is special...
 	if (m_wave_format == OGG_FORMAT_VORBIS) {
 		rval = mmioSeek((HMMIO)m_ogg_info.datasource, m_data_offset, SEEK_SET);
 	} else {
@@ -616,14 +638,17 @@ BOOL WaveFile::Cue (void)
 //	Returns -1 if there is nothing more to be read.  This function can return 0, since
 // sometimes the amount of bytes requested is too small for the ACM decompression to 
 // locate a suitable block
-int WaveFile::Read(ubyte *pbDest, ushort cbSize, int service)
+int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 {
 	void	*dest_buf=NULL, *uncompressed_wave_data;
-	int				rc, uncompressed_bytes_written;
-	unsigned int	src_bytes_used, convert_len, num_bytes_desired=0, num_bytes_read;
+	int				rc, uncompressed_bytes_written, section, last_section = -1, byte_order = 0;
+	uint	src_bytes_used, convert_len, num_bytes_desired=0, num_bytes_read;
 
 //	nprintf(("Alan","Reqeusted: %d\n", cbSize));
 
+#if BYTE_ORDER == BIG_ENDIAN
+	byte_order = 1;
+#endif
 
 	if ( service ) {
 		uncompressed_wave_data = Wavedata_service_buffer;
@@ -680,17 +705,16 @@ int WaveFile::Read(ubyte *pbDest, ushort cbSize, int service)
 		if(m_abort_next_read)
 			return -1;
 
-		int garbage;
-
 		uncompressed_bytes_written = 0;
 	
 		while (uncompressed_bytes_written < (int)num_bytes_desired) {
-			//Ignores frequency changes, I think we're screwed if that happens anyway.
-#if BYTE_ORDER == BIG_ENDIAN
-			rc = ov_read(&m_ogg_info, (char *) pbDest + uncompressed_bytes_written, num_bytes_desired - uncompressed_bytes_written, 1, m_wfmt.wBitsPerSample / 8, 1, &garbage);
-#else
-			rc = ov_read(&m_ogg_info, (char *) pbDest + uncompressed_bytes_written, num_bytes_desired - uncompressed_bytes_written, 0, m_wfmt.wBitsPerSample / 8, 1, &garbage);
-#endif
+			rc = ov_read(&m_ogg_info, (char *) pbDest + uncompressed_bytes_written, num_bytes_desired - uncompressed_bytes_written, byte_order, m_wfmt.wBitsPerSample / 8, 1, &section);
+
+			// fail if the bitstream changes, shouldn't get this far if that's the case though
+			if ((last_section != -1) && (last_section != section)) {
+				mprintf(("AUDIOSTR => OGG reading error:  We don't handle bitstream changes!\n"));
+				goto READ_ERROR;
+			}
 
 			if (rc == OV_EBADLINK) {
 				goto READ_ERROR;
@@ -699,12 +723,14 @@ int WaveFile::Read(ubyte *pbDest, ushort cbSize, int service)
 					m_abort_next_read = TRUE;
 				}
 				goto READ_DONE;
-			} else if(rc != OV_HOLE) {
+			} else if (rc > 0) {
+				last_section = section;
 				uncompressed_bytes_written += rc;
 				m_nBytesPlayed += rc;
 			}
 
-			//OGG is trying to read the next file!
+			// since we read for num_bytes_desired and don't otherwise take into account EOF
+			// this check will prevent moving to the next file in a VP
 			m_data_bytes_left = (m_data_offset + m_nDataSize) - mmioSeek( (HMMIO)m_ogg_info.datasource, 0, SEEK_CUR );
 
 			if (m_data_bytes_left <= 0) {
@@ -916,7 +942,10 @@ BOOL AudioStream::Create (char *pszFilename)
 				// Calculate sound buffer size in bytes
 				// Buffer size is average data rate times length of buffer
 				// No need for buffer to be larger than wave data though
-				m_cbBufSize = (m_nBufLength/1000) * (m_pwavefile->m_wfmt.wBitsPerSample/8) * m_pwavefile->m_wfmt.nChannels* m_pwavefile->m_wfmt.nSamplesPerSec;
+				m_cbBufSize = (m_nBufLength/1000) * (m_pwavefile->m_wfmt.wBitsPerSample/8) * m_pwavefile->m_wfmt.nChannels * m_pwavefile->m_wfmt.nSamplesPerSec;
+				m_cbBufSize /= MAX_STREAM_BUFFERS;
+				// if the requested buffer size is too big then cap it
+				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize; 
 
 //				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
 
@@ -927,7 +956,7 @@ BOOL AudioStream::Create (char *pszFilename)
 				
 				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 0) );
 
-				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
+				OpenAL_ErrorPrint( alSourcei(m_source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
 
 				ALfloat posv[] = { 0, 0, 0 };
 				OpenAL_ErrorPrint( alSourcefv(m_source_id, AL_POSITION, posv) );

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-05-26 04:32:31 $
+ * $Revision: 2.28 $
+ * $Date: 2005-06-01 09:41:14 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/05/26 04:32:31  taylor
+ * the Loki extensions are Linux only so don't even bother checking under Windows, the
+ *   new spec has a cross-platform way of getting the same thing so this isn't a big deal
+ *
  * Revision 2.26  2005/05/12 17:47:57  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -751,6 +755,12 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 		// got one, now read all of the needed header info
 		ov_info(ovf, -1);
 
+		// we only support one logical bitstream
+		if ( ov_streams(ovf) != 1 ) {
+			nprintf(( "Sound", "SOUND ==> OGG reading error: We don't support bitstream changes!\n" ));
+			return -1;
+		}
+
 		if ( (*header = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX) )) != NULL ) {
 			(*header)->wFormatTag = OGG_FORMAT_VORBIS;
 			(*header)->nChannels = (ushort)ovf->vi->channels;
@@ -938,6 +948,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	ALint bits, bps;
 	ALuint frequency;
 	ALvoid *data = NULL;
+	int byte_order = 0, section, last_section = -1;
 
 	// the below two covnert_ variables are only used when the wav format is not
 	// PCM.  DirectSound only takes PCM sound data, so we must convert to PCM if required
@@ -993,26 +1004,35 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 		case OGG_FORMAT_VORBIS:
 			nprintf(( "Sound", "SOUND ==> converting sound from OGG to PCM\n" ));
 
-			int garbage;
+#if BYTE_ORDER == BIG_ENDIAN
+			byte_order = 1;
+#endif
 			src_bytes_used = 0;
 			convert_buffer = (ubyte*)vm_malloc(si->size);
 			Assert(convert_buffer != NULL);
 
-			while(src_bytes_used < si->size) {
-				//Ignores frequency changes, I think we're screwed if that happens anyway.
-#if BYTE_ORDER == BIG_ENDIAN
-				rc = ov_read(&si->ogg_info, (char *) convert_buffer + src_bytes_used, si->size - src_bytes_used, 1, si->bits / 8, 1, &garbage);
-#else
-				rc = ov_read(&si->ogg_info, (char *) convert_buffer + src_bytes_used, si->size - src_bytes_used, 0, si->bits / 8, 1, &garbage);
-#endif
+			if (convert_buffer == NULL)
+				return -1;
+
+			while (src_bytes_used < si->size) {
+				rc = ov_read(&si->ogg_info, (char *) convert_buffer + src_bytes_used, si->size - src_bytes_used, byte_order, si->bits / 8, 1, &section);
+
+				// fail if the bitstream changes, shouldn't get this far if that's the case though
+				if ((last_section != -1) && (last_section != section)) {
+					nprintf(( "Sound", "SOUND ==> OGG reading error: We don't support bitstream changes!\n" ));
+					vm_free(convert_buffer);
+					convert_buffer = NULL;
+					return -1;
+				}
 
 				if (rc == OV_EBADLINK) {
 					vm_free(convert_buffer);
 					convert_buffer = NULL;
 					return -1;
-				} else if(rc == 0) {
+				} else if (rc == 0) {
 					break;
-				} else if(rc != OV_HOLE) {
+				} else if (rc > 0) {
+					last_section = section;
 					src_bytes_used += rc;
 				}
 			}
@@ -1022,7 +1042,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 			size = (int)src_bytes_used;
 			data = convert_buffer;
 
-			//The ogg handle isn't needed no more
+			// we're done with ogg stuff so clean it up
 			ov_clear(&si->ogg_info);
 
 			nprintf(( "Sound", "SOUND ==> Coverted sound from OGG to PCM successfully\n" ));
@@ -1087,7 +1107,7 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	DSBUFFERDESC	BufferDesc;
 	WAVEFORMATEX	WaveFormat;
 	HRESULT			DSReturn;
-	int				rc = 1, final_sound_size, DSOUND_load_buffer_result = 0;
+	int				rc = 1, final_sound_size, DSOUND_load_buffer_result = 0, byte_order = 0, section, last_section = -1;
 	BYTE				*pData, *pData2;
 	DWORD				DataSize, DataSize2;
 
@@ -1096,8 +1116,6 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	ubyte *convert_buffer = NULL;		// storage for converted wav file 
 	int	convert_len;					// num bytes of converted wav file
 	uint	src_bytes_used;				// number of source bytes actually converted (should always be equal to original size)
-	//Stuff for ogg
-	int garbage;
 
 	// Ensure DirectSound initialized
 	if (!ds_initialized) {
@@ -1117,7 +1135,6 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 	final_sound_size = si->size;	// assume this format will be used, may be over-ridded by convert_len
 
 //	Assert(WaveFormat.nChannels == 1);
-//	FILE* ofp;
 
 	switch ( si->format ) {
 		case WAVE_FORMAT_PCM:
@@ -1164,27 +1181,34 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 		case OGG_FORMAT_VORBIS:
 			nprintf(( "Sound", "SOUND ==> converting sound from OGG to PCM\n" ));
 
+#if BYTE_ORDER == BIG_ENDIAN
+			byte_order = 1;
+#endif
 			src_bytes_used = 0;
 			convert_buffer = (byte*) vm_malloc(si->size);
 			Assert(convert_buffer != NULL);
-			while(final_sound_size < (int) si->size)
-			{
-				//Assume little endian for now
-				//Ignores frequency changes, I think we're screwed if that happens anyway.
-				rc = ov_read(&si->ogg_info, (char *) convert_buffer + src_bytes_used, si->size - src_bytes_used, 0, si->bits / 8, 1, &garbage);
-				if(rc == OV_EBADLINK)
-				{
+
+			while (src_bytes_used < si->size) {
+				rc = ov_read(&si->ogg_info, (char *) convert_buffer + src_bytes_used, si->size - src_bytes_used, byte_order, si->bits / 8, 1, &section);
+
+				// fail if the bitstream changes, shouldn't get this far if that's the case though
+				if ((last_section != -1) && (last_section != section)) {
+					nprintf(( "Sound", "SOUND ==> OGG reading error: We don't support bitstream changes!\n" ));
 					vm_free(convert_buffer);
 					convert_buffer = NULL;
 					DSOUND_load_buffer_result = -1;
 					goto DSOUND_load_buffer_done;
 				}
-				else if(rc == 0)
-				{
+
+				if (rc == OV_EBADLINK) {
+					vm_free(convert_buffer);
+					convert_buffer = NULL;
+					DSOUND_load_buffer_result = -1;
+					goto DSOUND_load_buffer_done;
+				} else if (rc == 0) {
 					break;
-				}
-				else if(rc != OV_HOLE)
-				{
+				} else if (rc > 0) {
+					last_section = section;
 					src_bytes_used += rc;
 				}
 			}
