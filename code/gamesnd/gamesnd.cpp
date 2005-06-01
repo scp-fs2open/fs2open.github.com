@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-05-12 17:49:11 $
+ * $Revision: 2.13 $
+ * $Date: 2005-06-01 09:35:42 $
  * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/05/12 17:49:11  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.11  2005/04/25 00:22:34  wmcoolmon
  * Added parse_sound; replaced Assert() with an if() (The latter may not be a good idea, but it keeps missions from being un-debuggable)
  *
@@ -572,6 +576,7 @@ void gamesnd_play_error_beep()
 void gamesnd_add_sound_slot(int type, int num)
 {
 	const int increase_by = 5;
+	int i;
 
 	switch (type) {
 		case GAME_SND:
@@ -583,6 +588,11 @@ void gamesnd_add_sound_slot(int type, int num)
 				Snds = (game_snd *) vm_realloc (Snds, sizeof(game_snd) * (Num_game_sounds + increase_by));
 				Verify( Snds != NULL );
 				Num_game_sounds += increase_by;
+
+				// default all new entries
+				for (i = (Num_game_sounds - increase_by - 1); i < Num_game_sounds; i++) {
+					gamesnd_init_struct(&Snds[i]);
+				}
 			}
 		}
 		break;
@@ -601,9 +611,11 @@ void gamesnd_add_sound_slot(int type, int num)
 				Snds_iface_handle = (int *) vm_realloc (Snds_iface_handle, sizeof(int) * Num_iface_sounds);
 				Verify( Snds_iface_handle != NULL );
 
-				// make sure new handle slots are set to -1
-				for (int i = (Num_iface_sounds - increase_by - 1); i < Num_iface_sounds; i++)
+				// default all new entries
+				for (i = (Num_iface_sounds - increase_by - 1); i < Num_iface_sounds; i++) {
+					gamesnd_init_struct(&Snds_iface[i]);
 					Snds_iface_handle[i] = -1;
+				}
 			}
 		}
 		break;
