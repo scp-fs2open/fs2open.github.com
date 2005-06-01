@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-05-12 17:42:13 $
+ * $Revision: 1.22 $
+ * $Date: 2005-06-01 09:37:44 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/05/12 17:42:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ * set byte_mult to 2 for TCACHE_TYPE_AABITMAP to get the memory size right for Debug builds
+ *
  * Revision 1.20  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -405,7 +410,7 @@ int opengl_free_texture ( tcache_slot_opengl *t )
 
 void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out)
 {
-	int tex_w, tex_h;
+	int i, tex_w, tex_h;
 
 	// bogus
 	if((w_out == NULL) ||  (h_out == NULL)){
@@ -424,20 +429,17 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 	tex_w = w_in;
 	tex_h = h_in;
 
-	if (1)        {
-		int i;
-		for (i=0; i<16; i++ )   {
-			if ( (tex_w > (1<<i)) && (tex_w <= (1<<(i+1))) )        {
-				tex_w = 1 << (i+1);
-				break;
-			}
+	for (i=0; i<16; i++ )   {
+		if ( (tex_w > (1<<i)) && (tex_w <= (1<<(i+1))) )        {
+			tex_w = 1 << (i+1);
+			break;
 		}
+	}
 
-		for (i=0; i<16; i++ )   {
-			if ( (tex_h > (1<<i)) && (tex_h <= (1<<(i+1))) )        {
-				tex_h = 1 << (i+1);
-				break;
-			}
+	for (i=0; i<16; i++ )   {
+		if ( (tex_h > (1<<i)) && (tex_h <= (1<<(i+1))) )        {
+			tex_h = 1 << (i+1);
+			break;
 		}
 	}
 
@@ -471,7 +473,7 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 // bmap_h == height of source bitmap
 // tex_w == width of final texture
 // tex_h == height of final texture
-int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_opengl *t, int reload, int fail_on_full)
+int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_opengl *t, int resize, int reload, int fail_on_full)
 {
 	int ret_val = 1;
 	int byte_mult = 0;
@@ -482,6 +484,9 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 	int mipmap_w = 0, mipmap_h = 0;
 	int dsize = 0, doffset = 0;
 	int i,j,k;
+	ubyte *bmp_data = ((ubyte*)data);
+	ubyte *texmem = NULL, *texmemp;
+
 
 	// bogus
 	if(t == NULL){
@@ -607,17 +612,18 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 			}
 		}
 		break;
-	
+
 		case TCACHE_TYPE_AABITMAP:
 		{
 			// this is 16-bit so just set to 2 in order to get the size right
 			byte_mult = 2;
 
-			ubyte *bmp_data = ((ubyte*)data);
-			ubyte *texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
-			ubyte *texmemp = texmem;
+			texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
+			texmemp = texmem;
 			ubyte xlat[256];
-			
+
+			Assert( texmem != NULL );
+
 			for (i=0; i<16; i++) {
 				xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
 			}	
@@ -630,7 +636,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 			{
 				for (j=0;j<tex_w;j++)
 				{
-				if (i < bmap_h && j < bmap_w) {
+					if (i < bmap_h && j < bmap_w) {
 						*texmemp++ = 0xff;
 						*texmemp++ = xlat[bmp_data[i*bmap_w+j]];
 					} else {
@@ -645,93 +651,87 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 			else // faster anis
 				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, tex_w, tex_h, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
 
-			vm_free (texmem);
+			if (texmem != NULL)
+				vm_free (texmem);
+
+			break;
 		}
-		break;
 
 		case TCACHE_TYPE_INTERFACE:
 		{
-			ubyte *bmp_data = ((ubyte*)data);
-			ubyte *texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
-			ubyte *texmemp = texmem;
+			// if we aren't resizing then we can just use bmp_data directly
+			if ( resize ) {
+				texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
+				texmemp = texmem;
 
-			for (i=0;i<tex_h;i++)
-			{
-				for (j=0;j<tex_w;j++)
+				Assert( texmem != NULL );
+
+				for (i=0;i<tex_h;i++)
 				{
-					if (i < bmap_h && j < bmap_w) {
-						for (k = 0; k < byte_mult; k++) {
-							*texmemp++ = bmp_data[(i*bmap_w+j)*byte_mult+k];
-						}
-					} else {
-						for (k = 0; k < byte_mult; k++) {
-							*texmemp++ = 0;
+					for (j=0;j<tex_w;j++)
+					{
+						if (i < bmap_h && j < bmap_w) {
+							for (k = 0; k < byte_mult; k++) {
+								*texmemp++ = bmp_data[(i*bmap_w+j)*byte_mult+k];
+							}
+						} else {
+							for (k = 0; k < byte_mult; k++) {
+								*texmemp++ = 0;
+							}
 						}
 					}
 				}
 			}
 
-			// temporary fix for some crashes from multiple mipmaps, only support the first one
-		//	for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
-			for (i = 0; i<1; i++) {
-				dsize = mipmap_h * mipmap_w * byte_mult;
+			if (!reload)
+				glTexImage2D (GL_TEXTURE_2D, 0, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, (resize) ? texmem : bmp_data);
+			else // faster anis
+				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, (resize) ? texmem : bmp_data);
 
-				if (!reload)
-					glTexImage2D (GL_TEXTURE_2D, i, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, texmem + doffset);
-				else // faster anis
-					glTexSubImage2D (GL_TEXTURE_2D, i, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, texmem + doffset);
+			if (texmem != NULL)
+				vm_free(texmem);
 
-				doffset += dsize;
-				mipmap_h /= 2;
-				mipmap_w /= 2;
-			}
-
-			vm_free(texmem);
 			break;
 		}
 
 		default:
 		{
-			ubyte *bmp_data = ((ubyte*)data);
-			ubyte *texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
-			ubyte *texmemp = texmem;
+			// if we aren't resizing then we can just use bmp_data directly
+			if ( resize ) {
+				texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
+				texmemp = texmem;
 
-			fix u, utmp, v, du, dv;
+				Assert( texmem != NULL );
+	
+				fix u, utmp, v, du, dv;
 
-			u = v = 0;
+				u = v = 0;
 
-			du = ( (bmap_w-1)*F1_0 ) / tex_w;
-			dv = ( (bmap_h-1)*F1_0 ) / tex_h;
+				du = ( (bmap_w-1)*F1_0 ) / tex_w;
+				dv = ( (bmap_h-1)*F1_0 ) / tex_h;
 
-			for (j=0;j<tex_h;j++)
-			{
-				utmp = u;
-				for (i=0;i<tex_w;i++)
+				for (j=0;j<tex_h;j++)
 				{
-					for (k = 0; k < byte_mult; k++) {
-						*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*byte_mult+k];
+					utmp = u;
+					for (i=0;i<tex_w;i++)
+					{
+						for (k = 0; k < byte_mult; k++) {
+							*texmemp++ = bmp_data[(f2i(v)*bmap_w+f2i(utmp))*byte_mult+k];
+						}
+						utmp += du;
 					}
-					utmp += du;
+					v += dv;
 				}
-				v += dv;
 			}
 
-			// temporary fix for some crashes from multiple mipmaps, only support the first one
-		//	for (i = 0; i<bm_get_num_mipmaps(texture_handle); i++) {
-			for (i = 0; i<1; i++) {
-				dsize = mipmap_h * mipmap_w * byte_mult;
+			if (!reload)
+				glTexImage2D (GL_TEXTURE_2D, 0, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, (resize) ? texmem : bmp_data);
+			else // faster anis
+				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, (resize) ? texmem : bmp_data);
 
-				if (!reload)
-					glTexImage2D (GL_TEXTURE_2D, i, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, texmem + doffset);
-				else // faster anis
-					glTexSubImage2D (GL_TEXTURE_2D, i, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, texmem + doffset);
+			if (texmem != NULL)
+				vm_free(texmem);
 
-				doffset += dsize;
-				mipmap_h /= 2;
-				mipmap_w /= 2;
-			}
-
-			vm_free(texmem);
 			break;
 		}
 	}//end switch
@@ -760,7 +760,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	bitmap *bmp;
 	int final_w, final_h;
 	ubyte bpp = 16;
-	int reload = 0;
+	int reload = 0, resize = 0;
 
 	// setup texture/bitmap flags
 	flags = 0;
@@ -826,6 +826,11 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	// get final texture size
 	opengl_tcache_get_adjusted_texture_size(max_w, max_h, &final_w, &final_h);
 
+	// only resize if we actually need a new size, better data use and speed out of opengl_create_texture_sub()
+	if ( (max_w != final_w) || (max_h != final_h) ) {
+		resize = 1;
+	}
+
 	if ( (final_h < 1) || (final_w < 1) )       {
 		mprintf(("Bitmap is to small at %dx%d.\n", final_w, final_h ));
 		return 0;
@@ -846,7 +851,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	}
 
 	// call the helper
-	int ret_val = opengl_create_texture_sub(bitmap_type, bitmap_handle, (ushort*)bmp->data, bmp->w, bmp->h, final_w, final_h, tslot, reload, fail_on_full);
+	int ret_val = opengl_create_texture_sub(bitmap_type, bitmap_handle, (ushort*)bmp->data, bmp->w, bmp->h, final_w, final_h, tslot, resize, reload, fail_on_full);
 
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
