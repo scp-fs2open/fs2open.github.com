@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-05-12 17:49:12 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2005-06-01 15:10:26 $
+ * $Author: phreak $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.19  2005/03/08 04:41:39  Goober5000
  * whoops
  *
@@ -936,7 +940,7 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	gr_force_windowed();
 
 
-	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d", text, filename, linenum );
+	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", text, filename, linenum );
 
 	#ifdef SHOW_CALL_STACK
 		dumpBuffer.Clear();
@@ -980,7 +984,7 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	va_start(args, format);
 	vsprintf(AssertText1,format,args);
 	va_end(args);
-	sprintf(AssertText2,"Error: %s\r\nFile:%s\r\nLine: %d", AssertText1, filename, line );
+	sprintf(AssertText2,"Error: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
 
 	#ifdef SHOW_CALL_STACK
 		dumpBuffer.Clear();
@@ -1065,7 +1069,7 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 	va_start(args, format);
 	vsprintf(AssertText1,format,args);
 	va_end(args);
-	sprintf(AssertText2,"Warning: %s\r\nFile:%s\r\nLine: %d", AssertText1, filename, line );
+	sprintf(AssertText2,"Warning: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
 
 	#ifdef SHOW_CALL_STACK
 		dumpBuffer.Clear();
