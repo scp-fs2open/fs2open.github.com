@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-04-05 05:53:18 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-06-01 22:52:56 $
+ * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/05 05:53:18  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.11  2005/03/29 07:03:16  wmcoolmon
  * Removed some warnings under Linux/GCC
  *
@@ -272,6 +275,10 @@ jump_node *jumpnode_get_which_in(object *objp)
 
 	for ( jnp = Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = jnp->get_next() )
 	{	
+		//WMC - if a jump node has no model, who cares?
+		if(jnp->get_modelnum() < 0)
+			continue;
+
 		radius = model_get_radius( jnp->get_modelnum() );
 		dist = vm_vec_dist( &objp->pos, &jnp->get_obj()->pos );
 		if ( dist <= radius ) {
