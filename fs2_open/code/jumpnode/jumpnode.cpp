@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-06-01 22:52:56 $
+ * $Revision: 2.14 $
+ * $Date: 2005-06-01 22:54:23 $
  * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/06/01 22:52:56  wmcoolmon
+ * Better missing model handling
+ *
  * Revision 2.12  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -125,6 +128,9 @@ void jumpnode_level_close()
 void jump_node::render(vec3d *pos, vec3d *view_pos)
 {
 	if(m_flags & JN_HIDE)
+		return;
+
+	if(m_modelnum < 0)
 		return;
 
 	matrix				node_orient = IDENTITY_MATRIX;
