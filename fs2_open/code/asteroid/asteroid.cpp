@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-04-28 05:29:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.16 $
+ * $Date: 2005-06-01 09:34:59 $
+ * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/04/28 05:29:28  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.14  2005/04/28 01:32:57  wmcoolmon
  * Switch stuff_string_white to stuff_string (I don't see why _white was used in the first place)
  *
