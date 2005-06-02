@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-06-01 09:41:14 $
- * $Author: taylor $
+ * $Revision: 2.29 $
+ * $Date: 2005-06-02 01:56:32 $
+ * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/06/01 09:41:14  taylor
+ * bit of cleanup for audiostr-openal and fix a Windows-only enum error
+ * bunch of OGG related fixes for Linux and Windows (DirectSound and OpenAL), fixes audio related TBP 3.2 crashes
+ * gracefully handle OGG logical bitstream changes, shouldn't even load if there is more than 1
+ *
  * Revision 2.27  2005/05/26 04:32:31  taylor
  * the Loki extensions are Linux only so don't even bother checking under Windows, the
  *   new spec has a cross-platform way of getting the same thing so this isn't a big deal
@@ -1612,7 +1617,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 #ifdef _WIN32
 	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
 	// type problems (FIXME for a later date since I don't like this with future code) - taylor
-	ds_sound_device = alcOpenDevice( NOX("DirectSound") );
+	ds_sound_device = alcOpenDevice( (ALubyte *)NOX("DirectSound") );
 #else
 	ds_sound_device = alcOpenDevice( NULL );
 #endif
