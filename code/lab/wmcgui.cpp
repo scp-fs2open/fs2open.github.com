@@ -76,6 +76,7 @@ bool ObjectClassInfoEntry::Parse()
 		//Follow the current classes' example, this basically involves
 		//a !stricmp(), a resize() (to the number of entries) and multiple Entries[ID].Parse()
 		
+		//=================================================
 		if(!stricmp(buf, "Window"))
 		{
 			Object = GT_WINDOW;
@@ -96,6 +97,8 @@ bool ObjectClassInfoEntry::Parse()
 			//Fill it out
 			Entries[BCI_BUTTON].Parse("Button", CIE_IMAGE_NMCSD);
 		}
+
+		//=================================================
 
 		//Make sure that the next token isn't an end tag, but
 		//is a tag
@@ -635,9 +638,9 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 		}
 	}
 
-	for(uint i = DeletionCache.size(); i > -1; i--)
+	for(uint i = DeletionCache.size(); i > 0; i--)
 	{
-		::operator delete(DeletionCache[i]);
+		delete DeletionCache[i-1];
 		DeletionCache.pop_back();
 	}
 
@@ -976,12 +979,12 @@ GUIObject* GUIObject::AddChild(GUIObject* cgp)
 	return cgp;
 }
 
-void GUIObject::operator delete(void *dgp)
+void GUIObject::Delete()
 {
-	if(((GUIObject*) dgp)->OwnerScreen != NULL)
-		((GUIObject*) dgp)->OwnerScreen->DeleteObject((GUIObject*)dgp);
+	if(OwnerScreen != NULL)
+		OwnerScreen->DeleteObject(this);
 	else
-		::operator delete(dgp);
+		delete this;
 }
 
 void GUIObject::OnDraw(float frametime)
@@ -1033,9 +1036,9 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 		{
 			rval = DoMouseOver(frametime);
 
-			if(rval == OF_DESTROYED)
-				return OF_DESTROYED;
-			else if(rval == OF_TRUE)
+			/*if(rval == OF_DESTROYED)
+				return OF_DESTROYED;*/
+			if(rval == OF_TRUE)
 				(*unused_queue) &= ~GST_MOUSE_OVER;
 		}
 
@@ -1044,9 +1047,9 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 		{
 			rval = DoMouseDown(frametime);
 
-			if(rval == OF_DESTROYED)
-				return OF_DESTROYED;
-			else if(rval == OF_TRUE)
+			/*if(rval == OF_DESTROYED)
+				return OF_DESTROYED;*/
+			if(rval == OF_TRUE)
 				(*unused_queue) &= ~(GST_MOUSE_LEFT_BUTTON | GST_MOUSE_RIGHT_BUTTON | GST_MOUSE_MIDDLE_BUTTON);
 		}
 
@@ -1055,9 +1058,9 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 		{
 			rval = DoMouseUp(frametime);
 
-			if(rval == OF_DESTROYED)
-				return OF_DESTROYED;
-			else if(rval == OF_TRUE)
+			/*if(rval == OF_DESTROYED)
+				return OF_DESTROYED;*/
+			if(rval == OF_TRUE)
 				(*unused_queue) &= ~(GST_MOUSE_LEFT_BUTTON | GST_MOUSE_RIGHT_BUTTON | GST_MOUSE_MIDDLE_BUTTON);
 		}
 
@@ -1066,9 +1069,9 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 		{
 			rval = DoKeyState(frametime);
 
-			if(rval == OF_DESTROYED)
-				return OF_DESTROYED;
-			else if(rval == OF_TRUE)
+			/*if(rval == OF_DESTROYED)
+				return OF_DESTROYED;*/
+			if(rval == OF_TRUE)
 				(*unused_queue) &= ~(GST_KEYBOARD_CTRL | GST_KEYBOARD_ALT | GST_KEYBOARD_SHIFT);
 		}
 
@@ -1077,9 +1080,9 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 		{
 			rval = DoKeyPress(frametime);
 
-			if(rval == OF_DESTROYED)
-				return OF_DESTROYED;
-			else if(rval == OF_TRUE)
+			/*if(rval == OF_DESTROYED)
+				return OF_DESTROYED;*/
+			if(rval == OF_TRUE)
 				(*unused_queue) &= ~GST_KEYBOARD_KEYPRESS;
 		}
 	}
@@ -1089,8 +1092,8 @@ int GUIObject::OnFrame(float frametime, int *unused_queue)
 		rval = DoMouseOut(frametime);
 	}
 
-	if(rval == OF_DESTROYED)
-		return OF_DESTROYED;
+	/*if(rval == OF_DESTROYED)
+				return OF_DESTROYED;*/
 
 	/*if(!child_keypress && (Status & GST_KEY_PRESSED))
 		rval = DoKeyPress(OwnerSystem->CurrentKeyChar,frametime);*/
@@ -1490,8 +1493,8 @@ int Window::DoMouseUp(float frametime)
 {
 	if(CloseHighlight)
 	{
-		delete this;
-		return OF_DESTROYED;
+		Delete();
+		return OF_TRUE;
 	}
 
 	if(HideHighlight)
