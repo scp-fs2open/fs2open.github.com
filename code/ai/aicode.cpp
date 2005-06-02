@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-06-01 09:34:36 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2005-06-02 03:20:20 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
@@ -10803,7 +10803,6 @@ void ai_cleanup_rearm_mode(object *objp)
 	// if the support ship is in dock mode, force them to near last stage
 	if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_UNDOCK_3) )
 		aip->submode = AIS_UNDOCK_3;
-
 }
 
 // Goober5000 - this function should ONLY need to be called from a ship doing a deathroll.  It
@@ -10961,8 +10960,7 @@ void ai_dock()
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
 	//	Make sure object we're supposed to dock with or undock from still exists.
-	if ((aip->goal_objnum == -1) || (Objects[aip->goal_objnum].signature != aip->goal_signature) ||
-		((aip->active_goal == -1) && ((aip->submode >= AIS_DOCK_2) && (aip->submode <= AIS_DOCK_4)))) {
+	if ((aip->goal_objnum == -1) || (Objects[aip->goal_objnum].signature != aip->goal_signature)) {
 		ai_cleanup_rearm_mode(Pl_objp);
 		return;
 	}
