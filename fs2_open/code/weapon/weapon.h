@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/05/08 20:20:06  wmcoolmon
+ * armor.tbl revamp
+ *
  * Revision 2.49  2005/04/24 12:47:36  taylor
  * little cleanup of laser rendering
  *  - fix animated glows
@@ -552,6 +555,7 @@ struct ship_subsys;
 #define WF_DEAD_IN_WATER				(1<<4)		// a missiles engines have died
 #define WF_LOCKED_WHEN_FIRED			(1<<5)		// fired with a lock
 #define WF_DESTROYED_BY_WEAPON		(1<<6)		// destroyed by damage from other weapon
+#define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
 
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
@@ -956,7 +960,7 @@ int weapon_create_group_id();
 
 // Passing a group_id of -1 means it isn't in a group.  See weapon_create_group_id for more 
 // help on weapon groups.
-int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int secondary_flag, int group_id=-1, int is_locked = 0);
+int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int secondary_flag, int group_id=-1, int is_locked = 0, int is_spawned = 0);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
 // for weapons flagged as particle spewers, spew particles. wheee

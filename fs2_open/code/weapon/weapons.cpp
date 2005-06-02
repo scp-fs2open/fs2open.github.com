@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.116  2005/05/23 05:55:12  taylor
+ * more from Jens...
+ *  - make sure that a frame number doesn't get carried over to non-animated weapon glows
+ *  - move the line splitting code in missiontraining.cpp so that we don't have to worry about EOS chars
+ *
  * Revision 2.115  2005/05/12 17:49:18  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -3015,8 +3020,14 @@ void find_homing_object(object *weapon_objp, int num)
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_CMEASURE)) {
 			if (objp->type == OBJ_CMEASURE)
+			{
 				if (Cmeasures[objp->instance].flags & CMF_DUD_HEAT)
 					continue;
+			}
+
+			//WMC - Spawn weapons shouldn't go for protected ships
+			if((objp->flags & OF_PROTECTED) && (wp->weapon_flags & WF_SPAWNED))
+				continue;
 
 			int homing_object_team = obj_team(objp);
 			if ( (homing_object_team != wp->team) || (homing_object_team == TEAM_TRAITOR) ) {
@@ -3966,7 +3977,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 //
 // Returns:  index of weapon in the Objects[] array, -1 if the weapon object was not created
 int Weapons_created = 0;
-int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objnum, int secondary_flag, int group_id, int is_locked )
+int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objnum, int secondary_flag, int group_id, int is_locked, int is_spawned )
 {
 	int			n, objnum;
 	int num_deleted;
@@ -4238,6 +4249,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objn
 		wp->weapon_flags |= WF_LOCKED_WHEN_FIRED;
 	}
 
+	//if the weapon was spawned from a spawning type weapon
+	if(is_spawned){
+		wp->weapon_flags |= WF_SPAWNED;
+	}
+
 	Num_weapons++;
 	return objnum;
 }
@@ -4293,7 +4309,7 @@ void spawn_child_weapons(object *objp)
 		vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
 
 		vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
-		weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, 1, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED);
+		weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, 1, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
 
 		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
 		if (weapon_objnum != -1) {
