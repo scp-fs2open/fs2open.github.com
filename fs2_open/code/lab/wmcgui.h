@@ -190,7 +190,7 @@ public:
 //DoFrame return values
 #define OF_TRUE					-1
 #define OF_FALSE				-2
-#define OF_DESTROYED			-3	//If a call to DoFrame results in the object destroying itself
+//#define OF_DESTROYED			-3	//If a call to DoFrame results in the object destroying itself
 									//(ie the close button was pressed)
 
 class GUIObject : public LinkedList
@@ -264,9 +264,7 @@ public:
 	//Derive your class's constructer from the GUIObject one
 	GUIObject(std::string in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
 	~GUIObject();
-
-	//OPERATORS
-	void operator delete(void *dgp);
+	void Delete();
 
 	//CHILD FUNCTIONS
 	//Used for managing children. :)
