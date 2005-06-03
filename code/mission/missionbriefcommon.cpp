@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-05-30 05:33:11 $
+ * $Revision: 2.26 $
+ * $Date: 2005-06-03 06:39:27 $
  * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/05/30 05:33:11  taylor
+ * if a briefing does have any stages (no text) then don't carry over text from a previous mission
+ * some generic cleanup to V code that isn't a real problem now but could easily have been a memleak
+ *
  * Revision 2.24  2005/05/12 17:49:13  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -2741,6 +2745,11 @@ int brief_time_to_advance(int stage_num, float frametime)
 	}
 
 	Brief_stage_time += fl2i(frametime*1000 + 0.5f);
+
+	// we do this after the stage time gets set so that we can continue the voice
+	// and current stage rather than jumping to the next
+	if (Briefing_paused)
+		return 0;
 
 	if ( (Brief_voices[stage_num] >= 0) && Briefing_voice_enabled ) {
 		voice_active = 1;

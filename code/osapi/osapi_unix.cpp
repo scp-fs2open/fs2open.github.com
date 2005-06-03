@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-17 05:38:29 $
+ * $Revision: 2.9 $
+ * $Date: 2005-06-03 06:39:27 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/17 05:38:29  taylor
+ * updated Linux joystick code that's a bit less insane speed wise
+ * remove ability to build without joystick support, no reason to keep it around
+ * fix unusable warning flag with libjpeg building
+ *
  * Revision 2.7  2005/03/11 14:16:02  taylor
  * was causing strange hangs due to really large values, don't know if this will help but SDL should take care of error checking this way
  *
@@ -135,6 +140,7 @@
 #include "io/joy_ff.h"
 #include "osapi/osregistry.h"
 #include "graphics/2d.h"
+#include "freespace2/freespace.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -272,6 +278,12 @@ DWORD unix_process(DWORD lparam)
 		switch(event.type) {
 			case SDL_ACTIVEEVENT:
 				if( (event.active.state & SDL_APPACTIVE) || (event.active.state & SDL_APPINPUTFOCUS) ) {
+					if (fAppActive != event.active.gain) {
+						if (fAppActive)
+							game_pause();
+						else
+							game_unpause();
+					}
 					fAppActive = event.active.gain;
 					gr_activate(fAppActive);
 				}

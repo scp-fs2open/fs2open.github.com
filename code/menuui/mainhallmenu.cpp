@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-05-24 20:54:06 $
+ * $Revision: 2.30 $
+ * $Date: 2005-06-03 06:39:26 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/05/24 20:54:06  taylor
+ * couple of extra checks to make sure that we can't enter the barracks or the techroom
+ *   if the currently selected campaign isn't available, fixes several pilot crash bugs
+ *
  * Revision 2.28  2005/03/25 07:35:22  wmcoolmon
  * Small change now that the storybook is in CVS
  *
@@ -764,6 +768,9 @@ void main_hall_cull_door_sounds();
 
 // handle starting, stopping and reversing "door" animations
 void main_hall_handle_region_anims();								
+
+// to determine if we should continue playing sounds and random animations
+static int Main_hall_paused = 0;
 
 
 // ----------------------------------------------------------------------------
@@ -1581,6 +1588,9 @@ void main_hall_close()
 	// no fish
 	fishtank_stop();	
 
+	// unpause
+	Main_hall_paused = 0;
+
 	// not inited anymore
 	Main_hall_inited = 0;
 }
@@ -1629,7 +1639,7 @@ void main_hall_handle_misc_anims()
 {
 	int idx,s_idx;
 
-	if(Main_hall_frame_skip)
+	if(Main_hall_frame_skip || Main_hall_paused)
 		return;
 	
 	for(idx=0;idx<Main_hall->num_misc_animations;idx++){
@@ -1955,6 +1965,10 @@ void main_hall_handle_random_intercom_sounds()
 
 	// if the there is no sound playing
 	if(Main_hall_intercom_sound_handle == -1){
+		if (Main_hall_paused) {
+			return;
+		}
+
 		// if the timestamp has popped, play a sound
 		if((Main_hall_next_intercom_sound_stamp != -1) && (timestamp_elapsed(Main_hall_next_intercom_sound_stamp))){
 			// play the sound
@@ -2015,6 +2029,9 @@ void main_hall_notify_do()
 void main_hall_start_ambient()
 {
 	int play_ambient_loop = 0;
+
+	if (Main_hall_paused)
+		return;
 
 	if ( Main_hall_ambient_loop == -1 ) {
 		play_ambient_loop = 1;
@@ -2326,4 +2343,30 @@ void main_hall_read_table()
 void main_hall_vasudan_funny()
 {
 	Vasudan_funny = 1;
+}
+
+// silence sounds on mainhall if we hit a pause mode (ie. lost window focus, minimized, etc);
+void main_hall_pause()
+{
+	if (Main_hall_paused)
+		return;
+
+	Main_hall_paused = 1;
+
+	audiostream_pause(Main_hall_music_handle);
+
+	main_hall_stop_ambient();
+}
+
+// recover from a paused state (ie. lost window focus, minimized, etc);
+void main_hall_unpause()
+{
+	if (!Main_hall_paused)
+		return;
+
+	Main_hall_paused = 0;
+
+	audiostream_unpause(Main_hall_music_handle);
+
+	main_hall_start_ambient();
 }

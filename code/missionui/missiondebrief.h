@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.h $
- * $Revision: 2.1 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2005-06-03 06:39:26 $
+ * $Author: taylor $
  *
  * Header file for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.0  2002/06/03 04:02:25  penguin
  * Warpcore CVS sync
  *
@@ -69,9 +72,10 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __MISSIONDEBRIEF_H__
 #define __MISSIONDEBRIEF_H__
+
+#include "PreProcDefines.h"
 
 extern int Debrief_multi_stages_loaded;
 
@@ -90,5 +94,8 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 // multiplayer call to set up the client side debriefings
 void debrief_multi_server_stuff();
 void debrief_set_multi_clients( int stage_count, int active_stages[] );
+
+void debrief_pause();
+void debrief_unpause();
 
 #endif /* __MISSIONDEBRIEF_H__ */

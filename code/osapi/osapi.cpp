@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-05-01 23:17:46 $
- * $Author: phreak $
+ * $Revision: 2.29 $
+ * $Date: 2005-06-03 06:39:27 $
+ * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/05/01 23:17:46  phreak
+ * when creating the window take into account the top border
+ *
  * Revision 2.27  2005/04/24 03:06:29  phreak
  * centered the window on the desktop if the -window command line is used.
  *
@@ -537,6 +540,8 @@ void change_window_active_state()
 			// maximize it
 			joy_reacquire_ff();
 
+			game_unpause();
+
 #ifdef THREADED_PROCESS
 			SetThreadPriority( hThread, THREAD_PRIORITY_HIGHEST );
 #endif
@@ -547,8 +552,7 @@ void change_window_active_state()
 			}
 
 			// Pause sounds and put up pause screen if necessary
-
-			alt_tab_pause();
+			game_pause();
 
 #ifdef THREADED_PROCESS
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );

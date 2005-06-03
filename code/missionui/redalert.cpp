@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-04-03 08:48:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2005-06-03 06:39:26 $
+ * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/04/03 08:48:30  Goober5000
+ * brought weapon loadout banks into agreement with ship info banks
+ * improved error reporting on apply-to-all
+ * --Goober5000
+ *
  * Revision 2.13  2005/03/27 12:28:34  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -399,6 +404,29 @@ void red_alert_voice_stop()
 		return;
 
 	audiostream_stop(Red_alert_voice, 1, 0);	// stream is automatically rewound
+}
+
+// pausing and unpausing of red alert voice
+void red_alert_voice_pause()
+{
+	if ( Red_alert_voice == -1 )
+		return;
+
+	if ( !Red_alert_voice_started )
+		return;
+
+	audiostream_pause(Red_alert_voice);
+}
+
+void red_alert_voice_unpause()
+{
+	if ( Red_alert_voice == -1 )
+		return;
+
+	if ( !Red_alert_voice_started )
+		return;
+
+	audiostream_unpause(Red_alert_voice);
 }
 
 // a button was pressed, deal with it

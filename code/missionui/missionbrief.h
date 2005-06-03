@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.h $
- * $Revision: 2.4 $
- * $Date: 2005-01-31 23:27:54 $
+ * $Revision: 2.5 $
+ * $Date: 2005-06-03 06:39:26 $
  * $Author: taylor $
  *
  * Header file for code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.3  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -177,6 +180,8 @@ extern UI_INPUTBOX	Common_multi_text_inputbox[3];
 extern int	Briefing_music_handle;
 extern int	Briefing_music_begin_timestamp;
 
+extern int Briefing_paused;	// for stopping audio and stage progression
+
 struct brief_icon;
 
 void brief_init();
@@ -190,6 +195,9 @@ void briefing_stop_music();
 void briefing_start_music();
 void briefing_load_music(char* fname);
 void brief_stop_voices();
+
+void brief_pause();
+void brief_unpause();
 
 int brief_only_allow_briefing();
 
