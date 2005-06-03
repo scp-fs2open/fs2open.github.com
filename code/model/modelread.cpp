@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.68 $
- * $Date: 2005-05-28 19:41:56 $
+ * $Revision: 2.69 $
+ * $Date: 2005-06-03 18:18:02 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2005/05/28 19:41:56  taylor
+ * add a NULL check to model_get() for better error detection over an outright CTD
+ *
  * Revision 2.67  2005/05/12 17:49:14  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1675,6 +1678,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
 
 		if ( ibuffer_info.read != NULL ) {
+			// grab a checksum of the IBX, for debugging purposes
+			uint ibx_checksum = 0;
+			cfseek(ibuffer_info.read, 0, SEEK_SET);
+			cf_chksum_long(ibuffer_info.read, &ibx_checksum);
+			cfseek(ibuffer_info.read, 0, SEEK_SET);
+
 			// get the file size that we use to safety check with.
 			// be sure to subtract from this when we read something out
 			ibuffer_info.size = cfilelength( ibuffer_info.read );
@@ -1701,6 +1710,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					ibuffer_info.size = 0;
 				} else {
 					mprintf(("IBX: Found a good IBX to read for '%s'.\n", filename));
+					mprintf(("IBX-DEBUG => POF checksum: %10u, IBX checksum: %10u -- \"%s\"\n", pof_checksum, ibx_checksum, filename));
 				}
 			}
 		}
