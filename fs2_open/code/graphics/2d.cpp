@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 2.49 $
+ * $Date: 2005-06-03 06:44:17 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.47  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -1496,39 +1500,24 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 {
 	int w, h;
 
-	if(gr_screen.mode == GR_DIRECT3D){
+	if (gr_screen.mode == GR_STUB)
+		return;
 
-		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL);
 
-		// get the section as a texture in vram					
-		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
+	bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL);
 
-		// I will tidy this up later - RT
-		if(allow_scaling || gr_screen.rendering_to_texture != -1)
-		{
-			gr_resize_screen_pos(&x, &y);
-			gr_resize_screen_pos(&w, &h);
-		}
+	// get the section as a texture in vram					
+	gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
 
-		// RT draws all hall interface stuff
-		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_INTERFACE);
+	// I will tidy this up later - RT
+	if(allow_scaling || gr_screen.rendering_to_texture != -1)
+	{
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
 	}
-	else if((gr_screen.mode == GR_OPENGL)) {
-		bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL);
 
-		// get the section as a texture in vram					
-		gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
-
-		// I will tidy this up later - RT
-		if(allow_scaling || gr_screen.rendering_to_texture != -1)
-		{
-			gr_resize_screen_pos(&x, &y);
-			gr_resize_screen_pos(&w, &h);
-		}
-
-		// RT draws all hall interface stuff
-		g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_INTERFACE);
-	}
+	// RT draws all hall interface stuff
+	g3_draw_2d_poly_bitmap(x, y, w, h, TMAP_FLAG_INTERFACE);
 }
 
 // NEW new bitmap functions -Bobboau
