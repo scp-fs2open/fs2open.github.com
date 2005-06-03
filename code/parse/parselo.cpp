@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.42 $
- * $Author: phreak $
- * $Date: 2005-05-13 02:41:24 $
+ * $Revision: 2.43 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-06-03 22:36:57 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/05/13 02:41:24  phreak
+ * forgot a vm_strdup in place of a strdup
+ *
  * Revision 2.41  2005/05/12 17:49:16  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1831,6 +1834,8 @@ int stuff_bool_list(bool *blp, int max_bools)
 			ignore_white_space();
 		}
 	}
+
+	Mp++;
 
 	return count;
 }
