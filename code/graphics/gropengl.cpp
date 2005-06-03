@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.121 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 2.122 $
+ * $Date: 2005-06-03 06:51:50 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.121  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.120  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -3678,12 +3682,6 @@ void gr_opengl_init(int reinit)
 
 	//shut these command line parameters down if they are in use
 	Cmdline_batch_3dunlit = 0;
-
-	// why bother
-	if (bpp != 32) {
-		Cmdline_pcx32 = 0;
-		Cmdline_jpgtga = 0;
-	}
 
 #ifdef GL_NO_HTL
 	// turn off HT&L and VBO if we can't support it with built libs
