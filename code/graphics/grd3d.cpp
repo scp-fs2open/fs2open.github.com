@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.82 $
- * $Date: 2005-05-12 17:49:12 $
- * $Author: taylor $
+ * $Revision: 2.83 $
+ * $Date: 2005-06-03 16:42:30 $
+ * $Author: matt $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.81  2005/04/05 05:53:16  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1888,7 +1892,7 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
  */
 inline ushort d3d_ramp_val(UINT i, float recip_gamma, int scale = 65535)
 {
-    return static_cast<ushort>(scale*pow(i/255.f, recip_gamma));
+    return static_cast<ushort>(scale*pow(i/255.f, 1.0f/recip_gamma));
 }
 
 /**
