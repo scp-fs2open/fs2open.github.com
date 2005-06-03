@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-06-03 06:39:26 $
+ * $Revision: 2.21 $
+ * $Date: 2005-06-03 06:41:37 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/06/03 06:39:26  taylor
+ * fix issue where, when in multi mode, loading a single player would overwrite the campaign savefile
+ *
  * Revision 2.19  2005/05/26 04:28:45  taylor
  * if we switch to a pilot who has a campaign that isn't available then abort the read and
  *   deselect all pilots, should prevent data loss or crashes due to the missing safety check
