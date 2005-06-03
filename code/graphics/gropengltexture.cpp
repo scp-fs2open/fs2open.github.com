@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.22 $
- * $Date: 2005-06-01 09:37:44 $
+ * $Revision: 1.23 $
+ * $Date: 2005-06-03 06:44:17 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2005/06/01 09:37:44  taylor
+ * little cleanup
+ * optimize opengl_create_texture_sub() by not doing any extra image processing if we don't have to
+ *   if an image is already power-of-2 or we don't need power-of-2 then avoid the extra time and memory usage
+ *
  * Revision 1.21  2005/05/12 17:42:13  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -817,6 +822,11 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	if ( (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE) && (bitmap_type != TCACHE_TYPE_COMPRESSED) )      {
 		// max_w /= D3D_texture_divider;
 		// max_h /= D3D_texture_divider;
+
+		// if we are going to cull the size then we need to force a resize
+		if (Detail.hardware_textures < 4) {
+			resize = 1;
+		}
 
 		// Detail.debris_culling goes from 0 to 4.
 		max_w /= (16 >> Detail.hardware_textures);
