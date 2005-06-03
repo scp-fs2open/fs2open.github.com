@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-05-30 05:33:11 $
+ * $Revision: 2.27 $
+ * $Date: 2005-06-03 06:39:26 $
  * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/05/30 05:33:11  taylor
+ * if a briefing does have any stages (no text) then don't carry over text from a previous mission
+ * some generic cleanup to V code that isn't a real problem now but could easily have been a memleak
+ *
  * Revision 2.25  2005/05/12 17:49:14  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -580,6 +584,8 @@ ubyte* BriefingMaskData;		// pointer to actual bitmap data
 int Briefing_mask_w, Briefing_mask_h;
 int BriefingMaskBitmap;	// bitmap id of the briefing mask bitmap
 int Brief_inited = FALSE;
+
+int Briefing_paused = 0;	// for stopping audio and stage progression
 
 // --------------------------------------------------------------------------------------
 // Briefing specific UI
@@ -2299,6 +2305,8 @@ void brief_close()
 
 	brief_common_close();
 
+	Briefing_paused = 0;
+
 	Brief_inited = FALSE;
 }
 
@@ -2337,6 +2345,34 @@ void briefing_start_music()
 void brief_stop_voices()
 {
 	brief_voice_stop(Current_brief_stage);
+}
+
+void brief_pause()
+{
+	if (Briefing_paused)
+		return;
+
+	Briefing_paused = 1;
+
+	if (Briefing_music_handle >= 0) {
+		audiostream_pause(Briefing_music_handle);
+	}
+
+	brief_voice_pause(Current_brief_stage);
+}
+
+void brief_unpause()
+{
+	if (!Briefing_paused)
+		return;
+
+	Briefing_paused = 0;
+
+	if (Briefing_music_handle >= 0) {
+		audiostream_unpause(Briefing_music_handle);
+	}
+
+	brief_voice_unpause(Current_brief_stage);
 }
 
 void brief_maybe_blit_scene_cut(float frametime)

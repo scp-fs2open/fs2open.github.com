@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.h $
- * $Revision: 2.4 $
- * $Date: 2004-10-31 21:53:24 $
+ * $Revision: 2.5 $
+ * $Date: 2005-06-03 06:39:26 $
  * $Author: taylor $
  *
  * Header file for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/10/31 21:53:24  taylor
+ * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
+ *
  * Revision 2.3  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -90,5 +93,8 @@ void red_alert_read_wingman_status(CFILE *fp, int version);
 // campaign savefile versions
 void red_alert_write_wingman_status_campaign(CFILE *fp);
 void red_alert_read_wingman_status_campaign(CFILE *fp, char ships[][NAME_LENGTH], char weapons[][NAME_LENGTH]);
+
+void red_alert_voice_pause();
+void red_alert_voice_unpause();
 
 #endif

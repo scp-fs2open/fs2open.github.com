@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.5 $
- * $Date: 2005-03-03 06:05:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2005-06-03 06:39:26 $
+ * $Author: taylor $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.4  2004/10/31 21:31:34  taylor
  * bump COUNT_ESTIMATE, reset time compression at the start of a mission, new pilot file support, add feature_disabled popup
  *
@@ -380,9 +383,9 @@ int game_hacked_data();
 // show the oem upsell screens (end of campaign, or close of game
 void oem_upsell_show_screens();
 
-// function to handle pausing the game when the game is minimized
-// called from osapi.cpp
-void alt_tab_pause();
+// calls to be executed when the game is put in or restored from minimized or inactive state
+void game_pause();
+void game_unpause();
 
 #endif			// endif of #ifndef STAMPER_PROGRAM
 #endif 

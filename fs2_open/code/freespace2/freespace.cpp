@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.154 $
- * $Date: 2005-06-03 02:28:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.155 $
+ * $Date: 2005-06-03 06:39:25 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.154  2005/06/03 02:28:54  wmcoolmon
+ * Small extern fix
+ *
  * Revision 2.153  2005/05/30 05:30:02  taylor
  * make sure we stop mission in the redalert case too
  *
@@ -10729,21 +10732,112 @@ bool game_using_low_mem()
 
 //  place calls here that need to take effect immediately when the game is
 //  minimized.  Called from osapi.cpp 
-
-void alt_tab_pause()
+void game_pause()
 {
-	// pause all game music
-//	audiostream_pause_all();
-
-	//  Call pause_init immediately so pause screen will be drawn.
-
 	// Protection against flipping out -- Kazan
 	if (!GameState_Stack_Valid())
 		return;
 
 	if (!(Game_mode & GM_MULTIPLAYER)){
-		if ( (gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active()) )	{
-			pause_init(0);
+		switch ( gameseq_get_state() )
+		{
+			case GS_STATE_MAIN_MENU:
+				main_hall_pause(); // not an instant shutoff of misc anims and sounds
+				break;
+
+			case GS_STATE_BRIEFING:
+				brief_pause();
+				break;
+
+			case GS_STATE_DEBRIEF:
+				debrief_pause();
+				break;
+
+			case GS_STATE_CMD_BRIEF:
+				cmd_brief_pause();
+				break;
+
+			case GS_STATE_RED_ALERT:
+				red_alert_voice_pause();
+				break;
+
+			// anything that would leave the ambient mainhall sound going
+			case GS_STATE_TECH_MENU:
+			case GS_STATE_BARRACKS_MENU:
+			case GS_STATE_OPTIONS_MENU:
+			case GS_STATE_HUD_CONFIG:
+				main_hall_stop_ambient();
+				main_hall_stop_music(); // not an instant shutoff
+				break;
+
+			// only has the ambient sound, no music
+			case GS_STATE_INITIAL_PLAYER_SELECT:
+				main_hall_stop_ambient();
+				break;
+
+			// pause_init is a special case and we don't unpause it ourselves
+			case GS_STATE_GAME_PLAY:
+				if ( (!popup_active()) && (!popupdead_is_active()) )
+					pause_init(0);
+				break;
+
+			default:
+				audiostream_pause_all();
+		}
+	}
+}
+
+// calls to be executed when the game is restored from minimized or inactive state
+void game_unpause()
+{
+	if (!GameState_Stack_Valid())
+		return;
+
+	// automatically recover from everything but an in-mission pause
+	if (!(Game_mode & GM_MULTIPLAYER)) {
+		switch ( gameseq_get_state() )
+		{
+			case GS_STATE_MAIN_MENU:
+				main_hall_unpause();
+				break;
+
+			case GS_STATE_BRIEFING:
+				brief_unpause();
+				break;
+
+			case GS_STATE_DEBRIEF:
+				debrief_unpause();
+				break;
+
+			case GS_STATE_CMD_BRIEF:
+				cmd_brief_unpause();
+				break;
+
+			case GS_STATE_RED_ALERT:
+				red_alert_voice_unpause();
+				break;
+
+			// anything that would leave the ambient mainhall sound going
+			case GS_STATE_TECH_MENU:
+			case GS_STATE_BARRACKS_MENU:
+			case GS_STATE_OPTIONS_MENU:
+			case GS_STATE_HUD_CONFIG:
+				main_hall_start_ambient();
+				main_hall_start_music(); // not an instant shutoff
+				break;
+
+			// only has the ambient sound, no music
+			case GS_STATE_INITIAL_PLAYER_SELECT:
+				main_hall_start_ambient();
+				break;
+
+			// if in a game then do nothing, pause_init() should have been called
+			// and will get cleaned up elsewhere
+			case GS_STATE_GAME_PLAY:
+				break;
+
+			default:
+				audiostream_unpause_all();
 		}
 	}
 }

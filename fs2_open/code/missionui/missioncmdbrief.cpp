@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-03-10 08:00:08 $
+ * $Revision: 2.15 $
+ * $Date: 2005-06-03 06:39:26 $
  * $Author: taylor $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/03/10 08:00:08  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.13  2005/02/23 05:05:38  taylor
  * compiler warning fixes (for MSVC++ 6)
  * have the warp effect only load as many LODs as will get used
@@ -448,6 +457,7 @@ static anim_instance *Cur_anim_instance = NULL;
 static int Last_anim_frame_num;
 
 static int Cmd_brief_last_voice;
+static int Cmd_brief_paused = 0;
 //static int Palette_bmp = -1;
 static ubyte Palette[768];
 //static char Palette_name[128];
@@ -475,6 +485,9 @@ void cmd_brief_init_voice()
 int cmd_brief_check_stage_done()
 {
 	if (!Voice_good_to_go)
+		return 0;
+
+	if (Cmd_brief_paused)
 		return 0;
 
 	if (Voice_ended_time && (timer_get_milliseconds() - Voice_ended_time >= 1000))
@@ -613,6 +626,52 @@ void cmd_brief_hold()
 void cmd_brief_unhold()
 {
 	cmd_brief_new_stage(Cur_stage);
+}
+
+extern int Briefing_music_handle;
+
+void cmd_brief_pause()
+{
+	if (Cmd_brief_paused)
+		return;
+
+	Cmd_brief_paused = 1;
+
+	if (Cur_anim_instance != NULL) {
+		anim_pause(Cur_anim_instance);
+	}
+
+	if (Cmd_brief_last_voice >= 0) {
+		audiostream_pause(Cmd_brief_last_voice);
+	}
+
+	if (Briefing_music_handle >= 0) {
+		audiostream_pause(Briefing_music_handle);
+	}
+
+	fsspeech_pause(true);
+}
+
+void cmd_brief_unpause()
+{
+	if (!Cmd_brief_paused)
+		return;
+
+	Cmd_brief_paused = 0;
+
+	if (Cur_anim_instance != NULL) {
+		anim_unpause(Cur_anim_instance);
+	}
+
+	if (Cmd_brief_last_voice >= 0) {
+		audiostream_unpause(Cmd_brief_last_voice);
+	}
+
+	if (Briefing_music_handle >= 0) {
+		audiostream_unpause(Briefing_music_handle);
+	}
+
+	fsspeech_pause(false);
 }
 
 void cmd_brief_button_pressed(int n)
@@ -840,6 +899,7 @@ void cmd_brief_init(int team)
 	cmd_brief_init_voice();
 	Cur_anim_instance = NULL;
 	cmd_brief_new_stage(0);
+	Cmd_brief_paused = 0;
 	Cmd_brief_inited = 1;
 
 //#endif

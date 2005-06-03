@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-05-12 17:49:14 $
+ * $Revision: 2.34 $
+ * $Date: 2005-06-03 06:39:26 $
  * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/05/12 17:49:14  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.32  2005/05/08 20:25:04  wmcoolmon
  * Dynamically allocated medals
  *
@@ -807,6 +811,8 @@ static int Debrief_voices[MAX_DEBRIEF_STAGES];
 static int Debrief_cue_voice;					// timestamp to cue the playback of the voice
 static int Debrief_first_voice_flag = 1;	// used to delay the first voice playback extra long
 
+static int Debriefing_paused = 0;
+
 // pointer used for getting to debriefing information
 debriefing	Traitor_debriefing;				// used when player is a traitor
 
@@ -1084,6 +1090,45 @@ void debrief_voice_stop()
 	fsspeech_stop();
 }
 
+extern int Briefing_music_handle;
+
+void debrief_pause()
+{
+	if (Debriefing_paused)
+		return;
+
+	Debriefing_paused = 1;
+
+	if (Briefing_music_handle >= 0) {
+		audiostream_pause(Briefing_music_handle);
+	}
+
+	if ((Stage_voice < 0) || (Stage_voice > Num_debrief_stages) || (Debrief_voices[Stage_voice] < 0))
+		return;
+
+	audiostream_pause(Debrief_voices[Stage_voice]);
+
+	fsspeech_pause(true);
+}
+
+void debrief_unpause()
+{
+	if (!Debriefing_paused)
+		return;
+
+	Debriefing_paused = 1;
+
+	if (Briefing_music_handle >= 0) {
+		audiostream_unpause(Briefing_music_handle);
+	}
+
+	if ((Stage_voice < 0) || (Stage_voice > Num_debrief_stages) || (Debrief_voices[Stage_voice] < 0))
+		return;
+
+	audiostream_unpause(Debrief_voices[Stage_voice]);
+
+	fsspeech_pause(false);
+}
 
 #ifndef NO_NETWORK
 // function to deal with inserting possible promition and badge stages into the debriefing
@@ -2369,11 +2414,13 @@ void debrief_text_init()
 				Text[Num_text_lines++] = NULL;  // add a blank line between stages
 
 			src = Debrief_stages[i]->new_text;
-			if (src)
+
+			if (src) {
 				debrief_text_stage_init(src, TEXT_TYPE_NORMAL);
 
-			if(use_sim_speech) {
-				fsspeech_stuff_buffer(src);
+				if (use_sim_speech && !Recommend_active) {
+					fsspeech_stuff_buffer(src);
+				}
 			}
 
 			if (Recommend_active) {
@@ -2385,6 +2432,10 @@ void debrief_text_init()
 					Text[Num_text_lines++] = NULL;
 					debrief_text_stage_init(src, TEXT_TYPE_RECOMMENDATION);
 					r_count++;
+
+					if (use_sim_speech) {
+						fsspeech_stuff_buffer(src);
+					}
 				}
 			}
 		}
@@ -2790,6 +2841,8 @@ void debrief_close()
 		Debrief_stats_kills = NULL;
 	}
 	game_flush();
+
+	Debriefing_paused = 0;
 
 	Debrief_inited = 0;
 }

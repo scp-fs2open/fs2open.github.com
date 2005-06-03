@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.h $
- * $Revision: 2.3 $
- * $Date: 2005-01-31 23:27:54 $
+ * $Revision: 2.4 $
+ * $Date: 2005-06-03 06:39:26 $
  * $Author: taylor $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.2  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -64,6 +67,10 @@
  *
  * $NoKeywords: $
  */
+
+#ifndef __MISSIONCMDBRIEF_H__
+#define __MISSIONCMDBRIEF_H__
+
 #include "PreProcDefines.h"
 #define CMD_BRIEF_TEXT_MAX		16384
 #define CMD_BRIEF_STAGES_MAX	10
@@ -97,3 +104,8 @@ void cmd_brief_close();
 void cmd_brief_do_frame(float frametime);
 void cmd_brief_hold();
 void cmd_brief_unhold();
+
+void cmd_brief_pause();
+void cmd_brief_unpause();
+
+#endif // __MISSIONCMDBRIEF_H__

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-05-26 04:28:45 $
+ * $Revision: 2.20 $
+ * $Date: 2005-06-03 06:39:26 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/05/26 04:28:45  taylor
+ * if we switch to a pilot who has a campaign that isn't available then abort the read and
+ *   deselect all pilots, should prevent data loss or crashes due to the missing safety check
+ *
  * Revision 2.18  2005/03/27 06:12:38  taylor
  * some pilot file fixing when going between multi and single (partial fix)
  *
@@ -1056,6 +1060,9 @@ void barracks_init_player_stuff(int mode)
 		char old_pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
 		char *old_pilots[MAX_PILOTS];
 
+		Game_mode &= ~GM_MULTIPLAYER;
+		Game_mode |= GM_NORMAL;
+
 		Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
 		old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
@@ -1081,6 +1088,9 @@ void barracks_init_player_stuff(int mode)
 	}
 	// multiplayer specific stuff
 	else {
+		Game_mode &= ~GM_NORMAL;
+		Game_mode |= GM_MULTIPLAYER;
+
 		Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
 		// enable squad logo switching
