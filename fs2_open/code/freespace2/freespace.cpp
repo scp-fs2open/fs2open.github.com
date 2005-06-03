@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.153 $
- * $Date: 2005-05-30 05:30:02 $
- * $Author: taylor $
+ * $Revision: 2.154 $
+ * $Date: 2005-06-03 02:28:54 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.153  2005/05/30 05:30:02  taylor
+ * make sure we stop mission in the redalert case too
+ *
  * Revision 2.152  2005/05/15 21:40:31  phreak
  * custom loading screen fixage.
  *
@@ -2786,6 +2789,7 @@ DCF_BOOL( show_waypoints, Show_waypoints )
 DCF_BOOL( show_area_effect, Show_area_effect )
 DCF_BOOL( show_net_stats, Show_net_stats )
 DCF_BOOL( log, Log_debug_output_to_file )
+extern int Training_message_method;
 DCF_BOOL( training_msg_method, Training_message_method )
 DCF_BOOL( show_player_pos, Show_player_pos )
 DCF_BOOL(i_framerate, Interface_framerate )
