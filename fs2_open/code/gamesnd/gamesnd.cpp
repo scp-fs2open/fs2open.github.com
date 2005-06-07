@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-06-01 09:35:42 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-06-07 06:34:30 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/06/01 09:35:42  taylor
+ * make sure that newly created entries are properly initialized
+ *
  * Revision 2.12  2005/05/12 17:49:11  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -518,7 +521,7 @@ void gamesnd_init_sounds()
 	if (Snds == NULL) {
 		Snds = (game_snd *) vm_malloc (sizeof(game_snd) * MIN_GAME_SOUNDS);
 		Verify( Snds != NULL );
-		Num_game_sounds += MIN_GAME_SOUNDS;
+		Num_game_sounds = MIN_GAME_SOUNDS;
 	}
 
 	// init the gameplay sounds
