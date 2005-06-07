@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.200 $
- * $Date: 2005-05-26 04:30:48 $
- * $Author: taylor $
+ * $Revision: 2.201 $
+ * $Date: 2005-06-07 06:10:51 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.200  2005/05/26 04:30:48  taylor
+ * don't page out textures in ship_delete() since it causes some slowdown which can make
+ *   the explosion effects skip/stutter
+ *
  * Revision 2.199  2005/05/12 17:45:53  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -13274,8 +13278,9 @@ int is_support_allowed(object *objp)
 	return 0;
 }
 
-// return ship index
-int ship_get_random_ship()
+// returns random index of a visible ship
+// if no visible ships are generated in num_ships iterations, it returns -1
+int ship_get_random_targetable_ship()
 {
 	int num_ships;
 	int rand_ship;
@@ -13283,24 +13288,32 @@ int ship_get_random_ship()
 	ship_obj *so;
 
 	// get the # of ships on the list
-	num_ships = ship_get_num_ships();
+		num_ships = ship_get_num_ships();
 
-	// get a random ship on the list
-	rand_ship = (int)frand_range(0.0f, (float)(num_ships - 1));
-	if(rand_ship < 0){
-		rand_ship = 0;
-	} 
-	if(rand_ship > num_ships){
-		rand_ship = num_ships;
+	//So we don't get an infinite loop
+	for(int i = 0; i < num_ships; i++)
+	{
+		// get a random ship on the list
+		rand_ship = (int)frand_range(0.0f, (float)(num_ships - 1));
+		if(rand_ship < 0){
+			rand_ship = 0;
+		} 
+		if(rand_ship > num_ships){
+			rand_ship = num_ships;
+		}
+
+		// find this guy
+		so = GET_FIRST(&Ship_obj_list);
+		for(idx=0; idx<rand_ship; idx++) {
+			so = GET_NEXT(so);
+		}
+
+		//Make sure this ship isn't non-targettable
+		if(!(Ships[Objects[so->objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS))
+			return Objects[so->objnum].instance;
 	}
 
-	// find this guy
-	so = GET_FIRST(&Ship_obj_list);
-	for(idx=0; idx<rand_ship; idx++) {
-		so = GET_NEXT(so);
-	}
-
-	return Objects[so->objnum].instance;
+	return -1;
 }
 
 // forcible jettison cargo from a ship

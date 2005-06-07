@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.93 $
- * $Date: 2005-05-08 20:21:48 $
+ * $Revision: 2.94 $
+ * $Date: 2005-06-07 06:10:51 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2005/05/08 20:21:48  wmcoolmon
+ * armor.tbl revamp
+ *
  * Revision 2.92  2005/04/25 00:31:14  wmcoolmon
  * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
  *
@@ -1814,7 +1817,7 @@ extern int ship_get_random_player_wing_ship( int flags = SHIP_GET_ANY_SHIP, floa
 extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist=0.0f, int get_first=0 );
 
 // return ship index
-int ship_get_random_ship();
+int ship_get_random_targetable_ship();
 
 extern int ship_get_by_signature(int signature);
 
