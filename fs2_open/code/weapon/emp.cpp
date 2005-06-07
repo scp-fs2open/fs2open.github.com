@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-06-07 06:10:51 $
+ * $Author: wmcoolmon $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.10  2005/03/02 21:24:48  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -647,7 +650,7 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 		case EG_ESCORT1: case EG_ESCORT2: case EG_ESCORT3:
 			// choose a random ship
 			int shipnum;
-			shipnum = ship_get_random_ship();
+			shipnum = ship_get_random_targetable_ship();
 			if(shipnum >= 0){
 				strcpy(wt->str, Ships[shipnum].ship_name);
 			}

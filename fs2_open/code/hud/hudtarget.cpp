@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-05-30 05:31:19 $
- * $Author: taylor $
+ * $Revision: 2.61 $
+ * $Date: 2005-06-07 06:10:50 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/05/30 05:31:19  taylor
+ * make sure we don't show various offscreen indicators and info when hud-disabled-except-messages is used
+ *
  * Revision 2.59  2005/04/28 05:29:29  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -6337,7 +6340,7 @@ void hud_target_random_ship()
 	int shipnum;
 	int objnum;
 
-	shipnum = ship_get_random_ship();
+	shipnum = ship_get_random_targetable_ship();
 	if((shipnum < 0) || (Ships[shipnum].objnum < 0)){
 		return;
 	}
