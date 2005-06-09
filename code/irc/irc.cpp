@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-05-02 15:33:17 $
+ * $Revision: 1.16 $
+ * $Date: 2005-06-09 14:57:38 $
  * $Author: mrduckman $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/05/02 15:33:17  mrduckman
+ * Added /NAMES command (Very needed to know who's in a channel :P)
+ *
  * Revision 1.14  2005/03/27 21:13:05  mrduckman
  * Syntax correction
  *
@@ -526,6 +529,11 @@ void irc_client::ParseForCommand(std::string UserInput)
 		//NAMES <#channel>
 		Names(parts[1]);
 	}
+	else if (StrIcmp(parts[0], "/list"))
+	{
+		//LIST (May take parameters, but I won't do pattern matching yet (mrduckman)
+		ListChan();
+	}
 	else if (StrIcmp(parts[0], "/raw"))
 	{
 		//RAW command
@@ -536,6 +544,13 @@ void irc_client::ParseForCommand(std::string UserInput)
 		// it's a message to the current channel
 		//if (NumChannels() >= 1)
 		//	PrivateMessage(channels[current_channel].GetName(), UserInput);
+		/* mrduckman (09/06/2005)
+
+		Here you should pass a privmsg to the chan and also print it in the UI
+		cmd is PRIVMSG <channel> :<text>
+		The ':' is the delimeter for PRIVMSG
+
+		*/				
 	}
 
 }
@@ -694,6 +709,14 @@ void irc_client::Names(std::string channel)
 	PutRaw(command);
 }
 
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+void irc_client::ListChan()
+//LIST [pattern|chan name, chan name], but not doing it with them yet 
+// 'cause I don't know C/C++ pattern matching (mrduckman)
+{
+	std::string command = "LIST";
+	PutRaw(command);
+}
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 
 void irc_client::PutRaw(std::string command)
