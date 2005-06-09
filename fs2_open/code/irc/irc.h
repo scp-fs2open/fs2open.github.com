@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.9 $
- * $Date: 2005-05-02 15:33:17 $
+ * $Revision: 1.10 $
+ * $Date: 2005-06-09 14:57:38 $
  * $Author: mrduckman $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/05/02 15:33:17  mrduckman
+ * Added /NAMES command (Very needed to know who's in a channel :P)
+ *
  * Revision 1.8  2005/03/27 21:06:31  mrduckman
  * Added /kill IRC Command
  *
@@ -171,6 +174,7 @@ class irc_client
 		void Kill(std::string nick, std::string message);
 		void UserHost(std::string target);
 		void Names(std::string channel);
+		void ListChan();
 
 
 
