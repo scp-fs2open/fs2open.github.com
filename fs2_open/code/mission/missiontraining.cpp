@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-05-26 05:07:19 $
+ * $Revision: 2.15 $
+ * $Date: 2005-06-16 05:17:31 $
  * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/05/26 05:07:19  Goober5000
+ * some bracket happiness, plus fixed the training message version of the crazy semicolon bug
+ * (thanks to taylor for fixing the regular message version)
+ * --Goober500
+ *
  * Revision 2.13  2005/05/23 05:55:13  taylor
  * more from Jens...
  *  - make sure that a frame number doesn't get carried over to non-animated weapon glows

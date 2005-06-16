@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.154 $
- * $Date: 2005-05-12 03:50:09 $
+ * $Revision: 2.155 $
+ * $Date: 2005-06-16 05:17:32 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.154  2005/05/12 03:50:09  Goober5000
+ * repeating messages with variables should work properly now
+ * --Goober5000
+ *
  * Revision 2.153  2005/05/11 09:28:32  Goober5000
  * fixed a few of karajorma's bugs
  * --Goober5000
@@ -1604,7 +1608,10 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	i = find_free_sexp();
 	Assert(i != Locked_sexp_true);
 	Assert(i != Locked_sexp_false);
-	if (i == MAX_SEXP_NODES){
+
+	// Goober5000 - ACK!! find_free_sexp() returns -1!!
+	if (i == MAX_SEXP_NODES || i == -1)
+	{
 		Error(LOCATION, "Out of sexp nodes!");
 		return -1;
 	}
