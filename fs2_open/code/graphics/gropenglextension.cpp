@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 1.9 $
+ * $Date: 2005-06-19 02:37:02 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 1.7  2005/04/13 23:24:21  phreak
  * Updated the message of a required extension that hasn't been found.
  * It was referencing the old Glide engine.
@@ -163,7 +167,7 @@ int opengl_get_extensions()
 			//some extensions do not have functions
 			if (cur->function_name==NULL)
 			{
-				mprintf(("found extension %s\n", cur->extension_name));
+				mprintf(("  Found extension \"%s\".\n", cur->extension_name));
 				cur->enabled=1;
 				num_found++;
 				continue;
@@ -177,27 +181,39 @@ int opengl_get_extensions()
 			if (cur->func_pointer)
 			{
 				cur->enabled=1;
-				mprintf(("found extension function: %s -- extension: %s\n", cur->function_name, cur->extension_name));
+				mprintf(("  Found extension \"%s\", and function \"%s()\".\n", cur->extension_name, cur->function_name));
 				num_found++;
 			}
 			else
 			{
-				mprintf(("found extension, but not function: %s -- extension:%s\n", cur->function_name, cur->extension_name));
+				mprintf(("  Found extension \"%s\", but not function \"%s()\".\n", cur->extension_name, cur->function_name));
+
+				if (cur->required_to_run)
+				{
+#ifdef _WIN32
+				Error(__FILE__, __LINE__, "The required OpenGL extension '%s' is not fully supported by your current driver version or graphics card.  You can either use the Direct3D rendering engine (non-FRED builds only) or update your video card drivers.\n\n", cur->extension_name);
+#else
+				Error(__FILE__, __LINE__, "The required OpenGL extension '%s' is not fully supported by your current driver version or graphics card.\n", cur->extension_name);
+#endif
+				}
 			}
 		}
 		else
 		{
-			mprintf(("did not find extension: %s\n", cur->extension_name));
+			mprintf(("  Unable to find extension \"%s\".\n", cur->extension_name));
 			if (cur->required_to_run)
 			{
 #ifdef _WIN32
-				Error(__FILE__,__LINE__,"The required OpenGL extension '%s' is not supported by your graphics card.  You can either use the Direct3D rendering engine (non-FRED builds only) or update your video card drivers.\n\n",cur->extension_name);
+				Error(__FILE__, __LINE__, "The required OpenGL extension '%s' is not supported by your current driver version or graphics card.  You can either use the Direct3D rendering engine (non-FRED builds only) or update your video card drivers.\n\n", cur->extension_name);
 #else
-				Error(__FILE__,__LINE__,"The required OpenGL extension '%s' is not supported by your graphics card.\n",cur->extension_name);
+				Error(__FILE__, __LINE__, "The required OpenGL extension '%s' is not supported by your current driver version or graphics card.\n", cur->extension_name);
 #endif
 			}
 		}
 	}
+
+	mprintf(( "\n" ));
+
 	return num_found;
 }
 

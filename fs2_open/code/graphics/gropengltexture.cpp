@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.23 $
- * $Date: 2005-06-03 06:44:17 $
+ * $Revision: 1.24 $
+ * $Date: 2005-06-19 02:37:02 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2005/06/03 06:44:17  taylor
+ * cleanup of gr_bitmap since it's the same for D3D and OGL, skip if GR_STUB though
+ * fix resize/rendering issue when detail culling is used with optimized opengl_create_texture_sub()
+ *
  * Revision 1.22  2005/06/01 09:37:44  taylor
  * little cleanup
  * optimize opengl_create_texture_sub() by not doing any extra image processing if we don't have to
@@ -293,9 +297,7 @@ void opengl_tcache_init (int use_sections)
 	
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &GL_max_texture_width);
 
-	GL_max_texture_height=GL_max_texture_width;
-
-	mprintf(("max texture size is: %dx%d\n", GL_max_texture_width,GL_max_texture_height));
+	GL_max_texture_height = GL_max_texture_width;
 
 	// if we are not using sections then make sure we have the min texture size available to us
 	// 1024 is what we need with the standard resolutions - taylor
@@ -800,6 +802,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 					flags |= BMP_TEX_DXT5;
 					break;
 				default:
+					Assert( 0 );
 					break;
 			}
 			break;
@@ -898,7 +901,7 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 
 	opengl_set_max_anistropy();
 
-		 if((t->bitmap_id < 0) || (bitmap_id != t->bitmap_id)){
+	if ((t->bitmap_id < 0) || (bitmap_id != t->bitmap_id)) {
 		ret_val = opengl_create_texture( bitmap_id, bitmap_type, t, fail_on_full );
 	}
 
@@ -925,8 +928,6 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 //extern int bm_get_cache_slot( int bitmap_id, int separate_ani_frames );
 int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage)
 {
-	//int r1=0,r2=1,r3=1;
-
 	if (bitmap_id < 0)
 	{
 		GL_last_bitmap_id = -1;
@@ -942,61 +943,6 @@ int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *
 	opengl_switch_arb(stage, 1);
 
 	return gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, stage);
-
-/*
-	r1=gr_opengl_tcache_set_internal(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, 0);
-
-	if (Interp_multitex_cloakmap>0)
-	{
-		// no point in using glow or spec maps when this is on so make sure they are off
-		GLOWMAP = -1;
-		SPECMAP = -1;
-
-		opengl_switch_arb(1,1);
-
-		glActiveTextureARB(GL_TEXTURE1_ARB);
-		gr_opengl_set_additive_tex_env();
-
-		r2=gr_opengl_tcache_set_internal(Interp_multitex_cloakmap, bm_get_tcache_type(Interp_multitex_cloakmap), u_scale, v_scale, fail_on_full, sx, sy, force, 1);
-
-		r3=1;
-		opengl_switch_arb(2,0);
-	}
-
-	if ((GLOWMAP >= 0) && !Cmdline_noglow)
-	{
-		opengl_switch_arb(1,1);
-	
-		//set the glowmap stuff
-		glActiveTextureARB(GL_TEXTURE1_ARB);
-		gr_opengl_set_additive_tex_env();
-
-		r2=gr_opengl_tcache_set_internal(GLOWMAP, bm_get_tcache_type(GLOWMAP), u_scale, v_scale, fail_on_full, sx, sy, force, 1);
-	}
-	else
-	{
-		opengl_switch_arb(1,0);
-		r2=1;		
-	}
-
-//	if ((SPECMAP > -1) && !Cmdline_nospec && (GL_supported_texture_units > 2))
-	if (0)
-	{
-		opengl_switch_arb(2,1);
-
-		glActiveTextureARB(GL_TEXTURE2_ARB);
-		// tex env thingy - batteries not included
-
-		r3=gr_opengl_tcache_set_internal(SPECMAP, bm_get_tcache_type(SPECMAP), u_scale, v_scale, fail_on_full, sx, sy, force, 2);
-	}
-	else
-	{
-		opengl_switch_arb(2,0);
-		r3=1;
-	}
-
-	return ((r1) && (r2) && (r3));
-*/
 }
 
 void gr_opengl_preload_init()

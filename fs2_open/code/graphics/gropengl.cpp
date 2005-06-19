@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.122 $
- * $Date: 2005-06-03 06:51:50 $
+ * $Revision: 2.123 $
+ * $Date: 2005-06-19 02:37:02 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2005/06/03 06:51:50  taylor
+ * the problem this tried to fix should be properly fixed now but I keep forgetting to remove this block
+ *
  * Revision 2.121  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1173,35 +1176,19 @@ void gr_opengl_flip()
 	
 	Gr_opengl_mouse_saved = 0;
 	
-	if ( mouse_is_visible() )       {
+	if ( mouse_is_visible() ) {
 		int mx, my;
-		
-	 	gr_reset_clip();
-	 	mouse_get_pos( &mx, &my );
-	 	
-	 	gr_opengl_save_mouse_area(mx,my,GL_mouse_saved_size,GL_mouse_saved_size);
-	 	
-	 	if ( Gr_cursor == -1 )  {
-	 		// stuff
-	 	} else {
-	 		gr_set_bitmap(Gr_cursor);
-			gr_bitmap( mx, my, false);
-	 	}
-	 }
-	 
-#ifndef NDEBUG
-	GLenum error = glGetError();
-	int ic = 0;
-	do {
-		error = glGetError();
-		
-		if (error != GL_NO_ERROR) {
-			mprintf(("!!DEBUG!! OpenGL Error: %s (%d this frame)\n", gluErrorString(error), ic));
-		}
-		ic++;
-	} while (error != GL_NO_ERROR);
 
-#endif
+		gr_reset_clip();
+		mouse_get_pos( &mx, &my );
+
+		gr_opengl_save_mouse_area(mx, my, GL_mouse_saved_size, GL_mouse_saved_size);
+
+		if ( Gr_cursor != -1 ) {
+			gr_set_bitmap(Gr_cursor);
+			gr_bitmap( mx, my, false);
+		}
+	}
 
 	TIMERBAR_END_FRAME();
 	TIMERBAR_START_FRAME();
@@ -1220,20 +1207,26 @@ void gr_opengl_flip()
 	SDL_GL_SwapBuffers();
 #endif
 
-	opengl_tcache_frame ();
-	
-	int cnt = GL_activate;
-	if ( cnt )      {
-		GL_activate-=cnt;
+	opengl_tcache_frame();
+
+	if ( GL_activate )      {
+		GL_activate = 0;
 		opengl_tcache_flush();
-		// gr_opengl_clip_cursor(1); /* mouse grab, see opengl_activate */
+		// gr_opengl_clip_cursor(1); // mouse grab, see opengl_activate
 	}
 	
-	cnt = GL_deactivate;
-	if ( cnt )      {
-		GL_deactivate-=cnt;
-		// gr_opengl_clip_cursor(0);  /* mouse grab, see opengl_activate */
+	if ( GL_deactivate )      {
+		GL_deactivate = 0;
+		// gr_opengl_clip_cursor(0);  // mouse grab, see opengl_activate
 	}
+
+#ifndef NDEBUG
+	int ic = opengl_check_for_errors();
+
+	if (ic) {
+		mprintf(("!!DEBUG!! OpenGL Errors this frame: %i\n", ic));
+	}
+#endif
 }
 
 void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
@@ -1475,10 +1468,8 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 
 	if ( gr_screen.current_color.is_alphacolor )	{
 		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue,gr_screen.current_color.alpha);
-		//glColor3ub(255,255,255);
 	} else {
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-		//glColor3ub(255,255,255);
 	}
 
 	glSecondaryColor3ubvEXT(GL_zero_3ub);
@@ -2572,10 +2563,10 @@ void gr_opengl_init_alphacolor( color *clr, int r, int g, int b, int alpha, int 
 	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
 	if ( alpha < 0 ) alpha = 0; else if ( alpha > 255 ) alpha = 255;
 
-        gr_opengl_init_color( clr, r, g, b );
+	gr_opengl_init_color( clr, r, g, b );
 
-        clr->alpha = (unsigned char)alpha;
-        clr->ac_type = (ubyte)type;
+	clr->alpha = (ubyte)alpha;
+	clr->ac_type = (ubyte)type;
 	clr->alphacolor = -1;
 	clr->is_alphacolor = 1;
 }
@@ -2863,7 +2854,7 @@ void gr_opengl_zbuffer_clear(int mode)
 // copied out of grd3d.cpp
 inline WORD ogl_ramp_val(uint i, float recip_gamma, int scale = 65535)
 {
-    return static_cast<WORD>(scale*pow(i/255.0f, recip_gamma));
+    return static_cast<WORD>(scale*pow(i/255.0f, 1.0f/recip_gamma));
 }
 
 void gr_opengl_set_gamma(float gamma)
@@ -3026,22 +3017,29 @@ int gr_opengl_save_screen()
 		mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
  		return -1;
  	}
-	
+
+	glDisable(GL_TEXTURE_2D);
+
 #ifdef _WIN32
 	glReadBuffer(GL_FRONT);
 #else
 	glReadBuffer(GL_BACK);
 #endif
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, fmt, opengl_screen_tmp);
-   
+
+	glEnable(GL_TEXTURE_2D);
+
 	sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w*gr_screen.max_h*gr_screen.bytes_per_pixel];
 	dptr = (ubyte *)GL_saved_screen;
 
+	int width_times_pixel = (gr_screen.max_w * gr_screen.bytes_per_pixel);
+	int mouse_times_pixel = (GL_mouse_saved_size * gr_screen.bytes_per_pixel);
+
 	for (int j = 0; j < gr_screen.max_h; j++)
 	{
-		sptr -= gr_screen.max_w*gr_screen.bytes_per_pixel;
-		memcpy(dptr, sptr, gr_screen.max_w*gr_screen.bytes_per_pixel);
-		dptr += gr_screen.max_w*gr_screen.bytes_per_pixel;
+		sptr -= width_times_pixel;
+		memcpy(dptr, sptr, width_times_pixel);
+		dptr += width_times_pixel;
 	}
         
 	vm_free(opengl_screen_tmp);
@@ -3053,9 +3051,9 @@ int gr_opengl_save_screen()
 
 		for (int i = 0; i < GL_mouse_saved_size; i++)
 		{
-			memcpy(dptr, sptr, GL_mouse_saved_size * gr_screen.bytes_per_pixel);
-			sptr += GL_mouse_saved_size * gr_screen.bytes_per_pixel;
-			dptr -= gr_screen.max_w * gr_screen.bytes_per_pixel;
+			memcpy(dptr, sptr, mouse_times_pixel);
+			sptr += mouse_times_pixel;
+			dptr -= width_times_pixel;
 		}
 	}
 
@@ -3495,6 +3493,22 @@ void gr_opengl_draw_line_list(colored_vector *lines, int num)
 		return;
 }
 
+int opengl_check_for_errors()
+{
+	int ec = 0, error = GL_NO_ERROR;
+
+	do {
+		error = glGetError();
+		
+		if (error != GL_NO_ERROR) {
+			nprintf(("OpenGL", "!!ERROR!!: %s\n", gluErrorString(error)));
+			ec++;
+		}
+	} while (error != GL_NO_ERROR);
+
+	return ec;
+}
+
 void gr_opengl_close()
 {
 	if (currently_enabled_lights != NULL) {
@@ -3800,18 +3814,20 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 #ifdef _WIN32
 	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
 
-	pfd.nSize=sizeof(PIXELFORMATDESCRIPTOR);
-	pfd.nVersion=1;
-	pfd.cColorBits=(ubyte)bpp;
-	pfd.dwFlags=PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.cDepthBits=24;
-	pfd.iPixelType=PFD_TYPE_RGBA;
-	pfd.cRedBits=(ubyte)Gr_red.bits;
-	pfd.cRedShift=(ubyte)Gr_red.shift;
-	pfd.cBlueBits=(ubyte)Gr_blue.bits;
-	pfd.cBlueShift=(ubyte)Gr_blue.shift;
-	pfd.cGreenBits=(ubyte)Gr_green.bits;
-	pfd.cGreenShift=(ubyte)Gr_green.shift;
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.cColorBits = (bpp == 16) ? 16 : 24;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.cDepthBits = (bpp == 16) ? 16 : 32;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cRedBits = (ubyte)Gr_red.bits;
+	pfd.cRedShift = (ubyte)Gr_red.shift;
+	pfd.cBlueBits = (ubyte)Gr_blue.bits;
+	pfd.cBlueShift = (ubyte)Gr_blue.shift;
+	pfd.cGreenBits = (ubyte)Gr_green.bits;
+	pfd.cGreenShift = (ubyte)Gr_green.shift;
+	pfd.cAlphaBits = (ubyte)Gr_alpha.bits;
+	pfd.cAlphaShift = (ubyte)Gr_alpha.shift;
 
 
 	int PixelFormat;
@@ -3898,7 +3914,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	sscanf(ver, "%d.%d", &major, &minor);
 
 	if ( (major <= REQUIRED_GL_MAJOR_VERSION) && (minor < REQUIRED_GL_MINOR_VERSION) ) {
-		Error(LOCATION,"Current GL Version of %i.%i is less than required version of %i.%i\nSwitch video modes or update drivers", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
+		Error(LOCATION,"Current GL Version of %i.%i is less than the required version of %i.%i\nSwitch video modes or update your drivers.", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
 	}
 
 	OGL_enabled = 1;
@@ -3906,10 +3922,10 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	{
 		mprintf(("OPENGL INITED!\n"));
 		mprintf(("\n"));
-		mprintf(( "Vendor     : %s\n", glGetString( GL_VENDOR ) ));
-		mprintf(( "Renderer   : %s\n", glGetString( GL_RENDERER ) ));
-		mprintf(( "Version    : %s\n", ver ));
-		mprintf(( "Extensions : \n" ));
+		mprintf(( "  Vendor     : %s\n", glGetString( GL_VENDOR ) ));
+		mprintf(( "  Renderer   : %s\n", glGetString( GL_RENDERER ) ));
+		mprintf(( "  Version    : %s\n", ver ));
+		mprintf(( "  Extensions : \n" ));
 
 		//print out extensions
 		OGL_extensions=(const char*)glGetString(GL_EXTENSIONS);
@@ -3927,13 +3943,14 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 			while (curext)
 			{
-				mprintf(( "    %s\n", curext ));
+				mprintf(( "      %s\n", curext ));
 				curext=strtok(NULL, " ");
 			}
 
 			vm_free(extlist);
 			extlist = NULL;
 		}
+		mprintf(("\n"));
 	}
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
@@ -4033,6 +4050,9 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &GL_supported_texture_units);
 
+	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
+	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
+
 	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled) {
 		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_arb;
 	} else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled) {
@@ -4046,8 +4066,12 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	glDisable(GL_LIGHTING); //making sure of it
 
-	/*extern void gr_opengl_setup_env();
-	gr_opengl_setup_env();*/
+	mprintf(( "  Max texture units: %i\n", GL_supported_texture_units ));
+	mprintf(( "  Max elements vertices: %i\n", GL_max_elements_vertices ));
+	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));
+	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
+	mprintf(( "  Texture compression enabled: %s\n", Texture_compression_enabled ? NOX("YES") : NOX("NO") ));
+	mprintf(( "\n" ));
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;

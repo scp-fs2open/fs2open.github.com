@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.9 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.10 $
+ * $Date: 2005-06-19 02:37:02 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.8  2005/03/24 23:42:21  taylor
  * s/gr_ogl_/gr_opengl_/g
  * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
@@ -119,6 +132,7 @@ void gr_opengl_bitmap(int x, int y);
 void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy);
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0 );
 void opengl_reset_spec_mapping();
+int opengl_check_for_errors();
 
 extern int VBO_ENABLED;
 
