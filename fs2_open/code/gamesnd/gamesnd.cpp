@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-06-07 06:34:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2005-06-19 02:29:54 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/06/07 06:34:30  wmcoolmon
+ * Hopefully this fixes something :)
+ *
  * Revision 2.13  2005/06/01 09:35:42  taylor
  * make sure that newly created entries are properly initialized
  *
@@ -532,7 +535,7 @@ void gamesnd_init_sounds()
 	if (Snds_iface == NULL) {
 		Snds_iface = (game_snd *) vm_malloc (sizeof(game_snd) * MIN_INTERFACE_SOUNDS);
 		Verify( Snds_iface != NULL );
-		Num_iface_sounds += MIN_INTERFACE_SOUNDS;
+		Num_iface_sounds = MIN_INTERFACE_SOUNDS;
 
 		Assert( Snds_iface_handle == NULL );
 		Snds_iface_handle = (int *) vm_malloc (sizeof(int) * Num_iface_sounds);
