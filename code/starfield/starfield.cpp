@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-04-12 05:26:37 $
+ * $Revision: 2.54 $
+ * $Date: 2005-06-19 09:03:05 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/04/12 05:26:37  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.52  2005/04/11 05:50:36  taylor
  * some limits.h fixes to make GCC happier
  * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
@@ -563,8 +567,8 @@ void stars_load_debris()
 
 poly_list perspective_bitmap_list;
 int perspective_bitmap_buffer = -1;
-//alocates the poly list for the current decal list
-void perspective_bitmap_alocate_poly_list(int x, int y){
+//allocates the poly list for the current decal list
+void perspective_bitmap_allocate_poly_list(int x, int y){
 	perspective_bitmap_list.allocate(x*y*6);
 }
 
