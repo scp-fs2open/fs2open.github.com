@@ -29,6 +29,8 @@
 
 const int MAX_SPEECH_BUFFER_LEN = 4096;
 
+static int speech_inited = 0;
+
 bool FSSpeech_play_from[FSSPEECH_FROM_MAX];
 char *FSSpeech_play_id[FSSPEECH_FROM_MAX] =
 {
@@ -42,6 +44,15 @@ int  Speech_buffer_len;
 
 bool fsspeech_init()
 {
+	if (speech_inited) {
+		return true;
+	}
+
+	// if sound is disabled from the cmdline line then don't do speech either
+	if (Cmdline_freespace_no_sound) {
+		return false;
+	}
+
 	if(speech_init() == false) {
 		return false;
 	}
@@ -58,16 +69,26 @@ bool fsspeech_init()
 	int voice = os_config_read_uint(NULL, "SpeechVoice", 0);
 	speech_set_voice(voice);
 
+	speech_inited = 1;
+
 	return true;
 }
 
 void fsspeech_deinit()
 {
+	if (!speech_inited)
+		return;
+
 	speech_deinit();
+
+	speech_inited = 0;
 }
 
 void fsspeech_play(int type, char *text)
 {
+	if (!speech_inited)
+		return;
+
 	if(type >= FSSPEECH_FROM_MAX) return;
 
 	if(type >= 0 && FSSpeech_play_from[type] == false) return;
@@ -77,11 +98,17 @@ void fsspeech_play(int type, char *text)
 
 void fsspeech_stop()
 {
+	if (!speech_inited)
+		return;
+
 	speech_stop();
 }
 
 void fsspeech_pause(bool playing)
 {
+	if (!speech_inited)
+		return;
+
 	if(playing) {
 		speech_pause();
 	} else {
@@ -97,6 +124,9 @@ void fsspeech_start_buffer()
 
 void fsspeech_stuff_buffer(char *text)
 {
+	if (!speech_inited)
+		return;
+
 	int len = strlen(text);
 
 	if(Speech_buffer_len + len < MAX_SPEECH_BUFFER_LEN) {
@@ -108,6 +138,9 @@ void fsspeech_stuff_buffer(char *text)
 
 void fsspeech_play_buffer(int type)
 {
+	if (!speech_inited)
+		return;
+
 	fsspeech_play(type, Speech_buffer);
 }
 
