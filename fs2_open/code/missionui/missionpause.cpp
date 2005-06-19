@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-25 06:57:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-06-19 02:38:33 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.10  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -342,8 +345,9 @@ void pause_close(int multi)
 			Pause_saved_screen = -1;
 		}
 
-		if (Pause_background_bitmap){
+		if (Pause_background_bitmap != -1){
 			bm_release(Pause_background_bitmap);
+			Pause_background_bitmap = -1;
 		}
 
 		Pause_win.destroy();		
