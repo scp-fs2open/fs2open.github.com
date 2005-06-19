@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.83 $
- * $Date: 2005-06-03 16:42:30 $
- * $Author: matt $
+ * $Revision: 2.84 $
+ * $Date: 2005-06-19 02:31:50 $
+ * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2005/06/03 16:42:30  matt
+ * D3D gamma now no longer works backwards --Sticks
+ *
  * Revision 2.82  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1542,10 +1545,8 @@ int gr_d3d_save_screen()
 	if(!GlobalD3DVars::D3D_activate) return -1;
 	gr_reset_clip();
 
-	// Lets not bother with this if its a window or it causes a debug DX8 error
-	if(GlobalD3DVars::D3D_window == true) {
-		return 0;
-	}
+	if (GlobalD3DVars::lpD3D == NULL)
+		return -1;
 
 	if ( Gr_saved_surface )	{
 		mprintf(( "Screen alread saved!\n" ));
@@ -1553,11 +1554,21 @@ int gr_d3d_save_screen()
 	}
 
 	IDirect3DSurface8 *front_buffer_a8r8g8b8 = NULL;
+	D3DDISPLAYMODE mode;
+	mode.Width = mode.Height = 0;
 
+	// although this doesn't really matter in fullscreen mode it doesn't hurt either
+	if (FAILED(GlobalD3DVars::lpD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode)))
+	{
+		DBUGFILE_OUTPUT_0("Could not get adapter display mode");
+		return -1;
+	}
+
+	// we get the full mode size which for windowed mode is the entire screen and not just the window
 	// Problem that we can only get front buffer in A8R8G8B8
-	mprintf(("Creating surface for front buffer of size: %d %d",gr_screen.max_w, gr_screen.max_h));
+	mprintf(("Creating surface for front buffer of size: %d %d", mode.Width, mode.Height));
 	if(FAILED(GlobalD3DVars::lpD3DDevice->CreateImageSurface(
-		gr_screen.max_w, gr_screen.max_h, D3DFMT_A8R8G8B8, &front_buffer_a8r8g8b8))) {
+		mode.Width, mode.Height, D3DFMT_A8R8G8B8, &front_buffer_a8r8g8b8))) {
 
 		DBUGFILE_OUTPUT_0("Failed to create image surface");
 		return -1;
@@ -1597,7 +1608,26 @@ int gr_d3d_save_screen()
 
 	}
 
-	if(FAILED(front_buffer_a8r8g8b8->LockRect(&src_rect, NULL, D3DLOCK_READONLY))) {
+	RECT rct;
+
+	if (GlobalD3DVars::D3D_window) {
+		POINT pnt;
+		pnt.x = pnt.y = 0;
+
+		HWND wnd = (HWND)os_get_window();
+		ClientToScreen(wnd, &pnt);
+
+		rct.left = pnt.x;
+		rct.top = pnt.y;
+		rct.right = pnt.x + gr_screen.max_w;
+		rct.bottom = pnt.y + gr_screen.max_h;
+	} else {
+		rct.left = rct.top = 0;
+		rct.right = gr_screen.max_w;
+		rct.bottom = gr_screen.max_h;
+	}
+
+	if(FAILED(front_buffer_a8r8g8b8->LockRect(&src_rect, &rct, D3DLOCK_READONLY))) {
 
 		DBUGFILE_OUTPUT_0("Failed to lock front buffer");
 		goto Failed;
