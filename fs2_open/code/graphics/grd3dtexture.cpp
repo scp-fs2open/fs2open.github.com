@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-06-19 02:31:51 $
+ * $Revision: 2.51 $
+ * $Date: 2005-06-19 09:04:40 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/06/19 02:31:51  taylor
+ * allow screenshots and backsaves in windowed mode
+ * account for D3D_textures_in size so that it doesn't hit negative values
+ *
  * Revision 2.49  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -685,7 +689,8 @@ bool d3d_free_texture( tcache_slot_d3d *t )
 			
 		t->bitmap_id = -1;
 		t->used_this_frame = 0;
-		D3D_textures_in -= t->size;		
+		D3D_textures_in -= t->size;
+		t->size = 0;
 	}
 
 	return true;
