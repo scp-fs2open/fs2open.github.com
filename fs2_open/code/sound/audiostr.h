@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 2.3 $
- * $Date: 2005-06-19 02:45:55 $
+ * $Revision: 2.4 $
+ * $Date: 2005-06-19 04:59:04 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/06/19 02:45:55  taylor
+ * OGG streaming fixes to get data reading right and avoid skipping
+ * properly handle seeking in OGG streams
+ * compiler warning fix in OpenAL builds
+ *
  * Revision 2.2  2005/01/18 01:14:17  wmcoolmon
  * OGG fixes, ship selection fixes
  *
@@ -113,7 +118,7 @@
 
 #ifndef NO_SOUND
 
-#ifdef STRHDL
+#ifdef NEED_STRHDL
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
