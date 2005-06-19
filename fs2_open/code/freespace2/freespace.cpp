@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.156 $
- * $Date: 2005-06-19 02:28:55 $
+ * $Revision: 2.157 $
+ * $Date: 2005-06-19 09:00:09 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.156  2005/06/19 02:28:55  taylor
+ * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
+ * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
+ * NaN check to catch shards-of-death and prevent hitting an Assert() (Jens Granseuer)
+ * fix jumpnode code to catch model errors and close a memory leak
+ * make the call to bm_unload_all() after model_free_all() since we will get bmpman screwups otherwise
+ * don't show hardware sound RAM when using OpenAL build, it will always be 0
+ * print top-right memory figures in debug builds slighly further over when 1024+ res
+ *
  * Revision 2.155  2005/06/03 06:39:25  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -8763,6 +8772,7 @@ void game_shutdown(void)
 	
 	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
+	particle_close();			// close out the particle system
 	ship_close();					// free any memory that was allocated for the ships
 	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
 	unload_animating_pointer();// frees the frames used for the animating mouse pointer

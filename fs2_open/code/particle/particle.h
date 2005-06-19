@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.h $
- * $Revision: 2.4 $
- * $Date: 2005-04-05 05:53:23 $
+ * $Revision: 2.5 $
+ * $Date: 2005-06-19 09:00:09 $
  * $Author: taylor $
  *
  * Includes for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.3  2004/08/11 05:06:32  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -102,6 +105,9 @@
 
 // Resets particle system.  Call between levels.
 void particle_init();
+
+// called at game exit to cleanup any used resources
+void particle_close();
 
 // Moves the particles for each frame
 void particle_move_all(float frametime);

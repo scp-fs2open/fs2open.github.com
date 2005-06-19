@@ -153,56 +153,92 @@ class geometry_batcher{
 }
 */
 
-void geometry_batcher::allocate_internal(int n_verts){
+void geometry_batcher::allocate_internal(int n_verts)
+{
 	//this is called to start a batch, you make sure you have enough memory 
 	//to store all the geometry, 
 	//then you clear out the memory and set the number of primitives to 0
-	if(n_verts>n_allocated){
-		if(vert)vm_free(vert);
-		if(vert_list)vm_free(vert_list);
-		vert = (vertex*)vm_malloc(sizeof(vertex)*n_verts);
+	if (n_verts > n_allocated) {
+		if (vert != NULL) {
+			vm_free(vert);
+			vert = NULL;
+		}
+
+		if (vert_list != NULL) {
+			vm_free(vert_list);
+			vert_list = NULL;
+		}
+
+		vert = (vertex*)vm_malloc(sizeof(vertex) * n_verts);
 		vert_list = (vertex**)vm_malloc(sizeof(vertex*)*n_verts);
-		for(int i = 0; i<n_verts; i++)vert_list[i] = &vert[i];
-		memset(vert,0,sizeof(vertex)*n_verts);
+
+		Verify( (vert != NULL) && (vert_list != NULL) );
+
+		for (int i = 0; i<n_verts; i++)
+			vert_list[i] = &vert[i];
+
+		memset(vert, 0, sizeof(vertex) * n_verts);
 		n_allocated = n_verts;
 	}
+
 	n_to_render = 0;
 }
 
-void geometry_batcher::allocate(int quad, int n_tri){
-	int to_aloc = 0;
-	to_aloc += quad*6;
+void geometry_batcher::allocate(int quad, int n_tri)
+{
+	int to_alloc = 0;
+
 	//quads have two triangles, therefore six verts
-	to_aloc += n_tri*3;
+	if (quad > 0 ) {
+		to_alloc += (quad * 6);
+	}
+
 	//a single triangle has a mere 3 verts
+	if ( n_tri > 0 ) {
+		to_alloc += (n_tri * 3);
+	}
 
-	allocate_internal(to_aloc);
-
+	allocate_internal(to_alloc);
 }
 
-void geometry_batcher::add_alocate(int quad, int n_tri){
-	int to_aloc = n_to_render*3;
-	to_aloc += quad*6;
+void geometry_batcher::add_allocate(int quad, int n_tri)
+{
+	int to_alloc = (n_to_render * 3);
+
 	//quads have two triangles, therefore six verts
-	to_aloc += n_tri*3;
+	if ( quad > 0 ) {
+		to_alloc += (quad * 6);
+	}
+
 	//a single triangle has a mere 3 verts
+	if (n_tri > 0) {
+		to_alloc += (n_tri * 3);
+	}
 
 	vertex* old_vert = vert;
 
-	if(to_aloc>n_allocated){
-		if(vert_list)vm_free(vert_list);
+	if (to_alloc > n_allocated) {
+		if (vert_list != NULL) {
+			vm_free(vert_list);
+			vert_list = NULL;
+		}
 
-		vert = (vertex*)vm_malloc(sizeof(vertex)*to_aloc);
-		vert_list = (vertex**)vm_malloc(sizeof(vertex*)*to_aloc);
+		vert = (vertex*)vm_malloc(sizeof(vertex)*to_alloc);
+		vert_list = (vertex**)vm_malloc(sizeof(vertex*)*to_alloc);
 
-		for(int i = 0; i<to_aloc; i++)vert_list[i] = &vert[i];
-		memset(vert,0,sizeof(vertex)*to_aloc);
+		Verify( (vert != NULL) && (vert_list != NULL) );
 
-		if(old_vert){
+		for (int i = 0; i<to_alloc; i++)
+			vert_list[i] = &vert[i];
+
+		memset(vert,0,sizeof(vertex)*to_alloc);
+
+		if (old_vert != NULL) {
 			memcpy(vert,old_vert,sizeof(vertex)*n_to_render*3);
 			vm_free(old_vert);
 		}
-		n_allocated = to_aloc;
+
+		n_allocated = to_alloc;
 	}
 }
 
@@ -528,9 +564,10 @@ float geometry_batcher::draw_laser(vec3d *p0,float width1,vec3d *p1,float width2
 
 void geometry_batcher::render(int flags){
 //	gr_set_cull(0);
-	if(n_to_render)
-	g3_draw_poly( n_to_render*3, vert_list, flags | TMAP_FLAG_TRILIST);
-	n_to_render = 0;
+	if (n_to_render) {
+		g3_draw_poly( n_to_render * 3, vert_list, flags | TMAP_FLAG_TRILIST);
+		n_to_render = 0;
+	}
 }
 
 
@@ -557,7 +594,7 @@ int find_good_batch_item(int texture){
 float add_laser(int texture, vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b){
 	geometry_batcher* item = &geometry_map[find_good_batch_item(texture)].batch;
 
-	item->add_alocate(1);
+	item->add_allocate(1);
 	return item->draw_laser(p0, width1, p1, width2, r,g,b);	
 
 	return 0;
