@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.70 $
- * $Date: 2005-06-19 02:28:56 $
+ * $Revision: 2.71 $
+ * $Date: 2005-06-19 02:42:21 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2005/06/19 02:28:56  taylor
+ * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
+ * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
+ * NaN check to catch shards-of-death and prevent hitting an Assert() (Jens Granseuer)
+ * fix jumpnode code to catch model errors and close a memory leak
+ * make the call to bm_unload_all() after model_free_all() since we will get bmpman screwups otherwise
+ * don't show hardware sound RAM when using OpenAL build, it will always be 0
+ * print top-right memory figures in debug builds slighly further over when 1024+ res
+ * IBX checks for size and make sure we don't try to use a zero byte file
+ * don't replicate base textures to specular textures since it screws up bmpman accounting
+ *
  * Revision 2.69  2005/06/03 18:18:02  taylor
  * some IBX debugging info to help determine if an IBX is corrupt post-mortem
  *

@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.117 $
- * $Date: 2005-06-19 02:28:55 $
+ * $Revision: 2.118 $
+ * $Date: 2005-06-19 02:42:21 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2005/06/19 02:28:55  taylor
+ * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
+ * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
+ * NaN check to catch shards-of-death and prevent hitting an Assert() (Jens Granseuer)
+ * fix jumpnode code to catch model errors and close a memory leak
+ * make the call to bm_unload_all() after model_free_all() since we will get bmpman screwups otherwise
+ * don't show hardware sound RAM when using OpenAL build, it will always be 0
+ * print top-right memory figures in debug builds slighly further over when 1024+ res
+ * IBX checks for size and make sure we don't try to use a zero byte file
+ * don't replicate base textures to specular textures since it screws up bmpman accounting
+ *
  * Revision 2.116  2005/05/12 17:49:14  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
