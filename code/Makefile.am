@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.18 2005-04-25 06:33:56 taylor Exp $
+## $Id: Makefile.am,v 1.19 2005-06-19 02:48:13 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -596,7 +596,6 @@ endif
 ## Unix-specific sources
 if FS2_OS_UNIX
 UNIX_SOURCES =	\
-	io/xmouse.cpp	\
 	osapi/osapi_unix.cpp	\
 	osapi/osapi.h	\
 	osapi/osregistry_unix.cpp	\
