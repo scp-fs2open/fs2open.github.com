@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 2.50 $
+ * $Date: 2005-06-19 02:31:51 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.48  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -1041,6 +1045,9 @@ int d3d_create_texture_sub(int bitmap_type, int texture_handle, int bpp, ushort 
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
 	D3D_textures_in_frame += t->size;
+	if (!reload) {
+		D3D_textures_in += t->size;
+	}
 
 	return 1;
 }

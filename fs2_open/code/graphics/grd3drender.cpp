@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.71 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.72 $
+ * $Date: 2005-06-19 02:31:50 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.70  2005/04/24 02:38:31  wmcoolmon
  * Moved gr_rect and gr_shade to be API-nonspecific as the OGL/D3D functions were virtually identical
  *
@@ -793,6 +806,7 @@
 #include <D3dx8tex.h>
 #include "graphics/2d.h"
 
+#include "osapi/osapi.h"
 
 // Viewport used to change render between full screen and sub sections like the pilot animations
 D3DVIEWPORT8 viewport;
@@ -3692,20 +3706,36 @@ void gr_d3d_print_screen(char *filename)
 {
 	IDirect3DSurface8 *pDestSurface = NULL;
 
+	if (GlobalD3DVars::lpD3D == NULL)
+		return;
+
+
+	D3DDISPLAYMODE mode;
+	mode.Width = mode.Height = 0;
+
+	// although this doesn't really matter in fullscreen mode it doesn't hurt either
+	if (FAILED(GlobalD3DVars::lpD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode)))
+	{
+		mprintf(("Could not get adapter display mode"));
+		return;
+	}
+
+	// we get the full mode size which for windowed mode is the entire screen and not just the window
 	if(FAILED(GlobalD3DVars::lpD3DDevice->CreateImageSurface(
-		gr_screen.max_w, gr_screen.max_h, D3DFMT_A8R8G8B8, &pDestSurface)))
+		mode.Width, mode.Height, D3DFMT_A8R8G8B8, &pDestSurface)))
 	{
 		mprintf(("Failed to create image surface"));
 		return;
 	}
 
-	
+
 	if(FAILED(GlobalD3DVars::lpD3DDevice->GetFrontBuffer(pDestSurface)))
 	{
 		pDestSurface->Release();
 		mprintf(("Failed to get front buffer"));
 		return;
 	}
+
 
 	char pic_name[MAX_PATH];
 	strcpy(pic_name, filename);
@@ -3727,75 +3757,92 @@ void gr_d3d_print_screen(char *filename)
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	BITMAPINFOHEADER bmih;
-    bmih.biSize = sizeof(bmih);
-    bmih.biWidth = gr_screen.max_w;
-    bmih.biHeight = gr_screen.max_h;
-    bmih.biPlanes = 1;
-    bmih.biBitCount = 24;
-    bmih.biCompression = BI_RGB;
-    bmih.biSizeImage = gr_screen.max_w * gr_screen.max_h * 3;
-    bmih.biXPelsPerMeter = 0;
-    bmih.biYPelsPerMeter = 0;
-    bmih.biClrUsed = 0;
-    bmih.biClrImportant = 0;
+	bmih.biSize = sizeof(bmih);
+	bmih.biWidth = gr_screen.max_w;
+	bmih.biHeight = gr_screen.max_h;
+	bmih.biPlanes = 1;
+	bmih.biBitCount = 24;
+	bmih.biCompression = BI_RGB;
+	bmih.biSizeImage = gr_screen.max_w * gr_screen.max_h * 3;
+	bmih.biXPelsPerMeter = 0;
+	bmih.biYPelsPerMeter = 0;
+	bmih.biClrUsed = 0;
+	bmih.biClrImportant = 0;
 
-    // reserve memory for the DIB's bitmap bits
-    // (The extra byte is needed because the bitmap is 24-bit but we're
-    // going to write 32 bits (a DWORD) at a time. When we write the
-    // last pixel, we'll exceed the array's limit if we don't reserve an
-    // extra byte.)
-    unsigned char *Bits = new unsigned char[bmih.biSizeImage + 1];
-    if (!Bits)
-    {
-        return;
-    }
+	// reserve memory for the DIB's bitmap bits
+	unsigned char *Bits = new unsigned char[bmih.biSizeImage];
+	if (!Bits)
+	{
+		return;
+	}
 
-    // lock the surface for reading
+	RECT rct;
+
+	if (GlobalD3DVars::D3D_window) {
+		POINT pnt;
+		pnt.x = pnt.y = 0;
+
+		HWND wnd = (HWND)os_get_window();
+		ClientToScreen(wnd, &pnt);
+
+		rct.left = pnt.x;
+		rct.top = pnt.y;
+		rct.right = pnt.x + gr_screen.max_w;
+		rct.bottom = pnt.y + gr_screen.max_h;
+	} else {
+		rct.left = rct.top = 0;
+		rct.right = gr_screen.max_w;
+		rct.bottom = gr_screen.max_h;
+	}
+
+	// lock the surface for reading
+	// if a window then only lock the portion of the surface that we want to access
     D3DLOCKED_RECT LockedRect;
-    if (FAILED(pDestSurface->LockRect(&LockedRect, NULL, D3DLOCK_READONLY)))
-    {
+	if (FAILED(pDestSurface->LockRect(&LockedRect, &rct, D3DLOCK_READONLY)))
+	{
 		if (Bits)
 			delete[] Bits;
 
-        return;
-    }
+		return;
+	}
 
-    // flip the bitmap vertically (because that's how DIBs are stored)
-    // and convert it from 32-bits to 24-bits (some bitmap viewers can't
-    // handle 32-bit bitmaps, although it's a valid format)
+	// flip the bitmap vertically (because that's how DIBs are stored)
+	// and convert it from 32-bits to 24-bits (some bitmap viewers can't
+	// handle 32-bit bitmaps, although it's a valid format)
 
-    LPDWORD lpSrc;
-    LPBYTE lpDest = Bits;
+	LPBYTE lpDest = Bits;
+	LPBYTE lpSrc;
 
-    // read pixels beginning with the bottom scan line
-    for (int y = gr_screen.max_h - 1; y >= 0; y--)
-    {
-        // calculate address of the current source scan line
-        lpSrc = reinterpret_cast<LPDWORD>(LockedRect.pBits) + y * gr_screen.max_w;
-        for (int x = 0; x < gr_screen.max_w; x++)
-        {
-            // store the source pixel in the bitmap bits array
-            *reinterpret_cast<LPDWORD>(lpDest) = *lpSrc;
-            lpSrc++;        // increment source pointer by 1 DWORD
-            lpDest += 3;    // increment destination pointer by 3 bytes
-        }
-    }
+	// read pixels beginning with the bottom scan line
+	for (int y = (gr_screen.max_h - 1); y >= 0; y--)
+	{
+		// calculate address of the current source scan line (can't use width here, must use pitch)
+		lpSrc = (LPBYTE)LockedRect.pBits + y * LockedRect.Pitch;
 
-    // we can unlock and release the surface
-    pDestSurface->UnlockRect();
+		for (int x = 0; x < gr_screen.max_w; x++)
+		{
+			// store the source pixels in the bitmap bits array, ignores the alpha bit on copy
+			memcpy(lpDest, lpSrc, 3);
+			lpSrc += 4; // have to move past the alpha bit too
+			lpDest += 3;
+		}
+	}
+
+	// we can unlock and release the surface
+	pDestSurface->UnlockRect();
 
 
-    // prepare the bitmap file header
-    BITMAPFILEHEADER bmfh;
-    bmfh.bfType = BITMAP_FILE_SIGNATURE;
-    bmfh.bfSize = sizeof(bmfh) + sizeof(bmih) + bmih.biSizeImage;
-    bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
-    bmfh.bfOffBits = sizeof(bmfh) + sizeof(bmih);
+	// prepare the bitmap file header
+	BITMAPFILEHEADER bmfh;
+	bmfh.bfType = BITMAP_FILE_SIGNATURE;
+	bmfh.bfSize = sizeof(bmfh) + sizeof(bmih) + bmih.biSizeImage;
+	bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
+	bmfh.bfOffBits = sizeof(bmfh) + sizeof(bmih);
 
-    // create the BMP file
-    FILE *f = fopen(pic_name, "wb");
-    if (f)
-    {
+	// create the BMP file
+	FILE *f = fopen(pic_name, "wb");
+	if (f)
+	{
 		// dump the file header
 		fwrite(reinterpret_cast<void*>(&bmfh), sizeof(bmfh), 1, f);
 		// dump the info header
@@ -3808,8 +3855,8 @@ void gr_d3d_print_screen(char *filename)
 	}
 
 
-    // free the memory for the bitmap bits
-    delete[] Bits;
+	// free the memory for the bitmap bits
+	delete[] Bits;
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	// End of code borrowed from Michael Fötsch.
