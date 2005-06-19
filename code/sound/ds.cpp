@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-06-02 01:56:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.30 $
+ * $Date: 2005-06-19 02:45:55 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/06/02 01:56:32  wmcoolmon
+ * Cast to quiet error
+ *
  * Revision 2.28  2005/06/01 09:41:14  taylor
  * bit of cleanup for audiostr-openal and fix a Windows-only enum error
  * bunch of OGG related fixes for Linux and Windows (DirectSound and OpenAL), fixes audio related TBP 3.2 crashes
@@ -3148,7 +3151,7 @@ void ds_set_pitch(int channel, int pitch)
 	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return );
 
 	if (status == AL_PLAYING) {
-		ALfloat alpitch = log10((float)pitch) - 2.0f;
+		ALfloat alpitch = log10f((float)pitch) - 2.0f;
 		OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_PITCH, alpitch) );
 	}
 #else
