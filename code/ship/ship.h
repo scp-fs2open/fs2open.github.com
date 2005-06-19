@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.94 $
- * $Date: 2005-06-07 06:10:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.95 $
+ * $Date: 2005-06-19 02:43:49 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2005/06/07 06:10:51  wmcoolmon
+ * This may stop targeting not-targetable ships in EMP
+ *
  * Revision 2.93  2005/05/08 20:21:48  wmcoolmon
  * armor.tbl revamp
  *
@@ -947,6 +950,9 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 #define SF2_NO_BANK							(1<<7)		// Goober5000 - ship doesn't bank when turning
 #define SF2_AFFECTED_BY_GRAVITY				(1<<8)		// Goober5000 - ship affected by gravity points
 #define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<9)		// Goober5000 - switch whether subsystems are scanned
+
+// If any of these bits in the ship->flags are set, ignore this ship when targetting
+extern int TARGET_SHIP_IGNORE_FLAGS;
 
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
