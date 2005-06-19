@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.29 $
+ * $Date: 2005-06-19 02:37:43 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.27  2005/03/03 06:05:29  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -1686,13 +1689,6 @@ void techroom_close()
 
 	// since we may be loading so much data that level loads don't work
 	// be sure sure to free all models and textures when we leave - taylor
-	for (i=0; i<Ship_list_size; i++) {
-		if (Ship_list[i].model_num > -1) {
-			model_page_out_textures( Ship_list[i].model_num );
-			Ship_list[i].model_num = -1;
-		}
-	}
-
 	model_free_all();
 
 	Ships_loaded = 0;
