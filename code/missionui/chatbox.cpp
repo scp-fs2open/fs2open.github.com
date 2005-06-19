@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-21 15:53:24 $
+ * $Revision: 2.9 $
+ * $Date: 2005-06-19 02:38:33 $
  * $Author: taylor $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/21 15:53:24  taylor
+ * make sure we don't try to process chatbox_close() more than once
+ *
  * Revision 2.7  2005/03/02 21:18:19  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -871,16 +874,13 @@ void chatbox_close()
 
 	// unload any bitmaps
 	if(Chatbox_small_bitmap != -1){
-		bm_release(Chatbox_small_bitmap);
-		Chatbox_small_bitmap = -1;
+		bm_unload(Chatbox_small_bitmap);
 	}
 	if(Chatbox_big_bitmap != -1){
-		bm_release(Chatbox_big_bitmap);
-		Chatbox_big_bitmap = -1;
+		bm_unload(Chatbox_big_bitmap);
 	}
 	if(Chatbox_mp_bitmap != -1){
-		bm_release(Chatbox_mp_bitmap);
-		Chatbox_mp_bitmap = -1;
+		bm_unload(Chatbox_mp_bitmap);
 	}	
 
 	// clear all the text lines in the
