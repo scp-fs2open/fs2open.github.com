@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-14 03:38:54 $
+ * $Revision: 2.12 $
+ * $Date: 2005-06-19 02:48:13 $
  * $Author: taylor $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/14 03:38:54  taylor
+ * fix for mouse cursor problem when running in a window
+ *
  * Revision 2.10  2005/03/03 16:18:19  taylor
  * lockup fixes, and it's Linux friendly too :)
  *
@@ -805,14 +808,18 @@ void di_cleanup()
 #endif  // ifdef USE_DIRECTINPUT
 
 
-#ifdef _WIN32
 // portable routine to get the mouse position, relative
 // to current window
 void getWindowMousePos(POINT * pt)
 {
 	Assert(pt != NULL);
+
+#ifdef _WIN32
 	GetCursorPos(pt);
 	ScreenToClient((HWND)os_get_window(), pt);
+#else
+	SDL_GetMouseState(&pt->x, &pt->y);
+#endif
 }
 
 
@@ -821,7 +828,11 @@ void getWindowMousePos(POINT * pt)
 void setWindowMousePos(POINT * pt)
 {
 	Assert(pt != NULL);
+
+#ifdef _WIN32
 	ClientToScreen((HWND) os_get_window(), pt);
 	SetCursorPos(pt->x, pt->y);
+#else
+	SDL_WarpMouse(pt->x, pt->y);
+#endif
 }
-#endif // ifdef WIN32

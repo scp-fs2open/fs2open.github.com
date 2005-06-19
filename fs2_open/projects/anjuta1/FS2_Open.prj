@@ -419,7 +419,6 @@ module.source.files=\
 	io/mouse.cpp\
 	io/swff_lib.cpp\
 	io/timer.cpp\
-	io/xmouse.cpp\
 	jumpnode/jumpnode.cpp\
 	lighting/lighting.cpp\
 	localization/fhash.cpp\
