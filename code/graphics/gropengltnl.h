@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.10 $
- * $Date: 2005-04-05 05:53:17 $
+ * $Revision: 1.11 $
+ * $Date: 2005-06-19 02:37:02 $
  * $Author: taylor $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.9  2005/03/20 00:09:07  phreak
  * Added gr_draw_htl_line and gr_draw_htl sphere
  * There still needs to be D3D versions implemented, but OGL is done.
@@ -64,11 +67,17 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _GROPENGLTNL_H
 #define _GROPENGLTNL_H
 
+#include "PreProcDefines.h"
+
 #include "globalincs/pstypes.h"
+
+
+extern int GL_max_elements_vertices;
+extern int GL_max_elements_indices;
+
 struct poly_list;
 
 void gr_opengl_start_instance_matrix(vec3d *offset, matrix* rotation);

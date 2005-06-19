@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.23 $
- * $Date: 2005-05-12 17:43:20 $
+ * $Revision: 1.24 $
+ * $Date: 2005-06-19 02:37:02 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2005/05/12 17:43:20  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ * try and keep up with how much VBO data is in memory too since that takes away from texture memory
+ *
  * Revision 1.22  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -154,7 +159,12 @@ static int GL_htl_projection_matrix_set = 0;
 static int GL_htl_view_matrix_set = 0;
 static int GL_htl_2d_matrix_depth = 0;
 static int GL_htl_2d_matrix_set = 0;
+
 int GL_vertex_data_in = 0;
+
+int GL_max_elements_vertices = 4096;
+int GL_max_elements_indices = 4096;
+
 
 struct opengl_vertex_buffer
 {
@@ -188,18 +198,6 @@ int opengl_find_first_free_buffer()
 	}
 	
 	return -1;
-}
-
-int opengl_check_for_errors()
-{
-	int error = 0;
-
-	if ( (error = glGetError()) != GL_NO_ERROR ) {
-		nprintf(("OpenGL", "!!ERROR!!: %s\n", gluErrorString(error)));
-		return 1;
-	}
-
-	return 0;
 }
 
 int opengl_mod_depth()
@@ -343,7 +341,7 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		vbp->used = 1;
 		vbp->flags = flags;
 
-		vbp->n_prim = list->n_verts;
+		vbp->n_prim = (list->n_verts / 3);
 		vbp->n_verts = list->n_verts;
 
 		// maybe load it into a vertex buffer object
@@ -395,7 +393,7 @@ extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
-void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
+void gr_opengl_render_buffer(int start, int n_prim, short* index_buffer)
 {
 #ifndef GL_NO_HTL
 
@@ -412,7 +410,16 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 	int i, r, g, b, a, tmap_type;
 	bool use_spec = false;
 
+	int end = ((n_prim * 3) - 1);
+	int count = (n_prim * 3);
+	int start_tmp, end_tmp, count_tmp, multiple_elements = 0;
+
 	opengl_vertex_buffer *vbp = g_vbp;
+
+
+	// see if we need to optimize glDrawRangeElements
+	if ( (GL_max_elements_indices == GL_max_elements_vertices) && (count > GL_max_elements_indices) )
+		multiple_elements = 1;
 
 	if ( glIsEnabled(GL_CULL_FACE) )
 		glFrontFace(GL_CW);
@@ -450,7 +457,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		if (vbp->vbo) {
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)0 );
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
 		} else {
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
@@ -466,7 +473,7 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		if (vbp->vbo) {
 			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)0 );
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
 		} else {
 			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 		}
@@ -494,8 +501,24 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 
 	glLockArraysEXT( 0, vbp->n_verts);
 
-	if (index_list != NULL) {
-		glDrawRangeElements(GL_TRIANGLES, start, (n_prim * 3), (n_prim * 3), GL_UNSIGNED_SHORT, (ushort*)index_list);
+	if (index_buffer != NULL) {
+		if ( multiple_elements ) {
+			start_tmp = 0;
+			end_tmp = (GL_max_elements_indices - 1);
+			count_tmp = (end_tmp - start_tmp + 1);
+
+			glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+
+			while (end_tmp < end) {
+				start_tmp += (GL_max_elements_indices - 1);
+				end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
+				count_tmp = (end_tmp - start_tmp + 1);
+
+				glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+			}
+		} else {
+			glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start);
+		}
 	} else {
 		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
 	}
@@ -524,8 +547,24 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 
 		glLockArraysEXT( 0, vbp->n_verts );
 
-		if (index_list != NULL) {
-			glDrawRangeElements(GL_TRIANGLES, start, (n_prim * 3), (n_prim * 3), GL_UNSIGNED_SHORT, (ushort*)index_list);
+		if (index_buffer != NULL) {
+			if ( multiple_elements ) {
+				start_tmp = 0;
+				end_tmp = (GL_max_elements_indices - 1);
+				count_tmp = (end_tmp - start_tmp + 1);
+
+				glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+
+				while (end_tmp < end) {
+					start_tmp += (GL_max_elements_indices - 1);
+					end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
+					count_tmp = (end_tmp - start_tmp + 1);
+
+					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+				}
+			} else {
+				glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start);
+			}
 		} else {
 			glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
 		}
@@ -544,16 +583,36 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_list)
 		opengl_switch_arb(1,0);
 		opengl_switch_arb(2,0);
 
+		glLockArraysEXT( 0, vbp->n_verts);
+
 		for(i=0; i< (n_active_gl_lights-1)/GL_max_lights; i++)
 		{
 			opengl_change_active_lights(i+1);
 
-			if (index_list != NULL) {
-				glDrawRangeElements(GL_TRIANGLES, start, (n_prim * 3), (n_prim * 3), GL_UNSIGNED_SHORT, (ushort*)index_list);
+			if (index_buffer != NULL) {
+				if ( multiple_elements ) {
+					start_tmp = 0;
+					end_tmp = (GL_max_elements_indices - 1);
+					count_tmp = (end_tmp - start_tmp + 1);
+
+					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+
+					while (end_tmp < end) {
+						start_tmp += (GL_max_elements_indices - 1);
+						end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
+						count_tmp = (end_tmp - start_tmp + 1);
+
+						glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+					}
+				} else {
+					glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start);
+				}
 			} else {
 				glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
 			}
 		}
+
+		glUnlockArraysEXT();
 	}
 
 	TIMERBAR_POP();
@@ -717,6 +776,10 @@ void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 	if (Cmdline_nohtl)
 		return;
 
+	// don't bother with this if we aren't even going to need it
+	if (!GL_htl_projection_matrix_set)
+		return;
+
 	Assert( GL_htl_2d_matrix_set == 0 );
 	Assert( GL_htl_2d_matrix_depth == 0 );
 
@@ -744,7 +807,9 @@ void gr_opengl_end_2d_matrix()
 	if (Cmdline_nohtl)
 		return;
 
-	Assert( GL_htl_2d_matrix_set );
+	if (!GL_htl_2d_matrix_set)
+		return;
+
 	Assert( GL_htl_2d_matrix_depth == 1 );
 
 	glMatrixMode( GL_PROJECTION );
