@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-04-05 05:53:23 $
+ * $Revision: 2.14 $
+ * $Date: 2005-06-19 09:00:09 $
  * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.12  2005/03/24 23:37:25  taylor
  * fix GCC building
  *
@@ -265,6 +268,11 @@ int Anim_num_frames_smoke2 = -1;
 
 static int Particles_enabled = 1;
 
+geometry_batcher *PARTICLE_FIRE_batcher = NULL;
+geometry_batcher *PARTICLE_SMOKE_batcher = NULL;
+geometry_batcher *PARTICLE_SMOKE2_batcher = NULL;
+
+
 // Reset everything between levels
 void particle_init()
 {
@@ -279,20 +287,57 @@ void particle_init()
 		Particles[i].type = -1;
 	}
 
+	// FIRE!!!
 	if ( Anim_bitmap_id_fire == -1 )	{
 		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps, 0 );
 	}
-		//Anim_bitmap_id = bm_load( "particleglow01" );
-		//Anim_num_frames = 1;
 
+	if ( (Anim_bitmap_id_fire > -1) && (PARTICLE_FIRE_batcher == NULL) ) {
+		Assert( Anim_num_frames_fire > 0 );
+		PARTICLE_FIRE_batcher = new geometry_batcher[Anim_num_frames_fire];
+		Verify( PARTICLE_FIRE_batcher != NULL );
+	}
+
+	// Cough, cough
 	if ( Anim_bitmap_id_smoke == -1 )	{
 		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps, 0 );
 	}
 
+	if ( (Anim_bitmap_id_smoke > -1) && (PARTICLE_SMOKE_batcher == NULL) ) {
+		Assert( Anim_num_frames_smoke > 0 );
+		PARTICLE_SMOKE_batcher = new geometry_batcher[Anim_num_frames_smoke];
+		Verify( PARTICLE_SMOKE_batcher != NULL );
+	}
+
+	// wheeze
 	if ( Anim_bitmap_id_smoke2 == -1 )	{
 		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps, 0 );
 	}
 
+	if ( (Anim_bitmap_id_smoke2 > -1) && (PARTICLE_SMOKE2_batcher == NULL) ) {
+		Assert( Anim_num_frames_smoke2 > 0 );
+		PARTICLE_SMOKE2_batcher = new geometry_batcher[Anim_num_frames_smoke2];
+		Verify( PARTICLE_SMOKE2_batcher != NULL );
+	}
+}
+
+// only call from game_shutdown()!!!
+void particle_close()
+{
+	if ( PARTICLE_FIRE_batcher != NULL ) {
+		delete[] PARTICLE_FIRE_batcher;
+		PARTICLE_FIRE_batcher = NULL;
+	}
+
+	if ( PARTICLE_SMOKE_batcher != NULL ) {
+		delete[] PARTICLE_SMOKE_batcher;
+		PARTICLE_SMOKE_batcher = NULL;
+	}
+
+	if ( PARTICLE_SMOKE2_batcher != NULL ) {
+		delete[] PARTICLE_SMOKE2_batcher;
+		PARTICLE_SMOKE2_batcher = NULL;
+	}
 }
 
 void particle_page_in()
@@ -303,11 +348,17 @@ void particle_page_in()
 		Particles[i].type = -1;
 	}
 
-	bm_page_in_texture( Anim_bitmap_id_fire, Anim_num_frames_fire );
+	if (Anim_bitmap_id_fire > -1) {
+		bm_page_in_texture( Anim_bitmap_id_fire, Anim_num_frames_fire );
+	}
 
-	bm_page_in_texture( Anim_bitmap_id_smoke, Anim_num_frames_smoke );
+	if (Anim_bitmap_id_smoke > -1) {
+		bm_page_in_texture( Anim_bitmap_id_smoke, Anim_num_frames_smoke );
+	}
 
-	bm_page_in_texture( Anim_bitmap_id_smoke2, Anim_num_frames_smoke2 );
+	if (Anim_bitmap_id_smoke2 > -1) {
+		bm_page_in_texture( Anim_bitmap_id_smoke2, Anim_num_frames_smoke2 );
+	}
 }
 
 DCF(particles,"Turns particles on/off")
@@ -324,8 +375,6 @@ DCF(particles,"Turns particles on/off")
 //	os_config_write_uint( NULL, "UseParticles", Particles_enabled );
 }
 
-
-		//mprintf(( "%s\n", text ));
 
 int Num_particles_hwm = 0;
 
@@ -538,9 +587,6 @@ void particle_kill_all()
 MONITOR( NumParticlesRend );	
 extern int Cmdline_nohtl;
 
-#define MAX_PARTICLE_FRAMES 128
-geometry_batcher PARTICLE_FIRE_batcher[MAX_PARTICLE_FRAMES], PARTICLE_SMOKE_batcher[MAX_PARTICLE_FRAMES], PARTICLE_SMOKE2_batcher[MAX_PARTICLE_FRAMES];
-
 void particle_render_all()
 {
 	particle *p;
@@ -653,6 +699,9 @@ void particle_render_all()
 				}
 
 			case PARTICLE_FIRE:	{
+					if ( Anim_bitmap_id_fire == -1 )
+						break;
+
 					int framenum = fl2i(pct_complete * Anim_num_frames_fire + 0.5);
 
 					if ( framenum < 0 ) framenum = 0;
@@ -681,9 +730,9 @@ void particle_render_all()
 					}
 */					
 					int cur_frame = p->reverse ? (Anim_num_frames_fire - framenum - 1) : framenum;
-					Assert(cur_frame < MAX_PARTICLE_FRAMES);
+					Assert(cur_frame < Anim_num_frames_fire);
 
-					PARTICLE_FIRE_batcher[cur_frame].add_alocate(1);
+					PARTICLE_FIRE_batcher[cur_frame].add_allocate(1);
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){					
 						PARTICLE_FIRE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
@@ -696,6 +745,9 @@ void particle_render_all()
 				}
 
 			case PARTICLE_SMOKE:	{
+					if ( Anim_bitmap_id_smoke == -1 )
+						break;
+
 					int framenum = fl2i(pct_complete * Anim_num_frames_smoke + 0.5);
 
 					if ( framenum < 0 ) framenum = 0;
@@ -724,9 +776,9 @@ void particle_render_all()
 					}
 					*/
 					int cur_frame = p->reverse ? (Anim_num_frames_smoke - framenum - 1) : framenum;
-					Assert(cur_frame < MAX_PARTICLE_FRAMES);
+					Assert(cur_frame < Anim_num_frames_smoke);
 
-					PARTICLE_SMOKE_batcher[cur_frame].add_alocate(1);
+					PARTICLE_SMOKE_batcher[cur_frame].add_allocate(1);
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){					
 						PARTICLE_SMOKE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
@@ -740,6 +792,9 @@ void particle_render_all()
 				}
 
 			case PARTICLE_SMOKE2:	{
+					if ( Anim_bitmap_id_smoke2 == -1 )
+						break;
+
 					int framenum = fl2i(pct_complete * Anim_num_frames_smoke2 + 0.5);
 
 					if ( framenum < 0 ) framenum = 0;
@@ -768,9 +823,9 @@ void particle_render_all()
 					}
 					*/
 					int cur_frame = p->reverse ? (Anim_num_frames_smoke2 - framenum - 1) : framenum;
-					Assert(cur_frame < MAX_PARTICLE_FRAMES);
+					Assert(cur_frame < Anim_num_frames_smoke2);
 
-					PARTICLE_SMOKE2_batcher[cur_frame].add_alocate(1);
+					PARTICLE_SMOKE2_batcher[cur_frame].add_allocate(1);
 					// if this is a tracer style particle
 					if(p->tracer_length > 0.0f){					
 						PARTICLE_SMOKE2_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
@@ -785,17 +840,25 @@ void particle_render_all()
 		}
 	}
 
-	for(i = 0; i<Anim_num_frames_fire; i++){
-		gr_set_bitmap(Anim_bitmap_id_fire + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );		
-		PARTICLE_FIRE_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+	for (i = 0; i<Anim_num_frames_fire; i++) {
+		if ( PARTICLE_FIRE_batcher[i].need_to_render() ) {
+			gr_set_bitmap(Anim_bitmap_id_fire + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+			PARTICLE_FIRE_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		}
 	}
-	for(i = 0; i<Anim_num_frames_smoke; i++){
-		gr_set_bitmap(Anim_bitmap_id_smoke + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );		
-		PARTICLE_SMOKE_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+
+	for (i = 0; i<Anim_num_frames_smoke; i++) {
+		if ( PARTICLE_SMOKE_batcher[i].need_to_render() ) {
+			gr_set_bitmap(Anim_bitmap_id_smoke + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+			PARTICLE_SMOKE_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		}
 	}
-	for(i = 0; i<Anim_num_frames_smoke2; i++){
-		gr_set_bitmap(Anim_bitmap_id_smoke2 + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );		
-		PARTICLE_SMOKE2_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+
+	for (i = 0; i<Anim_num_frames_smoke2; i++) {
+		if ( PARTICLE_SMOKE2_batcher[i].need_to_render() ) {
+			gr_set_bitmap(Anim_bitmap_id_smoke2 + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+			PARTICLE_SMOKE2_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		}
 	}
 
 	batch_end();

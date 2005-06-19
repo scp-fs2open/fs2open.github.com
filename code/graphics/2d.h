@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.59 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 2.60 $
+ * $Date: 2005-06-19 09:00:09 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.58  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -192,7 +196,7 @@
  * MIN_DRAW_DISTANCE = 1
  *
  * Revision 2.17  2003/11/17 04:25:55  bobboau
- * made the poly list dynamicly alocated,
+ * made the poly list dynamicly allocated,
  * started work on fixing the node model not rendering,
  * but most of that got commented out so I wouldn't have to deal with it
  * while mucking about with the polylist
@@ -690,10 +694,10 @@ class geometry_batcher{
 	//makes sure we have enough space in the memory buffer for the geometry we are about to put into it
 	//you need to figure out how many verts are going to be requiered
 public:
-	geometry_batcher():n_to_render(0),n_allocated(0),vert(NULL){};
-	~geometry_batcher(){if(vert)vm_free((void*)vert);if(vert_list)vm_free(vert_list);};
+	geometry_batcher():n_to_render(0),n_allocated(0),vert(NULL),vert_list(NULL){};
+	~geometry_batcher() { if (vert != NULL) vm_free(vert); if (vert_list != NULL) vm_free(vert_list);};
 
-	void add_alocate(int quad, int n_tri=0);//add this many without loseing what we have
+	void add_allocate(int quad, int n_tri=0);//add this many without loseing what we have
 	void allocate(int quad, int n_tri=0);
 	//everything exept the draw tri comand requiers the same amount of space
 	//so just tell it how many draw_* comands you are going to need seperateing out
@@ -717,6 +721,9 @@ public:
 	void render(int flags);
 	//draws all of the batched geometry to the back buffer and flushes the cache
 	//accepts tmap flags so you can use anything you want realy
+
+	// determine if we even need to try and render this (helpful for particle system)
+	int need_to_render() { return n_to_render; };
 
 	void operator =(int){};
 };
