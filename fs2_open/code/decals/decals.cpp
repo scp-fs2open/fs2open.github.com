@@ -159,30 +159,30 @@ vec3d **decal_point_list = NULL;
 int *decal__poly = NULL;
 //those two are used deep within the bowels of the BSP parseing code
 
-int decal_points_alocated = 0;
+int decal_points_allocated = 0;
 
-//model data is held in dynamic memory, it's only realocated when 
+//model data is held in dynamic memory, it's only reallocated when 
 
 //the current buffers are too small, this free's the buffers atexit (see end of init_decals)
 void free_decal_stuff(){
-	if(decal_points_alocated){
+	if(decal_points_allocated){
 		//if either one of these arn't NULL than someone allocated something to them
 		if(decal_point_list)vm_free(decal_point_list);
 		if(decal__poly)vm_free(decal__poly);
 	}
 }
 
-//will realocate the lists (_without_ saveing what was in them!) 
+//will reallocate the lists (_without_ saveing what was in them!) 
 //if the passed size is bigger than what is currently allocated
 void decal_realc_pointlist(int n){
-	if(decal_points_alocated < n){
+	if(decal_points_allocated < n){
 		//if they've been allocated already free what they have
 		if(decal_point_list)vm_free(decal_point_list);
 		if(decal__poly)vm_free(decal__poly);
 		//then reallocate with the new point count
 		decal_point_list = (vec3d**) vm_malloc(sizeof(vec3d *)*n); 
 		decal__poly = (int*) vm_malloc(sizeof(int)*n); 
-		decal_points_alocated = n;
+		decal_points_allocated = n;
 	}
 }
 /****BSP Defpoint Buffer End****/
@@ -853,7 +853,7 @@ SAFEPOINT("entering decal_find_next");
 	decal_list_controle* list = find_list( system->decals, system->n_decal_textures, texture);
 	if(list == NULL){	
 		//if it couldn't find the texture, this means we need to 
-		//realocate the array and add one
+		//reallocate the array and add one
 		system->decals = (decal_list_controle*)vm_realloc(system->decals, sizeof(decal_list_controle) * ++system->n_decal_textures);
 
 		if(!system->decals)Error(LOCATION, "unable to malloc new decal list");
@@ -1305,7 +1305,7 @@ void decal_create_defpoints(ubyte * p )
 
 	for (n=0; n<nverts; n++ )	{
 
-		Assert(decal_points_alocated >= n);
+		Assert(decal_points_allocated >= n);
 
 		decal_point_list[n] = src;
 //		new_decal->vert[n].xyz = src->xyz;
@@ -1809,11 +1809,11 @@ void decal_create_tmappoly(ubyte * p)
 					return;
 				}
 			
-				Assert(decal_points_alocated >= i%nv);
-				Assert(decal_points_alocated >= (i+1)%nv);
-				Assert(decal_points_alocated >= decal__poly[0]);
-				Assert(decal_points_alocated >= decal__poly[i%nv]);
-				Assert(decal_points_alocated >= decal__poly[(i+1)%nv]);
+				Assert(decal_points_allocated >= i%nv);
+				Assert(decal_points_allocated >= (i+1)%nv);
+				Assert(decal_points_allocated >= decal__poly[0]);
+				Assert(decal_points_allocated >= decal__poly[i%nv]);
+				Assert(decal_points_allocated >= decal__poly[(i+1)%nv]);
 	
 				vm_vec2vert(decal_point_list[decal__poly[0]], &LAST_POLY->point[0]);
 				vm_vec2vert(decal_point_list[decal__poly[i%nv]], &LAST_POLY->point[1]);

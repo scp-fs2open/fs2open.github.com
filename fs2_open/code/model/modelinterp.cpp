@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.118 $
- * $Date: 2005-06-19 02:42:21 $
+ * $Revision: 2.119 $
+ * $Date: 2005-06-19 09:03:05 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2005/06/19 02:42:21  taylor
+ * really needed to mention those two things as well given the types of changes those are
+ *
  * Revision 2.117  2005/06/19 02:28:55  taylor
  * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
  * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
@@ -3922,8 +3925,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		model_render_shields(pm);
 	}	
 			
-
-	neb2_get_fog_intensity(obj);
 //start rendering glow points -Bobboau
 
 		if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) && (Detail.engine_glows)*/ )	{
@@ -5114,7 +5115,7 @@ void parse_defpoint(int off, ubyte *bsp_data){
 
 }
 
-inline int check_values(vec3d *N)
+int check_values(vec3d *N)
 {
 	// Values equal to -1.#IND0
 	if((N->xyz.x * N->xyz.x) < 0 ||
@@ -5370,28 +5371,28 @@ void dealc_model_loadstuf(){
 	htl_norms= NULL;
 }
 
- int alocate_poly_list_nvert = 0;
- int alocate_poly_list_nnorm = 0;
- bool alocate_poly_list_a = true;
-void alocate_poly_list(){
+ int allocate_poly_list_nvert = 0;
+ int allocate_poly_list_nnorm = 0;
+ bool allocate_poly_list_a = true;
+void allocate_poly_list(){
 	for(int i = 0; i<MAX_MODEL_TEXTURES; i++){
 		list[i].allocate(tri_count[i]*3);
 	}
 
-	if(htl_nverts > alocate_poly_list_nvert){
+	if(htl_nverts > allocate_poly_list_nvert){
 		if(htl_verts)vm_free(htl_verts);
 		htl_verts = (vec3d**)vm_malloc(sizeof(vec3d*)*htl_nverts);
-		alocate_poly_list_nvert = htl_nverts;
+		allocate_poly_list_nvert = htl_nverts;
 	}
-	if(htl_nnorms > alocate_poly_list_nnorm){
+	if(htl_nnorms > allocate_poly_list_nnorm){
 		if(htl_norms)vm_free(htl_norms);
 		htl_norms = (vec3d**)vm_malloc(sizeof(vec3d*)*htl_nnorms);
-		alocate_poly_list_nnorm = htl_nnorms;
+		allocate_poly_list_nnorm = htl_nnorms;
 	}
 
-	if(alocate_poly_list_a){
+	if(allocate_poly_list_a){
 		atexit(dealc_model_loadstuf);
-		alocate_poly_list_a = false;
+		allocate_poly_list_a = false;
 	}
 }
 int recode_check = 0;
@@ -5421,7 +5422,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		return;
 	}
 
-	alocate_poly_list();
+	allocate_poly_list();
 
 	parse_bsp(0, model->bsp_data);
 	model->n_buffers = 0;
@@ -6365,7 +6366,7 @@ void triggered_rotation::proces_queue(){
 
 //	if(n_queue > i){
 
-		//if there are more items on the queue than we just executed realocate the queue 
+		//if there are more items on the queue than we just executed reallocate the queue 
 		//copy all the items after the last one we executed
 		memcpy(queue, &old[i], sizeof(queued_animation)*(n_queue-i));
 //	}
