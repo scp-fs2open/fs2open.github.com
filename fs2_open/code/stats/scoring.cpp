@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.11 $
+ * $Date: 2005-06-19 02:47:00 $
  * $Author: taylor $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.9  2005/05/08 20:20:46  wmcoolmon
  * Dynamically allocated medals
  *
@@ -444,19 +448,19 @@ void scoring_eval_rank( scoring_struct *sc )
 	// first check to see if the promotion flag is set -- if so, return the new rank
 	if ( Player->flags & PLAYER_FLAGS_PROMOTED ) {
 	
-		new_rank = sc->rank;
-
 		// if the player does indeed get promoted, we should change his mission score
-		// to reflect the differce between all time and new rank score
-		if ( sc->rank < MAX_FREESPACE2_RANK ) {
-			new_rank = sc->rank + 1;
+		// to reflect the difference between all time and new rank score
+		if ( old_rank < MAX_FREESPACE2_RANK ) {
+			new_rank++;
 			if ( (sc->m_score + sc->score) < Ranks[new_rank].points )
 				sc->m_score = (Ranks[new_rank].points - sc->score);
 		}
 	} else {
 		// we get here only if player wasn't promoted automatically.
+		// it is possible to get a negative mission score but that will
+		// never result in a degradation
 		score = sc->m_score + sc->score;
-		for (i=0; i<NUM_RANKS; i++) {
+		for (i=old_rank + 1; i<NUM_RANKS; i++) {
 			if ( score >= Ranks[i].points )
 				new_rank = i;
 		}
