@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.116 $
- * $Date: 2005-05-12 17:49:14 $
+ * $Revision: 2.117 $
+ * $Date: 2005-06-19 02:28:55 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.116  2005/05/12 17:49:14  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.115  2005/04/21 15:49:20  taylor
  * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
  *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
@@ -4980,7 +4984,7 @@ void model_page_out_textures(int model_num, bool release)
 			if (release) {
 				bm_release( pm->original_textures[i] );
 			} else {
-				bm_unload( pm->original_textures[i] );
+				bm_unload_fast( pm->original_textures[i] );
 			}
 		}
 
@@ -4988,7 +4992,7 @@ void model_page_out_textures(int model_num, bool release)
 			if (release) {
 				bm_release( pm->glow_original_textures[i] );
 			} else {
-				bm_unload( pm->glow_original_textures[i] );
+				bm_unload_fast( pm->glow_original_textures[i] );
 			}
 		}
 
@@ -4996,7 +5000,7 @@ void model_page_out_textures(int model_num, bool release)
 			if (release) {
 				bm_release( pm->specular_original_textures[i] );
 			} else {
-				bm_unload( pm->specular_original_textures[i] );
+				bm_unload_fast( pm->specular_original_textures[i] );
 			}
 		}
 	}
@@ -5104,7 +5108,8 @@ inline int check_values(vec3d *N)
 	// Values equal to -1.#IND0
 	if((N->xyz.x * N->xyz.x) < 0 ||
 	   (N->xyz.y * N->xyz.y) < 0 ||
-	   (N->xyz.z * N->xyz.z) < 0)
+	   (N->xyz.z * N->xyz.z) < 0 ||
+	   !is_valid_vec(N))
 	{
 		N->xyz.x = 1;
 		N->xyz.y = 0;
@@ -5118,11 +5123,11 @@ inline int check_values(vec3d *N)
 int Parse_normal_problem_count = 0;
 
 void parse_tmap(int offset, ubyte *bsp_data){
-	int pof_tex = bsp_data[offset+40];
-	int n_vert = bsp_data[offset+36];
+	int pof_tex = w(bsp_data+offset+40);
+	int n_vert = w(bsp_data+offset+36);
 	//int n_tri = n_vert - 2;
 	ubyte *temp_verts;
-	ubyte *p = &bsp_data[offset];
+	ubyte *p = &bsp_data[offset+8];
 
 	model_tmap_vert *tverts;
 	tverts = (model_tmap_vert *)&bsp_data[offset+44];
@@ -5145,7 +5150,7 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		V->v = tverts[0].v;
 		*N = *htl_norms[(int)tverts[0].normnum];
 		if(IS_VEC_NULL(N))
-			*N = *vp(p+8);
+			*N = *vp(p);
 
 	  	problem_count += check_values(N);
 		vm_vec_normalize(N);
@@ -5161,7 +5166,7 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		V->v = tverts[i].v;
 		*N = *htl_norms[(int)tverts[i].normnum];
 		if(IS_VEC_NULL(N))
-			*N = *vp(p+8);
+			*N = *vp(p);
 
 	 	problem_count += check_values(N);
 		vm_vec_normalize(N);
@@ -5177,7 +5182,7 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		V->v = tverts[i+1].v;
 		*N = *htl_norms[(int)tverts[i+1].normnum];
 		if(IS_VEC_NULL(N))
-			*N = *vp(p+8);
+			*N = *vp(p);
 
 		problem_count += check_values(N);
 		vm_vec_normalize(N);
@@ -5206,15 +5211,15 @@ void parse_tmap(int offset, ubyte *bsp_data){
 void parse_flat_poly(int offset, ubyte *bsp_data)
 {
 /* Goober5000 - if this function was commented out, the variables should be also
-	int nv = bsp_data[offset+36];
+	int nv = w(bsp_data+offset+36);
 	short *verts = (short *)(&bsp_data[offset+44]);
 
 	vertex *V;
 	vec3d *v;
 	vec3d *N;
 	int i = 0;
-*/
-/*	for( i = 1; i<nv-1; i++){
+
+	for( i = 1; i<nv-1; i++){
 		V = &flat_list.vert[flat_list.n_poly][0];
 		N = &flat_list.norm[flat_list.n_poly][0];
 		v = Interp_verts[verts[i*2]];
@@ -5259,8 +5264,8 @@ void parse_flat_poly(int offset, ubyte *bsp_data)
 
 		flat_list.n_poly++;
 	}
-*/
-/*	//we don't need this
+
+	//we don't need this
 	for(i = 0; i<nv; i++){
 		V = &flat_line_list.vert[flat_line_list.n_line][0];
 		v = Interp_verts[verts[(i%nv*2)]];
@@ -5293,13 +5298,11 @@ void parse_sortnorm(int offset, ubyte *bsp_data);
 
 
 void parse_bsp(int offset, ubyte *bsp_data){
-	int ID, SIZE;
+	int id = w(bsp_data+offset);
+	int size = w(bsp_data+offset+4);
 
-	memcpy(&ID, &bsp_data[offset], sizeof(int));
-	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
-
-	while(ID!=0){
-		switch(ID){
+	while(id!=0){
+		switch(id){
 		case OP_EOF:	
 			return;
 			break;
@@ -5316,11 +5319,11 @@ void parse_bsp(int offset, ubyte *bsp_data){
 		default:
 			return;
 		}
-			offset += SIZE;
-		memcpy(&ID, &bsp_data[offset], sizeof(int));
-		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+		offset += size;
+		id = w(bsp_data+offset);
+		size = w(bsp_data+offset+4);
 
-		if(SIZE < 1)ID=OP_EOF;
+		if(size < 1) id=OP_EOF;
 	}
 }
 
@@ -5328,11 +5331,11 @@ void parse_bsp(int offset, ubyte *bsp_data){
 void parse_sortnorm(int offset, ubyte *bsp_data){
 
 	int frontlist, backlist, prelist, postlist, onlist;
-	memcpy(&frontlist, &bsp_data[offset+36], sizeof(int));
-	memcpy(&backlist, &bsp_data[offset+40], sizeof(int));
-	memcpy(&prelist, &bsp_data[offset+44], sizeof(int));
-	memcpy(&postlist, &bsp_data[offset+48], sizeof(int));
-	memcpy(&onlist, &bsp_data[offset+52], sizeof(int));
+	frontlist = w(bsp_data+offset+36);
+	backlist = w(bsp_data+offset+40);
+	prelist = w(bsp_data+offset+44);
+	postlist = w(bsp_data+offset+48);
+	onlist = w(bsp_data+offset+52);
 
 	if (prelist) parse_bsp(offset+prelist,bsp_data);
 	if (backlist) parse_bsp(offset+backlist, bsp_data);
@@ -5439,7 +5442,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		ibuffer_info.size -= sizeof(int); // subtract
 
 		// figure up how big this section of data is going to be
-		ibx_size += ibx_verts * sizeof(float); // first set of data (here)
+		ibx_size += ibx_verts * sizeof(float) * 8; // first set of data (here)
 		ibx_size += ibx_verts * sizeof(short); // second set of data (next "for" statement)
 
 		// safety check for this section
@@ -5527,21 +5530,20 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 
 
 void find_tmap(int offset, ubyte *bsp_data){
-	int pof_tex = bsp_data[offset+40];
-	int n_vert = bsp_data[offset+36];
+	int pof_tex = w(bsp_data+offset+40);
+	int n_vert = w(bsp_data+offset+36);
 
-	tri_count[pof_tex] +=n_vert-2;	
-
+	tri_count[pof_tex] += n_vert-2;	
 }
 
 void find_sortnorm(int offset, ubyte *bsp_data){
 
 	int frontlist, backlist, prelist, postlist, onlist;
-	memcpy(&frontlist, &bsp_data[offset+36], sizeof(int));
-	memcpy(&backlist, &bsp_data[offset+40], sizeof(int));
-	memcpy(&prelist, &bsp_data[offset+44], sizeof(int));
-	memcpy(&postlist, &bsp_data[offset+48], sizeof(int));
-	memcpy(&onlist, &bsp_data[offset+52], sizeof(int));
+	frontlist = w(bsp_data+offset+36);
+	backlist = w(bsp_data+offset+40);
+	prelist = w(bsp_data+offset+44);
+	postlist = w(bsp_data+offset+48);
+	onlist = w(bsp_data+offset+52);
 
 	if (prelist) find_tri_counts(offset+prelist,bsp_data);
 	if (backlist) find_tri_counts(offset+backlist, bsp_data);
@@ -5595,13 +5597,11 @@ void find_defpoint(int off, ubyte *bsp_data){
 
 //tri_count
 void find_tri_counts(int offset, ubyte *bsp_data){
-	int ID, SIZE;
+	int id = w(bsp_data+offset);
+	int size = w(bsp_data+offset+4);
 
-	memcpy(&ID, &bsp_data[offset], sizeof(int));
-	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
-
-	while(ID!=0){
-		switch(ID){
+	while(id!=0){
+		switch(id){
 		case OP_EOF:	
 			return;
 			break;
@@ -5618,11 +5618,11 @@ void find_tri_counts(int offset, ubyte *bsp_data){
 		default:
 			return;
 		}
-			offset += SIZE;
-		memcpy(&ID, &bsp_data[offset], sizeof(int));
-		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+		offset += size;
+		id = w(bsp_data+offset);
+		size = w(bsp_data+offset+4);
 
-		if(SIZE < 1)ID=OP_EOF;
+		if(size < 1) id=OP_EOF;
 	}
 }
 
@@ -5840,8 +5840,8 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 //int recode_check = 0;
 void recode_tmap(int offset, ubyte *bsp_data){
 
-	int pof_tex = bsp_data[offset+40];
-	int n_vert = bsp_data[offset+36];
+//	int pof_tex = w(bsp_data+offset+40);
+	int n_vert = w(bsp_data+offset+36);
 
 //	if(pof_tex == 4){
 //		1;
@@ -5884,13 +5884,11 @@ void recode_tmap(int offset, ubyte *bsp_data){
 void recode_sortnorm(int offset, ubyte *bsp_data);
 
 void recode_bsp(int offset, ubyte *bsp_data){
-	int ID, SIZE;
+	int id = w(bsp_data+offset);
+	int size = w(bsp_data+offset+4);
 
-	memcpy(&ID, &bsp_data[offset], sizeof(int));
-	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
-
-	while(ID!=0){
-		switch(ID){
+	while(id!=0){
+		switch(id){
 		case OP_EOF:	
 			return;
 			break;
@@ -5907,11 +5905,11 @@ void recode_bsp(int offset, ubyte *bsp_data){
 		default:
 			return;
 		}
-			offset += SIZE;
-		memcpy(&ID, &bsp_data[offset], sizeof(int));
-		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+		offset += size;
+		id = w(bsp_data+offset);
+		size = w(bsp_data+offset+4);
 
-		if(SIZE < 1)ID=OP_EOF;
+		if(size < 1) id=OP_EOF;
 	}
 }
 
@@ -5919,11 +5917,11 @@ int model_resort_index_buffer_n_verts = 0;
 void recode_sortnorm(int offset, ubyte *bsp_data){
 
 	int frontlist, backlist, prelist, postlist, onlist;
-	memcpy(&frontlist, &bsp_data[offset+36], sizeof(int));
-	memcpy(&backlist, &bsp_data[offset+40], sizeof(int));
-	memcpy(&prelist, &bsp_data[offset+44], sizeof(int));
-	memcpy(&postlist, &bsp_data[offset+48], sizeof(int));
-	memcpy(&onlist, &bsp_data[offset+52], sizeof(int));
+	frontlist = w(bsp_data+offset+36);
+	backlist = w(bsp_data+offset+40);
+	prelist = w(bsp_data+offset+44);
+	postlist = w(bsp_data+offset+48);
+	onlist = w(bsp_data+offset+52);
 
 	if (prelist) recode_bsp(offset+prelist,bsp_data);
 	if (backlist) recode_bsp(offset+backlist, bsp_data);
@@ -5944,9 +5942,9 @@ short find_first_index_vb(poly_list *plist, int idx, poly_list *v){
 }
 */
 void model_resort_index_buffer_tmap(int offset, ubyte *bsp_data, short* index_buffer, int texture){
-	if(texture != bsp_data[offset+40])return;
+	if(texture != w(bsp_data+offset+40))return;
 
-	int n_vert = bsp_data[offset+36];
+	int n_vert = w(bsp_data+offset+36);
 	//int n_tri = n_vert - 2;
 	ubyte *temp_verts;
 	//ubyte *p = &bsp_data[offset];
@@ -5957,7 +5955,7 @@ void model_resort_index_buffer_tmap(int offset, ubyte *bsp_data, short* index_bu
 	for(int i = 1; i<n_vert-1; i++){	
 		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[0].normnum;
 		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[i].normnum;
-		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[(i+1)%n_vert].normnum;
+		index_buffer[model_resort_index_buffer_n_verts++] = (short)tverts[i+1].normnum;
 	}
 
 }
@@ -5967,11 +5965,11 @@ void model_resort_index_buffer_bsp(int offset, ubyte *bsp_data, bool f2b, int te
 void model_resort_index_buffer_sortnorm_nonsorted(int offset, ubyte *bsp_info, int texture, short* index_buffer){
 
 	int frontlist, backlist, prelist, postlist, onlist;
-	memcpy(&frontlist, &bsp_info[offset+36], sizeof(int));
-	memcpy(&backlist, &bsp_info[offset+40], sizeof(int));
-	memcpy(&prelist, &bsp_info[offset+44], sizeof(int));
-	memcpy(&postlist, &bsp_info[offset+48], sizeof(int));
-	memcpy(&onlist, &bsp_info[offset+52], sizeof(int));
+	frontlist = w(bsp_info+offset+36);
+	backlist = w(bsp_info+offset+40);
+	prelist = w(bsp_info+offset+44);
+	postlist = w(bsp_info+offset+48);
+	onlist = w(bsp_info+offset+52);
 
 	if (prelist) model_resort_index_buffer_bsp(offset+prelist,bsp_info, false, texture, index_buffer);
 	if (backlist) model_resort_index_buffer_bsp(offset+backlist, bsp_info, false, texture, index_buffer);
@@ -6000,15 +5998,15 @@ void model_resort_index_buffer_sortnorm_b2f(int offset, ubyte *bsp_info, int tex
 //	Assert( w(p+4) == 56 );
 
 	int frontlist, backlist, prelist, postlist, onlist;
-	memcpy(&frontlist, &bsp_info[offset+36], sizeof(int));
-	memcpy(&backlist, &bsp_info[offset+40], sizeof(int));
-	memcpy(&prelist, &bsp_info[offset+44], sizeof(int));
-	memcpy(&postlist, &bsp_info[offset+48], sizeof(int));
-	memcpy(&onlist, &bsp_info[offset+52], sizeof(int));
+	frontlist = w(bsp_info+offset+36);
+	backlist = w(bsp_info+offset+40);
+	prelist = w(bsp_info+offset+44);
+	postlist = w(bsp_info+offset+48);
+	onlist = w(bsp_info+offset+52);
 
 	if (prelist) model_resort_index_buffer_bsp(offset+prelist,bsp_info, false, texture, index_buffer);		// prelist
 
-	if (g3_check_normal_facing(vp(bsp_info[offset+20]),vp(bsp_info[offset+8]))) {		//facing
+	if (g3_check_normal_facing(vp(bsp_info+offset+20),vp(bsp_info+offset+8))) {		//facing
 
 		//draw back then front
 
@@ -6052,17 +6050,17 @@ void model_resort_index_buffer_sortnorm_f2b(int offset, ubyte *bsp_info, int tex
 //	Assert( w(p+4) == 56 );
 
 	int frontlist, backlist, prelist, postlist, onlist;
-	memcpy(&frontlist, &bsp_info[offset+36], sizeof(int));
-	memcpy(&backlist, &bsp_info[offset+40], sizeof(int));
-	memcpy(&prelist, &bsp_info[offset+44], sizeof(int));
-	memcpy(&postlist, &bsp_info[offset+48], sizeof(int));
-	memcpy(&onlist, &bsp_info[offset+52], sizeof(int));
+	frontlist = w(bsp_info+offset+36);
+	backlist = w(bsp_info+offset+40);
+	prelist = w(bsp_info+offset+44);
+	postlist = w(bsp_info+offset+48);
+	onlist = w(bsp_info+offset+52);
 
 	if (postlist) model_resort_index_buffer_bsp(offset+postlist,bsp_info, true, texture, index_buffer);		// postlist
 
-	if (g3_check_normal_facing((vec3d*)&bsp_info[offset+20],(vec3d*)&bsp_info[offset+8])) {		//facing
+	if (g3_check_normal_facing(vp(bsp_info+offset+20),vp(bsp_info+offset+8))) {		//facing
 
-		// 
+		//draw front then back
 
 		if (frontlist) model_resort_index_buffer_bsp(offset+frontlist,bsp_info, true, texture, index_buffer);
 
@@ -6070,7 +6068,7 @@ void model_resort_index_buffer_sortnorm_f2b(int offset, ubyte *bsp_info, int tex
 
 		if (backlist) model_resort_index_buffer_bsp(offset+backlist,bsp_info, true, texture, index_buffer);
 
-	}	else {			//not facing.  draw front then back
+	} else {
 
 		//draw back then front
 
@@ -6087,13 +6085,11 @@ void model_resort_index_buffer_sortnorm_f2b(int offset, ubyte *bsp_info, int tex
 
 
 void model_resort_index_buffer_bsp(int offset, ubyte *bsp_data, bool f2b, int texture, short* index_buffer){
-	int ID, SIZE;
+	int id = w(bsp_data+offset);
+	int size = w(bsp_data+offset+4);
 
-	memcpy(&ID, &bsp_data[offset], sizeof(int));
-	memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
-
-	while(ID!=0){
-		switch(ID){
+	while(id!=0){
+		switch(id){
 		case OP_EOF:	
 			return;
 			break;
@@ -6111,11 +6107,11 @@ void model_resort_index_buffer_bsp(int offset, ubyte *bsp_data, bool f2b, int te
 		default:
 			return;
 		}
-			offset += SIZE;
-		memcpy(&ID, &bsp_data[offset], sizeof(int));
-		memcpy(&SIZE, &bsp_data[offset+sizeof(int)], sizeof(int));
+		offset += size;
+		id = w(bsp_data+offset);
+		size = w(bsp_data+offset+4);
 
-		if(SIZE < 1)ID=OP_EOF;
+		if(size < 1) id=OP_EOF;
 	}
 }
 

@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.58 $
- * $Date: 2005-05-30 05:29:17 $
+ * $Revision: 2.59 $
+ * $Date: 2005-06-19 02:28:55 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/05/30 05:29:17  taylor
+ * as soon as the first frame gets released the rest are unreachable in the loop
+ *   this was basically became a memory leak as additional frames never got released
+ *
  * Revision 2.57  2005/05/23 05:56:26  taylor
  * Jens, again:
  *  - compiler warning fixes
@@ -788,6 +792,8 @@ int Bm_low_mem = 0;
 // Bm_max_ram - How much RAM bmpman can use for textures.
 // Set to <1 to make it use all it wants.
 int Bm_max_ram = 0;		//16*1024*1024;			// Only use 16 MB for textures
+static int Bm_ignore_duplicates = 0;
+static int Bm_ignore_load_count = 0;
 
 #define EFF_FILENAME_CHECK { if ( be->type == BM_TYPE_EFF ) strncpy( filename, be->info.eff.filename, MAX_FILENAME_LEN ); else strncpy( filename, be->filename, MAX_FILENAME_LEN ); }
 
@@ -893,6 +899,52 @@ SkipFree:
 		be->data_size = 0;
 	#endif
 	be->signature = Bm_next_signature++; 
+}
+
+// a special version of bm_free_data() that can be safely used in gr_*_texture
+// to save system memory once textures have been transfered to API memory
+// it doesn't restore the slot to a pristine state, it only releases the data
+// NOTE: THIS SHOULD ONLY BE USED FROM bm_unload_fast()!!!
+static void bm_free_data_fast(int n)
+{
+	bitmap_entry	*be;
+	bitmap			*bmp;
+
+	Assert( n >= 0 && n < MAX_BITMAPS );
+
+	be = &bm_bitmaps[n];
+	bmp = &be->bm;
+
+	// If there isn't a bitmap in this structure, don't
+	// do anything but clear out the bitmap info
+	if ( be->type == BM_TYPE_NONE) 
+		return;
+
+	// Don't free up memory for user defined bitmaps, since
+	// BmpMan isn't the one in charge of allocating/deallocing them.
+	if ( ( be->type == BM_TYPE_USER ) ) {
+	#ifdef BMPMAN_NDEBUG
+		if ( be->data_size != 0 )
+			bm_texture_ram -= be->data_size;
+	#endif
+		return;
+	}
+
+	// If this bitmap doesn't have any data to free, skip
+	// the freeing it part of this.
+	if ( (bmp->data == 0) ) {
+		return;
+	}
+
+	// Free up the data now!
+
+	//	mprintf(( "Bitmap %d freed %d bytes\n", n, bm_bitmaps[n].data_size ));
+#ifdef BMPMAN_NDEBUG
+	bm_texture_ram -= be->data_size;
+	be->data_size = 0;
+#endif
+	vm_free((void *)bmp->data);
+	bmp->data = 0;
 }
 
 
@@ -1125,7 +1177,6 @@ int bm_load_sub_slow(char *real_filename, const char *ext, CFILE **img_cfp = NUL
 // that's already loaded
 // returns  0 if it could not be found
 //          1 if it already exists, fills in handle
-int Bm_ignore_duplicates = 0;
 int bm_load_sub_fast(char *real_filename, const char *ext, int *handle, int dir_type = CF_TYPE_ANY)
 {
 	if (Bm_ignore_duplicates)
@@ -2515,12 +2566,14 @@ int bm_unload( int handle, bool clear_render_targets )
 	// kind of like ref_count except it gets around the lock/unlock usage problem
 	// this gets set for each bm_load() call so we can make sure and not unload it
 	// from memory, even if we *can*, until it's really not needed anymore
-	if ( be->load_count > 0 )
-		be->load_count--;
+	if (!Bm_ignore_load_count) {
+		if ( be->load_count > 0 )
+			be->load_count--;
 
-	if ( be->load_count != 0 ) {
-		nprintf(("BmpMan", "Tried to unload %s that has a load count of %d.. not unloading\n", be->filename, be->load_count));
-		return 0;
+		if ( be->load_count != 0 ) {
+			nprintf(("BmpMan", "Tried to unload %s that has a load count of %d.. not unloading\n", be->filename, be->load_count));
+			return 0;
+		}
 	}
 
 	// be sure that all frames of an ani are unloaded - taylor
@@ -2544,17 +2597,76 @@ int bm_unload( int handle, bool clear_render_targets )
 	return 1;
 }
 
+// just like bm_unload() except that it doesn't care about what load_count is
+// and will just plow through and release the data anyway
+// (NOTE that bm_free_data_fast() is used here and NOT bm_free_data()!)
+int bm_unload_fast( int handle, bool clear_render_targets )
+{
+	bitmap_entry	*be;
+	bitmap			*bmp;
+
+	int n = handle % MAX_BITMAPS;
+
+
+	Assert(n >= 0 && n < MAX_BITMAPS);
+	be = &bm_bitmaps[n];
+	bmp = &be->bm;
+
+//	if(clear_render_targets && be->type == BM_TYPE_RENDER_TARGET)return -1;//these don't want to be unloaded here
+
+	if ( be->type == BM_TYPE_NONE ) {
+		return -1;		// Already been released
+	}
+
+	if ( be->type == BM_TYPE_USER ) {
+		return -1;
+	}
+
+	// If it is locked, cannot free it.
+	if (be->ref_count != 0) {
+		nprintf(("BmpMan", "Tried to unload_fast %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
+		return 0;
+	}
+
+	Assert( be->handle == handle );		// INVALID BITMAP HANDLE!
+
+	// be sure that all frames of an ani are unloaded - taylor
+	if ( be->type == BM_TYPE_ANI ) {
+		int i,first = be->info.ani.first_frame;
+
+		// for the unload all case, don't try to unload every frame of every frame
+		// all additional frames automatically get unloaded with the first one
+		if (n > be->info.ani.first_frame)
+			return 1;
+
+		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
+			nprintf(("BmpMan", "Unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
+			bm_free_data_fast(first+i);		// clears flags, bbp, data, etc
+		}
+	} else {
+		nprintf(("BmpMan", "Unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
+		bm_free_data_fast(n);		// clears flags, bbp, data, etc
+	}
+
+	return 1;
+}
 
 // unload all used bitmaps
 void bm_unload_all()
 {
 	int i;
 
+	// since bm_unload_all() should only be called from game_shutdown() it should be
+	// safe to ignore load_count's and unload anyway
+	Bm_ignore_load_count = 1;
+
 	for (i = 0; i < MAX_BITMAPS; i++)	{
 		if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
 			bm_unload(bm_bitmaps[i].handle, true);
 		}
 	}
+
+	Bm_ignore_load_count = 0;
 }
 
 
