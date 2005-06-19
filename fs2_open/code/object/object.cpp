@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-04-25 00:28:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.39 $
+ * $Date: 2005-06-19 02:43:14 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/04/25 00:28:58  wmcoolmon
+ * subsystem sounds
+ *
  * Revision 2.37  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1151,9 +1154,10 @@ void obj_delete(int objnum)
 	case OBJ_START:
 	case OBJ_WAYPOINT:
 	case OBJ_POINT:
-	case OBJ_JUMP_NODE:
 		Assert(Fred_running);
 		break;  // requires no action, handled by the Fred code.
+	case OBJ_JUMP_NODE:
+		break;  // requires no further action, handled by jumpnode deconstructor.
 	case OBJ_DEBRIS:
 		debris_delete( objp );
 		break;
