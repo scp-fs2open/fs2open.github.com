@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 2.2 $
- * $Date: 2005-01-18 01:14:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2005-06-19 02:45:55 $
+ * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/01/18 01:14:17  wmcoolmon
+ * OGG fixes, ship selection fixes
+ *
  * Revision 2.1  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -94,9 +97,11 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _AUDIOSTR_H
 #define _AUDIOSTR_H
+
+#include "PreProcDefines.h"
+
 
 // type of audio stream
 #define ASF_SOUNDFX			0
@@ -105,7 +110,30 @@
 #define ASF_NONE				3		// used to catch errors
 
 
+
 #ifndef NO_SOUND
+
+#ifdef STRHDL
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <mmsystem.h>
+#endif
+
+#include "sound/ogg/ogg.h"
+
+// audio stream file handle information
+typedef struct {
+	HMMIO cfp;		// handle for mmio
+
+	long true_offset;	// true offset of file into VP
+	uint size;			// total size of file being read
+
+	// for OGGs
+	OggVorbis_File vorbis_file;	// vorbis file info
+} STRHDL;
+#endif	// NEED_STRHDL
+
 // Initializes the audio streaming library.  Called
 // automatically when the sound stuff is inited.
 void audiostream_init();
