@@ -10,13 +10,26 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.22 $
- * $Date: 2005-04-24 12:56:42 $
+ * $Revision: 2.23 $
+ * $Date: 2005-06-19 02:28:55 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/04/24 12:56:42  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 2.21  2005/04/21 15:49:20  taylor
  * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
  *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
@@ -402,6 +415,10 @@ int bm_create( int bpp, int w, int h, void * data, int flags = 0);
 // still be used, it will just have to be paged in next
 // time it is locked.
 int bm_unload( int n, bool = false );
+
+// like bm_unload() except that it's safe to use to free data without worrying about
+// load_count so it's safe to use in relation to bm_release() and in gr_*_texture functions
+int bm_unload_fast( int n, bool = false );
 
 // Frees up a bitmap's data, and it's slot, so bitmap 
 // number 'n' cannot be used anymore, and bm_load or

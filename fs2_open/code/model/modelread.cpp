@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.69 $
- * $Date: 2005-06-03 18:18:02 $
+ * $Revision: 2.70 $
+ * $Date: 2005-06-19 02:28:56 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2005/06/03 18:18:02  taylor
+ * some IBX debugging info to help determine if an IBX is corrupt post-mortem
+ *
  * Revision 2.68  2005/05/28 19:41:56  taylor
  * add a NULL check to model_get() for better error detection over an outright CTD
  *
@@ -1677,6 +1680,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
 
+		// check if it's a zero size file and if so bail out to create a new one
+		if ( (ibuffer_info.read != NULL) && !cfilelength(ibuffer_info.read) ) {
+			cfclose( ibuffer_info.read );
+			ibuffer_info.read = NULL;
+		}
+
 		if ( ibuffer_info.read != NULL ) {
 			// grab a checksum of the IBX, for debugging purposes
 			uint ibx_checksum = 0;
@@ -2761,7 +2770,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		if (pm->specular_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
 							
 			mprintf(("For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
-			pm->specular_textures[i] = pm->textures[i];
+		//	pm->specular_textures[i] = pm->textures[i];
 
 		}
 		pm->specular_original_textures[i] = pm->specular_textures[i];

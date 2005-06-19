@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.155 $
- * $Date: 2005-06-03 06:39:25 $
+ * $Revision: 2.156 $
+ * $Date: 2005-06-19 02:28:55 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.155  2005/06/03 06:39:25  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.154  2005/06/03 02:28:54  wmcoolmon
  * Small extern fix
  *
@@ -1294,6 +1297,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "camera/camera.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
+#include "jumpnode/jumpnode.h"
 
 #if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
@@ -2154,6 +2158,7 @@ void game_level_close()
 	shield_hit_close();
 	mission_event_shutdown();
 	asteroid_level_close();
+	jumpnode_level_close();
 	model_cache_reset();						// Reset/free all the model caching stuff
 	flak_level_close();						// unload flak stuff
 	neb2_level_close();						// shutdown gaseous nebula stuff
@@ -2451,7 +2456,8 @@ void game_loading_callback(int count)
 		gr_set_bitmap( cbitmap );
 		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1]);
 
-		if(last_cbitmap > -1 && last_cbitmap != cbitmap)bm_release(last_cbitmap);
+		if ( (last_cbitmap > -1) && (last_cbitmap != cbitmap) )
+			bm_release(last_cbitmap);
 	
 		do_flip = 1;
 	}
@@ -2522,7 +2528,8 @@ void game_loading_callback(int count)
 	}
 #endif	// !NDEBUG
 
-	if(cbitmap != -1)last_cbitmap = cbitmap;
+	if (cbitmap != -1)
+		last_cbitmap = cbitmap;
 
 	if (do_flip) {
 		gr_flip();
@@ -3686,7 +3693,7 @@ void game_show_framerate()
 	if ( Show_mem  ) {
 		
 		int sx,sy,dy;
-		sx = 530;
+		sx = GR_1024 ? 870 : 530;
 		sy = 15;
 		dy = gr_get_font_height() + 1;
 
@@ -3710,8 +3717,10 @@ void game_show_framerate()
 #ifndef NO_SOUND
 		gr_printf( sx, sy, NOX("S-SRAM: %d KB\n"), Snd_sram/1024 );		// mem used to store game sound
 		sy += dy;
+#ifndef USE_OPENAL
 		gr_printf( sx, sy, NOX("S-HRAM: %d KB\n"), Snd_hram/1024 );		// mem used to store game sound
 		sy += dy;
+#endif
 #endif
 
 #ifndef NO_DIRECT3D
@@ -8757,7 +8766,6 @@ void game_shutdown(void)
 	ship_close();					// free any memory that was allocated for the ships
 	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
 	unload_animating_pointer();// frees the frames used for the animating mouse pointer
-	bm_unload_all();				// free bitmaps
 	mission_campaign_close();	// close out the campaign stuff
 	message_mission_close();	// clear loaded table data from message.tbl
 #ifndef NO_NETWORK
@@ -8789,6 +8797,7 @@ void game_shutdown(void)
 #endif
 
 	model_free_all();
+	bm_unload_all();			// unload/free bitmaps, has to be called *after* model_free_all()!
 
 	os_cleanup();
 

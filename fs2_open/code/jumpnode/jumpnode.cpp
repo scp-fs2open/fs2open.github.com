@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-06-01 22:54:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2005-06-19 02:28:55 $
+ * $Author: taylor $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/06/01 22:54:23  wmcoolmon
+ * Better missing model handling Pt. 2
+ *
  * Revision 2.13  2005/06/01 22:52:56  wmcoolmon
  * Better missing model handling
  *
@@ -118,7 +121,6 @@ void jumpnode_level_close()
 	for ( jnp = Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = next_node ) {	
 		next_node = jnp->get_next();
 		delete jnp;
-		Num_jump_nodes--;
 	}
 
 	//This could mean a memory leak
@@ -214,6 +216,7 @@ void jump_node::set_alphacolor(int r, int g, int b, int alpha)
 jump_node::jump_node(vec3d *pos)
 {
 	int obj;
+	float radius;
 
 	//Set name
 	sprintf(m_name, XSTR( "Jump Node %d", 632), Num_jump_nodes);
@@ -222,6 +225,9 @@ jump_node::jump_node(vec3d *pos)
 	m_modelnum = model_load(NOX("subspacenode.pof"), 0, NULL);
 	if ( m_modelnum < 0 ) {
 		Warning(LOCATION, "Could not load default model for %s", m_name);
+		radius = 0.0f;
+	} else {
+		radius = model_get_radius(m_modelnum);
 	}
 
 	//Set default color
@@ -231,7 +237,7 @@ jump_node::jump_node(vec3d *pos)
 	m_flags = 0;
 
 	//Create the object
-	obj = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, pos, model_get_radius(m_modelnum), OF_RENDERS);
+	obj = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, pos, radius, OF_RENDERS);
 
 	if (obj >= 0)
 	{
