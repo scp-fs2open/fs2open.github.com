@@ -435,14 +435,14 @@ void make_new_window(Button* caller)
 		else
 			stip = species_nodes[True_NumSpecies];
 
-		ctip = cmp->AddItem(stip, Ship_info[i].name, (void*)i, false);
+		ctip = cmp->AddItem(stip, Ship_info[i].name, i, false);
 		for(j = 0; j < Ship_info[i].num_detail_levels; j++)
 		{
 			itoa(j, buf, 10);
 			lod_name = "LOD ";
 			lod_name += buf;
 
-			cmp->AddItem(ctip, lod_name, (void*)j, false, change_lod);
+			cmp->AddItem(ctip, lod_name, j, false, change_lod);
 		}
 	}
 

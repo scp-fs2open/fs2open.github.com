@@ -462,7 +462,7 @@ struct TreeItem : public LinkedList
 private:
 	std::string Name;
 	void (*Function)(Tree *caller);
-	void *Data;
+	int Data;
 
 	bool DeleteData;	//Do we delete data for the user?
 	bool ShowThis;
@@ -475,7 +475,7 @@ private:
 public:
 	//Get
 	TreeItem *	GetParentItem(){return Parent;}
-	void	 *	GetData(){return Data;}
+	int			GetData(){return Data;}
 	bool		HasChildren(){return NOT_EMPTY(&Children);}
 
 	TreeItem();
@@ -507,7 +507,7 @@ public:
 	Tree(std::string in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//void LoadItemList(TreeItem *in_list, unsigned int count);
-	TreeItem* AddItem(TreeItem *parent, std::string in_name, void *in_data = NULL, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
+	TreeItem* AddItem(TreeItem *parent, std::string in_name, int in_data = 0, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
 
 	TreeItem* GetSelectedItem(){return SelectedItem;}
 };

@@ -1829,7 +1829,7 @@ TreeItem::TreeItem()
 :LinkedList()
 {
 	Function = NULL;
-	Data=NULL;
+	Data=0;
 	ShowThis=true;
 	ShowChildren=false;
 	DeleteData=true;
@@ -1852,8 +1852,10 @@ TreeItem::~TreeItem()
 		delete cgp;
 	}
 
-	if(Data != NULL && DeleteData)
-		delete Data;	//A good idea
+/*	if((Data != 0) && DeleteData) {
+		delete (ptr_u *)Data;	//A good idea
+	} */
+
 }
 
 void Tree::CalcItemsSize(TreeItem *items, int DrawData[4])
@@ -2082,7 +2084,7 @@ void Tree::DoMove(int dx, int dy)
 	MoveTreeItems(dx, dy, &Items);
 }
 
-TreeItem* Tree::AddItem(TreeItem *parent, std::string in_name, void *in_data, bool in_delete_data, void (*in_function)(Tree* caller))
+TreeItem* Tree::AddItem(TreeItem *parent, std::string in_name, int in_data, bool in_delete_data, void (*in_function)(Tree* caller))
 {
 	TreeItem *ni = new TreeItem;
 
