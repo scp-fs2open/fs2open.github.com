@@ -6,7 +6,20 @@
  *
 */ 
 
-// This module contains freespace specific stuff leaving the speech module to handle generic stuff.
+/*
+ * $Logfile: /Freespace2/code/sound/fsspeech.cpp $
+ * $Revision: 1.14 $
+ * $Date: 2005-06-20 15:54:58 $
+ * $Author: phreak $
+ *
+ * This module contains freespace specific stuff leaving the speech module to handle generic stuff.
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ *
+ * $NoKeywords: $
+ */
+
 
 #include "PreProcDefines.h"
 
@@ -22,7 +35,7 @@
 #include "osapi/osregistry.h"
 #include "debugconsole/dbugfile.h"
 #include "globalincs/pstypes.h"
-
+#include "cmdline/cmdline.h"
 
 
 #pragma warning(disable:4711)	// function selected for inlining
