@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.201 $
- * $Date: 2005-06-07 06:10:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.202 $
+ * $Date: 2005-06-20 04:10:35 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.201  2005/06/07 06:10:51  wmcoolmon
+ * This may stop targeting not-targetable ships in EMP
+ *
  * Revision 2.200  2005/05/26 04:30:48  taylor
  * don't page out textures in ship_delete() since it causes some slowdown which can make
  *   the explosion effects skip/stutter
@@ -13282,38 +13285,34 @@ int is_support_allowed(object *objp)
 // if no visible ships are generated in num_ships iterations, it returns -1
 int ship_get_random_targetable_ship()
 {
-	int num_ships;
 	int rand_ship;
-	int idx;
+	int idx = 0, target_list[MAX_SHIPS];
 	ship_obj *so;
 
-	// get the # of ships on the list
-		num_ships = ship_get_num_ships();
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		// make sure the instance is valid
+		if ( (Objects[so->objnum].instance < 0) || (Objects[so->objnum].instance >= MAX_SHIPS) )
+			continue;
 
-	//So we don't get an infinite loop
-	for(int i = 0; i < num_ships; i++)
-	{
-		// get a random ship on the list
-		rand_ship = (int)frand_range(0.0f, (float)(num_ships - 1));
-		if(rand_ship < 0){
-			rand_ship = 0;
-		} 
-		if(rand_ship > num_ships){
-			rand_ship = num_ships;
+		// skip if we aren't supposed to target it
+		if ( Ships[Objects[so->objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS )
+			continue;
+
+		if (idx >= MAX_SHIPS) {
+			idx = MAX_SHIPS;
+			break;
 		}
 
-		// find this guy
-		so = GET_FIRST(&Ship_obj_list);
-		for(idx=0; idx<rand_ship; idx++) {
-			so = GET_NEXT(so);
-		}
-
-		//Make sure this ship isn't non-targettable
-		if(!(Ships[Objects[so->objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS))
-			return Objects[so->objnum].instance;
+		target_list[idx] = Objects[so->objnum].instance;
+		idx++;
 	}
 
-	return -1;
+	if (idx == 0)
+		return -1;
+
+	rand_ship = (rand() % idx);
+
+	return target_list[rand_ship];
 }
 
 // forcible jettison cargo from a ship
