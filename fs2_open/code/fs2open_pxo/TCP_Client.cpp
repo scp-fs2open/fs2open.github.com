@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.28 $
- * $Date: 2005-05-08 20:28:57 $
- * $Author: wmcoolmon $
+ * $Revision: 1.29 $
+ * $Date: 2005-06-21 00:13:47 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2005/05/08 20:28:57  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 1.27  2005/03/08 03:50:25  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -797,7 +800,7 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 	// ---------- Receive Reply ------------
 
 	serverlist_reply_packet NewServer;
-	net_server *retlist, templist[MAX_SERVERS];
+	net_server *retlist = NULL, templist[MAX_SERVERS];
 
 	while ((clock() - starttime) <= timeout)
 	{
@@ -819,6 +822,8 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 		
 	}
 
+	if (!numServersFound)
+		return NULL;
 
 	// ---------- Prepair and return list ------------
 	retlist = new net_server[numServersFound];

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-05-12 17:49:15 $
+ * $Revision: 2.38 $
+ * $Date: 2005-06-21 00:13:47 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/05/12 17:49:15  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.36  2005/03/08 03:50:23  Goober5000
  * edited for language ;)
  * --Goober5000
@@ -2213,13 +2217,15 @@ void multi_join_load_tcp_addrs()
 		// free up any existing server list
 		multi_free_server_list();
 
-		net_server *servers;
-		int numServersFound;
-		
+		net_server *servers = NULL;
+		int numServersFound = 0;
+
 		//ml_printf("Network (FS2OpenPXO): Requesting server list\n");
 		servers = GetServerList(PXO_Server, numServersFound, FS2OpenPXO_Socket, PXO_port);
 
-		
+		if (servers == NULL)
+			return;
+
 		ml_printf("Network (FS2OpenPXO): Got %d servers.\n", numServersFound);
 
 		//active_game ag;
@@ -2243,19 +2249,23 @@ void multi_join_load_tcp_addrs()
 				ag.flags = servers[i].flags;
 				ag.comp_version = ag.version = MULTI_FS_SERVER_VERSION;*/
 
-				memset(&addr,0,sizeof(net_addr));
-				addr.type = NET_TCP;
-				psnet_string_to_addr(&addr,servers[i].ip);
-				addr.port = (short) servers[i].port;
+				if ( !psnet_is_valid_ip_string(servers[i].ip) ) {
+					nprintf(("Network","Invalid ip string (%s)\n", servers[i].ip));
+				} else {	
+					memset(&addr,0,sizeof(net_addr));
+					addr.type = NET_TCP;
+					psnet_string_to_addr(&addr,servers[i].ip);
+					addr.port = (short) servers[i].port;
 
-				if ( addr.port == 0 ){
-					addr.port = DEFAULT_GAME_PORT;
-				}
+					if ( addr.port == 0 ){
+						addr.port = DEFAULT_GAME_PORT;
+					}
 
-				// create a new server item on the list
-				item = multi_new_server_item();
-				if(item != NULL){
-					memcpy(&item->server_addr,&addr,sizeof(net_addr));
+					// create a new server item on the list
+					item = multi_new_server_item();
+					if(item != NULL){
+						memcpy(&item->server_addr,&addr,sizeof(net_addr));
+					}
 				}
 
 				//ag.server_addr = addr;
