@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:20 $
+ * $Revision: 2.6 $
+ * $Date: 2005-06-21 00:20:24 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.4  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -169,7 +172,7 @@ void neb2_render_player();
 void neb2_eye_changed();
 
 // get near and far fog values based upon object type and rendering mode
-void neb2_get_fog_values(float *fnear, float *ffar, object *obj);
+void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
 
 // given a position in space, return a value from 0.0 to 1.0 representing the fog level 
 float neb2_get_fog_intensity(object *obj);

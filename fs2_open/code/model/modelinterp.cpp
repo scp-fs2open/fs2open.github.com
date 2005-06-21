@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.119 $
- * $Date: 2005-06-19 09:03:05 $
+ * $Revision: 2.120 $
+ * $Date: 2005-06-21 00:20:24 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2005/06/19 09:03:05  taylor
+ * check_values() shouldn't be inline anymore
+ * remove useless neb2_get_fog_intensity() call
+ * s/alocate/allocate/g
+ *
  * Revision 2.118  2005/06/19 02:42:21  taylor
  * really needed to mention those two things as well given the types of changes those are
  *
@@ -3608,7 +3613,7 @@ void light_set_all_relevent();
 
 extern int Warp_model;
 
-void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int light_ignore_id )
+void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum )
 {
 	int i, detail_level;
 	polymodel * pm;
@@ -3616,14 +3621,18 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	uint save_gr_zbuffering_mode;
 	int zbuf_mode;
-	int objnum = light_ignore_id;
 	ship *shipp = NULL;
 	int is_ship = 0;
-	object *obj = &Objects[objnum];
-	if(obj->type == OBJ_SHIP){
-		shipp = &Ships[obj->instance];
-		is_ship = 1;
-		glow_maps_active = shipp->glowmaps_active;
+	object *objp = NULL;
+
+	if (objnum >= 0) {
+		objp = &Objects[objnum];
+
+		if (objp->type == OBJ_SHIP) {
+			shipp = &Ships[objp->instance];
+			is_ship = 1;
+			glow_maps_active = shipp->glowmaps_active;
+		}
 	}
 	
 	if (FULLCLOAK != 1)
@@ -3801,8 +3810,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
 	{
-		float fog_near, fog_far;
-		neb2_get_fog_values(&fog_near, &fog_far, obj);
+		float fog_near = 10.0f, fog_far = 1000.0f;
+		neb2_get_fog_values(&fog_near, &fog_far, objp);
 		unsigned char r, g, b;
 		neb2_get_fog_colour(&r, &g, &b);
 		gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
@@ -3873,15 +3882,17 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	if(!Cmdline_nohtl)gr_set_lighting(true,true);
 
-	vec3d decal_z_corection = View_position;
-//	vm_vec_sub(&decal_z_corection, &Eye_position, pos);
-	if(decal_z_corection.xyz.x != 0 && decal_z_corection.xyz.y != 0 && decal_z_corection.xyz.z != 0)
-		vm_vec_normalize(&decal_z_corection);
-	float corection = 0.2f;
-	vm_vec_scale(&decal_z_corection, corection);
-	g3_start_instance_matrix(&decal_z_corection, NULL, use_api);		
-	decal_render_all(&Objects[objnum]);
-	g3_done_instance(use_api);
+	if (objp != NULL) {
+		vec3d decal_z_corection = View_position;
+	//	vm_vec_sub(&decal_z_corection, &Eye_position, pos);
+		if(decal_z_corection.xyz.x != 0 && decal_z_corection.xyz.y != 0 && decal_z_corection.xyz.z != 0)
+			vm_vec_normalize(&decal_z_corection);
+		float corection = 0.2f;
+		vm_vec_scale(&decal_z_corection, corection);
+		g3_start_instance_matrix(&decal_z_corection, NULL, use_api);		
+		decal_render_all(objp);
+		g3_done_instance(use_api);
+	}
 
 
 	if(!Cmdline_nohtl){
@@ -3910,9 +3921,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	model_render_insignias(pm, detail_level);	
 
 	gr_zbias(0);  
-	
-//	object *obj = &Objects[objnum];
-//	decal_render_all(&Objects[objnum]);
+
 	gr_set_lighting(false,false);
 
 	if (FULLCLOAK != -1)	model_finish_cloak(FULLCLOAK);
@@ -4334,41 +4343,41 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;
 					particle_emit( &pe, PARTICLE_BITMAP, Interp_thruster_particle_bitmap );
 					*/
-				particle_emitter	pe;
-				thruster_particles* tp;
+					particle_emitter	pe;
+					thruster_particles* tp;
 
-				for(int P = 0; P < sip->n_thruster_particles; P++){
-					if(Interp_AB)
-						tp = &sip->afterburner_thruster_particles[P];
-					else
-						tp = &sip->normal_thruster_particles[P];
+					for(int P = 0; P < sip->n_thruster_particles; P++){
+						if(Interp_AB)
+							tp = &sip->afterburner_thruster_particles[P];
+						else
+							tp = &sip->normal_thruster_particles[P];
 
-					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
+						float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
 						vec3d npnt = pnt;
 						vm_vec_unrotate(&npnt, &pnt, orient);
 						vm_vec_add(&npnt, &npnt, pos);
 
-					pe.pos = npnt;				// Where the particles emit from
-					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
+						pe.pos = npnt;				// Where the particles emit from
+						pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
 	
-					vec3d nn = orient->vec.fvec;
-					vm_vec_negate(&nn);
-				//	vm_vec_unrotate(&nn, &bank->norm[j], orient);
+						vec3d nn = orient->vec.fvec;
+						vm_vec_negate(&nn);
+					//	vm_vec_unrotate(&nn, &bank->norm[j], orient);
 
-					pe.normal = nn;	// What normal the particle emit around
-					pe.min_vel = v*0.75f;
-					pe.max_vel =  v*1.25f;
+						pe.normal = nn;	// What normal the particle emit around
+						pe.min_vel = v*0.75f;
+						pe.max_vel =  v*1.25f;
 
-					pe.num_low = tp->n_low;					// Lowest number of particles to create
-					pe.num_high = tp->n_high;				// Highest number of particles to create
-					pe.min_rad = bank->point[j].radius*tp->min_rad;	// * objp->radius;
-					pe.max_rad = bank->point[j].radius*tp->max_rad; // * objp->radius;
-					pe.normal_variance = tp->variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+						pe.num_low = tp->n_low;					// Lowest number of particles to create
+						pe.num_high = tp->n_high;				// Highest number of particles to create
+						pe.min_rad = bank->point[j].radius*tp->min_rad;	// * objp->radius;
+						pe.max_rad = bank->point[j].radius*tp->max_rad; // * objp->radius;
+						pe.normal_variance = tp->variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 
-					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);
-				}
+						particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);
+					}
 
-				// do sound - maybe start a random sound, if it has played far enough.
+					// do sound - maybe start a random sound, if it has played far enough.
 				}
 			}
 		}
@@ -4444,7 +4453,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 }
 
 
-void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * pos, uint flags, int light_ignore_id, int *replacement_textures)
+void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * pos, uint flags, int objnum, int *replacement_textures)
 {
 	// replacement textures - Goober5000
 	model_set_replacement_textures(replacement_textures);
@@ -4505,7 +4514,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
 		{
 			float fog_near, fog_far;
-			object *obj = &Objects[light_ignore_id];
+			object *obj = &Objects[objnum];
 			neb2_get_fog_values(&fog_near, &fog_far, obj);
 			unsigned char r, g, b;
 			neb2_get_fog_colour(&r, &g, &b);

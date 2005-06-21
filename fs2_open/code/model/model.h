@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.61 $
- * $Date: 2005-04-25 00:26:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.62 $
+ * $Date: 2005-06-21 00:20:24 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/04/25 00:26:53  wmcoolmon
+ * Dynamically allocated engine washes; subsystem sounds
+ *
  * Revision 2.60  2005/04/21 15:49:20  taylor
  * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
  *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
@@ -1253,13 +1256,13 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NO
 
 // Renders just one particular submodel on a model.
 // See MR_? defines for values for flags
-void submodel_render(int model_num,int submodel_num, matrix *orient, vec3d * pos, uint flags=MR_NORMAL, int light_ignore_id=-1, int *replacement_textures = NULL);
+void submodel_render(int model_num,int submodel_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int *replacement_textures = NULL);
 
 // forward references - moved out here by Goober5000
 int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check);
 void set_warp_globals(float, float, float, int, float);
 void model_try_cache_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int num_lights);
-void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int light_ignore_id);
+void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum = -1);
 
 // Returns the radius of a model
 float model_get_radius(int modelnum);
