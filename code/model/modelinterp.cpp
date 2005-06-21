@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.120 $
- * $Date: 2005-06-21 00:20:24 $
+ * $Revision: 2.121 $
+ * $Date: 2005-06-21 00:25:34 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2005/06/21 00:20:24  taylor
+ * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
+ *   and this makes it so much easier to realize that
+ * properly deal with the fact that objnum can be -1 in  model_really_render()
+ * add NULL check to neb2_get_fog_values() so that it can just send back defaults if objp is NULL
+ * small compiler warning fix for neb code
+ *
  * Revision 2.119  2005/06/19 09:03:05  taylor
  * check_values() shouldn't be inline anymore
  * remove useless neb2_get_fog_intensity() call
@@ -4514,7 +4521,11 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
 		{
 			float fog_near, fog_far;
-			object *obj = &Objects[objnum];
+			object *obj = NULL;
+			
+			if (objnum >= 0)
+				obj = &Objects[objnum];
+
 			neb2_get_fog_values(&fog_near, &fog_far, obj);
 			unsigned char r, g, b;
 			neb2_get_fog_colour(&r, &g, &b);
