@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-05-08 20:38:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.35 $
+ * $Date: 2005-06-21 00:15:06 $
+ * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/05/08 20:38:32  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 2.33  2005/04/19 06:26:56  taylor
  * small compiler warning fixes, more 'always true' stuff
  *
@@ -3581,7 +3584,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	// local setup -- be sure we are actually passing a weapon!!!!
 	objp = &Objects[weapon_objnum];
 	Assert ( objp->type == OBJ_WEAPON );
-	if(Weapon_info[Weapons[weapon_objnum].weapon_info_index].subtype == WP_MISSILE){
+	if(Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE){
 		has_sig = 1;
 	}
 
@@ -3608,7 +3611,6 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	ADD_SHORT( val );
 	val = (short)ssp->submodel_info_2.angs.p;
 	ADD_SHORT( val );	
-	ADD_INT(Weapons[weapon_objnum].weapon_info_index);	//Break multiplayer! -WMC:D
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3643,7 +3645,6 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	GET_DATA( turret_index );
 	GET_SHORT( heading );
 	GET_SHORT( pitch );	
-	GET_INT( wid );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// find the object
@@ -3669,6 +3670,15 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		return;
 	}
 
+	if (ssp->weapons.num_primary_banks > 0) {
+		wid = ssp->weapons.primary_bank_weapons[0];
+	} else if (ssp->weapons.num_secondary_banks > 0) {
+		wid = ssp->weapons.secondary_bank_weapons[0];
+	}
+
+	if (wid < 0)
+		return;
+
 	// bash the position and orientation of the turret
 	ssp->submodel_info_1.angs.h = (float)heading;
 	ssp->submodel_info_2.angs.p = (float)pitch;
@@ -3680,6 +3690,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	if(wnet_signature != 0){		
 		multi_set_network_signature( wnet_signature, MULTI_SIG_NON_PERMANENT );
 	}
+
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), 0, -1, 1);
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd != -1 ) {
@@ -8250,7 +8261,6 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	val = (short)ssp->submodel_info_2.angs.p;
 	ADD_SHORT( val );	
 	ADD_FLOAT( flak_range );
-	ADD_INT(Weapons[Objects[weapon_objnum].instance].weapon_info_index);
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -8279,7 +8289,6 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_SHORT( heading );
 	GET_SHORT( pitch );	
 	GET_FLOAT( flak_range );
-	GET_INT(wid);
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// find the object
@@ -8303,6 +8312,12 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
 	if(ssp == NULL){
 		return;
+	}
+
+	if (ssp->weapons.num_primary_banks > 0) {
+		wid = ssp->weapons.primary_bank_weapons[0];
+	} else if (ssp->weapons.num_secondary_banks > 0) {
+		wid = ssp->weapons.secondary_bank_weapons[0];
 	}
 
 	if((wid < 0) || !(Weapon_info[wid].wi_flags & WIF_FLAK)){
