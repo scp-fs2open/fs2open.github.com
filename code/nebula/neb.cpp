@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-05-12 17:49:15 $
+ * $Revision: 2.38 $
+ * $Date: 2005-06-21 00:20:24 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/05/12 17:49:15  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.36  2005/04/25 00:27:32  wmcoolmon
  * Commented out unneeded array (Glide)
  *
@@ -1222,11 +1226,6 @@ void neb2_render_player()
 	vec3d eye_pos;
 	matrix eye_orient;
 
-#ifndef NDEBUG
-//	float this_area;
-	float frame_area = max_area;
-	float total_area = 0.0f;
-#endif
 
 	// standalone servers can bail here
 	if(Game_mode & GM_STANDALONE_SERVER){
@@ -1373,6 +1372,10 @@ void neb2_render_player()
 				gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
 
 /*#ifndef NDEBUG
+				//	float this_area;
+				float frame_area = max_area;
+				float total_area = 0.0f;
+
 				this_area = g3_draw_rotated_bitmap_area(&p, fl_radian(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED, max_area);				
 				total_area += this_area;
 				frame_area -= this_area;
@@ -1438,6 +1441,9 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 	// default values in case something truly nasty happens
 	*fnear = 10.0f;
 	*ffar = 1000.0f;
+
+	if (objp == NULL)
+		return;
 
 	// determine what fog index to use
 	if(objp->type == OBJ_SHIP){
