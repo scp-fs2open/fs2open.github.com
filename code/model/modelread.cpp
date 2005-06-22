@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.71 $
- * $Date: 2005-06-19 02:42:21 $
+ * $Revision: 2.72 $
+ * $Date: 2005-06-22 15:25:41 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2005/06/19 02:42:21  taylor
+ * really needed to mention those two things as well given the types of changes those are
+ *
  * Revision 2.70  2005/06/19 02:28:56  taylor
  * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
  * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
@@ -3455,7 +3458,7 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	sii->prev_angs = sii->angs;
 
 	// float pointer into struct to get angle (either p,b,h)
-	float *ang_prev, *ang_next;
+	float *ang_prev = NULL, *ang_next = NULL;
 	switch( sm->movement_axis ) {
 	case MOVEMENT_AXIS_X:
 		ang_prev = &sii->prev_angs.p;
@@ -3472,7 +3475,11 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 		ang_next = &sii->angs.b;
 		break;
 	}
-	
+
+	// just in case we got through that switch statement in error
+	if ( (ang_prev == NULL) && (ang_next == NULL) )
+		return;
+
 	// angular displacement of one step
 	float step_size = (PI2 / psub->stepped_rotation->num_steps);
 
