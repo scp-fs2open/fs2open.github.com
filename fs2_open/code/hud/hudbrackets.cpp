@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-05-11 22:15:49 $
- * $Author: phreak $
+ * $Revision: 2.22 $
+ * $Date: 2005-06-22 15:17:53 $
+ * $Author: taylor $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/05/11 22:15:49  phreak
+ * added mission flag that will not show enemy wing names, just the ship class.
+ *
  * Revision 2.20  2005/04/28 05:29:29  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -859,7 +862,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		}
 	}
 
-	if(Cmdline_targetinfo)
+	if(Cmdline_targetinfo && (target_objnum != -1))
 	{
 		object* t_objp = &Objects[target_objnum];
 		char* tinfo_name = NULL;
