@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.157 $
- * $Date: 2005-06-19 09:00:09 $
+ * $Revision: 2.158 $
+ * $Date: 2005-06-22 15:16:40 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157  2005/06/19 09:00:09  taylor
+ * minor sanity checking for geometry_batcher
+ * make particle batchers allocate dynamically
+ * handle cases where a particle graphic couldn't be loaded
+ *
  * Revision 2.156  2005/06/19 02:28:55  taylor
  * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
  * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
@@ -2703,7 +2708,9 @@ int game_start_mission()
 
 	char temp_fname[MAX_FILENAME_LEN];
 	strcpy(temp_fname, Game_current_mission_filename);
-	strcat(temp_fname, ".fs2");
+	char *p = strchr(temp_fname, '.');
+	if (p) *p = 0; // remove any extension
+	strcat(temp_fname, FS_MISSION_FILE_EXT);  // append mission extension
 	get_mission_info(temp_fname, &The_mission);
 
 	game_loading_callback_init();
