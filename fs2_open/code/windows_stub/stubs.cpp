@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.16 $
- * $Date: 2005-05-28 19:44:17 $
+ * $Revision: 2.17 $
+ * $Date: 2005-06-22 15:18:58 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/05/28 19:44:17  taylor
+ * haven't got a clue what I was thinking with that crap
+ *
  * Revision 2.15  2005/05/24 20:52:10  taylor
  * make sure that we recursively create directories for Linux/OSX
  * replace older recursive mkdir method in cfileextractor with new method
@@ -323,7 +326,7 @@ int _chdir(const char *path)
 // make specified directory
 int _mkdir(const char *path)
 {
-	int status;
+	int status = 1;		// if we don't ever call mkdir() to update this then assume we are in error
 	char *c, tmp_path[MAX_PATH];
 
 	memset(tmp_path, 0, MAX_PATH);
