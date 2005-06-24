@@ -8,13 +8,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/fsspeech.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-06-20 15:54:58 $
- * $Author: phreak $
+ * $Revision: 1.15 $
+ * $Date: 2005-06-24 19:36:49 $
+ * $Author: taylor $
  *
  * This module contains freespace specific stuff leaving the speech module to handle generic stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/06/20 15:54:58  phreak
+ * added cmdline.h include so the compiler would see the no sound command line option
+ * also added CVS header information.
+ *
  *
  *
  * $NoKeywords: $
@@ -35,8 +39,9 @@
 #include "osapi/osregistry.h"
 #include "debugconsole/dbugfile.h"
 #include "globalincs/pstypes.h"
-#include "cmdline/cmdline.h"
 
+
+extern int Cmdline_freespace_no_sound;
 
 #pragma warning(disable:4711)	// function selected for inlining
 
