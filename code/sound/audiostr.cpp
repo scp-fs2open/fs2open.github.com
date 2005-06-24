@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-06-19 02:45:55 $
+ * $Revision: 2.21 $
+ * $Date: 2005-06-24 19:36:49 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/06/19 02:45:55  taylor
+ * OGG streaming fixes to get data reading right and avoid skipping
+ * properly handle seeking in OGG streams
+ * compiler warning fix in OpenAL builds
+ *
  * Revision 2.19  2005/05/28 19:43:28  taylor
  * debug message fixing
  * a little bit of code clarity
@@ -1314,7 +1319,7 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
 
 		// location of start of file in VP
-		m_data_offset = FileOffset;
+		m_data_offset = 0;
 		m_nDataSize = m_data_bytes_left = ((int)ov_pcm_total(&m_snd_info.vorbis_file, -1) * m_wfmt.nBlockAlign);
 
 		// Cue for streaming

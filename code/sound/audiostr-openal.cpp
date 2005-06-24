@@ -1,12 +1,17 @@
 /*
  * $Logfile: $
- * $Revision: 1.11 $
- * $Date: 2005-06-19 02:45:55 $
+ * $Revision: 1.12 $
+ * $Date: 2005-06-24 19:36:49 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/06/19 02:45:55  taylor
+ * OGG streaming fixes to get data reading right and avoid skipping
+ * properly handle seeking in OGG streams
+ * compiler warning fix in OpenAL builds
+ *
  * Revision 1.10  2005/06/01 09:41:14  taylor
  * bit of cleanup for audiostr-openal and fix a Windows-only enum error
  * bunch of OGG related fixes for Linux and Windows (DirectSound and OpenAL), fixes audio related TBP 3.2 crashes
@@ -476,7 +481,7 @@ BOOL WaveFile::Open (char *pszFilename)
 		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
 
 		// location of start of file in VP
-		m_data_offset = FileOffset;
+		m_data_offset = 0;
 		m_nDataSize = m_data_bytes_left = ((int)ov_pcm_total(&m_snd_info.vorbis_file, -1) * m_wfmt.nBlockAlign);
 
 		// Cue for streaming
