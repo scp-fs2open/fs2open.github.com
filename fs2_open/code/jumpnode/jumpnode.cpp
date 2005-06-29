@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-06-19 02:28:55 $
+ * $Revision: 2.16 $
+ * $Date: 2005-06-29 18:53:07 $
  * $Author: taylor $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/06/19 02:28:55  taylor
+ * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
+ * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
+ * NaN check to catch shards-of-death and prevent hitting an Assert() (Jens Granseuer)
+ * fix jumpnode code to catch model errors and close a memory leak
+ * make the call to bm_unload_all() after model_free_all() since we will get bmpman screwups otherwise
+ * don't show hardware sound RAM when using OpenAL build, it will always be 0
+ * print top-right memory figures in debug builds slighly further over when 1024+ res
+ *
  * Revision 2.14  2005/06/01 22:54:23  wmcoolmon
  * Better missing model handling Pt. 2
  *
@@ -252,7 +261,10 @@ jump_node::jump_node(vec3d *pos)
 
 jump_node::~jump_node()
 {
-	obj_delete(m_objnum);
+	// fred does something special with jumpnodes so
+	// don't delete object in that case
+	if (!Fred_running)
+		obj_delete(m_objnum);
 
 	//We now return you to your scheduled deletion
 	Jump_nodes.remove(this);
