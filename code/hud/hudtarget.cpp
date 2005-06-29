@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-06-07 06:10:50 $
- * $Author: wmcoolmon $
+ * $Revision: 2.62 $
+ * $Date: 2005-06-29 18:52:02 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/06/07 06:10:50  wmcoolmon
+ * This may stop targeting not-targetable ships in EMP
+ *
  * Revision 2.60  2005/05/30 05:31:19  taylor
  * make sure we don't show various offscreen indicators and info when hud-disabled-except-messages is used
  *
@@ -2683,14 +2686,16 @@ int hud_target_closest(int team, int attacked_objnum, int play_fail_snd, int fil
 	if ( (attacked_objnum >= 0) && (attacked_objnum != player_obj_index) ) {
 		// bail if player does not have target
 		if ( Player_ai->target_objnum == -1) {
-			if ( Objects[attacked_objnum].type != OBJ_SHIP ) {
-				goto Target_closest_done;
-			}
+			goto Target_closest_done;
+		}
 
-			// bail if ship is to be ignored
-			if (!(Ships[Objects[attacked_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS)) {
-				goto Target_closest_done;
-			}
+		if ( Objects[attacked_objnum].type != OBJ_SHIP ) {
+			goto Target_closest_done;
+		}
+
+		// bail if ship is to be ignored
+		if (Ships[Objects[attacked_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) {
+			goto Target_closest_done;
 		}
 	}
 
@@ -3097,6 +3102,12 @@ void hud_target_subsystem_in_reticle()
 	}
 
 	int shipnum = targetp->instance;
+
+	if ( targetp->type == OBJ_SHIP ) {
+		if ( Ships[shipnum].flags & TARGET_SHIP_IGNORE_FLAGS ) {
+			return;
+		}
+	}
 
 	for (subsys = GET_FIRST(&Ships[shipnum].subsys_list); subsys != END_OF_LIST(&Ships[shipnum].subsys_list)  ; subsys = GET_NEXT( subsys ) ) {
 		
