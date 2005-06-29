@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.29 $
- * $Date: 2005-06-21 00:13:47 $
+ * $Revision: 1.30 $
+ * $Date: 2005-06-29 18:49:37 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2005/06/21 00:13:47  taylor
+ * add some better error checking/handling for when GetServerList messes up
+ *
  * Revision 1.28  2005/05/08 20:28:57  wmcoolmon
  * Dynamically allocated medals
  *
@@ -135,7 +138,7 @@
 #pragma warning(disable: 4663 4018 4663 4245 4711)
 
 #include <iostream>
-#include <time.h>
+
 
 #include "fs2open_pxo/Client.h"
 #include "fs2open_pxo/protocol.h"
@@ -143,11 +146,8 @@
 #include "network/multi_log.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
+#include "io/timer.h"
 
-// NOTE: CLK_TCK is depreciated but available for compatibility, use CLOCKS_PER_SEC instead
-#ifndef CLK_TCK
-#define CLK_TCK CLOCKS_PER_SEC
-#endif
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);
 #define PXO_ADDSTRING(x, y) memcpy(cur, x, y); cur += y;
@@ -162,8 +162,7 @@ int CheckSingleMission(const char* mission, unsigned int crc32, TCP_Socket &Sock
 	// Clear any old dead crap data
 	Socket.IgnorePackets();
 
-	timeout = timeout * CLK_TCK;
-	int starttime = clock();
+	fix end_time = timer_get_fixed_seconds() + (timeout * F1_0);
 
 	std::string sender = masterserver;
 
@@ -182,7 +181,7 @@ int CheckSingleMission(const char* mission, unsigned int crc32, TCP_Socket &Sock
 
 	fs2open_fcheck_reply c_reply;
 
-	while ((clock() - starttime) <= timeout)
+	while ( timer_get_fixed_seconds() <= end_time )
 	{
 
 		if (Socket.DataReady() && Socket.GetData((char *) &c_reply, sizeof(fs2open_fcheck_reply)) != -1)
@@ -212,14 +211,11 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 	// Clear any old dead crap data
 	Socket.IgnorePackets();
 
-	
 
-	timeout = timeout * CLK_TCK;
-	int starttime = clock();
+	fix end_time = timer_get_fixed_seconds() + (timeout * F1_0);
 
 
 	std::string sender = masterserver;
-
 
 
 	char PacketBuffer[16384]; // 16K should be enough i think..... I HOPE!
@@ -279,10 +275,10 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 
 	fs2open_pilot_updatereply u_reply;
 
-	while ((clock() - starttime) <= timeout)
+	while ( timer_get_fixed_seconds() <= end_time )
 	{
 
-		if (Socket.DataReady() && Socket.GetData((char *) &u_reply, sizeof(fs2open_pilot_updatereply)) != -1)
+		if (Socket.DataReady() && (Socket.GetData((char *) &u_reply, sizeof(fs2open_pilot_updatereply)) != -1))
 		{
 
 			if (u_reply.pid != PCKT_PILOT_UREPLY) // ignore packet
@@ -312,8 +308,6 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 
 	fs2open_get_pilot prq_packet;
 
-	timeout = timeout * CLK_TCK;
-
 	memset((char *) &prq_packet, 0, sizeof(fs2open_get_pilot));
 	prq_packet.pid = PCKT_PILOT_GET2;
 	prq_packet.sid = SID;
@@ -335,13 +329,12 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 	int CheckSize =  72, i;
 	int recvsize = 0, rs2;
 	Sleep(2); // give them a second
-	int starttime = clock();
 
-	while ((clock() - starttime) <= timeout)
+	fix end_time = timer_get_fixed_seconds() + (timeout * F1_0);
+
+	while ( timer_get_fixed_seconds() <= end_time )
 	{
-
-
-		if (Socket.DataReady() && (recvsize = Socket.GetData((char *) &PacketBuffer, 16384)) != -1)
+		if (Socket.DataReady() && ((recvsize = Socket.GetData((char *) &PacketBuffer, 16384)) != -1))
 		{
 
 			if (p_reply->pid != PCKT_PILOT_REPLY) // ignore packet
@@ -355,7 +348,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 				CheckSize = 8;
 
 			ml_printf("Precompletion Pilot Update: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
-			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
+			while (CheckSize - recvsize > 0 && timer_get_fixed_seconds() <= end_time)
 			{
 				if (Socket.DataReady())
 				{
@@ -367,7 +360,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 			ml_printf("PostCompletion Tables Get: CheckSize = %u, recvsize = %u", CheckSize, recvsize);
 
 			// if we timed out
-			if ((clock() - starttime) >= timeout)
+			if ( timer_get_fixed_seconds() >= end_time )
 			{
 				ml_printf("Pilot Update completetion timed out");
 				break;
@@ -446,8 +439,6 @@ fs2open_banmask* GetBanList(int &numBanMasks, TCP_Socket &Socket, int timeout)
 	br_packet.reserved = 0;
 
 
-	timeout = timeout * CLK_TCK;
-
 	//std::string sender = masterserver;
 
 	// send Packet
@@ -461,16 +452,16 @@ fs2open_banmask* GetBanList(int &numBanMasks, TCP_Socket &Socket, int timeout)
 	numBanMasks = 0;
 	Sleep(1); //lets give them a second
 
-	int starttime = clock();
+	fix end_time = timer_get_fixed_seconds() + (timeout * F1_0);
 
 	int recvsize = 0, rs2;
 	int CheckSize = sizeof(int) * 2;
 
 
-	while ((clock() - starttime) <= timeout)
+	while ( timer_get_fixed_seconds() <= end_time )
 	{
 
-		if (Socket.DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
+		if (Socket.DataReady() && ((recvsize = Socket.GetData(PacketBuffer, 16384)) != -1))
 		{
 			if (banreply_ptr->pid != PCKT_BANLIST_RPLY)
 			{
@@ -481,7 +472,7 @@ fs2open_banmask* GetBanList(int &numBanMasks, TCP_Socket &Socket, int timeout)
 			CheckSize += banreply_ptr->num_ban_masks * sizeof(fs2open_banmask);
 
 			ml_printf("Precompletion Table Get: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
-			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
+			while (CheckSize - recvsize > 0 && timer_get_fixed_seconds() <= end_time)
 			{
 				if (Socket.DataReady())
 				{
@@ -492,7 +483,7 @@ fs2open_banmask* GetBanList(int &numBanMasks, TCP_Socket &Socket, int timeout)
 			}
 			ml_printf("PostCompletion Banlist Get: CheckSize = %u, recvsize = %u", CheckSize, recvsize);
 
-			if ((clock() - starttime) >= timeout)
+			if ( timer_get_fixed_seconds() >= end_time )
 			{
 				ml_printf("Banlist Transfer completetion timed out");
 				break;
@@ -525,8 +516,6 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 	fs2open_file_check fc_packet;
 	fc_packet.pid = PCKT_TABLES_RQST;
 
-	timeout = timeout * CLK_TCK;
-
 	std::string sender = masterserver;
 
 	// send Packet
@@ -540,15 +529,14 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 	numTables = 0;
 	Sleep(2); //lets give them a second
 
-	int starttime = clock();
+	fix end_time = timer_get_fixed_seconds() + (timeout * F1_0);
 
 	int recvsize = 0, rs2;
 	int CheckSize = sizeof(int) * 2;
 
-	while ((clock() - starttime) <= timeout)
+	while ( timer_get_fixed_seconds() <= end_time )
 	{
-
-		if (Socket.DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
+		if (Socket.DataReady() && ((recvsize = Socket.GetData(PacketBuffer, 16384)) != -1))
 		{
 			if (misreply_ptr->pid != PCKT_TABLES_REPLY)
 			{
@@ -559,7 +547,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 			CheckSize += misreply_ptr->num_files * sizeof(file_record);
 
 			ml_printf("Precompletion Table Get: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
-			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
+			while (CheckSize - recvsize > 0 && timer_get_fixed_seconds() <= end_time)
 			{
 				if (Socket.DataReady())
 				{
@@ -570,7 +558,7 @@ file_record* GetTablesList(int &numTables, const char *masterserver, TCP_Socket 
 			}
 			ml_printf("PostCompletion Tables Get: CheckSize = %u, recvsize = %u", CheckSize, recvsize);
 
-			if ((clock() - starttime) >= timeout)
+			if ( timer_get_fixed_seconds() >= end_time )
 			{
 				ml_printf("Tables Transfer completetion timed out");
 				break;
@@ -614,7 +602,6 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 	fs2open_file_check fc_packet;
 	fc_packet.pid = PCKT_MISSIONS_RQST;
 
-	timeout = timeout * CLK_TCK;
 
 	std::string sender = masterserver;
 
@@ -631,15 +618,16 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 	numMissions = 0;
 	//int depth = 0;
 	Sleep(2); // lets give it a second
-	int starttime = clock();
+
+	fix end_time = timer_get_fixed_seconds() + (timeout * F1_0);
 
 	int recvsize = 0, rs2;
 	int CheckSize = sizeof(int) * 2;
 
-	while ((clock() - starttime) <= timeout)
+	while ( timer_get_fixed_seconds() <= end_time )
 	{
 
-		if (Socket.DataReady() && (recvsize = Socket.GetData(PacketBuffer, 16384)) != -1)
+		if (Socket.DataReady() && ((recvsize = Socket.GetData(PacketBuffer, 16384)) != -1))
 		{
 
 			if (misreply_ptr->pid != PCKT_MISSIONS_REPLY)
@@ -650,7 +638,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 			CheckSize += misreply_ptr->num_files * sizeof(file_record);
 
 			ml_printf("Precompletion Missions Get: CheckSize = %d, recvsize = %d", CheckSize, recvsize);
-			while (CheckSize - recvsize > 0 && (clock() - starttime) <= timeout)
+			while (CheckSize - recvsize > 0 && timer_get_fixed_seconds() <= end_time)
 			{
 				if (Socket.DataReady())
 				{
@@ -661,7 +649,7 @@ file_record* GetMissionsList(int &numMissions, const char *masterserver, TCP_Soc
 			}
 			ml_printf("PostCompletion Missions Get: CheckSize = %u, recvsize = %u", CheckSize, recvsize);
 
-			if ((clock() - starttime) >= timeout)
+			if ( timer_get_fixed_seconds() >= end_time )
 			{
 				ml_printf("Missions Transfer completetion timed out");
 				break;
@@ -701,9 +689,6 @@ int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Soc
 	// Clear any old dead crap data
 	Socket.IgnorePackets();
 
-	timeout = timeout * CLK_TCK;
-	int starttime = clock();
-
 	std::string sender = masterserver;
 
 	// create and send login packet
@@ -719,10 +704,13 @@ int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Soc
 		std::cout << "Error Sending Packet" << std::endl;
 		return -1;
 	}
-	
+
+	fix end_time = timer_get_fixed_seconds() + (timeout * F1_0);
+
 	// await reply
 	fs2open_pxo_lreply loginreply;
-	while ((clock() - starttime) <= timeout)
+
+	while ( timer_get_fixed_seconds() <= end_time )
 	{
 
 		if (Socket.DataReady() && Socket.GetData((char *)&loginreply, sizeof(fs2open_pxo_lreply)) != -1)
@@ -733,7 +721,9 @@ int Fs2OpenPXO_Login(const char* username, const char* password, TCP_Socket &Soc
 			}
 
 			if (loginreply.login_status == false)
+			{
 				return -1;
+			}
 			else
 				return loginreply.sid;
 		}
@@ -783,10 +773,7 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 
 	numServersFound = 0;
 
-	
-	
-	timeout = timeout * CLK_TCK;
-	int starttime = clock();
+
 	// ---------- Prepair and send request packet ------------	
 	serverlist_request_packet rpack;
 	rpack.pid = PCKT_SLIST_REQUEST;
@@ -802,24 +789,26 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 	serverlist_reply_packet NewServer;
 	net_server *retlist = NULL, templist[MAX_SERVERS];
 
-	while ((clock() - starttime) <= timeout)
-	{
-		if (Socket.DataReady() && Socket.GetData((char *)&NewServer, sizeof(serverlist_reply_packet)) != -1)
-		{
+	fix end_time = timer_get_fixed_seconds() + (timeout * F1_0);
 
+	while ( timer_get_fixed_seconds() <= end_time )
+	{
+		if (Socket.DataReady() && Socket.GetData((char *)&NewServer, sizeof(serverlist_reply_packet)) == sizeof(serverlist_reply_packet))
+		{
 			if (!strcmp(NewServer.name, "TERM") && NewServer.flags == 0 && NewServer.players == 0)
 			{
-				starttime = 0;
 				break;
 			}
 
 			memcpy((char *)&templist[numServersFound], (char *)&NewServer, sizeof(serverlist_reply_packet));
-			
 
 			numServersFound++;
-		}
 
-		
+			if (numServersFound >= MAX_SERVERS) {
+				numServersFound = MAX_SERVERS;
+				break;
+			}
+		}
 	}
 
 	if (!numServersFound)

@@ -10,12 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-03-02 21:18:18 $
+ * $Revision: 1.15 $
+ * $Date: 2005-06-29 18:49:37 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/03/02 21:18:18  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 1.13  2005/02/04 20:06:03  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -247,12 +252,16 @@ bool TCP_Socket::DataReady()
 	FD_ZERO(&recvs);
 	FD_SET(mySocket, &recvs);
 
+#ifndef SCP_UNIX
 	int status = select(1, &recvs, NULL, NULL, &wait);
+#else
+	int status = select(mySocket+1, &recvs, NULL, NULL, &wait);
+#endif
 
 #if defined(FS2_TCP_RMultithread)
 	return (status != 0 && status != SOCKET_ERROR) || this->MT_DataReady();
 #else
-	return (status != 0 && status != SOCKET_ERROR);
+	return (status != 0 && status != SOCKET_ERROR && FD_ISSET(mySocket, &recvs));
 #endif
 }
 
@@ -284,7 +293,11 @@ bool TCP_Socket::OOBDataReady()
 	FD_ZERO(&recvs);
 	FD_SET(mySocket, &recvs);
 
+#ifndef SCP_UNIX
 	int status = select(1, NULL, NULL, &recvs, &wait);
+#else
+	int status = select(mySocket+1, NULL, NULL, &recvs, &wait);
+#endif
 
 	return (status != 0 && status != SOCKET_ERROR);
 }
