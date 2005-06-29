@@ -11,12 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.h $
- * $Revision: 1.9 $
- * $Date: 2005-06-21 00:12:11 $
+ * $Revision: 1.10 $
+ * $Date: 2005-06-29 18:49:37 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/06/21 00:12:11  taylor
+ * add virtual destructor so that GCC4 can shut up
+ *
  * Revision 1.8  2005/02/04 20:06:03  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -63,31 +66,16 @@
 
 //#include <winsock2.h>
 
-#if !defined(STYPE)
-#define STYPE SOCKET
-#endif
-
-
-
-#if !defined(CLOSEFUNC)
-#define CLOSEFUNC closesocket
-#endif
-
 #else
 #include <cstdio>
 #include <stdlib.h>
 #include <unistd.h>
 #include <cerrno>
-#endif
 #include <string>
+#endif
 
 #include "globalincs/pstypes.h" // make sure _cdecl is defined correctly on *nix
 
-// Enable Multithread
-//#define MT_TCP_Socket
-
-// Enable MultiThreaded Receive - FreeSpace 2 TCP_Socket only!
-#define FS2_TCP_RMultithread
 
 #if !defined(CLOSEFUNC)
 #define CLOSEFUNC closesocket
