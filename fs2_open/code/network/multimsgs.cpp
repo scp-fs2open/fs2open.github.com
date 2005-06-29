@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-06-21 00:15:06 $
+ * $Revision: 2.36 $
+ * $Date: 2005-06-29 18:54:02 $
  * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/06/21 00:15:06  taylor
+ * unbreak network compatibility with 3.6.5 and earlier builds
+ * fix crashing with turret weapons
+ *
  * Revision 2.34  2005/05/08 20:38:32  wmcoolmon
  * Dynamically allocated medals
  *
@@ -7421,12 +7425,12 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 					int subsys_type;
 
 					fl_val = subsystem_percent[n_subsystems] * subsysp->max_hits / 100.0f;
-					subsysp->current_hits = val;
+					subsysp->current_hits = fl_val;
 
 					// add the value just generated (it was zero'ed above) into the array of generic system types
 					subsys_type = subsysp->system_info->type;					// this is the generic type of subsystem
 					Assert ( subsys_type < SUBSYSTEM_MAX );
-					shipp->subsys_info[subsys_type].current_hits += val;
+					shipp->subsys_info[subsys_type].current_hits += fl_val;
 					n_subsystems++;
 				}
 			}
