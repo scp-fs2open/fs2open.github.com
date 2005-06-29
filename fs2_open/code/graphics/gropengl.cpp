@@ -2,13 +2,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.123 $
- * $Date: 2005-06-19 02:37:02 $
+ * $Revision: 2.124 $
+ * $Date: 2005-06-29 18:51:05 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2005/06/19 02:37:02  taylor
+ * general cleanup, remove some old code
+ * speed up gr_opengl_flip() just a tad
+ * inverted gamma slider fix that Sticks made to D3D
+ * possible fix for ATI green screens
+ * move opengl_check_for_errors() out of gropentnl so we can use it everywhere
+ * fix logged OGL info from debug builds to be a little more readable
+ * if an extension is found but required function is not then fail
+ * try to optimize glDrawRangeElements so we are not rendering more than the card is optimized for
+ * some 2d matrix usage checks
+ *
  * Revision 2.122  2005/06/03 06:51:50  taylor
  * the problem this tried to fix should be properly fixed now but I keep forgetting to remove this block
  *
@@ -3816,9 +3827,9 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion = 1;
-	pfd.cColorBits = (bpp == 16) ? 16 : 24;
+	pfd.cColorBits = (ubyte)bpp;
 	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.cDepthBits = (bpp == 16) ? 16 : 32;
+	pfd.cDepthBits = 24;
 	pfd.iPixelType = PFD_TYPE_RGBA;
 	pfd.cRedBits = (ubyte)Gr_red.bits;
 	pfd.cRedShift = (ubyte)Gr_red.shift;
@@ -3826,8 +3837,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	pfd.cBlueShift = (ubyte)Gr_blue.shift;
 	pfd.cGreenBits = (ubyte)Gr_green.bits;
 	pfd.cGreenShift = (ubyte)Gr_green.shift;
-	pfd.cAlphaBits = (ubyte)Gr_alpha.bits;
-	pfd.cAlphaShift = (ubyte)Gr_alpha.shift;
+//	pfd.cAlphaBits = (ubyte)Gr_alpha.bits;
+//	pfd.cAlphaShift = (ubyte)Gr_alpha.shift;
 
 
 	int PixelFormat;
