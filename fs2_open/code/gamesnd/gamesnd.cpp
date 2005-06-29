@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-06-19 02:29:54 $
+ * $Revision: 2.16 $
+ * $Date: 2005-06-29 18:50:13 $
  * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/06/19 02:29:54  taylor
+ * MIN Num_iface_sounds fix
+ *
  * Revision 2.14  2005/06/07 06:34:30  wmcoolmon
  * Hopefully this fixes something :)
  *
@@ -227,14 +230,6 @@
 #include "parse/parselo.h"
 
 
-/* -- dynamic now - taylor
-// Global array that holds data about the gameplay sound effects.
-game_snd Snds[MAX_GAME_SOUNDS];
-
-// Global array that holds data about the interface sound effects.
-game_snd Snds_iface[MAX_INTERFACE_SOUNDS];
-int Snds_iface_handle[MAX_INTERFACE_SOUNDS]; */
-
 int Num_game_sounds = 0;
 game_snd *Snds = NULL;
 
@@ -278,13 +273,13 @@ int gamesnd_get_by_name(char* name)
 //don't work out.
 void parse_sound(char* tag, int *idx_dest, char* object_name)
 {
-	char buf[256];
+	char buf[MAX_FILENAME_LEN];
 	int idx;
 
 	(*idx_dest) = -1;
 	if(optional_string(tag))
 	{
-		stuff_string(buf, F_NAME, NULL, sizeof(buf)/sizeof(char));
+		stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
 		idx = gamesnd_get_by_name(buf);
 		if(idx != -1)
 			(*idx_dest) = idx;
@@ -527,6 +522,8 @@ void gamesnd_init_sounds()
 		Num_game_sounds = MIN_GAME_SOUNDS;
 	}
 
+	Assert( Num_game_sounds > 0 );
+
 	// init the gameplay sounds
 	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gamesnd_init_struct(&Snds[i]);
@@ -541,6 +538,8 @@ void gamesnd_init_sounds()
 		Snds_iface_handle = (int *) vm_malloc (sizeof(int) * Num_iface_sounds);
 		Verify( Snds_iface_handle != NULL );
 	}
+
+	Assert( Num_iface_sounds > 0 );
 
 	// init the interface sounds
 	for ( i = 0; i < Num_iface_sounds; i++ ) {

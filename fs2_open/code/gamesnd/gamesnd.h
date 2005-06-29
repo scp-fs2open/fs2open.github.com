@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.10 $
- * $Date: 2005-04-25 00:22:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2005-06-29 18:50:13 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/04/25 00:22:34  wmcoolmon
+ * Added parse_sound; replaced Assert() with an if() (The latter may not be a good idea, but it keeps missions from being un-debuggable)
+ *
  * Revision 2.9  2005/04/21 15:58:08  taylor
  * initial changes to mission loading and status in debug builds
  *  - move bmpman page in init to an earlier stage to avoid unloading sexp loaded images
@@ -398,19 +401,6 @@ void parse_sound(char* tag, int *idx_dest, char* object_name);
 // this is a callback, so it needs to be a real function
 void common_play_highlight_sound();
 
-
-// Misc_sounds[] holds handles for misc sounds in the game (list appears in sounds.tbl)
-/* -- dynamic now - taylor
-#ifdef INF_BUILD
-#define MAX_GAME_SOUNDS					400
-#else
-#define MAX_GAME_SOUNDS					200
-#endif
-
-#define MAX_INTERFACE_SOUNDS			70
-
-extern game_snd Snds[MAX_GAME_SOUNDS];
-extern game_snd Snds_iface[MAX_INTERFACE_SOUNDS]; */
 
 // match original values by default, grow from this
 #define MIN_GAME_SOUNDS					200
