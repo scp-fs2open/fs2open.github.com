@@ -160,6 +160,7 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
 }
 
 extern int Cmdline_window;
+extern int Cmdline_noscalevid;
 HRESULT InitVideoWindow(HWND ghApp, long video_w, long video_h)
 {
     HRESULT hr = S_OK;
@@ -170,8 +171,16 @@ HRESULT InitVideoWindow(HWND ghApp, long video_w, long video_h)
 	int screen_w = rect.right;
 	int screen_h = rect.bottom;
 
-	int video_rescale_w = (video_w * screen_w) / video_w;
-	int video_rescale_h = (video_rescale_w * video_h) / video_w;
+	int video_rescale_w;
+	int video_rescale_h;
+
+	if (Cmdline_noscalevid && (video_w < screen_w) && (video_h < screen_h)) {
+		video_rescale_w = video_w;
+		video_rescale_h = video_h;
+	} else {
+		video_rescale_w = (video_w * screen_w) / video_w;
+		video_rescale_h = (video_rescale_w * video_h) / video_w;
+	}
 
 	int extra_w = (screen_w - video_rescale_w) / 2;
 	int extra_h = (screen_h - video_rescale_h) / 2;

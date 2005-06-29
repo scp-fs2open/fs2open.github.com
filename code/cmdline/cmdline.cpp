@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.104 $
- * $Date: 2005-05-24 07:05:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.105 $
+ * $Date: 2005-06-29 18:46:13 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2005/05/24 07:05:49  wmcoolmon
+ * Commented out -fixbugs and -nocrash in preparation for 3.6.7
+ *
  * Revision 2.103  2005/05/12 17:49:10  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -749,6 +752,7 @@ Flag exe_params[] =
 	{ "-2d_poof",		  "Stops fog intersect hull",		true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.2d_poof", },
 	{ "-cell",		  "Enable cell shading",			true,	0,					EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.cell", },
 	{ "-rlm",           "Enable more realistic lighting", true,   0,                  EASY_DEFAULT,       "Graphics",     "", },
+	{ "-noscalevid",	"Disable scale-to-window for movies",	true,	0,			EASY_DEFAULT,		"Graphics",		"", },
 
 	{ "-pcx2dds",	      "Compress pcx",			        true,   0,					EASY_DEFAULT,		"Game Speed",	"", },
 	{ "-d3d_no_vsync",  "Disable vertical sync",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_no_vsync", },
@@ -836,6 +840,7 @@ cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player m
 cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Change to phreaks options including new targetting code
 cmdline_parm targetinfo_arg("-targetinfo", NULL);	//Adds ship name/class to right of target box -C
 cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
+cmdline_parm noscalevid_arg("-noscalevid", NULL); // disable video scaling that fits to window
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	//turns off parsing errors -C
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
@@ -954,6 +959,7 @@ int Cmdline_allslev = 0;
 int Cmdline_dualscanlines	= 0;
 int Cmdline_targetinfo = 0;
 int Cmdline_dnoshowvid = 0;
+int Cmdline_noscalevid = 0;
 int Cmdline_noparseerrors = 0;
 int Cmdline_show_fps = 0;
 int Cmdline_show_pos = 0;
@@ -1493,6 +1499,10 @@ bool SetCmdlineParams()
 
 	if(dnoshowvid_arg.found() ) {
 		Cmdline_dnoshowvid = 1;
+	}
+
+	if ( noscalevid_arg.found() ) {
+		Cmdline_noscalevid = 1;
 	}
 
 	if(noparseerrors_arg.found()) {

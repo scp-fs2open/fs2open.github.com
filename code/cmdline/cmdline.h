@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.69 $
- * $Date: 2005-03-13 23:07:35 $
+ * $Revision: 2.70 $
+ * $Date: 2005-06-29 18:46:13 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2005/03/13 23:07:35  taylor
+ * enable 32-bit to 16-bit TGA conversion with -tga16 cmdline option (experimental)
+ * fix crash when upgrading from original campaign stats file to current
+ *
  * Revision 2.68  2005/02/16 10:00:13  wmcoolmon
  * "-ingame" command line option
  *
@@ -511,6 +515,7 @@ extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
 extern int Cmdline_dualscanlines;
 extern int Cmdline_dnoshowvid;	//WMC Toggles movie playing support
+extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
 extern char *Cmdline_mod; //DTP for mod support
 extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.
 extern int Cmdline_show_stats;
