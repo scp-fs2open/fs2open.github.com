@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.155 $
- * $Date: 2005-06-16 05:17:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.156 $
+ * $Date: 2005-06-29 18:54:59 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.155  2005/06/16 05:17:32  Goober5000
+ * fixed a CVS log spelling error, plus fixed a tricky sexp allocation bug
+ * --Goober5000
+ *
  * Revision 2.154  2005/05/12 03:50:09  Goober5000
  * repeating messages with variables should work properly now
  * --Goober5000
@@ -1313,7 +1317,7 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
-	{ "set-skybox-model",			OP_SET_SKYBOX_MODEL,			1, INT_MAX },	// taylor
+	{ "set-skybox-model",			OP_SET_SKYBOX_MODEL,			1, 1 },	// taylor
 
 	//HUD funcs -C
 	{ "hud-disable",				OP_HUD_DISABLE,					1, 1 },	// Goober5000
@@ -18891,6 +18895,14 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the model of a jump node  "
 		"Takes 1 arguments...\r\n"
 		"\t1:\tJump node to hide\r\n"
+	},
+
+	// taylor
+	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
+		"\tSets the current skybox model\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tModel filename (with .pof extension) to switch to\r\n\r\n"
+		"If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
 	},
 };
 
