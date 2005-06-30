@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-06-29 18:50:13 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-06-30 00:48:02 $
+ * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/06/29 18:50:13  taylor
+ * little cleanup and error checking
+ *
  * Revision 2.15  2005/06/19 02:29:54  taylor
  * MIN Num_iface_sounds fix
  *
@@ -332,6 +335,7 @@ void gamesnd_load_gameplay_sounds()
 				gs->id = snd_load(gs);
 			}
 		}
+		game_busy();		// Animate loading cursor... does nothing if loading screen not active.
 	}
 }
 
