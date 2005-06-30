@@ -8,13 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-04-19 06:29:28 $
- * $Author: taylor $
+ * $Revision: 1.20 $
+ * $Date: 2005-06-30 02:35:00 $
+ * $Author: Goober5000 $
  *
  * Platform specific text-to-speech functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/04/19 06:29:28  taylor
+ * try not to buffer output to the speech dev so that the text doesn't just show up some time in the future
+ *
  * Revision 1.18  2005/03/29 06:36:37  wmcoolmon
  * Added some comments to #defines to make reading easier
  *
@@ -253,6 +256,24 @@ bool speech_set_voice(int voice)
 	STUB_FUNCTION;
 
 	return true;
+#endif
+}
+
+// Goober5000
+bool speech_is_speaking()
+{
+#ifdef _WIN32
+	HRESULT			hr;
+	SPVOICESTATUS	*pStatus = NULL;
+
+	hr = Voice_device->GetStatus(pStatus, NULL);
+	if (FAILED(hr)) return false;
+
+	return (pStatus->dwRunningState == SPRS_IS_SPEAKING);
+#else
+	STUB_FUNCTION;
+
+	return false;
 #endif
 }
 

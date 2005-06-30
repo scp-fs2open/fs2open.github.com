@@ -8,13 +8,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/fsspeech.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-06-30 01:35:52 $
+ * $Revision: 1.17 $
+ * $Date: 2005-06-30 02:35:00 $
  * $Author: Goober5000 $
  *
  * This module contains freespace specific stuff leaving the speech module to handle generic stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/06/30 01:35:52  Goober5000
+ * tweaked the stubs and added a function
+ * --Goober5000
+ *
  * Revision 1.15  2005/06/24 19:36:49  taylor
  * we only want to have m_data_offset be 0 for oggs since the seeking callback will account for the true offset
  * only extern the one int we need for the -nosound speech fix rather than including the entire header
@@ -172,6 +176,15 @@ bool fsspeech_play_from(int type)
 	Assert(type >= 0 && type < FSSPEECH_FROM_MAX);
 
 	return (speech_inited && FSSpeech_play_from[type]);
+}
+
+// Goober5000
+bool fsspeech_playing()
+{
+	if (!speech_inited)
+		return false;
+
+	return speech_is_speaking();
 }
 
 #endif	// FS2_SPEECH defined
