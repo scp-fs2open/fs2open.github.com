@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/06/02 02:41:52  wmcoolmon
+ * Protected ships are safe from spawning weapons. :)
+ *
  * Revision 2.50  2005/05/08 20:20:06  wmcoolmon
  * armor.tbl revamp
  *
@@ -536,10 +539,9 @@ struct ship_subsys;
 #define WIF2_DEFAULT_IN_TECH_DATABASE	(1 << 2)	// default in tech database - Goober5000
 #define WIF2_LOCAL_SSM					(1 << 3)	// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 #define WIF2_TAGGED_ONLY				(1 << 4)	// can only fire if target is tagged
-#define WIF2_BEAM_NO_WHACK				(1 << 5)	// this beam doesn't "whack" -- Kazan
-#define WIF2_CYCLE						(1 << 6)	// will only fire from (shots (defalts to 1)) points at a time
-#define WIF2_SMALL_ONLY					(1 << 7)	// can only be used against small ships like fighters or bombers
-#define WIF2_SAME_TURRET_COOLDOWN		(1 << 8)	// the weapon has the same cooldown time on turrets
+#define WIF2_CYCLE						(1 << 5)	// will only fire from (shots (defalts to 1)) points at a time
+#define WIF2_SMALL_ONLY					(1 << 6)	// can only be used against small ships like fighters or bombers
+#define WIF2_SAME_TURRET_COOLDOWN		(1 << 7)	// the weapon has the same cooldown time on turrets
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
