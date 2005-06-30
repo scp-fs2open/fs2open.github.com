@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-06-30 00:48:02 $
+ * $Revision: 2.18 $
+ * $Date: 2005-06-30 01:48:52 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/06/30 00:48:02  Goober5000
+ * if game_busy() is in gamesnd_preload_common_sounds() then it should
+ * also be in gamesnd_load_gameplay_sounds() I would expect
+ * --Goober5000
+ *
  * Revision 2.16  2005/06/29 18:50:13  taylor
  * little cleanup and error checking
  *
@@ -309,7 +314,7 @@ void gamesnd_preload_common_sounds()
 
 	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gs = &Snds[i];
-		if ( gs->filename[0] != 0 && stricmp(gs->filename, NOX("none.wav")) ) {
+		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			if ( gs->preload ) {
 				gs->id = snd_load(gs);
 			}
@@ -330,7 +335,7 @@ void gamesnd_load_gameplay_sounds()
 
 	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gs = &Snds[i];
-		if ( gs->filename[0] != 0 && stricmp(gs->filename, NOX("none.wav")) ) {
+		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			if ( !gs->preload ) { // don't try to load anything that's already preloaded
 				gs->id = snd_load(gs);
 			}
@@ -370,7 +375,7 @@ void gamesnd_load_interface_sounds()
 
 	for ( i = 0; i < Num_iface_sounds; i++ ) {
 		gs = &Snds_iface[i];
-		if ( gs->filename[0] != 0 && stricmp(gs->filename, NOX("none.wav")) ) {
+		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			gs->id = snd_load(gs);
 		}
 	}

@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-06-16 05:17:31 $
+ * $Revision: 2.16 $
+ * $Date: 2005-06-30 01:48:52 $
  * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/06/16 05:17:31  Goober5000
+ * fixed a CVS log spelling error, plus fixed a tricky sexp allocation bug
+ * --Goober5000
+ *
  * Revision 2.14  2005/05/26 05:07:19  Goober5000
  * some bracket happiness, plus fixed the training message version of the crazy semicolon bug
  * (thanks to taylor for fixing the regular message version)
@@ -998,7 +1002,7 @@ int message_play_training_voice(int index)
 					}
 				}
 
-				if (stricmp(Message_waves[index].name, NOX("none.wav"))) {
+				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4)) {
 					Training_voice_handle = audiostream_open(Message_waves[index].name, ASF_VOICE);
 					if (Training_voice_handle < 0) {
 						nprintf(("Warning", "Unable to load voice file %s\n", Message_waves[index].name));

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-04-25 00:22:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2005-06-30 01:48:52 $
+ * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/04/25 00:22:34  wmcoolmon
+ * Added parse_sound; replaced Assert() with an if() (The latter may not be a good idea, but it keeps missions from being un-debuggable)
+ *
  * Revision 2.19  2005/03/27 12:28:32  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -702,7 +705,7 @@ void event_music_level_init(int force_soundtrack)
 	// the NRML_2 and NRML_3 at the end of the pattern array kept getting spurious music
 	// tracks because their patterns weren't -1
 	for ( i = 0; i < MAX_PATTERNS; i++ ) {
-		if ( !stricmp(NOX("none.wav"), strack->pattern_fnames[i]) ) {
+		if ( !strnicmp(strack->pattern_fnames[i], NOX("none.wav"), 4) ) {
 			Patterns[i].handle = -1;	
 			continue;
 		}
@@ -1255,7 +1258,7 @@ void parse_menumusic()
 
 	required_string("$Filename:");
 	stuff_string(fname, F_PATHNAME, NULL);
-	if ( stricmp(fname, NOX("none.wav"))  ) {
+	if ( strnicmp(fname, NOX("none.wav"), 4)  ) {
 		Assert( strlen(fname) < (MAX_FILENAME_LEN-1) );
 		strcpy( Spooled_music[Num_music_files].filename, fname );
 	}
@@ -1276,7 +1279,7 @@ void event_music_parse_musictbl(char* longname, bool is_chunk)
 	{
 		for (j = 0; j < MAX_PATTERNS; j++)
 		{
-			strcpy(Soundtracks[i].pattern_fnames[j], "none.wav");
+			strcpy(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
 		}
 	}
 
