@@ -30,6 +30,8 @@ void fsspeech_start_buffer();
 void fsspeech_stuff_buffer(char *text);
 void fsspeech_play_buffer(int type);
 
+bool fsspeech_play_from(int type);
+
 #define fsspeech_was_compiled()	(true)
 
 #else
@@ -37,12 +39,13 @@ void fsspeech_play_buffer(int type);
 // stub functions (c.f. NO_SOUND)
 #define fsspeech_init()	(false)
 #define fsspeech_deinit()
-#define fsspeech_play(type, text)
+#define fsspeech_play(type, text) ((void) ((type), (text), false))
 #define fsspeech_stop()
-#define fsspeech_pause(playing)
+#define fsspeech_pause(playing) ((void) ((playing), false))
 #define fsspeech_start_buffer()
-#define fsspeech_stuff_buffer(text)
-#define fsspeech_play_buffer(type)
+#define fsspeech_stuff_buffer(text) ((void) ((text), false))
+#define fsspeech_play_buffer(type) ((void) ((type), false))
+#define fsspeech_play_from(type) ((type), false)
 #define fsspeech_was_compiled() (false)
 
 #endif
