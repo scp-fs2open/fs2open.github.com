@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2005/06/02 02:41:52  wmcoolmon
+ * Protected ships are safe from spawning weapons. :)
+ *
  * Revision 2.116  2005/05/23 05:55:12  taylor
  * more from Jens...
  *  - make sure that a frame number doesn't get carried over to non-animated weapon glows
@@ -1171,7 +1174,10 @@ void parse_wi_flags(weapon_info *weaponp)
 		else if (!stricmp(NOX("tagged only"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TAGGED_ONLY;
 		else if (!stricmp(NOX("beam no whack"), weapon_strings[i]))
-			weaponp->wi_flags2 |= WIF2_BEAM_NO_WHACK;
+		{
+			Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
+			weaponp->mass = 0.0f;
+		}
 		else if (!stricmp(NOX("cycle"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_CYCLE;
 		else if (!stricmp(NOX("small only"), weapon_strings[i]))
