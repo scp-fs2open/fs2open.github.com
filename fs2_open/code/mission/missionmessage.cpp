@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-06-30 01:48:52 $
+ * $Revision: 2.37 $
+ * $Date: 2005-06-30 02:36:16 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/06/30 01:48:52  Goober5000
+ * * NOX'd none.wav
+ * * changed comparisons on none.wav to only look at the first four letters in case
+ *   we don't have an extension or in case some weirdo decides to put none.ogg
+ * * simulated speech pre-empts "beeps" in in-game messages
+ * --Goober5000
+ *
  * Revision 2.35  2005/05/26 05:07:19  Goober5000
  * some bracket happiness, plus fixed the traning message version of the crazy semicolon bug
  * (thanks to taylor for fixing the regular message version)
@@ -1589,6 +1596,10 @@ void message_queue_process()
 
 //			if ( (Playing_messages[i].wave != -1) && snd_is_playing(Playing_messages[i].wave) )
 			if ( (Playing_messages[i].wave != -1) && (snd_time_remaining(Playing_messages[i].wave) > 250) )
+				wave_done = 0;
+
+			// Goober5000
+			if (fsspeech_playing())
 				wave_done = 0;
 
 			// AL 1-20-98: If voice message is done, kill the animation early
