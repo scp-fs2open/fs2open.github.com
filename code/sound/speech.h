@@ -25,6 +25,8 @@ bool speech_stop();
 bool speech_set_volume(unsigned short volume);
 bool speech_set_voice(int voice);
 
+bool speech_is_speaking();
+
 #else
 
 // Goober5000: see, the *real* way to do stubs (avoiding the warnings)
@@ -37,6 +39,7 @@ bool speech_set_voice(int voice);
 #define speech_stop() (false)
 #define speech_set_volume(volume) ((volume), false)
 #define speech_set_voice(voice) ((voice), false)
+#define speech_is_speaking() (false)
 
 #endif
 

@@ -31,6 +31,7 @@ void fsspeech_stuff_buffer(char *text);
 void fsspeech_play_buffer(int type);
 
 bool fsspeech_play_from(int type);
+bool fsspeech_playing();
 
 #define fsspeech_was_compiled()	(true)
 
@@ -46,6 +47,7 @@ bool fsspeech_play_from(int type);
 #define fsspeech_stuff_buffer(text) ((void) ((text), false))
 #define fsspeech_play_buffer(type) ((void) ((type), false))
 #define fsspeech_play_from(type) ((type), false)
+#define fsspeech_playing() (false)
 #define fsspeech_was_compiled() (false)
 
 #endif
