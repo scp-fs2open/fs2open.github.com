@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-05-26 05:07:19 $
+ * $Revision: 2.36 $
+ * $Date: 2005-06-30 01:48:52 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/05/26 05:07:19  Goober5000
+ * some bracket happiness, plus fixed the traning message version of the crazy semicolon bug
+ * (thanks to taylor for fixing the regular message version)
+ * --Goober500
+ *
  * Revision 2.34  2005/05/26 04:29:23  taylor
  * those crazy semi-colons
  *
@@ -1329,17 +1334,20 @@ bool message_play_wave( message_q *q )
 
 	m = &Messages[q->message_num];
 
-	if ( m->wave_info.index != -1 ) {
+	if ( m->wave_info.index >= 0 ) {
 		index = m->wave_info.index;
+		strcpy( filename, Message_waves[index].name );
 
-		// sanity check
-		Assert( index != -1 );
-		if ( index == -1 ){
-			return false;
+		// Goober5000 - if we're using simulated speech, it should pre-empt the generic beeps
+		if (fsspeech_play_from(FSSPEECH_FROM_INGAME))
+		{
+			if (!strnicmp(filename, "emptymsg.wav", 8)) return false;
+			if (!strnicmp(filename, "generic.wav", 7)) return false;
+			if (!strnicmp(filename, "msgstart.wav", 8)) return false;
+			if (!strnicmp(filename, "cuevoice.wav", 8)) return false;
 		}
 
 		// if we need to bash the wave name because of "conversion" to terran command, do it here
-		strcpy( filename, Message_waves[index].name );
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
 			char *p, new_filename[MAX_FILENAME_LEN];
 
