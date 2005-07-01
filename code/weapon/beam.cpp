@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-04-28 05:29:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.51 $
+ * $Date: 2005-07-01 17:19:43 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/04/28 05:29:30  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.49  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -3462,12 +3465,6 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 	}
 	shipp = &Ships[objp->instance];
 	if((shipp->ai_index < 0) || (shipp->ai_index >= MAX_AI_INFO)){
-		return;
-	}
-
-	// don't whack docked ships - and don't whack if the beam isn't supposed to
-	// Goober5000 - whacking docked ships should work now, so whack them
-	if(/*object_is_docked(objp) ||*/ (wip->wi_flags2 & WIF2_BEAM_NO_WHACK) ){
 		return;
 	}
 
