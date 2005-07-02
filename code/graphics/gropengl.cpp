@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.124 $
- * $Date: 2005-06-29 18:51:05 $
+ * $Revision: 2.125 $
+ * $Date: 2005-07-02 19:40:48 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2005/06/29 18:51:05  taylor
+ * revert OGL init changes since ATI drivers suck and don't like it
+ *
  * Revision 2.123  2005/06/19 02:37:02  taylor
  * general cleanup, remove some old code
  * speed up gr_opengl_flip() just a tad
@@ -1247,33 +1250,50 @@ void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
 
 void gr_opengl_set_clip(int x,int y,int w,int h, bool resize)
 {
-	if(resize || gr_screen.rendering_to_texture != -1)
-	{
-		gr_resize_screen_pos(&x, &y);
-		gr_resize_screen_pos(&w, &h);
-	}
-
 	// check for sanity of parameters
 	if (x < 0)
 		x = 0;
 	if (y < 0)
 		y = 0;
 
-	if (x >= gr_screen.max_w)
-		x = gr_screen.max_w - 1;
-	if (y >= gr_screen.max_h)
-		y = gr_screen.max_h - 1;
+	int to_resize = (resize || gr_screen.rendering_to_texture != -1);
 
-	if (x + w > gr_screen.max_w)
-		w = gr_screen.max_w - x;
-	if (y + h > gr_screen.max_h)
-		h = gr_screen.max_h - y;
+	int max_w = ((to_resize) ? gr_screen.max_w_unscaled : gr_screen.max_w);
+	int max_h = ((to_resize) ? gr_screen.max_h_unscaled : gr_screen.max_h);
+
+	if (x >= max_w)
+		x = max_w - 1;
+	if (y >= max_h)
+		y = max_h - 1;
+
+	if (x + w > max_w)
+		w = max_w - x;
+	if (y + h > max_h)
+		h = max_h - y;
 	
-	if (w > gr_screen.max_w)
-		w = gr_screen.max_w;
-	if (h > gr_screen.max_h)
-		h = gr_screen.max_h;
-	
+	if (w > max_w)
+		w = max_w;
+	if (h > max_h)
+		h = max_h;
+
+	gr_screen.offset_x_unscaled = x;
+	gr_screen.offset_y_unscaled = y;
+	gr_screen.clip_left_unscaled = 0;
+	gr_screen.clip_right_unscaled = w-1;
+	gr_screen.clip_top_unscaled = 0;
+	gr_screen.clip_bottom_unscaled = h-1;
+	gr_screen.clip_width_unscaled = w;
+	gr_screen.clip_height_unscaled = h;
+
+	if (to_resize) {
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
+	} else {
+		gr_unsize_screen_pos( &gr_screen.offset_x_unscaled, &gr_screen.offset_y_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
+	}
+
 	gr_screen.offset_x = x;
 	gr_screen.offset_y = y;
 	gr_screen.clip_left = 0;
@@ -1289,14 +1309,19 @@ void gr_opengl_set_clip(int x,int y,int w,int h, bool resize)
 
 void gr_opengl_reset_clip()
 {
-	gr_screen.offset_x = 0;
-	gr_screen.offset_y = 0;
-	gr_screen.clip_left = 0;
-	gr_screen.clip_top = 0;
-	gr_screen.clip_right = gr_screen.max_w - 1;
-	gr_screen.clip_bottom = gr_screen.max_h - 1;
-	gr_screen.clip_width = gr_screen.max_w;
-	gr_screen.clip_height = gr_screen.max_h;
+	gr_screen.offset_x = gr_screen.offset_x_unscaled = 0;
+	gr_screen.offset_y = gr_screen.offset_y_unscaled = 0;
+	gr_screen.clip_left = gr_screen.clip_left_unscaled = 0;
+	gr_screen.clip_top = gr_screen.clip_top_unscaled = 0;
+	gr_screen.clip_right = gr_screen.clip_right_unscaled = gr_screen.max_w - 1;
+	gr_screen.clip_bottom = gr_screen.clip_bottom_unscaled = gr_screen.max_h - 1;
+	gr_screen.clip_width = gr_screen.clip_width_unscaled = gr_screen.max_w;
+	gr_screen.clip_height = gr_screen.clip_height_unscaled = gr_screen.max_h;
+
+	if (gr_screen.custom_size >= 0) {
+		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
+	}
 
 	glDisable(GL_SCISSOR_TEST);
 }
@@ -1456,7 +1481,13 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
-	int bw, bh;
+	int bw, bh, do_resize ;
+
+	if ( (gr_screen.custom_size != -1) && (resize || (gr_screen.rendering_to_texture != -1)) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
 
 	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
 
@@ -1466,15 +1497,14 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 	u1 = u_scale*i2fl(sx+w)/i2fl(bw);
 	v1 = v_scale*i2fl(sy+h)/i2fl(bh);
 
-	x1 = i2fl(x+gr_screen.offset_x);
-	y1 = i2fl(y+gr_screen.offset_y);
-	x2 = i2fl(x+w+gr_screen.offset_x);
-	y2 = i2fl(y+h+gr_screen.offset_y);
+	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	x2 = i2fl(x + w + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y2 = i2fl(y + h + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
 
-	if( (gr_screen.custom_size != -1) && (resize || (gr_screen.rendering_to_texture != -1)) )
-	{
-		gr_resize_screen_posf(&x1, &y1);
-		gr_resize_screen_posf(&x2, &y2);
+	if ( do_resize ) {
+		gr_resize_screen_posf( &x1, &y1 );
+		gr_resize_screen_posf( &x2, &y2 );
 	}
 
 	if ( gr_screen.current_color.is_alphacolor )	{
@@ -1514,6 +1544,11 @@ void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 	int bw, bh;
 	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
 
+	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+
 	do {
 		reclip = 0;
 		#ifndef NDEBUG
@@ -1521,12 +1556,13 @@ void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 			count++;
 		#endif
 	
-		if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
-		if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
-		if ( dx1 < gr_screen.clip_left ) { sx += gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
-		if ( dy1 < gr_screen.clip_top ) { sy += gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
-		if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
-		if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
+		if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
+		if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
+		if ( dx1 < clip_left ) { sx += clip_left-dx1; dx1 = clip_left; }
+		if ( dy1 < clip_top ) { sy += clip_top-dy1; dy1 = clip_top; }
+		if ( dx2 > clip_right ) { dx2 = clip_right; }
+		if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
+
 
 		if ( sx < 0 ) {
 			dx1 -= sx;
@@ -1570,10 +1606,10 @@ void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 		Assert( sy+h <= bh );
 		Assert( dx2 >= dx1 );
 		Assert( dy2 >= dy1 );
-		Assert( (dx1 >= gr_screen.clip_left ) && (dx1 <= gr_screen.clip_right) );
-		Assert( (dx2 >= gr_screen.clip_left ) && (dx2 <= gr_screen.clip_right) );
-		Assert( (dy1 >= gr_screen.clip_top ) && (dy1 <= gr_screen.clip_bottom) );
-		Assert( (dy2 >= gr_screen.clip_top ) && (dy2 <= gr_screen.clip_bottom) );
+		Assert( (dx1 >= clip_left ) && (dx1 <= clip_right) );
+		Assert( (dx2 >= clip_left ) && (dx2 <= clip_right) );
+		Assert( (dy1 >= clip_top ) && (dy1 <= clip_bottom) );
+		Assert( (dy2 >= clip_top ) && (dy2 <= clip_bottom) );
 	#endif
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
@@ -1589,12 +1625,17 @@ void gr_opengl_aabitmap(int x, int y, bool resize)
 	int dy1=y, dy2=y+h-1;
 	int sx=0, sy=0;
 
-	if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
-	if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
-	if ( dx1 < gr_screen.clip_left ) { sx = gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
-	if ( dy1 < gr_screen.clip_top ) { sy = gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
-	if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
-	if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
+	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+
+	if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
+	if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
+	if ( dx1 < clip_left ) { sx = clip_left-dx1; dx1 = clip_left; }
+	if ( dy1 < clip_top ) { sy = clip_top-dy1; dy1 = clip_top; }
+	if ( dx2 > clip_right )	{ dx2 = clip_right; }
+	if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
 
 	if ( sx < 0 ) return;
 	if ( sy < 0 ) return;
@@ -1613,9 +1654,14 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 	int width, spacing, letter;
 	int x, y;
 
-	if ( !Current_font )	{
+	if ( !Current_font || (*s == NULL) )	{
 		return;
 	}
+
+	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
 	gr_set_bitmap(Current_font->bitmap_id);
 
@@ -1624,7 +1670,6 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 
 	if (sx==0x8000) {			//centered
 		x = get_centered_x(s);
-		gr_unsize_screen_pos(&x, NULL);
 	} else {
 		x = sx;
 	}
@@ -1639,7 +1684,6 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 			y += Current_font->h;
 			if (sx==0x8000) {			//centered
 				x = get_centered_x(s);
-				gr_unsize_screen_pos(&x, NULL);
 			} else {
 				x = sx;
 			}
@@ -1658,20 +1702,20 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 		int wc, hc;
 
 		// Check if this character is totally clipped
-		if ( x + width < gr_screen.clip_left ) continue;
-		if ( y + Current_font->h < gr_screen.clip_top ) continue;
-		if ( x > gr_screen.clip_right ) continue;
-		if ( y > gr_screen.clip_bottom ) continue;
+		if ( x + width < clip_left ) continue;
+		if ( y + Current_font->h < clip_top ) continue;
+		if ( x > clip_right ) continue;
+		if ( y > clip_bottom ) continue;
 
 		xd = yd = 0;
-		if ( x < gr_screen.clip_left ) xd = gr_screen.clip_left - x;
-		if ( y < gr_screen.clip_top ) yd = gr_screen.clip_top - y;
+		if ( x < clip_left ) xd = clip_left - x;
+		if ( y < clip_top ) yd = clip_top - y;
 		xc = x+xd;
 		yc = y+yd;
 
 		wc = width - xd; hc = Current_font->h - yd;
-		if ( xc + wc > gr_screen.clip_right ) wc = gr_screen.clip_right - xc;
-		if ( yc + hc > gr_screen.clip_bottom ) hc = gr_screen.clip_bottom - yc;
+		if ( xc + wc > clip_right ) wc = clip_right - xc;
+		if ( yc + hc > clip_bottom ) hc = clip_bottom - yc;
 
 		if ( wc < 1 ) continue;
 		if ( hc < 1 ) continue;
@@ -2782,13 +2826,11 @@ void gr_opengl_filter_set(int filter)
 // cross fade
 void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct)
 {
-	if ( pct <= 50 ) {
-		gr_set_bitmap(bmap1);
-		gr_bitmap(x1, y1);
-	} else {
-		gr_set_bitmap(bmap2);
-		gr_bitmap(x2, y2);
-	}		
+   	gr_set_bitmap(bmap1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f - pct );
+	gr_bitmap(x1, y1);
+
+  	gr_set_bitmap(bmap2, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, pct );
+	gr_bitmap(x2, y2);
 }
 
 void gr_opengl_set_clear_color(int r, int g, int b)
