@@ -420,10 +420,10 @@ void make_new_window(Button* caller)
 	//Add species nodes
 	for(i = 0; i < True_NumSpecies; i++)
 	{
-		species_nodes[i] = cmp->AddItem(NULL, Species_names[i], NULL, false);
+		species_nodes[i] = cmp->AddItem(NULL, Species_names[i], 0, false);
 	}
 	//Just in case. I don't actually think this is possible though.
-	species_nodes[True_NumSpecies] = cmp->AddItem(NULL, "Other", NULL, false);
+	species_nodes[True_NumSpecies] = cmp->AddItem(NULL, "Other", 0, false);
 
 	//Now add the ships
 	std::string lod_name;
