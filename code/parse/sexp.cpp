@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.156 $
- * $Date: 2005-06-29 18:54:59 $
+ * $Revision: 2.157 $
+ * $Date: 2005-07-02 19:36:04 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.156  2005/06/29 18:54:59  taylor
+ * set-skybox-model only takes one argument so don't advertise more
+ * add set-skybox-model help text for FRED2
+ *
  * Revision 2.155  2005/06/16 05:17:32  Goober5000
  * fixed a CVS log spelling error, plus fixed a tricky sexp allocation bug
  * --Goober5000
@@ -8160,7 +8164,11 @@ void sexp_end_of_campaign( int n )
 void sexp_end_campaign( int n )
 {
 	// in FS2 our ending is a bit wacky. we'll just flag the mission as having ended the campaign	
-	if ((Game_mode & GM_CAMPAIGN_MODE) && !stricmp(Campaign.filename, "freespace2")) {
+	//
+	// changed this to check for an active supernova rather than a special campaign since the supernova
+	// code needs special time to execute and will post GS_EVENT_END_CAMPAIGN with Game_mode check
+	// or show death-popup when it's done - taylor
+	if ( supernova_active()  /*(Game_mode & GM_CAMPAIGN_MODE) && !stricmp(Campaign.filename, "freespace2")*/ ) {
 		Campaign_ended_in_mission = 1;
 	} else {
 		// post and event to move us to the end-of-campaign state.  There we will play a movie, then

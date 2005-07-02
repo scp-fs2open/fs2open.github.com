@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:25 $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-02 19:36:04 $
  * $Author: taylor $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.4  2004/07/26 20:47:53  Kazan
  * remove MCD complete
  *
@@ -84,12 +87,12 @@ int Supernova_sound_1_played = 0;
 int Supernova_sound_2_played = 0;
 
 // countdown for supernova
-float Supernova_time_total = -1.0f;
-float Supernova_time = -1.0f;
-int Supernova_finished = 0;
-int Supernova_popup = 0;
-float Supernova_fade_to_white = 0.0f;
-int Supernova_particle_stamp = -1;
+static float Supernova_time_total = -1.0f;
+static float Supernova_time = -1.0f;
+static int Supernova_finished = 0;
+static int Supernova_popup = 0;
+static float Supernova_fade_to_white = 0.0f;
+static int Supernova_particle_stamp = -1;
 
 // supernova camera pos
 vec3d Supernova_camera_pos;
@@ -134,7 +137,7 @@ void supernova_start(int seconds)
 	if(Num_suns != 1){
 		return;
 	}
-	
+
 	Supernova_time_total = (float)seconds;
 	Supernova_time = (float)seconds;
 	Supernova_finished = 0;
@@ -244,7 +247,7 @@ void supernova_process()
 		}
 
 		// if we've got negative. the supernova is done
-		if(Supernova_time < 0.0f){							
+		if(Supernova_time < 0.0f){
 			Supernova_finished = 1;
 			Supernova_fade_to_white += flFrametime;
 
@@ -252,7 +255,10 @@ void supernova_process()
 			if(Supernova_fade_to_white >= SUPERNOVA_FADE_TO_WHITE_TIME){
 				if(!Supernova_popup){
 					// main freespace 2 campaign? if so - end it now
-					if((Game_mode & GM_CAMPAIGN_MODE) && !stricmp(Campaign.filename, "freespace2") && Campaign_ended_in_mission){
+					//
+					// don't actually check for a specific campaign here since others may want to end this way but we
+					// should test positive here if in campaign mode and sexp_end_campaign() got called - taylor
+					if((Game_mode & GM_CAMPAIGN_MODE) /*&& !stricmp(Campaign.filename, "freespace2")*/ && Campaign_ended_in_mission){
 						gameseq_post_event(GS_EVENT_END_CAMPAIGN);
 					} else {
 						popupdead_start();
@@ -268,6 +274,11 @@ void supernova_process()
 // is there a supernova active
 int supernova_active()
 {
+	// if not supernova has been set then just bail now
+	if (Supernova_status == SUPERNOVA_NONE) {
+		return 0;
+	}
+	
 	// if the supernova has "finished". fade to white and dead popup
 	if(Supernova_finished == 1){
 		Supernova_status = SUPERNOVA_HIT;
@@ -279,7 +290,7 @@ int supernova_active()
 	}
 
 	// no supernova
-	if((Supernova_time_total <= 0.0f) || (Supernova_time <= 0.0f)){
+	if( (Supernova_time_total <= 0.0f) || (Supernova_time <= 0.0f) ){
 		return 0;
 	}	
 
