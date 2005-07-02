@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-05-12 17:49:13 $
+ * $Revision: 2.25 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.23  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -711,7 +715,7 @@ void credits_init()
 	Credit_stop_pos = -i2fl(h);
 	Credit_position = Credit_start_pos;
 
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Credits_bitmap_mask_fname[gr_screen.res]);
 	common_set_interface_palette("InterfacePalette");  // set the interface palette
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.72 $
- * $Date: 2005-06-19 02:31:50 $
+ * $Revision: 2.73 $
+ * $Date: 2005-07-02 19:42:15 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2005/06/19 02:31:50  taylor
+ * allow screenshots and backsaves in windowed mode
+ * account for D3D_textures_in size so that it doesn't hit negative values
+ *
  * Revision 2.71  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -2498,51 +2502,62 @@ void gr_d3d_clear()
 extern float View_zoom;
 void gr_d3d_set_clip(int x,int y,int w,int h, bool resize)
 {
-	if(resize || gr_screen.rendering_to_texture != -1)
-	{
+	// check for sanity of parameters
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+
+	int to_resize = (resize || gr_screen.rendering_to_texture != -1);
+
+	int max_w = ((to_resize) ? gr_screen.max_w_unscaled : gr_screen.max_w);
+	int max_h = ((to_resize) ? gr_screen.max_h_unscaled : gr_screen.max_h);
+
+	if (x >= max_w)
+		x = max_w - 1;
+	if (y >= max_h)
+		y = max_h - 1;
+
+	if (x + w > max_w)
+		w = max_w - x;
+	if (y + h > max_h)
+		h = max_h - y;
+	
+	if (w > max_w)
+		w = max_w;
+	if (h > max_h)
+		h = max_h;
+
+	gr_screen.offset_x_unscaled = x;
+	gr_screen.offset_y_unscaled = y;
+	gr_screen.clip_left_unscaled = 0;
+	gr_screen.clip_right_unscaled = w-1;
+	gr_screen.clip_top_unscaled = 0;
+	gr_screen.clip_bottom_unscaled = h-1;
+	gr_screen.clip_width_unscaled = w;
+	gr_screen.clip_height_unscaled = h;
+
+	if (to_resize) {
 		gr_resize_screen_pos(&x, &y);
 		gr_resize_screen_pos(&w, &h);
+	} else {
+		gr_unsize_screen_pos( &gr_screen.offset_x_unscaled, &gr_screen.offset_y_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
 
 	gr_screen.offset_x = x;
 	gr_screen.offset_y = y;
-
 	gr_screen.clip_left = 0;
 	gr_screen.clip_right = w-1;
-
 	gr_screen.clip_top = 0;
 	gr_screen.clip_bottom = h-1;
-
-	// check for sanity of parameters
-	if ( gr_screen.clip_left+x < 0 ) {
-		gr_screen.clip_left = -x;
-	} else if ( gr_screen.clip_left+x > gr_screen.max_w-1 )	{
-		gr_screen.clip_left = gr_screen.max_w-1-x;
-	}
-	if ( gr_screen.clip_right+x < 0 ) {
-		gr_screen.clip_right = -x;
-	} else if ( gr_screen.clip_right+x >= gr_screen.max_w-1 )	{
-		gr_screen.clip_right = gr_screen.max_w-1-x;
-	}
-
-	if ( gr_screen.clip_top+y < 0 ) {
-		gr_screen.clip_top = -y;
-	} else if ( gr_screen.clip_top+y > gr_screen.max_h-1 )	{
-		gr_screen.clip_top = gr_screen.max_h-1-y;
-	}
-
-	if ( gr_screen.clip_bottom+y < 0 ) {
-		gr_screen.clip_bottom = -y;
-	} else if ( gr_screen.clip_bottom+y > gr_screen.max_h-1 )	{
-		gr_screen.clip_bottom = gr_screen.max_h-1-y;
-	}
-
-	gr_screen.clip_width = gr_screen.clip_right - gr_screen.clip_left + 1;
-	gr_screen.clip_height = gr_screen.clip_bottom - gr_screen.clip_top + 1;
+	gr_screen.clip_width = w;
+	gr_screen.clip_height = h;
 
 	// Setup the viewport for a reasonable viewing area
-	viewport.X = gr_screen.clip_left + x;
-	viewport.Y = gr_screen.clip_top  + y;
+	viewport.X = x;
+	viewport.Y = y;
 	viewport.Width  = gr_screen.clip_width;
 	viewport.Height = gr_screen.clip_height;
 	viewport.MinZ = 0.0F;
@@ -2564,18 +2579,24 @@ void gr_d3d_set_clip(int x,int y,int w,int h, bool resize)
 void gr_d3d_reset_clip()
 {
 	if(d3d_lost_device())return;
-	gr_screen.offset_x = 0;
-	gr_screen.offset_y = 0;
-	gr_screen.clip_left = 0;
-	gr_screen.clip_top  = 0;
-	gr_screen.clip_right  = gr_screen.max_w - 1;
-	gr_screen.clip_bottom = gr_screen.max_h - 1;
-	gr_screen.clip_width  = gr_screen.max_w;
-	gr_screen.clip_height = gr_screen.max_h;
+
+	gr_screen.offset_x = gr_screen.offset_x_unscaled = 0;
+	gr_screen.offset_y = gr_screen.offset_y_unscaled = 0;
+	gr_screen.clip_left = gr_screen.clip_left_unscaled = 0;
+	gr_screen.clip_top = gr_screen.clip_top_unscaled = 0;
+	gr_screen.clip_right = gr_screen.clip_right_unscaled = gr_screen.max_w - 1;
+	gr_screen.clip_bottom = gr_screen.clip_bottom_unscaled = gr_screen.max_h - 1;
+	gr_screen.clip_width = gr_screen.clip_width_unscaled = gr_screen.max_w;
+	gr_screen.clip_height = gr_screen.clip_height_unscaled = gr_screen.max_h;
+
+	if (gr_screen.custom_size >= 0) {
+		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
+	}
 
 	// Setup the viewport for a reasonable viewing area
-	viewport.X = gr_screen.clip_left;
-	viewport.Y = gr_screen.clip_top;
+	viewport.X = gr_screen.offset_x;
+	viewport.Y = gr_screen.offset_y;
 	viewport.Width  = gr_screen.clip_width;
 	viewport.Height = gr_screen.clip_height;
 	viewport.MinZ = 0.0F;
@@ -2986,7 +3007,7 @@ void gr_d3d_string( int sx, int sy, char *s, bool resize)
 
 //	mprintf(("<%s>\n", s));
 
-	if ( !Current_font )	{
+	if ( !Current_font || (*s == NULL) )	{
 		return;
 	}
 

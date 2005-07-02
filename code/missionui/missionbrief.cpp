@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-06-03 06:39:26 $
+ * $Revision: 2.28 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/06/03 06:39:26  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.26  2005/05/30 05:33:11  taylor
  * if a briefing does have any stages (no text) then don't carry over text from a previous mission
  * some generic cleanup to V code that isn't a real problem now but could easily have been a memleak
@@ -1371,7 +1374,7 @@ void brief_init()
 	snazzy_menu_add_region(&Briefing_select_region[Num_briefing_regions++], "",	BRIEF_TEXT_SCROLL_DOWN_MASK,	0);
 
 	// init common UI
-	Brief_ui_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
+	Brief_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 
 #ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
@@ -1815,6 +1818,8 @@ void brief_check_for_anim()
 
 	bs = &Briefing->stages[Current_brief_stage];
 	mouse_get_pos( &mx, &my );
+
+	gr_unsize_screen_pos( &mx, &my );
 
 	// if mouse click is over the VCR controls, don't launch an icon
 	// FIXME - should prolly push these into defines instead of hardcoding this

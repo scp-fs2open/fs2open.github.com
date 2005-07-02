@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-05-13 23:10:17 $
+ * $Revision: 2.36 $
+ * $Date: 2005-07-02 19:45:00 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/05/13 23:10:17  taylor
+ * unbreak joining (when forming, not in-game) (Jens Granseuer)
+ *
  * Revision 2.34  2005/05/12 17:49:15  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -3369,7 +3372,7 @@ void multi_update_validate_missions_DrawString(char *str)
 	gr_set_color_fast(&Color_normal);
 	gr_set_font(FONT2);
 	gr_get_string_size(&str_w, &str_h, str);
-	gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, str);
+	gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, str, false);
 	gr_set_font(FONT1);
 
 	gr_flip();
@@ -3614,7 +3617,7 @@ void Kaz_NoBackGround_DrawString(char *str)
 	gr_set_color_fast(&Color_normal);
 	gr_set_font(FONT2);
 	gr_get_string_size(&str_w, &str_h, str);
-	gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, str);
+	gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, str, false);
 	gr_set_font(FONT1);
 
 	gr_flip();

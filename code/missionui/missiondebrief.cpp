@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-06-03 06:39:26 $
+ * $Revision: 2.35 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/06/03 06:39:26  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.33  2005/05/12 17:49:14  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1334,7 +1337,7 @@ void debrief_ui_init()
 {
 	// init ship selection masks and buttons
 	common_set_interface_palette("DebriefPalette");		// set the interface palette
-	Debrief_ui_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
+	Debrief_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 	Debrief_ui_window.set_mask_bmap(Debrief_mask_name[gr_screen.res]);
 	Debrief_ui_window.tooltip_handler = debrief_tooltip_handler;
 	debrief_buttons_init();

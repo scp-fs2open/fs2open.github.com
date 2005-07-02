@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-06-03 06:44:17 $
+ * $Revision: 2.50 $
+ * $Date: 2005-07-02 19:42:15 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/06/03 06:44:17  taylor
+ * cleanup of gr_bitmap since it's the same for D3D and OGL, skip if GR_STUB though
+ * fix resize/rendering issue when detail culling is used with optimized opengl_create_texture_sub()
+ *
  * Revision 2.48  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1235,17 +1239,23 @@ void gr_init_res(int res, int mode, int max_w, int max_h)
 	gr_screen.signature = Gr_signature++;
 	gr_screen.mode = mode;
 	gr_screen.res = res;	
-	gr_screen.save_max_w = gr_screen.max_w = max_w;
-	gr_screen.save_max_h = gr_screen.max_h = max_h;
+	gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = max_w;
+	gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = max_h;
 	gr_screen.aspect = 1.0f;			// Normal PC screen
-	gr_screen.offset_x = 0;
-	gr_screen.offset_y = 0;
-	gr_screen.clip_left = 0;
-	gr_screen.clip_top = 0;
-	gr_screen.clip_right  = gr_screen.max_w - 1;
-	gr_screen.clip_bottom = gr_screen.max_h - 1;
-	gr_screen.clip_width  = gr_screen.max_w;
-	gr_screen.clip_height = gr_screen.max_h;
+	gr_screen.offset_x = gr_screen.offset_x_unscaled = 0;
+	gr_screen.offset_y = gr_screen.offset_y_unscaled = 0;
+	gr_screen.clip_left = gr_screen.clip_left_unscaled = 0;
+	gr_screen.clip_top = gr_screen.clip_top_unscaled = 0;
+	gr_screen.clip_right = gr_screen.clip_right_unscaled = gr_screen.max_w - 1;
+	gr_screen.clip_bottom = gr_screen.clip_bottom_unscaled = gr_screen.max_h - 1;
+	gr_screen.clip_width = gr_screen.clip_width_unscaled = gr_screen.max_w;
+	gr_screen.clip_height = gr_screen.clip_height_unscaled = gr_screen.max_h;
+
+	if (gr_screen.custom_size >= 0) {
+		gr_unsize_screen_pos( &gr_screen.max_w_unscaled, &gr_screen.max_h_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
+		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
+	}
 }
 //int big_ole_honkin_hack_test = -1;
 bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)

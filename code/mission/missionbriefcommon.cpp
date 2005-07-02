@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-06-03 06:39:27 $
+ * $Revision: 2.27 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/06/03 06:39:27  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.25  2005/05/30 05:33:11  taylor
  * if a briefing does have any stages (no text) then don't carry over text from a previous mission
  * some generic cleanup to V code that isn't a real problem now but could easily have been a memleak
@@ -735,8 +738,6 @@ void brief_init_screen(int multiplayer_flag)
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
 	bscreen.map_y1			= Brief_grid_coords[gr_screen.res][1];
 	bscreen.map_y2			= Brief_grid_coords[gr_screen.res][1] + Brief_grid_coords[gr_screen.res][3];
-	gr_resize_screen_pos(&bscreen.map_x1, &bscreen.map_y1);
-	gr_resize_screen_pos(&bscreen.map_x2, &bscreen.map_y2);
 	/*
 	bscreen.map_x1			= BRIEF_GRID3_X1;
 	bscreen.map_x2			= BRIEF_GRID0_X2;
@@ -1083,7 +1084,9 @@ void brief_render_fade_outs(float frametime)
 			}
 
 			bm_get_info( fi->fade_anim.first_frame, &w, &h, NULL);
-			
+
+			gr_resize_screen_pos( &w, &h );
+
 			bxf = tv.sx - w / 2.0f + 0.5f;
 			byf = tv.sy - h / 2.0f + 0.5f;
 			bx = fl2i(bxf);
@@ -1255,22 +1258,25 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		//gr_aabitmap(bx, by);
 
 		float scaled_w, scaled_h;
-		
+
+		float sx = tv.sx;
+		float sy = tv.sy;
+		gr_unsize_screen_posf( &sx, &sy );
+	
 		scaled_w = icon_w * w_scale_factor;
 		scaled_h = icon_h * h_scale_factor;
-		gr_resize_screen_posf(&scaled_w, &scaled_h);
-		bxf = tv.sx - scaled_w / 2.0f + 0.5f;
-		byf = tv.sy - scaled_h / 2.0f + 0.5f;
+		bxf = sx - scaled_w / 2.0f + 0.5f;
+		byf = sy - scaled_h / 2.0f + 0.5f;
 		bx = fl2i(bxf);
 		by = fl2i(byf);
-		bc = fl2i(tv.sx);
+		bc = fl2i(sx);
 
-		if ( (bx < 0) || (bx > gr_screen.max_w) || (by < 0) || (by > gr_screen.max_h) && !Fred_running ) {
+		if ( (bx < 0) || (bx > gr_screen.max_w_unscaled) || (by < 0) || (by > gr_screen.max_h_unscaled) && !Fred_running ) {
 			bi->x = bx;
 			bi->y = by;
 			return;
 		}
-
+/*
 		vertex va, vb;
 		va.sx = bxf;
 		va.sy = byf;
@@ -1281,7 +1287,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		vb.sy = byf+scaled_h-1;
 		vb.u = 1.0f;
 		vb.v = 1.0f;
-
+*/
 		// render highlight anim frame
 		if ( (bi->flags&BI_SHOWHIGHLIGHT) && (bi->flags&BI_HIGHLIGHT) ) {
 			hud_anim *ha = &bi->highlight_anim;
@@ -1296,7 +1302,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				gr_unsize_screen_pos(&ha->sx, &ha->sy);
 				hud_anim_render(ha, frametime, 1, 0, 1, 0, true);
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
@@ -1316,7 +1321,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 //				hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				gr_unsize_screen_pos(&ha->sx, &ha->sy);
 				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, true) == 0 ) {
 					bi->flags &= ~BI_FADEIN;
 				}
@@ -1327,17 +1331,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-//guessing the false shouldnt have been there was getting a compile error -Bobboau
-			//This would've saved me soooo much time if this 'fix' hadn't got commited.
-			//Generally I don't run around breaking random files for no reason. -C
-			gr_unsize_screen_pos(&bx, &by);
 			gr_aabitmap(bx, by, true);
-			//gr_aabitmap(bx, by);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
 				gr_get_string_size(&w,&h,Players[Player_num].callsign);
-				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign,false);
+				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign);
 			}
 			else {
 				if (Lcl_gr) {
@@ -1345,10 +1344,10 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 					strcpy(buf, bi->label);
 					lcl_translate_brief_icon_name(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf,false);
+					gr_string(bc - fl2i(w/2.0f), by - h, buf);
 				} else {
 					gr_get_string_size(&w,&h,bi->label);
-					gr_string(bc - fl2i(w/2.0f), by - h, bi->label,false);
+					gr_string(bc - fl2i(w/2.0f), by - h, bi->label);
 				}
 			}
 
@@ -1436,7 +1435,7 @@ void brief_render_map(int stage_num, float frametime)
 {
 	brief_stage *bs;
 
-	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, false);
+	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2);
 	
 	// REMOVED by neilk: removed gr_clear for FS2 because interface no longer calls for black background on grid
 	//	gr_clear();

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-12 05:26:38 $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-02 19:45:02 $
  * $Author: taylor $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/12 05:26:38  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.7  2005/03/02 21:24:47  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -252,7 +256,7 @@ player *Active_player;
 
 void show_stats_init()
 {
-	// Player_stats_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
+	// Player_stats_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 
 #ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {				

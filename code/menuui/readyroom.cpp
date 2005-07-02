@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-05-12 17:49:13 $
+ * $Revision: 2.18 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.16  2005/04/25 06:36:01  taylor
  * use full size of Campaign_missions[] for simroom filtering, fixes the problem of campaign
  *   missions still showing up in the single list even after filtering
@@ -1134,7 +1138,7 @@ void sim_room_init()
 
 	*Game_current_mission_filename = 0;
 	common_set_interface_palette("InterfacePalette");  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Sim_mask_filename[gr_screen.res]);
 
 	for (i=0; i<NUM_BUTTONS; i++) {
@@ -1799,7 +1803,7 @@ void campaign_room_init()
 	list_h = Mission_list_coords[gr_screen.res][3];
 
 	// common_set_interface_palette("InterfacePalette");  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Campaign_mask_filename[gr_screen.res]);
 
 	for (i=0; i<CR_NUM_BUTTONS; i++) {

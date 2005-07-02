@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-06-19 02:38:33 $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/06/19 02:38:33  taylor
+ * fix possible crash from popups, especially in multi
+ *
  * Revision 2.8  2005/04/21 15:53:24  taylor
  * make sure we don't try to process chatbox_close() more than once
  *
@@ -763,7 +766,7 @@ int chatbox_create(int mode_flags)
 	}
 	
 	// attempt to create the ui window for the chatbox and assign the mask
-	Chat_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
+	Chat_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 	Chat_window.set_mask_bmap(Chatbox_mask);	
 
    // create the chat text enter input area	

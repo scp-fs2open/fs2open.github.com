@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.60 $
- * $Date: 2005-06-19 09:00:09 $
+ * $Revision: 2.61 $
+ * $Date: 2005-07-02 19:42:15 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/06/19 09:00:09  taylor
+ * minor sanity checking for geometry_batcher
+ * make particle batchers allocate dynamically
+ * handle cases where a particle graphic couldn't be loaded
+ *
  * Revision 2.59  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -789,6 +794,7 @@ struct light_data {
 typedef struct screen {
 	uint	signature;			// changes when mode or palette or width or height changes
 	int	max_w, max_h;		// Width and height
+	int max_w_unscaled, max_h_unscaled;		// Width and height, should be 1024x768 or 640x480 in non-standard resolutions
 	int	save_max_w, save_max_h;		// Width and height
 	int	res;					// GR_640 or GR_1024
 	int	mode;					// What mode gr_init was called with.
@@ -797,14 +803,18 @@ typedef struct screen {
 	int	bits_per_pixel;	// How many bits per pixel it is. (7,8,15,16,24,32)
 	int	bytes_per_pixel;	// How many bytes per pixel (1,2,3,4)
 	int	offset_x, offset_y;		// The offsets into the screen
+	int offset_x_unscaled, offset_y_unscaled;	// Offsets into the screen, in 1024x768 or 640x480 dimensions
 	int	clip_width, clip_height;
+	int clip_width_unscaled, clip_height_unscaled;	// Height and width of clip aread, in 1024x768 or 640x480 dimensions
 
 	float fog_near, fog_far;
 
 	// the clip_l,r,t,b are used internally.  left and top are
 	// actually always 0, but it's nice to have the code work with
 	// arbitrary clipping regions.
-	int		clip_left, clip_right, clip_top, clip_bottom;	
+	int		clip_left, clip_right, clip_top, clip_bottom;
+	// same as above except in 1024x768 or 640x480 dimensions
+	int		clip_left_unscaled, clip_right_unscaled, clip_top_unscaled, clip_bottom_unscaled;
 
 	int		current_alphablend_mode;		// See GR_ALPHABLEND defines above
 	int		current_bitblt_mode;				// See GR_BITBLT_MODE defines above
@@ -1124,6 +1134,8 @@ int gr_init_font( char * typeface );
 // so if you don't need to format the string, then call gr_string
 // directly.
 extern void _cdecl gr_printf( int x, int y, char * format, ... );
+// same as above but doesn't resize for non-standard resolutions
+extern void _cdecl gr_printf_no_resize( int x, int y, char * format, ... );
 
 // Returns the size of the string in pixels in w and h
 extern void gr_get_string_size( int *w, int *h, char * text, int len = 9999 );

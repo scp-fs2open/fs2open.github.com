@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-05-12 17:49:15 $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-02 19:45:00 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/05/12 17:49:15  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.8  2005/04/24 12:56:43  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -418,7 +422,7 @@ void multi_pinfo_popup_init(net_player *np)
 	}
 
 	// create the interface window
-	Multi_pinfo_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_pinfo_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_pinfo_window.set_mask_bmap(Multi_pinfo_bitmap_mask[gr_screen.res]);
 
 	// load the background bitmap

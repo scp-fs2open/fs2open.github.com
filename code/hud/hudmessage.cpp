@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-02 19:42:15 $
  * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.11  2005/03/29 07:03:16  wmcoolmon
  * Removed some warnings under Linux/GCC
  *
@@ -1382,7 +1386,7 @@ void hud_scrollback_init()
 	audiostream_pause_all();
 
 	common_set_interface_palette("BriefingPalette");  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Hud_mission_log_mask_fname[gr_screen.res]);
 
 	for (i=0; i<NUM_BUTTONS; i++) {

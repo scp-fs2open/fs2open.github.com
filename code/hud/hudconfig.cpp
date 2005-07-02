@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 2.18 $
+ * $Date: 2005-07-02 19:42:15 $
  * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.16  2005/04/28 01:34:33  wmcoolmon
  * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
  *
@@ -970,7 +974,7 @@ void hud_config_init_ui()
 	hud_config_synch_ui();
 	HC_background_bitmap = bm_load(Hud_config_fname[gr_screen.res]);
 
-	HC_ui_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
+	HC_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 	HC_ui_window.set_mask_bmap(Hud_config_mask_fname[gr_screen.res]);
 
 	for (i=0; i<NUM_HUD_GAUGES; i++) {

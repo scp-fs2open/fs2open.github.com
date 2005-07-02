@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-05-12 17:49:12 $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-02 19:42:15 $
  * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.12  2005/01/31 23:27:53  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -366,6 +370,7 @@ int get_char_width(ubyte c1,ubyte c2,int *width,int *spacing)
 	return letter;
 }
 
+// NOTE: this returns an unscaled size for non-standard resolutions
 int get_centered_x(char *s)
 {
 	int w,w2,s2;
@@ -375,7 +380,7 @@ int get_centered_x(char *s)
 		w += s2;
 	}
 
-	return ((gr_screen.clip_width - w) / 2);
+	return ((gr_screen.clip_width_unscaled - w) / 2);
 }
 
 // draws a character centered on x
@@ -549,7 +554,7 @@ void gr8_string( int sx, int sy, char *s )
 	}
 }
 */
-
+/*
 void gr8_string(int sx, int sy, char *s )
 {
 	int row,width, spacing, letter;
@@ -687,6 +692,7 @@ void gr8_string(int sx, int sy, char *s )
 	}
 	gr_unlock();
 }
+*/
 
 #ifdef _WIN32
 HFONT MyhFont = NULL;
@@ -745,6 +751,19 @@ void _cdecl gr_printf( int x, int y, char * format, ... )
 	va_end(args);
 
 	gr_string(x,y,grx_printf_text);
+}
+
+void _cdecl gr_printf_no_resize( int x, int y, char * format, ... )
+{
+	va_list args;
+
+	if ( !Current_font ) return;
+	
+	va_start(args, format);
+	vsprintf(grx_printf_text,format,args);
+	va_end(args);
+
+	gr_string(x,y,grx_printf_text,false);
 }
 
 void gr_font_close()

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.62 $
- * $Date: 2005-06-29 18:52:02 $
+ * $Revision: 2.63 $
+ * $Date: 2005-07-02 19:42:15 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/06/29 18:52:02  taylor
+ * extra checks to make sure we don't end up targetting a sensor-invisible ship
+ *
  * Revision 2.61  2005/06/07 06:10:50  wmcoolmon
  * This may stop targeting not-targetable ships in EMP
  *
@@ -3451,6 +3454,8 @@ void hud_render_triangle(vec3d *hostile_pos, int aspect_flag, int show_interior,
 			projected_x = hostile_vertex.sx;
 			projected_y = hostile_vertex.sy;
 
+			gr_unsize_screen_posf( &projected_x, &projected_x );
+
 			mag_squared = (projected_x-Hud_reticle_center[gr_screen.res][0])*(projected_x-Hud_reticle_center[gr_screen.res][0]) + 
 							  (projected_y-Hud_reticle_center[gr_screen.res][1])*(projected_y-Hud_reticle_center[gr_screen.res][1]);
 
@@ -3464,6 +3469,7 @@ void hud_render_triangle(vec3d *hostile_pos, int aspect_flag, int show_interior,
 		}
 	}
 
+	gr_unsize_screen_posf( &hostile_vertex.x, &hostile_vertex.y );
 	ang = atan2_safe(hostile_vertex.y,hostile_vertex.x);
 	sin_ang=(float)sin(ang);
 	cos_ang=(float)cos(ang);
@@ -3983,8 +3989,13 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 void hud_update_target_in_reticle(vertex *projected_v)
 {
 	float mag_squared;
-	mag_squared = (projected_v->sx-Hud_reticle_center[gr_screen.res][0])*(projected_v->sx-Hud_reticle_center[gr_screen.res][0]) + 
-					  (projected_v->sy-Hud_reticle_center[gr_screen.res][1])*(projected_v->sy-Hud_reticle_center[gr_screen.res][1]);
+	float sx = projected_v->sx;
+	float sy = projected_v->sy;
+
+	gr_unsize_screen_posf( &sx, &sy );
+
+	mag_squared = (sx-Hud_reticle_center[gr_screen.res][0])*(sx-Hud_reticle_center[gr_screen.res][0]) + 
+					  (sy-Hud_reticle_center[gr_screen.res][1])*(sy-Hud_reticle_center[gr_screen.res][1]);
 
 	if (mag_squared < Outer_circle_radius[gr_screen.res]*Outer_circle_radius[gr_screen.res]) {
 		// this information can be used elsewhere
@@ -4395,6 +4406,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	weapon_info	*tmp=NULL;
 	float			dist_to_target, time_to_target, target_moved_dist, prange, srange;
 	int			bank_to_fire, indicator_frame, frame_offset;
+	float		sx, sy;
 
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -4542,8 +4554,11 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 			}
 
 			if ( indicator_frame >= 0 ) {
-				gr_unsize_screen_posf(&lead_target_vertex.sx, &lead_target_vertex.sy);
-				GR_AABITMAP(indicator_frame, fl2i(lead_target_vertex.sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(lead_target_vertex.sy - Lead_indicator_half[gr_screen.res][1]));				
+				sx = lead_target_vertex.sx;
+				sy = lead_target_vertex.sy;
+
+				gr_unsize_screen_posf(&sx, &sy);
+				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[gr_screen.res][1]));				
 			}
 		}
 	}
@@ -4607,8 +4622,11 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 			}
 
 			if ( indicator_frame >= 0 ) {
-				gr_unsize_screen_posf(&lead_target_vertex.sx, &lead_target_vertex.sy);
-				GR_AABITMAP(indicator_frame, fl2i(lead_target_vertex.sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(lead_target_vertex.sy - Lead_indicator_half[gr_screen.res][1]));				
+				sx = lead_target_vertex.sx;
+				sy = lead_target_vertex.sy;
+
+				gr_unsize_screen_posf(&sx, &sy);
+				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[gr_screen.res][1]));				
 			}
 		}
 	}
@@ -4906,53 +4924,56 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 	xpos = eye_vertex->sx;
 	ypos = eye_vertex->sy;
 
+	// we need it unsized here and it will be fixed when things are acutally drawn
+	gr_unsize_screen_posf(&xpos, &ypos);
+
 	on_left = on_right = on_top = on_bottom = 0;
 	xpos = (xpos<1) ? 0 : xpos;
 	ypos = (ypos<1) ? 0 : ypos;
 
-	if ( xpos <= gr_screen.clip_left ) {
-		xpos = i2fl(gr_screen.clip_left);
+	if ( xpos <= gr_screen.clip_left_unscaled ) {
+		xpos = i2fl(gr_screen.clip_left_unscaled);
 		on_left = TRUE;
 
-		if ( ypos < (half_gauge_length - gr_screen.clip_top) )
+		if ( ypos < (half_gauge_length - gr_screen.clip_top_unscaled) )
 			ypos = half_gauge_length;
 
 
-		if ( ypos > (gr_screen.clip_bottom - half_gauge_length) ) 
-			ypos = gr_screen.clip_bottom - half_gauge_length;
+		if ( ypos > (gr_screen.clip_bottom_unscaled - half_gauge_length) ) 
+			ypos = gr_screen.clip_bottom_unscaled - half_gauge_length;
 
 	}
-	else if ( xpos >= gr_screen.clip_right) {
-		xpos = i2fl(gr_screen.clip_right);
+	else if ( xpos >= gr_screen.clip_right_unscaled) {
+		xpos = i2fl(gr_screen.clip_right_unscaled);
 		on_right = TRUE;
 
-		if ( ypos < (half_gauge_length - gr_screen.clip_top) )
+		if ( ypos < (half_gauge_length - gr_screen.clip_top_unscaled) )
 			ypos = half_gauge_length;
 
-		if ( ypos > (gr_screen.clip_bottom - half_gauge_length) ) 
-			ypos = gr_screen.clip_bottom - half_gauge_length;
+		if ( ypos > (gr_screen.clip_bottom_unscaled - half_gauge_length) ) 
+			ypos = gr_screen.clip_bottom_unscaled - half_gauge_length;
 
 	}
-	else if ( ypos <= gr_screen.clip_top ) {
-		ypos = i2fl(gr_screen.clip_top);
+	else if ( ypos <= gr_screen.clip_top_unscaled ) {
+		ypos = i2fl(gr_screen.clip_top_unscaled);
 		on_top = TRUE;
 
-		if ( xpos < ( half_gauge_length - gr_screen.clip_left) )
+		if ( xpos < ( half_gauge_length - gr_screen.clip_left_unscaled) )
 			xpos = half_gauge_length;
 
-		if ( xpos > (gr_screen.clip_right - half_gauge_length) ) 
-			xpos = gr_screen.clip_right - half_gauge_length;
+		if ( xpos > (gr_screen.clip_right_unscaled - half_gauge_length) ) 
+			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
 
 	}
-	else if ( ypos >= gr_screen.clip_bottom ) {
-		ypos = i2fl(gr_screen.clip_bottom);
+	else if ( ypos >= gr_screen.clip_bottom_unscaled ) {
+		ypos = i2fl(gr_screen.clip_bottom_unscaled);
 		on_bottom = TRUE;
 
-		if ( xpos < ( half_gauge_length - gr_screen.clip_left) )
+		if ( xpos < ( half_gauge_length - gr_screen.clip_left_unscaled) )
 			xpos = half_gauge_length;
 
-		if ( xpos > (gr_screen.clip_right - half_gauge_length) ) 
-			xpos = gr_screen.clip_right - half_gauge_length;
+		if ( xpos > (gr_screen.clip_right_unscaled - half_gauge_length) ) 
+			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
 	}
 	else {
 		Int3();
@@ -4976,9 +4997,6 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 	//			  x6				x6
 	//
 	//
-
-	// we need it unsized here and it will be fixed when things are acutally drawn
-	gr_unsize_screen_posf(&xpos, &ypos);
 
 	xpos = (float)floor(xpos);
 	ypos = (float)floor(ypos);
@@ -5255,6 +5273,7 @@ void hud_show_target_triangle_indicator(vertex *projected_v)
 {
 	float x3,y3,x4,y4;
 	float xpos,ypos,ang;
+	float px, py;
 	
 	if ( Player_ai->target_objnum == -1)
 		return;
@@ -5269,7 +5288,12 @@ void hud_show_target_triangle_indicator(vertex *projected_v)
 
 		hud_set_iff_color(targetp, 1);
 
-		ang = atan2_safe(projected_v->y,projected_v->x);
+		px = projected_v->x;
+		py = projected_v->y;
+
+		gr_unsize_screen_posf( &px, &py );
+
+		ang = atan2_safe(py,px);
 		xpos = Hud_reticle_center[gr_screen.res][0] + (float)cos(ang)*(Outer_circle_radius[gr_screen.res]+4);
 		ypos = Hud_reticle_center[gr_screen.res][1] - (float)sin(ang)*(Outer_circle_radius[gr_screen.res]+4);
 

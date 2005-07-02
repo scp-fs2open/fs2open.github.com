@@ -9,6 +9,10 @@
 
 /* 
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.21  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -419,13 +423,15 @@ void d3d_batch_end_frame()
  *
  * @return void
  */
-void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, int bw, int bh, float u_scale, float v_scale, uint color, bool x_resize, bool resize)
+void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, int bw, int bh, float u_scale, float v_scale, uint color, bool resize)
 {
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
 
 	float fbw = i2fl(bw);
 	float fbh = i2fl(bh);
+
+	int do_resize = (resize || gr_screen.rendering_to_texture != -1);
 
 	// Rendition 
 	if(GlobalD3DVars::D3D_Antialiasing) {
@@ -446,39 +452,14 @@ void d3d_stuff_char(D3DVERTEX2D *src_v, int x,int y,int w,int h,int sx,int sy, i
 		v1 = v_scale*i2fl(sy+h)/ fbh;
 	} 
 
-	if(gr_screen.custom_size == -1)
-	{
-		x1 = i2fl(x+gr_screen.offset_x);
-		y1 = i2fl(y+gr_screen.offset_y);
-		x2 = i2fl(x+w+gr_screen.offset_x);
-		y2 = i2fl(y+h+gr_screen.offset_y);
+	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	x2 = i2fl(x + w + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y2 = i2fl(y + h + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
 
-	} else {
-
-		int nx = x+gr_screen.offset_x;
-		int ny = y+gr_screen.offset_y;
-		int nw = x+w+gr_screen.offset_x;
-		int nh = y+h+gr_screen.offset_y;
-
-		if(resize || gr_screen.rendering_to_texture != -1)
-		{
-			if(x_resize)
-			{
-				gr_resize_screen_pos(&nx, &ny);
-				gr_resize_screen_pos(&nw, &nh);
-			}
-			else
-			{
-				gr_resize_screen_pos(NULL, &ny);
-				gr_resize_screen_pos(NULL, &nh);
-			}
-
-		}
-
-		x1 = i2fl(nx);
-		y1 = i2fl(ny);
-		x2 = i2fl(nw);
-		y2 = i2fl(nh);
+	if (do_resize) {
+		gr_resize_screen_posf(&x1, &y1);
+		gr_resize_screen_posf(&x2, &y2);
 	}
 
 #if 1
@@ -704,20 +685,26 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 {
 	int spacing = 0;
 	int width;
-	bool x_resize;
 
 	int x = sx;
 	int y = sy;
 
-	// centered
-	x =(sx==0x8000) ? get_centered_x(s) : sx;
-	if(sx==0x8000)
-		x_resize = false;
-	else
-		x_resize = true;
+	if ( !Current_font ) {
+		return;
+	}
 
-  	do
-	{
+	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+
+
+	if (sx == 0x8000) {	// centered
+		x = get_centered_x(s);
+	} else {
+		x = sx;
+	}
+
 	HRESULT hr;
 	int magic_num, magic_num2;
 	int len = strlen_magic(s, magic_num, magic_num2);
@@ -749,7 +736,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 			hr = GlobalD3DVars::lpD3DDevice->DrawPrimitive(
 				D3DPT_TRIANGLELIST, 0, array[index].char_count * 2);
 
-   //			Assert(SUCCEEDED(hr));
+	//		Assert(SUCCEEDED(hr));
 
 			array[index].used_this_frame = true;
 			return;
@@ -784,11 +771,14 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 	while (*s)	{
 		x += spacing;
 
-		while (*s== '\n' )	{
+		while (*s == '\n' )	{
 			s++;
 			y += Current_font->h;
-			// centered
-			x =(sx==0x8000) ? get_centered_x(s) : sx;
+			if (sx==0x8000) {			//centered
+				x = get_centered_x(s);
+			} else {
+				x = sx;
+			}
 		}
 		if (*s == 0 ) break;
 
@@ -804,20 +794,20 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		int wc, hc;
 
 		// Check if this character is totally clipped
-		if ( x + width < gr_screen.clip_left ) continue;
-		if ( y + Current_font->h < gr_screen.clip_top ) continue;
-		if ( x > gr_screen.clip_right ) continue;
-		if ( y > gr_screen.clip_bottom ) continue;
+		if ( x + width < clip_left ) continue;
+		if ( y + Current_font->h < clip_top ) continue;
+		if ( x > clip_right ) continue;
+		if ( y > clip_bottom ) continue;
 
 		xd = yd = 0;
-		if ( x < gr_screen.clip_left ) xd = gr_screen.clip_left - x;
-		if ( y < gr_screen.clip_top ) yd = gr_screen.clip_top - y;
+		if ( x < clip_left ) xd = clip_left - x;
+		if ( y < clip_top ) yd = clip_top - y;
 		xc = x+xd;
 		yc = y+yd;
 
 		wc = width - xd; hc = Current_font->h - yd;
-		if ( xc + wc > gr_screen.clip_right ) wc = gr_screen.clip_right - xc;
-		if ( yc + hc > gr_screen.clip_bottom ) hc = gr_screen.clip_bottom - yc;
+		if ( xc + wc > clip_right ) wc = clip_right - xc;
+		if ( yc + hc > clip_bottom ) hc = clip_bottom - yc;
 
 		if ( wc < 1 ) continue;
 		if ( hc < 1 ) continue;
@@ -842,14 +832,14 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 
 #if 0
 		// Change the color this way to see which strings are being cached
-	  	uint color2 = (new_id == -1) ? color : 0xff00ff00;
+		uint color2 = (new_id == -1) ? color : 0xff00ff00;
 
 		// Marks the end of a batch blue
-	  	if(char_count > (MAX_STRING_LEN - 10)) 
-	  		color2 = 0xff0000ff;
+		if(char_count > (MAX_STRING_LEN - 10)) 
+			color2 = 0xff0000ff;
 #endif
 
-	 	d3d_stuff_char(src_v, xc, yc, wc, hc, u+xd, v+yd, bw, bh, u_scale, v_scale, color, x_resize, resize);
+	 	d3d_stuff_char(src_v, xc, yc, wc, hc, u+xd, v+yd, bw, bh, u_scale, v_scale, color, resize);
 
 		char_count++;
 		if(char_count >= MAX_STRING_LEN) {
@@ -864,7 +854,7 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		if(char_count == 0) {
 			array[new_id].free_slot		  = true;
 			array[new_id].used_this_frame = false;
-			continue;
+			return;
 		}
 
 		hr = d3d_SetVertexShader(vertex_types[FONT_VTYPE].fvf );
@@ -872,8 +862,8 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		hr = GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vbuffer, vertex_types[FONT_VTYPE].size); 
 		Assert(SUCCEEDED(hr));
 
-  		hr = GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, char_count * 2);
-//  		Assert(SUCCEEDED(hr));
+		hr = GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST, 0, char_count * 2);
+//		Assert(SUCCEEDED(hr));
 
 		// Fill in details
 		array[new_id].char_count   = char_count;
@@ -890,11 +880,6 @@ void d3d_batch_string(int sx, int sy, char *s, int bw, int bh, float u_scale, fl
 		array[new_id].used_this_frame = true;
 
 	} else if(char_count > 0) {
-  	   	d3d_DrawPrimitive(FONT_VTYPE, D3DPT_TRIANGLELIST,(LPVOID)d3d_verts, char_count * 6);
+		d3d_DrawPrimitive(FONT_VTYPE, D3DPT_TRIANGLELIST,(LPVOID)d3d_verts, char_count * 6);
 	}
-
-	} while (*s);
 }
-
-
-

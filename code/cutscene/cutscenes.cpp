@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-05-12 17:49:11 $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-02 19:42:14 $
  * $Author: taylor $
- * $Revision: 2.16 $
- * $Date: 2005-05-12 17:49:11 $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-02 19:42:14 $
  * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/05/12 17:49:11  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.15  2005/02/23 04:51:55  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots
  *
@@ -658,7 +662,7 @@ void cutscenes_screen_init()
 	int i;
 	ui_button_info *b;
 
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Cutscene_mask_name[gr_screen.res]);
 
 	for (i=0; i<NUM_BUTTONS; i++) {

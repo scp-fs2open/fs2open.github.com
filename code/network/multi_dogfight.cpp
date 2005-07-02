@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-02 21:18:19 $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-02 19:45:00 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/02 21:18:19  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.7  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -300,7 +305,7 @@ void multi_df_debrief_init()
 	Assert(Multi_df_background_bitmap);
 
 	// create the UI window
-	Multi_df_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Multi_df_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Multi_df_window.set_mask_bmap(Multi_df_mask_fname[gr_screen.res]);
 	
 	// initialize the control buttons

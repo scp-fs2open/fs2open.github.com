@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-06-21 00:13:47 $
+ * $Revision: 2.39 $
+ * $Date: 2005-07-02 19:45:00 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/06/21 00:13:47  taylor
+ * add some better error checking/handling for when GetServerList messes up
+ *
  * Revision 2.37  2005/05/12 17:49:15  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -858,7 +861,8 @@ void multi_common_notify_do()
 				break;			
 			}
 			if(y != -1){
-				gr_string((gr_screen.max_w - w)/2, y, Multi_common_notify_text);
+				gr_resize_screen_pos(NULL, &y);
+				gr_string((gr_screen.max_w - w)/2, y, Multi_common_notify_text, false);
 			}
 		}
 	}
@@ -1450,7 +1454,7 @@ void multi_join_game_init()
 	chatbox_clear();
 
 	// create the interface window
-	Multi_join_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_join_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_join_window.set_mask_bmap(Multi_join_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap
@@ -3181,7 +3185,7 @@ void multi_start_game_init()
 	multi_sg_init_gamenet();
 	
 	// create the interface window
-	Multi_sg_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_sg_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_sg_window.set_mask_bmap(Multi_sg_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap
@@ -4372,7 +4376,7 @@ void multi_create_game_init()
 	Multi_create_plist_select_id = -1;	
 
 	// create the interface window
-	Multi_create_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_create_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_create_window.set_mask_bmap(Multi_create_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap
@@ -4570,7 +4574,7 @@ void multi_create_game_do()
 			gr_set_color_fast(&Color_normal);
 			gr_set_font(FONT2);
 			gr_get_string_size(&str_w, &str_h, loading_str);
-			gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, loading_str);
+			gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, loading_str, false);
 			gr_set_font(FONT1);
 
 			gr_flip();
@@ -6627,7 +6631,7 @@ void multi_host_options_init()
 	int idx;
 
 	// create the interface window
-	Multi_ho_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_ho_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_ho_window.set_mask_bmap(Multi_ho_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap
@@ -7461,7 +7465,7 @@ void multi_game_client_setup_init()
 	int idx;
 
 	// create the interface window
-	Multi_jw_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_jw_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_jw_window.set_mask_bmap(Multi_jw_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap
@@ -8352,7 +8356,7 @@ void multi_sync_common_init()
 	int idx;
 
 	// create the interface window
-	Multi_sync_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Multi_sync_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Multi_sync_window.set_mask_bmap(Multi_sync_bitmap_mask_fname[gr_screen.res]);
 	Multi_sync_window.tooltip_handler = multi_sync_tooltip_handler;
 
@@ -9943,7 +9947,7 @@ void multi_passwd_init()
 	Multi_passwd_background = gr_save_screen();	
 	
 	// create the interface window
-	Multi_pwd_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_pwd_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_pwd_window.set_mask_bmap(Multi_pwd_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap
