@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-07-02 19:43:54 $
+ * $Revision: 2.36 $
+ * $Date: 2005-07-02 20:57:48 $
  * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.34  2005/06/03 06:39:26  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -2004,11 +2007,7 @@ void debrief_render()
 
 	font_height = gr_get_font_height();
 
-	x = Debrief_text_wnd_coords[gr_screen.res][0];
-	y = Debrief_text_wnd_coords[gr_screen.res][1];
-	gr_unsize_screen_pos(&x, &y);
-
-	gr_set_clip(x, y, Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3]);
+	gr_set_clip(Debrief_text_wnd_coords[gr_screen.res][0], Debrief_text_wnd_coords[gr_screen.res][1], Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3]);
 	y = 0;
 	z = Text_offset;
 	while (y + font_height <= Debrief_text_wnd_coords[gr_screen.res][3]) {
