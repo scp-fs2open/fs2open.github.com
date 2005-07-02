@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.8  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -1123,7 +1126,7 @@ void mission_hotkey_init()
 
 	reset_hotkeys();
 	common_set_interface_palette();  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Hotkey_mask_fname[gr_screen.res]);
 
 	for (i=0; i<NUM_BUTTONS; i++) {

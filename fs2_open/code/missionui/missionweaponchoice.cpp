@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-04-25 00:25:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.52 $
+ * $Date: 2005-07-02 19:43:55 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/04/25 00:25:46  wmcoolmon
+ * MAX_SHIP_TYPES > Num_ship_types
+ *
  * Revision 2.50  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -2766,7 +2769,7 @@ void weapon_select_init()
 	snazzy_menu_add_region(&Weapon_select_region[Num_weapon_select_regions++], "",	ICON_SHIP_SECONDARY_3,		0);
 
 	// init common UI
-	Weapon_ui_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
+	Weapon_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 
 	if(Game_mode & GM_MULTIPLAYER){
 		Weapon_ui_window.set_mask_bmap(Wl_mask_multi[Uses_apply_all_button][gr_screen.res]);

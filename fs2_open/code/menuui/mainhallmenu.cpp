@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-06-03 06:39:26 $
+ * $Revision: 2.31 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/06/03 06:39:26  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.29  2005/05/24 20:54:06  taylor
  * couple of extra checks to make sure that we can't enter the barracks or the techroom
  *   if the currently selected campaign isn't available, fixes several pilot crash bugs
@@ -2078,7 +2081,7 @@ void main_hall_blit_version()
 
 	// print the string near the lower left corner
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(5, gr_screen.max_h - 24, version_string);
+	gr_string(5, gr_screen.max_h_unscaled - 24, version_string);
 }
 
 // blit any necessary tooltips
@@ -2110,13 +2113,11 @@ void main_hall_maybe_blit_tooltips()
 		// get the width of the string
 		gr_get_string_size(&w, NULL, Main_hall->region_descript[text_index]);
 
-		gr_resize_screen_pos(&w, &shader_y);
-
 		gr_set_shader(&Main_hall_tooltip_shader);
-		gr_shade(0, shader_y, gr_screen.clip_width, (gr_screen.clip_height - shader_y));
+		gr_shade(0, shader_y, gr_screen.clip_width_unscaled, (gr_screen.clip_height_unscaled - shader_y), true);
 
 		gr_set_color_fast(&Color_bright_white);
-		gr_string((gr_screen.max_w - w)/2, Main_hall->region_yval, Main_hall->region_descript[text_index]);
+		gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall->region_yval, Main_hall->region_descript[text_index]);
 	}
 }
 
@@ -2152,8 +2153,8 @@ void main_hall_process_help_stuff()
 
 	// set the color and print out text and shader
 	gr_set_color_fast(&Color_bright_white);
-	gr_shade(0, 0, gr_screen.max_w, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset);
-	gr_string((gr_screen.max_w - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str);
+	gr_shade(0, 0, gr_screen.max_w_unscaled, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset, true);
+	gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str);
 }
 
 // what main hall we're on (should be 0 or 1)

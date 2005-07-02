@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-05-12 17:49:13 $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.12  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -847,7 +851,7 @@ void mission_show_goals_init()
 	}
 
 	common_set_interface_palette("ObjectivesPalette");  // set the interface palette
-	Goals_screen_ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Goals_screen_ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Goals_screen_ui_window.set_mask_bmap("Objectives-m");
 
 	for (i=0; i<NUM_GOAL_SCREEN_BUTTONS; i++) {

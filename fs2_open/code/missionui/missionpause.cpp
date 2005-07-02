@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-06-19 02:38:33 $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/06/19 02:38:33  taylor
+ * fix possible crash from popups, especially in multi
+ *
  * Revision 2.11  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -205,7 +208,7 @@ void pause_init(int multi)
 
 		//JAS: REMOVED CALL TO SET INTERFACE PALETTE TO GET RID OF SCREEN CLEAR WHEN PAUSING
 		//common_set_interface_palette();  // set the interface palette
-		Pause_win.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);	
+		Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
 
 #ifndef NO_NETWORK
 		if (multi) {

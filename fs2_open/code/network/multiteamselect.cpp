@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-04-25 00:28:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-02 19:45:00 $
+ * $Author: taylor $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/04/25 00:28:17  wmcoolmon
+ * MAX_SHIP_TYPES > Num_ship_types
+ *
  * Revision 2.10  2005/04/03 08:48:31  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -1354,7 +1357,7 @@ void multi_ts_init_graphics()
 	int idx;
 	
 	// create the interface window
-	Multi_ts_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_ts_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_ts_window.set_mask_bmap(Multi_ts_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap

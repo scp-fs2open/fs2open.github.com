@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-23 04:55:07 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * Campaign Loop briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.6  2004/07/26 20:47:40  Kazan
  * remove MCD complete
  *
@@ -199,7 +202,7 @@ void loop_brief_init()
 	Assert(Loop_brief_bitmap != -1);
 
 	// window
-	Loop_brief_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Loop_brief_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Loop_brief_window.set_mask_bmap(Loop_brief_mask[gr_screen.res]);	
 
 	// add the buttons

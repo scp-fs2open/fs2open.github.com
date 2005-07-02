@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallTemp.cpp $
- * $Revision: 2.5 $
- * $Date: 2004-07-26 20:47:37 $
- * $Author: Kazan $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-02 19:43:54 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2004/07/26 20:47:37  Kazan
+ * remove MCD complete
+ *
  * Revision 2.4  2004/07/12 16:32:53  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -124,7 +127,7 @@ void mht_init()
 	int idx;
 
 	// create the interface window
-	Mht_window.create(0, 0, gr_screen.max_w,gr_screen.max_h, 0);
+	Mht_window.create(0, 0, gr_screen.max_w_unscaled,gr_screen.max_h_unscaled, 0);
 	Mht_window.set_mask_bmap(Mht_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap

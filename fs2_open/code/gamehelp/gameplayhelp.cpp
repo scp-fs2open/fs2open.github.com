@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/GameplayHelp.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-23 04:51:56 $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-02 19:42:14 $
  * $Author: taylor $
  *
  * Module for displaying in-game help
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/23 04:51:56  taylor
+ * some bm_unload() -> bm_release() changes to save bmpman slots
+ *
  * Revision 2.5  2004/07/26 20:47:30  Kazan
  * remove MCD complete
  *
@@ -337,7 +340,7 @@ void gameplay_help_init()
 	}
 
 	common_set_interface_palette("InterfacePalette");  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Game_help_mask_filename[gr_screen.res]);
 
 	for (i=0; i<NUM_BUTTONS; i++) {

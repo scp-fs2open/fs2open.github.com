@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-06-03 06:41:37 $
+ * $Revision: 2.22 $
+ * $Date: 2005-07-02 19:43:53 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/06/03 06:41:37  taylor
+ * eek... fix wrong description of changes
+ *
  * Revision 2.20  2005/06/03 06:39:26  taylor
  * fix issue where, when in multi mode, loading a single player would overwrite the campaign savefile
  *
@@ -1529,7 +1532,7 @@ void barracks_init()
 	mission_campaign_savefile_save();
 
 	// create interface
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Barracks_bitmap_mask_fname[gr_screen.res]);
 
 	// load background bitmap

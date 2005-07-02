@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-04-05 05:53:19 $
+ * $Revision: 2.44 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/04/05 05:53:19  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.42  2005/04/03 08:48:30  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -1259,7 +1262,7 @@ void ship_select_init()
 									// restoring a game from the Options screen invoked from ship select
 
 	// init ship selection masks and buttons
-	Ship_select_ui_window.create( 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );
+	Ship_select_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 	Ship_select_ui_window.set_mask_bmap(Ship_select_background_mask_fname[gr_screen.res]);
 	Ship_select_ui_window.tooltip_handler = ss_tooltip_handler;
 	common_buttons_init(&Ship_select_ui_window);

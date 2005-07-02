@@ -9,13 +9,17 @@
 
 /*
  * $Logfile$
- * $Revision: 1.15 $
- * $Date: 2005-04-12 05:26:37 $
+ * $Revision: 1.16 $
+ * $Date: 2005-07-02 19:44:59 $
  * $Author: taylor $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/04/12 05:26:37  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 1.14  2005/03/02 21:18:19  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -292,7 +296,7 @@ void fs2ox_init()
 	fs2ox_frame_count = 0;
 
 	// create the interface window
-	fs2ox_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	fs2ox_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	fs2ox_window.set_mask_bmap(fs2ox_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-05-12 17:49:11 $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-02 19:42:14 $
  * $Author: taylor $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/05/12 17:49:11  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.12  2005/04/28 05:29:28  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -1595,7 +1599,7 @@ void control_config_init()
 		Control_config_backup[i] = Control_config[i];
 
 	common_set_interface_palette(NOX("ControlConfigPalette"));  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Conflict_background_bitmap_mask_fname[gr_screen.res]);
 	Ui_window.tooltip_handler = control_config_tooltip_handler;
 

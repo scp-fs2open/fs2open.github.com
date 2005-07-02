@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-02 19:45:02 $
  * $Author: taylor $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.5  2005/01/31 23:27:55  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -450,7 +454,7 @@ void UI_INPUTBOX::draw()
 //		}
 
 		// color the background behind the text	
-		gr_rect( 0, 0, tw + 1, th );
+		gr_rect( 0, 0, tw + 1, th, true );
 	}
 
 	if	( (my_wnd->selected_gadget == this) || disabled_flag ) {		
@@ -471,9 +475,9 @@ void UI_INPUTBOX::draw()
 
 	// draw the text
 	if (flags & UI_INPUTBOX_FLAG_PASSWD){
-		gr_string(text_x, text_y, passwd_text);
+		gr_string(text_x, text_y, passwd_text, false);
 	} else {
-		gr_string(text_x, text_y, text);
+		gr_string(text_x, text_y, text, false);
 	}
 
 	// draw the "cursor"

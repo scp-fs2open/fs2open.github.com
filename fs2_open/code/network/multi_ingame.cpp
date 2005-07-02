@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-04-25 00:28:17 $
- * $Author: wmcoolmon $
+ * $Revision: 2.22 $
+ * $Date: 2005-07-02 19:45:00 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/04/25 00:28:17  wmcoolmon
+ * MAX_SHIP_TYPES > Num_ship_types
+ *
  * Revision 2.20  2005/04/11 05:50:36  taylor
  * some limits.h fixes to make GCC happier
  * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
@@ -1019,7 +1022,7 @@ void multi_ingame_select_init()
 	// initialize GUI data	
 
 	// create the interface window
-	Multi_ingame_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_ingame_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_ingame_window.set_mask_bmap(Multi_ingame_join_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap

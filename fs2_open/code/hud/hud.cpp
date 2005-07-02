@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-05-30 05:31:19 $
+ * $Revision: 2.47 $
+ * $Date: 2005-07-02 19:42:15 $
  * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/05/30 05:31:19  taylor
+ * make sure we don't show various offscreen indicators and info when hud-disabled-except-messages is used
+ *
  * Revision 2.45  2005/05/12 03:50:10  Goober5000
  * repeating messages with variables should work properly now
  * --Goober5000
@@ -3438,8 +3441,9 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack)
 			g3_project_vertex(&pt);
 
 			if (!(pt.flags & PF_OVERFLOW))	{
-				HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width)*0.5f - pt.sx);
-				HUD_offset_y -= 0.45f * (i2fl(gr_screen.clip_height)*0.5f - pt.sy);
+				gr_unsize_screen_posf( &pt.sx, &pt.sy );
+				HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width_unscaled)*0.5f - pt.sx);
+				HUD_offset_y -= 0.45f * (i2fl(gr_screen.clip_height_unscaled)*0.5f - pt.sy);
 			}
 		}
 
@@ -3467,7 +3471,7 @@ void HUD_reset_clip()
 	int hx = fl2i(HUD_offset_x);
 	int hy = fl2i(HUD_offset_y);
 
-	gr_set_clip(hx, hy, gr_screen.max_w, gr_screen.max_h );
+	gr_set_clip(hx, hy, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled);
 }
 
 // Basically like gr_set_clip only it accounts for hud jittering

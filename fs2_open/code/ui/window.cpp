@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-02 19:45:02 $
  * $Author: taylor $
  *
  * Routines to handle UI windows.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.4  2005/01/31 23:27:55  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -290,12 +294,12 @@ void UI_WINDOW::create( int _x, int _y, int _w, int _h, int _flags )
 
 	if (_x < 0)
 		_x = 0;
-	if (_x + _w - 1 >= gr_screen.max_w)
-		_x = gr_screen.max_w - _w;
+	if (_x + _w - 1 >= gr_screen.max_w_unscaled)
+		_x = gr_screen.max_w_unscaled - _w;
 	if (_y < 0)
 		_y = 0;
-	if (_y + _h - 1 >= gr_screen.max_h)
-		_y = gr_screen.max_h - _h;
+	if (_y + _h - 1 >= gr_screen.max_h_unscaled)
+		_y = gr_screen.max_h_unscaled - _h;
 
 	game_flush();
 }
@@ -406,7 +410,7 @@ void UI_WINDOW::draw()
 		mouse_get_pos(&mx, &my);
 		// mprintf(("MOUSE (%d, %d)\n", mx, my));					
 		gr_set_color_fast(&Color_normal);
-		gr_printf(mx, my - 12, "%d %d", mx, my);
+		gr_printf_no_resize(mx, my - 12, "%d %d", mx, my);
 	}	
 }
 
@@ -431,7 +435,7 @@ int UI_WINDOW::get_current_hotspot()
 	}
 
 	// check the pixel value under the mouse
-	offset = ui_mouse.y * gr_screen.max_w + ui_mouse.x;
+	offset = ui_mouse.y * gr_screen.max_w_unscaled + ui_mouse.x;
 	pixel_val = *( ((ubyte*)mask_data) + offset);
 	return pixel_val;
 }
@@ -510,7 +514,7 @@ void UI_WINDOW::render_tooltip(char *str)
 	int str_w, str_h;
 
 	gr_get_string_size(&str_w, &str_h, str);
-	Assert(str_w < gr_screen.max_w - 4 && str_h < gr_screen.max_h - 4);
+	Assert(str_w < gr_screen.max_w_unscaled - 4 && str_h < gr_screen.max_h_unscaled - 4);
 
 	if (ttx < 2)
 		ttx = 2;
@@ -518,14 +522,14 @@ void UI_WINDOW::render_tooltip(char *str)
 	if (tty < 2)
 		tty = 2;
 
-	if (ttx + str_w + 2 > gr_screen.max_w)
-		ttx = gr_screen.max_w - str_w;
+	if (ttx + str_w + 2 > gr_screen.max_w_unscaled)
+		ttx = gr_screen.max_w_unscaled - str_w;
 
-	if (tty + str_h + 2 > gr_screen.max_h)
-		tty = gr_screen.max_h - str_h;
+	if (tty + str_h + 2 > gr_screen.max_w_unscaled)
+		tty = gr_screen.max_h_unscaled - str_h;
 
 	gr_set_color_fast(&Color_black);
-	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1);
+	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1, true);
 
 	gr_set_color_fast(&Color_bright_white);
 	gr_string(ttx, tty, str);

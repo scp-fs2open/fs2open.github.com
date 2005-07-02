@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/UIDRAW.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-02 19:45:02 $
+ * $Author: taylor $
  *
  * Routines to draw UI sort of stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -64,12 +67,12 @@
 
 void ui_hline(int x1, int x2, int y )
 {
-	gr_line(x1,y,x2,y);
+	gr_line(x1,y,x2,y,true);
 }
 
 void ui_vline(int y1, int y2, int x )
 {
-	gr_line(x,y1,x,y2);
+	gr_line(x,y1,x,y2,true);
 }
 
 void ui_string_centered( int x, int y, char * s )
@@ -112,7 +115,7 @@ void ui_draw_frame( int x1, int y1, int x2, int y2 )
 
 void ui_rect( int x1, int y1, int x2, int y2 )
 {
-	gr_rect( x1, y1, x2-x1+1, y2-y1+1 );
+	gr_rect( x1, y1, x2-x1+1, y2-y1+1, true );
 }
 
 
@@ -121,7 +124,7 @@ void ui_draw_box_out( int x1, int y1, int x2, int y2 )
 {
 
 	gr_set_color_fast( &CWHITE );
-	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1 );
+	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1, true );
 
 	ui_draw_shad( x1+0, y1+0, x2-0, y2-0, &CBRIGHT, &CGRAY );
 	ui_draw_shad( x1+1, y1+1, x2-1, y2-1, &CBRIGHT, &CGRAY );
@@ -132,7 +135,7 @@ void ui_draw_box_in( int x1, int y1, int x2, int y2 )
 {
 
 	gr_set_color_fast( &CWHITE );
-	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1 );
+	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1, true );
 
 	ui_draw_shad( x1+0, y1+0, x2-0, y2-0, &CGRAY, &CBRIGHT );
 	ui_draw_shad( x1+1, y1+1, x2-1, y2-1, &CGRAY, &CBRIGHT );

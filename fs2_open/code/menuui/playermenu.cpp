@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-05-12 17:49:13 $
+ * $Revision: 2.23 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.21  2005/04/12 19:22:48  taylor
  * more demo support (Jens Granseuer)
  *
@@ -518,7 +522,7 @@ void player_select_init()
 #endif
 
 	// create the UI window
-	Player_select_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Player_select_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Player_select_window.set_mask_bmap(Player_select_background_mask_bitmap[gr_screen.res]);
 	
 	// initialize the control buttons
@@ -1510,13 +1514,13 @@ void player_select_display_copyright()
 	}
 
 	gr_get_string_size(&w, NULL, Copyright_msg1);
-	sx = fl2i((gr_screen.max_w / 2) - w/2.0f + 0.5f);
-	sy = (gr_screen.max_h - 2) - 2*gr_get_font_height();
+	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
+	sy = (gr_screen.max_h_unscaled - 2) - 2*gr_get_font_height();
 	gr_string(sx, sy, Copyright_msg1);
 
 	gr_get_string_size(&w, NULL, Copyright_msg2);
-	sx = fl2i((gr_screen.max_w / 2) - w/2.0f + 0.5f);
-	sy = (gr_screen.max_h - 2) - gr_get_font_height();
+	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
+	sy = (gr_screen.max_h_unscaled - 2) - gr_get_font_height();
 
 	gr_string(sx, sy, Copyright_msg2);
 }
@@ -1529,7 +1533,7 @@ void player_select_display_all_text()
 	if (strlen(Player_select_bottom_text)) {
 		gr_get_string_size(&w, &h, Player_select_bottom_text);
 	
-		w = (gr_screen.max_w - w) / 2;
+		w = (gr_screen.max_w_unscaled - w) / 2;
 		gr_set_color_fast(&Color_bright_white);
 		gr_printf(w, Player_select_bottom_text_y[gr_screen.res], Player_select_bottom_text);
 	}
@@ -1538,7 +1542,7 @@ void player_select_display_all_text()
 	if (strlen(Player_select_middle_text)) {
 		gr_get_string_size(&w, &h, Player_select_middle_text);
 	
-		w = (gr_screen.max_w - w) / 2;
+		w = (gr_screen.max_w_unscaled - w) / 2;
 		gr_set_color_fast(&Color_bright_white);
 		gr_printf(w, Player_select_middle_text_y[gr_screen.res], Player_select_middle_text);
 	}

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-04-17 05:38:29 $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/04/17 05:38:29  taylor
+ * updated Linux joystick code that's a bit less insane speed wise
+ * remove ability to build without joystick support, no reason to keep it around
+ * fix unusable warning flag with libjpeg building
+ *
  * Revision 2.13  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -1257,7 +1262,7 @@ void options_menu_init()
 	Gamma_last_set = -1;
 
 	common_set_interface_palette("InterfacePalette");  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 
 	for (i=0; i<PLANETS_ON; i++) {
 		b = &Buttons[gr_screen.res][i];

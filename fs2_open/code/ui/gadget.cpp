@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-02-15 02:15:04 $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-02 19:45:02 $
  * $Author: taylor $
  *
  * Functions for the base gadget class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/02/15 02:15:04  taylor
+ * fix cleanup to avoid breaking the slider when it's still needed
+ *
  * Revision 2.7  2004/07/26 20:47:55  Kazan
  * remove MCD complete
  *
@@ -547,12 +550,6 @@ int UI_GADGET::is_mouse_on()
 	ubyte *mask_data;
 	int mask_w, mask_h;
 
-	int mouse_x = ui_mouse.x;
-	int mouse_y = ui_mouse.y;
-	// This keeps mouse position detection correct for non standard modes
-
-	gr_unsize_screen_pos(&mouse_x, &mouse_y);
-
 	// if linked to a hotspot, use the mask for determination
 	if (linked_to_hotspot) {
 		mask_data = (ubyte*)my_wnd->get_mask_data(&mask_w, &mask_h);
@@ -564,12 +561,12 @@ int UI_GADGET::is_mouse_on()
 
 		// if the mouse values are out of range of the bitmap
 		// NOTE : this happens when using smaller mask bitmaps than the screen resolution (during development)
-		if((mouse_x >= mask_w) || (mouse_y >= mask_h)){
+		if((ui_mouse.x >= mask_w) || (ui_mouse.y >= mask_h)){
 			return 0;
 		}
 
 		// check the pixel value under the mouse
-		offset = mouse_y * mask_w + mouse_x;
+		offset = ui_mouse.y * mask_w + ui_mouse.x;
 		pixel_val = *(mask_data + offset);
 		if (pixel_val == hotspot_num){
 			return 1;
@@ -578,7 +575,7 @@ int UI_GADGET::is_mouse_on()
 		}
 	// otherwise, we just check the bounding box area
 	} else {
-		if ((mouse_x >= x) && (mouse_x < x + w) && (mouse_y >= y) && (mouse_y < y + h) ){
+		if ((ui_mouse.x >= x) && (ui_mouse.x < x + w) && (ui_mouse.y >= y) && (ui_mouse.y < y + h) ){
 			return 1;
 		} else {
 			return 0;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-06-03 06:39:26 $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-02 19:43:55 $
  * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/06/03 06:39:26  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.14  2005/04/03 08:48:30  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
  * improved error reporting on apply-to-all
@@ -514,7 +517,7 @@ void red_alert_init()
 	}
 
 	// common_set_interface_palette("ControlConfigPalette");  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Red_alert_mask[gr_screen.res]);
 
 	for (i=0; i<NUM_BUTTONS; i++) {

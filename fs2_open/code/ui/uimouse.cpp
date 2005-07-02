@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/UIMOUSE.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-02 19:45:02 $
+ * $Author: taylor $
  *
  * Code for dealing with the mouse
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -101,6 +104,8 @@ void ui_mouse_process()
 	}
 
 	buttons = mouse_get_pos( &ui_mouse.x, &ui_mouse.y );
+
+	gr_unsize_screen_pos( &ui_mouse.x, &ui_mouse.y );
 
 	// check if mouse pressed
 	if (buttons & MOUSE_LEFT_BUTTON)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-06-19 02:37:43 $
+ * $Revision: 2.30 $
+ * $Date: 2005-07-02 19:43:54 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/06/19 02:37:43  taylor
+ * model_free_all() will unload textures so don't bother doing it twice
+ *
  * Revision 2.28  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1562,7 +1565,7 @@ void techroom_init()
 	The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 
 	// set up UI stuff
-	Ui_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Tech_mask_filename[gr_screen.res]);
 
 	Tech_background_bitmap = bm_load(Tech_background_filename[gr_screen.res]);
