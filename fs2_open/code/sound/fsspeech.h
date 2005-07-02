@@ -38,15 +38,17 @@ bool fsspeech_playing();
 #else
 
 // stub functions (c.f. NO_SOUND)
+
+// void functions have no effect and the stubs should not do anything or we get compiler warnings!!! - taylor
 #define fsspeech_init()	(false)
 #define fsspeech_deinit()
-#define fsspeech_play(type, text) ((void) ((type), (text), false))
+#define fsspeech_play(type, text)
 #define fsspeech_stop()
-#define fsspeech_pause(playing) ((void) ((playing), false))
+#define fsspeech_pause(playing)
 #define fsspeech_start_buffer()
-#define fsspeech_stuff_buffer(text) ((void) ((text), false))
-#define fsspeech_play_buffer(type) ((void) ((type), false))
-#define fsspeech_play_from(type) ((type), false)
+#define fsspeech_stuff_buffer(text)
+#define fsspeech_play_buffer(type)
+#define fsspeech_play_from(type) (false)
 #define fsspeech_playing() (false)
 #define fsspeech_was_compiled() (false)
 

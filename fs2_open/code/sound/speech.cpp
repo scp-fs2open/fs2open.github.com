@@ -8,13 +8,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-06-30 02:35:00 $
- * $Author: Goober5000 $
+ * $Revision: 1.21 $
+ * $Date: 2005-07-02 19:39:23 $
+ * $Author: taylor $
  *
  * Platform specific text-to-speech functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/06/30 02:35:00  Goober5000
+ * added functions to check if speech is playing
+ * --Goober5000
+ *
  * Revision 1.19  2005/04/19 06:29:28  taylor
  * try not to buffer output to the speech dev so that the text doesn't just show up some time in the future
  *
@@ -264,12 +268,12 @@ bool speech_is_speaking()
 {
 #ifdef _WIN32
 	HRESULT			hr;
-	SPVOICESTATUS	*pStatus = NULL;
+	SPVOICESTATUS	pStatus;
 
-	hr = Voice_device->GetStatus(pStatus, NULL);
+	hr = Voice_device->GetStatus(&pStatus, NULL);
 	if (FAILED(hr)) return false;
 
-	return (pStatus->dwRunningState == SPRS_IS_SPEAKING);
+	return (pStatus.dwRunningState == SPRS_IS_SPEAKING);
 #else
 	STUB_FUNCTION;
 
