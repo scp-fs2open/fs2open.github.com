@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-04-25 00:31:14 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-05 17:04:08 $
+ * $Author: phreak $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/25 00:31:14  wmcoolmon
+ * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
+ *
  * Revision 2.11  2005/03/02 21:24:46  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -387,7 +390,9 @@ void afterburners_update(object *objp, float fl_frametime)
 	if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER || (objp == Player_obj)){
 #else
 	// changed from != to == by Goober5000... this seems to be a bug
-	if (objp == Player_obj) {
+	// this should be true for all ships in non-network mode, this causes afterburner fuel to deplete
+	//previously the ai ships would have infinite AB fuel if checking for objp == Player_obj
+	if (1) {
 #endif
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
