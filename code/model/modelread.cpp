@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.72 $
- * $Date: 2005-06-22 15:25:41 $
+ * $Revision: 2.73 $
+ * $Date: 2005-07-07 16:32:33 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2005/06/22 15:25:41  taylor
+ * compiler warning fix (dizzy) and make sure that it's safe to continue after that switch statement
+ *
  * Revision 2.71  2005/06/19 02:42:21  taylor
  * really needed to mention those two things as well given the types of changes those are
  *
@@ -1673,7 +1676,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	}		
 
 	// Begin IBX code - taylor
-	if ( !Cmdline_nohtl ) {
+	if ( !Cmdline_nohtl && !Cmdline_noibx ) {
 		// generate checksum for the POF
 		uint pof_checksum = 0;
 		cfseek(fp, 0, SEEK_SET);	
@@ -2324,8 +2327,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 									if (bank->wash_info_pointer != NULL) {
 										table_error = 0;
 									}
-									// also set what subsystem this is attached to
-									bank->obj_num = k;
+									// also set what subsystem this is attached to but not if we only have one thruster bank
+									// do this so that original :V: models still work like they used to
+									if (pm->n_thrusters > 1) {
+										bank->obj_num = k;
+									}
 									break;
 								}
 							}

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.105 $
- * $Date: 2005-06-29 18:46:13 $
+ * $Revision: 2.106 $
+ * $Date: 2005-07-07 16:32:33 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2005/06/29 18:46:13  taylor
+ * add option to not scale up movies to fit window/screen, default is to scale
+ * (arguably not a bug but I said I would get it in before 3.6.5 and forgot)
+ *
  * Revision 2.104  2005/05/24 07:05:49  wmcoolmon
  * Commented out -fixbugs and -nocrash in preparation for 3.6.7
  *
@@ -720,11 +724,11 @@ typedef struct
 
 EasyFlag easy_flags[] =
 {
-	"Custom",
-	"Default FS2 (All features off)",
-	"All features on",
-	"High memory usage features on",
-	"High memory usage features off"
+	{ "Custom" },
+	{ "Default FS2 (All features off)" },
+	{ "All features on" },
+	{ "High memory usage features on" },
+	{ "High memory usage features off" }
 };
 
 // DO NOT CHANGE **ANYTHING** ABOUT THIS STRUCTURE AND ITS CONTENT
@@ -791,6 +795,7 @@ Flag exe_params[] =
 	{ "-query_speech",  "Does this build have speech?",   true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.query_speech", },
 	{ "-d3d_bad_tsys",  "Enable inefficient textures",	false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_bad_tsys", },
 	{ "-novbo",		  "Disable OpenGL VBO",				true,	0,					EASY_DEFAULT,		"Troubleshoot", "",	},
+	{ "-noibx",			"Don't use cached index buffers (IBX)",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"",	},
 
 	{ "-env",			  "environment mapping maping",		true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.env", },
 	{ "-alpha_env",	  "uses uses alpha for env maping",	true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.alpha_env", },
@@ -899,6 +904,7 @@ cmdline_parm use_rlm("-rlm", NULL); // more realistic lighting model - taylor
 cmdline_parm smart_shields("-smart_shields", NULL);
 cmdline_parm dis_collisions("-dis_collisions", NULL);
 cmdline_parm dis_weapons("-dis_weapons", NULL);
+cmdline_parm noibx_arg("-noibx", NULL);
 #ifdef WIN32
 cmdline_parm fix_bugs("-fixbugs", NULL);
 cmdline_parm disable_crashing("-nocrash", NULL);
@@ -953,6 +959,7 @@ int Cmdline_3dwarp = 0;
 int Cmdline_smart_shields = 0;
 int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
+int Cmdline_noibx = 0;
 
 int Cmdline_window = 0;
 int Cmdline_allslev = 0;
@@ -1925,6 +1932,10 @@ bool SetCmdlineParams()
 
 	if(dis_weapons.found())
 		Cmdline_dis_weapons = 1;
+
+	if ( noibx_arg.found() ) {
+		Cmdline_noibx = 1;
+	}
 
 	if ( tga16_arg.found() ) {
 		Cmdline_tga16 = 1;

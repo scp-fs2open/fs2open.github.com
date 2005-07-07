@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.70 $
- * $Date: 2005-06-29 18:46:13 $
+ * $Revision: 2.71 $
+ * $Date: 2005-07-07 16:32:33 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2005/06/29 18:46:13  taylor
+ * add option to not scale up movies to fit window/screen, default is to scale
+ * (arguably not a bug but I said I would get it in before 3.6.5 and forgot)
+ *
  * Revision 2.69  2005/03/13 23:07:35  taylor
  * enable 32-bit to 16-bit TGA conversion with -tga16 cmdline option (experimental)
  * fix crash when upgrading from original campaign stats file to current
@@ -545,6 +549,7 @@ extern int Cmdline_pcx32;
 extern int Cmdline_pcx32dds;
 extern int Cmdline_nomotiondebris;
 extern int Cmdline_rlm;
+extern int Cmdline_noibx;
 
 #ifdef SCP_UNIX
 	extern int Cmdline_no_grab;
