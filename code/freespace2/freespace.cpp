@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.158 $
- * $Date: 2005-06-22 15:16:40 $
+ * $Revision: 2.159 $
+ * $Date: 2005-07-07 16:33:39 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.158  2005/06/22 15:16:40  taylor
+ * make sure we only have one extension on mission names
+ *
  * Revision 2.157  2005/06/19 09:00:09  taylor
  * minor sanity checking for geometry_batcher
  * make particle batchers allocate dynamically
@@ -3748,7 +3751,8 @@ void game_show_framerate()
 #endif
 		{
 			extern int GL_textures_in;
-			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (GL_textures_in)/1024 );
+			extern int GL_vertex_data_in;
+			gr_printf( sx, sy, NOX("VRAM: %d KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
 			sy += dy;
 		}
 	}
