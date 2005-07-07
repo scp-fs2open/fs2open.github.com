@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-07-02 20:57:48 $
+ * $Revision: 2.37 $
+ * $Date: 2005-07-07 16:36:57 $
  * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/07/02 20:57:48  taylor
+ * bah, forgot to ever check debriefings
+ *
  * Revision 2.35  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -842,15 +845,18 @@ void debrief_kick_selected_player();
 
 // promotion voice selection stuff
 #define NUM_VOLITION_CAMPAIGNS	1
-struct {
+typedef struct {
 	char  campaign_name[32];
 	int	num_missions;
-} Volition_campaigns[NUM_VOLITION_CAMPAIGNS] = {
+} v_campaign;
+
+v_campaign Volition_campaigns[NUM_VOLITION_CAMPAIGNS] = {
 	{
 		BUILTIN_CAMPAIGN,		// the only campaign for now, but this leaves room for a mission pack
 		35						// make sure this is equal to the  number of missions you gave in the corresponding Debrief_promotion_voice_mapping
 	}
 };
+
 
 // data for which voice goes w/ which mission
 typedef struct voice_map {
@@ -2000,7 +2006,7 @@ void debrief_render_mission_time(int y_loc)
 // render out the debriefing text to the scroll window
 void debrief_render()
 {
-	int x, y, z, font_height;
+	int y, z, font_height;
 
 	if ( Num_stages <= 0 )
 		return;

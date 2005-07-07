@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.17 2005-05-17 20:57:05 taylor Exp $
+dnl $Id: configure.ac,v 1.18 2005-07-07 16:36:56 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -428,7 +428,7 @@ if test "$fs2_os_win32" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fexceptions"
 elif test "$fs2_os_unix" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-unknown-pragmas"
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -Wno-deprecated"
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -Wno-deprecated -Wno-char-subscripts"
 elif test "$fs2_os_osx" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fsigned-char"
 fi

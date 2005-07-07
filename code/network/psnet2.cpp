@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-05-12 17:49:15 $
+ * $Revision: 2.11 $
+ * $Date: 2005-07-07 16:36:58 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/05/12 17:49:15  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.9  2005/03/24 23:29:33  taylor
  * (re)move some uneeded variables to fix compiler warnings
  *
@@ -782,7 +786,7 @@ void psnet_close()
 		//Warning( LOCATION, "Error closing wsock!\n" );
 	}
 #else
-	if ( TCP_socket != INVALID_SOCKET ) {
+	if ( TCP_socket != (int)INVALID_SOCKET ) {
 		shutdown( TCP_socket, 1 );
 		close( TCP_socket );
 	}
@@ -1342,7 +1346,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 		return -1;
 	}
 
-	Assert(length<sizeof(reliable_header));
+	Assert(length < (int)sizeof(reliable_header));
 	psnet_rel_work();
 
 	rsocket=&Reliable_sockets[socketid];
@@ -2725,7 +2729,7 @@ int psnet_init_tcp()
 	TCP_socket = INVALID_SOCKET;	
 	
 	TCP_socket = socket( AF_INET, SOCK_DGRAM, 0 );
-	if ( TCP_socket == INVALID_SOCKET ) {
+	if ( TCP_socket == (int)INVALID_SOCKET ) {
 		Tcp_failure_code = WSAGetLastError();
 		ml_printf("Error on TCP startup %d\n", Tcp_failure_code);
 		return 0;

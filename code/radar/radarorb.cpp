@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-04-24 12:56:43 $
+ * $Revision: 1.12 $
+ * $Date: 2005-07-07 16:36:58 $
  * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/04/24 12:56:43  taylor
+ * really are too many changes here:
+ *  - remove all bitmap section support and fix problems with previous attempt
+ *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
+ *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
+ *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
+ *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
+ *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
+ *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
+ *    code/render/3ddraw.cpp )
+ *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
+ *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
+ *
  * Revision 1.10  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -117,6 +130,9 @@ vec3d vec_extents[]=
 	{0,-1,0},
 	{0,0,-1}
 };
+
+static matrix fudge = { { { {1.0f, 0.0f, 0.0f }, {0.0f,1.0f,0.0f}, {0.0f,0.0f,-1.0f} } } };
+
 
 // forward declarations
 void draw_radar_blips_orb(int desired_color, int is_dim, int distort=0);
@@ -593,7 +609,6 @@ void draw_radar_blips_orb(int rcol, int is_dim, int distort)
 // input:	distorted	=>		0 (default) to draw normal, 1 to draw distorted 
 void radar_draw_blips_sorted_orb(int distort)
 {
-	static matrix fudge={1,0,0,0,1,0,0,0,-1};
 	matrix m;
 	
 	vm_vector_2_matrix(&m,&Player_obj->orient.vec.fvec,NULL,NULL);
@@ -699,7 +714,6 @@ void radar_orb_draw_outlines()
 	vertex proj_orb_lines_xz[25];
 	vertex proj_orb_lines_yz[25];
 
-	static matrix fudge={1,0,0,0,1,0,0,0,-1};
 	g3_start_instance_matrix(&vmd_zero_vector, &fudge, false);
 
 	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, false);

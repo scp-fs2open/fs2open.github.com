@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-02 19:42:14 $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-07 16:36:57 $
  * $Author: taylor $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/02 19:42:14  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.13  2005/05/12 17:49:11  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1008,8 +1011,9 @@ void control_config_save_axis_undo(int axis)
 	config_item_undo *ptr;
 	config_item item;
 
+	memset( &item, 0, sizeof(config_item) );
+
 	item.joy_id = (short) Axis_map_to[axis];
-	item.used = 0;
 	item.used = Invert_axis[axis];
 
 	ptr = get_undo_block(1);
@@ -1125,6 +1129,8 @@ int control_config_clear_other()
 		ptr = get_undo_block(total);
 		for (i=j=0; i<NUM_JOY_AXIS_ACTIONS; i++)
 			if ((Axis_map_to[i] == Axis_map_to[z]) && (i != z)) {
+				memset( &item, 0, sizeof(config_item) );
+
 				item.joy_id = (short) Axis_map_to[i];
 				item.used = Invert_axis[i];
 
@@ -1262,6 +1268,8 @@ int control_config_do_reset()
 
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++)
 		if ((Axis_map_to[i] != control_config_axis_default(i)) || (Invert_axis[i] != Invert_axis_defaults[i])) {
+			memset( &item, 0, sizeof(config_item) );
+
 			item.joy_id = (short) Axis_map_to[i];
 			item.used = Invert_axis[i];
 
