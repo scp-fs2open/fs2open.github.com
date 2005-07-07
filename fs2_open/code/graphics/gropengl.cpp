@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.125 $
- * $Date: 2005-07-02 19:40:48 $
+ * $Revision: 2.126 $
+ * $Date: 2005-07-07 16:36:57 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.125  2005/07/02 19:40:48  taylor
+ * ton of non-standard resolution fixes
+ * make gr_cross_fade() work properly in OGL
+ *
  * Revision 2.124  2005/06/29 18:51:05  taylor
  * revert OGL init changes since ATI drivers suck and don't like it
  *
@@ -1654,7 +1658,7 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 	int width, spacing, letter;
 	int x, y;
 
-	if ( !Current_font || (*s == NULL) )	{
+	if ( !Current_font || (*s == 0) )	{
 		return;
 	}
 

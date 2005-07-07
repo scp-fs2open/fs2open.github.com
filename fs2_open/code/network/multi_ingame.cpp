@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-07-02 19:45:00 $
+ * $Revision: 2.23 $
+ * $Date: 2005-07-07 16:36:58 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/07/02 19:45:00  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.21  2005/04/25 00:28:17  wmcoolmon
  * MAX_SHIP_TYPES > Num_ship_types
  *
@@ -458,7 +461,7 @@
 
 
 LOCAL	int	Ingame_ships_deleted = 0;
-LOCAL	int	Ingame_ships_to_delete[MAX_SHIPS];
+//LOCAL	int	Ingame_ships_to_delete[MAX_SHIPS];
 
 
 // --------------------------------------------------------------------------------------------------

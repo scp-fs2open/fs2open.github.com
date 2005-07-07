@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-03-25 06:57:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-07 16:36:57 $
+ * $Author: taylor $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/03/25 06:57:34  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.11  2005/03/10 08:00:06  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -472,19 +475,19 @@ typedef struct comm_order {
 // Also make sure you update comm_order_menu_text below this.
 // Also make sure you update MAX_SHIP_ORDERS in HUDsquadmsg.h
 comm_order Comm_orders[MAX_SHIP_ORDERS] = {
-	ATTACK_TARGET_ITEM,
-	DISABLE_TARGET_ITEM,
-	DISARM_TARGET_ITEM,
-	DISABLE_SUBSYSTEM_ITEM,
-	PROTECT_TARGET_ITEM,
-	IGNORE_TARGET_ITEM,
-	FORMATION_ITEM,
-	COVER_ME_ITEM,
-	ENGAGE_ENEMY_ITEM,
-	CAPTURE_TARGET_ITEM,
-	REARM_REPAIR_ME_ITEM,
-	ABORT_REARM_REPAIR_ITEM,
-	DEPART_ITEM,
+	{ ATTACK_TARGET_ITEM },
+	{ DISABLE_TARGET_ITEM },
+	{ DISARM_TARGET_ITEM },
+	{ DISABLE_SUBSYSTEM_ITEM },
+	{ PROTECT_TARGET_ITEM },
+	{ IGNORE_TARGET_ITEM },
+	{ FORMATION_ITEM },
+	{ COVER_ME_ITEM },
+	{ ENGAGE_ENEMY_ITEM },
+	{ CAPTURE_TARGET_ITEM },
+	{ REARM_REPAIR_ME_ITEM },
+	{ ABORT_REARM_REPAIR_ITEM },
+	{ DEPART_ITEM }
 };
 
 // Text to display on the menu

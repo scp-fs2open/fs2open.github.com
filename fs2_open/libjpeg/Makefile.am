@@ -1,13 +1,13 @@
 ## libjpeg/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.3 2005-04-15 11:27:53 taylor Exp $
+## $Id: Makefile.am,v 1.4 2005-07-07 16:36:58 taylor Exp $
 
 
 EXTRA_DIST = README
 
 
 # D_ variants are defaults and should always be used
-AM_CFLAGS = @D_CFLAGS@
+AM_CFLAGS = @D_CFLAGS@ -Wno-main
 AM_LDFLAGS = @D_LDFLAGS@
 
 noinst_LIBRARIES = libjpeg.a

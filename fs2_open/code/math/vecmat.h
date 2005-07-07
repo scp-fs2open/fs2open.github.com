@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.10 $
- * $Date: 2005-04-15 11:41:27 $
+ * $Revision: 2.11 $
+ * $Date: 2005-07-07 16:36:57 $
  * $Author: taylor $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/04/15 11:41:27  taylor
+ * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
+ *
  * Revision 2.9  2005/04/15 11:36:54  taylor
  * new GCC = new warning messages, yippeeee!!
  *
@@ -253,9 +256,9 @@ extern matrix vmd_identity_matrix;
 //Here's a handy constant
 
 #define ZERO_VECTOR {0.0f,0.0f,0.0f}
-#define IDENTITY_MATRIX {1.0f,0.0f,0.0f,	\
-                         0.0f,1.0f,0.0f,	\
-                         0.0f,0.0f,1.0f }
+//#define IDENTITY_MATRIX {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+// first set of inside braces is for union, second set is for inside union, then for a2d[3][3] (some compiler warning messages just suck)
+#define IDENTITY_MATRIX { { { {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f} } } }
 
 //fills in fields of an angle vector
 #define vm_angvec_make(v,_p,_b,_h) (((v)->p=(_p), (v)->b=(_b), (v)->h=(_h)), (v))

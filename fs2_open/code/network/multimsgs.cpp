@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-06-29 18:54:02 $
+ * $Revision: 2.37 $
+ * $Date: 2005-07-07 16:36:58 $
  * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/06/29 18:54:02  taylor
+ * should fix perpetually damaged subsystems on ships for multi clients
+ *
  * Revision 2.35  2005/06/21 00:15:06  taylor
  * unbreak network compatibility with 3.6.5 and earlier builds
  * fix crashing with turret weapons
@@ -3624,7 +3627,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 // process a packet indicating a turret has been fired
 void process_turret_fired_packet( ubyte *data, header *hinfo )
 {
-	int offset, weapon_objnum, wid;
+	int offset, weapon_objnum, wid = -1;
 	ushort pnet_signature, wnet_signature;
 	vec3d pos, temp;
 	matrix orient;
@@ -8273,7 +8276,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 
 void process_flak_fired_packet(ubyte *data, header *hinfo)
 {
-	int offset, weapon_objnum, wid;
+	int offset, weapon_objnum, wid = -1;
 	ushort pnet_signature;
 	vec3d pos, dir;
 	matrix orient;
