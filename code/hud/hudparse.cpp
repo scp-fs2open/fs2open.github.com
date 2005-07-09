@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-04-28 01:34:33 $
+ * $Revision: 2.30 $
+ * $Date: 2005-07-09 03:02:07 $
  * $Author: wmcoolmon $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/04/28 01:34:33  wmcoolmon
+ * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
+ *
  * Revision 2.28  2005/04/24 08:27:17  Goober5000
  * fix0red the CVS log
  * --Goober5000
@@ -659,7 +662,7 @@ static void parse_resolution(hud_info* dest_hud)
 	for(int i = 0; i < Num_gauge_types; i++)
 	{
 		cg = &gauges[i];
-		if(!cg->parent && cg->fieldname)
+		if(cg->parent == NULL && strlen(cg->fieldname))
 		{
 
 			stuff_coords(dest_hud, cg);
@@ -793,12 +796,12 @@ void parse_custom_gauge()
 		gauge_info* cg = &gauges[Num_gauge_types];
 		memset(cg, 0, sizeof(gauge_info));
 		//Set all the ptrs (modified to work with GCC 3.4 - taylor)
-		cg->coord_dest = HUD_VAR(custom_gauge_coords[0]) + (Num_custom_gauges * sizeof(int));
-		cg->size_dest = HUD_VAR(custom_gauge_sizes[0]) + (Num_custom_gauges * sizeof(int));
-		cg->image_dest = HUD_VAR(custom_gauge_images[0]) + (Num_custom_gauges * sizeof(int));
+		cg->coord_dest = HUD_VAR(custom_gauge_coords[0]) + (Num_custom_gauges * (2*sizeof(int)));
+		cg->size_dest = HUD_VAR(custom_gauge_sizes[0]) + (Num_custom_gauges * (2*sizeof(int)));
+		cg->image_dest = HUD_VAR(custom_gauge_images[0]) + (Num_custom_gauges * (MAX_FILENAME_LEN * sizeof(char)));
 		cg->frame_dest = HUD_VAR(custom_gauge_frames[0]) + (Num_custom_gauges * sizeof(int));
-		cg->text_dest = HUD_VAR(custom_gauge_text[0]) + (Num_custom_gauges * sizeof(int));
-		cg->color_dest = HUD_VAR(custom_gauge_colors[0]) + (Num_custom_gauges * sizeof(int));
+		cg->text_dest = HUD_VAR(custom_gauge_text[0]) + (Num_custom_gauges * (NAME_LENGTH * sizeof(char)));
+		cg->color_dest = HUD_VAR(custom_gauge_colors[0]) + (Num_custom_gauges * sizeof(color));
 
 		required_string("$Name:");
 		//Gotta make this a token
