@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.159 $
- * $Date: 2005-07-07 16:33:39 $
+ * $Revision: 2.160 $
+ * $Date: 2005-07-09 04:34:43 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.159  2005/07/07 16:33:39  taylor
+ * add value of GL_vertex_data_in to OGL card memory usage
+ *
  * Revision 2.158  2005/06/22 15:16:40  taylor
  * make sure we only have one extension on mission names
  *
@@ -8518,12 +8521,10 @@ int WinMainSub(int argc, char *argv[])
 #else
 	vm_init(0); 
 
-   // mharris TODO: how should we determine what the "right" directory is?
-
 	// create user's directory
 	char userdir[MAX_PATH];
 
-	snprintf(userdir, MAX_PATH, "%s/%s", detect_home(), Osreg_user_dir);
+	snprintf(userdir, MAX_PATH, "%s/%s/", detect_home(), Osreg_user_dir);
 	_mkdir(userdir);
 #endif
 
