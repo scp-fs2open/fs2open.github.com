@@ -1,8 +1,8 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.18 2005-07-07 16:36:56 taylor Exp $
+dnl $Id: configure.ac,v 1.19 2005-07-11 10:12:06 wmcoolmon Exp $
 
-AC_INIT(fs2_open, 3.6.5)
+AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
 
 dnl we need at least version 2.54 of autoconf
