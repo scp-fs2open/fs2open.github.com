@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-07 16:36:57 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-11 10:01:06 $
+ * $Author: wmcoolmon $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/07 16:36:57  taylor
+ * various compiler warning fixes (some of these from dizzy)
+ *
  * Revision 2.12  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -1352,7 +1355,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 {
 	ai_info *aip;
 	ship *shipp, *ordering_shipp;
-	int i, send_message, to_everyone, do_ship;
+	int i, send_message, do_ship;
 	object *objp;
 
 #ifndef NO_NETWORK
@@ -1371,10 +1374,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	}
 #endif
 
-	// to_everyone tells us whether the command should apply to all ships, or just to fighets/bombers.
-	// when true, command goes to *all* friendlies.
 	send_message = 1;									// internal flag to dictate who sends message
-	to_everyone = 0;
 	do_ship = 0;
 	aip = Player_ai;
 
@@ -1387,7 +1387,6 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	ordering_shipp = &Ships[aip->shipnum];
 
 	if ( command == IGNORE_TARGET_ITEM ) {
-		to_everyone = 1;
 		// if we were messaging a ship directly, set flag to send no messages.  We will send one
 		// specifically from the ship player is ordering
 		if ( (Msg_instance != MESSAGE_ALL_FIGHTERS) && (Squad_msg_mode == SM_MODE_SHIP_COMMAND) ) {
@@ -1415,7 +1414,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !to_everyone && !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
@@ -1442,7 +1441,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// don't send message to non fighter wings
-		if ( !to_everyone && !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
 			continue;
 
 		// skip departing/dying ships
