@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.19 2005-07-11 10:12:06 wmcoolmon Exp $
+dnl $Id: configure.ac,v 1.20 2005-07-11 14:26:30 mrduckman Exp $
 
 AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -398,13 +398,17 @@ if test "$fs2_os_unix" = "yes" ; then
 	AM_PATH_SDL($SDL_VERSION,:,AC_MSG_ERROR([*** SDL >= $SDL_VERSION not found!]))
 elif test "$fs2_os_osx" = "yes" ; then
 	SDL_LIBS="-framework SDL"
-	AC_CHECK_HEADER(/Library/Frameworks/SDL.framework/Headers/SDL.h,
-		SDL_CFLAGS="-I/Library/Frameworks/SDL.framework/Headers",
-		[AC_CHECK_HEADER($HOME/Library/Frameworks/SDL.framework/Headers/SDL.h,
-			SDL_CFLAGS="-I$HOME/Library/Frameworks/SDL.framework/Headers",
-		[AC_CHECK_HEADER(/System/Library/Frameworks/SDL.framework/Headers/SDL.h,
-			SDL_CFLAGS="-I/System/Library/Frameworks/SDL.framework/Headers",
-			AC_MSG_ERROR([*** Cannot find SDL which is required! ***]))])])
+	dnl Check for SDL 1.2.6+
+	SDL_VERSION=1.2.6
+	AM_PATH_SDL($SDL_VERSION,:,AC_MSG_ERROR([*** SDL >= $SDL_VERSION not found!]))
+dnl	If compiling using UNIX Style, this shouldn't be used (mrduckman 11/07/2005)
+dnl	AC_CHECK_HEADER(/Library/Frameworks/SDL.framework/Headers/SDL.h,
+dnl		SDL_CFLAGS="-I/Library/Frameworks/SDL.framework/Headers",
+dnl		[AC_CHECK_HEADER($HOME/Library/Frameworks/SDL.framework/Headers/SDL.h,
+dnl			SDL_CFLAGS="-I$HOME/Library/Frameworks/SDL.framework/Headers",
+dnl		[AC_CHECK_HEADER(/System/Library/Frameworks/SDL.framework/Headers/SDL.h,
+dnl			SDL_CFLAGS="-I/System/Library/Frameworks/SDL.framework/Headers",
+dnl			AC_MSG_ERROR([*** Cannot find SDL which is required! ***]))])])
 fi
 
 dnl add SDL settings to our flags, only CFLAGS are default, libs are game specific
