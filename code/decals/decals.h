@@ -8,8 +8,6 @@
 
 #include "object/object.h"
 
-//#define DECALS_ENABLED
-
 #define MAX_DECAL_POLY 40
 #define MAX_DECAL_POLY_POINT 10
 #define MAX_DECAL_DEFPOINTS 10000

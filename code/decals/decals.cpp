@@ -920,8 +920,8 @@ check_list_decals();
 	//return a pointer to the decal at the end of the list
 }
 
-void clear_decals(decal_system	*system){
-#ifdef DECALS_ENABLED
+void clear_decals(decal_system	*system)
+{
 	int i;
 	if(!system->n_decal_textures)return;
 	for( i = 0; i<system->n_decal_textures; i++)system->decals[i].clear();
@@ -929,7 +929,6 @@ void clear_decals(decal_system	*system){
 	system->n_decal_textures = 0;
 	vm_free(system->decals);
 	system->decals = NULL;
-#endif
 }
 /**********************/
 /*END DECAL MANAGEMENT*/
@@ -961,7 +960,6 @@ static int back_faceing;	//global boolian type thing telling the low level stuff
 //early simple decal creation code, I don't even know if it works, 
 //saveing it becase I may have a use for this type off effect later
 int decal_create_simple(object *obj, decal_point *point, int texture){//makes a simple non-clipped decal
-#ifdef DECALS_ENABLED
 	mprintf(("a decal is about to be made at %0.2f, %0.2f, %0.2f\n", point->pnt.xyz.x, point->pnt.xyz.y, point->pnt.xyz.z));
 	mprintf(("orient fvec at %0.2f, %0.2f, %0.2f\n", point->orient.vec.fvec.xyz.x, point->orient.vec.fvec.xyz.y, point->orient.vec.fvec.xyz.z));
 
@@ -1029,7 +1027,7 @@ check_ship_decals();
 
 	mprintf(("a decal should have been made at %0.2f %0.2f %0.2f\n", point->pnt.xyz.x, point->pnt.xyz.y, point->pnt.xyz.z));
 //Int3();
-#endif
+
 	return 1;
 }
 
@@ -1127,10 +1125,11 @@ mprintf(("cube set up\n"));
 /**************/
 
 decal_poly *LAST_POLY;
-int decal_create(object * obj, decal_point *point, int subobject, int texture, int backfaced_texture, int glow_texture, int burn_texture, int burn_time){
+int decal_create(object * obj, decal_point *point, int subobject, int texture, int backfaced_texture, int glow_texture, int burn_texture, int burn_time)
+{
 	if(!Cmdline_decals)return -1;
 //	return -1;
-#ifdef DECALS_ENABLED
+
 SAFEPOINT("entering create_decal");
 	mprintf(("a decal is about to be made at %0.2f, %0.2f, %0.2f\n", point->pnt.xyz.x, point->pnt.xyz.y, point->pnt.xyz.z));
 
@@ -1268,11 +1267,7 @@ mprintf(("deacal defined\n"));
 check_poly_decals();
 
 //TIMERBAR_POP();
-return 1;
-
-#else
-return -1;
-#endif
+	return 1;
 }
 //decal_model d_model;
 
@@ -2082,8 +2077,8 @@ check_poly_decals();
 }
 
 /*
-void decal_render_all(object * obj){
-#ifdef DECALS_ENABLED
+void decal_render_all(object * obj)
+{
 	if(obj->type != OBJ_SHIP){
 		return;
 	}
@@ -2099,8 +2094,6 @@ void decal_render_all(object * obj){
 	}
 	gr_zbias(0);
 	gr_set_texture_addressing(TMAP_ADDRESS_WRAP);
-
-#endif
 }
 */
 
@@ -2178,10 +2171,11 @@ void end_submodel_instance(){
 	Assert(!decal_submodel_instance_depth);
 }
 
-void decal_render_all(object * obj){
+void decal_render_all(object * obj)
+{
 	if(!Cmdline_decals)return;
 //	return;
-#ifdef DECALS_ENABLED
+
 //	TIMERBAR_PUSH(TIMERBAR_DARKGREEN);
 /*check_ship_decals();
 check_list_decals();
@@ -2227,6 +2221,5 @@ check_poly_decals();*/
 check_list_decals();
 check_poly_decals();
 */
-#endif
 }
 

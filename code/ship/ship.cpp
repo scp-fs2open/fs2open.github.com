@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.204 $
- * $Date: 2005-07-12 21:58:45 $
+ * $Revision: 2.205 $
+ * $Date: 2005-07-12 22:14:40 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.204  2005/07/12 21:58:45  Goober5000
+ * removed NO_LINKED_PRIMARY_PENALTY as it's better suited for difficulty.tbl or something similar
+ * --Goober5000
+ *
  * Revision 2.203  2005/07/12 07:03:18  Goober5000
  * remove all restrictions on which ship types can dock with each other
  * --Goober5000
@@ -3012,8 +3016,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// parse contrail info
-#ifdef DECALS_ENABLED
-	if ( optional_string("$max deals:") ){
+	if ( optional_string("$max decals:") ){
 		stuff_int(&sip->max_decals);
 	}else{
 		if(sip->flags & SIF_SMALL_SHIP){
@@ -3026,7 +3029,6 @@ strcpy(parse_error_text, temp_error);
 			sip->max_decals = 10;
 		}
 	}
-#endif
 
 	char trail_name[MAX_FILENAME_LEN] = "";
 	trail_info *ci;
@@ -4168,12 +4170,10 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->cloak_alpha=255;
 
 //	shipp->ab_count = 0;
-#ifdef DECALS_ENABLED
 	shipp->ship_decal_system.n_decal_textures = 0;
 	shipp->ship_decal_system.decals = NULL;
 	shipp->ship_decal_system.decals_modified = false;
 	shipp->ship_decal_system.max_decals = sip->max_decals;
-#endif
 
 	shipp->bay_doors_open = false;
 	shipp->bay_number_wanting_open = 0;
@@ -4435,12 +4435,10 @@ void subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->system_info->flags |= MSS_FLAG_AWACS;
 		}
 
-#ifdef DECALS_ENABLED
 		ship_system->system_info->model_decal_system.decals = NULL;
 		ship_system->system_info->model_decal_system.n_decal_textures = 0;
 		ship_system->system_info->model_decal_system.decals_modified = false;
 		ship_system->system_info->model_decal_system.max_decals = shipp->ship_decal_system.max_decals / 10;
-#endif
 
 		// turn_rate, turn_accel
 		// model_set_instance_info
@@ -5009,8 +5007,8 @@ void ship_model_subsystems_delete(ship *shipp)
 	}
 }
 
-void ship_clear_decals(ship	*shipp){
-#ifdef DECALS_ENABLED
+void ship_clear_decals(ship	*shipp)
+{
 	clear_decals(&shipp->ship_decal_system);
 
 	ship_subsys *sys = GET_FIRST(&shipp->subsys_list);;
@@ -5023,7 +5021,6 @@ void ship_clear_decals(ship	*shipp){
 		clear_decals(&psub->model_decal_system);
 		sys = GET_NEXT(sys);
 	}
-#endif
 }
 
 
