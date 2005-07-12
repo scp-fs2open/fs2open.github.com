@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.203 $
- * $Date: 2005-07-12 07:03:18 $
+ * $Revision: 2.204 $
+ * $Date: 2005-07-12 21:58:45 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.203  2005/07/12 07:03:18  Goober5000
+ * remove all restrictions on which ship types can dock with each other
+ * --Goober5000
+ *
  * Revision 2.202  2005/06/20 04:10:35  taylor
  * little cleaner ship_get_random_targetable_ship(), for Goober's sake ;)
  *
@@ -223,13 +227,6 @@
  *
  * Revision 2.146  2005/01/01 07:18:48  wmcoolmon
  * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
- *
- * Revision 2.145  2004/12/30 07:26:21  argv
- * Quick hack to remove the 50% rate-of-fire penalty when primary weapons are
- * linked. "#define NO_LINKED_PRIMARY_PENALTY" to enable this change; it's
- * disabled by default.
- *
- * -- _argv[-1]
  *
  * Revision 2.144  2004/12/25 09:23:10  wmcoolmon
  * Fix to modular tables workaround with Fs2NetD
@@ -8110,16 +8107,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		polymodel *po = model_get( shipp->modelnum );
 		
-#ifndef NO_LINKED_PRIMARY_PENALTY
-		// _argv[-1], 27 Dec 2004: Turns off the 50% rate-of-fire
-		// penalty when primary banks are linked. This is, arguably,
-		// stupid. So we turn it off if builder says to in
-		// PreProcDefines.h. This is not a command-line option, as
-		// that would conceivably be an excessively easy way of
-		// cheating in multi. Let's at least force cheaters to hack
-		// the code, right?
 		next_fire_delay *= 1.0f + (num_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
-#endif
 
 		//	MK, 2/4/98: Since you probably were allowed to fire earlier, but couldn't fire until your frame interval
 		//	rolled around, subtract out up to half the previous frametime.

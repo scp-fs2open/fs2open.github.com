@@ -5,12 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.12 $
- * $Date: 2005-04-24 12:44:25 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2005-07-12 21:58:45 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/04/24 12:44:25  taylor
+ * make sure we don't build with speech support under Linux unless we specify it as a configure option
+ *
  * Revision 1.11  2005/03/25 06:57:32  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -102,17 +105,6 @@
 #endif
 
 #endif
-
-// _argv[-1], 27 Dec 2004: Turns off the 50% rate-of-fire penalty
-// when primary banks are linked. This is, arguably, stupid. So we
-// turn it off if builder says to. This is not a command-line option,
-// as that would conceivably be an excessively easy way of cheating in
-// multi. Let's at least force cheaters to hack the code, right?
-/*
-#ifndef NO_LINKED_PRIMARY_PENALTY
-#define NO_LINKED_PRIMARY_PENALTY 1
-#endif
-*/
 
 /*
 #ifndef INF_BUILD
