@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.202 $
- * $Date: 2005-06-20 04:10:35 $
- * $Author: taylor $
+ * $Revision: 2.203 $
+ * $Date: 2005-07-12 07:03:18 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.202  2005/06/20 04:10:35  taylor
+ * little cleaner ship_get_random_targetable_ship(), for Goober's sake ;)
+ *
  * Revision 2.201  2005/06/07 06:10:51  wmcoolmon
  * This may stop targeting not-targetable ships in EMP
  *
@@ -11059,6 +11062,14 @@ int ship_query_general_type(ship *shipp)
 // returns true if the docker can (is allowed) to dock with dockee
 int ship_docking_valid(int docker, int dockee)
 {
+	// Goober5000
+	// So many people have asked for this function to be extended that it's making less
+	// and less sense to keep it around.  We should probably just let any ship type
+	// dock with any other ship type and assume the mission designer is smart enough not to
+	// mess things up.
+	return 1;
+
+	/*
 	int docker_type, dockee_type;
 
 	Assert(docker >= 0 && docker < MAX_SHIPS);
@@ -11146,6 +11157,7 @@ int ship_docking_valid(int docker, int dockee)
 	}
 
 	return 0;
+	*/
 }
 
 // function to return a random ship in a starting player wing.  Returns -1 if a suitable
