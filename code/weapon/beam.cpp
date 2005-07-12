@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-07-01 17:19:43 $
- * $Author: phreak $
+ * $Revision: 2.52 $
+ * $Date: 2005-07-12 21:01:40 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
@@ -3465,6 +3465,13 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 	}
 	shipp = &Ships[objp->instance];
 	if((shipp->ai_index < 0) || (shipp->ai_index >= MAX_AI_INFO)){
+		return;
+	}
+
+	// don't whack docked ships
+	// Goober5000 - whacking docked ships should work now, so whack them
+	// Goober5000 - weapons with no mass don't whack (bypass the calculations)
+	if(/*object_is_docked(objp) ||*/ (wip->mass == 0.0f)) {
 		return;
 	}
 
