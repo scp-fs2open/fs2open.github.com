@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-12 21:10:57 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.12  2005/03/27 12:28:32  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -1621,12 +1624,6 @@ int collide_ship_ship( obj_pair * pair )
 	object *A = pair->a;
 	object *B = pair->b;
 
-	// Don't check collisions for warping out player if past stage 1.
-	if ( Player->control_mode > PCM_WARPOUT_STAGE1)	{
-		if ( A == Player_obj ) return 0;
-		if ( B == Player_obj ) return 0;
-	}
-
 	if ( A->type == OBJ_WAYPOINT ) return 1;
 	if ( B->type == OBJ_WAYPOINT ) return 1;
 	
@@ -1639,6 +1636,11 @@ int collide_ship_ship( obj_pair * pair )
 		player_involved = 1;
 	} else {
 		player_involved = 0;
+	}
+
+	// Don't check collisions for warping out player if past stage 1.
+	if ( player_involved && (Player->control_mode > PCM_WARPOUT_STAGE1) )	{
+		return 0;
 	}
 
 	dist = vm_vec_dist( &A->pos, &B->pos );
@@ -1693,7 +1695,7 @@ int collide_ship_ship( obj_pair * pair )
 		if ( hit ) {
 			float		damage;
 
-			if ( Player->control_mode == PCM_WARPOUT_STAGE1 )	{
+			if ( player_involved && (Player->control_mode == PCM_WARPOUT_STAGE1) )	{
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
 				HUD_printf(XSTR( "Warpout sequence aborted.", 466));
 			}
