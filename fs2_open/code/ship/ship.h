@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.95 $
- * $Date: 2005-06-19 02:43:49 $
- * $Author: taylor $
+ * $Revision: 2.96 $
+ * $Date: 2005-07-12 22:14:40 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2005/06/19 02:43:49  taylor
+ * WMC's build fix, part deux
+ *
  * Revision 2.94  2005/06/07 06:10:51  wmcoolmon
  * This may stop targeting not-targetable ships in EMP
  *
@@ -1195,9 +1198,7 @@ typedef struct ship {
 	int cloak_alpha;
 	fix time_until_uncloak;
 
-#ifdef DECALS_ENABLED
 	decal_system ship_decal_system;
-#endif
 
 #ifdef NEW_HUD
 	hud ship_hud;

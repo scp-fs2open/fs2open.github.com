@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.62 $
- * $Date: 2005-06-21 00:20:24 $
- * $Author: taylor $
+ * $Revision: 2.63 $
+ * $Date: 2005-07-12 22:14:40 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/06/21 00:20:24  taylor
+ * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
+ *   and this makes it so much easier to realize that
+ * properly deal with the fact that objnum can be -1 in  model_really_render()
+ * add NULL check to neb2_get_fog_values() so that it can just send back defaults if objp is NULL
+ * small compiler warning fix for neb code
+ *
  * Revision 2.61  2005/04/25 00:26:53  wmcoolmon
  * Dynamically allocated engine washes; subsystem sounds
  *
@@ -778,9 +785,9 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		secondary_banks[MAX_SHIP_SECONDARY_BANKS];				// default secondary weapons -hoffoss
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
-#ifdef DECALS_ENABLED
+
 	decal_system model_decal_system;
-#endif
+
 	triggered_rotation trigger;		//the actual currently running animation and assosiated states
 
 	int n_triggers;

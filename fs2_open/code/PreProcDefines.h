@@ -5,12 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.13 $
- * $Date: 2005-07-12 21:58:45 $
+ * $Revision: 1.14 $
+ * $Date: 2005-07-12 22:14:40 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/07/12 21:58:45  Goober5000
+ * removed NO_LINKED_PRIMARY_PENALTY as it's better suited for difficulty.tbl or something similar
+ * --Goober5000
+ *
  * Revision 1.12  2005/04/24 12:44:25  taylor
  * make sure we don't build with speech support under Linux unless we specify it as a configure option
  *
@@ -72,10 +76,6 @@
 
 #if !defined(_pre_proc_defs_h_)
 #define _pre_proc_defs_h_
-
-#ifndef DECALS_ENABLED
-#define DECALS_ENABLED		1
-#endif
 
 #ifndef HTL
 #define HTL					1
