@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.61 $
- * $Author: phreak $
- * $Date: 2005-05-11 22:15:26 $
+ * $Revision: 2.62 $
+ * $Author: Goober5000 $
+ * $Date: 2005-07-13 00:44:23 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/05/11 22:15:26  phreak
+ * added mission flag that will not show enemy wing names, just the ship class.
+ *
  * Revision 2.60  2005/04/28 05:29:30  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -580,39 +583,17 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
-// These species defines must match the contents of the Species_names[MAX_SPECIES_NAMES] array.
-#if defined(MORE_SPECIES)
 //-------------------------------------------
 // Kazan: Extended Species Support
 //-------------------------------------------
 
 // some defines moved here since it's needed in several modules
 #define MAX_SHIELD_ANIMNAME_LEN	64
-#define MAX_SHIELD_ANIMS MAX_SPECIES_NAMES
+#define MAX_SHIELD_ANIMS MAX_SPECIES
 #define SPECIES_NAME_MAXLEN		32
 #define MAX_DEBRIS_TNAME_LEN	64
 
-#define	MAX_SPECIES_NAMES		8
-#define	SPECIES_TERRAN			0
-#define	SPECIES_VASUDAN			1
-#define	SPECIES_SHIVAN			2
-#define SPECIES_ANCIENTS		3
-#define SPECIES_USER1			4
-#define SPECIES_USER2			5
-#define SPECIES_USER3			6
-#define SPECIES_USER4			7
-// Volition has this set to 3
-#define	SPECIES_NONE			8
-#else
-//-------------------------------------------
-// Volition basic Species Support
-//-------------------------------------------
-#define	MAX_SPECIES_NAMES		3
-#define	SPECIES_TERRAN			0
-#define	SPECIES_VASUDAN			1
-#define	SPECIES_SHIVAN			2
-#define	SPECIES_NONE			3
-#endif
+#define	MAX_SPECIES		8
 
 /* -- it's dynamic now - taylor
 #ifdef FS2_DEMO
@@ -638,11 +619,7 @@ extern char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 
-#if defined(MORE_SPECIES)
-extern char Species_names[MAX_SPECIES_NAMES][SPECIES_NAME_MAXLEN+1];
-#else
-extern char *Species_names[MAX_SPECIES_NAMES];
-#endif
+extern char Species_names[MAX_SPECIES][SPECIES_NAME_MAXLEN+1];
 
 extern char *Reinforcement_type_names[];
 extern char *Object_flags[];

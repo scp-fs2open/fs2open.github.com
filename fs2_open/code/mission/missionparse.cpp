@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.92 $
- * $Date: 2005-05-12 17:49:14 $
- * $Author: taylor $
+ * $Revision: 2.93 $
+ * $Date: 2005-07-13 00:44:22 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2005/05/12 17:49:14  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.91  2005/04/28 05:29:30  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -948,22 +952,7 @@ char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
 	"Primary", "Secondary", "Bonus",
 };
 
-// Species Count upgrade - by kazan
-
-#if defined(MORE_SPECIES)
-
-char Species_names[MAX_SPECIES_NAMES][SPECIES_NAME_MAXLEN+1];
-
-/*char *Species_names[MAX_SPECIES_NAMES] = {
-	{"Terran"}, {"Vasudan"}, {"Shivan"}, {"Ancients"}, {"User1"}, {"User2"}, {"User3"}, {"User4"}
-
-};*/
-#else
-char *Species_names[MAX_SPECIES_NAMES] = {
-	"Terran", "Vasudan", "Shivan"
-
-};
-#endif
+char Species_names[MAX_SPECIES][SPECIES_NAME_MAXLEN+1];
 
 char *Reinforcement_type_names[] = {
 	"Attack/Protect",
@@ -6062,13 +6051,6 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 		// 5/6/98 -- MWA  Don't need to do anything for multiplayer.  I think that we always want to use
 		// the species of the caller ship.
-
-#if !defined(MORE_SPECIES)
-		Assert( (requester_species == SPECIES_TERRAN) || (requester_species == SPECIES_VASUDAN) );
-#endif
-	//	if ( (Game_mode & GM_NORMAL) && (requester_species == SPECIES_VASUDAN) )	{	// make vasundan's use the terran support ship
-	//		requester_species = SPECIES_TERRAN;
-	//	}
 
 		// get index of correct species support ship
 		for (i=0; i < Num_ship_types; i++) {

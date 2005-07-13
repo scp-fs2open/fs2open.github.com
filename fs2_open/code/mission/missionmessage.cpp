@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-06-30 02:36:16 $
+ * $Revision: 2.38 $
+ * $Date: 2005-07-13 00:44:22 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/06/30 02:36:16  Goober5000
+ * the message queue now waits for simulated speech to finish
+ * --Goober5000
+ *
  * Revision 2.36  2005/06/30 01:48:52  Goober5000
  * * NOX'd none.wav
  * * changed comparisons on none.wav to only look at the first four letters in case
@@ -763,8 +767,6 @@ void persona_parse()
 		}
 	}
 
-#if defined(MORE_SPECIES)
-
 	char cstrtemp[SPECIES_NAME_MAXLEN+1];
 	memset(cstrtemp, 0, SPECIES_NAME_MAXLEN+1);
 	if ( optional_string("+") )
@@ -780,10 +782,7 @@ void persona_parse()
 			}
 		}
 	}
-#else
-	if ( optional_string("+Vasudan") )
-		Personas[Num_personas].flags |= PERSONA_FLAG_VASUDAN;
-#endif
+
 	if ( i == MAX_PERSONA_TYPES )
 		Error(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
 
@@ -1968,7 +1967,6 @@ int message_get_persona( ship *shipp )
 		// get the type of ship (i.e. support, fighter/bomber, etc)
 		ship_type = Ship_info[shipp->ship_info_index].flags;
 
-#if defined(MORE_SPECIES)
 		int persona_needed;
 		count = 0;
 
@@ -2022,104 +2020,6 @@ int message_get_persona( ship *shipp )
 
 		//return i;
 		goto I_Done;
-
-#else
-		//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
-		// Old Volition code for personnas
-		//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
-
-
-		// shorcut for Vasudan personas.  All vasudan fighters/bombers use the same persona.  All Vasudan
-		// large ships will use the same persona
-		if ( Ship_info[shipp->ship_info_index].species == SPECIES_VASUDAN ) {
-			int persona_needed;
-
-			if ( ship_type & (SIF_FIGHTER|SIF_BOMBER) ) {
-				persona_needed = PERSONA_FLAG_WINGMAN;
-			} else if ( ship_type & SIF_SUPPORT ) {
-				persona_needed = PERSONA_FLAG_SUPPORT;
-			} else {
-				persona_needed = PERSONA_FLAG_LARGE;
-			}
-
-			// iternate through the persona list finding the one that we need
-			for ( i = 0; i < Num_personas; i++ ) {
-				if ( (Personas[i].flags & persona_needed) && (Personas[i].flags & PERSONA_FLAG_VASUDAN) ) {
-					nprintf(("messaging", "assigning vasudan persona %s to %s\n", Personas[i].name, shipp->ship_name));
-				//	return i;
-					goto I_Done;
-				}
-			}
-
-			// make support personas use the terran persona by not returning here when looking for 
-			// Vasudan persona
-			if ( persona_needed != PERSONA_FLAG_SUPPORT ) {
-			//	return -1;			// shouldn't get here eventually, but return -1 for now to deal with missing persona
-				i = -1;
-				goto I_Done;
-			}
-		}
-
-		// iterate through the persona list looking for one not used.  Look at the type of persona
-		// and try to determine appropriate personas to use.
-		for ( i = 0; i < Num_personas; i++ ) {
-
-			// if this is a vasudan persona -- skip it
-			if ( Personas[i].flags & PERSONA_FLAG_VASUDAN )
-				continue;
-
-			// check the ship types, and don't try to assign those which don't type match
-			if ( (ship_type & SIF_SUPPORT) && !(Personas[i].flags & PERSONA_FLAG_SUPPORT) )
-				continue;
-			else if ( (ship_type & (SIF_FIGHTER|SIF_BOMBER)) && !(Personas[i].flags & PERSONA_FLAG_WINGMAN) )
-				continue;
-			else if ( !(ship_type & (SIF_FIGHTER|SIF_BOMBER|SIF_SUPPORT)) && !(Personas[i].flags & PERSONA_FLAG_LARGE) )
-				continue;
-
-			if ( !(Personas[i].flags & PERSONA_FLAG_USED) ) {
-				nprintf(("messaging", "assigning persona %s to %s\n", Personas[i].name, shipp->ship_name));
-				Personas[i].flags |= PERSONA_FLAG_USED;
-			//	return i;
-				goto I_Done;
-			}
-		}
-
-		// grab a random one, and reuse it (staying within type specifications)
-		count = 0;
-		for ( i = 0; i < Num_personas; i++ ) {
-
-			// see if ship meets our criterea
-			if ( (ship_type & SIF_SUPPORT) && !(Personas[i].flags & PERSONA_FLAG_SUPPORT) )
-				continue;
-			else if ( (ship_type & (SIF_FIGHTER|SIF_BOMBER)) && !(Personas[i].flags & PERSONA_FLAG_WINGMAN) )
-				continue;
-			else if ( !(ship_type & (SIF_FIGHTER|SIF_BOMBER|SIF_SUPPORT)) && !(Personas[i].flags & PERSONA_FLAG_LARGE) )
-				continue;
-			else if ( Personas[i].flags & PERSONA_FLAG_VASUDAN )		// don't use any vasudan persona
-				continue;
-
-			slist[count] = i;
-			count++;
-		}
-
-		// couldn't find appropriate persona type
-		if ( count == 0 ) {
-		//	return -1;
-			i = -1;
-			goto I_Done;
-		}
-
-		// now get a random one from the list
-		i = (rand() % count);
-		i = slist[i];
-			
-		nprintf(("messaging", "Couldn't find a new persona for ship %s, reusing persona %s\n", shipp->ship_name, Personas[i].name));
-
-		//return i;
-		goto I_Done;
-
-		// +-+-+-+-+-+ End old V Code +-+-+-+-+-+ 
-#endif
 	}
 
 	// for now -- we don't support other types of personas (non-wingman personas)

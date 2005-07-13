@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-25 00:28:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-13 00:44:23 $
+ * $Author: Goober5000 $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/25 00:28:58  wmcoolmon
+ * subsystem sounds
+ *
  * Revision 2.7  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -672,11 +675,8 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp)
 				}
 
 				// pick a random species-based sound				
-				ship_info *sip = &Ship_info[Ships[closest_objp->instance].ship_info_index];
-				int species = SPECIES_TERRAN;
-				if((sip->species >= 0) && (sip->species < MAX_SPECIES_NAMES)){
-					species = sip->species;
-				} 
+				int species = Ship_info[Ships[closest_objp->instance].ship_info_index].species;
+
 				int ship_size = 0;	// fighter
 				if(sip->flags & SIF_BOMBER){
 					ship_size = 1;

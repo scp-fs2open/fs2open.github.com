@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-05-11 09:32:03 $
+ * $Revision: 2.47 $
+ * $Date: 2005-07-13 00:44:21 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/05/11 09:32:03  Goober5000
+ * grr
+ * --Goober5000
+ *
  * Revision 2.45  2005/05/11 09:27:35  Goober5000
  * changed an Assert() to an Error()
  * --Goober5000
@@ -1291,14 +1295,14 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			p->killer_objtype = OBJ_ASTEROID;
 		}
 		p->killer_weapon_index=-1;
-		p->killer_species = SPECIES_NONE;
+		p->killer_species = -1;
 		p->killer_parent_name[0] = '\0';
 		break;
 
 	case OBJ_BEAM:
 		int beam_obj;
 		beam_obj = beam_get_parent(killer_objp);
-		p->killer_species = SPECIES_NONE;		
+		p->killer_species = -1;		
 		p->killer_objtype = OBJ_BEAM;
 		if(beam_obj != -1){			
 			if((Objects[beam_obj].type == OBJ_SHIP) && (Objects[beam_obj].instance >= 0)){
@@ -1317,7 +1321,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 		p->killer_objtype=-1;
 		p->killer_weapon_index=-1;
 		p->killer_parent_name[0]=0;
-		p->killer_species = SPECIES_NONE;
+		p->killer_species = -1;
 		break;
 
 	default:

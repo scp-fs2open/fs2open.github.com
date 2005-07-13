@@ -5,12 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.14 $
- * $Date: 2005-07-12 22:14:40 $
+ * $Revision: 1.15 $
+ * $Date: 2005-07-13 00:44:23 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/07/12 22:14:40  Goober5000
+ * removed DECALS_ENABLED
+ * --Goober5000
+ *
  * Revision 1.13  2005/07/12 21:58:45  Goober5000
  * removed NO_LINKED_PRIMARY_PENALTY as it's better suited for difficulty.tbl or something similar
  * --Goober5000
@@ -83,10 +87,6 @@
 
 #ifndef USE_OPENGL
 #define USE_OPENGL			1
-#endif
-
-#ifndef MORE_SPECIES
-#define MORE_SPECIES		1
 #endif
 
 #ifndef ENABLE_AUTO_PILOT

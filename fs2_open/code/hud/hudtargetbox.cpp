@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-05-11 22:15:49 $
- * $Author: phreak $
+ * $Revision: 2.52 $
+ * $Date: 2005-07-13 00:44:22 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/05/11 22:15:49  phreak
+ * added mission flag that will not show enemy wing names, just the ship class.
+ *
  * Revision 2.50  2005/04/28 05:29:29  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -1052,32 +1055,15 @@ void hud_render_target_asteroid(object *target_objp)
 	// hud print type of Asteroid (debris)
 	char hud_name[64];
 	switch (asteroidp->type) {
-	case ASTEROID_TYPE_SMALL:
-	case ASTEROID_TYPE_MEDIUM:
-	case ASTEROID_TYPE_BIG:
-		strcpy(hud_name, NOX("asteroid"));
-		break;
+		case ASTEROID_TYPE_SMALL:
+		case ASTEROID_TYPE_MEDIUM:
+		case ASTEROID_TYPE_BIG:
+			strcpy(hud_name, NOX("asteroid"));
+			break;
 
-	case DEBRIS_TERRAN_SMALL:
-	case DEBRIS_TERRAN_MEDIUM:
-	case DEBRIS_TERRAN_LARGE:
-		strcpy(hud_name, NOX("terran debris"));
-		break;
-
-	case DEBRIS_VASUDAN_SMALL:
-	case DEBRIS_VASUDAN_MEDIUM:
-	case DEBRIS_VASUDAN_LARGE:
-		strcpy(hud_name, NOX("vasudan debris"));
-		break;
-
-	case DEBRIS_SHIVAN_SMALL:
-	case DEBRIS_SHIVAN_MEDIUM:
-	case DEBRIS_SHIVAN_LARGE:
-		strcpy(hud_name, NOX("shivan debris"));
-		break;
-
-	default:
-		Int3();
+		default:
+			sprintf(hud_name, NOX("%s debris"), Species_names[(asteroidp->type / 3) - 1]);
+			break;
 	}
 
 	emp_hud_printf(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, hud_name);	

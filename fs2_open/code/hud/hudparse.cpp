@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-07-09 03:02:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2005-07-13 00:44:22 $
+ * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/07/09 03:02:07  wmcoolmon
+ * Added fixes for custom gauges discussed in the recent thread
+ *
  * Revision 2.29  2005/04/28 01:34:33  wmcoolmon
  * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
  *
@@ -119,7 +122,7 @@
 //#include "weapon/emp.h"
 #include "hud/hudparse.h" //Duh.
 #include "ship/ship.h" //for ship struct
-#include "mission/missionparse.h" //for MAX_SPECIES_NAMES
+#include "mission/missionparse.h" //for MAX_SPECIES
 #include "graphics/font.h" //for gr_force_fit_string
 
 
@@ -129,7 +132,7 @@ hud* current_hud = NULL;
 //Storage for the default and ship huds
 hud default_hud;
 hud ship_huds[MAX_SHIP_TYPES];
-hud species_huds[MAX_SPECIES_NAMES];
+hud species_huds[MAX_SPECIES];
 #else
 hud_info* current_hud = NULL; //If not set, it's NULL. This should always be null outside of a mission.
 hud_info default_hud;

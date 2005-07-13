@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-04-25 00:23:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.52 $
+ * $Date: 2005-07-13 00:44:22 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/04/25 00:23:23  wmcoolmon
+ * MAX_SHIP_TYPES > Num_ship_types
+ *
  * Revision 2.50  2005/04/20 04:34:01  phreak
  * get the cheat keys for "force weapon" working again
  *
@@ -1561,11 +1564,8 @@ void process_debug_keys(int k)
 
 			sip = &Ship_info[Ships[objp->instance].ship_info_index];
 			sip->species++;
-#if defined(MORE_SPECIES)
-			if (sip->species > SPECIES_USER4)
-#else
-			if ( sip->species > SPECIES_SHIVAN )
-#endif
+
+			if (sip->species >= True_NumSpecies)
 				sip->species = 0;
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Species of target changed to: %s", 24), Species_names[sip->species]);

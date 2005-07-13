@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-04-05 05:53:15 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-13 00:44:21 $
+ * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/04/05 05:53:15  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.12  2005/03/27 12:28:32  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -270,7 +273,7 @@
 #include "render/3d.h"
 #include "fireball/fireballs.h"
 #include "radar/radar.h"
-#include "mission/missionparse.h"		// For MAX_SPECIES_NAMES
+#include "mission/missionparse.h"		// For MAX_SPECIES
 #include "gamesnd/gamesnd.h"
 #include "object/objectsnd.h"
 #include "globalincs/linklist.h"
@@ -309,31 +312,10 @@ int Debris_model = -1;
 int Debris_vaporize_model = -1;
 int Debris_num_submodels = 0;
 
-#if defined(MORE_SPECIES)
+char Debris_texture_files[MAX_SPECIES][MAX_DEBRIS_TNAME_LEN+1];
 
-char Debris_texture_files[MAX_SPECIES_NAMES][MAX_DEBRIS_TNAME_LEN+1];
 
-/*char * Debris_texture_files[MAX_SPECIES_NAMES] = { 
-	NOX("debris01a"),	// Terran
-	NOX("debris01b"),	// Species B
-	NOX("debris01c"),	// Shivan
-	NOX("debris01a"),	// Ancient
-	NOX("debris01a"),	// User1
-	NOX("debris01a"),	// User2
-	NOX("debris01a"),	// User3
-	NOX("debris01a"),	// User4
-
-	};*/
-
-#else
-char * Debris_texture_files[MAX_SPECIES_NAMES] = { 
-	NOX("debris01a"),	// Terran
-	NOX("debris01b"),	// Species B
-	NOX("debris01c"),	// Shivan
-	};
-#endif
-
-int Debris_textures[MAX_SPECIES_NAMES];
+int Debris_textures[MAX_SPECIES];
 
 #define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
 #define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
@@ -414,11 +396,7 @@ void debris_page_in()
 
 	Debris_vaporize_model = model_load( NOX("debris02.pof"), 0, NULL );
 
-#if defined(MORE_SPECIES)
-	for (i=0; i<MAX_SPECIES_NAMES && i<True_NumSpecies; i++ )	{
-#else
-	for (i=0; i<MAX_SPECIES_NAMES; i++ )	{
-#endif
+	for (i=0; i<True_NumSpecies; i++ )	{
 		nprintf(( "Paging", "Paging in debris texture '%s'\n", Debris_texture_files[i] ));
 		Debris_textures[i] = bm_load( Debris_texture_files[i] );
 		if ( Debris_textures[i] < 0 ) { 
@@ -453,7 +431,7 @@ void debris_render(object * obj)
 	Assert( db->flags & DEBRIS_USED );
 
 	// Swap in a different texture depending on the species
-	if ( (db->species > -1) && (db->species < MAX_SPECIES_NAMES) )	{
+	if ( (db->species > -1) && (db->species < MAX_SPECIES) )	{
 
 		pm = model_get( db->model_num );
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.11 $
- * $Date: 2005-06-29 18:50:13 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 00:44:22 $
+ * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/06/29 18:50:13  taylor
+ * little cleanup and error checking
+ *
  * Revision 2.10  2005/04/25 00:22:34  wmcoolmon
  * Added parse_sound; replaced Assert() with an if() (The latter may not be a good idea, but it keeps missions from being un-debuggable)
  *
@@ -415,7 +418,7 @@ extern game_snd *Snds;
 extern game_snd *Snds_iface;
 
 // flyby sounds - 2 for each species (fighter and bomber flybys)
-extern game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
+extern game_snd Snds_flyby[MAX_SPECIES][2];
 
 
 // symbolic names for misc. game sounds.  The order here must match the order in
