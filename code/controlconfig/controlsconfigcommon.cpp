@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-03-03 06:05:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 02:30:52 $
+ * $Author: Goober5000 $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.10  2005/01/16 22:39:08  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -582,11 +585,9 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{							-1,					-1,	COMPUTER_TAB, false, "Top-down View"},
 	{							-1,					-1, COMPUTER_TAB, false, "Track targeted object", CC_TYPE_CONTINUOUS},
 
-#if defined(ENABLE_AUTO_PILOT)
 	// Auto Navigation Systen
 	{ KEY_ALTED |					KEY_A,			-1, COMPUTER_TAB, false, "Toggle Auto Pilot"},
 	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, false, "Cycle Nav Points"},
-#endif
 
 	{                           -1,					-1, -1,			 false,	"" }
 };

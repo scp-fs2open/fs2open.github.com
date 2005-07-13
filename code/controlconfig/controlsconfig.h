@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.11 $
- * $Date: 2005-03-03 06:05:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 02:30:52 $
+ * $Author: Goober5000 $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/03/03 06:05:27  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.10  2005/01/16 22:39:08  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
@@ -494,16 +497,12 @@ typedef struct config_item {
 #define VIEW_TOPDOWN									113
 #define VIEW_TRACK_TARGET								114
 
-#if defined(ENABLE_AUTO_PILOT)
 //AutoPilot - Kazan
 #define AUTO_PILOT_TOGGLE								115
 #define NAV_CYCLE										116
 
 // this should be the total number of control action defines above (or last define + 1)
 #define CCFG_MAX 117
-#else
-#define CCFG_MAX 115
-#endif
 
 extern int Failed_key_index;
 extern int Invert_heading;

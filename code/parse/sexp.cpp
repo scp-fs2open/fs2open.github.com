@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.157 $
- * $Date: 2005-07-02 19:36:04 $
- * $Author: taylor $
+ * $Revision: 2.158 $
+ * $Date: 2005-07-13 02:30:54 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157  2005/07/02 19:36:04  taylor
+ * some supernova fixing
+ *
  * Revision 2.156  2005/06/29 18:54:59  taylor
  * set-skybox-model only takes one argument so don't advertise more
  * add set-skybox-model help text for FRED2
@@ -258,7 +261,6 @@
  *
  * Revision 2.95  2004/07/26 17:54:05  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
- * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
  * Fixed FPS counter during time compression
  *
  * Revision 2.94  2004/07/12 16:33:01  Kazan
@@ -1025,9 +1027,7 @@
 #include "hud/hudmessage.h"
 #endif
 
-#if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
-#endif
 
 
 
@@ -1215,10 +1215,8 @@ sexp_oper Operators[] = {
 	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
 	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
 
-#if defined(ENABLE_AUTO_PILOT)
 	{ "is-nav-visited",				OP_NAV_ISVISITED,				1, 1 }, // Kazan
 	{ "distance-to-nav",			OP_NAV_DISTANCE,				1, 1 }, // Kazan
-#endif
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -1260,7 +1258,6 @@ sexp_oper Operators[] = {
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0 },
 
-#if defined(ENABLE_AUTO_PILOT)
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 3 }, //kazan
 	{ "add-nav-ship",					OP_NAV_ADD_SHIP,				2, 2 }, //kazan
 	{ "del-nav",						OP_NAV_DEL,						1, 1 }, //kazan
@@ -1272,7 +1269,6 @@ sexp_oper Operators[] = {
 	{ "unset-nav-visited",				OP_NAV_UNSET_VISITED,				1, 1 }, //kazan
 	{ "set-nav-carry",					OP_NAV_SET_CARRY,				1, INT_MAX }, //kazan
 	{ "unset-nav-carry",				OP_NAV_UNSET_CARRY,				1, INT_MAX }, //kazan
-#endif
 
 	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
 	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
@@ -1474,25 +1470,6 @@ char *HUD_gauge_text[NUM_HUD_GAUGES] =
 	"LAG GUAGE"
 };
 
-
-#if defined(ENABLE_AUTO_PILOT)
-// Defining these here.. just in case -- Kazan
-void add_nav_waypoint(int node);
-void add_nav_ship(int node);
-void del_nav(int node);
-void hide_nav(int node);
-void restrict_nav(int node);
-void unhide_nav(int node);
-void unrestrict_nav(int node);
-void set_nav_visited(int node);
-void unset_nav_visited(int node);
-
-int is_nav_visited(int node);
-int distance_to_nav(int node);
-
-void set_nav_carry_status(int node);
-void unset_nav_carry_status(int node);
-#endif
 
 void sexp_set_skybox_model_preload(char *name); // taylor
 
@@ -2182,13 +2159,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 		}
 
 		switch (type) {
-#if defined(ENABLE_AUTO_PILOT)
 			case OPF_NAV_POINT:
 				if (type2 != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
-#endif
 
 			case OPF_NUMBER:
 				if ((type2 != OPR_NUMBER) && (type2 != OPR_POSITIVE)){
@@ -11700,7 +11675,6 @@ void sexp_primitive_sensors_set_range(int n)
 // Kazan
 // AutoNav/AutoPilot system SEXPS
 
-#if defined(ENABLE_AUTO_PILOT)
 //text: set-nav-carry
 //args: 1+, Ship/Wing name
 void set_nav_carry_status(int node)
@@ -11873,7 +11847,6 @@ int distance_to_nav(int node)
 	return DistanceTo(nav_name);
 }
 
-#endif
 
 //*************************************************************************************************
 
@@ -14089,7 +14062,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_current_speed(node);
 				break;
 
-#if defined(ENABLE_AUTO_PILOT)
 			case OP_NAV_ISVISITED: //kazan
 				sexp_val = is_nav_visited(node);
 				break;
@@ -14153,7 +14125,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				unset_nav_carry_status(node);
 				break;
 
-#endif
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
 				sexp_scramble_messages(op_num == OP_SCRAMBLE_MESSAGES );
@@ -14452,9 +14423,7 @@ int query_operator_return_type(int op)
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_IS_CARGO:
 		case OP_MISSILE_LOCKED:
-#if defined(ENABLE_AUTO_PILOT)
 		case OP_NAV_ISVISITED:	//Kazan
-#endif
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -14504,9 +14473,7 @@ int query_operator_return_type(int op)
 		case OP_TEAM_SCORE:
 		case OP_NUM_SHIPS_IN_BATTLE:
 		case OP_CURRENT_SPEED:
-#if defined(ENABLE_AUTO_PILOT)
 		case OP_NAV_DISTANCE:	//kazan
-#endif
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -14645,7 +14612,6 @@ int query_operator_return_type(int op)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
-#if defined(ENABLE_AUTO_PILOT)
 		case OP_NAV_ADD_WAYPOINT:	//kazan
 		case OP_NAV_ADD_SHIP:		//kazan
 		case OP_NAV_DEL:			//kazan
@@ -14657,7 +14623,6 @@ int query_operator_return_type(int op)
 		case OP_NAV_UNSET_VISITED:	//kazan
 		case OP_NAV_SET_CARRY:		//kazan
 		case OP_NAV_UNSET_CARRY:	//kazan
-#endif
 		case OP_HUD_SET_TEXT:		//WMC
 		case OP_HUD_SET_TEXT_NUM:	//WMC
 		case OP_HUD_SET_COORDS:		//WMC
@@ -15699,7 +15664,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CURRENT_SPEED:
 			return OPF_SHIP_WING;
 
-#if defined(ENABLE_AUTO_PILOT)
 		case OP_NAV_ISVISITED:		//Kazan
 		case OP_NAV_DISTANCE:		//kazan
 		case OP_NAV_DEL:			//kazan
@@ -15729,7 +15693,6 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NAV_POINT;
 			else
 				return OPF_SHIP;
-#endif
 
 		//<Cutscenes>
 		case OP_SCRAMBLE_MESSAGES:
@@ -18905,12 +18868,20 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tJump node to hide\r\n"
 	},
 
+
+
 	// taylor
+
 	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
+
 		"\tSets the current skybox model\r\n\r\n"
+
 		"Takes 1 argument...\r\n"
+
 		"\t1:\tModel filename (with .pof extension) to switch to\r\n\r\n"
+
 		"If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
+
 	},
 };
 

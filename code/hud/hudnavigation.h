@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.h $
- * $Revision: 1.5 $
- * $Date: 2005-01-31 10:34:38 $
- * $Author: taylor $
+ * $Revision: 1.6 $
+ * $Date: 2005-07-13 02:30:53 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/01/31 10:34:38  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 1.4  2004/08/20 05:13:07  Kazan
  * wakka wakka - fix minor booboo
  *
@@ -17,7 +20,6 @@
  *
  * Revision 1.2  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
- * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
  * Fixed FPS counter during time compression
  *
  * Revision 1.1  2004/05/24 07:23:09  taylor

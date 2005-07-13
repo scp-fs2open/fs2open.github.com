@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.94 $
- * $Date: 2005-07-13 02:01:29 $
+ * $Revision: 2.95 $
+ * $Date: 2005-07-13 02:30:53 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2005/07/13 02:01:29  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.93  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -2162,10 +2166,8 @@ int parse_create_object(p_object *objp)
 	if ( objp->flags2 & P2_SF2_TOGGLE_SUBSYSTEM_SCANNING )
 		Ships[shipnum].flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
 
-#if defined(ENABLE_AUTO_PILOT)
 	if ( objp->flags2 & P2_SF2_NAV_CARRY_STATUS )
 		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
-#endif
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
@@ -2175,11 +2177,9 @@ int parse_create_object(p_object *objp)
 	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_DEPARTURE_WARP) )
 		Ships[shipnum].flags |= SF_NO_DEPARTURE_WARP;
 
-#if defined(ENABLE_AUTO_PILOT)
 	// Kazan
 	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NAV_CARRY) )
 		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
-#endif
 
 	// Goober5000 - arg... if ship is in a wing, copy the wing's depature information to the ship
 	if ( Ships[shipnum].wingnum != -1 )
@@ -3601,12 +3601,8 @@ void parse_wing(mission *pm)
 				wingp->flags |= WF_NO_DEPARTURE_WARP;
 			else if ( !stricmp( wing_flag_strings[i], NOX("no-dynamic")) )
 				wingp->flags |= WF_NO_DYNAMIC;
-
-#if defined(ENABLE_AUTO_PILOT)
 			else if ( !stricmp( wing_flag_strings[i], NOX("nav-carry-status")) )
 				wingp->flags |= WF_NAV_CARRY;
-#endif
-
 			else
 				Warning(LOCATION, "unknown wing flag\n%s\n\nSkipping.", wing_flag_strings[i]);
 		}

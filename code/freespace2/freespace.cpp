@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.161 $
- * $Date: 2005-07-13 00:44:21 $
+ * $Revision: 2.162 $
+ * $Date: 2005-07-13 02:30:52 $
  * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.161  2005/07/13 00:44:21  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.160  2005/07/09 04:34:43  taylor
  * make sure to tack on a / on the dot dir so that recursive directory making will work properly (code thought it was a file rather than a dir)
  *
@@ -224,7 +228,6 @@
  *
  * Revision 2.106  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
- * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
  * Fixed FPS counter during time compression
  *
  * Revision 2.105  2004/07/18 04:07:26  Kazan
@@ -1321,10 +1324,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
 #include "jumpnode/jumpnode.h"
-
-#if defined(ENABLE_AUTO_PILOT)
 #include "autopilot/autopilot.h"
-#endif
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -2257,9 +2257,7 @@ void game_level_init(int seed)
 	weapon_level_init();
 	init_decals();
 
-#if defined(ENABLE_AUTO_PILOT)
 	NavSystem_Init();				// zero out the nav system
-#endif
 	
 	ai_level_init();				//	Call this before ship_init() because it reads ai.tbl.
 	ship_level_init();
@@ -5243,10 +5241,8 @@ void game_simulation_frame()
 	awacs_process();
 //mprintf(("awacs procesed\n"));
 
-#if defined(ENABLE_AUTO_PILOT)
 	//Do autopilot stuff
 	NavSystem_Do();
-#endif
 
 	// single player, set Player hits_this_frame to 0
 	if ( !(Game_mode & GM_MULTIPLAYER) && Player ) {
