@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.h $
- * $Revision: 2.4 $
- * $Date: 2005-02-04 10:12:33 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 03:35:35 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/02/04 10:12:33  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.3  2004/10/31 22:00:57  taylor
  * new bmpman merge support, add PreProcDefines.h a few new places
  *
@@ -41,7 +44,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __TARGA_H
 #define __TARGA_H
 

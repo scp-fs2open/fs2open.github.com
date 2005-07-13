@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.10 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-07-13 03:35:29 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.9  2005/03/28 00:40:09  taylor
  * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
  *
@@ -238,7 +241,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __SOUND_H__
 #define __SOUND_H__
 

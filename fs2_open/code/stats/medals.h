@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.7 $
- * $Date: 2005-05-18 14:03:27 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-13 03:35:32 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/05/18 14:03:27  taylor
+ * a medals crash fix that isn't influenced by the evil Java empire (Jens Granseuer)
+ *
  * Revision 2.6  2005/05/14 16:16:48  phreak
  * medal_stuff needed a copy constructor and an overloaded assignment operator.
  *
@@ -79,7 +82,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef FREESPACE_MEDAL_HEADER_FILE
 #define FREESPACE_MEDAL_HEADER_FILE
 

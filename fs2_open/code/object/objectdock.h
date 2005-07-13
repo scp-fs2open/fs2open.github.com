@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.6 $
- * $Date: 2005-05-27 03:37:53 $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-13 03:35:31 $
  * $Author: Goober5000 $
  *
  * New docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/05/27 03:37:53  Goober5000
+ * moved some prototypes that WMC put in the header file back to the implementation file
+ * --Goober5000
+ *
  * Revision 2.5  2005/05/27 03:36:20  Goober5000
  * hmm, rolled back to 2.3
  * --Goober5000
@@ -34,7 +38,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 #ifndef _OBJECT_DOCK_H
 #define _OBJECT_DOCK_H
 

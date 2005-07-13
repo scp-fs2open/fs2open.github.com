@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-06-19 02:43:14 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2005-07-13 03:35:31 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/06/19 02:43:14  taylor
+ * jumpnodes can get deleted outside of FRED now so allow for that
+ *
  * Revision 2.38  2005/04/25 00:28:58  wmcoolmon
  * subsystem sounds
  *
@@ -562,7 +565,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "object/object.h"
 #include "weapon/weapon.h"

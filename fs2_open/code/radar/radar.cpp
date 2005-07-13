@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-04-05 05:53:23 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-13 03:35:35 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.14  2005/03/24 23:29:33  taylor
  * (re)move some uneeded variables to fix compiler warnings
  *
@@ -203,7 +206,6 @@
  */
 
 
-#include "PreProcDefines.h"
 
 #include "radar/radar.h"
 #include "graphics/font.h"

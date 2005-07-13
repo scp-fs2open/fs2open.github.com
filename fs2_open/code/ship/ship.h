@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.98 $
- * $Date: 2005-07-13 02:30:54 $
+ * $Revision: 2.99 $
+ * $Date: 2005-07-13 03:35:30 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2005/07/13 02:30:54  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.97  2005/07/13 00:44:21  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -637,7 +641,6 @@
 #ifndef _SHIP_H
 #define _SHIP_H
 
-#include "PreProcDefines.h"
 
 #include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
 #include "graphics/2d.h"			// for color def

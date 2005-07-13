@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-07-13 00:44:23 $
+ * $Revision: 2.39 $
+ * $Date: 2005-07-13 03:35:33 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/07/13 00:44:23  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.37  2005/07/07 16:36:58  taylor
  * various compiler warning fixes (some of these from dizzy)
  *
@@ -488,7 +492,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

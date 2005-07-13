@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-03-02 21:24:42 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-13 03:35:35 $
+ * $Author: Goober5000 $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/02 21:24:42  taylor
+ * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ *
  * Revision 2.5  2004/12/11 09:37:50  wmcoolmon
  * Apparently I never commited -mpnoreturn...
  *
@@ -130,7 +133,6 @@
  */
 
 
-#include "PreProcDefines.h"
 
 #define POPUPDEAD_NUM_CHOICES				3		// normal
 #define POPUPDEAD_NUM_CHOICES_RA			4		// red alert

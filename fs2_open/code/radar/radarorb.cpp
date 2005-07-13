@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-07-07 16:36:58 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2005-07-13 03:35:35 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/07/07 16:36:58  taylor
+ * various compiler warning fixes (some of these from dizzy)
+ *
  * Revision 1.11  2005/04/24 12:56:43  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -68,7 +71,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 
 #include "radar/radarorb.h"
 #include "graphics/font.h"

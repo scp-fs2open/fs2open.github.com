@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-07-07 16:36:58 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 03:35:33 $
+ * $Author: Goober5000 $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/07 16:36:58  taylor
+ * various compiler warning fixes (some of these from dizzy)
+ *
  * Revision 2.10  2005/05/12 17:49:15  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -145,7 +148,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

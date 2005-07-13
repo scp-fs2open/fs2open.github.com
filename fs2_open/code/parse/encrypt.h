@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.h $
- * $Revision: 2.3 $
- * $Date: 2005-04-15 11:35:18 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-13 03:35:31 $
+ * $Author: Goober5000 $
  *
  * Header for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/04/15 11:35:18  taylor
+ * add scramble port
+ * support both FS1 (8bit and 7bit) and FS2 style encryption
+ *
  * Revision 2.2  2004/08/11 05:06:31  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -54,7 +58,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __ENCRYPT_H__
 #define __ENCRYPT_H__
 

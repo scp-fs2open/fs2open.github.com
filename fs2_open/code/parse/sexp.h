@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.93 $
+ * $Revision: 2.94 $
  * $Author: Goober5000 $
- * $Date: 2005-07-13 02:30:54 $
+ * $Date: 2005-07-13 03:35:32 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2005/07/13 02:30:54  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.92  2005/05/12 03:50:09  Goober5000
  * repeating messages with variables should work properly now
  * --Goober5000
@@ -670,7 +674,6 @@
  * 
  */
 
-#include "PreProcDefines.h"
 #include "globalincs/pstypes.h"	// for NULL
 
 #ifndef _SEXP_H

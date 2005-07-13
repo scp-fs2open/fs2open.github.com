@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.16 $
- * $Date: 2005-05-12 17:49:16 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-13 03:35:29 $
+ * $Author: Goober5000 $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/05/12 17:49:16  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.15  2005/04/24 02:40:40  wmcoolmon
  * Lowlevel (ie vertex buffer-mapping) functions for _rect and _shade
  *
@@ -159,7 +163,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _3D_H
 #define _3D_H
 

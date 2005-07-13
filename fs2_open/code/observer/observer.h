@@ -9,14 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Observer/Observer.h $
- * $Revision: 2.4 $
- * $Date: 2005-04-05 05:53:22 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 03:35:34 $
+ * $Author: Goober5000 $
  *
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _OBSERVER_HEADER_FILE
 #define _OBSERVER_HEADER_FILE
 

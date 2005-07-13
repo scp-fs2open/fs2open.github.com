@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-06-19 02:47:00 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 03:35:32 $
+ * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/06/19 02:47:00  taylor
+ * never "promote" to a lower rank than current
+ *
  * Revision 2.10  2005/05/12 17:49:17  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -228,7 +231,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "stats/scoring.h"
 #include "freespace2/freespace.h"

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.h $
- * $Revision: 2.3 $
- * $Date: 2004-12-14 14:46:13 $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-13 03:35:33 $
  * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code header
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/12/14 14:46:13  Goober5000
+ * allow different wing names than ABGDEZ
+ * --Goober5000
+ *
  * Revision 2.2  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -127,7 +131,6 @@
  * 
  */
 
-#include "PreProcDefines.h"
 #ifndef _MULTITEAMSELECT_H
 #define _MULTITEAMSELECT_H
 

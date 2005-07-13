@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-06-07 06:10:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-13 03:35:30 $
+ * $Author: Goober5000 $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/06/07 06:10:51  wmcoolmon
+ * This may stop targeting not-targetable ships in EMP
+ *
  * Revision 2.11  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -108,7 +111,6 @@
 
 #include <stdarg.h>
 
-#include "PreProcDefines.h"
 
 #include "weapon/emp.h"
 #include "io/timer.h"

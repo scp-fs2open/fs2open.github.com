@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.14 $
- * $Date: 2005-04-05 11:48:23 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-13 03:35:29 $
+ * $Author: Goober5000 $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/04/05 11:48:23  taylor
+ * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
+ * better error handling for OpenAL functions
+ * Windows can now build properly with OpenAL
+ * extra check to make sure we don't try and use too many hardware bases sources
+ * fix memory error from OpenAL extension list in certain instances
+ *
  * Revision 2.13  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -149,7 +156,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __DS_H__
 #define __DS_H__
 

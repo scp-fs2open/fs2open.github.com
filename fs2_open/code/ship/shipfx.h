@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.7 $
- * $Date: 2005-04-05 05:53:24 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-13 03:35:30 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.6  2005/01/11 21:38:49  Goober5000
  * multiple ship docking :)
  * don't tell anyone yet... check the SCP internal
@@ -149,7 +152,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _SHIPFX_H
 #define _SHIPFX_H
 

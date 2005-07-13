@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-07-02 19:45:00 $
- * $Author: taylor $
+ * $Revision: 2.37 $
+ * $Date: 2005-07-13 03:35:33 $
+ * $Author: Goober5000 $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/07/02 19:45:00  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.35  2005/05/13 23:10:17  taylor
  * unbreak joining (when forming, not in-game) (Jens Granseuer)
  *
@@ -336,7 +339,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

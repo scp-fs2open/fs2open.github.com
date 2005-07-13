@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-04-25 00:31:14 $
- * $Author: wmcoolmon $
+ * $Revision: 2.43 $
+ * $Date: 2005-07-13 03:35:30 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/04/25 00:31:14  wmcoolmon
+ * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
+ *
  * Revision 2.41  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -400,7 +403,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "ship/shipfx.h"
 #include "ship/ship.h"

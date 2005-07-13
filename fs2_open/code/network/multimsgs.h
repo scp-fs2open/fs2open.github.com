@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.6 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-13 03:35:33 $
+ * $Author: Goober5000 $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.5  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -233,7 +236,6 @@
  */
 
 
-#include "PreProcDefines.h"
 #ifndef MULTI_MSGS_H
 #define MULTI_MSGS_H
 

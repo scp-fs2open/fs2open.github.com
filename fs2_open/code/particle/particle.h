@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.h $
- * $Revision: 2.5 $
- * $Date: 2005-06-19 09:00:09 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:35:34 $
+ * $Author: Goober5000 $
  *
  * Includes for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/06/19 09:00:09  taylor
+ * minor sanity checking for geometry_batcher
+ * make particle batchers allocate dynamically
+ * handle cases where a particle graphic couldn't be loaded
+ *
  * Revision 2.4  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -88,7 +93,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _PARTICLE_H
 #define _PARTICLE_H
 

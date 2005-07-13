@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-02 19:45:02 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-13 03:35:32 $
+ * $Author: Goober5000 $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/02 19:45:02  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.8  2005/04/12 05:26:38  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -212,7 +215,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifdef _WIN32
 #include <io.h>

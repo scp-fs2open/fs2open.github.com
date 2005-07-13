@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 2.4 $
- * $Date: 2005-06-19 04:59:04 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 03:35:29 $
+ * $Author: Goober5000 $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/06/19 04:59:04  taylor
+ * woorps!
+ *
  * Revision 2.3  2005/06/19 02:45:55  taylor
  * OGG streaming fixes to get data reading right and avoid skipping
  * properly handle seeking in OGG streams
@@ -105,7 +108,6 @@
 #ifndef _AUDIOSTR_H
 #define _AUDIOSTR_H
 
-#include "PreProcDefines.h"
 
 
 // type of audio stream

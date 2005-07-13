@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-02 19:45:00 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-07-13 03:35:32 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/02 19:45:00  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.9  2005/05/12 17:49:15  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -125,7 +128,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

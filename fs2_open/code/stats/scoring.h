@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.h $
- * $Revision: 2.6 $
- * $Date: 2005-05-08 20:20:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-13 03:35:32 $
+ * $Author: Goober5000 $
  *
  * Scoring system structures, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/05/08 20:20:46  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 2.5  2005/02/04 10:12:33  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -188,7 +191,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _SCORING_HEADER_FILE
 #define _SCORING_HEADER_FILE
 

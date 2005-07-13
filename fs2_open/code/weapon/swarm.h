@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.h $
- * $Revision: 2.4 $
- * $Date: 2005-03-25 06:57:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 03:35:30 $
+ * $Author: Goober5000 $
  *
  * Header file for managing swarm missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/03/25 06:57:38  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.3  2004/08/11 05:06:36  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -57,7 +60,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __FREESPACE_SWARM_H__
 #define __FREESPACE_SWARM_H__
 

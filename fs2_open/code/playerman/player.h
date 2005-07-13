@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.6 $
- * $Date: 2005-04-05 05:53:23 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-13 03:35:32 $
+ * $Author: Goober5000 $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.5  2004/08/11 05:06:32  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -182,7 +185,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _PLAYER_H
 #define _PLAYER_H
 

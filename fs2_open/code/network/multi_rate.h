@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 02:00:44 $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:35:32 $
  * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 02:00:44  Goober5000
+ * rolled this back because it causes a syntax error in MSVC
+ * --Goober5000
+ *
  * Revision 2.3  2005/02/04 20:06:05  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -39,7 +43,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FS2_MULTI_DATA_RATE_HEADER_FILE
 #define _FS2_MULTI_DATA_RATE_HEADER_FILE
 

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.11 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 03:35:34 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.10  2005/03/20 20:02:29  phreak
  * export the functions that deal with the creation and destruction of the starfield buffer.
  * FRED needs them
@@ -158,7 +161,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _STARFIELD_H
 #define _STARFIELD_H
 
