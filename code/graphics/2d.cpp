@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-07-02 19:42:15 $
- * $Author: taylor $
+ * $Revision: 2.51 $
+ * $Date: 2005-07-13 15:15:54 $
+ * $Author: phreak $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/07/02 19:42:15  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.49  2005/06/03 06:44:17  taylor
  * cleanup of gr_bitmap since it's the same for D3D and OGL, skip if GR_STUB though
  * fix resize/rendering issue when detail culling is used with optimized opengl_create_texture_sub()
@@ -1341,8 +1344,13 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	// load the web pointer cursor bitmap
 	if (Web_cursor_bitmap < 0)	{
 		int nframes;						// used to pass, not really needed (should be 1)
-		Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes);
-		Assert(Web_cursor_bitmap >= 0);		// if bitmap didnt load, thats not good (this is protected for in release tho)
+
+		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
+		if (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes) < 0)
+		{
+			Error(LOCATION, "Web cursor bitmap not found.  This usually means that the executable is being run outside the directory you installed Freespace2 to.  Please move the executable to that directory and try again");
+		}
+		
 	}
 
 	gr_set_color(0,0,0);
