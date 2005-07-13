@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.13 $
- * $Date: 2005-06-02 03:20:20 $
+ * $Revision: 1.14 $
+ * $Date: 2005-07-13 02:30:52 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/06/02 03:20:20  Goober5000
+ * ugh... reverting taylor's change for now; I'll have to take another look at this
+ * --Goober5000
+ *
  * Revision 1.11  2005/05/30 04:38:33  Goober5000
  * Taylor's the real SCP leader; I just play one on the Internet
  * --Goober5000
@@ -14552,14 +14556,12 @@ void ai_process( object * obj, int ai_index, float frametime )
 //		if (aip->submode == AIS_NONE_FORMATION)
 //			rfc = 0;
 //		break;
-#if defined(ENABLE_AUTO_PILOT)
 /*		// Kazan -- disable afterburning during thses
 	case AIM_WAYPOINTS:
 	case AIM_FLY_TO_SHIP:
 		if (AutoPilotEngaged)
 			AI_ci.afterburner_stop = 1;
 		break;*/
-#endif
 
 	default:
 		break;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.97 $
- * $Date: 2005-07-13 00:44:21 $
+ * $Revision: 2.98 $
+ * $Date: 2005-07-13 02:30:54 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2005/07/13 00:44:21  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.96  2005/07/12 22:14:40  Goober5000
  * removed DECALS_ENABLED
  * --Goober5000
@@ -1562,10 +1566,7 @@ extern std::vector<engine_wash_info> Engine_wash_info;
 #define WF_NO_DYNAMIC				(1<<10)		// members of this wing relentlessly pursue their ai goals
 #define WF_DEPARTURE_ORDERED		(1<<11)		// departure of this wing was ordered by player
 #define WF_NEVER_EXISTED			(1<<12)		// this wing never existed because something prevented it from being created (like its mother ship being destroyed)
-
-#if defined(ENABLE_AUTO_PILOT)
 #define WF_NAV_CARRY				(1<<13)		// Kazan - Wing has nav-carry-status
-#endif
 
 //	Defines a wing of ships.
 typedef struct wing {

@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-04-19 23:03:42 $
- * $Author: wmcoolmon $
+ * $Revision: 1.20 $
+ * $Date: 2005-07-13 02:30:52 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/04/19 23:03:42  wmcoolmon
+ * Lock time compression when autopilot is engaged
+ *
  * Revision 1.18  2005/04/05 05:53:14  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -46,7 +49,6 @@
  *
  * Revision 1.7  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
- * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
  * Fixed FPS counter during time compression
  *
  * Revision 1.6  2004/07/25 19:27:51  Kazan
@@ -90,10 +92,6 @@
 extern int		Player_use_ai;
 extern int sexp_distance2(int obj1, char *subj);
 extern int ai_goal_find_empty_slot( ai_goal *goals );
-
-
-#if defined(ENABLE_AUTO_PILOT)
-
 
 
 // Module variables
@@ -831,4 +829,3 @@ bool IsVisited(int nav)
 	return 0;
 }
 
-#endif

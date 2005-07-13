@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2005-07-13 02:30:53 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.11  2005/03/13 08:32:28  wmcoolmon
  * Hud fixing goodness. I also removed some obsolete code for displaying HUD weapons.
  *
@@ -32,7 +35,6 @@
  *
  * Revision 1.4  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
- * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
  * Fixed FPS counter during time compression
  *
  * Revision 1.3  2004/07/12 16:32:49  Kazan
@@ -54,7 +56,6 @@
 
 #include "PreProcDefines.h"
 
-#if defined(ENABLE_AUTO_PILOT)
 #include "hud/hudnavigation.h"
 #include "autopilot/autopilot.h"
 #include "hud/hudtarget.h"
@@ -164,6 +165,3 @@ void HUD_Draw_Navigation()
 		gr_string( 20, 120, "No Nav Point Selected");
 	}*/
 }
-#endif //ENABLE_AUTO_PILOT
-
-

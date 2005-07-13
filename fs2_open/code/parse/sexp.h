@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.92 $
+ * $Revision: 2.93 $
  * $Author: Goober5000 $
- * $Date: 2005-05-12 03:50:09 $
+ * $Date: 2005-07-13 02:30:54 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2005/05/12 03:50:09  Goober5000
+ * repeating messages with variables should work properly now
+ * --Goober5000
+ *
  * Revision 2.91  2005/05/02 22:36:54  wmcoolmon
  * Bah, stupid externs. :P
  *
@@ -120,7 +124,6 @@
  *
  * Revision 2.66  2004/07/26 17:54:05  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
- * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
  * Fixed FPS counter during time compression
  *
  * Revision 2.65  2004/07/01 16:38:19  Kazan
@@ -669,6 +672,7 @@
 
 #include "PreProcDefines.h"
 #include "globalincs/pstypes.h"	// for NULL
+
 #ifndef _SEXP_H
 #define _SEXP_H
 
@@ -746,11 +750,7 @@ struct ship_subsys;
 #define OPF_INTEL_NAME			46		// Goober5000 - the name of an intel entry in species.tbl
 #define OPF_STRING				47		// Goober5000 - any old string
 #define OPF_ROTATING_SUBSYSTEM	48		// Goober5000 - a rotating subsystem
-
-#if defined(ENABLE_AUTO_PILOT)
 #define OPF_NAV_POINT			49		// Kazan	  - a Nav Point name
-#endif
-
 #define OPF_SSM_CLASS			50		// Goober5000 - an SSM class
 #define OPF_FLEXIBLE_ARGUMENT	51		// Goober5000 - special to match for when-argument
 #define OPF_ANYTHING			52		// Goober5000 - anything goes
@@ -794,11 +794,7 @@ struct ship_subsys;
 #define	OP_CATEGORY_AI			0x0b00  // used for AI goals
 #define	OP_CATEGORY_TRAINING	0x0c00
 #define	OP_CATEGORY_UNLISTED	0x0d00
-
-#if defined(ENABLE_AUTO_PILOT)
 #define OP_CATEGORY_NAVPOINTS	0x0e00
-#endif
-
 #define	OP_CATEGORY_GOAL_EVENT	0x0f00	// final category can't be higher than 0x0f00,
 										// to avoid overlap with flags above
 
@@ -944,12 +940,8 @@ struct ship_subsys;
 #define OP_IS_SHIP_TYPE						(0x0026 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_IS_SHIP_CLASS					(0x0027	| OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_NUM_SHIPS_IN_BATTLE				(0x0028 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// phreak
-
-#if defined(ENABLE_AUTO_PILOT)
 #define OP_NAV_ISVISITED					(0x0029 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan (is-nav-visited)
 #define OP_NAV_DISTANCE						(0x002a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan (distance-to-nav)
-#endif
-
 #define OP_CURRENT_SPEED					(0x002b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 #define	OP_IS_IFF							(0x002c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 
@@ -1178,8 +1170,6 @@ struct ship_subsys;
 // Nav Points / Auto Nav sexps
 // Kazan
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-#if defined(ENABLE_AUTO_PILOT)
-
 
 //text: add-nav-waypoint
 #define OP_NAV_ADD_WAYPOINT					(0x0001 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
@@ -1203,8 +1193,6 @@ struct ship_subsys;
 #define OP_NAV_UNSET_CARRY					(0x0010 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 //text: unset-nav-visited
 #define OP_NAV_UNSET_VISITED				(0x0011 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
-
-#endif
 
 
 #define OP_KEY_PRESSED						(0x0000 | OP_CATEGORY_TRAINING)

@@ -5,12 +5,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PreProcDefines.h $
- * $Revision: 1.15 $
- * $Date: 2005-07-13 00:44:23 $
+ * $Revision: 1.16 $
+ * $Date: 2005-07-13 02:30:54 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/07/13 00:44:23  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 1.14  2005/07/12 22:14:40  Goober5000
  * removed DECALS_ENABLED
  * --Goober5000
@@ -89,10 +93,6 @@
 #define USE_OPENGL			1
 #endif
 
-#ifndef ENABLE_AUTO_PILOT
-#define ENABLE_AUTO_PILOT	1
-#endif
-
 #ifndef _REPORT_MEM_LEAKS
 #define _REPORT_MEM_LEAKS	1
 #endif
@@ -106,18 +106,5 @@
 
 #endif
 
-/*
-#ifndef INF_BUILD
-#define INF_BUILD			1
-#ifndef NO_NETWORK // no networking with INF_BUILD
-#define NO_NETWORK			1
-#endif // NO_NETWORK
-#endif // INF_BUILD
-*/
-
-// INF_BUILD error check...
-#if defined(INF_BUILD) && !defined(NO_NETWORK)
-#error "Networking *must* be disabled with Inferno builds, define NO_NETWORK"
-#endif
 
 #endif // _pre_proc_defs_h_

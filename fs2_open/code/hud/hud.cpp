@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.49 $
+ * $Date: 2005-07-13 02:30:53 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.47  2005/07/02 19:42:15  taylor
  * ton of non-standard resolution fixes
  *
@@ -109,7 +113,6 @@
  *
  * Revision 2.22  2004/07/26 17:54:04  Kazan
  * Autopilot system completed -- i am dropping plans for GUI nav map
- * All builds should have ENABLE_AUTO_PILOT defined from now on (.dsp's i am committing reflect this) the system will only be noticed if the mission designer brings it online by defining a nav point
  * Fixed FPS counter during time compression
  *
  * Revision 2.21  2004/07/12 16:32:49  Kazan
@@ -520,10 +523,7 @@
 #include "hud/hudparse.h"
 #include "object/objectdock.h"
 #include "render/3dinternal.h"
-
-#if defined(ENABLE_AUTO_PILOT)
 #include "hud/hudnavigation.h"	//kazan
-#endif
 
 #include "io/timer.h"
 #include "localization/localize.h"
@@ -1456,10 +1456,8 @@ void hud_show_common_3d_gauges(float frametime, int in_cockpit)
 		return;
 	}
 
-#if defined(ENABLE_AUTO_PILOT)
 	// Draw Navigation stuff
 	HUD_Draw_Navigation();
-#endif
 
 	// draw boxes around current selection set, if any
 	hud_show_selection_set();
