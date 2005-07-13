@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.61 $
- * $Date: 2005-07-02 19:42:15 $
- * $Author: taylor $
+ * $Revision: 2.62 $
+ * $Date: 2005-07-13 02:50:47 $
+ * $Author: Goober5000 $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/07/02 19:42:15  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.60  2005/06/19 09:00:09  taylor
  * minor sanity checking for geometry_batcher
  * make particle batchers allocate dynamically
@@ -620,7 +623,6 @@ gr_line(x1,y1,x2,y2)
  
 */
 
-#include "PreProcDefines.h"
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
 #include "cfile/cfile.h"

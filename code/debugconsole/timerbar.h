@@ -8,11 +8,14 @@
 
 /*
  * $Logfile: /Freespace2/code/debugconsole/timerbar.h $
- * $Revision: 1.9 $
- * $Date: 2004-08-11 05:06:20 $
- * $Author: Kazan $
+ * $Revision: 1.10 $
+ * $Date: 2005-07-13 02:50:50 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/08/11 05:06:20  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 1.8  2004/02/16 11:47:31  randomtiger
  * Removed a lot of files that we dont need anymore.
  * Changed htl to be on by default, command now -nohtl
@@ -50,7 +53,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _TIMERBAR_HEADER_
 #define _TIMERBAR_HEADER_
 

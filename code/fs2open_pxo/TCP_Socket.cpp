@@ -10,12 +10,20 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-06-29 18:49:37 $
- * $Author: taylor $
+ * $Revision: 1.16 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/06/29 18:49:37  taylor
+ * various FS2NetD fixes:
+ *  - replace timer stuff with something that more accurately works cross-platform and without being affected by load
+ *  - better sanity checking for the server list
+ *  - working Linux compatibility that's not dog slow
+ *  - when calling DataReady() make sure that the data is properly valid
+ *  - fix messed up cvs merge cleanup from the Linux merge which did nasty things
+ *
  * Revision 1.14  2005/03/02 21:18:18  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -70,7 +78,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

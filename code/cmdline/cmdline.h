@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.71 $
- * $Date: 2005-07-07 16:32:33 $
- * $Author: taylor $
+ * $Revision: 2.72 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2005/07/07 16:32:33  taylor
+ * compiler warning fixes
+ * add -noibx troubleshooting cmdline option to disable use of IBX files
+ * don't try to set thuster object number is only one thruster bank is specified (default method should go into affect)
+ *
  * Revision 2.70  2005/06/29 18:46:13  taylor
  * add option to not scale up movies to fit window/screen, default is to scale
  * (arguably not a bug but I said I would get it in before 3.6.5 and forgot)
@@ -471,7 +476,6 @@
  * 
  * $NoKeywords: $
  */
-#include "PreProcDefines.h"
 #ifndef FS_CMDLINE_HEADER_FILE
 #define FS_CMDLINE_HEADER_FILE
 

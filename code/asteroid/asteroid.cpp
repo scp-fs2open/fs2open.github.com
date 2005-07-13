@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-07-13 02:01:28 $
+ * $Revision: 2.19 $
+ * $Date: 2005-07-13 02:50:48 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/07/13 02:01:28  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.17  2005/07/13 00:44:20  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -330,7 +334,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "asteroid/asteroid.h"
 #include "object/object.h"

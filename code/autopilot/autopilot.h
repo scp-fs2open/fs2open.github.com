@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.7 $
- * $Date: 2005-04-05 05:53:14 $
- * $Author: taylor $
+ * $Revision: 1.8 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/04/05 05:53:14  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.6  2004/08/11 05:06:18  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -32,7 +35,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 #if !defined(_AUTOPILOT_H_)
 #define _AUTOPILOT_H_
 

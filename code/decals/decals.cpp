@@ -128,7 +128,6 @@ texture for the list is set, then a call is made to render the vertex buffer.
 
 */
 
-#include "PreProcDefines.h"
 
 #include "object/object.h"
 #include "globalincs/linklist.h"

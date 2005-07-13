@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-13 02:01:28 $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-13 02:50:51 $
  * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/13 02:01:28  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/13 00:44:21  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -271,7 +275,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "debris/debris.h"
 #include "render/3d.h"

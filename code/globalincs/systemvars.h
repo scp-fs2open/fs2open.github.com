@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.9 $
- * $Date: 2005-05-12 17:49:12 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-13 02:50:48 $
+ * $Author: Goober5000 $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/05/12 17:49:12  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.8  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -228,7 +232,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _SYSTEMVARS_H
 #define _SYSTEMVARS_H
 

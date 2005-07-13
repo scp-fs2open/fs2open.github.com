@@ -2,7 +2,6 @@
 #ifndef _GRD3DBATCH_H_
 #define _GRD3DBATCH_H_
 
-#include "PreProcDefines.h"
 
 #include "graphics/grbatch.h"
 

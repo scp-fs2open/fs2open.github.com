@@ -6,7 +6,6 @@
  *  Content:    DirectPlayLobby include file
  ***************************************************************************/
 
-#include "PreProcDefines.h"
 #ifndef __DPLOBBY_INCLUDED__
 #define __DPLOBBY_INCLUDED__
 

@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.15 $
- * $Date: 2005-02-04 20:06:03 $
- * $Author: taylor $
+ * $Revision: 1.16 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/02/04 20:06:03  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.14  2004/08/11 05:06:23  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -53,7 +56,6 @@
 #if !defined(__pxo_protocol_h_)
 #define __pxo_protocol_h_
 
-#include "PreProcDefines.h"
 
 #include "globalincs/pstypes.h" // for _fs_time_t
 

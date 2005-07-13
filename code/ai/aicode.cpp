@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-07-13 02:30:52 $
+ * $Revision: 1.15 $
+ * $Date: 2005-07-13 02:50:48 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/07/13 02:30:52  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 1.13  2005/06/02 03:20:20  Goober5000
  * ugh... reverting taylor's change for now; I'll have to take another look at this
  * --Goober5000
@@ -855,7 +859,6 @@
 // to objects.   The code in Ai.cpp is just for bookeeping, allocating
 // ai slots and linking them to ships.
 
-#include "PreProcDefines.h"
 
 #include "ai/ai.h"
 #include "globalincs/linklist.h"

@@ -6,7 +6,6 @@
  *  Content:    AsyncData object include file
  ***************************************************************************/
 
-#include "PreProcDefines.h"
 #ifndef __ASYNC_INCLUDED__
 #define __ASYNC_INCLUDED__
 

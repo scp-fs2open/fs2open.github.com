@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.h $
- * $Revision: 2.4 $
- * $Date: 2005-04-05 05:53:15 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 02:50:50 $
+ * $Author: Goober5000 $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/04/05 05:53:15  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.3  2004/08/11 05:06:19  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -122,7 +125,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _CMEASURE_H
 #define _CMEASURE_H
 

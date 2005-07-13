@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:19 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:19  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:01:54  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -50,7 +53,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _CFILESYSTEM_H
 #define _CFILESYSTEM_H
 

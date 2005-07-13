@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.h $
- * $Revision: 2.7 $
- * $Date: 2005-03-25 06:57:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-13 02:50:53 $
+ * $Author: Goober5000 $
  *
  * Header file for Game Sequencing items
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/03/25 06:57:33  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.6  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -352,7 +355,6 @@
 
 // defines for game sequencing
 
-#include "PreProcDefines.h"
 #ifndef __GAMESEQUENCE_H__
 #define __GAMESEQUENCE_H__
 

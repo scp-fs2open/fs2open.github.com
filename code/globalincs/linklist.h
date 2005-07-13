@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/LinkList.h $
- * $Revision: 2.5 $
- * $Date: 2005-03-29 03:40:15 $
- * $Author: phreak $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 02:50:48 $
+ * $Author: Goober5000 $
  *
  * Macros to handle doubly linked lists
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/03/29 03:40:15  phreak
+ * get_num_elements() method,  probably coded incorrectly, but its needed for FRED
+ *
  * Revision 2.4  2005/03/26 07:53:32  wmcoolmon
  * Some fixes
  *
@@ -53,7 +56,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _LINKLIST_H
 #define _LINKLIST_H
 

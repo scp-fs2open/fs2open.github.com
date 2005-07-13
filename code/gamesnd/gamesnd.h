@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-13 02:50:51 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.11  2005/06/29 18:50:13  taylor
  * little cleanup and error checking
  *
@@ -361,7 +365,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __GAMESND_H__
 #define __GAMESND_H__
 

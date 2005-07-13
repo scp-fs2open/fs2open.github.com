@@ -1,4 +1,3 @@
-#include "PreProcDefines.h"
 
 #ifndef _GRD3DLIGHT_H_
 #define _GRD3DLIGHT_H_

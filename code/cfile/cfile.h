@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.11 $
- * $Date: 2005-04-05 05:53:14 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/04/05 05:53:14  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.10  2005/01/30 12:50:08  taylor
  * merge with Linux/OSX tree - p0130
  *
@@ -371,7 +374,6 @@
 #ifndef __CFILE_H__
 #define __CFILE_H__
 
-#include "PreProcDefines.h"
 
 #include <time.h>
 #include "globalincs/pstypes.h"

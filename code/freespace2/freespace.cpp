@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.162 $
- * $Date: 2005-07-13 02:30:52 $
+ * $Revision: 2.163 $
+ * $Date: 2005-07-13 02:50:52 $
  * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.162  2005/07/13 02:30:52  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.161  2005/07/13 00:44:21  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -1213,7 +1217,6 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
  #include <sys/stat.h>
 #endif
 
-#include "PreProcDefines.h"
 
 #include "anim/animplay.h"
 #include "asteroid/asteroid.h"

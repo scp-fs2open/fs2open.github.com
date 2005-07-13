@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.2 $
- * $Date: 2005-05-11 11:38:03 $
+ * $Revision: 1.3 $
+ * $Date: 2005-07-13 02:50:48 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/05/11 11:38:03  Goober5000
+ * fixed a docking bug
+ * --Goober5000
+ *
  * Revision 1.1  2005/03/25 06:45:13  wmcoolmon
  * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
  *
@@ -567,7 +571,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "ai/aigoals.h"
 #include "parse/sexp.h"

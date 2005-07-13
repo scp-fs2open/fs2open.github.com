@@ -6,7 +6,6 @@
  *  Content:    DirectXSetup, error codes and flags
  ***************************************************************************/
 
-#include "PreProcDefines.h"
 
 #ifndef __DSETUP_H__
 #define __DSETUP_H__
