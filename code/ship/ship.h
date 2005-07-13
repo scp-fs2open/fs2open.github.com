@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.96 $
- * $Date: 2005-07-12 22:14:40 $
+ * $Revision: 2.97 $
+ * $Date: 2005-07-13 00:44:21 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2005/07/12 22:14:40  Goober5000
+ * removed DECALS_ENABLED
+ * --Goober5000
+ *
  * Revision 2.95  2005/06/19 02:43:49  taylor
  * WMC's build fix, part deux
  *
@@ -1720,14 +1724,8 @@ extern int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship typ
 // Moved from ship.cpp because this is needed over in species_defs
 // 10/15/2003, Kazan
 // ----------------------------------------------------------------------------
-#if defined(MORE_SPECIES)
-#define NUM_THRUST_ANIMS			(MAX_SPECIES_NAMES * 2)
-#define NUM_THRUST_GLOW_ANIMS		(MAX_SPECIES_NAMES * 2)
-
-#else
-#define NUM_THRUST_ANIMS			6
-#define NUM_THRUST_GLOW_ANIMS		6
-#endif
+#define NUM_THRUST_ANIMS			(MAX_SPECIES * 2)
+#define NUM_THRUST_GLOW_ANIMS		(MAX_SPECIES * 2)
 
 //	Do the special effect for energy dissipating into the shield for a hit.
 //	model_num	= index in Polygon_models[]

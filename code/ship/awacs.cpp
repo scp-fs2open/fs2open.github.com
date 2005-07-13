@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-04-05 05:53:24 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-13 00:44:21 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.11  2005/03/02 21:24:47  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -167,9 +170,7 @@ awacs_entry Awacs[MAX_AWACS];
 int Awacs_count = 0;
 
 // species dependent factor increasing scan range in nebula
-#define AWACS_SHIVAN_MULT		1.50
-#define AWACS_VASUDAN_MULT		1.25
-#define AWACS_TERRAN_MULT		1.00
+float AwacsMultiplier[MAX_SPECIES];
 
 // TEAM SHIP VISIBILITY
 // team-wide shared visibility info
@@ -426,24 +427,10 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		}
 
 		// fully targetable at half the nebula value
+
 		// modify distance by species
 		float scan_nebula_range = Neb2_awacs;
-		switch (Ship_info[viewer->ship_info_index].species) {
-		case SPECIES_SHIVAN:
-			scan_nebula_range *= float(AWACS_SHIVAN_MULT);
-			break;
-
-		case SPECIES_VASUDAN:
-			scan_nebula_range *= float(AWACS_VASUDAN_MULT);
-			break;
-
-		case SPECIES_TERRAN:
-			scan_nebula_range *= float(AWACS_TERRAN_MULT);
-			break;
-
-		default:
-			Int3();
-		}
+		scan_nebula_range *= AwacsMultiplier[Ship_info[viewer->ship_info_index].species];
 
 		// special case for huge ship - check inside expanded bounding boxes
 		if ( check_huge_ship ) {

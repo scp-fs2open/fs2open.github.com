@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.160 $
- * $Date: 2005-07-09 04:34:43 $
- * $Author: taylor $
+ * $Revision: 2.161 $
+ * $Date: 2005-07-13 00:44:21 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.160  2005/07/09 04:34:43  taylor
+ * make sure to tack on a / on the dot dir so that recursive directory making will work properly (code thought it was a file rather than a dir)
+ *
  * Revision 2.159  2005/07/07 16:33:39  taylor
  * add value of GL_vertex_data_in to OGL card memory usage
  *
@@ -1373,7 +1376,7 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 game_snd Snds[MIN_GAME_SOUNDS];
 game_snd Snds_iface[MIN_INTERFACE_SOUNDS];
 int Snds_iface_handle[MIN_INTERFACE_SOUNDS];
-game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
+game_snd Snds_flyby[MAX_SPECIES][2];
 
 // dummy callback -- real one is in gamesnd.cpp
 void common_play_highlight_sound()

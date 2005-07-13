@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-04-05 05:53:24 $
- * $Author: taylor $
+ * $Revision: 2.29 $
+ * $Date: 2005-07-13 00:44:21 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.27  2005/03/27 12:28:35  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -340,7 +343,6 @@ shield_hit	Shield_hits[MAX_SHIELD_HITS];
 
 
 
-#if defined(MORE_SPECIES)
 shield_ani Shield_ani[MAX_SHIELD_ANIMS];
 
 /*
@@ -355,13 +357,6 @@ shield_ani Shield_ani[MAX_SHIELD_ANIMS] = {
 	{ "shieldhit01a", -1, -1 },
 };*/
 
-#else
-shield_ani Shield_ani[MAX_SHIELD_ANIMS] = {
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-};
-#endif
 //XSTR:ON
 
 int Shield_bitmaps_loaded = 0;
@@ -743,7 +738,7 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 
 	n = si->species;		
 	// Do some sanity checking
-	Assert( (n >=0) && (n<MAX_SPECIES_NAMES));
+	Assert( (n >=0) && (n<MAX_SPECIES));
 	Assert( (n >=0) && (n<MAX_SHIELD_ANIMS));
 
 	// don't try to draw if we don't have an ani

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-07-07 16:36:58 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2005-07-13 00:44:23 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/07/07 16:36:58  taylor
+ * various compiler warning fixes (some of these from dizzy)
+ *
  * Revision 2.36  2005/06/29 18:54:02  taylor
  * should fix perpetually damaged subsystems on ships for multi clients
  *
@@ -2946,7 +2949,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	object *sobjp, *oobjp;
 	float percent_killed;	
 	ubyte was_player, extra_death_info, sd;
-	char killer_name[NAME_LENGTH], killer_objtype = OBJ_NONE, killer_species = SPECIES_TERRAN, killer_weapon_index = -1;
+	char killer_name[NAME_LENGTH], killer_objtype = OBJ_NONE, killer_species = 0, killer_weapon_index = -1;
 
 	offset = HEADER_LENGTH;
 	GET_USHORT(ship_sig);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-07-02 19:42:15 $
- * $Author: taylor $
+ * $Revision: 2.48 $
+ * $Date: 2005-07-13 00:44:22 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/07/02 19:42:15  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.46  2005/05/30 05:31:19  taylor
  * make sure we don't show various offscreen indicators and info when hud-disabled-except-messages is used
  *
@@ -1186,10 +1189,6 @@ int hud_disabled_except_messages()
 // return !0 if HUD is disabled (ie no gauges are shown/usable), otherwise return 0
 int hud_disabled()
 {
-	// if ( Ship_info[Player_ship->ship_info_index].species != SPECIES_TERRAN ) {
-		//return 1;
-	//}
-
 	return !HUD_draw;
 }
 

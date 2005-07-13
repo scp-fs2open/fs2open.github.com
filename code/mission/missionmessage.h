@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.8 $
- * $Date: 2004-12-10 17:21:00 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-13 00:44:22 $
+ * $Author: Goober5000 $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2004/12/10 17:21:00  taylor
+ * dymanic allocation of Personas
+ *
  * Revision 2.7  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -381,10 +384,7 @@ extern int Message_shipnum;					// used to display info on hud when message is s
 typedef struct persona_s {
 	char	name[NAME_LENGTH];
 	int	flags;
-#if defined(MORE_SPECIES)
 	int species;
-#endif
-
 } Persona;
 
 //extern Persona Personas[MAX_PERSONAS]; // it's dynamic now - taylor

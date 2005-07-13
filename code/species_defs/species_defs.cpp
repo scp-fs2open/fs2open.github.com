@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.12 $
- * $Date: 2005-01-25 23:32:46 $
+ * $Revision: 1.13 $
+ * $Date: 2005-07-13 00:44:24 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/01/25 23:32:46  Goober5000
+ * species will now load from a default table instead of being initialized via code
+ * --Goober5000
+ *
  * Revision 1.11  2004/11/22 06:17:57  taylor
  * make sure species_defs.tbl can be found outside of root[0] and in VPs
  *
@@ -73,79 +77,84 @@ int True_NumSpecies = 3;
 
 // manually extern everything here - because it's not all needed throughout the entire system
 extern shield_ani Shield_ani[MAX_SHIELD_ANIMS];
-extern char Species_names[MAX_SPECIES_NAMES][SPECIES_NAME_MAXLEN+1];
-extern char Debris_texture_files[MAX_SPECIES_NAMES][MAX_DEBRIS_TNAME_LEN+1];
+extern char Species_names[MAX_SPECIES][SPECIES_NAME_MAXLEN+1];
+extern char Debris_texture_files[MAX_SPECIES][MAX_DEBRIS_TNAME_LEN+1];
 extern char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
 extern char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
 extern char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
 extern char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN];
+extern float AwacsMultiplier[MAX_SPECIES];
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // This is the default table
 char *default_species_table = "\
-; -----------------------------------------------			\n\
-; Species_defs.tbl											\n\
-; Derek 'Kazan' Meek										\n\
-; FS2 Open Species table									\n\
-;															\n\
-; -----------------------------------------------			\n\
-															\n\
-#SPECIES DEFS												\n\
-															\n\
-$NumSpecies: 3												\n\
-															\n\
-;------------------------									\n\
-; Terran													\n\
-;------------------------									\n\
-$Species_Name: Terran										\n\
-	+Debris_Texture: debris01a								\n\
-	+Shield_Hit_ani: shieldhit01a							\n\
-$ThrustAnims:												\n\
-	+Pri_Normal:	thruster01								\n\
-	+Pri_Afterburn:	thruster01a								\n\
-	+Sec_Normal:	thruster02-01							\n\
-	+Sec_Afterburn:	thruster02-01a							\n\
-	+Ter_Normal:	thruster03-01							\n\
-	+Ter_Afterburn:	thruster03-01a							\n\
-$ThrustGlows:												\n\
-	+Normal:	thrusterglow01								\n\
-	+Afterburn:	thrusterglow01a								\n\
-															\n\
-;------------------------									\n\
-; Vasudan													\n\
-;------------------------									\n\
-$Species_Name: Vasudan										\n\
-	+Debris_Texture: debris01b								\n\
-	+Shield_Hit_ani: shieldhit01a							\n\
-$ThrustAnims:												\n\
-	+Pri_Normal:	thruster02								\n\
-	+Pri_Afterburn:	thruster02a								\n\
-	+Sec_Normal:	thruster02-02							\n\
-	+Sec_Afterburn:	thruster02-02a							\n\
-	+Ter_Normal:	thruster03-02							\n\
-	+Ter_Afterburn:	thruster03-02a							\n\
-$ThrustGlows:												\n\
-	+Normal:	thrusterglow02								\n\
-	+Afterburn:	thrusterglow02a								\n\
-															\n\
-;------------------------									\n\
-; Shivan													\n\
-;------------------------									\n\
-$Species_Name: Shivan										\n\
-	+Debris_Texture: debris01c								\n\
-	+Shield_Hit_ani: shieldhit01a							\n\
-$ThrustAnims:												\n\
-	+Pri_Normal:	thruster03								\n\
-	+Pri_Afterburn:	thruster03a								\n\
-	+Sec_Normal:	thruster02-03							\n\
-	+Sec_Afterburn:	thruster02-03a							\n\
-	+Ter_Normal:	thruster03-03							\n\
-	+Ter_Afterburn:	thruster03-03a							\n\
-$ThrustGlows:												\n\
-	+Normal:	thrusterglow03								\n\
-	+Afterburn:	thrusterglow03a								\n\
-#END														\n\
+; ----------------------------------------------\n\
+; Species_defs.tbl								\n\
+; Derek 'Kazan' Meek							\n\
+; FS2 Open Species table						\n\
+;												\n\
+; ----------------------------------------------\n\
+												\n\
+#SPECIES DEFS									\n\
+												\n\
+$NumSpecies: 3									\n\
+												\n\
+;------------------------						\n\
+; Terran										\n\
+;------------------------						\n\
+$Species_Name: Terran							\n\
+	+Debris_Texture: debris01a					\n\
+	+Shield_Hit_ani: shieldhit01a				\n\
+$ThrustAnims:									\n\
+	+Pri_Normal:	thruster01					\n\
+	+Pri_Afterburn:	thruster01a					\n\
+	+Sec_Normal:	thruster02-01				\n\
+	+Sec_Afterburn:	thruster02-01a				\n\
+	+Ter_Normal:	thruster03-01				\n\
+	+Ter_Afterburn:	thruster03-01a				\n\
+$ThrustGlows:									\n\
+	+Normal:	thrusterglow01					\n\
+	+Afterburn:	thrusterglow01a					\n\
+$AwacsMultiplier: 1.00							\n\
+												\n\
+;------------------------						\n\
+; Vasudan										\n\
+;------------------------						\n\
+$Species_Name: Vasudan							\n\
+	+Debris_Texture: debris01b					\n\
+	+Shield_Hit_ani: shieldhit01a				\n\
+$ThrustAnims:									\n\
+	+Pri_Normal:	thruster02					\n\
+	+Pri_Afterburn:	thruster02a					\n\
+	+Sec_Normal:	thruster02-02				\n\
+	+Sec_Afterburn:	thruster02-02a				\n\
+	+Ter_Normal:	thruster03-02				\n\
+	+Ter_Afterburn:	thruster03-02a				\n\
+$ThrustGlows:									\n\
+	+Normal:	thrusterglow02					\n\
+	+Afterburn:	thrusterglow02a					\n\
+$AwacsMultiplier: 1.25							\n\
+												\n\
+;------------------------						\n\
+; Shivan										\n\
+;------------------------						\n\
+$Species_Name: Shivan							\n\
+	+Debris_Texture: debris01c					\n\
+	+Shield_Hit_ani: shieldhit01a				\n\
+$ThrustAnims:									\n\
+	+Pri_Normal:	thruster03					\n\
+	+Pri_Afterburn:	thruster03a					\n\
+	+Sec_Normal:	thruster02-03				\n\
+	+Sec_Afterburn:	thruster02-03a				\n\
+	+Ter_Normal:	thruster03-03				\n\
+	+Ter_Afterburn:	thruster03-03a				\n\
+$ThrustGlows:									\n\
+	+Normal:	thrusterglow03					\n\
+	+Afterburn:	thrusterglow03a					\n\
+$AwacsMultiplier: 1.50							\n\
+												\n\
+#END											\n\
 ";
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -186,16 +195,17 @@ void Init_Species_Definitions()
 	required_string("$NumSpecies:");
 	stuff_int(&True_NumSpecies);
 
-	//ASSERT(True_NumSpecies < MAX_SPECIES_NAMES);
+	ASSERT(True_NumSpecies < MAX_SPECIES);
+
 	int thrust_index;
 
 	for (int i = 0; i < True_NumSpecies; i++)
 	{
-		// Start Species - Get it's name
+		// Start Species - Get its name
 		required_string("$Species_Name:");
 		stuff_string(Species_names[i],								F_NAME, NULL, SPECIES_NAME_MAXLEN);
 
-		// Get it's Debris Texture
+		// Get its Debris Texture
 		required_string("+Debris_Texture:");
 		stuff_string(Debris_texture_files[i],						F_NAME, NULL, MAX_DEBRIS_TNAME_LEN);
 
@@ -239,6 +249,10 @@ void Init_Species_Definitions()
 		required_string("+Afterburn:");
 		stuff_string(Thrust_glow_anim_names[thrust_index+1],		F_NAME, NULL, MAX_FILENAME_LEN);
 
+
+		// Goober5000 - AWACS multiplier (which Kazan forgot or missed)
+		required_string("$AwacsMultiplier:");
+		stuff_float(&AwacsMultiplier[i]);
 	}
 	
 	required_string("#END");

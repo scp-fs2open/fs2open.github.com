@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.205 $
- * $Date: 2005-07-12 22:14:40 $
+ * $Revision: 2.206 $
+ * $Date: 2005-07-13 00:44:21 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.205  2005/07/12 22:14:40  Goober5000
+ * removed DECALS_ENABLED
+ * --Goober5000
+ *
  * Revision 2.204  2005/07/12 21:58:45  Goober5000
  * removed NO_LINKED_PRIMARY_PENALTY as it's better suited for difficulty.tbl or something similar
  * --Goober5000
@@ -1717,7 +1721,6 @@ typedef struct thrust_anim {
 
 
 
-#if defined(MORE_SPECIES)
 // ----------------------------------------------------------------------------
 // New species_defs.tbl based code
 // 10/15/2003, Kazan
@@ -1731,50 +1734,6 @@ char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN];
 static thrust_anim	Thrust_anims[NUM_THRUST_ANIMS];
 static thrust_anim	Thrust_glow_anims[NUM_THRUST_GLOW_ANIMS];
 
-#else
-
-// ----------------------------------------------------------------------------
-// Old volition hardcode
-// 10/15/2003, Kazan
-// ----------------------------------------------------------------------------
-
-// These are indexed by:  Species*2 + (After_burner_on?1:0)
-static thrust_anim	Thrust_anims[NUM_THRUST_ANIMS];
-char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
-//XSTR:OFF
-	"thruster01", "thruster01a", 
-	"thruster02", "thruster02a", 
-	"thruster03", "thruster03a"
-
-//XSTR:ON
-};
-char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
-//XSTR:OFF
-	"thruster02-01", "thruster02-01a", 
-	"thruster02-02", "thruster02-02a", 
-	"thruster02-03", "thruster02-03a" 
-
-//XSTR:ON
-};
-char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN] = {	
-//XSTR:OFF
-	"thruster03-01", "thruster03-01a", 
-	"thruster03-02", "thruster03-02a", 
-	"thruster03-03", "thruster03-03a" 
-
-//XSTR:ON
-};
-
-// These are indexed by:  Species*2 + (After_burner_on?1:0)
-static thrust_anim	Thrust_glow_anims[NUM_THRUST_GLOW_ANIMS];
-char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN] = {	
-//XSTR:OFF
-	"thrusterglow01", "thrusterglow01a", 
-	"thrusterglow02", "thrusterglow02a", 
-	"thrusterglow03", "thrusterglow03a" 
-//XSTR:ON
-};
-#endif
 
 static int Thrust_anim_inited = 0;
 
@@ -2085,16 +2044,8 @@ int parse_ship(bool replace)
 	}
 	diag_printf ("Ship short name -- %s\n", sip->short_name);
 
-#if defined(MORE_SPECIES)
+	find_and_stuff("$Species:", &sip->species, F_NAME, Species_names, True_NumSpecies, "species names");
 
-	// static alias stuff
-	static char *tspecies_names[MAX_SPECIES_NAMES] = { Species_names[0], Species_names[1], Species_names[2], Species_names[3],
-													   Species_names[4], Species_names[5], Species_names[6], Species_names[7] };
-
-	find_and_stuff("$Species:", &sip->species, F_NAME, tspecies_names, MAX_SPECIES_NAMES, "species names");
-#else
-	find_and_stuff("$Species:", &sip->species, F_NAME, Species_names, MAX_SPECIES_NAMES, "species names");
-#endif
 	diag_printf ("Ship species -- %s\n", Species_names[sip->species]);
 
 	sip->type_str = sip->maneuverability_str = sip->armor_str = sip->manufacturer_str = NULL;
@@ -5868,11 +5819,7 @@ void ship_init_thrusters()
 		num_thrust_anims = NUM_THRUST_ANIMS - 2;
 	#endif
 
-#if defined(MORE_SPECIES)
-	for ( i = 0; i < num_thrust_anims && i < (True_NumSpecies * 2); i++ ) {
-#else
-	for ( i = 0; i < num_thrust_anims; i++ ) {
-#endif
+	for ( i = 0; i < (True_NumSpecies * 2); i++ ) {
 		ta = &Thrust_anims[i];
 		ta->first_frame = bm_load_animation(Thrust_anim_names[i],  &ta->num_frames, &fps, 1);
 		ta->secondary = bm_load(Thrust_secondary_anim_names[i]);
@@ -5892,11 +5839,7 @@ void ship_init_thrusters()
 		num_thrust_glow_anims = NUM_THRUST_GLOW_ANIMS - 2;
 	#endif
 
-#if defined(MORE_SPECIES)
-	for ( i = 0; i < num_thrust_glow_anims && i < (True_NumSpecies * 2); i++ ) {
-#else
-	for ( i = 0; i < num_thrust_glow_anims; i++ ) {
-#endif
+	for ( i = 0; i < (True_NumSpecies * 2); i++ ) {
 		ta = &Thrust_glow_anims[i];
 		ta->num_frames = NOISE_NUM_FRAMES;
 		fps = 15;
@@ -13195,7 +13138,7 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 }
 
 // function to return true if support ships are allowed in the mission for the given object.
-//	In single player, must be friendly and not Shivan.
+//	In single player, must be friendly and not Shivan. (Goober5000 - Shivans can now have support)
 //	In multiplayer -- to be coded by Mark Allender after 5/4/98 -- MK, 5/4/98
 int is_support_allowed(object *objp)
 {
@@ -13240,17 +13183,6 @@ int is_support_allowed(object *objp)
 	if ( Game_mode & GM_NORMAL ) {
 		if (Ships[objp->instance].team != TEAM_FRIENDLY){
 			return 0;
-		}
-
-		switch (Ship_info[Ships[objp->instance].ship_info_index].species) {
-		case SPECIES_TERRAN:
-			break;
-		case SPECIES_VASUDAN:
-			break;
-		case SPECIES_SHIVAN:
-			return 0;
-		case SPECIES_NONE:
-			break;
 		}
 
 		return 1;

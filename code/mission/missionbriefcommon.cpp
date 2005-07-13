@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2005-07-13 00:44:22 $
+ * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.26  2005/06/03 06:39:27  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -285,9 +288,9 @@
 // --------------------------------------------------------------------------------------
 // briefing icons
 // --------------------------------------------------------------------------------------
-hud_frames	Icon_bitmaps[MAX_BRIEF_ICONS][MAX_SPECIES_NAMES];
-hud_anim		Icon_highlight_anims[MAX_BRIEF_ICONS][MAX_SPECIES_NAMES];
-hud_anim		Icon_fade_anims[MAX_BRIEF_ICONS][MAX_SPECIES_NAMES];
+hud_frames	Icon_bitmaps[MAX_BRIEF_ICONS][MAX_SPECIES];
+hud_anim		Icon_highlight_anims[MAX_BRIEF_ICONS][MAX_SPECIES];
+hud_anim		Icon_fade_anims[MAX_BRIEF_ICONS][MAX_SPECIES];
 
 
 // --------------------------------------------------------------------------------------
@@ -772,11 +775,7 @@ void brief_init_icons()
 	int i, idx;
 
 	for (i=0; i<MAX_BRIEF_ICONS ; i++) {
-#if defined(MORE_SPECIES)
-		for(idx=0; idx<MAX_SPECIES_NAMES && idx<True_NumSpecies; idx++){
-#else
-		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
-#endif
+		for(idx=0; idx<True_NumSpecies; idx++){
 			Icon_bitmaps[i][idx].first_frame = -1;
 			Icon_bitmaps[i][idx].num_frames = 0;
 		}
@@ -792,11 +791,7 @@ void brief_init_anims()
 	int i, idx;
 
 	for (i=0; i<MAX_BRIEF_ICONS ; i++) {
-#if defined(MORE_SPECIES)
-		for(idx=0; idx<MAX_SPECIES_NAMES && idx<True_NumSpecies; idx++){
-#else
-		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
-#endif
+		for(idx=0; idx<True_NumSpecies; idx++){
 			Icon_highlight_anims[i][idx].first_frame = -1;
 			Icon_highlight_anims[i][idx].num_frames = 0;
 
@@ -816,11 +811,7 @@ void brief_unload_icons()
 	int				i, idx;
 
 	for ( i = 0; i < MAX_BRIEF_ICONS; i++ ) {
-#if defined(MORE_SPECIES)
-		for(idx=0; idx<MAX_SPECIES_NAMES && idx<True_NumSpecies; idx++){
-#else
-		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
-#endif
+		for(idx=0; idx<True_NumSpecies; idx++){
 			ib = &Icon_bitmaps[i][idx];
 
 			if (ib->first_frame < 0)
@@ -882,11 +873,7 @@ void brief_parse_icon_tbl()
 	int load_this_icon = 0;
 
 	while (required_string_either("#End","$Name:")) {
-#if defined(MORE_SPECIES)
-		for(idx=0; idx<MAX_SPECIES_NAMES && idx<True_NumSpecies; idx++){
-#else
-		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
-#endif
+		for(idx=0; idx<True_NumSpecies; idx++){
 			Assert( num_icons < MAX_BRIEF_ICONS);
 			hf = &Icon_bitmaps[num_icons][idx];
 
@@ -2541,11 +2528,7 @@ void brief_unload_anims()
 	int i, idx;
 	
 	for (i=0; i<MAX_BRIEF_ICONS; i++) {
-#if defined(MORE_SPECIES)
-		for(idx=0; idx<MAX_SPECIES_NAMES && i<True_NumSpecies; idx++){
-#else
-		for(idx=0; idx<MAX_SPECIES_NAMES; idx++){
-#endif
+		for(idx=0; i<True_NumSpecies; idx++){
 			hud_anim_release(&Icon_highlight_anims[i][idx]);
 			hud_anim_release(&Icon_fade_anims[i][idx]);
 		}

@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-06-30 01:48:52 $
+ * $Revision: 2.19 $
+ * $Date: 2005-07-13 00:44:22 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/06/30 01:48:52  Goober5000
+ * * NOX'd none.wav
+ * * changed comparisons on none.wav to only look at the first four letters in case
+ *   we don't have an extension or in case some weirdo decides to put none.ogg
+ * * simulated speech pre-empts "beeps" in in-game messages
+ * --Goober5000
+ *
  * Revision 2.17  2005/06/30 00:48:02  Goober5000
  * if game_busy() is in gamesnd_preload_common_sounds() then it should
  * also be in gamesnd_load_gameplay_sounds() I would expect
@@ -251,7 +258,7 @@ int *Snds_iface_handle = NULL;
 void gamesnd_add_sound_slot(int type, int num);
 
 // flyby sounds - 2 for each species (fighter and bomber flybys)
-game_snd Snds_flyby[MAX_SPECIES_NAMES][2];
+game_snd Snds_flyby[MAX_SPECIES][2];
 
 
 void gamesnd_play_iface(int n)
@@ -476,7 +483,6 @@ void gamesnd_parse_soundstbl()
 	// parse flyby sound section	
 	required_string("#Flyby Sounds Start");
 
-#if defined(MORE_SPECIES)
 	char cstrtemp[SPECIES_NAME_MAXLEN+3];
 
 	for (int i = 0; i < True_NumSpecies; i++)
@@ -485,18 +491,6 @@ void gamesnd_parse_soundstbl()
 		gamesnd_parse_line(&Snds_flyby[i][0], cstrtemp);
 		gamesnd_parse_line(&Snds_flyby[i][1], cstrtemp);	
 	}
-#else
-	// read 2 terran sounds
-	gamesnd_parse_line(&Snds_flyby[SPECIES_TERRAN][0], "$Terran:");
-	gamesnd_parse_line(&Snds_flyby[SPECIES_TERRAN][1], "$Terran:");
-
-	// 2 vasudan sounds
-	gamesnd_parse_line(&Snds_flyby[SPECIES_VASUDAN][0], "$Vasudan:");
-	gamesnd_parse_line(&Snds_flyby[SPECIES_VASUDAN][1], "$Vasudan:");
-
-	gamesnd_parse_line(&Snds_flyby[SPECIES_SHIVAN][0], "$Shivan:");
-	gamesnd_parse_line(&Snds_flyby[SPECIES_SHIVAN][1], "$Shivan:");
-#endif
 	
 	required_string("#Flyby Sounds End");
 

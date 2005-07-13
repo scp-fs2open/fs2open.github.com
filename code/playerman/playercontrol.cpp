@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-04-05 05:53:23 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2005-07-13 00:44:23 $
+ * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.26  2005/03/27 12:28:34  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -2014,23 +2017,19 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 		return;
 	}
 
-	#ifndef NDEBUG
-	if ( Show_killer_weapon ) {
-		killer_species = SPECIES_TERRAN;
-	}
-	#endif
-
-	switch ( killer_species ) {
-	case SPECIES_TERRAN:
+#ifndef NDEBUG
+	if ( Show_killer_weapon || (killer_species == Ship_info[Player_ship->ship_info_index].species) ) {
+#else
+	if (killer_species == Ship_info[Player_ship->ship_info_index].species) {
+#endif
 		strcpy(weapon_name, Weapon_info[weapon_info_index].name);
 		break;
-	default:
+	} else {
 		if ( Weapon_info[weapon_info_index].subtype == WP_MISSILE ) {
 			strcpy(weapon_name, XSTR( "missile", 90));
 		} else {
 			strcpy(weapon_name, XSTR( "laser fire", 91));
 		}
-		break;
 	}
 }
 
