@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 02:30:52 $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-13 02:50:50 $
  * $Author: Goober5000 $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 02:30:52  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.11  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -303,7 +307,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 #ifndef CONTROLS_CONFIG_H
 #define CONTROLS_CONFIG_H
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.18 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2005-07-13 02:50:47 $
+ * $Author: Goober5000 $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.17  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -155,7 +158,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _GRD3D_H
 #define _GRD3D_H
 

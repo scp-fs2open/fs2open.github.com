@@ -11,12 +11,20 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.h $
- * $Revision: 1.10 $
- * $Date: 2005-06-29 18:49:37 $
- * $Author: taylor $
+ * $Revision: 1.11 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/06/29 18:49:37  taylor
+ * various FS2NetD fixes:
+ *  - replace timer stuff with something that more accurately works cross-platform and without being affected by load
+ *  - better sanity checking for the server list
+ *  - working Linux compatibility that's not dog slow
+ *  - when calling DataReady() make sure that the data is properly valid
+ *  - fix messed up cvs merge cleanup from the Linux merge which did nasty things
+ *
  * Revision 1.9  2005/06/21 00:12:11  taylor
  * add virtual destructor so that GCC4 can shut up
  *
@@ -48,7 +56,6 @@
 #if !defined(__TCP_SOCKET_H_)
 #define __TCP_SOCKET_H_
 
-#include "PreProcDefines.h"
 // Enable Multithread
 //#define MT_TCP_Socket
 

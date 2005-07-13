@@ -7,7 +7,6 @@
  *
 */ 
 
-#include "PreProcDefines.h"
 #ifndef _GRD3DBMPMAN_H
 #define _GRD3DBMPMAN_H
 

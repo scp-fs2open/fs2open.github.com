@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.h $
- * $Revision: 2.3 $
- * $Date: 2005-04-12 05:26:36 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-13 02:50:52 $
+ * $Author: Goober5000 $
  *
  * Header file for program exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/04/12 05:26:36  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.2  2004/08/11 05:06:22  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -45,7 +49,6 @@
 #ifndef __EXCEPTION_HANDLER_H
 #define __EXCEPTION_HANDLER_H
 
-#include "PreProcDefines.h"
 
 
 // --------------------

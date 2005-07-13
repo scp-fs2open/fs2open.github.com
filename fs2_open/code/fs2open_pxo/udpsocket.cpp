@@ -10,12 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-03-02 21:18:18 $
- * $Author: taylor $
+ * $Revision: 1.10 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/03/02 21:18:18  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 1.8  2005/02/04 20:06:03  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -45,7 +50,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

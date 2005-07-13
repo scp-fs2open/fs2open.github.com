@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-13 02:50:47 $
+ * $Author: Goober5000 $
  *
  * header file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:24  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2002/08/01 01:41:05  penguin
  * The big include file move
  *
@@ -95,7 +98,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FONT_H
 #define _FONT_H
 

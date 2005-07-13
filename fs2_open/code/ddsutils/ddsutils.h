@@ -4,7 +4,6 @@
 #ifndef __DDS_H
 #define __DDS_H
 
-#include "PreProcDefines.h"
 #include "globalincs/pstypes.h"
 #ifdef _WIN32
 #include "directx/vddraw.h"

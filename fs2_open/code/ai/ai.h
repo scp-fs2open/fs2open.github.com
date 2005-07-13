@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.2 $
- * $Date: 2005-04-05 05:53:13 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2005-07-13 02:50:48 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/04/05 05:53:13  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.1  2005/03/25 06:45:12  wmcoolmon
  * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
  *
@@ -240,7 +243,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _AI_H
 #define _AI_H
 

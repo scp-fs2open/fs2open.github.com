@@ -7,7 +7,6 @@
  *
  ***************************************************************************/
 
-#include "PreProcDefines.h"
 
 #ifndef __DVP_INCLUDED__
 #define __DVP_INCLUDED__

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.h $
- * $Revision: 1.1 $
- * $Date: 2005-03-25 06:45:13 $
- * $Author: wmcoolmon $
+ * $Revision: 1.2 $
+ * $Date: 2005-07-13 02:50:48 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/03/25 06:45:13  wmcoolmon
+ * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
+ *
  * Revision 2.6  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -161,7 +164,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _AIGOALS_H
 #define _AIGOALS_H
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.h $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:14 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 02:50:48 $
+ * $Author: Goober5000 $
  *
  * Header file for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 05:53:14  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.4  2004/08/11 05:06:18  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -115,7 +118,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __ANIMPLAY_H__
 #define __ANIMPLAY_H__
 

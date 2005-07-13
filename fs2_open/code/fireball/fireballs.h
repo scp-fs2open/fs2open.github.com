@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.13 $
- * $Date: 2005-04-05 05:53:15 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-13 02:50:52 $
+ * $Author: Goober5000 $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/04/05 05:53:15  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.12  2005/03/19 18:02:33  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -206,7 +209,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FIREBALLS_H
 #define _FIREBALLS_H
 

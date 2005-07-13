@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
- * $Revision: 1.6 $
- * $Date: 2005-02-04 20:06:03 $
- * $Author: taylor $
+ * $Revision: 1.7 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/02/04 20:06:03  taylor
+ * merge with Linux/OSX tree - p0204-2
+ *
  * Revision 1.5  2004/08/11 05:06:23  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -34,7 +37,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 #if !defined(__protocol_h_)
 #define __protocol_h_
 

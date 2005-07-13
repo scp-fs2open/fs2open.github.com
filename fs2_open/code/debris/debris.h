@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.h $
- * $Revision: 2.4 $
- * $Date: 2005-04-28 05:29:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 02:50:51 $
+ * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/04/28 05:29:29  wmcoolmon
+ * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
+ *
  * Revision 2.3  2005/04/05 05:53:15  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -151,7 +154,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _DEBRIS_H
 #define _DEBRIS_H
 

@@ -10,12 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-03-02 21:18:18 $
- * $Author: taylor $
+ * $Revision: 1.21 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/03/02 21:18:18  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 1.19  2005/02/23 13:17:04  taylor
  * few more compiler warning fixes (didn't mean to commit iostream.h change)
  * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
@@ -79,7 +84,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.9 $
- * $Date: 2005-01-31 23:27:52 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-13 02:50:51 $
+ * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/01/31 23:27:52  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.8  2004/08/11 05:06:23  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -154,7 +157,6 @@
  */
 
 
-#include "PreProcDefines.h"
 #ifndef __EVENT_MUSIC_H__
 #define __EVENT_MUSIC_H__
 

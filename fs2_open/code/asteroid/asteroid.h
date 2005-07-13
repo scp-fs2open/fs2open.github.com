@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.8 $
- * $Date: 2005-07-13 02:01:28 $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-13 02:50:48 $
  * $Author: Goober5000 $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/13 02:01:28  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.7  2005/07/13 00:44:20  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -146,7 +150,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __ASTEROID_H__
 #define __ASTEROID_H__
 

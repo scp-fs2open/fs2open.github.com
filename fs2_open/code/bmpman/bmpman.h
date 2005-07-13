@@ -10,13 +10,22 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.23 $
- * $Date: 2005-06-19 02:28:55 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/06/19 02:28:55  taylor
+ * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
+ * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
+ * NaN check to catch shards-of-death and prevent hitting an Assert() (Jens Granseuer)
+ * fix jumpnode code to catch model errors and close a memory leak
+ * make the call to bm_unload_all() after model_free_all() since we will get bmpman screwups otherwise
+ * don't show hardware sound RAM when using OpenAL build, it will always be 0
+ * print top-right memory figures in debug builds slighly further over when 1024+ res
+ *
  * Revision 2.22  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -330,7 +339,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _BMPMAN_H
 #define _BMPMAN_H
 

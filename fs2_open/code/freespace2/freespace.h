@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.6 $
- * $Date: 2005-06-03 06:39:26 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-13 02:50:52 $
+ * $Author: Goober5000 $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/06/03 06:39:26  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.5  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -161,7 +164,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FREESPACE_H
 #define _FREESPACE_H
 #ifndef STAMPER_PROGRAM							// because of all the dependancies, I have to do this...yuck!!!  MWA 7/21/97

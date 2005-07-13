@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.h $
- * $Revision: 2.11 $
- * $Date: 2005-07-11 10:13:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 02:50:48 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/11 10:13:09  wmcoolmon
+ * Bumped Fs2_open version to 3.6.7
+ *
  * Revision 2.10  2004/12/22 21:47:37  taylor
  * version bump to 3.6.5
  *
@@ -127,7 +130,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __FS2_VERSIONING_HEADER_FILE
 #define __FS2_VERSIONING_HEADER_FILE
 

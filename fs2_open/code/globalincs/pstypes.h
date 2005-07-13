@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.30 $
- * $Date: 2005-05-12 17:49:11 $
- * $Author: taylor $
- * $Revision: 2.30 $
- * $Date: 2005-05-12 17:49:11 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2005-07-13 02:50:48 $
+ * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2005-07-13 02:50:48 $
+ * $Author: Goober5000 $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/05/12 17:49:11  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.29  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -351,7 +355,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 #ifndef _PSTYPES_H
 #define _PSTYPES_H
 

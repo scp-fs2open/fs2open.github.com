@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:19 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-07-13 02:50:49 $
+ * $Author: Goober5000 $
  *
  * External def's for CfileArchive.cpp.  This should only be used 
  * internally by cfile stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:19  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2002/07/07 19:55:58  penguin
  * Back-port to MSVC
  *
@@ -51,7 +54,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _CFILEARCHIVE_H
 #define _CFILEARCHIVE_H
 
