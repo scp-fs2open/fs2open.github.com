@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.63 $
- * $Date: 2005-07-12 22:14:40 $
+ * $Revision: 2.64 $
+ * $Date: 2005-07-13 03:26:00 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/07/12 22:14:40  Goober5000
+ * removed DECALS_ENABLED
+ * --Goober5000
+ *
  * Revision 2.62  2005/06/21 00:20:24  taylor
  * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
  *   and this makes it so much easier to realize that
@@ -546,7 +550,6 @@
 #ifndef _MODEL_H
 #define _MODEL_H
 
-#include "PreProcDefines.h"
 
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH

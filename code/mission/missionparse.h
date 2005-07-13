@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.63 $
+ * $Revision: 2.64 $
  * $Author: Goober5000 $
- * $Date: 2005-07-13 02:01:29 $
+ * $Date: 2005-07-13 03:25:59 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/07/13 02:01:29  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.62  2005/07/13 00:44:23  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -430,7 +434,6 @@
  * 
  */
 
-#include "PreProcDefines.h"
 #ifndef _PARSE_H
 #define _PARSE_H
 

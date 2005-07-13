@@ -9,10 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.h $
- * $Revision: 2.4 $Date: 2005/02/04 10:12:30 $
- * $Author: taylor $
+ * $Revision: 2.5 $Date: 2005/03/10 08:00:08 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/03/10 08:00:08  taylor
+ * change min/max to MIN/MAX to fix GCC problems
+ * add lab stuff to Makefile
+ * build unbreakage for everything that's not MSVC++ 6
+ * lots of warning fixes
+ * fix OpenGL rendering problem with ship insignias
+ * no Warnings() in non-debug mode for Linux (like Windows)
+ * some campaign savefile fixage to stop reverting everyones data
+ *
  * Revision 2.3  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -62,7 +71,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 #ifndef _PLAYER_SELECT_MENU_HEADER_FILE
 #define _PLAYER_SELECT_MENU_HEADER_FILE
 

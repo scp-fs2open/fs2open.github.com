@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.29 $
+ * $Date: 2005-07-13 03:25:59 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.27  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -260,7 +264,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "mission/missionbriefcommon.h"
 #include "mission/missionparse.h"

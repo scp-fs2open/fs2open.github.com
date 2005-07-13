@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.16 $
- * $Date: 2005-07-02 19:44:59 $
- * $Author: taylor $
+ * $Revision: 1.17 $
+ * $Date: 2005-07-13 03:25:58 $
+ * $Author: Goober5000 $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/07/02 19:44:59  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 1.15  2005/04/12 05:26:37  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -72,7 +75,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

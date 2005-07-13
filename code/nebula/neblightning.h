@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.h $
- * $Revision: 2.3 $
- * $Date: 2005-04-05 05:53:20 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-13 03:26:00 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.2  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -44,7 +47,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __FS2_NEBULA_LIGHTNING_HEADER_FILE
 #define __FS2_NEBULA_LIGHTNING_HEADER_FILE
 

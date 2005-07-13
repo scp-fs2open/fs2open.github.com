@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.96 $
- * $Date: 2005-07-13 02:32:22 $
+ * $Revision: 2.97 $
+ * $Date: 2005-07-13 03:25:59 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2005/07/13 02:32:22  Goober5000
+ * this seems like it should be handled by the code already...
+ * let's remove it and see what happens :p
+ * --Goober5000
+ *
  * Revision 2.95  2005/07/13 02:30:53  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -728,7 +733,6 @@
 #include <stdarg.h>
 #include <setjmp.h>
 
-#include "PreProcDefines.h"
 
 #include "mission/missionparse.h"
 #include "parse/parselo.h"

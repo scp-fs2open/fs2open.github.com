@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-07-07 16:36:57 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2005-07-13 03:25:58 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/07/07 16:36:57  taylor
+ * various compiler warning fixes (some of these from dizzy)
+ *
  * Revision 2.36  2005/07/02 20:57:48  taylor
  * bah, forgot to ever check debriefings
  *
@@ -463,7 +466,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "missionui/missiondebrief.h"
 #include "missionui/missionscreencommon.h"

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.9 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-13 03:25:59 $
  * $Author: Goober5000 $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.8  2004/12/10 17:21:00  taylor
  * dymanic allocation of Personas
  *
@@ -233,7 +237,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _MISSIONMESSAGE_H
 #define _MISSIONMESSAGE_H
 

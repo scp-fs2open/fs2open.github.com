@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-07-13 02:01:29 $
+ * $Revision: 2.40 $
+ * $Date: 2005-07-13 03:25:59 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/07/13 02:01:29  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.38  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -531,7 +535,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"

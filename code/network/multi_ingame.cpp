@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-07-07 16:36:58 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-07-13 03:25:59 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/07/07 16:36:58  taylor
+ * various compiler warning fixes (some of these from dizzy)
+ *
  * Revision 2.22  2005/07/02 19:45:00  taylor
  * ton of non-standard resolution fixes
  *
@@ -382,7 +385,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

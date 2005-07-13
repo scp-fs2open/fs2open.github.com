@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.6 $
- * $Date: 2005-06-21 00:20:24 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-13 03:26:00 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/06/21 00:20:24  taylor
+ * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
+ *   and this makes it so much easier to realize that
+ * properly deal with the fact that objnum can be -1 in  model_really_render()
+ * add NULL check to neb2_get_fog_values() so that it can just send back defaults if objp is NULL
+ * small compiler warning fix for neb code
+ *
  * Revision 2.5  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -70,7 +77,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FS2_NEB2_EFFECT_HEADER_FILE
 #define _FS2_NEB2_EFFECT_HEADER_FILE
 
