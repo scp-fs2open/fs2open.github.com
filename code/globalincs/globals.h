@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.13 $
- * $Date: 2005-07-13 02:01:29 $
+ * $Revision: 1.14 $
+ * $Date: 2005-07-13 02:08:26 $
  * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/07/13 02:01:29  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 1.12  2005/05/11 08:10:20  Goober5000
  * variables should now work properly in messages that are sent multiple times
  * --Goober5000
@@ -120,6 +124,12 @@
 #else
 #define MAX_SHIP_TYPES		130
 #endif
+
+// INF_BUILD error check...
+#if defined(INF_BUILD) && !defined(NO_NETWORK)
+#error "Networking *must* be disabled with Inferno builds.  Please #define NO_NETWORK."
+#endif
+
 
 #define MAX_WINGS				25
 
