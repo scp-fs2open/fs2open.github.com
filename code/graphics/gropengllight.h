@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.5 $
- * $Date: 2005-04-12 02:04:56 $
- * $Author: phreak $
+ * $Revision: 1.6 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/04/12 02:04:56  phreak
+ * gr_set_ambient_light() function for the ambient light sliders in FRED
+ *
  * Revision 1.4  2005/02/04 10:12:29  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -42,7 +45,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _GROPENGLLIGHT_H
 #define _GROPENGLLIGHT_H
 

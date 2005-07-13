@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.10 $
- * $Date: 2005-06-19 02:37:02 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/06/19 02:37:02  taylor
+ * general cleanup, remove some old code
+ * speed up gr_opengl_flip() just a tad
+ * inverted gamma slider fix that Sticks made to D3D
+ * possible fix for ATI green screens
+ * move opengl_check_for_errors() out of gropentnl so we can use it everywhere
+ * fix logged OGL info from debug builds to be a little more readable
+ * if an extension is found but required function is not then fail
+ * try to optimize glDrawRangeElements so we are not rendering more than the card is optimized for
+ * some 2d matrix usage checks
+ *
  * Revision 2.9  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -90,7 +101,6 @@
 #ifndef _GROPENGL_H
 #define _GROPENGL_H
 
-#include "PreProcDefines.h"
 
 
 #ifdef _WIN32

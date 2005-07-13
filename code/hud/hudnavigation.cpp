@@ -4,11 +4,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.13 $
- * $Date: 2005-07-13 02:30:53 $
+ * $Revision: 1.14 $
+ * $Date: 2005-07-13 03:15:52 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/07/13 02:30:53  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 1.12  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -54,7 +58,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 
 #include "hud/hudnavigation.h"
 #include "autopilot/autopilot.h"

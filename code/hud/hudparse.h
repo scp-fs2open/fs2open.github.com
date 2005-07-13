@@ -1,13 +1,17 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.h $
- * $Revision: 2.18 $
- * $Date: 2005-04-12 05:26:36 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * Header file for HUD tbl parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/04/12 05:26:36  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  *
  * $NoKeywords: $
  */
@@ -19,7 +23,6 @@
 //Define or undefine NEW_HUD here so you don't have to recompile everything.
 //#define NEW_HUD
 
-#include "PreProcDefines.h"
 #include "globalincs/globals.h"
 #include "hud/hudescort.h"
 #include "ai/ai.h"

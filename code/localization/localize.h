@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.h $
- * $Revision: 2.5 $
- * $Date: 2005-05-18 14:01:31 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/05/18 14:01:31  taylor
+ * some basic Polish language support from the icculus.org version (Janusz Dziemidowicz)
+ *
  * Revision 2.4  2004/08/11 05:06:27  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -68,7 +71,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
 #define __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
 

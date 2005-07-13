@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-05-30 23:41:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.33 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/05/30 23:41:36  wmcoolmon
+ * This should fix redmenace's Assert...I'm not sure why it hasn't been triggering every time a shield is at full strength.
+ *
  * Revision 2.31  2005/04/12 05:26:36  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -291,7 +294,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "hud/hudshield.h"
 #include "graphics/2d.h"

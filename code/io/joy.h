@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy.h $
- * $Revision: 2.2 $
- * $Date: 2005-04-17 05:38:28 $
- * $Author: taylor $
+ * $Revision: 2.3 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * Include file for joystick stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/04/17 05:38:28  taylor
+ * updated Linux joystick code that's a bit less insane speed wise
+ * remove ability to build without joystick support, no reason to keep it around
+ * fix unusable warning flag with libjpeg building
+ *
  * Revision 2.1  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -87,7 +92,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __JOY_H__
 #define __JOY_H__
 

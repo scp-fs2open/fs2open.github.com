@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.h $
- * $Revision: 1.5 $
- * $Date: 2005-02-04 10:12:30 $
- * $Author: taylor $
+ * $Revision: 1.6 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * header for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/02/04 10:12:30  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 1.4  2004/10/31 22:00:56  taylor
  * new bmpman merge support, add PreProcDefines.h a few new places
  *
@@ -29,7 +32,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _JPEGUTILS_H
 #define _JPEGUTILS_H
 

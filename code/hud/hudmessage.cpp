@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-02 19:42:15 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/02 19:42:15  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.12  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -444,7 +447,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "PreProcDefines.h"
 
 #include "hud/hud.h"
 #include "hud/hudmessage.h"

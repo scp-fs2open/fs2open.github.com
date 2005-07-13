@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.h $
- * $Revision: 2.2 $
- * $Date: 2005-03-24 23:36:13 $
- * $Author: taylor $
+ * $Revision: 2.3 $
+ * $Date: 2005-07-13 03:15:50 $
+ * $Author: Goober5000 $
  *
  * Low-level floating point math macros and routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/03/24 23:36:13  taylor
+ * fix compiler warnings with mismatched types and unused variables
+ * cleanup some debug messages so they can be turned off if needed
+ * get rid of extra strstr() check for thrusters since it should never get that far anyway
+ * page_in/page_out of model glows should be better now
+ * removed a bunch of unneeded casts and get type specific math functions right
+ *
  * Revision 2.1  2004/08/11 05:06:27  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -64,7 +71,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FLOATING_H
 #define _FLOATING_H
 

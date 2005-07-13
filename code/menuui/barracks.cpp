@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-07-02 19:43:53 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2005-07-13 03:15:50 $
+ * $Author: Goober5000 $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/07/02 19:43:53  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.21  2005/06/03 06:41:37  taylor
  * eek... fix wrong description of changes
  *
@@ -173,7 +176,6 @@
 
 #include <ctype.h>
 
-#include "PreProcDefines.h"
 
 #include "menuui/barracks.h"
 #include "playerman/managepilot.h"

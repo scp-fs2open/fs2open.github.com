@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.126 $
- * $Date: 2005-07-07 16:36:57 $
- * $Author: taylor $
+ * $Revision: 2.127 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2005/07/07 16:36:57  taylor
+ * various compiler warning fixes (some of these from dizzy)
+ *
  * Revision 2.125  2005/07/02 19:40:48  taylor
  * ton of non-standard resolution fixes
  * make gr_cross_fade() work properly in OGL
@@ -796,7 +799,6 @@
 #include <windowsx.h>
 #endif
 
-#include "PreProcDefines.h"
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"

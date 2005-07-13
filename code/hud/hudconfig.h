@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.h $
- * $Revision: 2.4 $
- * $Date: 2004-08-11 05:06:25 $
- * $Author: Kazan $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  * Header file for HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2004/08/11 05:06:25  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.3  2004/03/05 09:02:03  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -143,7 +146,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 #ifndef _HUDCONFIG_H
 #define _HUDCONFIG_H
 

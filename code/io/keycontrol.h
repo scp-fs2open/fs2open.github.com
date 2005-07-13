@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.h $
- * $Revision: 2.3 $
- * $Date: 2005-03-03 06:05:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * Header file for managing keyboard/joystick/mouse button presses
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/03/03 06:05:28  wmcoolmon
+ * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
+ *
  * Revision 2.2  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -57,7 +60,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __FREESPACE_KEYCONTROL_H__
 #define __FREESPACE_KEYCONTROL_H__
 

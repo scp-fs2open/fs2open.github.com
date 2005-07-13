@@ -10,13 +10,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.11 $
- * $Date: 2005-06-19 02:37:02 $
- * $Author: taylor $
+ * $Revision: 1.12 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/06/19 02:37:02  taylor
+ * general cleanup, remove some old code
+ * speed up gr_opengl_flip() just a tad
+ * inverted gamma slider fix that Sticks made to D3D
+ * possible fix for ATI green screens
+ * move opengl_check_for_errors() out of gropentnl so we can use it everywhere
+ * fix logged OGL info from debug builds to be a little more readable
+ * if an extension is found but required function is not then fail
+ * try to optimize glDrawRangeElements so we are not rendering more than the card is optimized for
+ * some 2d matrix usage checks
+ *
  * Revision 1.10  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -70,7 +81,6 @@
 #ifndef _GROPENGLTNL_H
 #define _GROPENGLTNL_H
 
-#include "PreProcDefines.h"
 
 #include "globalincs/pstypes.h"
 
