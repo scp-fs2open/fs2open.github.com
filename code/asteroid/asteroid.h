@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 00:44:20 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-13 02:01:28 $
  * $Author: Goober5000 $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 00:44:20  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.6  2005/04/05 05:53:14  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -161,7 +165,7 @@ struct collision_info_struct;
 
 // This is for the asteroid types plus DEBRIS_X_Y
 // (X is each species and Y is SMALL, MEDIUM, and LARGE)
-#define	MAX_DEBRIS_TYPES		((True_NumSpecies + 1) * 3)
+#define	MAX_DEBRIS_TYPES	((MAX_SPECIES + 1) * 3)
 
 
 // Data structure to track the active asteroids

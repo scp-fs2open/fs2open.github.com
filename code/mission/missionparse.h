@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.62 $
+ * $Revision: 2.63 $
  * $Author: Goober5000 $
- * $Date: 2005-07-13 00:44:23 $
+ * $Date: 2005-07-13 02:01:29 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/07/13 00:44:23  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.61  2005/05/11 22:15:26  phreak
  * added mission flag that will not show enemy wing names, just the ship class.
  *
@@ -583,18 +587,6 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
-//-------------------------------------------
-// Kazan: Extended Species Support
-//-------------------------------------------
-
-// some defines moved here since it's needed in several modules
-#define MAX_SHIELD_ANIMNAME_LEN	64
-#define MAX_SHIELD_ANIMS MAX_SPECIES
-#define SPECIES_NAME_MAXLEN		32
-#define MAX_DEBRIS_TNAME_LEN	64
-
-#define	MAX_SPECIES		8
-
 /* -- it's dynamic now - taylor
 #ifdef FS2_DEMO
 	#define MAX_SUBSYS_STATUS		125
@@ -619,7 +611,7 @@ extern char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 
-extern char Species_names[MAX_SPECIES][SPECIES_NAME_MAXLEN+1];
+extern char Species_names[MAX_SPECIES][NAME_LENGTH];
 
 extern char *Reinforcement_type_names[];
 extern char *Object_flags[];

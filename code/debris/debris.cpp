@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-13 00:44:21 $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-13 02:01:28 $
  * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/13 00:44:21  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.13  2005/04/05 05:53:15  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -273,7 +277,6 @@
 #include "render/3d.h"
 #include "fireball/fireballs.h"
 #include "radar/radar.h"
-#include "mission/missionparse.h"		// For MAX_SPECIES
 #include "gamesnd/gamesnd.h"
 #include "object/objectsnd.h"
 #include "globalincs/linklist.h"
@@ -312,7 +315,7 @@ int Debris_model = -1;
 int Debris_vaporize_model = -1;
 int Debris_num_submodels = 0;
 
-char Debris_texture_files[MAX_SPECIES][MAX_DEBRIS_TNAME_LEN+1];
+char Debris_texture_files[MAX_SPECIES][FILESPEC_LENGTH];
 
 
 int Debris_textures[MAX_SPECIES];

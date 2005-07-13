@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.12 $
- * $Date: 2005-05-11 08:10:20 $
+ * $Revision: 1.13 $
+ * $Date: 2005-07-13 02:01:29 $
  * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/05/11 08:10:20  Goober5000
+ * variables should now work properly in messages that are sent multiple times
+ * --Goober5000
+ *
  * Revision 1.11  2005/05/08 20:28:29  wmcoolmon
  * Dynamically allocated medals
  *
@@ -88,6 +92,9 @@
 // from player.h
 #define CALLSIGN_LEN					28		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN
 #define SHORT_CALLSIGN_PIXEL_W	80		// max width of short_callsign[] in pixels
+
+// from missionparse.h
+#define	MAX_SPECIES		8
 
 
 // from ship.h

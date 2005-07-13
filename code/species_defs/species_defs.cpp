@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.13 $
- * $Date: 2005-07-13 00:44:24 $
+ * $Revision: 1.14 $
+ * $Date: 2005-07-13 02:01:30 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/07/13 00:44:24  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 1.12  2005/01/25 23:32:46  Goober5000
  * species will now load from a default table instead of being initialized via code
  * --Goober5000
@@ -76,9 +80,9 @@
 int True_NumSpecies = 3;
 
 // manually extern everything here - because it's not all needed throughout the entire system
-extern shield_ani Shield_ani[MAX_SHIELD_ANIMS];
-extern char Species_names[MAX_SPECIES][SPECIES_NAME_MAXLEN+1];
-extern char Debris_texture_files[MAX_SPECIES][MAX_DEBRIS_TNAME_LEN+1];
+extern shield_ani Shield_ani[MAX_SPECIES];
+extern char Species_names[MAX_SPECIES][NAME_LENGTH];
+extern char Debris_texture_files[MAX_SPECIES][FILESPEC_LENGTH];
 extern char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
 extern char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
 extern char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
@@ -165,15 +169,15 @@ $AwacsMultiplier: 1.50							\n\
 
 void Init_Species_Definitions()
 {
-	memset(Shield_ani,					0, MAX_SHIELD_ANIMS * sizeof(shield_ani));
-	memset(Species_names,				0, MAX_SHIELD_ANIMS * (SPECIES_NAME_MAXLEN+1));
-	memset(Debris_texture_files,		0, MAX_SHIELD_ANIMS * (MAX_DEBRIS_TNAME_LEN+1));
+	memset(Shield_ani,					0, MAX_SPECIES * sizeof(shield_ani));
+	memset(Species_names,				0, MAX_SPECIES * (NAME_LENGTH));
+	memset(Debris_texture_files,		0, MAX_SPECIES * (FILESPEC_LENGTH));
 	memset(Thrust_anim_names,			0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
 	memset(Thrust_secondary_anim_names, 0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
 	memset(Thrust_tertiary_anim_names,	0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
 	memset(Thrust_glow_anim_names,		0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
 
-	char cstrtemp[MAX_SHIELD_ANIMNAME_LEN+1];
+	char cstrtemp[MAX_FILENAME_LEN+1];
 
 	// Goober5000 - condensed check for table file
 	CFILE *sdt = cfopen("species_defs.tbl", "rb");
@@ -195,7 +199,7 @@ void Init_Species_Definitions()
 	required_string("$NumSpecies:");
 	stuff_int(&True_NumSpecies);
 
-	ASSERT(True_NumSpecies < MAX_SPECIES);
+	Assert(True_NumSpecies < MAX_SPECIES);
 
 	int thrust_index;
 
@@ -203,16 +207,16 @@ void Init_Species_Definitions()
 	{
 		// Start Species - Get its name
 		required_string("$Species_Name:");
-		stuff_string(Species_names[i],								F_NAME, NULL, SPECIES_NAME_MAXLEN);
+		stuff_string(Species_names[i],								F_NAME, NULL, NAME_LENGTH);
 
 		// Get its Debris Texture
 		required_string("+Debris_Texture:");
-		stuff_string(Debris_texture_files[i],						F_NAME, NULL, MAX_DEBRIS_TNAME_LEN);
+		stuff_string(Debris_texture_files[i],						F_NAME, NULL, FILESPEC_LENGTH);
 
 		// Shield Hit Animation
-		memset(cstrtemp, 0, MAX_SHIELD_ANIMNAME_LEN+1);
+		memset(cstrtemp, 0, MAX_FILENAME_LEN+1);
 		required_string("+Shield_Hit_ani:");
-		stuff_string(cstrtemp,										F_NAME, NULL, MAX_SHIELD_ANIMNAME_LEN);
+		stuff_string(cstrtemp,										F_NAME, NULL, MAX_FILENAME_LEN);
 		strcpy(Shield_ani[i].filename, cstrtemp);
 
 		// Thruster Anims

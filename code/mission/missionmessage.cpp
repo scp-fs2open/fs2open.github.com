@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.39 $
+ * $Date: 2005-07-13 02:01:29 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.37  2005/06/30 02:36:16  Goober5000
  * the message queue now waits for simulated speech to finish
  * --Goober5000
@@ -767,11 +771,11 @@ void persona_parse()
 		}
 	}
 
-	char cstrtemp[SPECIES_NAME_MAXLEN+1];
-	memset(cstrtemp, 0, SPECIES_NAME_MAXLEN+1);
+	char cstrtemp[NAME_LENGTH];
+	memset(cstrtemp, 0, NAME_LENGTH);
 	if ( optional_string("+") )
 	{
-		stuff_string(cstrtemp, F_NAME, NULL, SPECIES_NAME_MAXLEN);
+		stuff_string(cstrtemp, F_NAME, NULL, NAME_LENGTH);
 
 		for (int j = 0; j < True_NumSpecies; j++)
 		{

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-07-13 00:44:21 $
+ * $Revision: 2.30 $
+ * $Date: 2005-07-13 02:01:30 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/07/13 00:44:21  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.28  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -337,27 +341,7 @@ int	Num_tris;								//	Number of triangles in current shield.  Would be a local
 
 shield_hit	Shield_hits[MAX_SHIELD_HITS];
 
-
-
-//XSTR:OFF
-
-
-
-shield_ani Shield_ani[MAX_SHIELD_ANIMS];
-
-/*
-shield_ani Shield_ani[MAX_SHIELD_ANIMS] = {
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-	{ "shieldhit01a", -1, -1 },
-};*/
-
-//XSTR:ON
+shield_ani Shield_ani[MAX_SPECIES];
 
 int Shield_bitmaps_loaded = 0;
 
@@ -375,7 +359,7 @@ void load_shield_hit_bitmap()
 
 	Shield_bitmaps_loaded = 1;
 
-	for (i=0; i<MAX_SHIELD_ANIMS && i<True_NumSpecies; i++ )	
+	for (i=0; i<True_NumSpecies; i++ )	
     {
 
 		Shield_ani[i].first_frame = bm_load_animation(Shield_ani[i].filename, &Shield_ani[i].nframes,NULL, 1);
@@ -401,7 +385,7 @@ void shield_hit_page_in()
 		load_shield_hit_bitmap();
 	}
 
-	for (i=0; i<MAX_SHIELD_ANIMS; i++ )	{
+	for (i=0; i<MAX_SPECIES; i++ )	{
 		if ( Shield_ani[i].first_frame > -1 ) {
 			bm_page_in_xparent_texture( Shield_ani[i].first_frame, Shield_ani[i].nframes );
 		}
@@ -739,7 +723,6 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 	n = si->species;		
 	// Do some sanity checking
 	Assert( (n >=0) && (n<MAX_SPECIES));
-	Assert( (n >=0) && (n<MAX_SHIELD_ANIMS));
 
 	// don't try to draw if we don't have an ani
 	if ( Shield_ani[n].first_frame > -1 ) {
