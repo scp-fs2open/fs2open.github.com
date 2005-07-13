@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.32 $
+ * $Date: 2005-07-13 02:01:29 $
  * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.30  2005/07/09 03:02:07  wmcoolmon
  * Added fixes for custom gauges discussed in the recent thread
  *
@@ -122,7 +126,6 @@
 //#include "weapon/emp.h"
 #include "hud/hudparse.h" //Duh.
 #include "ship/ship.h" //for ship struct
-#include "mission/missionparse.h" //for MAX_SPECIES
 #include "graphics/font.h" //for gr_force_fit_string
 
 

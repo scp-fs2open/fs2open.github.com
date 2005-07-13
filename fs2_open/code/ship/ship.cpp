@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.206 $
- * $Date: 2005-07-13 00:44:21 $
+ * $Revision: 2.207 $
+ * $Date: 2005-07-13 02:01:30 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.206  2005/07/13 00:44:21  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.205  2005/07/12 22:14:40  Goober5000
  * removed DECALS_ENABLED
  * --Goober5000
@@ -2044,7 +2048,11 @@ int parse_ship(bool replace)
 	}
 	diag_printf ("Ship short name -- %s\n", sip->short_name);
 
-	find_and_stuff("$Species:", &sip->species, F_NAME, Species_names, True_NumSpecies, "species names");
+	// static alias stuff - stupid, but it seems to be necessary
+	static char *tspecies_names[MAX_SPECIES];
+	for (i = 0; i < True_NumSpecies; i++)
+		tspecies_names[i] = Species_names[i];
+	find_and_stuff("$Species:", &sip->species, F_NAME, tspecies_names, True_NumSpecies, "species names");
 
 	diag_printf ("Ship species -- %s\n", Species_names[sip->species]);
 

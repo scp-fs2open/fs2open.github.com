@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.20 $
+ * $Date: 2005-07-13 02:01:28 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.18  2005/06/30 01:48:52  Goober5000
  * * NOX'd none.wav
  * * changed comparisons on none.wav to only look at the first four letters in case
@@ -483,7 +487,7 @@ void gamesnd_parse_soundstbl()
 	// parse flyby sound section	
 	required_string("#Flyby Sounds Start");
 
-	char cstrtemp[SPECIES_NAME_MAXLEN+3];
+	char cstrtemp[NAME_LENGTH+3];
 
 	for (int i = 0; i < True_NumSpecies; i++)
 	{

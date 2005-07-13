@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.93 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.94 $
+ * $Date: 2005-07-13 02:01:29 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.92  2005/05/12 17:49:14  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -952,7 +956,7 @@ char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
 	"Primary", "Secondary", "Bonus",
 };
 
-char Species_names[MAX_SPECIES][SPECIES_NAME_MAXLEN+1];
+char Species_names[MAX_SPECIES][NAME_LENGTH];
 
 char *Reinforcement_type_names[] = {
 	"Attack/Protect",

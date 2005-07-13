@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-07-13 00:44:23 $
+ * $Revision: 2.29 $
+ * $Date: 2005-07-13 02:01:30 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/07/13 00:44:23  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.27  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -2023,7 +2027,6 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 	if (killer_species == Ship_info[Player_ship->ship_info_index].species) {
 #endif
 		strcpy(weapon_name, Weapon_info[weapon_info_index].name);
-		break;
 	} else {
 		if ( Weapon_info[weapon_info_index].subtype == WP_MISSILE ) {
 			strcpy(weapon_name, XSTR( "missile", 90));

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-13 00:44:23 $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-13 02:01:30 $
  * $Author: Goober5000 $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/13 00:44:23  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.8  2005/04/25 00:28:58  wmcoolmon
  * subsystem sounds
  *
@@ -674,13 +678,11 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp)
 					return;
 				}
 
-				// pick a random species-based sound				
-				int species = Ship_info[Ships[closest_objp->instance].ship_info_index].species;
+				// pick a random species-based sound
+				ship_info *sip = &Ship_info[Ships[closest_objp->instance].ship_info_index];
 
-				int ship_size = 0;	// fighter
-				if(sip->flags & SIF_BOMBER){
-					ship_size = 1;
-				}
+				int species = sip->species;
+				int ship_size = (sip->flags & SIF_BOMBER) ? 1 : 0;
 
 				// play da sound
 				snd_play_3d(&Snds_flyby[species][ship_size], &closest_objp->pos, &View_position);

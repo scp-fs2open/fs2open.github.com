@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.53 $
+ * $Date: 2005-07-13 02:01:29 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.51  2005/04/25 00:23:23  wmcoolmon
  * MAX_SHIP_TYPES > Num_ship_types
  *
@@ -1048,6 +1052,8 @@ int get_next_weapon_looped(int current_weapon, int subtype)
 
 	return current_weapon;
 }
+
+extern int True_NumSpecies;
 
 void process_debug_keys(int k)
 {

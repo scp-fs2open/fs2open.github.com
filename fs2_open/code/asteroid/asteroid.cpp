@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-13 00:44:20 $
+ * $Revision: 2.18 $
+ * $Date: 2005-07-13 02:01:28 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/13 00:44:20  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.16  2005/06/01 09:34:59  taylor
  * newline fix
  *
@@ -2052,8 +2056,11 @@ void asteroid_parse_tbl()
 
 	required_string("#Asteroid Types");
 
+	// total we're expecting
+	int Total_asteroid_types = ((True_NumSpecies + 1) * 3);
+
 	while (required_string_either("#End","$Name:")) {
-		Assert( Num_asteroid_types < MAX_DEBRIS_TYPES );
+		Assert( Num_asteroid_types < Total_asteroid_types );
 		asteroid_parse_section();
 		Num_asteroid_types++;
 	}
@@ -2061,7 +2068,7 @@ void asteroid_parse_tbl()
 	required_string("#End");
 
 	// check all read in
-	Assert(Num_asteroid_types == MAX_DEBRIS_TYPES);
+	Assert(Num_asteroid_types == Total_asteroid_types);
 
 	Asteroid_impact_explosion_ani = -1;
 	required_string("$Impact Explosion:");
