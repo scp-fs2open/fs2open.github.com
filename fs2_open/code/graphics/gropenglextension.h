@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.4 $
- * $Date: 2005-01-21 08:25:14 $
- * $Author: taylor $
+ * $Revision: 1.5 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/01/21 08:25:14  taylor
+ * fill in gr_opengl_set_texture_addressing()
+ * add support for non-power-of-two textures for cards that have it
+ * temporary crash fix from multiple mipmap levels in uncompressed formats
+ *
  * Revision 1.3  2004/10/31 21:45:13  taylor
  * Linux tree merge, single array for VBOs/HTL
  *
@@ -34,7 +39,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _GROPENGLEXT_H
 #define _GROPENGLEXT_H
 

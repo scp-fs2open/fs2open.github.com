@@ -2,14 +2,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.17 $
- * $Date: 2005-04-24 02:38:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #include "graphics/2d.h"
 
 int	gr_stub_make_light(light_data* light, int idx, int priority){return 0;}

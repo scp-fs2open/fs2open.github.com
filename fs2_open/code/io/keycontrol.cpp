@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-07-13 02:30:53 $
+ * $Revision: 2.55 $
+ * $Date: 2005-07-13 03:15:52 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/07/13 02:30:53  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.53  2005/07/13 02:01:29  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -494,7 +498,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"

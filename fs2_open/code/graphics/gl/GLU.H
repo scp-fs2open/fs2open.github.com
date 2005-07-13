@@ -13,7 +13,6 @@ Abstract:
 
 --*/
 
-#include "PreProcDefines.h"
 #ifndef __glu_h__
 #ifndef __GLU_H__
 

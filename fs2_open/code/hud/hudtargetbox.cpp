@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-07-13 00:44:22 $
+ * $Revision: 2.53 $
+ * $Date: 2005-07-13 03:15:52 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/07/13 00:44:22  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.51  2005/05/11 22:15:49  phreak
  * added mission flag that will not show enemy wing names, just the ship class.
  *
@@ -414,7 +418,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "hud/hudtargetbox.h"
 #include "render/3dinternal.h"

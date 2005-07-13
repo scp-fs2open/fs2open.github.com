@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.10 $
- * $Date: 2005-06-09 14:57:38 $
- * $Author: mrduckman $
+ * $Revision: 1.11 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/06/09 14:57:38  mrduckman
+ * Added LIST command and added comment about PRIVMSG for Channels
+ *
  * Revision 1.9  2005/05/02 15:33:17  mrduckman
  * Added /NAMES command (Very needed to know who's in a channel :P)
  *
@@ -49,7 +52,6 @@
  */
 
 
-#include "PreProcDefines.h"
 #if !defined(_IRC_H_)
 #define _IRC_H_
 

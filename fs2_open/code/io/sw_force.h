@@ -26,7 +26,6 @@
         
 ****************************************************************************/
 
-#include "PreProcDefines.h"
 #ifndef _SW_Force_SEEN
 #define _SW_Force_SEEN
 #include <winerror.h>

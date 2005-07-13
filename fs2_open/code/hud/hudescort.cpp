@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-03-27 12:28:33 $
+ * $Revision: 2.23 $
+ * $Date: 2005-07-13 03:15:51 $
  * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/03/27 12:28:33  Goober5000
+ * clarified max hull/shield strength names and added ship guardian thresholds
+ * --Goober5000
+ *
  * Revision 2.21  2005/03/02 21:24:44  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -166,7 +170,6 @@
  */
 
 
-#include "PreProcDefines.h"
 
 #include "object/object.h"
 #include "ship/ship.h"

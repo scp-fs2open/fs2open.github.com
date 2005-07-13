@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.12 $
- * $Date: 2005-04-05 05:53:18 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-13 03:15:53 $
+ * $Author: Goober5000 $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/05 05:53:18  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.11  2005/03/29 06:28:52  wmcoolmon
  * Fixed extern to compile under Linux
  *
@@ -71,7 +74,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __JUMPNODE_H__
 #define __JUMPNODE_H__
 

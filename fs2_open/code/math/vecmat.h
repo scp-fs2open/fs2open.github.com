@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.11 $
- * $Date: 2005-07-07 16:36:57 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 03:15:50 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/07 16:36:57  taylor
+ * various compiler warning fixes (some of these from dizzy)
+ *
  * Revision 2.10  2005/04/15 11:41:27  taylor
  * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
  *
@@ -213,7 +216,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 #ifndef _VECMAT_H
 #define _VECMAT_H
 

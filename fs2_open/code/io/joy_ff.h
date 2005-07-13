@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy_ff.h $
- * $Revision: 2.4 $
- * $Date: 2005-04-17 05:38:28 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * Code for joystick Force Feedback.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/04/17 05:38:28  taylor
+ * updated Linux joystick code that's a bit less insane speed wise
+ * remove ability to build without joystick support, no reason to keep it around
+ * fix unusable warning flag with libjpeg building
+ *
  * Revision 2.3  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -55,7 +60,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __JOY_FF_H__
 #define __JOY_FF_H__
 

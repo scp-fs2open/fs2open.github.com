@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-07-13 02:30:53 $
+ * $Revision: 2.50 $
+ * $Date: 2005-07-13 03:15:51 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/07/13 02:30:53  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.48  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -498,7 +502,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 
 #include "hud/hud.h"
 #include "asteroid/asteroid.h"

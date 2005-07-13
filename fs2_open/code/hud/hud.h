@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.12 $
- * $Date: 2005-02-27 07:07:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/02/27 07:07:47  wmcoolmon
+ * nonstandard res HUD stuff
+ *
  * Revision 2.11  2005/02/13 08:38:54  wmcoolmon
  * nonstandard resolution-friendly function updates
  *
@@ -288,7 +291,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 #ifndef __HUD_H__
 #define __HUD_H__
 

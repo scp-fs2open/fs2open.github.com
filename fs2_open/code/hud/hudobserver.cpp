@@ -9,15 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-03-02 21:18:18 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * $NoKeywords: $
  *
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.63 $
- * $Date: 2005-07-02 19:42:15 $
- * $Author: taylor $
+ * $Revision: 2.64 $
+ * $Date: 2005-07-13 03:15:52 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/07/02 19:42:15  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.62  2005/06/29 18:52:02  taylor
  * extra checks to make sure we don't end up targetting a sensor-invisible ship
  *
@@ -438,7 +441,6 @@
  * 
  */
 
-#include "PreProcDefines.h"
 
 #include "hud/hud.h"
 #include "hud/hudparse.h"

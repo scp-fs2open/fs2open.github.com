@@ -7,19 +7,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/BitArray.h $
- * $Revision: 1.1 $
- * $Date: 2004-12-31 03:48:12 $
+ * $Revision: 1.2 $
+ * $Date: 2005-07-13 03:15:50 $
  * $Author: Goober5000 $
  *
  * Cool stuff with bit arrays
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/12/31 03:48:12  Goober5000
+ * CVS checkin of bitarray.h; use this for large arrays of boolean values
+ * --Goober5000
+ *
  * Revision 1.0  2004/12/30 22:45:00  Goober5000
  * Addition to CVS repository
  *
  */
 
-#include "PreProcDefines.h"
 #ifndef _BIT_ARRAY_H
 #define _BIT_ARRAY_H
 

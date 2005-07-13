@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-13 03:15:50 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.14  2005/04/17 05:38:29  taylor
  * updated Linux joystick code that's a bit less insane speed wise
  * remove ability to build without joystick support, no reason to keep it around
@@ -288,7 +291,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 
 #include "menuui/optionsmenu.h"
 #include "missionui/missionscreencommon.h"

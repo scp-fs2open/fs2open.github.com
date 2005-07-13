@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.h $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:17 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:15:51 $
+ * $Author: Goober5000 $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 05:53:17  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.4  2004/09/17 07:11:02  Goober5000
  * moved ssm stuff to header file so it would work in FRED
  * --Goober5000
@@ -49,7 +52,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FS2_HUD_ARTILLERY_HEADER_FILE
 #define _FS2_HUD_ARTILLERY_HEADER_FILE
 

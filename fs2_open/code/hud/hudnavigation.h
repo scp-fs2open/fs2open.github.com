@@ -4,11 +4,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.h $
- * $Revision: 1.6 $
- * $Date: 2005-07-13 02:30:53 $
+ * $Revision: 1.7 $
+ * $Date: 2005-07-13 03:15:52 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/07/13 02:30:53  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 1.5  2005/01/31 10:34:38  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -33,7 +37,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 
 #if !defined(_HUD_NAV_)
 #define _HUD_NAV_
