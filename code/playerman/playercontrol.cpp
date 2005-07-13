@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-07-13 02:30:53 $
+ * $Revision: 2.31 $
+ * $Date: 2005-07-13 03:35:32 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/07/13 02:30:53  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.29  2005/07/13 02:01:30  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -546,7 +550,6 @@
  * $NoKeywords: $
 */
 
-#include "PreProcDefines.h"
 
 #include "playerman/player.h"
 #include "io/joy.h"

@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.26 $
- * $Author: wmcoolmon $
- * $Date: 2005-05-08 20:23:28 $
+ * $Revision: 2.27 $
+ * $Author: Goober5000 $
+ * $Date: 2005-07-13 03:35:31 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/05/08 20:23:28  wmcoolmon
+ * "backspace" function
+ *
  * Revision 2.25  2005/04/28 01:36:46  wmcoolmon
  * More parsing flexibility
  *
@@ -327,7 +330,6 @@
  * 
  */
 
-#include "PreProcDefines.h"
 #ifndef _PARSELO_H
 #define _PARSELO_H
 

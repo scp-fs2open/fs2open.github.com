@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-01 07:31:10 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-13 03:35:33 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/01 07:31:10  taylor
+ * *that blasted Enter key*, just fixing the log... nothing to see here...
+ *
  * Revision 2.6  2005/04/01 07:27:32  taylor
  * some minor Linux fixage
  *
@@ -131,7 +134,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

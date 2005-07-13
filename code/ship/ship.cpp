@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.207 $
- * $Date: 2005-07-13 02:01:30 $
+ * $Revision: 2.208 $
+ * $Date: 2005-07-13 03:35:30 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.207  2005/07/13 02:01:30  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.206  2005/07/13 00:44:21  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -1515,7 +1519,6 @@
 
 #include <setjmp.h>
 
-#include "PreProcDefines.h"
 
 #include "ship/ship.h"
 #include "object/object.h"

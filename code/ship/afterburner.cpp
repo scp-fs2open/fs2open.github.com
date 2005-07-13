@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-05 17:04:08 $
- * $Author: phreak $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-13 03:35:30 $
+ * $Author: Goober5000 $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/05 17:04:08  phreak
+ * fixed an afterburner bug where AI ships would have infinite AB fuel if NO_NETWORK
+ * was defined.
+ *
  * Revision 2.12  2005/04/25 00:31:14  wmcoolmon
  * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
  *
@@ -178,7 +182,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "ship/afterburner.h"
 #include "io/joy_ff.h"

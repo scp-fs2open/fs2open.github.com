@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-07-12 21:01:40 $
+ * $Revision: 2.53 $
+ * $Date: 2005-07-13 03:35:30 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/07/12 21:01:40  Goober5000
+ * properly fixed beam_apply_whack()
+ * --Goober5000
+ *
  * Revision 2.50  2005/04/28 05:29:30  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -466,7 +470,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "weapon/beam.h"
 #include "globalincs/linklist.h"

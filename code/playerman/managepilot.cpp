@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-05-08 20:22:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2005-07-13 03:35:32 $
+ * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/05/08 20:22:38  wmcoolmon
+ * Dynamically allocated medals
+ *
  * Revision 2.19  2005/04/21 15:51:40  taylor
  * fix source/dest memory overwrite that Valgrind was complaining about
  *
@@ -297,7 +300,6 @@
 
 #include <errno.h>
 
-#include "PreProcDefines.h"
 
 #include "playerman/managepilot.h"
 #include "freespace2/freespace.h"

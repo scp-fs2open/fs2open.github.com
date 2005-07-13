@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-07-13 00:44:21 $
+ * $Revision: 2.48 $
+ * $Date: 2005-07-13 03:35:30 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/07/13 00:44:21  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.46  2005/05/11 09:32:03  Goober5000
  * grr
  * --Goober5000
@@ -609,7 +613,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "ship/shiphit.h"
 #include "object/object.h"

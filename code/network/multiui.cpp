@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-07-02 19:45:00 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2005-07-13 03:35:33 $
+ * $Author: Goober5000 $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/07/02 19:45:00  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.38  2005/06/21 00:13:47  taylor
  * add some better error checking/handling for when GetServerList messes up
  *
@@ -571,7 +574,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

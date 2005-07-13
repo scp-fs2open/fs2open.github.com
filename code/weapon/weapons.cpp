@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2005/06/30 00:36:10  Goober5000
+ * Removed "beam no whack" as setting the beam's mass to 0 achieves the same effect.
+ * --Goober5000
+ *
  * Revision 2.117  2005/06/02 02:41:52  wmcoolmon
  * Protected ships are safe from spawning weapons. :)
  *
@@ -766,7 +770,6 @@
 
 //#include <stdlib.h>
 
-#include "PreProcDefines.h"
 
 #include "weapon/weapon.h"
 #include "render/3d.h"

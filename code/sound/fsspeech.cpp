@@ -8,13 +8,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/fsspeech.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-06-30 02:35:00 $
+ * $Revision: 1.18 $
+ * $Date: 2005-07-13 03:35:29 $
  * $Author: Goober5000 $
  *
  * This module contains freespace specific stuff leaving the speech module to handle generic stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/06/30 02:35:00  Goober5000
+ * added functions to check if speech is playing
+ * --Goober5000
+ *
  * Revision 1.16  2005/06/30 01:35:52  Goober5000
  * tweaked the stubs and added a function
  * --Goober5000
@@ -33,7 +37,6 @@
  */
 
 
-#include "PreProcDefines.h"
 
 #ifdef FS2_SPEECH
 

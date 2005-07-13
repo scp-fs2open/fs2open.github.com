@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.5 $
- * $Date: 2005-01-31 23:27:55 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:35:36 $
+ * $Author: Goober5000 $
  *
  * Include file for our user interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/31 23:27:55  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.4  2004/08/11 05:06:35  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -341,7 +344,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _UI_H
 #define _UI_H
 

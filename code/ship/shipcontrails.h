@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:34 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-13 03:35:30 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:34  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2003/11/11 02:15:41  Goober5000
  * ubercommit - basically spelling and language fixes with some additional
  * warnings disabled
@@ -42,7 +45,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FREESPACE2_SHIP_CONTRAIL_HEADER_FILE
 #define _FREESPACE2_SHIP_CONTRAIL_HEADER_FILE
 

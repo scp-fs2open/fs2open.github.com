@@ -8,13 +8,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-07-02 19:39:23 $
- * $Author: taylor $
+ * $Revision: 1.22 $
+ * $Date: 2005-07-13 03:35:29 $
+ * $Author: Goober5000 $
  *
  * Platform specific text-to-speech functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/07/02 19:39:23  taylor
+ * fix compiler warnings introduced by recent stub changes (defining an empty stub as something is wrong, it should be nothing)
+ * assuming that GetStatus thing wasn't tested since it would never have worked
+ *
  * Revision 1.20  2005/06/30 02:35:00  Goober5000
  * added functions to check if speech is playing
  * --Goober5000
@@ -36,7 +40,6 @@
  */
 
 
-#include "PreProcDefines.h"
 
 #ifndef FS2_SPEECH
 #ifdef _WIN32

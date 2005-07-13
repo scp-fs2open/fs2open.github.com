@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.9 $
- * $Date: 2005-04-05 05:53:23 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-13 03:35:35 $
+ * $Author: Goober5000 $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.8  2005/01/11 21:25:58  Goober5000
  * fixed two small things with physics
  * --Goober500
@@ -163,7 +166,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _PHYSICS_H
 #define _PHYSICS_H
 

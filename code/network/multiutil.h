@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.h $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:35:33 $
+ * $Author: Goober5000 $
  *
  * Header file to support misc. multiplayer support functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.4  2005/02/04 10:12:31  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -150,7 +153,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef MULTI_UTIL_H
 #define MULTI_UTIL_H
 

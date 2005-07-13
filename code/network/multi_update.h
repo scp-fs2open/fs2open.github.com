@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.h $
- * $Revision: 2.1 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.2 $
+ * $Date: 2005-07-13 03:35:33 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.0  2002/06/03 04:02:26  penguin
  * Warpcore CVS sync
  *
@@ -35,7 +38,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _FREESPACE_AUTOUPDATE_THINGIE_HEADER_FILE
 #define _FREESPACE_AUTOUPDATE_THINGIE_HEADER_FILE
 

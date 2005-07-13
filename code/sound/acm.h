@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/acm.h $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 11:48:22 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:35:29 $
+ * $Author: Goober5000 $
  *
  * Header file for interface to Audio Compression Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 11:48:22  taylor
+ * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
+ * better error handling for OpenAL functions
+ * Windows can now build properly with OpenAL
+ * extra check to make sure we don't try and use too many hardware bases sources
+ * fix memory error from OpenAL extension list in certain instances
+ *
  * Revision 2.4  2005/01/31 10:34:39  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -58,7 +65,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __FREESPACE_ACM_H__
 #define __FREESPACE_ACM_H__
 

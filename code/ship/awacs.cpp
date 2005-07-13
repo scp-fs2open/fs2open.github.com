@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-13 00:44:21 $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-13 03:35:30 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/13 00:44:21  Goober5000
+ * improved species support and removed need for #define
+ * --Goober5000
+ *
  * Revision 2.12  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -135,7 +139,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "ship/awacs.h"
 #include "io/timer.h"

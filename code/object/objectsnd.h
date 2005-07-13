@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.h $
- * $Revision: 2.4 $
- * $Date: 2005-04-25 00:28:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 03:35:31 $
+ * $Author: Goober5000 $
  *
  * Header file for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/04/25 00:28:58  wmcoolmon
+ * subsystem sounds
+ *
  * Revision 2.3  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -79,7 +82,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __OBJECTSND_H__
 #define __OBJECTSND_H__
 

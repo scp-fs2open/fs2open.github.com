@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-03-02 21:18:20 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-13 03:35:33 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/03/02 21:18:20  taylor
+ * better support for Inferno builds (in PreProcDefines.h now, no networking support)
+ * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
+ * revert a timeout in Client.h back to the original value before Linux merge
+ *
  * Revision 2.13  2005/02/04 20:06:05  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -366,7 +371,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

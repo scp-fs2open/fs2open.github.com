@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.9 $
- * $Date: 2005-05-30 05:27:30 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-13 03:35:31 $
+ * $Author: Goober5000 $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/05/30 05:27:30  taylor
+ * me is a moron, this broke audio streaming
+ *
  * Revision 2.8  2005/04/11 05:45:38  taylor
  * _endthread() doesn't take an argument so do support one (Jens Granseuer)
  * debug variable fixes in freespace.cpp (Jens Granseuer)
@@ -43,7 +46,6 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#include "PreProcDefines.h"
 
 #if defined _WIN32
 

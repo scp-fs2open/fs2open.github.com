@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.158 $
- * $Date: 2005-07-13 02:30:54 $
+ * $Revision: 2.159 $
+ * $Date: 2005-07-13 03:35:31 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.158  2005/07/13 02:30:54  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.157  2005/07/02 19:36:04  taylor
  * some supernova fixing
  *
@@ -966,7 +970,6 @@
 #include <assert.h>
 #include <limits.h>
 
-#include "PreProcDefines.h"
 
 #include "parse/parselo.h"
 #include "parse/sexp.h"

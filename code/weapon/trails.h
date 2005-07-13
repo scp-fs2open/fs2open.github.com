@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.8 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-13 03:35:30 $
+ * $Author: Goober5000 $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.7  2005/02/20 23:11:51  wmcoolmon
  * Fix0r3d trails
  *
@@ -70,7 +73,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _TRAILS_H
 #define _TRAILS_H
 

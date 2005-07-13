@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.h $
- * $Revision: 2.5 $
- * $Date: 2005-02-04 10:12:32 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-13 03:35:34 $
+ * $Author: Goober5000 $
  *
  * header file for PCX utilities
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/02/04 10:12:32  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.4  2004/10/31 22:00:57  taylor
  * new bmpman merge support, add PreProcDefines.h a few new places
  *
@@ -80,7 +83,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _PCXUTILS_H
 #define _PCXUTILS_H
 

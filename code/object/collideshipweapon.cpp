@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2005-07-13 03:35:31 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.17  2005/03/19 20:45:23  Goober5000
  * corrected misinformation in comment about surface shields (implicit surface
  * shields were removed for meshed ships)
@@ -220,7 +223,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "object/objcollide.h"
 #include "object/object.h"

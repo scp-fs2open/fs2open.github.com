@@ -7,7 +7,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 #ifndef _FS2_REGISTRY_HEADER_FILE
 #define _FS2_REGISTRY_HEADER_FILE
 
