@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-05-12 17:49:15 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-13 03:25:59 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/05/12 17:49:15  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.10  2005/04/25 00:28:17  wmcoolmon
  * MAX_SHIP_TYPES > Num_ship_types
  *
@@ -198,7 +202,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #ifndef NO_NETWORK
 

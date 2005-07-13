@@ -10,7 +10,6 @@
 #ifndef _MODELSINC_H
 #define _MODELSINC_H
 
-#include "PreProcDefines.h"
 
 struct polymodel;
 

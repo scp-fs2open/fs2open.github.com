@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-07-02 19:43:55 $
- * $Author: taylor $
+ * $Revision: 2.53 $
+ * $Date: 2005-07-13 03:25:58 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/07/02 19:43:55  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.51  2005/04/25 00:25:46  wmcoolmon
  * MAX_SHIP_TYPES > Num_ship_types
  *
@@ -641,7 +644,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionweaponchoice.h"

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.h $
- * $Revision: 2.3 $
- * $Date: 2004-08-11 05:06:27 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-07-13 03:26:00 $
+ * $Author: Goober5000 $
  *
  * Header file for code that controls the Tech Room menu
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/08/11 05:06:27  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.2  2003/08/22 07:24:07  Goober5000
  * bumped max intel entries to 30
  * --Goober5000
@@ -79,7 +82,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 #ifndef _TECHMENU_H
 #define _TECHMENU_H
 

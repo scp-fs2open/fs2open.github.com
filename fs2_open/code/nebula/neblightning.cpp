@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-05 05:53:20 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-13 03:26:00 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.7  2005/03/02 21:24:42  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -84,7 +87,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "parse/parselo.h"
 #include "globalincs/linklist.h"

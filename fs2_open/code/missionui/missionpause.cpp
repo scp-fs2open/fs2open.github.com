@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-13 03:25:58 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.12  2005/06/19 02:38:33  taylor
  * fix possible crash from popups, especially in multi
  *
@@ -82,7 +85,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "missionui/missionpause.h"
 #include "ui/ui.h"

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:29 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-07-13 03:25:59 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:29  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:02:02  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -76,7 +79,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef _MULTI_INGAME_JOIN_HEADER_FILE
 #define _MULTI_INGAME_JOIN_HEADER_FILE
 

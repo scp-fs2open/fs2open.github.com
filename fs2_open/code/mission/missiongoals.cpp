@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-13 03:25:59 $
+ * $Author: Goober5000 $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.13  2005/05/12 17:49:13  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -385,7 +388,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"

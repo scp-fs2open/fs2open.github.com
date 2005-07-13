@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.h $
- * $Revision: 2.2 $
- * $Date: 2004-08-11 05:06:28 $
- * $Author: Kazan $
+ * $Revision: 2.3 $
+ * $Date: 2005-07-13 03:25:59 $
+ * $Author: Goober5000 $
  *
  * Header file to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2004/08/11 05:06:28  Kazan
+ * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
+ *
  * Revision 2.1  2004/03/05 09:02:06  Goober5000
  * Uber pass at reducing #includes
  * --Goober5000
@@ -117,7 +120,6 @@
  * 
 */
 
-#include "PreProcDefines.h"
 #ifndef _MISSIONLOG_H
 #define _MISSIONLOG_H
 

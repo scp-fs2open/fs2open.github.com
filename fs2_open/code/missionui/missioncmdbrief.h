@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.h $
- * $Revision: 2.4 $
- * $Date: 2005-06-03 06:39:26 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 03:25:58 $
+ * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/06/03 06:39:26  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.3  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -71,7 +74,6 @@
 #ifndef __MISSIONCMDBRIEF_H__
 #define __MISSIONCMDBRIEF_H__
 
-#include "PreProcDefines.h"
 #define CMD_BRIEF_TEXT_MAX		16384
 #define CMD_BRIEF_STAGES_MAX	10
 

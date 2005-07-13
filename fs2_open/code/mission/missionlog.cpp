@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-05-12 17:49:13 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-13 03:25:59 $
+ * $Author: Goober5000 $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.7  2005/03/02 21:24:45  taylor
  * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
  *
@@ -213,7 +217,6 @@
  * 
 */
 
-#include "PreProcDefines.h"
 
 #include "mission/missionlog.h"
 #include "playerman/player.h"

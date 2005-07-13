@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2005-07-13 03:25:58 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.43  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -534,7 +537,6 @@
  *
 */
 
-#include "PreProcDefines.h"
 
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.h $
- * $Revision: 2.8 $
- * $Date: 2005-03-31 11:11:56 $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-13 03:25:58 $
  * $Author: Goober5000 $
  *
  * Header file for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/31 11:11:56  Goober5000
+ * changed a bunch of literal constants to their #define'd keywords
+ * --Goober5000
+ *
  * Revision 2.7  2005/02/27 14:09:27  Goober5000
  * First stage of "apply to all ships in this wing" weapon loadout button code.
  * Button hooks only, pending interface art.  The "apply-to-all" code itself
@@ -150,7 +154,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 #ifndef __MISSION_WEAPON_CHOICE_H__
 #define __MISSION_WEAPON_CHOICE_H__
 

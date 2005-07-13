@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.h $
- * $Revision: 2.2 $
- * $Date: 2005-05-12 03:50:10 $
+ * $Revision: 2.3 $
+ * $Date: 2005-07-13 03:25:59 $
  * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/05/12 03:50:10  Goober5000
+ * repeating messages with variables should work properly now
+ * --Goober5000
+ *
  * Revision 2.1  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -58,7 +62,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 extern int Training_message_method;
 extern int Training_num_lines;
 extern int Training_message_visible;

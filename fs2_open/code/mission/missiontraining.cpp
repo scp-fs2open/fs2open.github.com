@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-06-30 01:48:52 $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-13 03:25:59 $
  * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/06/30 01:48:52  Goober5000
+ * * NOX'd none.wav
+ * * changed comparisons on none.wav to only look at the first four letters in case
+ *   we don't have an extension or in case some weirdo decides to put none.ogg
+ * * simulated speech pre-empts "beeps" in in-game messages
+ * --Goober5000
+ *
  * Revision 2.15  2005/06/16 05:17:31  Goober5000
  * fixed a CVS log spelling error, plus fixed a tricky sexp allocation bug
  * --Goober5000
@@ -319,7 +326,6 @@
  * $NoKeywords: $
  */
 
-#include "PreProcDefines.h"
 
 #include "mission/missiontraining.h"
 #include "parse/parselo.h"

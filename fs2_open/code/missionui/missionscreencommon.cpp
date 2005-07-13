@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-04-11 05:50:36 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2005-07-13 03:25:58 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/04/11 05:50:36  taylor
+ * some limits.h fixes to make GCC happier
+ * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
+ *
  * Revision 2.20  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -352,7 +356,6 @@
  *
  */
 
-#include "PreProcDefines.h"
 
 #include <limits.h>		// this is need even when not building debug!!
 
