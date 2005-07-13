@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-07 16:36:58 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-13 02:00:44 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
  * Revision 2.3  2005/02/04 20:06:05  taylor
@@ -77,7 +77,7 @@ void multi_rate_display(int np_index, int x, int y);
 
 // stubs using #defines (c.f. NO_SOUND)
 #define multi_rate_reset(np_index)
-#define multi_rate_add(np_index, type, size) ( { 0; } )
+#define multi_rate_add(np_index, type, size) (0)
 #define multi_rate_process()
 #define multi_rate_display(np_index, x, y)
 
