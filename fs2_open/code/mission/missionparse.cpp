@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.95 $
- * $Date: 2005-07-13 02:30:53 $
+ * $Revision: 2.96 $
+ * $Date: 2005-07-13 02:32:22 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2005/07/13 02:30:53  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.94  2005/07/13 02:01:29  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -2181,12 +2185,14 @@ int parse_create_object(p_object *objp)
 	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NAV_CARRY) )
 		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
 
+	/* Goober5000 - um, shouldn't this be handled automatically?
 	// Goober5000 - arg... if ship is in a wing, copy the wing's depature information to the ship
 	if ( Ships[shipnum].wingnum != -1 )
 	{
 		Ships[shipnum].departure_location = Wings[Ships[shipnum].wingnum].departure_location;
 		Ships[shipnum].departure_anchor = Wings[Ships[shipnum].wingnum].departure_anchor;
 	}
+	*/
 
 	// mwa -- 1/30/98.  Do both flags.  Fred uses the ship flag, and FreeSpace will use the object
 	// flag. I'm to lazy at this point to deal with consolidating them.
