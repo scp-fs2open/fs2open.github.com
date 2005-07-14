@@ -78,7 +78,7 @@ SOURCE="$(InputPath)"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "..\..\code" /I "c:\mssdk\include" /I "c:\dxsdk\include" /I "c:\speech_api\include" /D "NO_CD_CHECK" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "..\..\code" /I "c:\mssdk\include" /I "c:\dxsdk\include" /I "c:\speech_api\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
