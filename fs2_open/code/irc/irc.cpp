@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.18 $
+ * $Date: 2005-07-14 13:25:03 $
+ * $Author: mrduckman $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.16  2005/06/09 14:57:38  mrduckman
  * Added LIST command and added comment about PRIVMSG for Channels
  *
@@ -544,8 +548,8 @@ void irc_client::ParseForCommand(std::string UserInput)
 	else
 	{
 		// it's a message to the current channel
-		//if (NumChannels() >= 1)
-		//	PrivateMessage(channels[current_channel].GetName(), UserInput);
+		if (NumChannels() >= 1)
+			PrivateMessage(channels[current_channel].GetName(), UserInput);
 		/* mrduckman (09/06/2005)
 
 		Here you should pass a privmsg to the chan and also print it in the UI
