@@ -2683,9 +2683,5 @@ SOURCE=..\..\code\Autopilot\Autopilot.cpp
 SOURCE=..\..\code\Autopilot\Autopilot.h
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=..\..\code\PreProcDefines.h
-# End Source File
 # End Target
 # End Project
