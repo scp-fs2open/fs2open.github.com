@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-07-13 03:25:59 $
+ * $Revision: 2.30 $
+ * $Date: 2005-07-15 03:48:40 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.28  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -2531,7 +2535,7 @@ void brief_unload_anims()
 	int i, idx;
 	
 	for (i=0; i<MAX_BRIEF_ICONS; i++) {
-		for(idx=0; i<True_NumSpecies; idx++){
+		for(idx=0; idx<True_NumSpecies; idx++){
 			hud_anim_release(&Icon_highlight_anims[i][idx]);
 			hud_anim_release(&Icon_fade_anims[i][idx]);
 		}
