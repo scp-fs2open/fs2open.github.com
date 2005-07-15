@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.163 $
- * $Date: 2005-07-13 02:50:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.164 $
+ * $Date: 2005-07-15 23:19:10 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.163  2005/07/13 02:50:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.162  2005/07/13 02:30:52  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -3163,27 +3167,12 @@ void game_init()
 	// check for hi res pack file 
 	int has_sparky_hi = 0;
 
-	// check if sparky_hi exists -- access mode 0 means does file exist
-#ifdef _WIN32
+	has_sparky_hi = bm_load("2_ChoosePilot-m");
+	if(has_sparky_hi > -1)
 	{
-		char dir[128];
-		_getcwd(dir, 128);
-		if ( _access("sparky_hi_fs2.vp", 0) == 0) {
-			has_sparky_hi = 1;
-		} else {
-			mprintf(("No sparky_hi_fs2.vp in directory %s\n", dir));
-		}
+		bm_unload(has_sparky_hi);
+		has_sparky_hi = 1;
 	}
-#else
-	{
-		struct stat sbuf;
-		if (stat("sparky_hi_fs2.vp", &sbuf) == 0) {
-			has_sparky_hi = 1;
-		} else {
-			mprintf(("No sparky_hi_fs2.vp\n"));
-		}
-	}
-#endif
 
 	if(!Is_standalone)
 	{
