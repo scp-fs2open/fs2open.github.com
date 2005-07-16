@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-07-14 13:25:03 $
- * $Author: mrduckman $
+ * $Revision: 1.19 $
+ * $Date: 2005-07-16 06:33:16 $
+ * $Author: wmcoolmon $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/07/14 13:25:03  mrduckman
+ * Restored messages to on-focus channel. If it doesn't work, we'll work around with a pseudo-cmd.
+ *
  * Revision 1.17  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -548,8 +551,8 @@ void irc_client::ParseForCommand(std::string UserInput)
 	else
 	{
 		// it's a message to the current channel
-		if (NumChannels() >= 1)
-			PrivateMessage(channels[current_channel].GetName(), UserInput);
+//		if (NumChannels() >= 1)
+//			PrivateMessage(channels[current_channel].GetName(), UserInput);
 		/* mrduckman (09/06/2005)
 
 		Here you should pass a privmsg to the chan and also print it in the UI
