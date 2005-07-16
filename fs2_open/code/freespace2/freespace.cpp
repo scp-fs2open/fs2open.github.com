@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.164 $
- * $Date: 2005-07-15 23:19:10 $
+ * $Revision: 2.165 $
+ * $Date: 2005-07-16 07:03:49 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.164  2005/07/15 23:19:10  wmcoolmon
+ * I can't compile the source to test this, but this should switch the
+ * hi-res check to "2_ChoosePilot-m" rather than sparky_hi_fs2.
+ *
  * Revision 2.163  2005/07/13 02:50:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -3167,10 +3171,10 @@ void game_init()
 	// check for hi res pack file 
 	int has_sparky_hi = 0;
 
-	has_sparky_hi = bm_load("2_ChoosePilot-m");
-	if(has_sparky_hi > -1)
+	CFILE *the_mask = cfopen("2_ChoosePilot-m.pcx", "r");
+	if(the_mask != NULL)
 	{
-		bm_unload(has_sparky_hi);
+		cfclose(the_mask);
 		has_sparky_hi = 1;
 	}
 
