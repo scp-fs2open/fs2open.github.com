@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-13 03:35:30 $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-16 04:41:04 $
  * $Author: Goober5000 $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.13  2005/07/05 17:04:08  phreak
  * fixed an afterburner bug where AI ships would have infinite AB fuel if NO_NETWORK
  * was defined.
@@ -389,18 +393,14 @@ void afterburners_update(object *objp, float fl_frametime)
 	}
 
 	// single player, multiplayer servers, and clients for their own ships
+	// (when we are running with NO_NETWORK defined, we are always in single-player mode;
+	// therefore this code block should always execute)
 #ifndef NO_NETWORK
-	if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER || (objp == Player_obj)){
-#else
-	// changed from != to == by Goober5000... this seems to be a bug
-	// this should be true for all ships in non-network mode, this causes afterburner fuel to deplete
-	//previously the ai ships would have infinite AB fuel if checking for objp == Player_obj
-	if (1) {
+	if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER || (objp == Player_obj))
 #endif
+	{
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
-
-//			float recover_rate=sip->afterburner_recover_rate;
 
 			if ( shipp->afterburner_fuel < sip->afterburner_fuel_capacity ) {
 				float recharge_scale;
@@ -422,7 +422,7 @@ void afterburners_update(object *objp, float fl_frametime)
 			}
 		}
 
-		// afterburns are firing at this point
+		// afterburners are firing at this point
 
 		// Reduce the afterburner fuel
 		shipp->afterburner_fuel -= (sip->afterburner_burn_rate * fl_frametime);
