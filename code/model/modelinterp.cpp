@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.122 $
- * $Date: 2005-07-07 16:35:11 $
+ * $Revision: 2.123 $
+ * $Date: 2005-07-18 03:45:08 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2005/07/07 16:35:11  taylor
+ * make double sure that we actually need to render thruster glows instead of doing it regardless
+ *
  * Revision 2.121  2005/06/21 00:25:34  taylor
  * probably be a good idea to make the valid objnum check here too
  *
@@ -3369,10 +3372,10 @@ void model_try_cache_render(int model_num, matrix *orient, vec3d * pos, uint fla
 	//	}
 
 	//if ( keyd_pressed[KEY_RSHIFT] )	{
-	//	gr_line( fl2i(v[0].sx), fl2i(v[0].sy), fl2i(v[1].sx), fl2i(v[1].sy) );
-	//	gr_line( fl2i(v[1].sx), fl2i(v[1].sy), fl2i(v[2].sx), fl2i(v[2].sy) );
-	//	gr_line( fl2i(v[2].sx), fl2i(v[2].sy), fl2i(v[3].sx), fl2i(v[3].sy) );
-	//	gr_line( fl2i(v[3].sx), fl2i(v[3].sy), fl2i(v[0].sx), fl2i(v[0].sy) );
+	//	gr_line( fl2i(v[0].sx), fl2i(v[0].sy), fl2i(v[1].sx), fl2i(v[1].sy), false );
+	//	gr_line( fl2i(v[1].sx), fl2i(v[1].sy), fl2i(v[2].sx), fl2i(v[2].sy), false );
+	//	gr_line( fl2i(v[2].sx), fl2i(v[2].sy), fl2i(v[3].sx), fl2i(v[3].sy), false );
+	//	gr_line( fl2i(v[3].sx), fl2i(v[3].sy), fl2i(v[0].sx), fl2i(v[0].sy), false );
 	//}
 
 

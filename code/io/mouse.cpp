@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-06-19 02:48:13 $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-18 03:45:07 $
  * $Author: taylor $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/06/19 02:48:13  taylor
+ * remove xmouse.cpp since it's pretty much useless
+ *
  * Revision 2.11  2005/03/14 03:38:54  taylor
  * fix for mouse cursor problem when running in a window
  *
@@ -685,6 +688,15 @@ int mouse_get_pos(int *xpos, int *ypos)
 	if (ypos){
 		*ypos = Mouse_y;
 	}
+
+	return flags;
+}
+
+int mouse_get_pos_unscaled( int *xpos, int *ypos )
+{
+	int flags = mouse_get_pos( xpos, ypos );
+
+	gr_unsize_screen_pos( (xpos) ? xpos : NULL, (ypos) ? ypos : NULL );
 
 	return flags;
 }

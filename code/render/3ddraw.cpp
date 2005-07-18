@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-05-12 17:49:16 $
+ * $Revision: 2.44 $
+ * $Date: 2005-07-18 03:45:09 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/05/12 17:49:16  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.42  2005/04/24 12:56:43  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -385,7 +389,7 @@ int must_clip_line(vertex *p0,vertex *p1,ubyte codes_or, uint flags)
 
 	if (p1->flags&PF_OVERFLOW) goto free_points;
 	
-	//gr_line(fl2i(p0->sx),fl2i(p0->sy),fl2i(p1->sx),fl2i(p1->sy));
+	//gr_line(fl2i(p0->sx),fl2i(p0->sy),fl2i(p1->sx),fl2i(p1->sy),false);
 	//	gr_line_float(p0->sx,p0->sy,p1->sx,p1->sy);
 
 	gr_aaline( p0, p1 );
@@ -442,7 +446,7 @@ int g3_draw_line(vertex *p0,vertex *p1)
 //		return 1;
 		return must_clip_line(p0,p1,codes_or,0);
 
-//	gr_line(fl2i(p0->sx),fl2i(p0->sy),fl2i(p1->sx),fl2i(p1->sy));
+//	gr_line(fl2i(p0->sx),fl2i(p0->sy),fl2i(p1->sx),fl2i(p1->sy),false);
 //	gr_line_float(p0->sx,p0->sy,p1->sx,p1->sy);
 
   	gr_aaline( p0, p1 );
@@ -1736,7 +1740,7 @@ void g3_draw_horizon_line()
 
 
 	// draw from left to right.
-	gr_line( fl2i(horz_pts[0].x),fl2i(horz_pts[0].y),fl2i(horz_pts[1].x),fl2i(horz_pts[1].y) );
+	gr_line( fl2i(horz_pts[0].x),fl2i(horz_pts[0].y),fl2i(horz_pts[1].x),fl2i(horz_pts[1].y), false );
 	
 }
 

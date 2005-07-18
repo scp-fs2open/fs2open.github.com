@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-07-02 19:45:02 $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-18 03:45:10 $
  * $Author: taylor $
  *
  * Routines to handle UI windows.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/02 19:45:02  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.5  2005/05/12 17:49:17  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -529,7 +532,7 @@ void UI_WINDOW::render_tooltip(char *str)
 		tty = gr_screen.max_h_unscaled - str_h;
 
 	gr_set_color_fast(&Color_black);
-	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1, true);
+	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1);
 
 	gr_set_color_fast(&Color_bright_white);
 	gr_string(ttx, tty, str);

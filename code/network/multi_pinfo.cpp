@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-07-13 03:35:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-07-18 03:45:08 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.10  2005/07/02 19:45:00  taylor
  * ton of non-standard resolution fixes
  *
@@ -522,7 +526,7 @@ void multi_pinfo_popup_do()
 
 		// grey the screen
 		gr_set_shader(&Grey_shader);
-		gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height);
+		gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, false);
 		
 		// draw the background bitmap
 		gr_set_bitmap(Multi_pinfo_bitmap);

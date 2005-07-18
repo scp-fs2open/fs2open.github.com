@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-07-13 03:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.30 $
+ * $Date: 2005-07-18 03:45:08 $
+ * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.28  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -1819,9 +1823,7 @@ void brief_check_for_anim()
 	brief_icon		*bi = NULL;
 
 	bs = &Briefing->stages[Current_brief_stage];
-	mouse_get_pos( &mx, &my );
-
-	gr_unsize_screen_pos( &mx, &my );
+	mouse_get_pos_unscaled( &mx, &my );
 
 	// if mouse click is over the VCR controls, don't launch an icon
 	// FIXME - should prolly push these into defines instead of hardcoding this

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-18 03:45:08 $
+ * $Author: taylor $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.12  2005/07/02 19:45:00  taylor
  * ton of non-standard resolution fixes
  *
@@ -1997,7 +2001,7 @@ void multi_ts_handle_mouse()
 	int mouse_x,mouse_y,ship_class;
 
 	// get the mouse coords
-	mouse_get_pos(&mouse_x,&mouse_y);
+	mouse_get_pos_unscaled(&mouse_x,&mouse_y);
 
 	// do frame for the snazzy menu
 	snazzy_region = snazzy_menu_do(Multi_ts_mask_data, Multi_ts_mask_w, Multi_ts_mask_h, Multi_ts_snazzy_regions, Multi_ts_region, &snazzy_action, 0);
@@ -2624,7 +2628,7 @@ void multi_ts_blit_carried_icon()
 	}	
 
 	// get the mouse position
-	mouse_get_pos(&x,&y);
+	mouse_get_pos_unscaled(&x,&y);
 
 	// if we're carrying an icon of some kind
 	switch(Multi_ts_carried_from_type){

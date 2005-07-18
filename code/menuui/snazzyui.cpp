@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/SnazzyUI.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-01-31 23:27:54 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-18 03:45:07 $
  * $Author: taylor $
  *
  *  Code to drive the Snazzy User Interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/01/31 23:27:54  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.6  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -272,11 +275,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	Assert(regions != NULL);
 	
 	gr_reset_clip();  // don't remove
-	mouse_get_pos( &x, &y ); 
-
-	// This keeps mouse position detection correct for non standard modes
-
-	gr_unsize_screen_pos(&x, &y);
+	mouse_get_pos_unscaled( &x, &y ); 
 
 	// boundary conditions
 	if((y > mask_h - 1) || (x > mask_w - 1)){

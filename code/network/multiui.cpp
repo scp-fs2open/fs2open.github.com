@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2005-07-18 03:45:09 $
+ * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.39  2005/07/02 19:45:00  taylor
  * ton of non-standard resolution fixes
  *
@@ -863,8 +867,7 @@ void multi_common_notify_do()
 				break;			
 			}
 			if(y != -1){
-				gr_resize_screen_pos(NULL, &y);
-				gr_string((gr_screen.max_w - w)/2, y, Multi_common_notify_text, false);
+				gr_string((gr_screen.max_w_unscaled - w)/2, y, Multi_common_notify_text);
 			}
 		}
 	}
