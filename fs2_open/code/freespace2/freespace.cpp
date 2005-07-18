@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.165 $
- * $Date: 2005-07-16 07:03:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.166 $
+ * $Date: 2005-07-18 03:44:00 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.165  2005/07/16 07:03:49  wmcoolmon
+ * Unlike my previous commit, this one does not cause a segmentation
+ * fault. :)
+ *
  * Revision 2.164  2005/07/15 23:19:10  wmcoolmon
  * I can't compile the source to test this, but this should switch the
  * hi-res check to "2_ChoosePilot-m" rather than sparky_hi_fs2.
@@ -2515,7 +2519,7 @@ void game_loading_callback(int count)
 		}
 
 		gr_set_shader(&busy_shader);
-		gr_shade(0, 0, gr_screen.clip_width, 17); // make sure it goes across the entire width
+		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17); // make sure it goes across the entire width
 
 		gr_set_color_fast(&Color_white);
 		gr_string(5, 5, Processing_filename);
@@ -5596,7 +5600,7 @@ void game_shade_frame(float frametime)
 
 	//Set the shader
 	gr_set_shader(&Viewer_shader);
-	gr_shade(gr_screen.clip_left, gr_screen.clip_top, gr_screen.clip_width, gr_screen.clip_height);
+	gr_shade(gr_screen.clip_left, gr_screen.clip_top, gr_screen.clip_width, gr_screen.clip_height, false);
 }
 
 void game_frame(int paused)
@@ -9657,7 +9661,7 @@ void oem_upsell_show_screens()
 		// if this is the 3rd upsell, make it clickable, d00d
 		if ( Oem_upsell_screen_number == NUM_OEM_UPSELL_SCREENS-1 ) {
 			int mx, my;
-			int button_state = mouse_get_pos(&mx, &my);
+			int button_state = mouse_get_pos_unscaled(&mx, &my);
 			if ( (mx >= Oem_upsell3_button_coords[gr_screen.res][0]) && (mx <= Oem_upsell3_button_coords[gr_screen.res][0] + Oem_upsell3_button_coords[gr_screen.res][2])
 				&& (my >= Oem_upsell3_button_coords[gr_screen.res][1]) && (my <= Oem_upsell3_button_coords[gr_screen.res][1] + Oem_upsell3_button_coords[gr_screen.res][3]) )
 			{
@@ -10709,10 +10713,9 @@ void display_title_screen()
 		//Get bitmap's width and height
 		int width, height;
 		bm_get_info(title_bitmap, &width, &height);
-		gr_resize_screen_pos(&width, &height);
 
 		//Draw it in the center of the screen
-		gr_bitmap((gr_screen.max_w - width)/2, (gr_screen.max_h - height)/2);
+		gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2);
 	}
 
 	if(title_logo != -1)

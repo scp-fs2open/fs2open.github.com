@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-07-13 02:01:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.33 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/07/13 02:01:29  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.31  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -1586,7 +1590,7 @@ void gauge_data::draw_shape()
 				gr_rect(draw_coords[0] + shape_attrib[i][0],
 						draw_coords[0] + shape_attrib[i][1],
 						shape_attrib[i][2],
-						shape_attrib[i][3]);
+						shape_attrib[i][3], false);
 				break;
 			case HG_SHAPECIRCLE:
 				//0 - x offset

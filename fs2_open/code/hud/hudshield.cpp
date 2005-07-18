@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.34 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.32  2005/05/30 23:41:36  wmcoolmon
  * This should fix redmenace's Assert...I'm not sure why it hasn't been triggering every time a shield is at full strength.
  *
@@ -683,8 +687,6 @@ void hud_shield_show(object *objp)
 				{
 					//Top
 					case 0:
-						//Resize the screen coordinates, if needed, when we start out
-						gr_resize_screen_pos(&sx, &sy);
 						sy += 3;
 						for(j = 0; j < 6; j++)
 						{

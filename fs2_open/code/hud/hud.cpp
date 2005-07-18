@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.51 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.49  2005/07/13 02:30:53  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -2429,11 +2433,11 @@ void hud_show_text_flash_icon(char *txt, int y, int bright)
 	gr_get_string_size(&w, &h, txt);
 
 	// draw the box	
-	gr_rect( (int)((((float)gr_screen.max_w / 2.0f) - ((float)w / 2.0f)) - 1.0f), (int)((float)y - 1.0f), w + 2, h + 1);
+	gr_rect( (int)((((float)gr_screen.max_w_unscaled / 2.0f) - ((float)w / 2.0f)) - 1.0f), (int)((float)y - 1.0f), w + 2, h + 1);
 
 	// string
 	hud_set_gauge_color(HUD_TEXT_FLASH, HUD_C_BRIGHT);	
-	gr_string(fl2i((gr_screen.max_w - w) / 2.0f), y, txt, false);
+	gr_string(fl2i((gr_screen.max_w_unscaled - w) / 2.0f), y, txt);
 
 	// go back to normal font
 	gr_set_font(FONT1);
@@ -3475,12 +3479,12 @@ void HUD_reset_clip()
 }
 
 // Basically like gr_set_clip only it accounts for hud jittering
-void HUD_set_clip(int x, int y, int w, int h, bool resize)
+void HUD_set_clip(int x, int y, int w, int h)
 {
 	int hx = fl2i(HUD_offset_x);
 	int hy = fl2i(HUD_offset_y);
 
-	gr_set_clip(hx+x, hy+y, w, h, resize );
+	gr_set_clip(hx+x, hy+y, w, h);
 }
 
 // -------------------------------------------------------------------------------------

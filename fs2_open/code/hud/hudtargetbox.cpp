@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.54 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.52  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -744,15 +748,9 @@ void hud_targetbox_init_all_timers()
 	Last_ts = -1;
 }
 
-float Hud_target_object_factor = 1;
-
 // Initialize the data needed for the target view.  This is called from HUD_init() once per mission
 void hud_targetbox_init()
 {
-	// This scales zoomout views in HTL mode to be similar to the original
-  	if(!Cmdline_nohtl)
-		Hud_target_object_factor = 2.2f;
-
 	if (!Target_view_gauge_loaded) {
 		Target_view_gauge.first_frame = bm_load_animation(Target_view_fname[gr_screen.res], &Target_view_gauge.num_frames);
 		if ( Target_view_gauge.first_frame < 0 ) {
@@ -808,9 +806,14 @@ void hud_render_target_setup(vec3d *camera_eye, matrix *camera_orient, float zoo
 	// size to render to.  Normally, you would set this by using gr_set_clip,
 	// but because of the hacked in hud jittering, I couldn't.  So come talk
 	// to me before modifying or reusing the following code. Thanks.
-	
-	gr_screen.clip_width = Target_window_coords[gr_screen.res][2];
-	gr_screen.clip_height = Target_window_coords[gr_screen.res][3];
+
+	int clip_width = Target_window_coords[gr_screen.res][2];
+	int clip_height = Target_window_coords[gr_screen.res][3];
+
+	gr_resize_screen_pos( &clip_width, &clip_height );
+
+	gr_screen.clip_width = clip_width;
+	gr_screen.clip_height = clip_height;
 	g3_start_frame(1);		// Turn on zbuffering
 	hud_save_restore_camera_data(1);
 	g3_set_view_matrix( camera_eye, camera_orient, zoom);	
@@ -818,7 +821,7 @@ void hud_render_target_setup(vec3d *camera_eye, matrix *camera_orient, float zoo
 
 	HUD_set_clip(Target_window_coords[gr_screen.res][0],Target_window_coords[gr_screen.res][1],Target_window_coords[gr_screen.res][2],Target_window_coords[gr_screen.res][3]);
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 }
@@ -1030,7 +1033,7 @@ void hud_render_target_asteroid(object *target_objp)
 		// the objects position
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
-		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f * Hud_target_object_factor);
+		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(Asteroid_info[asteroidp->type].model_num[subtype]);
 		
 		if (Targetbox_wire!=0)
@@ -1391,6 +1394,7 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 		g3_project_vertex(&subobj_vertex);
 		*sx = (int) subobj_vertex.sx;
 		*sy = (int) subobj_vertex.sy;
+		gr_unsize_screen_pos( sx, sy );
 	}
 
 	return rval;
@@ -1425,15 +1429,12 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 	y1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][1] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][3] ));
 	x2 = x1 + Cargo_scan_coords[gr_screen.res][2];
 
-	gr_resize_screen_pos(NULL, &y1);
-
 	gr_line(x1, y1, x2, y1);
 
 	// RT Changed this to be optional
 	if(Cmdline_dualscanlines) {
 		// added 2nd horizontal scan line - phreak
 		y1 = fl2i(Cargo_scan_coords[gr_screen.res][1] + Cargo_scan_coords[gr_screen.res][3] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][3] ));
-		gr_resize_screen_pos(NULL, &y1);
 		gr_line(x1, y1, x2, y1);
 	}
 
@@ -1442,16 +1443,12 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 	y1 = Cargo_scan_coords[gr_screen.res][1];
 	y2 = y1 + Cargo_scan_coords[gr_screen.res][3];
 
-	gr_resize_screen_pos(NULL, &y1);
-	gr_resize_screen_pos(NULL, &y2);
 	gr_line(x1, y1-3, x1, y2-1);
 
 	// RT Changed this to be optional
 	if(Cmdline_dualscanlines) {
 		// added 2nd vertical scan line - phreak
 		x1 = fl2i(0.5f + Cargo_scan_coords[gr_screen.res][2] + Cargo_scan_coords[gr_screen.res][0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_coords[gr_screen.res][2] ));
-		gr_resize_screen_pos(NULL, &y1);
-		gr_resize_screen_pos(NULL, &y2);
 		gr_line(x1, y1-3, x1, y2-1);
 	}
 }
@@ -1519,7 +1516,7 @@ void hud_render_target_ship(object *target_objp)
 	//	hud_targetbox_get_eye(&camera_eye, &camera_orient, Player_obj->instance);
 
 		// RT, changed scaling here
-		hud_render_target_setup(&camera_eye, &camera_orient, target_sip->closeup_zoom * Hud_target_object_factor);
+		hud_render_target_setup(&camera_eye, &camera_orient, target_sip->closeup_zoom);
 		// model_clear_instance(target_shipp->modelnum);
 		ship_model_start( target_objp );
 
@@ -1581,8 +1578,6 @@ void hud_render_target_ship(object *target_objp)
 					hud_set_iff_color( target_objp, 1 );
 				}
 
-				//This only sort of works. -C
-				gr_resize_screen_pos(&sx, &sy);
 				if ( subsys_in_view ) {
 					draw_brackets_square_quick(sx - 10, sy - 10, sx + 10, sy + 10);
 				} else {
@@ -1645,7 +1640,7 @@ void hud_render_target_debris(object *target_objp)
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;
 		}
-		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f * Hud_target_object_factor);
+		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(debrisp->model_num);
 
 		// This calls the colour that doesnt get reset
@@ -1762,7 +1757,7 @@ void hud_render_target_weapon(object *target_objp)
 		// the objects position
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
-		hud_render_target_setup(&camera_eye, &camera_orient, View_zoom/3 * Hud_target_object_factor);
+		hud_render_target_setup(&camera_eye, &camera_orient, View_zoom/3);
 		model_clear_instance(viewed_model_num);
 
 		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, replacement_textures);

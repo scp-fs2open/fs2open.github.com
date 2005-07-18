@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.127 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.128 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.126  2005/07/07 16:36:57  taylor
  * various compiler warning fixes (some of these from dizzy)
  *
@@ -1170,9 +1174,9 @@ void gr_opengl_activate(int active)
 	
 }
 
-void gr_opengl_pixel(int x, int y)
+void gr_opengl_pixel(int x, int y, bool resize)
 {
-	gr_line(x,y,x,y);
+	gr_line(x,y,x,y,resize);
 }
 
 void gr_opengl_clear()
@@ -1465,7 +1469,7 @@ void gr_opengl_shade(int x,int y,int w,int h)
 }
 */
 
-void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize=false)
+void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize)
 {
 //	mprintf(("gr_opengl_aabitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s\n", 
   //				x, y, w, h, 
@@ -1735,7 +1739,7 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 	TIMERBAR_POP();
 }
 
-void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize = false)
+void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 {
 	if(resize || gr_screen.rendering_to_texture != -1)
 	{
@@ -1825,21 +1829,23 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 //	glHint( GL_LINE_SMOOTH_HINT, GL_FASTEST );
 //	glLineWidth( 1.0 );
 
-	gr_opengl_line( fl2i(v1->sx), fl2i(v1->sy), fl2i(v2->sx), fl2i(v2->sy) );
+	gr_opengl_line( fl2i(v1->sx), fl2i(v1->sy), fl2i(v2->sx), fl2i(v2->sy), false );
 
 //	glDisable( GL_LINE_SMOOTH );
 }
 
-void gr_opengl_gradient(int x1,int y1,int x2,int y2)
+void gr_opengl_gradient(int x1, int y1, int x2, int y2, bool resize)
 {
 	int clipped = 0, swapped=0;
 
-	//gr_resize_screen_pos(&x1, &y1);
-	//gr_resize_screen_pos(&x2, &y2);
-
 	if ( !gr_screen.current_color.is_alphacolor )   {
-		gr_line( x1, y1, x2, y2 );
+		gr_line( x1, y1, x2, y2, resize );
 		return;
+	}
+
+	if (resize || gr_screen.rendering_to_texture != -1) {
+		gr_resize_screen_pos( &x1, &y1 );
+		gr_resize_screen_pos( &x2, &y2 );
 	}
 
 	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);
@@ -1901,15 +1907,15 @@ void gr_opengl_circle( int xc, int yc, int d, bool resize )
 
 	while(x<y)	{
 		// Draw the first octant
-		gr_opengl_line( xc-y, yc-x, xc+y, yc-x );
-		gr_opengl_line( xc-y, yc+x, xc+y, yc+x );
+		gr_opengl_line( xc-y, yc-x, xc+y, yc-x, false );
+		gr_opengl_line( xc-y, yc+x, xc+y, yc+x, false );
                                 
 		if (p<0) 
 			p=p+(x<<2)+6;
 		else	{
 			// Draw the second octant
-			gr_opengl_line( xc-x, yc-y, xc+x, yc-y );
-			gr_opengl_line( xc-x, yc+y, xc+x, yc+y );
+			gr_opengl_line( xc-x, yc-y, xc+x, yc-y, false );
+			gr_opengl_line( xc-x, yc+y, xc+x, yc+y, false );
                                                 
 			p=p+((x-y)<<2)+10;
 			y--;
@@ -1917,8 +1923,8 @@ void gr_opengl_circle( int xc, int yc, int d, bool resize )
 		x++;
 	}
 	if(x==y) {
-		gr_opengl_line( xc-x, yc-y, xc+x, yc-y );
-		gr_opengl_line( xc-x, yc+y, xc+x, yc+y );
+		gr_opengl_line( xc-x, yc-y, xc+x, yc-y, false );
+		gr_opengl_line( xc-x, yc+y, xc+x, yc+y, false );
 	}
 	return;
 }
@@ -1944,13 +1950,13 @@ void gr_opengl_curve( int xc, int yc, int r, int direction)
 			while(a<b)
 			{
 				// Draw the first octant
-				gr_opengl_line(xc - b + 1, yc-a, xc - b, yc-a);
+				gr_opengl_line(xc - b + 1, yc-a, xc - b, yc-a, false);
 
 				if (p<0) 
 					p=p+(a<<2)+6;
 				else	{
 					// Draw the second octant
-					gr_opengl_line(xc-a+1,yc-b,xc-a,yc-b);
+					gr_opengl_line(xc-a+1,yc-b,xc-a,yc-b, false);
 					p=p+((a-b)<<2)+10;
 					b--;
 				}
@@ -1962,13 +1968,13 @@ void gr_opengl_curve( int xc, int yc, int r, int direction)
 			while(a<b)
 			{
 				// Draw the first octant
-				gr_opengl_line(xc + b - 1, yc-a, xc + b, yc-a);
+				gr_opengl_line(xc + b - 1, yc-a, xc + b, yc-a, false);
 
 				if (p<0) 
 					p=p+(a<<2)+6;
 				else	{
 					// Draw the second octant
-					gr_opengl_line(xc+a-1,yc-b,xc+a,yc-b);
+					gr_opengl_line(xc+a-1,yc-b,xc+a,yc-b, false);
 					p=p+((a-b)<<2)+10;
 					b--;
 				}
@@ -1980,13 +1986,13 @@ void gr_opengl_curve( int xc, int yc, int r, int direction)
 			while(a<b)
 			{
 				// Draw the first octant
-				gr_opengl_line(xc - b + 1, yc+a, xc - b, yc+a);
+				gr_opengl_line(xc - b + 1, yc+a, xc - b, yc+a, false);
 
 				if (p<0) 
 					p=p+(a<<2)+6;
 				else	{
 					// Draw the second octant
-					gr_opengl_line(xc-a+1,yc+b,xc-a,yc+b);
+					gr_opengl_line(xc-a+1,yc+b,xc-a,yc+b, false);
 					p=p+((a-b)<<2)+10;
 					b--;
 				}
@@ -1997,13 +2003,13 @@ void gr_opengl_curve( int xc, int yc, int r, int direction)
 			while(a<b)
 			{
 				// Draw the first octant
-				gr_opengl_line(xc + b - 1, yc+a, xc + b, yc+a);
+				gr_opengl_line(xc + b - 1, yc+a, xc + b, yc+a, false);
 
 				if (p<0) 
 					p=p+(a<<2)+6;
 				else	{
 					// Draw the second octant
-					gr_opengl_line(xc+a-1,yc+b,xc+a,yc+b);
+					gr_opengl_line(xc+a-1,yc+b,xc+a,yc+b, false);
 					p=p+((a-b)<<2)+10;
 					b--;
 				}

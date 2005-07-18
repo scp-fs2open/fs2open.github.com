@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-06-22 15:17:53 $
+ * $Revision: 2.23 $
+ * $Date: 2005-07-18 03:44:01 $
  * $Author: taylor $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/06/22 15:17:53  taylor
+ * objnum check when targetinfo is used, fixes message brackets having random text as info
+ *
  * Revision 2.21  2005/05/11 22:15:49  phreak
  * added mission flag that will not show enemy wing names, just the ship class.
  *
@@ -397,34 +400,35 @@ void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize)
 
 	// horizontal lines
 	if ( (x1 + bracket_width > 0) && (x1 < gr_screen.clip_width) ){
-		gr_gradient(x1,y1,x1+bracket_width-1,y1);	// top left
-		gr_gradient(x1,y2,x1+bracket_width-1,y2);	// bottom left
+		gr_gradient(x1,y1,x1+bracket_width-1,y1,false);	// top left
+		gr_gradient(x1,y2,x1+bracket_width-1,y2,false);	// bottom left
 	}
 
 	if ( (x2 - bracket_width < gr_screen.clip_width) && (x2 > 0) )	{
-		gr_gradient(x2, y1, x2-bracket_width+1,y1);	// top right
-		gr_gradient(x2, y2, x2-bracket_width+1,y2);	// bottom right
+		gr_gradient(x2, y1, x2-bracket_width+1,y1,false);	// top right
+		gr_gradient(x2, y2, x2-bracket_width+1,y2,false);	// bottom right
 	}
 
 	// vertical lines
 	if ( (y1 + bracket_height > 0) && (y1 < gr_screen.clip_height) ) {
-		gr_gradient(x1,y1,x1,y1+bracket_height-1);		// top left
-		gr_gradient(x2,y1,x2,y1+bracket_height-1);		// top right
+		gr_gradient(x1,y1,x1,y1+bracket_height-1,false);		// top left
+		gr_gradient(x2,y1,x2,y1+bracket_height-1,false);		// top right
 	}
 
 	if ( (y2 - bracket_height < gr_screen.clip_height) && (y2 > 0) )	{
-		gr_gradient(x1,y2,x1,y2-bracket_height+1);	// bottom left
-		gr_gradient(x2,y2,x2,y2-bracket_height+1);	// bottom right
+		gr_gradient(x1,y2,x1,y2-bracket_height+1,false);	// bottom left
+		gr_gradient(x2,y2,x2,y2-bracket_height+1,false);	// bottom right
 	}
 }
 
+// NOTE: all values should be in unscaled range
 void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick)
 {
 	int	width, height;
 
 	width = x2 - x1;
 	height = y2 - y1;
-
+	
 	// make the brackets extend 25% of the way along the width or height
 	int bracket_width = width/4;
 	int bracket_height = height/4;
@@ -673,6 +677,12 @@ void draw_bounding_brackets_subobject()
 				y2 = subobj_y + (gr_screen.max_h>>1);
 			}
 
+			// *** these unsize take care of everything below ***
+			gr_unsize_screen_pos( &hud_subtarget_w, &hud_subtarget_h );
+			gr_unsize_screen_pos( &subobj_x, &subobj_y );
+			gr_unsize_screen_pos( &x1, &y1 );
+			gr_unsize_screen_pos( &x2, &y2 );
+
 			if ( hud_subtarget_w < Min_subtarget_box_width[gr_screen.res] ) {
 				x1 = subobj_x - (Min_subtarget_box_width[gr_screen.res]>>1);
 				x2 = subobj_x + (Min_subtarget_box_width[gr_screen.res]>>1);
@@ -772,6 +782,7 @@ int hud_bracket_num_ships_attacking(int objnum)
 int	Ships_attacking_bitmap = -1;
 
 // draw_bounding_brackets() will draw the faded brackets that surround the current target
+// NOTE: x1, y1, x2 & y2 are assumed to be scaled sizes, w_correction & h_correction are assumed to be unscaled!!
 void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, int h_correction, float distance, int target_objnum)
 {
 	int width, height;
@@ -783,13 +794,17 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		  ( y1 > gr_screen.clip_height && y2 > gr_screen.clip_height ) )
 		return;
 
+	// *** everything blow is taken care of with this unsize ***
+	gr_unsize_screen_pos(&x1, &y1);
+	gr_unsize_screen_pos(&x2, &y2);
+
 	width = x2-x1;
 	Assert(width>=0);
 
 	height = y2-y1;
 	Assert(height>=0);
 
-	if ( (width>=(gr_screen.max_w)) && (height>=(gr_screen.max_h)) ) {
+	if ( (width >= (gr_screen.max_w_unscaled)) && (height >= (gr_screen.max_h_unscaled)) ) {
 		return;
 	}
 
@@ -804,10 +819,6 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 	}
 		
 	draw_brackets_square(x1-w_correction, y1-h_correction, x2+w_correction, y2+h_correction);
-
-	// *** everything blow is taken care of with this unsize ***
-	gr_unsize_screen_pos(&x1, &y1);
-	gr_unsize_screen_pos(&x2, &y2);
 
 	// draw distance to target in lower right corner of box
 	if ( distance > 0 ) {

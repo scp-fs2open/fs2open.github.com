@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-07-13 15:15:54 $
- * $Author: phreak $
+ * $Revision: 2.52 $
+ * $Date: 2005-07-18 03:44:00 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/07/13 15:15:54  phreak
+ * If the web cursor bitmap isn't found, tell the user to move the executable to the main FS2 directory.
+ *
  * Revision 2.50  2005/07/02 19:42:15  taylor
  * ton of non-standard resolution fixes
  *
@@ -687,6 +690,7 @@
 #include <windowsx.h>
 #endif
 
+#include <limits.h>
 
 //#include "graphics/GrSoft.h"
 #include "globalincs/pstypes.h"
@@ -762,19 +766,33 @@ float Max_draw_distance = Default_Max_draw_distance;
  */
 bool gr_resize_screen_pos(int *x, int *y)
 {
-	if(gr_screen.custom_size < 0 && gr_screen.rendering_to_texture == -1)	return false;
+	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
+		return false;
+
+	// it's possible for x/y to be larger than INT_MAX/INT_MIN when *'d by mult_by_x/y so use a tmp longlong (64 bit)
+	longlong xy_tmp = 0;
 
 	int div_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
 	int div_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
 			
 	if(x) {
-		(*x) *= gr_screen.max_w;
-		(*x) /= div_by_x;
+		xy_tmp = (*x);
+		xy_tmp *= gr_screen.max_w;
+		xy_tmp /= div_by_x;
+
+		Assert( (xy_tmp <= INT_MAX) && (xy_tmp >= INT_MIN) );
+
+		(*x) = (int)xy_tmp;
 	}
 
 	if(y) {
-		(*y) *= gr_screen.max_h;
-		(*y) /= div_by_y;
+		xy_tmp = (*y);
+		xy_tmp *= gr_screen.max_h;
+		xy_tmp /= div_by_y;
+
+		Assert( (xy_tmp <= INT_MAX) && (xy_tmp >= INT_MIN) );
+
+		(*y) = (int)xy_tmp;
 	}
 
 	return true;
@@ -788,19 +806,33 @@ bool gr_resize_screen_pos(int *x, int *y)
  */
 bool gr_unsize_screen_pos(int *x, int *y)
 {
-	if(gr_screen.custom_size < 0 && gr_screen.rendering_to_texture == -1)	return false;
+	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
+		return false;
 
+	// it's possible for x/y to be larger than INT_MAX/INT_MIN when *'d by mult_by_x/y so use a tmp longlong (64 bit)
+	longlong xy_tmp = 0;
+	
 	int mult_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
 	int mult_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
 			
 	if(x) {
-		(*x) *= mult_by_x;
-		(*x) /= gr_screen.max_w;
+		xy_tmp = (*x);
+		xy_tmp *= mult_by_x;
+		xy_tmp /= gr_screen.max_w;
+
+		Assert( (xy_tmp <= INT_MAX) && (xy_tmp >= INT_MIN) );
+
+		(*x) = (int)xy_tmp;
 	}
 
 	if(y) {
-		(*y) *= mult_by_y;
-		(*y) /= gr_screen.max_h;
+		xy_tmp = (*y);
+		xy_tmp *= mult_by_y;
+		xy_tmp /= gr_screen.max_h;
+
+		Assert( (xy_tmp <= INT_MAX) && (xy_tmp >= INT_MIN) );
+
+		(*y) = (int)xy_tmp;
 	}
 
 	return true;
@@ -816,10 +848,11 @@ bool gr_unsize_screen_pos(int *x, int *y)
  */
 bool gr_resize_screen_posf(float *x, float *y)
 {
-	if(gr_screen.custom_size < 0 && gr_screen.rendering_to_texture == -1)	return false;
+	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
+		return false;
 
-	float div_by_x = (float)((gr_screen.custom_size == GR_1024) ? 1024 : 640);
-	float div_by_y = (float)((gr_screen.custom_size == GR_1024) ?  768 : 480);
+	float div_by_x = (gr_screen.custom_size == GR_1024) ? 1024.0f : 640.0f;
+	float div_by_y = (gr_screen.custom_size == GR_1024) ?  768.0f : 480.0f;
 			
 	if(x) {
 		(*x) *= (float)gr_screen.max_w;
@@ -842,10 +875,11 @@ bool gr_resize_screen_posf(float *x, float *y)
  */
 bool gr_unsize_screen_posf(float *x, float *y)
 {
-	if(gr_screen.custom_size < 0 && gr_screen.rendering_to_texture == -1)	return false;
+	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
+		return false;
 
-	float mult_by_x = (float) ((gr_screen.custom_size == GR_1024) ? 1024 : 640);
-	float mult_by_y = (float) ((gr_screen.custom_size == GR_1024) ?  768 : 480);
+	float mult_by_x = (gr_screen.custom_size == GR_1024) ? 1024.0f : 640.0f;
+	float mult_by_y = (gr_screen.custom_size == GR_1024) ?  768.0f : 480.0f;
 			
 	if(x) {
 		(*x) *= mult_by_x;
@@ -1346,7 +1380,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 		int nframes;						// used to pass, not really needed (should be 1)
 
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
-		if (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes) < 0)
+		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 )
 		{
 			Error(LOCATION, "Web cursor bitmap not found.  This usually means that the executable is being run outside the directory you installed Freespace2 to.  Please move the executable to that directory and try again");
 		}
