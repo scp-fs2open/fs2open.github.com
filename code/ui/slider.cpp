@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/slider.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-02-23 13:17:05 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-18 12:42:10 $
  * $Author: taylor $
  *
  * C++ file for controlling and displaying a horizontal slider
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/02/23 13:17:05  taylor
+ * few more compiler warning fixes (didn't mean to commit iostream.h change)
+ * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
+ *
  * Revision 2.6  2005/02/23 04:57:29  taylor
  * even more bm_unload() -> bm_release() changes
  *
@@ -222,8 +226,6 @@ void UI_DOT_SLIDER_NEW::process(int focus)
 	if (button.button_down() || button.pressed() || mouse_captured()) {
 		capture_mouse();  // while we are changing level, ignore all other buttons
 		
-		gr_unsize_screen_pos(&ui_mouse.x, NULL);
-
 		pos = (ui_mouse.x - x) / dot_width;		
 
 		if (pos < 0){
