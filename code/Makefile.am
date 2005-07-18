@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.19 2005-06-19 02:48:13 taylor Exp $
+## $Id: Makefile.am,v 1.20 2005-07-18 03:37:35 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -32,7 +32,6 @@ EXTRA_PROGRAMS = fs2_open_r fs2_open_d wxFRED2_r wxFRED2_d
 ##
 
 FS2_SOURCES =	\
-	PreProcDefines.h	\
 	ai/ai.cpp	\
 	ai/ai.h	\
 	ai/aibig.cpp	\
