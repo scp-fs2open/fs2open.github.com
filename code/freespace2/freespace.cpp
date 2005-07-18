@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.166 $
- * $Date: 2005-07-18 03:44:00 $
+ * $Revision: 2.167 $
+ * $Date: 2005-07-18 14:09:03 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.166  2005/07/18 03:44:00  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.165  2005/07/16 07:03:49  wmcoolmon
  * Unlike my previous commit, this one does not cause a segmentation
  * fault. :)
@@ -3196,7 +3204,17 @@ void game_init()
 		}
 		else 
 		{
-			bool is_640x480 = strstr(ptr, "640") && strstr(ptr, "480"); 
+			bool is_640x480 = true; // default to 640x480 res
+
+			// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
+			//       If the format of that string changes you'll have to change this too!!!
+			if ( sscanf(ptr+5, "(%dx%d)", &width, &height) == 2 ) {
+				// if we are less than 1024x768 res then stay at low-res, otherwise bump it
+				is_640x480 = ( (width < 1024) && (height < 768) );
+			} else {
+				mprintf(("Couldn't determine if we are really using 640x480 res or not!  Going with default..."));
+			}
+
 			int res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
 			
 			// D3D9 should run on a seperate path to D3D8
