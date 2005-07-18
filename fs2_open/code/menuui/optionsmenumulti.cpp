@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-07-13 03:15:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-18 03:45:07 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/13 03:15:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.7  2005/03/02 21:18:19  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -2219,7 +2223,7 @@ void options_multi_vox_process_waveform()
 
 	// grey the screen
 	gr_set_shader(&Grey_shader);
-	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height);
+	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, false);
 
 	switch(Om_vox_test_status){
 	case OM_VOX_TEST_RECORDING:
@@ -2250,7 +2254,7 @@ void options_multi_vox_process_waveform()
 			}
 
 			running_avg /= avg_len;
-			gr_line((gr_screen.max_w - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
+			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
 		}		
 
 		// if this packet would have been dropped, notify the user
@@ -2283,7 +2287,7 @@ void options_multi_vox_process_waveform()
 			}
 
 			running_avg /= avg_len;			
-			gr_line((gr_screen.max_w - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
+			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
 		}				
 		#endif  // ifndef NO_SOUND
 		break;

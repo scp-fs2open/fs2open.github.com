@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-07-13 03:15:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.33 $
+ * $Date: 2005-07-18 03:45:07 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/07/13 03:15:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.31  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -2116,7 +2120,7 @@ void main_hall_maybe_blit_tooltips()
 		gr_get_string_size(&w, NULL, Main_hall->region_descript[text_index]);
 
 		gr_set_shader(&Main_hall_tooltip_shader);
-		gr_shade(0, shader_y, gr_screen.clip_width_unscaled, (gr_screen.clip_height_unscaled - shader_y), true);
+		gr_shade(0, shader_y, gr_screen.clip_width_unscaled, (gr_screen.clip_height_unscaled - shader_y));
 
 		gr_set_color_fast(&Color_bright_white);
 		gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall->region_yval, Main_hall->region_descript[text_index]);
@@ -2155,7 +2159,7 @@ void main_hall_process_help_stuff()
 
 	// set the color and print out text and shader
 	gr_set_color_fast(&Color_bright_white);
-	gr_shade(0, 0, gr_screen.max_w_unscaled, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset, true);
+	gr_shade(0, 0, gr_screen.max_w_unscaled, (2*Main_hall_tooltip_padding[gr_screen.res]) + h - y_anim_offset);
 	gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str);
 }
 

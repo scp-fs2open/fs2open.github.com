@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-07-13 03:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.46 $
+ * $Date: 2005-07-18 03:45:08 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.44  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -945,7 +949,7 @@ int ss_carried_icon_moved()
 {
 	int mx, my;
 
-	mouse_get_pos( &mx, &my );
+	mouse_get_pos_unscaled( &mx, &my );
 	if ( Carried_ss_icon.from_x != mx || Carried_ss_icon.from_y != my) {
 		return 1;
 	}
@@ -2004,13 +2008,12 @@ void ship_select_do(float frametime)
 	
 	if ( ss_icon_being_carried() ) {
 		int mouse_x, mouse_y, sx, sy;
-		mouse_get_pos( &mouse_x, &mouse_y );
+		mouse_get_pos_unscaled( &mouse_x, &mouse_y );
 		sx = mouse_x + Ss_delta_x;
 		sy = mouse_y + Ss_delta_y;
 		if(Ss_icons[Carried_ss_icon.ship_class].model_index == -1)
 		{
 			gr_set_bitmap(Ss_icons[Carried_ss_icon.ship_class].icon_bmaps[ICON_FRAME_SELECTED]);
-			gr_unsize_screen_pos(&sx, &sy);
 			gr_bitmap(sx, sy);
 		}
 		else
@@ -2021,9 +2024,8 @@ void ship_select_do(float frametime)
 
 			int w = 32;
 			int h = 28;
-			gr_resize_screen_pos(&w, &h);
-			draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip, false);
-			draw_brackets_square(sx, sy, sx + w, sy + h, false);
+			draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip);
+			draw_brackets_square(sx, sy, sx + w, sy + h);
 			//gr_shade(mouse_x + Ss_delta_x, mouse_y + Ss_delta_y, 32, 28);
 		}
 	}
@@ -2312,8 +2314,8 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 		ship_info *sip = &Ship_info[ship_class];
 		gr_set_color_fast(color_to_draw);
 		//gr_set_shader(shader_to_use);
-		draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, true);
-		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, true);
+		draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip);
+		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28);
 		//gr_shade(Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28);
 	}
 
@@ -2594,12 +2596,9 @@ int pick_from_ship_list(int screen_offset, int ship_class)
 		int mouse_x, mouse_y;
 
 		ss_set_carried_icon(-1, ship_class);
-		mouse_get_pos( &mouse_x, &mouse_y );
-		Ss_delta_x = Ship_list_coords[gr_screen.res][screen_offset][0];
-		Ss_delta_y = Ship_list_coords[gr_screen.res][screen_offset][1];
-		gr_resize_screen_pos(&Ss_delta_x, &Ss_delta_y);
-		Ss_delta_x -= mouse_x;
-		Ss_delta_y -= mouse_y;
+		mouse_get_pos_unscaled( &mouse_x, &mouse_y );
+		Ss_delta_x = Ship_list_coords[gr_screen.res][screen_offset][0] - mouse_x;
+		Ss_delta_y = Ship_list_coords[gr_screen.res][screen_offset][1] - mouse_y;
 		Assert( Ss_pool[ship_class] >= 0 );
 		rval = 0;
 	}
@@ -2664,12 +2663,9 @@ void pick_from_wing(int wb_num, int ws_num)
 			Assert(Wss_slots[slot_index].ship_class >= 0);
 			ss_set_carried_icon(slot_index, Wss_slots[slot_index].ship_class);
 
-			mouse_get_pos( &mouse_x, &mouse_y );
-			Ss_delta_x = Wing_icon_coords[gr_screen.res][slot_index][0];
-			Ss_delta_y = Wing_icon_coords[gr_screen.res][slot_index][1];
-			gr_resize_screen_pos(&Ss_delta_x, &Ss_delta_y);
-			Ss_delta_x -= mouse_x;
-			Ss_delta_y -= mouse_y;
+			mouse_get_pos_unscaled( &mouse_x, &mouse_y );
+			Ss_delta_x = Wing_icon_coords[gr_screen.res][slot_index][0] - mouse_x;
+			Ss_delta_y = Wing_icon_coords[gr_screen.res][slot_index][1] - mouse_y;
 			Carried_ss_icon.from_x = mouse_x;
 			Carried_ss_icon.from_y = mouse_y;
 			}
@@ -2836,7 +2832,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 			gr_set_color_fast(color_to_draw);
 			//gr_set_shader(shader_to_use);
 			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip);
-			draw_brackets_square(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28, true);
+			draw_brackets_square(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28);
 			//gr_shade(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28);
 		}
 	}
@@ -2905,7 +2901,7 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 			gr_set_color_fast(&Icon_colors[bmap_num]);
 			//gr_set_shader(&Icon_shaders[bmap_num]);
 			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip);
-			draw_brackets_square(x, y, x + 32, y + 28, true);
+			draw_brackets_square(x, y, x + 32, y + 28);
 			//gr_shade(x, y, 32, 28);
 		}
 	}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-18 03:45:07 $
+ * $Author: taylor $
  *
  * Include file for mouse reading routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -115,6 +119,8 @@ extern void mouse_mark_button( uint flags, int set );
 // Returns Button states
 // Always returns coordinates clipped to screen coordinates.
 extern int mouse_get_pos( int *xpos, int *ypos );
+// same as above but gets an unscaled reading (ie. the 1024x768/640x480 equivalent)
+extern int mouse_get_pos_unscaled( int *xpos, int *ypos );
 
 // get_real_pos could be negative.
 extern void mouse_get_real_pos(int *mx, int *my);

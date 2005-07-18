@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-07-13 03:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.54 $
+ * $Date: 2005-07-18 03:45:08 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.52  2005/07/02 19:43:55  taylor
  * ton of non-standard resolution fixes
  *
@@ -1171,7 +1175,7 @@ void wl_set_carried_icon(int from_bank, int from_slot, int weapon_class)
 	Carried_wl_icon.from_slot = from_slot;
 	Carried_wl_icon.weapon_class = weapon_class;
 
-	mouse_get_pos( &mx, &my );
+	mouse_get_pos_unscaled( &mx, &my );
 	Carried_wl_icon.from_x=mx;
 	Carried_wl_icon.from_y=my;
 
@@ -1182,7 +1186,7 @@ void wl_set_carried_icon(int from_bank, int from_slot, int weapon_class)
 int wl_carried_icon_moved()
 {
 	int mx, my;
-	mouse_get_pos( &mx, &my );
+	mouse_get_pos_unscaled( &mx, &my );
 	if ( Carried_wl_icon.from_x != mx || Carried_wl_icon.from_y != my) {
 		return 1;
 	}
@@ -1526,11 +1530,10 @@ void wl_render_overhead_view(float frametime)
 
 						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
 						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
-						//gr_resize_screen_pos(&xc, &yc);
 
-						gr_line(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, xc - 4, Wl_bank_coords[gr_screen.res][x][1] + 12, true);
+						gr_line(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, xc - 4, Wl_bank_coords[gr_screen.res][x][1] + 12);
 						gr_curve(xc - 5, Wl_bank_coords[gr_screen.res][x][1] + 12, 5, 1);
-						gr_line(xc, Wl_bank_coords[gr_screen.res][x][1] + 17, xc, yc, true);
+						gr_line(xc, Wl_bank_coords[gr_screen.res][x][1] + 17, xc, yc);
 						gr_circle(xc, yc, 5);
 
 						//test - couldn't get it to work, probably because
@@ -1586,11 +1589,10 @@ void wl_render_overhead_view(float frametime)
 
 						xc = fl2i(draw_point.sx + Wl_overhead_coords[gr_screen.res][0]);
 						yc = fl2i(draw_point.sy +Wl_overhead_coords[gr_screen.res][1]);
-						//gr_resize_screen_pos(&xc, &yc);
 
-						gr_line(Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, xc + 4, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, true);
+						gr_line(Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, xc + 4, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12);
 						gr_curve(xc, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, 5, 0);
-						gr_line(xc, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 17, xc, yc, true);
+						gr_line(xc, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 17, xc, yc);
 						gr_circle(xc, yc, 5);
 					}
 
@@ -2937,7 +2939,7 @@ int do_mouse_over_ship_weapon(int index)
 		int was_carried = wl_icon_being_carried();
 		maybe_drop_icon_on_slot(index);
 		if ( was_carried && !wl_icon_being_carried() ) {
-			mouse_get_pos( &mx, &my );
+			mouse_get_pos_unscaled( &mx, &my );
 			if ( Carried_wl_icon.from_x != mx || Carried_wl_icon.from_y != my) {
 				dropped_on_slot = 1;
 			}
@@ -2947,7 +2949,7 @@ int do_mouse_over_ship_weapon(int index)
 	// set Hot_weapon_bank if a droppable icon is being held over a slot that
 	// can accept that icon
 	is_moved = 0;
-	mouse_get_pos( &mx, &my );
+	mouse_get_pos_unscaled( &mx, &my );
 	if ( Carried_wl_icon.from_x != mx || Carried_wl_icon.from_y != my) {
 		is_moved = 1;
 	}
@@ -3568,7 +3570,7 @@ void weapon_select_do(float frametime)
 	if ( wl_icon_being_carried() ) {
 		int mx, my, sx, sy;
 		Assert(Carried_wl_icon.weapon_class < MAX_WEAPON_TYPES);
-		mouse_get_pos( &mx, &my );
+		mouse_get_pos_unscaled( &mx, &my );
 		sx = mx + Wl_delta_x;
 		sy = my + Wl_delta_y;
 
@@ -3579,7 +3581,6 @@ void weapon_select_do(float frametime)
 			{
 				gr_set_color_fast(&Color_blue);
 				gr_set_bitmap(icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED]);
-				gr_unsize_screen_pos(&sx, &sy);
 				gr_bitmap(sx, sy);
 			}
 			else
@@ -3587,19 +3588,18 @@ void weapon_select_do(float frametime)
 				gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
 				int w = 56;
 				int h = 24;
-				gr_resize_screen_pos(&w, &h);
-				draw_brackets_square(sx, sy, sx+w, sy+h, false);
+				draw_brackets_square(sx, sy, sx+w, sy+h);
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, 0.4f, sx, sy, w, h, NULL, false);
+					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, 0.4f, sx, sy, w, h, NULL);
 				}
 				else if(icon->laser_bmap != -1)
 				{
 					//Draw laser bitmap
 					gr_set_clip(sx, sy, 56, 24);
 					gr_set_bitmap(icon->laser_bmap);
-					gr_bitmap(0, 0, true);
+					gr_bitmap(0, 0);
 					gr_reset_clip();
 				}
 				else
@@ -3846,7 +3846,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 	else
 	{
 		gr_set_color_fast(color_to_draw);
-		draw_brackets_square(x, y, x + 56, y + 24, true);
+		draw_brackets_square(x, y, x + 56, y + 24);
 
 		if(icon->model_index != -1)
 		{
@@ -3857,7 +3857,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		{
 			gr_set_clip(x, y, 56, 24);
 			gr_set_bitmap(icon->laser_bmap);
-			gr_bitmap(0, 0, true);
+			gr_bitmap(0, 0);
 			gr_reset_clip();
 		}
 		else
@@ -3910,7 +3910,7 @@ void wl_draw_ship_weapons(int index)
 			else
 			{
 				gr_set_color_fast(&Icon_colors[WEAPON_ICON_FRAME_NORMAL]);
-				draw_brackets_square( Wl_bank_coords[gr_screen.res][i][0],  Wl_bank_coords[gr_screen.res][i][1],  Wl_bank_coords[gr_screen.res][i][0] + 56,  Wl_bank_coords[gr_screen.res][i][1] + 24, true);
+				draw_brackets_square( Wl_bank_coords[gr_screen.res][i][0],  Wl_bank_coords[gr_screen.res][i][1],  Wl_bank_coords[gr_screen.res][i][0] + 56,  Wl_bank_coords[gr_screen.res][i][1] + 24);
 			}
 		}
 
@@ -4015,12 +4015,9 @@ void wl_pick_icon_from_list(int index)
 	wl_set_carried_icon(-1, -1, weapon_class);
 	common_flash_button_init();
 
-	mouse_get_pos( &mx, &my );
-	Wl_delta_x = Wl_weapon_icon_coords[gr_screen.res][index][0];
-	Wl_delta_y = Wl_weapon_icon_coords[gr_screen.res][index][1];
-	gr_resize_screen_pos(&Wl_delta_x, &Wl_delta_y);
-	Wl_delta_x -= mx;
-	Wl_delta_y -= my;
+	mouse_get_pos_unscaled( &mx, &my );
+	Wl_delta_x = Wl_weapon_icon_coords[gr_screen.res][index][0] - mx;
+	Wl_delta_y = Wl_weapon_icon_coords[gr_screen.res][index][1] - my;
 }
 
 // ------------------------------------------------------------------------
@@ -4055,14 +4052,11 @@ void pick_from_ship_slot(int num)
 	wl_set_carried_icon(num, Selected_wl_slot, wep[num]);
 	common_flash_button_init();
 			
-	mouse_get_pos( &mx, &my );
+	mouse_get_pos_unscaled( &mx, &my );
 
 	int x_offset = wl_fury_missile_offset_hack(wep[num], wep_count[num]);
-	Wl_delta_x = Wl_bank_coords[gr_screen.res][num][0];
-	Wl_delta_y = Wl_bank_coords[gr_screen.res][num][1];
-	gr_resize_screen_pos(&Wl_delta_x, &Wl_delta_y);
-	Wl_delta_x -= mx + x_offset;
-	Wl_delta_y -= my;
+	Wl_delta_x = Wl_bank_coords[gr_screen.res][num][0] - mx + x_offset;
+	Wl_delta_y = Wl_bank_coords[gr_screen.res][num][1] - my;
 
 	Carried_wl_icon.from_x = mx;
 	Carried_wl_icon.from_y = my;

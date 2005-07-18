@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-18 03:45:07 $
+ * $Author: taylor $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -725,8 +729,8 @@ void goal_text::display(int n, int y)
 		y1 = y + h / 2 - 1;
 
 		// custom_size me
-		gr_line(Goal_screen_icon_x, y1, Goal_screen_text_x - 2, y1, true);
-		gr_line(Goal_screen_text_x + w + 1, y1, Goal_screen_icon_x + Goal_screen_text_w, y1, true);
+		gr_line(Goal_screen_icon_x, y1, Goal_screen_text_x - 2, y1);
+		gr_line(Goal_screen_text_x + w + 1, y1, Goal_screen_icon_x + Goal_screen_text_w, y1);
 
 	} else {
 		gr_set_color_fast(&Color_text_normal);

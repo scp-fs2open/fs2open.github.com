@@ -1606,7 +1606,7 @@ void Window::DoDraw(float frametime)
 	}
 	else
 	{
-		gr_line(Coords[0] + BorderSizes[0], Coords[1], Coords[2] - BorderSizes[2], Coords[1]);
+		gr_line(Coords[0] + BorderSizes[0], Coords[1], Coords[2] - BorderSizes[2], Coords[1], false);
 	}
 
 	if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_BM)))
@@ -1616,7 +1616,7 @@ void Window::DoDraw(float frametime)
 	}
 	else
 	{
-		gr_line(Coords[0] + BorderSizes[0], Coords[3], Coords[2] - BorderSizes[2], Coords[3]);
+		gr_line(Coords[0] + BorderSizes[0], Coords[3], Coords[2] - BorderSizes[2], Coords[3], false);
 	}
 
 	if(!(Style & GS_HIDDEN))
@@ -1628,7 +1628,7 @@ void Window::DoDraw(float frametime)
 		}
 		else
 		{
-			gr_line(Coords[0], Coords[1] + BorderSizes[1], Coords[0], Coords[3] - BorderSizes[3]);
+			gr_line(Coords[0], Coords[1] + BorderSizes[1], Coords[0], Coords[3] - BorderSizes[3], false);
 		}
 
 		if(IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_BORDER, CIE_HANDLE_MR)))
@@ -1638,7 +1638,7 @@ void Window::DoDraw(float frametime)
 		}
 		else
 		{
-			gr_line(Coords[2], Coords[1] + BorderSizes[1], Coords[2], Coords[3] - BorderSizes[3]);
+			gr_line(Coords[2], Coords[1] + BorderSizes[1], Coords[2], Coords[3] - BorderSizes[3], false);
 		}
 	}
 

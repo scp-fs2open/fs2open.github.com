@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/LISTBOX.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-07-02 19:45:02 $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-18 03:45:10 $
  * $Author: taylor $
  *
  * Code to implement a listbox gadget.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/02 19:45:02  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.5  2005/05/12 17:49:17  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -277,7 +280,7 @@ void UI_LISTBOX::draw()
 */
 			if (!uses_bmaps) {
 				gr_set_color_fast( &CBLACK );
-				gr_rect( x1, y1, w1+2, h1, true );
+				gr_rect( x1, y1, w1+2, h1 );
 			}
 
 			gr_set_color_fast(&CWHITE);
@@ -285,12 +288,12 @@ void UI_LISTBOX::draw()
 		} else {
 			if (my_wnd->selected_gadget == this) {
 				gr_set_color_fast( &CGRAY );
-				gr_rect( x1, y1, w1+2, h1, true );
+				gr_rect( x1, y1, w1+2, h1 );
 				gr_set_color_fast( &CBRIGHT_GREEN );
 
 			} else {
 				gr_set_color_fast( &CGRAY );
-				gr_rect( x1, y1, w1+2, h1, true );
+				gr_rect( x1, y1, w1+2, h1 );
 				gr_set_color_fast( &CBLACK );
 			}
 		}

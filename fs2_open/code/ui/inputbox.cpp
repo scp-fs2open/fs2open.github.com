@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-07-02 19:45:02 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-18 03:45:10 $
  * $Author: taylor $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/02 19:45:02  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.6  2005/05/12 17:49:17  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -454,7 +457,7 @@ void UI_INPUTBOX::draw()
 //		}
 
 		// color the background behind the text	
-		gr_rect( 0, 0, tw + 1, th, true );
+		gr_rect( 0, 0, tw + 1, th );
 	}
 
 	if	( (my_wnd->selected_gadget == this) || disabled_flag ) {		

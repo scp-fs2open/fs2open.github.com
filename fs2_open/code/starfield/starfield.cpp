@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-06-19 09:03:05 $
+ * $Revision: 2.55 $
+ * $Date: 2005-07-18 03:45:09 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/06/19 09:03:05  taylor
+ * check_values() shouldn't be inline anymore
+ * remove useless neb2_get_fog_intensity() call
+ * s/alocate/allocate/g
+ *
  * Revision 2.53  2005/04/12 05:26:37  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -2068,9 +2073,9 @@ void stars_draw_stars()
 			gr_set_color_fast( &sp->col );
 
 			if ( Star_flags & STAR_FLAG_TAIL )	{
-				gr_line(fl2i(p1.sx),fl2i(p1.sy),fl2i(p2.sx),fl2i(p2.sy));
+				gr_line(fl2i(p1.sx), fl2i(p1.sy), fl2i(p2.sx), fl2i(p2.sy), false);
 			} else {
-				gr_pixel( fl2i(p2.sx),fl2i(p2.sy) );
+				gr_pixel( fl2i(p2.sx), fl2i(p2.sy), false );
 			}
 		}
 	}

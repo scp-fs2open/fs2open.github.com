@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-07-15 03:48:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2005-07-18 03:45:07 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/07/15 03:48:40  Goober5000
+ * fixed a typo of Kazan's dating all the way back to October 15, 2003 (!!) that
+ * created a nasty stealth bug
+ * --Goober5000
+ *
  * Revision 2.29  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1150,7 +1155,7 @@ void brief_render_icon_line(int stage_num, int line_num)
 
 	brief_set_icon_color(icon[0]->team);
 
-	gr_line(fl2i(icon_x[0]), fl2i(icon_y[0]), fl2i(icon_x[1]), fl2i(icon_y[1]));
+	gr_line(fl2i(icon_x[0]), fl2i(icon_y[0]), fl2i(icon_x[1]), fl2i(icon_y[1]), false);
 }
 
 // -------------------------------------------------------------------------------------

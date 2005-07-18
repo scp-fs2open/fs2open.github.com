@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2005-07-18 03:45:07 $
+ * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.16  2005/06/30 01:48:52  Goober5000
  * * NOX'd none.wav
  * * changed comparisons on none.wav to only look at the first four letters in case
@@ -1226,7 +1230,7 @@ void message_training_display()
 
 	height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
-	gr_shade(Training_message_window_coords[gr_screen.res][0], Training_message_window_coords[gr_screen.res][1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height,true);
+	gr_shade(Training_message_window_coords[gr_screen.res][0], Training_message_window_coords[gr_screen.res][1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
 
 	gr_set_color_fast(&Color_bright_blue);
 	mode = count = 0;
