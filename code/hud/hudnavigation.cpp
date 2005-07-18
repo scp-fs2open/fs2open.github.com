@@ -4,11 +4,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.15 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.13  2005/07/13 02:30:53  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -146,7 +150,7 @@ void HUD_Draw_Navigation()
 			int x = int(target_point.sx);
 			int y = int(target_point.sy);
 			draw_brackets_square(x-box_scale, y-box_scale, 
-							     x+box_scale, y+box_scale);
+							     x+box_scale, y+box_scale, false);
 
 			gr_set_color_fast(&NavColor);
 			// draw the nav name

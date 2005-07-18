@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-05-12 17:49:11 $
+ * $Revision: 2.11 $
+ * $Date: 2005-07-18 03:44:00 $
  * $Author: taylor $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/05/12 17:49:11  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.9  2005/04/24 02:39:36  wmcoolmon
  * Context help fixing goodness
  *
@@ -312,7 +316,7 @@ void context_help_init()
 void context_help_grey_screen()
 {
 	gr_set_shader(&Grey_shader);
-	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height);
+	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, false);
 }
 
 // launch_context_help() will switch to a context sensitive help state
@@ -656,7 +660,7 @@ void help_overlay_blit(int overlay_id)
 	for (idx = 0; idx < textcount; idx++) {
 		gr_set_color_fast(&Color_black);
 		gr_get_string_size(&width, &height, help_overlaylist[overlay_id].textlist[GR_640][idx].string, strlen(help_overlaylist[overlay_id].textlist[GR_640][idx].string));
-		gr_rect(help_overlaylist[overlay_id].textlist[gr_screen.res][idx].x_coord-2*HELP_PADDING, help_overlaylist[overlay_id].textlist[gr_screen.res][idx].y_coord-3*HELP_PADDING, width+4*HELP_PADDING, height+4*HELP_PADDING,true);
+		gr_rect(help_overlaylist[overlay_id].textlist[gr_screen.res][idx].x_coord-2*HELP_PADDING, help_overlaylist[overlay_id].textlist[gr_screen.res][idx].y_coord-3*HELP_PADDING, width+4*HELP_PADDING, height+4*HELP_PADDING);
 		gr_set_color_fast(&Color_bright_white);
 		gr_printf(help_overlaylist[overlay_id].textlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].textlist[gr_screen.res][idx].y_coord, help_overlaylist[overlay_id].textlist[GR_640][idx].string);
 	}

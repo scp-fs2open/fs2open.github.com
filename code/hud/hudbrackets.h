@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * Header file for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.4  2005/01/30 03:26:11  wmcoolmon
  * HUD updates
  *
@@ -95,7 +99,7 @@
 void hud_init_brackets();
 void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, int h_correction, float distance=0.0f, int target_objnum=-1);
 void draw_bounding_brackets_subobject();
-void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize = false);
+void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize = true);
 void draw_brackets_diamond(int x1, int y1, int x2, int y2);
 void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick=0);
 void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2, int thick=0);

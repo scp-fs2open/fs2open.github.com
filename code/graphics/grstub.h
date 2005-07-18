@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.18 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -24,7 +24,7 @@ void gr_stub_set_tex_env_scale(float scale) {}
 void gr_stub_activate(int active) {}
 void gr_stub_preload_init() {}
 int gr_stub_preload(int bitmap_num, int is_aabitmap){return 0;}
-void gr_stub_pixel(int x, int y) {}
+void gr_stub_pixel(int x, int y, bool resize) {}
 void gr_stub_clear() {}
 void gr_stub_flip() {}
 void gr_stub_flip_window(uint _hdc, int x, int y, int w, int h ) {}
@@ -41,7 +41,7 @@ void gr_stub_aabitmap(int x, int y,bool resize) {}
 void gr_stub_string( int sx, int sy, char *s, bool resize = false) {}
 void gr_stub_line(int x1,int y1,int x2,int y2, bool resize = false) {}
 void gr_stub_aaline(vertex *v1, vertex *v2) {}
-void gr_stub_gradient(int x1,int y1,int x2,int y2) {}
+void gr_stub_gradient(int x1,int y1,int x2,int y2, bool resize) {}
 void gr_stub_circle( int xc, int yc, int d, bool resize ) {}
 void gr_stub_curve(int xc, int yc, int r, int direction) {}
 void gr_stub_stuff_fog_coord(vertex *v) {}

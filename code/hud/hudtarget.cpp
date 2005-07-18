@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.64 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.65 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.63  2005/07/02 19:42:15  taylor
  * ton of non-standard resolution fixes
  *
@@ -3202,8 +3206,8 @@ void hud_render_orientation_tee(object *from_objp, object *to_objp, matrix *from
 	y4 = y1 - T_BASE_LENGTH * (float)cos(dot_product);
 
 	// HACK! Should be antialiased!
-	gr_line(fl2i(x3),fl2i(y3),fl2i(x4),fl2i(y4),true);	// bottom of T
-	gr_line(fl2i(x1),fl2i(y1),fl2i(x2),fl2i(y2),true);	// part of T pointing towards center
+	gr_line(fl2i(x3),fl2i(y3),fl2i(x4),fl2i(y4));	// bottom of T
+	gr_line(fl2i(x1),fl2i(y1),fl2i(x2),fl2i(y2));	// part of T pointing towards center
 
 }
 
@@ -3257,9 +3261,9 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 
 void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3)
 {
-	gr_line(fl2i(x1),fl2i(y1),fl2i(x2),fl2i(y2),true);
-	gr_line(fl2i(x2),fl2i(y2),fl2i(x3),fl2i(y3),true);
-	gr_line(fl2i(x3),fl2i(y3),fl2i(x1),fl2i(y1),true);
+	gr_line(fl2i(x1),fl2i(y1),fl2i(x2),fl2i(y2));
+	gr_line(fl2i(x2),fl2i(y2),fl2i(x3),fl2i(y3));
+	gr_line(fl2i(x3),fl2i(y3),fl2i(x1),fl2i(y1));
 }
 
 
@@ -3325,7 +3329,7 @@ void hud_render_tail_missile_triangle(float ang, float xpos, float ypos, float c
 
 	// draw the tail indicating length
 	if ( tail_len > 0 ) {
-		gr_line(fl2i(xpos), fl2i(ypos), fl2i(xtail), fl2i(ytail), true);
+		gr_line(fl2i(xpos), fl2i(ypos), fl2i(xtail), fl2i(ytail));
 	}
 }
 
@@ -3423,7 +3427,7 @@ void hud_render_split_missile_triangle(float ang, float xpos, float ypos, float 
 			hud_tri_empty(x3,y3,x2,y2,x1,y1);
 			hud_tri_empty(x4,y4,x5,y5,x6,y6);
 		}
-		gr_line(fl2i(x2+0.5f),fl2i(y2+0.5f),fl2i(x5+0.5f),fl2i(y5+0.5f),true);
+		gr_line(fl2i(x2+0.5f),fl2i(y2+0.5f),fl2i(x5+0.5f),fl2i(y5+0.5f));
 	}
 }
 
@@ -5071,11 +5075,11 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 	hud_tri(x3,y3,x2,y2,x1,y1);
 	hud_tri(x4,y4,x5,y5,x6,y6);
 	if (on_right || on_bottom){
-		gr_line(fl2i(x2),fl2i(y2),fl2i(x5),fl2i(y5),true);
+		gr_line(fl2i(x2),fl2i(y2),fl2i(x5),fl2i(y5));
 	} else if (on_left) {
-		gr_line(fl2i(x2-1),fl2i(y2),fl2i(x5-1),fl2i(y5),true);
+		gr_line(fl2i(x2-1),fl2i(y2),fl2i(x5-1),fl2i(y5));
 	} else {
-		gr_line(fl2i(x2),fl2i(y2-1),fl2i(x5),fl2i(y5-1),true);
+		gr_line(fl2i(x2),fl2i(y2-1),fl2i(x5),fl2i(y5-1));
 	}
 
 }
@@ -5146,12 +5150,11 @@ void hud_show_weapon_energy_gauge()
 		float remaining;
 		currentx = current_hud->Wenergy_coords[0] + 10;
 		currenty = current_hud->Wenergy_coords[1];
-		if(gr_screen.max_w == 640)
+		if(gr_screen.max_w_unscaled == 640)
 		{
 			max_w = 60;
 		}
 
-		gr_resize_screen_pos(&currentx, &currenty);
 		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 		{
 			//Draw the weapon bright or normal depending if it's active or not.
@@ -5163,7 +5166,7 @@ void hud_show_weapon_energy_gauge()
 			{
 				hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_NORMAL);
 			}
-			gr_string(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name, false);
+			gr_string(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
 
 			//Next 'line'
 			currenty += 10;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.13 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.12  2005/02/27 07:07:47  wmcoolmon
  * nonstandard res HUD stuff
  *
@@ -383,7 +387,7 @@ void HUD_reset_clip();
 void hud_save_restore_camera_data(int save);
 
 // Basically like gr_set_clip only it accounts for hud jittering
-void HUD_set_clip(int x, int y, int w, int h, bool resize = true);
+void HUD_set_clip(int x, int y, int w, int h);
 
 // do flashing text gauge
 void hud_start_text_flash(char *txt, int t);

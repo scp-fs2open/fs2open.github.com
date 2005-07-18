@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.73 $
- * $Date: 2005-07-02 19:42:15 $
+ * $Revision: 2.74 $
+ * $Date: 2005-07-18 03:44:00 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2005/07/02 19:42:15  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.72  2005/06/19 02:31:50  taylor
  * allow screenshots and backsaves in windowed mode
  * account for D3D_textures_in size so that it doesn't hit negative values
@@ -2466,9 +2469,9 @@ void gr_d3d_aascaler(vertex *va, vertex *vb )
  *
  * @return void
  */
-void gr_d3d_pixel(int x, int y)
+void gr_d3d_pixel(int x, int y, bool resize)
 {
-	gr_line(x,y,x,y);
+	gr_line(x,y,x,y,resize);
 }
 
 /**
@@ -3007,7 +3010,7 @@ void gr_d3d_string( int sx, int sy, char *s, bool resize)
 
 //	mprintf(("<%s>\n", s));
 
-	if ( !Current_font || (*s == NULL) )	{
+	if ( !Current_font || !(*s) )	{
 		return;
 	}
 
@@ -3411,7 +3414,7 @@ void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize)
  */
 void gr_d3d_aaline(vertex *v1, vertex *v2)
 {
-	gr_d3d_line( fl2i(v1->sx), fl2i(v1->sy), fl2i(v2->sx), fl2i(v2->sy) );
+	gr_d3d_line( fl2i(v1->sx), fl2i(v1->sy), fl2i(v2->sx), fl2i(v2->sy), false );
 }
 
 /**
@@ -3422,16 +3425,18 @@ void gr_d3d_aaline(vertex *v1, vertex *v2)
  *
  * @return void
  */
-void gr_d3d_gradient(int x1,int y1,int x2,int y2)
+void gr_d3d_gradient(int x1, int y1, int x2, int y2, bool resize)
 {
 	int clipped = 0, swapped=0;
 
-	//gr_resize_screen_pos(&x1, &y1);
-	//gr_resize_screen_pos(&x2, &y2);
-
 	if ( !gr_screen.current_color.is_alphacolor )	{
-		gr_line( x1, y1, x2, y2 );
+		gr_line( x1, y1, x2, y2, resize );
 		return;
+	}
+
+	if (resize || gr_screen.rendering_to_texture != -1) {
+		gr_resize_screen_pos( &x1, &y1 );
+		gr_resize_screen_pos( &x2, &y2 );
 	}
 
 	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.62 $
- * $Date: 2005-07-13 02:50:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.63 $
+ * $Date: 2005-07-18 03:44:00 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/07/13 02:50:47  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.61  2005/07/02 19:42:15  taylor
  * ton of non-standard resolution fixes
  *
@@ -910,7 +914,7 @@ typedef struct screen {
 	void (*gf_string)(int x, int y, char * text,bool resize);
 
 	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
-	void (*gf_gradient)(int x1, int y1, int x2, int y2);
+	void (*gf_gradient)(int x1, int y1, int x2, int y2, bool resize);
  
 	void (*gf_circle)(int x, int y, int r, bool resize);
 	void (*gf_curve)(int x, int y, int r, int direction);
@@ -925,7 +929,7 @@ typedef struct screen {
 	// not this if you have two 3d points.
 	void (*gf_aaline)(vertex *v1, vertex *v2);
 
-	void (*gf_pixel)( int x, int y );
+	void (*gf_pixel)( int x, int y, bool resize );
 
 	// Scales current bitmap between va and vb with clipping
 	void (*gf_scaler)(vertex *va, vertex *vb );
@@ -1215,8 +1219,8 @@ __inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool re
 	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize);
 }
 
-void gr_rect(int x, int y, int w, int h, bool resize = false);
-void gr_shade(int x, int y, int w, int h, bool resize = false);
+void gr_rect(int x, int y, int w, int h, bool resize = true);
+void gr_shade(int x, int y, int w, int h, bool resize = true);
 
 //#define gr_shade				GR_CALL(gr_screen.gf_shade)
 //#define gr_string				GR_CALL(gr_screen.gf_string)
@@ -1233,18 +1237,28 @@ __inline void gr_circle(int xc, int yc, int d, bool resize = true)
 #define gr_curve				GR_CALL(gr_screen.gf_curve)
 
 //#define gr_line				GR_CALL(gr_screen.gf_line)
-__inline void gr_line(int x1, int y1, int x2, int y2, bool resize = false)
+__inline void gr_line(int x1, int y1, int x2, int y2, bool resize = true)
 {
 	(*gr_screen.gf_line)(x1, y1, x2, y2, resize);
 }
+
 #define gr_aaline				GR_CALL(gr_screen.gf_aaline)
-#define gr_pixel				GR_CALL(gr_screen.gf_pixel)
+
+//#define gr_pixel				GR_CALL(gr_screen.gf_pixel)
+__inline void gr_pixel(int x, int y, bool resize = true)
+{
+	(*gr_screen.gf_pixel)(x, y, resize);
+}
 #define gr_scaler				GR_CALL(gr_screen.gf_scaler)
 #define gr_aascaler			GR_CALL(gr_screen.gf_aascaler)
 #define gr_tmapper			GR_CALL(gr_screen.gf_tmapper)
 #define gr_tmapper_batch_3d_unlit	GR_CALL(gr_screen.gf_tmapper_batch_3d_unlit)
 
-#define gr_gradient			GR_CALL(gr_screen.gf_gradient)
+//#define gr_gradient			GR_CALL(gr_screen.gf_gradient)
+__inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
+{
+	(*gr_screen.gf_gradient)(x1, y1, x2, y2, resize);
+}
 
 
 #define gr_fade_in			GR_CALL(gr_screen.gf_fade_in)

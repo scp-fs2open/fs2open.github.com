@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-18 03:44:01 $
+ * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.13  2005/07/02 19:42:15  taylor
  * ton of non-standard resolution fixes
  *
@@ -678,7 +682,7 @@ void hud_init_msg_window()
 {
 	int i, h;
 
-	MSG_WINDOW_WIDTH = gr_screen.clip_width - 20;
+	MSG_WINDOW_WIDTH = gr_screen.clip_width_unscaled - 20;
 
 	Hud_list_start = 0;
 	Hud_list_end = 0;
@@ -702,7 +706,6 @@ void hud_init_msg_window()
 
 	MSG_WINDOW_FONT_HEIGHT = h;
 	MSG_WINDOW_HEIGHT = MSG_WINDOW_FONT_HEIGHT * (ACTIVE_BUFFER_LINES-1);
-	gr_resize_screen_pos(NULL, &MSG_WINDOW_HEIGHT);
 
 	// starting a mission, free the scroll-back buffers, but only if we've been
 	// through this function once already
@@ -740,7 +743,7 @@ void hud_show_msg_window()
 	hud_set_default_color();
 	gr_set_font(FONT1);
 
-	HUD_set_clip(MSG_WINDOW_X_START,MSG_WINDOW_Y_START, MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2, false);
+	HUD_set_clip(MSG_WINDOW_X_START,MSG_WINDOW_Y_START, MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2);
 
 	if ( OLD_ACTIVE_BUFFER_LINES != ACTIVE_BUFFER_LINES ) {
 		// the size of the message window has changed, the best thing to do is to put all
@@ -1136,7 +1139,6 @@ void hud_add_msg_to_scrollback(char *text, int source, int t)
 	int msg_len, w, max_width, x, offset = 0;
 
 	max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
-	gr_resize_screen_pos(&max_width, NULL);
 	msg_len = strlen(text);
 	if (msg_len == 0)
 		return;
@@ -1148,7 +1150,6 @@ void hud_add_msg_to_scrollback(char *text, int source, int t)
 	if (ptr) {
 		gr_get_string_size(&w, NULL, buf, ptr - buf);
 	}
-	gr_unsize_screen_pos(&w, NULL);
 
 //	if (ptr) {
 //		gr_get_string_size(&w, NULL, buf, ptr - buf + 2);
