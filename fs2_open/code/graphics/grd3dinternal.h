@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.46 $
- * $Date: 2005-07-13 02:50:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.47 $
+ * $Date: 2005-07-19 04:52:56 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/07/13 02:50:47  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.45  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -584,7 +588,7 @@ int gr_d3d_zbuffer_set(int mode);
 void gr_d3d_tmapper( int nverts, vertex **verts, uint flags );
 void gr_d3d_scaler(vertex *va, vertex *vb );
 void gr_d3d_aascaler(vertex *va, vertex *vb );
-void gr_d3d_pixel(int x, int y);
+void gr_d3d_pixel(int x, int y, bool resize);
 void gr_d3d_clear();
 void gr_d3d_set_clip(int x,int y,int w,int h,bool resize);
 void gr_d3d_reset_clip();
@@ -606,9 +610,9 @@ void gr_d3d_char(int x,int y,int letter);
 void gr_d3d_string( int sx, int sy, char *s, bool resize = true );
 void gr_d3d_circle( int xc, int yc, int d, bool resize = true );
 void gr_d3d_curve( int xc, int yc, int r, int direction );
-void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize = false);
+void gr_d3d_line(int x1,int y1,int x2,int y2, bool resize = true);
 void gr_d3d_aaline(vertex *v1, vertex *v2);
-void gr_d3d_gradient(int x1,int y1,int x2,int y2);
+void gr_d3d_gradient(int x1,int y1,int x2,int y2, bool resize = true);
 void gr_d3d_set_palette(ubyte *new_palette, int restrict_alphacolor);
 void gr_d3d_diamond(int x, int y, int width, int height);
 void gr_d3d_print_screen(char *filename);

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.74 $
- * $Date: 2005-07-18 03:44:00 $
+ * $Revision: 2.75 $
+ * $Date: 2005-07-19 04:52:56 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2005/07/18 03:44:00  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.73  2005/07/02 19:42:15  taylor
  * ton of non-standard resolution fixes
  *
@@ -3232,23 +3240,23 @@ void gr_d3d_circle( int xc, int yc, int d, bool resize)
 
 	while(x<y)	{
 		// Draw the first octant
-		gr_d3d_line( xc-y, yc-x, xc+y, yc-x );
-		gr_d3d_line( xc-y, yc+x, xc+y, yc+x );
+		gr_d3d_line( xc-y, yc-x, xc+y, yc-x, false );
+		gr_d3d_line( xc-y, yc+x, xc+y, yc+x, false );
 
 		if (p<0) 
 			p=p+(x<<2)+6;
 		else	{
 			// Draw the second octant
-			gr_d3d_line( xc-x, yc-y, xc+x, yc-y );
-			gr_d3d_line( xc-x, yc+y, xc+x, yc+y );
+			gr_d3d_line( xc-x, yc-y, xc+x, yc-y, false );
+			gr_d3d_line( xc-x, yc+y, xc+x, yc+y, false );
 			p=p+((x-y)<<2)+10;
 			y--;
 		}
 		x++;
 	}
 	if(x==y)	{
-		gr_d3d_line( xc-x, yc-y, xc+x, yc-y );
-		gr_d3d_line( xc-x, yc+y, xc+x, yc+y );
+		gr_d3d_line( xc-x, yc-y, xc+x, yc-y, false );
+		gr_d3d_line( xc-x, yc+y, xc+x, yc+y, false );
 	}
 }
 
@@ -3279,13 +3287,13 @@ void gr_d3d_curve( int xc, int yc, int r, int direction)
 			while(a<b)
 			{
 				// Draw the first octant
-				gr_d3d_line(xc - b + 1, yc-a, xc - b, yc-a);
+				gr_d3d_line(xc - b + 1, yc-a, xc - b, yc-a, false);
 
 				if (p<0) 
 					p=p+(a<<2)+6;
 				else	{
 					// Draw the second octant
-					gr_d3d_line(xc-a+1,yc-b,xc-a,yc-b);
+					gr_d3d_line(xc-a+1,yc-b,xc-a,yc-b, false);
 					p=p+((a-b)<<2)+10;
 					b--;
 				}
@@ -3297,13 +3305,13 @@ void gr_d3d_curve( int xc, int yc, int r, int direction)
 			while(a<b)
 			{
 				// Draw the first octant
-				gr_d3d_line(xc + b - 1, yc-a, xc + b, yc-a);
+				gr_d3d_line(xc + b - 1, yc-a, xc + b, yc-a, false);
 
 				if (p<0) 
 					p=p+(a<<2)+6;
 				else	{
 					// Draw the second octant
-					gr_d3d_line(xc+a-1,yc-b,xc+a,yc-b);
+					gr_d3d_line(xc+a-1,yc-b,xc+a,yc-b, false);
 					p=p+((a-b)<<2)+10;
 					b--;
 				}
@@ -3315,13 +3323,13 @@ void gr_d3d_curve( int xc, int yc, int r, int direction)
 			while(a<b)
 			{
 				// Draw the first octant
-				gr_d3d_line(xc - b + 1, yc+a, xc - b, yc+a);
+				gr_d3d_line(xc - b + 1, yc+a, xc - b, yc+a, false);
 
 				if (p<0) 
 					p=p+(a<<2)+6;
 				else	{
 					// Draw the second octant
-					gr_d3d_line(xc-a+1,yc+b,xc-a,yc+b);
+					gr_d3d_line(xc-a+1,yc+b,xc-a,yc+b, false);
 					p=p+((a-b)<<2)+10;
 					b--;
 				}
@@ -3332,13 +3340,13 @@ void gr_d3d_curve( int xc, int yc, int r, int direction)
 			while(a<b)
 			{
 				// Draw the first octant
-				gr_d3d_line(xc + b - 1, yc+a, xc + b, yc+a);
+				gr_d3d_line(xc + b - 1, yc+a, xc + b, yc+a, false);
 
 				if (p<0) 
 					p=p+(a<<2)+6;
 				else	{
 					// Draw the second octant
-					gr_d3d_line(xc+a-1,yc+b,xc+a,yc+b);
+					gr_d3d_line(xc+a-1,yc+b,xc+a,yc+b, false);
 					p=p+((a-b)<<2)+10;
 					b--;
 				}
