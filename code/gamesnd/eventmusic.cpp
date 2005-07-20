@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-06-30 01:48:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2005-07-20 02:37:32 $
+ * $Author: taylor $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/06/30 01:48:52  Goober5000
+ * * NOX'd none.wav
+ * * changed comparisons on none.wav to only look at the first four letters in case
+ *   we don't have an extension or in case some weirdo decides to put none.ogg
+ * * simulated speech pre-empts "beeps" in in-game messages
+ * --Goober5000
+ *
  * Revision 2.20  2005/04/25 00:22:34  wmcoolmon
  * Added parse_sound; replaced Assert() with an if() (The latter may not be a good idea, but it keeps missions from being un-debuggable)
  *
@@ -441,10 +448,21 @@ void event_music_init()
 			return;
 	}
 
+	int i, j;
+
 	//MUST be called before parsing stuffzors.
 	Num_music_files = 0;
 	Num_soundtracks = 0;		// Global
 	event_music_reset_choices();
+
+	// Goober5000 - clear all the filenames, so we're compatible with the extra NRMLs in FS1 music
+	for (i = 0; i < MAX_SOUNDTRACKS; i++)
+	{
+		for (j = 0; j < MAX_PATTERNS; j++)
+		{
+			strcpy(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
+		}
+	}
 
 	//Do teh parsing
 	event_music_parse_musictbl("music.tbl", false);
@@ -453,7 +471,7 @@ void event_music_init()
 	char *tbl_file_names[MAX_TBL_PARTS];
 
 	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-mus.tbm", CF_SORT_REVERSE);
-	for(int i = 0; i < num_files; i++)
+	for(i = 0; i < num_files; i++)
 	{
 		//HACK HACK HACK
 		modular_tables_loaded = true;
@@ -1272,16 +1290,8 @@ void parse_menumusic()
 //
 void event_music_parse_musictbl(char* longname, bool is_chunk)
 {
-	int rval, i, j;
+	int rval;
 
-	// Goober5000 - clear all the filenames, so we're compatible with the extra NRMLs in FS1 music
-	for (i = 0; i < MAX_SOUNDTRACKS; i++)
-	{
-		for (j = 0; j < MAX_PATTERNS; j++)
-		{
-			strcpy(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
-		}
-	}
 
 	if ((rval = setjmp(parse_abort)) != 0) {
 		Error(LOCATION, "Unable to parse %sl!  Code = %i.\n", longname, rval);
