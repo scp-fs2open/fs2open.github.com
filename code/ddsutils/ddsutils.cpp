@@ -65,7 +65,17 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 
 	// calculate the type and size of the data
 	if (dds_header.ddpfPixelFormat.dwFlags & DDPF_FOURCC) {
-		*size = dds_header.dwMipMapCount > 1 ? dds_header.dwPitchOrLinearSize * 2 : dds_header.dwPitchOrLinearSize;
+		// did I mention lately that I hate Microsoft?
+		// this is here to fix the situation where Microsoft doesn't follow their own docs
+		if ( dds_header.dwPitchOrLinearSize <= 0 ) {
+			if (dds_header.dwDepth == 0)
+				dds_header.dwDepth = 1;
+
+			// calculate the block size, mult by 8 for DXT1, 16 for DXT3 & 5
+			*size = ((dds_header.dwWidth + 3)/4) * ((dds_header.dwHeight + 3)/4) * ((dds_header.dwDepth + 3)/4) * ((dds_header.ddpfPixelFormat.dwFourCC == FOURCC_DXT1) ? 8 : 16);
+		} else {
+			*size = dds_header.dwMipMapCount > 1 ? dds_header.dwPitchOrLinearSize * 2 : dds_header.dwPitchOrLinearSize;
+		}
 
 		switch (dds_header.ddpfPixelFormat.dwFourCC) {
 			case FOURCC_DXT1:
