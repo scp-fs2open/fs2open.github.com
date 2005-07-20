@@ -2,13 +2,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.128 $
- * $Date: 2005-07-18 03:44:01 $
+ * $Revision: 2.129 $
+ * $Date: 2005-07-20 02:35:51 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2005/07/18 03:44:01  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.127  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -896,6 +904,9 @@ static const char* OGL_extensions;
 
 static float max_aniso=1.0f;			//max anisotropic filtering ratio
 
+static float GL_uv_resize_offset_u = 0.0f;
+static float GL_uv_resize_offset_v = 0.0f;
+
 void (*gr_opengl_set_tex_src)(gr_texture_source ts);
 
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
@@ -1515,6 +1526,8 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 	if ( do_resize ) {
 		gr_resize_screen_posf( &x1, &y1 );
 		gr_resize_screen_posf( &x2, &y2 );
+		u1 -= GL_uv_resize_offset_u;
+		v1 -= GL_uv_resize_offset_v;
 	}
 
 	if ( gr_screen.current_color.is_alphacolor )	{
@@ -4140,6 +4153,12 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
+
+	if (gr_screen.custom_size != -1) {
+		// taken from D3D version
+		GL_uv_resize_offset_u = GL_uv_resize_offset_v = 0.0044f;
+		gr_unsize_screen_posf( &GL_uv_resize_offset_u, &GL_uv_resize_offset_v );
+	}
 
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
 
