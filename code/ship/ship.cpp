@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.208 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.209 $
+ * $Date: 2005-07-21 07:53:13 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.208  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.207  2005/07/13 02:01:30  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -1599,6 +1603,7 @@ extern int Cmdline_nohtl;
 //#define COLLISION_VEL_CONST			0.1
 #define COLLISION_FRICTION_FACTOR	0.0		// ratio of maximum friction impulse to repulsion impulse
 #define COLLISION_ROTATION_FACTOR	1.0		// increase in rotation from collision
+#define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
 
 int	Ai_render_debug_flag=0;
 #ifndef NDEBUG
@@ -2611,15 +2616,34 @@ strcpy(parse_error_text, temp_error);
 		sip->max_hull_strength = 100.0f;
 	}
 
+	//Hull rep rate
+	sip->hull_repair_rate = 0.0f;
 	if(optional_string("$Hull Repair Rate:"))
-		stuff_float(&sip->hull_repair_rate_percent);
-	else
-		sip->hull_repair_rate_percent = 0.0f;
+	{
+		stuff_float(&sip->hull_repair_rate);
+		sip->hull_repair_rate *= 0.01f;
+		
+		//Sanity checking
+		if(sip->hull_repair_rate > 1.0f)
+			sip->hull_repair_rate = 1.0f;
+		else if(sip->hull_repair_rate < -1.0f)
+			sip->hull_repair_rate = -1.0f;
+	}
 
+	//Subsys rep rate
+	//-1 represents not set, in which case the default is used for the ship (if it is small)
+	sip->subsys_repair_rate = -2.0f;
 	if(optional_string("$Subsystem Repair Rate:"))
-		stuff_float(&sip->subsys_repair_rate_percent);
-	else
-		sip->subsys_repair_rate_percent = 0.01f;	//Old SHIP_REPAIR_SUBSYSTEM_RATE define
+	{
+		stuff_float(&sip->subsys_repair_rate);
+		sip->subsys_repair_rate *= 0.01f;
+		
+		//Sanity checking
+		if(sip->subsys_repair_rate > 1.0f)
+			sip->subsys_repair_rate = 1.0f;
+		else if(sip->subsys_repair_rate < -1.0f)
+			sip->subsys_repair_rate = -1.0f;
+	}
 	
 	sip->armor_type_idx = -1;
 	if(optional_string("$Armor Type:"))
@@ -6061,11 +6085,12 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 #define SUBSYS_REPAIR_THRESHOLD		0.1	// only repair subsystems that have > 10% strength
 void ship_auto_repair_frame(int shipnum, float frametime)
 {
-	ship_subsys			*ssp;
+	ship_subsys		*ssp;
 	ship_subsys_info	*ssip;
-	ship					*sp;
-	ship_info			*sip;
-	object				*objp;
+	ship			*sp;
+	ship_info		*sip;
+	object			*objp;
+	float			real_repair_rate;
 
 	#ifndef NDEBUG
 	if ( !Ship_auto_repair )	// only repair subsystems if Ship_auto_repair flag is set
@@ -6078,9 +6103,9 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 	objp = &Objects[sp->objnum];
 
 	//Repair the hull...or maybe unrepair?
-	if(sip->hull_repair_rate_percent != 0.0f && objp->hull_strength < sp->ship_max_hull_strength)
+	if(sip->hull_repair_rate != 0.0f)
 	{
-		objp->hull_strength += sp->ship_max_hull_strength * sip->hull_repair_rate_percent * frametime;
+		objp->hull_strength += sp->ship_max_hull_strength * sip->hull_repair_rate * frametime;
 
 		if(objp->hull_strength > sp->ship_max_hull_strength)
 		{
@@ -6090,12 +6115,16 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 
 	// only allow for the auto-repair of subsystems on small ships
 	//...NOT. Check if var has been changed from def -C
-	if ( !(sip->flags & SIF_SMALL_SHIP) && sip->subsys_repair_rate_percent == 0.01f)
+	if ( !(sip->flags & SIF_SMALL_SHIP) && sip->subsys_repair_rate == -2.0f)
 		return;
+	
+	if(sip->subsys_repair_rate == -2.0f)
+		real_repair_rate = SHIP_REPAIR_SUBSYSTEM_RATE;
+	else
+		real_repair_rate = sip->subsys_repair_rate;
 
 	// AL 3-14-98: only allow auto-repair if power output not zero
-	//...NOT. Check if var has been changed from def -C
-	if ( (sip->power_output <= 0 && sip->subsys_repair_rate_percent == 0.01f) || sip->subsys_repair_rate_percent == 0.0f)
+	if (sip->power_output <= 0)
 		return;
 	
 	// iterate through subsystems, repair as needed based on elapsed frametime
@@ -6110,8 +6139,8 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 				continue;
 
 			// do incremental repair on the subsystem
-			ssp->current_hits += ssp->max_hits * sip->subsys_repair_rate_percent * frametime;
-			ssip->current_hits += ssip->total_hits * sip->subsys_repair_rate_percent * frametime;
+			ssp->current_hits += ssp->max_hits * real_repair_rate * frametime;
+			ssip->current_hits += ssip->total_hits * real_repair_rate * frametime;
 		
 			// check for overflow of current_hits
 			if ( ssp->current_hits >= ssp->max_hits ) {

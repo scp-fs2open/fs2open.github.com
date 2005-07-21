@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.99 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.100 $
+ * $Date: 2005-07-21 07:53:14 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.98  2005/07/13 02:30:54  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -1456,8 +1460,8 @@ typedef struct ship_info {
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
 
-	float	hull_repair_rate_percent;				//How much of the hull is repaired every second
-	float	subsys_repair_rate_percent;		//How fast 
+	float	hull_repair_rate;				//How much of the hull is repaired every second
+	float	subsys_repair_rate;		//How fast 
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 
