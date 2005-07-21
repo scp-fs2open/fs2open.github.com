@@ -179,8 +179,8 @@ void set_ship_variables_ship(ship_info *sip)
 
 	SVW_SET_SI_VAR(max_shield_strength);
 	SVW_SET_SI_VAR(max_hull_strength);
-	SVW_SET_SI_VAR(subsys_repair_rate_percent);
-	SVW_SET_SI_VAR(hull_repair_rate_percent);
+	SVW_SET_SI_VAR(subsys_repair_rate);
+	SVW_SET_SI_VAR(hull_repair_rate);
 	SVW_SET_SI_VAR(cmeasure_max);
 	svt[i]->SetText(sip->shield_icon_index);
 	svt[i++]->SetSaveLoc(&sip->shield_icon_index, T_ST_ONENTER, Hud_shield_filename_count-1, 0);
