@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.209 $
- * $Date: 2005-07-21 07:53:13 $
- * $Author: wmcoolmon $
+ * $Revision: 2.210 $
+ * $Date: 2005-07-22 03:54:46 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.209  2005/07/21 07:53:13  wmcoolmon
+ * Changed $Hull Repair Rate and $Subsystem Repair Rate to be percentages,
+ * as well as making them accept all values between -1 and 1
+ *
  * Revision 2.208  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -8189,7 +8193,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
 				fbfire_info.beam_info_override = NULL;
 				fbfire_info.shooter = &Objects[shipp->objnum];
-				fbfire_info.target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+				if (aip->target_objnum >= 0) {
+					fbfire_info.target = &Objects[aip->target_objnum];
+				} else {
+					fbfire_info.target = NULL;
+				}
 				fbfire_info.turret = &shipp->fighter_beam_turret_data;
 				fbfire_info.fighter_beam = true;
 				fbfire_info.bank = bank_to_fire;
@@ -8368,18 +8376,24 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	
 						if (winfo_p->wi_flags & WIF_FLAK)
 						{
-							object* target=&Objects[aip->target_objnum];
+							object *target;
 							vec3d predicted_pos;
 							float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
 							float range_to_target;
 							float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
-												
+
+							if (aip->target_objnum != -1) {
+								target = &Objects[aip->target_objnum];
+							} else {
+								target = NULL;
+							}
+
 							set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
 							
 							range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
 	
 							//if we have a target and its in range
-							if ((target) && (range_to_target < flak_range))
+							if ((target != NULL) && (range_to_target < flak_range))
 							{
 								//set flak range to range of ship
 								flak_pick_range(&Objects[weapon_objnum],&predicted_pos,wepstr);
