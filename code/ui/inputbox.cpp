@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-07-18 03:45:10 $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-22 03:53:31 $
  * $Author: taylor $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/18 03:45:10  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.7  2005/07/02 19:45:02  taylor
  * ton of non-standard resolution fixes
  *
@@ -478,9 +485,9 @@ void UI_INPUTBOX::draw()
 
 	// draw the text
 	if (flags & UI_INPUTBOX_FLAG_PASSWD){
-		gr_string(text_x, text_y, passwd_text, false);
+		gr_string(text_x, text_y, passwd_text);
 	} else {
-		gr_string(text_x, text_y, text, false);
+		gr_string(text_x, text_y, text);
 	}
 
 	// draw the "cursor"

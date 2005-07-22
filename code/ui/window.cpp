@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-07-18 03:45:10 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-22 03:53:32 $
  * $Author: taylor $
  *
  * Routines to handle UI windows.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/18 03:45:10  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.6  2005/07/02 19:45:02  taylor
  * ton of non-standard resolution fixes
  *
@@ -246,7 +253,7 @@ void UI_WINDOW::set_mask_bmap(int bmap, char *name)
 
 		mask_bmap_id = bmap;
 		mask_bmap_ptr = bm_lock(mask_bmap_id, 8, BMP_AABITMAP);
-		mask_data = (ushort *) mask_bmap_ptr->data;		
+		mask_data = (ubyte *) mask_bmap_ptr->data;		
 		bm_get_info( bmap, &mask_w, &mask_h );
 		tt_group = -1;
 		/*
@@ -319,6 +326,7 @@ void UI_WINDOW::release_bitmaps()
 			mask_bmap_id = -1;
 		}
 
+		mask_data = NULL;
 		mask_bmap_ptr = NULL;
 	}
 
@@ -439,7 +447,7 @@ int UI_WINDOW::get_current_hotspot()
 
 	// check the pixel value under the mouse
 	offset = ui_mouse.y * gr_screen.max_w_unscaled + ui_mouse.x;
-	pixel_val = *( ((ubyte*)mask_data) + offset);
+	pixel_val = *(mask_data + offset);
 	return pixel_val;
 }
 

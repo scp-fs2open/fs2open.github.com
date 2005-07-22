@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-18 03:45:08 $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-22 03:53:31 $
  * $Author: taylor $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/18 03:45:08  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.13  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -800,7 +807,8 @@ void multi_ts_do()
 		break;
 
 	case KEY_ENTER|KEY_CTRLED:
-		multi_ts_commit_pressed();
+	//	multi_ts_commit_pressed();
+		Commit_pressed = 1;
 		break;
 	}		
 
@@ -866,6 +874,13 @@ void multi_ts_do()
 	
 	// flip the buffer
 	gr_flip();
+
+	// If the commit button was pressed, do the commit button actions.  Done at the end of the
+	// loop since we are a bit special and have to close out in the proper order.
+	if ( Commit_pressed ) {		
+		multi_ts_commit_pressed();		
+		Commit_pressed = 0;
+	}
 }
 
 // close the team select screen (always call, even when switching between weapon select, etc)
@@ -1349,7 +1364,8 @@ void multi_ts_button_pressed(int n)
 		break;
 	// commit button
 	case MULTI_TS_COMMIT :				
-		multi_ts_commit_pressed();
+	//	multi_ts_commit_pressed();
+		Commit_pressed = 1;
 		break;
 	default :
 		gamesnd_play_iface(SND_GENERAL_FAIL);		
@@ -1546,7 +1562,7 @@ void multi_ts_init_snazzy()
 	memset(Multi_ts_region,0,sizeof(MENU_REGION) * MULTI_TS_NUM_SNAZZY_REGIONS);	
 
 	// get a pointer to the mask bitmap data
-	Multi_ts_mask_data = (ubyte*)Multi_ts_window.get_mask_data(&Multi_ts_mask_w, &Multi_ts_mask_h);
+	Multi_ts_mask_data = Multi_ts_window.get_mask_data(&Multi_ts_mask_w, &Multi_ts_mask_h);
 
 	// add the wing slots information
 	snazzy_menu_add_region(&Multi_ts_region[Multi_ts_snazzy_regions++], "",	TSWING_0_SHIP_0,		0);
