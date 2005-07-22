@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2005-07-22 09:19:40 $
+ * $Author: wmcoolmon $
  *
  * Header file for HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.4  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -347,7 +351,7 @@ extern int Hud_target_w, Hud_target_h;
 
 extern shader Training_msg_glass;
 
-extern char *Ai_class_names[];
+extern char **Ai_class_names;
 extern char *Submode_text[];
 extern char *Strafe_submode_text[];
 
@@ -431,4 +435,3 @@ void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
 float hud_find_target_distance( object *targetee, object *targeter );
 
 #endif
-
