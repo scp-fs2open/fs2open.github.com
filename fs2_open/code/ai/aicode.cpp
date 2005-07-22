@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-07-13 02:50:48 $
- * $Author: Goober5000 $
+ * $Revision: 1.16 $
+ * $Date: 2005-07-22 03:54:45 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.14  2005/07/13 02:30:52  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -6272,7 +6276,7 @@ void set_primary_weapon_linkage(object *objp)
 	shipp->flags &= ~SF_PRIMARY_LINKED;
 
 	// AL: ensure target is a ship!
-	if ( Objects[aip->target_objnum].type == OBJ_SHIP ) {
+	if ( (aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) ) {
 		// If trying to destroy a big ship (i.e., not disable/disarm), always unleash all weapons
 		if ( ship_get_SIF(&Ships[Objects[aip->target_objnum].instance]) & SIF_BIG_SHIP) {
 			if ( aip->targeted_subsys == NULL ) {

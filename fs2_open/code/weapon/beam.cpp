@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.54 $
+ * $Date: 2005-07-22 03:54:46 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.52  2005/07/12 21:01:40  Goober5000
  * properly fixed beam_apply_whack()
  * --Goober5000
@@ -828,10 +832,11 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// for now, only allow ship targets
-	if(!fire_info->fighter_beam)
-	if((fire_info->target->type != OBJ_SHIP) && (fire_info->target->type != OBJ_ASTEROID) && (fire_info->target->type != OBJ_DEBRIS) && (fire_info->target->type != OBJ_WEAPON)){
-		return -1;
-	}	
+	if (!fire_info->fighter_beam) {
+		if((fire_info->target == NULL) || ((fire_info->target->type != OBJ_SHIP) && (fire_info->target->type != OBJ_ASTEROID) && (fire_info->target->type != OBJ_DEBRIS) && (fire_info->target->type != OBJ_WEAPON))){
+			return -1;
+		}
+	}
 
 	// make sure the beam_info_index is valid
 	Assert((fire_info->beam_info_index >= 0) && (fire_info->beam_info_index < MAX_WEAPON_TYPES) && (Weapon_info[fire_info->beam_info_index].wi_flags & WIF_BEAM));
@@ -877,7 +882,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->f_collision_count = 0;
 	new_item->target = fire_info->target;
 	new_item->target_subsys = fire_info->target_subsys;
-	new_item->target_sig = fire_info->target->signature;	
+	new_item->target_sig = (fire_info->target != NULL) ? fire_info->target->signature : 0;
 	new_item->beam_sound_loop = -1;
 	new_item->type = wip->b_info.beam_type;
 	new_item->targeting_laser_offset = fire_info->targeting_laser_offset;
@@ -2174,6 +2179,11 @@ void beam_delete(beam *b)
 int beam_get_model(object *objp)
 {
 	int subtype;
+
+	if (objp == NULL) {
+		return -1;
+	}
+
 	Assert(objp->instance >= 0);
 	if(objp->instance < 0){
 		return -1;
