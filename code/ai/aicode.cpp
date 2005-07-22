@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-07-22 03:54:45 $
- * $Author: taylor $
+ * $Revision: 1.17 $
+ * $Date: 2005-07-22 09:19:39 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/07/22 03:54:45  taylor
+ * better error checking/handling for when you fire primary/beam weapons without a target selected
+ *
  * Revision 1.15  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1041,10 +1044,10 @@ waypoint_list Waypoint_lists[MAX_WAYPOINT_LISTS];
 #define	STEALTH_MAX_VIEW_DIST	400		// dist at which 1) stealth no longer visible 2) firing inaccuracy is greatest
 #define	STEALTH_VIEW_CONE_DOT	0.707		// (half angle of 45 degrees)
 
-
-ai_class	Ai_classes[MAX_AI_CLASSES];
+ai_class *Ai_classes = NULL;
 int	Ai_firing_enabled = 1;
 int	Num_ai_classes;
+int Num_alloced_ai_classes;
 
 int	AI_FrameCount = 0;
 int	Ship_info_inited = 0;
@@ -1147,7 +1150,7 @@ pnode		*Ppfp;			//	Free pointer in path points.
 
 float	AI_frametime;
 
-char *Ai_class_names[MAX_AI_CLASSES];
+char** Ai_class_names = NULL;
 
 // global for rearm status for teams
 int Ai_friendly_rearm_timestamp, Ai_hostile_rearm_timestamp, Ai_neutral_rearm_timestamp, Ai_traitor_rearm_timestamp, Ai_unknown_rearm_timestamp;
@@ -1458,6 +1461,15 @@ void parse_int_list(int *ilist)
 	}
 }
 
+void free_ai_stuff()
+{
+	if(Ai_classes != NULL)
+		vm_free(Ai_classes);
+	
+	if(Ai_class_names != NULL)
+		vm_free(Ai_class_names);
+}
+
 void parse_ai_class()
 {
 	ai_class	*aicp = &Ai_classes[Num_ai_classes];
@@ -1480,6 +1492,7 @@ void parse_ai_class()
 	parse_float_list(aicp->ai_patience);
 }
 
+#define AI_CLASS_INCREMENT		10
 void parse_aitbl()
 {
 	// open localization
@@ -1489,20 +1502,33 @@ void parse_aitbl()
 
 	reset_parse();
 
+	//Just in case parse_aitbl is called twice
+	free_ai_stuff();
+	
 	Num_ai_classes = 0;
-
+	Num_alloced_ai_classes = AI_CLASS_INCREMENT;
+	Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
+	Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
+	
 	required_string("#AI Classes");
 
 	while (required_string_either("#End", "$Name:")) {
-		Assert( Num_ai_classes < MAX_AI_CLASSES);
 
 		parse_ai_class();
 
 		Num_ai_classes++;
+		if(Num_ai_classes >= Num_alloced_ai_classes)
+		{
+			Num_alloced_ai_classes += AI_CLASS_INCREMENT;
+			Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
+			Ai_class_names = (char**) vm_realloc(Ai_class_names, Num_alloced_ai_classes * sizeof(char*));
+		}
 	}
 
 	// close localization
 	lcl_ext_close();
+	
+	atexit(free_ai_stuff);
 }
 
 void parse_difftbl()
@@ -15842,4 +15868,3 @@ void maybe_cheat_fire_synaptic(object *objp, ai_info *aip)
 	}
 
 }
-

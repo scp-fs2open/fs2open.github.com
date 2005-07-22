@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.3 $
- * $Date: 2005-07-13 02:50:48 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2005-07-22 09:19:39 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.2  2005/04/05 05:53:13  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -377,11 +381,6 @@ typedef struct ai_goal {
 
 } ai_goal;
 
-#ifdef INF_BUILD
-#define	MAX_AI_CLASSES		30
-#else
-#define	MAX_AI_CLASSES		10
-#endif
 #define	MAX_GOAL_SHIP_NAMES	100
 
 #define	AIM_CHASE				0
@@ -712,8 +711,8 @@ extern ai_info *Player_ai;
 
 extern int Waypoints_created;	// externed since needed for save/restore
 
-extern ai_class Ai_classes[];
-extern char *Ai_class_names[];
+extern ai_class *Ai_classes;
+extern char** Ai_class_names;
 
 extern int Num_ai_classes;
 extern int Ai_firing_enabled;
