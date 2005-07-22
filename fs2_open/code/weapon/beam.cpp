@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-07-22 03:54:46 $
- * $Author: taylor $
+ * $Revision: 2.55 $
+ * $Date: 2005-07-22 10:18:37 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/07/22 03:54:46  taylor
+ * better error checking/handling for when you fire primary/beam weapons without a target selected
+ *
  * Revision 2.53  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -38,7 +41,7 @@
  * animated beam muzzle glows
  *
  * Revision 2.46  2005/03/02 21:24:48  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.45  2005/01/17 23:35:45  argv
  * Surface shields.

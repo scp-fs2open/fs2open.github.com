@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-13 02:50:51 $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-22 10:18:37 $
  * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/13 02:50:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.15  2005/07/13 02:01:28  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -32,7 +36,7 @@
  * --Goober5000
  *
  * Revision 2.11  2005/03/02 21:24:43  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.10  2005/01/30 09:27:39  Goober5000
  * nitpicked some boolean tests, and fixed two small bugs

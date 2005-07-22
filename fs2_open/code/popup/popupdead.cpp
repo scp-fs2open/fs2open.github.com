@@ -9,15 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:35:35 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-22 10:18:40 $
  * $Author: Goober5000 $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:35:35  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/03/02 21:24:42  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.5  2004/12/11 09:37:50  wmcoolmon
  * Apparently I never commited -mpnoreturn...

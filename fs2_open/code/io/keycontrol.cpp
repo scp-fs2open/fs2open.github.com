@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-07-13 03:15:52 $
+ * $Revision: 2.56 $
+ * $Date: 2005-07-22 10:18:39 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.54  2005/07/13 02:30:53  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -47,7 +51,6 @@
  *
  * Revision 2.46  2005/03/27 04:16:19  wmcoolmon
  * Fixed possible infinite loop problem
- * ----------------------------------------------------------------------
  *
  * Revision 2.45  2005/03/25 06:57:34  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
@@ -56,7 +59,7 @@
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
  * Revision 2.43  2005/03/02 21:24:41  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.42  2005/02/21 05:40:16  Goober5000
  * restored release version of some cheat codes; removed a cheat for cloaking

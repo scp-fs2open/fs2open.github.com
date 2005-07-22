@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-13 03:35:35 $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-22 10:18:40 $
  * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/13 03:35:35  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.15  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -23,7 +27,7 @@
  * (re)move some uneeded variables to fix compiler warnings
  *
  * Revision 2.13  2005/03/02 21:24:46  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.12  2005/02/04 20:06:07  taylor
  * merge with Linux/OSX tree - p0204-2

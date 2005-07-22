@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-16 04:41:04 $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-22 10:18:35 $
  * $Author: Goober5000 $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/16 04:41:04  Goober5000
+ * cleanup and clarification of phreak's fix of a bug propagated by me and penguin
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -28,7 +32,7 @@
  * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
  *
  * Revision 2.11  2005/03/02 21:24:46  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.10  2004/07/26 20:47:50  Kazan
  * remove MCD complete

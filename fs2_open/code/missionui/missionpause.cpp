@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-13 03:25:58 $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-22 10:18:39 $
  * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.13  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -24,7 +28,7 @@
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
  * Revision 2.10  2005/03/02 21:24:45  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.9  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes

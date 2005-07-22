@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.3 $
- * $Date: 2005-07-13 02:50:48 $
+ * $Revision: 1.4 $
+ * $Date: 2005-07-22 10:18:36 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.2  2005/05/11 11:38:03  Goober5000
  * fixed a docking bug
  * --Goober5000
@@ -24,7 +28,7 @@
  * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
  *
  * Revision 2.24  2005/03/02 21:24:47  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.23  2005/01/31 10:34:39  taylor
  * merge with Linux/OSX tree - p0131

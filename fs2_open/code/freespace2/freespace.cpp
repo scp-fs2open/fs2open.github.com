@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.167 $
- * $Date: 2005-07-18 14:09:03 $
- * $Author: taylor $
+ * $Revision: 2.168 $
+ * $Date: 2005-07-22 10:18:38 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.167  2005/07/18 14:09:03  taylor
+ * better "is_640x480" detection, 800x600 res was using GR_1024 where it should have used GR_640
+ *
  * Revision 2.166  2005/07/18 03:44:00  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -179,7 +182,7 @@
  * well that was good and wrong
  *
  * Revision 2.126  2005/03/02 21:24:43  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.125  2005/03/01 06:55:40  bobboau
  * oh, hey look I've commited something :D

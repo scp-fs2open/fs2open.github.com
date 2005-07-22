@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-07-13 03:26:00 $
+ * $Revision: 2.25 $
+ * $Date: 2005-07-22 10:18:37 $
  * $Author: Goober5000 $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/07/13 03:26:00  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.23  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -39,7 +43,7 @@
  * some campaign savefile fixage to stop reverting everyones data
  *
  * Revision 2.18  2005/03/02 21:24:44  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.17  2005/01/31 23:27:54  taylor
  * merge with Linux/OSX tree - p0131-2

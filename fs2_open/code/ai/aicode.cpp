@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-07-22 09:19:39 $
- * $Author: wmcoolmon $
+ * $Revision: 1.18 $
+ * $Date: 2005-07-22 10:18:36 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/07/22 09:19:39  wmcoolmon
+ * Dynamic AI Class number commit. KNOWN BUG: When AI_CLASS_INCREMENT is hit and vm_realloc is called, memory corruption seems to
+ * result. Not at all sure what causes this; if this can't be resolved soon, we can always treat _INCREMENT like _MAX
+ *
  * Revision 1.16  2005/07/22 03:54:45  taylor
  * better error checking/handling for when you fire primary/beam weapons without a target selected
  *
@@ -98,7 +102,7 @@
  * Turret AI code optimizations. If freaky stuff happens, call WMC()
  *
  * Revision 2.92  2005/03/02 21:24:46  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.91  2005/03/01 06:55:43  bobboau
  * oh, hey look I've commited something :D

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.159 $
- * $Date: 2005-07-13 03:35:31 $
+ * $Revision: 2.160 $
+ * $Date: 2005-07-22 10:18:41 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.159  2005/07/13 03:35:31  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.158  2005/07/13 02:30:54  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -103,7 +107,7 @@
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
  * Revision 2.135  2005/03/02 21:24:42  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.134  2005/02/04 23:29:32  taylor
  * merge with Linux/OSX tree - p0204-3

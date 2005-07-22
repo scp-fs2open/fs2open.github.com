@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-13 03:35:30 $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-22 10:18:37 $
  * $Author: Goober5000 $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.12  2005/06/07 06:10:51  wmcoolmon
  * This may stop targeting not-targetable ships in EMP
  *
@@ -23,7 +27,7 @@
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
  * Revision 2.10  2005/03/02 21:24:48  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.9  2005/01/31 23:27:55  taylor
  * merge with Linux/OSX tree - p0131-2

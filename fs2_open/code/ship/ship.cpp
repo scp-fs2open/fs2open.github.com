@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.211 $
- * $Date: 2005-07-22 04:31:12 $
+ * $Revision: 2.212 $
+ * $Date: 2005-07-22 10:18:35 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.211  2005/07/22 04:31:12  Goober5000
+ * fixed another bug when changing ship classes
+ * --Goober5000
+ *
  * Revision 2.210  2005/07/22 03:54:46  taylor
  * better error checking/handling for when you fire primary/beam weapons without a target selected
  *
@@ -176,7 +180,7 @@
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
  * Revision 2.166  2005/03/02 21:24:47  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.165  2005/03/01 23:05:38  taylor
  * unbreak Linux build (not valid C/C++ anyway, block scope)

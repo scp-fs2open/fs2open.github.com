@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-13 03:35:30 $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-22 10:18:35 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.13  2005/07/13 00:44:21  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -24,7 +28,7 @@
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
  * Revision 2.11  2005/03/02 21:24:47  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.10  2004/07/26 20:47:51  Kazan
  * remove MCD complete

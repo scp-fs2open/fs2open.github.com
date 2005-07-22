@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-07-13 03:25:59 $
+ * $Revision: 2.41 $
+ * $Date: 2005-07-22 10:18:39 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.39  2005/07/13 02:01:29  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -78,7 +82,7 @@
  * some campaign savefile fixage to stop reverting everyones data
  *
  * Revision 2.25  2005/03/02 21:24:45  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.24  2004/12/23 15:58:55  phreak
  * commits for scramble-messages and unscramble-messages

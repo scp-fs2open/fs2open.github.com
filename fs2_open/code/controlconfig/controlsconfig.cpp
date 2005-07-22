@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-13 02:50:50 $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-22 10:18:37 $
  * $Author: Goober5000 $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/13 02:50:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.15  2005/07/07 16:36:57  taylor
  * various compiler warning fixes (some of these from dizzy)
  *
@@ -35,7 +39,7 @@
  * fix unusable warning flag with libjpeg building
  *
  * Revision 2.10  2005/03/02 21:24:43  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.9  2004/07/29 19:37:50  Kazan
  * unbug the JS bug i caused --- kazan
