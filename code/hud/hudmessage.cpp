@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-18 03:44:01 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-22 10:18:38 $
+ * $Author: Goober5000 $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/18 03:44:01  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.14  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -34,7 +42,7 @@
  * don't let hud messages walk off screen when res is GR_640
  *
  * Revision 2.9  2005/03/02 21:24:44  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.8  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots

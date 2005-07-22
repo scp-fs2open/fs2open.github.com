@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-07-18 03:45:08 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2005-07-22 10:18:39 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/07/18 03:45:08  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.29  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -38,7 +45,7 @@
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
  * Revision 2.23  2005/03/02 21:24:45  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.22  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes

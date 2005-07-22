@@ -9,15 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-13 03:15:52 $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-22 10:18:38 $
  * $Author: Goober5000 $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.8  2005/03/02 21:24:44  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.7  2005/01/16 22:39:09  wmcoolmon
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.

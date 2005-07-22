@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.65 $
- * $Date: 2005-07-18 03:44:01 $
- * $Author: taylor $
+ * $Revision: 2.66 $
+ * $Date: 2005-07-22 10:18:38 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/07/18 03:44:01  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.64  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -63,7 +71,7 @@
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
  * Revision 2.51  2005/03/02 21:24:44  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.50  2005/01/30 03:26:11  wmcoolmon
  * HUD updates

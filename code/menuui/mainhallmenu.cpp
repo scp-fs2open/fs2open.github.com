@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-07-18 03:45:07 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2005-07-22 10:18:36 $
+ * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/07/18 03:45:07  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.32  2005/07/13 03:15:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -40,7 +47,7 @@
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
  * Revision 2.25  2005/03/02 21:24:44  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.24  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204

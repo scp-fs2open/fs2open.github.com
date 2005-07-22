@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-13 03:15:50 $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-22 10:18:37 $
  * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/13 03:15:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.15  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -25,7 +29,7 @@
  * fix unusable warning flag with libjpeg building
  *
  * Revision 2.13  2005/03/02 21:24:44  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.12  2005/02/23 04:51:56  taylor
  * some bm_unload() -> bm_release() changes to save bmpman slots

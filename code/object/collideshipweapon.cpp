@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-07-13 03:35:31 $
+ * $Revision: 2.20 $
+ * $Date: 2005-07-22 10:18:37 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/07/13 03:35:31  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.18  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -25,7 +29,7 @@
  * --Goober5000
  *
  * Revision 2.16  2005/03/02 21:24:46  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.15  2005/01/26 03:40:43  argv
  * Removed the implicit surface shield on mesh-shielded ships.

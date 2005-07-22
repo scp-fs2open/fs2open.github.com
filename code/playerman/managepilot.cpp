@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-07-13 03:35:32 $
+ * $Revision: 2.22 $
+ * $Date: 2005-07-22 10:18:39 $
  * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.20  2005/05/08 20:22:38  wmcoolmon
  * Dynamically allocated medals
  *
@@ -34,7 +38,7 @@
  * --Goober5000
  *
  * Revision 2.16  2005/03/02 21:24:46  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.15  2005/02/23 04:57:28  taylor
  * even more bm_unload() -> bm_release() changes

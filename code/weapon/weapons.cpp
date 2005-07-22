@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.118  2005/06/30 00:36:10  Goober5000
  * Removed "beam no whack" as setting the beam's mass to 0 achieves the same effect.
  * --Goober5000
@@ -115,7 +119,7 @@
  * animated beam muzzle glows
  *
  * Revision 2.92  2005/03/02 21:24:48  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.91  2005/03/01 06:55:45  bobboau
  * oh, hey look I've commited something :D

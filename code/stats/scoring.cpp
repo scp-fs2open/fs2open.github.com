@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 03:35:32 $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-22 10:18:40 $
  * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.11  2005/06/19 02:47:00  taylor
  * never "promote" to a lower rank than current
  *
@@ -27,7 +31,7 @@
  * Dynamically allocated medals
  *
  * Revision 2.8  2005/03/02 21:24:47  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.7  2005/02/04 20:06:09  taylor
  * merge with Linux/OSX tree - p0204-2

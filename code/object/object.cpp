@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-07-13 03:35:31 $
+ * $Revision: 2.41 $
+ * $Date: 2005-07-22 10:18:37 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/07/13 03:35:31  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.39  2005/06/19 02:43:14  taylor
  * jumpnodes can get deleted outside of FRED now so allow for that
  *
@@ -36,7 +40,7 @@
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
  * Revision 2.33  2005/03/02 21:24:46  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.32  2005/03/01 06:55:42  bobboau
  * oh, hey look I've commited something :D

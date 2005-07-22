@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-07-13 03:35:30 $
+ * $Revision: 2.44 $
+ * $Date: 2005-07-22 10:18:36 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.42  2005/04/25 00:31:14  wmcoolmon
  * Dynamically allocated engine washes; subsystem sounds; armor fixes. Line 4268 of ship.cpp, apparently, works properly; bears further looking into.
  *
@@ -47,7 +51,7 @@
  * some campaign savefile fixage to stop reverting everyones data
  *
  * Revision 2.36  2005/03/02 21:24:47  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.35  2005/02/23 04:57:28  taylor
  * even more bm_unload() -> bm_release() changes

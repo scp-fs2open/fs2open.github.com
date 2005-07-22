@@ -9,18 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-13 03:26:00 $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-22 10:18:40 $
  * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/13 03:26:00  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.8  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
  * Revision 2.7  2005/03/02 21:24:42  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.6  2005/02/04 20:06:04  taylor
  * merge with Linux/OSX tree - p0204-2

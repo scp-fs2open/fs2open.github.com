@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 03:35:32 $
+ * $Revision: 2.11 $
+ * $Date: 2005-07-22 10:18:40 $
  * $Author: Goober5000 $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.9  2005/07/02 19:45:02  taylor
  * ton of non-standard resolution fixes
  *
@@ -24,7 +28,7 @@
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
  *
  * Revision 2.7  2005/03/02 21:24:47  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.6  2005/02/04 10:12:33  taylor
  * merge with Linux/OSX tree - p0204

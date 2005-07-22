@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-07-13 02:50:48 $
+ * $Revision: 2.20 $
+ * $Date: 2005-07-22 10:18:36 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.18  2005/07/13 02:01:28  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -43,7 +47,7 @@
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
  * Revision 2.10  2005/03/02 21:24:43  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.9  2004/07/26 20:47:23  Kazan
  * remove MCD complete

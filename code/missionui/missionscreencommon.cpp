@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-07-13 03:25:58 $
+ * $Revision: 2.23 $
+ * $Date: 2005-07-22 10:18:39 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.21  2005/04/11 05:50:36  taylor
  * some limits.h fixes to make GCC happier
  * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
@@ -37,7 +41,7 @@
  * Fixx0red odd drag problems
  *
  * Revision 2.15  2005/03/02 21:24:45  taylor
- * more NO_NETWORK/INF_BUILD goodness for Windows, takes care of a few warnings too
+ * more network/inferno goodness for Windows, takes care of a few warnings too
  *
  * Revision 2.14  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
