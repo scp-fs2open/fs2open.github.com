@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.210 $
- * $Date: 2005-07-22 03:54:46 $
- * $Author: taylor $
+ * $Revision: 2.211 $
+ * $Date: 2005-07-22 04:31:12 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.210  2005/07/22 03:54:46  taylor
+ * better error checking/handling for when you fire primary/beam weapons without a target selected
+ *
  * Revision 2.209  2005/07/21 07:53:13  wmcoolmon
  * Changed $Hull Repair Rate and $Subsystem Repair Rate to be percentages,
  * as well as making them accept all values between -1 and 1
@@ -7422,16 +7425,50 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_info	*sip;
 	ship			*sp;
 	object		*objp;
+	float hull_pct, shield_pct;
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
 	objp = &Objects[sp->objnum];
 
+	// Goober5000 - maintain the original hull and shield percentages when called by sexp
+	if (by_sexp)
+	{
+		// hull
+		if (sp->special_hitpoint_index != -1) {
+			hull_pct = objp->hull_strength / (float) atoi(Sexp_variables[sp->special_hitpoint_index+HULL_STRENGTH].text);
+		} else {
+			hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
+		}
+
+		// shield
+		if (sp->special_hitpoint_index != -1) {
+			shield_pct = get_shield_strength(objp) / (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		} else {
+			shield_pct = get_shield_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
+		}
+	}
+	// set to 100% otherwise
+	else
+	{
+		hull_pct = 1.0f;
+		shield_pct = 1.0f;
+	}
+
+	// Goober5000 - extra checks
+	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
+	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
+	if (hull_pct <= 0.0f) hull_pct = 0.1f;
+	if (hull_pct > 1.0f) hull_pct = 1.0f;
+	if (shield_pct < 0.0f) shield_pct = 0.0f;
+	if (shield_pct > 1.0f) shield_pct = 1.0f;
+
+
 	// point to new ship data
 	sp->ship_info_index = ship_type;
-
 	ship_model_change(n, ship_type, 1);
+
 
 	// set the correct hull strength
 	if (Fred_running) {
@@ -7444,14 +7481,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_max_hull_strength = sip->max_hull_strength;
 		}
 
-		// Goober5000: don't set hull strength if called by sexp
-		if (!by_sexp)
-		{
-			objp->hull_strength = sp->ship_max_hull_strength;
-		}
+		objp->hull_strength = hull_pct * sp->ship_max_hull_strength;
 	}
 
-	// set the correct shields strength
+
+	// set the correct shield strength
 	if (Fred_running) {
 		if (sp->ship_max_shield_strength)
 			sp->ship_max_shield_strength = 100.0f;
@@ -7463,16 +7497,14 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
 
-		// Goober5000: don't set shield strength if called by sexp
-		if (!by_sexp)
-		{
-			set_shield_strength(objp, sp->ship_max_shield_strength);
-		}
+		set_shield_strength(objp, shield_pct * sp->ship_max_shield_strength);
 	}
+
 
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
+
 
 	// subsys stuff done only after hull stuff is set
 
