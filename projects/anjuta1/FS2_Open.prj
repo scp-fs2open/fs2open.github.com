@@ -322,7 +322,6 @@ module.include.files=\
 	graphics/gropengltexture.h\
 	autopilot/autopilot.h\
 	hud/hudnavigation.h\
-	PreProcDefines.h\
 	hud/hudparse.h\
 	graphics/gropenglbmpman.h\
 	object/objectdock.h\
