@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-04-05 05:53:18 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-07-22 09:59:30 $
+ * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/04/05 05:53:18  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.22  2005/03/25 06:57:35  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -763,11 +766,12 @@ float vm_vec_copy_normalize(vec3d *dest,vec3d *src)
 
 	//	Mainly here to trap attempts to normalize a null vector.
 	if (m <= 0.0f) {
-		static int been_warned2 = false;//added this so the warning could be sounded and you can still get on with playing-Bobboau
-		if(!been_warned2){
+//		static int been_warned2 = false;//added this so the warning could be sounded and you can still get on with playing-Bobboau
+//		if(!been_warned2)
+		{
 			Warning(LOCATION, "Null vec3d in vec3d normalize.\n"
 							  "Trace out of vecmat.cpp and find offending code.\n");
-			been_warned2 = true;
+//			been_warned2 = true;
 		}
 
 		dest->xyz.x = 1.0f;
