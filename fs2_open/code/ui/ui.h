@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:35:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-22 03:53:32 $
+ * $Author: taylor $
  *
  * Include file for our user interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:35:36  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/01/31 23:27:55  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -956,7 +960,7 @@ protected:
 	int mask_bmap_id;						// bitmap id of the mask bitmap to define hotspots
 	int foreground_bmap_id;				// bitmap id of the foreground bitmap to display
 	bitmap *mask_bmap_ptr;				// pointer to bitmap of the mask
-	ushort *mask_data;					// points to raw mask bitmap data
+	ubyte *mask_data;					// points to raw mask bitmap data
 	int mask_w, mask_h;					// width and height of the mask
 
 	UI_XSTR	*xstrs[MAX_UI_XSTRS];	// strings for drawing in code instead of in artwork
@@ -983,7 +987,7 @@ public:
 	void draw_XSTR_forced(UI_GADGET *owner, int frame);
 	int get_current_hotspot();
 	void destroy();
-	ushort *get_mask_data(int *w_md, int *h_md) { *w_md = mask_w; *h_md = mask_h; return mask_data; }
+	ubyte *get_mask_data(int *w_md, int *h_md) { *w_md = mask_w; *h_md = mask_h; return mask_data; }
 	void render_tooltip(char *str);
 	void set_ignore_gadgets(int state);
 	void add_XSTR(char *string, int xstr_id, int x, int y, UI_GADGET *assoc, int color_type, int font_id = -1);
