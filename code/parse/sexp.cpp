@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.160 $
- * $Date: 2005-07-22 10:18:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.161 $
+ * $Date: 2005-07-23 22:48:28 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.160  2005/07/22 10:18:41  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.159  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -18814,8 +18818,9 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 4 to 12 arguments...\r\n"
 		"\t1:\tX position (negative value to be from right of screen)\r\n"
 		"\t2:\tY position (negative value to be from bottom of screen)\r\n"
-		"\t3:\tTime to be displayed, not including fadein/out\r\n"
-		"\t4:\tText to display"
+		"\t3:\tText to display"
+		"\t4:\tTime to be displayed, not including fadein/out\r\n"
+		"\t(optional)\r\n"
 		"\t5:\tImage name\r\n"
 		"\t6:\tFade in time\r\n"
 		"\t7:\tCenter horizontally?\r\n"
