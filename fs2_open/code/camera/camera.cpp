@@ -8,7 +8,7 @@
 std::vector<subtitle> Subtitles;
 std::vector<camera> Cameras;
 //Preset cameras
-camera* Free_camera;
+camera* Free_camera = NULL;
 
 //This is where the camera class beings! :D
 camera::camera()
@@ -32,15 +32,18 @@ camera::~camera()
 
 void camera::reset()
 {
-	memset(&position, 0, sizeof(position));
+	position = vmd_zero_vector;
+	
 	if(desired_position != NULL)
 	{
 		delete desired_position;
 		desired_position = NULL;
 	}
+	
 	translation_velocity = translation_vel_limit = translation_acc_limit = vmd_zero_vector;
 
 	vm_set_identity(&orientation);
+	
 	if(desired_orientation != NULL)
 	{
 		delete desired_orientation;
@@ -52,7 +55,6 @@ void camera::reset()
 void camera::set_position(vec3d *in_position, float in_translation_time, float in_translation_acceleration_time)
 {
 	position = *in_position;
-
 }
 
 void camera::set_translation_velocity(vec3d *in_velocity)
@@ -212,20 +214,22 @@ void camera::do_frame(float in_frametime)
 		rotation_rate = vel_out;
 
 		//TODO: Make this "if(*desired_orienation == orientation)"
+		//Note that this means we are finished rotating
 		if(vel_out.xyz.x == 0.0f && vel_out.xyz.y == 0.0f && vel_out.xyz.z == 0.0f)
 		{
 			delete desired_orientation;
 			desired_orientation = NULL;
+			rotation_rate = rotation_vel_limit = rotation_acc_limit = vmd_zero_vector;
 		}
 	}
-	else
+	else if(rotation_rate.xyz.x || rotation_rate.xyz.y || rotation_rate.xyz.z)
 	{
 		//TODO: Make this right.
 		angles new_orientation;
 		vm_angles_2_matrix(&orientation, &new_orientation);
-		new_orientation.p = rotation_rate.xyz.z;
-		new_orientation.b = rotation_rate.xyz.x;
-		new_orientation.h = rotation_rate.xyz.y;
+		new_orientation.p += rotation_rate.xyz.z;
+		new_orientation.b += rotation_rate.xyz.x;
+		new_orientation.h += rotation_rate.xyz.y;
 		vm_angles_2_matrix(&orientation, &new_orientation);
 	}
 
