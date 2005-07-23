@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-05-22 22:47:19 $
- * $Author: phreak $
+ * $Revision: 2.28 $
+ * $Date: 2005-07-23 17:27:50 $
+ * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/05/22 22:47:19  phreak
+ * compile warning fixage.
+ *
  * Revision 2.26  2005/04/05 05:53:15  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -339,10 +342,11 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 			int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
 			r *= (0.40f + Noise[noise_frame]*0.30f);
-			float adg = (float)pow((2.0f*life_percent) - 1.0f,24.0f)*max_radius*2.0f;
 
-						
-			g3_draw_bitmap( &verts[4], 0,r+adg, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
+			//Bobboau's warp thingie; this should be an option somewhere
+			//r += (float)pow((2.0f*life_percent) - 1.0f,24.0f)*max_radius*2.0f;
+			
+			g3_draw_bitmap( &verts[4], 0, r, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 			gr_zbuffer_set(saved_gr_zbuffering);
 		}
 	}
