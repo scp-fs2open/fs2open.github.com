@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.27 $
+ * $Revision: 2.28 $
  * $Author: Goober5000 $
- * $Date: 2005-07-13 03:35:31 $
+ * $Date: 2005-07-23 21:47:46 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/07/13 03:35:31  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.26  2005/05/08 20:23:28  wmcoolmon
  * "backspace" function
  *
@@ -392,7 +396,7 @@ void end_string_at_first_hash_symbol(char *src);
 char *get_pointer_to_first_hash_symbol(char *src);
 
 // Goober5000
-int subsystem_stricmp(char *s1, char *s2);
+int subsystem_stricmp(const char *str1, const char *str2);
 
 // white space
 extern int is_white_space(char ch);

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.43 $
- * $Author: wmcoolmon $
- * $Date: 2005-06-03 22:36:57 $
+ * $Revision: 2.44 $
+ * $Author: Goober5000 $
+ * $Date: 2005-07-23 21:47:46 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/06/03 22:36:57  wmcoolmon
+ * I *think* this should fix bool lists
+ *
  * Revision 2.42  2005/05/13 02:41:24  phreak
  * forgot a vm_strdup in place of a strdup
  *
@@ -2450,24 +2453,24 @@ void end_string_at_first_hash_symbol(char *src)
 
 // Goober5000
 // accounts for the dumb communications != communication, etc.
-int subsystem_stricmp(char *s1, char *s2)
+int subsystem_stricmp(const char *str1, const char *str2)
 {
-	Assert(s1 && s2);
+	Assert(str1 && str2);
 
 	// ensure len-1 will be valid
-	if (!*s1 || !*s2)
-		return stricmp(s1, s2);
+	if (!*str1 || !*str2)
+		return stricmp(str1, str2);
 
 	// calc lengths
-	int len1 = strlen(s1);
-	int len2 = strlen(s2);
+	int len1 = strlen(str1);
+	int len2 = strlen(str2);
 
 	// get rid of trailing s on s1?
-	if (tolower(*(s1+len1-2) == 's'))
+	if (tolower(*(str1+len1-1) == 's'))
 		len1--;
 
 	// get rid of trailing s on s2?
-	if (tolower(*(s2+len2-2) == 's'))
+	if (tolower(*(str2+len2-1) == 's'))
 		len2--;
 
 	// once we remove the trailing s on both names, they should be the same length
@@ -2477,7 +2480,7 @@ int subsystem_stricmp(char *s1, char *s2)
 		return -1;
 
 	// now do the comparison
-	return strnicmp(s1, s2, len1);
+	return strnicmp(str1, str2, len1);
 }
 
 // Goober5000
