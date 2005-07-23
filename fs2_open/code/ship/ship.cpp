@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.212 $
- * $Date: 2005-07-22 10:18:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.213 $
+ * $Date: 2005-07-23 08:17:04 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.212  2005/07/22 10:18:35  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.211  2005/07/22 04:31:12  Goober5000
  * fixed another bug when changing ship classes
  * --Goober5000
@@ -4444,6 +4448,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		// model_clear_instance_info( &ship_system->submodel_info_1 );
 		model_clear_instance_info( &ship_system->submodel_info_2 );
+		//WMC hack
+		ship_system->submodel_info_2.angs.p = 0.5f*PI;
 	}
 
 	if ( !ignore_subsys_info ) {
@@ -9784,6 +9790,8 @@ void ship_model_start(object *objp)
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
 			model_set_instance(shipp->modelnum, psub->turret_gun_sobj, &pss->submodel_info_2 );
+			//WMC hack
+			pss->submodel_info_2.angs.p = 0.5f*PI;
 		}
 
 	}
