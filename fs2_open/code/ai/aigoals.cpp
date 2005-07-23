@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.4 $
- * $Date: 2005-07-22 10:18:36 $
+ * $Revision: 1.5 $
+ * $Date: 2005-07-23 18:38:47 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/07/22 10:18:36  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 1.3  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1204,27 +1208,36 @@ void ai_add_goal_sub_player(int type, int mode, int submode, char *shipname, ai_
 		aigp->priority = PLAYER_PRIORITY_SHIP;
 }
 
-int ai_goal_find_empty_slot( ai_goal *goals )
+// Goober5000 - Modified this function for clarity and to avoid returning the active goal's index
+// as the empty slot.  This avoids overwriting the active goal while it's being executed.  So far
+// the only time I've noticed it being a problem is during a rare situation where more than five
+// friendlies want to rearm at the same time.  The support ship forgets what it's doing and flies
+// off to repair somebody while still docked.  I reproduced this with retail, so it's not a problem
+// with my new docking code. :)
+int ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
 {
-	int gindex, empty_index, oldest_index;
+	int gindex, oldest_index;
 
-	empty_index = -1;
-	oldest_index = 0;
-	for ( gindex = 0; gindex < MAX_AI_GOALS; gindex++ ) {
-		if ( goals[gindex].time < goals[oldest_index].time )
+	oldest_index = -1;
+	for ( gindex = 0; gindex < MAX_AI_GOALS; gindex++ )
+	{
+		// get the index for the first unused goal
+		if (goals[gindex].ai_mode == AI_GOAL_NONE)
+			return gindex;
+
+		// if this is the active goal, don't consider it for pre-emption!!
+		if (gindex == active_goal)
+			continue;
+
+		// store the index of the oldest goal
+		if (oldest_index < 0)
 			oldest_index = gindex;
-
-		if ( (empty_index == -1) && (goals[gindex].ai_mode == AI_GOAL_NONE) )			// get the index for this goal
-			empty_index = gindex;
+		else if (goals[gindex].time < goals[oldest_index].time)
+			oldest_index = gindex;
 	}
 
-	// if we didn't find an empty slot, find the oldest goal and use it's slot
-	if ( empty_index == -1 )
-		empty_index = oldest_index;
-
- 	Assert ( empty_index < MAX_AI_GOALS );
-
-	return empty_index;
+	// if we didn't find an empty slot, use the oldest goal's slot
+	return oldest_index;
 }
 
 // adds a goal from a player to the given ship's ai_info structure.  'type' tells us if goal
@@ -1236,7 +1249,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, a
 	int empty_index;
 	ai_goal *aigp;
 
-	empty_index = ai_goal_find_empty_slot( aip->goals );
+	empty_index = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
 
 	// get a pointer to the goal structure
 	aigp = &aip->goals[empty_index];
@@ -1275,7 +1288,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 	// add the sexpression index into the wing's list of goal sexpressions if
 	// there are more waves to come.  We use the same method here as when adding a goal to
 	// a ship -- find the first empty entry.  If none exists, take the oldest entry and replace it.
-	empty_index = ai_goal_find_empty_slot( wingp->ai_goals );
+	empty_index = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
 	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index] );
 }
 
@@ -1503,7 +1516,7 @@ void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 {
 	int gindex;
 
-	gindex = ai_goal_find_empty_slot( aip->goals );
+	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
 	ai_add_goal_sub_sexp( sexp, type, &aip->goals[gindex] );
 }
 
@@ -1528,7 +1541,7 @@ void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
 	if ((wingp->num_waves - wingp->current_wave > 0) || Fred_running) {
 		int gindex;
 
-		gindex = ai_goal_find_empty_slot( wingp->ai_goals );
+		gindex = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
 		ai_add_goal_sub_sexp( sexp, type, &wingp->ai_goals[gindex] );
 	}
 }
@@ -1548,7 +1561,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 	ai_goal *aigp;
 
 	// find an empty slot to put this goal in.
-	gindex = ai_goal_find_empty_slot( aip->goals );
+	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
 
 	aigp = &(aip->goals[gindex]);
 
