@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-07-23 11:42:54 $
+ * $Revision: 1.20 $
+ * $Date: 2005-07-23 21:06:24 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/07/23 11:42:54  Goober5000
+ * fix the support ship bug; taylor should be happy now ;)
+ * --Goober5000
+ *
  * Revision 1.18  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -3256,8 +3260,12 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 		set_target_objnum(aip, attacked - Objects);
 	}
 
-	ai_set_goal_maybe_abort_dock(attacker, aip);
-	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
+	// Goober5000 - otherwise the timestamp would never expire
+	if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (aip->target_objnum >= 0))
+	{
+		ai_set_goal_maybe_abort_dock(attacker, aip);
+		aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
+	}
 
 	if (is_ignore_object(aip, aip->target_objnum)) {
 		aip->ignore_objnum = UNUSED_OBJNUM;
