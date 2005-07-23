@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-07-22 10:18:36 $
+ * $Revision: 1.19 $
+ * $Date: 2005-07-23 11:42:54 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/07/22 10:18:36  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 1.17  2005/07/22 09:19:39  wmcoolmon
  * Dynamic AI Class number commit. KNOWN BUG: When AI_CLASS_INCREMENT is hit and vm_realloc is called, memory corruption seems to
  * result. Not at all sure what causes this; if this can't be resolved soon, we can always treat _INCREMENT like _MAX
@@ -1178,7 +1182,8 @@ int	ai_return_path_num_from_dockbay(object *dockee_objp, int dockbay_index);
 void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int count=1);
 void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int count, int path_num, pnode *pnp, int randomize_pnt=-1);
 void ai_cleanup_rearm_mode(object *objp);
-void ai_cleanup_dock_mode(object *dying_objp);
+void ai_cleanup_dock_mode_subjective(object *objp);
+void ai_cleanup_dock_mode_objective(object *objp);
 
 // ai_set_rearm_status takes a team (friendly, hostile, neutral) and a time.  This function
 // sets the timestamp used to tell is it is a good time for this team to rearm.  Once the timestamp
@@ -10814,7 +10819,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 #endif
 }
 
-// Goober5000 - split from ai_cleanup_dock_mode
+// Goober5000
 void ai_cleanup_rearm_mode(object *objp)
 {
 	ai_info *aip = &Ai_info[Ships[objp->instance].ai_index];
@@ -10839,35 +10844,27 @@ void ai_cleanup_rearm_mode(object *objp)
 				ai_do_objects_repairing_stuff( objp, NULL, REPAIR_INFO_ABORT );
 		}
 	}
+}
 
-	// Goober5000 - yep, this looks like it's needed here too; thanks taylor!
-	// if the support ship is in dock mode, force them to near last stage
+// Goober5000 - clean up my own dock mode
+void ai_cleanup_dock_mode_subjective(object *objp)
+{
+	// get ai of object
+	ai_info *aip = &Ai_info[Ships[objp->instance].ai_index];
+
+	// if the object is in dock mode, force them to near last stage
 	if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_UNDOCK_3) )
 		aip->submode = AIS_UNDOCK_3;
 }
 
-// Goober5000 - this function should ONLY need to be called from a ship doing a deathroll.  It
-// ensures that any ship docking or undocking with it will finish gracefully.
-void ai_cleanup_dock_mode(object *dying_objp)
+// Goober5000 - clean up the dock mode of everybody around me
+// (This function should ONLY need to be called from a ship doing a deathroll.
+// It ensures that any ship docking or undocking with it will finish gracefully.)
+void ai_cleanup_dock_mode_objective(object *objp)
 {
-	Ai_info[Ships[dying_objp->instance].ai_index].mode = AIM_NONE;
-
 	// process all directly docked objects
-	for (dock_instance *ptr = dying_objp->dock_list; ptr != NULL; ptr = ptr->next)
-	{
-		// don't process if it's not a ship
-		if (ptr->docked_objp->type != OBJ_SHIP)
-			continue;
-
-		// get ai of docked object
-		ai_info *other_aip = &Ai_info[Ships[ptr->docked_objp->instance].ai_index];
-
-		// if the docked object is in dock mode, force them to near last stage
-		if ( (other_aip->mode == AIM_DOCK) && (other_aip->submode < AIS_UNDOCK_3) )
-			other_aip->submode = AIS_UNDOCK_3;
-		
-		// don't actually undock any ships, because do_dying_undock_physics will take care of it
-	}
+	for (dock_instance *ptr = objp->dock_list; ptr != NULL; ptr = ptr->next)
+		ai_cleanup_dock_mode_subjective(ptr->docked_objp);
 }
 
 /*
@@ -11000,9 +10997,16 @@ void ai_dock()
 	ship		*shipp = &Ships[Pl_objp->instance];
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
-	//	Make sure object we're supposed to dock with or undock from still exists.
-	if ((aip->goal_objnum == -1) || (Objects[aip->goal_objnum].signature != aip->goal_signature)) {
+	// Make sure we still have a dock goal.
+	if (aip->active_goal < 0)
+	{
+		ai_cleanup_dock_mode_subjective(Pl_objp);
+	}
+	// Make sure the object we're supposed to dock with or undock from still exists.
+	else if ((aip->goal_objnum == -1) || (Objects[aip->goal_objnum].signature != aip->goal_signature))
+	{
 		ai_cleanup_rearm_mode(Pl_objp);
+		ai_cleanup_dock_mode_subjective(Pl_objp);
 		return;
 	}
 
@@ -11372,22 +11376,8 @@ void ai_dock()
 		break;
 						 }
 	case AIS_UNDOCK_4: {
-		ai_info *other_aip;
-
-		Assert( aip->goal_objnum != -1 );
-		other_aip = &Ai_info[Ships[goal_objp->instance].ai_index];
 
 		aip->mode = AIM_NONE;
-
-		// these flags should have been cleared long ago!
-		// Get Allender if you hit one of these!!!!!
-		// removed by allender on 2/16 since a ship may be docked with some other ship, but still be the
-		// goal_objnum of this ship ending its undocking mode.
-		//Assert( !(aip_is_docked) );
-		//Assert( !(other_aip_is_docked) );
-		//Assert( !(aip->ai_flags & AIF_REPAIRING) );
-		//Assert( !(other_aip->ai_flags & AIF_BEING_REPAIRED) );
-		//Assert( !(other_aip->ai_flags & AIF_AWAITING_REPAIR) );
 
 		// only call mission goal complete if this was indeed an undock goal
 		if ( aip->active_goal > -1 ) {
@@ -15600,7 +15590,10 @@ void ai_deathroll_start(object *ship_objp)
 	ai_cleanup_rearm_mode(ship_objp);
 
 	// clean up anybody docking or undocking to me
-	ai_cleanup_dock_mode(ship_objp);
+	ai_cleanup_dock_mode_objective(ship_objp);
+
+	// clear my ai mode (originally in the previous function)
+	Ai_info[Ships[ship_objp->instance].ai_index].mode = AIM_NONE;
 }
 
 //	Object *requester_objp tells rearm ship to abort rearm.
