@@ -4,11 +4,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-07-13 02:30:52 $
+ * $Revision: 1.21 $
+ * $Date: 2005-07-23 16:25:32 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/07/13 02:30:52  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 1.19  2005/04/19 23:03:42  wmcoolmon
  * Lock time compression when autopilot is engaged
  *
@@ -91,7 +95,6 @@
 // Extern functions/variables
 extern int		Player_use_ai;
 extern int sexp_distance2(int obj1, char *subj);
-extern int ai_goal_find_empty_slot( ai_goal *goals );
 
 
 // Module variables
