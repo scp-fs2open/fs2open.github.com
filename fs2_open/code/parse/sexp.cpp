@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.161 $
- * $Date: 2005-07-23 22:48:28 $
+ * $Revision: 2.162 $
+ * $Date: 2005-07-23 22:52:44 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
@@ -18818,13 +18818,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 4 to 12 arguments...\r\n"
 		"\t1:\tX position (negative value to be from right of screen)\r\n"
 		"\t2:\tY position (negative value to be from bottom of screen)\r\n"
-		"\t3:\tText to display"
+		"\t3:\tText to display\r\n"
 		"\t4:\tTime to be displayed, not including fadein/out\r\n"
 		"\t(optional)\r\n"
 		"\t5:\tImage name\r\n"
 		"\t6:\tFade in time\r\n"
 		"\t7:\tCenter horizontally?\r\n"
-		"\t8:\tCenter vertically?"
+		"\t8:\tCenter vertically?\r\n"
 		"\t9:\tWidth\r\n"
 		"\t10:\tText red component (0-255)\r\n"
 		"\t11:\tText green component (0-255)\r\n"
