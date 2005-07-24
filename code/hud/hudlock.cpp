@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-22 10:18:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-24 18:31:59 $
+ * $Author: taylor $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -969,7 +973,7 @@ void hud_calculate_lock_position(float frametime)
 		delta_y = Players[Player_num].lock_indicator_y - Player->current_target_sy;
 
 		if (!delta_y && !delta_x) {
-			hypotenuse = 0.0f;
+			hypotenuse = 0;
 		}
 		else {
 			hypotenuse = _hypot(delta_y, delta_x);
@@ -1022,11 +1026,11 @@ void hud_calculate_lock_position(float frametime)
 			pixels_moved_while_locking = lock_pixels_per_sec * frametime;
 		}
 		
-		if (delta_x != 0) {
+		if ((delta_x != 0) && (hypotenuse != 0)) {
 			accumulated_x_pixels += pixels_moved_while_locking * delta_x/hypotenuse; 
 		}
 
-		if (delta_y != 0) {
+		if ((delta_y != 0) && (hypotenuse != 0)) {
 			accumulated_y_pixels += pixels_moved_while_locking * delta_y/hypotenuse; 
 		}
 
@@ -1093,7 +1097,7 @@ void hud_calculate_lock_position(float frametime)
 		delta_y = Players[Player_num].lock_indicator_y - Players[Player_num].lock_indicator_start_y;
 
 		if (!delta_y && !delta_x) {
-			hypotenuse = 0.0f;
+			hypotenuse = 0;
 		}
 		else {
 			hypotenuse = _hypot(delta_y, delta_x);
@@ -1106,10 +1110,10 @@ void hud_calculate_lock_position(float frametime)
 
 		pixels_moved_while_degrading = 2.0f * wip->lock_pixels_per_sec * frametime;
 
-		if (delta_x != 0)
+		if ((delta_x != 0) && (hypotenuse != 0))
 			accumulated_x_pixels += pixels_moved_while_degrading * delta_x/hypotenuse; 
 
-		if (delta_y != 0)
+		if ((delta_y != 0) && (hypotenuse != 0))
 			accumulated_y_pixels += pixels_moved_while_degrading * delta_y/hypotenuse; 
 
 		if (fl_abs(accumulated_x_pixels) > 1.0f) {
