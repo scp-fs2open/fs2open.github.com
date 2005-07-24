@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-07-22 10:18:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2005-07-24 18:33:47 $
+ * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/07/22 10:18:36  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.48  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -2576,14 +2580,15 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 						}
 						break;
 					case OBJ_BEAM://give kills for fighter beams-Bobboau
-					  {
+					{
 						int bobjn = beam_get_parent(other_obj);
 
 						// Goober5000 - only count beams fired by fighters or bombers
 						if (bobjn >= 0)
 						{
-							if (!(Ships[Objects[bobjn].instance].flags & SIF_FIGHTER) && !(Ships[Objects[bobjn].instance].flags & SIF_BOMBER))
+							if ( !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
 								bobjn = -1;
+							}
 						}
 
 						if(bobjn == -1){
