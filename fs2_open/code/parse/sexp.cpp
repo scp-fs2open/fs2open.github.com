@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.162 $
- * $Date: 2005-07-23 22:52:44 $
+ * $Revision: 2.163 $
+ * $Date: 2005-07-24 00:32:44 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.162  2005/07/23 22:52:44  wmcoolmon
+ * Fixed formatting FTW
+ *
  * Revision 2.160  2005/07/22 10:18:41  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -7834,7 +7837,9 @@ void sexp_explosion_effect(int n)
 			sci.blast = (float)max_blast;
 			sci.damage = (float)max_damage;
 			sci.speed = (float)shockwave_speed;
-			sci.rot_angle = frand_range(0.0f, 359.0f);
+			sci.rot_angles.p = frand_range(0.0f, 1.99f*PI);
+			sci.rot_angles.b = frand_range(0.0f, 1.99f*PI);
+			sci.rot_angles.h = frand_range(0.0f, 1.99f*PI);
 			shockwave_create(-1, &origin, &sci, SW_SHIP_DEATH);
 		}
 		else

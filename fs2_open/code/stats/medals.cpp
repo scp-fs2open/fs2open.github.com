@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-02 19:45:02 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-24 00:32:45 $
+ * $Author: wmcoolmon $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/02 19:45:02  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.13  2005/05/18 14:03:27  taylor
  * a medals crash fix that isn't influenced by the evil Java empire (Jens Granseuer)
  *
@@ -428,16 +431,16 @@ void parse_medal_tbl()
 			char buf[MULTITEXT_LENGTH];
 
 			stuff_int( &temp_medal.kills_needed );
-#ifdef FS2_DEMO
-			required_string("$Wavefile 1:");
-			stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
-			required_string("$Wavefile 2:");
-			stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+
+			if(optional_string("$Wavefile 1:"))
+				stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+			if(optional_string("$Wavefile 2:"))
+				stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
 			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
-#else
-			required_string("$Wavefile Base:");
-			stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
-#endif
+
+			if(optional_string("$Wavefile Base:"))
+				stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+
 			//required_string("$Wavefile 2:");
 			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
 

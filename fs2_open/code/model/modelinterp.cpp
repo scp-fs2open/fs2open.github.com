@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.123 $
- * $Date: 2005-07-18 03:45:08 $
- * $Author: taylor $
+ * $Revision: 2.124 $
+ * $Date: 2005-07-24 00:32:44 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2005/07/18 03:45:08  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.122  2005/07/07 16:35:11  taylor
  * make double sure that we actually need to render thruster glows instead of doing it regardless
  *
@@ -806,6 +813,7 @@
 #include "cmdline/cmdline.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
+#include "weapon/shockwave.h"
 
 
 
@@ -823,6 +831,7 @@ int modelstats_num_boxes = 0;
 extern int Cmdline_nohtl;
 
 int glow_maps_active = 1;
+int GLOWMAP_FRAME_OVERRIDE = -1;
 
 
 // a lighting object
@@ -1757,7 +1766,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						{
 							if (pm->glow_is_ani[tmap_num])
 							{
-								GLOWMAP = pm->glow_textures[tmap_num] + ((timestamp() / (int)(pm->glow_fps[tmap_num])) % pm->glow_numframes[tmap_num]);
+								if(GLOWMAP_FRAME_OVERRIDE < 0)
+									GLOWMAP = pm->glow_textures[tmap_num] + ((timestamp() / (int)(pm->glow_fps[tmap_num])) % pm->glow_numframes[tmap_num]);
+								else
+									GLOWMAP = pm->glow_textures[tmap_num] + GLOWMAP_FRAME_OVERRIDE;
 							}
 							else
 							{
@@ -3640,11 +3652,16 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	if (objnum >= 0) {
 		objp = &Objects[objnum];
+		GLOWMAP_FRAME_OVERRIDE = -1;
 
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
 			is_ship = 1;
 			glow_maps_active = shipp->glowmaps_active;
+		}
+		else if(objp->type == OBJ_SHOCKWAVE) {
+			shockwave *sw = &Shockwaves[objp->instance];
+			GLOWMAP_FRAME_OVERRIDE = sw->current_bitmap - Shockwave_info[sw->shockwave_info_index].bitmap_id;
 		}
 	}
 	
@@ -5820,7 +5837,10 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			{
 				if (pm->glow_is_ani[model->buffer[i].texture])
 				{
-					GLOWMAP = pm->glow_textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->glow_fps[model->buffer[i].texture])) % pm->glow_numframes[model->buffer[i].texture]);
+					if(GLOWMAP_FRAME_OVERRIDE < 0)
+						GLOWMAP = pm->glow_textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->glow_fps[model->buffer[i].texture])) % pm->glow_numframes[model->buffer[i].texture]);
+					else
+						GLOWMAP = pm->glow_textures[model->buffer[i].texture] + GLOWMAP_FRAME_OVERRIDE;
 				}
 				else
 				{

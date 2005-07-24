@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-07-24 00:32:45 $
+ * $Author: wmcoolmon $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.11  2005/03/10 08:00:17  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -379,7 +382,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
 
-	sw->rot_angle = sci->rot_angle;
+	sw->rot_angles = sci->rot_angles;
 
 	si = &Shockwave_info[sw->shockwave_info_index];
 //	sw->total_time = i2fl(si->num_frames) / si->fps;	// in seconds
@@ -393,7 +396,12 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	}
 
 	orient = vmd_identity_matrix;
-
+	vm_angles_2_matrix(&orient, &sw->rot_angles);
+//	angles a;
+//	a.p = sw->rot_angle*(PI/180);
+//	a.b = frand_range(0.0f, 2.0f*PI);
+//	a.h = frand_range(0.0f, 2.0f*PI);
+//	vm_angles_2_matrix(&orient, &a);
 	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, OF_RENDERS );
 
 	if ( objnum == -1 ){
@@ -614,7 +622,7 @@ void shockwave_render(object *objp)
 		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
 		gr_set_cull(0);
 		rendering_shockwave = true;
-		model_render( shockwave_model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL);
+		model_render( shockwave_model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL,sw->objnum);
 		rendering_shockwave = false;
 		gr_set_cull(1);
 
@@ -630,8 +638,8 @@ void shockwave_render(object *objp)
 		else g3_rotate_vertex(&p, &sw->pos );
 	
 		gr_set_bitmap(sw->current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-		if(Cmdline_nohtl)g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angle), sw->radius, TMAP_FLAG_TEXTURED);	
-		else g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angle), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
+		if(Cmdline_nohtl)g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED);	
+		else g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
 	}
 }
 

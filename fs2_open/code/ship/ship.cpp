@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.213 $
- * $Date: 2005-07-23 08:17:04 $
+ * $Revision: 2.214 $
+ * $Date: 2005-07-24 00:32:45 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.213  2005/07/23 08:17:04  wmcoolmon
+ * Another try at fixing gun turrets sticking straight up
+ *
  * Revision 2.212  2005/07/22 10:18:35  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -5400,7 +5403,9 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 		sci.blast = max_blast;
 		sci.damage = max_damage;
 		sci.speed = shockwave_speed;
-		sci.rot_angle = frand_range(0.0f, 359.0f);
+		sci.rot_angles.p = frand_range(0.0f, 1.99f*PI);
+		sci.rot_angles.b = frand_range(0.0f, 1.99f*PI);
+		sci.rot_angles.h = frand_range(0.0f, 1.99f*PI);
 		shipfx_do_shockwave_stuff(&Ships[exp_objp->instance], &sci);
 		// shockwave_create(Ships[exp_objp->instance].objnum, &exp_objp->pos, shockwave_speed, inner_rad, outer_rad, max_damage, max_blast, SW_SHIP_DEATH);
 	} else {
@@ -14605,4 +14610,3 @@ void armor_init()
 		armor_inited = 1;
 	}
 }
-
