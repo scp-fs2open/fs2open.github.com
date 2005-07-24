@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2005-07-24 18:32:58 $
+ * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.30  2005/07/18 03:45:08  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -595,10 +599,9 @@ float Closeup_zoom;
 vec3d Closeup_cam_pos;
 
 // Mask bitmap pointer and Mask bitmap_id
-bitmap* BriefingMaskPtr;		// bitmap pointer to the briefing select mask bitmap
-ubyte* BriefingMaskData;		// pointer to actual bitmap data
-int Briefing_mask_w, Briefing_mask_h;
-int BriefingMaskBitmap;	// bitmap id of the briefing mask bitmap
+ubyte* Brief_ui_mask_data;		// pointer to actual bitmap data
+static int Brief_ui_mask_w = -1;
+static int Brief_ui_mask_h = -1;
 int Brief_inited = FALSE;
 
 int Briefing_paused = 0;	// for stopping audio and stage progression
@@ -614,18 +617,6 @@ int Briefing_paused = 0;	// for stopping audio and stage progression
 #define	BRIEF_TEXT_SCROLL_DOWN_MASK	12
 #define	BRIEF_SKIP_TRAINING_MASK		15
 #define	BRIEF_PAUSE_MASK					16
-
-//XSTR:OFF
-static char *Brief_mask_single[GR_NUM_RESOLUTIONS] = {
-	"brief-m",		// GR_640
-	"2_brief-m"		// GR_1024
-};
-
-static char *Brief_mask_multi[GR_NUM_RESOLUTIONS] = {
-	"briefmulti-m",		// GR_640
-	"2_briefmulti-m"			// GR_1024
-};
-//XSTR:ON
 
 struct brief_buttons {	
 	char *filename;
@@ -1344,28 +1335,6 @@ void brief_init()
 	nprintf(("Alan","Entering brief_init()\n"));
 	common_select_init();
 
-#ifndef NO_NETWORK
-	if(Game_mode & GM_MULTIPLAYER) {
-		BriefingMaskBitmap = bm_load(Brief_multi_mask_filename[gr_screen.res]);
-	}
-	else
-#endif
-	{
-		BriefingMaskBitmap = bm_load(Brief_mask_filename[gr_screen.res]);
-	}
-
-	if (BriefingMaskBitmap < 0) {
-		Error(LOCATION,"Could not load in 'brief-m'!");
-	}
-
-	Briefing_mask_w = -1;
-	Briefing_mask_h = -1;
-
-	// get a pointer to bitmap by using bm_lock()
-	BriefingMaskPtr = bm_lock(BriefingMaskBitmap, 8, BMP_AABITMAP);
-	BriefingMaskData = (ubyte*)BriefingMaskPtr->data;
-	bm_get_info(BriefingMaskBitmap, &Briefing_mask_w, &Briefing_mask_h);
-
 	help_overlay_load(BR_OVERLAY);
 
 	// Set up the mask regions
@@ -1391,13 +1360,16 @@ void brief_init()
 
 #ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
-		Brief_ui_window.set_mask_bmap(Brief_mask_multi[gr_screen.res]);
+		Brief_ui_window.set_mask_bmap(Brief_multi_mask_filename[gr_screen.res]);
 	}
 	else
 #endif
 	{
-		Brief_ui_window.set_mask_bmap(Brief_mask_single[gr_screen.res]);
+		Brief_ui_window.set_mask_bmap(Brief_mask_filename[gr_screen.res]);
 	}
+
+	// get a pointer to the mask data
+	Brief_ui_mask_data = Brief_ui_window.get_mask_data( &Brief_ui_mask_w, &Brief_ui_mask_h );
 
 	Brief_ui_window.tooltip_handler = brief_tooltip_handler;
 	common_buttons_init(&Brief_ui_window);
@@ -1945,7 +1917,7 @@ void brief_do_frame(float frametime)
 		}
 
 	int snazzy_action = -1;
-	brief_choice = snazzy_menu_do(BriefingMaskData, Briefing_mask_w, Briefing_mask_h, Num_briefing_regions, Briefing_select_region, &snazzy_action, 0);
+	brief_choice = snazzy_menu_do(Brief_ui_mask_data, Brief_ui_mask_w, Brief_ui_mask_h, Num_briefing_regions, Briefing_select_region, &snazzy_action, 0);
 
 	k = common_select_do(frametime);
 
@@ -2260,11 +2232,6 @@ void brief_do_frame(float frametime)
 //
 void brief_unload_bitmaps()
 {	
-	if ( BriefingMaskBitmap != -1 ) {
-		bm_release(BriefingMaskBitmap);
-		BriefingMaskBitmap = -1;
-	}
-
 	if ( Brief_text_bitmap != -1 ) {
 		bm_release(Brief_text_bitmap);
 		Brief_text_bitmap = -1;
@@ -2310,9 +2277,6 @@ void brief_close()
 #ifndef FS2_DEMO
 	hud_anim_release(&Fade_anim);
 #endif
-
-	// done mask bitmap, so unlock it
-	bm_unlock(BriefingMaskBitmap);
 
 	Brief_ui_window.destroy();
 
