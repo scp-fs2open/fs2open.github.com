@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-07-23 21:06:24 $
+ * $Revision: 1.21 $
+ * $Date: 2005-07-24 20:12:55 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/07/23 21:06:24  Goober5000
+ * fixed ai issue where some ships would never call for rearm
+ * --Goober5000
+ *
  * Revision 1.19  2005/07/23 11:42:54  Goober5000
  * fix the support ship bug; taylor should be happy now ;)
  * --Goober5000
@@ -1188,6 +1192,22 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 void ai_cleanup_rearm_mode(object *objp);
 void ai_cleanup_dock_mode_subjective(object *objp);
 void ai_cleanup_dock_mode_objective(object *objp);
+
+// Goober5000
+typedef struct {
+	vec3d docker_point;
+	vec3d dockee_point;
+	int dock_mode;
+	int submodel;
+	vec3d submodel_pos;
+	float submodel_r;
+	float submodel_w;
+} rotating_dockpoint_info;
+
+// Goober5000
+//	Move to a position relative to a dock bay using thrusters.
+float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, rotating_dockpoint_info *rdinfo = NULL);
+
 
 // ai_set_rearm_status takes a team (friendly, hostile, neutral) and a time.  This function
 // sets the timestamp used to tell is it is a good time for this team to rearm.  Once the timestamp
@@ -3512,6 +3532,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	int		pp_index;		//	index in Path_points at which to store point, if this is a modify-in-place (pnp ! NULL)
 	int		start_index, finish_index;
 	vec3d submodel_offset, local_vert;
+	bool rotating_submodel;
 	
 	// nprintf(("AI", "Creating path for object %s in frame #%i\n", Ships[objp->instance].ship_name, AI_FrameCount));
 	
@@ -3531,29 +3552,39 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		finish_index = MAX(-1, mp->nverts-1-count);
 	}
 
-	// Goober5000 - start submodel calculation
-	ship_model_start(objp);
-
+	// Goober5000 - check for rotating submodels
 	modelnum = Ships[objp->instance].modelnum;
 	pm = model_get(modelnum);
+	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].movement_type >= 0))
+	{
+		rotating_submodel = true;
 
-	model_find_submodel_offset(&submodel_offset, modelnum, mp->parent_submodel);
+		// start submodel calculation
+		ship_model_start(objp);
+
+		model_find_submodel_offset(&submodel_offset, modelnum, mp->parent_submodel);
+	}
+	else
+	{
+		rotating_submodel = false;
+	}
 
 	int offset = 0;
-	for (i=start_index; i != finish_index; i += dir) {
+	for (i=start_index; i != finish_index; i += dir)
+	{
 		//	Globalize the point.
-		// Goober5000 - check whether this submodel rotates
-		if ((mp->parent_submodel < 0) || (pm->submodel[mp->parent_submodel].movement_type < 0))
+		// Goober5000 - handle rotating submodels
+		if (rotating_submodel)
+		{
+			// movement... find location of point like with docking code and spark generation
+			vm_vec_sub(&local_vert, &mp->verts[i].pos, &submodel_offset);
+			model_find_world_point(&v1, &local_vert, modelnum, mp->parent_submodel, &objp->orient, &objp->pos);			
+		}
+		else
 		{
 			// no movement... calculate as in original code
 			vm_vec_unrotate(&v1, &mp->verts[i].pos, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
-		}
-		else
-		{
-			// movement... find location of point like with docking code
-			vm_vec_sub(&local_vert, &mp->verts[i].pos, &submodel_offset);
-			model_find_world_point(&v1, &local_vert, modelnum, mp->parent_submodel, &objp->orient, &objp->pos);			
 		}
 
 		if ( randomize_pnt == i ) {
@@ -3570,8 +3601,11 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		offset++;
 	}
 
-	// Goober5000 - stop submodel calculation
-	ship_model_stop(objp);
+	// stop submodel calculation
+	if (!rotating_submodel)
+	{
+		ship_model_stop(objp);
+	}
 }
 
 
@@ -9388,7 +9422,7 @@ void ai_chase()
 
 //	Make the object *objp move so that the point *start moves towards the point *finish.
 //	Return distance.
-float dock_move_towards_point(object *objp, vec3d *start, vec3d *finish, vec3d *submodel_pos, float submodel_radius, float submodel_omega, int dock_mode, float speed_scale, float other_obj_speed = 0.0f)
+float dock_move_towards_point(object *objp, vec3d *start, vec3d *finish, float speed_scale, float other_obj_speed = 0.0f, rotating_dockpoint_info *rdinfo = NULL)
 {
 	physics_info	*pi = &objp->phys_info;
 	float			dist;			//	dist to goal
@@ -9402,21 +9436,21 @@ float dock_move_towards_point(object *objp, vec3d *start, vec3d *finish, vec3d *
 		speed = fl_sqrt(dist) * speed_scale;
 
 		// Goober5000 - if we're on a rotating submodel and we're rotating with it, adjust velocity for rotation
-		if (submodel_omega > 0.0f)
+		if (rdinfo && (rdinfo->submodel >= 0))
 		{
 			speed *= 1.25f;
 
-			switch (dock_mode)
+			switch (rdinfo->dock_mode)
 			{
 				case DOA_APPROACH:
 					// ramp submodel's linear velocity according to distance
-					speed += (submodel_radius * submodel_omega) / (dist);
+					speed += (rdinfo->submodel_r * rdinfo->submodel_w) / (dist);
 					break;
 
 				case DOA_DOCK:
 				case DOA_UNDOCK_1:
 					// use docker's linear velocity and don't ramp
-					speed += (vm_vec_dist(submodel_pos, &objp->pos) * submodel_omega);
+					speed += (vm_vec_dist(&rdinfo->submodel_pos, &objp->pos) * rdinfo->submodel_w);
 					break;
 			}
 		}
@@ -9553,7 +9587,7 @@ void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *glo
 //	DOA_UNDOCK_2	means undock, moving to point nearest dock bay and facing away from ship
 //	DOA_UNDOCK_3	means undock, moving directly away from ship
 //	DOA_DOCK_STAY	means rigidly maintain position in dock bay.
-float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, vec3d *docker_point_param, vec3d *dockee_point_param, float *rotating_submodel_tangential_velocity)
+float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, rotating_dockpoint_info *rdinfo)
 {
 	ship_info	*sip0, *sip1;
 	polymodel	*pm0, *pm1;
@@ -9598,14 +9632,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	vm_vec_avg(&dockee_point, &dockee_p0, &dockee_p1);
 
 	// Goober5000
-	if (docker_point_param != NULL)
-		*docker_point_param = docker_point;
-	if (dockee_point_param != NULL)
-		*dockee_point_param = dockee_point;
-
-
-	// Goober5000
-	vec3d submodel_pos;
+	vec3d submodel_pos = ZERO_VECTOR;
 	float submodel_radius = 0.0f;
 	float submodel_omega = 0.0f;
 	if ((dockee_rotating_submodel >= 0) && (dock_mode != DOA_DOCK_STAY))
@@ -9630,16 +9657,24 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	}
 
 	// Goober5000
-	if (rotating_submodel_tangential_velocity != NULL)
-		*rotating_submodel_tangential_velocity = submodel_radius * submodel_omega;
+	rotating_dockpoint_info rdinfo_buf;
+	if (rdinfo == NULL)
+		rdinfo = &rdinfo_buf;
 
+	rdinfo->docker_point = docker_point;
+	rdinfo->dockee_point = dockee_point;
+	rdinfo->dock_mode = dock_mode;
+	rdinfo->submodel = dockee_rotating_submodel;
+	rdinfo->submodel_pos = submodel_pos;
+	rdinfo->submodel_r = submodel_radius;
+	rdinfo->submodel_w = submodel_omega;
 
 
 	//	If dockee has moved much, then path will be recreated.
 	//	Might need to change state if moved too far.
 	if ((dock_mode != DOA_DOCK_STAY) && (dock_mode != DOA_DOCK)) {
 		// Goober5000 - maybe force recreate
-		int force_recreate = (dockee_rotating_submodel >= 0) && ((dock_mode == DOA_APPROACH) || (dock_mode == DOA_UNDOCK_1));
+		int force_recreate = 0;(dockee_rotating_submodel >= 0) && ((dock_mode == DOA_APPROACH) || (dock_mode == DOA_UNDOCK_1));
 
 		if (maybe_recreate_path(docker_objp, aip, force_recreate, force_recreate) > 5.0f)
 		{
@@ -9703,7 +9738,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		// nprintf(("AI", "speed scale = %7.3f\n", ss1));
 		speed_scale *= 1.0f + ss1;
 
-		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, goal_point, &submodel_pos, submodel_radius, submodel_omega, dock_mode, speed_scale, dockee_objp->phys_info.speed);
+		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, goal_point, speed_scale, dockee_objp->phys_info.speed, rdinfo);
 
 		//	Note, we're interested in distance from goal, so if we're still turning, bash that into return value.
 		// nprintf(("AI", "matrix dist = %7.3f, threshold = %7.3f\n", mdist, 2*flFrametime));
@@ -9735,7 +9770,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			docker_objp->phys_info.rotvel = omega_out;
 			docker_objp->orient = nm;
 
-			fdist = dock_move_towards_point(docker_objp, &docker_point, &dockee_point, &submodel_pos, submodel_radius, submodel_omega, dock_mode, speed_scale, dockee_objp->phys_info.speed);
+			fdist = dock_move_towards_point(docker_objp, &docker_point, &dockee_point, speed_scale, dockee_objp->phys_info.speed, rdinfo);
 		
 			//	Note, we're interested in distance from goal, so if we're still turning, bash that into return value.
 			fdist += 10.0f * vm_vec_mag_quick(&omega_out);
@@ -9756,7 +9791,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		//	Undocking.
 		//	Move to point on dock path nearest to dock station.
 		Assert(aip->path_length >= 2);
-		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, &Path_points[aip->path_start + aip->path_length-2].pos, &submodel_pos, submodel_radius, submodel_omega, dock_mode, speed_scale);
+		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, &Path_points[aip->path_start + aip->path_length-2].pos, speed_scale, 0.0f, rdinfo);
 
 		break;
 	}
@@ -9772,7 +9807,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 //		else
 			desired_index = aip->path_length-2;
 
-		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, &Path_points[aip->path_start + desired_index].pos, &submodel_pos, submodel_radius, submodel_omega, dock_mode, speed_scale);
+		fdist = dock_move_towards_point(docker_objp, &docker_objp->pos, &Path_points[aip->path_start + desired_index].pos, speed_scale, 0.0f, rdinfo);
 
 		break;
 	}
@@ -11162,10 +11197,10 @@ void ai_dock()
 			accelerate_ship(aip, 0.0f);
 			aip->submode = AIS_DOCK_2;
 		} else {
-			float tangential_velocity;
+			rotating_dockpoint_info rdinfo;
 
 			//nprintf(("AI", "Time = %7.3f, submode = %i\n", f2fl(Missiontime), aip->submode));
-			float dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_DOCK, NULL, NULL, &tangential_velocity);
+			float dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_DOCK, &rdinfo);
 			Assert(dist != UNINITIALIZED_VALUE);
 
 			if (dist == DOCK_BACKUP_RETURN_VAL) {
@@ -11175,10 +11210,13 @@ void ai_dock()
 
 			//nprintf(("AI", "Dock 3: dist = %7.3f\n", dist));
 
-			// Goober5000
 			float tolerance = 2*flFrametime * (1.0f + fl_sqrt(goal_objp->phys_info.speed));
-			if (tangential_velocity > 0.0f)
-				tolerance += 4*flFrametime * tangential_velocity;
+
+			// Goober5000
+			if (rdinfo.submodel >= 0)
+			{
+				tolerance += 4*flFrametime * (rdinfo.submodel_r * rdinfo.submodel_w);
+			}
 
 			if (dist < tolerance)
 			{
@@ -11300,7 +11338,7 @@ void ai_dock()
 	case AIS_UNDOCK_1: {
 		//	Using thrusters, exit from dock station to nearest next dock path point.
 		float	dist;
-		vec3d dockee_point;
+		rotating_dockpoint_info rdinfo;
 		
 		//nprintf(("AI", "Undock 1: time in this mode = %7.3f\n", f2fl(Missiontime - aip->submode_start_time)));
 
@@ -11315,18 +11353,21 @@ void ai_dock()
 			}
 			aip->submode_start_time = 0;
 		}
-		if(docker_index == -1 && dockee_index == -1)
-			break;
 
-
-		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_1, NULL, &dockee_point);
+		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_1, &rdinfo);
 		Assert(dist != UNINITIALIZED_VALUE);
 
-		float dist_to_dock_point = vm_vec_dist_quick(&Pl_objp->pos, &dockee_point /*&goal_objp->pos*/ );
+		float dist_to_dock;
+
+		// Goober5000 - if via submodel, calc distance to point, not center
+		if (rdinfo.submodel >= 0)
+			dist_to_dock = vm_vec_dist_quick(&Pl_objp->pos, &rdinfo.dockee_point);
+		else
+			dist_to_dock = vm_vec_dist_quick(&Pl_objp->pos, &goal_objp->pos);
 
 		//	Move to within 0.1 units of second last point on path before orienting, or just plain far away from docked-to ship.
 		//	This allows undock to complete if first ship flies away.
-		if ((dist < 2*flFrametime) || (dist_to_dock_point > 2*Pl_objp->radius)) {
+		if ((dist < 2*flFrametime) || (dist_to_dock > 2*Pl_objp->radius)) {
 			aip->submode = AIS_UNDOCK_2;
 			aip->submode_start_time = Missiontime;
 		}
