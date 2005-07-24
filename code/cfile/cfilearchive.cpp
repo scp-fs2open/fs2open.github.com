@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.cpp $
- * $Revision: 2.6 $
- * $Date: 2004-07-26 20:47:25 $
- * $Author: Kazan $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-24 18:31:17 $
+ * $Author: taylor $
  *
  * Low-level code for reading data out of large archive files or normal files.  All
  * reads/seeks come through here.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2004/07/26 20:47:25  Kazan
+ * remove MCD complete
+ *
  * Revision 2.5  2004/07/12 16:32:42  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -250,7 +253,7 @@ int cfseek( CFILE *cfile, int offset, int where )
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
 		int tmp_offset;
-		tmp_offset = ftell(cb->fp) - cb->lib_offset;
+		tmp_offset = (int)ftell(cb->fp) - cb->lib_offset;
 		Assert(tmp_offset==cb->raw_position);
 	#endif
 
