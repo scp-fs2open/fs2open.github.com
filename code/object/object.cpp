@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-07-22 10:18:37 $
+ * $Revision: 2.42 $
+ * $Date: 2005-07-24 19:59:24 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/07/22 10:18:37  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.40  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1266,12 +1270,11 @@ void move_one_docked_object(object *objp, object *parent_objp)
 		return;
 	}
 
-	// support ships don't keep up if they're undocking
-	ship *shipp = &Ships[objp->instance];
-	if (Ship_info[shipp->ship_info_index].flags & SIF_SUPPORT)
+	// support ships (and anyone else, for that matter) don't keep up if they're undocking
+	ai_info *aip = &Ai_info[Ships[objp->instance].ai_index];
+	if ( (aip->mode == AIM_DOCK) && (aip->submode >= AIS_UNDOCK_1) )
 	{
-		ai_info *aip = &Ai_info[shipp->ai_index];
-		if ( (aip->mode == AIM_DOCK) && (aip->submode >= AIS_UNDOCK_1) )
+		if (aip->goal_objnum == OBJ_INDEX(parent_objp))
 		{
 			return;
 		}
