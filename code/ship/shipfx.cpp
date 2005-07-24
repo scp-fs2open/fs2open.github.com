@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-07-24 00:32:45 $
+ * $Revision: 2.46 $
+ * $Date: 2005-07-24 06:01:37 $
  * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/07/24 00:32:45  wmcoolmon
+ * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
+ * support for the demo/FS1
+ *
  * Revision 2.44  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -3014,7 +3018,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 		sci2.rot_angles.b = frand_range(0.0f, 1.99f*PI);
 		sci2.rot_angles.h = frand_range(0.0f, 1.99f*PI);
 
-		shockwave_create(shipp->objnum, &shockwave_pos, &sci2, SW_SHIP_DEATH, (int)frand_range(0.0f, 350.0f), Ship_info[shipp->ship_info_index].shockwave_moddel);
+		shockwave_create(shipp->objnum, &shockwave_pos, &sci2, SW_SHIP_DEATH, (int)frand_range(0.0f, 350.0f), sip->shockwave_moddel, sip->shockwave_info_index);
 		// shockwave_create(shipp->objnum, &objp->pos, sip->shockwave_speed, sip->inner_rad, sip->outer_rad, sip->damage, sip->blast, SW_SHIP_DEATH);
 
 		// next shockwave

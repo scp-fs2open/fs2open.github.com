@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.100 $
- * $Date: 2005-07-21 07:53:14 $
+ * $Revision: 2.101 $
+ * $Date: 2005-07-24 06:01:37 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2005/07/21 07:53:14  wmcoolmon
+ * Changed $Hull Repair Rate and $Subsystem Repair Rate to be percentages,
+ * as well as making them accept all values between -1 and 1
+ *
  * Revision 2.99  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1430,6 +1434,8 @@ typedef struct ship_info {
 	int	shockwave_count;						// the # of total shockwaves
 	char shockwave_pof_file[NAME_LENGTH];			// POF file to load/associate with ship's shockwave
 	int shockwave_moddel;
+	char shockwave_name[NAME_LENGTH];
+	int shockwave_info_index;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
