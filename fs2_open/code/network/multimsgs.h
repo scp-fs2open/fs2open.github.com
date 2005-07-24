@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-24 18:35:44 $
+ * $Author: taylor $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -711,7 +715,7 @@ void send_NEW_countermeasure_fired_packet(object *objp, int cmeasure_count, int 
 void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo);
 
 // beam weapon packet
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override);
+void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam);
 void process_beam_fired_packet(ubyte *data, header *hinfo);
 
 // sw std query packet
