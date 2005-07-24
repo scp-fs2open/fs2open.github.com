@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.4 $
- * $Date: 2005-07-22 09:19:39 $
- * $Author: wmcoolmon $
+ * $Revision: 1.5 $
+ * $Date: 2005-07-24 20:12:55 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/07/22 09:19:39  wmcoolmon
+ * Dynamic AI Class number commit. KNOWN BUG: When AI_CLASS_INCREMENT is hit and vm_realloc is called, memory corruption seems to
+ * result. Not at all sure what causes this; if this can't be resolved soon, we can always treat _INCREMENT like _MAX
+ *
  * Revision 1.3  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -849,10 +853,5 @@ void ai_fly_to_ship();
 
 //Moved declaration here for player ship -WMC
 void process_subobjects(int objnum);
-
-//From aicode.cpp
-// Goober5000
-//	Move to a position relative to a dock bay using thrusters.
-extern float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, vec3d *docker_point_param = NULL, vec3d *dockee_point_param = NULL, float *rotating_submodel_tangential_velocity = NULL);
 
 #endif
