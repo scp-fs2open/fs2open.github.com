@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.40 $
+ * $Date: 2005-07-24 18:35:43 $
+ * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.38  2005/07/13 00:44:23  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -8035,7 +8039,7 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	ship_launch_countermeasure( objp, rand_val );			
 }
 
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override)
+void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;	
@@ -8048,11 +8052,18 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	// setup outgoing data
 	Assert(shooter != NULL);
 	Assert(turret != NULL);
-	Assert(target != NULL);
 	Assert(override != NULL);
-	if((shooter == NULL) || (turret == NULL) || (target == NULL) || (override == NULL)){
+	if((shooter == NULL) || (turret == NULL) || (override == NULL)){
 		return;
 	}
+
+	if (!fighter_beam) {
+		Assert(target != NULL);
+		if (target == NULL) {
+			return;
+		}
+	}
+
 	u_beam_info = (ubyte)beam_info_index;
 	subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter));
 	Assert(subsys_index >= 0);
@@ -8067,6 +8078,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	ADD_USHORT(target->net_signature);
 	ADD_DATA(u_beam_info);
 	ADD_DATA((*override));  // FIXME: how to swap - taylor
+//	ADD_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
 
 	// send to all clients	
 	multi_io_send_to_all_reliable(data, packet_size);
@@ -8080,6 +8092,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	ubyte u_beam_info;
 	beam_info b_info;
 	beam_fire_info fire_info;
+//	ubyte fighter_beam = 0;
 
 	// only clients should ever get this
 	Assert(MULTIPLAYER_CLIENT);
@@ -8091,6 +8104,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	GET_USHORT(target_sig);
 	GET_DATA(u_beam_info);
 	GET_DATA(b_info);  // FIXME: how to swap - taylor
+//	GET_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
 	PACKET_SET_SIZE();
 
 	// lookup all relevant data
@@ -8104,10 +8118,28 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.target = multi_get_network_object(target_sig);
 	fire_info.beam_info_override = &b_info;
 	fire_info.accuracy = 1.0f;
-	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance > MAX_SHIPS) || (fire_info.target == NULL)){
-		nprintf(("Network", "Couldn't get shooter/target info for BEAM weapon!\n"));
+	fire_info.fighter_beam = /*(fighter_beam) ? true :*/ false;
+
+	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance > MAX_SHIPS)){
+		nprintf(("Network", "Couldn't get shooter info for BEAM weapon!\n"));
 		return;
 	}
+
+	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
+	if ( Ship_info[Ships[fire_info.shooter->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
+		// make sure the beam is a primary weapon and not attached to a turret or something
+		for (int i = 0; i < Ships[fire_info.shooter->instance].weapons.num_primary_banks; i++) {
+			if ( Ships[fire_info.shooter->instance].weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
+				fire_info.fighter_beam = true;
+			}
+		}
+	}
+
+	if (!fire_info.fighter_beam && (fire_info.turret == NULL)) {
+		nprintf(("Network", "Couldn't get target info for BEAM weapon!\n"));
+		return;
+	}
+
 	fire_info.turret = ship_get_indexed_subsys( &Ships[fire_info.shooter->instance], (int)subsys_index);
 	if(fire_info.turret == NULL){
 		nprintf(("Network", "Couldn't get turret for BEAM weapon!\n"));
@@ -8115,7 +8147,6 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	}
 
 	// fire da beam
-	fire_info.fighter_beam = false;
 	beam_fire(&fire_info);
 }
 

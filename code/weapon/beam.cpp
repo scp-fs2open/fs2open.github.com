@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-07-22 10:18:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2005-07-24 18:35:44 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/07/22 10:18:37  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.54  2005/07/22 03:54:46  taylor
  * better error checking/handling for when you fire primary/beam weapons without a target selected
  *
@@ -955,7 +959,7 @@ int beam_fire(beam_fire_info *fire_info)
 #ifndef NO_NETWORK
 	// if we're a multiplayer master - send a packet
 	if(MULTIPLAYER_MASTER){
-		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo);
+		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo, (ubyte)fire_info->fighter_beam);
 	}
 #endif
 
