@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-24 00:32:45 $
+ * $Revision: 2.14 $
+ * $Date: 2005-07-24 06:01:37 $
  * $Author: wmcoolmon $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/24 00:32:45  wmcoolmon
+ * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
+ * support for the demo/FS1
+ *
  * Revision 2.12  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -291,10 +295,13 @@
 // Module-wide globals
 // -----------------------------------------------------------
 
-static char *Shockwave_filenames[MAX_SHOCKWAVE_TYPES] = 
+static char Shockwave_filenames[MAX_SHOCKWAVE_TYPES][NAME_LENGTH] = 
 {
 //XSTR:OFF
-	"shockwave01"
+	"shockwave01",
+	"\0",
+	"\0",
+	"\0",
 //XSTR:ON
 };
 
@@ -335,9 +342,12 @@ extern int Show_area_effect;
 //				failure			=>	-1
 //
 // Goober5000 - now parent_objnum can be allowed to be -1
-int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay, int model)
+int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay, int model, int info_index)
 {
-	if(model == -1)model = defalt_shockwave_model;
+	if(model == -1)
+		model = defalt_shockwave_model;
+	if(info_index < 0 || info_index > MAX_SHOCKWAVE_TYPES)
+		info_index = 0;
 
 	int				i, objnum, real_parent;
 	shockwave		*sw;
@@ -376,7 +386,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	sw->radius = 1.0f;
 	sw->pos = *pos;
 	sw->num_objs_hit = 0;
-	sw->shockwave_info_index=0;		// only one type for now... type could be passed is as a parameter
+	sw->shockwave_info_index=info_index;		// only one type for now... type could be passed is as a parameter
 	sw->current_bitmap=-1;
 
 	sw->time_elapsed=0.0f;
@@ -644,6 +654,31 @@ void shockwave_render(object *objp)
 }
 
 // ------------------------------------------------------------------------------------
+// shockwave_load()
+//
+// Call to load a Shockwave_type once its name is in Shockwave_filenames
+//
+int shockwave_load(int info_index)
+{
+	Assert(info_index > 0);
+	Assert(info_index < MAX_SHOCKWAVE_TYPES);
+	shockwave_info *si = &Shockwave_info[info_index];
+	if(si->bitmap_id > 0)
+	{
+		Warning(LOCATION, "Attempted to load a shockwave twice!");
+		return 1;
+	}
+	
+	si->bitmap_id = bm_load_animation( Shockwave_filenames[info_index], &si->num_frames, &si->fps, 1 );
+	if ( si->bitmap_id < 0 ) {
+		Error(LOCATION, "Could not load shockwave '%s'\n", Shockwave_filenames[info_index]);
+		return 0;
+	}
+	
+	return 1;
+}
+
+// ------------------------------------------------------------------------------------
 // shockwave_init()
 //
 // Call once at the start of each level (mission)
@@ -654,12 +689,15 @@ void shockwave_level_init()
 	shockwave_info	*si;
 
 	// load in shockwaves
-	for ( i=0; i<MAX_SHOCKWAVE_TYPES; i++ ) {
+	for ( i=0; i<NUM_DEFAULT_SHOCKWAVE_TYPES; i++ ) {
+		shockwave_load(i);
+	}
+	
+	for( i= NUM_DEFAULT_SHOCKWAVE_TYPES; i < MAX_SHOCKWAVE_TYPES; i++) {
 		si = &Shockwave_info[i];
-		si->bitmap_id	= bm_load_animation( Shockwave_filenames[i], &si->num_frames, &si->fps, 1 );
-		if ( si->bitmap_id < 0 ) {
-			Error(LOCATION, "Could not load %s anim file\n", Shockwave_filenames[i]);
-		}
+		si->bitmap_id = -1;
+		si->num_frames = 0;
+		si->fps = 0;
 	}
 	
 	list_init(&Shockwave_list);
@@ -685,6 +723,20 @@ void shockwave_level_close()
 {
 	if(Shockwave_inited){
 		shockwave_delete_all();		
+	}
+	
+	//Unload all non-default shockwaves
+	int i,j;
+	shockwave_info *si;
+	for(i = NUM_DEFAULT_SHOCKWAVE_TYPES; i < MAX_SHOCKWAVE_TYPES; i++)
+	{
+		si = &Shockwave_info[i];
+		for(j = 0; j < si->num_frames; j++)
+			bm_unload(si->bitmap_id + j);
+		si->bitmap_id = -1;
+		si->num_frames = 0;
+		si->fps = 0;
+		Shockwave_filenames[i][0] = '\0';
 	}
 	Shockwave_inited = 0;
 }
@@ -758,4 +810,26 @@ void shockwave_page_in()
 		bm_page_in_texture( si->bitmap_id, si->num_frames );
 	}
 
+}
+
+int shockwave_add(char *bm_name)
+{
+	for(int i = 0; i < MAX_SHOCKWAVE_TYPES; i++)
+	{
+		if(!stricmp(Shockwave_filenames[i], bm_name))
+		{
+			return i;
+		}
+		else if(!strlen(Shockwave_filenames[i]))
+		{
+			strcpy(Shockwave_filenames[i], bm_name);
+			
+			shockwave_load(i);
+			
+			return i;
+		}
+	}
+	
+	Warning(LOCATION, "Could not add shockwave type %s, as MAX_SHOCKWAVE_TYPES has been reached. Contact an fs2_open coder if you REALLY think you need more than %d shockwaves", bm_name, MAX_SHOCKWAVE_TYPES-NUM_DEFAULT_SHOCKWAVE_TYPES);
+	return -1;
 }

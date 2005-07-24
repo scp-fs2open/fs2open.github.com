@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.214 $
- * $Date: 2005-07-24 00:32:45 $
+ * $Revision: 2.215 $
+ * $Date: 2005-07-24 06:01:37 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.214  2005/07/24 00:32:45  wmcoolmon
+ * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
+ * support for the demo/FS1
+ *
  * Revision 2.213  2005/07/23 08:17:04  wmcoolmon
  * Another try at fixing gun turrets sticking straight up
  *
@@ -2288,8 +2292,14 @@ int parse_ship(bool replace)
 
 	sip->shockwave_moddel = -1;
 	strcpy(sip->shockwave_pof_file, "");
-	if(optional_string("$Shockwave_model:")){
+	if(optional_string("$Shockwave model:")){
 		stuff_string( sip->shockwave_pof_file, F_NAME, NULL);
+	}
+	
+	sip->shockwave_info_index = -1;
+	strcpy(sip->shockwave_name,"");
+	if(optional_string("$Shockwave name:")) {
+		stuff_string( sip->shockwave_name, F_NAME, NULL);
 	}
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
@@ -7041,8 +7051,14 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->modelnum = sip->modelnum;
 
 	if(strcmp(sip->shockwave_pof_file,""))
-	sip->shockwave_moddel = model_load(sip->shockwave_pof_file, 0, NULL);
-	else sip->shockwave_moddel = -1;
+		sip->shockwave_moddel = model_load(sip->shockwave_pof_file, 0, NULL);
+	else
+		sip->shockwave_moddel = -1;
+	
+	if(strcmp(sip->shockwave_name,""))
+		sip->shockwave_info_index = model_load(sip->shockwave_name, 0, NULL);
+	else
+		sip->shockwave_info_index = -1;
 
 	// model stuff
 	shipp->n_subsystems = 0;

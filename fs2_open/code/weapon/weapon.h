@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.52  2005/06/30 00:36:10  Goober5000
  * Removed "beam no whack" as setting the beam's mass to 0 achieves the same effect.
  * --Goober5000
@@ -704,6 +708,8 @@ typedef struct weapon_info {
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
 	float	shockwave_speed;					// speed of shockwave ( 0 means none )
+	int		shockwave_info_index;
+	char	shockwave_name[NAME_LENGTH];
 	char	shockwave_pof_name[NAME_LENGTH];	// Name of the pof for the shockwave, if useing it's own
 	int		shockwave_model;					//model for the shock wave -Bobboau
 

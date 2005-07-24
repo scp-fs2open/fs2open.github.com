@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-24 00:32:45 $
+ * $Revision: 2.8 $
+ * $Date: 2005-07-24 06:01:37 $
  * $Author: wmcoolmon $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/24 00:32:45  wmcoolmon
+ * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
+ * support for the demo/FS1
+ *
  * Revision 2.6  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -116,8 +120,9 @@ struct object;
 #define	SW_SHIP_DEATH		(1<<2)
 #define	SW_WEAPON_KILL		(1<<3)	// Shockwave created when weapon destroyed by another
 
-#define	MAX_SHOCKWAVES			16
-#define	MAX_SHOCKWAVE_TYPES	1
+#define	MAX_SHOCKWAVES					16
+#define	MAX_SHOCKWAVE_TYPES				8
+#define NUM_DEFAULT_SHOCKWAVE_TYPES		1
 #define	SW_MAX_OBJS_HIT	64
 
 typedef struct shockwave_info
@@ -165,9 +170,12 @@ void shockwave_level_init();
 void shockwave_level_close();
 void shockwave_delete(object *objp);
 void shockwave_move_all(float frametime);
-int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay = -1, int model = -1);
+int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay = -1, int model = -1, int info_index=-1);
 void shockwave_render(object *objp);
 int shockwave_weapon_index(int index);
 float shockwave_max_radius(int index);
+
+//Use to add a shockwave and get its info_index
+int shockwave_add(char *bm_name);
 
 #endif /* __SHOCKWAVE_H__ */

@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.121  2005/07/24 00:32:45  wmcoolmon
+ * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
+ * support for the demo/FS1
+ *
  * Revision 2.120  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -1514,13 +1518,6 @@ int parse_weapon(int subtype, bool replace)
 			wip->wi_flags |= WIF_SHOCKWAVE;
 		}
 		diag_printf ("Shockwave speed -- %7.3f\n", wip->shockwave_speed);
-
-		wip->shockwave_model = -1;
-		strcpy(wip->shockwave_pof_name,"");
-		if(optional_string("$Shockwave_model:")){
-			stuff_string( wip->shockwave_pof_name, F_NAME, NULL);
-		}
-
 	} 
 	// for primary weapons they're optional
 	else {
@@ -1552,12 +1549,17 @@ int parse_weapon(int subtype, bool replace)
 			}
 			diag_printf ("Shockwave speed -- %7.3f\n", wip->shockwave_speed);
 		}
-
-		wip->shockwave_model = -1;
-		strcpy(wip->shockwave_pof_name,"");
-		if(optional_string("$Shockwave_model:")){
-			stuff_string( wip->shockwave_pof_name, F_NAME, NULL);
-		}
+	}
+	wip->shockwave_model = -1;
+	strcpy(wip->shockwave_pof_name,"");
+	if(optional_string("$Shockwave Model:")){
+		stuff_string( wip->shockwave_pof_name, F_NAME, NULL);
+	}
+	
+	wip->shockwave_info_index = -1;
+	strcpy(wip->shockwave_name,"");
+	if(optional_string("$Shockwave name:")) {
+		stuff_string( wip->shockwave_name, F_NAME, NULL);
 	}
 
 	required_string("$Armor Factor:");
@@ -4809,7 +4811,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 			sci.rot_angles.b = 0.0f;
 			sci.rot_angles.h = 0.0f;
 
-			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &sci, sw_flag, -1, wip->shockwave_model);
+			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &sci, sw_flag, -1, wip->shockwave_model, wip->shockwave_info_index);
 //			snd_play_3d( &Snds[SND_SHOCKWAVE_IMPACT], hitpos, &Eye_position );
 		}
 		else {
@@ -5009,8 +5011,14 @@ void weapons_page_in()
 
 
 		if(strcmp(wip->shockwave_pof_name,""))
-		wip->shockwave_model = model_load(wip->shockwave_pof_name, 0, NULL);
-		else wip->shockwave_model = -1;
+			wip->shockwave_model = model_load(wip->shockwave_pof_name, 0, NULL);
+		else
+			wip->shockwave_model = -1;
+		
+		if(strcmp(wip->shockwave_name,""))
+			wip->shockwave_info_index = shockwave_add(wip->shockwave_name);
+		else
+			wip->shockwave_info_index = -1;
 
 		// trail bitmaps
 		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.bitmap > -1) )	{
