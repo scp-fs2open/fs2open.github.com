@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-24 00:32:45 $
+ * $Author: wmcoolmon $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -140,7 +144,7 @@ typedef struct shockwave {
 	float		time_elapsed;			// in seconds
 	float		total_time;				// total lifetime of animation in seconds
 	int			delay_stamp;			// for delayed shockwaves
-	float		rot_angle;
+	angles		rot_angles;
 	int			model;
 } shockwave;
 
@@ -150,7 +154,7 @@ typedef struct shockwave_create_info {
 	float damage;
 	float blast;
 	float speed;
-	float rot_angle;
+	angles rot_angles;
 } shockwave_create_info;
 
 extern shockwave			Shockwaves[MAX_SHOCKWAVES];

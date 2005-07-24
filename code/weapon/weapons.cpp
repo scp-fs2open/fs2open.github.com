@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2005/07/22 10:18:37  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.119  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -4801,7 +4805,9 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 			sci.inner_rad = wip->inner_radius;
 			sci.outer_rad = wip->outer_radius;
 			sci.speed = wip->shockwave_speed;
-			sci.rot_angle = 0.0f;
+			sci.rot_angles.p = 0.0f;
+			sci.rot_angles.b = 0.0f;
+			sci.rot_angles.h = 0.0f;
 
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &sci, sw_flag, -1, wip->shockwave_model);
 //			snd_play_3d( &Snds[SND_SHOCKWAVE_IMPACT], hitpos, &Eye_position );
