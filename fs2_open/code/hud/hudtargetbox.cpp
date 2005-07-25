@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-07-22 10:18:38 $
+ * $Revision: 2.56 $
+ * $Date: 2005-07-25 05:24:16 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.54  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -1156,7 +1160,7 @@ void hud_render_target_ship_info(object *target_objp)
 	target_shipp = &Ships[target_objp->instance];
 	target_sip = &Ship_info[target_shipp->ship_info_index];
 
-	if ((The_mission.flags & MISSION_FLAG_NO_ENEMY_WING_NAMES) &&
+	if (Cmdline_wcsaga &&
 		(target_shipp->wingnum != -1) && 
 		(target_shipp->team != Player_ship->team)) 
 	{

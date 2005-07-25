@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-02 19:43:55 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-25 05:24:16 $
+ * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/02 19:43:55  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.15  2005/06/03 06:39:26  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -243,15 +246,11 @@
 // Red Alert Mission-Level
 /////////////////////////////////////////////////////////////////////////////
 
-static int Red_alert_status;
 static int Red_alert_new_mission_timestamp;		// timestamp used to give user a little warning for red alerts
 static int Red_alert_num_slots_used = 0;
 static int Red_alert_voice_started;
 
 #define RED_ALERT_WARN_TIME		4000				// time to warn user that new orders are coming
-
-#define RED_ALERT_NONE				0
-#define RED_ALERT_MISSION			1
 
 #define MAX_RED_ALERT_SLOTS				32
 #define MAX_RED_ALERT_SUBSYSTEMS		64
@@ -640,9 +639,8 @@ void red_alert_do_frame(float frametime)
 }
 
 // set the red alert status for the current mission
-void red_alert_set_status(int status)
+void red_alert_invalidate_timestamp()
 {
-	Red_alert_status = status;
 	Red_alert_new_mission_timestamp = timestamp(-1);		// make invalid
 }
 
@@ -1119,11 +1117,7 @@ void red_alert_read_wingman_status_campaign(CFILE *fp, char ships[][NAME_LENGTH]
 // return !0 if this is a red alert mission, otherwise return 0
 int red_alert_mission()
 {
-	if ( Red_alert_status == RED_ALERT_MISSION ) {
-		return 1;
-	}
-
-	return 0;
+	return (The_mission.flags & MISSION_FLAG_RED_ALERT);
 }
 
 // called from sexpression code to start a red alert mission

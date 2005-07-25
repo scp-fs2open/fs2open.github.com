@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.64 $
+ * $Revision: 2.65 $
  * $Author: Goober5000 $
- * $Date: 2005-07-13 03:25:59 $
+ * $Date: 2005-07-25 05:24:17 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.63  2005/07/13 02:01:29  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -210,7 +214,7 @@
  * --Goober5000
  *
  * Revision 2.16  2003/01/13 02:09:12  wmcoolmon
- * Added MISSION_FLAG_NO_NEB_TRAILS and removed MISSION_FLAG_ST_OVERRIDE_NEB. Also changed code to set flags as necessary
+ * Change mission flag for nebula trails. Also changed code to set flags as necessary
  *
  * Revision 2.15  2003/01/11 01:00:25  wmcoolmon
  * Added code for "Ship Trails override Nebula"
@@ -484,22 +488,24 @@ struct wing;
 #define MISSION_TYPE_MULTI_TEAMS		(1<<4)
 #define MISSION_TYPE_MULTI_DOGFIGHT	(1<<5)
 
-#define MISSION_FLAG_SUBSPACE				(1<<0)	// mission takes place in subspace
-#define MISSION_FLAG_NO_PROMOTION			(1<<1)	// cannot get promoted or badges in this mission
-#define MISSION_FLAG_FULLNEB				(1<<2)	// mission is a full nebula mission
-#define MISSION_FLAG_NO_BUILTIN_MSGS		(1<<3)	// disables builtin msgs
-#define MISSION_FLAG_NO_TRAITOR				(1<<4)	// player cannot become a traitor
-#define MISSION_FLAG_SHIP_TRAILS			(1<<5)	// Enables ship trails
-#define MISSION_FLAG_SUPPORT_REPAIRS_HULL	(1<<6)	// Toggles support ship repair of ship hulls
+#define MISSION_FLAG_SUBSPACE					(1<<0)	// mission takes place in subspace
+#define MISSION_FLAG_NO_PROMOTION				(1<<1)	// cannot get promoted or badges in this mission
+#define MISSION_FLAG_FULLNEB					(1<<2)	// mission is a full nebula mission
+#define MISSION_FLAG_NO_BUILTIN_MSGS			(1<<3)	// disables builtin msgs
+#define MISSION_FLAG_NO_TRAITOR					(1<<4)	// player cannot become a traitor
+#define MISSION_FLAG_TOGGLE_SHIP_TRAILS			(1<<5)	// toggles ship trails (off in nebula, on outside nebula)
+#define MISSION_FLAG_SUPPORT_REPAIRS_HULL		(1<<6)	// Toggles support ship repair of ship hulls
 #define MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT	(1<<7)	// Beam-free-all by default - Goober5000
-#define MISSION_FLAG_NO_NEB_TRAILS			(1<<8)	//Disables ship trails in nebula -C
-#define MISSION_FLAG_3D_WARP_EFFECT			(1<<9)	// use Bobboau's 3-D warp effect - Goober5000
-#define MISSION_FLAG_NO_BRIEFING			(1<<10)	// no briefing, jump right into mission - Goober5000
-#define MISSION_FLAG_NO_DEBRIEFING			(1<<11)	// no debriefing, just like red-alert - Goober5000
-#define MISSION_FLAG_USE_NEW_AI				(1<<12)	// use SCP AI fixes.  Allows old missions to be balanced. -phreak
-#define MISSION_FLAG_ALLOW_DOCK_TREES		(1<<13)	// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
-#define MISSION_FLAG_2D_MISSION				(1<<14) // Mission is meant to be played top-down style; 2D physics and movement.
-#define MISSION_FLAG_NO_ENEMY_WING_NAMES	(1<<15)	// Hide hostile wing names ("Cancer 1", "Pisces 4", etc) to the player on request of WC:S -phreak
+#define MISSION_FLAG_CURRENTLY_UNUSED_1			(1<<8)
+#define MISSION_FLAG_CURRENTLY_UNUSED_2			(1<<9)
+#define MISSION_FLAG_NO_BRIEFING				(1<<10)	// no briefing, jump right into mission - Goober5000
+#define MISSION_FLAG_NO_DEBRIEFING				(1<<11)	// no debriefing, just like red-alert - Goober5000
+#define MISSION_FLAG_USE_NEW_AI					(1<<12)	// use SCP AI fixes.  Allows old missions to be balanced. -phreak
+#define MISSION_FLAG_ALLOW_DOCK_TREES			(1<<13)	// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
+#define MISSION_FLAG_2D_MISSION					(1<<14) // Mission is meant to be played top-down style; 2D physics and movement.
+#define MISSION_FLAG_CURRENTLY_UNUSED_3			(1<<15)
+#define MISSION_FLAG_RED_ALERT					(1<<16)	// a red-alert mission - Goober5000
+#define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
@@ -532,15 +538,7 @@ typedef struct mission {
 	int	flags;
 	int	num_players;									// valid in multiplayer missions -- number of players supported
 	uint	num_respawns;									// valid in multiplayer missions -- number of respawns allowed
-	int	red_alert;
-	int	scramble;
 	support_ship_info	support_ships;		// Goober5000
-	char	tour_name[NAME_LENGTH];
-	char	pre_briefing_cutscene[FILESPEC_LENGTH];
-	char	pre_mission_cutscene[FILESPEC_LENGTH];
-	char	next_mission_success[NAME_LENGTH];
-	char	next_mission_partial[NAME_LENGTH];
-	char	next_mission_failure[NAME_LENGTH];
 	char	squad_filename[MAX_FILENAME_LEN+1];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
 	char	squad_name[NAME_LENGTH+1];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][NAME_LENGTH];

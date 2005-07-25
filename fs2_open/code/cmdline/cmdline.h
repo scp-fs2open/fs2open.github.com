@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.72 $
- * $Date: 2005-07-13 02:50:49 $
+ * $Revision: 2.73 $
+ * $Date: 2005-07-25 05:24:16 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.71  2005/07/07 16:32:33  taylor
  * compiler warning fixes
  * add -noibx troubleshooting cmdline option to disable use of IBX files
@@ -594,6 +598,8 @@ extern int Cmdline_ballistic_gauge;
 extern int Cmdline_smart_shields;
 
 extern int Cmdline_tga16;
+
+extern int Cmdline_wcsaga;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif
