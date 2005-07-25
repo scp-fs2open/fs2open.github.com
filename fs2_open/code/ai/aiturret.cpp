@@ -1,12 +1,18 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-07-25 03:13:24 $
+ * $Revision: 1.19 $
+ * $Date: 2005-07-25 05:23:33 $
  * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/07/25 03:13:24  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 1.17  2005/05/16 15:40:43  phreak
  * reverted a tagged only commit, it wasn't needed
  *
@@ -1531,7 +1537,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		// Goober5000 - Also, don't shoot at a ship we're docking with.  Volition
 		// had this in the code originally but messed it up so that it didn't work.
-		ai_info *aip = Ai_info[shipp->ai_index];
+		ai_info *aip = &Ai_info[shipp->ai_index];
 		if ((aip->mode == AIM_DOCK) && (aip->goal_objnum == ss->turret_enemy_objnum))
 		{
 			ss->turret_enemy_objnum = -1;
