@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-07-22 10:18:40 $
+ * $Revision: 2.9 $
+ * $Date: 2005-07-25 05:24:17 $
  * $Author: Goober5000 $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/22 10:18:40  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.7  2005/07/13 03:35:35  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -284,7 +288,7 @@ void popupdead_start()
 			Popupdead_button_text[2] = XSTR( "Don't Show Me This Again", 1475);
 			Popupdead_num_choices = POPUPDEAD_NUM_CHOICES_SKIP;
 			Popupdead_skip_active = 1;
-		} else if(The_mission.red_alert) {
+		} else if(The_mission.flags & MISSION_FLAG_RED_ALERT) {
 			// We can't staticly declare these because they are externalized
 			Popupdead_button_text[0] = XSTR( "Quick Start Mission", 105);
 			Popupdead_button_text[1] = XSTR( "Return To Flight Deck", 106);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-07-24 18:32:58 $
- * $Author: taylor $
+ * $Revision: 2.33 $
+ * $Date: 2005-07-25 05:24:16 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/07/24 18:32:58  taylor
+ * various incarnations of freaky and stupid, need to do this everywhere eventually
+ *
  * Revision 2.31  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -2461,7 +2464,7 @@ int brief_only_allow_briefing()
 		return 1;
 	}
 
-	if ( The_mission.scramble || The_mission.red_alert) {
+	if ( The_mission.flags & (MISSION_FLAG_SCRAMBLE | MISSION_FLAG_RED_ALERT) ) {
 		return 1;
 	}
 

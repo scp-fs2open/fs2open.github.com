@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:25:58 $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-25 05:24:16 $
  * $Author: Goober5000 $
  *
  * Header file for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/06/03 06:39:26  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -84,7 +88,7 @@ void	red_alert_init();
 void	red_alert_close();
 void	red_alert_do_frame(float frametime);
 int	red_alert_mission();
-void	red_alert_set_status(int status);
+void	red_alert_invalidate_timestamp();
 int	red_alert_check_status();
 
 void red_alert_store_wingman_status();

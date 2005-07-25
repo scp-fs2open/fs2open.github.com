@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-07-18 03:44:01 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-07-25 05:24:16 $
+ * $Author: Goober5000 $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/07/18 03:44:01  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.22  2005/06/22 15:17:53  taylor
  * objnum check when targetinfo is used, fixes message brackets having random text as info
  *
@@ -308,6 +316,8 @@
 #include "jumpnode/jumpnode.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
+
+#include "cmdline/cmdline.h"
 
 
 
@@ -884,7 +894,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		switch(t_objp->type)
 		{
 			case OBJ_SHIP:
-				if ((The_mission.flags & MISSION_FLAG_NO_ENEMY_WING_NAMES) &&
+				if (Cmdline_wcsaga &&
 					(Ships[t_objp->instance].wingnum != -1) && 
 					(Ships[t_objp->instance].team != Player_ship->team)) 
 				{

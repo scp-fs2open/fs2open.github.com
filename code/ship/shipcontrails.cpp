@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-04-05 05:53:24 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-07-25 05:24:17 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.22  2005/03/03 03:53:18  wmcoolmon
  * This should really be like this to prevent crashing
  *
@@ -129,6 +132,9 @@
 // if the object is below the limit for contrails
 int ct_below_limit(object *objp);
 
+// Goober0500
+bool ct_display_contrails();
+
 // if an object has active contrails
 int ct_has_contrails(ship *shipp);
 
@@ -216,7 +222,7 @@ void ct_ship_process(ship *shipp)
 	Assert(shipp->objnum >= 0);
 	
 	// if trails aren't enabled, return
-	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
+	if (!ct_display_contrails()) {
 		return;
 	}
 
@@ -288,8 +294,8 @@ void ct_update_contrails(ship *shipp)
 	return;
 #else
 
-	// if no ship trails, return
-	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
+	// if trails aren't enabled, return
+	if (!ct_display_contrails()) {
 		return;
 	}
 
@@ -332,8 +338,8 @@ void ct_create_contrails(ship *shipp)
 	return;
 #else
 
-	// if no ship trails, return
-	if(!(The_mission.flags & MISSION_FLAG_SHIP_TRAILS)){
+	// if trails aren't enabled, return
+	if (!ct_display_contrails()) {
 		return;
 	}
 
@@ -545,3 +551,16 @@ int ct_has_ABtrails(ship *shipp)
 	return 0;
 }
 
+bool ct_display_contrails()
+{
+	bool display;
+
+	// normally display trails in a full nebula environment
+	display = (The_mission.flags & MISSION_FLAG_FULLNEB) ? true : false;
+
+	// toggle according to flag
+	if (The_mission.flags & MISSION_FLAG_TOGGLE_SHIP_TRAILS)
+		display = !display;
+
+	return display;
+}

@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-07-23 17:27:50 $
+ * $Revision: 2.29 $
+ * $Date: 2005-07-25 05:24:17 $
  * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/07/23 17:27:50  Goober5000
+ * remove Bobboau's extra warp thing
+ * --Goober5000
+ *
  * Revision 2.27  2005/05/22 22:47:19  phreak
  * compile warning fixage.
  *
@@ -351,7 +355,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		}
 	}
 
-	if(Warp_model > -1 && (warp_3d || (The_mission.flags & MISSION_FLAG_3D_WARP_EFFECT) || Cmdline_3dwarp))
+	if((Warp_model >= 0) && (warp_3d || Cmdline_3dwarp))
 	{
 		float model_Interp_scale_x = radius /20;
 		float model_Interp_scale_y = radius /20;

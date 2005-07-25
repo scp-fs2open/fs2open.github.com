@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.99 $
- * $Date: 2005-07-25 03:13:25 $
+ * $Revision: 2.100 $
+ * $Date: 2005-07-25 05:24:16 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2005/07/25 03:13:25  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 2.98  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -346,7 +352,7 @@
  * --Goober5000
  *
  * Revision 2.17  2003/01/13 02:09:12  wmcoolmon
- * Added MISSION_FLAG_NO_NEB_TRAILS and removed MISSION_FLAG_ST_OVERRIDE_NEB. Also changed code to set flags as necessary
+ * Change mission flag for nebula trails. Also changed code to set flags as necessary
  *
  * Revision 2.16  2003/01/11 01:00:25  wmcoolmon
  * Added code for "Ship Trails override Nebula"
@@ -1161,12 +1167,14 @@ void parse_mission_info(mission *pm)
 		nebl_set_storm(Mission_parse_storm_name);
 	}
 
+	/* Goober5000 - no longer used with MISSION_FLAG_TOGGLE_SHIP_TRAILS
 	// if this is a nebula mission and the "no ship trails in nebula" flag is not set,
 	// enable ship trails
 	if ((pm->flags & MISSION_FLAG_FULLNEB) && (!(pm->flags & MISSION_FLAG_NO_NEB_TRAILS)))
 	{
 		pm->flags |= MISSION_FLAG_SHIP_TRAILS;
 	}
+	*/
 
 	// Goober5000 - ship contrail speed threshold
 	pm->contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -1190,15 +1198,19 @@ void parse_mission_info(mission *pm)
 		}
 	}
 
-	pm->red_alert = 0;
 	if ( optional_string("+Red Alert:")) {
-		stuff_int(&pm->red_alert);
-	} 
-	red_alert_set_status(pm->red_alert);
+		int temp;
+		stuff_int(&temp);
 
-	pm->scramble = 0;
+		The_mission.flags |= MISSION_FLAG_RED_ALERT;
+	} 
+	red_alert_invalidate_timestamp();
+
 	if ( optional_string("+Scramble:")) {
-		stuff_int(&pm->scramble);
+		int temp;
+		stuff_int(&temp);
+
+		The_mission.flags |= MISSION_FLAG_SCRAMBLE;
 	}
 
 	// set up support ships
@@ -1488,25 +1500,29 @@ void parse_player_info2(mission *pm)
 
 void parse_plot_info(mission *pm)
 {
-	required_string("#Plot Info");
+	if (optional_string("#Plot Info"))
+	{
+		char dummy_filespec[FILESPEC_LENGTH];
+		char dummy_name[NAME_LENGTH];
 
-	required_string("$Tour:");
-	stuff_string(pm->tour_name, F_NAME, NULL);
+		required_string("$Tour:");
+		stuff_string(dummy_name, F_NAME, NULL);
 
-	required_string("$Pre-Briefing Cutscene:");
-	stuff_string(pm->pre_briefing_cutscene, F_FILESPEC, NULL);
+		required_string("$Pre-Briefing Cutscene:");
+		stuff_string(dummy_filespec, F_FILESPEC, NULL);
 
-	required_string("$Pre-Mission Cutscene:");
-	stuff_string(pm->pre_mission_cutscene, F_FILESPEC, NULL);
+		required_string("$Pre-Mission Cutscene:");
+		stuff_string(dummy_filespec, F_FILESPEC, NULL);
 
-	required_string("$Next Mission Success:");
-	stuff_string(pm->next_mission_success, F_NAME, NULL);
+		required_string("$Next Mission Success:");
+		stuff_string(dummy_name, F_NAME, NULL);
 
-	required_string("$Next Mission Partial:");
-	stuff_string(pm->next_mission_partial, F_NAME, NULL);
+		required_string("$Next Mission Partial:");
+		stuff_string(dummy_name, F_NAME, NULL);
 
-	required_string("$Next Mission Failure:");
-	stuff_string(pm->next_mission_failure, F_NAME, NULL);
+		required_string("$Next Mission Failure:");
+		stuff_string(dummy_name, F_NAME, NULL);
+	}
 }
 
 void parse_briefing_info(mission *pm)
