@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.100 $
- * $Date: 2005-07-25 05:24:16 $
+ * $Revision: 2.101 $
+ * $Date: 2005-07-25 08:22:00 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2005/07/25 05:24:16  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.99  2005/07/25 03:13:25  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -1202,7 +1206,10 @@ void parse_mission_info(mission *pm)
 		int temp;
 		stuff_int(&temp);
 
-		The_mission.flags |= MISSION_FLAG_RED_ALERT;
+		if (temp)
+			The_mission.flags |= MISSION_FLAG_RED_ALERT;
+		else
+			The_mission.flags &= ~MISSION_FLAG_RED_ALERT;
 	} 
 	red_alert_invalidate_timestamp();
 
@@ -1210,7 +1217,10 @@ void parse_mission_info(mission *pm)
 		int temp;
 		stuff_int(&temp);
 
-		The_mission.flags |= MISSION_FLAG_SCRAMBLE;
+		if (temp)
+			The_mission.flags |= MISSION_FLAG_SCRAMBLE;
+		else
+			The_mission.flags &= ~MISSION_FLAG_SCRAMBLE;
 	}
 
 	// set up support ships

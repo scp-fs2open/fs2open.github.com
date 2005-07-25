@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-22 10:18:38 $
+ * $Revision: 2.17 $
+ * $Date: 2005-07-25 08:21:59 $
  * $Author: Goober5000 $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.15  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -479,6 +483,7 @@
 #include "sound/audiostr.h"
 #include "ship/ship.h"
 #include "parse/parselo.h"
+#include "mission/missionmessage.h"		// for MAX_MISSION_MESSAGES
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -605,7 +610,9 @@ int HUD_msg_inited = FALSE;
 
 // There is a maximum number of lines that will be stored in the message scrollback.  Oldest
 // messages are deleted to make way for newest messages.
-#define MAX_MSG_SCROLLBACK_LINES	100
+// Goober5000 - I think it'd be nice to see *all* the messages
+#define MAX_MSG_SCROLLBACK_LINES	MAX_MISSION_MESSAGES
+//#define MAX_MSG_SCROLLBACK_LINES	100
 line_node Msg_scrollback_lines[MAX_MSG_SCROLLBACK_LINES];
 
 line_node Msg_scrollback_free_list;
