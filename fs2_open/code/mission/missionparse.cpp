@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.98 $
- * $Date: 2005-07-22 10:18:39 $
+ * $Revision: 2.99 $
+ * $Date: 2005-07-25 03:13:25 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.97  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -5644,13 +5648,6 @@ int mission_do_departure( object *objp )
 	// just make it warp out like anything else.
 	if ( shipp->departure_location == DEPART_AT_DOCK_BAY )
 	{
-		// if told to warp out, depart to ship instead:
-		if (aigp->ai_mode == AI_GOAL_WARP)
-		{
-			aigp->ai_submode = AIS_DEPART_TO_BAY;
-			Ai_info[shipp->ai_index].mode = AIM_BAY_DEPART;
-		}
-
 		int anchor_shipnum;
 		char *name;
 

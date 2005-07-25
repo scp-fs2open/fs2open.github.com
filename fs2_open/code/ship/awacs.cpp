@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-22 10:18:35 $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-25 03:13:24 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/22 10:18:35  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -609,40 +613,8 @@ void team_visibility_update()
 
 
 // Determine is ship is visible by team
-int ship_is_visible_by_team(int ship_num, int team)
-{
-	Assert((ship_num >= 0) && (ship_num < MAX_SHIPS));
-
-	switch (team) {
-	case TEAM_FRIENDLY:
-		return Team_friendly_visibility[ship_num];
-		break;
-
-	case TEAM_HOSTILE:
-		return Team_hostile_visibility[ship_num];
-		break;
-
-	case TEAM_NEUTRAL:
-		return Team_neutral_visibility[ship_num];
-		break;
-
-	case TEAM_UNKNOWN:
-		return 0;
-		break;
-
-	case TEAM_TRAITOR:
-		return 0;
-		break;
-
-	default:
-		Int3();
-		return 0;
-	}
-}
-
-// New version of determine is ship is visible by team - Goober5000
-// accounts for friendly stealth invisible and primitive sensors
-int ship_is_visible_by_team_new(object *target, ship *viewer)
+// Goober5000 - now accounts for friendly stealth invisible and primitive sensors
+int ship_is_visible_by_team(object *target, ship *viewer)
 {
 	Assert(target);
 	Assert(viewer);
@@ -670,8 +642,33 @@ int ship_is_visible_by_team_new(object *target, ship *viewer)
 	}
 
 	// now evaluate this the old way
-	return ship_is_visible_by_team(target->instance, viewer->team);
+	int ship_num = target->instance;
+	int team = viewer->team;
+
+	switch (team)
+	{
+		case TEAM_FRIENDLY:
+			return Team_friendly_visibility[ship_num];
+			break;
+
+		case TEAM_HOSTILE:
+			return Team_hostile_visibility[ship_num];
+			break;
+
+		case TEAM_NEUTRAL:
+			return Team_neutral_visibility[ship_num];
+			break;
+
+		case TEAM_UNKNOWN:
+			return 0;
+			break;
+
+		case TEAM_TRAITOR:
+			return 0;
+			break;
+
+		default:
+			Int3();
+			return 0;
+	}
 }
-
-
-		

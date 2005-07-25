@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-07-24 20:12:55 $
+ * $Revision: 1.22 $
+ * $Date: 2005-07-25 03:13:23 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/07/24 20:12:55  Goober5000
+ * cleaned up some rotating submodel code
+ * --Goober5000
+ *
  * Revision 1.20  2005/07/23 21:06:24  Goober5000
  * fixed ai issue where some ships would never call for rearm
  * --Goober5000
@@ -271,7 +275,7 @@
  * --Goober5000
  *
  * Revision 2.54  2004/02/28 01:36:20  Goober5000
- * commented a slide_face_ship that I missed before
+ * commented something that I missed before
  * --Goober5000
  *
  * Revision 2.53  2004/02/27 04:09:56  bobboau
@@ -1650,7 +1654,7 @@ void parse_difftbl()
 	{
 		parse_float_list(Cmeasure_fire_chance);
 	}
-	if (optional_string("$AI Sheild Manage Delays:"))
+	if (optional_string("$AI Shield Manage Delays:"))
 	{
 		parse_float_list(Shield_manage_delays);
 	}
@@ -1831,7 +1835,7 @@ int ai_is_stealth_visible(object *viewer_objp, object *stealth_objp)
 	Assert(shipp->flags2 & SF2_STEALTH);
 
 	// check if in neb and below awac level for visible
-	if ( !ship_is_visible_by_team_new(stealth_objp, &Ships[viewer_objp->instance]) ) {
+	if ( !ship_is_visible_by_team(stealth_objp, &Ships[viewer_objp->instance]) ) {
 		vm_vec_sub(&vec_to_stealth, &stealth_objp->pos, &viewer_objp->pos);
 		dist_to_stealth = vm_vec_mag_quick(&vec_to_stealth);
 		dot_to_stealth = vm_vec_dotprod(&viewer_objp->orient.vec.fvec, &vec_to_stealth) / dist_to_stealth;
@@ -2587,7 +2591,7 @@ int object_is_targetable(object *target, ship *viewer)
 	{
 		stealth_ship = (Ships[target->instance].flags2 & SF2_STEALTH);
 
-		if ( ship_is_visible_by_team_new(target, viewer) == 1)
+		if ( ship_is_visible_by_team(target, viewer) == 1)
 		{
 			return 1;
 		}
@@ -3778,7 +3782,8 @@ void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_flag, int 
 
 			ship	*shipp = &Ships[objp->instance];
 			pm = model_get( shipp->modelnum );
-			if(pm->n_paths <= path_num)Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exist, on ship %s", path_num, shipp->ship_name);
+			if(pm->n_paths <= path_num)
+				Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exist, on ship %s", path_num, shipp->ship_name);
 		//	Assert(pm->n_paths > path_num);
 			aip->goal_objnum = objp-Objects;
 			aip->goal_signature = objp->signature;
@@ -4093,7 +4098,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 
 
 //	Cause a ship to fly tword a ship.
-void ai_start_fly_to_ship(object *objp, char *target_obj)
+void ai_start_fly_to_ship(object *objp, int shipnum)
 {
 	ai_info	*aip;
 
@@ -4103,18 +4108,10 @@ void ai_start_fly_to_ship(object *objp, char *target_obj)
 	aip->ai_flags |= AIF_FORMATION_WING;
 	aip->ai_flags &= ~AIF_FORMATION_OBJECT;
 
-
-	// we're going to assume that this search succeededs
-
-	for (int i = 0; i < MAX_SHIPS; i++)
-	{
-		if (Ships[i].objnum != -1 && !stricmp(target_obj, Ships[i].ship_name))
-		{
-			aip->target_objnum = Ships[i].objnum;	
-			break;
-		}
-	}
 	aip->mode = AIM_FLY_TO_SHIP;
+	aip->submode_start_time = Missiontime;
+
+	aip->target_objnum = Ships[shipnum].objnum;	
 
 	Assert(aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC);
 }
@@ -5960,8 +5957,6 @@ evade_ship_l1: ;
 
 	// nprintf(("Mike", "Goal point = %7.1f %7.1f %7.1f\n", goal_point.x, goal_point.y, goal_point.z));
 	turn_towards_point(Pl_objp, &goal_point, NULL, bank_override);
-	// Goober5000 - whoops, forgot to remove this before
-	// slide_face_ship();//added this -Bobboau
 
 	aip->prev_goal_point = goal_point;
 }
@@ -6048,6 +6043,12 @@ void show_firing_diag()
 
 //old version of this fuction, this will be useful for playing old missions and not having the new primary
 //selection code throw off the balance of the mission.
+//	If:
+//		flags & WIF_PUNCTURE
+//	Then Select a Puncture weapon.
+//	Else
+//		Select Any ol' weapon.
+//	Returns primary_bank index.
 int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 {
 	ship	*shipp = &Ships[objp->instance];
@@ -6635,7 +6636,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	}
 #endif
 
-	if (priority1 == 0)
+	if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (priority1 == 0))
 		ignore_mask |= WIF_HOMING;
 
 	//	Stuff weapon_bank_list with bank index of available weapons.
@@ -6656,7 +6657,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		}
 	}
 
-	if (priority2 == 0)
+	if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (priority2 == 0))
 		ignore_mask |= WIF_HOMING;
 
 	//	If didn't find anything above, then pick any secondary weapon.
@@ -6687,8 +6688,8 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 
 	weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
-	//rapid dumbfire? let it rip!
-	if ( (!(wip->wi_flags & WIF_HOMING)) && (wip->fire_wait < .5f) && (The_mission.flags & MISSION_FLAG_USE_NEW_AI))
+	// phreak -- rapid dumbfire? let it rip!
+	if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
 	{	
 		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
 	}
@@ -7479,9 +7480,6 @@ void get_behind_ship(ai_info *aip, ship_info *sip, float dist_to_enemy)
 	} else {
 		accelerate_ship(aip, (dot + 1.0f)/2.0f);
 	}
-
-	// Goober5000: removed this... why was it added?
-	// slide_face_ship();//added this -Bobboau
 }
 
 int avoid_player(object *objp, vec3d *goal_pos)
@@ -7983,9 +7981,6 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 	}
 
 	attack_set_accel(aip, dist_to_enemy, dot_to_enemy, dot_from_enemy);
-
-	// Goober5000: removed this... why was it added?
-	// slide_face_ship();//added this -Bobboau
 }
 
 //	EVADE_SQUIGGLE submode handler for chase mode.
@@ -8432,14 +8427,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		if (is_big_ship)
 		{
 			priority1 = WIF_HUGE;
-			if (The_mission.flags & MISSION_FLAG_USE_NEW_AI)
-			{
-				priority2 = WIF_BOMBER_PLUS;
-			}
-			else
-			{
-				priority2 = WIF_HOMING;
-			}
+			priority2 = (The_mission.flags & MISSION_FLAG_USE_NEW_AI) ? WIF_BOMBER_PLUS : WIF_HOMING;
 		} 
 		else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) )
 		{
@@ -8451,7 +8439,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			priority1 = WIF_PUNCTURE;
 			priority2 = WIF_HOMING;
 		}
-		else if ((en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
+		else if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
 		{	
 			priority1 = 0;								
 			priority2 = 0;
@@ -10367,7 +10355,7 @@ void ai_big_guard()
 		// get desired z
 		// how often to choose new desired_z
 		// 1*(64) sec < 2000, 2*(64) < 2-4000 3*(64) > 4-8000, etc (Missiontime >> 22 is 64 sec intervals)
-		int time_choose = int(floor(log(length * 0.001) / log((double)2)));
+		int time_choose = int(floor(log(length * 0.001f) / log(2.0f)));
 		float desired_z = min_z + length * static_randf( Pl_objp-Objects ^ (Missiontime >> (22 + time_choose)) );
 
 		// get r from guard_ship
@@ -12597,11 +12585,7 @@ void ai_balance_shield(object *objp)
 				objp->shield_quadrant[i] = shield_strength_avg;
 		}
 }
-/*
- * Made a small change to how friendly AI's will manage their shields.
- * They will now act as pro's rather then amateurs.
- * Did this because we all know how long wingmen last :)
- */
+
 //	Manage the shield for this ship.
 //	Try to max out the side that was most recently hit.
 void ai_manage_shield(object *objp, ai_info *aip)
@@ -12621,7 +12605,10 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		} 
 		else 
 		{
-			delay = Shield_manage_delays[NUM_SKILL_LEVELS/1];	// Changed from 2 - unknownplayer
+			if (The_mission.flags & MISSION_FLAG_USE_NEW_AI)
+				delay = Shield_manage_delays[NUM_SKILL_LEVELS];	// unknownplayer - treat as if Skill_level is expert
+			else
+				delay = Shield_manage_delays[NUM_SKILL_LEVELS/2];
 		}
 
 		//	Scale between 1x and 3x based on ai_class
@@ -13172,12 +13159,14 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 
 	aip = &Ai_info[Ships[pl_objp->instance].ai_index];
 
-	if ( parent_objnum == -1 )
+	objnum = parent_objnum;
+	if ( objnum < 0 )
 	{
-		// locate a capital ship on the same team:
-		objnum = Ships[ship_get_ship_with_dock_bay(Ships[pl_objp->instance].team)].objnum;
-	} else {
-		objnum = parent_objnum;
+		// try to locate a capital ship on the same team:
+		int shipnum = ship_get_ship_with_dock_bay(Ships[pl_objp->instance].team);
+
+		if (shipnum >= 0)
+			objnum = Ships[shipnum].objnum;
 	}
 
 	aip->path_start = -1;
@@ -13251,20 +13240,16 @@ void ai_bay_depart()
 	anchor_shipnum = ship_name_lookup(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
 	if (anchor_shipnum >= 0)
 	{
-
 		// make sure not dying or departing
-
-
-        // *Yeah, but make it without a crash ;)
-        //  If the anchor ship is departing/dying, anchor was being set to -1 and it was trying to check it for bays   -Et1
-
-		if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING) || ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]) )
+		if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
 		{
-
 			anchor_shipnum = -1;
-
-        }
-
+		}
+		// make sure fighterbays not destroyed
+		else if ( ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]) )
+		{
+			anchor_shipnum = -1;
+		}
 	}
 
 	if (anchor_shipnum < 0)
@@ -13275,15 +13260,20 @@ void ai_bay_depart()
 		return;
 	}
 
+	// Bobboau
 	bay_process_doors(Pl_objp, -1);
+
 	// follow the path to the final point
 	ai_path();
-	//if we are on the last segment of the path and the bay doors are not open, ope  them
+
+	//if we are on the last segment of the path and the bay doors are not open, open them
 	//if we are on any other segment of the path, close them
 
 	// if the final point is reached, let default AI take over
 	if ( aip->path_cur >= (aip->path_start+aip->path_length) ) {
-		//ok, I'm in so close the doors now
+
+
+		// Bobboau - ok, I'm in so close the doors now
 		ship* parent_ship = &Ships[Objects[aip->goal_objnum].instance];
 
 		parent_ship->bay_number_wanting_open--;//one less ship wants the bay open
@@ -13301,6 +13291,7 @@ void ai_bay_depart()
 
 
 
+		// Volition bay code
 		polymodel	*pm;
 		ship_bay		*sb;
 
@@ -13660,8 +13651,6 @@ void ai_warp_out(object *objp)
 	}
 
 	ai_info	*aip;
-	int anchor_shipnum;
-
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	switch (aip->submode) {
@@ -13715,46 +13704,6 @@ void ai_warp_out(object *objp)
 		break;
 	}
 	case AIS_WARP_5:
-		break;
-	case AIS_DEPART_TO_BAY:	// no warp stuff
-		// check if parent ship still exists; if not, abort depart
-	// ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
-		anchor_shipnum = ship_name_lookup(Parse_names[Ships[objp->instance].departure_anchor]);
-		if (anchor_shipnum >= 0)
-		{
-			if ( Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
-			{
-				anchor_shipnum = -1;
-			}
-		}
-
-		if (anchor_shipnum < 0)
-		{
-			// if no warp drive, cancel everything
-			if (Ships[objp->instance].flags2 & SF2_NO_SUBSPACE_DRIVE)
-			{
-				ai_goal *aigp = &aip->goals[aip->active_goal];
-
-				Ships[objp->instance].flags &= ~SF_DEPARTING;
-
-				// engage enemy
-				aip->target_objnum = -1;	// force reacquisition of target
-				aip->enemy_wing = -1;		// same with wing
-				aigp->ai_mode = AI_GOAL_CHASE_ANY;
-				aigp->ai_submode = SM_ATTACK;
-				ai_attack_object( objp, NULL, aigp->priority, NULL );
-			}
-			// if we have warp, engage warp drive instead
-			else
-			{
-				(Ships[objp->instance].flags &= ~SF_DEPART_DOCKBAY) |= SF_DEPART_WARP;
-
-				aip->goals[aip->active_goal].ai_mode = AI_GOAL_WARP;
-				aip->goals[aip->active_goal].ai_submode = -1;
-				aip->mode = AIM_WARP_OUT;
-				aip->submode = AIS_WARP_1;
-			}
-		}
 		break;
 	default:
 		Int3();		//	Illegal submode for warping out.
@@ -14632,12 +14581,6 @@ void ai_process( object * obj, int ai_index, float frametime )
 //		if (aip->submode == AIS_NONE_FORMATION)
 //			rfc = 0;
 //		break;
-/*		// Kazan -- disable afterburning during thses
-	case AIM_WAYPOINTS:
-	case AIM_FLY_TO_SHIP:
-		if (AutoPilotEngaged)
-			AI_ci.afterburner_stop = 1;
-		break;*/
 
 	default:
 		break;

@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-05-16 15:40:43 $
- * $Author: phreak $
+ * $Revision: 1.18 $
+ * $Date: 2005-07-25 03:13:24 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/05/16 15:40:43  phreak
+ * reverted a tagged only commit, it wasn't needed
+ *
  * Revision 1.16  2005/05/14 21:48:22  phreak
  * another tagged only turret fix
  *
@@ -360,9 +363,7 @@ bool valid_turret_enemy(object *eobjp, object *turret_parent, ship_subsys *turre
 		if(!is_target_beam_valid(&turret->weapons, eobjp))
 			return false;
 
-		// Goober5000 - don't fire at cargo containers, otherwise you have the absurd
-		// possibility of a transport firing at a cargo container it's docking with,
-		// which happened to me on one mission
+		// Goober5000 - don't fire at cargo containers (let me know if you want to discuss this) ;)
 		if ( Ship_info[shipp->ship_info_index].flags & SIF_CARGO ) {
 			return false;
 		}
@@ -531,24 +532,6 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		}
 	} // end ship section
 
-	// _argv[-1], 29 Dec 2004: Turret AI should shoot at asteroids, as it did in the retail game. This makes it shoot at them again.
-	// _argv[-1], 30 Dec 2004: I've been informed that turret AI in the retail game does NOT shoot at asteroids, so this is now disabled by default. I'll add this as a command-line option / ship flag / whatnot later.
-/*
-#ifdef TURRETS_SHOOT_ASTEROIDS
-	if (objp->type == OBJ_ASTEROID) {
-		dist *= 1.2f; // rocks are relatively unimportant.
-
-		if (eeo->turret_parent_objnum == asteroid_collide_objnum(objp) && dist < eeo->nearest_attacker_dist) {
-			eeo->nearest_attacker_dist = dist;
-			eeo->nearest_attacker_objnum = OBJ_INDEX(objp);
-		}
-		if (dist < eeo->nearest_dist) {
-			eeo->nearest_dist = dist;
-			eeo->nearest_objnum = OBJ_INDEX(objp);
-		}
-	}
-#endif
-*/
 	// check if object is an asteroid attacking the turret parent - taylor
 	if (objp->type == OBJ_ASTEROID) {
 		if ( eeo->turret_parent_objnum == asteroid_collide_objnum(objp) ) {
@@ -623,7 +606,7 @@ int get_nearest_enemy_objnum(int turret_parent_objnum, ship_subsys *turret_subsy
 	eeo.nearest_objnum = -1;
 
 	//don't fire anti capital ship turrets at bombs.
-	if (!big_flag)
+	if ( !((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (big_flag)) )
 	{
 		// Missile_obj_list
 		for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
@@ -1181,6 +1164,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 				objp=&Objects[weapon_objnum];
 				wp=&Weapons[objp->instance];
+
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
 					wp->target_num = turret->turret_enemy_objnum;
@@ -1214,6 +1198,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					}
 #endif				
 					if ( wip->launch_snd != -1 ) {
+						// Don't play turret firing sound if turret sits on player ship... it gets annoying.
 						if ( parent_objnum != OBJ_INDEX(Player_obj) ) {						
 							snd_play_3d( &Snds[wip->launch_snd], turret_pos, &View_position );						
 						}
@@ -1228,12 +1213,11 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 	}
 	//Not useful -WMC
-	/*
-	else
+	else if (!(The_mission.flags & MISSION_FLAG_USE_NEW_AI))
 	{
 		float wait = 1000.0f * frand_range(0.9f, 1.1f);
 		turret->turret_next_fire_stamp = timestamp((int) wait);
-	}*/
+	}
 }
 
 //void turret_swarm_fire_from_turret(ship_subsys *turret, int parent_objnum, int target_objnum, ship_subsys *target_subsys)
@@ -1258,7 +1242,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
     // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
     //  problems with non-homing swarm weapons -Et1
-	if( !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
+	if( (The_mission.flags & MISSION_FLAG_USE_NEW_AI) && !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
     {
 
         turret_fvec = tsi->turret->turret_last_fire_direction;
@@ -1538,10 +1522,17 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	//	If still don't have an enemy, return.  Or, if enemy is protected, return.
 	if (ss->turret_enemy_objnum != -1) {
-		//	Don't shoot at ship we're docked with.
-		// Volition originally meant for us to also not shoot at a ship we're docking with, but they messed it up so that
-		// it didn't work.  And with the new code, it's expensive.  So we keep the old behavior.
+		// Don't shoot at ship we're docked with.
 		if (dock_check_find_docked_object(objp, &Objects[ss->turret_enemy_objnum]))
+		{
+			ss->turret_enemy_objnum = -1;
+			return;
+		}
+
+		// Goober5000 - Also, don't shoot at a ship we're docking with.  Volition
+		// had this in the code originally but messed it up so that it didn't work.
+		ai_info *aip = Ai_info[shipp->ai_index];
+		if ((aip->mode == AIM_DOCK) && (aip->goal_objnum == ss->turret_enemy_objnum))
 		{
 			ss->turret_enemy_objnum = -1;
 			return;

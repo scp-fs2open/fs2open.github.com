@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.5 $
- * $Date: 2005-07-24 20:12:55 $
+ * $Revision: 1.6 $
+ * $Date: 2005-07-25 03:13:24 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/07/24 20:12:55  Goober5000
+ * cleaned up some rotating submodel code
+ * --Goober5000
+ *
  * Revision 1.4  2005/07/22 09:19:39  wmcoolmon
  * Dynamic AI Class number commit. KNOWN BUG: When AI_CLASS_INCREMENT is hit and vm_realloc is called, memory corruption seems to
  * result. Not at all sure what causes this; if this can't be resolved soon, we can always treat _INCREMENT like _MAX
@@ -848,7 +852,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 void ai_announce_ship_dying(object *dying_objp);
 
 // added by kazan
-void ai_start_fly_to_ship(object *objp, char *target_obj);
+void ai_start_fly_to_ship(object *objp, int shipnum);
 void ai_fly_to_ship();
 
 //Moved declaration here for player ship -WMC

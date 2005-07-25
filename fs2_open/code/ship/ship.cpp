@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.215 $
- * $Date: 2005-07-24 06:01:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.216 $
+ * $Date: 2005-07-25 03:13:24 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.215  2005/07/24 06:01:37  wmcoolmon
+ * Multiple shockwaves support.
+ *
  * Revision 2.214  2005/07/24 00:32:45  wmcoolmon
  * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
  * support for the demo/FS1
@@ -3844,7 +3847,7 @@ int ship_get_type(char* output, ship_info *sip)
 			strcpy(output, "Subspace portal");
 			return 1;
 		default:
-			strcpy(output, "Unknown");
+			strcpy(output, "Unknown (or mixed type)");
 			return 0;
 	}
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:30 $
+ * $Revision: 2.5 $
+ * $Date: 2005-07-25 03:13:24 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -88,12 +92,6 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs=1);
 // Determine if ship is visible by team
 // return 1 if ship is fully visible
 // return 0 if ship is only partly visible
-int ship_is_visible_by_team(int ship_num, int team);
-
-// Determine if ship is visible by team - new; incorporates friendly stealth invisible
-// and primitive sensors
-// return 1 if ship is fully visible
-// return 0 if ship is only partly visible
-extern int ship_is_visible_by_team_new(object *target, ship *viewer);
+int ship_is_visible_by_team(object *target, ship *viewer);
 
 #endif

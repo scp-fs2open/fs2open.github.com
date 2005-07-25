@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.2 $
- * $Date: 2005-04-05 05:53:13 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2005-07-25 03:13:23 $
+ * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/04/05 05:53:13  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 1.1  2005/03/25 06:45:12  wmcoolmon
  * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
  *
@@ -1934,26 +1937,20 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 		return;
 	}
 
-	// Only attack turret if it sits on current target
 	Assert(weapon_objp->parent >= 0 && weapon_objp->parent < MAX_OBJECTS);
 	parent_objp = &Objects[weapon_objp->parent];
 	
 	// UnknownPlayer : Decide whether or not this weapon was a beam, in which case it might be a good
 	// idea to go after it even if its not on the current target. This is randomized so
 	// the ai will not always go after different ships firing beams at them.
+	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	if ( Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM ) {
-		// Approx 1/4 chance we'll go after the beam
-		if (frand()*100 > 25.0f) {
-			if ( (parent_objp->signature != weapon_objp->parent_sig) || (parent_objp->type != OBJ_SHIP) ) {
-				return;
-			}
-		
-			if ( aip->target_objnum != OBJ_INDEX(parent_objp) ) {
-				return;
-			}
-		}
-	} else { // everything that's not a beam is handled the original way
+	bool attack_turret_on_different_ship = (The_mission.flags & MISSION_FLAGS_USE_NEW_AI)
+		&& (Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
+
+	// unless we're making an exception, we should only attack a turret if it sits on the current target
+	if ( !attack_turret_on_different_ship )
+	{
 		if ( (parent_objp->signature != weapon_objp->parent_sig) || (parent_objp->type != OBJ_SHIP) ) {
 			return;
 		}
