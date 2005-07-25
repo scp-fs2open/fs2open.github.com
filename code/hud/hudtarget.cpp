@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.66 $
- * $Date: 2005-07-22 10:18:38 $
+ * $Revision: 2.67 $
+ * $Date: 2005-07-25 03:13:24 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.65  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -952,7 +956,7 @@ int hud_target_invalid_awacs(object *objp)
 	// if objp is ship object, first check if can be targeted with team info
 	if (objp->type == OBJ_SHIP) {
 		if (Player_ship != NULL) {
-			if (ship_is_visible_by_team_new(objp, Player_ship)) {
+			if (ship_is_visible_by_team(objp, Player_ship)) {
 				return 0;
 			}
 		}

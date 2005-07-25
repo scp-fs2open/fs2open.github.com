@@ -85,7 +85,7 @@ variable system: takes a string and constructs an expression includeing game var
   other stuff... this is still heavily under construction, and not many variables have been made yet
   all game variables rely on a data pack passed to it, not all evaluations will have all data 
   items relevent to them. for example texture variables will not be relevent to per ship evaluations
-  ship variables (like sheild streignth) will not be relevent to per weapon evaluations. 
+  ship variables (like shield strength) will not be relevent to per weapon evaluations. 
   in the instance that irrelevent variables are used in expressions the default return value for 
   them should , generaly, be 0.0f. however there may be instances in wich a diferent irrelevent 
   return would be mor logical, it is up to the person adding the new game variable to make sure

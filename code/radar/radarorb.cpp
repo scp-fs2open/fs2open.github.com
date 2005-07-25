@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-07-22 10:18:40 $
+ * $Revision: 1.15 $
+ * $Date: 2005-07-25 03:13:25 $
  * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/07/22 10:18:40  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 1.13  2005/07/13 03:35:35  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -259,7 +263,7 @@ void radar_plot_object_orb( object *objp )
 	int ship_is_visible = 0;
 	if (objp->type == OBJ_SHIP) {
 		if (Player_ship != NULL) {
-			if (ship_is_visible_by_team_new(objp, Player_ship)) {
+			if (ship_is_visible_by_team(objp, Player_ship)) {
 				ship_is_visible = 1;
 			}
 		}

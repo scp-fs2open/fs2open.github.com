@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-07-23 18:38:47 $
+ * $Revision: 1.6 $
+ * $Date: 2005-07-25 03:13:24 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/07/23 18:38:47  Goober5000
+ * fixed a rare but ugly (though amusing) bug
+ * --Goober5000
+ *
  * Revision 1.4  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -859,7 +863,7 @@ void ai_clear_ship_goals( ai_info *aip )
 	// Dont reset player ai (and hence target)
 	// Goober5000 - account for player ai
 	//if ( !((Player_ship != NULL) && (&Ships[aip->shipnum] == Player_ship)) || Player_use_ai ) {
-	if ( Player_ship == NULL || Player_use_ai || &Ships[aip->shipnum] != Player_ship)
+	if ( (Player_ship == NULL) || (&Ships[aip->shipnum] != Player_ship) || Player_use_ai )
 	{
 		ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );
 	}
@@ -1212,8 +1216,8 @@ void ai_add_goal_sub_player(int type, int mode, int submode, char *shipname, ai_
 // as the empty slot.  This avoids overwriting the active goal while it's being executed.  So far
 // the only time I've noticed it being a problem is during a rare situation where more than five
 // friendlies want to rearm at the same time.  The support ship forgets what it's doing and flies
-// off to repair somebody while still docked.  I reproduced this with retail, so it's not a problem
-// with my new docking code. :)
+// off to repair somebody while still docked.  I reproduced this with retail, so it's not a bug in
+// my new docking code. :)
 int ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
 {
 	int gindex, oldest_index;
@@ -2289,8 +2293,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	// Goober5000 - we may want to use AI for the player
 	// AL 3-7-98: If this is a player ship, and the goal is not a formation goal, then do a quick out
-	//if ( !(Player_use_ai) && (objp->flags & OF_PLAYER_SHIP) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) ) {
-	if ( !Player_use_ai && objp->flags & OF_PLAYER_SHIP)
+	if ( !(Player_use_ai) && (objp->flags & OF_PLAYER_SHIP) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) )
 	{
 		return;
 	}	
@@ -2351,7 +2354,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	}
 
 	case AI_GOAL_FLY_TO_SHIP:
-		ai_start_fly_to_ship(objp, current_goal->ship_name);
+		shipnum = ship_name_lookup( current_goal->ship_name );
+		Assert (shipnum != -1 );			// shouldn't get here if this is false!!!!
+		ai_start_fly_to_ship(objp, shipnum);
 		break;
 
 	case AI_GOAL_DOCK: {
@@ -2363,7 +2368,6 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		// get fixed up in goal_achievable so that the points can be checked there for validity
 		Assert (current_goal->flags & AIGF_DOCK_INDEXES_VALID);
 		ai_dock_with_object( objp, current_goal->docker.index, other_obj, current_goal->dockee.index, current_goal->priority, AIDO_DOCK );
-		aip->submode_start_time = Missiontime;
 		break;
 	}
 
@@ -2427,7 +2431,6 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 		// passing 0, 0 is okay because the undock code will figure out where to undock from
 		ai_dock_with_object( objp, 0, other_obj, 0, current_goal->priority, AIDO_UNDOCK );
-		aip->submode_start_time = Missiontime;
 		break;
 
 

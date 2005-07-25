@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-22 10:18:40 $
+ * $Revision: 2.18 $
+ * $Date: 2005-07-25 03:13:25 $
  * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/22 10:18:40  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.16  2005/07/13 03:35:35  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -360,7 +364,7 @@ void radar_plot_object_std( object *objp )
 	int ship_is_visible = 0;
 	if (objp->type == OBJ_SHIP) {
 		if (Player_ship != NULL) {
-			if (ship_is_visible_by_team_new(objp, Player_ship)) {
+			if (ship_is_visible_by_team(objp, Player_ship)) {
 				ship_is_visible = 1;
 			}
 		}

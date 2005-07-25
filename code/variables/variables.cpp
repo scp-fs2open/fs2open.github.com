@@ -268,9 +268,9 @@ public:
 	};
 };
 
-class sheilds:public game_variable{
+class shields:public game_variable{
 public:
-	sheilds(){};
+	shields(){};
 	float value(variable_call_data*data=NULL){
 		if(data && data->obj)
 		switch(data->obj->type){
@@ -484,15 +484,15 @@ variable* expression::get_object_variable(char**str){
 		(*str)++; //get rid of the leading {
 
 		char engine_output_id[] = "engine_output";
-		char sheild_id[] = "sheilds";
+		char shield_id[] = "shields";
 		//the variable cascade
 		if(!strncmp(*str,engine_output_id,strlen(engine_output_id))){
 			*str+=strlen(engine_output_id);
 			ret = new engine_output();
 		}else
-		if(!strncmp(*str,sheild_id,strlen(sheild_id))){
-			*str+=strlen(sheild_id);
-			ret = new sheilds();
+		if(!strncmp(*str,shield_id,strlen(shield_id))){
+			*str+=strlen(shield_id);
+			ret = new shields();
 		}else
 		{
 			//unsuported object variable

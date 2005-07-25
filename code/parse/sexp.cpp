@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.163 $
- * $Date: 2005-07-24 00:32:44 $
- * $Author: wmcoolmon $
+ * $Revision: 2.164 $
+ * $Date: 2005-07-25 03:13:25 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.163  2005/07/24 00:32:44  wmcoolmon
+ * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
+ * support for the demo/FS1
+ *
  * Revision 2.162  2005/07/23 22:52:44  wmcoolmon
  * Fixed formatting FTW
  *
@@ -4944,7 +4948,7 @@ int sexp_is_ship_visible(int n)
 	// get ship's *radar* visiblity
 	if (Player_ship != NULL)
 	{
-		if (ship_is_visible_by_team_new(&Objects[Ships[shipnum].objnum], Player_ship))
+		if (ship_is_visible_by_team(&Objects[Ships[shipnum].objnum], Player_ship))
 		{
 			ship_is_visible = 2;
 		}
