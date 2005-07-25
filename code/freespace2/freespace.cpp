@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.168 $
- * $Date: 2005-07-22 10:18:38 $
+ * $Revision: 2.169 $
+ * $Date: 2005-07-25 05:55:40 $
  * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.168  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.167  2005/07/18 14:09:03  taylor
  * better "is_640x480" detection, 800x600 res was using GR_1024 where it should have used GR_640
  *
@@ -5481,20 +5485,17 @@ void game_maybe_do_dead_popup(float frametime)
 
 			// this should only happen during a red alert mission
 			case 3:				
-				// bogus?
-				Assert(The_mission.red_alert);
-				if(!The_mission.red_alert){
-					// CD CHECK
-					if(game_do_cd_mission_check(Game_current_mission_filename)){
-						gameseq_post_event(GS_EVENT_START_GAME);
-					} else {
-						gameseq_post_event(GS_EVENT_MAIN_MENU);
-					}
-					break;
+				if (The_mission.flags & MISSION_FLAG_RED_ALERT)
+				{
+					// choose the previous mission
+					mission_campaign_previous_mission();
+				}
+				else
+				{
+					// bogus?
+					Int3();
 				}
 				
-				// choose the previous mission
-				mission_campaign_previous_mission();
 				// CD CHECK
 				if(game_do_cd_mission_check(Game_current_mission_filename)){
 					gameseq_post_event(GS_EVENT_START_GAME);
@@ -5804,7 +5805,7 @@ void game_frame(int paused)
 
 			// hack - sometimes this seems to slip by in multiplayer. this should guarantee that we catch it
 			if((Game_mode & GM_MULTIPLAYER) && (Player_multi_died_check != -1) && (Game_mode & GM_DEAD_BLEW_UP) ){
-				if(fl_abs(time(NULL) - Player_multi_died_check) > 4){
+				if(fl_abs(time(NULL) - Player_multi_died_check) > 4.0f){
 					if(!popupdead_is_active()){
 						popupdead_start();
 					}
