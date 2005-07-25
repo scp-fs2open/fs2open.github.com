@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-24 06:01:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2005-07-25 08:22:00 $
+ * $Author: Goober5000 $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/24 06:01:37  wmcoolmon
+ * Multiple shockwaves support.
+ *
  * Revision 2.13  2005/07/24 00:32:45  wmcoolmon
  * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
  * support for the demo/FS1
@@ -660,7 +663,7 @@ void shockwave_render(object *objp)
 //
 int shockwave_load(int info_index)
 {
-	Assert(info_index > 0);
+	Assert(info_index >= 0);
 	Assert(info_index < MAX_SHOCKWAVE_TYPES);
 	shockwave_info *si = &Shockwave_info[info_index];
 	if(si->bitmap_id > 0)
