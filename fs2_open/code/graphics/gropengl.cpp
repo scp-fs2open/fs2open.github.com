@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.129 $
- * $Date: 2005-07-20 02:35:51 $
+ * $Revision: 2.130 $
+ * $Date: 2005-07-26 08:46:48 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2005/07/20 02:35:51  taylor
+ * better UV offsets when using non-standard resolutions (for text mostly), copied from D3D code
+ *
  * Revision 2.128  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -942,13 +945,36 @@ void opengl_go_fullscreen(HWND wnd)
 	SetActiveWindow(wnd);
 	SetForegroundWindow(wnd);
 
-	memset((void*)&dm,0,sizeof(DEVMODE));
-	dm.dmSize=sizeof(DEVMODE);
-	dm.dmPelsHeight=gr_screen.max_h;
-	dm.dmPelsWidth=gr_screen.max_w;
-	dm.dmBitsPerPel=gr_screen.bits_per_pixel;
-	dm.dmFields=DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-	ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
+	memset((void*)&dm, 0, sizeof(DEVMODE));
+
+	dm.dmSize = sizeof(DEVMODE);
+	dm.dmPelsHeight = gr_screen.max_h;
+	dm.dmPelsWidth = gr_screen.max_w;
+	dm.dmBitsPerPel = gr_screen.bits_per_pixel;
+	dm.dmDisplayFrequency = os_config_read_uint( NULL, NOX("OGL_RefreshRate"), 0 );
+	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+
+	if (dm.dmDisplayFrequency)
+		dm.dmFields |= DM_DISPLAYFREQUENCY;
+
+	if ( (ChangeDisplaySettings(&dm, CDS_FULLSCREEN)) != DISP_CHANGE_SUCCESSFUL ) {
+		if (dm.dmDisplayFrequency) {
+			// failed to switch with freq change so try without it just in case
+			dm.dmDisplayFrequency = 0;
+			dm.dmFields &= ~DM_DISPLAYFREQUENCY;
+
+			if ( (ChangeDisplaySettings(&dm, CDS_FULLSCREEN)) != DISP_CHANGE_SUCCESSFUL ) {
+				Warning( LOCATION, "Unable to go fullscreen on second attempt!" );
+			}
+		} else {
+			Warning( LOCATION, "Unable to go fullscreen!" );
+		}
+	} else {
+		// REMOVEME: doesn't really need to be here but for debugging purposes it
+		//           could be helpful during the immediate future.
+		mprintf(("USING REFRESH_RATE OF: %i\n", dm.dmDisplayFrequency));
+	}
+
 	os_resume();  
 #else
 	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) ) {
