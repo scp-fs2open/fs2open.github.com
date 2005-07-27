@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.6 $
- * $Date: 2005-07-25 03:13:24 $
+ * $Revision: 1.7 $
+ * $Date: 2005-07-27 17:22:22 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/07/25 03:13:24  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 1.5  2005/07/24 20:12:55  Goober5000
  * cleaned up some rotating submodel code
  * --Goober5000
@@ -338,6 +344,7 @@ struct object;
 #define AIGF_GOAL_OVERRIDE			(1<<4)	// paired with AIG_TYPE_DYNAMIC to mean this goal overrides any other goal
 #define AIGF_PURGE					(1<<5)	// purge this goal next time we process
 #define AIGF_GOALS_PURGED			(1<<6)	// this goal has already caused other goals to get purged
+#define AIGF_DOCK_SOUND_PLAYED		(1<<7)	// Goober5000 - replacement for AL's hack ;)
 
 #define AIGF_DOCK_INDEXES_VALID		(AIGF_DOCKER_INDEX_VALID|AIGF_DOCKEE_INDEX_VALID)
 
