@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.4 $
- * $Date: 2005-07-25 05:23:33 $
+ * $Revision: 1.5 $
+ * $Date: 2005-07-27 18:27:49 $
  * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/07/25 05:23:33  Goober5000
+ * whoops
+ * --Goober5000
+ *
  * Revision 1.3  2005/07/25 03:13:23  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -840,6 +844,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 							aip->previous_mode = aip->mode;
 							aip->mode = AIM_NONE;
 							aip->submode = -1;
+							aip->submode_start_time = Missiontime;
 							return 1;
 						}
 						ai_path();
@@ -1188,8 +1193,9 @@ void ai_big_chase()
 	if (aip->ai_flags & AIF_TARGET_COLLISION) {
 		if ( ai_big_strafe_maybe_retreat(dist_to_enemy, &enemy_pos) ) {
 			aip->mode = AIM_STRAFE;
-			aip->submode = AIS_STRAFE_AVOID;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered
+			aip->submode = AIS_STRAFE_AVOID;
+			aip->submode_start_time = Missiontime;
 			return;
 		}
 	}
@@ -1273,6 +1279,7 @@ void ai_big_chase()
 	default:
 		aip->last_attack_time = Missiontime;
 		aip->submode = SM_ATTACK;
+		aip->submode_start_time = Missiontime;
 		break;
 	}
 
@@ -1388,8 +1395,8 @@ void ai_big_chase()
 		
 		if (box_dist > 300) {
 			aip->submode = SM_ATTACK;
-			aip->last_attack_time = Missiontime;
 			aip->submode_start_time = Missiontime;
+			aip->last_attack_time = Missiontime;
 		}
 		}
 		break;
@@ -1401,8 +1408,8 @@ void ai_big_chase()
 				aip->submode_start_time = Missiontime;
 			} else {
 				aip->submode = SM_ATTACK;
-				aip->last_attack_time = Missiontime;
 				aip->submode_start_time = Missiontime;
+				aip->last_attack_time = Missiontime;
 			}
 		}
 
@@ -1418,8 +1425,8 @@ void ai_big_chase()
 
 	default:
 		aip->submode = SM_ATTACK;
-		aip->last_attack_time = Missiontime;
 		aip->submode_start_time = Missiontime;
+		aip->last_attack_time = Missiontime;
 	}
 
 	//
