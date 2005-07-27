@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.6 $
- * $Date: 2005-07-25 03:13:24 $
+ * $Revision: 1.7 $
+ * $Date: 2005-07-27 18:27:49 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/07/25 03:13:24  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 1.5  2005/07/23 18:38:47  Goober5000
  * fixed a rare but ugly (though amusing) bug
  * --Goober5000
@@ -2503,6 +2509,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		ai_clear_ship_goals( aip );
 		aip->mode = AIM_PLAY_DEAD;
 		aip->submode = -1;
+		aip->submode_start_time = Missiontime;
 		break;
 
 	case AI_GOAL_FORM_ON_WING:

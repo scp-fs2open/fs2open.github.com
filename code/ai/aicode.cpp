@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.23 $
- * $Date: 2005-07-27 17:22:22 $
+ * $Revision: 1.24 $
+ * $Date: 2005-07-27 18:27:49 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2005/07/27 17:22:22  Goober5000
+ * more tweaks to the dock code
+ * --Goober5000
+ *
  * Revision 1.22  2005/07/25 03:13:23  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -3302,8 +3306,9 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 	}
 
 	aip->mode = AIM_CHASE;
-	aip->submode = SM_ATTACK;	// AL 12-15-97: need to set submode?  I got an assert() where submode was bogus
-										//					 for AIM_CHASE... it may have been not set correctly here
+	aip->submode = SM_ATTACK;				// AL 12-15-97: need to set submode?  I got an assert() where submode was bogus
+	aip->submode_start_time = Missiontime;	// for AIM_CHASE... it may have been not set correctly here
+
 	if (ssp == NULL) {
 		set_targeted_subsys(aip, NULL, -1);
 		if (aip->target_objnum != -1) {
@@ -3330,8 +3335,8 @@ void ai_attack_wing(object *attacker, int wingnum, int priority)
 
 	aip->enemy_wing = wingnum;
 	aip->mode = AIM_CHASE;
-	aip->submode = SM_ATTACK;	// AL 12-15-97: need to set submode?  I got an assert() where submode was bogus
-										//					 for AIM_CHASE... it may have been not set correctly here
+	aip->submode = SM_ATTACK;				// AL 12-15-97: need to set submode?  I got an assert() where submode was bogus
+	aip->submode_start_time = Missiontime;	// for AIM_CHASE... it may have been not set correctly here
 
 	aip->ok_to_target_timestamp = timestamp(0);		//	Guarantee we can target.
 
@@ -4056,18 +4061,19 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 	switch (dock_type) {
 	case AIDO_DOCK:
 		aip->submode = AIS_DOCK_0;
+		aip->submode_start_time = Missiontime;
 		break;
 	case AIDO_DOCK_NOW:
 		aip->submode = AIS_DOCK_4A;
+		aip->submode_start_time = Missiontime;
 		break;
 	case AIDO_UNDOCK:
 		aip->submode = AIS_UNDOCK_0;
+		aip->submode_start_time = Missiontime;
 		break;
 	default:
 		Int3();		//	Bogus dock_type.
 	}
-
-	aip->submode_start_time = Missiontime;
 
 	// Goober5000 - we no longer need to set dock_path_index because it's easier to grab the path from the dockpoint
 	// a debug check would be a good thing here, though
@@ -4161,6 +4167,7 @@ void ai_do_stay_near(object *objp, object *other_objp, float dist)
 
 	aip->mode = AIM_STAY_NEAR;
 	aip->submode = -1;
+	aip->submode_start_time = Missiontime;
 	aip->stay_near_distance = dist;
 	aip->goal_objnum = other_objp-Objects;
 	aip->goal_signature = other_objp->signature;
@@ -4178,6 +4185,7 @@ void ai_do_safety(object *objp)
 
 	aip->mode = AIM_SAFETY;
 	aip->submode = AISS_1;
+	aip->submode_start_time = Missiontime;
 }
 
 //	Make object *objp form on wing of object *goal_objp
@@ -5582,6 +5590,7 @@ int maybe_resume_previous_mode(object *objp, ai_info *aip)
 						Assert(aip->previous_mode == AIM_GUARD);
 						aip->mode = aip->previous_mode;
 						aip->submode = AIS_GUARD_PATROL;
+						aip->submode_start_time = Missiontime;
 						aip->active_goal = AI_GOAL_NONE;
 						return 1;
 					}
@@ -8194,6 +8203,7 @@ void ai_set_guard_wing(object *objp, int wingnum)
 		aip->guard_signature = Objects[leader_objnum].signature;
 		aip->mode = AIM_GUARD;
 		aip->submode = AIS_GUARD_STATIC;
+		aip->submode_start_time = Missiontime;
 
 		ai_set_guard_vec(objp, &Objects[leader_objnum]);
 	}
@@ -8259,6 +8269,7 @@ void ai_set_guard_object(object *objp, object *other_objp)
 
 		aip->mode = AIM_GUARD;
 		aip->submode = AIS_GUARD_STATIC;
+		aip->submode_start_time = Missiontime;
 
 		Assert(other_objnum >= 0);	//	Hmm, bogus object and we need its position for guard_vec.
 
@@ -8714,6 +8725,7 @@ void ai_cruiser_chase()
 		// just entering, approach enemy ship
 		if (aip->submode == SM_ATTACK) {
 			aip->submode = SM_BIG_APPROACH;
+			aip->submode_start_time = Missiontime;
 		}
 
 		// desired accel
@@ -8761,12 +8773,14 @@ void ai_cruiser_chase()
 					// if within 90 degrees of en forward, go into parallel, otherwise circle
 					if ( vm_vec_dotprod(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) > 0 ) {
 						aip->submode = SM_BIG_PARALLEL;
+						aip->submode_start_time = Missiontime;
 					}
 				}
 
 				// otherwise cirle
 				if ( !maybe_hack_cruiser_chase_abort() ) {
 					aip->submode = SM_BIG_CIRCLE;
+					aip->submode_start_time = Missiontime;
 				}
 			}
 			break;
@@ -8785,6 +8799,7 @@ void ai_cruiser_chase()
 						// and the separation is > 0.9 desired
 						if (cur_sep > 0.9 * desired_sep) {
 							aip->submode = SM_BIG_PARALLEL;
+							aip->submode_start_time = Missiontime;
 						}
 					}
 				}
@@ -8801,6 +8816,7 @@ void ai_cruiser_chase()
 						//and the separation is [0.9 to 1.1] desired
 						if ( (cur_sep > 0.9f * desired_sep) ) {
 							aip->submode = SM_BIG_PARALLEL;
+							aip->submode_start_time = Missiontime;
 						}
 					}
 				}
@@ -8813,6 +8829,7 @@ void ai_cruiser_chase()
 						//and the separation is [0.9 to 1.1] desired
 						if ( (cur_sep > 0.9f * desired_sep) ) {
 							aip->submode = SM_BIG_PARALLEL;
+							aip->submode_start_time = Missiontime;
 						}
 					}
 				}
@@ -8827,6 +8844,7 @@ void ai_cruiser_chase()
 					// and we no longer overlap
 					if ( dist_to_enemy > (0.75 * (En_objp->radius + Pl_objp->radius)) ) {
 						aip->submode = SM_BIG_APPROACH;
+						aip->submode_start_time = Missiontime;
 					}
 				}
 			}
@@ -9078,7 +9096,8 @@ void ai_chase()
 			aip->submode = SM_GET_BEHIND;
 			aip->submode_start_time = Missiontime;
 		} else if ((enemy_sip_flags & SIF_SMALL_SHIP) && (dist_to_enemy < 150.0f) && (dot_from_enemy > dot_to_enemy + 0.5f + aip->ai_courage*.002)) {
-			if ((Missiontime - aip->last_hit_target_time > i2f(5)) && (frand() < (float) (aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS))) {				aip->submode = SM_GET_AWAY;
+			if ((Missiontime - aip->last_hit_target_time > i2f(5)) && (frand() < (float) (aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS))) {
+				aip->submode = SM_GET_AWAY;
 				aip->submode_start_time = Missiontime;
 				aip->last_hit_target_time = Missiontime;
 			} else {
@@ -9089,8 +9108,8 @@ void ai_chase()
 			if ((dot_to_enemy < 0.8f) && (dot_from_enemy > dot_to_enemy)) {
 				if (frand() > 0.5f) {
 					aip->submode = SM_CONTINUOUS_TURN;
-					aip->submode_parm0 = myrand() & 0x0f;
 					aip->submode_start_time = Missiontime;
+					aip->submode_parm0 = myrand() & 0x0f;
 				} else {
 					aip->submode = SM_EVADE;
 					aip->submode_start_time = Missiontime;
@@ -9226,8 +9245,8 @@ void ai_chase()
 			if ((Missiontime - aip->submode_start_time > i2f(5)) || (dist_to_enemy > rand_dist) || (dot_from_enemy < 0.4f)) {
 				aip->ai_flags |= AIF_ATTACK_SLOWLY;
 				aip->submode = SM_ATTACK;
-				aip->time_enemy_in_range = 2.0f;		//	Cheat.  Presumably if they were running away from you, they were monitoring you!
 				aip->submode_start_time = Missiontime;
+				aip->time_enemy_in_range = 2.0f;		//	Cheat.  Presumably if they were running away from you, they were monitoring you!
 				aip->last_attack_time = Missiontime;
 			}
 		}
@@ -9285,9 +9304,8 @@ void ai_chase()
 	default:
 		//Int3();
 		aip->submode = SM_ATTACK;
-		aip->last_attack_time = Missiontime;
-
 		aip->submode_start_time = Missiontime;
+		aip->last_attack_time = Missiontime;
 	}
 
 	//
@@ -10462,9 +10480,10 @@ void ai_big_guard()
 		break;
 
 	default:
-		//Int3();	//	Illegal submode for Guard mode.
+		Int3();	//	Illegal submode for Guard mode.
 		// AL 06/03/97 comment out Int3() to allow milestone to get out the door
 		aip->submode = AIS_GUARD_PATROL;
+		aip->submode_start_time = Missiontime;
 		break;
 	}
 }
@@ -10653,9 +10672,10 @@ void ai_guard()
 
 		break;
 	default:
-		//Int3();	//	Illegal submode for Guard mode.
+		Int3();	//	Illegal submode for Guard mode.
 		// AL 06/03/97 comment out Int3() to allow milestone to get out the door
 		aip->submode = AIS_GUARD_PATROL;
+		aip->submode_start_time = Missiontime;
 		break;
 	}
 
@@ -10863,7 +10883,10 @@ void ai_cleanup_dock_mode_subjective(object *objp)
 
 	// if the object is in dock mode, force them to near last stage
 	if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_UNDOCK_3) )
+	{
 		aip->submode = AIS_UNDOCK_3;
+		aip->submode_start_time = Missiontime;
+	}
 }
 
 // Goober5000 - clean up the dock mode of everybody around me
@@ -11627,6 +11650,7 @@ void process_subobjects(int objnum)
 			if ( aip->mode != AIM_BAY_DEPART ) {
 				ai_attack_object(objp, NULL, 99, NULL);		//	Regardless of current mode, enter attack mode.
 				aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
+				aip->submode_start_time = Missiontime;
 			}
 		}
 	}
@@ -13631,6 +13655,7 @@ void ai_set_mode_warp_out(object *objp, ai_info *aip)
 	if (aip->mode != AIM_WARP_OUT) {
 		aip->mode = AIM_WARP_OUT;
 		aip->submode = AIS_WARP_1;
+		aip->submode_start_time = Missiontime;
 	}
 }
 
@@ -13698,10 +13723,12 @@ void ai_warp_out(object *objp)
 	case AIS_WARP_1:
 		aip->force_warp_time = timestamp(10*1000);	//	Try to avoid a collision for up to ten seconds.
 		aip->submode = AIS_WARP_2;
+		aip->submode_start_time = Missiontime;
 		break;
 	case AIS_WARP_2:			//	Make sure won't collide with any object.
 		if (timestamp_elapsed(aip->force_warp_time) || !collide_predict_large_ship(objp, objp->radius*2.0f + 100.0f)) {
 			aip->submode = AIS_WARP_3;
+			aip->submode_start_time = Missiontime;
 
 			// maybe recalculate collision pairs.
 			if (ship_get_warp_speed(objp) > ship_get_max_speed(&Ships[objp->instance])) {
@@ -13726,6 +13753,7 @@ void ai_warp_out(object *objp)
 		// HUGE ships go immediately to AIS_WARP_4
 		if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HUGE_SHIP) {
 			aip->submode = AIS_WARP_4;
+			aip->submode_start_time = Missiontime;
 			break;
 		}
 		//compute_warpout_stuff(objp, &goal_speed, &warp_time, &warp_pos);
@@ -13736,12 +13764,15 @@ void ai_warp_out(object *objp)
 		vm_vec_copy_scale(&objp->phys_info.vel, &objp->orient.vec.fvec, speed);
 		objp->phys_info.desired_vel = objp->phys_info.vel;
 		// nprintf(("AI", "Frame %i, speed = %7.3f, goal = %7.3f\n", Framecount, vm_vec_mag_quick(&objp->phys_info.vel), goal_speed));
-		if (timestamp_elapsed(aip->force_warp_time) || (fl_abs(objp->phys_info.speed - goal_speed) < 2.0f))
+		if (timestamp_elapsed(aip->force_warp_time) || (fl_abs(objp->phys_info.speed - goal_speed) < 2.0f)) {
 			aip->submode = AIS_WARP_4;
+			aip->submode_start_time = Missiontime;
+		}
 		break;
 	case AIS_WARP_4: {
 		shipfx_warpout_start(objp);
 		aip->submode = AIS_WARP_5;
+		aip->submode_start_time = Missiontime;
 		break;
 	}
 	case AIS_WARP_5:
@@ -14855,18 +14886,27 @@ void ai_do_default_behavior(object *obj)
 	aip = &Ai_info[Ships[obj->instance].ai_index];
 
 	ship_flags = Ship_info[Ships[obj->instance].ship_info_index].flags;
-	if (!is_instructor(obj) && (ship_flags & (SIF_FIGHTER | SIF_BOMBER))) {
+	if (!is_instructor(obj) && (ship_flags & (SIF_FIGHTER | SIF_BOMBER)))
+	{
 		int enemy_objnum = find_enemy(OBJ_INDEX(obj), 1000.0f, Skill_level_max_attackers[Game_skill_level]);
 		set_target_objnum(aip, enemy_objnum);
 		aip->mode = AIM_CHASE;
 		aip->submode = SM_ATTACK;
-	} else if (ship_flags & (SIF_SUPPORT)) {
+		aip->submode_start_time = Missiontime;
+	}
+	else if (ship_flags & (SIF_SUPPORT))
+	{
 		aip->mode = AIM_SAFETY;
 		aip->submode = AISS_1;
+		aip->submode_start_time = Missiontime;
 		aip->ai_flags &= ~(AIF_REPAIRING);
-	} else if ( ship_flags & SIF_SENTRYGUN ) {
+	}
+	else if ( ship_flags & SIF_SENTRYGUN )
+	{
 		aip->mode = AIM_SENTRYGUN;
-	} else {
+	}
+	else
+	{
 		aip->mode = AIM_NONE;
 	}
 	
@@ -15067,6 +15107,7 @@ void maybe_set_dynamic_chase(ai_info *aip, int hitter_objnum)
 	aip->previous_submode = aip->mode;
 	aip->mode = AIM_CHASE;
 	aip->submode = SM_ATTACK;
+	aip->submode_start_time = Missiontime;
 }
 
 
@@ -15358,6 +15399,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		if (aip->mode == AIM_NONE) {
 			aip->mode = AIM_CHASE;	//	This will cause the ship to move, if not attack.
 			aip->submode = SM_EVADE;
+			aip->submode_start_time = Missiontime;
 		}
 		return;
 	}
@@ -15675,11 +15717,15 @@ int ai_abort_rearm_request(object *requester_objp)
 					ai_do_objects_repairing_stuff( requester_objp, repair_objp, REPAIR_INFO_ABORT );
 
 					if ( repair_aip->submode == AIS_DOCK_4 )
+					{
 						repair_aip->submode = AIS_UNDOCK_0;
+						repair_aip->submode_start_time = Missiontime;
+					}
 					else
+					{
 						repair_aip->submode = AIS_UNDOCK_3;
-
-					repair_aip->submode_start_time = Missiontime;
+						repair_aip->submode_start_time = Missiontime;
+					}
 				} else {
 					nprintf(("AI", "Not aborting rearm since already undocking\n"));
 				}
