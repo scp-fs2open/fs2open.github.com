@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2005/07/24 06:01:37  wmcoolmon
+ * Multiple shockwaves support.
+ *
  * Revision 2.121  2005/07/24 00:32:45  wmcoolmon
  * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
  * support for the demo/FS1
@@ -814,6 +817,7 @@
 #include "graphics/grbatch.h"
 #include "parse/parselo.h"
 #include "radar/radarsetup.h"
+#include "weapon/beam.h"	// for BEAM_TYPE_? definitions
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -2115,6 +2119,12 @@ int parse_weapon(int subtype, bool replace)
 		required_string("+Shots:");
 		stuff_int(&wip->b_info.beam_shots);
 
+		// make sure that we have at least one shot so that TYPE_D beams will work
+		if ( (wip->b_info.beam_type == BEAM_TYPE_D) && (wip->b_info.beam_shots < 1) ) {
+			Warning( LOCATION, "Type D beam weapon, '%s', has less than one \"+Shots\" specified!  It must be set to at least 1!!",  wip->name);
+			wip->b_info.beam_shots = 1;
+		}
+		
 		// shrinkage
 		required_string("+ShrinkFactor:");
 		stuff_float(&wip->b_info.beam_shrink_factor);
