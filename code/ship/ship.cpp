@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.216 $
- * $Date: 2005-07-25 03:13:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.217 $
+ * $Date: 2005-07-30 22:34:42 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.216  2005/07/25 03:13:24  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 2.215  2005/07/24 06:01:37  wmcoolmon
  * Multiple shockwaves support.
  *
@@ -4464,8 +4470,6 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		// model_clear_instance_info( &ship_system->submodel_info_1 );
 		model_clear_instance_info( &ship_system->submodel_info_2 );
-		//WMC hack
-		ship_system->submodel_info_2.angs.p = 0.5f*PI;
 	}
 
 	if ( !ignore_subsys_info ) {
@@ -9814,8 +9818,6 @@ void ship_model_start(object *objp)
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
 			model_set_instance(shipp->modelnum, psub->turret_gun_sobj, &pss->submodel_info_2 );
-			//WMC hack
-			pss->submodel_info_2.angs.p = 0.5f*PI;
 		}
 
 	}
@@ -14419,10 +14421,13 @@ int damage_type_add(char *name)
 
 //Armor types
 #define AT_TYPE_ADDITIVE			0
-#define AT_TYPE_MULTIPLICATIVE		1
+#define AT_TYPE_MULTIPLICATIVE			1
 #define AT_TYPE_EXPONENTIAL			2
-#define AT_TYPE_EXPONENTIAL_BASE	3
+#define AT_TYPE_EXPONENTIAL_BASE		3
 #define AT_TYPE_CUTOFF				4
+#define AT_TYPE_REVERSE_CUTOFF			5
+#define AT_TYPE_INSTANT_CUTOFF			6
+#define AT_TYPE_INSTANT_REVERSE_CUTOFF		7
 
 char *TypeNames[] = {
 	"additive",
@@ -14430,14 +14435,20 @@ char *TypeNames[] = {
 	"exponentional",
 	"exponential base",
 	"cutoff",
+	"reverse cutoff",
+	"instant cutoff",
+	"instant reverse cutoff",
 };
 
 float TypeDefaultValues[] = {
-	0.0f,
-	1.0f,
-	1.0f,
-	1.0f, //Damage will always be one (No mathematical way to do better)
-	0.0f,
+	0.0f,	//additive
+	1.0f,	//multiplicatve
+	1.0f,	//exp
+	1.0f, 	//exp base - Damage will always be one (No mathematical way to do better)
+	0.0f,	//cutoff
+	0.0f,	//reverse cutoff
+	0.0f,	//instant cutoff
+	0.0f,	//rev instant cutoff
 };
 
 const int Num_armor_calculation_types = sizeof(TypeNames)/sizeof(char*);
@@ -14464,6 +14475,7 @@ float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wi
 	if(adtp != NULL)
 	{
 		num = adtp->Calculations.size();
+		bool end_now = false;
 		for(i = 0; i < num; i++)
 		{
 			curr_arg = &adtp->Arguments[i];
@@ -14485,7 +14497,28 @@ float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wi
 					if(damage_applied < *curr_arg)
 						damage_applied = 0;
 					break;
+				case AT_TYPE_REVERSE_CUTOFF:
+					if(damage_applied > *curr_arg)
+						damage_applied = 0;
+					break;
+				case AT_TYPE_INSTANT_CUTOFF:
+					if(damage_applied < *curr_arg)
+					{
+						damage_applied = 0;
+						end_now = true;
+					}
+					break;
+				case AT_TYPE_INSTANT_REVERSE_CUTOFF:
+					if(damage_applied > *curr_arg)
+					{
+						damage_applied = 0;
+						end_now = true;
+					}
+					break;
 			}
+			
+			if(end_now)
+				break;
 		}
 	}
 	
