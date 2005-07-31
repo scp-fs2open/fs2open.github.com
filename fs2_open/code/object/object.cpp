@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-07-24 19:59:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.43 $
+ * $Date: 2005-07-31 01:34:03 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/07/24 19:59:24  Goober5000
+ * fixed a minor docking bug
+ * --Goober5000
+ *
  * Revision 2.41  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -1394,7 +1398,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				//	objp->phys_info.flags &= ~(PF_REDUCED_DAMP | PF_DEAD_DAMP);
 				// objp->phys_info.side_slip_time_const = Ship_info[Ships[objp->instance].ship_info_index].damp;
 			// }
-			for(int i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
+			for(int i = 0; i < Ships[objp->instance].weapons.num_secondary_banks; i++){
 				if(Ships[objp->instance].weapons.secondary_bank_ammo[i] == 0)continue;
 				//if there are no missles left don't bother
 				int points = model_get(Ships[objp->instance].modelnum)->missile_banks[i].num_slots;
