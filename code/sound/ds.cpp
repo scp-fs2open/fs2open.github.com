@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-06-19 02:45:55 $
+ * $Revision: 2.31 $
+ * $Date: 2005-07-31 01:35:43 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/06/19 02:45:55  taylor
+ * OGG streaming fixes to get data reading right and avoid skipping
+ * properly handle seeking in OGG streams
+ * compiler warning fix in OpenAL builds
+ *
  * Revision 2.29  2005/06/02 01:56:32  wmcoolmon
  * Cast to quiet error
  *
@@ -753,6 +758,7 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 	PCMWAVEFORMAT	PCM_header;
 	ushort			cbExtra = 0;
 	unsigned int	tag, size, next_chunk;
+	bool			got_fmt = false, got_data = false;
 
 	if ( fp == NULL )	{
 		return -1;
@@ -835,6 +841,7 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 			else {
 				Assert(0);		// malloc failed
 			}
+			got_fmt = true;
 	
 			break;
 		case 0x61746164:		// the 'data' tag
@@ -842,10 +849,17 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 			(*dest) = (ubyte *)vm_malloc(size);
 			Assert( *dest != NULL );
 			cfread( *dest, size, 1, fp );
+			got_data = true;
 			break;
 		default:	// unknown, skip it
 			break;
 		}
+
+		// This is here so that we can avoid reading data that we don't understand or properly handle.
+		// We could do this just as well by checking the RIFF size, but this is easier - taylor
+		if (got_fmt && got_data)
+			break;
+
 		cfseek( fp, next_chunk, CF_SEEK_SET );
 	}
 
