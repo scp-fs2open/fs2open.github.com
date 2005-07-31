@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-25 08:22:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-07-31 20:31:41 $
+ * $Author: wmcoolmon $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/25 08:22:00  Goober5000
+ * more bugs and tweaks
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/24 06:01:37  wmcoolmon
  * Multiple shockwaves support.
  *
@@ -635,7 +639,7 @@ void shockwave_render(object *objp)
 		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
 		gr_set_cull(0);
 		rendering_shockwave = true;
-		model_render( shockwave_model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL,sw->objnum);
+		model_render( shockwave_model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL,sw->objnum);
 		rendering_shockwave = false;
 		gr_set_cull(1);
 
