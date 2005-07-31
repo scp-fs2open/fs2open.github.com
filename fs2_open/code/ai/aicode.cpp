@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.24 $
- * $Date: 2005-07-27 18:27:49 $
- * $Author: Goober5000 $
+ * $Revision: 1.25 $
+ * $Date: 2005-07-31 01:29:21 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2005/07/27 18:27:49  Goober5000
+ * verified that submode_start_time is updated whenever submode is changed
+ * --Goober5000
+ *
  * Revision 1.23  2005/07/27 17:22:22  Goober5000
  * more tweaks to the dock code
  * --Goober5000
@@ -13484,6 +13488,10 @@ void ai_execute_behavior(ai_info *aip)
 		break;
 	case AIM_WARP_OUT:
 		break;		//	Note, handled directly from ai_frame().
+	case AIM_GET_BEHIND:
+		// FIXME: got this from TBP and added it here to skip the Int3() but don't really want to handle it
+		// properly until after 3.6.7 just to avoid delaying release or breaking something - taylor
+		break;
 	default:
 		Int3();		//	This should never happen -- MK, 5/12/97	
 		break;
