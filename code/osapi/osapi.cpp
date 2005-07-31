@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-06-03 06:39:27 $
+ * $Revision: 2.30 $
+ * $Date: 2005-07-31 01:30:48 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/06/03 06:39:27  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.28  2005/05/01 23:17:46  phreak
  * when creating the window take into account the top border
  *
@@ -884,10 +887,12 @@ void os_poll()
 #endif
 }
 
-void debug_int3()
+void debug_int3(char *file, int line)
 {
+	mprintf(("Int3(): From %s at line %d\n", file, line));
 
 	gr_activate(0);
+
 #ifdef _WIN32
 #if defined _MSC_VER
 	_asm { int 3 };

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-06-03 06:39:27 $
+ * $Revision: 2.10 $
+ * $Date: 2005-07-31 01:30:48 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/06/03 06:39:27  taylor
+ * better audio pause/unpause support when game window loses focus or is minimized
+ *
  * Revision 2.8  2005/04/17 05:38:29  taylor
  * updated Linux joystick code that's a bit less insane speed wise
  * remove ability to build without joystick support, no reason to keep it around
@@ -349,9 +352,11 @@ void os_poll()
 	unix_process(0);
 }
 
-void debug_int3()
+void debug_int3(char *file, int line)
 {
-   abort();
+	mprintf(("Int3(): From %s at line %d\n", file, line));
+
+	abort();
 }
 
 #endif		// Goober5000 - #ifndef WIN32
