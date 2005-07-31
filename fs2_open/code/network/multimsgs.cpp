@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-07-24 18:35:43 $
+ * $Revision: 2.41 $
+ * $Date: 2005-07-31 01:32:21 $
  * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/07/24 18:35:43  taylor
+ * proper multi support for fighter beams, already has code to break protocol commented out if we need it,
+ *   decided to skip and beam type checks and let beam_fire() reassign it (should work ok)
+ *
  * Revision 2.39  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -4612,7 +4616,7 @@ void send_player_order_packet(int type, int index, int cmd)
 
 	// if we are not messaging all ships or wings, add the index, which is the shipnum or wingnum
 	if ( val != SQUAD_MSG_ALL ){
-		ADD_DATA(index);  // net signature of target ship
+		ADD_INT(index);  // net signature of target ship
 	}
 
 	ADD_INT(cmd);         // the command itself
@@ -6151,7 +6155,7 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 			continue;		
 		
 		// add the net signature of the object for look up
-		ADD_DATA( Objects[so->objnum].net_signature );
+		ADD_USHORT( Objects[so->objnum].net_signature );
 		
 		// add the ship info index 
 		val = (ubyte)(shipp->ship_info_index);
@@ -6320,7 +6324,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 	Multi_ts_num_deleted = (int)val;
 	for(idx=0;idx<Multi_ts_num_deleted;idx++){
 		// get the ship's objnum
-		GET_DATA(sval);
+		GET_USHORT(sval);
 		objp = NULL;
 		objp = multi_get_network_object(sval);
 		if(objp != NULL){
