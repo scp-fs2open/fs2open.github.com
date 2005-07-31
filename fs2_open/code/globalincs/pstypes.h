@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.31 $
- * $Date: 2005-07-13 02:50:48 $
- * $Author: Goober5000 $
- * $Revision: 2.31 $
- * $Date: 2005-07-13 02:50:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2005-07-31 01:30:48 $
+ * $Author: taylor $
+ * $Revision: 2.32 $
+ * $Date: 2005-07-31 01:30:48 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.30  2005/05/12 17:49:11  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -616,10 +620,10 @@ void gr_activate(int);
 		// No debug version of Int3
 		#define Int3() do { } while (0) 
 	#else
-		void debug_int3();
+		void debug_int3(char *file, int line);
 
 		// Debug version of Int3
-		#define Int3() debug_int3()
+		#define Int3() debug_int3(__FILE__, __LINE__)
 	#endif	// NDEBUG && DEMO
 #endif	// INTERPLAYQA
 
