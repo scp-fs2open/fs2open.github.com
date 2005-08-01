@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.25 $
- * $Date: 2005-07-31 01:29:21 $
+ * $Revision: 1.26 $
+ * $Date: 2005-08-01 09:57:52 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2005/07/31 01:29:21  taylor
+ * Temporarily add an empty AIM_GET_BEHIND case to ai_execute_behavior() to avoid hitting Int3() in TBP
+ *
  * Revision 1.24  2005/07/27 18:27:49  Goober5000
  * verified that submode_start_time is updated whenever submode is changed
  * --Goober5000
@@ -1543,6 +1546,17 @@ void parse_ai_class()
 	parse_float_list(aicp->ai_patience);
 }
 
+void reset_ai_class_names()
+{
+	ai_class *aicp;
+
+	for (int i = 0; i < Num_ai_classes; i++) {
+		aicp = &Ai_classes[i];
+
+		Ai_class_names[i] = aicp->name;
+	}
+}
+
 #define AI_CLASS_INCREMENT		10
 void parse_aitbl()
 {
@@ -1568,11 +1582,17 @@ void parse_aitbl()
 		parse_ai_class();
 
 		Num_ai_classes++;
+
 		if(Num_ai_classes >= Num_alloced_ai_classes)
 		{
 			Num_alloced_ai_classes += AI_CLASS_INCREMENT;
 			Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
-			Ai_class_names = (char**) vm_realloc(Ai_class_names, Num_alloced_ai_classes * sizeof(char*));
+
+			// Ai_class_names doesn't realloc all that well so we have to do it the hard way.
+			// Luckily, it's contents can be easily replaced so we don't have to save anything.
+			vm_free(Ai_class_names);
+			Ai_class_names = (char **) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
+			reset_ai_class_names();
 		}
 	}
 
