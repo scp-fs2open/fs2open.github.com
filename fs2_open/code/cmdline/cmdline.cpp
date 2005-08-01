@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.107 $
- * $Date: 2005-07-25 05:24:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.108 $
+ * $Date: 2005-08-01 10:00:39 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2005/07/25 05:24:16  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.106  2005/07/07 16:32:33  taylor
  * compiler warning fixes
  * add -noibx troubleshooting cmdline option to disable use of IBX files
@@ -1198,14 +1202,7 @@ void os_init_cmdline(char *cmdline)
 #ifdef _WIN32
 	fp = fopen("data\\cmdline_fso.cfg", "rt");
 #else
-	char cmdname[MAX_PATH];
-
-	snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
-	fp = fopen(cmdname, "rt");
-
-	// not found in userdir so check gamedir
-	if (!fp)
-		fp = fopen("data/cmdline_fso.cfg", "rt");
+	fp = fopen("data/cmdline_fso.cfg", "rt");
 #endif
 
 	// if the file exists, get a single line, and deal with it
@@ -1228,6 +1225,39 @@ void os_init_cmdline(char *cmdline)
 		os_validate_parms(buf);
 		fclose(fp);
 	}
+
+#ifdef SCP_UNIX
+	// parse user specific cmdline config file (will supersede options in global file)
+	char cmdname[MAX_PATH];
+
+	snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline_fso.cfg", detect_home(), Osreg_user_dir);
+	fp = fopen(cmdname, "rt");
+
+	if ( !fp ) {
+		// try for non "_fso", for older code versions
+		snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
+		fp = fopen(cmdname, "rt");
+	}
+
+	// if the file exists, get a single line, and deal with it
+	if ( fp ) {
+		char buf[1024], *p;
+
+		fgets(buf, 1024, fp);
+
+		// replace the newline character with a NULL
+		if ( (p = strrchr(buf, '\n')) != NULL ) {
+			*p = '\0';
+		}
+
+		// append a space for the os_parse_parms() check
+		strcat(buf, " ");
+
+		os_parse_parms(buf);
+		os_validate_parms(buf);
+		fclose(fp);
+	}
+#endif
 
 	os_parse_parms(cmdline);
 	os_validate_parms(cmdline);
