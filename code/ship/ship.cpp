@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.217 $
- * $Date: 2005-07-30 22:34:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.218 $
+ * $Date: 2005-08-03 22:02:38 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.217  2005/07/30 22:34:42  wmcoolmon
+ * Removed turret thing, added some more armor type calculations
+ *
  * Revision 2.216  2005/07/25 03:13:24  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -862,9 +865,9 @@
  * Transports can now dock with fighters, bombers, & stealth ships.
  *
  * Revision 2.12  2002/12/07 01:37:42  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * inital decals code, if you are worried a bug is being caused by the decals code, its only references are in
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
- * it needs a better renderer, but is in prety good shape for now,
+ * it needs a better renderer, but is in pretty good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
  *
  * Revision 2.11  2002/11/14 06:15:03  bobboau
@@ -3034,7 +3037,13 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// if the ship is a stealth ship
-	if ( optional_string("$Stealth:") ){
+	if ( optional_string("$Stealth:") )
+	{
+		sip->flags |= SIF_SHIP_CLASS_STEALTH;
+	}
+	else if ( optional_string("$Stealth") )
+	{
+		Warning(LOCATION, "Ship %s is missing the colon after \"$Stealth\".", sip->name);
 		sip->flags |= SIF_SHIP_CLASS_STEALTH;
 	}
 
@@ -4322,7 +4331,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 			}
 
 			// see if this ship has subsystems and a model for the subsystems.  We only need check the first
-			// subsystem since previous error checking would have trapped it's loading as an error.
+			// subsystem since previous error checking would have trapped its loading as an error.
 			Assert( Ship_info[i].n_subsystems == sip->n_subsystems );
 
 			msp = &Ship_info[i].subsystems[0];
@@ -5097,7 +5106,7 @@ void ship_delete( object * obj )
 }
 
 // function used by ship_destroyed and ship_departed which is called if the ship
-// is in a wing.  This function updates the ship_index list (i.e. removes it's
+// is in a wing.  This function updates the ship_index list (i.e. removes its
 // entry in the list), and packs the array accordingly.
 void ship_wing_cleanup( int shipnum, wing *wingp )
 {
@@ -6616,11 +6625,11 @@ void ship_process_post(object * obj, float frametime)
 	
 	if ( shipp->flags & SF_ARRIVING && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{
 		// JAS -- if the ship is warping in, just move it forward at a speed
-		// fast enough to move 2x it's radius in SHIP_WARP_TIME seconds.
+		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpin_frame( obj, frametime );
 	} else if ( shipp->flags & SF_DEPART_WARP ) {
 		// JAS -- if the ship is warping out, just move it forward at a speed
-		// fast enough to move 2x it's radius in SHIP_WARP_TIME seconds.
+		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpout_frame( obj, frametime );
 	} else {
 		//	Do AI.
@@ -7579,7 +7588,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	sip->thruster_glow2a = bm_load(sip->thruster_bitmap2a);
 	sip->thruster_glow3 = bm_load(sip->thruster_bitmap3);
 	sip->thruster_glow3a = bm_load(sip->thruster_bitmap3a);
-	//load it's thruster graphics
+	//load its thruster graphics
 
 	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
 
@@ -10139,7 +10148,7 @@ int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass)
 // routine to return the strength of a subsystem.  We keep a total hit tally for all subsystems
 // which are similar (i.e. a total for all engines).  These routines will return a number between
 // 0.0 and 1.0 which is the relative combined strength of the given subsystem type.  The number
-// calculated for the engines is slightly different.  Once an engine reaches < 15% of it's hits, it's
+// calculated for the engines is slightly different.  Once an engine reaches < 15% of its hits, its
 // output drops to that %.  A dead engine has no output.
 float ship_get_subsystem_strength( ship *shipp, int type )
 {
@@ -11490,7 +11499,7 @@ int ship_can_warp(ship *sp)
 }
 
 
-// Calculate the normal vector from a subsystem position and it's first path point
+// Calculate the normal vector from a subsystem position and its first path point
 // input:	sp	=>	pointer to ship that is parent of subsystem
 //				ss =>	pointer to subsystem of interest
 //				norm	=> output parameter... vector from subsys to first path point
@@ -11874,7 +11883,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 	return outbuf;
 }
 
-// return the amount of time until ship reaches it's goal (in MM:SS format)
+// return the amount of time until ship reaches its goal (in MM:SS format)
 //	input:	outbuf	=>		buffer to hold orders string
 //				sp			=>		ship pointer to extract orders from
 //
@@ -14053,7 +14062,7 @@ void ship_start_animation_type(ship *shipp, int animation_type, int subtype, int
 }
 
 //this finds the actual amount of time that motion of an animation type will take to stop, 
-//not for gameplay purposes but for stuff that is involved in coordenateing the animation it'self
+//not for gameplay purposes but for stuff that is involved in coordinating the animation itself
 
 //the time it takes to speed up or slow down is v/a
 //in this time the animation covers an angle = to (v^2)/(2a) (for both directions so v^2/a)
