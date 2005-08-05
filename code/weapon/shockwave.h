@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.8 $
- * $Date: 2005-07-24 06:01:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2005-08-05 15:33:45 $
+ * $Author: taylor $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/24 06:01:37  wmcoolmon
+ * Multiple shockwaves support.
+ *
  * Revision 2.7  2005/07/24 00:32:45  wmcoolmon
  * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
  * support for the demo/FS1
@@ -174,6 +177,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 void shockwave_render(object *objp);
 int shockwave_weapon_index(int index);
 float shockwave_max_radius(int index);
+int shockwave_get_framenum(int index, int num_frames);
 
 //Use to add a shockwave and get its info_index
 int shockwave_add(char *bm_name);

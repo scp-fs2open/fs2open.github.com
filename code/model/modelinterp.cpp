@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.124 $
- * $Date: 2005-07-24 00:32:44 $
- * $Author: wmcoolmon $
+ * $Revision: 2.125 $
+ * $Date: 2005-08-05 15:33:45 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2005/07/24 00:32:44  wmcoolmon
+ * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
+ * support for the demo/FS1
+ *
  * Revision 2.123  2005/07/18 03:45:08  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -3660,8 +3664,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			glow_maps_active = shipp->glowmaps_active;
 		}
 		else if(objp->type == OBJ_SHOCKWAVE) {
-			shockwave *sw = &Shockwaves[objp->instance];
-			GLOWMAP_FRAME_OVERRIDE = sw->current_bitmap - Shockwave_info[sw->shockwave_info_index].bitmap_id;
+			GLOWMAP_FRAME_OVERRIDE = objp->instance;
 		}
 	}
 	
@@ -5840,7 +5843,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 					if(GLOWMAP_FRAME_OVERRIDE < 0)
 						GLOWMAP = pm->glow_textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->glow_fps[model->buffer[i].texture])) % pm->glow_numframes[model->buffer[i].texture]);
 					else
-						GLOWMAP = pm->glow_textures[model->buffer[i].texture] + GLOWMAP_FRAME_OVERRIDE;
+						GLOWMAP = pm->glow_textures[model->buffer[i].texture] + shockwave_get_framenum(GLOWMAP_FRAME_OVERRIDE, pm->glow_numframes[model->buffer[i].texture]);
 				}
 				else
 				{

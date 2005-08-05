@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-31 20:31:41 $
- * $Author: wmcoolmon $
+ * $Revision: 2.17 $
+ * $Date: 2005-08-05 15:33:45 $
+ * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/31 20:31:41  wmcoolmon
+ * MR_NO_FOGGING for shockwaves
+ *
  * Revision 2.15  2005/07/25 08:22:00  Goober5000
  * more bugs and tweaks
  * --Goober5000
@@ -491,6 +494,29 @@ void shockwave_set_framenum(int index)
 	sw->current_bitmap = si->bitmap_id + framenum;
 }
 
+// given a shockwave index and the number of frames in an animation return what
+// the current frame # should be  (for use with 3d shockwaves)
+int shockwave_get_framenum(int index, int num_frames)
+{
+	int				framenum;
+	shockwave		*sw;
+
+	sw = &Shockwaves[index];
+
+	framenum = fl2i(sw->time_elapsed / sw->total_time * num_frames + 0.5);
+
+	// ensure we don't go past the number of frames of animation
+	if ( framenum > (num_frames-1) ) {
+		framenum = (num_frames-1);
+		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
+	}
+
+	if ( framenum < 0 ) {
+		framenum = 0;
+	}
+
+	return framenum;
+}
 // ------------------------------------------------------------------------------------
 // shockwave_move()
 //
