@@ -456,6 +456,9 @@ public:
 #define TI_INDENT_PER_LEVEL				10
 #define	TI_SPACE_BETWEEN_VERTICAL		2
 
+// forward declaration
+class Tree;
+
 struct TreeItem : public LinkedList
 {
 	friend class Tree;
