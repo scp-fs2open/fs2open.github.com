@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-08-05 15:33:45 $
+ * $Revision: 2.18 $
+ * $Date: 2005-08-07 09:25:55 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/08/05 15:33:45  taylor
+ * fix 3-D shockwave frame detection so that it will use the proper number of frames for the animation (not less, not more)
+ *
  * Revision 2.16  2005/07/31 20:31:41  wmcoolmon
  * MR_NO_FOGGING for shockwaves
  *
@@ -307,12 +310,14 @@
 
 static char Shockwave_filenames[MAX_SHOCKWAVE_TYPES][NAME_LENGTH] = 
 {
-//XSTR:OFF
 	"shockwave01",
 	"\0",
 	"\0",
 	"\0",
-//XSTR:ON
+	"\0",
+	"\0",
+	"\0",
+	"\0"
 };
 
 shockwave			Shockwaves[MAX_SHOCKWAVES];
@@ -320,8 +325,10 @@ shockwave_info	Shockwave_info[MAX_SHOCKWAVE_TYPES];
 
 shockwave			Shockwave_list;
 int					Shockwave_inited = 0;
+static int			Default_shockwave_loaded = 0;
 
-int defalt_shockwave_model = -1;
+static int default_shockwave_model = -1;
+
 // -----------------------------------------------------------
 // Function macros
 // -----------------------------------------------------------
@@ -354,8 +361,6 @@ extern int Show_area_effect;
 // Goober5000 - now parent_objnum can be allowed to be -1
 int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay, int model, int info_index)
 {
-	if(model == -1)
-		model = defalt_shockwave_model;
 	if(info_index < 0 || info_index > MAX_SHOCKWAVE_TYPES)
 		info_index = 0;
 
@@ -385,7 +390,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 
 	sw = &Shockwaves[i];
 
-	sw->model = model;
+	sw->model = (model < 0) ? default_shockwave_model : model;
 
 	sw->flags = (SW_USED | flag);
 	sw->speed = sci->speed;
@@ -479,6 +484,10 @@ void shockwave_set_framenum(int index)
 	sw = &Shockwaves[index];
 	si = &Shockwave_info[sw->shockwave_info_index];
 
+	// skip this if it's a 3d shockwave since it won't have the maps managed here
+	if (si->bitmap_id < 0)
+		return;
+
 	framenum = fl2i(sw->time_elapsed / sw->total_time * si->num_frames + 0.5);
 
 	// ensure we don't go past the number of frames of animation
@@ -532,7 +541,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	object		*objp;
 	float			blast,damage;
 	int			i;
-	
+
 	Assert(shockwave_objp->type == OBJ_SHOCKWAVE);
 	Assert(shockwave_objp->instance  >= 0 && shockwave_objp->instance < MAX_SHOCKWAVES);
 	sw = &Shockwaves[shockwave_objp->instance];
@@ -581,6 +590,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 				break;
 			}
 		}
+
 		if ( i < sw->num_objs_hit ){
 			continue;
 		}
@@ -638,13 +648,12 @@ void shockwave_render(object *objp)
 
 	sw = &Shockwaves[objp->instance];
 	si = &Shockwave_info[sw->shockwave_info_index];
-	int shockwave_model = sw->model;
 
 	if( (sw->delay_stamp != -1) && !timestamp_elapsed(sw->delay_stamp)){
 		return;
 	}
 
-	if ( sw->current_bitmap < 0 ){
+	if ( (sw->current_bitmap < 0) && (sw->model < 0) ) {
 		return;
 	}
 
@@ -653,7 +662,7 @@ void shockwave_render(object *objp)
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
-	if(shockwave_model > -1){
+	if (sw->model > -1) {
 		float model_Interp_scale_x = sw->radius /40;
 		float model_Interp_scale_y = sw->radius /40;
 		float model_Interp_scale_z = sw->radius /40;
@@ -665,7 +674,7 @@ void shockwave_render(object *objp)
 		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
 		gr_set_cull(0);
 		rendering_shockwave = true;
-		model_render( shockwave_model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL,sw->objnum);
+		model_render( sw->model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL,sw->objnum);
 		rendering_shockwave = false;
 		gr_set_cull(1);
 
@@ -695,14 +704,21 @@ int shockwave_load(int info_index)
 {
 	Assert(info_index >= 0);
 	Assert(info_index < MAX_SHOCKWAVE_TYPES);
+
 	shockwave_info *si = &Shockwave_info[info_index];
-	if(si->bitmap_id > 0)
-	{
+
+	if ( (si->bitmap_id >= 0) && (info_index < NUM_DEFAULT_SHOCKWAVE_TYPES) ) {
+		// defaults are only loaded/unloaded once so bail if we are here twice
+		return 1;
+	}
+
+	if ( si->bitmap_id >= 0 ) {
 		Warning(LOCATION, "Attempted to load a shockwave twice!");
 		return 1;
 	}
-	
+
 	si->bitmap_id = bm_load_animation( Shockwave_filenames[info_index], &si->num_frames, &si->fps, 1 );
+
 	if ( si->bitmap_id < 0 ) {
 		Error(LOCATION, "Could not load shockwave '%s'\n", Shockwave_filenames[info_index]);
 		return 0;
@@ -721,29 +737,42 @@ void shockwave_level_init()
 	int i;	
 	shockwave_info	*si;
 
-	// load in shockwaves
-	for ( i=0; i<NUM_DEFAULT_SHOCKWAVE_TYPES; i++ ) {
-		shockwave_load(i);
-	}
-	
-	for( i= NUM_DEFAULT_SHOCKWAVE_TYPES; i < MAX_SHOCKWAVE_TYPES; i++) {
+	default_shockwave_model = -1;
+
+	for (i = 0; i < MAX_SHOCKWAVE_TYPES; i++) {
+		if (Default_shockwave_loaded && (i < NUM_DEFAULT_SHOCKWAVE_TYPES))
+			continue;
+
 		si = &Shockwave_info[i];
 		si->bitmap_id = -1;
 		si->num_frames = 0;
 		si->fps = 0;
 	}
-	
+
+	// try and load in a 3d shockwave first
+	mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
+	default_shockwave_model = model_load("shockwave.pof", 0, NULL, 0);
+
+	if (default_shockwave_model >= 0) {
+		mprintf(("SHOCKWAVE =>  Default model load: SUCCEEDED!!\n"));
+	} else {
+		mprintf(("SHOCKWAVE =>  Default model load: FAILED!!  Falling back to 2D effect...\n"));
+
+		// only try to load the default 2d versions if 3d load failed
+		for (i = 0; i < NUM_DEFAULT_SHOCKWAVE_TYPES; i++) {
+			shockwave_load(i);
+		}
+
+		Default_shockwave_loaded = 1;
+	}
+
 	list_init(&Shockwave_list);
 
 	for ( i = 0; i < MAX_SHOCKWAVES; i++ ) {
 		Shockwaves[i].flags = 0;
 		Shockwaves[i].objnum = -1;
+		Shockwaves[i].model = -1;
 	}
-
-	mprintf(("loading defalt shockwave model"));
-	defalt_shockwave_model = -1;
-	defalt_shockwave_model = model_load("shockwave.pof", 0, NULL, 0);
-	mprintf((" %d\n", defalt_shockwave_model));
 
 	Shockwave_inited = 1;
 }
@@ -759,18 +788,25 @@ void shockwave_level_close()
 	}
 	
 	//Unload all non-default shockwaves
-	int i,j;
+	int i;
 	shockwave_info *si;
-	for(i = NUM_DEFAULT_SHOCKWAVE_TYPES; i < MAX_SHOCKWAVE_TYPES; i++)
+
+	for (i = NUM_DEFAULT_SHOCKWAVE_TYPES; i < MAX_SHOCKWAVE_TYPES; i++)
 	{
 		si = &Shockwave_info[i];
-		for(j = 0; j < si->num_frames; j++)
-			bm_unload(si->bitmap_id + j);
+
+		if (si->bitmap_id >= 0)
+			bm_release(si->bitmap_id);
+
 		si->bitmap_id = -1;
 		si->num_frames = 0;
 		si->fps = 0;
 		Shockwave_filenames[i][0] = '\0';
 	}
+
+	// NOTE: The model_unload() level close code will properly handle the 3d shockwaves
+	//       for us so don't do anything about them here.
+
 	Shockwave_inited = 0;
 }
 
@@ -810,7 +846,7 @@ void shockwave_move_all(float frametime)
 void shockwave_render_all()
 {
 	shockwave	*sw, *next;
-	
+
 	sw = GET_FIRST(&Shockwave_list);
 	while ( sw != &Shockwave_list ) {
 		next = sw->next;
