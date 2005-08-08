@@ -10,13 +10,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.24 $
- * $Date: 2005-06-19 02:37:02 $
+ * $Revision: 1.25 $
+ * $Date: 2005-08-08 01:19:50 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2005/06/19 02:37:02  taylor
+ * general cleanup, remove some old code
+ * speed up gr_opengl_flip() just a tad
+ * inverted gamma slider fix that Sticks made to D3D
+ * possible fix for ATI green screens
+ * move opengl_check_for_errors() out of gropentnl so we can use it everywhere
+ * fix logged OGL info from debug builds to be a little more readable
+ * if an extension is found but required function is not then fail
+ * try to optimize glDrawRangeElements so we are not rendering more than the card is optimized for
+ * some 2d matrix usage checks
+ *
  * Revision 1.23  2005/05/12 17:43:20  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -278,7 +289,9 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		vbp->vbo = 0;
 
 		// don't create vbo for small stuff, performance gain
-		if (VBO_ENABLED && (list->n_verts >= 250))
+		// FIXME: This little speed increase appears to cause problems with some cards/drivers.
+		//        Disabling it until I can find a solution that works better.
+		if (VBO_ENABLED /*&& (list->n_verts >= 250)*/)
 			make_vbo = 1;
 
 		// setup using flags
