@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.218 $
- * $Date: 2005-08-03 22:02:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.219 $
+ * $Date: 2005-08-08 03:13:53 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.218  2005/08/03 22:02:38  Goober5000
+ * made "stealth" tag more user-friendly, and fixed a bit of punctuation
+ * --Goober5000
+ *
  * Revision 2.217  2005/07/30 22:34:42  wmcoolmon
  * Removed turret thing, added some more armor type calculations
  *
@@ -5275,6 +5279,15 @@ void ship_vanished(object *objp)
 		// update wingman status gauge
 		if ( (sp->wing_status_wing_index >= 0) && (sp->wing_status_wing_pos >= 0) ) {
 			hud_set_wingman_status_departed(sp->wing_status_wing_index, sp->wing_status_wing_pos);
+		}
+
+		// if ship belongs to a wing -- increment the total number of ships in the wing vanished
+		if ( sp->wingnum != -1 ) {
+			wing *wingp;
+
+			wingp = &Wings[sp->wingnum];
+			// don't increment as a destroyed ship since that would make it logged
+			ship_wing_cleanup( objp->instance, wingp );
 		}
 
 		ai_ship_destroy(objp->instance, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
