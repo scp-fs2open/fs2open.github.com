@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-07-22 10:18:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2005-08-09 10:06:47 $
+ * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/07/22 10:18:37  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.24  2005/07/13 03:26:00  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1211,15 +1215,16 @@ int player_select_get_last_pilot()
 			Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
 			old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
-			new_pilot_num = Player_select_num_pilots + old_pilot_num;
+			new_pilot_num = MIN((Player_select_num_pilots + old_pilot_num), MAX_PILOTS);
 
 			for (i = Player_select_num_pilots; i<new_pilot_num;) {
 				for (j = 0; j<old_pilot_num; j++) {
-					if ( i <= MAX_PILOTS ) {
-						strcpy( Pilots[i], old_pilots[j] );
-						Player_select_num_pilots++;
-						i++;
-					}
+					if ( i >= MAX_PILOTS )
+						break;
+				
+					strcpy( Pilots[i], old_pilots[j] );
+					Player_select_num_pilots++;
+					i++;
 				}
 			}
 		}
@@ -1271,15 +1276,16 @@ void player_select_init_player_stuff(int mode)
 		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
 		old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
-		new_pilot_num = Player_select_num_pilots + old_pilot_num;
+		new_pilot_num = MIN((Player_select_num_pilots + old_pilot_num), MAX_PILOTS);
 
 		for (i = Player_select_num_pilots; i<new_pilot_num;) {
 			for (j = 0; j<old_pilot_num; j++) {
-				if ( i <= MAX_PILOTS ) {
-					strcpy( Pilots[i], old_pilots[j] );
-					Player_select_num_pilots++;
-					i++;
-				}
+				if ( i >= MAX_PILOTS )
+					break;
+				
+				strcpy( Pilots[i], old_pilots[j] );
+				Player_select_num_pilots++;
+				i++;
 			}
 		}
 	} else {
