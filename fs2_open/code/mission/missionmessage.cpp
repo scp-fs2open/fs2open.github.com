@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.42 $
+ * $Date: 2005-08-11 12:18:53 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.40  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1090,6 +1094,11 @@ void message_mission_shutdown()
 	mprintf(("Unloading in mission messages\n"));
 
 	training_mission_shutdown();
+
+	// kill/stop all playing messages sounds and animations if we need to
+	if (Num_messages_playing) {
+		message_kill_all(1);
+	}
 
 	// remove the wave sounds from memory
 	for (i = 0; i < Num_message_waves; i++ ) {
