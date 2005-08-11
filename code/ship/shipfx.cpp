@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-07-24 06:01:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.47 $
+ * $Date: 2005-08-11 12:16:23 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/07/24 06:01:37  wmcoolmon
+ * Multiple shockwaves support.
+ *
  * Revision 2.45  2005/07/24 00:32:45  wmcoolmon
  * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
  * support for the demo/FS1
@@ -3082,7 +3085,15 @@ void engine_wash_ship_process(ship *shipp)
 
 	// go thru Ship_used_list and check if we're in wash from CAP or SUPERCAP (SIF_HUGE)
 	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+		if (so->objnum < 0) {
+			continue;
+		}
+
 		ship_objp = &Objects[so->objnum];
+
+		if (!ship_objp || (ship_objp->instance < 0)) {
+			continue;
+		}
 
 		// don't do small ships
 		if ( (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_SMALL_SHIP) ) {
