@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.169 $
- * $Date: 2005-07-25 05:55:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.170 $
+ * $Date: 2005-08-11 12:22:26 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.169  2005/07/25 05:55:40  Goober5000
+ * forgot this
+ * --Goober5000
+ *
  * Revision 2.168  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -10815,10 +10819,17 @@ void game_pause()
 			// anything that would leave the ambient mainhall sound going
 			case GS_STATE_TECH_MENU:
 			case GS_STATE_BARRACKS_MENU:
-			case GS_STATE_OPTIONS_MENU:
-			case GS_STATE_HUD_CONFIG:
 				main_hall_stop_ambient();
 				main_hall_stop_music(); // not an instant shutoff
+				break;
+
+			// things that would get music except if they are called while in-mission
+			case GS_STATE_OPTIONS_MENU:
+			case GS_STATE_HUD_CONFIG:
+				if ( !(Game_mode & GM_IN_MISSION) ) {
+					main_hall_stop_ambient();
+					main_hall_stop_music(); // not an instant shutoff
+				}
 				break;
 
 			// only has the ambient sound, no music
@@ -10871,10 +10882,17 @@ void game_unpause()
 			// anything that would leave the ambient mainhall sound going
 			case GS_STATE_TECH_MENU:
 			case GS_STATE_BARRACKS_MENU:
-			case GS_STATE_OPTIONS_MENU:
-			case GS_STATE_HUD_CONFIG:
 				main_hall_start_ambient();
 				main_hall_start_music(); // not an instant shutoff
+				break;
+
+			// things that would get music except if they are called while in-mission
+			case GS_STATE_OPTIONS_MENU:
+			case GS_STATE_HUD_CONFIG:
+				if ( !(Game_mode & GM_IN_MISSION) ) {
+					main_hall_start_ambient();
+					main_hall_start_music(); // not an instant shutoff
+				}
 				break;
 
 			// only has the ambient sound, no music
