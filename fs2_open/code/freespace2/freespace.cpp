@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.170 $
- * $Date: 2005-08-11 12:22:26 $
- * $Author: taylor $
+ * $Revision: 2.171 $
+ * $Date: 2005-08-14 17:20:55 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.170  2005/08/11 12:22:26  taylor
+ * don't do any ambient sound or music stuff in game_pause()/unpause() on options screens when in mission so we can
+ *   avoid having mainhall ambient sounds and music start playing and then not stop until you exit the mission
+ *
  * Revision 2.169  2005/07/25 05:55:40  Goober5000
  * forgot this
  * --Goober5000
@@ -8545,7 +8549,7 @@ int WinMainSub(int argc, char *argv[])
 	}
 #else
 	vm_init(0); 
-
+	
 	// create user's directory
 	char userdir[MAX_PATH];
 

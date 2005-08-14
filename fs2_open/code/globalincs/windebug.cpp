@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-06-01 15:10:26 $
- * $Author: phreak $
+ * $Revision: 2.22 $
+ * $Date: 2005-08-14 17:20:56 $
+ * $Author: Kazan $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/06/01 15:10:26  phreak
+ * clarified error messages to say that the files listed on asserts/warnings/errors
+ * are located on the computers that built the exe.
+ *
  * Revision 2.20  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1212,14 +1216,14 @@ int __cdecl MyAllocHook(
 
 //	mprintf(( "Total RAM = %d\n", TotalRam ));
 
-/*   mprintf(( "Memory operation in %s, line %d: %s a %d-byte '%s' block (# %ld)\n",
+   mprintf(( "Memory operation in %s, line %d: %s a %d-byte '%s' block (# %ld)\n",
             szFileName, nLine, operation[nAllocType], nSize, 
             blockType[nBlockUse], lRequest ));
    if ( pvData != NULL )
       mprintf(( " at %X", pvData ));
 
 	mprintf(("\n" ));
-*/
+
 
    return( TRUE );         // Allow the memory operation to proceed
 }
@@ -1235,8 +1239,14 @@ void windebug_memwatch_init()
 
 #endif
 
-#define NEW_MALLOC
 
+//**************************************
+// WARNING - ENABLE THIS FEATURE AT YOUR 
+// OWN RISK - IT CAUSES GAURANTEED CRASHING
+// Warned by: Kazan
+// Featured Implemented by: Unknown
+//#define NEW_MALLOC
+//**************************************
 
 int Watch_malloc = 0;
 DCF_BOOL(watch_malloc, Watch_malloc );
@@ -1522,13 +1532,22 @@ void *_vm_malloc( int size )
 		TotalRam += size;
 
 		ptr = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__ );
+
+		if (ptr == NULL)
+		{
+			mprintf(( "Malloc failed!!!!!!!!!!!!!!!!!!!\n" ));
+
+				Error(LOCATION, "Malloc Failed!\n");
+		}
 		if(Cmdline_show_mem_usage)
 			register_malloc(size, filename, line, ptr);
 		return ptr;
 	}
 	#endif
  
+
 	ptr = HeapAlloc(Heap, HEAP_FLAG, size );
+
 
 	if ( ptr == NULL )	{
 		mprintf(( "HeapAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
