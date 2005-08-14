@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-08-14 17:20:56 $
+ * $Revision: 2.23 $
+ * $Date: 2005-08-14 21:01:59 $
  * $Author: Kazan $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/08/14 17:20:56  Kazan
+ * diabled NEW_MALLOC on windows - it was causing crashing - must have been corrupting it's own heap
+ *
  * Revision 2.21  2005/06/01 15:10:26  phreak
  * clarified error messages to say that the files listed on asserts/warnings/errors
  * are located on the computers that built the exe.
@@ -1163,10 +1166,10 @@ void getmem()
 }
 */
 
-#ifndef NDEBUG
+
 
 int TotalRam = 0;
-
+#ifndef NDEBUG
 #define nNoMansLandSize 4
 
 typedef struct _CrtMemBlockHeader
@@ -1527,7 +1530,8 @@ void *_vm_malloc( int size )
 {
 	void *ptr = NULL;
 
-	#if (!defined(NDEBUG)) && defined(_MSC_VER)
+#ifndef NEW_MALLOC
+
 	if ( !Heap )	{
 		TotalRam += size;
 
@@ -1539,11 +1543,13 @@ void *_vm_malloc( int size )
 
 				Error(LOCATION, "Malloc Failed!\n");
 		}
+#ifndef NDEBUG
 		if(Cmdline_show_mem_usage)
 			register_malloc(size, filename, line, ptr);
+#endif
 		return ptr;
 	}
-	#endif
+#else
  
 
 	ptr = HeapAlloc(Heap, HEAP_FLAG, size );
@@ -1567,6 +1573,7 @@ void *_vm_malloc( int size )
 		register_malloc(actual_size, filename, line, ptr);
 
 	#endif
+#endif
 
 	return ptr;
 }
@@ -1604,30 +1611,35 @@ void _vm_free( void *ptr )
 		return;
 	}
 
-#if (!defined(NDEBUG)) && defined(_MSC_VER)
+
+#ifndef NEW_MALLOC
 	if ( !Heap )	{
-		_CrtMemBlockHeader *phd = pHdr(ptr);
-		int nSize = phd->nDataSize;
 
-		TotalRam -= nSize;
+		//_CrtMemBlockHeader *phd = pHdr(ptr);
+		//int nSize = phd->nDataSize;
 
+		//TotalRam -= nSize;
+#ifndef NDEBUG
 		if(Cmdline_show_mem_usage)
 			unregister_malloc(filename, nSize, ptr);
-
+#endif
 		_free_dbg(ptr,_NORMAL_BLOCK);
 		return;
 	}
 
-	int actual_size = HeapSize(Heap, HEAP_FLAG, ptr);
+	/*int actual_size = HeapSize(Heap, HEAP_FLAG, ptr);
 	if ( Watch_malloc )	{
 		mprintf(( "Free %d bytes [%s(%d)]\n", actual_size, clean_filename(filename), line ));
 	}
-	TotalRam -= actual_size;
+	TotalRam -= actual_size;*/
+	#ifndef NDEBUG
 	if(Cmdline_show_mem_usage)
 		unregister_malloc(filename, actual_size, ptr);
-#endif
+	#endif
+#else
 	HeapFree( Heap, HEAP_FLAG, ptr );
 	HeapCompact(Heap, HEAP_FLAG);
+#endif
 }
 
 void vm_free_all()
@@ -1646,16 +1658,18 @@ void *_vm_realloc( void *ptr, int size )
 
 	void *ret_ptr = NULL;
 
-	#if (!defined(NDEBUG)) && defined(_MSC_VER)
-	if ( !Heap )	{
-		TotalRam += size;
+#ifndef NEW_MALLOC
 
-		ptr = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__ );
-		if(Cmdline_show_mem_usage)
-			register_malloc(size, filename, line, ptr);
-		return ptr;
-	}
-	#endif
+	TotalRam += size;
+	ptr = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__ );
+#ifndef	NDEBUG 
+	if(Cmdline_show_mem_usage)
+		register_malloc(size, filename, line, ptr);
+#endif
+	return ptr;
+	
+
+#else
 
 	ret_ptr = HeapReAlloc(Heap, HEAP_FLAG, ptr, size);
 
@@ -1691,8 +1705,8 @@ void *_vm_realloc( void *ptr, int size )
 		register_malloc(actual_size, filename, line, ret_ptr);
 
 	#endif
-
 	return ret_ptr;
+#endif
 }
 
 

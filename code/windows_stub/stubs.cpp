@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.17 $
- * $Date: 2005-06-22 15:18:58 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2005-08-14 21:01:59 $
+ * $Author: Kazan $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/06/22 15:18:58  taylor
+ * make sure that _mkdir() will return an error if the path is invalid
+ *
  * Revision 2.16  2005/05/28 19:44:17  taylor
  * haven't got a clue what I was thinking with that crap
  *
@@ -281,9 +284,9 @@ bool QueryPerformanceCounter(LARGE_INTEGER *pcount)
 	return 1;
 }
 
-#ifndef NDEBUG
+
 int TotalRam = 0;
-#endif
+
 
 int Watch_malloc = 0;
 DCF_BOOL(watch_malloc, Watch_malloc );
