@@ -87,7 +87,7 @@ BuildCmds= \
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /U "NDEBUG" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "$(WXWIN)/include" /I "$(WXWIN)/contrib/include" /I "$(WXWIN)/lib/mswd" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -337,7 +337,7 @@ SOURCE=..\..\code\wxfred2\wxfred.xrc
 !IF  "$(CFG)" == "wxFRED2 - Win32 Release"
 
 # Begin Custom Build - Compiling XRC resources...
-InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\wxfred2
+InputDir=\projects\fs2_open\code\wxfred2
 InputPath=..\..\code\wxfred2\wxfred.xrc
 InputName=wxfred
 
@@ -349,7 +349,7 @@ InputName=wxfred
 !ELSEIF  "$(CFG)" == "wxFRED2 - Win32 Debug"
 
 # Begin Custom Build - Compiling XRC resources...
-InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\wxfred2
+InputDir=\projects\fs2_open\code\wxfred2
 InputPath=..\..\code\wxfred2\wxfred.xrc
 InputName=wxfred
 
