@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-08-14 23:05:27 $
+ * $Revision: 2.25 $
+ * $Date: 2005-08-16 20:06:24 $
  * $Author: Kazan $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/08/14 23:05:27  Kazan
+ * i introduced a bug in _vm_realloc.. fixed it
+ *
  * Revision 2.23  2005/08/14 21:01:59  Kazan
  * I'm stupid, sorry - fixed release-build-crash
  *
@@ -1655,10 +1658,22 @@ void *_vm_realloc( void *ptr, int size )
 
 #ifndef NEW_MALLOC
 
-	TotalRam += size;
+	
+#ifndef NDEBUG
+	// Unregistered the previous allocation
+	_CrtMemBlockHeader *phd = pHdr(ptr);
+	int nSize = phd->nDataSize;
 
+	TotalRam -= nSize;
+	if(Cmdline_show_mem_usage)
+		unregister_malloc(filename, nSize, ptr);
+#endif
+
+	TotalRam += size;
 	ptr = _realloc_dbg(ptr, size,  _NORMAL_BLOCK, __FILE__, __LINE__ );
+
 #ifndef	NDEBUG 
+	// register this allocation
 	if(Cmdline_show_mem_usage)
 		register_malloc(size, filename, line, ptr);
 #endif

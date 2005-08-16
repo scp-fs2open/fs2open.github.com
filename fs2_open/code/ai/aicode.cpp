@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.26 $
- * $Date: 2005-08-01 09:57:52 $
- * $Author: taylor $
+ * $Revision: 1.27 $
+ * $Date: 2005-08-16 20:06:24 $
+ * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2005/08/01 09:57:52  taylor
+ * never could get Ai_class_names to realloc properly but this does the job just as well
+ *
  * Revision 1.25  2005/07/31 01:29:21  taylor
  * Temporarily add an empty AIM_GET_BEHIND case to ai_execute_behavior() to avoid hitting Int3() in TBP
  *
@@ -5097,13 +5100,13 @@ void ai_fly_to_ship()
 
 	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) // capital ship and AutoPilotEngaged
 	{
-		
+		/*
 		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, target_pos, // current point, destination point
 											model_get_core_radius( sip->modelnum ) * 1.5f, // radius w/ buffer
 											Pl_objp, NULL, 0);
 		// fly parrel to collider - so figure out vector between collider and radius
 		if (collide_objnum != -1)
-		{
+		{*/
 			/*
 			vec3d col_vec, col_direct;
 			vm_vec_copy_normalize(&col_vec, &Objects[collide_objnum].phys_info.vel);
@@ -5121,14 +5124,14 @@ void ai_fly_to_ship()
 			
 
 			ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
-
+		/*
 		}
 		else
 		{
 			if (dist_to_goal > 0.1f) {
 				ai_turn_towards_vector(target_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
 			}
-		}
+		}*/
 	}
 	else
 	{
@@ -5336,12 +5339,12 @@ void ai_waypoints()
 	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) // capital ship and AutoPilotEngaged
 	{
 		
-		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, wp_cur, // current point, destination point
-											model_get_core_radius( sip->modelnum ) * 1.5f, // radius w/ buffer
-											Pl_objp, NULL, 0);
+		//int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, wp_cur, // current point, destination point
+		//									model_get_core_radius( sip->modelnum ) * 1.5f, // radius w/ buffer
+		//									Pl_objp, NULL, 0);
 		// fly parrel to collider - so figure out vector between collider and radius
-		if (collide_objnum != -1)
-		{
+		//if (collide_objnum != -1)
+		//{
 
 			/*
 			vec3d col_vec, col_direct;
@@ -5360,13 +5363,13 @@ void ai_waypoints()
 
 			ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
 
-		}
+		/*}
 		else
 		{
 			if (dist_to_goal > 0.1f) {
 				ai_turn_towards_vector(wp_cur, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
 			}
-		}
+		}*/
 	}
 	else
 	{
