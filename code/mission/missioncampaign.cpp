@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-08-18 00:19:53 $
- * $Author: Kazan $
+ * $Revision: 2.28 $
+ * $Date: 2005-08-18 01:15:41 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/08/18 00:19:53  Kazan
+ * # FEATURE BREAK # This breaks a feature in pilot files temporarily to correct a [reproducable] crash - it is merely commenting out the trouble lines - bug report in mantis and assigned to taylor
+ *
  * Revision 2.26  2005/05/12 17:49:13  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1554,54 +1557,59 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		intel_count = cfread_int(fp);
 		Assert(intel_count <= MAX_INTEL_ENTRIES);
 
-		// ******************************************************************
-		// TAYLOR FIX THIS
-		// Bug occurs when you clone a pilot - all the initial techroom stuff
-		// is blank - THIS CAUSED CRASHING - ZERO ships were available in the
-		// tech room!
-		// ******************************************************************
 		// zero out all data so that we can start anew
 		if (set_defaults) {
 			for (idx=0; idx<MAX_SHIP_TYPES; idx++) {
-			//	Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
+				Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
 			}
 		
 			for (idx=0; idx<MAX_WEAPON_TYPES; idx++) {
-				//Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
+				Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
 			}
 
 			for (idx=0; idx<MAX_INTEL_ENTRIES; idx++) {
-				//Intel_info[idx].flags &= ~IIF_DEFAULT_IN_TECH_DATABASE;
+				Intel_info[idx].flags &= ~IIF_DEFAULT_IN_TECH_DATABASE;
 			}
 		}
 
 		// read all ships in
 		for (idx=0; idx<ship_count; idx++) {
 			in = cfread_ubyte(fp);
+
+			sid = ship_info_lookup(s_name[idx]);
+			if (sid == -1)
+				continue;
+
 			if (in) {
-				//Ship_info[ship_info_lookup(s_name[idx])].flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
+				Ship_info[sid].flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
 			} else if (set_defaults) {
-				//Ship_info[ship_info_lookup(s_name[idx])].flags &= ~SIF_IN_TECH_DATABASE;
+				Ship_info[sid].flags &= ~SIF_IN_TECH_DATABASE;
 			}
 		}
 
 		// read all weapons in
 		for (idx=0; idx<weapon_count; idx++) {
 			in = cfread_ubyte(fp);
+
+			wid = weapon_info_lookup(w_name[idx]);
+			if (wid == -1)
+				continue;
+
 			if (in) {
-				//Weapon_info[weapon_info_lookup(w_name[idx])].wi_flags |= WIF_IN_TECH_DATABASE;
+				Weapon_info[wid].wi_flags |= WIF_IN_TECH_DATABASE;
 			} else if (set_defaults) {
-				//Weapon_info[weapon_info_lookup(w_name[idx])].wi_flags &= ~WIF_IN_TECH_DATABASE;
+				Weapon_info[wid].wi_flags &= ~WIF_IN_TECH_DATABASE;
 			}	
 		}
 	
 		// read all intel entries in
-		for (idx=0; idx<intel_count; idx++) {
+		for (idx=0; idx<intel_count && idx<Intel_info_size; idx++) {
 			in = cfread_ubyte(fp);
+
 			if (in) {
-				//Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
+				Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
 			} else if (set_defaults) {
-				//Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
+				Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
 			}
 		}
 
@@ -1641,7 +1649,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			shp_tmp = cfread_int(fp);
 			// don't set this again and again (for WMC)
 			if (set_defaults) {
-				slot->ship_class = ship_info_lookup(s_name[shp_tmp]);
+				slot->ship_class = ship_info_lookup(s_name[shp_tmp]); // -1 should be ok here
 			}
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
@@ -1649,7 +1657,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 				// don't set this again and again (for WMC)
 				if (set_defaults) {
 					slot->wep_count[j] = cfread_int(fp);
-					slot->wep[j] = weapon_info_lookup(w_name[wep_tmp]);
+					slot->wep[j] = weapon_info_lookup(w_name[wep_tmp]); // -1 should be ok here
 				} else {
 					// we need to read some dummy info for the wep_counts
 					wep_tmp = cfread_int(fp);
@@ -1677,7 +1685,12 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 
 		for (i=0; i<k_total; i++) {
 			k_count = cfread_ushort(fp);
-			pl->stats.kills[ship_info_lookup(s_name[i])] = k_count;
+
+			sid = ship_info_lookup(s_name[i]);
+			if (sid == -1)
+				continue;
+
+			pl->stats.kills[sid] = k_count;
 		}
 
 		pl->stats.kill_count = cfread_int(fp);
