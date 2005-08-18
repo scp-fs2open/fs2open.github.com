@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-07-22 10:18:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2005-08-18 01:15:41 $
+ * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/07/22 10:18:36  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.24  2005/07/18 03:45:07  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -1085,15 +1089,16 @@ void barracks_init_player_stuff(int mode)
 		Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.pl2"), CF_SORT_TIME);
 		old_pilot_num = cf_get_file_list_preallocated(MAX_PILOTS, old_pilots_arr, old_pilots, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
-		new_pilot_num = Num_pilots + old_pilot_num;
+		new_pilot_num = MIN((Num_pilots + old_pilot_num), MAX_PILOTS);
 
 		for (i = Num_pilots; i<new_pilot_num;) {
 			for (j = 0; j<old_pilot_num; j++) {
-				if ( i <= MAX_PILOTS ) {
-					strcpy( Pilots[i], old_pilots[j] );
-					Num_pilots++;
-					i++;
-				}
+				if ( i >= MAX_PILOTS )
+					break;
+
+				strcpy( Pilots[i], old_pilots[j] );
+				Num_pilots++;
+				i++;
 			}
 		}
 
