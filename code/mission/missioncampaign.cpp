@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-05-12 17:49:13 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-08-18 00:19:53 $
+ * $Author: Kazan $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.25  2005/05/08 20:26:00  wmcoolmon
  * Dynamically allocated medals
  *
@@ -1550,18 +1554,24 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		intel_count = cfread_int(fp);
 		Assert(intel_count <= MAX_INTEL_ENTRIES);
 
+		// ******************************************************************
+		// TAYLOR FIX THIS
+		// Bug occurs when you clone a pilot - all the initial techroom stuff
+		// is blank - THIS CAUSED CRASHING - ZERO ships were available in the
+		// tech room!
+		// ******************************************************************
 		// zero out all data so that we can start anew
 		if (set_defaults) {
 			for (idx=0; idx<MAX_SHIP_TYPES; idx++) {
-				Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
+			//	Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
 			}
 		
 			for (idx=0; idx<MAX_WEAPON_TYPES; idx++) {
-				Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
+				//Weapon_info[idx].wi_flags &= ~WIF_IN_TECH_DATABASE;
 			}
 
 			for (idx=0; idx<MAX_INTEL_ENTRIES; idx++) {
-				Intel_info[idx].flags &= ~IIF_DEFAULT_IN_TECH_DATABASE;
+				//Intel_info[idx].flags &= ~IIF_DEFAULT_IN_TECH_DATABASE;
 			}
 		}
 
@@ -1569,9 +1579,9 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		for (idx=0; idx<ship_count; idx++) {
 			in = cfread_ubyte(fp);
 			if (in) {
-				Ship_info[ship_info_lookup(s_name[idx])].flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
+				//Ship_info[ship_info_lookup(s_name[idx])].flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
 			} else if (set_defaults) {
-				Ship_info[ship_info_lookup(s_name[idx])].flags &= ~SIF_IN_TECH_DATABASE;
+				//Ship_info[ship_info_lookup(s_name[idx])].flags &= ~SIF_IN_TECH_DATABASE;
 			}
 		}
 
@@ -1579,9 +1589,9 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		for (idx=0; idx<weapon_count; idx++) {
 			in = cfread_ubyte(fp);
 			if (in) {
-				Weapon_info[weapon_info_lookup(w_name[idx])].wi_flags |= WIF_IN_TECH_DATABASE;
+				//Weapon_info[weapon_info_lookup(w_name[idx])].wi_flags |= WIF_IN_TECH_DATABASE;
 			} else if (set_defaults) {
-				Weapon_info[weapon_info_lookup(w_name[idx])].wi_flags &= ~WIF_IN_TECH_DATABASE;
+				//Weapon_info[weapon_info_lookup(w_name[idx])].wi_flags &= ~WIF_IN_TECH_DATABASE;
 			}	
 		}
 	
@@ -1589,11 +1599,12 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		for (idx=0; idx<intel_count; idx++) {
 			in = cfread_ubyte(fp);
 			if (in) {
-				Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
+				//Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
 			} else if (set_defaults) {
-				Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
+				//Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
 			}
 		}
+
 		// end techroom data ---------------------------------------------------
 
 		// begin player loadout ------------------------------------------------
