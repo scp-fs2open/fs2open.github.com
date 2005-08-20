@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.h $
- * $Revision: 1.4 $
- * $Date: 2005-03-24 23:42:21 $
+ * $Revision: 1.5 $
+ * $Date: 2005-08-20 20:34:51 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/03/24 23:42:21  taylor
+ * s/gr_ogl_/gr_opengl_/g
+ * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
+ * make gr_opengl_draw_htl_sphere() just use GLU so we don't need yet another friggin API
+ *
  * Revision 1.3  2005/03/07 13:10:21  bobboau
  * commit of render target code, d3d should be totaly functional,
  * OGL still needs implementation.
@@ -67,7 +72,7 @@ void gr_opengl_bm_page_in_start();
 // Lock an image files data into memory
 int gr_opengl_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
-bool gr_opengl_make_render_target(int n, int &x, int &y, int flags);
-bool gr_opengl_set_render_target(int handle, int face);
+bool gr_opengl_bm_make_render_target(int n, int &x, int &y, int flags);
+bool gr_opengl_bm_set_render_target(int handle, int face);
 
 #endif // _OGL_BMPMAN_H

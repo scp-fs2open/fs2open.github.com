@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-06-19 09:04:40 $
+ * $Revision: 2.52 $
+ * $Date: 2005-08-20 20:34:51 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/06/19 09:04:40  taylor
+ * make sure to reset size to 0 on texture free
+ *
  * Revision 2.50  2005/06/19 02:31:51  taylor
  * allow screenshots and backsaves in windowed mode
  * account for D3D_textures_in size so that it doesn't hit negative values
@@ -1153,7 +1156,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 	
 	tcache_slot_d3d * t = &Textures[n];	
 	
-	if(!is_render_target(bitmap_id)){
+	if(!bm_is_render_target(bitmap_id)){
 		// If rendering exactly the same texture section as before
 		if ( (D3D_last_bitmap_id == bitmap_id) && (D3D_last_bitmap_type==bitmap_type) && (t->bitmap_id == bitmap_id))	{
 			t->used_this_frame++;

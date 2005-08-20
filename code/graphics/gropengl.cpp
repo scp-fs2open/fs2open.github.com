@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.130 $
- * $Date: 2005-07-26 08:46:48 $
+ * $Revision: 2.131 $
+ * $Date: 2005-08-20 20:34:51 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2005/07/26 08:46:48  taylor
+ * Add ability to use specific refresh rate, needs a soon to be updated Launcher to have set via GUI
+ *   but this can go in already.  Defaults to, and falls back on, previous behavior and adds some
+ *   error checking that wasn't there previously.
+ *
  * Revision 2.129  2005/07/20 02:35:51  taylor
  * better UV offsets when using non-standard resolutions (for text mostly), copied from D3D code
  *
@@ -871,6 +876,7 @@ static int OGL_fogmode=0;
 static HDC dev_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
+static WORD original_gamma_ramp[3][256];
 #endif
 
 int VBO_ENABLED = 0;
@@ -2990,9 +2996,7 @@ void gr_opengl_set_gamma(float gamma)
 		}
 
 #ifdef _WIN32
-		HDC hdc = GetDC( (HWND)os_get_window() );
-
-		SetDeviceGammaRamp( hdc, gamma_ramp );
+		SetDeviceGammaRamp( dev_context, gamma_ramp );
 #else
 		SDL_SetGammaRamp( gamma_ramp[0], gamma_ramp[1], gamma_ramp[2] );
 #endif
@@ -3629,6 +3633,9 @@ void gr_opengl_close()
 		wglDeleteContext(rend_context);
 		rend_context=NULL;
 	}
+
+	// restore original gamma settings
+	SetDeviceGammaRamp( dev_context, original_gamma_ramp );
 #endif
 }
 
@@ -3766,8 +3773,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
 //	gr_screen.gf_set_environment_mapping = gr_opengl_render_to_env;;
 
-	gr_screen.gf_make_render_target = gr_opengl_make_render_target;
-	gr_screen.gf_set_render_target = gr_opengl_set_render_target;
+	gr_screen.gf_bm_make_render_target = gr_opengl_bm_make_render_target;
+	gr_screen.gf_bm_set_render_target = gr_opengl_bm_set_render_target;
 
 	gr_screen.gf_start_state_block = gr_opengl_start_state_block;
 	gr_screen.gf_end_state_block = gr_opengl_end_state_block;
@@ -3972,6 +3979,9 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		exit(1);
 	}
+
+	// get the default gamma ramp so that we can restore it on close
+	GetDeviceGammaRamp( dev_context, &original_gamma_ramp );
 #else
 	if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
 	{

@@ -580,7 +580,7 @@ void bm_post_lost(){
 }
 
 
-bool gr_d3d_make_render_target(int n, int &x, int &y, int flags){
+bool gr_d3d_bm_make_render_target(int n, int &x, int &y, int flags){
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
 	Assert(d3d_bitmap_entry[n].tinterface == NULL);
@@ -629,7 +629,7 @@ bool gr_d3d_make_render_target(int n, int &x, int &y, int flags){
 }
 
 
-bool gr_d3d_set_render_target(int handle, int face){
+bool gr_d3d_bm_set_render_target(int handle, int face){
 	int i = 0;
 	static bool once = false;
 	if(!once){atexit(bm_pre_lost);once = true;}

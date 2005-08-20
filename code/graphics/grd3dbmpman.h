@@ -39,8 +39,8 @@ void gr_d3d_bm_init(int n);
 void gr_d3d_bm_page_in_start();
 int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
-bool gr_d3d_make_render_target(int n, int &x, int &y, int flags);
-bool gr_d3d_set_render_target(int n, int face);
+bool gr_d3d_bm_make_render_target(int n, int &x, int &y, int flags);
+bool gr_d3d_bm_set_render_target(int n, int face);
 
 IDirect3DBaseTexture8* get_render_target_texture(int);
 

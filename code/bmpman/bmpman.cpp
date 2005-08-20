@@ -10,13 +10,22 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.59 $
- * $Date: 2005-06-19 02:28:55 $
+ * $Revision: 2.60 $
+ * $Date: 2005-08-20 20:34:48 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/06/19 02:28:55  taylor
+ * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
+ * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
+ * NaN check to catch shards-of-death and prevent hitting an Assert() (Jens Granseuer)
+ * fix jumpnode code to catch model errors and close a memory leak
+ * make the call to bm_unload_all() after model_free_all() since we will get bmpman screwups otherwise
+ * don't show hardware sound RAM when using OpenAL build, it will always be 0
+ * print top-right memory figures in debug builds slighly further over when 1024+ res
+ *
  * Revision 2.58  2005/05/30 05:29:17  taylor
  * as soon as the first frame gets released the rest are unreachable in the loop
  *   this was basically became a memory leak as additional frames never got released
@@ -3390,7 +3399,7 @@ int bm_make_render_target( int &x_res, int &y_res, int flags )
 
 
 //	gr_bm_load( type, n, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
-	gr_make_render_target( n, x_res, y_res, flags );
+	gr_bm_make_render_target( n, x_res, y_res, flags );
 	//API render target function gets called here
 
 
@@ -3421,13 +3430,17 @@ int bm_make_render_target( int &x_res, int &y_res, int flags )
 	return bm_bitmaps[n].handle;
 }
 
-bool is_render_target(int bitmap_id){
+bool bm_is_render_target(int bitmap_id)
+{
 	int n = bitmap_id % MAX_BITMAPS;
-	return bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET;
+
+	Assert(bitmap_id == bm_bitmaps[n].handle);
+
+	return (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET);
 }
 
 bool bm_set_render_target(int handle, int face){
-	if(gr_set_render_target(handle, face)){
+	if(gr_bm_set_render_target(handle, face)){
 
 		int n = handle % MAX_BITMAPS;
 		if(gr_screen.rendering_to_texture == -1){
