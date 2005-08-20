@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.14 $
- * $Date: 2005-07-13 02:01:30 $
+ * $Revision: 1.15 $
+ * $Date: 2005-08-20 18:23:02 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/07/13 02:01:30  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 1.13  2005/07/13 00:44:24  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -255,10 +259,24 @@ void Init_Species_Definitions()
 
 
 		// Goober5000 - AWACS multiplier (which Kazan forgot or missed)
-		required_string("$AwacsMultiplier:");
-		stuff_float(&AwacsMultiplier[i]);
+		if (optional_string("$AwacsMultiplier:"))
+		{
+			stuff_float(&AwacsMultiplier[i]);
+		}
+		else
+		{
+			// set defaults to Volition's originals
+			if (!stricmp(Species_names[i], "Vasudan"))
+				AwacsMultiplier[i] = 1.25f;
+			else if (!stricmp(Species_names[i], "Shivan"))
+				AwacsMultiplier[i] = 1.50f;
+			else
+				AwacsMultiplier[i] = 1.0f;
+
+			// let them know
+			Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", Species_names[i], AwacsMultiplier[i]);
+		}
 	}
 	
 	required_string("#END");
-	
 }
