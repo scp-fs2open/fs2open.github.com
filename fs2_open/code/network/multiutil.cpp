@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.38 $
+ * $Date: 2005-08-20 20:29:47 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.36  2005/07/02 19:45:00  taylor
  * ton of non-standard resolution fixes
  *
@@ -344,7 +348,7 @@
 
 #if defined _WIN32
 #include <winsock.h>
-#elif defined unix
+#elif defined SCP_UNIX
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
