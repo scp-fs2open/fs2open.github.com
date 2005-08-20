@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.75 $
- * $Date: 2005-07-19 04:52:56 $
- * $Author: taylor $
+ * $Revision: 2.76 $
+ * $Date: 2005-08-20 16:00:03 $
+ * $Author: matt $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2005/07/19 04:52:56  taylor
+ * fix resize fixes
+ *
  * Revision 2.74  2005/07/18 03:44:00  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -823,6 +826,7 @@
 
 #include "osapi/osapi.h"
 
+
 // Viewport used to change render between full screen and sub sections like the pilot animations
 D3DVIEWPORT8 viewport;
 
@@ -1606,7 +1610,7 @@ void gr_d3d_tmapper_internal_3d_unlit( int nverts, vertex **verts, uint flags, i
 		}
 		
 		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
-		src_v->specular = D3DCOLOR_ARGB(a, r, g, b);
+		src_v->specular = D3DCOLOR_ARGB(a, 0, 0, 0);
 
 		src_v->sx = va->x; 
 		src_v->sy = va->y; 
@@ -1902,7 +1906,8 @@ bool cell_enabled = false;
 extern bool rendering_shockwave;
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
-//	d3d_set_initial_render_state();
+
+  //	d3d_set_initial_render_state();
 
 	if(flags & TMAP_HTL_2D)
 	{
@@ -2320,6 +2325,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	}
 
 }
+
 
 /*
 			if(env_enabled){
@@ -3736,6 +3742,7 @@ int tga_compress(char *out, char *in, int bytecount, int pixsize )
 #endif
 
 
+
 void gr_d3d_print_screen(char *filename)
 {
 	IDirect3DSurface8 *pDestSurface = NULL;
@@ -3769,6 +3776,7 @@ void gr_d3d_print_screen(char *filename)
 		mprintf(("Failed to get front buffer"));
 		return;
 	}
+
 
 
 	char pic_name[MAX_PATH];
