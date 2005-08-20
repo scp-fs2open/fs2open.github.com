@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.24 $
- * $Date: 2005-07-13 02:50:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2005-08-20 20:34:49 $
+ * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.23  2005/06/19 02:28:55  taylor
  * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
  * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
@@ -586,6 +590,6 @@ int bm_get_num_mipmaps(int num);
 void bm_print_bitmaps();
 
 int bm_make_render_target( int &x_res, int &y_res, int flags );
-bool is_render_target(int bitmap_id);
-bool bm_set_render_target(int handle, int face);
+bool bm_is_render_target(int bitmap_id);
+bool bm_set_render_target(int handle, int face = -1);
 #endif

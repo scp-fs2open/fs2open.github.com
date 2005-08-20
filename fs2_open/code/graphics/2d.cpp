@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-07-18 03:44:00 $
+ * $Revision: 2.53 $
+ * $Date: 2005-08-20 20:34:50 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/07/18 03:44:00  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.51  2005/07/13 15:15:54  phreak
  * If the web cursor bitmap isn't found, tell the user to move the executable to the main FS2 directory.
  *
@@ -1401,42 +1409,44 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 
 	int X=512,Y=512;
 //	big_ole_honkin_hack_test = bm_make_render_target(X,Y,BMP_TEX_STATIC_RENDER_TARGET);
-//	gr_set_render_target(big_ole_honkin_hack_test);
+//	bm_set_render_target(big_ole_honkin_hack_test);
 
 	//get a render target for static environment maps
 	gr_screen.static_environment_map = bm_make_render_target(X,Y, BMP_TEX_STATIC_RENDER_TARGET|BMP_TEX_CUBEMAP);
 	//clear out the 6 faces
-	gr_set_render_target(gr_screen.static_environment_map,0);
+	bm_set_render_target(gr_screen.static_environment_map,0);
 	gr_clear();
-	gr_set_render_target(gr_screen.static_environment_map,1);
+	bm_set_render_target(gr_screen.static_environment_map,1);
 	gr_clear();
-	gr_set_render_target(gr_screen.static_environment_map,2);
+	bm_set_render_target(gr_screen.static_environment_map,2);
 	gr_clear();
-	gr_set_render_target(gr_screen.static_environment_map,3);
+	bm_set_render_target(gr_screen.static_environment_map,3);
 	gr_clear();
-	gr_set_render_target(gr_screen.static_environment_map,4);
+	bm_set_render_target(gr_screen.static_environment_map,4);
 	gr_clear();
-	gr_set_render_target(gr_screen.static_environment_map,5);
+	bm_set_render_target(gr_screen.static_environment_map,5);
 	gr_clear();
+
+	bm_set_render_target(-1);
 
 	//get the dynamic environment map
 	gr_screen.dynamic_environment_map = bm_make_render_target(X,Y, BMP_TEX_DYNAMIC_RENDER_TARGET|BMP_TEX_CUBEMAP);
 	//clear it out
-	gr_set_render_target(gr_screen.dynamic_environment_map,0);
+	bm_set_render_target(gr_screen.dynamic_environment_map,0);
 	gr_clear();
-	gr_set_render_target(gr_screen.dynamic_environment_map,1);
+	bm_set_render_target(gr_screen.dynamic_environment_map,1);
 	gr_clear();
-	gr_set_render_target(gr_screen.dynamic_environment_map,2);
+	bm_set_render_target(gr_screen.dynamic_environment_map,2);
 	gr_clear();
-	gr_set_render_target(gr_screen.dynamic_environment_map,3);
+	bm_set_render_target(gr_screen.dynamic_environment_map,3);
 	gr_clear();
-	gr_set_render_target(gr_screen.dynamic_environment_map,4);
+	bm_set_render_target(gr_screen.dynamic_environment_map,4);
 	gr_clear();
-	gr_set_render_target(gr_screen.dynamic_environment_map,5);
+	bm_set_render_target(gr_screen.dynamic_environment_map,5);
 	gr_clear();
 
 	//set the render target back to the back buffer
-	gr_set_render_target(-1);
+	bm_set_render_target(-1);
 	return true;
 }
 

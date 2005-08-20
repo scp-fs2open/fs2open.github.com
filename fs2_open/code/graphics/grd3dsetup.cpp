@@ -9,6 +9,9 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/05/01 23:23:18  phreak
+ * added CVS info to top of file.
+ *
  *
 */
  
@@ -857,8 +860,8 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_bm_load					= gr_d3d_bm_load;
 	gr_screen.gf_bm_page_in_start			= gr_d3d_bm_page_in_start;
 	gr_screen.gf_bm_lock					= gr_d3d_bm_lock;
-	gr_screen.gf_make_render_target			= gr_d3d_make_render_target;
-	gr_screen.gf_set_render_target			= gr_d3d_set_render_target;
+	gr_screen.gf_bm_make_render_target		= gr_d3d_bm_make_render_target;
+	gr_screen.gf_bm_set_render_target		= gr_d3d_bm_set_render_target;
 	
 	
 	

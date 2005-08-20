@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.171 $
- * $Date: 2005-08-14 17:20:55 $
- * $Author: Kazan $
+ * $Revision: 2.172 $
+ * $Date: 2005-08-20 20:34:49 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.171  2005/08/14 17:20:55  Kazan
+ * diabled NEW_MALLOC on windows - it was causing crashing - must have been corrupting it's own heap
+ *
  * Revision 2.170  2005/08/11 12:22:26  taylor
  * don't do any ambient sound or music stuff in game_pause()/unpause() on options screens when in mission so we can
  *   avoid having mainhall ambient sounds and music start playing and then not stop until you exit the mission
@@ -4558,7 +4561,7 @@ vec3d	Dead_player_last_vel = {1.0f, 1.0f, 1.0f};
 
 inline void render_environment(int&i, matrix*new_orient, float new_zoom){
 vec3d nv = ZERO_VECTOR;
-	gr_set_render_target(
+	bm_set_render_target(
 		(Game_subspace_effect)?
 			gr_screen.dynamic_environment_map 
 		: 
@@ -4628,7 +4631,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient){
 		gr_set_proj_matrix( ((4.0f/9.0f)*(PI)*View_zoom), Canv_w2/Canv_h2, 1.0f, 30000.0f);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-		gr_set_render_target(-1);
+		bm_set_render_target(-1);
 
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
@@ -10767,7 +10770,7 @@ void display_title_screen()
 	// flip
 	gr_flip();
 
-//	gr_set_render_target(-1);//big_ole_honkin_hack_test
+//	bm_set_render_target(-1);//big_ole_honkin_hack_test
 	if(title_bitmap != -1)
 	{
 		bm_release(title_bitmap);

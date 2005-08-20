@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.63 $
- * $Date: 2005-07-18 03:44:00 $
+ * $Revision: 2.64 $
+ * $Date: 2005-08-20 20:34:50 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/07/18 03:44:00  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.62  2005/07/13 02:50:47  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1022,8 +1030,8 @@ typedef struct screen {
 	void (*gf_bm_page_in_start)();
 	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
-	bool (*gf_make_render_target)(int n, int &x_res, int &y_res, int flags );
-	bool (*gf_set_render_target)(int n, int face);
+	bool (*gf_bm_make_render_target)(int n, int &x_res, int &y_res, int flags );
+	bool (*gf_bm_set_render_target)(int n, int face);
 
 	void (*gf_translate_texture_matrix)(int unit, vec3d *shift);
 	void (*gf_push_texture_matrix)(int unit);
@@ -1322,11 +1330,11 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 #define gr_bm_page_in_start			GR_CALL(*gr_screen.gf_bm_page_in_start)
 #define gr_bm_lock					GR_CALL(*gr_screen.gf_bm_lock)          
 
-#define gr_make_render_target					GR_CALL(*gr_screen.gf_make_render_target)          
-//#define gr_set_render_target					GR_CALL(*gr_screen.gf_set_render_target)          
-__inline bool gr_set_render_target(int n, int face = -1)
+#define gr_bm_make_render_target					GR_CALL(*gr_screen.gf_bm_make_render_target)          
+//#define gr_bm_set_render_target					GR_CALL(*gr_screen.gf_bm_set_render_target)          
+__inline bool gr_bm_set_render_target(int n, int face = -1)
 {
-	return (*gr_screen.gf_set_render_target)(n, face);
+	return (*gr_screen.gf_bm_set_render_target)(n, face);
 }
 
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
