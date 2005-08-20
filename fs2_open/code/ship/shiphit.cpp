@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-07-24 18:33:47 $
+ * $Revision: 2.51 $
+ * $Date: 2005-08-20 20:32:28 $
  * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/07/24 18:33:47  taylor
+ * hehehe, fix the check to allow fighter beams to count for kills
+ *
  * Revision 2.49  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -2847,7 +2850,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 
 }
 
-
+extern int Cmdline_nohtl;
 
 // This gets called to apply damage when a damaging force hits a ship, but at no 
 // point in particular.  Like from a shockwave.   This routine will see if the
@@ -2879,7 +2882,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 
 		// world_hitpos use force_center for shockwave
 		// Goober5000 check for NULL
-		if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (Ship_info[Ships[ship_obj->instance].ship_info_index].flags & SIF_HUGE_SHIP))
+		if (Cmdline_nohtl && (other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (Ship_info[Ships[ship_obj->instance].ship_info_index].flags & SIF_HUGE_SHIP))
 		{
 			world_hitpos = *force_center;
 		}
