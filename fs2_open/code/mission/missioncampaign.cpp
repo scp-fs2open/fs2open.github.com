@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-08-18 01:15:41 $
+ * $Revision: 2.29 $
+ * $Date: 2005-08-20 20:38:08 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/08/18 01:15:41  taylor
+ * Address a couple of pilot code issues
+ *  - make the same MAX_PILOTS in the barracks that the playerselect screen has since it's a problem here too
+ *  - add a -1 check for ship/weapon name lookups to avoid bounds issues.  NOTE: this can empty the techroom of entries if ithits this check, but it won't crash :)
+ *
  * Revision 2.27  2005/08/18 00:19:53  Kazan
  * # FEATURE BREAK # This breaks a feature in pilot files temporarily to correct a [reproducable] crash - it is merely commenting out the trouble lines - bug report in mantis and assigned to taylor
  *
@@ -312,7 +317,7 @@
 #include <io.h>
 #endif
 
-#if defined unix
+#ifdef SCP_UNIX
 #include <sys/stat.h>
 #include <glob.h>
 #endif
@@ -560,7 +565,7 @@ void mission_campaign_build_list( int multiplayer )
 			}
 		}
 	}
-#elif defined unix
+#elif defined SCP_UNIX
 	glob_t globinfo;
 	memset(&globinfo, 0, sizeof(globinfo));
 	int status = glob(wild_card, 0, NULL, &globinfo);
