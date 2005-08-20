@@ -9,13 +9,17 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/Chttpget.cpp $
-* $Revision: 2.6 $
-* $Date: 2005-05-12 17:49:13 $
+* $Revision: 2.7 $
+* $Date: 2005-08-20 20:38:08 $
 * $Author: taylor $
 *
 * HTTP Client class (get only)
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.6  2005/05/12 17:49:13  taylor
+* use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+*   fixes various problems and is past time to make the switch
+*
 * Revision 2.5  2004/07/26 20:47:33  Kazan
 * remove MCD complete
 *
@@ -227,7 +231,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	unsigned long arg;
 
 	arg = true;
-#ifndef unix
+#ifndef SCP_UNIX
 	ioctlsocket( m_DataSock, FIONBIO, &arg );
 #else
 	ioctl( m_DataSock, FIONBIO, &arg );

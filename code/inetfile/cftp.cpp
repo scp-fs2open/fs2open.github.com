@@ -9,13 +9,16 @@
 
  /*
  * $Logfile: /Freespace2/code/Inetfile/CFtp.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:33 $
- *  $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2005-08-20 20:38:08 $
+ *  $Author: taylor $
  *
  * FTP Client class (get only)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:32:50  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -341,7 +344,7 @@ unsigned int CFtpGet::IssuePort()
 
 	char szCommandString[200];
 	SOCKADDR_IN listenaddr;					// Socket address structure
-#ifdef unix
+#ifdef SCP_UNIX
    socklen_t iLength;						// Length of the address structure
 #else
    int iLength;								// Length of the address structure
