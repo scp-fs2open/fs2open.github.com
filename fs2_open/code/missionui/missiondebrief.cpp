@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.40 $
+ * $Date: 2005-08-21 21:05:53 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.38  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -2045,15 +2049,10 @@ void debrief_render()
 //
 void debrief_stats_render()
 {	
-	int i, x, y, font_height;	
+	int i, y, font_height;	
 
 	gr_set_color_fast(&Color_blue);
-
-	x = Debrief_text_wnd_coords[gr_screen.res][0];
-	y = Debrief_text_wnd_coords[gr_screen.res][1];
-	gr_unsize_screen_pos(&x, &y);
-
-	gr_set_clip(x, y, Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3]);
+	gr_set_clip(Debrief_text_wnd_coords[gr_screen.res][0], Debrief_text_wnd_coords[gr_screen.res][1], Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3]);
 	gr_string(0, 0, Debrief_current_callsign);
 	font_height = gr_get_font_height();
 	y = 30;
