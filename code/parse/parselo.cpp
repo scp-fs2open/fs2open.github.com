@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.44 $
+ * $Revision: 2.45 $
  * $Author: Goober5000 $
- * $Date: 2005-07-23 21:47:46 $
+ * $Date: 2005-08-22 22:24:21 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/07/23 21:47:46  Goober5000
+ * bah - fixed subsystem comparison
+ * --Goober5000
+ *
  * Revision 2.43  2005/06/03 22:36:57  wmcoolmon
  * I *think* this should fix bool lists
  *
@@ -1517,17 +1521,40 @@ void read_file_text_from_array(char *array, char *processed_text, char *raw_text
 }
 
 // Goober5000
+int is_unicode(char *text)
+{
+	if (!strncmp(text, "\xEF\xBB\xBF", 3))		// UTF-8
+		return 1;
+
+	if (!strncmp(text, "\xFE\xFF", 2))			// UTF-16 big-endian
+		return 1;
+
+	if (!strncmp(text, "\xFF\xFE", 2))			// UTF-16 little-endian
+		return 1;
+
+	if (!strncmp(text, "\x00\x00\xFE\xFF", 4))	// UTF-32 big-endian
+		return 1;
+
+	if (!strncmp(text, "\xFF\xFE\x00\x00", 4))	// UTF-32 little-endian
+		return 1;
+
+	return 0;
+}
+
+// Goober5000
 void read_raw_file_text(char *filename, int mode, char *raw_text)
 {
 	CFILE	*mf;
-	int	file_is_encrypted = 0;
+	int	file_is_encrypted;
+	int file_is_unicode;
 
 	if (!filename)
 		longjmp(parse_abort, 10);
 
 	strcpy(Current_filename, filename);
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
-	if (mf == NULL) {
+	if (mf == NULL)
+	{
 		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
 		longjmp(parse_abort, 5);
 	}
@@ -1543,7 +1570,17 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 	cfread(raw_text, MIN(file_len, 10), 1, mf);
 	file_is_encrypted = is_encrypted(raw_text);
 	cfseek(mf, 0, CF_SEEK_SET);
-	if ( file_is_encrypted ) {
+
+	// Goober5000 - also determine if file is Unicode
+	file_is_unicode = is_unicode(raw_text);
+	if ( file_is_unicode )
+	{
+		nprintf(("Error", "Wokka!  File (%s) is in Unicode format!\n", filename));
+		longjmp(parse_abort, 5);
+	}
+
+	if ( file_is_encrypted )
+	{
 		int	unscrambled_len;
 		char	*scrambled_text;
 		scrambled_text = (char*)vm_malloc(file_len+1);
@@ -1553,9 +1590,12 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 		unencrypt(scrambled_text, file_len, raw_text, &unscrambled_len);
 		file_len = unscrambled_len;
 		vm_free(scrambled_text);
-	} else {
+	}
+	else
+	{
 		cfread(raw_text, file_len, 1, mf);
 	}
+
 	cfclose(mf);
 }
 
@@ -2206,30 +2246,14 @@ void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int
 	}
 }
 
-// Initialize a parse process.
-void init_parse()
-{
-	int i;
-
-	Mp = Mission_text;
-
-	Warning_count = 0;
-	Error_count = 0;
-	for (i=0; i<MAX_CARGO; i++)
-		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
-
-	Total_goal_ship_names = 0;
-	init_sexp();
-
-	strcpy(parse_error_text, "");//better error mesages-Bobboau
-}
-
 void reset_parse()
 {
 	Mp = Mission_text;
 
 	Warning_count = 0;
 	Error_count = 0;
+
+	strcpy(parse_error_text, "");//better error mesages-Bobboau
 }
 
 void reset_parse_ex(char *text)

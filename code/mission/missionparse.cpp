@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.102 $
- * $Date: 2005-08-21 06:19:31 $
+ * $Revision: 2.103 $
+ * $Date: 2005-08-22 22:24:22 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2005/08/21 06:19:31  Goober5000
+ * clarified the comment on my original move of the wing departure information assignment
+ * --Goober5000
+ *
  * Revision 2.101  2005/07/25 08:22:00  Goober5000
  * more bugs and tweaks
  * --Goober5000
@@ -1088,6 +1092,7 @@ void mission_parse_do_initial_docks();
 void mission_parse_set_arrival_locations();
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set );
 int parse_lookup_alt_name(char *name);
+void parse_init();
 
 void parse_mission_info(mission *pm)
 {
@@ -4472,7 +4477,7 @@ void parse_mission(mission *pm, int flag)
 
 	list_init( &ship_arrival_list );		// init lists for arrival objects and wings
 
-	init_parse();
+	parse_init();
 
 	Subsys_index = 0;
 	Subsys_status_size = 0;
@@ -4782,7 +4787,7 @@ int get_mission_info(char *filename, mission *mission_p)
 
 		read_file_text(filename, CF_TYPE_MISSIONS);
 		memset( mission_p, 0, sizeof(mission) );
-		init_parse();
+		parse_init();
 		parse_mission_info(mission_p);
 
 		// close localization
@@ -4790,6 +4795,19 @@ int get_mission_info(char *filename, mission *mission_p)
 	}
 
 	return 0;
+}
+
+// Goober5000 - changed and moved from parselo.cpp
+// Initialize the mission parse process.
+void parse_init()
+{
+	reset_parse();
+
+	for (int i = 0; i < MAX_CARGO; i++)
+		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
+
+	Total_goal_ship_names = 0;
+	init_sexp();
 }
 
 // mai parse routine for parsing a mission.  The default parameter flags tells us which information
