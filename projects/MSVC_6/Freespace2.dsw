@@ -20,11 +20,26 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name oggvorbis
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name dx8sdk
+    End Project Dependency
 }}}
 
 ###############################################################################
 
 Project: "code"=".\code.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "dx8sdk"=".\dx8sdk.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
