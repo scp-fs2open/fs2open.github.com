@@ -17,12 +17,6 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name libjpeg
     End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name oggvorbis
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name dx8sdk
-    End Project Dependency
 }}}
 
 ###############################################################################
@@ -39,31 +33,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "dx8sdk"=".\dx8sdk.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
 Project: "libjpeg"=".\libjpeg.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
-Project: "oggvorbis"=".\oggvorbis.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
