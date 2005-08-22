@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-08-20 20:38:08 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2005-08-22 22:24:22 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/08/20 20:38:08  taylor
+ * more unix->SCP_UNIX define fixing
+ *
  * Revision 2.28  2005/08/18 01:15:41  taylor
  * Address a couple of pilot code issues
  *  - make the same MAX_PILOTS in the barracks that the playerselect screen has since it's a problem here too
@@ -2409,7 +2412,8 @@ void read_mission_goal_list(int num)
 	lcl_ext_open();	
 	
 	read_file_text(filename);
-	init_parse();
+	reset_parse();
+	init_sexp();
 
 	// first, read the mission notes for this mission.  Used in campaign editor
 	if (skip_to_string("#Mission Info")) {

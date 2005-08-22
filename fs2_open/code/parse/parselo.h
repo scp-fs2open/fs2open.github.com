@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.28 $
+ * $Revision: 2.29 $
  * $Author: Goober5000 $
- * $Date: 2005-07-23 21:47:46 $
+ * $Date: 2005-08-22 22:24:21 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/07/23 21:47:46  Goober5000
+ * bah - fixed subsystem comparison
+ * --Goober5000
+ *
  * Revision 2.27  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -461,10 +465,8 @@ int check_for_string(char *pstr);
 int check_for_string_raw(char *pstr);
 
 // general
-extern void init_parse();
 extern void reset_parse();
 extern void display_parse_diagnostics();
-extern void parse_main();
 
 // utility
 extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
