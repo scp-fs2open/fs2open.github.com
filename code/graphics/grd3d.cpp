@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.85 $
- * $Date: 2005-08-23 15:59:51 $
+ * $Revision: 2.86 $
+ * $Date: 2005-08-23 16:57:28 $
  * $Author: matt $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2005/08/23 15:59:51  matt
+ * Fixed screen save crash when a popup is called
+ *
  * Revision 2.84  2005/06/19 02:31:50  taylor
  * allow screenshots and backsaves in windowed mode
  * account for D3D_textures_in size so that it doesn't hit negative values
@@ -1546,6 +1549,10 @@ void d3d_setup_format_components(PIXELFORMAT *surface, color_gun *r_gun, color_g
 
 int gr_d3d_save_screen()
 {
+
+	int rect_size_x;
+	int rect_size_y;
+
 	if(!GlobalD3DVars::D3D_activate) return -1;
 	gr_reset_clip();
 
@@ -1623,13 +1630,41 @@ int gr_d3d_save_screen()
 
 		rct.left = pnt.x;
 		rct.top = pnt.y;
-		rct.right = gr_screen.max_w;
-		rct.bottom = gr_screen.max_h;
+
+		if(pnt.x < 0) {
+			rct.left = 0;
+		}
+
+		if(pnt.y < 0) {
+			rct.top = 0;
+		}
+
+		//We can't write to anything larger than the desktop resolution, so check against it
+		if((pnt.x + gr_screen.max_w) > mode.Width) {
+			rct.right = mode.Width;
+		}
+		else {
+			rct.right = pnt.x + gr_screen.max_w;
+		}
+
+		//And again
+		if((pnt.y + gr_screen.max_h) > mode.Height) {
+			rct.bottom = mode.Height;
+		}
+		else{
+			rct.bottom = pnt.y + gr_screen.max_h;
+		}
+
 	} else {
 		rct.left = rct.top = 0;
 		rct.right = gr_screen.max_w;
 		rct.bottom = gr_screen.max_h;
 	}
+
+	//Find the total size of our rectangle
+	rect_size_x = rct.right - rct.left;
+	rect_size_y = rct.bottom - rct.top;
+
 
 	if(FAILED(front_buffer_a8r8g8b8->LockRect(&src_rect, &rct, D3DLOCK_READONLY))) {
 
@@ -1641,12 +1676,12 @@ int gr_d3d_save_screen()
 	typedef struct { unsigned char b,g,r,a; } TmpC;
 
 	if(D3D_32bit) {
-		for(int j = 0; j < (gr_screen.max_h - rct.top); j++) {
+		for(int j = 0; j < (rect_size_y - 1); j++) {
 		
 			TmpC *src = (TmpC *)  (((char *) src_rect.pBits) + (src_rect.Pitch * j)); 
 			uint *dst = (uint *) (((char *) dst_rect.pBits) + (dst_rect.Pitch * j));
 		
-			for(int i = 0; i < (gr_screen.max_w - rct.left); i++) {
+			for(int i = 0; i < (rect_size_x - 1); i++) {
 			 	dst[i] = 0;
 				dst[i] |= (uint)(( (int) src[i].r / r_gun.scale ) << r_gun.shift);
 				dst[i] |= (uint)(( (int) src[i].g / g_gun.scale ) << g_gun.shift);
@@ -1654,12 +1689,12 @@ int gr_d3d_save_screen()
 			}
 		}
 	} else {
-		for(int j = 0; j < (gr_screen.max_h - rct.top); j++) {
+		for(int j = 0; j < (rect_size_y - 1); j++) {
 		
 			TmpC   *src = (TmpC *)  (((char *) src_rect.pBits) + (src_rect.Pitch * j)); 
 			ushort *dst = (ushort *) (((char *) dst_rect.pBits) + (dst_rect.Pitch * j));
 		
-			for(int i = 0; i < (gr_screen.max_w - rct.left); i++) {
+			for(int i = 0; i < (rect_size_x - 1); i++) {
 			 	dst[i] = 0;
 				dst[i] |= (ushort)(( (int) src[i].r / r_gun.scale ) << r_gun.shift);
 				dst[i] |= (ushort)(( (int) src[i].g / g_gun.scale ) << g_gun.shift);
