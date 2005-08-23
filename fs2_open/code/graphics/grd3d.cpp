@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.84 $
- * $Date: 2005-06-19 02:31:50 $
- * $Author: taylor $
+ * $Revision: 2.85 $
+ * $Date: 2005-08-23 15:59:51 $
+ * $Author: matt $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2005/06/19 02:31:50  taylor
+ * allow screenshots and backsaves in windowed mode
+ * account for D3D_textures_in size so that it doesn't hit negative values
+ *
  * Revision 2.83  2005/06/03 16:42:30  matt
  * D3D gamma now no longer works backwards --Sticks
  *
@@ -1619,8 +1623,8 @@ int gr_d3d_save_screen()
 
 		rct.left = pnt.x;
 		rct.top = pnt.y;
-		rct.right = pnt.x + gr_screen.max_w;
-		rct.bottom = pnt.y + gr_screen.max_h;
+		rct.right = gr_screen.max_w;
+		rct.bottom = gr_screen.max_h;
 	} else {
 		rct.left = rct.top = 0;
 		rct.right = gr_screen.max_w;
@@ -1637,12 +1641,12 @@ int gr_d3d_save_screen()
 	typedef struct { unsigned char b,g,r,a; } TmpC;
 
 	if(D3D_32bit) {
-		for(int j = 0; j < gr_screen.max_h; j++) {
+		for(int j = 0; j < (gr_screen.max_h - rct.top); j++) {
 		
 			TmpC *src = (TmpC *)  (((char *) src_rect.pBits) + (src_rect.Pitch * j)); 
 			uint *dst = (uint *) (((char *) dst_rect.pBits) + (dst_rect.Pitch * j));
 		
-			for(int i = 0; i < gr_screen.max_w; i++) {
+			for(int i = 0; i < (gr_screen.max_w - rct.left); i++) {
 			 	dst[i] = 0;
 				dst[i] |= (uint)(( (int) src[i].r / r_gun.scale ) << r_gun.shift);
 				dst[i] |= (uint)(( (int) src[i].g / g_gun.scale ) << g_gun.shift);
@@ -1650,12 +1654,12 @@ int gr_d3d_save_screen()
 			}
 		}
 	} else {
-		for(int j = 0; j < gr_screen.max_h; j++) {
+		for(int j = 0; j < (gr_screen.max_h - rct.top); j++) {
 		
 			TmpC   *src = (TmpC *)  (((char *) src_rect.pBits) + (src_rect.Pitch * j)); 
 			ushort *dst = (ushort *) (((char *) dst_rect.pBits) + (dst_rect.Pitch * j));
 		
-			for(int i = 0; i < gr_screen.max_w; i++) {
+			for(int i = 0; i < (gr_screen.max_w - rct.left); i++) {
 			 	dst[i] = 0;
 				dst[i] |= (ushort)(( (int) src[i].r / r_gun.scale ) << r_gun.shift);
 				dst[i] |= (ushort)(( (int) src[i].g / g_gun.scale ) << g_gun.shift);
