@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.104 $
- * $Date: 2005-08-23 07:49:24 $
+ * $Revision: 2.105 $
+ * $Date: 2005-08-23 09:18:07 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2005/08/23 07:49:24  Goober5000
+ * removed a thing I apparently forgot to remove on 2005/07/12
+ * --Goober5000
+ *
  * Revision 2.103  2005/08/22 22:24:22  Goober5000
  * some tweaks to parselo, plus ensure that Unicode files don't crash
  * --Goober5000
@@ -2058,6 +2062,9 @@ int parse_create_object(p_object *objp)
 	// must reset the number of ai goals when the object is created
 	for (i = 0; i < MAX_AI_GOALS; i++ ){
 		aip->goals[i].ai_mode = AI_GOAL_NONE;
+		aip->goals[i].signature = -1;
+		aip->goals[i].priority = -1;
+		aip->goals[i].flags = 0;
 	}
 
 	Ships[shipnum].cargo1 = objp->cargo1;
@@ -3680,7 +3687,9 @@ void parse_wing(mission *pm)
 	// initialize wing goals
 	for (i=0; i<MAX_AI_GOALS; i++) {
 		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
+		wingp->ai_goals[i].signature = -1;
 		wingp->ai_goals[i].priority = -1;
+		wingp->ai_goals[i].flags = 0;
 	}
 
 #ifndef NO_NETWORK

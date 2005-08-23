@@ -4,11 +4,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-07-23 16:25:32 $
+ * $Revision: 1.22 $
+ * $Date: 2005-08-23 09:18:08 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/07/23 16:25:32  Goober5000
+ * remove an extraneous extern
+ * --Goober5000
+ *
  * Revision 1.20  2005/07/13 02:30:52  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -440,6 +444,7 @@ void EndAutoPilot()
 					Wings[i].ai_goals[j].ai_mode = AI_GOAL_NONE;
 					Wings[i].ai_goals[j].signature = -1;
 					Wings[i].ai_goals[j].priority = -1;
+					Wings[i].ai_goals[j].flags = 0;
 				}
 			}
 		}

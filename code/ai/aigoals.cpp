@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-08-23 09:03:56 $
+ * $Revision: 1.9 $
+ * $Date: 2005-08-23 09:18:08 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/08/23 09:03:56  Goober5000
+ * fix for bug 519
+ * --Goober5000
+ *
  * Revision 1.7  2005/07/27 18:27:49  Goober5000
  * verified that submode_start_time is updated whenever submode is changed
  * --Goober5000
@@ -524,7 +528,7 @@
  * goal vs. ship type validity
  * 
  * 91    8/12/97 9:58a Hoffoss
- * Fixed ai_update_goal_references() and query_referended_in_ai_goals().
+ * Fixed ai_update_goal_references() and query_referenced_in_ai_goals().
  * 
  * 90    8/12/97 8:01a Allender
  * when adding goals to wing structures, replace the oldest entry of the
@@ -852,6 +856,7 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 	aip->goals[index].signature = -1;
 	aip->goals[index].priority = -1;
 	aip->goals[index].flags = 0;				// must reset the flags since not doing so will screw up goal sorting.
+
 	if ( index == aip->active_goal )
 		aip->active_goal = AI_GOAL_NONE;
 
@@ -899,6 +904,7 @@ void ai_clear_wing_goals( int wingnum )
 		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
 		wingp->ai_goals[i].signature = -1;
 		wingp->ai_goals[i].priority = -1;
+		wingp->ai_goals[i].flags = 0;
 	}
 
 
@@ -958,6 +964,7 @@ void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 			wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
 			wingp->ai_goals[i].signature = -1;
 			wingp->ai_goals[i].priority = -1;
+			wingp->ai_goals[i].flags = 0;
 			break;
 		}
 	}
