@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-07-27 18:27:49 $
+ * $Revision: 1.8 $
+ * $Date: 2005-08-23 09:03:56 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/07/27 18:27:49  Goober5000
+ * verified that submode_start_time is updated whenever submode is changed
+ * --Goober5000
+ *
  * Revision 1.6  2005/07/25 03:13:24  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -1304,7 +1308,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 
 
 // common routine to add a sexpression mission goal to the appropriate goal structure.
-void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
+void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 {
 	int n, node, dummy, op;
 	char *text;
@@ -1315,6 +1319,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 
 	aigp->signature = Ai_goal_signature++;
 
+	aigp->ship_name = NULL;
 	aigp->time = Missiontime;
 	aigp->type = type;
 	aigp->flags = 0;
@@ -1518,6 +1523,18 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp )
 		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", text, aigp->priority, PLAYER_PRIORITY_MIN-1));
 		aigp->priority = PLAYER_PRIORITY_MIN-1;
 	}
+
+	// Goober5000 - since none of the goals act on the actor,
+	// don't assign the goal if the actor's goal target is itself
+	if (aigp->ship_name != NULL && !strcmp(aigp->ship_name, actor_name))
+	{
+		// based on ai_remove_ship_goal, these seem to be the only statements
+		// necessary to cause this goal to "never have been assigned"
+		aigp->ai_mode = AI_GOAL_NONE;
+		aigp->signature = -1;
+		aigp->priority = -1;
+		aigp->flags = 0;
+	}
 }
 
 // adds an ai goal for an individual ship
@@ -1527,7 +1544,7 @@ void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 	int gindex;
 
 	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
-	ai_add_goal_sub_sexp( sexp, type, &aip->goals[gindex] );
+	ai_add_goal_sub_sexp( sexp, type, &aip->goals[gindex], Ships[aip->shipnum].ship_name );
 }
 
 // code to add ai goals to wings.
@@ -1536,7 +1553,7 @@ void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
 	int i;
 	wing *wingp = &Wings[wingnum];
 
-	// add the ai goal for any ship that is currently arrived in the game (only if fred isn't running
+	// add the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {
 		for (i = 0; i < wingp->current_count; i++) {
 			int num = wingp->ship_index[i];
@@ -1552,7 +1569,7 @@ void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
 		int gindex;
 
 		gindex = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
-		ai_add_goal_sub_sexp( sexp, type, &wingp->ai_goals[gindex] );
+		ai_add_goal_sub_sexp( sexp, type, &wingp->ai_goals[gindex], wingp->name );
 	}
 }
 
@@ -1570,9 +1587,18 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 	int gindex;
 	ai_goal *aigp;
 
+#ifndef NDEBUG
+	// Goober5000 - none of the goals act on the actor, as in ai_add_goal_sub_sexp
+	if (!strcmp(name, Ships[aip->shipnum].ship_name))
+	{
+		// not good
+		Int3();
+		return;
+	}
+#endif
+
 	// find an empty slot to put this goal in.
 	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
-
 	aigp = &(aip->goals[gindex]);
 
 	aigp->signature = Ai_goal_signature++;
@@ -1582,6 +1608,8 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 	aigp->flags = AIGF_GOAL_OVERRIDE;
 
 	switch ( goal_type ) {
+
+/* Goober5000 - this seems to not be used
 	case AI_GOAL_DOCK:
 		aigp->ship_name = name;
 		aigp->docker.index = docker_point;
@@ -1591,6 +1619,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 		aigp->ai_mode = AI_GOAL_DOCK;
 		aigp->ai_submode = AIS_DOCK_0;		// be sure to set the submode
 		break;
+*/
 
 	case AI_GOAL_UNDOCK:
 		aigp->ship_name = name;
@@ -1599,11 +1628,15 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 		aigp->ai_submode = AIS_UNDOCK_0;
 		break;
 
+/* Goober5000 - this seems to not be used
 	case AI_GOAL_GUARD:
-		aigp->ai_mode = AI_GOAL_GUARD;
 		if ( wing_name_lookup(name, 1) != -1 )
 			aigp->ai_mode = AI_GOAL_GUARD_WING;
+		else
+			aigp->ai_mode = AI_GOAL_GUARD;
+		aigp->priority = PLAYER_PRIORITY_MIN-1;		// make the priority always less than what the player's is
 		break;
+*/
 
 	case AI_GOAL_REARM_REPAIR:
 		aigp->ai_mode = AI_GOAL_REARM_REPAIR;
@@ -1616,7 +1649,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 
 	default:
 		Int3();		// unsupported internal goal -- see Mike K or Mark A.
-		break;
+		return;
 	}
 
 
