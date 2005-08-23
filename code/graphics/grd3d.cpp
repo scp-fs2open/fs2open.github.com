@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.86 $
- * $Date: 2005-08-23 16:57:28 $
+ * $Revision: 2.87 $
+ * $Date: 2005-08-23 17:06:28 $
  * $Author: matt $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2005/08/23 16:57:28  matt
+ * Fixed another screen save bug relating to having your window positioned offscreen. Still isn't great for when the window is offscreen top left
+ *
  * Revision 2.85  2005/08/23 15:59:51  matt
  * Fixed screen save crash when a popup is called
  *
@@ -1676,12 +1679,12 @@ int gr_d3d_save_screen()
 	typedef struct { unsigned char b,g,r,a; } TmpC;
 
 	if(D3D_32bit) {
-		for(int j = 0; j < (rect_size_y - 1); j++) {
+		for(int j = 0; j < (rect_size_y); j++) {
 		
 			TmpC *src = (TmpC *)  (((char *) src_rect.pBits) + (src_rect.Pitch * j)); 
 			uint *dst = (uint *) (((char *) dst_rect.pBits) + (dst_rect.Pitch * j));
 		
-			for(int i = 0; i < (rect_size_x - 1); i++) {
+			for(int i = 0; i < (rect_size_x); i++) {
 			 	dst[i] = 0;
 				dst[i] |= (uint)(( (int) src[i].r / r_gun.scale ) << r_gun.shift);
 				dst[i] |= (uint)(( (int) src[i].g / g_gun.scale ) << g_gun.shift);
@@ -1689,12 +1692,12 @@ int gr_d3d_save_screen()
 			}
 		}
 	} else {
-		for(int j = 0; j < (rect_size_y - 1); j++) {
+		for(int j = 0; j < (rect_size_y); j++) {
 		
 			TmpC   *src = (TmpC *)  (((char *) src_rect.pBits) + (src_rect.Pitch * j)); 
 			ushort *dst = (ushort *) (((char *) dst_rect.pBits) + (dst_rect.Pitch * j));
 		
-			for(int i = 0; i < (rect_size_x - 1); i++) {
+			for(int i = 0; i < (rect_size_x); i++) {
 			 	dst[i] = 0;
 				dst[i] |= (ushort)(( (int) src[i].r / r_gun.scale ) << r_gun.shift);
 				dst[i] |= (ushort)(( (int) src[i].g / g_gun.scale ) << g_gun.shift);
