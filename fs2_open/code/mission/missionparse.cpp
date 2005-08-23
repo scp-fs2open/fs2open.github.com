@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.103 $
- * $Date: 2005-08-22 22:24:22 $
+ * $Revision: 2.104 $
+ * $Date: 2005-08-23 07:49:24 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2005/08/22 22:24:22  Goober5000
+ * some tweaks to parselo, plus ensure that Unicode files don't crash
+ * --Goober5000
+ *
  * Revision 2.102  2005/08/21 06:19:31  Goober5000
  * clarified the comment on my original move of the wing departure information assignment
  * --Goober5000
@@ -3758,12 +3762,7 @@ void parse_wing(mission *pm)
 				Ships[num].wingnum = wingnum;
 
 		} else {
-			// determine if this ship is a player ship, and deal with it appropriately.
-			if ( !strnicmp(ship_name, NOX("Player "), 7) ) {
-				Error(LOCATION, "Old mission file -- please convert by loading/saving in Fred -- see Allender/Hoffoss for help.");
-			}
-
-			// assign the wing number to the ship -- if the ship has arrived, doulble check that
+			// assign the wing number to the ship -- if the ship has arrived, double check that
 			// there is only one wave of this wing since ships with their own arrival cue cannot be
 			// in a wing with > 1 wave.  Otherwise, find the ship on the ship arrival list and set
 			// their wing number
