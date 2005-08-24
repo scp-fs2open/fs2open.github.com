@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-07-20 02:37:32 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2005-08-24 07:20:36 $
+ * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/07/20 02:37:32  taylor
+ * move the "none.wav" init to event_music_init() so it only runs through once (fixes no mission music when modular tbls are used)
+ *
  * Revision 2.21  2005/06/30 01:48:52  Goober5000
  * * NOX'd none.wav
  * * changed comparisons on none.wav to only look at the first four letters in case
@@ -754,7 +757,7 @@ void event_music_level_init(int force_soundtrack)
 	Check_for_battle_music = 0;
 
 	// Goober5000 - is this FS1 style?
-	Current_soundtrack_fs1_style = stristr(Soundtracks[Current_soundtrack_num].name, "fs1") ? 1 : 0;
+	Current_soundtrack_fs1_style = stristr(Soundtracks[Current_soundtrack_num].name, "FS1") ? 1 : 0;
 
 	if ( Event_music_level_inited ) {
 		if ( force_soundtrack != -1 )  {
