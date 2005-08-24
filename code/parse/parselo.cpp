@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.45 $
+ * $Revision: 2.46 $
  * $Author: Goober5000 $
- * $Date: 2005-08-22 22:24:21 $
+ * $Date: 2005-08-24 07:14:52 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/08/22 22:24:21  Goober5000
+ * some tweaks to parselo, plus ensure that Unicode files don't crash
+ * --Goober5000
+ *
  * Revision 2.44  2005/07/23 21:47:46  Goober5000
  * bah - fixed subsystem comparison
  * --Goober5000
@@ -2508,34 +2512,52 @@ int subsystem_stricmp(const char *str1, const char *str2)
 }
 
 // Goober5000
+// current algorithm adapted from http://www.codeproject.com/string/stringsearch.asp
 char *stristr(const char *str, const char *substr)
 {
-	// check for null
+	// check for null and insanity
 	Assert(str);
 	Assert(substr);
-	if (str == NULL || substr == NULL)
+	if (str == NULL || substr == NULL || *substr == '\0')
 		return NULL;
 
-	// get number of chars to compare
-	unsigned int substr_len = strlen(substr);
+	// save both a lowercase and an uppercase version of the first character of substr
+	char substr_ch_lower = tolower(*substr);
+	char substr_ch_upper = toupper(*substr);
 
-	// sanity
-	if (substr_len == 0)
-		return const_cast<char *>(str);
+	// find the maximum distance to search
+	char *upper_bound = (char *)str + strlen(str) - strlen(substr);
 
-	// iterate the position through the parent string
-	char *pos = const_cast<char *>(str);
-	while (strlen(pos) >= substr_len)
+	// loop through every character of str
+	for (char *start = (char *)str; start <= upper_bound; start++)
 	{
-		// see if the substr appears at this position
-		if (strnicmp(pos, substr, substr_len) == 0)
-			return pos;
+		// check first character of substr
+		if ((*start == substr_ch_upper) || (*start == substr_ch_lower))
+		{
+			// first character matched, so check the rest
+			for (char *str_ch = start+1, *substr_ch = (char *)substr+1; substr_ch != '\0'; str_ch++, substr_ch++)
+			{
+				// character match?
+				if (*str_ch == *substr_ch)
+					continue;
 
-		// advance
-		pos++;
+				// converted character match?
+				if (tolower(*str_ch) == tolower(*substr_ch))
+					continue;
+
+				// mismatch
+				goto stristr_continue_outer_loop;
+			}
+
+			// finished inner loop with success!
+			return start;
+		}
+
+stristr_continue_outer_loop:
+		/* NO-OP */ ;
 	}
 
-	// not found
+	// no match
 	return NULL;
 }
 
