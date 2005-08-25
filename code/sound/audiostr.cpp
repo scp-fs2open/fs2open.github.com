@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-08-25 06:32:42 $
+ * $Revision: 2.23 $
+ * $Date: 2005-08-25 22:33:48 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/08/25 06:32:42  taylor
+ * fix Int3() when we are an OGG and need silence data
+ *
  * Revision 2.21  2005/06/24 19:36:49  taylor
  * we only want to have m_data_offset be 0 for oggs since the seeking callback will account for the true offset
  * only extern the one int we need for the -nosound speech fix rather than including the entire header
@@ -580,6 +583,8 @@ BOOL AudioStream::Create (LPSTR pszFilename, AudioStreamServices * pass)
 				// Buffer size is average data rate times length of buffer
 				// No need for buffer to be larger than wave data though
 				m_cbBufSize = (m_pwavefile->GetUncompressedAvgDataRate () * m_nBufLength) / 1000;
+				// if the requested buffer size is too big then cap it
+				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
 				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
 				// m_cbBufSize = (m_cbBufSize > m_pwavefile->GetDataSize ()) ? m_pwavefile->GetDataSize () : m_cbBufSize;
 
