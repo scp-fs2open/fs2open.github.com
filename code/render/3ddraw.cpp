@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-07-18 03:45:09 $
+ * $Revision: 2.45 $
+ * $Date: 2005-08-25 22:32:55 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/07/18 03:45:09  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.43  2005/05/12 17:49:16  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -454,6 +461,7 @@ int g3_draw_line(vertex *p0,vertex *p1)
 	return 0;
 }
 
+
 //returns true if a plane is facing the viewer. takes the unrotated surface
 //normal of the plane, and a point on it.  The normal need not be normalized
 int g3_check_normal_facing(vec3d *v,vec3d *norm)
@@ -554,6 +562,11 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 	 	return 0;
 	}
 */
+
+	// if we have too many verts to stick into Vbuf0 then bail out and don't draw anything
+	if (nv >= TMAP_MAX_VERTS) 
+		return 0;
+
 	for (i=0;i<nv;i++) {
 		vertex *p;
 
