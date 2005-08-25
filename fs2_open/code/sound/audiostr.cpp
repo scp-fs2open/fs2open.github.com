@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-06-24 19:36:49 $
+ * $Revision: 2.22 $
+ * $Date: 2005-08-25 06:32:42 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/06/24 19:36:49  taylor
+ * we only want to have m_data_offset be 0 for oggs since the seeking callback will account for the true offset
+ * only extern the one int we need for the -nosound speech fix rather than including the entire header
+ *
  * Revision 2.20  2005/06/19 02:45:55  taylor
  * OGG streaming fixes to get data reading right and avoid skipping
  * properly handle seeking in OGG streams
@@ -1694,7 +1698,7 @@ BYTE WaveFile::GetSilenceData (void)
 	BYTE bSilenceData = 0;
 
 	// Silence data depends on format of Wave file
-	if (m_pwfmt_original) {
+	if (m_pwfmt_original || (m_wave_format == OGG_FORMAT_VORBIS)) {
 		if (m_wfmt.wBitsPerSample == 8) {
 			// For 8-bit formats (unsigned, 0 to 255)
 			// Packed DWORD = 0x80808080;
