@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.76 $
- * $Date: 2005-08-20 16:00:03 $
- * $Author: matt $
+ * $Revision: 2.77 $
+ * $Date: 2005-08-25 22:40:03 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2005/08/20 16:00:03  matt
+ * Fix for D3D white squares issue
+ *
  * Revision 2.75  2005/07/19 04:52:56  taylor
  * fix resize fixes
  *
@@ -1903,7 +1906,6 @@ extern int spec;
 bool env_enabled = false;
 extern int cell_shaded_lightmap;
 bool cell_enabled = false;
-extern bool rendering_shockwave;
 void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_scaler )	
 {
 
@@ -2268,16 +2270,6 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 		}else{
 			//non glowmapped
 			set_stage_for_defuse();
-		}
-	}
-
-	if(rendering_shockwave && (flags & TMAP_FLAG_PIXEL_FOG)){
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);//don't fog shockwaves
-		for (i=0; i<nverts; i++ )	{
-			f_float = (gr_screen.fog_far - verts[i]->z) / (gr_screen.fog_far - gr_screen.fog_near);
-			if(f_float < 0.0f)f_float = 0.0f;
-
-			d3d_verts[i].color = D3DCOLOR_RGBA((ubyte)((int)verts[i]->r * f_float), (ubyte)((int)verts[i]->g * f_float), (ubyte)((int)verts[i]->b * f_float), verts[i]->a);
 		}
 	}
 

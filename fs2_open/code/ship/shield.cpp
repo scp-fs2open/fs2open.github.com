@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-07-22 10:18:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.33 $
+ * $Date: 2005-08-25 22:40:03 $
+ * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/07/22 10:18:35  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.31  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -301,7 +305,7 @@ int	Show_shield_mesh = 0;
 //#define	MAX_SHIELD_HITS	20
 #define	MAX_TRIS_PER_HIT	40					//	Number of triangles per shield hit, maximum.
 #define	MAX_SHIELD_HITS	20					//	Maximum number of active shield hits.
-#define	MAX_SHIELD_TRI_BUFFER	(MAX_SHIELD_HITS*20) //	Persistent buffer of triangle comprising all active shield hits.
+#define	MAX_SHIELD_TRI_BUFFER	(MAX_SHIELD_HITS*MAX_TRIS_PER_HIT) //(MAX_SHIELD_HITS*20) //	Persistent buffer of triangle comprising all active shield hits.
 #define	SHIELD_HIT_DURATION	(3*F1_0/4)	//	Duration, in milliseconds, of shield hit effect
 
 #define	SH_UNUSED			-1					//	Indicates an unused record in Shield_hits
@@ -392,7 +396,7 @@ void shield_hit_page_in()
 		load_shield_hit_bitmap();
 	}
 
-	for (i=0; i<MAX_SPECIES; i++ )	{
+	for (i=0; i<True_NumSpecies; i++ )	{
 		if ( Shield_ani[i].first_frame > -1 ) {
 			bm_page_in_xparent_texture( Shield_ani[i].first_frame, Shield_ani[i].nframes );
 		}
@@ -405,8 +409,10 @@ void shield_hit_init()
 {
 	int	i;
 
-	for (i=0; i<MAX_SHIELD_HITS; i++)
+	for (i=0; i<MAX_SHIELD_HITS; i++) {
 		Shield_hits[i].type = SH_UNUSED;
+		Shield_hits[i].objnum = -1;
+	}
 
 	for (i=0; i<MAX_SHIELD_TRI_BUFFER; i++) {
 		Global_tris[i].used = 0;
@@ -729,11 +735,11 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 
 	n = si->species;		
 	// Do some sanity checking
-	Assert( (n >=0) && (n<MAX_SPECIES));
+	Assert( (n >= 0) && (n < True_NumSpecies) );
 
 	// don't try to draw if we don't have an ani
 	if ( Shield_ani[n].first_frame > -1 ) {
-		frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * Shield_ani[n].nframes);
+		frame_num = f2i(Missiontime - Shield_hits[shield_num].start_time) * Shield_ani[n].nframes;
 		if ( frame_num >= Shield_ani[n].nframes )	{
 			frame_num = Shield_ani[n].nframes - 1;
 		} else if ( frame_num < 0 )	{
@@ -751,8 +757,8 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 		// UnknownPlayer : Those foo OGL people ensured this routine would always be executed by making OGL_enabled
 		// evaluated via OR. So we fix this problem by evaluating by AND, which means that if we're not using
 		// either THEN do the low detail shield thing.
-	
-		if ( (!D3D_enabled && !OGL_enabled) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+
+		if ( (!D3D_enabled && !OGL_enabled) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
 			if ( bitmap_id != - 1 ) {
 				render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
 			}

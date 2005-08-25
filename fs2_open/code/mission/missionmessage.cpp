@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-08-11 12:18:53 $
+ * $Revision: 2.43 $
+ * $Date: 2005-08-25 22:40:03 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/08/11 12:18:53  taylor
+ * handle rare cases where anims would get freaky if one happened to still be playing or otherwise queued
+ *
  * Revision 2.41  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -700,7 +703,6 @@ int MessageQ_num;			// keeps track of number of entries on the queue.
 // Persona information
 int Num_personas;
 Persona *Personas = NULL;
-//Persona Personas[MAX_PERSONAS]; // it's dynamic now - taylor
 
 char *Persona_type_names[MAX_PERSONA_TYPES] = 
 {
@@ -1972,7 +1974,6 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 int message_get_persona( ship *shipp )
 {
 	int i = 0, ship_type, count;
-//	int slist[MAX_PERSONAS]; // it's dynamic now - taylor
 	int *slist = new int[Num_personas];
 	memset( slist, 0, sizeof(int) * Num_personas );
 

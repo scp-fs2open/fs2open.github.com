@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-08-25 22:40:03 $
+ * $Author: taylor $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.9  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -364,13 +368,6 @@ extern int Num_builtin_messages;				// from messages.tbl -- index of message loc
 extern int Message_shipnum;					// used to display info on hud when message is sent
 
 // variable, etc for persona information
-/* it's dynamic now - taylor
-#ifndef INF_BUILD
-#define MAX_PERSONAS		13
-#else
-#define MAX_PERSONAS		25
-#endif
-*/
 #define MAX_PERSONA_TYPES		4
 
 // flags for personas.  the type flags must be sequential starting from 0, and must match
@@ -390,7 +387,6 @@ typedef struct persona_s {
 	int species;
 } Persona;
 
-//extern Persona Personas[MAX_PERSONAS]; // it's dynamic now - taylor
 extern Persona *Personas;
 extern int Num_personas;
 

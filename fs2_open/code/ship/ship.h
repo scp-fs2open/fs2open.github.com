@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.101 $
- * $Date: 2005-07-24 06:01:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.102 $
+ * $Date: 2005-08-25 22:40:04 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2005/07/24 06:01:37  wmcoolmon
+ * Multiple shockwaves support.
+ *
  * Revision 2.100  2005/07/21 07:53:14  wmcoolmon
  * Changed $Hull Repair Rate and $Subsystem Repair Rate to be percentages,
  * as well as making them accept all values between -1 and 1
@@ -1433,7 +1436,7 @@ typedef struct ship_info {
 	float	shockwave_speed;						// speed at which shockwave expands, 0 means no shockwave
 	int	shockwave_count;						// the # of total shockwaves
 	char shockwave_pof_file[NAME_LENGTH];			// POF file to load/associate with ship's shockwave
-	int shockwave_moddel;
+	int shockwave_model;
 	char shockwave_name[NAME_LENGTH];
 	int shockwave_info_index;
 

@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-07-25 05:24:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.30 $
+ * $Date: 2005-08-25 22:40:02 $
+ * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/07/25 05:24:17  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.28  2005/07/23 17:27:50  Goober5000
  * remove Bobboau's extra warp thing
  * --Goober5000
@@ -357,11 +361,9 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 
 	if((Warp_model >= 0) && (warp_3d || Cmdline_3dwarp))
 	{
-		float model_Interp_scale_x = radius /20;
-		float model_Interp_scale_y = radius /20;
-		float model_Interp_scale_z = radius /20;
+		float model_Interp_scale_xyz = radius / 20.0f;
 
-		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, texture_bitmap_num, (radius/max_radius) );
+		set_warp_globals(model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, texture_bitmap_num, (radius/max_radius) );
 		
 		float dist = vm_vec_dist_quick( pos, &Eye_position );
 
@@ -372,11 +374,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 
 //	Warp_Map = -1;//un sets the warp map
 
-		model_Interp_scale_x = 1.0f;
-		model_Interp_scale_y = 1.0f;
-		model_Interp_scale_z = 1.0f;
-
-		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, -1.0f);
+		set_warp_globals(1.0f, 1.0f, 1.0f, -1, -1.0f);
 
 /*
 //this is that half done effect that was pissing people off-Bobboau
