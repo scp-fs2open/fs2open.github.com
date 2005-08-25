@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.27 $
- * $Date: 2005-08-16 20:06:24 $
- * $Author: Kazan $
+ * $Revision: 1.28 $
+ * $Date: 2005-08-25 00:48:19 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2005/08/16 20:06:24  Kazan
+ * [hopefully] Fix the bug i introduced in the show memory usage code, and the convergence bug during autopilot [also saves cpu cycles - MANY of them]
+ *
  * Revision 1.26  2005/08/01 09:57:52  taylor
  * never could get Ai_class_names to realloc properly but this does the job just as well
  *
@@ -11670,7 +11673,7 @@ void process_subobjects(int objnum)
 
 	//	Deal with a ship with blown out engines.
 	if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
-		if (sip->flags & (SIF_FIGHTER | SIF_BOMBER)) {
+		if ( (sip->flags & (SIF_FIGHTER | SIF_BOMBER)) && !(shipp->flags & SF_DYING) ) {
 			// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
 			//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
 			//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
