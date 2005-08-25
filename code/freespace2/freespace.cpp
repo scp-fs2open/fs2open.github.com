@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.172 $
- * $Date: 2005-08-20 20:34:49 $
+ * $Revision: 2.173 $
+ * $Date: 2005-08-25 22:40:02 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.172  2005/08/20 20:34:49  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 2.171  2005/08/14 17:20:55  Kazan
  * diabled NEW_MALLOC on windows - it was causing crashing - must have been corrupting it's own heap
  *
@@ -4877,11 +4882,12 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 					vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.vec.uvec, NULL);
 					Viewer_obj = NULL;
 			} else if (Viewer_mode & VM_TOPDOWN) {
-					angles rot_angles = {PI/2,0.0f,0.0f};
+					angles rot_angles = {PI/2.0f,0.0f,0.0f};
 					eye_pos->xyz.x = Viewer_obj->pos.xyz.x;
 					eye_pos->xyz.y = Viewer_obj->pos.xyz.y + Viewer_obj->radius * 25.0f;
 					eye_pos->xyz.z = Viewer_obj->pos.xyz.z;
 					vm_angles_2_matrix(eye_orient, &rot_angles);
+					Viewer_obj = NULL;
 			} else {
 				// get an eye position based upon the correct type of object
 				switch(Viewer_obj->type){

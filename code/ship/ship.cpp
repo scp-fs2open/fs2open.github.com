@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.219 $
- * $Date: 2005-08-08 03:13:53 $
+ * $Revision: 2.220 $
+ * $Date: 2005-08-25 22:40:03 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.219  2005/08/08 03:13:53  taylor
+ * be sure to remove ships from a wing when that ship gets vanished
+ *
  * Revision 2.218  2005/08/03 22:02:38  Goober5000
  * made "stealth" tag more user-friendly, and fixed a bit of punctuation
  * --Goober5000
@@ -2306,7 +2309,7 @@ int parse_ship(bool replace)
 		stuff_int(&sip->shockwave_count);
 	}
 
-	sip->shockwave_moddel = -1;
+	sip->shockwave_model = -1;
 	strcpy(sip->shockwave_pof_file, "");
 	if(optional_string("$Shockwave model:")){
 		stuff_string( sip->shockwave_pof_file, F_NAME, NULL);
@@ -6668,7 +6671,7 @@ void ship_process_post(object * obj, float frametime)
 		//rotate player subobjects since its processed by the ai functions
 		// AL 2-19-98: Fire turret for player if it exists
 		//WMC - changed this to call process_subobjects
-		if ( obj->flags & OF_PLAYER_SHIP && !Player_use_ai)
+		if ( (obj->flags & OF_PLAYER_SHIP) && !Player_use_ai )
 		{
 			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
 			if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
@@ -7080,9 +7083,9 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->modelnum = sip->modelnum;
 
 	if(strcmp(sip->shockwave_pof_file,""))
-		sip->shockwave_moddel = model_load(sip->shockwave_pof_file, 0, NULL);
+		sip->shockwave_model = model_load(sip->shockwave_pof_file, 0, NULL);
 	else
-		sip->shockwave_moddel = -1;
+		sip->shockwave_model = -1;
 	
 	if(strcmp(sip->shockwave_name,""))
 		sip->shockwave_info_index = model_load(sip->shockwave_name, 0, NULL);

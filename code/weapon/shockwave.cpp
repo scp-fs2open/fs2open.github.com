@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-08-07 09:25:55 $
+ * $Revision: 2.19 $
+ * $Date: 2005-08-25 22:40:04 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/08/07 09:25:55  taylor
+ * some minor cleanup
+ * don't load the default 2d shockwave graphics if we have a default 3d shockwave, they won't get used and only take up memory
+ *
  * Revision 2.17  2005/08/05 15:33:45  taylor
  * fix 3-D shockwave frame detection so that it will use the proper number of frames for the animation (not less, not more)
  *
@@ -636,7 +640,6 @@ void shockwave_move(object *shockwave_objp, float frametime)
 //	input:	objp	=>		pointer to shockwave object
 //
 extern int Cmdline_nohtl;
-bool rendering_shockwave = false;
 void shockwave_render(object *objp)
 {
 	shockwave		*sw;
@@ -663,28 +666,18 @@ void shockwave_render(object *objp)
 	}
 
 	if (sw->model > -1) {
-		float model_Interp_scale_x = sw->radius /40;
-		float model_Interp_scale_y = sw->radius /40;
-		float model_Interp_scale_z = sw->radius /40;
+		float model_Interp_scale_xyz = sw->radius / 50.0f;
 
-		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, 1.0f - (sw->radius/sw->outer_radius) );
+		set_warp_globals( model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, -1, 1.0f - (sw->radius/sw->outer_radius) );
 		
 		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
 
 		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
 		gr_set_cull(0);
-		rendering_shockwave = true;
-		model_render( sw->model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL,sw->objnum);
-		rendering_shockwave = false;
+		model_render( sw->model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL, sw->objnum);
 		gr_set_cull(1);
 
-		model_Interp_scale_x = 1.0f;
-		model_Interp_scale_y = 1.0f;
-		model_Interp_scale_z = 1.0f;
-
-
-
-		set_warp_globals(model_Interp_scale_x, model_Interp_scale_y, model_Interp_scale_z, -1, -1.0f);
+		set_warp_globals( 1.0f, 1.0f, 1.0f, -1, -1.0f);
 	}else{
 		if(!Cmdline_nohtl)g3_transfer_vertex(&p, &sw->pos );
 		else g3_rotate_vertex(&p, &sw->pos );

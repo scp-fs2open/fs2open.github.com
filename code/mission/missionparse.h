@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.65 $
- * $Author: Goober5000 $
- * $Date: 2005-07-25 05:24:17 $
+ * $Revision: 2.66 $
+ * $Author: taylor $
+ * $Date: 2005-08-25 22:40:03 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/07/25 05:24:17  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.64  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -587,14 +591,6 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 #define MAX_ALT_TYPE_NAMES				25
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
-
-/* -- it's dynamic now - taylor
-#ifdef FS2_DEMO
-	#define MAX_SUBSYS_STATUS		125
-#else
-	#define MAX_SUBSYS_STATUS		300
-#endif
-*/
 
 #define MAX_SPECIAL_ARRIVAL_ANCHORS	6
 extern char *Special_arrival_anchor_names[MAX_SPECIAL_ARRIVAL_ANCHORS];

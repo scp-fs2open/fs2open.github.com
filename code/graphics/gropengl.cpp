@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.131 $
- * $Date: 2005-08-20 20:34:51 $
+ * $Revision: 2.132 $
+ * $Date: 2005-08-25 22:40:03 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2005/08/20 20:34:51  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 2.130  2005/07/26 08:46:48  taylor
  * Add ability to use specific refresh rate, needs a soon to be updated Launcher to have set via GUI
  *   but this can go in already.  Defaults to, and falls back on, previous behavior and adds some
@@ -2242,8 +2247,6 @@ void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int 
 		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 		return;
 	}
-
-	gr_opengl_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0);
 
 	// render with spec lighting only
 	opengl_default_light_settings(0, 0, 1);
