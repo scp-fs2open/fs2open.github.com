@@ -1,12 +1,16 @@
 /*
  * $Logfile: $
- * $Revision: 1.12 $
- * $Date: 2005-06-24 19:36:49 $
+ * $Revision: 1.13 $
+ * $Date: 2005-08-26 17:05:13 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/06/24 19:36:49  taylor
+ * we only want to have m_data_offset be 0 for oggs since the seeking callback will account for the true offset
+ * only extern the one int we need for the -nosound speech fix rather than including the entire header
+ *
  * Revision 1.11  2005/06/19 02:45:55  taylor
  * OGG streaming fixes to get data reading right and avoid skipping
  * properly handle seeking in OGG streams
@@ -945,10 +949,16 @@ BOOL AudioStream::Create (char *pszFilename)
 				// Calculate sound buffer size in bytes
 				// Buffer size is average data rate times length of buffer
 				// No need for buffer to be larger than wave data though
-				m_cbBufSize = (m_nBufLength/1000) * (m_pwavefile->m_wfmt.wBitsPerSample/8) * m_pwavefile->m_wfmt.nChannels * m_pwavefile->m_wfmt.nSamplesPerSec;
+				m_cbBufSize = (m_pwavefile->GetUncompressedAvgDataRate() * m_nBufLength) / 1000;
+				// cut it down by the number of buffers we rotate with to maintain some measure of sane memory usage
 				m_cbBufSize /= MAX_STREAM_BUFFERS;
+
 				// if the requested buffer size is too big then cap it
-				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize; 
+				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
+
+				// ??? there tends to be static in the audio if m_cbBufSize equals the samples per second, so make it unqual
+				if (m_cbBufSize == m_pwavefile->m_wfmt.nSamplesPerSec)
+					m_cbBufSize -= 1;
 
 //				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
 
