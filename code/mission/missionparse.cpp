@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.105 $
- * $Date: 2005-08-23 09:18:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.106 $
+ * $Date: 2005-08-26 00:56:17 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2005/08/23 09:18:07  Goober5000
+ * ensure init/reset of goals works cleanly
+ * --Goober5000
+ *
  * Revision 2.104  2005/08/23 07:49:24  Goober5000
  * removed a thing I apparently forgot to remove on 2005/07/12
  * --Goober5000
@@ -3125,6 +3129,7 @@ void parse_common_object_data(p_object	*objp)
 	}
 }
 
+extern int Multi_ping_timestamp;
 void parse_objects(mission *pm, int flag)
 {	
 	p_object temp;
@@ -3142,6 +3147,18 @@ void parse_objects(mission *pm, int flag)
 			if(num_ship_original < MAX_SHIP_ORIGINAL){
 				memcpy(&ship_original[num_ship_original++], &temp, sizeof(p_object));
 			}
+
+#ifndef NO_NETWORK
+			// send out a ping if we are multi so that psnet2 doesn't kill us off for a long load
+			// NOTE that we can't use the timestamp*() functions here since they won't increment
+			//      during this loading process
+			if (Game_mode & GM_MULTIPLAYER) {
+				if ( (Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()) ) {
+					multi_ping_send_all();
+					Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
+				}
+			}
+#endif
 		}
 	}
 }

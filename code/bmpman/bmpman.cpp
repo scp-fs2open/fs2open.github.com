@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.60 $
- * $Date: 2005-08-20 20:34:48 $
+ * $Revision: 2.61 $
+ * $Date: 2005-08-26 00:56:16 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/08/20 20:34:48  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 2.59  2005/06/19 02:28:55  taylor
  * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
  * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
@@ -2860,6 +2865,9 @@ void bm_page_in_start()
 	gr_bm_page_in_start();
 }
 
+extern int Multi_ping_timestamp;
+extern void multi_ping_send_all();
+
 void bm_page_in_stop()
 {	
 	int i;	
@@ -2876,14 +2884,14 @@ void bm_page_in_stop()
 	// Load all the ones that are supposed to be loaded for this level.
 	int n = 0;
 
-	#ifdef BMPMAN_NDEBUG
+#ifdef BMPMAN_NDEBUG
 	Bm_ram_freed = 0;
-	#endif
+#endif
 
 	int bm_preloading = 1;
 
 	for (i = 0; i < MAX_BITMAPS; i++)	{
-		if ( bm_bitmaps[i].type != BM_TYPE_NONE  &&  bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET)	{
+		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET) ) {
 			if ( bm_bitmaps[i].preloaded )	{
 #ifdef BMPMAN_SPECIAL_NONDARK
 				// if this is a texture, check to see if a ship uses it
@@ -2922,16 +2930,29 @@ void bm_page_in_stop()
 
 				n++;
 
-				#ifdef BMPMAN_NDEBUG
+#ifdef BMPMAN_NDEBUG
 				if ( Bm_ram_freed )	{
 					nprintf(( "BmpInfo","BMPMAN: Not enough cache memory to load all level bitmaps\n" ));
 					break;
 				}
-				#endif
+#endif
+
+#ifndef NO_NETWORK
+				// send out a ping if we are multi so that psnet2 doesn't kill us off for a long load
+				// NOTE that we can't use the timestamp*() functions here since they won't increment
+				//      during this loading process
+				if (Game_mode & GM_MULTIPLAYER) {
+					if ( (Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()) ) {
+						multi_ping_send_all();
+						Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
+					}
+				}
+#endif
 			} else {
 				bm_unload(bm_bitmaps[i].handle);
 			}
 		}
+
 #ifndef NDEBUG
 		memset(busy_text, 0, MAX_PATH_LEN);
 #ifdef _WIN32
@@ -2940,8 +2961,10 @@ void bm_page_in_stop()
 		snprintf(busy_text, MAX_PATH_LEN-1, "** %s: %s **", NOX("BmpMan"), bm_bitmaps[i].filename);
 #endif // _WIN32
 #endif // NDEBUG
+
 		game_busy(busy_text);
 	}
+
 	nprintf(( "BmpInfo","BMPMAN: Loaded %d bitmaps that are marked as used for this level.\n", n ));
 
 	int total_bitmaps = 0;

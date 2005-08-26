@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.173 $
- * $Date: 2005-08-25 22:40:02 $
+ * $Revision: 2.174 $
+ * $Date: 2005-08-26 00:56:17 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.173  2005/08/25 22:40:02  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.172  2005/08/20 20:34:49  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -1589,6 +1596,8 @@ int Debug_dump_frame_num = 0;
 int Player_died_popup_wait = -1;
 int Player_multi_died_check = -1;
 
+int Multi_ping_timestamp = -1;
+
 // builtin mission list stuff
 #ifdef FS2_DEMO
 	int Game_builtin_mission_count = 6;
@@ -2288,6 +2297,8 @@ void game_level_init(int seed)
 	if(!Is_standalone){
 		game_reset_time();			// resets time, and resets saved time too
 	}
+
+	Multi_ping_timestamp = -1;
 
 	obj_init();						// Must be inited before the other systems
 
