@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-08-21 21:05:53 $
- * $Author: taylor $
+ * $Revision: 2.41 $
+ * $Date: 2005-08-27 00:21:27 $
+ * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/08/21 21:05:53  taylor
+ * fix stats display in debriefing with non-standard resolutions
+ *
  * Revision 2.39  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -2600,6 +2603,9 @@ void debrief_init()
 					multi_display_chat_msg("Unknown Stats Store Request Reply",0,0);
 					break;
 			}
+
+			// refetch to try and resolve the display bug
+			int rescode = GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
 
 		}
 		else

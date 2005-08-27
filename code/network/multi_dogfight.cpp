@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-08-27 00:21:27 $
+ * $Author: Kazan $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.9  2005/07/02 19:45:00  taylor
  * ton of non-standard resolution fixes
  *
@@ -388,6 +392,9 @@ void multi_df_debrief_init()
 				multi_display_chat_msg("Unknown Stats Store Request Reply",0,0);
 				break;
 		}
+
+		// refetch to try and resolve the display bug
+		int rescode = GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
 
 	}
 	else
