@@ -2,13 +2,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.132 $
- * $Date: 2005-08-25 22:40:03 $
- * $Author: taylor $
+ * $Revision: 2.133 $
+ * $Date: 2005-08-29 02:20:56 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2005/08/25 22:40:03  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.131  2005/08/20 20:34:51  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -1037,8 +1044,10 @@ void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
 			opengl_switch_arb(0,0);
 			opengl_switch_arb(1,0);
 			opengl_switch_arb(2,0);
-	
+
 			gr_tcache_set(-1, -1, NULL, NULL );
+
+			GL_current_tex_src = ts;
 			break;
 		
 		case TEXTURE_SOURCE_DECAL:
@@ -1048,7 +1057,8 @@ void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
 			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
 			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
-				
+
+			GL_current_tex_src = ts;
 			//	opengl_set_max_anistropy();		
 		break;
 		
@@ -1066,6 +1076,8 @@ void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
 			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
 			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
+
+			GL_current_tex_src = ts;
 			break;
 		default:
 			return;
@@ -1083,6 +1095,8 @@ void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
 			opengl_switch_arb(2,0);
 	
 			gr_tcache_set(-1, -1, NULL, NULL );
+
+			GL_current_tex_src = ts;
 			break;
 		
 		case TEXTURE_SOURCE_DECAL:
@@ -1093,6 +1107,7 @@ void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
 			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
 			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
 				
+			GL_current_tex_src = ts;
 			//	opengl_set_max_anistropy();		
 		break;
 		
@@ -1104,6 +1119,8 @@ void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
 			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
 			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
+
+			GL_current_tex_src = ts;
 			break;
 		default:
 			return;
@@ -1122,12 +1139,17 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 			opengl_switch_arb(2,0);
 	
 			gr_tcache_set(-1, -1, NULL, NULL );
+
+			GL_current_tex_src = ts;
 			break;
 		
 		case TEXTURE_SOURCE_DECAL:
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+			GL_current_tex_src = ts;
+
 		//	opengl_set_max_anistropy();
 			break;
 		
@@ -1136,6 +1158,9 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+			GL_current_tex_src = ts;
+
 			break;
 		default:
 			return;
@@ -1152,18 +1177,22 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 	switch (ab) {
 		case ALPHA_BLEND_NONE:
 			glBlendFunc(GL_ONE, GL_ZERO);
+			GL_current_alpha_blend = ab;
 			break;
 
 		case ALPHA_BLEND_ALPHA_ADDITIVE:
 			glBlendFunc(GL_ONE, GL_ONE);
+			GL_current_alpha_blend = ab;
 			break;
 
 		case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			GL_current_alpha_blend = ab;
 			break;
 		
 		case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
 			glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+			GL_current_alpha_blend = ab;
 			break;
 	
 		default:
@@ -1174,21 +1203,25 @@ void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_typ
 		case ZBUFFER_TYPE_NONE:
 			glDepthFunc(GL_ALWAYS);
 			glDepthMask(GL_FALSE);
+			GL_current_ztype = zt;
 			break;
 
 		case ZBUFFER_TYPE_READ:
 			glDepthFunc(GL_LESS);
-			glDepthMask(GL_FALSE);	
+			glDepthMask(GL_FALSE);
+			GL_current_ztype = zt;
 			break;
 
 		case ZBUFFER_TYPE_WRITE:
 			glDepthFunc(GL_ALWAYS);
 			glDepthMask(GL_TRUE);
+			GL_current_ztype = zt;
 			break;
 	
 		case ZBUFFER_TYPE_FULL:
 			glDepthFunc(GL_LESS);
 			glDepthMask(GL_TRUE);
+			GL_current_ztype = zt;
 			break;
 	
 		default:
