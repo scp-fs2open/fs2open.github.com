@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.25 $
- * $Date: 2005-08-08 01:19:50 $
- * $Author: taylor $
+ * $Revision: 1.26 $
+ * $Date: 2005-08-29 02:23:04 $
+ * $Author: phreak $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2005/08/08 01:19:50  taylor
+ * hopefully fix the problem that was causing geometry issues in just OGL when using VBOs
+ *
  * Revision 1.24  2005/06/19 02:37:02  taylor
  * general cleanup, remove some old code
  * speed up gr_opengl_flip() just a tad
@@ -960,6 +963,7 @@ void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
 	if (Cmdline_nohtl)
 		return;
 
+	gr_opengl_set_state(GL_current_tex_src, ALPHA_BLEND_NONE, GL_current_ztype);
 	glBegin(GL_LINES);
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 		glSecondaryColor3ubvEXT(GL_zero_3ub);
@@ -984,7 +988,9 @@ void gr_opengl_draw_htl_sphere(float rad)
 	if (quad == NULL)
 		return;
 
- 	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+	gr_opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
+	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+	glSecondaryColor3ubvEXT(GL_zero_3ub);
 
 	// FIXME: opengl_check_for_errors() needs to be modified to work with this at
 	// some point but for now I just don't care so it does nothing
