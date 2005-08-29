@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.11 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-08-29 02:20:56 $
+ * $Author: phreak $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.10  2005/06/19 02:37:02  taylor
  * general cleanup, remove some old code
  * speed up gr_opengl_flip() just a tad
@@ -145,5 +149,9 @@ void opengl_reset_spec_mapping();
 int opengl_check_for_errors();
 
 extern int VBO_ENABLED;
+
+extern gr_texture_source	GL_current_tex_src;
+extern gr_alpha_blend		GL_current_alpha_blend;
+extern gr_zbuffer_type		GL_current_ztype;
 
 #endif
