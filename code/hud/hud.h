@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.14 $
- * $Date: 2005-07-18 03:44:01 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-08-31 07:17:43 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/18 03:44:01  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.13  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -440,8 +448,6 @@ void hud_add_objective_messsage(int type, int status);
 int	hud_team_matches_filter(int team_filter, int ship_team);
 void	hud_maybe_clear_head_area();
 
-int	hud_wing_index_from_ship(int shipnum);
-int	hud_wing_slot_from_name(char *name);
 int	hud_get_dock_time( object *docker_objp );
 void	hud_show_radar();
 void	hud_show_target_model();

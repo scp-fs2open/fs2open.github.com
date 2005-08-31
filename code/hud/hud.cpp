@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-07-22 10:18:38 $
+ * $Revision: 2.53 $
+ * $Date: 2005-08-31 07:17:43 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.51  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -3301,50 +3305,6 @@ void hud_maybe_display_objective_message()
 		}		
 		break;
 	}
-}
-
-// return wing slot (0->3) based on name of ship.
-// Assumes ship name is in the XXXX 1, XXXX 2, XXXX 3, XXXX 4 format
-int hud_wing_slot_from_name(char *name)
-{
-	int	rval;
-	char	num[2];
-
-	num[0]=name[strlen(name)-1];
-	num[1]=0;
-
-	rval = num[0] - '1';
-	Assert(rval >= 0 && rval < 4);
-	return rval;
-}
-
-// return index in starting wings (0->11) for specified ship.
-int hud_wing_index_from_ship(int shipnum)
-{
-	int	i;
-	ship	*shipp;
-
-	shipp = &Ships[shipnum];
-
-	int wing_num=0, wing_slot=0;
-
-	for (i=0; i<3; i++) {
-		if ( Starting_wings[i] < 0 ) {
-			continue;
-		}
-
-		if (shipp->wingnum == Starting_wings[i]) {
-			wing_num=i;
-			break;
-		}
-	}
-
-	if ( i==3 ) {
-		Int3();
-	}
-
-	wing_slot = hud_wing_slot_from_name(shipp->ship_name);
-	return (i*4+wing_slot);
 }
 
 #ifndef NO_NETWORK
