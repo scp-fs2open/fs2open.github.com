@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.28 $
- * $Date: 2005-08-25 00:48:19 $
- * $Author: taylor $
+ * $Revision: 1.29 $
+ * $Date: 2005-08-31 00:59:35 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2005/08/25 00:48:19  taylor
+ * don't let ai keep firing primary and secondary weapons for fighters and bombers if they are dying (fixes player deathroll too)
+ *
  * Revision 1.27  2005/08/16 20:06:24  Kazan
  * [hopefully] Fix the bug i introduced in the show memory usage code, and the convergence bug during autopilot [also saves cpu cycles - MANY of them]
  *
@@ -11090,7 +11093,8 @@ void ai_dock()
 
 	// Make sure we still have a dock goal.
 	// Make sure the object we're supposed to dock with or undock from still exists.
-	if ((aip->active_goal < 0) || (aip->goal_objnum == -1) || (Objects[aip->goal_objnum].signature != aip->goal_signature))
+	if ( ((aip->active_goal < 0) && (aip->submode != AIS_DOCK_4A))
+		|| (aip->goal_objnum == -1)	|| (Objects[aip->goal_objnum].signature != aip->goal_signature) )
 	{
 		ai_cleanup_dock_mode_subjective(Pl_objp);
 	}
