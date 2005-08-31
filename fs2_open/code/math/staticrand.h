@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:15:50 $
+ * $Revision: 2.5 $
+ * $Date: 2005-08-31 06:25:27 $
  * $Author: Goober5000 $
  *
  * header for Static Random functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:15:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -62,7 +66,7 @@ extern int static_rand(int num);
 extern float static_randf(int num);
 extern void static_randvec(int num, vec3d *vp);
 extern float static_randf_range(int num, float min, float max);
-void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient);
+void static_rand_cone(int num, vec3d *out, vec3d *in, float max_angle, matrix *orient = NULL);
 
 // Alternate random number generator that doesn't affect rand() sequence
 
