@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-08-23 09:18:08 $
+ * $Revision: 1.10 $
+ * $Date: 2005-08-31 07:54:33 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/08/23 09:18:08  Goober5000
+ * ensure init/reset of goals works cleanly
+ * --Goober5000
+ *
  * Revision 1.8  2005/08/23 09:03:56  Goober5000
  * fix for bug 519
  * --Goober5000
@@ -683,28 +687,37 @@ char *Ai_goal_text(int goal)
 
 // function to maybe add the form on my wing goal for a player's starting wing.  Called from below and when a
 // player wing arrives.
+// Goober5000 - made more generic
 void ai_maybe_add_form_goal( wing *wingp )
 {
 	int j;
+	char *wing_leader;
+
+	// Goober5000 - the wing leader is now not necessarily the player
+	wing_leader = Ships[wingp->ship_index[wingp->special_ship]].ship_name;
 
 	// iterate through the ship_index list of this wing and check for orders.  We will do
-	// this for all ships in the wing instead of on a wing only basis in cases some ships
+	// this for all ships in the wing instead of on a wing only basis in case some ships
 	// in the wing actually have different orders than others
 	for ( j = 0; j < wingp->current_count; j++ ) {
 		ai_info *aip;
 
 		Assert( wingp->ship_index[j] != -1 );						// get Allender
 
+		// don't process wing leader
+		if (j == wingp->special_ship)
+			continue;
+
 		aip = &Ai_info[Ships[wingp->ship_index[j]].ai_index];
+
 		// don't process Player_ship
 		if ( aip == Player_ai )
 			continue;
 		
-		// it is sufficient enough to check the first goal entry to see if it has a valid
-		// goal
+		// it is sufficient enough to check the first goal entry to see if it has a valid goal
 		if ( aip->goals[0].ai_mode == AI_GOAL_NONE ) {
-			// need to add a form on my wing goal here.  Ships are always forming on the player's wing.
-			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip );
+			// need to add a form on my wing goal here
+			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, wing_leader, aip );
 		}
 	}
 }
