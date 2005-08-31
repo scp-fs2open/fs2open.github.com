@@ -12,10 +12,6 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.124  2005/08/31 00:48:22  Goober5000
- * made spawning missiles work like retail when appropriate
- * --Goober5000
- *
  * Revision 2.123  2005/07/29 10:18:26  taylor
  * safety check for TYPE_D beam weapons, the +Shots: count needs to be at least 1 to avoid various errors
  *
@@ -4302,9 +4298,6 @@ void spawn_child_weapons(object *objp)
 	ushort starting_sig;
 	weapon	*wp;
 	weapon_info	*wip;
-	int		weapon_objnum;
-	vec3d	tvec, pos;
-	matrix	orient, m;
 
 	Assert(objp->type == OBJ_WEAPON);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_WEAPONS));
@@ -4334,18 +4327,17 @@ void spawn_child_weapons(object *objp)
 #endif
 
 	for (i=0; i<wip->spawn_count; i++) {
-
-		vm_vector_2_matrix(&m, &objp->orient.vec.fvec, NULL, NULL);
+		int		weapon_objnum;
+		vec3d	tvec, pos;
+		matrix	orient;
 
 		// for multiplayer, use the static randvec functions based on the network signatures to provide
 		// the randomness so that it is the same on all machines.
 		if ( Game_mode & GM_MULTIPLAYER ) {
-			static_rand_cone(objp->net_signature + i, &tvec,&objp->orient.vec.fvec,wip->spawn_angle,&m);
+			static_rand_cone(objp->net_signature + i, &tvec, &objp->orient.vec.fvec, wip->spawn_angle);
 		} else {
-			vm_vec_random_cone(&tvec,&objp->orient.vec.fvec,wip->spawn_angle,&m);
+			vm_vec_random_cone(&tvec, &objp->orient.vec.fvec, wip->spawn_angle);
 		}
-	
-	
 		vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
 
 		vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
