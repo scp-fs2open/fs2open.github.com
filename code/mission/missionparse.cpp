@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.107 $
- * $Date: 2005-08-31 07:54:32 $
+ * $Revision: 2.108 $
+ * $Date: 2005-08-31 08:09:50 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2005/08/31 07:54:32  Goober5000
+ * Wings will now form on their leader, not necessarily the player.  This is to
+ * account for cases where the player is not the leader of his wing.  It has the
+ * side effect of causing wings that arrive later in the mission to form on *their*
+ * leader rather than the player, but this is probably the preferred behavior (at
+ * least judging from Mike Kulas's comment of 5/9/98).  This does create a
+ * difference from retail AI, but it should be only cosmetic, since ships only form
+ * on a wing until they are ordered (via comm or sexp) to do something else.
+ * --Goober5000
+ *
  * Revision 2.106  2005/08/26 00:56:17  taylor
  * send out multi pings during level load to prevent timeouts on slower computers (does not break network compatibility with older, or retail, clients/servers)
  *
@@ -3463,6 +3473,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	if ( (objnum != -1) && (Game_mode & GM_IN_MISSION) ) {		// if true, we have created at least one new ship.
 		int i, ship_num;
 
+		// Goober5000 - make all wings form on their respective leaders
+		ai_maybe_add_form_goal( wingp );
+
+/*
 		// see if this wing is a player starting wing, and if so, call the maybe_add_form_goal
 		// function to possibly make the wing form on its leader
 		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
@@ -3473,6 +3487,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		if ( i < MAX_STARTING_WINGS ){
 			ai_maybe_add_form_goal( wingp );
 		}
+*/
 
 		mission_log_add_entry( LOG_WING_ARRIVE, wingp->name, NULL, wingp->current_wave );
 		ship_num = wingp->ship_index[0];
@@ -3497,11 +3512,14 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 #ifndef NDEBUG
 		// test code to check to be sure that all ships in the wing are ignoring the same types
-		// of orders from the player
+		// of orders from the leader
 		if ( Fred_running ) {
-			Assert( wingp->ship_index[0] != -1 );
+			Assert( wingp->ship_index[wingp->special_ship] != -1 );
 			int orders = Ships[wingp->ship_index[0]].orders_accepted;
-			for (i = 1; i < wingp->current_count; i++ ) {
+			for (i = 0; i < wingp->current_count; i++ ) {
+				if (i == wingp->special_ship)
+					continue;
+
 				if ( orders != Ships[wingp->ship_index[i]].orders_accepted ) {
 					Warning(LOCATION, "ships in wing %s are ignoring different player orders.  Please find Mark A\nto talk to him about this.", wingp->name );
 					break;

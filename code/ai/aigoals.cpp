@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-08-31 07:54:33 $
+ * $Revision: 1.11 $
+ * $Date: 2005-08-31 08:09:51 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/08/31 07:54:33  Goober5000
+ * Wings will now form on their leader, not necessarily the player.  This is to
+ * account for cases where the player is not the leader of his wing.  It has the
+ * side effect of causing wings that arrive later in the mission to form on *their*
+ * leader rather than the player, but this is probably the preferred behavior (at
+ * least judging from Mike Kulas's comment of 5/9/98).  This does create a
+ * difference from retail AI, but it should be only cosmetic, since ships only form
+ * on a wing until they are ordered (via comm or sexp) to do something else.
+ * --Goober5000
+ *
  * Revision 1.9  2005/08/23 09:18:08  Goober5000
  * ensure init/reset of goals works cleanly
  * --Goober5000
@@ -732,7 +742,15 @@ void ai_post_process_mission()
 	// (2) if they have an order, they are free to act on it.
 	//
 	// So basically, we are checking for (1)
-	if ( !Fred_running ) {
+	if ( !Fred_running )
+	{
+		// Goober5000 - make all wings form on their respective leaders
+		for ( i = 0; i < Num_wings; i++ )
+		{
+			ai_maybe_add_form_goal( &Wings[i] );
+		}
+
+/*
 		for ( i = 0; i < 1; i++ ) {	//	MK, 5/9/98: Used to iterate through MAX_STARTING_WINGS, but this was too many ships forming on player.
 			if ( Starting_wings[i] != -1 ) {
 				wing *wingp;
@@ -743,6 +761,7 @@ void ai_post_process_mission()
 
 			}
 		}
+*/
 	}
 
 	// for every valid ship object, call process_mission_orders to be sure that ships start the
