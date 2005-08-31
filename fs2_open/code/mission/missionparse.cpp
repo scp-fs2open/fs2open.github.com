@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.106 $
- * $Date: 2005-08-26 00:56:17 $
- * $Author: taylor $
+ * $Revision: 2.107 $
+ * $Date: 2005-08-31 07:54:32 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2005/08/26 00:56:17  taylor
+ * send out multi pings during level load to prevent timeouts on slower computers (does not break network compatibility with older, or retail, clients/servers)
+ *
  * Revision 2.105  2005/08/23 09:18:07  Goober5000
  * ensure init/reset of goals works cleanly
  * --Goober5000
@@ -3461,7 +3464,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		int i, ship_num;
 
 		// see if this wing is a player starting wing, and if so, call the maybe_add_form_goal
-		// function to possibly make the wing form on the player
+		// function to possibly make the wing form on its leader
 		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
 			if ( Starting_wings[i] == wingnum ){
 				break;
