@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-08-31 08:09:51 $
+ * $Revision: 1.12 $
+ * $Date: 2005-08-31 08:11:58 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/08/31 08:09:51  Goober5000
+ * All wings will now form on their respective leaders, not just certain starting wings.
+ * If this breaks anything, the old code is commented out.  You know who to yell at. ;)
+ * --Goober5000
+ *
  * Revision 1.10  2005/08/31 07:54:33  Goober5000
  * Wings will now form on their leader, not necessarily the player.  This is to
  * account for cases where the player is not the leader of his wing.  It has the
@@ -745,7 +750,7 @@ void ai_post_process_mission()
 	if ( !Fred_running )
 	{
 		// Goober5000 - make all wings form on their respective leaders
-		for ( i = 0; i < Num_wings; i++ )
+		for ( i = 0; i < num_wings; i++ )
 		{
 			ai_maybe_add_form_goal( &Wings[i] );
 		}
