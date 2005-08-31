@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2005/07/29 10:18:26  taylor
+ * safety check for TYPE_D beam weapons, the +Shots: count needs to be at least 1 to avoid various errors
+ *
  * Revision 2.122  2005/07/24 06:01:37  wmcoolmon
  * Multiple shockwaves support.
  *
@@ -1989,7 +1992,7 @@ int parse_weapon(int subtype, bool replace)
 
 	//read in the spawn angle info
 	//if the weapon isn't a spawn weapon, then this is not going to be used.
-	wip->spawn_angle = 360;
+	wip->spawn_angle = -1;
 	if (optional_string("$Spawn Angle:"))
 	{
 		stuff_float(&wip->spawn_angle);
@@ -4328,12 +4331,27 @@ void spawn_child_weapons(object *objp)
 		vec3d	tvec, pos;
 		matrix	orient;
 
-		// for multiplayer, use the static randvec functions based on the network signatures to provide
-		// the randomness so that it is the same on all machines.
-		if ( Game_mode & GM_MULTIPLAYER ){
-			static_rand_cone(objp->net_signature + i, &tvec,&objp->orient.vec.fvec,wip->spawn_angle,&objp->orient);
-		} else {
-			vm_vec_random_cone(&tvec,&objp->orient.vec.fvec,wip->spawn_angle,&objp->orient);
+		// phreak's code
+		if (wip->spawn_angle > 0)
+		{
+			// for multiplayer, use the static randvec functions based on the network signatures to provide
+			// the randomness so that it is the same on all machines.
+			if ( Game_mode & GM_MULTIPLAYER ) {
+				static_rand_cone(objp->net_signature + i, &tvec,&objp->orient.vec.fvec,wip->spawn_angle,&objp->orient);
+			} else {
+				vm_vec_random_cone(&tvec,&objp->orient.vec.fvec,wip->spawn_angle,&objp->orient);
+			}
+		}
+		// original code
+		else
+		{
+			// for multiplayer, use the static randvec functions based on the network signatures to provide
+			// the randomness so that it is the same on all machines.
+			if ( Game_mode & GM_MULTIPLAYER ) {
+				static_randvec(objp->net_signature + i, &tvec);
+			} else {
+				vm_vec_rand_vec_quick(&tvec);
+			}
 		}
 		vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
 
