@@ -10,13 +10,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.220 $
- * $Date: 2005-08-25 22:40:03 $
- * $Author: taylor $
+ * $Revision: 2.221 $
+ * $Date: 2005-08-31 07:01:40 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.220  2005/08/25 22:40:03  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.219  2005/08/08 03:13:53  taylor
  * be sure to remove ships from a wing when that ship gets vanished
  *
@@ -1824,28 +1831,6 @@ void ship_obj_list_reset_slot(int index)
 	Ship_objs[index].flags = 0;
 	Ship_objs[index].next = NULL;
 	Ship_objs[index].prev = (ship_obj*)-1;
-}
-
-// if the given ship is in my squadron wings
-// Goober5000
-int ship_in_my_squadron(ship *shipp)
-{
-	int i;
-
-	for (i=0; i<MAX_STARTING_WINGS; i++)
-	{
-		if (shipp->wingnum == Starting_wings[i])
-			return 1;
-	}
-
-	for (i=0; i<MAX_TVT_WINGS; i++)
-	{
-		if (shipp->wingnum == TVT_wings[i])
-			return 1;
-	}
-
-	// not in
-	return 0;
 }
 
 // ---------------------------------------------------
@@ -4804,13 +4789,13 @@ void ship_render(object * obj)
 				model_set_insignia_bitmap(Net_players[np_index].m_player->insignia_texture);
 			}
 		}
-		// in single player, we want to render model insignias on all ships in alpha beta and gamma
+		// in single player, we want to render model insignias on all ships in player starting wings
 		// Goober5000 - and also on wings that have their logos set
 		else
 #endif
 		{
-			// if its an object in my squadron
-			if(ship_in_my_squadron(shipp)) {
+			// if its in a player wing
+			if(shipp->flags & SF_FROM_PLAYER_WING) {
 				model_set_insignia_bitmap(Player->insignia_texture);
 			}
 
