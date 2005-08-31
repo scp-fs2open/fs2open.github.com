@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2005/08/31 00:48:22  Goober5000
+ * made spawning missiles work like retail when appropriate
+ * --Goober5000
+ *
  * Revision 2.123  2005/07/29 10:18:26  taylor
  * safety check for TYPE_D beam weapons, the +Shots: count needs to be at least 1 to avoid various errors
  *
@@ -1992,7 +1996,7 @@ int parse_weapon(int subtype, bool replace)
 
 	//read in the spawn angle info
 	//if the weapon isn't a spawn weapon, then this is not going to be used.
-	wip->spawn_angle = -1;
+	wip->spawn_angle = 180;
 	if (optional_string("$Spawn Angle:"))
 	{
 		stuff_float(&wip->spawn_angle);
@@ -4298,6 +4302,9 @@ void spawn_child_weapons(object *objp)
 	ushort starting_sig;
 	weapon	*wp;
 	weapon_info	*wip;
+	int		weapon_objnum;
+	vec3d	tvec, pos;
+	matrix	orient, m;
 
 	Assert(objp->type == OBJ_WEAPON);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_WEAPONS));
@@ -4327,32 +4334,18 @@ void spawn_child_weapons(object *objp)
 #endif
 
 	for (i=0; i<wip->spawn_count; i++) {
-		int		weapon_objnum;
-		vec3d	tvec, pos;
-		matrix	orient;
 
-		// phreak's code
-		if (wip->spawn_angle > 0)
-		{
-			// for multiplayer, use the static randvec functions based on the network signatures to provide
-			// the randomness so that it is the same on all machines.
-			if ( Game_mode & GM_MULTIPLAYER ) {
-				static_rand_cone(objp->net_signature + i, &tvec,&objp->orient.vec.fvec,wip->spawn_angle,&objp->orient);
-			} else {
-				vm_vec_random_cone(&tvec,&objp->orient.vec.fvec,wip->spawn_angle,&objp->orient);
-			}
+		vm_vector_2_matrix(&m, &objp->orient.vec.fvec, NULL, NULL);
+
+		// for multiplayer, use the static randvec functions based on the network signatures to provide
+		// the randomness so that it is the same on all machines.
+		if ( Game_mode & GM_MULTIPLAYER ) {
+			static_rand_cone(objp->net_signature + i, &tvec,&objp->orient.vec.fvec,wip->spawn_angle,&m);
+		} else {
+			vm_vec_random_cone(&tvec,&objp->orient.vec.fvec,wip->spawn_angle,&m);
 		}
-		// original code
-		else
-		{
-			// for multiplayer, use the static randvec functions based on the network signatures to provide
-			// the randomness so that it is the same on all machines.
-			if ( Game_mode & GM_MULTIPLAYER ) {
-				static_randvec(objp->net_signature + i, &tvec);
-			} else {
-				vm_vec_rand_vec_quick(&tvec);
-			}
-		}
+	
+	
 		vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
 
 		vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
