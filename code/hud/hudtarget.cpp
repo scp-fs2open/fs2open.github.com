@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.67 $
- * $Date: 2005-07-25 03:13:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.68 $
+ * $Date: 2005-09-01 04:14:04 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/07/25 03:13:24  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 2.66  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -4319,7 +4325,7 @@ int hud_get_best_primary_bank(float *range)
 		Assert(bank_to_fire >= 0 && bank_to_fire < swp->num_primary_banks);
 		Assert(swp->primary_bank_weapons[bank_to_fire] >= 0 && swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
 		wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
-		weapon_range = wip->max_speed * wip->lifetime;
+		weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
 
 		// don't consider this primary if it's a ballistic that's out of ammo - Goober5000
 		if ( wip->wi_flags2 & WIF2_BALLISTIC )
@@ -4592,7 +4598,8 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		if ( (wip->wi_flags & WIF_HOMING_HEAT) || (wip->wi_flags & WIF_HOMING_ASPECT))
 			return;
 
-		double  max_dist=wip->lifetime*wip->max_speed;
+		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
+
 		if (dist_to_target > max_dist)
 			return;
 	}

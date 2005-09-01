@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.29 $
- * $Date: 2005-08-31 00:59:35 $
- * $Author: Goober5000 $
+ * $Revision: 1.30 $
+ * $Date: 2005-09-01 04:14:03 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2005/08/31 00:59:35  Goober5000
+ * fixed yet another docking bug, based on taylor's original fix :p
+ * --Goober5000
+ *
  * Revision 1.28  2005/08/25 00:48:19  taylor
  * don't let ai keep firing primary and secondary weapons for fighters and bombers if they are dying (fixes player deathroll too)
  *
@@ -4341,7 +4345,7 @@ float compute_time_to_enemy(float dist_to_enemy, object *pobjp, object *eobjp)
 	bank_num = shipp->weapons.current_primary_bank;
 	weapon_num = shipp->weapons.primary_bank_weapons[bank_num];
 	max_laser_speed = Weapon_info[weapon_num].max_speed;
-	max_laser_distance = max_laser_speed * Weapon_info[weapon_num].lifetime;
+	max_laser_distance = MIN((max_laser_speed * Weapon_info[weapon_num].lifetime), Weapon_info[weapon_num].weapon_range);
 
 	//	If pretty far away, use player's speed to predict position, else
 	//	use laser's speed because when close, we care more about hitting
@@ -7162,7 +7166,7 @@ float ai_get_weapon_dist(ship_weapon *swp)
 		return 1000.0f;
 	}
 
-	return Weapon_info[weapon_num].max_speed * Weapon_info[weapon_num].lifetime;
+	return MIN((Weapon_info[weapon_num].max_speed * Weapon_info[weapon_num].lifetime), Weapon_info[weapon_num].weapon_range);
 }
 
 float ai_get_weapon_speed(ship_weapon *swp)
@@ -9399,9 +9403,9 @@ void ai_chase()
 									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
 										firing_range=swip->lssm_lock_range;		//that should be enough
 									else if (swip->wi_flags & WIF_BOMB)
-										firing_range = swip->max_speed * swip->lifetime * 0.75f;
+										firing_range = MIN((swip->max_speed * swip->lifetime * 0.75f), swip->weapon_range);
 									else
-										firing_range = swip->max_speed * swip->lifetime * (Game_skill_level + 1 + aip->ai_class/2)/NUM_SKILL_LEVELS;
+										firing_range = MIN((swip->max_speed * swip->lifetime * (Game_skill_level + 1 + aip->ai_class/2)/NUM_SKILL_LEVELS), swip->weapon_range);
 
 									
 									// reduce firing range in nebula
