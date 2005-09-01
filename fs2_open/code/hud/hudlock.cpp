@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-24 18:31:59 $
+ * $Revision: 2.17 $
+ * $Date: 2005-09-01 04:14:04 $
  * $Author: taylor $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/24 18:31:59  taylor
+ * address possible div-by-0 problem
+ *
  * Revision 2.15  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -587,7 +590,7 @@ int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 	else
 		// calculate the range of the weapon, and only display the lead target indicator when
 		// if the weapon can actually hit the target
-		weapon_range = wip->max_speed * wip->lifetime;
+		weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
 
 	
 

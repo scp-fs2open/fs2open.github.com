@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-07-27 18:27:49 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2005-09-01 04:14:03 $
+ * $Author: taylor $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/07/27 18:27:49  Goober5000
+ * verified that submode_start_time is updated whenever submode is changed
+ * --Goober5000
+ *
  * Revision 1.4  2005/07/25 05:23:33  Goober5000
  * whoops
  * --Goober5000
@@ -1062,7 +1066,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 				Assert(tswp->current_primary_bank < tswp->num_primary_banks);
 				weapon_info	*wip = &Weapon_info[tswp->primary_bank_weapons[tswp->current_primary_bank]];
 
-				if (dist_to_enemy < wip->max_speed * wip->lifetime){
+				if (dist_to_enemy < MIN((wip->max_speed * wip->lifetime), wip->weapon_range)){
 					has_fired = 1;
 					if(! ai_fire_primary_weapon(Pl_objp)){
 						has_fired = -1;
@@ -1101,7 +1105,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 							if (swip->wi_flags2 & WIF2_LOCAL_SSM)
 								firing_range=swip->lssm_lock_range;
 							else
-								firing_range= swip->max_speed * swip->lifetime;
+								firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
 							// reduce firing range of secondaries in nebula
 							extern int Nebula_sec_range;
 							if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {

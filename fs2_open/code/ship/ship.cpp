@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.221 $
- * $Date: 2005-08-31 07:01:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.222 $
+ * $Date: 2005-09-01 04:14:04 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.221  2005/08/31 07:01:40  Goober5000
+ * remove a redundant function
+ * --Goober5000
+ *
  * Revision 2.220  2005/08/25 22:40:03  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -8458,7 +8462,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						{
 							object *target;
 							vec3d predicted_pos;
-							float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
+							float flak_range = MIN((winfo_p->lifetime * winfo_p->max_speed), winfo_p->weapon_range);
 							float range_to_target;
 							float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
 
@@ -8952,7 +8956,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				if ( !Weapon_energy_cheat ) {
 					float max_dist;
 
-					max_dist = wip->lifetime * wip->max_speed;
+					max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
 					if (wip->wi_flags2 & WIF2_LOCAL_SSM){
 						max_dist= wip->lssm_lock_range;
 					}
@@ -12733,7 +12737,7 @@ float ship_get_secondary_weapon_range(ship *shipp)
 		int bank=swp->current_secondary_bank;
 		wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 		if ( swp->secondary_bank_ammo[bank] > 0 ) {
-			srange = wip->max_speed * wip->lifetime;
+			srange = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
 		}
 	}
 
