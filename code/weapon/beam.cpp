@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-07-24 18:35:44 $
- * $Author: taylor $
+ * $Revision: 2.57 $
+ * $Date: 2005-09-03 17:48:21 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/07/24 18:35:44  taylor
+ * proper multi support for fighter beams, already has code to break protocol commented out if we need it,
+ *   decided to skip and beam type checks and let beam_fire() reassign it (should work ok)
+ *
  * Revision 2.55  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -1890,9 +1894,11 @@ void beam_render_all()
 	beam *moveup;	
 	
 	U_offset = U_offset + flFrametime;	//moves the U value of texture coods in beams if desired-Bobboau
-	if(U_offset > 1.0f){
-		U_offset = U_offset - 1.0f;	//keeps it below 1.0-Bobboau
-	}
+
+	//don't wrap since it causes the beam to jump	
+//	if(U_offset > 1.0f){
+//		U_offset = U_offset - 1.0f;	//keeps it below 1.0-Bobboau
+//	}
 
 
 	// traverse through all active beams
