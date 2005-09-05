@@ -15,6 +15,7 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	int retval = DDS_ERROR_NONE;
 	int ct = DDS_UNCOMPRESSED;
 	int bits = 0;
+	int trash;
 
 	if (img_cfp == NULL) {
 		// this better not happen.. ever
@@ -43,25 +44,27 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	if (code != DDS_FILECODE)
 		return DDS_ERROR_BAD_HEADER;
 
-	// read the header
-	cfread(&dds_header, sizeof(DDSURFACEDESC2), 1, ddsfile);
+	// read header variables
+	dds_header.dwSize				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwSize );
+	dds_header.dwFlags				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwFlags );
+	dds_header.dwHeight				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwHeight );
+	dds_header.dwWidth				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwWidth );
+	dds_header.dwPitchOrLinearSize	= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwPitchOrLinearSize );
+	dds_header.dwDepth				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwDepth);
+	dds_header.dwMipMapCount		= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwMipMapCount );
 
-	// swap header variables
-	dds_header.dwSize				= INTEL_INT( dds_header.dwSize );
-	dds_header.dwFlags				= INTEL_INT( dds_header.dwFlags );
-	dds_header.dwHeight				= INTEL_INT( dds_header.dwHeight );
-	dds_header.dwWidth				= INTEL_INT( dds_header.dwWidth );
-	dds_header.dwPitchOrLinearSize	= INTEL_INT( dds_header.dwPitchOrLinearSize );
-	dds_header.dwDepth				= INTEL_INT( dds_header.dwDepth);
-	dds_header.dwMipMapCount		= INTEL_INT( dds_header.dwMipMapCount );
-	dds_header.ddpfPixelFormat.dwSize				= INTEL_INT( dds_header.ddpfPixelFormat.dwSize );
-	dds_header.ddpfPixelFormat.dwFlags				= INTEL_INT( dds_header.ddpfPixelFormat.dwFlags );
-	dds_header.ddpfPixelFormat.dwFourCC				= INTEL_INT( dds_header.ddpfPixelFormat.dwFourCC );
-	dds_header.ddpfPixelFormat.dwRGBBitCount		= INTEL_INT( dds_header.ddpfPixelFormat.dwRGBBitCount );
-	dds_header.ddpfPixelFormat.dwRBitMask			= INTEL_INT( dds_header.ddpfPixelFormat.dwRBitMask );
-	dds_header.ddpfPixelFormat.dwGBitMask			= INTEL_INT( dds_header.ddpfPixelFormat.dwGBitMask );
-	dds_header.ddpfPixelFormat.dwBBitMask			= INTEL_INT( dds_header.ddpfPixelFormat.dwBBitMask );
-	dds_header.ddpfPixelFormat.dwRGBAlphaBitMask	= INTEL_INT( dds_header.ddpfPixelFormat.dwRGBAlphaBitMask );
+	// skip over the crap we don't care about
+	for (int i = 0; i < 11; i++)
+		trash = cfread_uint(ddsfile);
+
+	dds_header.ddpfPixelFormat.dwSize				= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwSize );
+	dds_header.ddpfPixelFormat.dwFlags				= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwFlags );
+	dds_header.ddpfPixelFormat.dwFourCC				= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwFourCC );
+	dds_header.ddpfPixelFormat.dwRGBBitCount		= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwRGBBitCount );
+	dds_header.ddpfPixelFormat.dwRBitMask			= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwRBitMask );
+	dds_header.ddpfPixelFormat.dwGBitMask			= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwGBitMask );
+	dds_header.ddpfPixelFormat.dwBBitMask			= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwBBitMask );
+	dds_header.ddpfPixelFormat.dwRGBAlphaBitMask	= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwRGBAlphaBitMask );
 
 	// calculate the type and size of the data
 	if (dds_header.ddpfPixelFormat.dwFlags & DDPF_FOURCC) {
@@ -171,7 +174,6 @@ int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp)
 
 	// read the header -- if its at this stage, it should be legal.
 	retval = dds_read_header(real_name, cfp, &w, &h, &bits, &ct, &lvl, &size);
-
 	Assert(retval == DDS_ERROR_NONE);
 
 	// this really shouldn't be needed but better safe than sorry
@@ -182,7 +184,7 @@ int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp)
 	cfseek(cfp, DDS_OFFSET, CF_SEEK_SET);
 
 	// read in the data
-	cfread(data, size, 1, cfp);
+	cfread(data, 1, size, cfp);
 
 	if (bpp)
 		*bpp = (ubyte)bits;
