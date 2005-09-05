@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.16 $
+ * $Date: 2005-09-05 09:38:19 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.14  2005/03/15 17:10:58  taylor
  * make sure w,h,bpp are useable before trying to assign values to them
  *
@@ -378,6 +382,7 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 {
 	int idx;
 	ushort pixel;
+	int pixel32;
 	ubyte pal_index;
 	ubyte r, g, b;
 	ubyte al = 0;
@@ -387,8 +392,6 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 		if ( (bytes_per_pixel == 3) || (bytes_per_pixel == 4) ) {
 			// if we are going to a 16-bit destination
 			if (dest_size == 2) {
-				int pixel32;
-
 				memcpy( &pixel32, *src, bytes_per_pixel );
 
 				pixel32 = INTEL_INT(pixel32);
@@ -404,14 +407,21 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 			}
 			// otherwise we stay at what size we already are
 			else {
+				memcpy( &pixel32, *src, bytes_per_pixel );
+
+				if (bytes_per_pixel == 4)
+					pixel32 = INTEL_INT(pixel32);
+
 				// should have it's own alpha settings so just copy it out as is
-				memcpy( *dst, *src, bytes_per_pixel );
+				memcpy( *dst, &pixel32, bytes_per_pixel );
 			}
 		}
 		// 8 or 16 bit
 		else {
 			// stuff the 16 bit pixel
 			memcpy(&pixel, *src, bytes_per_pixel);
+
+			pixel = INTEL_SHORT(pixel);
 						
 			// if the pixel is transparent, make it so...	
 			if(((pixel & 0x7c00) == 0) && ((pixel & 0x03e0) == 0x03e0) && ((pixel & 0x001f) == 0)){

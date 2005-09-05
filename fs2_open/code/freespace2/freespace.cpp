@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.174 $
- * $Date: 2005-08-26 00:56:17 $
+ * $Revision: 2.175 $
+ * $Date: 2005-09-05 09:38:18 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174  2005/08/26 00:56:17  taylor
+ * send out multi pings during level load to prevent timeouts on slower computers (does not break network compatibility with older, or retail, clients/servers)
+ *
  * Revision 2.173  2005/08/25 22:40:02  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -3079,6 +3082,10 @@ void run_launcher()
 #endif
 }
 
+#ifdef APPLE_APP
+char full_path[1024];
+#endif
+
 void game_init()
 {
 
@@ -3107,7 +3114,21 @@ void game_init()
 	// int s2, e2;
 
 	char whee[1024];
+
+#ifdef APPLE_APP
+	// some OSX hackery to drop us out of the APP the binary is run from
+	char *c = NULL;
+	c = strstr(full_path, ".app");
+	if ( c != NULL ) {
+		while (c && (*c != '/'))
+			c--;
+
+		*c = '\0';
+	}
+	strncpy(whee, full_path, 1024);
+#else
 	GetCurrentDirectory(1024, whee);
+#endif
 	strcat(whee, DIR_SEPARATOR_STR);
 	strcat(whee, EXE_FNAME);
 
@@ -8711,6 +8732,11 @@ int main(int argc, char *argv[])
 #endif
 {
 
+#ifdef APPLE_APP
+	// Finder sets the working directory to the root of the drive so we have to get a little creative
+	// to find out where on the disk we should be running from for CFILE's sake.
+	strncpy(full_path, *argv, 1024);
+#endif
 
 #ifdef _WIN32
 #ifdef _DEBUG

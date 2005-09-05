@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2005-09-05 09:38:19 $
+ * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.11  2005/07/07 16:36:58  taylor
  * various compiler warning fixes (some of these from dizzy)
  *
@@ -1234,12 +1238,14 @@ int psnet_rel_ping_compare( const void *arg1, const void *arg2 )
 
 void psnet_rel_send_ack(SOCKADDR *raddr, unsigned int sig, ubyte link_type, float time_sent)
 {
-	int ret;
+	int ret, sig_tmp;
 	reliable_header ack_header;
 	ack_header.type = RNT_ACK;	
 	ack_header.data_len = sizeof(unsigned int);
 	ack_header.send_time = time_sent;
-	memcpy(&ack_header.data,&sig,sizeof(unsigned int));
+	ack_header.send_time = INTEL_FLOAT(&ack_header.send_time);
+	sig_tmp = INTEL_INT(sig);
+	memcpy(&ack_header.data,&sig_tmp,sizeof(unsigned int));
 	switch (link_type) {
 #ifdef _WIN32
 	case NET_IPX:
@@ -1247,7 +1253,7 @@ void psnet_rel_send_ack(SOCKADDR *raddr, unsigned int sig, ubyte link_type, floa
 			ml_string("No IPX in rel_send_ack()");
 			return;
 		}		
-		ret = SENDTO(Unreliable_socket, (char *)&ack_header, RELIABLE_PACKET_HEADER_ONLY_SIZE+sizeof(unsigned int), 0, raddr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+		ret = SENDTO(Unreliable_socket, (char *)&ack_header, RELIABLE_PACKET_HEADER_ONLY_SIZE+ack_header.data_len, 0, raddr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 		break;
 #endif
 	case NET_TCP:
@@ -1255,7 +1261,7 @@ void psnet_rel_send_ack(SOCKADDR *raddr, unsigned int sig, ubyte link_type, floa
 			ml_string("No TCP in rel_send_ack()");
 			return;
 		}
-		ret = SENDTO(Unreliable_socket, (char *)&ack_header, RELIABLE_PACKET_HEADER_ONLY_SIZE+sizeof(unsigned int), 0, raddr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+		ret = SENDTO(Unreliable_socket, (char *)&ack_header, RELIABLE_PACKET_HEADER_ONLY_SIZE+ack_header.data_len, 0, raddr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 		break;
 	default:		
 		ml_string("Unknown protocol type in nw_SendReliable()");
@@ -1369,13 +1375,14 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 		
 			memcpy(rsocket->sbuffers[i]->buffer,data,length);	
 
-			send_header.seq = rsocket->theirsequence;
+			send_header.seq = INTEL_SHORT( rsocket->theirsequence );
 			rsocket->ssequence[i] = rsocket->theirsequence;
 			
 			memcpy(send_header.data,data,length);
-			send_header.data_len = (ushort)length;
+			send_header.data_len = INTEL_SHORT( (ushort)length );
 			send_header.type = RNT_DATA;
 			send_header.send_time = psnet_get_time();
+			send_header.send_time = INTEL_FLOAT( &send_header.send_time ) ;
 			// SOCKADDR_IN * rsockaddr = (SOCKADDR_IN *)&rsocket->addr;
 					
 			if (send_this_packet){
@@ -1563,6 +1570,9 @@ void psnet_rel_work()
 			memset(&d3_rcv_addr,0,sizeof(net_addr));
 			memset(&rcv_addr,0,sizeof(SOCKADDR));
 			bytesin = RECVFROM(Unreliable_socket, (char *)&rcv_buff,sizeof(reliable_header), 0, (SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
+			rcv_buff.seq = INTEL_SHORT( rcv_buff.seq );
+			rcv_buff.data_len = INTEL_SHORT( rcv_buff.data_len );
+			rcv_buff.send_time = INTEL_FLOAT( &rcv_buff.send_time );
 			memcpy(d3_rcv_addr.addr, &tcp_addr->sin_addr.s_addr, 4);
 			d3_rcv_addr.port = tcp_addr->sin_port;
 			d3_rcv_addr.type = NET_TCP;
@@ -1616,7 +1626,7 @@ void psnet_rel_work()
 					//Int3();//See Kevin
 					continue;
 				}
-				psnet_rel_send_ack(&rsocket->addr,rcv_buff.seq,link_type,rcv_buff.send_time);			
+				psnet_rel_send_ack(&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);			
 			}
 			
 			//Find out if this is a packet from someone we were expecting a packet.
@@ -1642,7 +1652,7 @@ void psnet_rel_work()
 					//this is our connection to the server
 					if(Serverconn != 0xffffffff){
 						if(rcv_buff.type == RNT_ACK){
-							int *acknum = (int *)&rcv_buff.data;
+							ushort *acknum = (ushort *)&rcv_buff.data;
 							if(*acknum == (~CONNECTSEQ & 0xffff)){
 								rsocket->status = RNF_CONNECTED;
 								ml_printf("Got ACK for IAMHERE!\n");
@@ -1651,7 +1661,7 @@ void psnet_rel_work()
 						}
 					} else if(rcv_buff.type == RNT_I_AM_HERE){
 						rsocket->status = RNF_CONNECTING;
-						psnet_rel_send_ack(&rsocket->addr,rcv_buff.seq,link_type,rcv_buff.send_time);		
+						psnet_rel_send_ack(&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);		
 						ml_printf("Got IAMHERE!\n");
 						continue;
 					}
@@ -1693,7 +1703,7 @@ void psnet_rel_work()
 					unsigned int *acksig = (unsigned int *)&rcv_buff.data;
 					if(rsocket){
 						if(rsocket->sbuffers[i]){
-							if(rsocket->ssequence[i] == *acksig){								
+							if(rsocket->ssequence[i] == INTEL_INT(*acksig)){								
 								Assert(rsocket->sbuffers[i] != NULL);
 								vm_free(rsocket->sbuffers[i]);
 								rsocket->sbuffers[i] = NULL;	
@@ -1757,7 +1767,7 @@ void psnet_rel_work()
 						}
 					}
 				}
-				psnet_rel_send_ack(&rsocket->addr,rcv_buff.seq,link_type,rcv_buff.send_time);		
+				psnet_rel_send_ack(&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);		
 			}
 			
 		}
@@ -1803,9 +1813,10 @@ void psnet_rel_work()
 				if((rsocket->sbuffers[i]) && (fl_abs((psnet_get_time() - rsocket->timesent[i])) >= retry_packet_time)) {
 					reliable_header send_header;					
 					send_header.send_time = psnet_get_time();
-					send_header.seq = rsocket->ssequence[i];
+					send_header.send_time = INTEL_FLOAT( &send_header.send_time );
+					send_header.seq = INTEL_SHORT( rsocket->ssequence[i] );
 					memcpy(send_header.data,rsocket->sbuffers[i]->buffer,rsocket->send_len[i]);
-					send_header.data_len = (ushort)rsocket->send_len[i];
+					send_header.data_len = INTEL_SHORT( (ushort)rsocket->send_len[i] );
 					send_header.type = RNT_DATA;
 					if(rsocket->connection_type == NET_TCP){
 						rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
@@ -1830,6 +1841,7 @@ void psnet_rel_work()
 			if((rsocket->status == RNF_CONNECTED) && (fl_abs((psnet_get_time() - rsocket->last_packet_sent)) > NETHEARTBEATTIME)) {
 				reliable_header send_header;				
 				send_header.send_time = psnet_get_time();
+				send_header.send_time = INTEL_FLOAT( &send_header.send_time );
 				send_header.seq = 0;
 				send_header.data_len = 0;
 				send_header.type = RNT_HEARTBEAT;
@@ -2087,7 +2099,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			if(bytesin){	
 				ml_string("about to check ack_header.type");
 				if(ack_header.type == RNT_ACK){
-					int *acknum = (int *)&ack_header.data;
+					short *acknum = (short *)&ack_header.data;
 					if(*acknum == CONNECTSEQ){						
 						for(i=1; i<MAXRELIABLESOCKETS; i++){
 							if(Reliable_sockets[i].status==RNF_UNUSED){
