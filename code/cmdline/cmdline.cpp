@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.108 $
- * $Date: 2005-08-01 10:00:39 $
+ * $Revision: 2.109 $
+ * $Date: 2005-09-05 09:33:08 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2005/08/01 10:00:39  taylor
+ * allow for both gamedir and userdir cmdline config files
+ *
  * Revision 2.107  2005/07/25 05:24:16  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000
@@ -665,6 +668,8 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#elif defined(APPLE_APP)
+#include <CoreFoundation/CoreFoundation.h>
 #endif
 
 #include <string.h>
@@ -1144,12 +1149,7 @@ void os_validate_parms(char *cmdline)
 		if (token[0] == '-') {
 			parm_found = 0;
 			for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
-#ifdef _WIN32
 				if (!stricmp(parmp->name, token)) {
-#else
-				// make sure to do a case sensitive check here
-				if (!strcmp(parmp->name, token)) {
-#endif
 					parm_found = 1;
 					break;
 				}
@@ -1162,23 +1162,39 @@ void os_validate_parms(char *cmdline)
 				sprintf(buffer,"Unrecogzined command line parameter %s, continue?",token);
 				if( MessageBox(NULL, buffer, "Warning", MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
 					exit(0);
-#else
-				printf("FS2 Open: The Source Code Project\n");
-				printf("Website: http://freespace.volitionwatch.com/fsscp\n");
-				printf("Mantis (bug reporting): http://mgo.maxgaming.net/mantis/main_page.php\n\n");
-				printf("Usage: fs2 [options]\n");
+#elif defined(APPLE_APP)
+				CFStringRef message;
+				char buffer[128];
+				CFOptionFlags result;
 
-				// not the prettiest thing but the job gets done
-				int STR_SIZE = 25;
-				char space[STR_SIZE];  // max len of exe_params.name + 5 spaces
-				int p=0, m, sp=0;
-				while (exe_params[p].name[0] == '-') {
-					sp = strlen(exe_params[p].name);
-					for (m = 0; m<STR_SIZE; m++) space[m] = ' ';
-					space[STR_SIZE - sp] = '\0';
-					printf("    [ %s ]%s- %s\n", exe_params[p].name, space, exe_params[p].desc);
-					p++;
+				snprintf(buffer, 128, "Unrecognized command line parameter, \"%s\", continue?", token);
+				message = CFStringCreateWithCString(NULL, buffer, kCFStringEncodingASCII);
+
+				if ( CFUserNotificationDisplayAlert(0, kCFUserNotificationPlainAlertLevel, NULL, NULL, NULL, CFSTR("Unknown Command"), message, NULL, CFSTR("Quit"), NULL, &result) )
+					exit(0);
+
+				if (result != kCFUserNotificationDefaultResponse)
+					exit(0);
+#else
+				// if we got a -help, --help, or -h then show the help text, otherwise so unknown option
+				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") ) {
+					printf("FS2 Open: The Source Code Project, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+					printf("Website: http://scp.indiegames.us\n");
+					printf("Mantis (bug reporting): http://lore.maxgaming.net/~scp/mantis/\n\n");
+					printf("Usage: fs2_open [options]\n");
+
+					// not the prettiest thing but the job gets done
+					static const int STR_SIZE = 25;  // max len of exe_params.name + 5 spaces
+					int p=0, sp=0;
+					while (exe_params[p].name[0] == '-') {
+						sp = strlen(exe_params[p].name);
+						printf("    [ %s ]%*s- %s\n", exe_params[p].name, (STR_SIZE - sp - 1), NOX(" "), exe_params[p].desc);
+						p++;
+					}
+				} else {
+					printf("Unrecognized command line parameter \"%s\".  Exiting...\n", token);
 				}
+				printf("\n");
 				exit(0);
 #endif
 			}
@@ -1201,6 +1217,20 @@ void os_init_cmdline(char *cmdline)
 	// the command line will take precedence
 #ifdef _WIN32
 	fp = fopen("data\\cmdline_fso.cfg", "rt");
+#elif defined(APPLE_APP)
+	extern char full_path[1024];
+	char *c = NULL, data_path[1024];
+
+	c = strstr(full_path, ".app");
+	if ( c != NULL ) {
+		while (c && (*c != '/'))
+			c--;
+		
+		*c = '\0';
+	}
+	snprintf(data_path, 1024, "%s/data/cmdline_fso.cfg", full_path);
+
+	fp = fopen(data_path, "rt");
 #else
 	fp = fopen("data/cmdline_fso.cfg", "rt");
 #endif
