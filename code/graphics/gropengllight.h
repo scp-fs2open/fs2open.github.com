@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.6 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 1.7 $
+ * $Date: 2005-09-05 09:36:41 $
+ * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.5  2005/04/12 02:04:56  phreak
  * gr_set_ambient_light() function for the ambient light sliders in FRED
  *
@@ -48,6 +52,9 @@
 #ifndef _GROPENGLLIGHT_H
 #define _GROPENGLLIGHT_H
 
+#include "graphics/gropengl.h"
+
+
 #define MAX_LIGHTS 256
 
 enum
@@ -62,7 +69,7 @@ extern struct opengl_light opengl_lights[MAX_LIGHTS];
 extern bool active_light_list[MAX_LIGHTS];
 extern int *currently_enabled_lights;
 extern bool lighting_is_enabled;
-extern int GL_max_lights;
+extern GLint GL_max_lights;
 extern int active_gl_lights;
 extern int n_active_gl_lights;
 extern int GL_center_alpha;

@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.10 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 1.11 $
+ * $Date: 2005-09-05 09:36:41 $
+ * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.9  2005/04/24 12:56:43  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -78,13 +82,14 @@
 #define _GROPENGLTEXTURE_H
 
 #include "globalincs/pstypes.h"
+#include "graphics/gropengl.h"
 
 
 //turns on/off GL_TEXTUREx_ARB
 void opengl_switch_arb(int unit, int state);
 
 typedef struct tcache_slot_opengl {
-	uint	texture_handle;
+	GLuint	texture_handle;
 	float	u_scale, v_scale;
 	int	bitmap_id;
 	int	size;
@@ -98,9 +103,9 @@ extern int GL_texture_sections;
 extern int GL_texture_ram;
 extern int GL_frame_count;
 extern int GL_min_texture_width;
-extern int GL_max_texture_width;
+extern GLint GL_max_texture_width;
 extern int GL_min_texture_height;
-extern int GL_max_texture_height;
+extern GLint GL_max_texture_height;
 extern int GL_square_textures;
 extern int GL_textures_in;
 extern int GL_textures_in_frame;
@@ -109,7 +114,7 @@ extern int GL_last_detail;
 extern int GL_last_bitmap_type;
 extern int GL_last_section_x;
 extern int GL_last_section_y;
-extern int GL_supported_texture_units;
+extern GLint GL_supported_texture_units;
 extern int GL_should_preload;
 
 
