@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.133 $
- * $Date: 2005-08-29 02:20:56 $
- * $Author: phreak $
+ * $Revision: 2.134 $
+ * $Date: 2005-09-05 09:36:41 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2005/08/29 02:20:56  phreak
+ * Record state changes in gr_opengl_set_state()
+ *
  * Revision 2.132  2005/08/25 22:40:03  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -997,7 +1000,14 @@ void opengl_go_fullscreen(HWND wnd)
 #else
 	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) ) {
 		os_suspend();
-		SDL_WM_ToggleFullScreen( SDL_GetVideoSurface() );
+	//	SDL_WM_ToggleFullScreen( SDL_GetVideoSurface() );
+		if ( (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, 0, SDL_OPENGL | SDL_FULLSCREEN)) == NULL ) {
+			mprintf(("Couldn't go fullscreen!\n"));
+			if ( (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, 0, SDL_OPENGL)) == NULL ) {
+				mprintf(("Couldn't drop back to windowed mode either!\n"));
+				exit(1);
+			}
+		}
 		os_resume();
 	}
 #endif
@@ -3365,7 +3375,7 @@ void gr_opengl_bitmap_internal(int x,int y,int w,int h,int sx,int sy)
 {
 
 	//int i,j,k;
-	unsigned int tex=0;			//gl texture number
+	GLuint tex=0;			//gl texture number
 
 	bitmap * bmp;
 	int size;
@@ -4063,8 +4073,8 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	ver = (char *)glGetString(GL_VERSION);
 	sscanf(ver, "%d.%d", &major, &minor);
 
-	if ( (major <= REQUIRED_GL_MAJOR_VERSION) && (minor < REQUIRED_GL_MINOR_VERSION) ) {
-		Error(LOCATION,"Current GL Version of %i.%i is less than the required version of %i.%i\nSwitch video modes or update your drivers.", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
+	if ( (major < REQUIRED_GL_MAJOR_VERSION) || ((major <= REQUIRED_GL_MAJOR_VERSION) && (minor < REQUIRED_GL_MINOR_VERSION)) ) {
+		Error(LOCATION,"Current GL Version of %i.%i is less than the required version of %i.%i.\nSwitch video modes or update your drivers.", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
 	}
 
 	OGL_enabled = 1;

@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.26 $
- * $Date: 2005-08-29 02:23:04 $
- * $Author: phreak $
+ * $Revision: 1.27 $
+ * $Date: 2005-09-05 09:36:41 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2005/08/29 02:23:04  phreak
+ * Get rid of alpha blending when using the htl drawing fuctions for lines and spheres.
+ * Right now, gr_opengl_draw_htl_line and gr_opengl_draw_htl_sphere are only used in fred, so
+ * it shouldn't change anything critical
+ *
  * Revision 1.25  2005/08/08 01:19:50  taylor
  * hopefully fix the problem that was causing geometry issues in just OGL when using VBOs
  *
@@ -176,8 +181,8 @@ static int GL_htl_2d_matrix_set = 0;
 
 int GL_vertex_data_in = 0;
 
-int GL_max_elements_vertices = 4096;
-int GL_max_elements_indices = 4096;
+GLint GL_max_elements_vertices = 4096;
+GLint GL_max_elements_indices = 4096;
 
 
 struct opengl_vertex_buffer
@@ -188,7 +193,7 @@ struct opengl_vertex_buffer
 	int n_prim;
 	int n_verts;
 	float *array_list;	// interleaved array
-	uint vbo;			// buffer for VBO
+	GLuint vbo;			// buffer for VBO
 	uint flags;			// FVF
 	int vbo_size;
 };
@@ -216,9 +221,9 @@ int opengl_find_first_free_buffer()
 
 int opengl_mod_depth()
 {
-	int mv;
+	GLint mv;
 	glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &mv);
-	return mv;
+	return (int)mv;
 }
 
 void gr_opengl_set_buffer(int idx)
@@ -244,7 +249,7 @@ uint opengl_create_vbo(uint size, GLfloat *data)
 	// Kazan: A) This makes that if (buffer_name) work correctly (false = 0, true = anything not 0)
 	//				if glGenBuffersARB() doesn't initialized it for some reason
 	//        B) It shuts up MSVC about may be used without been initalized
-	uint buffer_name=0;
+	GLuint buffer_name=0;
 
 #ifndef GL_NO_HTL
 
@@ -264,7 +269,7 @@ uint opengl_create_vbo(uint size, GLfloat *data)
 
 #endif // GL_NO_HTL
 
-	return buffer_name;
+	return (int)buffer_name;
 }
 
 int gr_opengl_make_buffer(poly_list *list, uint flags)

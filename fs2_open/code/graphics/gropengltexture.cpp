@@ -10,13 +10,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.24 $
- * $Date: 2005-06-19 02:37:02 $
+ * $Revision: 1.25 $
+ * $Date: 2005-09-05 09:36:41 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2005/06/19 02:37:02  taylor
+ * general cleanup, remove some old code
+ * speed up gr_opengl_flip() just a tad
+ * inverted gamma slider fix that Sticks made to D3D
+ * possible fix for ATI green screens
+ * move opengl_check_for_errors() out of gropentnl so we can use it everywhere
+ * fix logged OGL info from debug builds to be a little more readable
+ * if an extension is found but required function is not then fail
+ * try to optimize glDrawRangeElements so we are not rendering more than the card is optimized for
+ * some 2d matrix usage checks
+ *
  * Revision 1.23  2005/06/03 06:44:17  taylor
  * cleanup of gr_bitmap since it's the same for D3D and OGL, skip if GR_STUB though
  * fix resize/rendering issue when detail culling is used with optimized opengl_create_texture_sub()
@@ -159,16 +170,16 @@ ubyte Tex_used_this_frame[MAX_BITMAPS];
 int GL_texture_ram = 0;
 int GL_frame_count = 0;
 int GL_min_texture_width = 0;
-int GL_max_texture_width = 0;
+GLint GL_max_texture_width = 0;
 int GL_min_texture_height = 0;
-int GL_max_texture_height = 0;
+GLint GL_max_texture_height = 0;
 int GL_square_textures = 0;
 int GL_textures_in = 0;
 int GL_textures_in_frame = 0;
 int GL_last_bitmap_id = -1;
 int GL_last_detail = -1;
 int GL_last_bitmap_type = -1;
-int GL_supported_texture_units = 2;
+GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
 
 extern int vram_full;

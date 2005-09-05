@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.12 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 1.13 $
+ * $Date: 2005-09-05 09:36:41 $
+ * $Author: taylor $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.11  2005/06/19 02:37:02  taylor
  * general cleanup, remove some old code
  * speed up gr_opengl_flip() just a tad
@@ -85,8 +89,8 @@
 #include "globalincs/pstypes.h"
 
 
-extern int GL_max_elements_vertices;
-extern int GL_max_elements_indices;
+extern GLint GL_max_elements_vertices;
+extern GLint GL_max_elements_indices;
 
 struct poly_list;
 

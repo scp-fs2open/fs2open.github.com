@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-05-23 05:56:26 $
+ * $Revision: 1.18 $
+ * $Date: 2005-09-05 09:36:41 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/05/23 05:56:26  taylor
+ * Jens, again:
+ *  - compiler warning fixes
+ *  - sanity and readability fixes for bmpman
+ *
  * Revision 1.16  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -135,7 +140,7 @@ extern double specular_exponent_value;
 
 extern int Cmdline_rlm;
 
-int GL_max_lights = 0;
+GLint GL_max_lights = 0;
 
 // OGL defaults
 static const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
