@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.222 $
- * $Date: 2005-09-01 04:14:04 $
- * $Author: taylor $
+ * $Revision: 2.223 $
+ * $Date: 2005-09-05 09:02:08 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.222  2005/09/01 04:14:04  taylor
+ * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
+ *
  * Revision 2.221  2005/08/31 07:01:40  Goober5000
  * remove a redundant function
  * --Goober5000
@@ -4638,7 +4641,7 @@ void ship_render(object * obj)
 			}
 		}		
 
-		if(!(si->flags2 & SIF2_SHOW_SHIP_MODEL))
+		if(!(si->flags2 & SIF2_SHOW_SHIP_MODEL) && !(Viewer_mode & VM_TOPDOWN))
 		{
 			return;
 		}
