@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-08-20 20:34:50 $
+ * $Revision: 2.54 $
+ * $Date: 2005-09-05 09:38:18 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/08/20 20:34:50  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 2.52  2005/07/18 03:44:00  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -718,11 +723,11 @@
 // 3dnow stuff
 // #include "amd3d.h"
 
-#ifdef SCP_UNIX
+#if defined(SCP_UNIX) && !defined(__APPLE__)
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
 #endif
-#endif // SCP_UNIX
+#endif // SCP_UNIX && !__APPLE__
 
 // Includes for different rendering systems
 #include "graphics/grd3dsetup.h"
@@ -1229,7 +1234,7 @@ done_checking_cpuid:
 	*katmai = 1;
 
 #elif ( SDL_VERSION_ATLEAST(1, 2, 7) )
-
+#ifndef __APPLE__
 	// can't get CPU family yet
 
 	if ( SDL_HasMMX() )
@@ -1240,7 +1245,7 @@ done_checking_cpuid:
 
 	if ( SDL_HasSSE() )
 		*katmai = 1;
-
+#endif // __APPLE__
 #else
 	
 	STUB_FUNCTION;

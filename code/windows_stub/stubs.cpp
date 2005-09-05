@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.18 $
- * $Date: 2005-08-14 21:01:59 $
- * $Author: Kazan $
+ * $Revision: 2.19 $
+ * $Date: 2005-09-05 09:38:19 $
+ * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/08/14 21:01:59  Kazan
+ * I'm stupid, sorry - fixed release-build-crash
+ *
  * Revision 2.17  2005/06/22 15:18:58  taylor
  * make sure that _mkdir() will return an error if the path is invalid
  *
@@ -69,6 +72,10 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include "SDL.h"
+
+#if defined(APPLE_APP)
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 #if defined(HAVE_MALLOC_H)
 #include <malloc.h>
@@ -170,6 +177,16 @@ void Error( char * filename, int line, char * format, ... )
 	vsnprintf(buffer_tmp, 199, format, args);
 	va_end(args);
 
+#if defined(APPLE_APP)
+	CFStringRef AsMessage;
+	char AsText[1024];
+	CFOptionFlags result;
+
+	snprintf(AsText, 1024, "Error: %s\n\nFile: %s\nLine %d\n", buffer_tmp, filename, line);
+	AsMessage = CFStringCreateWithCString(NULL, AsText, kCFStringEncodingASCII);
+
+	CFUserNotificationDisplayAlert(0, kCFUserNotificationStopAlertLevel, NULL, NULL, NULL, CFSTR("Error!"), AsMessage, CFSTR("Exit"), NULL, NULL, &result);
+#else
 	slen = strlen(buffer_tmp);
 
 	// strip out the newline char so the output looks better
@@ -191,6 +208,7 @@ void Error( char * filename, int line, char * format, ... )
 
 	// Order UP!!
 	fprintf(stderr, "ERROR: \"%s\" at %s:%d\n", buffer, filename, line);
+#endif
 
 	abort();
 }

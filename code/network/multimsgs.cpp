@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-07-31 01:32:21 $
+ * $Revision: 2.42 $
+ * $Date: 2005-09-05 09:38:19 $
  * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/07/31 01:32:21  taylor
+ * few data type fixes, was only a problem for big-endian systems as little-endian doesn't really care about this
+ *
  * Revision 2.40  2005/07/24 18:35:43  taylor
  * proper multi support for fighter beams, already has code to break protocol commented out if we need it,
  *   decided to skip and beam type checks and let beam_fire() reassign it (should work ok)
@@ -1932,7 +1935,7 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	BUILD_HEADER(ACCEPT);	
 	
 	// add the accept code
-	ADD_DATA(code);
+	ADD_INT(code);
 	
 	// add code specific accept data
 	if (code & ACCEPT_INGAME) {
@@ -1964,16 +1967,16 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	}
 
 	// add the current skill level setting on the host
-	ADD_DATA(Game_skill_level);
+	ADD_INT(Game_skill_level);
 
 	// add this guys player num 
-	ADD_DATA(new_player_num);
+	ADD_INT(new_player_num);
 
 	// add his player id
-	ADD_DATA(Net_players[new_player_num].player_id);
+	ADD_SHORT(Net_players[new_player_num].player_id);
 
 	// add netgame type flags
-	ADD_DATA(Netgame.type_flags);
+	ADD_INT(Netgame.type_flags);
 	
 //#ifndef NDEBUG
 	// char buffer[100];

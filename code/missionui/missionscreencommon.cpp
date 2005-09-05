@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.24 $
+ * $Date: 2005-09-05 09:38:18 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.22  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1560,7 +1564,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		if ( Wl_pool[i] > 0 ) {
 			block[offset++] = (ubyte)i;
-			ishort = (short)Wl_pool[i];
+			ishort = INTEL_SHORT( (short)Wl_pool[i] );
 			memcpy(block+offset, &ishort, sizeof(short));
 			offset += sizeof(short);
 		}
@@ -1587,7 +1591,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 			}
 
 			Assert( Wss_slots[i].wep_count[j] < SHRT_MAX );
-			ishort = short(Wss_slots[i].wep_count[j]);
+			ishort = INTEL_SHORT( (short)Wss_slots[i].wep_count[j] );
 
 			memcpy(&(block[offset]), &(ishort), sizeof(short) );
 			offset += sizeof(short);
@@ -1613,6 +1617,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 	}
 #endif
 
+	player_id = INTEL_SHORT( player_id );
 	memcpy(block+offset,&player_id,sizeof(player_id));
 	offset += sizeof(player_id);
 
@@ -1666,7 +1671,7 @@ int restore_wss_data(ubyte *block)
 	
 		memcpy(&ishort, block+offset, sizeof(short));
 		offset += sizeof(short);
-		Wl_pool[b1] = ishort;
+		Wl_pool[b1] = INTEL_SHORT( ishort );
 	}
 
 	for ( i=0; i<MAX_WSS_SLOTS; i++ ) {
@@ -1686,6 +1691,7 @@ int restore_wss_data(ubyte *block)
 			}
 		
 			memcpy( &ishort, &(block[offset]), sizeof(short) );
+			ishort = INTEL_SHORT( ishort );
 			Wss_slots[i].wep_count[j] = (int)ishort;
 			offset += sizeof(short);
 		}
@@ -1700,6 +1706,7 @@ int restore_wss_data(ubyte *block)
 
 	// read in the player address
 	memcpy(&player_id,block+offset,sizeof(player_id));
+	player_id = INTEL_SHORT( player_id );
 	offset += sizeof(short);
 	
 #ifndef NO_NETWORK

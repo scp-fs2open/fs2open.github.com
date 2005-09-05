@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.13 $
- * $Date: 2005-08-26 17:05:13 $
+ * $Revision: 1.14 $
+ * $Date: 2005-09-05 09:38:19 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/08/26 17:05:13  taylor
+ * fix strange static issue experienced with TBP briefing voices
+ *
  * Revision 1.12  2005/06/24 19:36:49  taylor
  * we only want to have m_data_offset be 0 for oggs since the seeking callback will account for the true offset
  * only extern the one int we need for the -nosound speech fix rather than including the entire header
@@ -818,6 +821,19 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 		m_data_bytes_left -= num_bytes_read;
 		m_nBytesPlayed += num_bytes_read;
 		uncompressed_bytes_written = num_bytes_read;
+#if BYTE_ORDER == BIG_ENDIAN
+		if ( m_wave_format == WAVE_FORMAT_PCM ) {
+			// swap 16-bit sound data
+			if (m_wfmt.wBitsPerSample == 16) {
+				ushort *swap_tmp;
+
+				for (uint i=0; i<uncompressed_bytes_written; i=i+2) {
+					swap_tmp = (ushort*)((ubyte*)dest_buf + i);
+					*swap_tmp = INTEL_SHORT(*swap_tmp);
+				}
+			}
+		}
+#endif
 		goto READ_DONE;
 	}
     

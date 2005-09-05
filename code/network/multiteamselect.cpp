@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-22 03:53:31 $
+ * $Revision: 2.16 $
+ * $Date: 2005-09-05 09:38:19 $
  * $Author: taylor $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/22 03:53:31  taylor
+ * fix crash on commit in the multi ship selection screen
+ * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
+ * fix unsized text in input boxes (fixed the real problem earlier but forgot to remove this old fix)
+ *
  * Revision 2.14  2005/07/18 03:45:08  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -3053,7 +3058,7 @@ void send_pslot_update_packet(int team,int code,int sound)
 
 				// if there's a player, add his address
 				if(val){
-					ADD_DATA(Multi_ts_team[team].multi_ts_player[idx]->player_id);
+					ADD_SHORT(Multi_ts_team[team].multi_ts_player[idx]->player_id);
 
 					// should also update his p_info settings locally
 					Multi_ts_team[team].multi_ts_player[idx]->p_info.ship_class = Wss_slots_teams[team][idx].ship_class;
