@@ -1,13 +1,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.19 $
- * $Date: 2005-09-05 09:38:19 $
+ * $Revision: 2.20 $
+ * $Date: 2005-09-06 05:32:12 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/09/05 09:38:19  taylor
+ * merge of OSX tree
+ * a lot of byte swaps were still missing, will hopefully be fully network compatible now
+ *
  * Revision 2.18  2005/08/14 21:01:59  Kazan
  * I'm stupid, sorry - fixed release-build-crash
  *
@@ -123,7 +127,7 @@ void WinAssert(char * text, char *filename, int line)
 {
 	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n", text, filename, line);
 
-	abort();
+	exit(EXIT_FAILURE);
 }
 
 // standard warning message
@@ -210,7 +214,7 @@ void Error( char * filename, int line, char * format, ... )
 	fprintf(stderr, "ERROR: \"%s\" at %s:%d\n", buffer, filename, line);
 #endif
 
-	abort();
+	exit(EXIT_FAILURE);
 }
 
 
