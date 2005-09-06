@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-02-04 10:12:32 $
+ * $Revision: 2.9 $
+ * $Date: 2005-09-06 02:40:24 $
  * $Author: taylor $
  *
  * code to deal with pcx files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/02/04 10:12:32  taylor
+ * merge with Linux/OSX tree - p0204
+ *
  * Revision 2.7  2004/10/31 22:00:57  taylor
  * new bmpman merge support, add PreProcDefines.h a few new places
  *
@@ -721,6 +724,14 @@ int pcx_read_bitmap_32(char *real_filename, ubyte *org_data )
 		return PCX_ERROR_OPENING;
 	}
 
+	header.Xmin = INTEL_SHORT( header.Xmin );
+	header.Ymin = INTEL_SHORT( header.Ymin );
+	header.Xmax = INTEL_SHORT( header.Xmax );
+	header.Ymax = INTEL_SHORT( header.Ymax );
+	header.Hdpi = INTEL_SHORT( header.Hdpi );
+	header.Vdpi = INTEL_SHORT( header.Vdpi );
+	header.BytesPerLine = INTEL_SHORT( header.BytesPerLine );
+
 	// Is it a 256 color PCX file?
 	if ((header.Manufacturer != 10)||(header.Encoding != 1)||(header.Nplanes != 1)||(header.BitsPerPixel != 8)||(header.Version != 5))	{
 		cfclose( PCXfile );
@@ -744,8 +755,12 @@ int pcx_read_bitmap_32(char *real_filename, ubyte *org_data )
 	buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
 
 	count = 0; 
-	
-	typedef struct {ubyte b,g,r,a;} COLOR32;
+
+#if BYTE_ORDER == BIG_ENDIAN
+	typedef struct { ubyte a, r, g, b; } COLOR32;
+#else
+	typedef struct { ubyte b, g, r, a; } COLOR32;
+#endif
 
 	for (row=0; row < src_ysize;row++)      {
 	
