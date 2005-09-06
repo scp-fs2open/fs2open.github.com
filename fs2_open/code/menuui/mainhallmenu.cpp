@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-07-22 10:18:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2005-09-06 17:26:39 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/07/22 10:18:36  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.33  2005/07/18 03:45:07  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -1134,7 +1138,10 @@ void main_hall_init(int main_hall_num)
 	// set the placement of the mouse cursor (start at the ready room)
 	Main_hall_mouse_region = -1;
 	Main_hall_last_clicked_region = READY_ROOM_REGION;	
-	mouse_set_pos(Main_hall->door_anim_coords[READY_ROOM_REGION][2],Main_hall->door_anim_coords[READY_ROOM_REGION][3]);	
+	int mx = Main_hall->door_anim_coords[READY_ROOM_REGION][2];
+	int my = Main_hall->door_anim_coords[READY_ROOM_REGION][3];
+	gr_resize_screen_pos( &mx, &my );
+	mouse_set_pos( mx, my );	
 
 	Main_hall_inited = 1;
 
@@ -1943,7 +1950,10 @@ void main_hall_handle_right_clicks()
 				new_region = Main_hall_last_clicked_region + 1;
 
 			// set the position of the mouse cursor and the newly clicked region			
-			mouse_set_pos(Main_hall->door_anim_coords[new_region][2],Main_hall->door_anim_coords[new_region][3]);			
+			int mx = Main_hall->door_anim_coords[new_region][2];
+			int my = Main_hall->door_anim_coords[new_region][3];
+			gr_resize_screen_pos( &mx, &my );
+			mouse_set_pos( mx, my );			
 
 			main_hall_handle_mouse_location(new_region);
 			Main_hall_last_clicked_region = new_region;
