@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.223 $
- * $Date: 2005-09-05 09:02:08 $
- * $Author: wmcoolmon $
+ * $Revision: 2.224 $
+ * $Date: 2005-09-06 00:32:19 $
+ * $Author: Kazan $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.223  2005/09/05 09:02:08  wmcoolmon
+ * Fix the ship vanishing in TOPDOWN mode error
+ *
  * Revision 2.222  2005/09/01 04:14:04  taylor
  * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
  *
@@ -1648,6 +1651,7 @@
 
 extern bool splodeing;
 
+extern bool module_ship_weapons_loaded;
 extern float splode_level;
 
 extern int splodeingtexture;
@@ -3553,6 +3557,7 @@ void ship_init()
 			{
 				//HACK HACK HACK
 				modular_tables_loaded = true;
+				module_ship_weapons_loaded = true;
 				strcat(tbl_file_names[i], ".tbm");
 				parse_shiptbl(tbl_file_names[i], true);
 			}

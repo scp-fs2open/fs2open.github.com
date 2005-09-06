@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.46 $
- * $Author: Goober5000 $
- * $Date: 2005-08-24 07:14:52 $
+ * $Revision: 2.47 $
+ * $Author: Kazan $
+ * $Date: 2005-09-06 00:32:19 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/08/24 07:14:52  Goober5000
+ * faster version of stristr
+ * --Goober5000
+ *
  * Revision 2.45  2005/08/22 22:24:21  Goober5000
  * some tweaks to parselo, plus ensure that Unicode files don't crash
  * --Goober5000
@@ -302,6 +306,7 @@
 
 //To keep people from bypassing table checksums with modular tables -C
 bool	modular_tables_loaded = false;
+bool	module_ship_weapons_loaded = false;
 
 char	parse_error_text[64];//for my better error mesages-Bobboau
 char		Current_filename[128];

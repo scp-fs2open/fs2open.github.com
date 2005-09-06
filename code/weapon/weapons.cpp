@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2005/08/31 06:12:41  Goober5000
+ * roll back and recommit the minimally invasive version of phreak's fix...
+ * this removes a bit of redundant code
+ * --Goober5000
+ *
  * Revision 2.123  2005/07/29 10:18:26  taylor
  * safety check for TYPE_D beam weapons, the +Shots: count needs to be at least 1 to avoid various errors
  *
@@ -835,6 +840,7 @@ DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 #endif
 
 static int Weapon_flyby_sound_timer;	
+extern bool module_ship_weapons_loaded;
 
 weapon Weapons[MAX_WEAPONS];
 weapon_info Weapon_info[MAX_WEAPON_TYPES];
@@ -2708,6 +2714,7 @@ void weapon_init()
 		{
 			//HACK HACK HACK
 			modular_tables_loaded = true;
+			module_ship_weapons_loaded = true;
 			strcat(tbl_file_names[i], ".tbm");
 			parse_weapon_expl_tbl(tbl_file_names[i]);
 		}
@@ -2731,6 +2738,7 @@ void weapon_init()
 			{
 				//HACK HACK HACK
 				modular_tables_loaded = true;
+				module_ship_weapons_loaded = true;
 				strcat(tbl_file_names[i], ".tbm");
 				parse_weaponstbl(tbl_file_names[i], true);
 			}
