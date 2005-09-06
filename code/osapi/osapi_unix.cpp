@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-31 01:30:48 $
+ * $Revision: 2.11 $
+ * $Date: 2005-09-06 05:32:12 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/31 01:30:48  taylor
+ * print file and line info for Int3() calls to the logfile so that they are easier to debug with basic error reports
+ *
  * Revision 2.9  2005/06/03 06:39:27  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -356,7 +359,7 @@ void debug_int3(char *file, int line)
 {
 	mprintf(("Int3(): From %s at line %d\n", file, line));
 
-	abort();
+	exit(EXIT_FAILURE);
 }
 
 #endif		// Goober5000 - #ifndef WIN32

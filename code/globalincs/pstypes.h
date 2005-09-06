@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.32 $
- * $Date: 2005-07-31 01:30:48 $
+ * $Revision: 2.33 $
+ * $Date: 2005-09-06 05:32:12 $
  * $Author: taylor $
- * $Revision: 2.32 $
- * $Date: 2005-07-31 01:30:48 $
+ * $Revision: 2.33 $
+ * $Date: 2005-09-06 05:32:12 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/07/31 01:30:48  taylor
+ * print file and line info for Int3() calls to the logfile so that they are easier to debug with basic error reports
+ *
  * Revision 2.31  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -612,7 +615,7 @@ void gr_activate(int);
    #ifdef _WIN32
 	  #define AsmInt3() _asm { int 3 }
    #else
-     #define AsmInt3() abort()
+     #define AsmInt3() exit(EXIT_FAILURE)
    #endif
 
 #else
