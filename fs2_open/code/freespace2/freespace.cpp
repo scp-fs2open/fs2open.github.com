@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.175 $
- * $Date: 2005-09-05 09:38:18 $
- * $Author: taylor $
+ * $Revision: 2.176 $
+ * $Date: 2005-09-06 00:32:19 $
+ * $Author: Kazan $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.175  2005/09/05 09:38:18  taylor
+ * merge of OSX tree
+ * a lot of byte swaps were still missing, will hopefully be fully network compatible now
+ *
  * Revision 2.174  2005/08/26 00:56:17  taylor
  * send out multi pings during level load to prevent timeouts on slower computers (does not break network compatibility with older, or retail, clients/servers)
  *
@@ -10660,6 +10664,7 @@ DCF(wepspew, "display the checksum for the current weapons.tbl")
 // if the game is running using hacked data
 void multi_update_valid_tables(); // in multiutil.obj
 extern bool modular_tables_loaded;
+extern bool module_ship_weapons_loaded;
 
 int game_hacked_data()
 {
@@ -10667,7 +10672,7 @@ int game_hacked_data()
 
 #ifndef NO_NETWORK
 	//omfg modular tables
-	if(modular_tables_loaded)
+	if(module_ship_weapons_loaded)
 	{
 		return 1;
 	}
