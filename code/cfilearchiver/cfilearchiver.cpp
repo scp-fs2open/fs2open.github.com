@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cfilearchiver/CfileArchiver.cpp $
- * $Revision: 2.2 $
- * $Date: 2005-01-30 12:50:08 $
+ * $Revision: 2.3 $
+ * $Date: 2005-09-08 00:09:31 $
  * $Author: taylor $
  *
  * Program to create an archive file for use with cfile stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/01/30 12:50:08  taylor
+ * merge with Linux/OSX tree - p0130
+ *
  * Revision 2.1  2003/11/16 09:42:37  Goober5000
  * clarified and pruned debug spew messages
  * --Goober5000
@@ -330,6 +333,12 @@ void print_instructions()
 
 	exit(0);
 }
+
+// we end up #include'ing SDL.h which on Windows and Mac will redfine main() which is something
+// that we don't want since we don't actually link against SDL, this solves the problem...
+#ifdef main
+#undef main
+#endif
 
 int main(int argc, char *argv[] )
 {
