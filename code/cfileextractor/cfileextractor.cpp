@@ -5,13 +5,17 @@
 
 /*
  * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-09-08 00:09:31 $
+ * $Revision: 1.6 $
+ * $Date: 2005-09-08 05:04:15 $
  * $Author: taylor $
  *
  * Cross-platform cmdline extractor for VP files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/09/08 00:09:31  taylor
+ * fix building/linking of command line tools under Linux/OSX
+ * add tools as targets to OSX project file
+ *
  * Revision 1.4  2005/05/24 20:52:10  taylor
  * make sure that we recursively create directories for Linux/OSX
  * replace older recursive mkdir method in cfileextractor with new method
@@ -36,7 +40,12 @@
 #include <cstring>
 #include <ctime>
 
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -270,7 +279,11 @@ void extract_all_files(char *file)
 			if (c) {
 				*c = '\0';	// NULL at DIR_SEP char
 
+#ifdef _WIN32
+				status = _mkdir(path);
+#else
 				status = mkdir(path, 0777);
+#endif
 
 				m_error = errno;
 
@@ -377,7 +390,7 @@ void list_all_files(char *file)
 
 void help()
 {
-	printf("VP file extractor - version 0.01\n");
+	printf("VP file extractor - version 0.5\n");
 	printf("\n");
 	printf("Usage:  cfileextractor [-x | -l] [-L] <vp_filename>\n");
 	printf("\n");
