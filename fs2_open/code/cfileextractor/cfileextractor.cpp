@@ -5,13 +5,17 @@
 
 /*
  * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.4 $
- * $Date: 2005-05-24 20:52:10 $
+ * $Revision: 1.5 $
+ * $Date: 2005-09-08 00:09:31 $
  * $Author: taylor $
  *
  * Cross-platform cmdline extractor for VP files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/05/24 20:52:10  taylor
+ * make sure that we recursively create directories for Linux/OSX
+ * replace older recursive mkdir method in cfileextractor with new method
+ *
  * Revision 1.3  2005/05/24 03:12:27  taylor
  * get command sanity check right, fixes lowercase on extract too
  *
@@ -388,6 +392,12 @@ void help()
 	printf("  (No command specified will list all files in the VP archive.)\n");
 	printf("\n");
 }
+
+// we end up #include'ing SDL.h which on Windows and Mac will redfine main() which is something
+// that we don't want since we don't actually link against SDL, this solves the problem...
+#ifdef main
+#undef main
+#endif
 
 int main(int argc, char *argv[])
 {

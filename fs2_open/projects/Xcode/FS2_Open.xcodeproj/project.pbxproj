@@ -562,6 +562,11 @@
 		34C71D6E08C455C900459F5B /* midiseq.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954FF08C3D6A0003B1351 /* midiseq.h */; };
 		34C71D6F08C455CA00459F5B /* midifile.h in Headers */ = {isa = PBXBuildFile; fileRef = 345954FE08C3D6A0003B1351 /* midifile.h */; };
 		34C71D7008C455CB00459F5B /* midifile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954FD08C3D6A0003B1351 /* midifile.cpp */; };
+		34DCF83608CFA6D200A528A0 /* cfilearchiver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF83008CFA68700A528A0 /* cfilearchiver.cpp */; };
+		34DCF86308CFAFEE00A528A0 /* cfileextractor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF86208CFAFEE00A528A0 /* cfileextractor.cpp */; };
+		34DCF87008CFB15700A528A0 /* cryptstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF86F08CFB15700A528A0 /* cryptstring.cpp */; };
+		34DCF88208CFB29E00A528A0 /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345954B208C3D6A0003B1351 /* encrypt.cpp */; };
+		34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34DCF88408CFB2B500A528A0 /* scramble.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -1347,6 +1352,15 @@
 		34C7188B08C40DEB00459F5B /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
 		34C71A8208C4147700459F5B /* libcode.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libcode.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		34C71A9108C4184200459F5B /* libjpeg.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libjpeg.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		34DCF83008CFA68700A528A0 /* cfilearchiver.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = cfilearchiver.cpp; sourceTree = "<group>"; };
+		34DCF83408CFA6B900A528A0 /* cfilearchiver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cfilearchiver; sourceTree = BUILT_PRODUCTS_DIR; };
+		34DCF85C08CFAE8A00A528A0 /* cfileextractor */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cfileextractor; sourceTree = BUILT_PRODUCTS_DIR; };
+		34DCF86208CFAFEE00A528A0 /* cfileextractor.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = cfileextractor.cpp; sourceTree = "<group>"; };
+		34DCF86908CFB0BA00A528A0 /* cryptstring */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cryptstring; sourceTree = BUILT_PRODUCTS_DIR; };
+		34DCF86F08CFB15700A528A0 /* cryptstring.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = cryptstring.cpp; sourceTree = "<group>"; };
+		34DCF87A08CFB21600A528A0 /* scramble */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = scramble; sourceTree = BUILT_PRODUCTS_DIR; };
+		34DCF88408CFB2B500A528A0 /* scramble.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = scramble.cpp; sourceTree = "<group>"; };
+		34DCF88508CFB2B500A528A0 /* scramble.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = scramble.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		B2F67F1E04C773E400A80002 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = /System/Library/Frameworks/GLUT.framework; sourceTree = "<absolute>"; };
 		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
@@ -1379,6 +1393,34 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		34C71A8F08C4184200459F5B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		34DCF83208CFA6B900A528A0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		34DCF85A08CFAE8A00A528A0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		34DCF86708CFB0BA00A528A0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		34DCF87808CFB21600A528A0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1424,6 +1466,10 @@
 				34595A7508C3D8CB003B1351 /* FS2_Open.app */,
 				34C71A8208C4147700459F5B /* libcode.a */,
 				34C71A9108C4184200459F5B /* libjpeg.a */,
+				34DCF83408CFA6B900A528A0 /* cfilearchiver */,
+				34DCF85C08CFAE8A00A528A0 /* cfileextractor */,
+				34DCF86908CFB0BA00A528A0 /* cryptstring */,
+				34DCF87A08CFB21600A528A0 /* scramble */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1478,9 +1524,12 @@
 				345952E508C3D69F003B1351 /* bmpman */,
 				345952E908C3D69F003B1351 /* camera */,
 				345952EC08C3D69F003B1351 /* cfile */,
+				34DCF82F08CFA68700A528A0 /* cfilearchiver */,
+				34DCF86108CFAFEE00A528A0 /* cfileextractor */,
 				345952F808C3D69F003B1351 /* cmdline */,
 				345952FB08C3D69F003B1351 /* cmeasure */,
 				345952FE08C3D69F003B1351 /* controlconfig */,
+				34DCF86E08CFB15700A528A0 /* cryptstring */,
 				3459530408C3D69F003B1351 /* cutscene */,
 				3459530908C3D69F003B1351 /* ddsutils */,
 				3459530C08C3D69F003B1351 /* debris */,
@@ -1527,6 +1576,7 @@
 				345954C608C3D6A0003B1351 /* popup */,
 				345954CB08C3D6A0003B1351 /* radar */,
 				345954D208C3D6A0003B1351 /* render */,
+				34DCF88308CFB2B500A528A0 /* scramble */,
 				345954DD08C3D6A0003B1351 /* ship */,
 				345954ED08C3D6A0003B1351 /* sound */,
 				3459550E08C3D6A0003B1351 /* species_defs */,
@@ -2719,6 +2769,39 @@
 			name = "Static libs";
 			sourceTree = "<group>";
 		};
+		34DCF82F08CFA68700A528A0 /* cfilearchiver */ = {
+			isa = PBXGroup;
+			children = (
+				34DCF83008CFA68700A528A0 /* cfilearchiver.cpp */,
+			);
+			path = cfilearchiver;
+			sourceTree = "<group>";
+		};
+		34DCF86108CFAFEE00A528A0 /* cfileextractor */ = {
+			isa = PBXGroup;
+			children = (
+				34DCF86208CFAFEE00A528A0 /* cfileextractor.cpp */,
+			);
+			path = cfileextractor;
+			sourceTree = "<group>";
+		};
+		34DCF86E08CFB15700A528A0 /* cryptstring */ = {
+			isa = PBXGroup;
+			children = (
+				34DCF86F08CFB15700A528A0 /* cryptstring.cpp */,
+			);
+			path = cryptstring;
+			sourceTree = "<group>";
+		};
+		34DCF88308CFB2B500A528A0 /* scramble */ = {
+			isa = PBXGroup;
+			children = (
+				34DCF88408CFB2B500A528A0 /* scramble.cpp */,
+				34DCF88508CFB2B500A528A0 /* scramble.h */,
+			);
+			path = scramble;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -3140,6 +3223,138 @@
 			productReference = 34C71A9108C4184200459F5B /* libjpeg.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		34DCF83308CFA6B900A528A0 /* cfilearchiver */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 34DCF83708CFA6F000A528A0 /* Build configuration list for PBXNativeTarget "cfilearchiver" */;
+			buildPhases = (
+				34DCF83108CFA6B900A528A0 /* Sources */,
+				34DCF83208CFA6B900A528A0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = cfilearchiver;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			dependencies = (
+			);
+			name = cfilearchiver;
+			productName = cfilearchiver;
+			productReference = 34DCF83408CFA6B900A528A0 /* cfilearchiver */;
+			productType = "com.apple.product-type.tool";
+		};
+		34DCF85B08CFAE8A00A528A0 /* cfileextractor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 34DCF85E08CFAF0500A528A0 /* Build configuration list for PBXNativeTarget "cfileextractor" */;
+			buildPhases = (
+				34DCF85908CFAE8A00A528A0 /* Sources */,
+				34DCF85A08CFAE8A00A528A0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = cfileextractor;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			dependencies = (
+			);
+			name = cfileextractor;
+			productName = cfileextractor;
+			productReference = 34DCF85C08CFAE8A00A528A0 /* cfileextractor */;
+			productType = "com.apple.product-type.tool";
+		};
+		34DCF86808CFB0BA00A528A0 /* cryptstring */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 34DCF86B08CFB13E00A528A0 /* Build configuration list for PBXNativeTarget "cryptstring" */;
+			buildPhases = (
+				34DCF86608CFB0BA00A528A0 /* Sources */,
+				34DCF86708CFB0BA00A528A0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = cryptstring;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			dependencies = (
+			);
+			name = cryptstring;
+			productName = cryptstring;
+			productReference = 34DCF86908CFB0BA00A528A0 /* cryptstring */;
+			productType = "com.apple.product-type.tool";
+		};
+		34DCF87908CFB21600A528A0 /* scramble */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 34DCF87C08CFB23400A528A0 /* Build configuration list for PBXNativeTarget "scramble" */;
+			buildPhases = (
+				34DCF87708CFB21600A528A0 /* Sources */,
+				34DCF87808CFB21600A528A0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = scramble;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			dependencies = (
+			);
+			name = scramble;
+			productName = scramble;
+			productReference = 34DCF87A08CFB21600A528A0 /* scramble */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -3159,6 +3374,10 @@
 				3459585008C3D8CB003B1351 /* FS2_Open */,
 				34C71A8108C4147700459F5B /* code */,
 				34C71A9008C4184200459F5B /* jpeg */,
+				34DCF83308CFA6B900A528A0 /* cfilearchiver */,
+				34DCF85B08CFAE8A00A528A0 /* cfileextractor */,
+				34DCF86808CFB0BA00A528A0 /* cryptstring */,
+				34DCF87908CFB21600A528A0 /* scramble */,
 			);
 		};
 /* End PBXProject section */
@@ -3491,6 +3710,39 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		34DCF83108CFA6B900A528A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				34DCF83608CFA6D200A528A0 /* cfilearchiver.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		34DCF85908CFAE8A00A528A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				34DCF86308CFAFEE00A528A0 /* cfileextractor.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		34DCF86608CFB0BA00A528A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				34DCF87008CFB15700A528A0 /* cryptstring.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		34DCF87708CFB21600A528A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				34DCF88208CFB29E00A528A0 /* encrypt.cpp in Sources */,
+				34DCF88608CFB2B500A528A0 /* scramble.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -3791,6 +4043,302 @@
 			};
 			name = Deployment;
 		};
+		34DCF83808CFA6F000A528A0 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					/Library/Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cfilearchiver;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Development;
+		};
+		34DCF83908CFA6F000A528A0 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					/Library/Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cfilearchiver;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Deployment;
+		};
+		34DCF85F08CFAF0500A528A0 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					/Library/Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cfileextractor;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Development;
+		};
+		34DCF86008CFAF0500A528A0 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					/Library/Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cfileextractor;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Deployment;
+		};
+		34DCF86C08CFB13E00A528A0 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = NO;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					/Library/Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cryptstring;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Development;
+		};
+		34DCF86D08CFB13E00A528A0 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = NO;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					/Library/Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = cryptstring;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Deployment;
+		};
+		34DCF87D08CFB23400A528A0 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = NO;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					/Library/Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = scramble;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Development;
+		};
+		34DCF87E08CFB23400A528A0 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = NO;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					SCP_UNIX,
+					NDEBUG,
+					NO_DIRECT3D,
+				);
+				GCC_USE_GCC3_PFE_SUPPORT = YES;
+				HEADER_SEARCH_PATHS = (
+					../../code,
+					/Library/Frameworks/SDL.framework/Headers,
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = YES;
+				PRODUCT_NAME = scramble;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Deployment;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -3829,6 +4377,38 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Development;
+		};
+		34DCF83708CFA6F000A528A0 /* Build configuration list for PBXNativeTarget "cfilearchiver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				34DCF83808CFA6F000A528A0 /* Development */,
+				34DCF83908CFA6F000A528A0 /* Deployment */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		34DCF85E08CFAF0500A528A0 /* Build configuration list for PBXNativeTarget "cfileextractor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				34DCF85F08CFAF0500A528A0 /* Development */,
+				34DCF86008CFAF0500A528A0 /* Deployment */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		34DCF86B08CFB13E00A528A0 /* Build configuration list for PBXNativeTarget "cryptstring" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				34DCF86C08CFB13E00A528A0 /* Development */,
+				34DCF86D08CFB13E00A528A0 /* Deployment */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		34DCF87C08CFB23400A528A0 /* Build configuration list for PBXNativeTarget "scramble" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				34DCF87D08CFB23400A528A0 /* Development */,
+				34DCF87E08CFB23400A528A0 /* Deployment */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 /* End XCConfigurationList section */
 	};

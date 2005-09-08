@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/scramble/scramble.cpp $
- * $Revision: 2.3 $
- * $Date: 2005-05-12 17:49:16 $
+ * $Revision: 2.4 $
+ * $Date: 2005-09-08 00:09:32 $
  * $Author: taylor $
  *
  * Module for file scrambler
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/05/12 17:49:16  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.2  2005/04/15 11:35:18  taylor
  * add scramble port
  * support both FS1 (8bit and 7bit) and FS2 style encryption
@@ -107,7 +111,7 @@ void scramble_read_ships_tbl(char **text, int *text_len, FILE *fp)
 	char	*token;
 
 	*text_len = _filelength(fileno(fp));
-	*text = (char*)vm_malloc(*text_len+1);
+	*text = (char*)malloc(*text_len+1);
 
 	dest = *text;
 
@@ -163,7 +167,7 @@ void scramble_read_weapons_tbl(char **text, int *text_len, FILE *fp)
 	char	*token = NULL;
 
 	*text_len = _filelength(fileno(fp));
-	*text = (char*)vm_malloc(*text_len+1);
+	*text = (char*)malloc(*text_len+1);
 
 	dest = *text;
 
@@ -210,7 +214,7 @@ void scramble_read_weapons_tbl(char **text, int *text_len, FILE *fp)
 void scramble_read_default(char **text, int *text_len, FILE *fp)
 {
 	*text_len = _filelength(fileno(fp));
-	*text = (char*)vm_malloc(*text_len+1);
+	*text = (char*)malloc(*text_len+1);
 	fread( *text, *text_len, 1, fp );
 }
 
@@ -275,15 +279,15 @@ void scramble_file(char *src_filename, char *dest_filename, int preprocess)
 		return;
 	}
 
-	scramble_text = (char*)vm_malloc(text_len+32);
+	scramble_text = (char*)malloc(text_len+32);
 
 	encrypt(text, text_len, scramble_text, &scramble_len, Use_8bit, fs2);
 	
 	// write out scrambled data
 	fwrite( scramble_text, scramble_len, 1, fp );
 
-	vm_free(text);
-	vm_free(scramble_text);
+	free(text);
+	free(scramble_text);
 	fclose(fp);
 }
 
@@ -304,7 +308,7 @@ void unscramble_file(char *src_filename, char *dest_filename)
 
 	// read in the scrambled data
 	scramble_len = _filelength(fileno(fp));
-	scramble_text = (char*)vm_malloc(scramble_len+1);
+	scramble_text = (char*)malloc(scramble_len+1);
 	fread( scramble_text, scramble_len, 1, fp );
 	fclose(fp);
 
@@ -319,15 +323,15 @@ void unscramble_file(char *src_filename, char *dest_filename)
 	}
 
 	// assume original text no larger than double scrambled size
-	text = (char*)vm_malloc(scramble_len*2);
+	text = (char*)malloc(scramble_len*2);
 
 	unencrypt(scramble_text, scramble_len, text, &text_len);
 
 	// write out unscrambled data
 	fwrite( text, text_len, 1, fp );
 
-	vm_free(text);
-	vm_free(scramble_text);
+	free(text);
+	free(scramble_text);
 	fclose(fp);
 }
 
@@ -343,11 +347,14 @@ void print_instructions()
 	printf("   -8bit	Use 8bit, Freespace 1 style encryption (default=no)\n\n");
 }
 
-#ifdef SCP_UNIX
-int main(int argc, char *argv[])
-#else
-void main(int argc, char *argv[])
+
+// we end up #includ'ing SDL.h which on Windows and Mac will redfine main() which is something
+// that we don't want since we don't actually link against SDL, this solves the problem...
+#ifdef main
+#undef main
 #endif
+
+int main(int argc, char *argv[])
 {
 	switch (argc) {
 	case 2:
@@ -359,6 +366,7 @@ void main(int argc, char *argv[])
 			scramble_file(argv[1]);
 		}
 		break;
+
 	case 3:
 		encrypt_init();
 		if ( !stricmp("-u", argv[1]) ) {
@@ -385,6 +393,7 @@ void main(int argc, char *argv[])
 			scramble_file(argv[1], argv[2]);
 		}
 		break;
+
 	case 4:
 		encrypt_init();
 		if ( !stricmp("-u", argv[1]) ) {
@@ -409,13 +418,10 @@ void main(int argc, char *argv[])
 			print_instructions();
 		}
 		break;
+
 	default:
 		print_instructions();
-#ifdef SCP_UNIX
 		return 1;
-#else
-		return;
-#endif
 	}
 }
 

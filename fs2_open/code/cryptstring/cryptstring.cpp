@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cryptstring/cryptstring.cpp $
- * $Revision: 2.1 $
- * $Date: 2002-08-01 01:41:04 $
- * $Author: penguin $
+ * $Revision: 2.2 $
+ * $Date: 2005-09-08 00:09:32 $
+ * $Author: taylor $
  *
  * Applet for crypting strings.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2002/08/01 01:41:04  penguin
+ * The big include file move
+ *
  * Revision 2.0  2002/06/03 04:02:21  penguin
  * Warpcore CVS sync
  *
@@ -32,6 +35,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "globalincs/crypt.h"
+
+
+// we end up #include'ing SDL.h which on Windows and Mac will redfine main() which is something
+// that we don't want since we don't actually link against SDL, this solves the problem...
+#ifdef main
+#undef main
+#endif
 
 int main(int argc, char **argv)
 {
