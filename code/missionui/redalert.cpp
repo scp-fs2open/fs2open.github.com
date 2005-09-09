@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-25 05:24:16 $
+ * $Revision: 2.18 $
+ * $Date: 2005-09-09 05:12:44 $
  * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/25 05:24:16  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.16  2005/07/02 19:43:55  taylor
  * ton of non-standard resolution fixes
  *
@@ -594,6 +598,18 @@ void red_alert_do_frame(float frametime)
 	if (!Red_alert_inited) {
 		Int3();
 		return;
+	}
+
+	// commit if skipping briefing, but not in multi - Goober5000
+#ifndef NO_NETWORK
+	if (!(Game_mode & GM_MULTIPLAYER))
+#endif
+	{
+		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
+		{
+			commit_pressed();
+			return;
+		}
 	}
 
 	k = Ui_window.process() & ~KEY_DEBUGGED;
