@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-07-25 05:24:16 $
+ * $Revision: 2.34 $
+ * $Date: 2005-09-09 05:11:20 $
  * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/07/25 05:24:16  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.32  2005/07/24 18:32:58  taylor
  * various incarnations of freaky and stupid, need to do this everywhere eventually
  *
@@ -1913,11 +1917,13 @@ void brief_do_frame(float frametime)
 #ifndef NO_NETWORK
 	if (!(Game_mode & GM_MULTIPLAYER))
 #endif
+	{
 		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
 		{
 			commit_pressed();
 			return;
 		}
+	}
 
 	int snazzy_action = -1;
 	brief_choice = snazzy_menu_do(Brief_ui_mask_data, Brief_ui_mask_w, Brief_ui_mask_h, Num_briefing_regions, Briefing_select_region, &snazzy_action, 0);
