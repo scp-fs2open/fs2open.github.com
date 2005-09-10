@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-07-31 01:34:03 $
+ * $Revision: 2.44 $
+ * $Date: 2005-09-10 21:10:19 $
  * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/07/31 01:34:03  taylor
+ * fix a NULL pointer reference if there are no secondary banks on a ship
+ *
  * Revision 2.42  2005/07/24 19:59:24  Goober5000
  * fixed a minor docking bug
  * --Goober5000
@@ -916,6 +919,12 @@ void add_shield_strength(object *objp, float delta)
 			{
 				objp->shield_quadrant[weakest_idx]+=delta;
 				delta=0;
+
+				if (objp->shield_quadrant[weakest_idx] > section_max) {
+					objp->shield_quadrant[weakest_idx] = section_max;
+				} else if (objp->shield_quadrant[weakest_idx] < 0.0f) {
+					objp->shield_quadrant[weakest_idx] = 0.0f;
+				}
 			}
 		}
 	}
