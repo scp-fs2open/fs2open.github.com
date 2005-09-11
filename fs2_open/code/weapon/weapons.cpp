@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2005/09/08 23:20:54  phreak
+ * sort_weapons_by_type() now subsorts missiles and places fighter-sized weapons ahead of capital weapons and child weapons
+ * its also alot less memory intensive too.
+ *
  * Revision 2.127  2005/09/06 00:32:20  Kazan
  * fixed a bug related to multiplayer table validation and modular tables
  *
@@ -2646,8 +2650,8 @@ void create_weapon_names()
 //Child weapons
 void sort_weapons_by_type()
 {
-	weapon_info *lasers = NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_weapons = NULL;
-	int num_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child = 0;
+	weapon_info *lasers = NULL, *big_lasers=NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_weapons = NULL;
+	int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child = 0;
 
 	int i,j;
 
@@ -2657,7 +2661,8 @@ void sort_weapons_by_type()
 		switch (Weapon_info[i].subtype)
 		{
 			case WP_LASER:
-				num_lasers++;
+				if (Weapon_info[i].wi_flags & WIF_BIG_ONLY) num_big_lasers++;
+				else num_lasers++;
 				break;
 		
 			case WP_BEAM:
@@ -2678,6 +2683,7 @@ void sort_weapons_by_type()
 
 	//allocate the buckets
 	lasers = new weapon_info[num_lasers]; num_lasers = 0;
+	big_lasers = new weapon_info[num_big_lasers]; num_big_lasers = 0;
 	beams = new weapon_info[num_beams]; num_beams = 0;
 	missiles = new weapon_info[num_missiles]; num_missiles = 0;
 	big_missiles = new weapon_info[num_big_missiles]; num_big_missiles = 0;
@@ -2689,7 +2695,8 @@ void sort_weapons_by_type()
 		switch (Weapon_info[i].subtype)
 		{
 			case WP_LASER:
-				lasers[num_lasers++]=Weapon_info[i];
+				if (Weapon_info[i].wi_flags & WIF_BIG_ONLY) big_lasers[num_big_lasers++]=Weapon_info[i];
+				else lasers[num_lasers++]=Weapon_info[i];
 				break;
 		
 			case WP_BEAM:
@@ -2711,6 +2718,11 @@ void sort_weapons_by_type()
 	for (i=0, j=0; i < num_lasers; i++, j++)
 	{
 		Weapon_info[j] = lasers[i];
+	}
+
+	for (i=0; i < num_big_lasers; i++, j++)
+	{
+		Weapon_info[j] = big_lasers[i];
 	}
 
 	for (i=0; i < num_beams; i++, j++)
@@ -2736,6 +2748,7 @@ void sort_weapons_by_type()
 	}
 
 	delete [] lasers;
+	delete [] big_lasers;
 	delete [] beams;
 	delete [] missiles;
 	delete [] big_missiles;
