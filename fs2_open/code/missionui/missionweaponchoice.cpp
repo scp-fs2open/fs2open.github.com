@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2005-09-13 04:32:11 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.54  2005/07/18 03:45:08  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -4841,13 +4845,13 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	weapon_info *wip;
 
 	char ship_name[NAME_LENGTH];
-	char error_messages[MAX_WING_SLOTS * MAX_SHIP_WEAPONS][50 + NAME_LENGTH * 2];
+	char error_messages[MAX_WSS_SLOTS * MAX_SHIP_WEAPONS][50 + NAME_LENGTH * 2];
 	char *wep_display_name;
 	char buf[NAME_LENGTH];
 
 	// clear error stuff
 	error_flag = false;
-	for (i = 0; i < MAX_WING_SLOTS * MAX_SHIP_WEAPONS; i++)
+	for (i = 0; i < MAX_WSS_SLOTS * MAX_SHIP_WEAPONS; i++)
 	{
 		*error_messages[i] = '\0';
 	}
@@ -4950,11 +4954,11 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	{
 		int i, j;
 		bool is_duplicate;
-		char error_msg[MAX_WING_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
+		char error_msg[MAX_WSS_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
 		strcpy(error_msg, "The following errors were encountered:\n\n");
 
 		// copy all messages
-		for (i = 0; i < (MAX_WING_SLOTS * MAX_SHIP_WEAPONS); i++)
+		for (i = 0; i < (MAX_WSS_SLOTS * MAX_SHIP_WEAPONS); i++)
 		{
 			// there should be a message here
 			if (*error_messages[i] == '\0')
