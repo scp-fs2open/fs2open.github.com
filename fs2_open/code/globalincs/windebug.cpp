@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-08-16 20:06:24 $
- * $Author: Kazan $
+ * $Revision: 2.26 $
+ * $Date: 2005-09-14 20:38:12 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/08/16 20:06:24  Kazan
+ * [hopefully] Fix the bug i introduced in the show memory usage code, and the convergence bug during autopilot [also saves cpu cycles - MANY of them]
+ *
  * Revision 2.24  2005/08/14 23:05:27  Kazan
  * i introduced a bug in _vm_realloc.. fixed it
  *
@@ -1174,8 +1177,9 @@ void getmem()
 
 
 
-int TotalRam = 0;
 #ifndef NDEBUG
+
+int TotalRam = 0;
 #define nNoMansLandSize 4
 
 typedef struct _CrtMemBlockHeader
@@ -1537,8 +1541,6 @@ void *_vm_malloc( int size )
 	void *ptr = NULL;
 
 #ifndef NEW_MALLOC
-	TotalRam += size;
-
 	ptr = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__ );
 
 	if (ptr == NULL)
@@ -1548,6 +1550,8 @@ void *_vm_malloc( int size )
 			Error(LOCATION, "Malloc Failed!\n");
 	}
 #ifndef NDEBUG
+	TotalRam += size;
+
 	if(Cmdline_show_mem_usage)
 		register_malloc(size, filename, line, ptr);
 #endif
@@ -1669,15 +1673,16 @@ void *_vm_realloc( void *ptr, int size )
 		unregister_malloc(filename, nSize, ptr);
 #endif
 
-	TotalRam += size;
-	ptr = _realloc_dbg(ptr, size,  _NORMAL_BLOCK, __FILE__, __LINE__ );
+	ret_ptr = _realloc_dbg(ptr, size,  _NORMAL_BLOCK, __FILE__, __LINE__ );
 
 #ifndef	NDEBUG 
+	TotalRam += size;
+
 	// register this allocation
 	if(Cmdline_show_mem_usage)
 		register_malloc(size, filename, line, ptr);
 #endif
-	return ptr;
+	return ret_ptr;
 	
 
 #else
