@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.8 $
- * $Date: 2005-07-13 03:35:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-09-14 20:03:40 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.7  2005/05/18 14:03:27  taylor
  * a medals crash fix that isn't influenced by the evil Java empire (Jens Granseuer)
  *
@@ -105,6 +109,7 @@ typedef struct medal_stuff {
 	char	bitmap[NAME_LENGTH];
 	int	num_versions;
 	int	kills_needed;
+	int badge_num;
 
 	//If this is a badge (kills_needed > 1)
 	char voice_base[MAX_FILENAME_LEN];
@@ -115,6 +120,7 @@ typedef struct medal_stuff {
 		bitmap[0] = '\0';
 		num_versions = 1;
 		kills_needed = 0;
+		badge_num = 0;
 		voice_base[0] = '\0';
 		promotion_text = NULL;
 	}

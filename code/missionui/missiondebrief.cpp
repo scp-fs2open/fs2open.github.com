@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-08-27 00:21:27 $
- * $Author: Kazan $
+ * $Revision: 2.42 $
+ * $Date: 2005-09-14 20:03:40 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/08/27 00:21:27  Kazan
+ * potential fix for mantis bug 237
+ *
  * Revision 2.40  2005/08/21 21:05:53  taylor
  * fix stats display in debriefing with non-standard resolutions
  *
@@ -1515,7 +1518,7 @@ void debrief_award_init()
 	// only grant badge if earned and allowed.  (no_promotion really means no promotion and no badges)
 	if ( Player->stats.m_badge_earned != -1 ) {
 		i = Player->stats.m_badge_earned;
-		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_BADGE], i + 1);
+		sprintf(buf, NOX("%s%.2d"), Debrief_award_filename[gr_screen.res][DB_AWARD_BADGE], Medals[i].badge_num + 1);
 		Badge_bitmap = bm_load(buf);
 
 		Badge_stage.new_text = Medals[i].promotion_text;
