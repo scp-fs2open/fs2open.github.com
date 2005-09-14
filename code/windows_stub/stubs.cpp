@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.20 $
- * $Date: 2005-09-06 05:32:12 $
+ * $Revision: 2.21 $
+ * $Date: 2005-09-14 20:38:12 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/09/06 05:32:12  taylor
+ * use exit(EXIT_FAILURE) rather than abort() so that all atexit() calls will actually get executed
+ *
  * Revision 2.19  2005/09/05 09:38:19  taylor
  * merge of OSX tree
  * a lot of byte swaps were still missing, will hopefully be fully network compatible now
@@ -306,9 +309,9 @@ bool QueryPerformanceCounter(LARGE_INTEGER *pcount)
 	return 1;
 }
 
-
+#ifndef NDEBUG
 int TotalRam = 0;
-
+#endif
 
 int Watch_malloc = 0;
 DCF_BOOL(watch_malloc, Watch_malloc );
