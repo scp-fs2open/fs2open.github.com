@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-24 00:32:45 $
- * $Author: wmcoolmon $
+ * $Revision: 2.16 $
+ * $Date: 2005-09-14 20:03:40 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/24 00:32:45  wmcoolmon
+ * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
+ * support for the demo/FS1
+ *
  * Revision 2.14  2005/07/02 19:45:02  taylor
  * ton of non-standard resolution fixes
  *
@@ -371,6 +375,7 @@ void medal_stuff::clone(const medal_stuff &m)
 	memcpy(bitmap, m.bitmap, NAME_LENGTH);
 	num_versions = m.num_versions;
 	kills_needed = m.kills_needed;
+	badge_num = m.badge_num;
 	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
 
 	if (m.promotion_text)
@@ -397,6 +402,7 @@ const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
 void parse_medal_tbl()
 {
 	int rval, i;
+	int num_badges = 0;
 
 	if ((rval = setjmp(parse_abort)) != 0) {
 		Error(LOCATION, "Error parsing 'medals.tbl'\r\nError code = %i.\r\n", rval);
@@ -447,6 +453,10 @@ void parse_medal_tbl()
 			required_string("$Promotion Text:");
 			stuff_string(buf, F_MULTITEXT, NULL);
 			temp_medal.promotion_text = vm_strdup(buf);
+
+			// since badges (ace ranks) are handled a little differently we need to know
+			// which we are in the list of badges.
+			temp_medal.badge_num = num_badges++;
 		}
 
 		Medals.push_back(temp_medal);
