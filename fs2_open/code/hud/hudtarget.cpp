@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.68 $
- * $Date: 2005-09-01 04:14:04 $
- * $Author: taylor $
+ * $Revision: 2.69 $
+ * $Date: 2005-09-14 02:55:04 $
+ * $Author: phreak $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2005/09/01 04:14:04  taylor
+ * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
+ *
  * Revision 2.67  2005/07/25 03:13:24  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -5566,11 +5569,7 @@ void hud_show_weapons()
 		}
 
 		int ammo=sw->secondary_bank_ammo[i];
-		/*if ((Tertiary_weapon_info[Player_ship->tertiary_weapon_info_idx].type == TWT_AMMO_POD) && (i == Player_ship->ammopod_current_secondary))
-		{
-			ammo+=Player_ship->ammopod_current_ammo;
-		}*/
-
+	
 		// print out the ammo right justified
 		sprintf(ammo_str, "%d", ammo);
 		hud_num_make_mono(ammo_str);
@@ -5582,8 +5581,12 @@ void hud_show_weapons()
 		name_y += name_res_diff;
 	}
 
+
 	if(ns==0)
+	{
 		emp_hud_string(Weapon_pname_coords[gr_screen.res][0][0], name_y, EG_WEAPON_S1, XSTR( "<none>", 329));	
+		y += res_diff;		//bump the bottom of the gauge down so it fits "<none>" without any overlap.
+	}
 
 	y -= 0;
 	GR_AABITMAP(Weapon_gauges[ballistic_hud_index][4].first_frame, Weapon_gauge_secondary_coords[ballistic_hud_index][gr_screen.res][0][0], y);
