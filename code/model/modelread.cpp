@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.73 $
- * $Date: 2005-07-07 16:32:33 $
- * $Author: taylor $
+ * $Revision: 2.74 $
+ * $Date: 2005-09-15 23:54:58 $
+ * $Author: Kazan $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2005/07/07 16:32:33  taylor
+ * compiler warning fixes
+ * add -noibx troubleshooting cmdline option to disable use of IBX files
+ * don't try to set thuster object number is only one thruster bank is specified (default method should go into affect)
+ *
  * Revision 2.72  2005/06/22 15:25:41  taylor
  * compiler warning fix (dizzy) and make sure that it's safe to continue after that switch statement
  *
@@ -1947,6 +1952,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				//mprintf(0,"Got chunk SOBJ, len=%d\n",len);
 
 				n = cfread_int(fp);
+				mprintf(("SOBJ IDed itself as %d", n));
 
 				Assert(n < pm->n_models );
 
@@ -2717,8 +2723,9 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 		pm->textures[i] = bm_load_animation(tmp_name, &pm->num_frames[i], &pm->fps[i], 1, CF_TYPE_MAPS);
 		if (pm->textures[i]<0)	//if I couldn't find the PCX see if there is an ani-Bobboau
-		{					
-			mprintf(("For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+		{	
+			// don't need to see this message
+			//mprintf(("For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
 
 			pm->textures[i] = bm_load( tmp_name );
 
@@ -2757,8 +2764,9 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 		pm->glow_textures[i] = bm_load_animation( tmp_name, &pm->glow_numframes[i], &pm->glow_fps[i], 1, CF_TYPE_MAPS );
 		if (pm->glow_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
-							
-			mprintf(("For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+				
+			// don't need to see this message
+			//mprintf(("For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
 
 			pm->glow_is_ani[i] = 0;
 			pm->glow_textures[i] = bm_load( tmp_name );
@@ -2788,8 +2796,9 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 		pm->specular_textures[i] = bm_load( tmp_name );
 		if (pm->specular_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
-							
-			mprintf(("For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
+			
+			// don't need to see this message
+			//mprintf(("For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
 		//	pm->specular_textures[i] = pm->textures[i];
 
 		}
