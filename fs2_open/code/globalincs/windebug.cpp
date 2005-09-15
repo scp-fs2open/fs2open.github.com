@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-09-14 20:38:12 $
+ * $Revision: 2.27 $
+ * $Date: 2005-09-15 05:19:25 $
  * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/09/14 20:38:12  taylor
+ * some vm_* fixage for Windows
+ *
  * Revision 2.25  2005/08/16 20:06:24  Kazan
  * [hopefully] Fix the bug i introduced in the show memory usage code, and the convergence bug during autopilot [also saves cpu cycles - MANY of them]
  *
@@ -1675,12 +1678,18 @@ void *_vm_realloc( void *ptr, int size )
 
 	ret_ptr = _realloc_dbg(ptr, size,  _NORMAL_BLOCK, __FILE__, __LINE__ );
 
+	if (ret_ptr == NULL) {
+		mprintf(( "realloc failed!!!!!!!!!!!!!!!!!!!\n" ));
+
+		Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
+			"virtual memory size, or installing more physical RAM.\n");
+	}
 #ifndef	NDEBUG 
 	TotalRam += size;
 
 	// register this allocation
 	if(Cmdline_show_mem_usage)
-		register_malloc(size, filename, line, ptr);
+		register_malloc(size, filename, line, ret_ptr);
 #endif
 	return ret_ptr;
 	
