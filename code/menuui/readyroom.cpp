@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-07-18 03:45:07 $
+ * $Revision: 2.20 $
+ * $Date: 2005-09-16 02:51:54 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/07/18 03:45:07  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.18  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -1912,6 +1919,11 @@ void campaign_room_close()
 
 	// unload the overlay bitmap
 	help_overlay_unload(CAMPAIGN_ROOM_OVERLAY);
+
+	// be sure that we are going to use the correct mainhall
+	if ( (Player != NULL) && (Campaign.current_mission >= 0) ) {
+		Player->main_hall = Campaign.missions[Campaign.current_mission].main_hall;
+	}
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
