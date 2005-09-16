@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.30 $
- * $Date: 2005-09-01 04:14:03 $
+ * $Revision: 1.31 $
+ * $Date: 2005-09-16 02:59:55 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2005/09/01 04:14:03  taylor
+ * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
+ *
  * Revision 1.29  2005/08/31 00:59:35  Goober5000
  * fixed yet another docking bug, based on taylor's original fix :p
  * --Goober5000
@@ -12113,7 +12116,7 @@ int ai_formation()
 	//	Determine which kind of formation flying.
 	//	If tracking an object, not in waypoint mode:
 	if (aip->ai_flags & AIF_FORMATION_OBJECT) {
-		if ((aip->goal_objnum < 0) || (aip->goal_objnum >= MAX_OBJECTS)) {
+		if ((aip->goal_objnum < 0) || (aip->goal_objnum >= MAX_OBJECTS) || (aip->mode == AIM_BAY_DEPART)) {
 			aip->ai_flags &= ~AIF_FORMATION_OBJECT;
 			return 1;
 		}
