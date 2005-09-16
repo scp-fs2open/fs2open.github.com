@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-08-22 22:24:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2005-09-16 00:03:51 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/08/22 22:24:22  Goober5000
+ * some tweaks to parselo, plus ensure that Unicode files don't crash
+ * --Goober5000
+ *
  * Revision 2.29  2005/08/20 20:38:08  taylor
  * more unix->SCP_UNIX define fixing
  *
@@ -1322,7 +1326,6 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 	extern int Player_select_screen_active;
 	if (!Player_select_screen_active && !strcmp(cfilename, pl->current_campaign)) {
 		set_defaults = 0;
-		printf("filename: %s, current campaign: %s\n", cfilename, pl->current_campaign);
 	}
 
 	// probably only called from single player games anymore!!! should be anyway
