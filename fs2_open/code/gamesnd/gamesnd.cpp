@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-07-13 02:01:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2005-09-16 08:11:39 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/07/13 02:01:28  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.19  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -437,6 +441,9 @@ void gamesnd_parse_line(game_snd *gs, char *tag)
 		gs->flags |= GAME_SND_USE_DS3D;
 		stuff_int(&gs->min);
 		stuff_int(&gs->max);
+	} else {
+		gs->min = 0;
+		gs->max = 0;
 	}
 	advance_to_eoln(NULL);
 }
