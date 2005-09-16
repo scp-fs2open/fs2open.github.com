@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-09-13 04:32:11 $
- * $Author: taylor $
+ * $Revision: 2.57 $
+ * $Date: 2005-09-16 17:02:50 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
@@ -4837,7 +4837,8 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 void wl_apply_current_loadout_to_all_ships_in_current_wing()
 {
 	bool error_flag;
-	int source_slot, start_slot, cur_slot, cur_bank;
+	int source_wss_slot, cur_wss_slot;
+	int cur_wing_block, cur_wing_slot, cur_bank;
 	int weapon_type_to_add, result;
 	int i;
 
@@ -4845,13 +4846,13 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	weapon_info *wip;
 
 	char ship_name[NAME_LENGTH];
-	char error_messages[MAX_WSS_SLOTS * MAX_SHIP_WEAPONS][50 + NAME_LENGTH * 2];
+	char error_messages[MAX_WING_SLOTS * MAX_SHIP_WEAPONS][50 + NAME_LENGTH * 2];
 	char *wep_display_name;
 	char buf[NAME_LENGTH];
 
 	// clear error stuff
 	error_flag = false;
-	for (i = 0; i < MAX_WSS_SLOTS * MAX_SHIP_WEAPONS; i++)
+	for (i = 0; i < MAX_WING_SLOTS * MAX_SHIP_WEAPONS; i++)
 	{
 		*error_messages[i] = '\0';
 	}
@@ -4860,41 +4861,45 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	wl_dump_carried_icon();
 
 	// find the currently selected ship (or the squadron leader if none)
-	source_slot = Selected_wl_slot;
-	if (source_slot == -1)
-		source_slot = 0;
+	source_wss_slot = Selected_wl_slot;
+	if (source_wss_slot == -1)
+		source_wss_slot = 0;
 
-	// find the slot that starts the wing this ship is part of
-	start_slot = (source_slot / MAX_WING_SLOTS) * MAX_WING_SLOTS;
+	// find which wing this ship is part of
+	cur_wing_block = source_wss_slot / MAX_WING_SLOTS;
 
-	// for all ships in the current wing
-	for (cur_slot = start_slot; cur_slot < (start_slot + MAX_WING_SLOTS); cur_slot++)
+	// for all ships in the wing
+	for (cur_wing_slot = 0; cur_wing_slot < MAX_WING_SLOTS; cur_wing_slot++)
 	{
-		sip = &Ship_info[Wss_slots[cur_slot].ship_class];
-		ss_return_name(cur_slot / MAX_WING_SLOTS, cur_slot % MAX_WING_SLOTS, ship_name);
+		// get the slot for this ship
+		cur_wss_slot = cur_wing_block * MAX_WING_SLOTS + cur_wing_slot;
 
-		// not the selected ship
-		if (cur_slot == source_slot)
+		// get the ship's name and class
+		sip = &Ship_info[Wss_slots[cur_wss_slot].ship_class];	
+		ss_return_name(cur_wing_block, cur_wing_slot, ship_name);
+
+		// don't process the selected ship
+		if (cur_wss_slot == source_wss_slot)
 			continue;
 
 		// must be valid for us to change
-		if (!ss_valid_slot(cur_slot))
+		if (!ss_valid_slot(cur_wss_slot))
 			continue;
 
 		// copy weapons from source slot to this slot
 		for (cur_bank = 0; cur_bank < MAX_SHIP_WEAPONS; cur_bank++)
 		{
 			// this bank must exist on both the source ship and the destination ship
-			if ((Wss_slots[source_slot].wep_count[cur_bank] < 0) || (Wss_slots[cur_slot].wep_count[cur_bank] < 0))
+			if ((Wss_slots[source_wss_slot].wep_count[cur_bank] < 0) || (Wss_slots[cur_wss_slot].wep_count[cur_bank] < 0))
 			{
 				continue;
 			}
 
 			// dump the destination ship's weapons
-			wl_drop(cur_bank, -1, -1, Wss_slots[cur_slot].wep[cur_bank], cur_slot, -1, true);
+			wl_drop(cur_bank, -1, -1, Wss_slots[cur_wss_slot].wep[cur_bank], cur_wss_slot, -1, true);
 
 			// determine the weapon we need
-			weapon_type_to_add = Wss_slots[source_slot].wep[cur_bank];
+			weapon_type_to_add = Wss_slots[source_wss_slot].wep[cur_bank];
 			wip = &Weapon_info[weapon_type_to_add];
 
 			// maybe localize
@@ -4913,7 +4918,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add])
 				|| ((wip->wi_flags2 & WIF2_BALLISTIC) && !(sip->flags & SIF_BALLISTIC_PRIMARIES)))
 			{
-				sprintf(error_messages[cur_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry"), ship_name, wep_display_name);
+				sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry"), ship_name, wep_display_name);
 				error_flag = true;
 				continue;
 			}
@@ -4924,9 +4929,9 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 				if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[cur_bank][weapon_type_to_add]))
 				{
 					if (cur_bank < MAX_SHIP_PRIMARY_BANKS)
-						sprintf(error_messages[cur_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry in primary bank %d"), ship_name, wep_display_name, cur_bank+1);
+						sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry in primary bank %d"), ship_name, wep_display_name, cur_bank+1);
 					else
-						sprintf(error_messages[cur_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry in secondary bank %d"), ship_name, wep_display_name, cur_bank+1-MAX_SHIP_PRIMARY_BANKS);
+						sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("%s is unable to carry %s weaponry in secondary bank %d"), ship_name, wep_display_name, cur_bank+1-MAX_SHIP_PRIMARY_BANKS);
 
 					error_flag = true;
 					continue;
@@ -4934,12 +4939,12 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			}
 
 			// add from the weapon pool
-			result = wl_drop(-1, weapon_type_to_add, cur_bank, -1, cur_slot, -1, true);
+			result = wl_drop(-1, weapon_type_to_add, cur_bank, -1, cur_wss_slot, -1, true);
 
 			// bank left unfilled or partially filled
 			if ((result == 0) || (result == 2))
 			{
-				sprintf(error_messages[cur_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("Insufficient %s available to arm %s"), Weapon_info[weapon_type_to_add].name, ship_name);
+				sprintf(error_messages[cur_wing_slot * MAX_SHIP_WEAPONS + cur_bank], NOX("Insufficient %s available to arm %s"), Weapon_info[weapon_type_to_add].name, ship_name);
 				error_flag = true;
 				continue;
 			}
@@ -4954,11 +4959,11 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	{
 		int i, j;
 		bool is_duplicate;
-		char error_msg[MAX_WSS_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
+		char error_msg[MAX_WING_SLOTS * MAX_SHIP_WEAPONS * (50 + NAME_LENGTH * 2) + 40];
 		strcpy(error_msg, "The following errors were encountered:\n\n");
 
 		// copy all messages
-		for (i = 0; i < (MAX_WSS_SLOTS * MAX_SHIP_WEAPONS); i++)
+		for (i = 0; i < (MAX_WING_SLOTS * MAX_SHIP_WEAPONS); i++)
 		{
 			// there should be a message here
 			if (*error_messages[i] == '\0')
