@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.165 $
- * $Date: 2005-09-17 01:37:02 $
+ * $Revision: 2.166 $
+ * $Date: 2005-09-17 01:41:49 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
@@ -16515,7 +16515,7 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len)
 		{
 			// see if a variable starts at the next char
 			int var_index = get_index_sexp_variable_name_special(pos+1);
-			if (var_index > 0)
+			if (var_index >= 0)
 			{
 				// get the replacement string ($variable)
 				char what_to_replace[TOKEN_LENGTH+1];
