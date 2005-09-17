@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.47 $
- * $Author: Kazan $
- * $Date: 2005-09-06 00:32:19 $
+ * $Revision: 2.48 $
+ * $Author: Goober5000 $
+ * $Date: 2005-09-17 01:36:29 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/09/06 00:32:19  Kazan
+ * fixed a bug related to multiplayer table validation and modular tables
+ *
  * Revision 2.46  2005/08/24 07:14:52  Goober5000
  * faster version of stristr
  * --Goober5000
@@ -2540,7 +2543,7 @@ char *stristr(const char *str, const char *substr)
 		if ((*start == substr_ch_upper) || (*start == substr_ch_lower))
 		{
 			// first character matched, so check the rest
-			for (char *str_ch = start+1, *substr_ch = (char *)substr+1; substr_ch != '\0'; str_ch++, substr_ch++)
+			for (char *str_ch = start+1, *substr_ch = (char *)substr+1; *substr_ch != '\0'; str_ch++, substr_ch++)
 			{
 				// character match?
 				if (*str_ch == *substr_ch)
