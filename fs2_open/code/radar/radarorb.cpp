@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-07-25 03:13:25 $
- * $Author: Goober5000 $
+ * $Revision: 1.16 $
+ * $Date: 2005-09-17 19:12:37 $
+ * $Author: phreak $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/07/25 03:13:25  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 1.14  2005/07/22 10:18:40  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -801,8 +807,8 @@ void radar_frame_render_orb(float frametime)
 	}
 
 	hud_set_gauge_color(HUD_RADAR);
-	radar_draw_range();
 	radar_blit_gauge();
+	radar_draw_range();
 
 	radar_orb_setup_view();
 	radar_orb_draw_outlines();
