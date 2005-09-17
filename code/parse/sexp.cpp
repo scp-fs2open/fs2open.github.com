@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.164 $
- * $Date: 2005-07-25 03:13:25 $
+ * $Revision: 2.165 $
+ * $Date: 2005-09-17 01:37:02 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.164  2005/07/25 03:13:25  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 2.163  2005/07/24 00:32:44  wmcoolmon
  * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
  * support for the demo/FS1
@@ -16509,7 +16515,7 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len)
 		{
 			// see if a variable starts at the next char
 			int var_index = get_index_sexp_variable_name_special(pos+1);
-			if (var_index != -1)
+			if (var_index > 0)
 			{
 				// get the replacement string ($variable)
 				char what_to_replace[TOKEN_LENGTH+1];
