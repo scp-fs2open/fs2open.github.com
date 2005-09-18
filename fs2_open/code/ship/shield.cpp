@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-08-25 22:40:03 $
+ * $Revision: 2.34 $
+ * $Date: 2005-09-18 23:06:17 $
  * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/08/25 22:40:03  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.32  2005/07/22 10:18:35  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -739,7 +746,7 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 
 	// don't try to draw if we don't have an ani
 	if ( Shield_ani[n].first_frame > -1 ) {
-		frame_num = f2i(Missiontime - Shield_hits[shield_num].start_time) * Shield_ani[n].nframes;
+		frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * Shield_ani[n].nframes );
 		if ( frame_num >= Shield_ani[n].nframes )	{
 			frame_num = Shield_ani[n].nframes - 1;
 		} else if ( frame_num < 0 )	{
