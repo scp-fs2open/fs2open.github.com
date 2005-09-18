@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.176 $
- * $Date: 2005-09-06 00:32:19 $
- * $Author: Kazan $
+ * $Revision: 2.177 $
+ * $Date: 2005-09-18 20:41:10 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.176  2005/09/06 00:32:19  Kazan
+ * fixed a bug related to multiplayer table validation and modular tables
+ *
  * Revision 2.175  2005/09/05 09:38:18  taylor
  * merge of OSX tree
  * a lot of byte swaps were still missing, will hopefully be fully network compatible now
@@ -2588,8 +2591,9 @@ void game_loading_callback(int count)
 		char mem_buffer[1000];
 		char filename[35];
 		int size;
+		int i;
 	  	memblockinfo_sort();
-		for(int i = 0; i < 30; i++)
+		for(i = 0; i < 30; i++)
 		{
 			memblockinfo_sort_get_entry(i, filename, &size);
 
