@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.15 $
- * $Date: 2005-08-20 18:23:02 $
+ * $Revision: 1.16 $
+ * $Date: 2005-09-18 02:28:18 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/08/20 18:23:02  Goober5000
+ * made AwacsMultiplier more user-friendly
+ * --Goober5000
+ *
  * Revision 1.14  2005/07/13 02:01:30  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -203,7 +207,7 @@ void Init_Species_Definitions()
 	required_string("$NumSpecies:");
 	stuff_int(&True_NumSpecies);
 
-	Assert(True_NumSpecies < MAX_SPECIES);
+	Assert(True_NumSpecies <= MAX_SPECIES);
 
 	int thrust_index;
 
