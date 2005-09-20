@@ -232,6 +232,37 @@ void camera::do_frame(float in_frametime)
 		new_orientation.h += rotation_rate.xyz.y;
 		vm_angles_2_matrix(&orientation, &new_orientation);
 	}
+	
+	if(desired_position != NULL)
+	{
+		static bool camera_prob_warned = false;
+		if(!camera_prob_warned) {
+			Warning(LOCATION, "Attempt to use gradual camera movement; this feature is not implemented yet");
+		}
+		/*
+		matrix ori_out;
+		vec3d vel_out;
+		matrix vec_ori;
+		matrix temp_ori;
+
+		//vm_vector_2_matrix(&vec_ori, &desired_position);
+		vm_matrix_interpolate(&vec_ori, &temp_ori, &translation_velocity, in_frametime, &ori_out, &vel_out, &translation_vel_limit, &translation_acc_limit, 1);
+		//vm_vec_rotate(&position, &vmd_identity_matrix, &ori_out);
+		translation_velocity = vel_out;
+
+		//TODO: Make this "if(*desired_orienation == orientation)"
+		//Note that this means we are finished rotating
+		if(vel_out.xyz.x == 0.0f && vel_out.xyz.y == 0.0f && vel_out.xyz.z == 0.0f)
+		{
+			delete desired_position;
+			desired_position = NULL;
+			translation_velocity = translation_vel_limit = translation_acc_limit = vmd_zero_vector;
+		}*/
+	}
+	else
+	{
+		vm_vec_scale_add2(&position, &translation_velocity, in_frametime);
+	}
 
 /*	rot_frametime = trans_frametime = in_frametime;
 
@@ -291,8 +322,6 @@ void camera::do_frame(float in_frametime)
 
 		translation_time_left -= frametime;
 	}*/
-
-	vm_vec_scale_add2(&position, &translation_velocity, in_frametime);
 }
 
 #define MAX_SUBTITLE_LINES		10
