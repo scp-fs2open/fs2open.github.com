@@ -5,13 +5,17 @@
 
 /*
  * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.6 $
- * $Date: 2005-09-08 05:04:15 $
+ * $Revision: 1.7 $
+ * $Date: 2005-09-20 02:45:47 $
  * $Author: taylor $
  *
  * Cross-platform cmdline extractor for VP files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/09/08 05:04:15  taylor
+ * make it actually compile under WIN32
+ * bump version to 0.5 since little else is going to be done to this thing
+ *
  * Revision 1.5  2005/09/08 00:09:31  taylor
  * fix building/linking of command line tools under Linux/OSX
  * add tools as targets to OSX project file
@@ -75,6 +79,12 @@
 FILE *fp_in = NULL;
 FILE *fp_out = NULL;
 
+#ifndef MAX_PATH
+#define MAX_PATH	255
+#endif
+
+char out_dir[MAX_PATH];
+
 #define BLOCK_SIZE (1024*1024)
 
 char tmp_data[BLOCK_SIZE];		// 1 MB
@@ -82,11 +92,12 @@ char tmp_data[BLOCK_SIZE];		// 1 MB
 static int have_index = 0;
 static int have_header = 0;
 
-#define ERR_NO_FP_IN	0
-#define ERR_NO_FP_OUT	1
-#define ERR_INVALID_VP	2
-#define ERR_NO_INDEX	3
-#define ERR_NO_HEADER	4
+#define ERR_NO_FP_IN		0
+#define ERR_NO_FP_OUT		1
+#define ERR_INVALID_VP		2
+#define ERR_NO_INDEX		3
+#define ERR_NO_HEADER		4
+#define ERR_PATH_TOO_LONG	5
 
 typedef struct vp_header {
 	char id[4];  // 'VPVP'
@@ -157,6 +168,9 @@ void print_error(int err)
 			break;
 		case ERR_NO_HEADER:
 			printf("ERROR: No file header is available!  Exiting...\n");
+			break;
+		case ERR_PATH_TOO_LONG:
+			printf("ERROR: Path to output directory is too long!  Exiting...\n");
 			break;
 		default:
 			break;
@@ -261,15 +275,34 @@ void extract_all_files(char *file)
 
 	int status, m_error, nbytes, nbytes_remaining;
 	char path[CF_MAX_PATHNAME_LENGTH+CF_MAX_FILENAME_LENGTH+1]; // path length + filename length + extra NULL
+	char path2[CF_MAX_PATHNAME_LENGTH+CF_MAX_FILENAME_LENGTH+1]; // path length + filename length + extra NULL
 	char *c;
+	ubyte have_outdir = 0;
 
-	printf("VP file extractor - version 0.01\n");
+	int out_len = strlen(out_dir);
+
+	if (out_len > 0)
+		have_outdir = 1;
+
+	printf("VP file extractor - version 0.6\n");
 	printf("\n");
+
+	if (have_outdir) {
+		printf("Output directory: \"%s\"\n", out_dir);
+	}
+
 	printf("Extracting: %s...\n", file);
 
 	for (uint i = 0; i < VP_FileInfo.size(); i++) {
 		// save the file path to a temp location and recursively make the needed directories
-		sprintf(path, "%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
+		if (have_outdir) {
+			if ( (out_len + 1 + strlen(path)) > MAX_PATH-1 )
+				print_error(ERR_PATH_TOO_LONG);
+
+			sprintf(path, "%s%s%s%s", out_dir, DIR_SEPARATOR_STR, VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
+		} else {
+			sprintf(path, "%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR);
+		}
 
 		c = &path[0];
 
@@ -296,11 +329,24 @@ void extract_all_files(char *file)
 			}
 		}
 
+		memset( path, 0, CF_MAX_PATHNAME_LENGTH+CF_MAX_FILENAME_LENGTH+1);
+
 		// start writing out the file
 		fseek(fp_in, VP_FileInfo[i].offset, SEEK_SET);
 
 		sprintf(path, "%s%s%s", VP_FileInfo[i].file_path, DIR_SEPARATOR_STR, VP_FileInfo[i].file_name);
-		fp_out = fopen(path, "wb");
+
+		// this is cheap, I know.
+		if (have_outdir) {
+			if ( (out_len + 1 + strlen(path)) > MAX_PATH-1 )
+				print_error(ERR_PATH_TOO_LONG);
+
+			sprintf(path2, "%s%s%s", out_dir, DIR_SEPARATOR_STR, path);
+		} else {
+			strcpy(path2, path);
+		}
+
+		fp_out = fopen(path2, "wb");
 
 		printf("  %s ... ", path);
 
@@ -344,7 +390,7 @@ void list_all_files(char *file)
 		print_error(ERR_NO_INDEX);
 
 	
-	printf("VP file extractor - version 0.01\n");
+	printf("VP file extractor - version 0.6\n");
 	printf("\n");
 	printf("%s:\n", file);
 	printf("\n");
@@ -390,9 +436,9 @@ void list_all_files(char *file)
 
 void help()
 {
-	printf("VP file extractor - version 0.5\n");
+	printf("VP file extractor - version 0.6\n");
 	printf("\n");
-	printf("Usage:  cfileextractor [-x | -l] [-L] <vp_filename>\n");
+	printf("Usage:  cfileextractor [-x | -l] [-L] [-o <dir>] <vp_filename>\n");
 	printf("\n");
 	printf(" Commands (only one at the time):\n");
 	printf("  -x | --extract        Extract all files into current directory.\n");
@@ -401,6 +447,8 @@ void help()
 	printf("\n");
 	printf(" Options:\n");
 	printf("  -L | --lowercase      Force all filenames to be lower case.\n");
+	printf("  -o <dir>              Extract files to <dir> instead of current directory.\n");
+	printf("                        NOTE: No spaces allowed, enclose path in \" \" if needed.\n");
 	printf("\n");
 	printf("  (No command specified will list all files in the VP archive.)\n");
 	printf("\n");
@@ -435,6 +483,8 @@ int main(int argc, char *argv[])
 	// if the header is invalid then read_header() should exit us out
 	read_header();
 
+	memset(out_dir, 0, MAX_PATH);
+
 	// TODO: add filter based extraction
 	for (int i = 1; i < argc-1; i++) {
 		if (!strcmp(argv[i], "-x") || !strcmp(argv[i], "--extract")) {
@@ -451,6 +501,9 @@ int main(int argc, char *argv[])
 				exit(0);
 			}
 			list = 1;
+		} else if ( !strcmp(argv[i], "-o") && (i+1 < argc) && (argv[i+1][0] != '-') ) {
+			strncpy(out_dir, argv[i+1], MAX_PATH-1);
+			i++;  // have to increment "i" past the output directory
 		} else {
 			help();
 			return 0;
