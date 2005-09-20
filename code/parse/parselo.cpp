@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.48 $
- * $Author: Goober5000 $
- * $Date: 2005-09-17 01:36:29 $
+ * $Revision: 2.49 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-09-20 04:51:45 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/09/17 01:36:29  Goober5000
+ * It is a strange fate that we should suffer so much fear and doubt over so small a thing.
+ * Such a little thing...
+ *
  * Revision 2.47  2005/09/06 00:32:19  Kazan
  * fixed a bug related to multiplayer table validation and modular tables
  *
@@ -265,7 +269,7 @@
  * account for some new foreign chars
  * 
  * 94    6/12/98 7:37p Hoffoss
- * Made ß translate to ss, since we don't have this character in our font.
+ * Made ï¿½translate to ss, since we don't have this character in our font.
  * 
  * 93    6/12/98 4:52p Hoffoss
  * Added support for special characters in in forgeign languages.
@@ -1284,6 +1288,22 @@ char *stuff_and_malloc_string( int type, char *terminators, int len)
 	return vm_strdup(tmp_result);
 }
 
+void stuff_malloc_string(char **dest, int type, char *terminators, int len)
+{
+	Assert(dest != NULL); //wtf?
+	
+	char *new_val = stuff_and_malloc_string(type, terminators, len);
+	
+	if(new_val != NULL)
+	{
+		if(*dest != NULL) {
+			vm_free(*dest);
+		}
+		
+		*dest = new_val;
+	}
+}
+
 // After reading a multitext string, you can call this function to convert any newlines into
 // spaces, so it's a one paragraph string (I.e. as in MS-Word).
 //
@@ -1747,6 +1767,31 @@ void stuff_float(float *f)
 		Mp++;
 
 	diag_printf("Stuffed float: %f\n", *f);
+}
+
+extern int stuff_float_optional(float *f)
+{
+	int skip_len;
+	bool comma = false;
+	
+	ignore_white_space();
+	skip_len = strspn(Mp, "+-0123456789.");
+	if(*(Mp+skip_len) == ',') {
+		comma = true;
+	}
+	
+	if(skip_len < 0)
+	{
+		if(comma) {
+			Mp++;
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+
+	stuff_float(f);
+	return 2;
 }
 
 //	Stuff an integer value pointed at by Mp.
@@ -2226,6 +2271,17 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 	required_string(id);
 	stuff_string(token, f_type, NULL);
 	*addr = string_lookup(token, strlist, max, description, 1);
+}
+
+void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], int max, char *description)
+{
+	char token[128];
+	
+	if(optional_string(id))
+	{
+		stuff_string(token, f_type, NULL);
+		*addr = string_lookup(token, strlist, max, description, 1);
+	}
 }
 
 //	Mp points at a string.
