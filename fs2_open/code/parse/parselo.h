@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.29 $
- * $Author: Goober5000 $
- * $Date: 2005-08-22 22:24:21 $
+ * $Revision: 2.30 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-09-20 04:51:45 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/08/22 22:24:21  Goober5000
+ * some tweaks to parselo, plus ensure that Unicode files don't crash
+ * --Goober5000
+ *
  * Revision 2.28  2005/07/23 21:47:46  Goober5000
  * bah - fixed subsystem comparison
  * --Goober5000
@@ -434,14 +438,16 @@ extern int required_string_3(char *str1, char *str2, char *str3);
 extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);
 extern void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars);
 extern void stuff_string_white(char *pstr, int len = 0);
-extern void stuff_string(char *pstr, int type, char *terminators, int len = 0);
+extern void stuff_string(char *pstr, int type, char *terminators = NULL, int len = 0);
 extern void stuff_string_line(char *pstr, int len);
 
 // Exactly the same as stuff string only Malloc's the buffer. 
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-char *stuff_and_malloc_string( int type, char *terminators, int len);
+extern char *stuff_and_malloc_string( int type, char *terminators = NULL, int len = 0);
+extern void stuff_malloc_string(char **dest, int type, char *terminators = NULL, int len = 0);
 extern void stuff_float(float *f);
+extern int stuff_float_optional(float *f);
 extern void stuff_int(int *i);
 extern void stuff_sound(int *dest);
 extern void stuff_ubyte(ubyte *i);
@@ -454,6 +460,7 @@ extern void stuff_vector(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
 extern int string_lookup(char *str1, char *strlist[], int max, char *description = NULL, int say_errors = 0);
 extern void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, char *description);
+extern void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], int max, char *description);
 extern int match_and_stuff(int f_type, char *strlist[], int max, char *description);
 extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
 	int max, char *description);
