@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.102 $
- * $Date: 2005-08-25 22:40:04 $
+ * $Revision: 2.103 $
+ * $Date: 2005-09-20 02:48:37 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2005/08/25 22:40:04  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.101  2005/07/24 06:01:37  wmcoolmon
  * Multiple shockwaves support.
  *
@@ -1715,7 +1722,7 @@ extern void physics_ship_init(object *objp);
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
-extern int ship_info_lookup(char *name);
+extern int ship_info_lookup(char *name = NULL);
 extern int ship_info_base_lookup(int si_index);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(char *name);

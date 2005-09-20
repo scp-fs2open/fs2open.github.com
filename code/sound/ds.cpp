@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-07-31 01:35:43 $
+ * $Revision: 2.32 $
+ * $Date: 2005-09-20 02:48:37 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/07/31 01:35:43  taylor
+ * we only care about fmt and data tags so once we have them bail out, fixes some really bad seek errors in crappy wav files
+ *
  * Revision 2.30  2005/06/19 02:45:55  taylor
  * OGG streaming fixes to get data reading right and avoid skipping
  * properly handle seeking in OGG streams
@@ -1377,6 +1380,7 @@ void ds_init_channels()
 		OpenAL_ErrorPrint( alGenSources(1, &Channels[i].source_id) );
 		Channels[i].buf_id = -1;
 		Channels[i].vol = 0;
+		Channels[i].is_voice_msg = false;
 	}
 #else
 	int i;
