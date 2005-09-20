@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.134 $
- * $Date: 2005-09-05 09:36:41 $
+ * $Revision: 2.135 $
+ * $Date: 2005-09-20 02:46:52 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2005/09/05 09:36:41  taylor
+ * merge of OSX tree
+ * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
+ * fix OGL version check, it would allow a required major version to be higher if the required minor version was lower than current
+ *
  * Revision 2.133  2005/08/29 02:20:56  phreak
  * Record state changes in gr_opengl_set_state()
  *
@@ -3031,6 +3036,17 @@ void gr_opengl_set_gamma(float gamma)
 			v = 0;
 		}
 		Gr_gamma_lookup[i] = v;
+	}
+
+	// set the alpha gamma settings (for fonts)
+	for (i=0; i<16; i++) {
+		GL_xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
+	}
+
+	GL_xlat[15] = GL_xlat[1];
+
+	for ( ; i<256; i++ )    {
+		GL_xlat[i] = GL_xlat[0];
 	}
 
 	// new way - but not while running FRED

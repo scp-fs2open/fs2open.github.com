@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.11 $
- * $Date: 2005-09-05 09:36:41 $
+ * $Revision: 1.12 $
+ * $Date: 2005-09-20 02:46:53 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/09/05 09:36:41  taylor
+ * merge of OSX tree
+ * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
+ * fix OGL version check, it would allow a required major version to be higher if the required minor version was lower than current
+ *
  * Revision 1.10  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -116,6 +121,7 @@ extern int GL_last_section_x;
 extern int GL_last_section_y;
 extern GLint GL_supported_texture_units;
 extern int GL_should_preload;
+extern ubyte GL_xlat[256];
 
 
 extern int vram_full;
@@ -128,8 +134,8 @@ void opengl_tcache_flush();
 void opengl_tcache_cleanup();
 void opengl_tcache_frame();
 void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
-int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_opengl *t, int reload, int fail_on_full);
-int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot, int fail_on_full);
+int opengl_create_texture_sub(int bitmap_type, int texture_handle, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data = NULL, tcache_slot_opengl *t = NULL, int resize = 0, int reload = 0, int fail_on_full = 0);
+int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL, int fail_on_full = 0);
 int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
 void gr_opengl_set_additive_tex_env();
 void gr_opengl_set_modulate_tex_env();

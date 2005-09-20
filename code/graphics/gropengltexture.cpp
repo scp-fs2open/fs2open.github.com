@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.25 $
- * $Date: 2005-09-05 09:36:41 $
+ * $Revision: 1.26 $
+ * $Date: 2005-09-20 02:46:52 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2005/09/05 09:36:41  taylor
+ * merge of OSX tree
+ * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
+ * fix OGL version check, it would allow a required major version to be higher if the required minor version was lower than current
+ *
  * Revision 1.24  2005/06/19 02:37:02  taylor
  * general cleanup, remove some old code
  * speed up gr_opengl_flip() just a tad
@@ -181,6 +186,7 @@ int GL_last_detail = -1;
 int GL_last_bitmap_type = -1;
 GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
+ubyte GL_xlat[256];
 
 extern int vram_full;
 extern int GLOWMAP;
@@ -329,6 +335,8 @@ void opengl_tcache_init (int use_sections)
 	for( i=0; i<MAX_BITMAPS; i++ )  {
 		Textures[i].bitmap_id = -1;
 	}
+
+	memset( GL_xlat, 0, 256 );
 
 	//GL_last_detail = Detail.hardware_textures;
 	GL_last_bitmap_id = -1;
@@ -491,7 +499,7 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 // bmap_h == height of source bitmap
 // tex_w == width of final texture
 // tex_h == height of final texture
-int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data, int bmap_w, int bmap_h, int tex_w, int tex_h, tcache_slot_opengl *t, int resize, int reload, int fail_on_full)
+int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data, tcache_slot_opengl *t, int resize, int reload, int fail_on_full)
 {
 	int ret_val = 1;
 	int byte_mult = 0;
@@ -507,7 +515,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 
 
 	// bogus
-	if(t == NULL){
+	if ( (t == NULL) || (bmp_data == NULL) ) {
 		return 0;
 	}
 
@@ -638,17 +646,8 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 
 			texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
 			texmemp = texmem;
-			ubyte xlat[256];
 
 			Assert( texmem != NULL );
-
-			for (i=0; i<16; i++) {
-				xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
-			}	
-			xlat[15] = xlat[1];
-			for ( ; i<256; i++ )    {
-				xlat[i] = xlat[0];
-			}
 
 			for (i=0;i<tex_h;i++)
 			{
@@ -656,7 +655,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, ushort *data,
 				{
 					if (i < bmap_h && j < bmap_w) {
 						*texmemp++ = 0xff;
-						*texmemp++ = xlat[bmp_data[i*bmap_w+j]];
+						*texmemp++ = GL_xlat[bmp_data[i*bmap_w+j]];
 					} else {
 						*texmemp++ = 0;
 						*texmemp++ = 0;
@@ -780,6 +779,10 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	ubyte bpp = 16;
 	int reload = 0, resize = 0;
 
+	if (tslot == NULL) {
+		return 0;
+	}
+
 	// setup texture/bitmap flags
 	flags = 0;
 	switch(bitmap_type){
@@ -875,7 +878,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	}
 
 	// call the helper
-	int ret_val = opengl_create_texture_sub(bitmap_type, bitmap_handle, (ushort*)bmp->data, bmp->w, bmp->h, final_w, final_h, tslot, resize, reload, fail_on_full);
+	int ret_val = opengl_create_texture_sub(bitmap_type, bitmap_handle, bmp->w, bmp->h, final_w, final_h, (ushort*)bmp->data, tslot, resize, reload, fail_on_full);
 
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
