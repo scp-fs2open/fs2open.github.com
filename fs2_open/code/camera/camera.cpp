@@ -238,7 +238,10 @@ void camera::do_frame(float in_frametime)
 		static bool camera_prob_warned = false;
 		if(!camera_prob_warned) {
 			Warning(LOCATION, "Attempt to use gradual camera movement; this feature is not implemented yet");
+			camera_prob_warned = true;
 		}
+		//WMC - This is your past self talking. You were attempting to use vm_matrix_interpolate
+		//to move the camera, but never got around to actually getting it completed + tested
 		/*
 		matrix ori_out;
 		vec3d vel_out;
