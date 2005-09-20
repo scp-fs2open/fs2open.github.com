@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.224 $
- * $Date: 2005-09-06 00:32:19 $
- * $Author: Kazan $
+ * $Revision: 2.225 $
+ * $Date: 2005-09-20 02:48:06 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.224  2005/09/06 00:32:19  Kazan
+ * fixed a bug related to multiplayer table validation and modular tables
+ *
  * Revision 2.223  2005/09/05 09:02:08  wmcoolmon
  * Fix the ship vanishing in TOPDOWN mode error
  *
@@ -7397,6 +7400,8 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 	// page in nondims in game
 	if(!Fred_running){
 		model_page_in_textures(sp->modelnum, ship_type);
+		// also get anything extra (like thrusters graphics)
+		ship_page_in_model_textures(sp->modelnum, ship_type);
 	}
 
 	// this is only done when changing ship classes
