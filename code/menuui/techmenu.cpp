@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2005-09-20 04:37:01 $
+ * $Author: wmcoolmon $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.29  2005/06/19 02:37:43  taylor
  * model_free_all() will unload textures so don't bother doing it twice
  *
@@ -571,8 +574,8 @@ static int Text_offset;
 static int Text_line_size[MAX_TEXT_LINES];
 static char *Text_lines[MAX_TEXT_LINES];
 
-static int Cur_entry;				// this is the current entry selected, using entry indexing
-static int Cur_entry_index;		// this is the current entry selected, using master list indexing
+static int Cur_entry = -1;				// this is the current entry selected, using entry indexing
+static int Cur_entry_index = -1;		// this is the current entry selected, using master list indexing
 static int Techroom_ship_modelnum;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
@@ -657,7 +660,11 @@ void techroom_init_desc(char *src, int w)
 void techroom_select_new_entry()
 {
 	Assert(Current_list != NULL);
-	if (Current_list == NULL) return;
+	if (Current_list == NULL || Current_list_size <= 0) {
+		Cur_entry_index = Cur_entry = -1;
+		techroom_init_desc(NULL,0);
+		return;
+	}
 
 	Cur_entry_index = Current_list[Cur_entry].index;
 
@@ -681,21 +688,6 @@ void techroom_select_new_entry()
 			}
 		}
 
-#ifdef MULTIPLAYER_BETA_BUILD
-		// don't load supercaps in the beta
-		if((sip->flags & SIF_SUPERCAP) || (sip->flags & SIF_DRYDOCK)){
-			Techroom_ship_modelnum = -1;
-		} else {
-			Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-		}
-
-		Current_list[Cur_entry].model_num = Techroom_ship_modelnum;
-
-		// page in ship textures properly (takes care of nondimming pixels)
-		model_page_in_textures(Techroom_ship_modelnum, Cur_entry_index);
-
-		Current_list[Cur_entry].textures_loaded = 1;
-#else
 		Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
 		Current_list[Cur_entry].model_num = Techroom_ship_modelnum;
@@ -704,7 +696,6 @@ void techroom_select_new_entry()
 		model_page_in_textures(Techroom_ship_modelnum, Cur_entry_index);
 
 		Current_list[Cur_entry].textures_loaded = 1;
-#endif
 	} else {
 		Techroom_ship_modelnum = -1;
 		Trackball_mode = 0;
@@ -837,6 +828,9 @@ void techroom_ships_render(float frametime)
 {
 	// render all the common stuff
 	tech_common_render();
+	
+	if(Cur_entry_index == -1)
+		return;
 
 	// now render the trackball ship, which is unique to the ships tab
 	float rev_rate = REVOLUTION_RATE;
