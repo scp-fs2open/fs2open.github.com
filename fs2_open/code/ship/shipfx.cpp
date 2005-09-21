@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-08-25 22:40:04 $
- * $Author: taylor $
+ * $Revision: 2.49 $
+ * $Date: 2005-09-21 03:55:31 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/08/25 22:40:04  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.47  2005/08/11 12:16:23  taylor
  * little safety check, a couple of strange cases allow this to happen so we should look for it
  *
@@ -1309,20 +1316,14 @@ void shipfx_warpout_start( object *objp )
 	} else {
 
         // * For now, all the effects flag does is to use our orange effect when warping out    -Et1
-        if( Cmdline_TBPWarpEffects )
+        if( Cmdline_tbp )
         {
-
             warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
-
         }
         else
         {
-        
             warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
-
         }
-                
-
 	}
 	if (warp_objnum < 0 )	{	// JAS: This must always be created, if not, just warp the ship in
 		shipfx_actually_warpout(shipp,objp);

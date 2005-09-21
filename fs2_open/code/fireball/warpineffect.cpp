@@ -9,13 +9,20 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-08-25 22:40:02 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2005-09-21 03:55:32 $
+ * $Author: Goober5000 $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/08/25 22:40:02  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.29  2005/07/25 05:24:17  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000
@@ -247,6 +254,7 @@
 extern int Warp_model;
 extern int Cmdline_nohtl;
 extern int Cmdline_3dwarp;
+extern int Cmdline_warp_flash;
 
 
 DCF(norm,"normalize a zero length vector")
@@ -351,8 +359,11 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 
 			r *= (0.40f + Noise[noise_frame]*0.30f);
 
-			//Bobboau's warp thingie; this should be an option somewhere
-			//r += (float)pow((2.0f*life_percent) - 1.0f,24.0f)*max_radius*2.0f;
+			// Bobboau's warp thingie, toggled by cmdline
+			if (Cmdline_warp_flash)
+			{
+				r += (float)pow((2.0f*life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
+			}
 			
 			g3_draw_bitmap( &verts[4], 0, r, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 			gr_zbuffer_set(saved_gr_zbuffering);

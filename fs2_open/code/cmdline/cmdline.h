@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.73 $
- * $Date: 2005-07-25 05:24:16 $
+ * $Revision: 2.74 $
+ * $Date: 2005-09-21 03:55:31 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2005/07/25 05:24:16  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.72  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -534,7 +538,6 @@ extern int Cmdline_show_stats;
 extern int Cmdline_safeloading;
 extern int Cmdline_nospec;
 extern int Cmdline_orb_radar;
-extern int Cmdline_TBPWarpEffects;  // TBP warp effects -Et1
 
 extern int Cmdline_cache_ani;
 extern int Cmdline_d3dmipmap;
@@ -580,6 +583,7 @@ extern int Cmdline_batch_3dunlit;
 
 extern int Cmdline_2d_poof;
 extern int Cmdline_3dwarp;
+extern int Cmdline_warp_flash;
 
 extern int Cmdline_FRED2_htl;
 extern int CmdLine_NoWarn;
@@ -600,6 +604,7 @@ extern int Cmdline_smart_shields;
 extern int Cmdline_tga16;
 
 extern int Cmdline_wcsaga;
+extern int Cmdline_tbp;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif

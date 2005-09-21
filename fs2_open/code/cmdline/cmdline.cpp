@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.109 $
- * $Date: 2005-09-05 09:33:08 $
- * $Author: taylor $
+ * $Revision: 2.110 $
+ * $Date: 2005-09-21 03:55:31 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2005/09/05 09:33:08  taylor
+ * merge of OSX tree
+ * update cmdline stuff for Linux to be less stupid and provide better feedback to the user
+ *
  * Revision 2.108  2005/08/01 10:00:39  taylor
  * allow for both gamedir and userdir cmdline config files
  *
@@ -784,7 +788,8 @@ Flag exe_params[] =
 	{ "-smart_shields",		"Enable Smart Shields",						true,	0,					EASY_DEFAULT,		"Gameplay",		"", },
 	{ "-ship_choice_3d",	"Use models for ship selection",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.ship_choice_3d", },
 	{ "-3dwarp",			"Enable 3d warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"", },
-	{ "-tbpwarpeffects",	"Toggle features for The Babylon Project",	true,	0,					EASY_DEFAULT,		"Gameplay",		"", }, // TBP warp effects -Et1
+	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"", },
+	{ "-tbp",				"Toggle features for The Babylon Project",	true,	0,					EASY_DEFAULT,		"Gameplay",		"", }, // TBP warp effects -Et1
 	{ "-wcsaga",			"Toggle features for Wing Commander Saga",	true,	0,					EASY_DEFAULT,		"Gameplay",		"", },
 
 	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.snd_preload", },
@@ -913,8 +918,8 @@ cmdline_parm env("-env", NULL);
 cmdline_parm alpha_env("-alpha_env", NULL);	
 cmdline_parm decals("-decals", NULL);	
 cmdline_parm orb_radar("-orbradar",NULL);
-cmdline_parm TBPWarpEffects( "-tbpwarpeffects", NULL ); // TBP warp effects -Et1
 cmdline_parm use_3dwarp("-3dwarp", NULL);
+cmdline_parm use_warp_flash("-warp_flash", NULL);
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
 cmdline_parm use_rlm("-rlm", NULL); // more realistic lighting model - taylor
 cmdline_parm smart_shields("-smart_shields", NULL);
@@ -938,6 +943,7 @@ cmdline_parm snd_preload_arg("-snd_preload", NULL);
 
 cmdline_parm no_fpscap("-no_fps_capping", NULL);
 
+cmdline_parm tbp("-tbp", NULL ); // TBP warp effects -Et1
 cmdline_parm wcsaga("-wcsaga", NULL);
 
 int Cmdline_mpnoreturn = 0;
@@ -972,8 +978,8 @@ int Cmdline_SpewTable_CRCs = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_d3d_particle = 0;
 int Cmdline_orb_radar = 0;
-int Cmdline_TBPWarpEffects = 0; // TBP warp effects -Et1
 int Cmdline_3dwarp = 0;
+int Cmdline_warp_flash = 0;
 int Cmdline_smart_shields = 0;
 int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
@@ -1050,6 +1056,7 @@ int Cmdline_batch_3dunlit = 0;
 
 // Goober5000
 int Cmdline_wcsaga = 0;
+int Cmdline_tbp = 0;
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -1670,15 +1677,17 @@ bool SetCmdlineParams()
 	}
 
     // TBP warp effects -Et1
-    if( TBPWarpEffects.found() )
+    if( tbp.found() )
     {
-
-        Cmdline_TBPWarpEffects = 1;
-
+        Cmdline_tbp = 1;
     }
 
 	if ( use_3dwarp.found() ) {
 		Cmdline_3dwarp = 1;
+	}
+
+	if ( use_warp_flash.found() ) {
+		Cmdline_warp_flash = 1;
 	}
 
 //specular comand lines
