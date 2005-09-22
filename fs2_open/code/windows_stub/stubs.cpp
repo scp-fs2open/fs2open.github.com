@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.21 $
- * $Date: 2005-09-14 20:38:12 $
+ * $Revision: 2.22 $
+ * $Date: 2005-09-22 11:21:22 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/09/14 20:38:12  taylor
+ * some vm_* fixage for Windows
+ *
  * Revision 2.20  2005/09/06 05:32:12  taylor
  * use exit(EXIT_FAILURE) rather than abort() so that all atexit() calls will actually get executed
  *
@@ -122,7 +125,16 @@ int filelength(int fd)
 // non-blocking process pause
 void Sleep(int mili)
 {
+#ifdef __APPLE__
+	// ewwww, I hate this!!  SDL_Delay() is causing issues for us though and this
+	// basically matches Apple examples of the same thing.  Same as SDL_Delay() but
+	// we aren't hitting up the system for anything during the process
+	int then = SDL_GetTicks() + mili;
+
+	while (then > SDL_GetTicks());
+#else
 	SDL_Delay( long(mili) );
+#endif
 }
 
 // fatal assertion error
