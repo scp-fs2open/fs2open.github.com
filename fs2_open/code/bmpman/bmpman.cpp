@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.61 $
- * $Date: 2005-08-26 00:56:16 $
+ * $Revision: 2.62 $
+ * $Date: 2005-09-22 11:20:11 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/08/26 00:56:16  taylor
+ * send out multi pings during level load to prevent timeouts on slower computers (does not break network compatibility with older, or retail, clients/servers)
+ *
  * Revision 2.60  2005/08/20 20:34:48  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -2182,6 +2185,18 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	EFF_FILENAME_CHECK;
 
 	error = dds_read_bitmap( filename, data, &dds_bpp );
+
+#if BYTE_ORDER == BIG_ENDIAN
+	// same as with TGA, we need to byte swap 32-bit, uncompressed, DDS images
+	if ( (be->type == BM_TYPE_DDS) && (dds_bpp == 32) ) {
+		uint *swap_tmp;
+
+		for (uint i = 0; i < be->mem_taken; i += 4) {
+			swap_tmp = (uint *)(data + i);
+			*swap_tmp = INTEL_INT(*swap_tmp);
+		}
+	}
+#endif
 
 	bmp->bpp = dds_bpp;
 	bmp->data = (ptr_u)data;
