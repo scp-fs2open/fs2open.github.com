@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-08-18 01:15:41 $
+ * $Revision: 2.27 $
+ * $Date: 2005-09-22 19:16:48 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/08/18 01:15:41  taylor
+ * Address a couple of pilot code issues
+ *  - make the same MAX_PILOTS in the barracks that the playerselect screen has since it's a problem here too
+ *  - add a -1 check for ship/weapon name lookups to avoid bounds issues.  NOTE: this can empty the techroom of entries if ithits this check, but it won't crash :)
+ *
  * Revision 2.25  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -994,6 +999,9 @@ void barracks_delete_pilot()
 	if (popup_rval != 1) {
 		return;
 	}
+
+	// have to reset popup_rval since it may not update later
+	popup_rval = 0;
 
 	if (!stricmp(Pilots[Selected_line], Cur_pilot->callsign)) {
 		active = 1;
