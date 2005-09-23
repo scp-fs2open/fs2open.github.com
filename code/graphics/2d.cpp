@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-09-05 09:38:18 $
- * $Author: taylor $
+ * $Revision: 2.55 $
+ * $Date: 2005-09-23 23:07:11 $
+ * $Author: Goober5000 $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/09/05 09:38:18  taylor
+ * merge of OSX tree
+ * a lot of byte swaps were still missing, will hopefully be fully network compatible now
+ *
  * Revision 2.53  2005/08/20 20:34:50  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -1389,15 +1393,19 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	}
 
 	// load the web pointer cursor bitmap
-	if (Web_cursor_bitmap < 0)	{
+	if (Web_cursor_bitmap < 0)
+	{
 		int nframes;						// used to pass, not really needed (should be 1)
 
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
 		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 )
 		{
-			Error(LOCATION, "Web cursor bitmap not found.  This usually means that the executable is being run outside the directory you installed Freespace2 to.  Please move the executable to that directory and try again");
-		}
-		
+			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
+				"\t1) You're running Freespace Open from somewhere other than your Freespace 2 folder;\n"
+				"\t2) You've somehow corrupted your Freespace 2 installation;\n"
+				"\t3) You haven't installed Freespace 2 at all.\n"
+				"Number 1 can be fixed by simply moving the Freespace Open executable file to the Freespace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling Freespace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");
+		}	
 	}
 
 	gr_set_color(0,0,0);
