@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-09-09 05:11:20 $
+ * $Revision: 2.35 $
+ * $Date: 2005-09-23 22:48:56 $
  * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/09/09 05:11:20  Goober5000
+ * braces for clarity
+ *
  * Revision 2.33  2005/07/25 05:24:16  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000
@@ -1719,9 +1722,12 @@ int brief_setup_closeup(brief_icon *bi)
 		// cut any text off after (and including) '#' char
 		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
 
-		if ( sip->flags & (SIF_SMALL_SHIP|SIF_BIG_SHIP|SIF_HUGE_SHIP|SIF_SENTRYGUN) ) {
+		// Goober5000 - wcsaga doesn't want this
+		if (!Cmdline_wcsaga && sip->flags & (SIF_SMALL_SHIP|SIF_BIG_SHIP|SIF_HUGE_SHIP|SIF_SENTRYGUN))
+		{
 			strcat(Closeup_icon->closeup_label, XSTR( " class", 434));
 		}
+
 		break;
 	}
 	
