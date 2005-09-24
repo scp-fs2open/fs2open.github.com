@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.31 $
- * $Date: 2005-09-16 02:59:55 $
- * $Author: taylor $
+ * $Revision: 1.32 $
+ * $Date: 2005-09-24 01:41:21 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2005/09/16 02:59:55  taylor
+ * when a wing is departing to a bay have ships break formation when playing follow-the-leader
+ *
  * Revision 1.30  2005/09/01 04:14:03  taylor
  * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
  *
@@ -13611,9 +13614,6 @@ int maybe_request_support(object *objp)
 
 	if (!is_support_allowed(objp))
 		return 0;
-
-	//if (shipp->team != TEAM_FRIENDLY)
-	//	return 0;
 
 	//	Compute a desire value.
 	//	Desire of 0 means no reason to request support.
