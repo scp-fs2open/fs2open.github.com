@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-08-25 22:40:03 $
- * $Author: taylor $
+ * $Revision: 2.44 $
+ * $Date: 2005-09-24 07:07:16 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/08/25 22:40:03  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.42  2005/08/11 12:18:53  taylor
  * handle rare cases where anims would get freaky if one happened to still be playing or otherwise queued
  *
@@ -790,7 +797,7 @@ void persona_parse()
 	{
 		stuff_string(cstrtemp, F_NAME, NULL, NAME_LENGTH);
 
-		for (int j = 0; j < True_NumSpecies; j++)
+		for (int j = 0; j < Num_species; j++)
 		{
 			if (!strcmp(cstrtemp, Species_names[j]))
 			{

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-07-22 10:18:36 $
+ * $Revision: 2.21 $
+ * $Date: 2005-09-24 07:07:15 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/07/22 10:18:36  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.19  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -2047,7 +2051,7 @@ void asteroid_parse_section()
 	required_string("$Hitpoints:");
 	stuff_float(&asip->initial_asteroid_strength);
 }
-extern int True_NumSpecies;
+extern int Num_species;
 // read in data from asteroid.tbl into Asteroid_info[] array
 void asteroid_parse_tbl()
 {
@@ -2064,7 +2068,7 @@ void asteroid_parse_tbl()
 	required_string("#Asteroid Types");
 
 	// total we're expecting
-	int Total_asteroid_types = ((True_NumSpecies + 1) * 3);
+	int Total_asteroid_types = ((Num_species + 1) * 3);
 
 	while (required_string_either("#End","$Name:")) {
 		Assert( Num_asteroid_types < Total_asteroid_types );

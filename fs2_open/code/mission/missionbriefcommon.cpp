@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-07-18 03:45:07 $
- * $Author: taylor $
+ * $Revision: 2.32 $
+ * $Date: 2005-09-24 07:07:16 $
+ * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/07/18 03:45:07  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.30  2005/07/15 03:48:40  Goober5000
  * fixed a typo of Kazan's dating all the way back to October 15, 2003 (!!) that
  * created a nasty stealth bug
@@ -787,7 +794,7 @@ void brief_init_icons()
 	int i, idx;
 
 	for (i=0; i<MAX_BRIEF_ICONS ; i++) {
-		for(idx=0; idx<True_NumSpecies; idx++){
+		for(idx=0; idx<Num_species; idx++){
 			Icon_bitmaps[i][idx].first_frame = -1;
 			Icon_bitmaps[i][idx].num_frames = 0;
 		}
@@ -803,7 +810,7 @@ void brief_init_anims()
 	int i, idx;
 
 	for (i=0; i<MAX_BRIEF_ICONS ; i++) {
-		for(idx=0; idx<True_NumSpecies; idx++){
+		for(idx=0; idx<Num_species; idx++){
 			Icon_highlight_anims[i][idx].first_frame = -1;
 			Icon_highlight_anims[i][idx].num_frames = 0;
 
@@ -823,7 +830,7 @@ void brief_unload_icons()
 	int				i, idx;
 
 	for ( i = 0; i < MAX_BRIEF_ICONS; i++ ) {
-		for(idx=0; idx<True_NumSpecies; idx++){
+		for(idx=0; idx<Num_species; idx++){
 			ib = &Icon_bitmaps[i][idx];
 
 			if (ib->first_frame < 0)
@@ -885,7 +892,7 @@ void brief_parse_icon_tbl()
 	int load_this_icon = 0;
 
 	while (required_string_either("#End","$Name:")) {
-		for(idx=0; idx<True_NumSpecies; idx++){
+		for(idx=0; idx<Num_species; idx++){
 			Assert( num_icons < MAX_BRIEF_ICONS);
 			hf = &Icon_bitmaps[num_icons][idx];
 
@@ -2540,7 +2547,7 @@ void brief_unload_anims()
 	int i, idx;
 	
 	for (i=0; i<MAX_BRIEF_ICONS; i++) {
-		for(idx=0; idx<True_NumSpecies; idx++){
+		for(idx=0; idx<Num_species; idx++){
 			hud_anim_release(&Icon_highlight_anims[i][idx]);
 			hud_anim_release(&Icon_fade_anims[i][idx]);
 		}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-09-16 08:11:39 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2005-09-24 07:07:16 $
+ * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/09/16 08:11:39  taylor
+ * fix afterburner bug
+ *
  * Revision 2.20  2005/07/13 02:01:28  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -496,7 +499,7 @@ void gamesnd_parse_soundstbl()
 
 	char cstrtemp[NAME_LENGTH+3];
 
-	for (int i = 0; i < True_NumSpecies; i++)
+	for (int i = 0; i < Num_species; i++)
 	{
 		sprintf(cstrtemp, "$%s:", Species_names[i]);
 		gamesnd_parse_line(&Snds_flyby[i][0], cstrtemp);

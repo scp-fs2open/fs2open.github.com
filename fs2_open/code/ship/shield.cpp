@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-09-18 23:06:17 $
- * $Author: taylor $
+ * $Revision: 2.35 $
+ * $Date: 2005-09-24 07:07:16 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/09/18 23:06:17  taylor
+ * gah, revert that since it was never going to work (not sure what I was drinking that day)
+ *
  * Revision 2.33  2005/08/25 22:40:03  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -359,8 +362,6 @@ int	Num_tris;								//	Number of triangles in current shield.  Would be a local
 
 shield_hit	Shield_hits[MAX_SHIELD_HITS];
 
-shield_ani Shield_ani[MAX_SPECIES];
-
 int Shield_bitmaps_loaded = 0;
 
 //	This is a recursive function, so prototype it.
@@ -377,10 +378,9 @@ void load_shield_hit_bitmap()
 
 	Shield_bitmaps_loaded = 1;
 
-	for (i=0; i<True_NumSpecies; i++ )	
+	for (i=0; i<Num_species; i++ )	
     {
-
-		Shield_ani[i].first_frame = bm_load_animation(Shield_ani[i].filename, &Shield_ani[i].nframes,NULL, 1);
+		Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, 1);
 
         // *This is disabled for TBP    -Et1
 		// Changed to an assert by kazan
@@ -389,7 +389,7 @@ void load_shield_hit_bitmap()
 		if ( Shield_ani[i].first_frame < 0 )
 			Int3();
         */
-		Assert(Shield_ani[i].first_frame >= 0);
+		Assert(Species_info[i].shield_anim.first_frame >= 0);
 	}
 
 	#endif
@@ -403,9 +403,10 @@ void shield_hit_page_in()
 		load_shield_hit_bitmap();
 	}
 
-	for (i=0; i<True_NumSpecies; i++ )	{
-		if ( Shield_ani[i].first_frame > -1 ) {
-			bm_page_in_xparent_texture( Shield_ani[i].first_frame, Shield_ani[i].nframes );
+	for (i=0; i<Num_species; i++ )	{
+		generic_anim *sa = &Species_info[i].shield_anim;
+		if ( sa->first_frame >= 0 ) {
+			bm_page_in_xparent_texture(sa->first_frame, sa->num_frames );
 		}
 	}
 }
@@ -736,24 +737,26 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 	orient = &objp->orient;
 	centerp = &objp->pos;
 
-	int bitmap_id, frame_num, n;
+	int bitmap_id, frame_num;
 
 	// mprintf(("Percent = %7.3f\n", f2fl(Missiontime - Shield_hits[shield_num].start_time)));
 
-	n = si->species;		
 	// Do some sanity checking
-	Assert( (n >= 0) && (n < True_NumSpecies) );
+	Assert( (si->species >= 0) && (si->species < Num_species) );
+
+	generic_anim *sa = &Species_info[si->species].shield_anim;
 
 	// don't try to draw if we don't have an ani
-	if ( Shield_ani[n].first_frame > -1 ) {
-		frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * Shield_ani[n].nframes );
-		if ( frame_num >= Shield_ani[n].nframes )	{
-			frame_num = Shield_ani[n].nframes - 1;
+	if ( sa->first_frame >= 0 )
+	{
+		frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * sa->num_frames );
+		if ( frame_num >= sa->num_frames )	{
+			frame_num = sa->num_frames - 1;
 		} else if ( frame_num < 0 )	{
 			mprintf(( "HEY! Missiontime went backwards! (Shield.cpp)\n" ));
 			frame_num = 0;
 		}
-		bitmap_id = Shield_ani[n].first_frame + frame_num;
+		bitmap_id = sa->first_frame + frame_num;
 
 		float alpha = 0.9999f;
 		if(The_mission.flags & MISSION_FLAG_FULLNEB){

@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.4 $
- * $Date: 2005-07-13 03:35:35 $
+ * $Revision: 1.5 $
+ * $Date: 2005-09-24 07:07:17 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/07/13 03:35:35  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.3  2005/01/31 10:34:39  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -24,10 +28,47 @@
  *
  */
 
-#if !defined(_species_defs_h_)
-#define _species_defs_h_
+#if !defined(_SPECIES_DEFS_H_)
+#define _SPECIES_DEFS_H_
 
-extern int True_NumSpecies;
+#include "globalincs\pstypes.h"
+#include "globalincs\globals.h"
+#include "bmpman/bmpman.h"
+
+
+typedef struct thruster_pair {
+	generic_anim normal;
+	generic_anim afterburn;
+} thruster_pair;
+
+typedef struct thruster_info {
+	thruster_pair flames;
+	thruster_pair glow;
+} thruster_info;
+
+
+typedef struct species_info
+{
+	char species_name[NAME_LENGTH];
+	union {
+		struct {
+			int r, g, b;
+		} rgb;
+		int a1d[3];
+	} fred_color;
+
+	char debris_texture_file[MAX_FILENAME_LEN];
+
+	generic_anim shield_anim;
+	thruster_info thruster_info;
+
+	float awacs_multiplier;
+} species_info;
+
+
+extern int Num_species;
+extern species_info Species_info[MAX_SPECIES];
+
 
 // load up the species_defs.tbl into the correct data areas
 // IMPORTANT: If NumSpecies != 3 icons.tbl has to be modified to compensate!

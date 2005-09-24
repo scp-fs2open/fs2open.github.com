@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.16 $
- * $Date: 2005-09-18 02:28:18 $
+ * $Revision: 1.17 $
+ * $Date: 2005-09-24 07:07:17 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/09/18 02:28:18  Goober5000
+ * a small fix
+ * --Goober5000
+ *
  * Revision 1.15  2005/08/20 18:23:02  Goober5000
  * made AwacsMultiplier more user-friendly
  * --Goober5000
@@ -84,29 +88,14 @@
 //#include <memory.h>
 
 
-// from shield.cpp
-int True_NumSpecies = 3;
+int Num_species;
+species_info Species_info[MAX_SPECIES];
 
-// manually extern everything here - because it's not all needed throughout the entire system
-extern shield_ani Shield_ani[MAX_SPECIES];
-extern char Species_names[MAX_SPECIES][NAME_LENGTH];
-extern char Debris_texture_files[MAX_SPECIES][FILESPEC_LENGTH];
-extern char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
-extern char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
-extern char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
-extern char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN];
-extern float AwacsMultiplier[MAX_SPECIES];
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // This is the default table
 char *default_species_table = "\
-; ----------------------------------------------\n\
-; Species_defs.tbl								\n\
-; Derek 'Kazan' Meek							\n\
-; FS2 Open Species table						\n\
-;												\n\
-; ----------------------------------------------\n\
 												\n\
 #SPECIES DEFS									\n\
 												\n\
@@ -119,16 +108,13 @@ $Species_Name: Terran							\n\
 	+Debris_Texture: debris01a					\n\
 	+Shield_Hit_ani: shieldhit01a				\n\
 $ThrustAnims:									\n\
-	+Pri_Normal:	thruster01					\n\
-	+Pri_Afterburn:	thruster01a					\n\
-	+Sec_Normal:	thruster02-01				\n\
-	+Sec_Afterburn:	thruster02-01a				\n\
-	+Ter_Normal:	thruster03-01				\n\
-	+Ter_Afterburn:	thruster03-01a				\n\
+	+Normal:	thruster01						\n\
+	+Afterburn:	thruster01a						\n\
 $ThrustGlows:									\n\
 	+Normal:	thrusterglow01					\n\
 	+Afterburn:	thrusterglow01a					\n\
 $AwacsMultiplier: 1.00							\n\
+$FRED Color: ( 0, 0, 192 )						\n\
 												\n\
 ;------------------------						\n\
 ; Vasudan										\n\
@@ -137,16 +123,13 @@ $Species_Name: Vasudan							\n\
 	+Debris_Texture: debris01b					\n\
 	+Shield_Hit_ani: shieldhit01a				\n\
 $ThrustAnims:									\n\
-	+Pri_Normal:	thruster02					\n\
-	+Pri_Afterburn:	thruster02a					\n\
-	+Sec_Normal:	thruster02-02				\n\
-	+Sec_Afterburn:	thruster02-02a				\n\
-	+Ter_Normal:	thruster03-02				\n\
-	+Ter_Afterburn:	thruster03-02a				\n\
+	+Normal:	thruster02						\n\
+	+Afterburn:	thruster02a						\n\
 $ThrustGlows:									\n\
 	+Normal:	thrusterglow02					\n\
 	+Afterburn:	thrusterglow02a					\n\
 $AwacsMultiplier: 1.25							\n\
+$FRED Color: ( 0, 128, 0 )						\n\
 												\n\
 ;------------------------						\n\
 ; Shivan										\n\
@@ -155,16 +138,13 @@ $Species_Name: Shivan							\n\
 	+Debris_Texture: debris01c					\n\
 	+Shield_Hit_ani: shieldhit01a				\n\
 $ThrustAnims:									\n\
-	+Pri_Normal:	thruster03					\n\
-	+Pri_Afterburn:	thruster03a					\n\
-	+Sec_Normal:	thruster02-03				\n\
-	+Sec_Afterburn:	thruster02-03a				\n\
-	+Ter_Normal:	thruster03-03				\n\
-	+Ter_Afterburn:	thruster03-03a				\n\
+	+Normal:	thruster03						\n\
+	+Afterburn:	thruster03a						\n\
 $ThrustGlows:									\n\
 	+Normal:	thrusterglow03					\n\
 	+Afterburn:	thrusterglow03a					\n\
 $AwacsMultiplier: 1.50							\n\
+$FRED Color: ( 192, 0, 0 )						\n\
 												\n\
 #END											\n\
 ";
@@ -172,20 +152,12 @@ $AwacsMultiplier: 1.50							\n\
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // This function loads the data from the species_defs.tbl
-// It setups up Species_names, Debris Texture Files, Thruster Animations and Thruster Glow Animations
 // Names only - actual loading is done elsewhere
 
 void Init_Species_Definitions()
 {
-	memset(Shield_ani,					0, MAX_SPECIES * sizeof(shield_ani));
-	memset(Species_names,				0, MAX_SPECIES * (NAME_LENGTH));
-	memset(Debris_texture_files,		0, MAX_SPECIES * (FILESPEC_LENGTH));
-	memset(Thrust_anim_names,			0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
-	memset(Thrust_secondary_anim_names, 0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
-	memset(Thrust_tertiary_anim_names,	0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
-	memset(Thrust_glow_anim_names,		0, NUM_THRUST_ANIMS * MAX_FILENAME_LEN);
-
-	char cstrtemp[MAX_FILENAME_LEN+1];
+	// clear array
+	memset(Species_info, 0, MAX_SPECIES * sizeof(species_info));
 
 	// Goober5000 - condensed check for table file
 	CFILE *sdt = cfopen("species_defs.tbl", "rb");
@@ -199,86 +171,126 @@ void Init_Species_Definitions()
 	else
 		read_file_text_from_array(default_species_table);
 
-
 	reset_parse();	
 
 	required_string("#SPECIES DEFS");
 
 	required_string("$NumSpecies:");
-	stuff_int(&True_NumSpecies);
+	stuff_int(&Num_species);
 
-	Assert(True_NumSpecies <= MAX_SPECIES);
+	Assert(Num_species <= MAX_SPECIES);
 
-	int thrust_index;
-
-	for (int i = 0; i < True_NumSpecies; i++)
+	// begin reading data
+	for (int i = 0; i < Num_species; i++)
 	{
+		species_info *species = &Species_info[i];
+
+
 		// Start Species - Get its name
 		required_string("$Species_Name:");
-		stuff_string(Species_names[i],								F_NAME, NULL, NAME_LENGTH);
+		stuff_string(species->species_name, F_NAME, NULL, NAME_LENGTH);
 
 		// Get its Debris Texture
 		required_string("+Debris_Texture:");
-		stuff_string(Debris_texture_files[i],						F_NAME, NULL, FILESPEC_LENGTH);
+		stuff_string(species->debris_texture_file, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// Shield Hit Animation
-		memset(cstrtemp, 0, MAX_FILENAME_LEN+1);
 		required_string("+Shield_Hit_ani:");
-		stuff_string(cstrtemp,										F_NAME, NULL, MAX_FILENAME_LEN);
-		strcpy(Shield_ani[i].filename, cstrtemp);
+		stuff_string(species->shield_anim.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+
 
 		// Thruster Anims
-		thrust_index = i*2;
-
 		required_string("$ThrustAnims:");
 
-		required_string("+Pri_Normal:");
-		stuff_string(Thrust_anim_names[thrust_index],				F_NAME, NULL, MAX_FILENAME_LEN);
+		// favor new style
+		if (!optional_string("+Pri_Normal:"))
+			required_string("+Normal:");
+		stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
-		required_string("+Pri_Afterburn:");
-		stuff_string(Thrust_anim_names[thrust_index+1],				F_NAME, NULL, MAX_FILENAME_LEN);
+		// and again
+		if (!optional_string("+Pri_Afterburn:"))
+			required_string("+Afterburn:");
+		stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
-		required_string("+Sec_Normal:");
-		stuff_string(Thrust_secondary_anim_names[thrust_index],		F_NAME, NULL, MAX_FILENAME_LEN);
 
-		required_string("+Sec_Afterburn:");
-		stuff_string(Thrust_secondary_anim_names[thrust_index+1],	F_NAME, NULL, MAX_FILENAME_LEN);
-
-		required_string("+Ter_Normal:");
-		stuff_string(Thrust_tertiary_anim_names[thrust_index],		F_NAME, NULL, MAX_FILENAME_LEN);
-		
-		required_string("+Ter_Afterburn:");
-		stuff_string(Thrust_tertiary_anim_names[thrust_index+1],	F_NAME, NULL, MAX_FILENAME_LEN);
-
+		// old stuff for compatibility
+		optional_string("+Sec_Normal:");
+		optional_string("+Sec_Afterburn:");
+		optional_string("+Ter_Normal:");
+		optional_string("+Ter_Afterburn:");
 
 
 		// Thruster Glow Anims
 		required_string("$ThrustGlows:");
 
 		required_string("+Normal:");
-		stuff_string(Thrust_glow_anim_names[thrust_index],			F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_info.glow.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 		
 		required_string("+Afterburn:");
-		stuff_string(Thrust_glow_anim_names[thrust_index+1],		F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 
-		// Goober5000 - AWACS multiplier (which Kazan forgot or missed)
+		// Goober5000 - AWACS multiplier
 		if (optional_string("$AwacsMultiplier:"))
 		{
-			stuff_float(&AwacsMultiplier[i]);
+			stuff_float(&species->awacs_multiplier);
 		}
 		else
 		{
 			// set defaults to Volition's originals
 			if (!stricmp(Species_names[i], "Vasudan"))
-				AwacsMultiplier[i] = 1.25f;
+				species->awacs_multiplier = 1.25f;
 			else if (!stricmp(Species_names[i], "Shivan"))
-				AwacsMultiplier[i] = 1.50f;
+				species->awacs_multiplier = 1.50f;
 			else
-				AwacsMultiplier[i] = 1.0f;
+				species->awacs_multiplier = 1.0f;
 
 			// let them know
-			Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", Species_names[i], AwacsMultiplier[i]);
+			Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", species->species_name, species->awacs_multiplier);
+		}
+
+
+		// Goober5000 - FRED stuff
+		if (optional_string("$FRED Color:"))
+		{
+			stuff_int_list(species->fred_color.a1d, 3, RAW_INTEGER_TYPE);
+		}
+		else
+		{
+			// set defaults to Volition's originals
+			if (!stricmp(species->species_name, "Terran"))
+			{
+				species->fred_color.rgb.r = 0;
+				species->fred_color.rgb.g = 0;
+				species->fred_color.rgb.b = 192;
+			}
+			else if (!stricmp(species->species_name, "Vasudan"))
+			{
+				species->fred_color.rgb.r = 0;
+				species->fred_color.rgb.g = 128;
+				species->fred_color.rgb.b = 0;
+			}
+			else if (!stricmp(species->species_name, "Shivan"))
+			{
+				species->fred_color.rgb.r = 192;
+				species->fred_color.rgb.g = 0;
+				species->fred_color.rgb.b = 0;
+			}
+			else if (!stricmp(species->species_name, "Ancients") || !stricmp(species->species_name, "Ancient"))
+			{
+				species->fred_color.rgb.r = 192;
+				species->fred_color.rgb.g = 0;
+				species->fred_color.rgb.b = 192;
+			}
+			else
+			{
+				species->fred_color.rgb.r = 0;
+				species->fred_color.rgb.g = 0;
+				species->fred_color.rgb.b = 0;
+			}
+
+			// let them know
+			Warning(LOCATION, "$FRED Color not specified for species %s in species_defs.tbl!  Defaulting to (%d, %d, %d).\n", species->species_name, species->fred_color.rgb.r, species->fred_color.rgb.g, species->fred_color.rgb.b);
 		}
 	}
 	

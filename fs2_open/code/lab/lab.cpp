@@ -161,14 +161,14 @@ Text *svt[NUM_SHIP_VARIABLES];
 	svt[i++]->SetSaveLoc(&var, T_ST_ONENTER)
 
 extern int Hud_shield_filename_count;
-extern int True_NumSpecies;
+extern int Num_species;
 
 void set_ship_variables_ship(ship_info *sip)
 {
 	unsigned int i=0;
 	svt[i++]->SetText(sip->name);
 	svt[i]->SetText(sip->species);
-	svt[i++]->SetSaveLoc(&sip->species, T_ST_ONENTER, True_NumSpecies-1, 0);
+	svt[i++]->SetSaveLoc(&sip->species, T_ST_ONENTER, Num_species-1, 0);
 
 	SVW_SET_SI_VAR(density);
 	SVW_SET_SI_VAR(damp);
@@ -414,26 +414,26 @@ void make_new_window(Button* caller)
 
 	Tree* cmp = (Tree*)ShipClassWin->AddChild(new Tree("Ship tree", 0, 0));
 	TreeItem *ctip, *stip;
-	TreeItem **species_nodes = new TreeItem*[True_NumSpecies+1];
+	TreeItem **species_nodes = new TreeItem*[Num_species+1];
 	int i,j;
 
 	//Add species nodes
-	for(i = 0; i < True_NumSpecies; i++)
+	for(i = 0; i < Num_species; i++)
 	{
 		species_nodes[i] = cmp->AddItem(NULL, Species_names[i], 0, false);
 	}
 	//Just in case. I don't actually think this is possible though.
-	species_nodes[True_NumSpecies] = cmp->AddItem(NULL, "Other", 0, false);
+	species_nodes[Num_species] = cmp->AddItem(NULL, "Other", 0, false);
 
 	//Now add the ships
 	std::string lod_name;
 	char buf[8];
 	for(i = 0; i < Num_ship_types; i++)
 	{
-		if(Ship_info[i].species >= 0 && Ship_info[i].species < True_NumSpecies)
+		if(Ship_info[i].species >= 0 && Ship_info[i].species < Num_species)
 			stip = species_nodes[Ship_info[i].species];
 		else
-			stip = species_nodes[True_NumSpecies];
+			stip = species_nodes[Num_species];
 
 		ctip = cmp->AddItem(stip, Ship_info[i].name, i, false);
 		for(j = 0; j < Ship_info[i].num_detail_levels; j++)
@@ -448,7 +448,7 @@ void make_new_window(Button* caller)
 
 	//Get rid of any empty nodes
 	//No the <= is not a mistake :)
-	for(i = 0; i <= True_NumSpecies; i++)
+	for(i = 0; i <= Num_species; i++)
 	{
 		if(!species_nodes[i]->HasChildren())
 		{
