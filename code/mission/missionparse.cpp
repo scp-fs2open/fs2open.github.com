@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.109 $
- * $Date: 2005-09-24 01:50:08 $
+ * $Revision: 2.110 $
+ * $Date: 2005-09-24 02:24:29 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2005/09/24 01:50:08  Goober5000
+ * a bunch of support ship bulletproofing
+ * --Goober5000
+ *
  * Revision 2.108  2005/08/31 08:09:50  Goober5000
  * All wings will now form on their respective leaders, not just certain starting wings.
  * If this breaks anything, the old code is commented out.  You know who to yell at. ;)
@@ -1277,7 +1281,7 @@ void parse_mission_info(mission *pm)
 	// for each species, store whether support is available
 	for (int species = 0; species < MAX_SPECIES; species++)
 	{
-		for (int ship_class = 0; ship_class < Num_ship_types; j++)
+		for (int ship_class = 0; ship_class < Num_ship_types; ship_class++)
 		{
 			if ((Ship_info[ship_class].flags & SIF_SUPPORT) && (Ship_info[ship_class].species == species))
 			{
