@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.17 $
- * $Date: 2005-09-24 07:07:17 $
+ * $Revision: 1.18 $
+ * $Date: 2005-09-24 07:18:15 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/09/24 07:07:17  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 1.16  2005/09/18 02:28:18  Goober5000
  * a small fix
  * --Goober5000
@@ -214,10 +218,11 @@ void Init_Species_Definitions()
 
 
 		// old stuff for compatibility
-		optional_string("+Sec_Normal:");
-		optional_string("+Sec_Afterburn:");
-		optional_string("+Ter_Normal:");
-		optional_string("+Ter_Afterburn:");
+		char dummy[MAX_FILENAME_LEN];
+		if (optional_string("+Sec_Normal:")) stuff_string(dummy, F_NAME, NULL, MAX_FILENAME_LEN);
+		if (optional_string("+Sec_Afterburn:")) stuff_string(dummy, F_NAME, NULL, MAX_FILENAME_LEN);
+		if (optional_string("+Ter_Normal:")) stuff_string(dummy, F_NAME, NULL, MAX_FILENAME_LEN);
+		if (optional_string("+Ter_Afterburn:")) stuff_string(dummy, F_NAME, NULL, MAX_FILENAME_LEN);
 
 
 		// Thruster Glow Anims
