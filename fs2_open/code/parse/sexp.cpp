@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.166 $
- * $Date: 2005-09-17 01:41:49 $
+ * $Revision: 2.167 $
+ * $Date: 2005-09-24 01:50:09 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.166  2005/09/17 01:41:49  Goober5000
+ * better tweak
+ *
  * Revision 2.164  2005/07/25 03:13:25  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -990,7 +993,6 @@
 #include <ctype.h>
 #include <assert.h>
 #include <limits.h>
-
 
 #include "parse/parselo.h"
 #include "parse/sexp.h"
@@ -11551,6 +11553,11 @@ void sexp_set_support_ship(int n)
 	if ((temp_val < 0) && (stricmp(CTEXT(n), "<any support ship class>")))
 	{
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
+		return;
+	}
+	if (!(Ship_info[temp_val].flags & SIF_SUPPORT))
+	{
+		Warning(LOCATION, "Ship %s is not a support ship!", Ship_info[temp_val].name);
 		return;
 	}
 	The_mission.support_ships.ship_class = temp_val;

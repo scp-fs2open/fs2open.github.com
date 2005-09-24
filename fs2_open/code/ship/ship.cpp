@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.225 $
- * $Date: 2005-09-20 02:48:06 $
- * $Author: taylor $
+ * $Revision: 2.226 $
+ * $Date: 2005-09-24 01:50:09 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.225  2005/09/20 02:48:06  taylor
+ * make sure that any extra ship textures get loaded on a class change (that Ares bug which wasn't actually Ares specific)
+ *
  * Revision 2.224  2005/09/06 00:32:19  Kazan
  * fixed a bug related to multiplayer table validation and modular tables
  *
@@ -13331,34 +13334,46 @@ int is_support_allowed(object *objp)
 		}
 	}
 
-	if ( Game_mode & GM_NORMAL ) {
-		if (Ships[objp->instance].team != TEAM_FRIENDLY){
+	if (Game_mode & GM_NORMAL)
+	{
+		if (Ships[objp->instance].team != TEAM_FRIENDLY)
+		{
 			return 0;
 		}
-
-		return 1;
+	}
 #ifndef NO_NETWORK
-	} else {
+	else
+	{
 		// multiplayer version behaves differently.  Depending on mode:
 		// 1) coop mode -- only available to friendly
 		// 2) team v team mode -- availble to either side
 		// 3) dogfight -- never
 
-		if(Netgame.type_flags & NG_TYPE_DOGFIGHT){
+		if(Netgame.type_flags & NG_TYPE_DOGFIGHT)
+		{
 			return 0;
 		}
 
-		if ( IS_MISSION_MULTI_COOP ) {
-			if ( Ships[objp->instance].team != TEAM_FRIENDLY ){
+		if (IS_MISSION_MULTI_COOP)
+		{
+			if (Ships[objp->instance].team != TEAM_FRIENDLY)
+			{
 				return 0;
 			}
 		}
-
-		return 1;
+	}
 #endif
+
+	// Goober5000 - extra check for existence of support ship
+	if ( (The_mission.support_ships.ship_class < 0) &&
+		!(The_mission.support_ships.support_available_for_species & (1 << Ship_info[Ships[objp->instance].ship_info_index].species)) )
+	{
+		return 0;
 	}
 
-	return 0;
+
+	// Goober5000 - if we got this far, we can request support
+	return 1;
 }
 
 // returns random index of a visible ship

@@ -9,13 +9,20 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.66 $
- * $Author: taylor $
- * $Date: 2005-08-25 22:40:03 $
+ * $Revision: 2.67 $
+ * $Author: Goober5000 $
+ * $Date: 2005-09-24 01:50:09 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/08/25 22:40:03  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.65  2005/07/25 05:24:17  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000
@@ -528,6 +535,7 @@ typedef struct support_ship_info {
 	int		max_support_ships;				// max number of support ships
 	int		ship_class;						// ship class of support ship
 	int		tally;							// number of support ships so far
+	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)
 } support_ship_info;
 
 typedef struct mission {
