@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-07-22 10:18:39 $
+ * $Revision: 2.57 $
+ * $Date: 2005-09-24 07:07:16 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.55  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1053,7 +1057,7 @@ int get_next_weapon_looped(int current_weapon, int subtype)
 	return current_weapon;
 }
 
-extern int True_NumSpecies;
+extern int Num_species;
 
 void process_debug_keys(int k)
 {
@@ -1571,7 +1575,7 @@ void process_debug_keys(int k)
 			sip = &Ship_info[Ships[objp->instance].ship_info_index];
 			sip->species++;
 
-			if (sip->species >= True_NumSpecies)
+			if (sip->species >= Num_species)
 				sip->species = 0;
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Species of target changed to: %s", 24), Species_names[sip->species]);

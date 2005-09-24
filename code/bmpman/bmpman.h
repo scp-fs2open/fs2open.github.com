@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.25 $
- * $Date: 2005-08-20 20:34:49 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2005-09-24 07:07:17 $
+ * $Author: Goober5000 $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/08/20 20:34:49  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 2.24  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -378,6 +383,15 @@
 #define BM_PIXEL_FORMAT_ARGB_D3D			2						// this card has nice 1555 textures like Glide - ahhhhh!
 
 
+// Goober5000
+typedef struct generic_anim {
+	char filename[MAX_FILENAME_LEN];
+	int	first_frame;
+	int	num_frames;
+	int time;		// in seconds
+} generic_anim;
+
+
 extern int bm_inited;
 
 extern int Bm_paging;
@@ -592,4 +606,6 @@ void bm_print_bitmaps();
 int bm_make_render_target( int &x_res, int &y_res, int flags );
 bool bm_is_render_target(int bitmap_id);
 bool bm_set_render_target(int handle, int face = -1);
+
+
 #endif

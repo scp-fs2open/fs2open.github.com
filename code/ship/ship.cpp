@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.226 $
- * $Date: 2005-09-24 01:50:09 $
+ * $Revision: 2.227 $
+ * $Date: 2005-09-24 07:07:16 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.226  2005/09/24 01:50:09  Goober5000
+ * a bunch of support ship bulletproofing
+ * --Goober5000
+ *
  * Revision 2.225  2005/09/20 02:48:06  taylor
  * make sure that any extra ship textures get loaded on a class change (that Ares bug which wasn't actually Ares specific)
  *
@@ -1641,6 +1645,7 @@
 #include "mission/missioncampaign.h"
 #include "radar/radarsetup.h"
 #include "object/objectdock.h"
+#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
@@ -1785,32 +1790,6 @@ ship_counts Ship_counts[MAX_SHIP_TYPE_COUNTS];
 // every SHIP_CARGO_CHECK_INTERVAL ms.  Didn't want to make a timer in each ship struct.  Ensure
 // inited to 1 at mission start.
 static int Ship_cargo_check_timer;
-
-
-// Stuff for showing ship thrusters. 
-typedef struct thrust_anim {
-	int	num_frames;
-	int	first_frame;
-	int secondary;
-	int tertiary;
-	float time;				// in seconds
-} thrust_anim;
-
-
-
-// ----------------------------------------------------------------------------
-// New species_defs.tbl based code
-// 10/15/2003, Kazan
-// ----------------------------------------------------------------------------
-
-char	Thrust_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
-char	Thrust_secondary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
-char	Thrust_tertiary_anim_names[NUM_THRUST_ANIMS][MAX_FILENAME_LEN];
-char	Thrust_glow_anim_names[NUM_THRUST_GLOW_ANIMS][MAX_FILENAME_LEN];
-
-static thrust_anim	Thrust_anims[NUM_THRUST_ANIMS];
-static thrust_anim	Thrust_glow_anims[NUM_THRUST_GLOW_ANIMS];
-
 
 static int Thrust_anim_inited = 0;
 
@@ -2101,9 +2080,9 @@ int parse_ship(bool replace)
 
 	// static alias stuff - stupid, but it seems to be necessary
 	static char *tspecies_names[MAX_SPECIES];
-	for (i = 0; i < True_NumSpecies; i++)
+	for (i = 0; i < Num_species; i++)
 		tspecies_names[i] = Species_names[i];
-	find_and_stuff("$Species:", &sip->species, F_NAME, tspecies_names, True_NumSpecies, "species names");
+	find_and_stuff("$Species:", &sip->species, F_NAME, tspecies_names, Num_species, "species names");
 
 	diag_printf ("Ship species -- %s\n", Species_names[sip->species]);
 
@@ -2959,6 +2938,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 
+/* what the crap is all this???
 	sip->thruster_glow1 = -1;
 	sip->thruster_glow1a = -1;
 	sip->thruster_glow2 = -1;
@@ -2980,10 +2960,6 @@ strcpy(parse_error_text, temp_error);
 	strcpy(sip->thruster_bitmap2a, Thrust_secondary_anim_names[i]);
 	strcpy(sip->thruster_bitmap3a, Thrust_tertiary_anim_names[i]);
 
-	 sip->thruster01_rad_factor = 1.0f;
-	 sip->thruster02_rad_factor = 1.0f;
-	 sip->thruster02_len_factor = 1.0f;
-	 sip->thruster03_rad_factor = 1.0f;
 
 	if ( optional_string("$Thruster Bitmap 1:") ){
 		stuff_string( sip->thruster_bitmap1, F_NAME, NULL );
@@ -2991,6 +2967,8 @@ strcpy(parse_error_text, temp_error);
 	if ( optional_string("$Thruster Bitmap 1a:") ){
 		stuff_string( sip->thruster_bitmap1a, F_NAME, NULL );
 	}
+
+	sip->thruster01_rad_factor = 1.0f;
 	if ( optional_string("$Thruster01 Radius factor:") ){
 		stuff_float(&sip->thruster01_rad_factor);
 	}
@@ -3001,9 +2979,13 @@ strcpy(parse_error_text, temp_error);
 	if ( optional_string("$Thruster Bitmap 2a:") ){
 		stuff_string( sip->thruster_bitmap2a, F_NAME, NULL );
 	}
+
+	sip->thruster02_rad_factor = 1.0f;
 	if ( optional_string("$Thruster02 Radius factor:") ){
 		stuff_float(&sip->thruster02_rad_factor);
 	}
+
+	sip->thruster02_len_factor = 1.0f;
 	if ( optional_string("$Thruster01 Length factor:") ){
 		stuff_float(&sip->thruster02_len_factor);
 	}
@@ -3014,10 +2996,14 @@ strcpy(parse_error_text, temp_error);
 	if ( optional_string("$Thruster Bitmap 3a:") ){
 		stuff_string( sip->thruster_bitmap3a, F_NAME, NULL );
 	}
+
+	sip->thruster03_rad_factor = 1.0f;
 	if ( optional_string("$Thruster03 Radius factor:") ){
 		stuff_float(&sip->thruster03_rad_factor);
 	}
+*/
 
+/*
 	sip->n_thruster_particles = 0;
 	sip->n_ABthruster_particles = 0;
 	while(optional_string("$Thruster Particles:")){
@@ -3044,6 +3030,7 @@ strcpy(parse_error_text, temp_error);
 			required_string("$Variance:");
 		stuff_float(&t->variance);
 	}
+*/
 
 	// if the ship is a stealth ship
 	if ( optional_string("$Stealth:") )
@@ -5909,49 +5896,59 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 // loads the animations for ship's afterburners
 void ship_init_thrusters()
 {
-	int			fps, i;
-	thrust_anim	*ta;
+	int fps, i, j;
+	generic_anim *ta;
+	species_info *species;
 
 	if ( Thrust_anim_inited == 1 )
 		return;
 
-	// AL 29-3-98: Don't want to include Shivan thrusters in the demo build
-	int num_thrust_anims = NUM_THRUST_ANIMS;
-	#ifdef DEMO // N/A FS2_DEMO
-		num_thrust_anims = NUM_THRUST_ANIMS - 2;
-	#endif
+	for (i = 0; i < Num_species; i++)
+	{
+		species = &Species_info[i];
 
-	for ( i = 0; i < (True_NumSpecies * 2); i++ ) {
-		ta = &Thrust_anims[i];
-		ta->first_frame = bm_load_animation(Thrust_anim_names[i],  &ta->num_frames, &fps, 1);
-		ta->secondary = bm_load(Thrust_secondary_anim_names[i]);
-		ta->tertiary = bm_load(Thrust_tertiary_anim_names[i]);
-		
-		if ( ta->first_frame == -1 ) {
-			Error(LOCATION,"Error loading animation file: %s\n",Thrust_anim_names[i]);
-			return;
+		// AL 29-3-98: Don't want to include Shivan thrusters in the demo build
+#ifdef DEMO // N/A FS2_DEMO
+		if (!stricmp(species->species_name, "Shivan"))
+			continue;
+#endif
+
+		generic_anim *all_flame_anims[2];
+		all_flame_anims[0] = &species->thruster_info.flames.normal;
+		all_flame_anims[1] = &species->thruster_info.flames.afterburn;
+		for (j = 0; j < 2; j++)
+		{
+			ta = all_flame_anims[j];
+
+			ta->first_frame = bm_load_animation(ta->filename,  &ta->num_frames, &fps, 1);
+			if (ta->first_frame < 0)
+			{
+				Error(LOCATION,"Error loading animation file: %s\n", ta->filename);
+				return;
+			}
+			Assert(fps != 0);
+			ta->time = (int) i2fl(ta->num_frames)/fps;
 		}
-		Assert(fps != 0);
-		ta->time = i2fl(ta->num_frames)/fps;
-	}
 
-	// AL 29-3-98: Don't want to include Shivan thrusters in the demo build
-	int num_thrust_glow_anims = NUM_THRUST_GLOW_ANIMS;
-	#ifdef DEMO // N/A FS2_DEMO
-		num_thrust_glow_anims = NUM_THRUST_GLOW_ANIMS - 2;
-	#endif
 
-	for ( i = 0; i < (True_NumSpecies * 2); i++ ) {
-		ta = &Thrust_glow_anims[i];
-		ta->num_frames = NOISE_NUM_FRAMES;
-		fps = 15;
-		ta->first_frame = bm_load( Thrust_glow_anim_names[i] );
-		if ( ta->first_frame == -1 ) {
-			Error(LOCATION,"Error loading bitmap file: %s\n",Thrust_glow_anim_names[i]);
-			return;
+		generic_anim *all_glow_anims[2];
+		all_glow_anims[0] = &species->thruster_info.glow.normal;
+		all_glow_anims[1] = &species->thruster_info.glow.afterburn;
+		for (j = 0; j < 2; j++)
+		{
+			ta = all_glow_anims[j];
+
+			ta->num_frames = NOISE_NUM_FRAMES;
+			fps = 15;
+			ta->first_frame = bm_load(ta->filename);
+			if (ta->first_frame < 0)
+			{
+				Error(LOCATION,"Error loading bitmap file: %s\n", ta->filename);
+				return;
+			}
+			Assert(fps != 0);
+			ta->time = (int) i2fl(ta->num_frames)/fps;
 		}
-		Assert(fps != 0);
-		ta->time = i2fl(ta->num_frames)/fps;
 	}
 
 	Thrust_anim_inited = 1;
@@ -5965,29 +5962,30 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 {
 	float rate;
 	int framenum;
-	int anim_index;
-	thrust_anim *the_anim;
+	generic_anim *flame_anim, *glow_anim;
 	ship_info	*sinfo = &Ship_info[shipp->ship_info_index];
+	species_info *species = &Species_info[sinfo->species];
 
-	bool AB = false;
+	if (!Thrust_anim_inited)
+		ship_init_thrusters();
 
-	if ( !Thrust_anim_inited )	ship_init_thrusters();
-
-	// The animations are organized by:
-	// Species*2 + (After_burner_on?1:0)
-	anim_index = sinfo->species*2;
-
-	if ( objp->phys_info.flags & PF_AFTERBURNER_ON )	{
-		anim_index++;		//	select afterburner anim.
+	if (objp->phys_info.flags & PF_AFTERBURNER_ON)
+	{
+		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
+		glow_anim = &species->thruster_info.glow.afterburn;			// select afterburner glow
 		rate = 1.5f;		// go at 1.5x faster when afterburners on
-		AB = true;
-	} 
+	}
 	else if (objp->phys_info.flags & PF_BOOSTER_ON)
 	{
-		anim_index++;		//	select afterburner anim.
-		rate = 2.5f;		// go at 2.5x faster when booster pod on
-		AB = true;
-	}else {
+		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
+		glow_anim = &species->thruster_info.glow.afterburn;			// select afterburner glow
+		rate = 2.5f;		// go at 2.5x faster when boosters on
+	}
+	else
+	{
+		flame_anim = &species->thruster_info.flames.normal;			// select normal flame
+		glow_anim = &species->thruster_info.glow.normal;				// select normal glow
+
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
 		// rate = 0.5f + objp->phys_info.forward_thrust / 2.0f;
@@ -5996,69 +5994,51 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 
 //	rate = 0.1f;
 
-	Assert( anim_index > -1 );
-	Assert( anim_index < NUM_THRUST_ANIMS );
-
-	the_anim = &Thrust_anims[anim_index];
-
-	//Assert( frametime > 0.0f );
-	if(frametime > 0.0f)
-		shipp->thruster_frame += frametime * rate;
+	Assert( frametime > 0.0f );
+	shipp->thruster_frame += frametime * rate;
 
 	// Sanity checks
 	if ( shipp->thruster_frame < 0.0f )	shipp->thruster_frame = 0.0f;
 	if ( shipp->thruster_frame > 100.0f ) shipp->thruster_frame = 0.0f;
 
-	while ( shipp->thruster_frame > the_anim->time )	{
-		shipp->thruster_frame -= the_anim->time;
+	while ( shipp->thruster_frame > flame_anim->time )	{
+		shipp->thruster_frame -= flame_anim->time;
 	}
-	framenum = fl2i( (shipp->thruster_frame*the_anim->num_frames) / the_anim->time );
+	framenum = fl2i( (shipp->thruster_frame*flame_anim->num_frames) / flame_anim->time );
 	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= the_anim->num_frames ) framenum = the_anim->num_frames-1;
+	if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
 
 //	if ( anim_index == 0 )
-//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  the_anim->num_frames, anim_index ));
+//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  flame_anim->num_frames, anim_index ));
 	
 	// Get the bitmap for this frame
-	shipp->thruster_bitmap = the_anim->first_frame + framenum;
-//	shipp->secondary_thruster_bitmap = the_anim->secondary;
-//	shipp->tertiary_thruster_bitmap = the_anim->tertiary;
-	
+	shipp->thruster_bitmap = flame_anim->first_frame + framenum;
 
 //	mprintf(( "TF: %.2f\n", shipp->thruster_frame ));
 
 	// Do it for glow bitmaps
-	the_anim = &Thrust_glow_anims[anim_index];
 
-	//Assert( frametime > 0.0f );
-	if(frametime > 0.0f)
-		shipp->thruster_glow_frame += frametime * rate;
+	Assert( frametime > 0.0f );
+	shipp->thruster_glow_frame += frametime * rate;
 
 	// Sanity checks
 	if ( shipp->thruster_glow_frame < 0.0f )	shipp->thruster_glow_frame = 0.0f;
 	if ( shipp->thruster_glow_frame > 100.0f ) shipp->thruster_glow_frame = 0.0f;
 
-	while ( shipp->thruster_glow_frame > the_anim->time )	{
-		shipp->thruster_glow_frame -= the_anim->time;
+	while ( shipp->thruster_glow_frame > glow_anim->time )	{
+		shipp->thruster_glow_frame -= glow_anim->time;
 	}
-	framenum = fl2i( (shipp->thruster_glow_frame*the_anim->num_frames) / the_anim->time );
+	framenum = fl2i( (shipp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->time );
 	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= the_anim->num_frames ) framenum = the_anim->num_frames-1;
+	if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
 
 //	if ( anim_index == 0 )
-//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  the_anim->num_frames, anim_index ));
+//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  glow_anim->num_frames, anim_index ));
 	
 	// Get the bitmap for this frame
-//	shipp->thruster_glow_bitmap = the_anim->first_frame;	// + framenum;
+	shipp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
 	shipp->thruster_glow_noise = Noise[framenum];
 
-
-	if(AB)shipp->thruster_glow_bitmap = sinfo->thruster_glow1a;
-	else shipp->thruster_glow_bitmap = sinfo->thruster_glow1;
-	if(AB)shipp->secondary_thruster_bitmap = sinfo->thruster_glow2a;
-	else shipp->secondary_thruster_bitmap = sinfo->thruster_glow2;
-	if(AB)shipp->tertiary_thruster_bitmap = sinfo->thruster_glow3a;
-	else shipp->tertiary_thruster_bitmap = sinfo->thruster_glow3;
 }
 
 
@@ -6073,71 +6053,64 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 {
 	float rate;
 	int framenum;
-	int anim_index;
-	thrust_anim *the_anim;
+	generic_anim *flame_anim, *glow_anim;
 
-	if ( !Thrust_anim_inited )	ship_init_thrusters();
+	if (!Thrust_anim_inited)
+		ship_init_thrusters();
 
-	// The animations are organized by:
-	// Species*2 + (After_burner_on?1:0)
-	anim_index = weaponp->species*2;
+	species_info *species = &Species_info[weaponp->species];
 
 	// If thrust at 0, go at half as fast, full thrust; full framerate
 	// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
 	// rate = 0.5f + objp->phys_info.forward_thrust / 2.0f;
 	rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
 
-	Assert( anim_index > -1 );
-	Assert( anim_index < NUM_THRUST_ANIMS );
+	flame_anim = &species->thruster_info.flames.normal;
+	glow_anim = &species->thruster_info.glow.normal;
 
-	the_anim = &Thrust_anims[anim_index];
-
-	//Assert( frametime > 0.0f );
-	if(frametime > 0.0f)
-		weaponp->thruster_frame += frametime * rate;
+	Assert( frametime > 0.0f );
+	weaponp->thruster_frame += frametime * rate;
 
 	// Sanity checks
 	if ( weaponp->thruster_frame < 0.0f )	weaponp->thruster_frame = 0.0f;
 	if ( weaponp->thruster_frame > 100.0f ) weaponp->thruster_frame = 0.0f;
 
-	while ( weaponp->thruster_frame > the_anim->time )	{
-		weaponp->thruster_frame -= the_anim->time;
+	while ( weaponp->thruster_frame > flame_anim->time )	{
+		weaponp->thruster_frame -= flame_anim->time;
 	}
-	framenum = fl2i( (weaponp->thruster_frame*the_anim->num_frames) / the_anim->time );
+	framenum = fl2i( (weaponp->thruster_frame*flame_anim->num_frames) / flame_anim->time );
 	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= the_anim->num_frames ) framenum = the_anim->num_frames-1;
+	if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
 
 //	if ( anim_index == 0 )
-//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  the_anim->num_frames, anim_index ));
+//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  flame_anim->num_frames, anim_index ));
 	
 	// Get the bitmap for this frame
-	weaponp->thruster_bitmap = the_anim->first_frame + framenum;
+	weaponp->thruster_bitmap = flame_anim->first_frame + framenum;
 
 //	mprintf(( "TF: %.2f\n", weaponp->thruster_frame ));
 
 	// Do it for glow bitmaps
-	the_anim = &Thrust_glow_anims[anim_index];
 
-	//Assert( frametime > 0.0f );
-	if(frametime > 0.0f)
-		weaponp->thruster_glow_frame += frametime * rate;
+	Assert( frametime > 0.0f );
+	weaponp->thruster_glow_frame += frametime * rate;
 
 	// Sanity checks
 	if ( weaponp->thruster_glow_frame < 0.0f )	weaponp->thruster_glow_frame = 0.0f;
 	if ( weaponp->thruster_glow_frame > 100.0f ) weaponp->thruster_glow_frame = 0.0f;
 
-	while ( weaponp->thruster_glow_frame > the_anim->time )	{
-		weaponp->thruster_glow_frame -= the_anim->time;
+	while ( weaponp->thruster_glow_frame > glow_anim->time )	{
+		weaponp->thruster_glow_frame -= glow_anim->time;
 	}
-	framenum = fl2i( (weaponp->thruster_glow_frame*the_anim->num_frames) / the_anim->time );
+	framenum = fl2i( (weaponp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->time );
 	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= the_anim->num_frames ) framenum = the_anim->num_frames-1;
+	if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
 
 //	if ( anim_index == 0 )
-//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  the_anim->num_frames, anim_index ));
+//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  glow_anim->num_frames, anim_index ));
 	
 	// Get the bitmap for this frame
-	weaponp->thruster_glow_bitmap = the_anim->first_frame;	// + framenum;
+	weaponp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
 	weaponp->thruster_glow_noise = Noise[framenum];
 }
 
@@ -12997,17 +12970,29 @@ void ship_page_in()
 	//
 
 	// Make sure thrusters are loaded
-	if ( !Thrust_anim_inited )	ship_init_thrusters();
+	if (!Thrust_anim_inited)
+		ship_init_thrusters();
 
-	for ( i = 0; i < NUM_THRUST_ANIMS; i++ ) {
-		thrust_anim	*ta = &Thrust_anims[i];
+	generic_anim *ta;
+	thruster_info *thruster;
+	for ( i = 0; i < Num_species; i++ ) {
+		thruster = &Species_info[i].thruster_info;
+
+		ta = &thruster->flames.normal;
 		for ( j = 0; j<ta->num_frames; j++ )	{
 			bm_page_in_texture( ta->first_frame + j );
 		}
-	}
 
-	for ( i = 0; i < NUM_THRUST_GLOW_ANIMS; i++ ) {
-		thrust_anim	*ta = &Thrust_glow_anims[i];
+		ta = &thruster->flames.afterburn;
+		for ( j = 0; j<ta->num_frames; j++ )	{
+			bm_page_in_texture( ta->first_frame + j );
+		}
+
+		ta = &thruster->glow.normal;
+		// glows are really not anims
+		bm_page_in_texture( ta->first_frame );
+
+		ta = &thruster->glow.afterburn;
 		// glows are really not anims
 		bm_page_in_texture( ta->first_frame );
 	}

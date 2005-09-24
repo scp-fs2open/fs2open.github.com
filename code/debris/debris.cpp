@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-22 10:18:37 $
+ * $Revision: 2.18 $
+ * $Date: 2005-09-24 07:07:15 $
  * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/22 10:18:37  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.16  2005/07/13 02:50:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -406,7 +410,7 @@ void debris_page_in()
 
 	Debris_vaporize_model = model_load( NOX("debris02.pof"), 0, NULL );
 
-	for (i=0; i<True_NumSpecies; i++ )	{
+	for (i=0; i<Num_species; i++ )	{
 		nprintf(( "Paging", "Paging in debris texture '%s'\n", Debris_texture_files[i] ));
 		Debris_textures[i] = bm_load( Debris_texture_files[i] );
 		if ( Debris_textures[i] < 0 ) { 

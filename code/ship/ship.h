@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.104 $
- * $Date: 2005-09-24 02:40:10 $
+ * $Revision: 2.105 $
+ * $Date: 2005-09-24 07:07:17 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2005/09/24 02:40:10  Goober5000
+ * get rid of a whole bunch of Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.103  2005/09/20 02:48:37  taylor
  * fix a couple of things that Valgrind complained about
  *
@@ -890,19 +894,10 @@ typedef	struct ship_subsys {
 // we might have 3 engines), and the relative strength of the subsystem.  The #defines in model.h
 // for SUBSYSTEM_xxx will be used as indices into this array.
 typedef struct ship_subsys_info {
-	int		num;				// number of subsystems of type on this ship;
-	float		total_hits;		// total number of hits between all subsystems of this type.
-	float		current_hits;	// current count of hits for all subsystems of this type.	
+	int	num;				// number of subsystems of type on this ship;
+	float total_hits;		// total number of hits between all subsystems of this type.
+	float current_hits;		// current count of hits for all subsystems of this type.	
 } ship_subsys_info;
-
-
-// moved here from Shield.cpp by Kazan
-// For Species_Defs.cpp stuff
-typedef struct shield_ani {
-	char		filename[32];
-	int		first_frame;
-	int		nframes;
-} shield_ani;
 
 
 #define	MAX_IFF_COLORS	7
