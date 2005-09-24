@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.108 $
- * $Date: 2005-08-31 08:09:50 $
+ * $Revision: 2.109 $
+ * $Date: 2005-09-24 01:50:08 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2005/08/31 08:09:50  Goober5000
+ * All wings will now form on their respective leaders, not just certain starting wings.
+ * If this breaks anything, the old code is commented out.  You know who to yell at. ;)
+ * --Goober5000
+ *
  * Revision 2.107  2005/08/31 07:54:32  Goober5000
  * Wings will now form on their leader, not necessarily the player.  This is to
  * account for cases where the player is not the leader of his wing.  It has the
@@ -1267,6 +1272,20 @@ void parse_mission_info(mission *pm)
 	pm->support_ships.max_support_ships = -1;	// infinite
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
+	pm->support_ships.support_available_for_species = 0;
+
+	// for each species, store whether support is available
+	for (int species = 0; species < MAX_SPECIES; species++)
+	{
+		for (int ship_class = 0; ship_class < Num_ship_types; j++)
+		{
+			if ((Ship_info[ship_class].flags & SIF_SUPPORT) && (Ship_info[ship_class].species == species))
+			{
+				pm->support_ships.support_available_for_species |= (1 << species);
+				break;
+			}
+		}
+	}
 
 	if ( optional_string("+Disallow Support:"))
 	{

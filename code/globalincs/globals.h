@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.15 $
- * $Date: 2005-07-13 02:50:48 $
+ * $Revision: 1.16 $
+ * $Date: 2005-09-24 01:50:10 $
  * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.14  2005/07/13 02:08:26  Goober5000
  * move inferno vs. network check here for the time being
  * --Goober5000
@@ -101,6 +105,8 @@
 #define SHORT_CALLSIGN_PIXEL_W	80		// max width of short_callsign[] in pixels
 
 // from missionparse.h
+// This must be less than or equal to the number of bits in an int!  If you really must have that many species,
+// then please update the support_ship_info struct.
 #define	MAX_SPECIES		8
 
 
