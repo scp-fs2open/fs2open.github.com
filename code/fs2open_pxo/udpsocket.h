@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
- * $Revision: 1.7 $
- * $Date: 2005-07-13 02:50:49 $
+ * $Revision: 1.8 $
+ * $Date: 2005-09-24 02:57:12 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.6  2005/02/04 20:06:03  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -52,12 +56,12 @@
 #define CLOSEFUNC closesocket
 
 #else
+#include <string>
 #include <cstdio>
 #include <stdlib.h>
 #include <unistd.h>
 #include <cerrno>
 #endif
-#include <string>
 
 #include "globalincs/pstypes.h"
 
