@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.9 $
- * $Date: 2005-09-14 20:03:40 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-09-24 02:40:10 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/09/14 20:03:40  taylor
+ * fix ace badges not getting displayed in debriefing
+ *
  * Revision 2.8  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -92,7 +95,9 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>
+#pragma warning(pop)
 
 struct scoring_struct;
 struct player;

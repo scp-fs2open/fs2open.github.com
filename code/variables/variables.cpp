@@ -1,4 +1,8 @@
+
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
+#pragma warning(pop)
+
 #include <stack>
 #include <math.h>
 #include "variables/variables.h"

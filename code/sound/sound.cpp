@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-05-24 03:11:38 $
- * $Author: taylor $
+ * $Revision: 2.29 $
+ * $Date: 2005-09-24 02:40:09 $
+ * $Author: Goober5000 $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/05/24 03:11:38  taylor
+ * an extra bounds check in sound.cpp
+ * fix audiostr error when filename is !NULL but 0 in len might hit on SDL debug code
+ *
  * Revision 2.27  2005/05/23 04:58:43  phreak
  * fix out of bounds error
  *
@@ -400,8 +404,10 @@
 #include <windows.h>
 #endif
 #include <limits.h>
-#include <vector>
 
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
+#include <vector>
+#pragma warning(pop)
 
 #include "render/3d.h"
 #include "sound/sound.h"
