@@ -1,8 +1,12 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
+
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
 #include <vector>
+#pragma warning(pop)
+
 //*****************************Low-level abstraction*******************************
 //Lame attempt to keep things from being exceedingly difficult when switching to ferrium
 #ifndef FERRIUM

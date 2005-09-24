@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.103 $
- * $Date: 2005-09-20 02:48:37 $
- * $Author: taylor $
+ * $Revision: 2.104 $
+ * $Date: 2005-09-24 02:40:10 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2005/09/20 02:48:37  taylor
+ * fix a couple of things that Valgrind complained about
+ *
  * Revision 2.102  2005/08/25 22:40:04  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -660,6 +663,7 @@
 #define _SHIP_H
 
 
+
 #include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
 #include "graphics/2d.h"			// for color def
 #include "model/model.h"
@@ -671,7 +675,10 @@
 #endif
 #include "hud/hudparse.h"
 #include "render/3d.h"
+
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>
+#pragma warning(pop)
 
 struct object;
 

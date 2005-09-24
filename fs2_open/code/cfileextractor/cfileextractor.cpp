@@ -5,13 +5,17 @@
 
 /*
  * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-09-20 02:45:47 $
- * $Author: taylor $
+ * $Revision: 1.8 $
+ * $Date: 2005-09-24 02:40:09 $
+ * $Author: Goober5000 $
  *
  * Cross-platform cmdline extractor for VP files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/09/20 02:45:47  taylor
+ * bump version to 0.6
+ * add a specified directory to output files to
+ *
  * Revision 1.6  2005/09/08 05:04:15  taylor
  * make it actually compile under WIN32
  * bump version to 0.5 since little else is going to be done to this thing
@@ -37,7 +41,10 @@
  * $NoKeywords: $
  */
 
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>
+#pragma warning(pop)
+
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>

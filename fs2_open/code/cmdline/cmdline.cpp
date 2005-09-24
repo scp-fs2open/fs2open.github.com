@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.110 $
- * $Date: 2005-09-21 03:55:31 $
+ * $Revision: 2.111 $
+ * $Date: 2005-09-24 02:40:09 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2005/09/21 03:55:31  Goober5000
+ * add option for warp flash; mess with the cmdlines a bit
+ * --Goober5000
+ *
  * Revision 2.109  2005/09/05 09:33:08  taylor
  * merge of OSX tree
  * update cmdline stuff for Linux to be less stupid and provide better feedback to the user
@@ -685,8 +689,11 @@
 #include "network/multi.h"
 #include "species_defs/species_defs.h"
 #include "hud/hudconfig.h"
-//WMC - added these for show-SEXP command line
+
+#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>
+#pragma warning(pop)
+
 #include "globalincs/version.h"
 #include "parse/sexp.h"
 

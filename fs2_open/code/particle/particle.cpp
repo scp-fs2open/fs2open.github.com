@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-06-19 09:00:09 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-09-24 02:40:09 $
+ * $Author: Goober5000 $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/06/19 09:00:09  taylor
+ * minor sanity checking for geometry_batcher
+ * make particle batchers allocate dynamically
+ * handle cases where a particle graphic couldn't be loaded
+ *
  * Revision 2.13  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -217,6 +222,7 @@
  * $NoKeywords: $
  */
 
+#define gink blah
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "render/3d.h" 
