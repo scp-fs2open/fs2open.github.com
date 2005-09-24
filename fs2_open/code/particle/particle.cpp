@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-09-24 02:40:09 $
+ * $Revision: 2.16 $
+ * $Date: 2005-09-24 02:43:33 $
  * $Author: Goober5000 $
  *
  * Code for particle system
@@ -222,7 +222,6 @@
  * $NoKeywords: $
  */
 
-#define gink blah
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "render/3d.h" 
