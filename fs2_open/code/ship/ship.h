@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.105 $
- * $Date: 2005-09-24 07:07:17 $
+ * $Revision: 2.106 $
+ * $Date: 2005-09-24 07:45:31 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2005/09/24 07:07:17  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 2.104  2005/09/24 02:40:10  Goober5000
  * get rid of a whole bunch of Microsoft warnings
  * --Goober5000
@@ -1140,8 +1144,6 @@ typedef struct ship {
 	int	ship_list_index;					// index of ship in Ship_objs[] array
 
 	int	thruster_bitmap;					// What frame the current thruster bitmap is at for this ship
-	int	secondary_thruster_bitmap;			// What frame the current thruster bitmap is at for this ship
-	int	tertiary_thruster_bitmap;			// What frame the current thruster bitmap is at for this ship
 	float	thruster_frame;					// Used to keep track of which frame the animation should be on.
 
 	int	thruster_glow_bitmap;			// What frame the current thruster engine glow bitmap is at for this ship
@@ -1519,23 +1521,6 @@ typedef struct ship_info {
 	float		ABwidth_factor;	//a number that the width (set by the thruster glow width) will be multiplyed by
 	float		ABAlpha_factor;	//allows you to set how starting trasparency value
 	float		ABlife;			//how long the trails live for
-
-	char		thruster_bitmap1[NAME_LENGTH];
-	char		thruster_bitmap1a[NAME_LENGTH];
-	char		thruster_bitmap2[NAME_LENGTH];
-	char		thruster_bitmap2a[NAME_LENGTH];
-	char		thruster_bitmap3[NAME_LENGTH];
-	char		thruster_bitmap3a[NAME_LENGTH];
-	int			thruster_glow1;
-	int			thruster_glow1a;
-	int			thruster_glow2;
-	int			thruster_glow2a;
-	int			thruster_glow3;
-	int			thruster_glow3a;
-	float		thruster01_rad_factor;
-	float		thruster02_rad_factor;
-	float		thruster02_len_factor;
-	float		thruster03_rad_factor;
 
 	int			n_thruster_particles;
 	int			n_ABthruster_particles;

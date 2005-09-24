@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.125 $
- * $Date: 2005-08-05 15:33:45 $
- * $Author: taylor $
+ * $Revision: 2.126 $
+ * $Date: 2005-09-24 07:45:31 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.125  2005/08/05 15:33:45  taylor
+ * fix 3-D shockwave frame detection so that it will use the proper number of frames for the animation (not less, not more)
+ *
  * Revision 2.124  2005/07/24 00:32:44  wmcoolmon
  * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
  * support for the demo/FS1
@@ -899,22 +902,18 @@ static uint Interp_tmap_flags = 0;
 // If non-zero, then the subobject gets scaled by Interp_thrust_scale.
 static int Interp_thrust_scale_subobj=0;
 static float Interp_thrust_scale = 0.1f;
-static int Interp_thrust_bitmap = -1;
-static int Interp_thrust_glow_bitmap = -1;
-static int Interp_secondary_thrust_glow_bitmap = -1;
-static int Interp_tertiary_thrust_glow_bitmap = -1;
-static bool Interp_AB=false;
-static float Interp_thrust_glow_rad_factor = 1.0f;
-static float Interp_secondary_thrust_glow_rad_factor = 1.0f;
-static float Interp_secondary_thrust_glow_len_factor = 1.0f;
-static float Interp_tertiary_thrust_glow_rad_factor = 1.0f;
-static vec3d controle_rotval = ZERO_VECTOR;
-static float Interp_thrust_glow_noise = 1.0f;
 static float Interp_thrust_scale_x = 0.0f;//added -bobboau
 static float Interp_thrust_scale_y = 0.0f;//added -bobboau
+
+static int Interp_thrust_bitmap = -1;
+static int Interp_thrust_glow_bitmap = -1;
+static float Interp_thrust_glow_noise = 1.0f;
+static bool Interp_AB=false;
+
 float Model_Interp_scale_x = 1.0f;	//added these three for warpin stuff-Bobbau
 float Model_Interp_scale_y = 1.0f;
 float Model_Interp_scale_z = 1.0f;
+
 int Warp_Model = -1; //global warp model number
 int Warp_Map = -1;	//global map to be used while rendering the warp model
 float Warp_Alpha = -1.0f;
@@ -1114,27 +1113,15 @@ void interp_clear_instance()
 	Interp_thrust_scale_y = 0.0f;//added-Bobboau
 	Interp_thrust_bitmap = -1;
 	Interp_thrust_glow_bitmap = -1;
-	Interp_secondary_thrust_glow_bitmap = -1;
-	Interp_tertiary_thrust_glow_bitmap = -1;
 	Interp_thrust_glow_noise = 1.0f;
 	Interp_insignia_bitmap = -1;
-	Interp_thrust_glow_rad_factor = 1.0f;
-	Interp_secondary_thrust_glow_rad_factor = 1.0f;
-	Interp_secondary_thrust_glow_len_factor = 1.0f;
-	Interp_tertiary_thrust_glow_rad_factor = 1.0f;
 	Interp_AB=false;
-	vm_vec_zero(&controle_rotval);
 }
 
 // Scales the engines thrusters by this much
-void model_set_thrust( int model_num, vec3d *length /*<-I did that-Bobboau*/, int bitmap, int glow_bitmap, float glow_noise, bool AB, int secondary_bitmap, int tertiary_bitmap, vec3d *rovel, float trf1, float trf2, float trf3, float tlf)
+void model_set_thrust( int model_num, vec3d *length /*<-I did that-Bobboau*/, int bitmap, int glow_bitmap, float glow_noise, bool AB)
 {
 	Interp_AB = AB;
-
-	Interp_thrust_glow_rad_factor = trf1;
-	Interp_secondary_thrust_glow_rad_factor = trf2;
-	Interp_secondary_thrust_glow_len_factor = tlf;
-	Interp_tertiary_thrust_glow_rad_factor = trf3;
 
 	Interp_thrust_scale = length->xyz.z;
 	Interp_thrust_scale_x = length->xyz.x;
@@ -1142,11 +1129,6 @@ void model_set_thrust( int model_num, vec3d *length /*<-I did that-Bobboau*/, in
 	Interp_thrust_bitmap = bitmap;
 	Interp_thrust_glow_bitmap = glow_bitmap;
 	Interp_thrust_glow_noise = glow_noise;
-	Interp_secondary_thrust_glow_bitmap = secondary_bitmap;
-	Interp_tertiary_thrust_glow_bitmap = tertiary_bitmap;
-	if(rovel != NULL)controle_rotval = *rovel;
-	else 	vm_vec_zero(&controle_rotval);
-
 
 	if ( Interp_thrust_scale < 0.1f ) {
 		Interp_thrust_scale = 0.1f;
@@ -4142,19 +4124,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 				n_q+=bank->num_slots;
 		}
 		primary_thruster_batcher.allocate(n_q);
-		secondary_thruster_batcher.allocate(n_q);
-		tertiary_thruster_batcher.allocate(n_q);
-		//this is used for the secondary thruster glows 
-		//it only needs to be calculated once so I'm doing it here -Bobboau
-				vec3d norm /*= bank->norm[j]*/;
-				norm.xyz.z = -1.0f;
-				norm.xyz.x = 1.0f;
-				norm.xyz.y = -1.0f;
-
-				norm.xyz.x *= controle_rotval.xyz.y/2;
-				norm.xyz.y *= controle_rotval.xyz.x/2;
-
-				vm_vec_normalize(&norm);
 
 		for (i = 0; i < pm->n_thrusters; i++ ) {
 			thruster_bank *bank = &pm->thrusters[i];
@@ -4242,18 +4211,18 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 //						g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 				//		if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
 				//		else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w*0.325f );
-
+/*
 						pt.r = (ubyte)(255.0f * d);
 						pt.g = (ubyte)(255.0f * d);
 						pt.b = (ubyte)(255.0f * d);
 						pt.a = (ubyte)(255.0f * d);
 						primary_thruster_batcher.draw_bitmap(&pt,w*0.5f*Interp_thrust_glow_rad_factor, w*0.325f);
-
+*/
 						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
 					}
 				}//d>0
 
-				if(Interp_tertiary_thrust_glow_bitmap > -1){
+/*				if(Interp_tertiary_thrust_glow_bitmap > -1){
 					//tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
 					//thus is mostly for haveing a glow that is visable from the front
 				//	gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, fog_int );
@@ -4270,7 +4239,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 					tertiary_thruster_batcher.draw_bitmap(&pt, w*0.6f, magnitude*4*Interp_tertiary_thrust_glow_rad_factor, -(D>0)?D:-D);
 				}
 				
-
+*/
 /*begin secondary glows*/
 				//secondary thruster glows, they are based on the beam rendering code
 				//they are suposed to simulate... an ion wake... or... something
@@ -4278,7 +4247,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 				//it that scientific enough for you!! you anti-asthetic basturds!!!
 				///AAAHHhhhh!!!!
 				vec3d pnt = bank->point[j].pnt;
-
+/*
 				scale = magnitude*(MAX_SCALE-(MIN_SCALE/2))+(MIN_SCALE/2);
 																				    
 			//	vertex h1[4];				// halves of a beam section	
@@ -4340,20 +4309,20 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 					vm_vec_sub(&tempv,&View_position,&pnt);
 					vm_vec_normalize(&tempv);
 
-*/					if(The_mission.flags & MISSION_FLAG_FULLNEB){
+					if(The_mission.flags & MISSION_FLAG_FULLNEB){
 						vec3d npnt;
 						vm_vec_add(&npnt, &pnt, pos);
 						d *= fog_int;
 					}
-
+*/
 /*					gr_set_cull(0);
 					gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d);		
 					g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 					gr_set_cull(1);
 				*/
-					secondary_thruster_batcher.draw_beam(&pnt, &norm2, w*Interp_secondary_thrust_glow_rad_factor*0.5f, d);
+/*					secondary_thruster_batcher.draw_beam(&pnt, &norm2, w*Interp_secondary_thrust_glow_rad_factor*0.5f, d);
 				}
-
+*/
 //end secondary glows
 //begin particles
 				if(is_ship){
@@ -4419,27 +4388,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 			primary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 		}
-
-		if (Interp_secondary_thrust_glow_bitmap >= 0) {
-			gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
-			secondary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
-		}
-
-		if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-			gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-			tertiary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-		}
 	}
-/*
-	Interp_thrust_glow_rad_factor = trf1;
-	Interp_secondary_thrust_glow_rad_factor = trf2;
-	Interp_secondary_thrust_glow_len_factor = tlf;
-	Interp_tertiary_thrust_glow_rad_factor = trf3;
-*/
-//	Interp_thrust_glow_bitmap = -1;	
-//	Interp_secondary_thrust_glow_bitmap = -1;
-//	Interp_tertiary_thrust_glow_bitmap = -1;
-	vm_vec_zero(&controle_rotval);
 
 	gr_set_cull(0);	
 
