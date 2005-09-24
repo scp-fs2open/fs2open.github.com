@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.64 $
- * $Date: 2005-07-13 03:26:00 $
+ * $Revision: 2.65 $
+ * $Date: 2005-09-24 07:45:31 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/07/13 03:26:00  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.63  2005/07/12 22:14:40  Goober5000
  * removed DECALS_ENABLED
  * --Goober5000
@@ -1559,7 +1563,7 @@ int model_which_octant( vec3d *pnt, int model_num,matrix *model_orient, vec3d * 
 
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num = -1, vec3d *length = &vmd_zero_vector, int bitmapnum = -1, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false, int secondary_bitmap = -1, int tertiary_thruster_bitmap = -1, vec3d *rovel = NULL, float trf1 = 1.0f, float trf2 = 1.0f, float trf3 = 1.0f, float tlf = 1.0f);
+void model_set_thrust(int model_num = -1, vec3d *length = &vmd_zero_vector, int bitmapnum = -1, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false);
 
 //=========================================================
 // model caching
