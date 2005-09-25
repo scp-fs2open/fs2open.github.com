@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-25 03:13:24 $
+ * $Revision: 2.17 $
+ * $Date: 2005-09-25 05:13:04 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/25 03:13:24  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 2.15  2005/07/22 10:18:35  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -155,6 +161,7 @@
 #include "nebula/neb.h"
 #include "mission/missionparse.h"
 #include "network/multi.h"
+#include "species_defs/species_defs.h"
 
 
 
@@ -179,9 +186,6 @@ typedef struct awacs_entry {
 } awacs_entry;
 awacs_entry Awacs[MAX_AWACS];
 int Awacs_count = 0;
-
-// species dependent factor increasing scan range in nebula
-float AwacsMultiplier[MAX_SPECIES];
 
 // TEAM SHIP VISIBILITY
 // team-wide shared visibility info
@@ -441,7 +445,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 
 		// modify distance by species
 		float scan_nebula_range = Neb2_awacs;
-		scan_nebula_range *= AwacsMultiplier[Ship_info[viewer->ship_info_index].species];
+		scan_nebula_range *= Species_info[Ship_info[viewer->ship_info_index].species].awacs_multiplier;
 
 		// special case for huge ship - check inside expanded bounding boxes
 		if ( check_huge_ship ) {

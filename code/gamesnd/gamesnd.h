@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.13 $
- * $Date: 2005-07-13 02:50:51 $
+ * $Revision: 2.14 $
+ * $Date: 2005-09-25 05:13:06 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/13 02:50:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.12  2005/07/13 00:44:22  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -415,13 +419,8 @@ void common_play_highlight_sound();
 extern int Num_game_sounds;
 extern int Num_iface_sounds;
 
-#define MAX_SPECIES_FLYBY_SOUNDS		4				// 4 different possible flybys for species
-
 extern game_snd *Snds;
 extern game_snd *Snds_iface;
-
-// flyby sounds - 2 for each species (fighter and bomber flybys)
-extern game_snd Snds_flyby[MAX_SPECIES][2];
 
 
 // symbolic names for misc. game sounds.  The order here must match the order in

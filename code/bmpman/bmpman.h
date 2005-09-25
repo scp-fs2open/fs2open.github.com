@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.26 $
- * $Date: 2005-09-24 07:07:17 $
+ * $Revision: 2.27 $
+ * $Date: 2005-09-25 05:13:07 $
  * $Author: Goober5000 $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/09/24 07:07:17  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 2.25  2005/08/20 20:34:49  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -390,6 +394,12 @@ typedef struct generic_anim {
 	int	num_frames;
 	int time;		// in seconds
 } generic_anim;
+
+// Goober5000
+typedef struct generic_bitmap {
+	char filename[MAX_FILENAME_LEN];
+	int bitmap;
+} generic_bitmap;
 
 
 extern int bm_inited;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.9 $
- * $Date: 2005-07-13 02:50:48 $
+ * $Revision: 2.10 $
+ * $Date: 2005-09-25 05:13:04 $
  * $Author: Goober5000 $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.8  2005/07/13 02:01:28  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -162,13 +166,11 @@ struct collision_info_struct;
 
 #define	MAX_ASTEROIDS			256
 
+#define MAX_ASTEROID_TYPES		3
+
 #define	ASTEROID_TYPE_SMALL		0
 #define	ASTEROID_TYPE_MEDIUM	1
-#define	ASTEROID_TYPE_BIG		2
-
-// This is for the asteroid types plus DEBRIS_X_Y
-// (X is each species and Y is SMALL, MEDIUM, and LARGE)
-#define	MAX_DEBRIS_TYPES	((MAX_SPECIES + 1) * 3)
+#define	ASTEROID_TYPE_LARGE		2
 
 
 // Data structure to track the active asteroids
@@ -227,8 +229,6 @@ typedef enum {
 	FT_PASSIVE
 } field_type_t;
 
-#define	MAX_ACTIVE_DEBRIS_TYPES	3
-
 typedef	struct asteroid_field {
 	vec3d	min_bound;						//	Minimum range of field.
 	vec3d	max_bound;						//	Maximum range of field.
@@ -240,10 +240,10 @@ typedef	struct asteroid_field {
 	int		num_initial_asteroids;		//	Number of asteroids at creation.
 	field_type_t		field_type;			// active throws and wraps, passive does not
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
-	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
+	int				field_debris_type[MAX_ASTEROID_TYPES];	// one of the debris type defines above
 } asteroid_field;
 
-extern asteroid_info Asteroid_info[MAX_DEBRIS_TYPES];
+extern asteroid_info Asteroid_info[MAX_ASTEROID_TYPES];
 extern asteroid Asteroids[MAX_ASTEROIDS];
 extern asteroid_field	Asteroid_field;
 

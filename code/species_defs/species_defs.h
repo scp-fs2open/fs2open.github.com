@@ -1,15 +1,23 @@
-// Species_Defs.h
-// Extended Species Support for FS2 Open
-// Derek Meek
-// 10-14-2003
+/*
+ * Species_Defs.h
+ * Extended Species Support for FS2 Open
+ *
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ *
+ */
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.6 $
- * $Date: 2005-09-25 02:15:02 $
+ * $Revision: 1.7 $
+ * $Date: 2005-09-25 05:13:07 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/09/25 02:15:02  Goober5000
+ * meh for consistency
+ * --Goober5000
+ *
  * Revision 1.5  2005/09/24 07:07:17  Goober5000
  * another species overhaul
  * --Goober5000
@@ -32,13 +40,15 @@
  *
  */
 
-#if !defined(_SPECIES_DEFS_H_)
+#ifndef _SPECIES_DEFS_H_
 #define _SPECIES_DEFS_H_
 
 #include "globalincs\pstypes.h"
 #include "globalincs\globals.h"
 #include "bmpman/bmpman.h"
-
+#include "gamesnd/gamesnd.h"
+#include "hud/hud.h"
+#include "mission\missionbriefcommon.h"
 
 typedef struct thruster_pair {
 	generic_anim normal;
@@ -52,7 +62,15 @@ typedef struct thruster_info {
 
 
 typedef struct species_info {
+
 	char species_name[NAME_LENGTH];
+
+	generic_bitmap debris_texture;
+	generic_anim shield_anim;
+	thruster_info thruster_info;
+
+	float awacs_multiplier;
+
 	union {
 		struct {
 			int r, g, b;
@@ -60,12 +78,29 @@ typedef struct species_info {
 		int a1d[3];
 	} fred_color;
 
-	char debris_texture_file[MAX_FILENAME_LEN];
 
-	generic_anim shield_anim;
-	thruster_info thruster_info;
+	// if this will not be parsed in species_defs.tbl, move it below the following comment
+#ifdef NEW_HUD
+	hud_info hud;
+#endif
 
-	float awacs_multiplier;
+
+	// the members below this comment are not parsed in species_defs.tbl
+
+	game_snd snd_flyby_fighter;
+	game_snd snd_flyby_bomber;
+
+	hud_frames icon_bitmaps[MAX_BRIEF_ICONS];
+	hud_anim icon_highlight_anims[MAX_BRIEF_ICONS];
+	hud_anim icon_fade_anims[MAX_BRIEF_ICONS];
+
+
+	// constructor to initialize everything to 0
+	species_info()
+	{
+		memset(this, 0, sizeof(species_info));
+	}
+
 } species_info;
 
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 02:01:30 $
+ * $Revision: 2.11 $
+ * $Date: 2005-09-25 05:13:07 $
  * $Author: Goober5000 $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 02:01:30  Goober5000
+ * fixed a bunch of "issues" caused by me with the species stuff
+ * --Goober5000
+ *
  * Revision 2.9  2005/07/13 00:44:23  Goober5000
  * improved species support and removed need for #define
  * --Goober5000
@@ -287,6 +291,7 @@
 #include "io/timer.h"
 #include "render/3d.h"
 #include "io/joy_ff.h"
+#include "species_defs/species_defs.h"
 
 
 
@@ -679,14 +684,17 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp)
 				}
 
 				// pick a random species-based sound
-				ship_info *sip = &Ship_info[Ships[closest_objp->instance].ship_info_index];
 
-				int species = sip->species;
-				int ship_size = (sip->flags & SIF_BOMBER) ? 1 : 0;
+				ship_info *sip = &Ship_info[Ships[closest_objp->instance].ship_info_index];
+				game_snd *snd;
+
+				if (sip->flags & SIF_BOMBER)
+					snd = &Species_info[sip->species].snd_flyby_bomber;
+				else
+					snd = &Species_info[sip->species].snd_flyby_fighter;
 
 				// play da sound
-				snd_play_3d(&Snds_flyby[species][ship_size], &closest_objp->pos, &View_position);
-				//snd_play_3d(&Snds_flyby[Debug_1][Debug_2], &closest_objp->pos, &View_position);
+				snd_play_3d(snd, &closest_objp->pos, &View_position);
 
 				//float dist = vm_vec_dist(&closest_objp->pos, &View_position);
 				//nprintf(("AI", "Frame %i: Playing flyby sound, species = %i, size = %i, dist = %7.3f\n", Framecount, species, ship_size, dist));

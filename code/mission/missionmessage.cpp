@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-09-24 07:07:16 $
+ * $Revision: 2.45 $
+ * $Date: 2005-09-25 05:13:07 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/09/24 07:07:16  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 2.43  2005/08/25 22:40:03  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -799,7 +803,7 @@ void persona_parse()
 
 		for (int j = 0; j < Num_species; j++)
 		{
-			if (!strcmp(cstrtemp, Species_names[j]))
+			if (!strcmp(cstrtemp, Species_info[j].species_name))
 			{
 				Personas[Num_personas].species = j;
 				break;

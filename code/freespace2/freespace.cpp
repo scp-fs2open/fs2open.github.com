@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.177 $
- * $Date: 2005-09-18 20:41:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.178 $
+ * $Date: 2005-09-25 05:13:05 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.177  2005/09/18 20:41:10  wmcoolmon
+ * Fixed silly i variable placement mistake
+ *
  * Revision 2.176  2005/09/06 00:32:19  Kazan
  * fixed a bug related to multiplayer table validation and modular tables
  *
@@ -1439,7 +1442,6 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 game_snd Snds[MIN_GAME_SOUNDS];
 game_snd Snds_iface[MIN_INTERFACE_SOUNDS];
 int Snds_iface_handle[MIN_INTERFACE_SOUNDS];
-game_snd Snds_flyby[MAX_SPECIES][2];
 
 // dummy callback -- real one is in gamesnd.cpp
 void common_play_highlight_sound()

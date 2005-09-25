@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-09-24 07:07:15 $
+ * $Revision: 2.19 $
+ * $Date: 2005-09-25 05:13:05 $
  * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/09/24 07:07:15  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 2.17  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -326,11 +330,6 @@ int Debris_model = -1;
 int Debris_vaporize_model = -1;
 int Debris_num_submodels = 0;
 
-char Debris_texture_files[MAX_SPECIES][FILESPEC_LENGTH];
-
-
-int Debris_textures[MAX_SPECIES];
-
 #define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
 #define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
 #define	DEBRIS_INDEX(dp) (dp-Debris)
@@ -410,13 +409,19 @@ void debris_page_in()
 
 	Debris_vaporize_model = model_load( NOX("debris02.pof"), 0, NULL );
 
-	for (i=0; i<Num_species; i++ )	{
-		nprintf(( "Paging", "Paging in debris texture '%s'\n", Debris_texture_files[i] ));
-		Debris_textures[i] = bm_load( Debris_texture_files[i] );
-		if ( Debris_textures[i] < 0 ) { 
-			Warning( LOCATION, "Couldn't load species %d debris\ntexture, '%s'\n", i, Debris_texture_files[i] );
+	for (i=0; i<Num_species; i++ )
+	{
+		species_info *species = &Species_info[i];
+
+		nprintf(( "Paging", "Paging in debris texture '%s'\n", species->debris_texture.filename));
+
+		species->debris_texture.bitmap = bm_load(species->debris_texture.filename);
+		if (species->debris_texture.bitmap < 0)
+		{
+			Warning( LOCATION, "Couldn't load species %s debris\ntexture, '%s'\n", species->species_name, species->debris_texture.filename);
 		}
-		bm_page_in_texture( Debris_textures[i] );
+
+		bm_page_in_texture(species->debris_texture.bitmap);
 	}
 	
 }
@@ -439,19 +444,19 @@ void debris_render(object * obj)
 	pm = NULL;	
 	num = obj->instance;
 
-	Assert(num >= 0 && num < MAX_DEBRIS_PIECES );
+	Assert(num >= 0 && num < MAX_DEBRIS_PIECES);
 	db = &Debris[num];
 
-	Assert( db->flags & DEBRIS_USED );
+	Assert(db->flags & DEBRIS_USED);
 
 	// Swap in a different texture depending on the species
-	if ( (db->species > -1) && (db->species < MAX_SPECIES) )	{
-
+	if (db->species >= 0)
+	{
 		pm = model_get( db->model_num );
 
 		if ( pm && (pm->n_textures == 1) ) {
 			swapped = pm->textures[0];
-			pm->textures[0] = Debris_textures[db->species];
+			pm->textures[0] = Species_info[db->species].debris_texture.bitmap;
 		}
 	}
 

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.67 $
+ * $Revision: 2.68 $
  * $Author: Goober5000 $
- * $Date: 2005-09-24 01:50:09 $
+ * $Date: 2005-09-25 05:13:07 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/09/24 01:50:09  Goober5000
+ * a bunch of support ship bulletproofing
+ * --Goober5000
+ *
  * Revision 2.66  2005/08/25 22:40:03  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -615,8 +619,6 @@ extern char *Status_target_names[MAX_STATUS_NAMES];
 extern char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
-
-extern char Species_names[MAX_SPECIES][NAME_LENGTH];
 
 extern char *Reinforcement_type_names[];
 extern char *Object_flags[];

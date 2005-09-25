@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-09-24 07:07:16 $
+ * $Revision: 2.23 $
+ * $Date: 2005-09-25 05:13:05 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/09/24 07:07:16  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 2.21  2005/09/16 08:11:39  taylor
  * fix afterburner bug
  *
@@ -268,10 +272,6 @@ int *Snds_iface_handle = NULL;
 
 void gamesnd_add_sound_slot(int type, int num);
 
-// flyby sounds - 2 for each species (fighter and bomber flybys)
-game_snd Snds_flyby[MAX_SPECIES][2];
-
-
 void gamesnd_play_iface(int n)
 {
 	if (Snds_iface_handle[n] >= 0)
@@ -499,17 +499,48 @@ void gamesnd_parse_soundstbl()
 
 	char cstrtemp[NAME_LENGTH+3];
 
-	for (int i = 0; i < Num_species; i++)
+	while (check_for_string("#Flyby Sounds End") == NULL)
 	{
-		sprintf(cstrtemp, "$%s:", Species_names[i]);
-		gamesnd_parse_line(&Snds_flyby[i][0], cstrtemp);
-		gamesnd_parse_line(&Snds_flyby[i][1], cstrtemp);	
+		for (int i = 0; i < Num_species; i++)
+		{
+			species_info *species = &Species_info[i];
+
+			sprintf(cstrtemp, "$%s:", species->species_name);
+			if (check_for_string(cstrtemp))
+			{
+				gamesnd_parse_line(&species->snd_flyby_fighter, cstrtemp);
+				gamesnd_parse_line(&species->snd_flyby_bomber, cstrtemp);
+			}
+		}
 	}
-	
+
 	required_string("#Flyby Sounds End");
 
 	// close localization
 	lcl_ext_close();
+
+
+	// check for any missing info
+	char errormsg[65 + (MAX_SPECIES * (NAME_LENGTH+1))];
+	bool species_missing = false;
+	strcpy(errormsg, "The following species are missing flyby sounds in sounds.tbl:\n");
+	for (int i = 0; i < Num_species; i++)
+	{
+		species_info *species = &Species_info[i];
+
+		if (species->snd_flyby_fighter.filename[0] = '\0')
+		{
+			strcat(errormsg, species->species_name);
+			strcat(errormsg, "\n");
+			species_missing = true;
+		}
+	}
+	strcat(errormsg, "\0");
+
+	if (species_missing)
+	{
+		Error(LOCATION, errormsg);
+	}
 }
 
 

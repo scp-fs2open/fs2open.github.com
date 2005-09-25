@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-09-24 07:07:16 $
+ * $Revision: 2.58 $
+ * $Date: 2005-09-25 05:13:06 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/09/24 07:07:16  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 2.56  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -544,6 +548,7 @@
 #include "missionui/missionpause.h"
 #include "hud/hudgauges.h"
 #include "freespace2/freespace.h"	//For time compression stuff
+#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1578,7 +1583,7 @@ void process_debug_keys(int k)
 			if (sip->species >= Num_species)
 				sip->species = 0;
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Species of target changed to: %s", 24), Species_names[sip->species]);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Species of target changed to: %s", 24), Species_info[sip->species].species_name);
 			break;
 		}
 			

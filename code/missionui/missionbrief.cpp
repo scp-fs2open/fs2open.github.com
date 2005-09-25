@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-09-23 22:48:56 $
+ * $Revision: 2.36 $
+ * $Date: 2005-09-25 05:13:06 $
  * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/09/23 22:48:56  Goober5000
+ * something for WCS
+ * --Goober5000
+ *
  * Revision 2.34  2005/09/09 05:11:20  Goober5000
  * braces for clarity
  *
@@ -1692,7 +1696,7 @@ int brief_setup_closeup(brief_icon *bi)
 		break;
 	case ICON_ASTEROID_FIELD:
 #ifndef FS2_DEMO
-		strcpy(pof_filename, Asteroid_info[ASTEROID_TYPE_BIG].pof_files[0]);
+		strcpy(pof_filename, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);
 		strcpy(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -334.0f);
 		Closeup_zoom = 0.5f;

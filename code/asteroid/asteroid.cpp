@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-09-24 07:07:15 $
+ * $Revision: 2.22 $
+ * $Date: 2005-09-25 05:13:04 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/09/24 07:07:15  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 2.20  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -394,7 +398,7 @@ int	Num_asteroids = 0;
 int	Asteroid_throw_objnum = -1;		//	Object index of ship to throw asteroids at.
 int	Next_asteroid_throw;
 
-asteroid_info	Asteroid_info[MAX_DEBRIS_TYPES];
+asteroid_info	Asteroid_info[MAX_ASTEROID_TYPES];
 asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
 
@@ -867,22 +871,22 @@ void asteroid_create_all()
 			asteroid_load(Asteroid_field.field_debris_type[idx], 0);
 		}
 	} else {
-		if (Asteroid_field.field_debris_type[0] != -1) {
+		if (Asteroid_field.field_debris_type[0] >= 0) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 0);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 0);
-			asteroid_load(ASTEROID_TYPE_BIG, 0);
+			asteroid_load(ASTEROID_TYPE_LARGE, 0);
 		}
 
-		if (Asteroid_field.field_debris_type[1] != -1) {
+		if (Asteroid_field.field_debris_type[1] >= 0) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 1);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 1);
-			asteroid_load(ASTEROID_TYPE_BIG, 1);
+			asteroid_load(ASTEROID_TYPE_LARGE, 1);
 		}
 
-		if (Asteroid_field.field_debris_type[2] != -1) {
+		if (Asteroid_field.field_debris_type[2] >= 0) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 2);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 2);
-			asteroid_load(ASTEROID_TYPE_BIG, 2);
+			asteroid_load(ASTEROID_TYPE_LARGE, 2);
 		}
 	}
 
@@ -897,7 +901,7 @@ void asteroid_create_all()
 				subtype = (subtype + 1) % 3;
 			}
 
-			asteroid_create(&Asteroid_field, ASTEROID_TYPE_BIG, subtype);
+			asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
 		} else {
 			Assert(num_debris_types > 0);
 
@@ -1074,7 +1078,7 @@ void maybe_throw_asteroid(int count)
 			while (Asteroid_field.field_debris_type[subtype] == -1) {
 				subtype = (subtype + 1) % 3;
 			}
-			object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_BIG, subtype);
+			object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
 			if (objp != NULL) {
 				asteroid_aim_at_target(A, objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
 
@@ -1508,7 +1512,7 @@ float asteroid_get_fireball_scale_multiplier(int num)
 	if (Asteroids[num].flags & AF_USED) {
 
 		switch(Asteroids[num].type) {
-		case ASTEROID_TYPE_BIG:
+		case ASTEROID_TYPE_LARGE:
 			return 1.5f;
 			break;
 
@@ -1764,7 +1768,7 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 		if ( !MULTIPLAYER_CLIENT ) {
 #endif
 
-			if (asp->type <= ASTEROID_TYPE_BIG) // 3
+			if (asp->type <= ASTEROID_TYPE_LARGE)
 				// if this isn't true it's just debris, and debris doesn't break up
 			{
 				switch (asp->type) {
@@ -1780,7 +1784,7 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec);
 						
 						break;
-					case ASTEROID_TYPE_BIG:
+					case ASTEROID_TYPE_LARGE:
 						asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
 						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &relvec);
 					

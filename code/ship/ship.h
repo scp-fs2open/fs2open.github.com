@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.106 $
- * $Date: 2005-09-24 07:45:31 $
+ * $Revision: 2.107 $
+ * $Date: 2005-09-25 05:13:05 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2005/09/24 07:45:31  Goober5000
+ * cleaned up some more thruster stuff; honestly, the thruster code is such a
+ * mess that it should probably be reverted to the retail version
+ * --Goober5000
+ *
  * Revision 2.105  2005/09/24 07:07:17  Goober5000
  * another species overhaul
  * --Goober5000
@@ -1731,12 +1736,6 @@ extern int Player_ship_class;
 extern int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
 extern int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship types, precedence list for player ship/wing selection
 */
-// ----------------------------------------------------------------------------
-// Moved from ship.cpp because this is needed over in species_defs
-// 10/15/2003, Kazan
-// ----------------------------------------------------------------------------
-#define NUM_THRUST_ANIMS			(MAX_SPECIES * 2)
-#define NUM_THRUST_GLOW_ANIMS		(MAX_SPECIES * 2)
 
 //	Do the special effect for energy dissipating into the shield for a hit.
 //	model_num	= index in Polygon_models[]
