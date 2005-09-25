@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-07-25 05:24:16 $
+ * $Revision: 2.25 $
+ * $Date: 2005-09-25 05:13:06 $
  * $Author: Goober5000 $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/07/25 05:24:16  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.23  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -933,7 +937,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				{
 					case ASTEROID_TYPE_SMALL:
 					case ASTEROID_TYPE_MEDIUM:
-					case ASTEROID_TYPE_BIG:
+					case ASTEROID_TYPE_LARGE:
 						tinfo_name = NOX("Asteroid");
 						break;
 					default:

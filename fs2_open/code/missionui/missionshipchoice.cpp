@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-07-22 10:18:39 $
+ * $Revision: 2.48 $
+ * $Date: 2005-09-25 05:13:06 $
  * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.46  2005/07/18 03:45:08  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -577,6 +581,7 @@
 #include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
 #include "hud/hudbrackets.h"
+#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1774,11 +1779,11 @@ void ship_select_blit_ship_info()
 	y_start += 10;
 	gr_set_color_fast(text);
 	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->manufacturer_str);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->manufacturer_str);
 	}
 	else
 	{
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,Species_names[sip->species]);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, Species_info[sip->species].species_name);
 	}
 	y_start += 10;
 

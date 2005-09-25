@@ -1,3 +1,19 @@
+/*
+ * wmcgui.h
+ * created by WMCoolmon
+ *
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ *
+ */
+
+/*
+ * $Logfile: /Freespace2/code/species_defs/species_defs.h $
+ * $Revision: 1.16 $
+ * $Date: 2005-09-25 05:13:06 $
+ * $Author: Goober5000 $
+ */
+
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"

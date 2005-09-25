@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.228 $
- * $Date: 2005-09-24 07:45:31 $
+ * $Revision: 2.229 $
+ * $Date: 2005-09-25 05:13:04 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.228  2005/09/24 07:45:31  Goober5000
+ * cleaned up some more thruster stuff; honestly, the thruster code is such a
+ * mess that it should probably be reverted to the retail version
+ * --Goober5000
+ *
  * Revision 2.227  2005/09/24 07:07:16  Goober5000
  * another species overhaul
  * --Goober5000
@@ -2085,10 +2090,10 @@ int parse_ship(bool replace)
 	// static alias stuff - stupid, but it seems to be necessary
 	static char *tspecies_names[MAX_SPECIES];
 	for (i = 0; i < Num_species; i++)
-		tspecies_names[i] = Species_names[i];
+		tspecies_names[i] = Species_info[i].species_name;
 	find_and_stuff("$Species:", &sip->species, F_NAME, tspecies_names, Num_species, "species names");
 
-	diag_printf ("Ship species -- %s\n", Species_names[sip->species]);
+	diag_printf ("Ship species -- %s\n", Species_info[sip->species].species_name);
 
 	sip->type_str = sip->maneuverability_str = sip->armor_str = sip->manufacturer_str = NULL;
 	if (optional_string("+Type:")) {

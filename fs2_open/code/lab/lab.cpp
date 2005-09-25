@@ -1,3 +1,19 @@
+/*
+ * lab.cpp
+ * created by WMCoolmon
+ *
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ *
+ */
+
+/*
+ * $Logfile: /Freespace2/code/species_defs/species_defs.h $
+ * $Revision: 1.15 $
+ * $Date: 2005-09-25 05:13:06 $
+ * $Author: Goober5000 $
+ */
+
 #include "wmcgui.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
@@ -11,6 +27,7 @@
 #include "missionui/missionscreencommon.h"
 #include "weapon/beam.h"
 #include "mission/missionparse.h"
+#include "species_defs/species_defs.h"
 
 //All sorts of globals
 
@@ -420,7 +437,7 @@ void make_new_window(Button* caller)
 	//Add species nodes
 	for(i = 0; i < Num_species; i++)
 	{
-		species_nodes[i] = cmp->AddItem(NULL, Species_names[i], 0, false);
+		species_nodes[i] = cmp->AddItem(NULL, Species_info[i].species_name, 0, false);
 	}
 	//Just in case. I don't actually think this is possible though.
 	species_nodes[Num_species] = cmp->AddItem(NULL, "Other", 0, false);

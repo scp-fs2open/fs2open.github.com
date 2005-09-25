@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.110 $
- * $Date: 2005-09-24 02:24:29 $
+ * $Revision: 2.111 $
+ * $Date: 2005-09-25 05:13:07 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2005/09/24 02:24:29  Goober5000
+ * bah
+ * --Goober5000
+ *
  * Revision 2.109  2005/09/24 01:50:08  Goober5000
  * a bunch of support ship bulletproofing
  * --Goober5000
@@ -830,6 +834,7 @@
 #include "math/fvi.h"
 #include "weapon/weapon.h"
 #include "cfile/cfile.h"
+#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1027,8 +1032,6 @@ char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
 char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
 	"Primary", "Secondary", "Bonus",
 };
-
-char Species_names[MAX_SPECIES][NAME_LENGTH];
 
 char *Reinforcement_type_names[] = {
 	"Attack/Protect",
@@ -1279,7 +1282,7 @@ void parse_mission_info(mission *pm)
 	pm->support_ships.support_available_for_species = 0;
 
 	// for each species, store whether support is available
-	for (int species = 0; species < MAX_SPECIES; species++)
+	for (int species = 0; species < Num_species; species++)
 	{
 		for (int ship_class = 0; ship_class < Num_ship_types; ship_class++)
 		{

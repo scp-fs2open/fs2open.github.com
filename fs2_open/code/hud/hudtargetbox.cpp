@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-07-25 05:24:16 $
+ * $Revision: 2.57 $
+ * $Date: 2005-09-25 05:13:06 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/07/25 05:24:16  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.55  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -1075,12 +1079,12 @@ void hud_render_target_asteroid(object *target_objp)
 	switch (asteroidp->type) {
 		case ASTEROID_TYPE_SMALL:
 		case ASTEROID_TYPE_MEDIUM:
-		case ASTEROID_TYPE_BIG:
+		case ASTEROID_TYPE_LARGE:
 			strcpy(hud_name, NOX("asteroid"));
 			break;
 
 		default:
-			sprintf(hud_name, NOX("%s debris"), Species_names[(asteroidp->type / 3) - 1]);
+			sprintf(hud_name, NOX("%s debris"), Species_info[(asteroidp->type / MAX_ASTEROID_TYPES) - 1].species_name);
 			break;
 	}
 

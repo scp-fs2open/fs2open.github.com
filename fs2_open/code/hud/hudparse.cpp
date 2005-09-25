@@ -7,13 +7,21 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-07-18 03:44:01 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2005-09-25 05:13:06 $
+ * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/07/18 03:44:01  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.32  2005/07/13 02:01:29  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -135,13 +143,12 @@
 
 //Global stuffs
 #ifdef NEW_HUD
-hud* current_hud = NULL;
+hud_info *current_hud = NULL;
 //Storage for the default and ship huds
-hud default_hud;
-hud ship_huds[MAX_SHIP_TYPES];
-hud species_huds[MAX_SPECIES];
+hud_info default_hud;
+hud_info ship_huds[MAX_SHIP_TYPES];
 #else
-hud_info* current_hud = NULL; //If not set, it's NULL. This should always be null outside of a mission.
+hud_info *current_hud = NULL; //If not set, it's NULL. This should always be null outside of a mission.
 hud_info default_hud;
 hud_info ship_huds[MAX_SHIP_TYPES];
 #endif
@@ -1031,9 +1038,9 @@ void set_current_hud(int player_ship_num)
 		{
 			ship_huds[owner->ship_info_index].copy(&owner->ship_hud);
 		}
-		else if(species_huds[Ship_info[owner->ship_info_index].species].is_loaded() == true)
+		else if(Species_info[Ship_info[owner->ship_info_index].species].hud.is_loaded() == true)
 		{
-			species_huds[Ship_info[owner->ship_info_index].species].copy(&owner->ship_hud);
+			Species_info[Ship_info[owner->ship_info_index].species].hud.copy(&owner->ship_hud);
 		}
 		else
 		{

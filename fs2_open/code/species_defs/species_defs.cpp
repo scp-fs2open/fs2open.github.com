@@ -1,15 +1,23 @@
-// Species_Defs.h
-// Extended Species Support for FS2 Open
-// Derek Meek
-// 10-14-2003
+/*
+ * Species_Defs.CPP
+ * Extended Species Support for FS2 Open
+ *
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ *
+ */
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.18 $
- * $Date: 2005-09-24 07:18:15 $
+ * $Revision: 1.19 $
+ * $Date: 2005-09-25 05:13:07 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/09/24 07:18:15  Goober5000
+ * fixage
+ * --Goober5000
+ *
  * Revision 1.17  2005/09/24 07:07:17  Goober5000
  * another species overhaul
  * --Goober5000
@@ -160,9 +168,6 @@ $FRED Color: ( 192, 0, 0 )						\n\
 
 void Init_Species_Definitions()
 {
-	// clear array
-	memset(Species_info, 0, MAX_SPECIES * sizeof(species_info));
-
 	// Goober5000 - condensed check for table file
 	CFILE *sdt = cfopen("species_defs.tbl", "rb");
 	int table_exists = (sdt != NULL);
@@ -196,7 +201,7 @@ void Init_Species_Definitions()
 
 		// Get its Debris Texture
 		required_string("+Debris_Texture:");
-		stuff_string(species->debris_texture_file, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->debris_texture.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// Shield Hit Animation
 		required_string("+Shield_Hit_ani:");
@@ -243,9 +248,9 @@ void Init_Species_Definitions()
 		else
 		{
 			// set defaults to Volition's originals
-			if (!stricmp(Species_names[i], "Vasudan"))
+			if (!stricmp(species->species_name, "Vasudan"))
 				species->awacs_multiplier = 1.25f;
-			else if (!stricmp(Species_names[i], "Shivan"))
+			else if (!stricmp(species->species_name, "Shivan"))
 				species->awacs_multiplier = 1.50f;
 			else
 				species->awacs_multiplier = 1.0f;
