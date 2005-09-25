@@ -5,11 +5,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.5 $
- * $Date: 2005-09-24 07:07:17 $
+ * $Revision: 1.6 $
+ * $Date: 2005-09-25 02:15:02 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/09/24 07:07:17  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 1.4  2005/07/13 03:35:35  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -47,8 +51,7 @@ typedef struct thruster_info {
 } thruster_info;
 
 
-typedef struct species_info
-{
+typedef struct species_info {
 	char species_name[NAME_LENGTH];
 	union {
 		struct {
