@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-09-05 09:38:19 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2005-09-25 22:23:39 $
+ * $Author: Kazan $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/09/05 09:38:19  taylor
+ * merge of OSX tree
+ * a lot of byte swaps were still missing, will hopefully be fully network compatible now
+ *
  * Revision 2.41  2005/07/31 01:32:21  taylor
  * few data type fixes, was only a problem for big-endian systems as little-endian doesn't really care about this
  *
@@ -1916,7 +1920,29 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 //*********************************************************************************************************
 // Accept Player Packet
 //*********************************************************************************************************
+/*
+struct fs2_accept_packet
+{
+	char packet_signature;
+	int code;
 
+    if (code & ACCEPT_INGAME)
+	{
+		int gm_mis_fname_len;
+		char mission_filename[gm_mis_fname_len];
+		unsigned char ingame_joining_team;
+		if (ingame_joining_team == 1)
+			unsigned char ingame_join_team;
+
+	}
+
+	int skill_level;
+	int player_num;
+	short player_id;
+	int netgame_type_flags;
+
+}
+*/
 // send an accept packet to a client in response to a request to join the game
 void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 {
@@ -2130,6 +2156,18 @@ void process_accept_packet(ubyte* data, header* hinfo)
 	}
 }
 
+//*********************************************************************************************************
+// Player Leave Packet
+//*********************************************************************************************************
+/*
+struct fs2_leave_game_packet
+{
+	char packet_signature;
+	char kicked_reason;
+	short player_id;
+	
+}
+*/
 // send a notice that the player at net_addr is leaving (if target is NULL, the broadcast the packet)
 void send_leave_game_packet(short player_id, int kicked_reason, net_player *target)
 {
@@ -2285,6 +2323,25 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 #endif
 }
 
+//*********************************************************************************************************
+// Game active packet
+//*********************************************************************************************************
+/*
+struct fs2_game_active_packet
+{
+	char packet_signature;
+	ubyte server_version;
+	ubyte compat_version;
+	int len1;
+	char netgame_name[len1];
+	int len2;
+	char netgame_mission_name[len2];
+	int len3;
+	char netgame_title[len3];
+	ubyte num_players;
+	unsigned short flags;
+}
+*/
 // send information about this currently active game to the specified address
 void send_game_active_packet(net_addr* addr)
 {
@@ -2413,6 +2470,40 @@ void process_game_active_packet(ubyte* data, header* hinfo)
 		multi_update_active_games(&ag);
 	}
 }
+
+//*********************************************************************************************************
+// Game Update Packet
+//*********************************************************************************************************
+/*
+struct fs2_game_update
+{
+	char packet_signature;
+	int len1;
+	char netgame_name[len1];
+	int len2;
+	char netgame_mission_name[len2];
+	int len3;
+	char netgame_title[len3];
+	int len4;
+	char netgame_campaign_name[len4];
+	int campaign_mode;
+	int max_players;
+	int security;
+	unsigned int respawn;
+	int flags;
+	int type_flags;
+	int version_info;
+	ubyte debug_flags;
+
+	// !!!!!! this isn't relying on information earlier in the packet!
+	// receiving seems to always assume it's there!
+	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+		 int game_state;
+	}
+
+  }
+
+*/
 
 // send_game_update_packet sends an updated Netgame structure to all players currently connected.  The update
 // is used to change the current mission, current state, etc.
@@ -2564,6 +2655,12 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 	Netgame.game_state = ng_state;	
 }
 
+//*********************************************************************************************************
+// Game Update Packet
+//*********************************************************************************************************
+/*
+
+*/
 // send a request or a reply for mission description, if code == 0, request, if code == 1, reply
 void send_netgame_descript_packet(net_addr *addr, int code)
 {
