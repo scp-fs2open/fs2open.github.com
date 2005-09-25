@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-09-25 21:00:40 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2005-09-25 22:24:22 $
+ * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/09/25 21:00:40  taylor
+ * gah.
+ *
  * Revision 2.34  2005/09/25 07:07:34  Goober5000
  * partial commit; hang on
  * --Goober5000
@@ -560,7 +563,6 @@ cmd_brief Cmd_briefs[MAX_TEAMS];
 // --------------------------------------------------------------------------------------
 void	brief_render_elements(vec3d *pos, grid *gridp);
 void	brief_render_icons(int stage_num, float frametime);
-void 	brief_parse_icon_tbl();
 void	brief_grid_read_camera_controls( control_info * ci, float frametime );
 void	brief_maybe_create_new_grid(grid *gridp, vec3d *pos, matrix *orient, int force = 0);
 grid	*brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size);
@@ -785,46 +787,14 @@ void brief_init_screen(int multiplayer_flag)
 }
 
 // --------------------------------------------------------------------------------------
-//	brief_init_icons()
+//	brief_init_colors()
 //
 //
-void brief_init_icons()
+void brief_init_colors()
 {
 	if ( Fred_running ) {
 		gr_init_alphacolor( &IFF_colors[IFF_COLOR_HOSTILE][0],  0xff, 0x00, 0x00, 15*16 );
 		gr_init_alphacolor( &IFF_colors[IFF_COLOR_FRIENDLY][0], 0x00, 0xff, 0x00, 15*16 );
-	}
-
-	int species, icon;
-
-	for (species=0; species<Num_species; species++)
-	{
-		for (icon=0; icon<MAX_BRIEF_ICONS; icon++)
-		{
-			Species_info[species].icon_bitmaps[icon].first_frame = -1;
-			Species_info[species].icon_bitmaps[icon].num_frames = 0;
-		}
-	}
-}
-
-// --------------------------------------------------------------------------------------
-//	brief_init_anims()
-//
-//
-void brief_init_anims()
-{
-	int species, anim;
-
-	for (species=0; species<Num_species; species++)
-	{
-		for (anim=0; anim<MAX_BRIEF_ICONS; anim++)
-		{
-			Species_info[species].icon_highlight_anims[anim].first_frame = -1;
-			Species_info[species].icon_highlight_anims[anim].num_frames = 0;
-
-			Species_info[species].icon_fade_anims[anim].first_frame = -1;
-			Species_info[species].icon_fade_anims[anim].num_frames = 0;
-		}
 	}
 }
 
@@ -907,16 +877,26 @@ void brief_parse_icon_tbl()
 	{
 		Assert(num_icons < (MAX_SPECIES * MAX_BRIEF_ICONS));
 
-		hf = &temp_icon_bitmaps[num_icons];
-
-		// set defaults
-		hf->first_frame = -1;
-		hf->num_frames = 0;
-
-		// load in regular frames
+		// parse regular frames
 		required_string("$Name:");
 		stuff_string(name, F_NAME, NULL);
+		hf = &temp_icon_bitmaps[num_icons];
+		hud_frames_init(hf);
 	
+		// parse fade frames
+		required_string("$Name:");
+		stuff_string(name, F_NAME, NULL);
+		ha = &temp_icon_fade_anims[num_icons];
+		hud_anim_init(ha, 0, 0, name);
+
+		// parse highlighting frames
+		required_string("$Name:");
+		stuff_string(name, F_NAME, NULL);
+		ha = &temp_icon_highlight_anims[num_icons];
+		hud_anim_init(ha, 0, 0, name);
+
+
+		// maybe load animation
 		if (brief_icon_used_in_briefing(num_icons))
 		{
 			hf->first_frame = bm_load_animation(name, &hf->num_frames);
@@ -925,18 +905,6 @@ void brief_parse_icon_tbl()
 				Warning(LOCATION, "Unable to load '%s'", name );
 			}
 		}
-
-		// load in fade frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, NULL);
-		ha = &temp_icon_fade_anims[num_icons];
-		hud_anim_init(ha, 0, 0, name);
-
-		// load in highlighting frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, NULL);
-		ha = &temp_icon_highlight_anims[num_icons];
-		hud_anim_init(ha, 0, 0, name);
 
 		// next icon
 		num_icons++;
@@ -1078,8 +1046,7 @@ void brief_init_map()
 	The_grid = brief_create_default_grid();
 	brief_maybe_create_new_grid(The_grid, pos, orient, 1);
 
-	brief_init_anims();
-	brief_init_icons();
+	brief_init_colors();
 	brief_parse_icon_tbl();
 
 	brief_move_icon_reset();
