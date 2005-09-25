@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-09-25 05:13:06 $
+ * $Revision: 2.58 $
+ * $Date: 2005-09-25 05:26:13 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/09/25 05:13:06  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.56  2005/07/25 05:24:16  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000
@@ -462,6 +466,8 @@
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
 #include "object/objectdock.h"
+#include "species_defs/species_defs.h"
+
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
