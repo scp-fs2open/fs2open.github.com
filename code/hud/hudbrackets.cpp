@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-09-25 05:13:06 $
+ * $Revision: 2.26 $
+ * $Date: 2005-09-25 08:25:15 $
  * $Author: Goober5000 $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/09/25 05:13:06  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.24  2005/07/25 05:24:16  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000
@@ -933,7 +937,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				tinfo_name = buffer;
 				break;
 			case OBJ_ASTEROID:
-				switch(Asteroids[t_objp->instance].type)
+				switch(Asteroids[t_objp->instance].asteroid_type)
 				{
 					case ASTEROID_TYPE_SMALL:
 					case ASTEROID_TYPE_MEDIUM:

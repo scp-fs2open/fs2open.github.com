@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.8 $
- * $Date: 2005-09-25 07:07:34 $
+ * $Revision: 1.9 $
+ * $Date: 2005-09-25 08:25:16 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/09/25 07:07:34  Goober5000
+ * partial commit; hang on
+ * --Goober5000
+ *
  * Revision 1.7  2005/09/25 05:13:07  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -99,7 +103,7 @@ typedef struct species_info {
 	hud_anim icon_highlight_anims[MAX_BRIEF_ICONS];
 	hud_anim icon_fade_anims[MAX_BRIEF_ICONS];
 
-	asteroid_info debris_info[MAX_ASTEROID_TYPES];
+	asteroid_info debris_info[NUM_DEBRIS_SIZES];
 
 	// constructor to initialize everything to 0
 	species_info()
@@ -115,7 +119,7 @@ extern species_info Species_info[MAX_SPECIES];
 
 
 // load up the species_defs.tbl into the correct data areas
-// IMPORTANT: If NumSpecies != 3 icons.tbl has to be modified to compensate!
-void Init_Species_Definitions();
+// IMPORTANT: If Num_species != 3, icons.tbl, asteroid.tbl, and sounds.tbl have to be modified to compensate!
+void species_init();
 
 #endif

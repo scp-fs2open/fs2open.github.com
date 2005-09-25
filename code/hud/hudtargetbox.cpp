@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-09-25 05:26:13 $
+ * $Revision: 2.59 $
+ * $Date: 2005-09-25 08:25:15 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/09/25 05:26:13  Goober5000
+ * bah
+ * --Goober5000
+ *
  * Revision 2.57  2005/09/25 05:13:06  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -1029,14 +1033,14 @@ void hud_render_target_asteroid(object *target_objp)
 	vec3d		orient_vec, up_vector;
 	int			target_team;
 	float			time_to_impact, factor;	
-	int			subtype;
+	int			pof;
 
 	int flags=0;									//draw flags for wireframe
 	asteroidp = &Asteroids[target_objp->instance];
 
 	target_team = obj_team(target_objp);
 
-	subtype = asteroidp->asteroid_subtype;
+	pof = asteroidp->asteroid_subtype;
 	
 	time_to_impact = asteroid_time_to_impact(target_objp);
 
@@ -1056,7 +1060,7 @@ void hud_render_target_asteroid(object *target_objp)
 		vm_vec_copy_scale(&obj_pos,&orient_vec,factor);
 
 		hud_render_target_setup(&camera_eye, &camera_orient, 0.5f);
-		model_clear_instance(Asteroid_info[asteroidp->type].model_num[subtype]);
+		model_clear_instance(Asteroid_info[asteroidp->asteroid_type].model_num[pof]);
 		
 		if (Targetbox_wire!=0)
 		{
@@ -1070,7 +1074,7 @@ void hud_render_target_asteroid(object *target_objp)
 				flags |=MR_NO_POLYS;
 		}
 
-		model_render(Asteroid_info[asteroidp->type].model_num[subtype], &target_objp->orient, &obj_pos, flags |MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_FOGGING );
+		model_render(Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos, flags |MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_NO_FOGGING );
 		hud_render_target_close();
 	}
 
@@ -1082,7 +1086,7 @@ void hud_render_target_asteroid(object *target_objp)
 
 	// hud print type of Asteroid (debris)
 	char hud_name[64];
-	switch (asteroidp->type) {
+	switch (asteroidp->asteroid_type) {
 		case ASTEROID_TYPE_SMALL:
 		case ASTEROID_TYPE_MEDIUM:
 		case ASTEROID_TYPE_LARGE:
@@ -1090,7 +1094,7 @@ void hud_render_target_asteroid(object *target_objp)
 			break;
 
 		default:
-			sprintf(hud_name, NOX("%s debris"), Species_info[(asteroidp->type / MAX_ASTEROID_TYPES) - 1].species_name);
+			sprintf(hud_name, NOX("%s debris"), Species_info[(asteroidp->asteroid_type / NUM_DEBRIS_SIZES) - 1].species_name);
 			break;
 	}
 

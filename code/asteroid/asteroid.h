@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.10 $
- * $Date: 2005-09-25 05:13:04 $
+ * $Revision: 2.11 $
+ * $Date: 2005-09-25 08:25:14 $
  * $Author: Goober5000 $
  *
  * Header file for asteroids
@@ -166,11 +166,13 @@ struct collision_info_struct;
 
 #define	MAX_ASTEROIDS			256
 
-#define MAX_ASTEROID_TYPES		3
-
 #define	ASTEROID_TYPE_SMALL		0
 #define	ASTEROID_TYPE_MEDIUM	1
 #define	ASTEROID_TYPE_LARGE		2
+
+// This is for the asteroid types plus DEBRIS_X_Y
+// (X is each species and Y is SMALL, MEDIUM, and LARGE)
+#define	MAX_DEBRIS_TYPES	((MAX_SPECIES + 1) * 3)
 
 
 // Data structure to track the active asteroids
@@ -180,8 +182,8 @@ typedef struct asteroid_obj {
 } asteroid_obj;
 extern asteroid_obj Asteroid_obj_list;
 
-
-#define	MAX_ASTEROID_POFS			3				// Max number of POFs per asteroid type
+#define NUM_DEBRIS_SIZES	3
+#define	NUM_DEBRIS_POFS		3				// Number of POFs per debris size
 
 #define	AF_USED					(1<<0)			//	Set means used.
 
@@ -189,8 +191,8 @@ extern asteroid_obj Asteroid_obj_list;
 #define MAX_ASTEROID_DETAIL_LEVELS	5
 
 typedef struct asteroid_info {
-	char			name[NAME_LENGTH];									// name for the asteroid
-	char			pof_files[MAX_ASTEROID_POFS][NAME_LENGTH];	// POF files to load/associate with ship
+	char			name[NAME_LENGTH];								// name for the asteroid
+	char			pof_files[NUM_DEBRIS_POFS][NAME_LENGTH];		// POF files to load/associate with ship
 	int			num_detail_levels;									// number of detail levels for this ship
 	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];		// distance to change detail levels at
 	float			max_speed;												// cap on speed for asteroid
@@ -199,15 +201,15 @@ typedef struct asteroid_info {
 	float			damage;													// maximum damage applied from area effect explosion
 	float			blast;													// maximum blast impulse from area effect explosion									
 	float			initial_asteroid_strength;								// starting strength of asteroid
-	polymodel	*modelp[MAX_ASTEROID_POFS];
-	int			model_num[MAX_ASTEROID_POFS];
+	polymodel	*modelp[NUM_DEBRIS_POFS];
+	int			model_num[NUM_DEBRIS_POFS];
 } asteroid_info;
 
 typedef	struct asteroid {
 	int		flags;
 	int		objnum;
-	int		type;						//	In 0..Num_asteroid_types
-	int		asteroid_subtype;		// Which index into asteroid_info for modelnum and modelp
+	int		asteroid_type;		// 0..MAX_DEBRIS_TYPES
+	int		asteroid_subtype;	// Index in asteroid_info for modelnum and modelp
 	int		check_for_wrap;		//	timestamp to check for asteroid wrapping around field
 	int		check_for_collide;	// timestamp to check for asteroid colliding with escort ships
 	int		final_death_time;		// timestamp to swap in new models after explosion starts
@@ -229,6 +231,9 @@ typedef enum {
 	FT_PASSIVE
 } field_type_t;
 
+// these should always be equal for the benefit of generic asteroids (c.f. asteroid_page_in)
+#define	MAX_ACTIVE_DEBRIS_TYPES		NUM_DEBRIS_SIZES
+
 typedef	struct asteroid_field {
 	vec3d	min_bound;						//	Minimum range of field.
 	vec3d	max_bound;						//	Maximum range of field.
@@ -240,14 +245,13 @@ typedef	struct asteroid_field {
 	int		num_initial_asteroids;		//	Number of asteroids at creation.
 	field_type_t		field_type;			// active throws and wraps, passive does not
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
-	int				field_debris_type[MAX_ASTEROID_TYPES];	// one of the debris type defines above
+	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
 } asteroid_field;
 
-extern asteroid_info Asteroid_info[MAX_ASTEROID_TYPES];
+extern asteroid_info Asteroid_info[MAX_DEBRIS_TYPES];
 extern asteroid Asteroids[MAX_ASTEROIDS];
 extern asteroid_field	Asteroid_field;
 
-extern int	Num_asteroid_types;
 extern int	Num_asteroids;
 extern int	Asteroids_enabled;
 
