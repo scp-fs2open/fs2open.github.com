@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.111 $
- * $Date: 2005-09-24 02:40:09 $
+ * $Revision: 2.112 $
+ * $Date: 2005-09-25 08:23:38 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2005/09/24 02:40:09  Goober5000
+ * get rid of a whole bunch of Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.110  2005/09/21 03:55:31  Goober5000
  * add option for warp flash; mess with the cmdlines a bit
  * --Goober5000
@@ -687,7 +691,6 @@
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
 #include "network/multi.h"
-#include "species_defs/species_defs.h"
 #include "hud/hudconfig.h"
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
