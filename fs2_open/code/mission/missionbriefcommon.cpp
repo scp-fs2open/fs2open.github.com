@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-09-25 07:07:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2005-09-25 21:00:40 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/09/25 07:07:34  Goober5000
+ * partial commit; hang on
+ * --Goober5000
+ *
  * Revision 2.33  2005/09/25 05:13:07  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -904,6 +908,10 @@ void brief_parse_icon_tbl()
 		Assert(num_icons < (MAX_SPECIES * MAX_BRIEF_ICONS));
 
 		hf = &temp_icon_bitmaps[num_icons];
+
+		// set defaults
+		hf->first_frame = -1;
+		hf->num_frames = 0;
 
 		// load in regular frames
 		required_string("$Name:");
