@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.68 $
- * $Author: Goober5000 $
- * $Date: 2005-09-25 05:13:07 $
+ * $Revision: 2.69 $
+ * $Author: taylor $
+ * $Date: 2005-09-25 18:44:51 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2005/09/25 05:13:07  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.67  2005/09/24 01:50:09  Goober5000
  * a bunch of support ship bulletproofing
  * --Goober5000
@@ -858,6 +862,8 @@ p_object *mission_parse_get_arrival_ship( char *name );
 p_object *mission_parse_get_arrival_ship( ushort net_signature );
 p_object *mission_parse_get_original_ship( ushort net_signature );
 int parse_create_object(p_object *objp);
+
+void mission_parse_close();
 
 // used in squadmate messaging stuff to create wings from reinforcements.
 int parse_wing_create_ships(wing *wingp, int num_to_create, int force = 0, int specific_instance = -1 );
