@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-09-25 05:13:07 $
+ * $Revision: 2.34 $
+ * $Date: 2005-09-25 07:07:34 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/09/25 05:13:07  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.32  2005/09/24 07:07:16  Goober5000
  * another species overhaul
  * --Goober5000
@@ -953,7 +957,16 @@ void brief_parse_icon_tbl()
 	// error check
 	if (num_species_covered < Num_species)
 	{
-		Error(LOCATION, "Insufficient briefing icons in icons.tbl for all the species in species_defs.tbl!");
+		char errormsg[65 + (MAX_SPECIES * (NAME_LENGTH+1))];
+		strcpy(errormsg, "The following species are missing icon info in icons.tbl:\n");
+		for (int i = num_species_covered; i < Num_species; i++)
+		{
+			strcat(errormsg, Species_info[i].species_name);
+			strcat(errormsg, "\n");
+		}
+		strcat(errormsg, "\0");
+
+		Error(LOCATION, errormsg);
 	}
 }
 
