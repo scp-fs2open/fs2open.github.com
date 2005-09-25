@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.111 $
- * $Date: 2005-09-25 05:13:07 $
+ * $Revision: 2.112 $
+ * $Date: 2005-09-25 08:25:15 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2005/09/25 05:13:07  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.110  2005/09/24 02:24:29  Goober5000
  * bah
  * --Goober5000
@@ -834,7 +838,6 @@
 #include "math/fvi.h"
 #include "weapon/weapon.h"
 #include "cfile/cfile.h"
-#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1131,6 +1134,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set );
 int parse_lookup_alt_name(char *name);
 void parse_init();
 
+extern int Num_species;
 void parse_mission_info(mission *pm)
 {
 	int i;

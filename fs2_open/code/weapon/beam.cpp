@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-09-03 17:48:21 $
- * $Author: phreak $
+ * $Revision: 2.58 $
+ * $Date: 2005-09-25 08:25:14 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/09/03 17:48:21  phreak
+ * don't wrap the U_offset variable since it causes the beam to jump once it gets reset.
+ *
  * Revision 2.56  2005/07/24 18:35:44  taylor
  * proper multi support for fighter beams, already has code to break protocol commented out if we need it,
  *   decided to skip and beam type checks and let beam_fire() reassign it (should work ok)
@@ -2191,7 +2194,7 @@ void beam_delete(beam *b)
 // given an object, return its model num
 int beam_get_model(object *objp)
 {
-	int subtype;
+	int pof;
 
 	if (objp == NULL) {
 		return -1;
@@ -2202,7 +2205,6 @@ int beam_get_model(object *objp)
 		return -1;
 	}
 
-	subtype = 0;
 	switch(objp->type){
 	case OBJ_SHIP:		
 		return Ships[objp->instance].modelnum;
@@ -2222,12 +2224,12 @@ int beam_get_model(object *objp)
 		return Debris[objp->instance].model_num;		
 
 	case OBJ_ASTEROID:
-		subtype = Asteroids[objp->instance].asteroid_subtype;
-		Assert(Asteroids[objp->instance].type >= 0);
-		if(Asteroids[objp->instance].type < 0){
+		pof = Asteroids[objp->instance].asteroid_subtype;
+		Assert(Asteroids[objp->instance].asteroid_type >= 0);
+		if(Asteroids[objp->instance].asteroid_type < 0){
 			return -1;
 		}
-		return Asteroid_info[Asteroids[objp->instance].type].model_num[subtype];
+		return Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[pof];
 
 	default:
 		// this shouldn't happen too often

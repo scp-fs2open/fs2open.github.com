@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.19 $
- * $Date: 2005-09-25 05:13:07 $
+ * $Revision: 1.20 $
+ * $Date: 2005-09-25 08:25:16 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/09/25 05:13:07  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 1.18  2005/09/24 07:18:15  Goober5000
  * fixage
  * --Goober5000
@@ -163,10 +167,10 @@ $FRED Color: ( 192, 0, 0 )						\n\
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-// This function loads the data from the species_defs.tbl
+// This function parses the data from the species_defs.tbl
 // Names only - actual loading is done elsewhere
 
-void Init_Species_Definitions()
+void species_init()
 {
 	// Goober5000 - condensed check for table file
 	CFILE *sdt = cfopen("species_defs.tbl", "rb");

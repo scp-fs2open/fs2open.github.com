@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-12 21:10:57 $
+ * $Revision: 2.15 $
+ * $Date: 2005-09-25 08:25:14 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/12 21:10:57  Goober5000
+ * fixed "warpout sequence aborted" bug
+ * --Goober5000
+ *
  * Revision 2.13  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1119,7 +1123,7 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *light, float
 		Assert(light->type == OBJ_SHIP);
 		if (Ship_info[Ships[light->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
 
-			asteroid_type = Asteroids[heavy->instance].type;
+			asteroid_type = Asteroids[heavy->instance].asteroid_type;
 			if (asteroid_type == 0) {
 				*cruiser_mass = 10.0f * heavy->phys_info.mass;
 			} else if (asteroid_type == 1) {
@@ -1137,7 +1141,7 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *light, float
 		Assert(heavy->type == OBJ_SHIP);
 		if (Ship_info[Ships[heavy->instance].ship_info_index].flags & SIF_BIG_SHIP) {
 
-			asteroid_type = Asteroids[light->instance].type;
+			asteroid_type = Asteroids[light->instance].asteroid_type;
 			if (asteroid_type == 0) {
 				*cruiser_mass = 10.0f * light->phys_info.mass;
 			} else if (asteroid_type == 1) {

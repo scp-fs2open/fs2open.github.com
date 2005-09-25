@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.69 $
- * $Date: 2005-09-14 02:55:04 $
- * $Author: phreak $
+ * $Revision: 2.70 $
+ * $Date: 2005-09-25 08:25:15 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2005/09/14 02:55:04  phreak
+ * fix to a minor annoyance where the hud weapons gauge wouldnt render properly if there were no secondary weapons.
+ *
  * Revision 2.68  2005/09/01 04:14:04  taylor
  * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
  *
@@ -2992,9 +2995,9 @@ void hud_target_in_reticle_new()
 			break;
 		case OBJ_ASTEROID:
 			{
-				int subtype = 0;
-				subtype = Asteroids[A->instance].asteroid_subtype;
-				mc.model_num = Asteroid_info[Asteroids[A->instance].type].model_num[subtype];
+				int pof = 0;
+				pof = Asteroids[A->instance].asteroid_subtype;
+				mc.model_num = Asteroid_info[Asteroids[A->instance].asteroid_type].model_num[pof];
 			}
 			break;
 		case OBJ_JUMP_NODE:
@@ -3957,9 +3960,9 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 
 		case OBJ_ASTEROID:
 			{
-			int subtype = 0;
-			subtype = Asteroids[targetp->instance].asteroid_subtype;
-			modelnum = Asteroid_info[Asteroids[targetp->instance].type].model_num[subtype];
+			int pof = 0;
+			pof = Asteroids[targetp->instance].asteroid_subtype;
+			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			}
 			break;

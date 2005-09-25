@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-09-25 05:13:06 $
+ * $Revision: 2.59 $
+ * $Date: 2005-09-25 08:25:15 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/09/25 05:13:06  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.57  2005/09/24 07:07:16  Goober5000
  * another species overhaul
  * --Goober5000
@@ -564,17 +568,6 @@
 // --------------------------------------------------------------
 // Global to file 
 // --------------------------------------------------------------
-
-// --------------------------------------------------------------
-// Externals
-// --------------------------------------------------------------
-typedef	struct asteroid_field {
-	vec3d	min_bound;						//	Minimum range of field.
-	vec3d	max_bound;						//	Maximum range of field.
-	vec3d	vel;								//	Average asteroid moves at this velocity.
-	float		speed;							// Average speed of field
-	int		num_initial_asteroids;		//	Number of asteroids at creation.
-} asteroid_field;
 
 // time compression/dilation values - Goober5000
 // (Volition sez "can't compress below 0.25"... not sure if

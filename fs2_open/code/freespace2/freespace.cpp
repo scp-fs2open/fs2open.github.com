@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.178 $
- * $Date: 2005-09-25 05:13:05 $
+ * $Revision: 2.179 $
+ * $Date: 2005-09-25 08:25:14 $
  * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2005/09/25 05:13:05  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.177  2005/09/18 20:41:10  wmcoolmon
  * Fixed silly i variable placement mistake
  *
@@ -1374,7 +1378,6 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "sound/sound.h"
-#include "species_defs/species_defs.h"
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "stats/medals.h"
@@ -3450,7 +3453,8 @@ void game_init()
 	// load non-darkening pixel defs
 	palman_load_pixels();
 
-	Init_Species_Definitions();					// Load up the Species defs - this needs to be done FIRST -- Kazan
+	extern void species_init();
+	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
 	// hud shield icon stuff
 	//hud_shield_game_init(); No longer needed; see ships.tbl -C

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.14 $
- * $Date: 2005-09-25 05:13:06 $
+ * $Revision: 2.15 $
+ * $Date: 2005-09-25 08:25:15 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/09/25 05:13:06  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.13  2005/07/13 02:50:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -503,7 +507,7 @@ extern game_snd *Snds_iface;
 #define	SND_CAPSHIP_EXPLODE				59
 #define	SND_CAPSHIP_SUBSYS_EXPLODE		60
 #define	SND_LARGESHIP_WARPOUT			61
-#define	SND_ASTEROID_EXPLODE_BIG		62
+#define	SND_ASTEROID_EXPLODE_LARGE		62
 #define	SND_ASTEROID_EXPLODE_SMALL		63
 #define	SND_CUE_VOICE						64
 #define	SND_END_VOICE						65

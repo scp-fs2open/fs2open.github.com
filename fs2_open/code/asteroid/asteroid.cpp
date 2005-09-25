@@ -9,17 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-09-25 05:13:04 $
+ * $Revision: 2.23 $
+ * $Date: 2005-09-25 08:25:14 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.21  2005/09/24 07:07:15  Goober5000
- * another species overhaul
- * --Goober5000
- *
  * Revision 2.20  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -398,7 +394,7 @@ int	Num_asteroids = 0;
 int	Asteroid_throw_objnum = -1;		//	Object index of ship to throw asteroids at.
 int	Next_asteroid_throw;
 
-asteroid_info	Asteroid_info[MAX_ASTEROID_TYPES];
+asteroid_info	Asteroid_info[MAX_DEBRIS_TYPES];
 asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
 
@@ -582,14 +578,14 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		return NULL;
 	}
 
+	if( (asteroid_subtype < 0) || (asteroid_subtype >= NUM_DEBRIS_POFS)){
+		return NULL;
+	}
+
 	// HACK: multiplayer asteroid subtype always 0 to keep subtype in sync
 	if ( Game_mode & GM_MULTIPLAYER) {
 		asteroid_subtype = 0;
 	}	
-
-	if( (asteroid_subtype < 0) || (asteroid_subtype >= MAX_ASTEROID_POFS)){
-		return NULL;
-	}
 
 	asip = &Asteroid_info[asteroid_type];
 
@@ -599,7 +595,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	}	
 
 	asp = &Asteroids[n];
-	asp->type = asteroid_type;
+	asp->asteroid_type = asteroid_type;
 	asp->asteroid_subtype = asteroid_subtype;
 	asp->flags = 0;
 	asp->flags |= AF_USED;
@@ -801,25 +797,25 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 int get_debris_from_same_group(int index) {
 	int group_base, group_offset;
 
-	group_base = (index / 3) * 3;
+	group_base = (index / NUM_DEBRIS_SIZES) * NUM_DEBRIS_SIZES;
 	group_offset = index - group_base;
 
 	// group base + offset
 	// offset is formed by adding 1 or 2 (since 3 in model group) and mapping back in the 0-2 range
-	return group_base + ((group_offset + rand()%2 + 1) % 3);
+	return group_base + ((group_offset + rand()%(NUM_DEBRIS_SIZES-1) + 1) % NUM_DEBRIS_SIZES);
 }
 
 // returns a weight that depends on asteroid size.
 // the weight is then used to determine the frequencty of different sizes of ship debris
 int get_debris_weight(int ship_debris_index)
 {
-	if (ship_debris_index % 3 == 0)
+	if (ship_debris_index % NUM_DEBRIS_SIZES == 0)
 		return SMALL_DEBRIS_WEIGHT;
 
-	if (ship_debris_index % 3 == 1)
+	if (ship_debris_index % NUM_DEBRIS_SIZES == 1)
 		return MEDIUM_DEBRIS_WEIGHT;
 
-	if (ship_debris_index % 3 == 2)
+	if (ship_debris_index % NUM_DEBRIS_SIZES == 2)
 		return LARGE_DEBRIS_WEIGHT;
 	//Int3();
 	return 1;
@@ -834,7 +830,7 @@ void asteroid_create_all()
 	// each different type (size) of debris piece has a diffenent weight, smaller weighted more heavily than larger.
 	// choose next type from table ship_debris_odds_table by rand()%max_weighted_range,
 	//  the first column in ship_debris_odds_table random number *below* which the debris type in the second column is selected.
-	int ship_debris_odds_table[3][2];
+	int ship_debris_odds_table[MAX_ACTIVE_DEBRIS_TYPES][2];
 	int max_weighted_range = 0;
 
 	if (!Asteroids_enabled)
@@ -850,7 +846,7 @@ void asteroid_create_all()
 
 	// get number of ship debris types
 	if (Asteroid_field.debris_genre == DG_SHIP) {
-		for (idx=0; idx<3; idx++) {
+		for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 			if (Asteroid_field.field_debris_type[idx] != -1) {
 				num_debris_types++;
 			}
@@ -871,19 +867,19 @@ void asteroid_create_all()
 			asteroid_load(Asteroid_field.field_debris_type[idx], 0);
 		}
 	} else {
-		if (Asteroid_field.field_debris_type[0] >= 0) {
+		if (Asteroid_field.field_debris_type[0] != -1) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 0);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 0);
 			asteroid_load(ASTEROID_TYPE_LARGE, 0);
 		}
 
-		if (Asteroid_field.field_debris_type[1] >= 0) {
+		if (Asteroid_field.field_debris_type[1] != -1) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 1);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 1);
 			asteroid_load(ASTEROID_TYPE_LARGE, 1);
 		}
 
-		if (Asteroid_field.field_debris_type[2] >= 0) {
+		if (Asteroid_field.field_debris_type[2] != -1) {
 			asteroid_load(ASTEROID_TYPE_SMALL, 2);
 			asteroid_load(ASTEROID_TYPE_MEDIUM, 2);
 			asteroid_load(ASTEROID_TYPE_LARGE, 2);
@@ -896,9 +892,9 @@ void asteroid_create_all()
 			// For asteroid, load only large asteroids
 
 			// get a valid subtype
-			int subtype = rand() % 3;
+			int subtype = rand() % NUM_DEBRIS_POFS;
 			while (Asteroid_field.field_debris_type[subtype] == -1) {
-				subtype = (subtype + 1) % 3;
+				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
 			}
 
 			asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
@@ -907,7 +903,7 @@ void asteroid_create_all()
 
 			int rand_choice = rand() % max_weighted_range;
 
-			for (idx=0; idx<3; idx++) {
+			for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 				// for ship debris, choose type according to odds table
 				if (rand_choice < ship_debris_odds_table[idx][0]) {
 					asteroid_create(&Asteroid_field, ship_debris_odds_table[idx][1], 0);
@@ -1074,9 +1070,9 @@ void maybe_throw_asteroid(int count)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		object *A = &Objects[so->objnum];
 		if (so->objnum == Asteroid_throw_objnum) {
-			int subtype = rand() % 3;
+			int subtype = rand() % NUM_DEBRIS_POFS;
 			while (Asteroid_field.field_debris_type[subtype] == -1) {
-				subtype = (subtype + 1) % 3;
+				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
 			}
 			object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
 			if (objp != NULL) {
@@ -1229,7 +1225,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	if ( asteroid_hit_info == NULL ) {
 		// asteroid weapon collision
 		Assert( other_obj->type == OBJ_WEAPON );
-		mc.model_num = Asteroid_info[Asteroids[num].type].model_num[asteroid_subtype];	// Fill in the model to check
+		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];	// Fill in the model to check
 		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;					// The object's orient
 		mc.pos = &pasteroid->pos;							// The object's position
@@ -1410,7 +1406,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 	} else {
 		// Asteroid is heavier obj
-		mc.model_num = Asteroid_info[Asteroids[num].type].model_num[asteroid_subtype];		// Fill in the model to check
+		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];		// Fill in the model to check
 		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;				// The object's orient
 		mc.radius = model_get_core_radius( Ships[ship_obj->instance].modelnum );
@@ -1481,8 +1477,8 @@ void asteroid_render(object * obj)
 
 		Assert( asp->flags & AF_USED );
 
-		model_clear_instance( Asteroid_info[asp->type].model_num[asp->asteroid_subtype]);
-		model_render(Asteroid_info[asp->type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos, MR_NORMAL|MR_IS_ASTEROID, OBJ_INDEX(obj) );	//	Replace MR_NORMAL with 0x07 for big yellow blobs
+		model_clear_instance( Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype]);
+		model_render(Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos, MR_NORMAL|MR_IS_ASTEROID, OBJ_INDEX(obj) );	//	Replace MR_NORMAL with 0x07 for big yellow blobs
 	}
 }
 
@@ -1511,7 +1507,7 @@ float asteroid_get_fireball_scale_multiplier(int num)
 {
 	if (Asteroids[num].flags & AF_USED) {
 
-		switch(Asteroids[num].type) {
+		switch(Asteroids[num].asteroid_type) {
 		case ASTEROID_TYPE_LARGE:
 			return 1.5f;
 			break;
@@ -1552,14 +1548,14 @@ void asteriod_explode_sound(object *objp, int type, int play_loud)
 	int	sound_index = -1;
 	float range_factor = 1.0f;		// how many times sound should traver farther than normal
 
-	if (type % 3 <= 1)
+	if (type % NUM_DEBRIS_SIZES <= 1)
 	{
 		sound_index = SND_ASTEROID_EXPLODE_SMALL;
 		range_factor = 5.0;
 	}
 	else
 	{
-		sound_index = SND_ASTEROID_EXPLODE_BIG;
+		sound_index = SND_ASTEROID_EXPLODE_LARGE;
 		range_factor = 10.0f;
 	}
 
@@ -1586,7 +1582,7 @@ void asteroid_do_area_effect(object *asteroid_objp)
 	asteroid_info	*asip;
 
 	asp = &Asteroids[asteroid_objp->instance];
-	asip = &Asteroid_info[asp->type];
+	asip = &Asteroid_info[asp->asteroid_type];
 
 	if ( asip->damage <= 0 ) {		// do a quick out if there is no damage to apply
 		return;
@@ -1643,7 +1639,7 @@ void asteroid_hit( object * asteroid_obj, object * other_obj, vec3d * hitpos, fl
 			if ( asp->collide_objnum == OBJ_INDEX(other_obj) ) {
 //				play_loud_collision = 1;
 			}
-			asteriod_explode_sound(asteroid_obj, asp->type, play_loud_collision);
+			asteriod_explode_sound(asteroid_obj, asp->asteroid_type, play_loud_collision);
 			asteroid_do_area_effect(asteroid_obj);
 
 			asp->final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the asteroid up.
@@ -1768,10 +1764,10 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 		if ( !MULTIPLAYER_CLIENT ) {
 #endif
 
-			if (asp->type <= ASTEROID_TYPE_LARGE)
-				// if this isn't true it's just debris, and debris doesn't break up
+			// if this isn't true it's just debris, and debris doesn't break up
+			if (asp->asteroid_type <= ASTEROID_TYPE_LARGE)
 			{
-				switch (asp->type) {
+				switch (asp->asteroid_type) {
 					case ASTEROID_TYPE_SMALL:
 						break;
 					case ASTEROID_TYPE_MEDIUM:
@@ -2012,12 +2008,8 @@ float asteroid_time_to_impact(object *asteroid_objp)
 }
 
 // read in a single asteroid section from asteroid.tbl
-void asteroid_parse_section()
+void asteroid_parse_section(asteroid_info *asip)
 {
-	asteroid_info	*asip;
-	
-	asip = &Asteroid_info[Num_asteroid_types];
-
 	required_string("$Name:");
 	stuff_string(asip->name, F_NAME, NULL);
 
@@ -2027,7 +2019,7 @@ void asteroid_parse_section()
 	required_string( "$POF file2:" );
 	stuff_string(asip->pof_files[1], F_NAME, NULL);
 
-	if ( (strstr(asip->name,"Asteroid") != NULL) || (strstr(asip->name, "asteroid") != NULL) ) {
+	if ( (stristr(asip->name,"Asteroid") != NULL) ) {
 		required_string( "$POF file3:" );
 		stuff_string(asip->pof_files[2], F_NAME, NULL);
 	}
@@ -2055,6 +2047,7 @@ void asteroid_parse_section()
 	required_string("$Hitpoints:");
 	stuff_float(&asip->initial_asteroid_strength);
 }
+
 extern int Num_species;
 // read in data from asteroid.tbl into Asteroid_info[] array
 void asteroid_parse_tbl()
@@ -2072,11 +2065,11 @@ void asteroid_parse_tbl()
 	required_string("#Asteroid Types");
 
 	// total we're expecting
-	int Total_asteroid_types = ((Num_species + 1) * 3);
+	int Total_asteroid_types = ((Num_species + 1) * NUM_DEBRIS_SIZES);
 
 	while (required_string_either("#End","$Name:")) {
 		Assert( Num_asteroid_types < Total_asteroid_types );
-		asteroid_parse_section();
+		asteroid_parse_section(&Asteroid_info[Num_asteroid_types]);
 		Num_asteroid_types++;
 	}
 
@@ -2260,12 +2253,13 @@ void asteroid_page_in()
 		nprintf(( "Paging", "Paging in asteroids\n" ));
 
 
-		// max of 3 possible debris field models
-		for (i=0; i<3; i++) {
+		// max of MAX_ACTIVE_DEBRIS_TYPES possible debris field models
+		for (i=0; i<MAX_ACTIVE_DEBRIS_TYPES; i++) {
 			asteroid_info	*asip;
 
 			if (Asteroid_field.debris_genre == DG_ASTEROID) {
 				// asteroid
+				Assert(i < NUM_DEBRIS_SIZES);
 				asip = &Asteroid_info[i];
 			} else {
 				// ship debris - always full until empty
@@ -2277,7 +2271,7 @@ void asteroid_page_in()
 			}
 
 
-			for (k=0; k<3; k++) {
+			for (k=0; k<NUM_DEBRIS_POFS; k++) {
 
 				// SHIP DEBRIS - use subtype 0
 				if (Asteroid_field.debris_genre == DG_SHIP) {
