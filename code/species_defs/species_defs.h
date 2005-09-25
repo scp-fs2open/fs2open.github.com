@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.10 $
- * $Date: 2005-09-25 18:48:25 $
- * $Author: taylor $
+ * $Revision: 1.11 $
+ * $Date: 2005-09-25 20:31:42 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/09/25 18:48:25  taylor
+ * GCC fixage, my Whiffle Bat that was saved for Bobboau's constant breaking is currently getting "Goober5000" etched into it :)
+ *
  * Revision 1.9  2005/09/25 08:25:16  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -68,11 +71,15 @@ typedef struct thrust_pair {
 	generic_anim afterburn;
 } thrust_pair;
 
-typedef struct thruster_info {
+typedef struct thrust_info {
 	thrust_pair flames;
 	thrust_pair glow;
 } thrust_info;
 
+
+// Currently the only species-specific feature not in species_info is ship debris.  This is because
+// ship debris chunks are treated as asteroids and tied so tightly into the asteroid code that
+// separating them makes the code much more complicated.
 
 typedef struct species_info {
 
@@ -107,7 +114,6 @@ typedef struct species_info {
 	hud_anim icon_highlight_anims[MAX_BRIEF_ICONS];
 	hud_anim icon_fade_anims[MAX_BRIEF_ICONS];
 
-	asteroid_info debris_info[NUM_DEBRIS_SIZES];
 
 	// constructor to initialize everything to 0
 	species_info()
