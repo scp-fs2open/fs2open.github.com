@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-09-25 20:31:42 $
+ * $Revision: 2.25 $
+ * $Date: 2005-09-25 20:55:28 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/09/25 20:31:42  Goober5000
+ * okay; everything should be good to go
+ * --Goober5000
+ *
  * Revision 2.23  2005/09/25 08:25:14  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -2093,7 +2097,7 @@ void asteroid_parse_tbl()
 		for (int i = 0; i < Num_species; i++)
 		{
 			// species found
-			if (!stristr(temp.name, Species_info[i].species_name))
+			if (stristr(temp.name, Species_info[i].species_name))
 			{
 				int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
 
