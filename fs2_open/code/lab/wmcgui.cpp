@@ -9,9 +9,11 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.19 $
- * $Date: 2005-09-25 05:13:06 $
+ * $Revision: 1.20 $
+ * $Date: 2005-09-25 07:26:05 $
  * $Author: Goober5000 $
+ *
+ * $Log: not supported by cvs2svn $
  */
 
 #include "lab/wmcgui.h"
