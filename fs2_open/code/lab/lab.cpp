@@ -8,12 +8,16 @@
  */
 
 /*
- * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.16 $
- * $Date: 2005-09-25 07:26:05 $
+ * $Logfile: /Freespace2/code/lab/lab.cpp $
+ * $Revision: 1.17 $
+ * $Date: 2005-09-25 07:27:33 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/09/25 07:26:05  Goober5000
+ * try to fix the headers
+ * --Goober5000
+ *
  */
 
 #include "wmcgui.h"
