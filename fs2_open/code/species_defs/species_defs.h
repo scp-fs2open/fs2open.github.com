@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.7 $
- * $Date: 2005-09-25 05:13:07 $
+ * $Revision: 1.8 $
+ * $Date: 2005-09-25 07:07:34 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/09/25 05:13:07  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 1.6  2005/09/25 02:15:02  Goober5000
  * meh for consistency
  * --Goober5000
@@ -48,7 +52,8 @@
 #include "bmpman/bmpman.h"
 #include "gamesnd/gamesnd.h"
 #include "hud/hud.h"
-#include "mission\missionbriefcommon.h"
+#include "mission/missionbriefcommon.h"
+#include "asteroid/asteroid.h"
 
 typedef struct thruster_pair {
 	generic_anim normal;
@@ -94,6 +99,7 @@ typedef struct species_info {
 	hud_anim icon_highlight_anims[MAX_BRIEF_ICONS];
 	hud_anim icon_fade_anims[MAX_BRIEF_ICONS];
 
+	asteroid_info debris_info[MAX_ASTEROID_TYPES];
 
 	// constructor to initialize everything to 0
 	species_info()

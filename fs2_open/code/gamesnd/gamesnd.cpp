@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-09-25 05:13:05 $
+ * $Revision: 2.24 $
+ * $Date: 2005-09-25 07:07:34 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/09/25 05:13:05  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.22  2005/09/24 07:07:16  Goober5000
  * another species overhaul
  * --Goober5000
@@ -526,11 +530,9 @@ void gamesnd_parse_soundstbl()
 	strcpy(errormsg, "The following species are missing flyby sounds in sounds.tbl:\n");
 	for (int i = 0; i < Num_species; i++)
 	{
-		species_info *species = &Species_info[i];
-
-		if (species->snd_flyby_fighter.filename[0] = '\0')
+		if (Species_info[i].snd_flyby_fighter.filename[0] = '\0')
 		{
-			strcat(errormsg, species->species_name);
+			strcat(errormsg, Species_info[i].species_name);
 			strcat(errormsg, "\n");
 			species_missing = true;
 		}
