@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-09-25 22:24:22 $
+ * $Revision: 2.37 $
+ * $Date: 2005-09-25 23:02:29 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/09/25 22:24:22  Goober5000
+ * more fiddly stuff
+ * --Goober5000
+ *
  * Revision 2.35  2005/09/25 21:00:40  taylor
  * gah.
  *
@@ -883,6 +887,16 @@ void brief_parse_icon_tbl()
 		hf = &temp_icon_bitmaps[num_icons];
 		hud_frames_init(hf);
 	
+		// maybe load animation
+		if (brief_icon_used_in_briefing(num_icons))
+		{
+			hf->first_frame = bm_load_animation(name, &hf->num_frames);
+			if ( hf->first_frame == -1 )
+			{
+				Warning(LOCATION, "Unable to load '%s'", name );
+			}
+		}
+
 		// parse fade frames
 		required_string("$Name:");
 		stuff_string(name, F_NAME, NULL);
@@ -894,17 +908,6 @@ void brief_parse_icon_tbl()
 		stuff_string(name, F_NAME, NULL);
 		ha = &temp_icon_highlight_anims[num_icons];
 		hud_anim_init(ha, 0, 0, name);
-
-
-		// maybe load animation
-		if (brief_icon_used_in_briefing(num_icons))
-		{
-			hf->first_frame = bm_load_animation(name, &hf->num_frames);
-			if ( hf->first_frame == -1 )
-			{
-				Warning(LOCATION, "Unable to load '%s'", name );
-			}
-		}
 
 		// next icon
 		num_icons++;
