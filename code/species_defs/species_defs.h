@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.9 $
- * $Date: 2005-09-25 08:25:16 $
- * $Author: Goober5000 $
+ * $Revision: 1.10 $
+ * $Date: 2005-09-25 18:48:25 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/09/25 08:25:16  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 1.8  2005/09/25 07:07:34  Goober5000
  * partial commit; hang on
  * --Goober5000
@@ -51,23 +55,23 @@
 #ifndef _SPECIES_DEFS_H_
 #define _SPECIES_DEFS_H_
 
-#include "globalincs\pstypes.h"
-#include "globalincs\globals.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 #include "bmpman/bmpman.h"
 #include "gamesnd/gamesnd.h"
 #include "hud/hud.h"
 #include "mission/missionbriefcommon.h"
 #include "asteroid/asteroid.h"
 
-typedef struct thruster_pair {
+typedef struct thrust_pair {
 	generic_anim normal;
 	generic_anim afterburn;
-} thruster_pair;
+} thrust_pair;
 
 typedef struct thruster_info {
-	thruster_pair flames;
-	thruster_pair glow;
-} thruster_info;
+	thrust_pair flames;
+	thrust_pair glow;
+} thrust_info;
 
 
 typedef struct species_info {
@@ -76,7 +80,7 @@ typedef struct species_info {
 
 	generic_bitmap debris_texture;
 	generic_anim shield_anim;
-	thruster_info thruster_info;
+	thrust_info thruster_info;
 
 	float awacs_multiplier;
 
