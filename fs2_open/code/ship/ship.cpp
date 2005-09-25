@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.229 $
- * $Date: 2005-09-25 05:13:04 $
+ * $Revision: 2.230 $
+ * $Date: 2005-09-25 08:21:54 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.229  2005/09/25 05:13:04  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.228  2005/09/24 07:45:31  Goober5000
  * cleaned up some more thruster stuff; honestly, the thruster code is such a
  * mess that it should probably be reverted to the retail version
@@ -1654,7 +1658,6 @@
 #include "mission/missioncampaign.h"
 #include "radar/radarsetup.h"
 #include "object/objectdock.h"
-#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
