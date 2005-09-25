@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.112 $
- * $Date: 2005-09-25 08:25:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.113 $
+ * $Date: 2005-09-25 18:44:51 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2005/09/25 08:25:15  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.111  2005/09/25 05:13:07  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -4956,6 +4960,14 @@ int parse_main(char *mission_name, int flags, int importFSM)
 		strcpy(Mission_filename, mission_name);
 
 	return 0;
+}
+
+void mission_parse_close()
+{
+	if (Subsys_status != NULL) {
+		vm_free(Subsys_status);
+		Subsys_status = NULL;
+	}
 }
 
 // sets the arrival lcoation of the ships in wingp.  pass num_to_set since the threshold value

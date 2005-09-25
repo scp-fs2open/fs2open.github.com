@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.179 $
- * $Date: 2005-09-25 08:25:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.180 $
+ * $Date: 2005-09-25 18:44:51 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.179  2005/09/25 08:25:14  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.178  2005/09/25 05:13:05  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -8879,6 +8883,7 @@ void game_shutdown(void)
 	unload_animating_pointer();// frees the frames used for the animating mouse pointer
 	mission_campaign_close();	// close out the campaign stuff
 	message_mission_close();	// clear loaded table data from message.tbl
+	mission_parse_close();		// clear out any extra memory that may be in use by mission parsing
 #ifndef NO_NETWORK
 	multi_voice_close();			// close down multiplayer voice (including freeing buffers, etc)
 	multi_log_close();
