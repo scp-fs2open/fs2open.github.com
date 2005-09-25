@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.230 $
- * $Date: 2005-09-25 08:21:54 $
+ * $Revision: 2.231 $
+ * $Date: 2005-09-25 20:42:57 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.230  2005/09/25 08:21:54  Goober5000
+ * remove duplicate #include
+ * --Goober5000
+ *
  * Revision 2.229  2005/09/25 05:13:04  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -12920,7 +12924,7 @@ void ship_page_in()
 		ship_init_thrusters();
 
 	generic_anim *ta;
-	thruster_info *thruster;
+	thrust_info *thruster;
 	for ( i = 0; i < Num_species; i++ ) {
 		thruster = &Species_info[i].thruster_info;
 
