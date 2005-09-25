@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-08-31 07:17:43 $
+ * $Revision: 2.54 $
+ * $Date: 2005-09-25 22:24:22 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/08/31 07:17:43  Goober5000
+ * removed two unused functions
+ * --Goober5000
+ *
  * Revision 2.52  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -2286,13 +2290,20 @@ void hud_show_damage_popup()
 // init the members of the hud_anim struct to default values
 void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename)
 {
-	ha->first_frame	= -1;
+	ha->first_frame		= -1;
 	ha->num_frames		= 0;
 	ha->total_time		= 0.0f;
 	ha->time_elapsed	= 0.0f;
 	ha->sx				= sx;
 	ha->sy				= sy;
 	strcpy(ha->name, filename);
+}
+
+// init the members of the hud_frames struct to default values
+void hud_frames_init(hud_frames *hf)
+{
+	hf->first_frame		= -1;
+	hf->num_frames		= 0;
 }
 
 // call to unload the targetbox static animation

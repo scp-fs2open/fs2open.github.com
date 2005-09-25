@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:25:59 $
+ * $Revision: 2.8 $
+ * $Date: 2005-09-25 22:24:22 $
  * $Author: Goober5000 $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -412,7 +416,8 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num);
 void brief_camera_move(float frametime, int stage_num);
 void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float w_scale_factor = 1.0f, float h_scale_factor = 1.0f);
 void brief_render_icon_line(int stage_num, int line_num);
-void brief_init_icons();
+void brief_init_colors();
+void brief_parse_icon_tbl();
 void brief_load_icons();
 void brief_unload_icons();
 void brief_common_close();

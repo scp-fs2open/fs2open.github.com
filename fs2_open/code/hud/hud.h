@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.15 $
- * $Date: 2005-08-31 07:17:43 $
+ * $Revision: 2.16 $
+ * $Date: 2005-09-25 22:24:22 $
  * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/08/31 07:17:43  Goober5000
+ * removed two unused functions
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -404,7 +408,8 @@ void hud_start_text_flash(char *txt, int t);
 void hud_num_make_mono(char *num_str);
 
 // functions for handling hud animations
-void	hud_anim_init(hud_anim *ha, int sx, int sy, char *filename);
+void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename);
+void hud_frames_init(hud_frames *hf);
 int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,bool resize=true);
 int	hud_anim_load(hud_anim *ha);
 void	hud_anim_release(hud_anim *ha);
