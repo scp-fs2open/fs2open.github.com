@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.11 $
- * $Date: 2005-09-25 08:25:14 $
+ * $Revision: 2.12 $
+ * $Date: 2005-09-25 20:31:42 $
  * $Author: Goober5000 $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/09/25 08:25:14  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.9  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -166,13 +170,22 @@ struct collision_info_struct;
 
 #define	MAX_ASTEROIDS			256
 
+#define NUM_DEBRIS_SIZES	3
+#define	NUM_DEBRIS_POFS		3				// Number of POFs per debris size
+
 #define	ASTEROID_TYPE_SMALL		0
 #define	ASTEROID_TYPE_MEDIUM	1
 #define	ASTEROID_TYPE_LARGE		2
 
 // This is for the asteroid types plus DEBRIS_X_Y
 // (X is each species and Y is SMALL, MEDIUM, and LARGE)
-#define	MAX_DEBRIS_TYPES	((MAX_SPECIES + 1) * 3)
+#define	MAX_DEBRIS_TYPES	((MAX_SPECIES + 1) * NUM_DEBRIS_SIZES)
+
+// these should always be equal for the benefit of generic asteroids (c.f. asteroid_page_in)
+#define	MAX_ACTIVE_DEBRIS_TYPES		NUM_DEBRIS_SIZES
+
+// Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
+#define MAX_ASTEROID_DETAIL_LEVELS	5
 
 
 // Data structure to track the active asteroids
@@ -182,13 +195,6 @@ typedef struct asteroid_obj {
 } asteroid_obj;
 extern asteroid_obj Asteroid_obj_list;
 
-#define NUM_DEBRIS_SIZES	3
-#define	NUM_DEBRIS_POFS		3				// Number of POFs per debris size
-
-#define	AF_USED					(1<<0)			//	Set means used.
-
-// Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
-#define MAX_ASTEROID_DETAIL_LEVELS	5
 
 typedef struct asteroid_info {
 	char			name[NAME_LENGTH];								// name for the asteroid
@@ -205,6 +211,9 @@ typedef struct asteroid_info {
 	int			model_num[NUM_DEBRIS_POFS];
 } asteroid_info;
 
+
+#define	AF_USED					(1<<0)			//	Set means used.
+
 typedef	struct asteroid {
 	int		flags;
 	int		objnum;
@@ -219,6 +228,7 @@ typedef	struct asteroid {
 	int		target_objnum;			//	Yes, hah!  Asteroids can have targets.  See asteroid_aim_at_target().
 } asteroid;
 
+
 // TYPEDEF FOR DEBRIS TYPE
 typedef enum {
 	DG_ASTEROID,
@@ -230,9 +240,6 @@ typedef enum {
 	FT_ACTIVE,
 	FT_PASSIVE
 } field_type_t;
-
-// these should always be equal for the benefit of generic asteroids (c.f. asteroid_page_in)
-#define	MAX_ACTIVE_DEBRIS_TYPES		NUM_DEBRIS_SIZES
 
 typedef	struct asteroid_field {
 	vec3d	min_bound;						//	Minimum range of field.

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-09-25 08:25:14 $
+ * $Revision: 2.24 $
+ * $Date: 2005-09-25 20:31:42 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/09/25 08:25:14  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.20  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -367,6 +371,7 @@
 #include "parse/parselo.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "species_defs/species_defs.h"
 
 #ifndef NO_NETWORK
 #include "network/multiutil.h"
@@ -389,7 +394,6 @@ asteroid_obj	Asteroid_obj_list;						// head of linked list of asteroid_obj stru
 #define LARGE_DEBRIS_WEIGHT	1
 
 int	Asteroids_enabled = 1;
-int	Num_asteroid_types;
 int	Num_asteroids = 0;
 int	Asteroid_throw_objnum = -1;		//	Object index of ship to throw asteroids at.
 int	Next_asteroid_throw;
@@ -559,12 +563,12 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	int				rand_base;
 
 	// bogus
-	if(asfieldp == NULL){
+	if(asfieldp == NULL) {
 		return NULL;
 	}
 
-	for (n=0; n<MAX_ASTEROIDS; n++ ) {
-		if ( !(Asteroids[n].flags & AF_USED) ){
+	for (n=0; n<MAX_ASTEROIDS; n++) {
+		if (!(Asteroids[n].flags & AF_USED)) {
 			break;
 		}
 	}
@@ -574,11 +578,11 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		return NULL;
 	}
 
-	if((asteroid_type < 0) || (asteroid_type >= Num_asteroid_types)){
+	if((asteroid_type < 0) || (asteroid_type >= ((Num_species + 1) * NUM_DEBRIS_SIZES))) {
 		return NULL;
 	}
 
-	if( (asteroid_subtype < 0) || (asteroid_subtype >= NUM_DEBRIS_POFS)){
+	if((asteroid_subtype < 0) || (asteroid_subtype >= NUM_DEBRIS_POFS)) {
 		return NULL;
 	}
 
@@ -590,7 +594,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	asip = &Asteroid_info[asteroid_type];
 
 	// bogus
-	if(asip->modelp[asteroid_subtype] == NULL){
+	if(asip->modelp[asteroid_subtype] == NULL) {
 		return NULL;
 	}	
 
@@ -809,16 +813,22 @@ int get_debris_from_same_group(int index) {
 // the weight is then used to determine the frequencty of different sizes of ship debris
 int get_debris_weight(int ship_debris_index)
 {
-	if (ship_debris_index % NUM_DEBRIS_SIZES == 0)
-		return SMALL_DEBRIS_WEIGHT;
+	int size = ship_debris_index % NUM_DEBRIS_SIZES;
+	switch (size)
+	{
+		case ASTEROID_TYPE_SMALL:
+			return SMALL_DEBRIS_WEIGHT;
 
-	if (ship_debris_index % NUM_DEBRIS_SIZES == 1)
-		return MEDIUM_DEBRIS_WEIGHT;
+		case ASTEROID_TYPE_MEDIUM:
+			return MEDIUM_DEBRIS_WEIGHT;
 
-	if (ship_debris_index % NUM_DEBRIS_SIZES == 2)
-		return LARGE_DEBRIS_WEIGHT;
-	//Int3();
-	return 1;
+		case ASTEROID_TYPE_LARGE:
+			return LARGE_DEBRIS_WEIGHT;
+
+		default:
+			Int3();
+			return 1;
+	}
 }
 
 // Create all the asteroids for the mission, called from 
@@ -829,8 +839,12 @@ void asteroid_create_all()
 	// ship_debris_odds_table keeps track of debris type of the next debris piece
 	// each different type (size) of debris piece has a diffenent weight, smaller weighted more heavily than larger.
 	// choose next type from table ship_debris_odds_table by rand()%max_weighted_range,
-	//  the first column in ship_debris_odds_table random number *below* which the debris type in the second column is selected.
-	int ship_debris_odds_table[MAX_ACTIVE_DEBRIS_TYPES][2];
+	// the threshold *below* which the debris type is selected.
+	struct {
+		int random_threshold;
+		int debris_type;
+	} ship_debris_odds_table[MAX_ACTIVE_DEBRIS_TYPES];
+
 	int max_weighted_range = 0;
 
 	if (!Asteroids_enabled)
@@ -855,8 +869,8 @@ void asteroid_create_all()
 		// Calculate the odds table
 		for (idx=0; idx<num_debris_types; idx++) {
 			int debris_weight = get_debris_weight(Asteroid_field.field_debris_type[idx]);
-			ship_debris_odds_table[idx][0] = max_weighted_range + debris_weight;
-			ship_debris_odds_table[idx][1] = Asteroid_field.field_debris_type[idx];
+			ship_debris_odds_table[idx].random_threshold = max_weighted_range + debris_weight;
+			ship_debris_odds_table[idx].debris_type = Asteroid_field.field_debris_type[idx];
 			max_weighted_range += debris_weight;
 		}
 	}
@@ -905,8 +919,8 @@ void asteroid_create_all()
 
 			for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 				// for ship debris, choose type according to odds table
-				if (rand_choice < ship_debris_odds_table[idx][0]) {
-					asteroid_create(&Asteroid_field, ship_debris_odds_table[idx][1], 0);
+				if (rand_choice < ship_debris_odds_table[idx].random_threshold) {
+					asteroid_create(&Asteroid_field, ship_debris_odds_table[idx].debris_type, 0);
 					break;
 				}
 			}
@@ -2054,8 +2068,6 @@ void asteroid_parse_tbl()
 {
 	char impact_ani_file[FILESPEC_LENGTH];
 
-	Num_asteroid_types = 0;
-
 	// open localization
 	lcl_ext_open();
 
@@ -2067,21 +2079,53 @@ void asteroid_parse_tbl()
 	// total we're expecting
 	int Total_asteroid_types = ((Num_species + 1) * NUM_DEBRIS_SIZES);
 
-	while (required_string_either("#End","$Name:")) {
-		Assert( Num_asteroid_types < Total_asteroid_types );
-		asteroid_parse_section(&Asteroid_info[Num_asteroid_types]);
-		Num_asteroid_types++;
+	int asteroid_tally[MAX_SPECIES+1];
+	memset(asteroid_tally, 0, sizeof(int)*(MAX_SPECIES+1));
+
+	memset(Asteroid_info, 0, sizeof(asteroid_info)*MAX_DEBRIS_TYPES);
+
+	while (required_string_either("#End","$Name:"))
+	{
+		asteroid_info temp;
+		asteroid_parse_section(&temp);
+
+		// check for species
+		for (int i = 0; i < Num_species; i++)
+		{
+			// species found
+			if (!stristr(temp.name, Species_info[i].species_name))
+			{
+				int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
+
+				Assert(asteroid_tally[idx] < NUM_DEBRIS_SIZES);
+				if (asteroid_tally[idx] >= NUM_DEBRIS_SIZES)
+					goto asteroid_parse_tbl_continue_outer_loop;
+
+				Asteroid_info[asteroid_tally[idx]] = temp;
+				asteroid_tally[idx]++;
+				goto asteroid_parse_tbl_continue_outer_loop;
+			}
+		}
+
+		// species not found; must be generic
+		Assert(asteroid_tally[0] < NUM_DEBRIS_SIZES);
+		if (asteroid_tally[0] >= NUM_DEBRIS_SIZES)
+			continue;
+
+		Asteroid_info[asteroid_tally[0]] = temp;
+		asteroid_tally[0]++;
+
+asteroid_parse_tbl_continue_outer_loop:
+		/* NO-OP */ ;
 	}
 
 	required_string("#End");
 
-	// check all read in
-	Assert(Num_asteroid_types == Total_asteroid_types);
-
 	Asteroid_impact_explosion_ani = -1;
 	required_string("$Impact Explosion:");
 	stuff_string(impact_ani_file, F_NAME, NULL);
-	if ( stricmp(impact_ani_file,NOX("none")))	{
+	if ( stricmp(impact_ani_file,NOX("none")))
+	{
 		int num_frames;
 		Asteroid_impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, NULL, 1);
 	}
@@ -2091,6 +2135,29 @@ void asteroid_parse_tbl()
 
 	// close localization
 	lcl_ext_close();
+
+
+	// check for any missing info
+	char errormsg[70 + (MAX_SPECIES * (NAME_LENGTH+1))];
+	bool species_missing = false;
+	strcpy(errormsg, "The following species are missing debris types in asteroids.tbl:\n");
+	for (int i = 0; i < Num_species; i++)
+	{
+		int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
+
+		if (asteroid_tally[idx] < NUM_DEBRIS_SIZES)
+		{
+			strcat(errormsg, Species_info[i].species_name);
+			strcat(errormsg, "\n");
+			species_missing = true;
+		}
+	}
+	strcat(errormsg, "\0");
+
+	if (species_missing)
+	{
+		Error(LOCATION, errormsg);
+	}
 }
 
 //	Return number of asteroids expected to collide with a ship.
