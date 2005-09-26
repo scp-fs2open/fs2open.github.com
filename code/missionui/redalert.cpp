@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-09-09 05:12:44 $
+ * $Revision: 2.19 $
+ * $Date: 2005-09-26 04:08:54 $
  * $Author: Goober5000 $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/09/09 05:12:44  Goober5000
+ * "no briefing" flag now works for red-alert missions too
+ * --Goober5000
+ *
  * Revision 2.17  2005/07/25 05:24:16  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000
@@ -579,7 +583,7 @@ void red_alert_close()
 		}
 		
 		Ui_window.destroy();
-		// hud_anim_release(&Flash_anim);
+		// bm_unload(&Flash_anim);
 		common_free_interface_palette();		// restore game palette
 		game_flush();
 	}

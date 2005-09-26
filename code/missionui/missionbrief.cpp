@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-09-25 05:13:06 $
+ * $Revision: 2.37 $
+ * $Date: 2005-09-26 04:08:54 $
  * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/09/25 05:13:06  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.35  2005/09/23 22:48:56  Goober5000
  * something for WCS
  * --Goober5000
@@ -2294,7 +2298,7 @@ void brief_close()
 	brief_voice_unload_all();
 
 #ifndef FS2_DEMO
-	hud_anim_release(&Fade_anim);
+	bm_unload(Fade_anim.first_frame);
 #endif
 
 	Brief_ui_window.destroy();

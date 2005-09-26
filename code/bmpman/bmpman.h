@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.28 $
- * $Date: 2005-09-26 02:15:02 $
+ * $Revision: 2.29 $
+ * $Date: 2005-09-26 04:08:53 $
  * $Author: Goober5000 $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/09/26 02:15:02  Goober5000
+ * okay, this should all be working :)
+ * --Goober5000
+ *
  * Revision 2.27  2005/09/25 05:13:07  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -396,7 +400,7 @@ typedef struct generic_anim {
 	char filename[MAX_FILENAME_LEN];
 	int	first_frame;
 	int	num_frames;
-	int time;		// in seconds
+	int total_time;		// in seconds
 } generic_anim;
 
 // Goober5000
@@ -405,6 +409,10 @@ typedef struct generic_bitmap {
 	int bitmap;
 } generic_bitmap;
 
+
+void generic_anim_init(generic_anim *ga, char *filename = NULL);
+void generic_bitmap_init(generic_bitmap *gb, char *filename = NULL);
+int generic_anim_load(generic_anim *ga);
 
 extern int bm_inited;
 
@@ -620,8 +628,5 @@ void bm_print_bitmaps();
 int bm_make_render_target( int &x_res, int &y_res, int flags );
 bool bm_is_render_target(int bitmap_id);
 bool bm_set_render_target(int handle, int face = -1);
-
-void generic_anim_init(generic_anim *ga, char *filename = NULL);
-void generic_bitmap_init(generic_bitmap *gb, char *filename = NULL);
 
 #endif

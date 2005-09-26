@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.17 $
- * $Date: 2005-09-26 02:15:03 $
+ * $Revision: 2.18 $
+ * $Date: 2005-09-26 04:08:53 $
  * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/09/26 02:15:03  Goober5000
+ * okay, this should all be working :)
+ * --Goober5000
+ *
  * Revision 2.16  2005/09/25 22:24:22  Goober5000
  * more fiddly stuff
  * --Goober5000
@@ -409,7 +413,6 @@ void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename);
 void hud_frames_init(hud_frames *hf);
 int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,bool resize=true);
 int	hud_anim_load(hud_anim *ha);
-void	hud_anim_release(hud_anim *ha);
 
 // flash text at the given y
 void hud_show_text_flash_icon(char *txt, int y, int bright);

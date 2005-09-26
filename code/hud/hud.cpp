@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-09-26 02:15:03 $
+ * $Revision: 2.56 $
+ * $Date: 2005-09-26 04:08:53 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/09/26 02:15:03  Goober5000
+ * okay, this should all be working :)
+ * --Goober5000
+ *
  * Revision 2.54  2005/09/25 22:24:22  Goober5000
  * more fiddly stuff
  * --Goober5000
@@ -2308,15 +2312,6 @@ void hud_frames_init(hud_frames *hf)
 {
 	hf->first_frame		= -1;
 	hf->num_frames		= 0;
-}
-
-// call to unload the targetbox static animation
-void hud_anim_release(hud_anim *ha)
-{
-	int i;
-	for ( i = 0; i < ha->num_frames; i++ ) {
-		bm_unload(ha->first_frame + i);
-	}
 }
 
 // load a hud_anim
