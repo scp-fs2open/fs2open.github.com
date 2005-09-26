@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.63 $
- * $Date: 2005-09-26 02:15:02 $
+ * $Revision: 2.64 $
+ * $Date: 2005-09-26 04:08:53 $
  * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/09/26 02:15:02  Goober5000
+ * okay, this should all be working :)
+ * --Goober5000
+ *
  * Revision 2.62  2005/09/22 11:20:11  taylor
  * byte-swap for 32-bit uncompressed DDS images on big endian
  *
@@ -3526,3 +3530,20 @@ void generic_bitmap_init(generic_bitmap *gb, char *filename)
 
 	gb->bitmap = -1;
 }
+
+// load a generic_anim
+// return 0 is successful, otherwise return -1
+int generic_anim_load(generic_anim *ga)
+{
+	int		fps;
+
+	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps);
+	if ( ga->first_frame == -1 ) {
+		Int3();	// couldn't load animation file in
+		return -1;
+	}
+	Assert(fps != 0);
+	ga->total_time = i2fl(ga->num_frames)/fps;
+	return 0;
+}
+

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-09-26 02:15:03 $
+ * $Revision: 2.39 $
+ * $Date: 2005-09-26 04:08:54 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/09/26 02:15:03  Goober5000
+ * okay, this should all be working :)
+ * --Goober5000
+ *
  * Revision 2.37  2005/09/25 23:02:29  Goober5000
  * and again, gah
  * --Goober5000
@@ -2515,8 +2519,8 @@ void brief_unload_anims()
 
 		for (icon=0; icon<MAX_BRIEF_ICONS; icon++)
 		{
-			hud_anim_release(&spinfo->icon_highlight_anims[icon]);
-			hud_anim_release(&spinfo->icon_fade_anims[icon]);
+			bm_unload(spinfo->icon_highlight_anims[icon].first_frame);
+			bm_unload(spinfo->icon_fade_anims[icon].first_frame);
 
 			if (spinfo->icon_bitmaps[icon].first_frame >= 0)
 			{

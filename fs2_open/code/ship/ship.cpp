@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.231 $
- * $Date: 2005-09-25 20:42:57 $
+ * $Revision: 2.232 $
+ * $Date: 2005-09-26 04:08:54 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.231  2005/09/25 20:42:57  Goober5000
+ * taylor forgot something ;)
+ * --Goober5000
+ *
  * Revision 2.230  2005/09/25 08:21:54  Goober5000
  * remove duplicate #include
  * --Goober5000
@@ -5856,16 +5860,12 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 // loads the animations for ship's afterburners
 void ship_init_thrusters()
 {
-	int fps, i, j;
-	generic_anim *ta;
-	species_info *species;
-
 	if ( Thrust_anim_inited == 1 )
 		return;
 
-	for (i = 0; i < Num_species; i++)
+	for (int i = 0; i < Num_species; i++)
 	{
-		species = &Species_info[i];
+		species_info *species = &Species_info[i];
 
 		// AL 29-3-98: Don't want to include Shivan thrusters in the demo build
 #ifdef DEMO // N/A FS2_DEMO
@@ -5873,42 +5873,11 @@ void ship_init_thrusters()
 			continue;
 #endif
 
-		generic_anim *all_flame_anims[2];
-		all_flame_anims[0] = &species->thruster_info.flames.normal;
-		all_flame_anims[1] = &species->thruster_info.flames.afterburn;
-		for (j = 0; j < 2; j++)
-		{
-			ta = all_flame_anims[j];
+		generic_anim_load(&species->thruster_info.flames.normal);
+		generic_anim_load(&species->thruster_info.flames.afterburn);
 
-			ta->first_frame = bm_load_animation(ta->filename,  &ta->num_frames, &fps, 1);
-			if (ta->first_frame < 0)
-			{
-				Error(LOCATION,"Error loading animation file: %s\n", ta->filename);
-				return;
-			}
-			Assert(fps != 0);
-			ta->time = (int) i2fl(ta->num_frames)/fps;
-		}
-
-
-		generic_anim *all_glow_anims[2];
-		all_glow_anims[0] = &species->thruster_info.glow.normal;
-		all_glow_anims[1] = &species->thruster_info.glow.afterburn;
-		for (j = 0; j < 2; j++)
-		{
-			ta = all_glow_anims[j];
-
-			ta->num_frames = NOISE_NUM_FRAMES;
-			fps = 15;
-			ta->first_frame = bm_load(ta->filename);
-			if (ta->first_frame < 0)
-			{
-				Error(LOCATION,"Error loading bitmap file: %s\n", ta->filename);
-				return;
-			}
-			Assert(fps != 0);
-			ta->time = (int) i2fl(ta->num_frames)/fps;
-		}
+		generic_anim_load(&species->thruster_info.glow.normal);
+		generic_anim_load(&species->thruster_info.glow.afterburn);
 	}
 
 	Thrust_anim_inited = 1;
@@ -5961,10 +5930,10 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if ( shipp->thruster_frame < 0.0f )	shipp->thruster_frame = 0.0f;
 	if ( shipp->thruster_frame > 100.0f ) shipp->thruster_frame = 0.0f;
 
-	while ( shipp->thruster_frame > flame_anim->time )	{
-		shipp->thruster_frame -= flame_anim->time;
+	while ( shipp->thruster_frame > flame_anim->total_time )	{
+		shipp->thruster_frame -= flame_anim->total_time;
 	}
-	framenum = fl2i( (shipp->thruster_frame*flame_anim->num_frames) / flame_anim->time );
+	framenum = fl2i( (shipp->thruster_frame*flame_anim->num_frames) / flame_anim->total_time );
 	if ( framenum < 0 ) framenum = 0;
 	if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
 
@@ -5985,10 +5954,10 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if ( shipp->thruster_glow_frame < 0.0f )	shipp->thruster_glow_frame = 0.0f;
 	if ( shipp->thruster_glow_frame > 100.0f ) shipp->thruster_glow_frame = 0.0f;
 
-	while ( shipp->thruster_glow_frame > glow_anim->time )	{
-		shipp->thruster_glow_frame -= glow_anim->time;
+	while ( shipp->thruster_glow_frame > glow_anim->total_time )	{
+		shipp->thruster_glow_frame -= glow_anim->total_time;
 	}
-	framenum = fl2i( (shipp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->time );
+	framenum = fl2i( (shipp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
 	if ( framenum < 0 ) framenum = 0;
 	if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
 
@@ -6035,10 +6004,10 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 	if ( weaponp->thruster_frame < 0.0f )	weaponp->thruster_frame = 0.0f;
 	if ( weaponp->thruster_frame > 100.0f ) weaponp->thruster_frame = 0.0f;
 
-	while ( weaponp->thruster_frame > flame_anim->time )	{
-		weaponp->thruster_frame -= flame_anim->time;
+	while ( weaponp->thruster_frame > flame_anim->total_time )	{
+		weaponp->thruster_frame -= flame_anim->total_time;
 	}
-	framenum = fl2i( (weaponp->thruster_frame*flame_anim->num_frames) / flame_anim->time );
+	framenum = fl2i( (weaponp->thruster_frame*flame_anim->num_frames) / flame_anim->total_time );
 	if ( framenum < 0 ) framenum = 0;
 	if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
 
@@ -6059,10 +6028,10 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 	if ( weaponp->thruster_glow_frame < 0.0f )	weaponp->thruster_glow_frame = 0.0f;
 	if ( weaponp->thruster_glow_frame > 100.0f ) weaponp->thruster_glow_frame = 0.0f;
 
-	while ( weaponp->thruster_glow_frame > glow_anim->time )	{
-		weaponp->thruster_glow_frame -= glow_anim->time;
+	while ( weaponp->thruster_glow_frame > glow_anim->total_time )	{
+		weaponp->thruster_glow_frame -= glow_anim->total_time;
 	}
-	framenum = fl2i( (weaponp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->time );
+	framenum = fl2i( (weaponp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
 	if ( framenum < 0 ) framenum = 0;
 	if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
 
