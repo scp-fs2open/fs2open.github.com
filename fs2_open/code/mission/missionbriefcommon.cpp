@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-09-26 04:08:54 $
+ * $Revision: 2.40 $
+ * $Date: 2005-09-26 04:51:00 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/09/26 04:08:54  Goober5000
+ * some more cleanup
+ * --Goober5000
+ *
  * Revision 2.38  2005/09/26 02:15:03  Goober5000
  * okay, this should all be working :)
  * --Goober5000
@@ -923,6 +927,30 @@ void brief_preload_icon_anim(brief_icon *bi)
 	}
 }
 
+void brief_preload_fade_anim(brief_icon *bi)
+{
+	hud_anim *ha;
+	int species = ship_get_species_by_type(bi->ship_class);
+
+	if(species < 0){
+		return;
+	}
+
+	ha = &Species_info[species].icon_fade_anims[bi->type];
+	if ( !stricmp(NOX("none"), ha->filename) ) {
+		return;
+	}
+
+	// force read of data from disk, so we don't glitch on initial playback
+	if ( ha->first_frame == -1 ) {
+		hud_anim_load(ha);
+		Assert(ha->first_frame >= 0);
+	}
+
+	gr_set_bitmap(ha->first_frame);
+	gr_aabitmap(0, 0);
+}
+
 void brief_preload_highlight_anim(brief_icon *bi)
 {
 	hud_anim *ha;
@@ -949,30 +977,6 @@ void brief_preload_highlight_anim(brief_icon *bi)
 	gr_aabitmap(0, 0);
 }
 
-void brief_preload_fade_anim(brief_icon *bi)
-{
-	hud_anim *ha;
-	int species = ship_get_species_by_type(bi->ship_class);
-
-	if(species < 0){
-		return;
-	}
-
-	ha = &Species_info[species].icon_fade_anims[bi->type];
-	if ( !stricmp(NOX("none"), ha->filename) ) {
-		return;
-	}
-
-	// force read of data from disk, so we don't glitch on initial playback
-	if ( ha->first_frame == -1 ) {
-		hud_anim_load(ha);
-		Assert(ha->first_frame >= 0);
-	}
-
-	gr_set_bitmap(ha->first_frame);
-	gr_aabitmap(0, 0);
-}
-
 // preload highlight, fadein and fadeout animations that are used in each stage
 void brief_preload_anims()
 {
@@ -985,11 +989,12 @@ void brief_preload_anims()
 		num_icons = Briefing->stages[i].num_icons;
 		for ( j = 0; j < num_icons; j++ ) {
 			bi = &Briefing->stages[i].icons[j];
+
+			brief_preload_icon_anim(bi);
+			brief_preload_fade_anim(bi);
 			if ( bi->flags & BI_HIGHLIGHT ) {
 				brief_preload_highlight_anim(bi);
 			}
-			brief_preload_fade_anim(bi);
-			brief_preload_icon_anim(bi);
 		}
 	}
 }
@@ -2519,14 +2524,9 @@ void brief_unload_anims()
 
 		for (icon=0; icon<MAX_BRIEF_ICONS; icon++)
 		{
-			bm_unload(spinfo->icon_highlight_anims[icon].first_frame);
+			bm_unload(spinfo->icon_bitmaps[icon].first_frame);
 			bm_unload(spinfo->icon_fade_anims[icon].first_frame);
-
-			if (spinfo->icon_bitmaps[icon].first_frame >= 0)
-			{
-				bm_release(spinfo->icon_bitmaps[icon].first_frame);
-				spinfo->icon_bitmaps[icon].first_frame = -1;
-			}
+			bm_unload(spinfo->icon_highlight_anims[icon].first_frame);
 		}
 	}
 }
