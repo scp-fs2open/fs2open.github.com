@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.16 $
- * $Date: 2005-09-25 22:24:22 $
+ * $Revision: 2.17 $
+ * $Date: 2005-09-26 02:15:03 $
  * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/09/25 22:24:22  Goober5000
+ * more fiddly stuff
+ * --Goober5000
+ *
  * Revision 2.15  2005/08/31 07:17:43  Goober5000
  * removed two unused functions
  * --Goober5000
@@ -319,28 +323,21 @@
 
 struct object;
 
-typedef struct hud_anim
-{
-	char	name[MAX_FILENAME_LEN];
-	int	first_frame;	// the bitmap id for the first frame in the animation... note that
-								// all bitmap id's following this frame are numbered sequentially
-	int	num_frames;		// number of frames in the animation
-	int	sx, sy;			// screen (x,y) of top-left corner of animation
-	float	total_time;		// total time in seconds for the animation (depends on animation fps)
-	float	time_elapsed;	// time that has elapsed (in seconds) since animation started playing
+typedef struct hud_anim {
+	char filename[MAX_FILENAME_LEN];
+	int first_frame;	// the bitmap id for the first frame in the animation... note that
+							// all bitmap id's following this frame are numbered sequentially
+	int num_frames;		// number of frames in the animation
+	int sx, sy;			// screen (x,y) of top-left corner of animation
+	float total_time;	// total time in seconds for the animation (depends on animation fps)
+	float time_elapsed;	// time that has elapsed (in seconds) since animation started playing
 } hud_anim;
 
-typedef struct hud_frames
-{
+typedef struct hud_frames {
 	int	first_frame;
 	int	num_frames;
 } hud_frames;
 
-typedef struct hud_frames_info
-{
-	char	*name;
-	int	x, y;
-} hud_frames_info;
 
 //Current HUD to use for info -C
 #ifndef NEW_HUD

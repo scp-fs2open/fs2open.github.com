@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.62 $
- * $Date: 2005-09-22 11:20:11 $
- * $Author: taylor $
+ * $Revision: 2.63 $
+ * $Date: 2005-09-26 02:15:02 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/09/22 11:20:11  taylor
+ * byte-swap for 32-bit uncompressed DDS images on big endian
+ *
  * Revision 2.61  2005/08/26 00:56:16  taylor
  * send out multi pings during level load to prevent timeouts on slower computers (does not break network compatibility with older, or retail, clients/servers)
  *
@@ -3501,4 +3504,25 @@ bool bm_set_render_target(int handle, int face){
 		return true;
 	}else 
 		return false;
+}
+
+void generic_anim_init(generic_anim *ga, char *filename)
+{
+	if (filename == NULL)
+		ga->filename[0] = '\0';
+	else
+		strcpy(ga->filename, filename);
+
+	ga->first_frame = -1;
+	ga->num_frames = 0;
+}
+
+void generic_bitmap_init(generic_bitmap *gb, char *filename)
+{
+	if (filename == NULL)
+		gb->filename[0] = '\0';
+	else
+		strcpy(gb->filename, filename);
+
+	gb->bitmap = -1;
 }

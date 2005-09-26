@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-09-25 23:02:29 $
+ * $Revision: 2.38 $
+ * $Date: 2005-09-26 02:15:03 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/09/25 23:02:29  Goober5000
+ * and again, gah
+ * --Goober5000
+ *
  * Revision 2.36  2005/09/25 22:24:22  Goober5000
  * more fiddly stuff
  * --Goober5000
@@ -578,6 +582,100 @@ void	brief_set_text_color(int color_index);
 extern void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
 int brief_text_wipe_finished();
 
+// --------------------------------------------------------------------------------------
+//	brief_parse_icon_tbl()
+//
+//
+void brief_parse_icon_tbl()
+{
+	int			num_icons, current_icon, rval;
+	char			name[NAME_LENGTH];
+	generic_anim	*ga;
+	hud_anim		*ha;
+	int species, icon;
+	int num_species_covered;
+
+	generic_anim temp_icon_bitmaps[MAX_SPECIES * MAX_BRIEF_ICONS];
+	hud_anim temp_icon_fade_anims[MAX_SPECIES * MAX_BRIEF_ICONS];
+	hud_anim temp_icon_highlight_anims[MAX_SPECIES * MAX_BRIEF_ICONS];
+
+	// open localization
+	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		Error(LOCATION, "Unable to parse icons.tbl!  Code = %i.\n", rval);
+	}
+	else {
+		read_file_text("icons.tbl");
+		reset_parse();		
+	}
+
+	required_string("#Start");
+
+	num_icons = 0;
+	while (required_string_either("#End","$Name:"))
+	{
+		Assert(num_icons < (MAX_SPECIES * MAX_BRIEF_ICONS));
+
+		// parse regular frames
+		required_string("$Name:");
+		stuff_string(name, F_NAME, NULL);
+		ga = &temp_icon_bitmaps[num_icons];
+		generic_anim_init(ga, name);
+	
+		// parse fade frames
+		required_string("$Name:");
+		stuff_string(name, F_NAME, NULL);
+		ha = &temp_icon_fade_anims[num_icons];
+		hud_anim_init(ha, 0, 0, name);
+
+		// parse highlighting frames
+		required_string("$Name:");
+		stuff_string(name, F_NAME, NULL);
+		ha = &temp_icon_highlight_anims[num_icons];
+		hud_anim_init(ha, 0, 0, name);
+
+		// next icon
+		num_icons++;
+	}
+	required_string("#End");
+
+	// close localization
+	lcl_ext_close();
+
+
+	// now assign the icons to their species
+	num_species_covered = num_icons / MAX_BRIEF_ICONS;
+	current_icon = 0;
+	for (icon = 0; icon < MAX_BRIEF_ICONS; icon++)
+	{
+		for (species = 0; species < num_species_covered; species++)
+		{
+			Species_info[species].icon_bitmaps[icon] = temp_icon_bitmaps[current_icon];
+			Species_info[species].icon_fade_anims[icon] = temp_icon_fade_anims[current_icon];
+			Species_info[species].icon_highlight_anims[icon] = temp_icon_highlight_anims[current_icon];
+
+			current_icon++;
+		}
+	}
+
+	// error check
+	if (num_species_covered < Num_species)
+	{
+		char errormsg[65 + (MAX_SPECIES * (NAME_LENGTH+1))];
+		strcpy(errormsg, "The following species are missing icon info in icons.tbl:\n");
+		for (species = num_species_covered; species < Num_species; species++)
+		{
+			strcat(errormsg, Species_info[species].species_name);
+			strcat(errormsg, "\n");
+		}
+		strcat(errormsg, "\0");
+
+		Error(LOCATION, errormsg);
+	}
+}
+
+
 void brief_set_icon_color(int team)
 {
 	switch (team) { 
@@ -663,8 +761,6 @@ void mission_brief_common_init()
 		}
 
 	}
-
-		
 }
 
 //--------------------------------------------------------------------------------------
@@ -802,160 +898,25 @@ void brief_init_colors()
 	}
 }
 
-// ------------------------------------------------------------------------
-//	brief_unload_icons() 
-//
-//
-void brief_unload_icons()
+void brief_preload_icon_anim(brief_icon *bi)
 {
-	hud_frames		*ib;
-	int				species, icon;
+	generic_anim *ga;
+	int species = ship_get_species_by_type(bi->ship_class);
 
-	for (species = 0; species < Num_species; species++)
-	{
-		for (icon = 0; icon < MAX_BRIEF_ICONS; icon++)
-		{
-			ib = &Species_info[species].icon_bitmaps[icon];
-
-			if (ib->first_frame < 0)
-				continue;
-
-			bm_release(ib->first_frame);
-			ib->first_frame = -1;
-			ib->num_frames = 0;
-		}
-	}
-}
-
-// determine if icon type is used in the current briefing
-int brief_icon_used_in_briefing(int icon_type)
-{
-	int num_icons, num_stages, i, j;
-
-	num_stages = Briefing->num_stages;
-
-	for ( i = 0; i < num_stages; i++ ) {
-		num_icons = Briefing->stages[i].num_icons;
-		for ( j = 0; j < num_icons; j++ ) {
-			if ( Briefing->stages[i].icons[j].type == icon_type ) {
-				return 1;
-			}
-		}
+	if(species < 0) {
+		return;
 	}
 
-	return 0;
-}
-
-// --------------------------------------------------------------------------------------
-//	brief_parse_icon_tbl()
-//
-//
-void brief_parse_icon_tbl()
-{
-	int			num_icons, current_icon, rval;
-	char			name[NAME_LENGTH];
-	hud_frames	*hf;
-	hud_anim		*ha;
-	int species, i;
-	int num_species_covered;
-
-	hud_frames temp_icon_bitmaps[MAX_SPECIES * MAX_BRIEF_ICONS];
-	hud_anim temp_icon_fade_anims[MAX_SPECIES * MAX_BRIEF_ICONS];
-	hud_anim temp_icon_highlight_anims[MAX_SPECIES * MAX_BRIEF_ICONS];
-
-	// open localization
-	lcl_ext_open();
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse icons.tbl!  Code = %i.\n", rval);
-	}
-	else {
-		read_file_text("icons.tbl");
-		reset_parse();		
+	ga = &Species_info[species].icon_bitmaps[bi->type];
+	if ( !stricmp(NOX("none"), ga->filename) ) {
+		return;
 	}
 
-	required_string("#Start");
-
-	num_icons = 0;
-	while (required_string_either("#End","$Name:"))
-	{
-		Assert(num_icons < (MAX_SPECIES * MAX_BRIEF_ICONS));
-
-		// parse regular frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, NULL);
-		hf = &temp_icon_bitmaps[num_icons];
-		hud_frames_init(hf);
-	
-		// maybe load animation
-		if (brief_icon_used_in_briefing(num_icons))
-		{
-			hf->first_frame = bm_load_animation(name, &hf->num_frames);
-			if ( hf->first_frame == -1 )
-			{
-				Warning(LOCATION, "Unable to load '%s'", name );
-			}
-		}
-
-		// parse fade frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, NULL);
-		ha = &temp_icon_fade_anims[num_icons];
-		hud_anim_init(ha, 0, 0, name);
-
-		// parse highlighting frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, NULL);
-		ha = &temp_icon_highlight_anims[num_icons];
-		hud_anim_init(ha, 0, 0, name);
-
-		// next icon
-		num_icons++;
+	// force read of data from disk, so we don't glitch on initial playback
+	if ( ga->first_frame == -1 ) {
+		ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames);
+		Assert(ga->first_frame >= 0);
 	}
-	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
-
-
-	// now assign the icons to their species
-	num_species_covered = num_icons / MAX_BRIEF_ICONS;
-	current_icon = 0;
-	for (species = 0; species < num_species_covered; species++)
-	{
-		for (i = 0; i < MAX_BRIEF_ICONS; i++)
-		{
-			Species_info[species].icon_bitmaps[i] = temp_icon_bitmaps[current_icon];
-			Species_info[species].icon_fade_anims[i] = temp_icon_fade_anims[current_icon];
-			Species_info[species].icon_highlight_anims[i] = temp_icon_highlight_anims[current_icon];
-
-			current_icon++;
-		}
-	}
-
-	// error check
-	if (num_species_covered < Num_species)
-	{
-		char errormsg[65 + (MAX_SPECIES * (NAME_LENGTH+1))];
-		strcpy(errormsg, "The following species are missing icon info in icons.tbl:\n");
-		for (int i = num_species_covered; i < Num_species; i++)
-		{
-			strcat(errormsg, Species_info[i].species_name);
-			strcat(errormsg, "\n");
-		}
-		strcat(errormsg, "\0");
-
-		Error(LOCATION, errormsg);
-	}
-}
-
-// --------------------------------------------------------------------------------------
-//	brief_close_map()
-//
-//
-void brief_close_map()
-{
-	brief_unload_icons();
 }
 
 void brief_preload_highlight_anim(brief_icon *bi)
@@ -968,7 +929,7 @@ void brief_preload_highlight_anim(brief_icon *bi)
 	}
 
 	ha = &Species_info[species].icon_highlight_anims[bi->type];
-	if ( !stricmp(NOX("none"), ha->name) ) {
+	if ( !stricmp(NOX("none"), ha->filename) ) {
 		return;
 	}
 
@@ -994,7 +955,7 @@ void brief_preload_fade_anim(brief_icon *bi)
 	}
 
 	ha = &Species_info[species].icon_fade_anims[bi->type];
-	if ( !stricmp(NOX("none"), ha->name) ) {
+	if ( !stricmp(NOX("none"), ha->filename) ) {
 		return;
 	}
 
@@ -1008,7 +969,7 @@ void brief_preload_fade_anim(brief_icon *bi)
 	gr_aabitmap(0, 0);
 }
 
-// preload highlight, fadein and fadeout animations that are used in this stage
+// preload highlight, fadein and fadeout animations that are used in each stage
 void brief_preload_anims()
 {
 	int			num_icons, num_stages, i, j;
@@ -1024,6 +985,7 @@ void brief_preload_anims()
 				brief_preload_highlight_anim(bi);
 			}
 			brief_preload_fade_anim(bi);
+			brief_preload_icon_anim(bi);
 		}
 	}
 }
@@ -1050,9 +1012,8 @@ void brief_init_map()
 	brief_maybe_create_new_grid(The_grid, pos, orient, 1);
 
 	brief_init_colors();
-	brief_parse_icon_tbl();
-
 	brief_move_icon_reset();
+
 	brief_preload_anims();
 
 	Brief_text_wipe_snd = -1;
@@ -1178,7 +1139,7 @@ void brief_render_icon_line(int stage_num, int line_num)
 void brief_render_icon(int stage_num, int icon_num, float frametime, int selected, float w_scale_factor, float h_scale_factor)
 {
 	brief_icon	*bi, *closeup_icon;
-	hud_frames	*ib;
+	generic_anim *ga;
 	vertex		tv;	// temp vertex used to find screen position for text
 	vec3d		*pos = NULL;
 	int			bx,by,bc,w,h,icon_w,icon_h,icon_bitmap=-1;
@@ -1240,8 +1201,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 			return;
 		}
 
-		ib = &Species_info[species].icon_bitmaps[bi->type];
-		if ( ib->first_frame < 0 ) {
+		ga = &Species_info[species].icon_bitmaps[bi->type];
+		if (ga->first_frame < 0) {
 			Int3();
 			return;
 		}
@@ -1250,12 +1211,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		closeup_icon = brief_get_closeup_icon();
 		if ( bi == closeup_icon || selected ) {
-			icon_bitmap=ib->first_frame+1;
-//			gr_set_bitmap(ib->first_frame+1);
+			icon_bitmap = ga->first_frame+1;
+//			gr_set_bitmap(ga->first_frame+1);
 		}
 		else {
-			icon_bitmap=ib->first_frame;
-//			gr_set_bitmap(ib->first_frame);
+			icon_bitmap = ga->first_frame;
+//			gr_set_bitmap(ga->first_frame);
 		}
 	
 		// draw icon centered at draw position
@@ -2546,23 +2507,30 @@ void brief_modify_grid(grid *gridp)
 void brief_unload_anims()
 {
 	int icon, species;
+	species_info *spinfo;
 	
 	for(species=0; species<Num_species; species++)
 	{
+		spinfo = &Species_info[species];
+
 		for (icon=0; icon<MAX_BRIEF_ICONS; icon++)
 		{
-			hud_anim_release(&Species_info[species].icon_highlight_anims[icon]);
-			hud_anim_release(&Species_info[species].icon_fade_anims[icon]);
+			hud_anim_release(&spinfo->icon_highlight_anims[icon]);
+			hud_anim_release(&spinfo->icon_fade_anims[icon]);
+
+			if (spinfo->icon_bitmaps[icon].first_frame >= 0)
+			{
+				bm_release(spinfo->icon_bitmaps[icon].first_frame);
+				spinfo->icon_bitmaps[icon].first_frame = -1;
+			}
 		}
 	}
 }
 
 void brief_common_close()
 {
-	brief_close_map();
 	brief_unload_anims();
 }
-
 
 void brief_restart_text_wipe()
 {
