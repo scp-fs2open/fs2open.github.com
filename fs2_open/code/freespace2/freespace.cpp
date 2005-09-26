@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.180 $
- * $Date: 2005-09-25 18:44:51 $
- * $Author: taylor $
+ * $Revision: 2.181 $
+ * $Date: 2005-09-26 02:15:02 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180  2005/09/25 18:44:51  taylor
+ * fix Subsys_status leak, wasn't a problem in game but can be touchy on exit
+ *
  * Revision 2.179  2005/09/25 08:25:14  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -3459,6 +3462,8 @@ void game_init()
 
 	extern void species_init();
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
+
+	brief_parse_icon_tbl();
 
 	// hud shield icon stuff
 	//hud_shield_game_init(); No longer needed; see ships.tbl -C

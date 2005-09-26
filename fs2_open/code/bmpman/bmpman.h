@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.27 $
- * $Date: 2005-09-25 05:13:07 $
+ * $Revision: 2.28 $
+ * $Date: 2005-09-26 02:15:02 $
  * $Author: Goober5000 $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/09/25 05:13:07  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.26  2005/09/24 07:07:17  Goober5000
  * another species overhaul
  * --Goober5000
@@ -617,5 +621,7 @@ int bm_make_render_target( int &x_res, int &y_res, int flags );
 bool bm_is_render_target(int bitmap_id);
 bool bm_set_render_target(int handle, int face = -1);
 
+void generic_anim_init(generic_anim *ga, char *filename = NULL);
+void generic_bitmap_init(generic_bitmap *gb, char *filename = NULL);
 
 #endif

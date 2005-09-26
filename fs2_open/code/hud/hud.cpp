@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-09-25 22:24:22 $
+ * $Revision: 2.55 $
+ * $Date: 2005-09-26 02:15:03 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/09/25 22:24:22  Goober5000
+ * more fiddly stuff
+ * --Goober5000
+ *
  * Revision 2.53  2005/08/31 07:17:43  Goober5000
  * removed two unused functions
  * --Goober5000
@@ -2296,7 +2300,7 @@ void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename)
 	ha->time_elapsed	= 0.0f;
 	ha->sx				= sx;
 	ha->sy				= sy;
-	strcpy(ha->name, filename);
+	strcpy(ha->filename, filename);
 }
 
 // init the members of the hud_frames struct to default values
@@ -2321,7 +2325,7 @@ int hud_anim_load(hud_anim *ha)
 {
 	int		fps;
 
-	ha->first_frame = bm_load_animation(ha->name, &ha->num_frames, &fps);
+	ha->first_frame = bm_load_animation(ha->filename, &ha->num_frames, &fps);
 	if ( ha->first_frame == -1 ) {
 		Int3();	// couldn't load animation file in
 		return -1;

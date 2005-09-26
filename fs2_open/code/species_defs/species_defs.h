@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.11 $
- * $Date: 2005-09-25 20:31:42 $
+ * $Revision: 1.12 $
+ * $Date: 2005-09-26 02:15:03 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/09/25 20:31:42  Goober5000
+ * okay; everything should be good to go
+ * --Goober5000
+ *
  * Revision 1.10  2005/09/25 18:48:25  taylor
  * GCC fixage, my Whiffle Bat that was saved for Bobboau's constant breaking is currently getting "Goober5000" etched into it :)
  *
@@ -110,7 +114,7 @@ typedef struct species_info {
 	game_snd snd_flyby_fighter;
 	game_snd snd_flyby_bomber;
 
-	hud_frames icon_bitmaps[MAX_BRIEF_ICONS];
+	generic_anim icon_bitmaps[MAX_BRIEF_ICONS];
 	hud_anim icon_highlight_anims[MAX_BRIEF_ICONS];
 	hud_anim icon_fade_anims[MAX_BRIEF_ICONS];
 
