@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.232 $
- * $Date: 2005-09-26 04:08:54 $
+ * $Revision: 2.233 $
+ * $Date: 2005-09-26 06:00:59 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.232  2005/09/26 04:08:54  Goober5000
+ * some more cleanup
+ * --Goober5000
+ *
  * Revision 2.231  2005/09/25 20:42:57  Goober5000
  * taylor forgot something ;)
  * --Goober5000
@@ -5856,6 +5860,23 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 
 }
 
+int thruster_glow_anim_load(generic_anim *ga)
+{
+	int fps = 15;
+
+	ga->first_frame = bm_load(ga->filename);
+	if (ga->first_frame < 0)
+	{
+		Int3();	// couldn't load bitmap file in
+		return -1;
+	}
+	ga->num_frames = NOISE_NUM_FRAMES;
+
+	Assert(fps != 0);
+	ga->total_time = (int) i2fl(ga->num_frames)/fps;
+
+	return 0;
+}
 
 // loads the animations for ship's afterburners
 void ship_init_thrusters()
@@ -5876,8 +5897,9 @@ void ship_init_thrusters()
 		generic_anim_load(&species->thruster_info.flames.normal);
 		generic_anim_load(&species->thruster_info.flames.afterburn);
 
-		generic_anim_load(&species->thruster_info.glow.normal);
-		generic_anim_load(&species->thruster_info.glow.afterburn);
+		// glows are handled a bit strangely
+		thruster_glow_anim_load(&species->thruster_info.glow.normal);
+		thruster_glow_anim_load(&species->thruster_info.glow.afterburn);
 	}
 
 	Thrust_anim_inited = 1;

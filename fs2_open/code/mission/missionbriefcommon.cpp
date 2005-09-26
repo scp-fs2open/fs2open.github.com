@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-09-26 05:24:25 $
+ * $Revision: 2.43 $
+ * $Date: 2005-09-26 06:00:58 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/09/26 05:24:25  Goober5000
+ * small fix
+ * --Goober5000
+ *
  * Revision 2.41  2005/09/26 04:53:19  Goober5000
  * moved these per taylor's recommendation
  * --Goober5000
@@ -2535,10 +2539,20 @@ void brief_unload_anims()
 			if (spinfo->icon_bitmaps[icon].first_frame >= 0)
 			{
 				bm_unload(spinfo->icon_bitmaps[icon].first_frame);
-				spinfo->icon_bitmaps[icon.first_frame = -1;
+				spinfo->icon_bitmaps[icon].first_frame = -1;
 			}
-			bm_unload(spinfo->icon_fade_anims[icon].first_frame);
-			bm_unload(spinfo->icon_highlight_anims[icon].first_frame);
+
+			if (spinfo->icon_fade_anims[icon].first_frame >= 0)
+			{
+				bm_unload(spinfo->icon_fade_anims[icon].first_frame);
+				spinfo->icon_fade_anims[icon].first_frame = -1;
+			}
+
+			if (spinfo->icon_highlight_anims[icon].first_frame >= 0)
+			{
+				bm_unload(spinfo->icon_highlight_anims[icon].first_frame);
+				spinfo->icon_highlight_anims[icon].first_frame = -1;
+			}
 		}
 	}
 }
@@ -2798,11 +2812,14 @@ int generic_anim_load(generic_anim *ga)
 	int		fps;
 
 	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps);
-	if ( ga->first_frame == -1 ) {
+	if ( ga->first_frame < 0)
+	{
 		Int3();	// couldn't load animation file in
 		return -1;
 	}
+
 	Assert(fps != 0);
-	ga->total_time = i2fl(ga->num_frames)/fps;
+	ga->total_time = (int) i2fl(ga->num_frames)/fps;
+
 	return 0;
 }
