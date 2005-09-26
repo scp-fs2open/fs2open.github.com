@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.9 $
- * $Date: 2005-09-26 02:15:03 $
+ * $Revision: 2.10 $
+ * $Date: 2005-09-26 04:53:19 $
  * $Author: Goober5000 $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/09/26 02:15:03  Goober5000
+ * okay, this should all be working :)
+ * --Goober5000
+ *
  * Revision 2.8  2005/09/25 22:24:22  Goober5000
  * more fiddly stuff
  * --Goober5000
@@ -330,6 +334,26 @@ typedef struct debriefing {
 	int				num_stages;
 	debrief_stage	stages[MAX_DEBRIEF_STAGES];
 } debriefing;
+
+
+// Goober5000
+typedef struct generic_anim {
+	char filename[MAX_FILENAME_LEN];
+	int	first_frame;
+	int	num_frames;
+	int total_time;		// in seconds
+} generic_anim;
+
+// Goober5000
+typedef struct generic_bitmap {
+	char filename[MAX_FILENAME_LEN];
+	int bitmap;
+} generic_bitmap;
+
+
+void generic_anim_init(generic_anim *ga, char *filename = NULL);
+void generic_bitmap_init(generic_bitmap *gb, char *filename = NULL);
+int generic_anim_load(generic_anim *ga);
 
 
 // Code to free/init the above structures between levels:

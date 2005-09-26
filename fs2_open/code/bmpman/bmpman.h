@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.29 $
- * $Date: 2005-09-26 04:08:53 $
+ * $Revision: 2.30 $
+ * $Date: 2005-09-26 04:53:19 $
  * $Author: Goober5000 $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/09/26 04:08:53  Goober5000
+ * some more cleanup
+ * --Goober5000
+ *
  * Revision 2.28  2005/09/26 02:15:02  Goober5000
  * okay, this should all be working :)
  * --Goober5000
@@ -394,25 +398,6 @@
 #define BM_PIXEL_FORMAT_D3D				1						// d3d - card dependant. booo!
 #define BM_PIXEL_FORMAT_ARGB_D3D			2						// this card has nice 1555 textures like Glide - ahhhhh!
 
-
-// Goober5000
-typedef struct generic_anim {
-	char filename[MAX_FILENAME_LEN];
-	int	first_frame;
-	int	num_frames;
-	int total_time;		// in seconds
-} generic_anim;
-
-// Goober5000
-typedef struct generic_bitmap {
-	char filename[MAX_FILENAME_LEN];
-	int bitmap;
-} generic_bitmap;
-
-
-void generic_anim_init(generic_anim *ga, char *filename = NULL);
-void generic_bitmap_init(generic_bitmap *gb, char *filename = NULL);
-int generic_anim_load(generic_anim *ga);
 
 extern int bm_inited;
 

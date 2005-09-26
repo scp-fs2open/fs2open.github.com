@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-09-26 04:51:00 $
+ * $Revision: 2.41 $
+ * $Date: 2005-09-26 04:53:19 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/09/26 04:51:00  Goober5000
+ * some more cleanup
+ * --Goober5000
+ *
  * Revision 2.39  2005/09/26 04:08:54  Goober5000
  * some more cleanup
  * --Goober5000
@@ -2753,4 +2757,44 @@ int brief_time_to_advance(int stage_num, float frametime)
 	}
 
 	return advance;
+}
+
+// Goober5000
+void generic_anim_init(generic_anim *ga, char *filename)
+{
+	if (filename == NULL)
+		ga->filename[0] = '\0';
+	else
+		strcpy(ga->filename, filename);
+
+	ga->first_frame = -1;
+	ga->num_frames = 0;
+}
+
+// Goober5000
+void generic_bitmap_init(generic_bitmap *gb, char *filename)
+{
+	if (filename == NULL)
+		gb->filename[0] = '\0';
+	else
+		strcpy(gb->filename, filename);
+
+	gb->bitmap = -1;
+}
+
+// Goober5000
+// load a generic_anim
+// return 0 is successful, otherwise return -1
+int generic_anim_load(generic_anim *ga)
+{
+	int		fps;
+
+	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps);
+	if ( ga->first_frame == -1 ) {
+		Int3();	// couldn't load animation file in
+		return -1;
+	}
+	Assert(fps != 0);
+	ga->total_time = i2fl(ga->num_frames)/fps;
+	return 0;
 }
