@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.181 $
- * $Date: 2005-09-26 02:15:02 $
+ * $Revision: 2.182 $
+ * $Date: 2005-09-27 05:25:18 $
  * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.181  2005/09/26 02:15:02  Goober5000
+ * okay, this should all be working :)
+ * --Goober5000
+ *
  * Revision 2.180  2005/09/25 18:44:51  taylor
  * fix Subsys_status leak, wasn't a problem in game but can be touchy on exit
  *
@@ -3459,6 +3463,9 @@ void game_init()
 
 	// load non-darkening pixel defs
 	palman_load_pixels();
+
+	extern void iff_init();
+	iff_init();						// Goober5000 - this must be done even before species_defs :p
 
 	extern void species_init();
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan

@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.17 $
- * $Date: 2005-09-27 02:36:57 $
+ * $Revision: 1.18 $
+ * $Date: 2005-09-27 05:25:18 $
  * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 1.16  2005/09/24 01:50:10  Goober5000
  * a bunch of support ship bulletproofing
  * --Goober5000
@@ -112,6 +116,9 @@
 // This must be less than or equal to the number of bits in an int!  If you really must have that many species,
 // then please update the support_ship_info struct.
 #define	MAX_SPECIES		8
+
+#define MAX_IFFS		10
+
 
 // from ship.h
 #ifdef NDEBUG

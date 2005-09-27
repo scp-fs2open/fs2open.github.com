@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.13 $
- * $Date: 2005-09-27 05:01:52 $
+ * $Revision: 1.14 $
+ * $Date: 2005-09-27 05:25:19 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/09/27 05:01:52  Goober5000
+ * betterizing
+ * --Goober5000
+ *
  * Revision 1.12  2005/09/26 02:15:03  Goober5000
  * okay, this should all be working :)
  * --Goober5000
@@ -65,11 +69,8 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
-#include "bmpman/bmpman.h"
 #include "gamesnd/gamesnd.h"
-#include "hud/hud.h"
 #include "mission/missionbriefcommon.h"
-#include "asteroid/asteroid.h"
 
 typedef struct thrust_pair {
 	generic_anim normal;
@@ -90,11 +91,7 @@ typedef struct species_info {
 
 	char species_name[NAME_LENGTH];
 
-	generic_bitmap debris_texture;
-	generic_anim shield_anim;
-	thrust_info thruster_info;
-
-	float awacs_multiplier;
+	int default_iff;
 
 	union {
 		struct {
@@ -103,6 +100,11 @@ typedef struct species_info {
 		int a1d[3];
 	} fred_color;
 
+	generic_bitmap debris_texture;
+	generic_anim shield_anim;
+	thrust_info thruster_info;
+
+	float awacs_multiplier;
 
 	// if this will not be parsed in species_defs.tbl, move it below the following comment
 #ifdef NEW_HUD
