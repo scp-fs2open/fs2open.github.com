@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-09-27 05:01:52 $
+ * $Revision: 1.22 $
+ * $Date: 2005-09-27 05:25:19 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/09/27 05:01:52  Goober5000
+ * betterizing
+ * --Goober5000
+ *
  * Revision 1.20  2005/09/25 08:25:16  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -103,6 +107,7 @@
 #include "species_defs/species_defs.h"
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
+#include "iff_defs/iff_defs.h"
 
 
 int Num_species;
@@ -123,6 +128,9 @@ char *default_species_table = "\
 ; Terran										\n\
 ;------------------------						\n\
 $Species_Name: Terran							\n\
+$Default IFF: Friendly							\n\
+$FRED Color: ( 0, 0, 192 )						\n\
+$MiscAnims:										\n\
 	+Debris_Texture: debris01a					\n\
 	+Shield_Hit_ani: shieldhit01a				\n\
 $ThrustAnims:									\n\
@@ -132,12 +140,14 @@ $ThrustGlows:									\n\
 	+Normal:	thrusterglow01					\n\
 	+Afterburn:	thrusterglow01a					\n\
 $AwacsMultiplier: 1.00							\n\
-$FRED Color: ( 0, 0, 192 )						\n\
 												\n\
 ;------------------------						\n\
 ; Vasudan										\n\
 ;------------------------						\n\
 $Species_Name: Vasudan							\n\
+$Default IFF: Friendly							\n\
+$FRED Color: ( 0, 128, 0 )						\n\
+$MiscAnims:										\n\
 	+Debris_Texture: debris01b					\n\
 	+Shield_Hit_ani: shieldhit01a				\n\
 $ThrustAnims:									\n\
@@ -147,12 +157,14 @@ $ThrustGlows:									\n\
 	+Normal:	thrusterglow02					\n\
 	+Afterburn:	thrusterglow02a					\n\
 $AwacsMultiplier: 1.25							\n\
-$FRED Color: ( 0, 128, 0 )						\n\
 												\n\
 ;------------------------						\n\
 ; Shivan										\n\
 ;------------------------						\n\
 $Species_Name: Shivan							\n\
+$Default IFF: Hostile							\n\
+$FRED Color: ( 192, 0, 0 )						\n\
+$MiscAnims:										\n\
 	+Debris_Texture: debris01c					\n\
 	+Shield_Hit_ani: shieldhit01a				\n\
 $ThrustAnims:									\n\
@@ -162,7 +174,6 @@ $ThrustGlows:									\n\
 	+Normal:	thrusterglow03					\n\
 	+Afterburn:	thrusterglow03a					\n\
 $AwacsMultiplier: 1.50							\n\
-$FRED Color: ( 192, 0, 0 )						\n\
 												\n\
 #END											\n\
 ";
@@ -217,6 +228,84 @@ void species_init()
 		// Start Species - Get its name
 		required_string("$Species_Name:");
 		stuff_string(species->species_name, F_NAME, NULL, NAME_LENGTH);
+
+		// Goober5000 - IFF
+		if (optional_string("$Default IFF:"))
+		{
+			bool iff_found = false;
+			char temp_name[NAME_LENGTH];
+			stuff_string(temp_name, F_NAME, NULL, NAME_LENGTH);
+
+			// search for it in iffs
+			for (int i = 0; i < Num_iffs; i++)
+			{
+				if (!stricmp(Iff_info[i].iff_name, temp_name))
+				{
+					species->default_iff = i;
+					iff_found = true;
+				}
+			}
+
+			if (!iff_found)
+			{
+				species->default_iff = 0;
+				Warning(LOCATION, "Species %s default IFF %s not found in iff_defs.tbl!  Defaulting to %s.\n", species->species_name, temp_name, Iff_info[species->default_iff].iff_name);
+			}
+		}
+		else
+		{
+			// we have no idea which it could be, so default to 0
+			species->default_iff = 0;
+
+			// let them know
+			Warning(LOCATION, "$Default IFF not specified for species %s in species_defs.tbl!  Defaulting to %s.\n", species->species_name, Iff_info[species->default_iff].iff_name);
+		}
+
+		// Goober5000 - FRED color
+		if (optional_string("$FRED Color:") || optional_string("$FRED Colour:"))
+		{
+			stuff_int_list(species->fred_color.a1d, 3, RAW_INTEGER_TYPE);
+		}
+		else
+		{
+			// set defaults to Volition's originals
+			if (!stricmp(species->species_name, "Terran"))
+			{
+				species->fred_color.rgb.r = 0;
+				species->fred_color.rgb.g = 0;
+				species->fred_color.rgb.b = 192;
+			}
+			else if (!stricmp(species->species_name, "Vasudan"))
+			{
+				species->fred_color.rgb.r = 0;
+				species->fred_color.rgb.g = 128;
+				species->fred_color.rgb.b = 0;
+			}
+			else if (!stricmp(species->species_name, "Shivan"))
+			{
+				species->fred_color.rgb.r = 192;
+				species->fred_color.rgb.g = 0;
+				species->fred_color.rgb.b = 0;
+			}
+			else if (!stricmp(species->species_name, "Ancients") || !stricmp(species->species_name, "Ancient"))
+			{
+				species->fred_color.rgb.r = 192;
+				species->fred_color.rgb.g = 0;
+				species->fred_color.rgb.b = 192;
+			}
+			else
+			{
+				species->fred_color.rgb.r = 0;
+				species->fred_color.rgb.g = 0;
+				species->fred_color.rgb.b = 0;
+			}
+
+			// let them know
+			Warning(LOCATION, "$FRED Color not specified for species %s in species_defs.tbl!  Defaulting to (%d, %d, %d).\n", species->species_name, species->fred_color.rgb.r, species->fred_color.rgb.g, species->fred_color.rgb.b);
+		}
+
+		// stuff
+		optional_string("$MiscAnims:");
 
 		// Get its Debris Texture
 		required_string("+Debris_Texture:");
@@ -276,50 +365,6 @@ void species_init()
 
 			// let them know
 			Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", species->species_name, species->awacs_multiplier);
-		}
-
-
-		// Goober5000 - FRED stuff
-		if (optional_string("$FRED Color:") || optional_string("$FRED Colour:"))
-		{
-			stuff_int_list(species->fred_color.a1d, 3, RAW_INTEGER_TYPE);
-		}
-		else
-		{
-			// set defaults to Volition's originals
-			if (!stricmp(species->species_name, "Terran"))
-			{
-				species->fred_color.rgb.r = 0;
-				species->fred_color.rgb.g = 0;
-				species->fred_color.rgb.b = 192;
-			}
-			else if (!stricmp(species->species_name, "Vasudan"))
-			{
-				species->fred_color.rgb.r = 0;
-				species->fred_color.rgb.g = 128;
-				species->fred_color.rgb.b = 0;
-			}
-			else if (!stricmp(species->species_name, "Shivan"))
-			{
-				species->fred_color.rgb.r = 192;
-				species->fred_color.rgb.g = 0;
-				species->fred_color.rgb.b = 0;
-			}
-			else if (!stricmp(species->species_name, "Ancients") || !stricmp(species->species_name, "Ancient"))
-			{
-				species->fred_color.rgb.r = 192;
-				species->fred_color.rgb.g = 0;
-				species->fred_color.rgb.b = 192;
-			}
-			else
-			{
-				species->fred_color.rgb.r = 0;
-				species->fred_color.rgb.g = 0;
-				species->fred_color.rgb.b = 0;
-			}
-
-			// let them know
-			Warning(LOCATION, "$FRED Color not specified for species %s in species_defs.tbl!  Defaulting to (%d, %d, %d).\n", species->species_name, species->fred_color.rgb.r, species->fred_color.rgb.g, species->fred_color.rgb.b);
 		}
 	}
 	
