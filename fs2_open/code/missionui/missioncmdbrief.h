@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 03:25:58 $
+ * $Revision: 2.6 $
+ * $Date: 2005-09-27 02:36:57 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.4  2005/06/03 06:39:26  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -98,7 +102,7 @@ typedef struct {
 	cmd_brief_stage stage[CMD_BRIEF_STAGES_MAX];
 } cmd_brief;
 
-extern cmd_brief Cmd_briefs[MAX_TEAMS];
+extern cmd_brief Cmd_briefs[MAX_TVT_TEAMS];
 extern cmd_brief *Cur_cmd_brief;  // pointer to one of the Cmd_briefs elements (the active one)
 
 void cmd_brief_init(int stages);

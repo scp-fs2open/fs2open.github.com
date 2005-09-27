@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.10 $
- * $Date: 2005-09-26 04:53:19 $
+ * $Revision: 2.11 $
+ * $Date: 2005-09-27 02:36:57 $
  * $Author: Goober5000 $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/09/26 04:53:19  Goober5000
+ * moved these per taylor's recommendation
+ * --Goober5000
+ *
  * Revision 2.9  2005/09/26 02:15:03  Goober5000
  * okay, this should all be working :)
  * --Goober5000
@@ -418,8 +422,8 @@ extern brief_screen bscreen;
 // ------------------------------------------------------------------------
 // Global briefing/debriefing data
 // ------------------------------------------------------------------------
-extern briefing		Briefings[MAX_TEAMS];
-extern debriefing		Debriefings[MAX_TEAMS];
+extern briefing		Briefings[MAX_TVT_TEAMS];
+extern debriefing		Debriefings[MAX_TVT_TEAMS];
 extern briefing		*Briefing;
 extern debriefing		*Debriefing;
 extern float			Brief_text_wipe_time_elapsed;

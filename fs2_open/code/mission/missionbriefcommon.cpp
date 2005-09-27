@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-09-26 06:00:58 $
+ * $Revision: 2.44 $
+ * $Date: 2005-09-27 02:36:57 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/09/26 06:00:58  Goober5000
+ * this should fix the rest of the briefing icon bugs
+ * --Goober5000
+ *
  * Revision 2.42  2005/09/26 05:24:25  Goober5000
  * small fix
  * --Goober5000
@@ -431,8 +435,8 @@ int Brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
 // --------------------------------------------------------------------------------------
 // Game-wide global data
 // --------------------------------------------------------------------------------------
-briefing		Briefings[MAX_TEAMS];			// there is exactly one briefing per mission
-debriefing	Debriefings[MAX_TEAMS];			// there can be multiple debriefings per mission
+briefing		Briefings[MAX_TVT_TEAMS];			// there is exactly one briefing per mission
+debriefing	Debriefings[MAX_TVT_TEAMS];			// there can be multiple debriefings per mission
 briefing		*Briefing;							// pointer used in code -- points to correct briefing
 debriefing	*Debriefing;						// pointer to correct debriefing
 
@@ -584,7 +588,7 @@ int			Num_fade_icons;
 int Brief_voices[MAX_BRIEF_STAGES];
 
 cmd_brief *Cur_cmd_brief;
-cmd_brief Cmd_briefs[MAX_TEAMS];
+cmd_brief Cmd_briefs[MAX_TVT_TEAMS];
 
 // --------------------------------------------------------------------------------------
 // forward declarations
@@ -739,7 +743,7 @@ void mission_brief_common_init()
 
 	if ( Fred_running )	{
 		// If Fred is running malloc out max space
-		for (i=0; i<MAX_TEAMS; i++ )	{
+		for (i=0; i<MAX_TVT_TEAMS; i++ )	{
 			for (j=0; j<MAX_BRIEF_STAGES; j++ )	{
 				Briefings[i].stages[j].new_text = (char *)vm_malloc(MAX_BRIEF_LEN);
 				Assert(Briefings[i].stages[j].new_text!=NULL);
@@ -752,7 +756,7 @@ void mission_brief_common_init()
 			}
 		}
 
-		for (i=0; i<MAX_TEAMS; i++ )	{
+		for (i=0; i<MAX_TVT_TEAMS; i++ )	{
 			for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
 				Debriefings[i].stages[j].new_text = (char *)vm_malloc(MAX_DEBRIEF_LEN);
 				Assert(Debriefings[i].stages[j].new_text!=NULL);
@@ -763,7 +767,7 @@ void mission_brief_common_init()
 
 	} else {
 		// If game is running don't malloc anything
-		for (i=0; i<MAX_TEAMS; i++ )	{
+		for (i=0; i<MAX_TVT_TEAMS; i++ )	{
 			for (j=0; j<MAX_BRIEF_STAGES; j++ )	{
 				Briefings[i].stages[j].new_text = NULL;
 				Briefings[i].stages[j].num_icons = 0;
@@ -773,7 +777,7 @@ void mission_brief_common_init()
 			}
 		}
 
-		for (i=0; i<MAX_TEAMS; i++ )	{
+		for (i=0; i<MAX_TVT_TEAMS; i++ )	{
 			for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
 				Debriefings[i].stages[j].new_text = NULL;
 				Debriefings[i].stages[j].new_recommendation_text = NULL;
@@ -794,7 +798,7 @@ void mission_brief_common_reset()
 		return;						// Don't free these under Fred.
 	}
 
-	for (i=0; i<MAX_TEAMS; i++ )	{
+	for (i=0; i<MAX_TVT_TEAMS; i++ )	{
 		for (j=0; j<MAX_BRIEF_STAGES; j++ )	{
 			if ( Briefings[i].stages[j].new_text )	{
 				vm_free(Briefings[i].stages[j].new_text);
@@ -823,7 +827,7 @@ void mission_debrief_common_reset()
 		return;						// Don't free these under Fred.
 	}
 
-	for (i=0; i<MAX_TEAMS; i++ )	{
+	for (i=0; i<MAX_TVT_TEAMS; i++ )	{
 		for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
 			if ( Debriefings[i].stages[j].new_text )	{
 				vm_free(Debriefings[i].stages[j].new_text);
@@ -850,7 +854,7 @@ void brief_reset()
 	int i;
 
 	Briefing = NULL;
-	for ( i = 0; i < MAX_TEAMS; i++ ) 
+	for ( i = 0; i < MAX_TVT_TEAMS; i++ ) 
 		Briefings[i].num_stages = 0;
 	Cur_brief_id = 1;
 }
@@ -864,7 +868,7 @@ void debrief_reset()
 	int i;
 
 	Debriefing = NULL;
-	for ( i = 0; i < MAX_TEAMS; i++ ) {
+	for ( i = 0; i < MAX_TVT_TEAMS; i++ ) {
 		Debriefings[i].num_stages = 0;
 	}
 
@@ -2716,7 +2720,7 @@ void cmd_brief_reset()
 	static int inited = 0;
 
 	if (inited) {
-		for (i=0; i<MAX_TEAMS; i++) {
+		for (i=0; i<MAX_TVT_TEAMS; i++) {
 			for (j=0; j<Cmd_briefs[i].num_stages; j++) {
 				if (Cmd_briefs[i].stage[j].text)
 					vm_free(Cmd_briefs[i].stage[j].text);
@@ -2725,7 +2729,7 @@ void cmd_brief_reset()
 	}
 
 	inited = 1;
-	for (i=0; i<MAX_TEAMS; i++)
+	for (i=0; i<MAX_TVT_TEAMS; i++)
 		Cmd_briefs[i].num_stages = 0;
 }
 

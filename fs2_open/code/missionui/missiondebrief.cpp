@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-09-14 20:03:40 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2005-09-27 02:36:57 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/09/14 20:03:40  taylor
+ * fix ace badges not getting displayed in debriefing
+ *
  * Revision 2.41  2005/08/27 00:21:27  Kazan
  * potential fix for mantis bug 237
  *
@@ -1221,8 +1224,8 @@ void debrief_multi_server_stuff()
 {
 	debriefing *debriefp;
 
-	int stage_active[MAX_TEAMS][MAX_DEBRIEF_STAGES], *stages[MAX_TEAMS];
-	int i, j, num_stages, stage_count[MAX_TEAMS];
+	int stage_active[MAX_TVT_TEAMS][MAX_DEBRIEF_STAGES], *stages[MAX_TVT_TEAMS];
+	int i, j, num_stages, stage_count[MAX_TVT_TEAMS];
 
 	memset( stage_active, 0, sizeof(stage_active) );
 

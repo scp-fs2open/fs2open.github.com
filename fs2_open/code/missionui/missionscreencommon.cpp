@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-09-05 09:38:18 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2005-09-27 02:36:57 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/09/05 09:38:18  taylor
+ * merge of OSX tree
+ * a lot of byte swaps were still missing, will hopefully be fully network compatible now
+ *
  * Revision 2.23  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -1343,10 +1347,10 @@ loadout_data Player_loadout;	// what the ship and weapon loadout is... used sinc
 //int		Ss_pool[MAX_SHIP_TYPES];				// ship pool
 //int		Wss_num_wings;								// number of player wings
 
-wss_unit	Wss_slots_teams[MAX_TEAMS][MAX_WSS_SLOTS];
-int		Wl_pool_teams[MAX_TEAMS][MAX_WEAPON_TYPES];
-int		Ss_pool_teams[MAX_TEAMS][MAX_SHIP_TYPES];
-int		Wss_num_wings_teams[MAX_TEAMS];
+wss_unit	Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
+int		Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+int		Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
+int		Wss_num_wings_teams[MAX_TVT_TEAMS];
 
 wss_unit	*Wss_slots;
 int		*Wl_pool;

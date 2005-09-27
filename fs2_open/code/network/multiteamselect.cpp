@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-09-05 09:38:19 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-09-27 02:36:58 $
+ * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/09/05 09:38:19  taylor
+ * merge of OSX tree
+ * a lot of byte swaps were still missing, will hopefully be fully network compatible now
+ *
  * Revision 2.15  2005/07/22 03:53:31  taylor
  * fix crash on commit in the multi ship selection screen
  * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
@@ -585,10 +589,10 @@ typedef struct ts_team_data {
 	int multi_ts_flag[MULTI_TS_NUM_SHIP_SLOTS];								// flags indicating the "status" of a slot
 	int multi_players_locked;														// are the players locked into place
 } ts_team_data;
-ts_team_data Multi_ts_team[MULTI_TS_MAX_TEAMS];								// data for all teams
+ts_team_data Multi_ts_team[MULTI_TS_MAX_TVT_TEAMS];								// data for all teams
 
 // deleted ship objnums
-int Multi_ts_deleted_objnums[MULTI_TS_MAX_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
+int Multi_ts_deleted_objnums[MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
 int Multi_ts_num_deleted;
 
 //XSTR:ON
@@ -762,7 +766,7 @@ void multi_ts_common_init()
 	}
 
 	// deleted ship information
-	memset(Multi_ts_deleted_objnums,0,sizeof(int) * MULTI_TS_MAX_TEAMS * MULTI_TS_NUM_SHIP_SLOTS);
+	memset(Multi_ts_deleted_objnums,0,sizeof(int) * MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS);
 	Multi_ts_num_deleted = 0;
 
 	// mouse hotspot information
@@ -779,7 +783,7 @@ void multi_ts_common_init()
 	}	
 
 	// blast the team data clean
-	memset(Multi_ts_team,0,sizeof(ts_team_data) * MULTI_TS_MAX_TEAMS);	
+	memset(Multi_ts_team,0,sizeof(ts_team_data) * MULTI_TS_MAX_TVT_TEAMS);	
 
 	// assign the correct players to the correct slots
 	multi_ts_init_players();
@@ -1182,7 +1186,7 @@ void multi_ts_create_wings()
 	
 	// check status of all ships and delete or change ship type as necessary
 	Multi_ts_num_deleted = 0;
-	for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
+	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS;s_idx++){	
 			// otherwise if there's a valid ship in this spot
 			if(Multi_ts_team[idx].multi_ts_flag[s_idx] >= 0){
@@ -1223,7 +1227,7 @@ void multi_ts_handle_player_drop()
 	int idx,s_idx;
 
 	// find the player
-	for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
+	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS;s_idx++){
 			// if we found him, clear his player slot and set his object back to being  OF_COULD_BE_PLAYER
 			if((Multi_ts_team[idx].multi_ts_player[s_idx] != NULL) && !MULTI_CONNECTED((*Multi_ts_team[idx].multi_ts_player[s_idx]))){
@@ -1877,7 +1881,7 @@ void multi_ts_init_objnums()
 	object *objp;
 
 	// zero out the indices
-	for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
+	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS;s_idx++){
 			Multi_ts_team[idx].multi_ts_objnum[s_idx] = -1;
 		}		
@@ -1909,7 +1913,7 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
-		Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TEAMS);
+		Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TVT_TEAMS);
 		for(idx=0;idx<MAX_TVT_WINGS;idx++)
 		{
 			// get team (wing)
@@ -1946,7 +1950,7 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 void multi_ts_get_shipname( char *ship_name, int team, int slot_index )
 {
 	if ( Netgame.type_flags & NG_TYPE_TEAM ) {
-		Assert( (team >= 0) && (team < MULTI_TS_MAX_TEAMS) );
+		Assert( (team >= 0) && (team < MULTI_TS_MAX_TVT_TEAMS) );
 		sprintf(ship_name, "%s %d", TVT_wing_names[team], slot_index);
 	} else {
 		Assert( team == 0 );
@@ -1960,7 +1964,7 @@ void multi_ts_init_flags()
 	int idx,s_idx;
 
 	// zero out the flags
-	for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
+	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS;s_idx++){
 			Multi_ts_team[idx].multi_ts_flag[s_idx] = MULTI_TS_FLAG_NONE;			
 		}
@@ -1968,7 +1972,7 @@ void multi_ts_init_flags()
 
 	// in a team vs. team situation
 	if(Netgame.type_flags & NG_TYPE_TEAM){
-		for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
+		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
 			for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS_TEAM;s_idx++){
 				// if the there is an objnum here but no ship class, we know its currently empty
 				if((Multi_ts_team[idx].multi_ts_objnum[s_idx] != -1) && (Wss_slots_teams[idx][s_idx].ship_class == -1)){
@@ -2728,7 +2732,7 @@ int multi_ts_get_team(char *ship_name)
 	int idx;//,s_idx;
 
 	// lookup through all team ship names
-	Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TEAMS);
+	Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TVT_TEAMS);
 	for(idx=0;idx<MAX_TVT_WINGS;idx++)
 	{
 		if (!strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])))

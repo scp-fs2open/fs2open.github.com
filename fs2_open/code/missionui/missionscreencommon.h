@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.8 $
- * $Date: 2005-07-13 03:25:58 $
+ * $Revision: 2.9 $
+ * $Date: 2005-09-27 02:36:57 $
  * $Author: Goober5000 $
  *
  * $NoKeywords: $
@@ -163,22 +163,22 @@ typedef struct wss_unit {
 	int	wep_count[MAX_SHIP_WEAPONS];
 } wss_unit;
 
-extern wss_unit Wss_slots_teams[MAX_TEAMS][MAX_WSS_SLOTS];
+extern wss_unit Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
 extern wss_unit *Wss_slots;
 
 extern int Wss_num_wings; // number of player wings
-extern int Wss_num_wings_teams[MAX_TEAMS];
+extern int Wss_num_wings_teams[MAX_TVT_TEAMS];
 
 //////////////////////////////////////////////
 // Weapon pool
 //////////////////////////////////////////////
-extern int Wl_pool_teams[MAX_TEAMS][MAX_WEAPON_TYPES];
+extern int Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 extern int *Wl_pool;
 
 //////////////////////////////////////////////
 // Ship pool
 //////////////////////////////////////////////
-extern int Ss_pool_teams[MAX_TEAMS][MAX_SHIP_TYPES];
+extern int Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
 extern int *Ss_pool;
 
 //////////////////////////////////////////////

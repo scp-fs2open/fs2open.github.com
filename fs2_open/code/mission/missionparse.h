@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.69 $
- * $Author: taylor $
- * $Date: 2005-09-25 18:44:51 $
+ * $Revision: 2.70 $
+ * $Author: Goober5000 $
+ * $Date: 2005-09-27 02:36:57 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2005/09/25 18:44:51  taylor
+ * fix Subsys_status leak, wasn't a problem in game but can be touchy on exit
+ *
  * Revision 2.68  2005/09/25 05:13:07  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -823,7 +826,7 @@ typedef struct {
 
 #define TOKEN_LENGTH	32
 
-extern team_data Team_data[MAX_TEAMS];
+extern team_data Team_data[MAX_TVT_TEAMS];
 //extern subsys_status Subsys_status[MAX_SUBSYS_STATUS]; // it's dynamic now - taylor
 extern subsys_status *Subsys_status;
 extern int Subsys_index;

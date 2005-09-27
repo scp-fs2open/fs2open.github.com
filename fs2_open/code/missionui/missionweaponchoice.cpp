@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-09-16 17:02:50 $
+ * $Revision: 2.58 $
+ * $Date: 2005-09-27 02:36:57 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/09/16 17:02:50  Goober5000
+ * roll back taylor's loadout fix and do it this way: it saves memory
+ * (but thanks to taylor for drawing attention to the difference between wing slots and wss slots!)
+ * --Goober5000
+ *
  * Revision 2.55  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -994,7 +999,7 @@ typedef struct wl_icon_info
 	anim_instance	*wl_anim_instance;
 } wl_icon_info;
 
-wl_icon_info	Wl_icons_teams[MAX_TEAMS][MAX_WEAPON_TYPES];
+wl_icon_info	Wl_icons_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 wl_icon_info	*Wl_icons;
 
 int Plist[MAX_WEAPON_TYPES];	// used to track scrolling of primary icon list
@@ -2642,7 +2647,7 @@ void weapon_select_common_init()
 
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		// initialize for all teams
-		for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){
+		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
 			weapon_select_init_team(idx);
 		}
 

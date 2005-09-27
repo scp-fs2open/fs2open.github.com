@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-09-25 05:13:06 $
+ * $Revision: 2.49 $
+ * $Date: 2005-09-27 02:36:57 $
  * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/09/25 05:13:06  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.47  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -649,10 +653,10 @@ typedef struct ss_wing_info
 //ss_icon_info	Ss_icons[MAX_SHIP_TYPES];		// holds ui info on different ship icons
 //ss_wing_info	Ss_wings[MAX_WING_BLOCKS];		// holds ui info for wings and wing slots
 
-ss_wing_info	Ss_wings_teams[MAX_TEAMS][MAX_WING_BLOCKS];
+ss_wing_info	Ss_wings_teams[MAX_TVT_TEAMS][MAX_WING_BLOCKS];
 ss_wing_info	*Ss_wings;
 
-ss_icon_info	Ss_icons_teams[MAX_TEAMS][MAX_SHIP_TYPES];
+ss_icon_info	Ss_icons_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
 ss_icon_info	*Ss_icons;
 
 int Ss_mouse_down_on_region = -1;
@@ -3762,7 +3766,7 @@ void ship_select_common_init()
 
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){		
 		// initialize for all teams in the game
-		for(idx=0;idx<MULTI_TS_MAX_TEAMS;idx++){	
+		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){	
 			ship_select_init_team_data(idx);
 		}		
 

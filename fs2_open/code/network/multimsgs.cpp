@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-09-25 22:23:39 $
- * $Author: Kazan $
+ * $Revision: 2.44 $
+ * $Date: 2005-09-27 02:36:58 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/09/25 22:23:39  Kazan
+ * correct an error
+ *
  * Revision 2.42  2005/09/05 09:38:19  taylor
  * merge of OSX tree
  * a lot of byte swaps were still missing, will hopefully be fully network compatible now
@@ -7659,7 +7662,7 @@ void send_debrief_info( int stage_count[], int *stages[] )
 void process_debrief_info( ubyte *data, header *hinfo )
 {
 	int offset, i, j;
-	int stage_counts[MAX_TEAMS], active_stages[MAX_TEAMS][MAX_DEBRIEF_STAGES], *stages[MAX_TEAMS];
+	int stage_counts[MAX_TVT_TEAMS], active_stages[MAX_TVT_TEAMS][MAX_DEBRIEF_STAGES], *stages[MAX_TVT_TEAMS];
 	int i_tmp;
 
 	offset = HEADER_LENGTH;
