@@ -8,12 +8,16 @@
  */
 
 /*
- * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.20 $
- * $Date: 2005-09-25 08:25:16 $
+ * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
+ * $Revision: 1.21 $
+ * $Date: 2005-09-27 05:01:52 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/09/25 08:25:16  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 1.19  2005/09/25 05:13:07  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -97,11 +101,8 @@
 #pragma warning(disable:4710)	// function not inlined
 
 #include "species_defs/species_defs.h"
-#include "mission/missionparse.h"
-#include "parse/parselo.h"
-#include "ship/ship.h"
 #include "cfile/cfile.h"
-//#include <memory.h>
+#include "parse/parselo.h"
 
 
 int Num_species;
@@ -111,11 +112,12 @@ species_info Species_info[MAX_SPECIES];
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // This is the default table
+// Please note that the {\n\}s should be removed from the end of each line
+// if you intend to use this to format your own species_defs.tbl.
+
 char *default_species_table = "\
 												\n\
 #SPECIES DEFS									\n\
-												\n\
-$NumSpecies: 3									\n\
 												\n\
 ;------------------------						\n\
 ; Terran										\n\
@@ -188,16 +190,29 @@ void species_init()
 
 	required_string("#SPECIES DEFS");
 
-	required_string("$NumSpecies:");
-	stuff_int(&Num_species);
-
-	Assert(Num_species <= MAX_SPECIES);
+	// no longer required: counted automatically
+	if (optional_string("$NumSpecies:"))
+	{
+		int temp;
+		stuff_int(&temp);
+	}
 
 	// begin reading data
-	for (int i = 0; i < Num_species; i++)
+	Num_species = 0;
+	while (required_string_either("#END","$Species_Name:"))
 	{
-		species_info *species = &Species_info[i];
+		species_info *species;
+		
+		// make sure we're under the limit
+		if (Num_species >= MAX_SPECIES)
+		{
+			Warning(LOCATION, "Too many species in species_defs.tbl!  Max is %d.\n", MAX_SPECIES);
+			skip_to_string("#END", NULL);
+			break;
+		}
 
+		species = &Species_info[Num_species];
+		Num_species++;
 
 		// Start Species - Get its name
 		required_string("$Species_Name:");
@@ -265,7 +280,7 @@ void species_init()
 
 
 		// Goober5000 - FRED stuff
-		if (optional_string("$FRED Color:"))
+		if (optional_string("$FRED Color:") || optional_string("$FRED Colour:"))
 		{
 			stuff_int_list(species->fred_color.a1d, 3, RAW_INTEGER_TYPE);
 		}
