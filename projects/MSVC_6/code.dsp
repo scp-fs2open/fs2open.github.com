@@ -2683,5 +2683,17 @@ SOURCE=..\..\code\Autopilot\Autopilot.cpp
 SOURCE=..\..\code\Autopilot\Autopilot.h
 # End Source File
 # End Group
+# Begin Group "iff_defs"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\iff_defs\iff_defs.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\iff_defs\iff_defs.h
+# End Source File
+# End Group
 # End Target
 # End Project
