@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.12 $
- * $Date: 2005-09-26 02:15:03 $
+ * $Revision: 1.13 $
+ * $Date: 2005-09-27 05:01:52 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/09/26 02:15:03  Goober5000
+ * okay, this should all be working :)
+ * --Goober5000
+ *
  * Revision 1.11  2005/09/25 20:31:42  Goober5000
  * okay; everything should be good to go
  * --Goober5000
@@ -53,9 +57,6 @@
  *
  * Revision 1.1  2003/10/15 22:03:27  Kazan
  * Da Species Update :D
- *
- *
- *
  *
  */
 
