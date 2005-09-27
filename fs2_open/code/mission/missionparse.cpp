@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.114 $
- * $Date: 2005-09-27 02:36:57 $
+ * $Revision: 2.115 $
+ * $Date: 2005-09-27 08:09:13 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.114  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.113  2005/09/25 18:44:51  taylor
  * fix Subsys_status leak, wasn't a problem in game but can be touchy on exit
  *
@@ -3508,7 +3512,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	// possibly play some event driven music here.  Send a network packet indicating the wing was
 	// created.  Only do this stuff if actually in the mission.
 	if ( (objnum != -1) && (Game_mode & GM_IN_MISSION) ) {		// if true, we have created at least one new ship.
-		int i, ship_num;
+		int ship_num;
 
 		// Goober5000 - make all wings form on their respective leaders
 		ai_maybe_add_form_goal( wingp );
@@ -3553,7 +3557,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		if ( Fred_running ) {
 			Assert( wingp->ship_index[wingp->special_ship] != -1 );
 			int orders = Ships[wingp->ship_index[0]].orders_accepted;
-			for (i = 0; i < wingp->current_count; i++ ) {
+			for (int i = 0; i < wingp->current_count; i++ ) {
 				if (i == wingp->special_ship)
 					continue;
 
