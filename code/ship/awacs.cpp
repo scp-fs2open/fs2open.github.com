@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-09-25 05:13:04 $
+ * $Revision: 2.18 $
+ * $Date: 2005-09-27 02:36:56 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/09/25 05:13:04  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.16  2005/07/25 03:13:24  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -174,7 +178,7 @@
 int Awacs_stamp = -1;
 
 // total awacs levels for all teams
-float Awacs_team[MAX_TEAMS];	// total AWACS capabilities for each team
+float Awacs_team[MAX_TVT_TEAMS];	// total AWACS capabilities for each team
 float Awacs_level;				// Awacs_friendly - Awacs_hostile
 
 // list of all AWACS sources
@@ -248,7 +252,7 @@ void awacs_update_all_levels()
 
 	// zero all levels
 	Awacs_level = 0.0f;
-	for(idx=0; idx<MAX_TEAMS; idx++){
+	for(idx=0; idx<MAX_TVT_TEAMS; idx++){
 		Awacs_team[idx] = 0.0f;
 	}
 
@@ -298,7 +302,7 @@ void awacs_update_all_levels()
 	// spew all the info
 #ifndef NDEBUG 
 	/*
-	for(idx=0; idx<MAX_TEAMS; idx++){
+	for(idx=0; idx<MAX_TVT_TEAMS; idx++){
 		nprintf(("General", "Team %d AWACS == %f\n", idx, Awacs_team[idx]));
 	}
 	nprintf(("General", "AWACS level == %f\n", Awacs_level));

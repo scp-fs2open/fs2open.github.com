@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-08-20 20:29:47 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2005-09-27 02:36:58 $
+ * $Author: Goober5000 $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/08/20 20:29:47  taylor
+ * Fix an old unix define, should be SCP_UNIX
+ *
  * Revision 2.37  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -2825,10 +2828,10 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 			if(Netgame.type_flags & NG_TYPE_TEAM)
 			{
 			/*	int i, j;
-				int team_nums[MULTI_TS_MAX_TEAMS] = {0, 0};\
+				int team_nums[MULTI_TS_MAX_TVT_TEAMS] = {0, 0};\
 
 				//First get the number of players on each team
-				for(i = 0; i < MULTI_TS_MAX_TEAMS; i++)
+				for(i = 0; i < MULTI_TS_MAX_TVT_TEAMS; i++)
 				{
 					for(j = 0; j < MULTI_TS_NUM_SHIP_SLOTS; j++)
 					{
@@ -2841,7 +2844,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 				//Find the lowest team
 				//Init this to the first team, so it works properly
 				int lowest_team[2] = {team_nums[0], 0};
-				for(i = 0; i < MULTI_TS_MAX_TEAMS;i++)
+				for(i = 0; i < MULTI_TS_MAX_TVT_TEAMS;i++)
 				{
 					if(Multi_ts_team[i] < lowest_team[0])
 					{

@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.16 $
- * $Date: 2005-09-24 01:50:10 $
+ * $Revision: 1.17 $
+ * $Date: 2005-09-27 02:36:57 $
  * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/09/24 01:50:10  Goober5000
+ * a bunch of support ship bulletproofing
+ * --Goober5000
+ *
  * Revision 1.15  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -109,7 +113,6 @@
 // then please update the support_ship_info struct.
 #define	MAX_SPECIES		8
 
-
 // from ship.h
 #ifdef NDEBUG
 	#ifdef FRED
@@ -203,7 +206,7 @@
 // from object.h; probably will be redone eventually
 //	Team bitmasks.
 #define TEAM_HOSTILE		(1 << 0)
-#define TEAM_FRIENDLY	(1 << 1)
+#define TEAM_FRIENDLY		(1 << 1)
 #define TEAM_NEUTRAL		(1 << 2)
 #define TEAM_UNKNOWN		(1 << 3)
 #define TEAM_TRAITOR		(1	<< 4)
@@ -212,7 +215,7 @@
 
 
 // from pstypes.h - don't ask me why it was there
-#define MAX_TEAMS		3
+#define MAX_TVT_TEAMS		3
 
 
 // from scoring.h

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:33 $
+ * $Revision: 2.5 $
+ * $Date: 2005-09-27 02:36:58 $
  * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code header
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2004/12/14 14:46:13  Goober5000
  * allow different wing names than ABGDEZ
  * --Goober5000
@@ -144,11 +148,11 @@ struct header;
 // should be initialize to 0 inside of multi_vars_init
 extern int Multi_ts_inited;
 
-#define MULTI_TS_MAX_TEAMS									2						// 2 teams max for now
+#define MULTI_TS_MAX_TVT_TEAMS							2						// 2 teams max for now
 #define MULTI_TS_NUM_SHIP_SLOTS							12						// # of ship slots in non team vs. team mode
 
 // deleted ship objnums
-extern int Multi_ts_deleted_objnums[MULTI_TS_MAX_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
+extern int Multi_ts_deleted_objnums[MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
 extern int Multi_ts_num_deleted;
 
 // ------------------------------------------------------------------------------------------------------

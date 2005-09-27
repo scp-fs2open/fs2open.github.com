@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.113 $
- * $Date: 2005-09-25 18:44:51 $
- * $Author: taylor $
+ * $Revision: 2.114 $
+ * $Date: 2005-09-27 02:36:57 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2005/09/25 18:44:51  taylor
+ * fix Subsys_status leak, wasn't a problem in game but can be touchy on exit
+ *
  * Revision 2.112  2005/09/25 08:25:15  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -914,7 +917,7 @@ int Subsys_status_size;
 
 char Mission_parse_storm_name[NAME_LENGTH] = "none";
 
-team_data Team_data[MAX_TEAMS];
+team_data Team_data[MAX_TVT_TEAMS];
 
 // variables for player start in single player
 char		Player_start_shipname[NAME_LENGTH];
