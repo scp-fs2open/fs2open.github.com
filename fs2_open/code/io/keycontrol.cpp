@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-09-25 08:25:15 $
+ * $Revision: 2.60 $
+ * $Date: 2005-09-27 06:39:23 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/09/25 08:25:15  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.58  2005/09/25 05:13:06  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -553,6 +557,7 @@
 #include "hud/hudgauges.h"
 #include "freespace2/freespace.h"	//For time compression stuff
 #include "species_defs/species_defs.h"
+#include "asteroid/asteroid.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1413,7 +1418,6 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_U: {
 		case KEY_DEBUGGED1 + KEY_U:
 			// launch asteroid
-			extern asteroid_field Asteroid_field;
 			object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int subtype);
 			object *objp = asteroid_create(&Asteroid_field, 0, 0);
 			vec3d vel;
