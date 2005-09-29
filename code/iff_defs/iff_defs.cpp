@@ -7,11 +7,15 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.1 $
- * $Date: 2005-09-27 05:25:18 $
+ * $Revision: 1.2 $
+ * $Date: 2005-09-29 04:26:08 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/09/27 05:25:18  Goober5000
+ * initial commit of basic IFF code
+ * --Goober5000
+ *
  */
 
 
@@ -56,7 +60,7 @@ $Default Ship Flags: ( \"cargo-known\" )									\n\
 ; Hostile																	\n\
 ;------------------------													\n\
 $IFF Name: Hostile															\n\
-$Color: ( 255, 0, 0 )														\n\
+$IFF Color: ( 255, 0, 0 )													\n\
 +As Seen By Hostile: ( 0, 255, 0 )											\n\
 +As Seen By Neutral: ( 0, 255, 0 )											\n\
 $Attacks: ( \"Friendly\" \"Neutral\" \"Traitor\" )							\n\
@@ -65,7 +69,7 @@ $Attacks: ( \"Friendly\" \"Neutral\" \"Traitor\" )							\n\
 ; Neutral																	\n\
 ;------------------------													\n\
 $IFF Name: Neutral															\n\
-$Color: ( 255, 0, 0 )														\n\
+$IFF Color: ( 255, 0, 0 )													\n\
 +As Seen By Neutral: ( 0, 255, 0 )											\n\
 $Attacks: ( \"Friendly\" \"Traitor\" )										\n\
 																			\n\
@@ -73,7 +77,7 @@ $Attacks: ( \"Friendly\" \"Traitor\" )										\n\
 ; Unknown																	\n\
 ;------------------------													\n\
 $IFF Name: Unknown															\n\
-$Color: ( 255, 0, 255 )														\n\
+$IFF Color: ( 255, 0, 255 )													\n\
 $Attacks: ( \"Hostile\" )													\n\
 $Exempt From All Teams At War												\n\
 																			\n\
@@ -81,7 +85,7 @@ $Exempt From All Teams At War												\n\
 ; Traitor																	\n\
 ;------------------------													\n\
 $IFF Name: Traitor															\n\
-$Color: ( 255, 0, 0 )														\n\
+$IFF Color: ( 255, 0, 0 )													\n\
 $Attacks: ( \"Friendly\" \"Hostile\" \"Neutral\" \"Traitor\" )				\n\
 																			\n\
 #End																		\n\
@@ -111,7 +115,7 @@ void iff_init()
 	required_string("#IFFs");
 
 	// get the traitor
-	required_string("Traitor IFF:");
+	required_string("$Traitor IFF:");
 	stuff_string(traitor_name, F_NAME, NULL, NAME_LENGTH);
 
 	// begin reading data
@@ -124,7 +128,7 @@ void iff_init()
 		if (Num_iffs >= MAX_IFFS)
 		{
 			Warning(LOCATION, "Too many iffs in iffs_defs.tbl!  Max is %d.\n", MAX_IFFS);
-			skip_to_string("#End", NULL);
+			skip_to_start_of_string("#End", NULL);
 			break;
 		}
 
@@ -136,7 +140,7 @@ void iff_init()
 		stuff_string(iff->iff_name, F_NAME, NULL, NAME_LENGTH);
 
 
-		skip_to_string("$IFF Name", "#End");
+		skip_to_start_of_string("$IFF Name", "#End");
 
 // if (optional_string("$FRED Color:") || optional_string("$FRED Colour:"))
 

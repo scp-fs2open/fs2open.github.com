@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.115 $
- * $Date: 2005-09-27 08:09:13 $
+ * $Revision: 2.116 $
+ * $Date: 2005-09-29 04:26:08 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2005/09/27 08:09:13  Goober5000
+ * fix debug warning
+ * --Goober5000
+ *
  * Revision 2.114  2005/09/27 02:36:57  Goober5000
  * clarification
  * --Goober5000
@@ -3018,7 +3022,7 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		// if we ran out of texture replacement slots, don't read any more
 		if (Num_texture_replacements >= MAX_TEXTURE_REPLACEMENTS)
 		{
-			skip_to_start_of_strings("#Wings", "$Name");
+			skip_to_start_of_string_either("#Wings", "$Name");
 		}
 	}
 

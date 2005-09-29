@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.49 $
- * $Author: wmcoolmon $
- * $Date: 2005-09-20 04:51:45 $
+ * $Revision: 2.50 $
+ * $Author: Goober5000 $
+ * $Date: 2005-09-29 04:26:08 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/09/20 04:51:45  wmcoolmon
+ * New parsing functions that I'll be using for XMTs once I get them
+ * working
+ *
  * Revision 2.48  2005/09/17 01:36:29  Goober5000
  * It is a strange fate that we should suffer so much fear and doubt over so small a thing.
  * Such a little thing...
@@ -632,9 +636,38 @@ int skip_to_string(char *pstr, char *end)
 	return 1;
 }
 
+// Goober5000
+// Advance to start of pstr.  Return 0 is successful, otherwise return !0
+int skip_to_start_of_string(char *pstr, char *end)
+{
+	int len, endlen;
+
+	ignore_white_space();
+	len = strlen(pstr);
+	if(end)
+		endlen = strlen(end);
+	else
+		endlen = 0;
+
+	while ( (*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len) ) {
+		if (end && *Mp == '#')
+			return 0;
+
+		if (end && !strnicmp(end, Mp, endlen))
+			return 0;
+
+		advance_to_eoln(NULL);
+		ignore_white_space();
+	}
+
+	if (!Mp || (*Mp == EOF_CHAR))
+		return 0;
+
+	return 1;
+}
 
 // Advance to start of either pstr1 or pstr2.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_strings(char *pstr1, char *pstr2, char* end)
+int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
 {
 	int len1, len2, endlen;
 
@@ -1530,6 +1563,11 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 // Goober5000 - added ability to read somewhere other than Mission_text
 void read_file_text(char *filename, int mode, char *processed_text, char *raw_text)
 {
+	// copy the filename
+	if (!filename)
+		longjmp(parse_abort, 10);
+	strcpy(Current_filename, filename);
+
 	// read the raw text
 	read_raw_file_text(filename, mode, raw_text);
 
@@ -1540,6 +1578,9 @@ void read_file_text(char *filename, int mode, char *processed_text, char *raw_te
 // Goober5000
 void read_file_text_from_array(char *array, char *processed_text, char *raw_text)
 {
+	// we have no filename, so copy a substitute
+	strcpy(Current_filename, "internal default file");
+
 	// if we have no raw buffer, set it as the array
 	if (raw_text == NULL)
 		raw_text = array;
@@ -1580,10 +1621,8 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 	int	file_is_encrypted;
 	int file_is_unicode;
 
-	if (!filename)
-		longjmp(parse_abort, 10);
+	Assert(filename);
 
-	strcpy(Current_filename, filename);
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{

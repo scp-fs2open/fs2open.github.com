@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.233 $
- * $Date: 2005-09-26 06:00:59 $
+ * $Revision: 2.234 $
+ * $Date: 2005-09-29 04:26:08 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.233  2005/09/26 06:00:59  Goober5000
+ * this should fix the rest of the briefing icon bugs
+ * --Goober5000
+ *
  * Revision 2.232  2005/09/26 04:08:54  Goober5000
  * some more cleanup
  * --Goober5000
@@ -2045,7 +2049,7 @@ int parse_ship(bool replace)
 #ifdef DEMO // not needed FS2_DEMO (using separate table file)
 	if ( sip->name[0] != '@' ) {
 		// advance to next weapon, and return -1
-		if ( skip_to_start_of_strings("$Name:", "#End") != 1 ) {
+		if ( skip_to_start_of_string_either("$Name:", "#End") != 1 ) {
 			Int3();
 		}
 		return -1;

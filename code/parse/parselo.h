@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.30 $
- * $Author: wmcoolmon $
- * $Date: 2005-09-20 04:51:45 $
+ * $Revision: 2.31 $
+ * $Author: Goober5000 $
+ * $Date: 2005-09-29 04:26:08 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/09/20 04:51:45  wmcoolmon
+ * New parsing functions that I'll be using for XMTs once I get them
+ * working
+ *
  * Revision 2.29  2005/08/22 22:24:21  Goober5000
  * some tweaks to parselo, plus ensure that Unicode files don't crash
  * --Goober5000
@@ -424,7 +428,8 @@ extern void error_display(int error_level, char *format, ...);
 
 // skip
 extern int skip_to_string(char *pstr, char *end = NULL);
-extern int skip_to_start_of_strings(char *pstr1, char *pstr2, char *end = NULL);
+extern int skip_to_start_of_string(char *pstr, char *end = NULL);
+extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = NULL);
 extern void advance_to_eoln(char *terminators);
 extern void skip_token();
 

@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-09-25 05:13:06 $
+ * $Revision: 2.35 $
+ * $Date: 2005-09-29 04:26:08 $
  * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/09/25 05:13:06  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.33  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -853,7 +857,7 @@ void parse_custom_gauge()
 	}
 	else
 	{
-		skip_to_start_of_strings("$Name:", "#End");
+		skip_to_start_of_string_either("$Name:", "#End");
 	}
 }
 
@@ -902,7 +906,7 @@ int parse_hud_gauges_tbl(char* longname)
 			}
 			else
 			{
-				skip_to_start_of_strings("$Resolution:", "$Default:", "#End");
+				skip_to_start_of_string_either("$Resolution:", "$Default:", "#End");
 			}
 		}
 		required_string("#End");
@@ -918,7 +922,7 @@ int parse_hud_gauges_tbl(char* longname)
 			}
 			else
 			{
-				skip_to_start_of_strings("$Resolution:", "$Default:", "#End");
+				skip_to_start_of_string_either("$Resolution:", "$Default:", "#End");
 			}
 		}
 		required_string("#End");
@@ -943,7 +947,7 @@ int parse_hud_gauges_tbl(char* longname)
 						}
 						else
 						{
-							skip_to_start_of_strings("$Resolution:", "$Default:", "$Ship:");
+							skip_to_start_of_string_either("$Resolution:", "$Default:", "$Ship:");
 						}
 					}
 				}
@@ -966,7 +970,7 @@ int parse_hud_gauges_tbl(char* longname)
 						}
 						else
 						{
-							skip_to_start_of_strings("$Resolution:", "$Default:", "$Ship:");
+							skip_to_start_of_string_either("$Resolution:", "$Default:", "$Ship:");
 						}
 					}
 				}
