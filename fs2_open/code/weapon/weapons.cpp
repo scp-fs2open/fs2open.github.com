@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2005/09/11 03:50:42  phreak
+ * sort_weapons_by_type() now also subsorts primaries by whether its supposed to only
+ * be used on big ships or not.
+ *
  * Revision 2.128  2005/09/08 23:20:54  phreak
  * sort_weapons_by_type() now subsorts missiles and places fighter-sized weapons ahead of capital weapons and child weapons
  * its also alot less memory intensive too.
@@ -1298,7 +1302,7 @@ int parse_weapon(int subtype, bool replace)
 		if ( wip->name[0] != '@' ) {
 			// advance to next weapon, and return -1
 
-			if ( skip_to_start_of_strings("$Name:", "#End") != 1 ) {
+			if ( skip_to_start_of_string_either("$Name:", "#End") != 1 ) {
 				Int3();
 			}
 			return -1;
