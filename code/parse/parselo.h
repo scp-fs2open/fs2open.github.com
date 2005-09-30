@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.31 $
+ * $Revision: 2.32 $
  * $Author: Goober5000 $
- * $Date: 2005-09-29 04:26:08 $
+ * $Date: 2005-09-30 03:19:57 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/09/29 04:26:08  Goober5000
+ * parse fixage
+ * --Goober5000
+ *
  * Revision 2.30  2005/09/20 04:51:45  wmcoolmon
  * New parsing functions that I'll be using for XMTs once I get them
  * working
@@ -443,6 +447,7 @@ extern int required_string_3(char *str1, char *str2, char *str3);
 extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);
 extern void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars);
 extern void stuff_string_white(char *pstr, int len = 0);
+extern void stuff_string_until(char *pstr, char *endstr, int len = 0);
 extern void stuff_string(char *pstr, int type, char *terminators = NULL, int len = 0);
 extern void stuff_string_line(char *pstr, int len);
 
