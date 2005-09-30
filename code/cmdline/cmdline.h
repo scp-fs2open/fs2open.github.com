@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.74 $
- * $Date: 2005-09-21 03:55:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.75 $
+ * $Date: 2005-09-30 09:47:06 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2005/09/21 03:55:31  Goober5000
+ * add option for warp flash; mess with the cmdlines a bit
+ * --Goober5000
+ *
  * Revision 2.73  2005/07/25 05:24:16  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000
@@ -559,7 +563,7 @@ extern int Cmdline_d3d_no_vsync;
 extern int Cmdline_pcx32;
 extern int Cmdline_pcx32dds;
 extern int Cmdline_nomotiondebris;
-extern int Cmdline_rlm;
+extern int Cmdline_cache_bitmaps;
 extern int Cmdline_noibx;
 
 #ifdef SCP_UNIX

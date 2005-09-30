@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.65 $
- * $Date: 2005-09-26 04:53:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.66 $
+ * $Date: 2005-09-30 09:47:05 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/09/26 04:53:19  Goober5000
+ * moved these per taylor's recommendation
+ * --Goober5000
+ *
  * Revision 2.64  2005/09/26 04:08:53  Goober5000
  * some more cleanup
  * --Goober5000
@@ -793,6 +797,7 @@
 
 extern int Cmdline_jpgtga;
 extern int Cmdline_pcx32;
+extern int Cmdline_cache_bitmaps;
 
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG
@@ -2877,8 +2882,8 @@ void bm_page_in_start()
 
 	// Mark all as inited
 	for (i = 0; i < MAX_BITMAPS; i++)	{
-		if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
-		//	bm_unload(bm_bitmaps[i].handle);
+		if ( !Cmdline_cache_bitmaps && (bm_bitmaps[i].type != BM_TYPE_NONE) )	{
+			bm_unload(bm_bitmaps[i].handle);
 		}
 		bm_bitmaps[i].preloaded = 0;
 		bm_bitmaps[i].preload_count = 0;
