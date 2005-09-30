@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.50 $
+ * $Revision: 2.51 $
  * $Author: Goober5000 $
- * $Date: 2005-09-29 04:26:08 $
+ * $Date: 2005-09-30 03:19:57 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/09/29 04:26:08  Goober5000
+ * parse fixage
+ * --Goober5000
+ *
  * Revision 2.49  2005/09/20 04:51:45  wmcoolmon
  * New parsing functions that I'll be using for XMTs once I get them
  * working
@@ -1040,8 +1044,9 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 {
 	char *foundstr;
+	Assert(outstr && instr && endstr);
 
-	foundstr = strstr(instr, endstr);
+	foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
 		nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
@@ -1069,9 +1074,22 @@ void stuff_string_white(char *pstr, int len)
 {
 	if(!len)
 		len = NAME_LENGTH-1;
+
 	ignore_white_space();
 	copy_to_next_white(pstr, Mp, len);
 	advance_to_next_white();
+}
+
+// Goober5000
+void stuff_string_until(char *pstr, char *endstr, int len)
+{
+	if(!len)
+		len = NAME_LENGTH-1;
+
+	ignore_gray_space();
+	copy_text_until(pstr, Mp, endstr, len);
+	Mp += strlen(pstr);
+	drop_trailing_white_space(pstr);
 }
 
 //	Stuff a string into a string buffer.
