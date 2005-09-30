@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.112 $
- * $Date: 2005-09-25 08:23:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.113 $
+ * $Date: 2005-09-30 09:47:06 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2005/09/25 08:23:38  Goober5000
+ * remove unneeded #include
+ * --Goober5000
+ *
  * Revision 2.111  2005/09/24 02:40:09  Goober5000
  * get rid of a whole bunch of Microsoft warnings
  * --Goober5000
@@ -783,8 +787,8 @@ Flag exe_params[] =
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomotiondebris",},
 	{ "-2d_poof",			"Stops fog intersect hull",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.2d_poof", },
 	{ "-cell",				"Enable cell shading",						true,	0,					EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.cell", },
-	{ "-rlm",				"Enable more realistic lighting",			true,	0,					EASY_DEFAULT,		"Graphics",		"", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"", },
+	{ "-cache_bitmaps",		"Cache bitmaps between missions",			true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"", },
 
 	{ "-pcx2dds",			"Compress pcx",								true,	0,					EASY_DEFAULT,		"Game Speed",	"", },
 	{ "-d3d_no_vsync",		"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_no_vsync", },
@@ -931,11 +935,11 @@ cmdline_parm orb_radar("-orbradar",NULL);
 cmdline_parm use_3dwarp("-3dwarp", NULL);
 cmdline_parm use_warp_flash("-warp_flash", NULL);
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
-cmdline_parm use_rlm("-rlm", NULL); // more realistic lighting model - taylor
 cmdline_parm smart_shields("-smart_shields", NULL);
 cmdline_parm dis_collisions("-dis_collisions", NULL);
 cmdline_parm dis_weapons("-dis_weapons", NULL);
 cmdline_parm noibx_arg("-noibx", NULL);
+cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);
 #ifdef WIN32
 cmdline_parm fix_bugs("-fixbugs", NULL);
 cmdline_parm disable_crashing("-nocrash", NULL);
@@ -1040,7 +1044,7 @@ int CmdLine_NoWarn = 0; // turn warnings off in FRED
 
 int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 
-int Cmdline_rlm = 0;	// more realistic lighting model - taylor
+int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
 
 //Experimental
 int Cmdline_load_only_used;
@@ -2007,10 +2011,10 @@ bool SetCmdlineParams()
 		Cmdline_wcsaga = 1;
 	}
 
-	if ( use_rlm.found() ) {
-		Cmdline_rlm = 1;
+	if ( cache_bitmaps_arg.found() ) {
+		Cmdline_cache_bitmaps = 1;
 	} else {
-		Cmdline_rlm = 0;
+		Cmdline_cache_bitmaps = 0;
 	}
 
 	if ( smart_shields.found())

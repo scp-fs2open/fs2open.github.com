@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.182 $
- * $Date: 2005-09-27 05:25:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.183 $
+ * $Date: 2005-09-30 09:47:06 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.182  2005/09/27 05:25:18  Goober5000
+ * initial commit of basic IFF code
+ * --Goober5000
+ *
  * Revision 2.181  2005/09/26 02:15:02  Goober5000
  * okay, this should all be working :)
  * --Goober5000
@@ -3837,7 +3841,7 @@ void game_show_framerate()
 			sy += dy;
 		}	
 
-		gr_printf( sx, sy, NOX("BMP: %d KB\n"), bm_texture_ram/1024 );
+		gr_printf( sx, sy, NOX("%s: %d KB\n"), (Cmdline_cache_bitmaps) ? NOX("C-BMP") : NOX("BMP"), bm_texture_ram/1024 );
 		sy += dy;
 
 #ifndef NO_SOUND

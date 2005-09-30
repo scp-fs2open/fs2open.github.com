@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-09-05 09:36:41 $
+ * $Revision: 1.19 $
+ * $Date: 2005-09-30 09:47:06 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/09/05 09:36:41  taylor
+ * merge of OSX tree
+ * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
+ * fix OGL version check, it would allow a required major version to be higher if the required minor version was lower than current
+ *
  * Revision 1.17  2005/05/23 05:56:26  taylor
  * Jens, again:
  *  - compiler warning fixes
@@ -138,7 +143,6 @@ extern float static_light_factor;
 extern float static_tube_factor;
 extern double specular_exponent_value;
 
-extern int Cmdline_rlm;
 
 GLint GL_max_lights = 0;
 
@@ -350,8 +354,7 @@ void opengl_init_light()
 	glMaterialf(GL_FRONT, GL_SHININESS, 80.0f );
 
 	// more realistic lighting model
-	if (Cmdline_rlm)
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
 	glGetIntegerv(GL_MAX_LIGHTS, &GL_max_lights); // Get the max number of lights supported
 
