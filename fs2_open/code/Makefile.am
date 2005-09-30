@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.20 2005-07-18 03:37:35 taylor Exp $
+## $Id: Makefile.am,v 1.21 2005-09-30 09:44:19 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -175,6 +175,8 @@ FS2_SOURCES =	\
 	hud/hudtargetbox.h	\
 	hud/hudwingmanstatus.cpp	\
 	hud/hudwingmanstatus.h	\
+	iff_defs/iff_defs.cpp	\
+	iff_defs/iff_defs.h	\
 	io/key.cpp	\
 	io/key.h	\
 	io/keycontrol.cpp	\
