@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.74 $
- * $Date: 2005-09-15 23:54:58 $
- * $Author: Kazan $
+ * $Revision: 2.75 $
+ * $Date: 2005-10-02 23:00:39 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2005/09/15 23:54:58  Kazan
+ * comment out superfluous debug message
+ *
  * Revision 2.73  2005/07/07 16:32:33  taylor
  * compiler warning fixes
  * add -noibx troubleshooting cmdline option to disable use of IBX files
@@ -4420,20 +4423,54 @@ void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int a
 int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 {
 	int i;
-
 	polymodel *pm;
 
+	// get model and make sure it has dockpoints
 	pm = model_get(modelnum);
-
-	// no docking points -- return -1
 	if ( pm->n_docks <= 0 )
 		return -1;
 
-	for (i = index_to_start_at; i < pm->n_docks; i++ ) {
+	// look for a dockpoint of this type
+	for (i = index_to_start_at; i < pm->n_docks; i++ )
+	{
 		if ( dock_type & pm->docking_bays[i].type_flags )
 			return i;
 	}
 
+	// if we get here, type wasn't found -- return -1 and hope for the best
+	return -1;
+}
+
+// function to return an index into the docking_bays array which matches the string passed
+// Fred uses strings to identify docking positions.  This functin also accepts generic strings
+// so that a desginer doesn't have to know exact names if building a mission from hand.
+int model_find_dock_name_index( int modelnum, char *name )
+{
+	int i;
+	polymodel *pm;
+
+	// get model and make sure it has dockpoints
+	pm = model_get(modelnum);
+	if ( pm->n_docks <= 0 )
+		return -1;
+
+	// check the generic names and call previous function to find first dock point of
+	// the specified type
+	if ( !stricmp(name, "cargo") )
+		return model_find_dock_index( modelnum, DOCK_TYPE_CARGO );
+	else if (!stricmp( name, "rearm") )
+		return model_find_dock_index( modelnum, DOCK_TYPE_REARM );
+	else if (!stricmp( name, "generic") )
+		return model_find_dock_index( modelnum, DOCK_TYPE_GENERIC );
+
+	// look for a dockpoint with this name
+	for (i = 0; i < pm->n_docks; i++ )
+	{
+		if ( !stricmp(pm->docking_bays[i].name, name) )
+			return i;
+	}
+
+	// if we get here, name wasn't found -- return -1 and hope for the best
 	return -1;
 }
 
@@ -4455,36 +4492,6 @@ int model_get_dock_types(int modelnum)
 		type |= pm->docking_bays[i].type_flags;
 
 	return type;
-}
-
-// function to return an index into the docking_bays array which matches the string passed
-// Fred uses strings to identify docking positions.  This functin also accepts generic strings
-// so that a desginer doesn't have to know exact names if building a mission from hand.
-int model_find_dock_name_index( int modelnum, char *name )
-{
-	int i;
-	polymodel *pm;
-
-	pm = model_get(modelnum);
-	if ( pm->n_docks <= 0 )
-		return -1;
-
-	// check the generic names and call previous function to find first dock point of
-	// the specified type
-	if ( !stricmp(name, "cargo") )
-		return model_find_dock_index( modelnum, DOCK_TYPE_CARGO );
-	else if (!stricmp( name, "rearm") )
-		return model_find_dock_index( modelnum, DOCK_TYPE_REARM );
-	else if (!stricmp( name, "generic") )
-		return model_find_dock_index( modelnum, DOCK_TYPE_GENERIC );
-
-	for (i = 0; i < pm->n_docks; i++ ) {
-		if ( !stricmp(pm->docking_bays[i].name, name) )
-			return i;
-	}
-
-	// if we get here, name wasn't found -- return -1 and hope for the best
-	return -1;
 }
 
 // returns the actual name of a docking point on a model, needed by Fred.
