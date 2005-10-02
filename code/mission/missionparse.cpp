@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.116 $
- * $Date: 2005-09-29 04:26:08 $
+ * $Revision: 2.117 $
+ * $Date: 2005-10-02 23:01:17 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.116  2005/09/29 04:26:08  Goober5000
+ * parse fixage
+ * --Goober5000
+ *
  * Revision 2.115  2005/09/27 08:09:13  Goober5000
  * fix debug warning
  * --Goober5000
@@ -5538,9 +5542,11 @@ void mission_parse_support_arrived( int objnum )
 		}
 	}
 
+	/* Goober5000 - this is taken care of in mission_bring_in_support_ship
 	//	MK: A bit of a hack.  If on player's team and player isn't allowed shields, don't give this ship shields.
 	if ((Player_obj->flags & OF_NO_SHIELDS) && (Player_ship->team == Ships[Objects[objnum].instance].team))
 		Objects[objnum].flags |= OF_NO_SHIELDS;
+	*/
 
 	Ships[Objects[objnum].instance].flags |= SF_WARPED_SUPPORT;
 
