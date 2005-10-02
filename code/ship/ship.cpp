@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.234 $
- * $Date: 2005-09-29 04:26:08 $
+ * $Revision: 2.235 $
+ * $Date: 2005-10-02 23:12:44 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.234  2005/09/29 04:26:08  Goober5000
+ * parse fixage
+ * --Goober5000
+ *
  * Revision 2.233  2005/09/26 06:00:59  Goober5000
  * this should fix the rest of the briefing icon bugs
  * --Goober5000
@@ -13245,6 +13249,12 @@ int is_support_allowed(object *objp)
 		return 0;
 	}
 
+	// Goober5000 - extra check to make sure this guy has a rearming dockpoint
+	if (model_find_dock_index(Ships[objp->instance].modelnum, DOCK_TYPE_REARM) < 0)
+	{
+		mprintf(("support not allowed for %s because its model lacks a rearming dockpoint\n", Ships[objp->instance].ship_name));
+		return 0;
+	}
 
 	// Goober5000 - if we got this far, we can request support
 	return 1;
