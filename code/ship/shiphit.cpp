@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-08-20 20:32:28 $
+ * $Revision: 2.52 $
+ * $Date: 2005-10-06 07:53:01 $
  * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/08/20 20:32:28  taylor
+ * Make sure to always use world pos for shockwaves in HTL mode, avoids the distance check Error()
+ *   (if someone can find a better explanation of why this one thing was different please make a better fix)
+ *
  * Revision 2.50  2005/07/24 18:33:47  taylor
  * hehehe, fix the check to allow fighter beams to count for kills
  *
@@ -1378,6 +1382,9 @@ void show_dead_message(object *ship_obj, object *other_obj)
 	if ( !MULTIPLAYER_CLIENT ){
 		shiphit_record_player_killer( other_obj, player_p );
 	}
+#else
+	// always do it for non-network builds
+	shiphit_record_player_killer( other_obj, player_p );
 #endif
 
 	// display a hud message is the guy killed isn't me (multiplayer only)
