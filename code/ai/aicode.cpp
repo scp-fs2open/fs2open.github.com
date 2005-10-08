@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.32 $
- * $Date: 2005-09-24 01:41:21 $
- * $Author: Goober5000 $
+ * $Revision: 1.33 $
+ * $Date: 2005-10-08 18:46:38 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2005/09/24 01:41:21  Goober5000
+ * this isn't needed because of is_support_allowed
+ * --Goober5000
+ *
  * Revision 1.31  2005/09/16 02:59:55  taylor
  * when a wing is departing to a bay have ships break formation when playing follow-the-leader
  *
@@ -9572,7 +9576,10 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 
 	// make sure we have a spline path to check against before going any further
 	if (pm->docking_bays[dock_index].num_spline_paths <= 0)
+	{
+		Warning(LOCATION, "No spline paths found for dock index %d");
 		return -1;
+	}
 
 	// find a path for this dockpoint (c.f. ai_return_path_num_from_dockbay)
 	path_num = pm->docking_bays[dock_index].splines[0];
@@ -9591,6 +9598,7 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 	}
 
 	// if path doesn't exist or the submodel doesn't exist or the submodel doesn't move
+	Warning(LOCATION, "Path or submodel does not exist; (path_num: %d) (n_paths: %d) (submodel:%d) (n_models: %d)", path_num, pm->n_paths, submodel, pm->n_models);
 	return -1;
 }
 
@@ -9677,6 +9685,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 
 	// Goober5000 - check if we're attached to a rotating submodel
 	int dockee_rotating_submodel = find_parent_rotating_submodel(pm1, dockee_index);
+	Assert(dockee_rotating_submodel != -1);
+	Assert(pm1->submodel[dockee_rotating_submodel].sii != NULL);
 
 	// Goober5000 - move docking points with submodels if necessary, for both docker and dockee
 	find_adjusted_dockpoint_info(&docker_p0, &docker_p1, &docker_p0_norm, docker_objp, pm0, sip0->modelnum, -1, docker_index);
