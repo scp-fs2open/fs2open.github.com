@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.235 $
- * $Date: 2005-10-02 23:12:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.236 $
+ * $Date: 2005-10-08 05:41:09 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.235  2005/10/02 23:12:44  Goober5000
+ * fixed the CTD when support is called for a ship lacking a rearming dockpoint
+ * --Goober5000
+ *
  * Revision 2.234  2005/09/29 04:26:08  Goober5000
  * parse fixage
  * --Goober5000
@@ -5145,7 +5149,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) )
 					continue;
 #endif
-				if ( (Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)) )
+				if ( (Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)) && !(Ships[Objects[so->objnum].instance].flags2 & (SF2_VANISHED)) )
 					// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 					// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
 					// Not sure how to fix this. -- Goober5000
@@ -5236,6 +5240,7 @@ void ship_vanished(object *objp)
 	if (objp->type == OBJ_SHIP)
 	{
 		ship *sp = &Ships[objp->instance];
+		sp->flags2 |= SF2_VANISHED;	//WMC - to fix ship_wing_cleanup
 
 		// demo recording
 		if(Game_mode & GM_DEMO_RECORD){

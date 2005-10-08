@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.107 $
- * $Date: 2005-09-25 05:13:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.108 $
+ * $Date: 2005-10-08 05:41:09 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2005/09/25 05:13:05  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.106  2005/09/24 07:45:31  Goober5000
  * cleaned up some more thruster stuff; honestly, the thruster code is such a
  * mess that it should probably be reverted to the retail version
@@ -993,6 +997,7 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 #define SF2_NO_BANK							(1<<7)		// Goober5000 - ship doesn't bank when turning
 #define SF2_AFFECTED_BY_GRAVITY				(1<<8)		// Goober5000 - ship affected by gravity points
 #define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<9)		// Goober5000 - switch whether subsystems are scanned
+#define SF2_VANISHED				(1<<10)		//WMC - ship has vanished, used mostly for ship_wing_cleanup
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
