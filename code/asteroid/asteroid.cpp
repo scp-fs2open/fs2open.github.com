@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-09-25 22:29:35 $
- * $Author: Kazan $
+ * $Revision: 2.28 $
+ * $Date: 2005-10-08 15:37:26 $
+ * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/09/25 22:29:35  Kazan
+ * my bad
+ *
  * Revision 2.26  2005/09/25 22:23:39  Kazan
  * correct an error
  *
@@ -413,6 +416,8 @@ asteroid_info	Asteroid_info[MAX_DEBRIS_TYPES];
 asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
 
+static int Num_debris_types;
+
 static int		Asteroid_impact_explosion_ani;
 static float	Asteroid_impact_explosion_radius;
 
@@ -485,6 +490,8 @@ void asteroid_obj_list_remove(object * obj)
 float asteroid_cap_speed(int asteroid_info_index, float speed)
 {
 	float max, double_max;
+
+	Assert( asteroid_info_index < Num_debris_types );
 
 	max = Asteroid_info[asteroid_info_index].max_speed;
 	double_max = max * 2;
@@ -784,6 +791,13 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	asteroid_info	*asip;
 //	int				pof_index;
 
+	Assert( asteroid_info_index < Num_debris_types );
+	Assert( asteroid_subtype < NUM_DEBRIS_POFS );
+
+	if ( (asteroid_info_index >= Num_debris_types) || (asteroid_subtype >= NUM_DEBRIS_POFS) ) {
+		return;
+	}
+
 	asip = &Asteroid_info[asteroid_info_index];
 
 	// pick one of MAX_ASTEROID_POFS models
@@ -795,6 +809,10 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 //		// only 1 pof for ship debris type
 //		pof_index = 0;
 //	}
+
+	if ( !strlen(asip->pof_files[asteroid_subtype]) || !stricmp(asip->pof_files[asteroid_subtype], NOX("none")) ) {
+		return;
+	}
 
 	asip->model_num[asteroid_subtype] = model_load( asip->pof_files[asteroid_subtype], 0, NULL );
 
@@ -2078,6 +2096,9 @@ extern int Num_species;
 void asteroid_parse_tbl()
 {
 	char impact_ani_file[FILESPEC_LENGTH];
+	int asteroid_tally[MAX_SPECIES+1];
+	asteroid_info *asip;
+	int i;
 
 	// open localization
 	lcl_ext_open();
@@ -2087,47 +2108,64 @@ void asteroid_parse_tbl()
 
 	required_string("#Asteroid Types");
 
-	// total we're expecting
-	int Total_asteroid_types = ((Num_species + 1) * NUM_DEBRIS_SIZES);
+	Num_debris_types = 0;
 
-	int asteroid_tally[MAX_SPECIES+1];
-	memset(asteroid_tally, 0, sizeof(int)*(MAX_SPECIES+1));
+	memset(asteroid_tally, 0, sizeof(int) * (MAX_SPECIES+1));
+	memset(Asteroid_info, 0, sizeof(asteroid_info) * MAX_DEBRIS_TYPES);
 
-	memset(Asteroid_info, 0, sizeof(asteroid_info)*MAX_DEBRIS_TYPES);
 
 	while (required_string_either("#End","$Name:"))
 	{
-		asteroid_info temp;
-		asteroid_parse_section(&temp);
+		Assert( Num_debris_types < MAX_DEBRIS_TYPES );
 
-		// check for species
-		for (int i = 0; i < Num_species; i++)
-		{
-			// species found
-			if (stristr(temp.name, Species_info[i].species_name))
-			{
-				int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
-
-				Assert(asteroid_tally[idx] < NUM_DEBRIS_SIZES);
-				if (asteroid_tally[idx] >= NUM_DEBRIS_SIZES)
-					goto asteroid_parse_tbl_continue_outer_loop;
-
-				Asteroid_info[asteroid_tally[idx]] = temp;
-				asteroid_tally[idx]++;
-				goto asteroid_parse_tbl_continue_outer_loop;
-			}
-		}
-
-		// species not found; must be generic
-		Assert(asteroid_tally[0] < NUM_DEBRIS_SIZES);
-		if (asteroid_tally[0] >= NUM_DEBRIS_SIZES)
+		if (Num_debris_types >= MAX_DEBRIS_TYPES)
 			continue;
 
-		Asteroid_info[asteroid_tally[0]] = temp;
-		asteroid_tally[0]++;
 
-asteroid_parse_tbl_continue_outer_loop:
-		/* NO-OP */ ;
+		asip = &Asteroid_info[Num_debris_types];
+
+		memset(asip, 0, sizeof(asteroid_info));
+
+		for (i = 0; i < NUM_DEBRIS_POFS; i++) {
+			asip->model_num[i] = -1;
+		}
+
+		asteroid_parse_section( asip );
+
+
+		// sanity check for debris type sizes
+		for (i = Num_species; i >= 0; i--) {
+			// generic debris type
+			if ( i == 0 ) {
+				Assert( asteroid_tally[i] < NUM_DEBRIS_SIZES );
+
+				if ( asteroid_tally[i] >= NUM_DEBRIS_SIZES ) {
+					// too many sizes specified, don't increment Num_debris_types and we'll overwrite
+					// the current entry with the next
+					break;
+				}
+
+				// we're safe to continue
+				asteroid_tally[i]++;
+				Num_debris_types++;
+				break;
+			}
+			// check for a species debris type
+			else if ( stristr(asip->name, Species_info[i-1].species_name) ) {
+				Assert( asteroid_tally[i] < NUM_DEBRIS_SIZES );
+
+				if ( asteroid_tally[i] >= NUM_DEBRIS_SIZES ) {
+					// too many sizes specified, don't increment Num_debris_types and we'll overwrite
+					// the current entry with the next
+					break;
+				}
+
+				// we're safe to continue
+				asteroid_tally[i]++;
+				Num_debris_types++;
+				break;
+			}
+		}
 	}
 
 	required_string("#End");
@@ -2152,7 +2190,7 @@ asteroid_parse_tbl_continue_outer_loop:
 	char errormsg[70 + (MAX_SPECIES * (NAME_LENGTH+1))];
 	bool species_missing = false;
 	strcpy(errormsg, "The following species are missing debris types in asteroids.tbl:\n");
-	for (int i = 0; i < Num_species; i++)
+	for (i = 0; i < Num_species; i++)
 	{
 		int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
 
@@ -2362,7 +2400,10 @@ void asteroid_page_in()
 						continue;
 					}
 				}
-				
+
+				if (asip->model_num[k] < 0)
+					continue;
+
 				asip->modelp[k] = model_get(asip->model_num[k]);
 
 				// Page in textures
