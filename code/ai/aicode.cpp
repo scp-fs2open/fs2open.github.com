@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.33 $
- * $Date: 2005-10-08 18:46:38 $
+ * $Revision: 1.34 $
+ * $Date: 2005-10-08 19:29:08 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2005/10/08 18:46:38  wmcoolmon
+ * Error checking for dock error
+ *
  * Revision 1.32  2005/09/24 01:41:21  Goober5000
  * this isn't needed because of is_support_allowed
  * --Goober5000
@@ -9685,8 +9688,6 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 
 	// Goober5000 - check if we're attached to a rotating submodel
 	int dockee_rotating_submodel = find_parent_rotating_submodel(pm1, dockee_index);
-	Assert(dockee_rotating_submodel != -1);
-	Assert(pm1->submodel[dockee_rotating_submodel].sii != NULL);
 
 	// Goober5000 - move docking points with submodels if necessary, for both docker and dockee
 	find_adjusted_dockpoint_info(&docker_p0, &docker_p1, &docker_p0_norm, docker_objp, pm0, sip0->modelnum, -1, docker_index);
@@ -9712,7 +9713,10 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		vm_vec_add(&submodel_pos, &dockee_objp->pos, &submodel_offset);
 
 		// get angular velocity of dockpoint
-		submodel_omega = pm1->submodel[dockee_rotating_submodel].sii->cur_turn_rate;
+		//WMC - hack(?) to fix bug where sii might not exist
+		if(pm1->submodel[dockee_rotating_submodel].sii != NULL) {
+			submodel_omega = pm1->submodel[dockee_rotating_submodel].sii->cur_turn_rate;
+		}
 
 		// get radius to dockpoint
 		vm_vec_avg(&dockpoint_temp, &dockee_p0, &dockee_p1);
