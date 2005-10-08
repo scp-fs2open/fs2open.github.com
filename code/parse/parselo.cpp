@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.51 $
- * $Author: Goober5000 $
- * $Date: 2005-09-30 03:19:57 $
+ * $Revision: 2.52 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-10-08 18:26:40 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/09/30 03:19:57  Goober5000
+ * parsing stuff
+ * --Goober5000
+ *
  * Revision 2.50  2005/09/29 04:26:08  Goober5000
  * parse fixage
  * --Goober5000
@@ -545,7 +549,7 @@ void error_display(int error_level, char *format, ...)
 		Error_count++;
 	}
 
-	nprintf((error_text, "%s(%i):%s: ", Current_filename, get_line_num(), error_text));
+	nprintf((error_text, "%s(line %i:%s: ", Current_filename, get_line_num(), error_text));
 
 	va_start(args, format);
 	vsprintf(buffer, format, args);
@@ -554,9 +558,9 @@ void error_display(int error_level, char *format, ...)
 
 	nprintf((error_text, "%s", buffer));
 	if(error_level == 0 || Cmdline_noparseerrors)
-		Warning(LOCATION, "%s(%i):\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
+		Warning(LOCATION, "%s(line %i:\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
 	else
-		Error(LOCATION, "%s(%i):\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
+		Error(LOCATION, "%s(line %i:\n%s: %s", Current_filename, get_line_num(), error_text, buffer);
 }
 
 //	Advance Mp to the next eoln character.
@@ -1826,7 +1830,7 @@ void stuff_float(float *f)
 	diag_printf("Stuffed float: %f\n", *f);
 }
 
-extern int stuff_float_optional(float *f)
+int stuff_float_optional(float *f)
 {
 	int skip_len;
 	bool comma = false;
