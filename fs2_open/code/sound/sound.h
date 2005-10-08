@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.11 $
- * $Date: 2005-07-13 03:35:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-08 18:25:41 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/13 03:35:29  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.10  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -245,14 +249,7 @@
 #define __SOUND_H__
 
 #include "globalincs/pstypes.h"
-/*
-#ifdef INF_BUILD
-#define MAX_SOUNDS 450
-#else
-//#define MAX_SOUNDS	256
-#define MAX_SOUNDS 512		//bumped to 512 on march 13, 2005 -WMC
-#endif
-*/
+
 // Used for keeping track which low-level sound library is being used
 #define SOUND_LIB_DIRECTSOUND		0
 #define SOUND_LIB_RSX				1
