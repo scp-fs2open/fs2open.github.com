@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.237 $
- * $Date: 2005-10-09 00:43:09 $
+ * $Revision: 2.238 $
+ * $Date: 2005-10-09 09:13:29 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.237  2005/10/09 00:43:09  wmcoolmon
+ * Extendable modular tables (XMTs); added weapon dialogs to the Lab
+ *
  * Revision 2.236  2005/10/08 05:41:09  wmcoolmon
  * Fix Int3() from ship-vanish
  *
@@ -2118,6 +2121,9 @@ void init_ship_entry(int ship_info_index)
 	sip->forward_decel = 0.0f;
 	sip->slide_accel = 0.0f;
 	sip->slide_decel = 0.0f;
+
+	sip->warpin_speed = 0.0f;
+	sip->warpout_speed = 0.0f;
 	
 	sip->inner_rad = 0.0f;
 	sip->outer_rad = 0.0f;
@@ -2477,6 +2483,22 @@ int parse_ship(bool replace)
 
 	if(optional_string("$Slide decel:"))
 		stuff_float(&sip->slide_decel );
+
+	if(optional_string("$Warpin speed:"))
+	{
+		stuff_float(&sip->warpin_speed);
+		if(sip->warpin_speed == 0.0f) {
+			Warning(LOCATION, "Warp-in speed cannot be 0; value ignored.");
+		}
+	}
+
+	if(optional_string("$Warpout speed:"))
+	{
+		stuff_float(&sip->warpout_speed);
+		if(sip->warpin_speed == 0.0f) {
+			Warning(LOCATION, "Warp-out speed cannot be 0; value ignored.");
+		}
+	}
 
 	// get ship explosion info
 	if(optional_string("$Expl inner rad:")){
@@ -13894,12 +13916,12 @@ float ship_get_max_speed(ship *shipp)
 	return max_speed;
 }
 
-// determin warp speed of ship
-float ship_get_warp_speed(object *objp)
+// determin warpout speed of ship
+float ship_get_warpout_speed(object *objp)
 {
 	Assert(objp->type == OBJ_SHIP);
 
-	return shipfx_calculate_warp_dist(objp) / shipfx_calculate_warp_time(objp);
+	return shipfx_calculate_warp_dist(objp) / shipfx_calculate_warp_time(objp, WT_WARP_OUT);
 }
 
 // returns true if ship is beginning to speed up in warpout 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-09-21 03:55:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2005-10-09 09:13:29 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/09/21 03:55:31  Goober5000
+ * add option for warp flash; mess with the cmdlines a bit
+ * --Goober5000
+ *
  * Revision 2.48  2005/08/25 22:40:04  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -855,9 +859,17 @@ static float shipfx_calculate_effect_radius( object *objp )
 #define SMALLEST_RAD 15.0f
 #define SMALLEST_RAD_TIME 1.5f
 
-
-float shipfx_calculate_warp_time(object *objp)
+float shipfx_calculate_warp_time(object *objp, int warp_type)
 {
+	if(objp->type == OBJ_SHIP)
+	{
+		ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+		if(warp_type == WT_WARP_IN && sip->warpin_speed != 0.0f) {
+			return ship_get_length(&Ships[objp->instance])/sip->warpin_speed;
+		} else if(warp_type == WT_WARP_OUT && sip->warpout_speed != 0.0f) {
+			return ship_get_length(&Ships[objp->instance])/sip->warpout_speed;
+		}
+	}
 	// Find rad_percent from 0 to 1, 0 being smallest ship, 1 being largest
 	float rad_percent = (objp->radius-SMALLEST_RAD) / (LARGEST_RAD-SMALLEST_RAD);
 	if ( rad_percent < 0.0f ) {
@@ -963,7 +975,7 @@ void shipfx_warpin_start( object *objp )
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
-		effect_time = shipfx_calculate_warp_time(objp) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
+		effect_time = shipfx_calculate_warp_time(objp, WT_WARP_IN) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
 		effect_radius = shipfx_calculate_effect_radius(objp);
 
 		// maybe special warpin
@@ -1011,7 +1023,7 @@ void shipfx_warpin_frame( object *objp, float frametime )
 			shipp->flags &= (~SF_ARRIVING_STAGE_1);
 			shipp->flags |= SF_ARRIVING_STAGE_2;
 
-			float warp_time = shipfx_calculate_warp_time(objp);
+			float warp_time = shipfx_calculate_warp_time(objp, WT_WARP_IN);
 			float speed = shipfx_calculate_warp_dist(objp) / warp_time;		// How long it takes to move through warp effect
 
 			// Make ship move at velocity so that it moves two radii in warp_time seconds.
@@ -1146,7 +1158,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	}
 	
 	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
-	*warp_time = shipfx_calculate_warp_time(objp);
+	*warp_time = shipfx_calculate_warp_time(objp, WT_WARP_OUT);
 
 	// Calculate speed to fly through
 	*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
@@ -1176,7 +1188,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 
 
 	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
-	*warp_time = shipfx_calculate_warp_time(objp);
+	*warp_time = shipfx_calculate_warp_time(objp, WT_WARP_OUT);
 
 	// Pick some speed at which we want to go through the warp effect.  
 	*speed = shipfx_calculate_warp_dist(objp) / *warp_time;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-09-25 08:25:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-10-09 09:13:29 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/09/25 08:25:14  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/12 21:10:57  Goober5000
  * fixed "warpout sequence aborted" bug
  * --Goober5000
@@ -1854,7 +1858,7 @@ int collide_ship_ship( obj_pair * pair )
 
 		// get shipA max speed
 		if (ship_is_beginning_warpout_speedup(A)) {
-			shipA_max_speed = MAX(ship_get_max_speed(&Ships[A->instance]), ship_get_warp_speed(A));
+			shipA_max_speed = MAX(ship_get_max_speed(&Ships[A->instance]), ship_get_warpout_speed(A));
 		} else {
 			shipA_max_speed = ship_get_max_speed(&Ships[A->instance]);
 		}
@@ -1865,7 +1869,7 @@ int collide_ship_ship( obj_pair * pair )
 
 		// get shipB max speed
 		if (ship_is_beginning_warpout_speedup(B)) {
-			shipB_max_speed = MAX(ship_get_max_speed(&Ships[B->instance]), ship_get_warp_speed(B));
+			shipB_max_speed = MAX(ship_get_max_speed(&Ships[B->instance]), ship_get_warpout_speed(B));
 		} else {
 			shipB_max_speed = ship_get_max_speed(&Ships[B->instance]);
 		}

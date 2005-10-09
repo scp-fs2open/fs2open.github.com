@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.8 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-10-09 09:13:29 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.7  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -284,7 +288,9 @@ void shipfx_start_cloak(ship *shipp, int warmup = 5000, int recalc_transform = 0
 void shipfx_stop_cloak(ship *shipp, int warpdown = 5000);
 float shipfx_calc_visibility(object *obj, vec3d *view_pt);
 
-float shipfx_calculate_warp_time(object *objp);
+#define WT_WARP_IN	0
+#define WT_WARP_OUT	1
+float shipfx_calculate_warp_time(object *objp, int warp_type);
 float shipfx_calculate_warp_dist(object *objp);
 
 
