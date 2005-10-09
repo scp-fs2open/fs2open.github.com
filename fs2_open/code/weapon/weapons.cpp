@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2005/09/29 04:26:09  Goober5000
+ * parse fixage
+ * --Goober5000
+ *
  * Revision 2.129  2005/09/11 03:50:42  phreak
  * sort_weapons_by_type() now also subsorts primaries by whether its supposed to only
  * be used on big ships or not.
@@ -458,7 +462,7 @@
  * Revision 2.2  2002/10/19 19:29:29  bobboau
  * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  * Revision 2.1.2.2  2002/09/28 22:13:43  randomtiger
- * Sorted out some bits and pieces. The background nebula blends now which is nice. – RT
+ * Sorted out some bits and pieces. The background nebula blends now which is nice.  RT
  *
  * Revision 2.1.2.1  2002/09/24 18:56:46  randomtiger
  * DX8 branch commit
@@ -863,6 +867,14 @@ int Num_tertiary_weapon_types=0;
 missile_obj Missile_objs[MAX_MISSILE_OBJS];	// array used to store missile object indexes
 missile_obj Missile_obj_list;						// head of linked list of missile_obj structs
 
+//WEAPON SUBTYPE STUFF
+char *Weapon_subtype_names[] = {
+	"Laser",
+	"Missile",
+	"Beam"
+};
+int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
+
 
 // WEAPON EXPLOSION INFO
 #define MAX_weapon_expl_lod						4
@@ -901,14 +913,8 @@ int     First_secondary_index = -1;
 extern int Cmdline_load_only_used;
 static int *used_weapons = NULL;
 
-#ifdef INF_BUILD
-#define MAX_SPAWN_WEAPONS	30
-#else
-#define	MAX_SPAWN_WEAPONS	10			//	Up to 10 weapons can spawn weapons.
-#endif
-
-int	Num_spawn_types;
-char	Spawn_names[MAX_SPAWN_WEAPONS][NAME_LENGTH];
+int	Num_spawn_types = 0;
+char	(*Spawn_namez)[NAME_LENGTH];
 
 int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
 int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
@@ -1123,18 +1129,27 @@ int weapon_info_lookup(char *name)
 //	Parse the weapon flags.
 void parse_wi_flags(weapon_info *weaponp)
 {
+	//Make sure we HAVE flags :p
+	if(!optional_string("$Flags:"))
+		return;
+
 	char	weapon_strings[MAX_WEAPON_FLAGS][NAME_LENGTH];
 	int	num_strings;
-
-	required_string("$Flags:");
 
 	num_strings = stuff_string_list(weapon_strings, MAX_WEAPON_FLAGS);
 	
 	for (int i=0; i<num_strings; i++) {
 		if (!stricmp(NOX("Electronics"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_ELECTRONICS;		
-		else if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5)) {
-			if (weaponp->spawn_type == -1) {
+		else if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
+		{
+			if (weaponp->spawn_type == -1)
+			{
+				//We need more spawning slots
+				//allocate in slots of 10
+				if((Num_spawn_types % 10) == 0) {
+					Spawn_namez = (char (*)[32])vm_realloc(Spawn_namez, Num_spawn_types+10);
+				}
 				int	skip_length, name_length;
 				char	*temp_string;
 
@@ -1152,8 +1167,8 @@ void parse_wi_flags(weapon_info *weaponp)
 					name_length = num_start - temp_string - skip_length;
 				}
 
-				strncpy(Spawn_names[Num_spawn_types++], &(weapon_strings[i][skip_length]), name_length);
-				Assert(Num_spawn_types < MAX_SPAWN_WEAPONS);
+				strncpy(Spawn_namez[i], &(weapon_strings[i][skip_length]), name_length);
+				Num_spawn_types++;
 			} else {
 				Warning(LOCATION, "Illegal to have two spawn types for one weapon.\nIgnoring weapon %s", weaponp->name);
 			}
@@ -1271,6 +1286,197 @@ void parse_wi_flags(weapon_info *weaponp)
 
 }
 
+void init_weapon_entry(int weap_info_index)
+{
+	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
+	weapon_info *wip = &Weapon_info[weap_info_index];
+	
+	wip->wi_flags = WIF_DEFAULT_VALUE;
+	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
+	
+	wip->subtype = WP_UNUSED;
+	
+	wip->title[0] = 0;
+	wip->desc = NULL;
+	wip->tech_title[0] = 0;
+	wip->tech_anim_filename[0] = 0;
+	wip->tech_desc = NULL;
+	
+	wip->tech_model[0] = '\0';
+	
+	wip->hud_filename[0] = '\0';
+	wip->hud_image_index = -1;
+	
+	wip->pofbitmap_name[0] = '\0';
+	
+	wip->external_model_name[0] = '\0';
+	wip->external_model_num = -1;
+	
+	wip->weapon_submodel_rotate_accell = 10.0f;
+	wip->weapon_submodel_rotate_vel = 0.0f;
+	
+	wip->mass = 1.0f;
+	wip->max_speed = 10.0f;
+	wip->fire_wait = 1.0f;
+	wip->damage = 0.0f;
+	
+	wip->damage_type_idx = -1;
+	
+	wip->blast_force = 0;
+	wip->inner_radius = 0;
+	wip->outer_radius = 0;
+	
+	wip->shockwave_speed = 0;
+	wip->shockwave_model = -1;
+	wip->shockwave_pof_name[0] = '\0';
+	wip->shockwave_info_index = -1;
+	wip->shockwave_name[0] = '\0';
+	
+	wip->armor_factor = 1.0f;
+	wip->shield_factor = 1.0f;
+	wip->subsystem_factor = 1.0f;
+	
+	wip->lifetime = 1.0f;
+	wip->energy_consumed = 0.0f;
+
+	wip->cargo_size = 1.0f;
+	
+	wip->turn_time = 1.0f;
+	wip->fov = PI;
+	
+	wip->min_lock_time = 0.0f;
+	wip->lock_pixels_per_sec = 50;
+	wip->catchup_pixels_per_sec = 50;
+	wip->catchup_pixel_penalty = 50;
+	
+	wip->swarm_count = -1;
+	// *Default is 150  -Et1
+	wip->SwarmWait = SWARM_MISSILE_DELAY;
+	
+	wip->launch_snd = -1;
+	wip->impact_snd = -1;
+	wip->flyby_snd = -1;
+	
+	wip->rearm_rate = 1.0f;
+	
+	wip->weapon_range = 999999999.9f;
+	// *Mï¿½imum weapon range, default is 0 -Et1
+	wip->WeaponMinRange = 0.0f;
+	wip->spawn_type = -1;
+	
+	//Trails
+	trail_info *ti = &wip->tr_info;
+	memset(ti, 0, sizeof(trail_info));
+	ti->w_start = 1.0f;
+	ti->w_end = 1.0f;
+	ti->a_start = 1.0f;
+	ti->a_end = 1.0f;
+	ti->max_life = 1.0f;
+	ti->bitmap = -1;
+
+	wip->icon_filename[0] = 0;
+
+	wip->anim_filename[0] = 0;
+
+	wip->impact_explosion_radius = 1.0f;
+	wip->impact_weapon_expl_index = -1;
+
+	wip->muzzle_flash = -1;
+
+	wip->emp_intensity = EMP_DEFAULT_INTENSITY;
+	wip->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
+	wip->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
+	wip->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
+
+	wip->cs_num_fired=4;
+	wip->cs_radius=1.25f;
+	wip->cs_delay=30;
+	wip->cs_crotate=1;
+	wip->cs_twist=5.0f;
+	
+	wip->elec_intensity=1.0f;
+	wip->elec_time=6000;
+	wip->elec_eng_mult=1.0f;
+	wip->elec_weap_mult=1.0f;
+	wip->elec_beam_mult=1.0f;
+	wip->elec_sensors_mult=1.0f;
+	wip->elec_randomness=4000;
+	wip->elec_use_new_style=0;
+	
+	wip->spawn_angle = 180;
+	
+	wip->lssm_warpout_delay=0;			//delay between launch and warpout (ms)
+	wip->lssm_warpin_delay=0;			//delay between warpout and warpin (ms)
+	wip->lssm_stage5_vel=0;		//velocity during final stage
+	wip->lssm_warpin_radius=0;
+	wip->lssm_lock_range=1000000.0f;	//local ssm lock range (optional)
+	
+	wip->b_info.beam_type = -1;
+	wip->b_info.beam_life = -1.0f;
+	wip->b_info.beam_warmup = -1;
+	wip->b_info.beam_warmdown = -1;
+	wip->b_info.beam_muzzle_radius = 0.0f;
+	wip->b_info.beam_particle_count = -1;
+	wip->b_info.beam_particle_radius = 0.0f;
+	wip->b_info.beam_particle_angle = 0.0f;
+	wip->b_info.beam_particle_ani = -1;
+	for(int i = 0; i < NUM_SKILL_LEVELS; i++)
+	{
+		wip->b_info.beam_miss_factor[i] = 0.00001f;
+	}
+	wip->b_info.beam_loop_sound = -1;
+	wip->b_info.beam_warmup_sound = -1;
+	wip->b_info.beam_warmdown_sound = -1;
+	wip->b_info.beam_num_sections = 0;
+	wip->b_info.beam_glow_bitmap = -1;
+	wip->b_info.beam_glow_nframes = 1;
+	wip->b_info.beam_glow_fps = 0;
+	wip->b_info.beam_shots = 0;
+	wip->b_info.beam_shrink_factor = 0.0f;
+	wip->b_info.beam_shrink_pct = 0.0f;
+	wip->b_info.range = BEAM_FAR_LENGTH;
+	wip->b_info.damage_threshold = 1.0f;
+	
+	//WMC - realized this isn't needed
+	/*beam_weapon_section_info *bsip;
+	for(i = 0; i < MAX_BEAM_SECTIONS;i++)
+	{
+		bsip = &wip->b_info.sections[i];
+		bsip->texture = -1;
+		bsip->nframes = 1;
+		bsip->fps = 1;
+		bsip->flicker = 0.1f;
+		bsip->zadd = 2.0f;
+		bsip->tile_type = 0;
+		bsip->tile_factor = 1.0f;
+		bsip->translation = 0.0f;
+	}*/
+
+	wip->Weapon_particle_spew_count = 1;
+	wip->Weapon_particle_spew_time = 25;
+	wip->Weapon_particle_spew_vel = 0.4f;
+	wip->Weapon_particle_spew_radius = 2.0f;
+	wip->Weapon_particle_spew_lifetime = 0.15f;
+	wip->Weapon_particle_spew_scale = 0.8f;
+	wip->Weapon_particle_spew_bitmap = -1;
+	
+	wip->tag_level = -1;
+	wip->tag_time = -1.0f;
+	
+	wip->SSM_index =-1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
+	
+	wip->field_of_fire = 0.0f;
+	
+	wip->shots = 1;
+	
+	wip->decal_texture = -1;
+	wip->decal_glow_texture = -1;
+	wip->decal_burn_texture = -1;
+	wip->decal_backface_texture = -1;
+	wip->decal_rad = -1;
+	wip->decal_burn_time = 1000;
+}
+
 // function to parse the information for a specific weapon type.	
 // return 0 if successful, otherwise return -1
 #define WEAPONS_MULTITEXT_LENGTH 2048
@@ -1278,130 +1484,139 @@ void parse_wi_flags(weapon_info *weaponp)
 int parse_weapon(int subtype, bool replace)
 {
 	char buf[WEAPONS_MULTITEXT_LENGTH];
-	weapon_info *wip;
+	weapon_info *wip = NULL;
 	char fname[255] = "";
 	int idx;
-	int primary_rearm_rate_specified;
-
-	wip = &Weapon_info[Num_weapon_types];
-
-	wip->wi_flags = WIF_DEFAULT_VALUE;
-	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
+	int primary_rearm_rate_specified=0;
+	bool first_time = false;
+	bool create_if_not_found  = true;
 
 	required_string("$Name:");
-	stuff_string(wip->name, F_NAME, NULL);
-	diag_printf ("Weapon name -- %s\n", wip->name);
+	stuff_string(fname, F_NAME, NULL);
+	diag_printf ("Weapon name -- %s\n", fname);
+
+	if(optional_string("+nocreate")) {
+		if(!replace) {
+			Warning(LOCATION, "+nocreate flag used for weapon in non-modular table");
+		}
+		create_if_not_found = false;
+	}
 
 	strcpy(parse_error_text, "");
 	strcpy(parse_error_text, "\nin weapon: ");
-	strcat(parse_error_text, wip->name);
-	// AL 28-3-98: If this is a demo build, we only want to parse weapons that are preceded with
-	//             the '@' symbol
-	// WMC 27-4-05: No need now. :)
-/*	#ifdef DEMO // not needed FS2_DEMO (separate table file)
-		if ( wip->name[0] != '@' ) {
-			// advance to next weapon, and return -1
+	strcat(parse_error_text, fname);
 
-			if ( skip_to_start_of_string_either("$Name:", "#End") != 1 ) {
+	//Remove @ symbol
+	//these used to be used to denote weapons that would
+	//only be parsed in demo builds
+	if ( fname[0] == '@' ) {
+		backspace(fname);
+	}
+
+	int w_id = weapon_name_lookup(fname);
+
+	if(w_id != -1)
+	{
+		wip = &Weapon_info[w_id];
+		if(!replace)
+		{
+			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", wip->name);
+			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
 			return -1;
 		}
-	#endif
-*/
-
-	if ( wip->name[0] == '@' ) {
-		char old_name[NAME_LENGTH];
-		strcpy(old_name, wip->name);
-		strcpy(wip->name, old_name+1);
 	}
-
-	int w_id = weapon_name_lookup(wip->name);
-	if(w_id != -1)
+	else
 	{
-		if(replace)
+		//Don't create weapon if it has +nocreate and is in a modular table.
+		if(!create_if_not_found && replace)
 		{
-			wip = &Weapon_info[w_id];
+			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+				Int3();
+			}
 		}
-		else
-		{
-			nprintf(("Warning", "Error: Weapon %s already exists. Weapon names should be unique.", wip->name));
+
+		if(Num_weapon_types >= MAX_WEAPON_TYPES) {
+			Warning(LOCATION, "Too many weapon classes; maximum is %d, so only the first %d will be used", MAX_WEAPON_TYPES, Num_weapon_types);
+			
+			//Skip the rest of the ships in non-modular tables, since we can't add them.
+			if(!replace) {
+				while(skip_to_start_of_string_either("$Name:", "#End"));
+			}
+			return -1;
+		}
+
+		wip = &Weapon_info[Num_weapon_types];
+		init_weapon_entry(Num_weapon_types);
+		first_time = true;
+		
+		strcpy(wip->name, fname);
+		Num_weapon_types++;
+	}
+	//Set subtype
+	if(wip->subtype != WP_UNUSED && !first_time)
+	{
+		if(wip->subtype != subtype) {
+			Warning(LOCATION, "Type of weapon %s entry does not agree with original entry type.", wip->name);
 		}
 	}
 	else
 	{
-		Num_weapon_types++;
+		wip->subtype = subtype;
 	}
-	//Set subtype
-	wip->subtype = subtype;
 
-	wip->title[0] = 0;
 	if (optional_string("+Title:")) {
 		stuff_string(wip->title, F_NAME, NULL, WEAPON_TITLE_LEN);
 	}
 
-	wip->desc = NULL;
 	if (optional_string("+Description:")) {
-		stuff_string(buf, F_MULTITEXT, NULL);
-		wip->desc = vm_strdup(buf);
+		stuff_malloc_string(&wip->desc, F_MULTITEXT);
 	}
 
-	wip->tech_title[0] = 0;
 	if (optional_string("+Tech Title:")) {
 		stuff_string(wip->tech_title, F_NAME, NULL, NAME_LENGTH);
 	}
 
-	wip->tech_anim_filename[0] = 0;
 	if (optional_string("+Tech Anim:")) {
 		stuff_string(wip->tech_anim_filename, F_NAME, NULL, NAME_LENGTH);
 	}
 
-	wip->tech_desc = NULL;
 	if (optional_string("+Tech Description:")) {
-		stuff_string(buf, F_MULTITEXT, NULL, WEAPONS_MULTITEXT_LENGTH);
-		wip->tech_desc = vm_strdup(buf);
+		stuff_malloc_string(&wip->tech_desc, F_MULTITEXT);
+//		stuff_string(buf, F_MULTITEXT, NULL, WEAPONS_MULTITEXT_LENGTH);
+//		wip->tech_desc = vm_strdup(buf);
 	}
 
-	if(optional_string("$Tech Model:"))
+	if(optional_string("$Tech Model:")) {
 		stuff_string(wip->tech_model, F_NAME, NULL);
-	else
-		wip->tech_model[0] = '\0';
+	}
+		
 
 	//Check for the HUD image string
-	if(optional_string("$HUD Image:"))
-	{
+	if(optional_string("$HUD Image:")) {
 		stuff_string(wip->hud_filename, F_NAME, NULL);
 	}
-	else
-	{
-		wip->hud_filename[0] = '\0';
-	}
-	wip->hud_image_index = -1;
 
 	//	Read the model file.  It can be a POF file or none.
 	//	If there is no model file (Model file: = "none") then we use our special
 	//	laser renderer which requires inner, middle and outer information.
-	required_string("$Model file:");
-	stuff_string(wip->pofbitmap_name, F_NAME, NULL);
-	diag_printf ("Model pof file -- %s\n", wip->pofbitmap_name );
+	if(optional_string("$Model file:")) {
+		stuff_string(wip->pofbitmap_name, F_NAME, NULL);
+		diag_printf ("Model pof file -- %s\n", wip->pofbitmap_name );
+	}
 
-		if (optional_string("$External Model File:")) {
-			stuff_string(wip->external_model_name, F_NAME, NULL);	
-		}else{
-			strcpy(wip->external_model_name,"");
-		}
-		wip->external_model_num = -1;
-
-	wip->weapon_submodel_rotate_accell = 10.0f;
-	wip->weapon_submodel_rotate_vel = 0.0f;
+	if (optional_string("$External Model File:")) {
+		stuff_string(wip->external_model_name, F_NAME, NULL);	
+	}
 
 	if (optional_string("$Submodel Rotation Speed:"))
 		stuff_float(&wip->weapon_submodel_rotate_vel);
 	if (optional_string("$Submodel Rotation Acceleration:"))
 		stuff_float(&wip->weapon_submodel_rotate_accell);
 
-	if ( stricmp(wip->pofbitmap_name, NOX("none")) ) {
-		wip->model_num = -1;				
+	if ( stricmp(wip->pofbitmap_name, NOX("none")) && strlen(wip->pofbitmap_name)) {
+		wip->model_num = -1;
 		wip->render_type = WRT_POF;
 		wip->laser_bitmap = -1;
 	} else {
@@ -1488,205 +1703,197 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&wip->laser_tail_radius );
 	}
 
-	required_string("$Mass:");
-	stuff_float( &(wip->mass) );
-	diag_printf ("Weapon mass -- %7.3f\n", wip->mass);
+	if(optional_string("$Mass:")) {
+		stuff_float( &(wip->mass) );
+		diag_printf ("Weapon mass -- %7.3f\n", wip->mass);
+	}
 
-	required_string("$Velocity:");
-	stuff_float( &(wip->max_speed) );
-	diag_printf ("Weapon mass -- %7.3f\n", wip->max_speed);
+	if(optional_string("$Velocity:")) {
+		stuff_float( &(wip->max_speed) );
+		diag_printf ("Weapon mass -- %7.3f\n", wip->max_speed);
+	}
 
-	required_string("$Fire Wait:");
-	stuff_float( &(wip->fire_wait) );
-	diag_printf ("Weapon fire wait -- %7.3f\n", wip->fire_wait);
+	if(optional_string("$Fire Wait:")) {
+		stuff_float( &(wip->fire_wait) );
+		diag_printf ("Weapon fire wait -- %7.3f\n", wip->fire_wait);
+	}
 
-	required_string("$Damage:");
-	stuff_float(&wip->damage);
+	if(optional_string("$Damage:")) {
+		stuff_float(&wip->damage);
+	}
 	
-	wip->damage_type_idx = -1;
-	if(optional_string("$Damage Type:"))
-	{
+	if(optional_string("$Damage Type:")) {
+		//This is checked for validity on every armor type
+		//If it's invalid (or -1), then armor has no effect
 		stuff_string(buf, F_NAME, NULL);
 		wip->damage_type_idx = damage_type_add(buf);
 	}
-	//This is checked for validity on every armor type
-	//If it's invalid (or -1), then armor has no effect
 
 	// secondary weapons require these values
-	wip->blast_force = 0;
-	wip->inner_radius = 0;
-	wip->outer_radius = 0;
-	wip->shockwave_speed = 0;
-	if (subtype == WP_MISSILE) {
-		required_string("$Blast Force:");
+	// for primary weapons they're optional
+	//Made them all optional for modular tables -C
+	if(optional_string("$Blast Force:")){
 		stuff_float( &(wip->blast_force) );
 		diag_printf ("Weapon blast force -- %7.3f\n", wip->blast_force);
+	}
 
-		required_string("$Inner Radius:");
+	if(optional_string("$Inner Radius:")){
 		stuff_float( &(wip->inner_radius) );
 		if ( wip->inner_radius != 0 ) {
 			wip->wi_flags |= WIF_AREA_EFFECT;
 		}
 		diag_printf ("Weapon inner blast radius -- %7.3f\n", wip->inner_radius);
+	}
 
-		required_string("$Outer Radius:");
+	if(optional_string("$Outer Radius:")){
 		stuff_float( &(wip->outer_radius) );
 		if ( wip->outer_radius != 0 ) {
 			wip->wi_flags |= WIF_AREA_EFFECT;
 		}
 		diag_printf ("Weapon outer blast radius -- %7.3f\n", wip->outer_radius);
+	}
 
-		required_string("$Shockwave Speed:");
+	if(optional_string("$Shockwave Speed:")){
 		stuff_float( &(wip->shockwave_speed) );
 		if ( wip->shockwave_speed != 0 ) {
 			wip->wi_flags |= WIF_SHOCKWAVE;
 		}
 		diag_printf ("Shockwave speed -- %7.3f\n", wip->shockwave_speed);
-	} 
-	// for primary weapons they're optional
-	else {
-		if(optional_string("$Blast Force:")){
-			stuff_float( &(wip->blast_force) );
-			diag_printf ("Weapon blast force -- %7.3f\n", wip->blast_force);
-		}
-
-		if(optional_string("$Inner Radius:")){
-			stuff_float( &(wip->inner_radius) );
-			if ( wip->inner_radius != 0 ) {
-				wip->wi_flags |= WIF_AREA_EFFECT;
-			}
-			diag_printf ("Weapon inner blast radius -- %7.3f\n", wip->inner_radius);
-		}
-
-		if(optional_string("$Outer Radius:")){
-			stuff_float( &(wip->outer_radius) );
-			if ( wip->outer_radius != 0 ) {
-				wip->wi_flags |= WIF_AREA_EFFECT;
-			}
-			diag_printf ("Weapon outer blast radius -- %7.3f\n", wip->outer_radius);
-		}
-
-		if(optional_string("$Shockwave Speed:")){
-			stuff_float( &(wip->shockwave_speed) );
-			if ( wip->shockwave_speed != 0 ) {
-				wip->wi_flags |= WIF_SHOCKWAVE;
-			}
-			diag_printf ("Shockwave speed -- %7.3f\n", wip->shockwave_speed);
-		}
 	}
-	wip->shockwave_model = -1;
-	strcpy(wip->shockwave_pof_name,"");
+	//End prim/second fiasco
+	
 	if(optional_string("$Shockwave Model:")){
 		stuff_string( wip->shockwave_pof_name, F_NAME, NULL);
 	}
 	
-	wip->shockwave_info_index = -1;
-	strcpy(wip->shockwave_name,"");
 	if(optional_string("$Shockwave name:")) {
 		stuff_string( wip->shockwave_name, F_NAME, NULL);
 	}
 
-	required_string("$Armor Factor:");
-	stuff_float(&wip->armor_factor);
+	if(optional_string("$Armor Factor:")) {
+		stuff_float(&wip->armor_factor);
+	}
 
-	required_string("$Shield Factor:");
-	stuff_float(&wip->shield_factor);
+	if(optional_string("$Shield Factor:")) {
+		stuff_float(&wip->shield_factor);
+	}
 
-	required_string("$Subsystem Factor:");
-	stuff_float(&wip->subsystem_factor);
+	if(optional_string("$Subsystem Factor:")) {
+		stuff_float(&wip->subsystem_factor);
+	}
 
-	required_string("$Lifetime:");
-	stuff_float(&wip->lifetime);
+	if(optional_string("$Lifetime:")) {
+		stuff_float(&wip->lifetime);
+	}
 
-	required_string("$Energy Consumed:");
-	stuff_float(&wip->energy_consumed);
+	if(optional_string("$Energy Consumed:")) {
+		stuff_float(&wip->energy_consumed);
+	}
 
 	// Goober5000: cargo size is checked for div-0 errors... see below (must parse flags first)
-	required_string("$Cargo Size:");
-	stuff_float(&wip->cargo_size);
+	if(optional_string("$Cargo Size:"))
+	{
+		stuff_float(&wip->cargo_size);
+	}
 
-	int is_homing=0;
-	required_string("$Homing:");
-	stuff_boolean(&is_homing);
+	bool is_homing=false;
+	if(optional_string("$Homing:")) {
+		stuff_boolean(&is_homing);
+	}
 
-	if (is_homing == 1) {
+	if (is_homing || (wip->wi_flags & WIF_HOMING))
+	{
 		char	temp_type[128];
 
 		// the following five items only need to be recorded if the weapon is a homing weapon
-		required_string("+Type:");
-		stuff_string(temp_type, F_NAME, NULL);
+		if(optional_string("+Type:"))
+		{
+			stuff_string(temp_type, F_NAME, NULL);
+			if (!stricmp(temp_type, NOX("HEAT")))
+			{
+				if(wip->wi_flags & WIF_HOMING_ASPECT) {
+					wip->wi_flags &= ~WIF_HOMING_ASPECT;
+				}
+				
+				wip->wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
+			}
+			else if (!stricmp(temp_type, NOX("ASPECT")))
+			{
+				if(wip->wi_flags & WIF_HOMING_HEAT) {
+					wip->wi_flags &= ~WIF_HOMING_HEAT;
+				}
+				
+				wip->wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
+			}
+			//If you want to add another weapon, remember you need to reset
+			//ALL homing flags.
+		}
 
-		if (!stricmp(temp_type, NOX("HEAT"))) {
+		if (wip->wi_flags & WIF_HOMING_HEAT)
+		{
 			float	view_cone_angle;
 
-			wip->wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
+			if(optional_string("+Turn Time:")) {
+				stuff_float(&wip->turn_time);
+			}
 
-			required_string("+Turn Time:");			
-			stuff_float(&wip->turn_time);
+			if(optional_string("+View Cone:")) {
+				stuff_float(&view_cone_angle);
+				wip->fov = (float)cos((float)(ANG_TO_RAD(view_cone_angle/2.0f)));
+			}
+		}
+		else if (wip->wi_flags & WIF_HOMING_ASPECT)
+		{
+			if(optional_string("+Turn Time:")) {
+				stuff_float(&wip->turn_time);
+			}
 
-			required_string("+View Cone:");
-			stuff_float(&view_cone_angle);
+			if(optional_string("+Min Lock Time:")) {			// minimum time (in seconds) to achieve lock
+				stuff_float(&wip->min_lock_time);
+			}
 
-			wip->fov = (float)cos((float)(ANG_TO_RAD(view_cone_angle/2.0f)));
+			if(optional_string("+Lock Pixels/Sec:")) {		// pixels/sec moved while locking
+				stuff_int(&wip->lock_pixels_per_sec);
+			}
 
-		} else if (!stricmp(temp_type, NOX("ASPECT"))) {
-			wip->wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
+			if(optional_string("+Catch-up Pixels/Sec:")) {	// pixels/sec moved while catching-up for a lock
+				stuff_int(&wip->catchup_pixels_per_sec);
+			}
 
-			required_string("+Turn Time:");			
-			stuff_float(&wip->turn_time);
-
-			required_string("+Min Lock Time:");			// minimum time (in seconds) to achieve lock
-			stuff_float(&wip->min_lock_time);
-
-			required_string("+Lock Pixels/Sec:");		// pixels/sec moved while locking
-			stuff_int(&wip->lock_pixels_per_sec);
-
-			required_string("+Catch-up Pixels/Sec:");	// pixels/sec moved while catching-up for a lock
-			stuff_int(&wip->catchup_pixels_per_sec);
-
-			required_string("+Catch-up Penalty:");		// number of extra pixels to move while locking as a penalty for catching up for a lock
-			stuff_int(&wip->catchup_pixel_penalty);
-		} else
+			if(optional_string("+Catch-up Penalty:")) {
+				// number of extra pixels to move while locking as a penalty for catching up for a lock
+				stuff_int(&wip->catchup_pixel_penalty);
+			}
+		}
+		else
+		{
 			Error(LOCATION, "Illegal homing type = %s.\nMust be HEAT or ASPECT.\n", temp_type);
+		}
 
 	}
 
 	// swarm missiles
 	int s_count;
 
-	wip->swarm_count = -1;
-
-    // *Default is 150  -Et1
-    wip->SwarmWait = SWARM_MISSILE_DELAY;
-
-	if(optional_string("$Swarm:")){
+	if(optional_string("$Swarm:"))
+	{
 		wip->swarm_count = SWARM_DEFAULT_NUM_MISSILES_FIRED;
 		stuff_int(&s_count);
 		wip->swarm_count = (short)s_count;
 
 		// flag as being a swarm weapon
 		wip->wi_flags |= WIF_SWARM;
+	}
 
-
-        // *Swarm wait token    -Et1
-
-        if( optional_string( "+SwarmWait:" ) )
-        {
-
-            float SwarmWait;
-
-            stuff_float( &SwarmWait );
-
-            if( SwarmWait > 0.0f && SwarmWait * wip->swarm_count < wip->fire_wait )
-            {
-
-                wip->SwarmWait = int( SwarmWait * 1000 );
-
-            }
-
-
-        }
-
+	// *Swarm wait token    -Et1
+	if((wip->wi_flags & WIF_SWARM) && optional_string( "+SwarmWait:" ))
+	{
+		float SwarmWait;
+		stuff_float( &SwarmWait );
+		if( SwarmWait > 0.0f && SwarmWait * wip->swarm_count < wip->fire_wait )
+		{
+			wip->SwarmWait = int( SwarmWait * 1000 );
+		}
 	}
 
 	//Launch sound
@@ -1703,70 +1910,52 @@ int parse_weapon(int subtype, bool replace)
 	{
 		if (optional_string("$FlyBySnd:"))
 		{
-			Warning(LOCATION, "$FlyBySnd: flag not used with primary weapons; ignoring...");
+			Warning(LOCATION, "$FlyBySnd: flag found on %s, but is not used with primary weapons; ignoring...", wip->name);
 		}
 	}
 
 	// handle rearm rate - modified by Goober5000
 	primary_rearm_rate_specified = 0;
-	if (subtype == WP_MISSILE)		// secondary weapons are required to have a rearm rate
+	float rearm_rate;
+	// Anticipate rearm rate for ballistic primaries
+	if (optional_string("$Rearm Rate:"))
 	{
-		required_string( "$Rearm Rate:");
+		if (subtype != WP_MISSILE) {
+			primary_rearm_rate_specified = 1;
+		}
 
-		stuff_float( &wip->rearm_rate );
-		if (wip->rearm_rate > 0.1f)
+		stuff_float( &rearm_rate );
+		if (rearm_rate > 0.0f)
 		{
-			wip->rearm_rate = 1.0f/wip->rearm_rate;
+			wip->rearm_rate = 1.0f/rearm_rate;
 		}
 		else
 		{
-			wip->rearm_rate = 1.0f;
-		}
-	}
-	else
-	{
-		// Anticipate rearm rate for ballistic primaries
-		if (optional_string("$Rearm Rate:"))
-		{
-			primary_rearm_rate_specified = 1;
-
-			stuff_float( &wip->rearm_rate );
-			if (wip->rearm_rate > 0.1f)
-			{
-				wip->rearm_rate = 1.0f/wip->rearm_rate;
-			}
-			else
-			{
-				wip->rearm_rate = 1.0f;
-			}
+			Warning(LOCATION, "Rearm wait of less than 0 on weapon %s; setting to 1", wip->name);
 		}
 	}
 
-	wip->weapon_range = 999999999.9f;
+
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
 	}
 
-    // *Mínimum weapon range, default is 0 -Et1
-    wip->WeaponMinRange = 0.0f;
+	if( optional_string( "+Weapon Min Range:" ) )
+	{
+		float MinRange;
+		stuff_float( &MinRange );
 
-    if( optional_string( "+Weapon Min Range:" ) )
-    {
+		if( MinRange > 0.0f && MinRange < MIN( wip->max_speed * wip->lifetime, wip->weapon_range ) )
+		{
+			wip->WeaponMinRange = MinRange;
+		}
+		else
+		{
+			Warning(LOCATION, "Invalid minimum range on weapon %s; setting to 0", wip->name);
+		}
 
-        float MinRange;
+	}
 
-        stuff_float( &MinRange );
-
-        if( MinRange > 0.0f && MinRange < MIN( wip->max_speed * wip->lifetime, wip->weapon_range ) )
-        {
-
-            wip->WeaponMinRange = MinRange;
-
-        }
-
-    }
-
-	wip->spawn_type = -1;
 	parse_wi_flags(wip);
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
@@ -1777,7 +1966,7 @@ int parse_weapon(int subtype, bool replace)
 		if (wip->wi_flags2 & WIF2_BALLISTIC)
 		{
 			// rearm rate not specified
-			if (!primary_rearm_rate_specified)
+			if (!primary_rearm_rate_specified && first_time)
 			{
 				Warning(LOCATION, "$Rearm Rate for ballistic primary %s not specified.  Defaulting to 100...\n", wip->name);
 				wip->rearm_rate = 100.0f;
@@ -1820,52 +2009,56 @@ int parse_weapon(int subtype, bool replace)
 		if (wip->cargo_size == 0.0f)
 		{
 			Warning(LOCATION, "Cargo size of weapon %s cannot be 0.  Setting to 1.\n", wip->name);
-			wip->cargo_size = 1;
+			wip->cargo_size = 1.0f;
 		}
 	}
 
 	char trail_name[MAX_FILENAME_LEN] = "";
 	trail_info *ti = &wip->tr_info;
-	memset(ti, 0, sizeof(trail_info));
 	if(optional_string("$Trail:")){	
 		wip->wi_flags |= WIF_TRAIL;		// missile leaves a trail
 
-		required_string("+Start Width:");
-		stuff_float(&ti->w_start);
+		if(optional_string("+Start Width:")) {
+			stuff_float(&ti->w_start);
+		}
 
-		required_string("+End Width:");
-		stuff_float(&ti->w_end);
+		if(optional_string("+End Width:")) {
+			stuff_float(&ti->w_end);
+		}
 
-		required_string("+Start Alpha:");
-		stuff_float(&ti->a_start);
+		if(optional_string("+Start Alpha:")) {
+			stuff_float(&ti->a_start);
+		}
 
-		required_string("+End Alpha:");
-		stuff_float(&ti->a_end);		
+		if(optional_string("+End Alpha:")) {
+			stuff_float(&ti->a_end);
+		}
 
-		required_string("+Max Life:");
-		stuff_float(&ti->max_life);
+		if(optional_string("+Max Life:"))
+		{
+			stuff_float(&ti->max_life);
 
-		ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
+			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
+		}
 
-		required_string("+Bitmap:");
-		stuff_string(trail_name, F_NAME, NULL);
-		ti->bitmap = bm_load(trail_name);
+		if(optional_string("+Bitmap:")) {
+			stuff_string(trail_name, F_NAME, NULL);
+			//TODO: Remove this bm_load call. -WMC
+			ti->bitmap = bm_load(trail_name);
+		}
 		// wip->delta_time = fl2i(1000.0f*wip->max_life)/(NUM_TRAIL_SECTIONS+1);		// time between sections.  max_life / num_sections basically.
 	}
 
 	// read in filename for icon that is used in weapons selection
-	wip->icon_filename[0] = 0;
 	if ( optional_string("$Icon:") ) {
 		stuff_string(wip->icon_filename, F_NAME, NULL);
 	}
 
 	// read in filename for animation that is used in weapons selection
-	wip->anim_filename[0] = 0;
 	if ( optional_string("$Anim:") ) {
 		stuff_string(wip->anim_filename, F_NAME, NULL);
 	}
 
-	wip->impact_weapon_expl_index = -1;
 	if ( optional_string("$Impact Explosion:") ) {
 		char impact_ani_file[FILESPEC_LENGTH];
 		stuff_string(impact_ani_file, F_NAME, NULL);
@@ -1873,22 +2066,21 @@ int parse_weapon(int subtype, bool replace)
 			wip->impact_weapon_expl_index = get_weapon_expl_info_index(impact_ani_file);
 			//int num_frames, fps;
 			//wip->impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, &fps, 1 );
-
-			required_string("$Impact Explosion Radius:");
-			stuff_float(&wip->impact_explosion_radius);
 		}
 	}
-
+	
+	if(optional_string("$Impact Explosion Radius:")) {
+		stuff_float(&wip->impact_explosion_radius);
+	}
 	// muzzle flash
 	char mflash_string[255] = "";
-	wip->muzzle_flash = -1;
 	if( optional_string("$Muzzleflash:") ){
 		stuff_string(mflash_string, F_NAME, NULL);
 
 		// look it up
 		wip->muzzle_flash = mflash_lookup(mflash_string);
 
-		if(wip->muzzle_flash >= 0){			
+		if(wip->muzzle_flash > -1){			
 			wip->wi_flags |= WIF_MFLASH;
 		}
 	}
@@ -1896,26 +2088,19 @@ int parse_weapon(int subtype, bool replace)
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
 	if( optional_string("$EMP Intensity:") ){
 		stuff_float(&wip->emp_intensity);
-	} else {
-		wip->emp_intensity = EMP_DEFAULT_INTENSITY;
 	}
+	
 	if( optional_string("$EMP Time:") ){
 		stuff_float(&wip->emp_time);
-	} else {
-		wip->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
 	}
 
 	// Energy suck optional stuff (if WIF_ENERGY_SUCK is not set, none of this matters anyway)
 	if( optional_string("$Leech Weapon:") ){
 		stuff_float(&wip->weapon_reduce);
-	} else {
-		wip->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	}
 
 	if( optional_string("$Leech Afterburner:") ){
 		stuff_float(&wip->afterburner_reduce);
-	} else {
-		wip->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
 	}
 
 /*
@@ -1938,70 +2123,74 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("$Corkscrew:"))
 	{
-		required_string("+Num Fired:");
-		stuff_int(&wip->cs_num_fired);
+		if(optional_string("+Num Fired:")) {
+			stuff_int(&wip->cs_num_fired);
+		}
 
-		required_string("+Radius:");
-		stuff_float(&wip->cs_radius);
+		if(optional_string("+Radius:")) {
+			stuff_float(&wip->cs_radius);
+		}
 
-		required_string("+Fire Delay:");
-		stuff_int(&wip->cs_delay);
+		if(optional_string("+Fire Delay:")) {
+			stuff_int(&wip->cs_delay);
+		}
 		
-		required_string("+Counter rotate:");
-		stuff_boolean(&wip->cs_crotate);
+		if(optional_string("+Counter rotate:")) {
+			stuff_boolean(&wip->cs_crotate);
+		}
 
-		required_string("+Twist:");
-		stuff_float(&wip->cs_twist);
-
+		if(optional_string("+Twist:")) {
+			stuff_float(&wip->cs_twist);
+		}
 	}
 
 	//electronics tag optional stuff
-	wip->elec_intensity=1.0f;
-	wip->elec_time=6000;
-	wip->elec_eng_mult=1.0f;
-	wip->elec_weap_mult=1.0f;
-	wip->elec_beam_mult=1.0f;
-	wip->elec_sensors_mult=1.0f;
-	wip->elec_randomness=4000;
-	wip->elec_use_new_style=0;
-
+	//Note that I made all these optional in the interest of modular tables.
+	//TODO: Possibly add a warning on first_time define?
 	if (optional_string("$Electronics:"))
 	{
-		if (!required_string_either("+New Style:", "+Old Style:"))
-		{
-			required_string("+New Style:");
+		if(optional_string("+New Style:")) {
 			wip->elec_use_new_style=1;
-
-			required_string("+Intensity:");
-			stuff_float(&wip->elec_intensity);
-
-			required_string("+Lifetime:");
-			stuff_int(&wip->elec_time);
-
-			required_string("+Engine Multiplier:");
-			stuff_float(&wip->elec_eng_mult);
-
-			required_string("+Weapon Multiplier:");
-			stuff_float(&wip->elec_weap_mult);
-
-			required_string("+Beam Turret Multiplier:");
-			stuff_float(&wip->elec_beam_mult);
-
-			required_string("+Sensors Multiplier:");
-			stuff_float(&wip->elec_sensors_mult);
-	
-			required_string("+Randomness Time:");
-			stuff_int(&wip->elec_randomness);
 		}
-		else
-		{
-			required_string("+Old Style:");
+		else if(optional_string("+Old Style:")) {
 			wip->elec_use_new_style=0;
-			
-			required_string("+Lifetime:");
-			stuff_int(&wip->elec_time);
+		}
+		
+		//New only -WMC
+		if(optional_string("+Intensity:")) {
+			stuff_float(&wip->elec_intensity);
+			if(!wip->elec_use_new_style)Warning(LOCATION, "+Intensity may only be used with new style electronics");
+		}
 
-			required_string("+Randomness Time:");
+		if(optional_string("+Lifetime:")) {
+			stuff_int(&wip->elec_time);
+		}
+
+		//New only -WMC
+		if(optional_string("+Engine Multiplier:")) {
+			stuff_float(&wip->elec_eng_mult);
+			if(!wip->elec_use_new_style)Warning(LOCATION, "+Engine multiplier may only be used with new style electronics");
+		}
+
+		//New only -WMC
+		if(optional_string("+Weapon Multiplier:")) {
+			stuff_float(&wip->elec_weap_mult);
+			if(!wip->elec_use_new_style)Warning(LOCATION, "+Weapon multiplier may only be used with new style electronics");
+		}
+
+		//New only -WMC
+		if(optional_string("+Beam Turret Multiplier:")) {
+			stuff_float(&wip->elec_beam_mult);
+			if(!wip->elec_use_new_style)Warning(LOCATION, "+Beam turret multiplier may only be used with new style electronics");
+		}
+
+		//New only -WMC
+		if(optional_string("+Sensors Multiplier:")) {
+			stuff_float(&wip->elec_sensors_mult);
+			if(!wip->elec_use_new_style)Warning(LOCATION, "+Sensors multiplier may only be used with new style electronics");
+		}
+	
+		if(optional_string("+Randomness Time:")) {
 			stuff_int(&wip->elec_randomness);
 		}
 	}
@@ -2009,120 +2198,105 @@ int parse_weapon(int subtype, bool replace)
 
 	//read in the spawn angle info
 	//if the weapon isn't a spawn weapon, then this is not going to be used.
-	wip->spawn_angle = 180;
-	if (optional_string("$Spawn Angle:"))
-	{
+	if (optional_string("$Spawn Angle:")) {
 		stuff_float(&wip->spawn_angle);
 	}
 
-	wip->lssm_warpout_delay=0;			//delay between launch and warpout (ms)
-	wip->lssm_warpin_delay=0;			//delay between warpout and warpin (ms)
-	wip->lssm_stage5_vel=0;		//velocity during final stage
-	wip->lssm_warpin_radius=0;
-	wip->lssm_lock_range=1000000.0f;	//local ssm lock range (optional)
-	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
+	if (wip->wi_flags2 & WIF2_LOCAL_SSM && optional_string("$Local SSM:"))
 	{
-		required_string("$Local SSM:");
+		if(optional_string("+Warpout Delay:")) {
+			stuff_int(&wip->lssm_warpout_delay);
+		}
 
-		required_string("+Warpout Delay:");
-		stuff_int(&wip->lssm_warpout_delay);
+		if(optional_string("+Warpin Delay:")) {
+			stuff_int(&wip->lssm_warpin_delay);
+		}
 
-		required_string("+Warpin Delay:");
-		stuff_int(&wip->lssm_warpin_delay);
+		if(optional_string("+Stage 5 Velocity:")) {
+			stuff_float(&wip->lssm_stage5_vel);
+		}
 
-		required_string("+Stage 5 Velocity:");
-		stuff_float(&wip->lssm_stage5_vel);
+		if(optional_string("+Warpin Radius:")) {
+			stuff_float(&wip->lssm_warpin_radius);
+		}
 
-		required_string("+Warpin Radius:");
-		stuff_float(&wip->lssm_warpin_radius);
-
-		if (optional_string("+Lock Range:"))
+		if (optional_string("+Lock Range:")) {
 			stuff_float(&wip->lssm_lock_range);
+		}
 	}
 
 
 	// beam weapon optional stuff
-	wip->b_info.beam_type = -1;
-	wip->b_info.beam_life = -1.0f;
-	wip->b_info.beam_warmup = -1;
-	wip->b_info.beam_warmdown = -1;
-	wip->b_info.beam_muzzle_radius = 0.0f;
-	wip->b_info.beam_particle_count = -1;
-	wip->b_info.beam_particle_radius = 0.0f;
-	wip->b_info.beam_particle_angle = 0.0f;
-	wip->b_info.beam_particle_ani = -1;	
-	wip->b_info.beam_loop_sound = -1;
-	wip->b_info.beam_warmup_sound = -1;
-	wip->b_info.beam_warmdown_sound = -1;
-	wip->b_info.beam_num_sections = 0;
-	wip->b_info.beam_glow_bitmap = -1;
-	wip->b_info.beam_glow_nframes = 1;
-	wip->b_info.beam_glow_fps = 0;
-	wip->b_info.beam_shots = 0;
-	wip->b_info.beam_shrink_factor = 0.0f;
-	wip->b_info.beam_shrink_pct = 0.0f;
-	wip->b_info.range = BEAM_FAR_LENGTH;
-	wip->b_info.damage_threshold = 1.0f;
-
 	if( optional_string("$BeamInfo:")){
 		// beam type
-		required_string("+Type:");
-		stuff_int(&wip->b_info.beam_type);
+		if(optional_string("+Type:")) {
+			stuff_int(&wip->b_info.beam_type);
+		}
 
 		// how long it lasts
-		required_string("+Life:");
-		stuff_float(&wip->b_info.beam_life);
+		if(optional_string("+Life:")) {
+			stuff_float(&wip->b_info.beam_life);
+		}
 
 		// warmup time
-		required_string("+Warmup:");
-		stuff_int(&wip->b_info.beam_warmup);
+		if(optional_string("+Warmup:")) {
+			stuff_int(&wip->b_info.beam_warmup);
+		}
 
 		// warmdowm time
-		required_string("+Warmdown:");
-		stuff_int(&wip->b_info.beam_warmdown);
+		if(optional_string("+Warmdown:")) {
+			stuff_int(&wip->b_info.beam_warmdown);
+		}
 
 		// muzzle glow radius
-		required_string("+Radius:");
-		stuff_float(&wip->b_info.beam_muzzle_radius);
+		if(optional_string("+Radius:")) {
+			stuff_float(&wip->b_info.beam_muzzle_radius);
+		}
 
 		// particle spew count
-		required_string("+PCount:");
-		stuff_int(&wip->b_info.beam_particle_count);
+		if(optional_string("+PCount:")) {
+			stuff_int(&wip->b_info.beam_particle_count);
+		}
 
 		// particle radius
-		required_string("+PRadius:");
-		stuff_float(&wip->b_info.beam_particle_radius);
+		if(optional_string("+PRadius:")) {
+			stuff_float(&wip->b_info.beam_particle_radius);
+		}
 
 		// angle off turret normal
-		required_string("+PAngle:");
-		stuff_float(&wip->b_info.beam_particle_angle);
+		if(optional_string("+PAngle:")) {
+			stuff_float(&wip->b_info.beam_particle_angle);
+		}
 
 		// particle bitmap/ani		
-		required_string("+PAni:");
-		stuff_string(fname, F_NAME, NULL);
-		if(!Fred_running){
-			int num_frames, fps;
-			wip->b_info.beam_particle_ani = bm_load_animation(fname, &num_frames, &fps, 1);
+		if(optional_string("+PAni:"))
+		{
+			stuff_string(fname, F_NAME, NULL);
+			//TODO: Get rid of this bm_load_animation call. -C
+			if(!Fred_running){
+				int num_frames, fps;
+				wip->b_info.beam_particle_ani = bm_load_animation(fname, &num_frames, &fps, 1);
+			}
 		}
 
 		// magic miss #
-		required_string("+Miss Factor:");		
-		for(idx=0; idx<NUM_SKILL_LEVELS; idx++){
-			wip->b_info.beam_miss_factor[idx] = 0.00001f;
-			stuff_float(&wip->b_info.beam_miss_factor[idx]);
+		if(optional_string("+Miss Factor:")) {
+			for(idx=0; idx<NUM_SKILL_LEVELS; idx++)
+			{
+				if(!stuff_float_optional(&wip->b_info.beam_miss_factor[idx])) {
+					break;
+				}
+			}
 		}
 
 		// beam fire sound
-		required_string("+BeamSound:");
-		stuff_int(&wip->b_info.beam_loop_sound);
+		parse_sound("+BeamSound:", &wip->b_info.beam_loop_sound, wip->name);
 
 		// warmup sound
-		required_string("+WarmupSound:");
-		stuff_int(&wip->b_info.beam_warmup_sound);
+		parse_sound("+WarmupSound:", &wip->b_info.beam_warmup_sound, wip->name);
 
 		// warmdown sound
-		required_string("+WarmdownSound:");
-		stuff_int(&wip->b_info.beam_warmdown_sound);
+		parse_sound("+WarmdownSound:", &wip->b_info.beam_warmdown_sound, wip->name);
 
 		// glow bitmap
 		required_string("+Muzzleglow:");
@@ -2130,6 +2304,7 @@ int parse_weapon(int subtype, bool replace)
 		if(!Fred_running){
 			wip->b_info.beam_glow_bitmap = bm_load(fname);
 
+			//TODO: Get rid of this bm_load_animation call. -C
 			if (wip->b_info.beam_glow_bitmap == -1) {
 				wip->b_info.beam_glow_bitmap = bm_load_animation(fname, &wip->b_info.beam_glow_nframes, &wip->b_info.beam_glow_fps);
 			}
@@ -2146,20 +2321,25 @@ int parse_weapon(int subtype, bool replace)
 		}
 		
 		// shrinkage
-		required_string("+ShrinkFactor:");
-		stuff_float(&wip->b_info.beam_shrink_factor);
-		required_string("+ShrinkPct:");
-		stuff_float(&wip->b_info.beam_shrink_pct);
+		if(optional_string("+ShrinkFactor:")) {
+			stuff_float(&wip->b_info.beam_shrink_factor);
+		}
+		
+		if(optional_string("+ShrinkPct:")) {
+			stuff_float(&wip->b_info.beam_shrink_pct);
+		}
 
-		if (optional_string("+Range:"))
-		{
+		if (optional_string("+Range:")) {
 			stuff_float(&wip->b_info.range);
 		}
-		if (optional_string("+Attenuation:"))
-		{
+		
+		if (optional_string("+Attenuation:")) {
 			stuff_float(&wip->b_info.damage_threshold);
 		}
+		//=============================HEY YOU!!!!!!!!=============================
+		//I got to this point for modular table stuff.
 		// beam sections
+		//TODO: Add code for handling override rather than addition
 		while( optional_string("$Section:") ){
 			beam_weapon_section_info i;
 			char tex_name[255] = "";
@@ -2176,8 +2356,10 @@ int parse_weapon(int subtype, bool replace)
 			i.fps = 1;
 
 			if(!Fred_running){
+				//TODO: Get rid of this bm_load call. -C
 				i.texture = bm_load(tex_name);
 
+				//TODO: Get rid of this bm_load_animation call. -C
 				if (i.texture < 0) {
 					i.texture = bm_load_animation(tex_name, &i.nframes, &i.fps);
 				}
@@ -2214,14 +2396,11 @@ int parse_weapon(int subtype, bool replace)
 			required_string("+Zadd:");
 			stuff_float(&i.z_add);
 
-			i.tile_type = 0;
-			i.tile_factor = 1.0f;
 			if( optional_string("+Tile Factor:")){ //beam texture tileing factor -Bobboau
 				stuff_float(&(i.tile_factor));
 				stuff_int(&(i.tile_type));
 			}
 
-			i.translation = 0.0f;
 			if( optional_string("+Translation:")){ //beam texture moveing stuff -Bobboau
 				stuff_float(&(i.translation));			
 			}
@@ -2234,8 +2413,10 @@ int parse_weapon(int subtype, bool replace)
 		}		
 	}
 
-	if(wip->wi_flags & WIF_PARTICLE_SPEW){
-		if(optional_string("$Pspew:")){
+	if(wip->wi_flags & WIF_PARTICLE_SPEW)
+	{
+		if(optional_string("$Pspew:"))
+		{
 			required_string("+Count:");
 			stuff_int(&wip->Weapon_particle_spew_count);
 			required_string("+Time:");
@@ -2252,80 +2433,70 @@ int parse_weapon(int subtype, bool replace)
 			stuff_string(wip->Weapon_particle_spew_bitmap_name, F_NAME, NULL);
 		
 			wip->Weapon_particle_spew_bitmap = bm_load( wip->Weapon_particle_spew_bitmap_name );
-			if(wip->Weapon_particle_spew_bitmap < 0){	//if it couldn't find the pcx look for an ani-Bobboau
+			if(wip->Weapon_particle_spew_bitmap < 0)
+			{	//if it couldn't find the pcx look for an ani-Bobboau
 				nprintf(("General","couldn't find particle pcx for %s \n", wip->name));
 				wip->Weapon_particle_spew_bitmap = bm_load_animation(wip->Weapon_particle_spew_bitmap_name, &wip->Weapon_particle_spew_nframes, &wip->Weapon_particle_spew_fps, 1);				
-				if(wip->Weapon_particle_spew_bitmap < 0){
+				if(wip->Weapon_particle_spew_bitmap < 0)
+				{
 					nprintf(("General","couldn't find ani for %s \n", wip->name));
-				Warning( LOCATION, "Couldn't open paticle texture '%s'\nreferenced by weapon '%s'\n", wip->Weapon_particle_spew_bitmap_name, wip->name );
-				}else{
+					Warning( LOCATION, "Couldn't open paticle texture '%s'\nreferenced by weapon '%s'\n", wip->Weapon_particle_spew_bitmap_name, wip->name );
+				}
+				else
+				{
 					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", wip->Weapon_particle_spew_bitmap_name, wip->name, wip->Weapon_particle_spew_nframes, wip->Weapon_particle_spew_fps));
 				}
-			}else{
+			}
+			else
+			{
 				wip->Weapon_particle_spew_nframes = 1;
 				wip->Weapon_particle_spew_fps = 0;
 			}
-
-		}else{
-			wip->Weapon_particle_spew_count = 1;
-			wip->Weapon_particle_spew_time = 25;
-			wip->Weapon_particle_spew_vel = 0.4f;
-			wip->Weapon_particle_spew_radius = 2.0f;
-			wip->Weapon_particle_spew_lifetime = 0.15f;
-			wip->Weapon_particle_spew_scale = 0.8f;
-			wip->Weapon_particle_spew_bitmap = -1;
 		}
 	}
 
 	// tag weapon optional stuff
-	wip->tag_level = -1;
-	wip->tag_time = -1.0f;
 	if( optional_string("$Tag:")){
 		stuff_int(&wip->tag_level);
 		stuff_float(&wip->tag_time);		
 		wip->wi_flags |= WIF_TAG;
 	}	
 
-	wip->SSM_index =-1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
 	if( optional_string("$SSM:")){
 		stuff_int(&wip->SSM_index);
 	}// SSM index -Bobboau
 
-
-	wip->field_of_fire = 0.0f;
 	if( optional_string("$FOF:")){
 		stuff_float(&wip->field_of_fire);
 	}
 
-	wip->shots = 1;
 	if( optional_string("$Shots:")){
 		stuff_int(&wip->shots);
 	}
 
-
-	wip->decal_texture = -1;
-	wip->decal_glow_texture = -1;
-	wip->decal_burn_texture = -1;
-	wip->decal_backface_texture = -1;
-	wip->decal_rad = -1;
-	wip->decal_burn_time = 1000;
 	if( optional_string("$decal:")){
 		char tex_name[64], temp[64];
+
 		required_string("+texture:");
 		stuff_string(tex_name, F_NAME, NULL);
 		wip->decal_texture = bm_load(tex_name);
+
 		strcpy(temp, tex_name);
 		strcat(tex_name, "-glow");
 		wip->decal_glow_texture = bm_load(tex_name);
+
 		strcpy(tex_name, temp);
 		strcat(tex_name, "-burn");
 		wip->decal_burn_texture = bm_load(tex_name);
+
 		if( optional_string("+backface texture:")){
 			stuff_string(tex_name, F_NAME, NULL);
 			wip->decal_backface_texture = bm_load(tex_name);
 		}
+
 		required_string("+radius:");
 		stuff_float(&wip->decal_rad);
+
 		if( optional_string("+burn time:")){
 			stuff_int(&wip->decal_burn_time);
 		}
@@ -2340,15 +2511,92 @@ int parse_weapon(int subtype, bool replace)
 	return 0;
 }
 
+int cmeasure_name_lookup(char *name)
+{
+	int	i;
+
+	for ( i=0; i < Num_cmeasure_types; i++) {
+		if (!stricmp(name, Cmeasure_info[i].cmeasure_name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void init_cmeasure_entry(int cmeasure_idx)
+{
+	Assert(cmeasure_idx > -1 && cmeasure_idx < MAX_CMEASURES);
+	cmeasure_info *cmeasurep = &Cmeasure_info[cmeasure_idx];
+
+	cmeasurep->max_speed = 20.0f;
+	cmeasurep->fire_wait = 0.5f;
+	cmeasurep->life_min = 1.0f;
+	cmeasurep->life_max = 2.0f;
+	cmeasurep->launch_sound = -1;
+	cmeasurep->model_num = -1;
+	cmeasurep->pof_name[0] = '\0';
+}
+
 // function to parse the information for a specific ship type.	
-void parse_cmeasure()
+void parse_cmeasure(bool replace)
 {
 	cmeasure_info *cmeasurep;
+	bool create_if_not_found = true;
 
 	cmeasurep = &Cmeasure_info[Num_cmeasure_types];
+	Num_cmeasure_types++;
 
+	char buf[NAME_LENGTH];
 	required_string("$Name:");
-	stuff_string(cmeasurep->cmeasure_name, F_NAME, NULL);
+	stuff_string(buf, F_NAME, NULL);
+
+	if(optional_string("+nocreate")) {
+		if(!replace) {
+			Warning(LOCATION, "+nocreate flag used for countermeasure in non-modular table");
+		}
+		create_if_not_found = false;
+	}
+
+	int c_id = cmeasure_name_lookup(buf);
+
+	if(c_id <= -1)
+	{
+		if(Num_cmeasure_types >= MAX_CMEASURES) {
+			Warning(LOCATION, "Too many countermeasures; maximum is %d, so only the first %d will be used", MAX_CMEASURES, Num_cmeasure_types);
+			
+			//Skip the rest of the ships in non-modular tables, since we can't add them.
+			if(!replace) {
+				while(skip_to_start_of_string_either("$Name:", "#End"));
+			}
+			return;
+		}
+
+		if(!create_if_not_found && replace)
+		{
+			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+				Int3();
+			}
+		}
+
+		//Make a new cmeasure
+		init_cmeasure_entry(Num_cmeasure_types);
+		cmeasurep = &Cmeasure_info[Num_cmeasure_types];
+		Num_cmeasure_types++;
+		strcpy(cmeasurep->cmeasure_name, buf);
+	}
+	else
+	{
+		cmeasurep = &Cmeasure_info[c_id];
+		if(!replace)
+		{
+			Warning(LOCATION, "Error:  Countermeasure '%s' already exists.  All countermeasure class names in weapons.tbl must be unique.", cmeasurep->cmeasure_name);
+			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+				Int3();
+			}
+			return;
+		}
+	}
 
 /*$Name:					Type One
 $Velocity:				20.0				;; speed relative to ship, rear-fired until POF info added, MK, 5/22/97
@@ -2358,24 +2606,28 @@ $Lifetime Max:			2.0				;; Maximum lifetime.  Actual lifetime is rand(min..max).
 $LaunchSnd:				counter_1.wav,	.8, 10, 300	;; countermeasure 1 fired (sound is 3d)
 */
 
-	required_string("$Velocity:");
-	stuff_float( &(cmeasurep->max_speed) );
+	if(optional_string("$Velocity:")) {
+		stuff_float( &(cmeasurep->max_speed) );
+	}
 
-	required_string("$Fire Wait:");
-	stuff_float( &(cmeasurep->fire_wait) );
+	if(optional_string("$Fire Wait:")) {
+		stuff_float( &(cmeasurep->fire_wait) );
+	}
 
-	required_string("$Lifetime Min:");
-	stuff_float(&cmeasurep->life_min);
+	if(optional_string("$Lifetime Min:")) {
+		stuff_float(&cmeasurep->life_min);
+	}
 
-	required_string("$Lifetime Max:");
-	stuff_float(&cmeasurep->life_max);
+	if(optional_string("$Lifetime Max:")) {
+		stuff_float(&cmeasurep->life_max);
+	}
 
 	//Launching sound
 	parse_sound("$LaunchSnd:", &cmeasurep->launch_sound, cmeasurep->cmeasure_name);
 
-	required_string("$Model:");
-	stuff_string(cmeasurep->pof_name, F_NAME, NULL);
-	cmeasurep->model_num = -1;		
+	if(optional_string("$Model:")) {
+		stuff_string(cmeasurep->pof_name, F_NAME, NULL);
+	}
 }
 
 
@@ -2386,17 +2638,24 @@ void translate_spawn_types()
 	int	i,j;
 
 	for (i=0; i<Num_weapon_types; i++)
-		if (Weapon_info[i].spawn_type != -1) {
+	{
+		if (Weapon_info[i].spawn_type != -1)
+		{
 			int	spawn_type = Weapon_info[i].spawn_type;
 
 			for (j=0; j<Num_weapon_types; j++)
-				if (!stricmp(Spawn_names[spawn_type], Weapon_info[j].name)) {
+			{
+				if (!stricmp(Spawn_namez[spawn_type], Weapon_info[j].name))
+				{
 					Weapon_info[i].spawn_type = (short)j;
-					if (i == j){
+					if (i == j)
+					{
 						Warning(LOCATION, "Weapon %s spawns itself.  Infinite recursion?\n", Weapon_info[i].name);
 					}
 				}
+			}
 		}
+	}
 }
 
 void parse_tertiary_cloak(tertiary_weapon_info* twip)
@@ -2542,8 +2801,7 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 		required_string("#Countermeasures");
 		while (required_string_either("#End", "$Name:")) {
 			Assert( Num_cmeasure_types < MAX_CMEASURE_TYPES );
-			parse_cmeasure();
-			Num_cmeasure_types++;
+			parse_cmeasure(false);
 		}
 
 		strcpy(parse_error_text, "");
@@ -2595,7 +2853,7 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				Assert( Num_cmeasure_types < MAX_CMEASURE_TYPES );
-				parse_cmeasure();
+				parse_cmeasure(true);
 				Num_cmeasure_types++;
 			}
 

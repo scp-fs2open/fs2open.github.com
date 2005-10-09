@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.108 $
- * $Date: 2005-10-08 05:41:09 $
+ * $Revision: 2.109 $
+ * $Date: 2005-10-09 00:43:09 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2005/10/08 05:41:09  wmcoolmon
+ * Fix Int3() from ship-vanish
+ *
  * Revision 2.107  2005/09/25 05:13:05  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -1567,6 +1570,8 @@ typedef struct engine_wash_info
 	float		radius_mult;	// multiplier for radius 
 	float		length;			// length of engine wash, measured from thruster
 	float		intensity;		// intensity of engine wash
+	
+	engine_wash_info();
 } engine_wash_info;
 
 extern std::vector<engine_wash_info> Engine_wash_info;

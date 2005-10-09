@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/07/24 06:01:37  wmcoolmon
+ * Multiple shockwaves support.
+ *
  * Revision 2.53  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -491,10 +494,12 @@
 struct object;
 struct ship_subsys;
 
-#define	WP_UNUSED	-1
+#define	WP_UNUSED	-	1
 #define	WP_LASER		0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
-#define	WP_MISSILE	1
-#define	WP_BEAM		2
+#define	WP_MISSILE		1
+#define	WP_BEAM			2
+extern char *Weapon_subtype_names[];
+extern int Num_weapon_subtypes;
 
 #define	WRT_LASER	1
 #define	WRT_POF		2
@@ -826,7 +831,7 @@ typedef struct weapon_info {
                
     int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
-    float WeaponMinRange;           // *Mínimum weapon range, default is 0 -Et1
+    float WeaponMinRange;           // *Mï¿½imum weapon range, default is 0 -Et1
 
 
 	float weapon_submodel_rotate_accell;
@@ -980,6 +985,7 @@ void weapon_maybe_spew_particle(object *obj);
 
 void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos );
 int weapon_name_lookup(char *name);
+int cmeasure_name_lookup(char *name);
 void spawn_child_weapons( object *objp );
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
