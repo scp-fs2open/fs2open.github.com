@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-09-25 07:27:33 $
- * $Author: Goober5000 $
+ * $Revision: 1.18 $
+ * $Date: 2005-10-09 00:43:08 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/09/25 07:27:33  Goober5000
+ * and again
+ * --Goober5000
+ *
  * Revision 1.16  2005/09/25 07:26:05  Goober5000
  * try to fix the headers
  * --Goober5000
@@ -27,6 +31,7 @@
 
 #include "cmdline/cmdline.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 #include "render/3d.h"
 #include "lighting/lighting.h"
 #include "model/model.h"
@@ -38,6 +43,8 @@
 //All sorts of globals
 
 static GUIScreen *Lab_screen = NULL;
+
+static int Selected_weapon_index = -1;
 
 static int ShipSelectShipIndex = -1;
 static int ShipSelectModelNum = -1;
@@ -426,7 +433,7 @@ void zero_ship_class_win(GUIObject *caller)
 {
 	ShipClassWin = NULL;
 }
-void make_new_window(Button* caller)
+void ships_make_window(Button* caller)
 {
 
 	if(ShipClassWin != NULL)
@@ -508,7 +515,75 @@ void make_another_window(Button* caller)
 		
 	DescText->SetCloseFunction(zero_descwin);
 }
+//*****************************Subsystem Window*******************************
+//WMC - disabled because I don't feel like making it work right now
+/*static Text *sst[NUM_SHIP_VARIABLES];
+static int ssn = 0;
 
+#define SSW_LEFTWIDTH		150
+#define SSW_RIGHTWIDTH		100
+#define SSW_RIGHTX			160
+
+#define SSW_SET_MS_VAR(var)	sst[i]->SetText(msp->var);	\
+	sst[i++]->SetSaveLoc(&msp->var, T_ST_ONENTER)
+
+#define SSW_ADD_TEXT(name) cwp->AddChild(new Text(name, name, 0, y, SSW_LEFTWIDTH));			\
+	sst[ssn] = (Text*) cwp->AddChild(new Text(std::string (name) + std::string("Editbox"), "", SSW_RIGHTX, y, SSW_RIGHTWIDTH, 12, T_EDITTABLE));	\
+	y += sst[ssn++]->GetHeight() + 5
+
+static Window*	ShipSubsysWin = NULL;
+static Tree*	ShipSubsysTree = NULL;
+
+void ship_zero_subsys(GUIObject* caller)
+{
+	ShipSubsysWin = NULL;
+}
+
+void ship_change_subsys(Tree *caller)
+{
+	ship_info *sip = &Ship_info[ShipSelectShipIndex];
+	model_subsystem *msp = &sip->subsystems[(int)(caller->GetSelectedItem()->GetData())];
+	
+	int i = 0;
+	sst[i++]->SetText(std::string(msp->name));
+	SSW_SET_MS_VAR(radius);
+	SSW_SET_MS_VAR(turn_rate);
+}
+
+void ship_update_subsys_window(ship_info *sip)
+{
+	ShipSubsysTree->ClearItems();
+	int i;
+
+	//Add species nodes
+	ShipSubsysTree->ClearItems();
+	for(i = 0; i < sip->n_subsystems; i++)
+	{
+		ShipSubsysTree->AddItem(NULL, sip->subsystems[i].subobj_name, i, false, ship_change_subsys);
+	}
+}
+
+void ship_subsys_window(Button* caller)
+{
+	if(ShipSubsysWin != NULL)
+		return;
+
+	Window * cwp = ShipSubsysWin = (Window*)Lab_screen->Add(new Window("Ship subsystems", 200, 200));
+	ShipSubsysTree = (Tree*)ShipSubsysWin->AddChild(new Tree("Ship tree", 0, 0));
+	
+	int y = 200;
+	cwp->AddChild(new Text("Name", "", y, SSW_LEFTWIDTH));
+	sst[ssn] = (Text*) cwp->AddChild(new Text("Subsys name", "<None>", SSW_RIGHTX, y, SSW_RIGHTWIDTH, 12));
+	y += sst[ssn++]->GetHeight() + 5;
+	SSW_ADD_TEXT("Radius");
+	SSW_ADD_TEXT("Turn rate");
+	
+	if(ShipSelectShipIndex != -1)
+		ship_update_subsys_window(&Ship_info[ShipSelectShipIndex]);
+		
+	ShipSubsysWin->SetCloseFunction(ship_zero_subsys);
+}
+*/
 //*****************************Ship display stuff*******************************
 
 void change_lod(Tree* caller)
@@ -538,8 +613,200 @@ void change_lod(Tree* caller)
 	{
 		set_ship_variables_ship(&Ship_info[ShipSelectShipIndex]);
 	}
+	
+	//WMC - disabled because I don't feel like making it work right now
+	/*
+	if(ShipSubsysWin != NULL)
+	{
+		ship_update_subsys_window(&Ship_info[ShipSelectShipIndex]);
+	}
+	*/
 }
 
+//*****************************Weapon list*******************************
+void change_weapon(Tree* caller);
+static Window* WeapClassWin = NULL;
+void zero_weap_class_win(GUIObject *caller)
+{
+	WeapClassWin = NULL;
+}
+void weaps_make_window(Button* caller)
+{
+
+	if(WeapClassWin != NULL)
+		return;
+
+	//GUIObject* cgp;
+	WeapClassWin = (Window*)Lab_screen->Add(new Window("Weapon classes", 50, 50));
+
+	Tree* cmp = (Tree*)WeapClassWin->AddChild(new Tree("Weapon tree", 0, 0));
+	
+	TreeItem *cwip, *stip;
+	//Unfortunately these are hardcoded
+	TreeItem **type_nodes = new TreeItem*[Num_weapon_subtypes];
+	int i;
+
+	//Add type nodes
+	for(i = 0; i < Num_weapon_subtypes; i++)
+	{
+		type_nodes[i] = cmp->AddItem(NULL, Weapon_subtype_names[i], 0, false);
+	}
+
+	//Now add the weapons
+	for(i = 0; i < Num_weapon_types; i++)
+	{
+		if(Weapon_info[i].subtype == WP_UNUSED) {
+			continue;
+		} else if(Weapon_info[i].subtype >= Num_weapon_subtypes) {
+			Warning(LOCATION, "Invalid weapon subtype found on weapon %s", Weapon_info[i].name);
+			continue;
+		}
+		
+		if(Weapon_info[i].wi_flags & WIF_BEAM)
+			stip = type_nodes[WP_BEAM];
+		else
+			stip = type_nodes[Weapon_info[i].subtype];
+
+		cwip = cmp->AddItem(stip, Weapon_info[i].name, i, false, change_weapon);
+	}
+
+	//Get rid of any empty nodes
+	//No the <= is not a mistake :)
+	for(i = 0; i < Num_weapon_subtypes; i++)
+	{
+		if(!type_nodes[i]->HasChildren())
+		{
+			delete type_nodes[i];
+		}
+	}
+
+	WeapClassWin->SetCloseFunction(zero_weap_class_win);
+}
+
+//*****************************Weapon Variables Window*******************************
+static Window* WeapVarWin = NULL;
+
+#define NUM_WEAP_VARIABLES		50
+Text *wvt[NUM_WEAP_VARIABLES];
+
+#define WVW_SET_WI_VAR(var)	wvt[i]->SetText(wip->var);	\
+	wvt[i++]->SetSaveLoc(&wip->var, T_ST_ONENTER)
+
+#define WVW_SET_VAR(var)	wvt[i]->SetText(var);	\
+	wvt[i++]->SetSaveLoc(&var, T_ST_ONENTER)
+
+void weap_set_variables(weapon_info *wip)
+{
+	unsigned int i=0;
+	wvt[i++]->SetText(std::string(wip->name));
+	wvt[i]->SetText(wip->subtype);
+	wvt[i++]->SetSaveLoc(&wip->subtype, T_ST_ONENTER, Num_weapon_subtypes-1, 0);
+	
+	WVW_SET_WI_VAR(mass);
+	WVW_SET_WI_VAR(max_speed);
+	WVW_SET_WI_VAR(lifetime);
+	WVW_SET_WI_VAR(weapon_range);
+	WVW_SET_WI_VAR(WeaponMinRange);
+	
+	WVW_SET_WI_VAR(fire_wait);
+	WVW_SET_WI_VAR(damage);
+	WVW_SET_WI_VAR(armor_factor);
+	WVW_SET_WI_VAR(shield_factor);
+	WVW_SET_WI_VAR(subsystem_factor);
+	
+	WVW_SET_WI_VAR(damage_type_idx);
+	
+	WVW_SET_WI_VAR(shockwave_speed);
+	
+	WVW_SET_WI_VAR(turn_time);
+	WVW_SET_WI_VAR(fov);
+	WVW_SET_WI_VAR(min_lock_time);
+	WVW_SET_WI_VAR(lock_pixels_per_sec);
+	WVW_SET_WI_VAR(catchup_pixels_per_sec);
+	WVW_SET_WI_VAR(catchup_pixel_penalty);
+	WVW_SET_WI_VAR(swarm_count);
+	WVW_SET_WI_VAR(SwarmWait);
+}
+
+#define WVW_LEFTWIDTH		150
+#define WVW_RIGHTWIDTH		100
+#define WVW_RIGHTX			160
+
+void zero_weap_var_win(GUIObject *caller)
+{
+	WeapVarWin = NULL;
+}
+#define WVW_ADD_TEXT_HEADER(name) y += (cwp->AddChild(new Text(name, name, WVW_RIGHTX/2, y + 10, WVW_RIGHTWIDTH))->GetHeight() + 15)
+
+#define WVW_ADD_TEXT(name) cwp->AddChild(new Text(name, name, 0, y, SVW_LEFTWIDTH));			\
+	wvt[i] = (Text*) cwp->AddChild(new Text(std::string (name) + std::string("Editbox"), "", WVW_RIGHTX, y, WVW_RIGHTWIDTH, 12, T_EDITTABLE));	\
+	y += wvt[i++]->GetHeight() + 5														\
+
+void weap_variables_window(Button *caller)
+{
+	if(WeapVarWin != NULL)
+		return;
+
+	GUIObject* cwp = Lab_screen->Add(new Window("Weapon variables", gr_screen.max_w - (WVW_RIGHTX + WVW_RIGHTWIDTH + 25), 200));
+	WeapVarWin = (Window*)cwp;
+	unsigned int i = 0;
+	int y = 0;
+
+	cwp->AddChild(new Text("Name", "", y, WVW_LEFTWIDTH));
+	wvt[i] = (Text*) cwp->AddChild(new Text("Weapon name", "<None>", WVW_RIGHTX, y, WVW_RIGHTWIDTH, 12));
+	y += wvt[i++]->GetHeight() + 5;
+	WVW_ADD_TEXT("Subtype");
+
+	//Physics
+	WVW_ADD_TEXT_HEADER("Physics");
+	WVW_ADD_TEXT("Mass");
+	WVW_ADD_TEXT("Max speed");
+	WVW_ADD_TEXT("Lifetime");
+	WVW_ADD_TEXT("Range");
+	WVW_ADD_TEXT("Min Range");
+	
+	WVW_ADD_TEXT_HEADER("Damage");
+	WVW_ADD_TEXT("Fire wait");
+	WVW_ADD_TEXT("Damage");
+	WVW_ADD_TEXT("Armor factor");
+	WVW_ADD_TEXT("Shield factor");
+	WVW_ADD_TEXT("Subsys factor");
+	
+	WVW_ADD_TEXT_HEADER("Armor");
+	WVW_ADD_TEXT("Damage type");
+	
+	WVW_ADD_TEXT_HEADER("Shockwave");
+	WVW_ADD_TEXT("Speed");
+	
+	WVW_ADD_TEXT_HEADER("Missiles");
+	WVW_ADD_TEXT("Turn time");
+	WVW_ADD_TEXT("FOV");
+	WVW_ADD_TEXT("Min locktime");
+	WVW_ADD_TEXT("Pixels/sec");
+	WVW_ADD_TEXT("Catchup pixels/sec");
+	WVW_ADD_TEXT("Catchup pixel pen.");
+	WVW_ADD_TEXT("Swarm count");
+	WVW_ADD_TEXT("Swarm wait");
+	
+
+	if(Selected_weapon_index != -1)
+		weap_set_variables(&Weapon_info[Selected_weapon_index]);
+
+	WeapVarWin->SetCloseFunction(zero_weap_var_win);
+}
+
+//*****************************Weapon thingy*******************************
+void change_weapon(Tree* caller)
+{
+	Selected_weapon_index = (int)(caller->GetSelectedItem()->GetData());
+
+	if(WeapVarWin != NULL)
+	{
+		weap_set_variables(&Weapon_info[Selected_weapon_index]);
+	}
+}
+
+//************************Ship renderer****************************
 extern float View_zoom;
 static int Trackball_mode = 1;
 static int Trackball_active = 0;
@@ -669,9 +936,8 @@ void lab_init()
 	GUIObject *cwp;
 	GUIObject *cbp;
 	cwp = Lab_screen->Add(new Window("Toolbar", 0, 0, -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
-//	cwp->AddChild(new Button("File", 0, 0, file_menu));
 	int x = 0;
-	cbp = cwp->AddChild(new Button("Ship classes", 0, 0, make_new_window));
+	cbp = cwp->AddChild(new Button("Ship classes", 0, 0, ships_make_window));
 	x += cbp->GetWidth() + 10;
 	cbp = cwp->AddChild(new Button("Class Description", x, 0, make_another_window));
 	x += cbp->GetWidth() + 10;
@@ -683,8 +949,19 @@ void lab_init()
 	cbp = cwp->AddChild(new Button("Class options", x, 0, ship_flags_window));
 	x += cbp->GetWidth() + 10;
 	cbp = cwp->AddChild(new Button("Class variables", x, 0, ship_variables_window));
+	//WMC - disabled because I don't feel like making it work right now
+	/*
+	x += cbp->GetWidth() + 10;
+	cbp = cwp->AddChild(new Button("Class subsystems", x, 0, ship_subsys_window));
+	*/
 	x += cbp->GetWidth() + 10;
 	cbp = cwp->AddChild(new Button("Exit", x, 0, get_out_of_lab));
+	
+	cwp = Lab_screen->Add(new Window("Weapons toolbar", 0, cwp->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
+	x = 0;
+	cbp = cwp->AddChild(new Button("Weapon classes", 0, 0, weaps_make_window));
+	x += cbp->GetWidth() + 10;
+	cbp = cwp->AddChild(new Button("Weapon variables", x, 0, weap_variables_window));
 }
 
 extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);

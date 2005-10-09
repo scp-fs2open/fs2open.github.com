@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-09-25 07:27:33 $
- * $Author: Goober5000 $
+ * $Revision: 1.22 $
+ * $Date: 2005-10-09 00:43:08 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/09/25 07:27:33  Goober5000
+ * and again
+ * --Goober5000
+ *
  * Revision 1.20  2005/09/25 07:26:05  Goober5000
  * try to fix the headers
  * --Goober5000
@@ -1857,15 +1861,8 @@ TreeItem::TreeItem()
 	DeleteData=true;
 	memset(Coords, 0, sizeof(Coords));
 }
-TreeItem::~TreeItem()
+void TreeItem::ClearAllItems()
 {
-	//Because I don't think the default LinkedList destructor is called
-	//OK so it seems to be
-	/*
-	prev->next=next;
-	next->prev=prev;
-	*/
-	
 	LinkedList* cgp = GET_FIRST(&Children);
 	LinkedList* cgp_next;
 	for(; cgp != END_OF_LIST(&Children); cgp = cgp_next)
@@ -1873,11 +1870,10 @@ TreeItem::~TreeItem()
 		cgp_next = GET_NEXT(cgp);
 		delete cgp;
 	}
-
-/*	if((Data != 0) && DeleteData) {
-		delete (ptr_u *)Data;	//A good idea
-	} */
-
+}
+TreeItem::~TreeItem()
+{
+	ClearAllItems();
 }
 
 void Tree::CalcItemsSize(TreeItem *items, int DrawData[4])
@@ -2123,15 +2119,11 @@ TreeItem* Tree::AddItem(TreeItem *parent, std::string in_name, int in_data, bool
 	OnRefreshSize();
 	return ni;
 }
-/*
-void Tree::LoadItemList(MenuItem *in_list, unsigned int count)
-{
-	unsigned int oldcount = Items.size();
-	Items.resize(oldcount + count);
-	memcpy(&Items[oldcount], in_list, sizeof(MenuItem) * count);
 
-	CalculateSize();
-}*/
+void Tree::ClearItems()
+{
+	Items.ClearAllItems();
+}
 
 //*****************************Text*******************************
 int Text::DoRefreshSize()
@@ -2377,6 +2369,24 @@ void Text::SetSaveLoc(int *int_ptr, int save_method, int max_value, int min_valu
 	SaveMin = min_value;
 }
 
+void Text::SetSaveLoc(short int *sint_ptr, int save_method, short int max_value, short int min_value)
+{
+	Assert(sint_ptr != NULL);		//Naughty.
+	Assert(min_value < max_value);	//Mmm-hmm.
+
+	SaveType = T_ST_SINT;
+	if(save_method == T_ST_CLOSE)
+		SaveType |= T_ST_CLOSE;
+	else if(save_method == T_ST_REALTIME)
+		SaveType |= T_ST_REALTIME;
+	else if(save_method == T_ST_ONENTER)
+		SaveType |= T_ST_ONENTER;
+
+	siSavePointer = sint_ptr;
+	SaveMax = max_value;
+	SaveMin = min_value;
+}
+
 void Text::SetSaveLoc(float *ptr, int save_method, float max_value, float min_value)
 {
 	Assert(ptr != NULL);		//Naughty.
@@ -2467,6 +2477,15 @@ bool Text::Save()
 		if(the_int <= SaveMax && the_int >= SaveMin)
 		{
 			*iSavePointer = the_int;
+			return true;
+		}
+	}
+	else if(SaveType & T_ST_SINT)
+	{
+		int the_sint =  atoi(Content.c_str());
+		if(the_sint <= SaveMax && the_sint >= SaveMin)
+		{
+			*siSavePointer = the_sint;
 			return true;
 		}
 	}

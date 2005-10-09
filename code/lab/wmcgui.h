@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.h $
- * $Revision: 1.18 $
- * $Date: 2005-09-25 07:27:33 $
- * $Author: Goober5000 $
+ * $Revision: 1.19 $
+ * $Date: 2005-10-09 00:43:08 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/09/25 07:27:33  Goober5000
+ * and again
+ * --Goober5000
+ *
  * Revision 1.17  2005/09/25 07:26:05  Goober5000
  * try to fix the headers
  * --Goober5000
@@ -506,7 +510,9 @@ public:
 	TreeItem *	GetParentItem(){return Parent;}
 	int			GetData(){return Data;}
 	bool		HasChildren(){return NOT_EMPTY(&Children);}
-
+	
+	void TreeItem::ClearAllItems();
+	
 	TreeItem();
 	~TreeItem();
 };
@@ -537,6 +543,7 @@ public:
 
 	//void LoadItemList(TreeItem *in_list, unsigned int count);
 	TreeItem* AddItem(TreeItem *parent, std::string in_name, int in_data = 0, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
+	void ClearItems();
 
 	TreeItem* GetSelectedItem(){return SelectedItem;}
 };
@@ -548,9 +555,10 @@ public:
 //What type?
 #define T_ST_NONE			0		//No saving
 #define T_ST_INT			(1<<0)
-#define T_ST_CHAR			(1<<1)
-#define T_ST_FLOAT			(1<<2)
-#define T_ST_UBYTE			(1<<3)
+#define T_ST_SINT			(1<<1)
+#define T_ST_CHAR			(1<<2)
+#define T_ST_FLOAT			(1<<3)
+#define T_ST_UBYTE			(1<<4)
 
 //When do we save changes?
 #define T_ST_ONENTER		(1<<21)
@@ -575,6 +583,7 @@ class Text : public GUIObject
 	int SaveType;
 	union
 	{
+		short int *siSavePointer;
 		int *iSavePointer;
 		ubyte *ubSavePointer;
 		float *flSavePointer;
@@ -597,6 +606,7 @@ public:
 	void SetText(int the_int);
 	void SetText(float the_float);
 	void SetSaveLoc(int *ptr, int save_method, int max_value=INT_MAX, int min_value=INT_MIN);
+	void Text::SetSaveLoc(short int *sint_ptr, int save_method, short int max_value=SHRT_MAX, short int min_value=SHRT_MIN);
 	void SetSaveLoc(float *ptr, int save_method, float max_value=INT_MAX, float min_value=INT_MIN);
 	void SetSaveLoc(char *ptr, int save_method, uint max_len=UINT_MAX, uint min_len = 0);
 	void SetSaveLoc(ubyte *ptr, int save_method, int max_value=UCHAR_MAX, int min_value=0);
