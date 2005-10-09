@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.169 $
- * $Date: 2005-10-09 08:03:21 $
+ * $Revision: 2.170 $
+ * $Date: 2005-10-09 08:10:03 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.169  2005/10/09 08:03:21  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.168  2005/10/09 06:10:59  wmcoolmon
  * Added sexps set-object-speed-x, set-object-speed-y, set-object-speed-z,
  * and ship-create
@@ -18782,7 +18785,10 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_SHIP_CREATE, "ship-create\r\n"
 		"\tCreates a new ship\r\n"
-		"\tTakes 5 to 8 arguments..."
+		"\tReturns NAN if ship couldn't be created;\r\n"
+		"\tReturns 1 if the ship already existed;\r\n"
+		"\tReturns 2 if the ship was created\r\n"
+		"\tTakes 5 to 8 arguments...\r\n"
 		"\t1: Name of new ship\r\n"
 		"\t2: Class of new ship\r\n"
 		"\t3: X position\r\n"
