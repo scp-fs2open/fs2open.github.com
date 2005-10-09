@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2005/10/09 03:13:13  wmcoolmon
+ * Much better laser weapon/pof handling, removed a couple unneccessary
+ * warnings (used to try and track down a bug)
+ *
  * Revision 2.131  2005/10/09 00:43:09  wmcoolmon
  * Extendable modular tables (XMTs); added weapon dialogs to the Lab
  *
@@ -1559,7 +1563,7 @@ int parse_weapon(int subtype, bool replace)
 		}
 
 		if(Num_weapon_types >= MAX_WEAPON_TYPES) {
-			Warning(LOCATION, "Too many weapon classes; maximum is %d, so only the first %d will be used", MAX_WEAPON_TYPES, Num_weapon_types);
+			Warning(LOCATION, "Too many weapon classes before '%s'; maximum is %d, so only the first %d will be used", fname, MAX_WEAPON_TYPES, Num_weapon_types);
 			
 			//Skip the rest of the ships in non-modular tables, since we can't add them.
 			if(!replace) {
@@ -2628,7 +2632,7 @@ void parse_cmeasure(bool replace)
 	if(c_id <= -1)
 	{
 		if(Num_cmeasure_types >= MAX_CMEASURES) {
-			Warning(LOCATION, "Too many countermeasures; maximum is %d, so only the first %d will be used", MAX_CMEASURES, Num_cmeasure_types);
+			Warning(LOCATION, "Too many countermeasures before '%s'; maximum is %d, so only the first %d will be used", buf, MAX_CMEASURES, Num_cmeasure_types);
 			
 			//Skip the rest of the ships in non-modular tables, since we can't add them.
 			if(!replace) {
