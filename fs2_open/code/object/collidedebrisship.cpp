@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-10-09 09:13:29 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.8  2005/03/27 12:28:32  Goober5000
  * clarified max hull/shield strength names and added ship guardian thresholds
  * --Goober5000
@@ -321,7 +324,7 @@ int collide_debris_ship( obj_pair * pair )
 		shipp = &Ships[pship->instance];
 
 		if (ship_is_beginning_warpout_speedup(pship)) {
-			ship_max_speed = MAX(ship_get_max_speed(shipp), ship_get_warp_speed(pship));
+			ship_max_speed = MAX(ship_get_max_speed(shipp), ship_get_warpout_speed(pship));
 		} else {
 			ship_max_speed = ship_get_max_speed(shipp);
 		}
@@ -472,7 +475,7 @@ int collide_asteroid_ship( obj_pair * pair )
 		asteroid_max_speed = MAX(asteroid_max_speed, 10.0f);
 
 		if (ship_is_beginning_warpout_speedup(pship)) {
-			ship_max_speed = MAX(ship_get_max_speed(shipp), ship_get_warp_speed(pship));
+			ship_max_speed = MAX(ship_get_max_speed(shipp), ship_get_warpout_speed(pship));
 		} else {
 			ship_max_speed = ship_get_max_speed(shipp);
 		}

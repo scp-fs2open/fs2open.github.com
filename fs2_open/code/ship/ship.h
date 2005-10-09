@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.109 $
- * $Date: 2005-10-09 00:43:09 $
+ * $Revision: 2.110 $
+ * $Date: 2005-10-09 09:13:29 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.109  2005/10/09 00:43:09  wmcoolmon
+ * Extendable modular tables (XMTs); added weapon dialogs to the Lab
+ *
  * Revision 2.108  2005/10/08 05:41:09  wmcoolmon
  * Fix Int3() from ship-vanish
  *
@@ -1446,6 +1449,9 @@ typedef struct ship_info {
 	float		forward_decel;
 	float		slide_accel;
 	float		slide_decel;
+	float		warpin_speed;
+	float		warpout_speed;
+
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
 	uint		flags2;							//	See SIF2_xxxx - added by Goober5000
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
@@ -1964,8 +1970,8 @@ int ship_is_tagged(object *objp);
 // returns max normal speed of ship (overclocked / afterburned)
 float ship_get_max_speed(ship *shipp);
 
-// returns warp speed of ship
-float ship_get_warp_speed(object *objp);
+// returns warpout speed of ship
+float ship_get_warpout_speed(object *objp);
 
 // returns true if ship is beginning to speed up in warpout
 int ship_is_beginning_warpout_speedup(object *objp);

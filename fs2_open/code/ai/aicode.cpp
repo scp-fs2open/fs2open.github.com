@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.35 $
- * $Date: 2005-10-09 03:13:13 $
+ * $Revision: 1.36 $
+ * $Date: 2005-10-09 09:13:28 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2005/10/09 03:13:13  wmcoolmon
+ * Much better laser weapon/pof handling, removed a couple unneccessary
+ * warnings (used to try and track down a bug)
+ *
  * Revision 1.34  2005/10/08 19:29:08  wmcoolmon
  * Attempt to fix crash bug on 'Mystery of the Trinity'
  *
@@ -13791,7 +13795,7 @@ void ai_warp_out(object *objp)
 			aip->submode_start_time = Missiontime;
 
 			// maybe recalculate collision pairs.
-			if (ship_get_warp_speed(objp) > ship_get_max_speed(&Ships[objp->instance])) {
+			if (ship_get_warpout_speed(objp) > ship_get_max_speed(&Ships[objp->instance])) {
 				// recalculate collision pairs
 				OBJ_RECALC_PAIRS(objp);	
 			}
@@ -13808,7 +13812,7 @@ void ai_warp_out(object *objp)
 		//	Rampup desired_vel in here from current to desired velocity and set PF_USE_VEL. (not sure this is the right flag)
 		//	See shipfx#572 for sample code.
 		float	speed, goal_speed;
-		goal_speed = ship_get_warp_speed(objp);
+		goal_speed = ship_get_warpout_speed(objp);
 
 		// HUGE ships go immediately to AIS_WARP_4
 		if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HUGE_SHIP) {
