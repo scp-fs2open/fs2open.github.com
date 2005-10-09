@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-04-05 05:53:21 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-10-09 01:50:04 $
+ * $Author: wmcoolmon $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/05 05:53:21  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.8  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -277,12 +280,10 @@
 #include "object/objectdock.h"
 
 
-#ifdef FS2_DEMO
-	#define MAX_PAIRS 3000
-#else
-	#define MAX_PAIRS 8000	//	Reduced from 10,000 to 6,000 by MK on 4/1/98.
-									//	Most I saw was 3400 in sm1-06a, the asteriod mission.  No other mission came close.
-#endif
+
+#define MAX_PAIRS 10000	//	Bumped back to 10,000 by WMC
+			//	Reduced from 10,000 to 6,000 by MK on 4/1/98.
+			//	Most I saw was 3400 in sm1-06a, the asteriod mission.  No other mission came close.
 
 // the next 3 variables are used for pair statistics
 // also in weapon.cpp there is Weapons_created.
