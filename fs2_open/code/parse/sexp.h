@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.94 $
- * $Author: Goober5000 $
- * $Date: 2005-07-13 03:35:32 $
+ * $Revision: 2.95 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-10-09 06:10:59 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.93  2005/07/13 02:30:54  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -1116,6 +1120,11 @@ struct ship_subsys;
 #define OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD	(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define OP_SET_SKYBOX_MODEL					(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // taylor
+
+#define OP_SHIP_CREATE						(0X00b5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_OBJECT_SPEED_X					(0X00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_OBJECT_SPEED_Y					(0X00b7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_OBJECT_SPEED_Z					(0X00b8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 
 /* made obsolete by Goober5000
 // debugging sexpressions

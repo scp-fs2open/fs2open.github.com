@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.167 $
- * $Date: 2005-09-24 01:50:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.168 $
+ * $Date: 2005-10-09 06:10:59 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.167  2005/09/24 01:50:09  Goober5000
+ * a bunch of support ship bulletproofing
+ * --Goober5000
+ *
  * Revision 2.166  2005/09/17 01:41:49  Goober5000
  * better tweak
  *
@@ -1157,6 +1161,9 @@ sexp_oper Operators[] = {
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
+	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,				2,	2	},	// WMC
+	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,				2,	2	},	// WMC
+	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,				2,	2	},	// WMC
 	{ "get-object-x",				OP_GET_OBJECT_X,				1,	2	},	// Goober5000
 	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	2	},	// Goober5000
 	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	2	},	// Goober5000
@@ -1334,6 +1341,7 @@ sexp_oper Operators[] = {
 	{ "set-support-ship",			OP_SET_SUPPORT_SHIP,			6, 6 },	// Goober5000
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
+	{ "ship-create",					OP_SHIP_CREATE,					5, 8	},	//WMC
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
@@ -1341,14 +1349,14 @@ sexp_oper Operators[] = {
 	{ "ship-tag",				OP_SHIP_TAG,				3, 7			},	// Goober5000
 	{ "ship-untag",				OP_SHIP_UNTAG,				1, 1			},	// Goober5000
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
-	{ "warp-effect",				OP_WARP_EFFECT,					12, 12 },		// Goober5000
+	{ "warp-effect",			OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
 	{ "set-skybox-model",			OP_SET_SKYBOX_MODEL,			1, 1 },	// taylor
 
 	//HUD funcs -C
-	{ "hud-disable",				OP_HUD_DISABLE,					1, 1 },	// Goober5000
-	{ "hud-disable-except-messages",OP_HUD_DISABLE_EXCEPT_MESSAGES,	1, 1 },	// Goober5000
-	{ "hud-set-text",				OP_HUD_SET_TEXT,				2, 2 },	//WMCoolmon
+	{ "hud-disable",			OP_HUD_DISABLE,					1, 1 },	// Goober5000
+	{ "hud-disable-except-messages",	OP_HUD_DISABLE_EXCEPT_MESSAGES,	1, 1 },	// Goober5000
+	{ "hud-set-text",			OP_HUD_SET_TEXT,				2, 2 },	//WMCoolmon
 	{ "hud-set-text-num",			OP_HUD_SET_TEXT_NUM,			2, 2 },	//WMCoolmon
 	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
@@ -5418,6 +5426,76 @@ int sexp_distance_subsystem(int n)	// Goober5000
 	}
 
 	return dist_min;
+}
+
+void sos_helper(object *objp, int speed, int axis)
+{
+	switch(axis)
+	{
+		case 0:
+			objp->phys_info.vel.xyz.x = i2fl(speed);
+			break;
+		case 1:
+			objp->phys_info.vel.xyz.y = i2fl(speed);
+			break;
+		case 2:
+			objp->phys_info.vel.xyz.z = i2fl(speed);
+			break;
+		default:
+			Warning(LOCATION,"Invalid axis %d passed to sexp_sos_helper", axis);
+			return;
+	}
+}
+
+void sexp_set_object_speed(int n, int axis)
+{
+	ship_obj *so;
+	int idx;
+	char *object_name = CTEXT(n);
+	n = CDR(n);
+	int object_speed = eval_num(n);
+
+	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
+		return;
+
+	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
+		return;
+
+	idx = sexp_determine_team(object_name);
+	if (idx)
+	{
+		so = GET_FIRST(&Ship_obj_list);
+		while (so != END_OF_LIST(&Ship_obj_list))
+		{
+			if (Ships[Objects[so->objnum].instance].team == idx) {
+				sos_helper(&Objects[so->objnum], object_speed, axis);
+			}
+
+			so = GET_NEXT(so);
+		}
+
+		return;
+	}
+
+	idx = ship_name_lookup(object_name);
+	if(idx > -1) {
+		sos_helper(&Objects[Ships[idx].objnum], object_speed, axis);
+		return;
+	}
+
+	idx = waypoint_lookup(object_name);
+	if(idx > -1) {
+		sos_helper(&Objects[idx], object_speed, axis);
+		return;
+	}
+
+	idx = wing_name_lookup(object_name);
+	if(idx > 0)
+	{
+		for(int i = 0; i < Wings[idx].current_count; i++) {
+			sos_helper(&Objects[Ships[Wings[idx].ship_index[i]].objnum], object_speed, axis);
+		}
+	}
 }
 
 // Goober5000
@@ -9890,6 +9968,66 @@ void sexp_ships_guardian( int n, int guardian )
 	}
 }
 
+int sexp_ship_create(int n)
+{
+	int new_ship_class = -1;
+	char *new_ship_name;
+	vec3d new_ship_pos = vmd_zero_vector;
+	angles new_ship_ang = {0};
+	matrix new_ship_ori = vmd_identity_matrix;
+	bool change_angles = false;
+
+	new_ship_name = CTEXT(n);
+	if(ship_name_lookup(new_ship_name) > -1) {
+		return 1;
+	}
+	
+	//Get ship class
+	n = CDR(n);
+	new_ship_class = ship_info_lookup(CTEXT(n));
+
+	if(new_ship_class == -1) {
+		Warning(LOCATION, "Invalid ship class passed to ship-create; ship type '%s' does not exist", CTEXT(n));
+		return SEXP_NAN;
+	}
+
+	n = CDR(n);
+	new_ship_pos.xyz.x = eval_num(n);
+	n = CDR(n);
+	new_ship_pos.xyz.y = eval_num(n);
+	n = CDR(n);
+	new_ship_pos.xyz.z = eval_num(n);
+
+	n = CDR(n);
+	if(n != -1) {
+		new_ship_ang.p = eval_num(n) * (PI/180.0f);
+		change_angles = true;
+	}
+
+	n = CDR(n);
+	if(n != -1) {
+		new_ship_ang.b = eval_num(n) * (PI/180.0f);
+		change_angles = true;
+	}
+
+	n = CDR(n);
+	if(n != -1) {
+		new_ship_ang.h = eval_num(n) * (PI/180.0f);
+		change_angles = true;
+	}
+
+	//This is a costly function, so only do it if needed
+	if(change_angles) {
+		vm_angles_2_matrix(&new_ship_ori, &new_ship_ang);
+	}
+
+	if(ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name) < 0) {
+		return SEXP_NAN;
+	}
+
+	return 2;
+}
+
 void sexp_ship_vanish_helper(object *objp, dock_function_info *infop)
 {
 	ship_vanished(objp);
@@ -13444,6 +13582,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_ship_subsys_guardian_threshold(node);
 				sexp_val = 1;
 				break;
+			
+			case OP_SHIP_CREATE:
+				sexp_val = sexp_ship_create ( node );
+				break;
 
 			case OP_SHIP_VANISH:
 				sexp_ship_vanish( node );
@@ -13746,6 +13888,21 @@ int eval_sexp(int cur_node, int referenced_node)
 				// the current campaign's mission and move forward to the next mission
 			case OP_RED_ALERT:
 				red_alert_start_mission();
+				sexp_val = 1;
+				break;
+
+			case OP_SET_OBJECT_SPEED_X:
+				sexp_set_object_speed(node, 0);
+				sexp_val = 1;
+				break;
+
+			case OP_SET_OBJECT_SPEED_Y:
+				sexp_set_object_speed(node, 1);
+				sexp_val = 1;
+				break;
+
+			case OP_SET_OBJECT_SPEED_Z:
+				sexp_set_object_speed(node, 2);
 				sexp_val = 1;
 				break;
 
@@ -14507,6 +14664,7 @@ int query_operator_return_type(int op)
 		case OP_NUM_SHIPS_IN_BATTLE:
 		case OP_CURRENT_SPEED:
 		case OP_NAV_DISTANCE:	//kazan
+		case OP_SHIP_CREATE: //WMC
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -14684,6 +14842,9 @@ int query_operator_return_type(int op)
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
+		case OP_SET_OBJECT_SPEED_X:
+		case OP_SET_OBJECT_SPEED_Y:
+		case OP_SET_OBJECT_SPEED_Z:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -14846,6 +15007,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 			return OPF_SHIP;
+		
+		case OP_SHIP_CREATE:
+			if(argnum == 0)
+				return OPF_STRING;
+			else if(argnum == 1)
+				return OPF_SHIP_CLASS_NAME;
+			else
+				return OPF_NUMBER;
 
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 			if (argnum == 0)
@@ -14919,6 +15088,14 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_DISTANCE:
 			return OPF_SHIP_WING_POINT;
+
+		case OP_SET_OBJECT_SPEED_X:
+		case OP_SET_OBJECT_SPEED_Y:
+		case OP_SET_OBJECT_SPEED_Z:
+			if (argnum==0)
+				return OPF_SHIP_WING_POINT;
+			else
+				return OPF_NUMBER;
 
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
@@ -16821,6 +16998,9 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SHIP_POSITION:
 		case OP_SET_SHIP_FACING:
 		case OP_SET_SHIP_FACING_OBJECT:
+		case OP_SET_OBJECT_SPEED_X:
+		case OP_SET_OBJECT_SPEED_Y:
+		case OP_SET_OBJECT_SPEED_Z:
 			return CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION;
 
 		case OP_CHANGE_SOUNDTRACK:
@@ -16835,6 +17015,7 @@ int get_subcategory(int sexp_id)
 		case OP_PRIMITIVE_SENSORS_SET_RANGE:
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
+		case OP_SHIP_CREATE:
 		case OP_SHIP_VANISH:
 		case OP_SUPERNOVA_START:
 		case OP_SHIP_VAPORIZE:
@@ -16987,6 +17168,24 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_AVG, "Average value (Arithmetic operator)\r\n"
 		"\tReturns the average (rounded to the nearest integer) of a set of numbers.  Takes 1 or more numeric arguments.\r\n" },
+
+	{OP_SET_OBJECT_SPEED_X, "set-object-speed-x\r\n"
+		"\tSets the X speed of a ship, wing, waypoint, or ship."
+		"Takes 2 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: The speed to set." },
+
+	{OP_SET_OBJECT_SPEED_Y, "set-object-speed-y\r\n"
+		"\tSets the Y speed of a ship, wing, waypoint, or ship."
+		"Takes 2 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: The speed to set." },
+
+	{OP_SET_OBJECT_SPEED_Z, "set-object-speed-z\r\n"
+		"\tSets the Z speed of a ship, wing, waypoint, or ship."
+		"Takes 2 arguments...\r\n"
+		"\t1: The name of the object.\r\n"
+		"\t2: The speed to set." },
 
 	// Goober5000
 	{ OP_GET_OBJECT_X, "get-object-x\r\n"
@@ -18508,6 +18707,18 @@ sexp_help_struct Sexp_help[] = {
 		"\tMakes the named ship vanish (no log and vanish)\r\n"
 		"\tSingle Player Only!  Warning: This will cause ship exit not to be logged, so 'has-departed', etc. will not work\r\n"
 		"\t1: List of ship names to vanish\r\n"},
+
+	{ OP_SHIP_CREATE, "ship-create\r\n"
+		"\tCreates a new ship\r\n"
+		"\tTakes 5 to 8 arguments..."
+		"\t1: Name of new ship\r\n"
+		"\t2: Class of new ship\r\n"
+		"\t3: X position\r\n"
+		"\t4: Y position\r\n"
+		"\t5: Z position\r\n"
+		"\t6: Pitch (optional)\r\n"
+		"\t7: Bank (optional)\r\n"
+		"\t8: Heading (optional)\r\n"},
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
 		"\tCheck whether ship is visible on Player's radar\r\n"

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.52 $
+ * $Revision: 2.53 $
  * $Author: wmcoolmon $
- * $Date: 2005-10-08 18:26:40 $
+ * $Date: 2005-10-09 06:10:58 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/10/08 18:26:40  wmcoolmon
+ * Better readability for parse errors
+ *
  * Revision 2.51  2005/09/30 03:19:57  Goober5000
  * parsing stuff
  * --Goober5000
@@ -1351,11 +1354,11 @@ void stuff_malloc_string(char **dest, int type, char *terminators, int len)
 	
 	if(new_val != NULL)
 	{
-		if(*dest != NULL) {
+		if((*dest) != NULL) {
 			vm_free(*dest);
 		}
 		
-		*dest = new_val;
+		(*dest) = new_val;
 	}
 }
 
