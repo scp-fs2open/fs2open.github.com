@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.34 $
- * $Date: 2005-10-08 19:29:08 $
+ * $Revision: 1.35 $
+ * $Date: 2005-10-09 03:13:13 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2005/10/08 19:29:08  wmcoolmon
+ * Attempt to fix crash bug on 'Mystery of the Trinity'
+ *
  * Revision 1.33  2005/10/08 18:46:38  wmcoolmon
  * Error checking for dock error
  *
@@ -9580,7 +9583,6 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 	// make sure we have a spline path to check against before going any further
 	if (pm->docking_bays[dock_index].num_spline_paths <= 0)
 	{
-		Warning(LOCATION, "No spline paths found for dock index %d");
 		return -1;
 	}
 
@@ -9601,7 +9603,6 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 	}
 
 	// if path doesn't exist or the submodel doesn't exist or the submodel doesn't move
-	Warning(LOCATION, "Path or submodel does not exist; (path_num: %d) (n_paths: %d) (submodel:%d) (n_models: %d)", path_num, pm->n_paths, submodel, pm->n_models);
 	return -1;
 }
 
