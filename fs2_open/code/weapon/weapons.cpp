@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2005/10/09 17:38:49  wmcoolmon
+ * Added names to the 'limits reached' dialogs in ship/weapons.tbl
+ *
  * Revision 2.132  2005/10/09 03:13:13  wmcoolmon
  * Much better laser weapon/pof handling, removed a couple unneccessary
  * warnings (used to try and track down a bug)
