@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-10-09 00:43:08 $
+ * $Revision: 1.19 $
+ * $Date: 2005-10-09 09:18:10 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/10/09 00:43:08  wmcoolmon
+ * Extendable modular tables (XMTs); added weapon dialogs to the Lab
+ *
  * Revision 1.17  2005/09/25 07:27:33  Goober5000
  * and again
  * --Goober5000
@@ -206,6 +209,8 @@ void set_ship_variables_ship(ship_info *sip)
 	SVW_SET_SI_VAR(max_vel.xyz.x);
 	SVW_SET_SI_VAR(max_vel.xyz.y);
 	SVW_SET_SI_VAR(max_vel.xyz.z);
+	SVW_SET_SI_VAR(warpin_speed);
+	SVW_SET_SI_VAR(warpout_speed);
 
 	SVW_SET_SI_VAR(max_shield_strength);
 	SVW_SET_SI_VAR(max_hull_strength);
@@ -284,6 +289,8 @@ void ship_variables_window(Button *caller)
 	SVW_ADD_TEXT("Max vel (x)");
 	SVW_ADD_TEXT("Max vel (y)");
 	SVW_ADD_TEXT("Max vel (z)");
+	SVW_ADD_TEXT("Warp in speed");
+	SVW_ADD_TEXT("Warp out speed");
 
 	//Other
 	SVW_ADD_TEXT_HEADER("Stats");
