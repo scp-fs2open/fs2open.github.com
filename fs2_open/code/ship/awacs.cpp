@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-09-27 02:36:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2005-10-09 08:03:21 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/09/27 02:36:56  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.17  2005/09/25 05:13:04  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -353,7 +357,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	friendly_invisible = (shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
 	
 	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (shipp->flags2 & SF2_STEALTH);
-	int nebula_mission = (The_mission.flags & MISSION_FLAG_FULLNEB);
+	int nebula_enabled = (The_mission.flags & MISSION_FLAG_FULLNEB);
 	int check_huge_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_HUGE_SHIP);
 
 	// ships on the same team are always viewable
@@ -365,7 +369,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 
 	// only check for Awacs if stealth ship or Nebula mission
 	// determine the closest friendly awacs
-	if ((stealth_ship || nebula_mission) && use_awacs) {
+	if ((stealth_ship || nebula_enabled) && use_awacs) {
 		for (idx=0; idx<Awacs_count; idx++) {
 			// if not on the same team as the viewer
 			if(Awacs[idx].team != viewer->team){
@@ -421,7 +425,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		// if the ship is within range of an awacs
 		if(closest_index != -1){
 			// if the nebula effect is active, stealth ships are only partially targetable
-			if ( nebula_mission ) {
+			if ( nebula_enabled ) {
 				return MARGINALLY_TARGETABLE;
 			}
 
@@ -436,7 +440,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	// all other ships
 	else {
 		// if this is not a nebula mission, its always targetable
-		if( !nebula_mission ){
+		if( !nebula_enabled ){
 			return FULLY_TARGETABLE;
 		}
 
@@ -448,7 +452,12 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		// fully targetable at half the nebula value
 
 		// modify distance by species
-		float scan_nebula_range = Neb2_awacs;
+		float scan_nebula_range;
+		if(nebula_enabled) {
+			scan_nebula_range = Neb2_awacs;
+		} else {
+			scan_nebula_range = -1.0f;
+		}
 		scan_nebula_range *= Species_info[Ship_info[viewer->ship_info_index].species].awacs_multiplier;
 
 		// special case for huge ship - check inside expanded bounding boxes

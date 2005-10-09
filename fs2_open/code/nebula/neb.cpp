@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-06-21 00:20:24 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2005-10-09 08:03:20 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/06/21 00:20:24  taylor
+ * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
+ *   and this makes it so much easier to realize that
+ * properly deal with the fact that objnum can be -1 in  model_really_render()
+ * add NULL check to neb2_get_fog_values() so that it can just send back defaults if objp is NULL
+ * small compiler warning fix for neb code
+ *
  * Revision 2.37  2005/05/12 17:49:15  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -291,6 +298,8 @@
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS
 //
+
+bool Nebula_sexp_used = false;
 
 unsigned char Neb2_fog_colour_r = 0;
 unsigned char Neb2_fog_colour_g = 0;
@@ -574,8 +583,13 @@ void neb2_get_fog_colour(unsigned char *r, unsigned char *g, unsigned char *b)
 	if(b) *b = Neb2_fog_colour_b;
 }
 
-// initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
 void neb2_level_init()
+{
+	Nebula_sexp_used = false;
+}
+
+// initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
+void neb2_post_level_init()
 {
 	int idx;		
 
@@ -585,13 +599,13 @@ void neb2_level_init()
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	if(!(The_mission.flags & MISSION_FLAG_FULLNEB) && !Nebula_sexp_used){
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Neb2_awacs = -1.0f;
 		return;
 	}
 
-	if(Cmdline_nohtl || Fred_running) {
+	if(Cmdline_nohtl || Fred_running && (The_mission.flags & MISSION_FLAG_FULLNEB)) {
 		// by default we'll use pof rendering
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
@@ -698,7 +712,7 @@ void neb2_level_close()
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	if(!(The_mission.flags & MISSION_FLAG_FULLNEB) && !Nebula_sexp_used){
 		return;
 	}
 
@@ -729,7 +743,7 @@ void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){		
+	if(!(The_mission.flags & MISSION_FLAG_FULLNEB) && !Nebula_sexp_used){		
 		return;
 	}
 
@@ -783,7 +797,7 @@ void neb2_page_in()
 	int idx;
 
 	// load in all nebula bitmaps
-	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+	if (The_mission.flags & MISSION_FLAG_FULLNEB || Nebula_sexp_used) {
 		for(idx=0; idx<Neb2_poof_count; idx++){
 			if((Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx))){
 				bm_page_in_texture(Neb2_poofs[idx]);

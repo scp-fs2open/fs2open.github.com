@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.18 $
- * $Date: 2005-09-26 04:08:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2005-10-09 08:03:19 $
+ * $Author: wmcoolmon $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/09/26 04:08:53  Goober5000
+ * some more cleanup
+ * --Goober5000
+ *
  * Revision 2.17  2005/09/26 02:15:03  Goober5000
  * okay, this should all be working :)
  * --Goober5000
@@ -341,6 +345,8 @@ typedef struct hud_frames {
 	int	first_frame;
 	int	num_frames;
 } hud_frames;
+
+extern int HUD_contrast;
 
 
 //Current HUD to use for info -C

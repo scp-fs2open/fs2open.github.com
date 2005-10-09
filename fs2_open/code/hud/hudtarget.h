@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-22 09:19:40 $
+ * $Revision: 2.7 $
+ * $Date: 2005-10-09 08:03:20 $
  * $Author: wmcoolmon $
  *
  * Header file for HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/22 09:19:40  wmcoolmon
+ * Dynamic AI Class number commit. KNOWN BUG: When AI_CLASS_INCREMENT is hit and vm_realloc is called, memory corruption seems to
+ * result. Not at all sure what causes this; if this can't be resolved soon, we can always treat _INCREMENT like _MAX
+ *
  * Revision 2.5  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -345,6 +349,11 @@ typedef struct htarget_list {
 	int						how_added;			// determines how this hotkey was added (mission default or player)
 	object					*objp;				// the actual object
 } htarget_list;
+
+//for nebula toggle SEXP
+#define		TOGGLE_TEXT_NEBULA_ALPHA	127
+#define		TOGGLE_TEXT_NORMAL_ALPHA	160
+extern int Toggle_text_alpha;
 
 extern htarget_list htarget_free_list;
 extern int Hud_target_w, Hud_target_h;

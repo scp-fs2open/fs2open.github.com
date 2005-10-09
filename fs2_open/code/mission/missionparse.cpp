@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.117 $
- * $Date: 2005-10-02 23:01:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.118 $
+ * $Date: 2005-10-09 08:03:20 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2005/10/02 23:01:17  Goober5000
+ * removed a redundant action
+ * --Goober5000
+ *
  * Revision 2.116  2005/09/29 04:26:08  Goober5000
  * parse fixage
  * --Goober5000
@@ -1228,26 +1232,12 @@ void parse_mission_info(mission *pm)
 	// nebula mission stuff
 	Neb2_awacs = -1.0f;
 	if(optional_string("+NebAwacs:")){
-		if(pm->flags & MISSION_FLAG_FULLNEB){
-			stuff_float(&Neb2_awacs);
-		} else {
-			float temp;
-			stuff_float(&temp);
-		}
+		stuff_float(&Neb2_awacs);
 	}
 	if(optional_string("+Storm:")){
 		stuff_string(Mission_parse_storm_name, F_NAME, NULL);
 		nebl_set_storm(Mission_parse_storm_name);
 	}
-
-	/* Goober5000 - no longer used with MISSION_FLAG_TOGGLE_SHIP_TRAILS
-	// if this is a nebula mission and the "no ship trails in nebula" flag is not set,
-	// enable ship trails
-	if ((pm->flags & MISSION_FLAG_FULLNEB) && (!(pm->flags & MISSION_FLAG_NO_NEB_TRAILS)))
-	{
-		pm->flags |= MISSION_FLAG_SHIP_TRAILS;
-	}
-	*/
 
 	// Goober5000 - ship contrail speed threshold
 	pm->contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -4252,24 +4242,24 @@ void parse_bitmaps(mission *pm)
 	Nebula_index = -1;
 	Mission_palette = 1;
 
+	// neb2 info
+	strcpy(Neb2_texture_name, "Eraseme3");
+	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
+	if(optional_string("+Neb2:")){
+		stuff_string(Neb2_texture_name, F_NAME, NULL);
+
+		required_string("+Neb2Flags:");			
+		stuff_int(&Neb2_poof_flags);
+
+		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(
+		if(Fred_running && (The_mission.flags & MISSION_FLAG_FULLNEB)){
+			neb2_post_level_init();
+		}
+	}
+
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
 		// no regular nebula stuff
 		nebula_close();
-
-		// neb2 info
-		strcpy(Neb2_texture_name, "Eraseme3");
-		Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
-		if(optional_string("+Neb2:")){
-			stuff_string(Neb2_texture_name, F_NAME, NULL);
-
-			required_string("+Neb2Flags:");			
-			stuff_int(&Neb2_poof_flags);
-
-			// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(
-			if(Fred_running){
-				neb2_level_init();
-			}
-		}
 	} else {
 		if (optional_string("+Nebula:")) {
 			stuff_string(str, F_NAME, NULL, MAX_FILENAME_LEN);
