@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.238 $
- * $Date: 2005-10-09 09:13:29 $
+ * $Revision: 2.239 $
+ * $Date: 2005-10-09 17:38:49 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.238  2005/10/09 09:13:29  wmcoolmon
+ * Added warpin/warpout speed override values to ships.tbl
+ *
  * Revision 2.237  2005/10/09 00:43:09  wmcoolmon
  * Extendable modular tables (XMTs); added weapon dialogs to the Lab
  *
@@ -2317,7 +2320,7 @@ int parse_ship(bool replace)
 		
 		//Check if there are too many ship classes
 		if(Num_ship_types >= MAX_SHIP_TYPES) {
-			Warning(LOCATION, "Too many ship classes; maximum is %d, so only the first %d will be used", MAX_SHIP_TYPES, Num_ship_types);
+			Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first %d will be used", buf, MAX_SHIP_TYPES, Num_ship_types);
 			
 			//Skip the rest of the ships in non-modular tables, since we can't add them.
 			if(!replace) {
