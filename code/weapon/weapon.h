@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/10/09 00:43:09  wmcoolmon
+ * Extendable modular tables (XMTs); added weapon dialogs to the Lab
+ *
  * Revision 2.54  2005/07/24 06:01:37  wmcoolmon
  * Multiple shockwaves support.
  *
@@ -501,6 +504,7 @@ struct ship_subsys;
 extern char *Weapon_subtype_names[];
 extern int Num_weapon_subtypes;
 
+#define WRT_NONE	-1
 #define	WRT_LASER	1
 #define	WRT_POF		2
 

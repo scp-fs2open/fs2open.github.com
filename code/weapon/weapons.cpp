@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2005/10/09 00:43:09  wmcoolmon
+ * Extendable modular tables (XMTs); added weapon dialogs to the Lab
+ *
  * Revision 2.130  2005/09/29 04:26:09  Goober5000
  * parse fixage
  * --Goober5000
@@ -1295,6 +1298,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
 	
 	wip->subtype = WP_UNUSED;
+	wip->render_type = WRT_NONE;
 	
 	wip->title[0] = 0;
 	wip->desc = NULL;
@@ -1308,6 +1312,23 @@ void init_weapon_entry(int weap_info_index)
 	wip->hud_image_index = -1;
 	
 	wip->pofbitmap_name[0] = '\0';
+
+	wip->model_num = -1;
+
+	wip->laser_bitmap = -1;
+	wip->laser_bitmap_nframes = 1;
+	wip->laser_bitmap_fps = 0;
+
+	wip->laser_glow_bitmap = -1;
+	wip->laser_glow_bitmap_nframes = 0;
+	wip->laser_glow_bitmap_fps = 0;
+
+	gr_init_color( &wip->laser_color_1, 255, 255, 255 );
+	gr_init_color(&wip->laser_color_2, 0, 0, 0);
+	
+	wip->laser_length = 10.0f;
+	wip->laser_head_radius = 1.0f;
+	wip->laser_tail_radius = 1.0f;
 	
 	wip->external_model_name[0] = '\0';
 	wip->external_model_num = -1;
@@ -1601,8 +1622,18 @@ int parse_weapon(int subtype, bool replace)
 	//	Read the model file.  It can be a POF file or none.
 	//	If there is no model file (Model file: = "none") then we use our special
 	//	laser renderer which requires inner, middle and outer information.
-	if(optional_string("$Model file:")) {
+	if(optional_string("$Model file:"))
+	{
 		stuff_string(wip->pofbitmap_name, F_NAME, NULL);
+		if(stricmp(wip->pofbitmap_name, NOX("none")) && strlen(wip->pofbitmap_name))
+		{
+			wip->render_type = WRT_POF;
+			if(wip->laser_bitmap > -1) {
+				bm_unload(wip->laser_bitmap);
+			}
+
+			wip->laser_bitmap = -1;
+		}
 		diag_printf ("Model pof file -- %s\n", wip->pofbitmap_name );
 	}
 
@@ -1615,91 +1646,125 @@ int parse_weapon(int subtype, bool replace)
 	if (optional_string("$Submodel Rotation Acceleration:"))
 		stuff_float(&wip->weapon_submodel_rotate_accell);
 
-	if ( stricmp(wip->pofbitmap_name, NOX("none")) && strlen(wip->pofbitmap_name)) {
-		wip->model_num = -1;
-		wip->render_type = WRT_POF;
-		wip->laser_bitmap = -1;
-	} else {
-		//	No POF or AVI file specified, render as special laser type.
-		ubyte r,g,b;
 
-		wip->render_type = WRT_LASER;
-		wip->model_num = -1;
+	//	No POF or AVI file specified, render as special laser type.(?)
+	ubyte r,g,b;
 
-		// laser bitmap itself
-		required_string("@Laser Bitmap:");
-		stuff_string(wip->pofbitmap_name, F_NAME, NULL);
-		wip->laser_bitmap = -1;
-		if(!Fred_running){
-			wip->laser_bitmap = bm_load( wip->pofbitmap_name );
-			if(wip->laser_bitmap < 0){	//if it couldn't find the pcx look for an ani-Bobboau
+	// laser bitmap itself
+	if(optional_string("@Laser Bitmap:"))
+	{
+		int new_laser = -1;
+		stuff_string(fname, F_NAME, NULL);
+
+		if(!Fred_running)
+		{
+			new_laser = bm_load( fname );
+			if(new_laser < 0)
+			{	//if it couldn't find the pcx look for an ani-Bobboau
 				nprintf(("General","couldn't find pcx for %s \n", wip->name));
-					wip->laser_bitmap = bm_load_animation(wip->pofbitmap_name, &wip->laser_bitmap_nframes, &wip->laser_bitmap_fps, 1);				
-				if(wip->laser_bitmap < 0){
+				new_laser = bm_load_animation(fname, &wip->laser_bitmap_nframes, &wip->laser_bitmap_fps, 1);				
+				if(new_laser < 0)
+				{
 					nprintf(("General","couldn't find ani for %s \n", wip->name));
-				Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by weapon '%s'\n", wip->pofbitmap_name, wip->name );
-				}else{
+					Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by weapon '%s'\n", wip->pofbitmap_name, wip->name );
+				}
+				else
+				{
+					if(wip->laser_bitmap > -1) {
+						bm_unload(wip->laser_bitmap);
+					}
+					strcpy(wip->pofbitmap_name, fname);
+					wip->laser_bitmap = new_laser;
+					wip->render_type = WRT_LASER;
 					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", wip->pofbitmap_name, wip->name,wip->laser_bitmap_nframes, wip->laser_bitmap_fps));
 				}
-			}else{
+			}
+			else
+			{
+				if(wip->laser_bitmap > -1) {
+					bm_unload(wip->laser_bitmap);
+				}
+				strcpy(wip->pofbitmap_name, fname);
+				wip->laser_bitmap = new_laser;
+				wip->render_type = WRT_LASER;
 				wip->laser_bitmap_nframes = 1;
 				wip->laser_bitmap_fps = 0;
 			}
 
 		}
+	}
 
-		// optional laser glow
-		wip->laser_glow_bitmap = -1;
-		if(optional_string("@Laser Glow:")){
-			stuff_string(fname, F_NAME, NULL);		
-			if(!Fred_running){
-				wip->laser_glow_bitmap = bm_load( fname );
-				if(wip->laser_glow_bitmap < 0){	//if it couldn't find the pcx look for an ani-Bobboau
-					nprintf(("General","couldn't find pcx for %s \n", wip->name));
-					wip->laser_glow_bitmap = bm_load_animation(fname, &wip->laser_glow_bitmap_nframes, &wip->laser_glow_bitmap_fps, 1);				
-					if(wip->laser_glow_bitmap < 0){
-						nprintf(("General","couldn't find ani for %s \n", wip->name));
+	// optional laser glow
+	if(optional_string("@Laser Glow:"))
+	{
+		stuff_string(fname, F_NAME, NULL);		
+		if(!Fred_running)
+		{
+			int new_glow = bm_load( fname );
+			if(new_glow < 0)
+			{	//if it couldn't find the pcx look for an ani-Bobboau
+				nprintf(("General","couldn't find pcx for %s \n", wip->name));
+				new_glow = bm_load_animation(fname, &wip->laser_glow_bitmap_nframes, &wip->laser_glow_bitmap_fps, 1);				
+				if(new_glow < 0){
+					nprintf(("General","couldn't find ani for %s \n", wip->name));
 					Warning( LOCATION, "Couldn't open glow texture '%s'\nreferenced by weapon '%s'\n", fname, wip->name );
-					}else{
-						nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", fname, wip->name,wip->laser_glow_bitmap_nframes, wip->laser_glow_bitmap_fps));
-					}
 				}else{
-					wip->laser_glow_bitmap_nframes = 0;
-					wip->laser_glow_bitmap_fps = 0;
-				}
-
-				/* there's no purpose to this, it just gets unloaded before use anyway - taylor
-				// might as well lock it down as an aabitmap now
-				if(wip->laser_glow_bitmap >= 0){	//locking all frames if it is a ani-Bobboau
-					for(int i = 0; i>wip->laser_glow_bitmap_nframes; i++){
-						bm_lock((wip->laser_glow_bitmap + i), 8, BMP_AABITMAP);
-						bm_unlock((wip->laser_glow_bitmap + i));
-						nprintf(("General","locking glow for weapon %s \n", wip->name));
-					//	mprintf(("locking glow for weapon"));
+					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", fname, wip->name,wip->laser_glow_bitmap_nframes, wip->laser_glow_bitmap_fps));
+					if(wip->laser_glow_bitmap > -1) {
+						bm_unload(wip->laser_glow_bitmap);
 					}
+					wip->laser_glow_bitmap = new_glow;
 				}
-				*/
 			}
+			else
+			{
+				if(wip->laser_glow_bitmap > -1) {
+					bm_unload(wip->laser_glow_bitmap);
+				}
+				wip->laser_glow_bitmap = new_glow;
+				wip->laser_glow_bitmap_nframes = 0;
+				wip->laser_glow_bitmap_fps = 0;
+			}
+
+			/* there's no purpose to this, it just gets unloaded before use anyway - taylor
+			// might as well lock it down as an aabitmap now
+			if(wip->laser_glow_bitmap >= 0){	//locking all frames if it is a ani-Bobboau
+				for(int i = 0; i>wip->laser_glow_bitmap_nframes; i++){
+					bm_lock((wip->laser_glow_bitmap + i), 8, BMP_AABITMAP);
+					bm_unlock((wip->laser_glow_bitmap + i));
+					nprintf(("General","locking glow for weapon %s \n", wip->name));
+				//	mprintf(("locking glow for weapon"));
+				}
+			}
+			*/
 		}
+	}
 		
-		required_string("@Laser Color:");
-		stuff_ubyte(&r);	stuff_ubyte(&g);	stuff_ubyte(&b);
+	if(optional_string("@Laser Color:"))
+	{
+		stuff_ubyte(&r);
+		stuff_ubyte(&g);
+		stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_1, r, g, b );
+	}
 
-		// optional string for cycling laser colors
-		gr_init_color(&wip->laser_color_2, 0, 0, 0);
-		if(optional_string("@Laser Color2:")){
-			stuff_ubyte(&r);	stuff_ubyte(&g);	stuff_ubyte(&b);
-			gr_init_color( &wip->laser_color_2, r, g, b );
-		}
+	// optional string for cycling laser colors
+	if(optional_string("@Laser Color2:")){
+		stuff_ubyte(&r);
+		stuff_ubyte(&g);
+		stuff_ubyte(&b);
+		gr_init_color( &wip->laser_color_2, r, g, b );
+	}
 
-		required_string("@Laser Length:");
+	if(optional_string("@Laser Length:")) {
 		stuff_float(&wip->laser_length);
-		
-		required_string("@Laser Head Radius:");
+	}
+	
+	if(optional_string("@Laser Head Radius:")) {
 		stuff_float(&wip->laser_head_radius);
+	}
 
-		required_string("@Laser Tail Radius:");
+	if(optional_string("@Laser Tail Radius:")) {
 		stuff_float(&wip->laser_tail_radius );
 	}
 
