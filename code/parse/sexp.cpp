@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.168 $
- * $Date: 2005-10-09 06:10:59 $
+ * $Revision: 2.169 $
+ * $Date: 2005-10-09 08:03:21 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.168  2005/10/09 06:10:59  wmcoolmon
+ * Added sexps set-object-speed-x, set-object-speed-y, set-object-speed-z,
+ * and ship-create
+ *
  * Revision 2.167  2005/09/24 01:50:09  Goober5000
  * a bunch of support ship bulletproofing
  * --Goober5000
@@ -1045,6 +1049,7 @@
 #include "object/objectdock.h"
 #include "globalincs/systemvars.h"
 #include "camera/camera.h"
+#include "nebula/neb.h"
 
 #ifndef NO_NETWORK
 #include "network/multi.h"
@@ -1285,6 +1290,7 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
+	{ "mission-set-nebula",					OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
 	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
@@ -1548,6 +1554,9 @@ int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 int eval_num(int node);
 
+//WMC - triggers functions when SEXPs are parsed rather than executed
+void trigger_operator_premission(int op);
+
 // Goober5000
 char *Sexp_current_replacement_argument;
 arg_item Sexp_applicable_argument_list;
@@ -1616,11 +1625,12 @@ void init_sexp()
 int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 {
 	int i;
+	int sexp_const;
 
-	i = get_operator_const(text);
-	if ((i == OP_TRUE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR)) {
+	sexp_const = get_operator_const(text);
+	if ((sexp_const == OP_TRUE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR)) {
 		return Locked_sexp_true;
-	} else if ((i == OP_FALSE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR)) {
+	} else if ((sexp_const == OP_FALSE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR)) {
 		return Locked_sexp_false;
 	}
 
@@ -1644,6 +1654,9 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[i].rest = rest;
 	Sexp_nodes[i].value = SEXP_UNKNOWN;
 	Sexp_nodes[i].flags = SNF_DEFAULT_VALUE;	// Goober5000
+
+	trigger_operator_premission(sexp_const);
+
 	return i;
 }
 
@@ -8834,6 +8847,38 @@ void sexp_force_jump()
 	gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
 }
 
+void sexp_pre_mission_set_nebula()
+{
+	//Set this so the nebula stuff gets initted
+	Nebula_sexp_used = true;
+}
+
+void sexp_mission_set_nebula(int n)
+{
+	if(Sexp_nodes[n].value == SEXP_KNOWN_TRUE)
+	{
+		The_mission.flags |= MISSION_FLAG_FULLNEB;
+		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
+		HUD_contrast = 1;
+		if(Cmdline_nohtl || Fred_running) {
+			Neb2_render_mode = NEB2_RENDER_POF;
+			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
+		} else {
+			Neb2_render_mode = NEB2_RENDER_HTL;
+		}
+		Debris_vclips = Debris_vclips_nebula;
+		neb2_eye_changed();
+	}
+	else
+	{
+		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
+		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
+		Neb2_render_mode = NEB2_RENDER_NONE;
+		Debris_vclips = Debris_vclips_normal;
+		HUD_contrast = 0;
+	}
+}
+
 // sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
 void sexp_end_mission( int n )
 {
@@ -13799,6 +13844,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			//-Sesquipedalian
+			case OP_MISSION_SET_NEBULA:
+				sexp_mission_set_nebula( node );
+				sexp_val = 1;
+				break;
+
 			case OP_END_MISSION:
 				sexp_end_mission( node );
 				sexp_val = 1;
@@ -14518,6 +14568,21 @@ void test_sexps()
 	exit(0);
 }
 
+void trigger_operator_premission(int op)
+{
+	switch(op)
+	{
+		case OP_MISSION_SET_NEBULA:
+			sexp_pre_mission_set_nebula();
+			break;
+		default:
+			break;
+		//No premission action
+	}
+
+	return;
+}
+
 // returns the data type returned by an operator
 int query_operator_return_type(int op)
 {
@@ -14926,6 +14991,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AND_IN_SEQUENCE:
 		case OP_OR:
 		case OP_NOT:
+		case OP_MISSION_SET_NEBULA:
 			return OPF_BOOL;
 
 		case OP_PLUS:
@@ -16981,6 +17047,7 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
 		case OP_TECH_RESET_TO_DEFAULT:
+		case OP_MISSION_SET_NEBULA:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
 		case OP_DONT_COLLIDE_INVISIBLE:
@@ -18417,6 +18484,11 @@ sexp_help_struct Sexp_help[] = {
 		"the next mission in the campaign under red alert status.  There should only be one branch from "
 		"a mission that uses this expression\r\n\r\n"
 		"Takes no arguments."},
+
+	{ OP_END_MISSION, "mission-set-nebula\r\n" 
+		"\tTurns nebula on/off\r\n"
+		"\tTakes1 argument...\r\n"
+		"\t1:\tWhether nebula is enabled" },
 
 	//-Sesquipedalian
 	{ OP_END_MISSION, "end-mission\r\n" 

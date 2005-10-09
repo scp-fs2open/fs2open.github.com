@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:26:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-10-09 08:03:20 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:26:00  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/06/21 00:20:24  taylor
  * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
  *   and this makes it so much easier to realize that
@@ -89,6 +93,7 @@
 struct ship;
 struct object;
 
+extern bool Nebula_sexp_used;
 // fog near and far values for rendering the background nebula
 extern float Neb_backg_fog_near;
 extern float Neb_backg_fog_far;
@@ -145,8 +150,11 @@ void neb2_init();
 // set detail level
 void neb2_set_detail_level(int level);
 
-// initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
+//init neb stuff  - WMC
 void neb2_level_init();
+
+// initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
+void neb2_post_level_init();
 
 // shutdown nebula stuff
 void neb2_level_close();

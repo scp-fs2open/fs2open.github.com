@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.95 $
+ * $Revision: 2.96 $
  * $Author: wmcoolmon $
- * $Date: 2005-10-09 06:10:59 $
+ * $Date: 2005-10-09 08:03:21 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2005/10/09 06:10:59  wmcoolmon
+ * Added sexps set-object-speed-x, set-object-speed-y, set-object-speed-z,
+ * and ship-create
+ *
  * Revision 2.94  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1125,6 +1129,8 @@ struct ship_subsys;
 #define OP_SET_OBJECT_SPEED_X					(0X00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SET_OBJECT_SPEED_Y					(0X00b7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SET_OBJECT_SPEED_Z					(0X00b8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+
+#define OP_MISSION_SET_NEBULA					(0x00b9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 
 /* made obsolete by Goober5000
 // debugging sexpressions

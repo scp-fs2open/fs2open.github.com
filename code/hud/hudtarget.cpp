@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.70 $
- * $Date: 2005-09-25 08:25:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.71 $
+ * $Date: 2005-10-09 08:03:19 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2005/09/25 08:25:15  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.69  2005/09/14 02:55:04  phreak
  * fix to a minor annoyance where the hud weapons gauge wouldnt render properly if there were no secondary weapons.
  *
@@ -728,7 +732,7 @@ static int Hud_toggle_coords[GR_NUM_RESOLUTIONS][4][2] = {
 	}
 };
 
-static int Toggle_text_alpha = 255;
+int Toggle_text_alpha = 255;
 
 
 // animation files for the weapons gauge
@@ -1704,9 +1708,9 @@ void hud_init_targeting()
 	Target_next_turret_timestamp = timestamp(0);
 
 	if(The_mission.flags & MISSION_FLAG_FULLNEB) {
-		Toggle_text_alpha = 127; 
+		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA; 
 	} else {
-		Toggle_text_alpha = 160;
+		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
 	}
 }
 

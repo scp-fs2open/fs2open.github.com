@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 03:35:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2005-10-09 08:03:21 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 03:35:34  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.11  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -262,5 +266,14 @@ void stars_get_sun_pos(int sun_n, vec3d *pos);
 
 void stars_generate_bitmap_instance_vertex_buffers();
 void starfield_kill_bitmap_buffer();
+
+typedef struct debris_vclip {
+	int	bm;
+	int	nframes;
+	char  name[MAX_FILENAME_LEN+1];
+} debris_vclip;
+extern debris_vclip Debris_vclips_normal[];
+extern debris_vclip Debris_vclips_nebula[];
+extern debris_vclip *Debris_vclips;
 
 #endif

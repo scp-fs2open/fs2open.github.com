@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.183 $
- * $Date: 2005-09-30 09:47:06 $
- * $Author: taylor $
+ * $Revision: 2.184 $
+ * $Date: 2005-10-09 08:03:19 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.183  2005/09/30 09:47:06  taylor
+ * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
+ * add -cache_bitmaps and have bitmap caching between levels off by default
+ * when -cache_bitmaps is used then use C-BMP for top-right memory listing, and just BMP otherwise
+ *
  * Revision 2.182  2005/09/27 05:25:18  Goober5000
  * initial commit of basic IFF code
  * --Goober5000
@@ -2392,7 +2397,8 @@ void game_level_init(int seed)
 	dogfight_blown = 0;
 
 	shipfx_engine_wash_level_init();
-
+	
+	neb2_level_init();
 	nebl_level_init();
 
 	Last_view_target = NULL;
@@ -2480,7 +2486,7 @@ void game_post_level_init()
 	// While trying to track down the nebula bug I encountered a cool effect -
 	// comment this out to fly a mission in a void. Maybe we should develop this
 	// into a full effect or something, because it is seriously cool.
-	neb2_level_init();		
+	neb2_post_level_init();		
 
 #ifndef NDEBUG
 	game_event_debug_init();
@@ -3599,9 +3605,6 @@ int Mem_starttime_virtual;
 
 void game_get_framerate()
 {	
- //	if(The_mission.flags & MISSION_FLAG_FULLNEB)
- //		gr_set_color(0,0,255);
- //	else
 	gr_set_color_fast(&HUD_color_debug);
 #ifdef WMC
 	//WMC - this code spits out the target of all turrets

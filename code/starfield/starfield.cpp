@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-07-18 03:45:09 $
- * $Author: taylor $
+ * $Revision: 2.56 $
+ * $Date: 2005-10-09 08:03:21 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/07/18 03:45:09  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.54  2005/06/19 09:03:05  taylor
  * check_values() shouldn't be inline anymore
  * remove useless neb2_get_fog_intensity() call
@@ -444,12 +451,6 @@
 #define RND_MAX_MASK	0x3fff
 #define HALF_RND_MAX 0x2000
 
-typedef struct debris_vclip {
-	int	bm;
-	int	nframes;
-	char  name[MAX_FILENAME_LEN+1];
-} debris_vclip;
-
 typedef struct {
 	vec3d pos;
 	vec3d last_pos;
@@ -502,9 +503,9 @@ star Stars[MAX_STARS];
 old_debris odebris[MAX_DEBRIS];
 
 //XSTR:OFF
-debris_vclip debris_vclips_normal[MAX_DEBRIS_VCLIPS] = { { -1, -1, "debris01" }, { -1, -1, "debris02" }, { -1, -1, "debris03" }, { -1, -1, "debris04" } };
-debris_vclip debris_vclips_nebula[MAX_DEBRIS_VCLIPS] = { { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" } };
-debris_vclip *debris_vclips = debris_vclips_normal;
+debris_vclip Debris_vclips_normal[MAX_DEBRIS_VCLIPS] = { { -1, -1, "debris01" }, { -1, -1, "debris02" }, { -1, -1, "debris03" }, { -1, -1, "debris04" } };
+debris_vclip Debris_vclips_nebula[MAX_DEBRIS_VCLIPS] = { { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" }, { -1, -1, "Neb01-64" } };
+debris_vclip *Debris_vclips = Debris_vclips_normal;
 //XSTR:ON
 
 int stars_debris_loaded = 0;
@@ -538,6 +539,22 @@ starfield_bitmap *stars_lookup_sun(starfield_bitmap_instance *s)
 	return NULL;
 }
 
+void stars_load_debris_vclips(debris_vclip *Debris_vclips)
+{
+	for (int i=0; i<MAX_DEBRIS_VCLIPS; i++ )	{
+		Debris_vclips[i].bm = bm_load_animation( Debris_vclips[i].name, &Debris_vclips[i].nframes, NULL, 1 );
+		if ( Debris_vclips[i].bm < 0 ) {
+			// try loading it as a single bitmap
+			Debris_vclips[i].bm = bm_load(Debris_vclips[i].name);
+			Debris_vclips[i].nframes = 1;
+
+			if(Debris_vclips[i].bm <= 0){
+				Error( LOCATION, "Couldn't load animation/bitmap '%s'\n", Debris_vclips[i].name );
+			}
+		}
+	}
+}
+
 void stars_load_debris()
 {
 	if(Cmdline_nomotiondebris)
@@ -545,27 +562,20 @@ void stars_load_debris()
 		return;
 	}
 
-	int i;
-
 	// if we're in nebula mode
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
-		debris_vclips = debris_vclips_nebula;
+	if(The_mission.flags & MISSION_FLAG_FULLNEB || Nebula_sexp_used){
+		stars_load_debris_vclips(Debris_vclips_nebula);
+	}
+	if(!(The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used){
+		stars_load_debris_vclips(Debris_vclips_normal);
+	}
+	
+	if(The_mission.flags & MISSION_FLAG_FULLNEB) {
+		Debris_vclips = Debris_vclips_nebula;
 	} else {
-		debris_vclips = debris_vclips_normal;
+		Debris_vclips = Debris_vclips_normal;
 	}
-
-	for (i=0; i<MAX_DEBRIS_VCLIPS; i++ )	{
-		debris_vclips[i].bm = bm_load_animation( debris_vclips[i].name, &debris_vclips[i].nframes, NULL, 1 );
-		if ( debris_vclips[i].bm < 0 ) {
-			// try loading it as a single bitmap
-			debris_vclips[i].bm = bm_load(debris_vclips[i].name);
-			debris_vclips[i].nframes = 1;
-
-			if(debris_vclips[i].bm <= 0){
-				Error( LOCATION, "Couldn't load animation/bitmap '%s'\n", debris_vclips[i].name );
-			}
-		}
-	}
+	
 	stars_debris_loaded = 1;
 }
 
@@ -1008,7 +1018,7 @@ void stars_init()
 		stuff_string(filename, F_NAME, NULL);
 
 		if(count < MAX_DEBRIS_VCLIPS){
-			strcpy(debris_vclips_normal[count++].name, filename);
+			strcpy(Debris_vclips_normal[count++].name, filename);
 		}
 	}
 	Assert(count == 4);
@@ -1020,7 +1030,7 @@ void stars_init()
 		stuff_string(filename, F_NAME, NULL);
 
 		if(count < MAX_DEBRIS_VCLIPS){
-			strcpy(debris_vclips_nebula[count++].name, filename);
+			strcpy(Debris_vclips_nebula[count++].name, filename);
 		}
 	}
 	Assert(count == 4);
@@ -2126,12 +2136,12 @@ void stars_draw_debris()
 
 		if (p.codes == 0) {
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
-			frame %= debris_vclips[d->vclip].nframes;
+			frame %= Debris_vclips[d->vclip].nframes;
 
 			if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
-				gr_set_bitmap( debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);	
+				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);	
 			} else {
-				gr_set_bitmap( debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);	
+				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);	
 			}
 					
 			vm_vec_add( &tmp, &d->last_pos, &Eye_position );
@@ -2303,8 +2313,8 @@ void stars_page_in()
 	}
 
 	for (i=0; i<MAX_DEBRIS_VCLIPS; i++ )	{
-		for (j=0; j<debris_vclips[i].nframes; j++ )	{
-			bm_page_in_xparent_texture(debris_vclips[i].bm + j);
+		for (j=0; j<Debris_vclips[i].nframes; j++ )	{
+			bm_page_in_xparent_texture(Debris_vclips[i].bm + j);
 		}
 	}	
 }
@@ -2347,10 +2357,11 @@ void stars_set_background_model(char *model_name, char *texture_name)
 {
 	if (Nmodel_bitmap >= 0)
 		bm_unload(Nmodel_bitmap);
+	
+	if (Nmodel_num >= 0)
+		model_unload(Nmodel_num);
 
-	if (!stricmp(model_name,""))
-	{
-		Nmodel_num=-1;
+	if (!stricmp(model_name,"")) {
 		return;
 	}
 
