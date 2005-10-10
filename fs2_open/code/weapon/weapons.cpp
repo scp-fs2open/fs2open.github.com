@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2005/10/09 23:56:22  Kazan
+ * some weird character was on the head of weapons.cpp
+ *
  * Revision 2.133  2005/10/09 17:38:49  wmcoolmon
  * Added names to the 'limits reached' dialogs in ship/weapons.tbl
  *
@@ -851,12 +854,9 @@
 #include "parse/parselo.h"
 #include "radar/radarsetup.h"
 #include "weapon/beam.h"	// for BEAM_TYPE_? definitions
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#endif
 
 
 #ifndef NDEBUG
@@ -1098,10 +1098,8 @@ void weapon_maybe_alert_cmeasure_success(object *objp)
 		if ( cmp->source_objnum == OBJ_INDEX(Player_obj) ) {
 			hud_start_text_flash(XSTR("Evaded", 1430), 800);
 			snd_play(&Snds[SND_MISSILE_EVADED_POPUP]);
-#ifndef NO_NETWORK
 		} else if ( Objects[cmp->source_objnum].flags & OF_PLAYER_SHIP ) {
 			send_countermeasure_success_packet( cmp->source_objnum );
-#endif
 		}
 	}
 }
@@ -3533,12 +3531,10 @@ void find_homing_object(object *weapon_objp, int num)
 	if (wp->homing_object == Player_obj)
 		weapon_maybe_play_warning(wp);
 
-#ifndef NO_NETWORK
 	// if the old homing object is different that the new one, send a packet to clients
 	if ( MULTIPLAYER_MASTER && (old_homing_objp != wp->homing_object) ) {
 		send_homing_weapon_info( num );
 	}
-#endif
 }
 
 //	Scan all countermeasures.  Maybe make weapon_objp home on it.
@@ -3646,12 +3642,10 @@ void find_homing_object_by_sig(object *weapon_objp, int sig)
 		sop = sop->next;
 	}
 
-#ifndef NO_NETWORK
 	// if the old homing object is different that the new one, send a packet to clients
 	if ( MULTIPLAYER_MASTER && (old_homing_objp != wp->homing_object) ) {
 		send_homing_weapon_info( weapon_objp->instance );
 	}
-#endif
 }
 
 //	Make weapon num home.  It's also object *obj.
@@ -3847,7 +3841,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 							// determine the player
 							pp = Player;
-#ifndef NO_NETWORK
+
 							if ( Game_mode & GM_MULTIPLAYER ) {
 								int pnum;
 
@@ -3856,7 +3850,6 @@ void weapon_home(object *obj, int num, float frame_time)
 									pp = Net_players[pnum].m_player;
 								}
 							}
-#endif
 
 							// If player has apect lock, we don't want to find a homing point on the closest
 							// octant... setting the timestamp to 0 ensures this.
@@ -4107,16 +4100,12 @@ void weapon_process_post(object * obj, float frame_time)
 	// when killing a missile that spawn child weapons!!!!
 	if ( wp->lifeleft < 0.0f ) {
 		if ( wip->subtype & WP_MISSILE ) {
-#ifndef NO_NETWORK
 			if(Game_mode & GM_MULTIPLAYER){				
 				if ( !MULTIPLAYER_CLIENT || (MULTIPLAYER_CLIENT && (wp->lifeleft < -2.0f)) || (MULTIPLAYER_CLIENT && (wip->wi_flags & WIF_CHILD))) {					// don't call this function multiplayer client -- host will send this packet to us
 					// nprintf(("AI", "Frame %i: Weapon %i detonated, dist = %7.3f!\n", Framecount, obj-Objects));
 					weapon_detonate(obj);					
 				}
-			}
-			else
-#endif
-			{
+			} else {
 				// nprintf(("AI", "Frame %i: Weapon %i detonated, dist = %7.3f!\n", Framecount, obj-Objects));
 				weapon_detonate(obj);									
 			}
@@ -4375,11 +4364,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
-#ifndef NO_NETWORK
 		if ((target_objnum != -1) && (!targeting_same || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (target_team == TEAM_TRAITOR))) ) {
-#else
-		if ((target_objnum != -1) && (!targeting_same)) {
-#endif
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
 			wp->nearest_dist = 99999.0f;
@@ -4543,7 +4528,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objn
 		wp->particle_spew_time = -1;		
 	}
 
-#ifndef NO_NETWORK
 	// assign the network signature.  The starting sig is sent to all clients, so this call should
 	// result in the same net signature numbers getting assigned to every player in the game
 	if ( Game_mode & GM_MULTIPLAYER ) {
@@ -4564,7 +4548,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objn
 		// removed 1/13/98 -- MWA if ( MULTIPLAYER_CLIENT && (wip->subtype == WP_LASER) )
 		//	removed 1/13/98 -- MWA	wp->lifeleft += 1.5f;
 	}
-#endif
 
 	//	Make remote detonate missiles look like they're getting detonated by firer simply by giving them variable lifetimes.
 	if (!(Objects[parent_objnum].flags & OF_PLAYER_SHIP) && (wip->wi_flags & WIF_REMOTE)) {
@@ -4729,7 +4712,7 @@ void spawn_child_weapons(object *objp)
 	}
 
 	starting_sig = 0;
-#ifndef NO_NETWORK
+
 	if ( Game_mode & GM_MULTIPLAYER ) {		
 		// get the next network signature and save it.  Set the next usable network signature to be
 		// the passed in objects signature + 1.  We "reserved" N of these slots when we created objp
@@ -4737,7 +4720,6 @@ void spawn_child_weapons(object *objp)
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
 		multi_set_network_signature( objp->net_signature, MULTI_SIG_NON_PERMANENT );
 	}
-#endif
 
 	for (i=0; i<wip->spawn_count; i++) {
 		int		weapon_objnum;
@@ -4771,12 +4753,10 @@ void spawn_child_weapons(object *objp)
 
 	}
 
-#ifndef NO_NETWORK
 	// in multiplayer, reset the next network signature to the one that was saved.
 	if ( Game_mode & GM_MULTIPLAYER ){
 		multi_set_network_signature( starting_sig, MULTI_SIG_NON_PERMANENT );
 	}
-#endif
 }
 
 // -----------------------------------------------------------------------
@@ -5201,10 +5181,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	// if( ((wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (other_obj == Player_obj) ){
-#ifndef NO_NETWORK
-	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT)
-#endif
-	{
+	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
 		weapon_hit_do_sound(other_obj, wip, hitpos);
 	}
 
@@ -5288,12 +5265,10 @@ void weapon_detonate(object *objp)
 		return;
 	}	
 
-#ifndef NO_NETWORK
 	// send a detonate packet in multiplayer
 	if(MULTIPLAYER_MASTER){
 		send_weapon_detonate_packet(objp);
 	}
-#endif
 
 	// call weapon hit
 	weapon_hit(objp, NULL, &objp->pos);
@@ -5426,8 +5401,13 @@ void weapons_page_in()
 		}
 
 		wip->external_model_num = -1;
-		if(strcmp(wip->external_model_name,""))wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
-		if(wip->external_model_num == -1)wip->external_model_num = wip->model_num;
+
+		if ( strlen(wip->external_model_name) )
+			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
+
+		if (wip->external_model_num == -1)
+			wip->external_model_num = wip->model_num;
+
 		// If this has an impact vclip page it in.
 //		if ( wip->impact_explosion_ani > -1 )	{
 //			int nframes, fps;
@@ -5436,12 +5416,12 @@ void weapons_page_in()
 //		}
 
 
-		if(strcmp(wip->shockwave_pof_name,""))
+		if( strlen(wip->shockwave_pof_name) )
 			wip->shockwave_model = model_load(wip->shockwave_pof_name, 0, NULL);
 		else
 			wip->shockwave_model = -1;
 		
-		if(strcmp(wip->shockwave_name,""))
+		if( strlen(wip->shockwave_name) )
 			wip->shockwave_info_index = shockwave_add(wip->shockwave_name);
 		else
 			wip->shockwave_info_index = -1;
@@ -5512,8 +5492,14 @@ void weapons_page_in()
 		cmeasure_info *cmeasurep;
 
 		cmeasurep = &Cmeasure_info[i];
-	
+
+		Assert( strlen(cmeasurep->pof_name) );
+
 		cmeasurep->model_num = model_load( cmeasurep->pof_name, 0, NULL );
+
+		if ( cmeasurep->model_num < 0 ) {
+			Error( LOCATION, "Unable to load countermeasure POF for '%s' (%s)", cmeasurep->cmeasure_name, cmeasurep->pof_name);
+		}
 
 		polymodel *pm = model_get( cmeasurep->model_num );
 
@@ -5524,7 +5510,6 @@ void weapons_page_in()
 				bm_page_in_texture( bitmap_num );
 			}
 		}
-		Assert( cmeasurep->model_num > -1 );
 	}
 
 
