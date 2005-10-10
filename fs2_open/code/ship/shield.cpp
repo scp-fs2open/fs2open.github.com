@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-09-24 07:07:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.36 $
+ * $Date: 2005-10-10 17:21:10 $
+ * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/09/24 07:07:16  Goober5000
+ * another species overhaul
+ * --Goober5000
+ *
  * Revision 2.34  2005/09/18 23:06:17  taylor
  * gah, revert that since it was never going to work (not sure what I was drinking that day)
  *
@@ -957,11 +961,9 @@ float apply_damage_to_shield(object *objp, int quadrant, float damage)
 
 	// multiplayer clients bail here if nodamage
 	// if(MULTIPLAYER_CLIENT && (Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE)){
-#ifndef NO_NETWORK
 	if(MULTIPLAYER_CLIENT){
 		return damage;
 	}
-#endif
 
 	if ( (quadrant < 0)  || (quadrant >= MAX_SHIELD_SECTIONS) ) return damage;	
 	
@@ -1144,7 +1146,6 @@ void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos)
 	Num_multi_shield_points++;
 }
 
-#ifndef NO_NETWORK
 // sets up the shield point hit information for multiplayer clients
 void shield_point_multi_setup()
 {
@@ -1162,7 +1163,6 @@ void shield_point_multi_setup()
 
 	Num_multi_shield_points = 0;
 }
-#endif
 
 
 //	Create all the shield explosions that occurred on object *objp this frame.
@@ -1196,12 +1196,9 @@ void create_shield_explosion_all(object *objp)
 
 	//mprintf(("Creating %i explosions took %7.3f seconds\n", shipp->shield_hits, (float) (timer_get_milliseconds() - start_time)/1000.0f));
 
-#ifndef NO_NETWORK
 	// some some reason, clients seem to have a bogus count valud on occation.  I"ll chalk it up
 	// to missed packets :-)  MWA 2/6/98
-	if ( !MULTIPLAYER_CLIENT )
-#endif
-	{
+	if ( !MULTIPLAYER_CLIENT ) {
 		Assert(count == 0);	//	Couldn't find all the alleged shield hits.  Bogus!
 		//cometed out becase fighterbeams were tripping this -Bobboau
 		// urg - Bobboau, please fix bugs; don't hide them :-/

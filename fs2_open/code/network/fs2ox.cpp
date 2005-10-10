@@ -9,13 +9,17 @@
 
 /*
  * $Logfile$
- * $Revision: 1.17 $
- * $Date: 2005-07-13 03:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 1.18 $
+ * $Date: 2005-10-10 17:21:07 $
+ * $Author: taylor $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.16  2005/07/02 19:44:59  taylor
  * ton of non-standard resolution fixes
  *
@@ -76,7 +80,6 @@
  */
 
 
-#ifndef NO_NETWORK
 
 // 4786 = identifier truncated in the debug information
 // 4710 = function not inlined
@@ -619,5 +622,3 @@ void fs2ox_button_pressed(int n)
 		break;
 	}
 }
-
-#endif // !NO_NETWORK

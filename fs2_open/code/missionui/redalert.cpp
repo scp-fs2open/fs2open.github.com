@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-09-26 04:08:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/09/26 04:08:54  Goober5000
+ * some more cleanup
+ * --Goober5000
+ *
  * Revision 2.18  2005/09/09 05:12:44  Goober5000
  * "no briefing" flag now works for red-alert missions too
  * --Goober5000
@@ -605,10 +609,7 @@ void red_alert_do_frame(float frametime)
 	}
 
 	// commit if skipping briefing, but not in multi - Goober5000
-#ifndef NO_NETWORK
-	if (!(Game_mode & GM_MULTIPLAYER))
-#endif
-	{
+	if (!(Game_mode & GM_MULTIPLAYER)) {
 		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
 		{
 			commit_pressed();

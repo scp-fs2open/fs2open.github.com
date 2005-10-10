@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-09-26 04:08:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.38 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/09/26 04:08:54  Goober5000
+ * some more cleanup
+ * --Goober5000
+ *
  * Revision 2.36  2005/09/25 05:13:06  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -453,14 +457,11 @@
 #include "playerman/player.h"
 #include "sound/fsspeech.h"
 #include "parse/parselo.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
-#endif
 
 
 
@@ -954,7 +955,6 @@ void brief_button_do(int i)
 			brief_exit_loop_pressed();
 			break;
 
-#ifndef NO_NETWORK
 		case BRIEF_BUTTON_MULTI_LOCK:
 			Assert(Game_mode & GM_MULTIPLAYER);			
 			// the "lock" button has been pressed
@@ -965,7 +965,6 @@ void brief_button_do(int i)
 				Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.disable();
 			}
 			break;
-#endif
 	} // end switch
 }
 
@@ -1067,7 +1066,6 @@ void brief_buttons_init()
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.hide();
 		Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.disable();
-#ifndef NO_NETWORK
 	} else {
 		// if we're not the host of the game (or a tema captain in team vs. team mode), disable the lock button
 		if(Netgame.type_flags & NG_TYPE_TEAM){
@@ -1079,7 +1077,6 @@ void brief_buttons_init()
 				Brief_buttons[gr_screen.res][BRIEF_BUTTON_MULTI_LOCK].button.disable();
 			}
 		}
-#endif
 	}
 
 	// create close button for closeup popup
@@ -1160,13 +1157,9 @@ void brief_load_bitmaps()
 //
 void brief_ui_init()
 {
-#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER) {
 		Brief_background_bitmap = bm_load(Brief_multi_filename[gr_screen.res]);
-	}
-	else
-#endif
-	{
+	} else {
 		Brief_background_bitmap = bm_load(Brief_filename[gr_screen.res]);	
 	}
 
@@ -1285,13 +1278,11 @@ void brief_init()
 	demo_reset_trailer_timer();
 #endif
 
-#ifndef NO_NETWORK
 	// for multiplayer, change the state in my netplayer structure
 	// and initialize the briefing chat area thingy
 	if ( Game_mode & GM_MULTIPLAYER ){
 		Net_player->state = NETPLAYER_STATE_BRIEFING;
 	}
-#endif
 
 	// Non standard briefing in red alert mission
 	if ( red_alert_mission() ) {
@@ -1300,13 +1291,9 @@ void brief_init()
 	}
 
 	// get a pointer to the appropriate briefing structure
-#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		Briefing = &Briefings[Net_player->p_info.team];
-	}
-	else
-#endif
-	{
+	} else {
 		Briefing = &Briefings[0];			
 	}
 
@@ -1376,13 +1363,9 @@ void brief_init()
 	// init common UI
 	Brief_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
 
-#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		Brief_ui_window.set_mask_bmap(Brief_multi_mask_filename[gr_screen.res]);
-	}
-	else
-#endif
-	{
+	} else {
 		Brief_ui_window.set_mask_bmap(Brief_mask_filename[gr_screen.res]);
 	}
 
@@ -1393,7 +1376,6 @@ void brief_init()
 	common_buttons_init(&Brief_ui_window);
 	brief_buttons_init();
 
-#ifndef NO_NETWORK
 	// if multiplayer, initialize a few other systems
 	if(Game_mode & GM_MULTIPLAYER){		
 		// again, should not be necessary, but we'll leave it for now
@@ -1402,7 +1384,6 @@ void brief_init()
 		// force the chatbox to be small
 		chatbox_force_small();
 	}
-#endif
 
 	// set up the screen regions
 	brief_init_screen(Brief_multiplayer);
@@ -1616,16 +1597,13 @@ void brief_render(float frametime)
 
 	// output mission title
 	gr_set_color_fast(&Color_bright_white);
-#ifndef NO_NETWORK
+
 	if (Game_mode & GM_MULTIPLAYER) {
 		char buf[256];
 		strncpy(buf, The_mission.name, 256);
 		gr_force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
 		gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf);
-	}
-	else
-#endif
-	{
+	} else {
 		gr_get_string_size(&w, NULL, The_mission.name);
 		gr_string(Title_coords[gr_screen.res][0] - w, Title_coords[gr_screen.res][1], The_mission.name);
 	}
@@ -1928,9 +1906,7 @@ void brief_do_frame(float frametime)
 	}
 
 	// commit if skipping briefing, but not in multi - Goober5000
-#ifndef NO_NETWORK
 	if (!(Game_mode & GM_MULTIPLAYER))
-#endif
 	{
 		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
 		{
@@ -2193,7 +2169,6 @@ void brief_do_frame(float frametime)
 			brief_render_closeup(Closeup_icon->ship_class, frametime);
 		}
 
-#ifndef NO_NETWORK
 		// render some extra stuff in multiplayer
 		if (Game_mode & GM_MULTIPLAYER) {
 			// should render this last so that it overlaps all controls
@@ -2220,7 +2195,6 @@ void brief_do_frame(float frametime)
 				}
 			}
 		}
-#endif
 	}		
 
 	// maybe flash a button if player hasn't done anything for a while
@@ -2235,13 +2209,9 @@ void brief_do_frame(float frametime)
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
 	// the ship model is not in memory
 	if (Commit_pressed) {
-#ifndef NO_NETWORK
 		if (Game_mode & GM_MULTIPLAYER) {
 			multi_ts_commit_pressed();
-		}
-		else
-#endif
-		{
+		} else {
 			commit_pressed();
 		}
 

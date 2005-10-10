@@ -20,9 +20,6 @@ struct object;
 struct header;
 struct net_player;
 
-#ifdef NO_NETWORK
-#error do not use
-#endif
 
 // client button info flags
 #define OOC_FIRE_SECONDARY			(1<<0)

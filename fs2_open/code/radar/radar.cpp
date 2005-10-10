@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-07-25 03:13:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2005-10-10 17:21:09 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/07/25 03:13:25  Goober5000
+ * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
+ * should now be added to all places where it is needed (except the turret code, which I still
+ * have to to review)
+ * --Goober5000
+ *
  * Revision 2.17  2005/07/22 10:18:40  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -347,7 +353,6 @@ void radar_plot_object_std( object *objp )
 	vec3d	*world_pos = &objp->pos;	
 	float		awacs_level;
 
-#ifndef NO_NETWORK
 	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
 	if( Game_mode & GM_STANDALONE_SERVER ){
@@ -358,7 +363,6 @@ void radar_plot_object_std( object *objp )
 	if ( MULTIPLAYER_CLIENT && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ){
 		return;
 	}
-#endif
 
 	// get team-wide awacs level for the object if not ship
 	int ship_is_visible = 0;

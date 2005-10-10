@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.66 $
- * $Date: 2005-09-30 09:47:05 $
+ * $Revision: 2.67 $
+ * $Date: 2005-10-10 17:21:03 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/09/30 09:47:05  taylor
+ * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
+ * add -cache_bitmaps and have bitmap caching between levels off by default
+ * when -cache_bitmaps is used then use C-BMP for top-right memory listing, and just BMP otherwise
+ *
  * Revision 2.65  2005/09/26 04:53:19  Goober5000
  * moved these per taylor's recommendation
  * --Goober5000
@@ -2968,7 +2973,6 @@ void bm_page_in_stop()
 				}
 #endif
 
-#ifndef NO_NETWORK
 				// send out a ping if we are multi so that psnet2 doesn't kill us off for a long load
 				// NOTE that we can't use the timestamp*() functions here since they won't increment
 				//      during this loading process
@@ -2978,7 +2982,6 @@ void bm_page_in_stop()
 						Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
 					}
 				}
-#endif
 			} else {
 				bm_unload(bm_bitmaps[i].handle);
 			}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-07-22 10:18:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2005-10-10 17:21:08 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/07/22 10:18:37  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.19  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -237,12 +241,9 @@
 #include "hud/hudshield.h"
 #include "hud/hudwingmanstatus.h"
 #include "io/timer.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
-#endif
 
 
 
@@ -298,7 +299,6 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	float		blast = wip->mass;
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	
 
-#ifndef NO_NETWORK
 	// send player pain packet
 	if ( (MULTIPLAYER_MASTER) && !(shipp->flags & SF_DYING) ){
 		int np_index = multi_find_player_by_object(ship_obj);
@@ -308,7 +308,6 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, ship_obj), &force, hitpos);
 		}
 	}	
-#endif
 
 	ship_apply_local_damage(ship_obj, weapon_obj, world_hitpos, damage, quadrant_num, CREATE_SPARKS, submodel_num);
 
@@ -323,10 +322,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	// Apply a wack.  This used to be inside of ship_hit... duh! Ship_hit
 	// is to apply damage, not physics, so I moved it here.
 	// don't apply whack for multiplayer_client from laser - will occur with pain packet
-#ifndef NO_NETWORK
-	if (!((wip->subtype == WP_LASER) && MULTIPLAYER_CLIENT) )
-#endif
-	{		
+	if (!((wip->subtype == WP_LASER) && MULTIPLAYER_CLIENT) ) {		
 		// apply a whack		
 		ship_apply_whack( &force, hitpos, ship_obj );
 	}

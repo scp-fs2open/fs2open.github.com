@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multilag.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-10-10 17:21:07 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/05/12 17:49:15  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -111,8 +115,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include <winsock.h>
 #include <wsipx.h>
@@ -777,5 +779,3 @@ DCF(lag_good, "")
 	Multi_streak_stamp = -1;
 	Multi_current_streak = -1;
 }
-
-#endif // !NO_NETWORK

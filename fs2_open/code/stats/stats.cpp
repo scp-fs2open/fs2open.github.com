@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Stats.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-07-22 10:18:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-10 17:21:10 $
+ * $Author: taylor $
  *
  * module for running the stats screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/22 10:18:40  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.10  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -229,10 +233,7 @@
 #include "playerman/player.h"
 #include "stats/stats.h"
 #include "hud/hud.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 #define MISSION_STATS_START_Y 80
@@ -263,14 +264,9 @@ player *Active_player;
 void show_stats_init()
 {
 	// Player_stats_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
-
-#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {				
 		set_player_stats(MY_NET_PLAYER_NUM);
-	}
-	else
-#endif
-	{
+	} else {
 		Active_player = Player;		
 	}	
 }
@@ -522,7 +518,6 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 	} // end switch
 }
 
-#ifndef NO_NETWORK
 int find_netplayer_n(int n)
 {
 	int idx;
@@ -538,14 +533,12 @@ int find_netplayer_n(int n)
 	}
 	return -1;
 }
-#endif
 
 
 void show_stats_close()
 {	
 }
  
-#ifndef NO_NETWORK
 // initialize the statistics portion of the player structure for multiplayer.  Only the host of
 // a netgame needs to be doing this (and if fact, only he *should* be doing this)
 void init_multiplayer_stats( )
@@ -562,4 +555,3 @@ void set_player_stats(int pid)
 {
    Active_player = Net_players[pid].m_player;
 }
-#endif

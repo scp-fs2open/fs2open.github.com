@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_observer.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2005-10-10 17:21:07 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.8  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -119,8 +123,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include "network/multi_observer.h"
 #include "network/multi.h"
@@ -325,5 +327,3 @@ void multi_obs_zoom_to_target()
 	// move
 	vm_vec_add2(&Player_obj->pos,&direct);
 }
-	
-#endif // !NO_NETWORK

@@ -9,16 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDObserver.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  *
  */
 
-
-#ifndef NO_NETWORK
 
 #include "hud/hudobserver.h"
 #include "hud/hudtargetbox.h"
@@ -76,5 +74,3 @@ void hud_render_observer()
 	// render individual player text
 	hud_obs_render_players_all();
 }
-
-#endif // !NO_NETWORK

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-10-09 09:13:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.51 $
+ * $Date: 2005-10-10 17:21:10 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/10/09 09:13:29  wmcoolmon
+ * Added warpin/warpout speed override values to ships.tbl
+ *
  * Revision 2.49  2005/09/21 03:55:31  Goober5000
  * add option for warp flash; mess with the cmdlines a bit
  * --Goober5000
@@ -456,15 +459,9 @@
 #include "weapon/shockwave.h"
 #include "parse/parselo.h"
 #include "object/objectdock.h"
-
-// Needed for TBP warp effect override  -Et1
-#include "cmdline/cmdline.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
-#endif
 
 
 
@@ -473,6 +470,8 @@
 extern float flFrametime;
 extern int Framecount;
 #endif
+
+extern int Cmdline_tbp;
 
 #define SHIP_CANNON_BITMAP			"argh"
 int Ship_cannon_bitmap = -1;
@@ -742,12 +741,11 @@ void shipfx_blow_up_hull(object *obj, int model, vec3d *exp_center)
 	// in multiplayer, send a debris_hull_create packet.  Save/restore the debris signature
 	// when in misison only (since we can create debris pieces before mission starts)
 	sig_save = 0;
-#ifndef NO_NETWORK
+
 	if ( (Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_IN_MISSION) ) {
 		sig_save = multi_get_next_network_signature( MULTI_SIG_DEBRIS );
 		multi_set_network_signature( (ushort)(Ships[obj->instance].arrival_distance), MULTI_SIG_DEBRIS );
 	}
-#endif
 
 	bool try_live_debris = true;
 	for (i=0; i<pm->num_debris_objects; i++ )	{
@@ -765,12 +763,10 @@ void shipfx_blow_up_hull(object *obj, int model, vec3d *exp_center)
 		}
 	}
 
-#ifndef NO_NETWORK
 	// restore the ship signature to it's original value.
 	if ( (Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_IN_MISSION) ) {
 		multi_set_network_signature( sig_save, MULTI_SIG_DEBRIS );
 	}
-#endif
 }
 
 
@@ -1283,12 +1279,10 @@ void shipfx_warpout_start( object *objp )
 		demo_POST_warpout(objp->signature, shipp->flags);
 	}
 
-#ifndef NO_NETWORK
 	// don't send ship depart packets for player ships
 	if ( (MULTIPLAYER_MASTER) && !(objp->flags & OF_PLAYER_SHIP) ){
 		send_ship_depart_packet( objp );
 	}
-#endif
 
 	// don't do departure wormhole if ship flag is set which indicates no effect
 	if ( shipp->flags & SF_NO_DEPARTURE_WARP ) {

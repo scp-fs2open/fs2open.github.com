@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-07-22 10:18:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.36 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.34  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -322,10 +326,7 @@
 #include "ship/ship.h"
 #include "render/3d.h"	//For g3_start_frame
 #include "render/3dinternal.h" //For View_zoom
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 
@@ -893,11 +894,7 @@ void hud_shield_equalize(object *objp, player *pl)
 		strength = get_shield_strength(objp);
 		if ( strength != 0 ) {
 			// maybe impose a 2% penalty - server side and single player only
-#ifndef NO_NETWORK
 			if(!MULTIPLAYER_CLIENT &&  (pl->shield_penalty_stamp < 0) || timestamp_elapsed_safe(pl->shield_penalty_stamp, 1000) ){
-#else
-			if((pl->shield_penalty_stamp < 0) || timestamp_elapsed_safe(pl->shield_penalty_stamp, 1000) ){
-#endif
 				strength *= 0.98f;
 
 				// reset the penalty timestamp

@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-07-22 10:18:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/07/22 10:18:40  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.18  2005/07/18 03:45:07  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -356,10 +360,7 @@
 #include "globalincs/alphacolors.h"
 #include "ship/ship.h"
 #include "parse/sexp.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 
@@ -541,14 +542,12 @@ void training_obj_display()
 				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
 			}
 
-#ifndef NO_NETWORK
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
 			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
 				if((Mission_events[z].team != -1) && (Net_player->p_info.team != Mission_events[z].team)){
 					continue;
 				}
 			}
-#endif
 
 			switch (mission_get_event_status(z)) {
 			case EVENT_CURRENT:

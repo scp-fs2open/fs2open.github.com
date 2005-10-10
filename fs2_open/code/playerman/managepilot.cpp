@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2005-10-10 17:21:09 $
+ * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.21  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -330,10 +334,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "cfile/cfile.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 
@@ -1045,7 +1046,7 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	// restore the default netgame protocol mode
 	int protocol_temp = cfread_int(file);
-#ifndef NO_NETWORK
+
 	switch(protocol_temp){
 	// plain TCP
 	case NET_VMT:	
@@ -1057,7 +1058,6 @@ int read_pilot_file(char *callsign, int single, player *p)
 		Multi_options_g.protocol = NET_IPX;
 		break;			
 	}	
-#endif
 
 	// restore wingman status used by red alert missions
 	// moved to campaign file in 242 - taylor
@@ -1379,17 +1379,12 @@ int write_pilot_file_core(player *p)
 	cfwrite_int(p->readyroom_listing_mode, file);
 	cfwrite_int(Briefing_voice_enabled, file);
 
-#ifndef NO_NETWORK
 	// store the default netgame protocol mode for this pilot
 	if (Multi_options_g.protocol == NET_TCP) {		
 		cfwrite_int(NET_TCP, file);		
 	} else {
 		cfwrite_int(NET_IPX, file);
 	}	
-#else
-	// write a value to file so format doesn't change
-	cfwrite_int(0, file);
-#endif
 
 	if ( is_multi ) {
 		red_alert_write_wingman_status(file);
@@ -1668,13 +1663,11 @@ void init_new_pilot(player *p, int reset)
 
 	p->tips = 1;
 
-#ifndef NO_NETWORK
 	Multi_options_g.protocol = NET_TCP;	
 
 	// initialize default multiplayer options
 	multi_options_set_netgame_defaults(&p->m_server_options);
 	multi_options_set_local_defaults(&p->m_local_options);
-#endif
 
 	Player_loadout.filename[0] = 0;
 

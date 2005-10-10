@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-08-27 00:21:27 $
- * $Author: Kazan $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-10 17:21:07 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/08/27 00:21:27  Kazan
+ * potential fix for mantis bug 237
+ *
  * Revision 2.10  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -97,8 +100,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include "network/multi_dogfight.h"
 #include "network/multi.h"
@@ -666,5 +667,3 @@ int multi_df_stuff_kills(char *kills, int player_x, int player_y)
 	sprintf(kills, "%d", s->stats.m_dogfight_kills[Multi_df_score[player_y].np_index]);
 	return s->stats.m_dogfight_kills[Multi_df_score[player_y].np_index];
 }
-
-#endif // !NO_NETWORK

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-10-10 17:21:08 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.14  2005/03/02 21:18:20  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -371,8 +375,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #ifdef _WIN32
 #include <windows.h>
@@ -2433,5 +2435,3 @@ void std_deinit_standalone()
 		Standalone_thread = NULL;
 	}
 }
-
-#endif // !NO_NETWORK

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-09-27 02:36:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.48  2005/09/25 05:13:06  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -586,14 +590,11 @@
 #include "cfile/cfile.h"
 #include "hud/hudbrackets.h"
 #include "species_defs/species_defs.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiui.h"
 #include "network/multiteamselect.h"
 #include "network/multiutil.h"
-#endif
 
 
 
@@ -1200,13 +1201,11 @@ void ship_select_init()
 	common_set_interface_palette("ShipPalette");
 	common_flash_button_init();
 
-#ifndef NO_NETWORK
 	// if in multiplayer -- set my state to be ship select
 	if ( Game_mode & GM_MULTIPLAYER ){		
 		// also set the ship which is mine as the default
 		maybe_change_selected_wing_ship(Net_player->p_info.ship_index/MAX_WING_SLOTS,Net_player->p_info.ship_index%MAX_WING_SLOTS);
 	}
-#endif
 
 	set_active_ui(&Ship_select_ui_window);
 	Current_screen = ON_SHIP_SELECT;
@@ -2166,12 +2165,10 @@ void ship_select_do(float frametime)
 	// Done Rendering and Drawing 3D //
 	///////////////////////////////////
 
-#ifndef NO_NETWORK
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		if ( Selected_ss_class >= 0 )
 			Net_player->p_info.ship_class = Selected_ss_class;
 	}	 
-#endif
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
@@ -2570,7 +2567,6 @@ void commit_pressed()
 
 	// move to the next stage
 	// in multiplayer this is the final mission sync
-#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){		
 		Multi_sync_mode = MULTI_SYNC_POST_BRIEFING;
 		gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);	
@@ -2581,9 +2577,7 @@ void commit_pressed()
 		}
 	}
 	// in single player we jump directly into the mission
-	else
-#endif
-	{
+	else {
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
 
@@ -2763,7 +2757,6 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 					else
 						color_to_draw = &Icon_colors[ICON_FRAME_DISABLED];
 
-#ifndef NO_NETWORK
 					// in multiplayer, determine if this it the special case where the slot is disabled, and 
 					// it is also _my_ slot (ie, team capatains/host have not locked players yet)
 					if((Game_mode & GM_MULTIPLAYER) && multi_ts_disabled_high_slot(slot_index)){
@@ -2772,7 +2765,6 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 						else
 							color_to_draw = &Icon_colors[ICON_FRAME_DISABLED_HIGH];
 					}
-#endif
 					break;
 				}
 
@@ -3258,7 +3250,6 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 		sp = &Ships[wp->ship_index[wing_slot]];
 
 		// in multiplayer, return the callsigns of the players who are in the ships
-#ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			int player_index = multi_find_player_by_object(&Objects[sp->objnum]);
 			if(player_index != -1){
@@ -3266,10 +3257,7 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 			} else {
 				strcpy(name,sp->ship_name);
 			}
-		}
-		else
-#endif
-		{		
+		} else {		
 			strcpy(name, sp->ship_name);
 		}
 	}
@@ -3512,12 +3500,11 @@ int ss_disabled_slot(int slot_num)
 		return 0;
 	}
 
-#ifndef NO_NETWORK
 	// HACK HACK HACK - call the team select function in multiplayer
 	if(Game_mode & GM_MULTIPLAYER) {
 		return multi_ts_disabled_slot(slot_num);
 	} 
-#endif
+
 	return ( Ss_wings[slot_num/MAX_WING_SLOTS].ss_slots[slot_num%MAX_WING_SLOTS].status & WING_SLOT_IGNORE );
 }
 
@@ -3695,12 +3682,10 @@ void ss_init_units()
 		}	// end for
 	}	// end for
 
-#ifndef NO_NETWORK
 	// lock/unlock any necessary slots for multiplayer
 	if(Game_mode & GM_MULTIPLAYER){
 		ss_recalc_multiplayer_slots();
 	}
-#endif
 }
 
 // set the necessary pointers
@@ -3733,14 +3718,11 @@ void ship_select_init_team_data(int team_num)
 
 	// determine how many wings we should be checking for
 	Wss_num_wings = 0;
-#ifndef NO_NETWORK
+
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		// now setup wings for easy reference		
 		ss_init_wing_info(0,team_num);			
-	}
-	else
-#endif
-	{			
+	} else {			
 		// now setup wings for easy reference
 		for(idx=0;idx<MAX_STARTING_WINGS;idx++){
 			ss_init_wing_info(idx,idx);	
@@ -3761,7 +3743,6 @@ void ship_select_init_team_data(int team_num)
 void ship_select_common_init()
 {		
 	// initialize team critical data for all teams
-#ifndef NO_NETWORK
 	int idx;
 
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){		
@@ -3772,10 +3753,7 @@ void ship_select_common_init()
 
 		// finally, intialize team data for myself
 		ship_select_init_team_data(Common_team);
-	}
-	else
-#endif
-	{			
+	} else {			
 		ship_select_init_team_data(Common_team);
 	}
 	
@@ -4028,7 +4006,6 @@ void ss_drop(int from_slot,int from_list,int to_slot,int to_list,int player_inde
 	}	
 }
 
-#ifndef NO_NETWORK
 // lock/unlock any necessary slots for multiplayer
 void ss_recalc_multiplayer_slots()
 {
@@ -4073,4 +4050,3 @@ void ss_recalc_multiplayer_slots()
 		}
 	}
 } 
-#endif

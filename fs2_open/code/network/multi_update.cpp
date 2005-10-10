@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-10-10 17:21:07 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.7  2005/04/01 07:31:10  taylor
  * *that blasted Enter key*, just fixing the log... nothing to see here...
  *
@@ -134,8 +138,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include "network/multi_update.h"
 #include "popup/popup.h"
@@ -343,5 +345,3 @@ int multi_update_gobaby()
 	
 	return my_code;		
 }
-
-#endif // !NO_NETWORK

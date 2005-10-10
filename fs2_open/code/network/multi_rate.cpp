@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:35:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-10-10 17:21:07 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/03/02 21:18:19  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -63,8 +67,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 // -----------------------------------------------------------------------------------------------------------------------
 // MULTI RATE DEFINES/VARS
@@ -266,5 +268,3 @@ void multi_rate_display(int np_index, int x, int y)
 }
 
 #endif
-
-#endif // !NO_NETWORK

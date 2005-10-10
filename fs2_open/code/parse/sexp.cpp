@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.170 $
- * $Date: 2005-10-09 08:10:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.171 $
+ * $Date: 2005-10-10 17:21:08 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.170  2005/10/09 08:10:03  wmcoolmon
+ * Minor update to ship-create description
+ *
  * Revision 2.169  2005/10/09 08:03:21  wmcoolmon
  * New SEXP stuff
  *
@@ -1053,13 +1056,10 @@
 #include "globalincs/systemvars.h"
 #include "camera/camera.h"
 #include "nebula/neb.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "network/multi_team.h"
-#endif
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -5052,7 +5052,6 @@ int sexp_is_friendly_stealth_visible(int n)
 // if invalid team return 0
 int sexp_team_score(int node)
 {
-#ifndef NO_NETWORK
 	// if multi t vs t
 	if (Game_mode & GM_MULTIPLAYER) {
 		if (Netgame.type_flags & NG_TYPE_TEAM) {
@@ -5070,7 +5069,6 @@ int sexp_team_score(int node)
 			}
 		}
 	}
-#endif
 
 	return 0;
 }
@@ -7153,12 +7151,10 @@ void sexp_ingame_ship_change_iff(int ship_num, int new_team)
 
 	Ships[ship_num].team = new_team;
 
-#ifndef NO_NETWORK
 	// send a network packet if we need to
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0)){
 		send_change_iff_packet(Objects[Ships[ship_num].objnum].net_signature, new_team);
 	}
-#endif
 }
 
 // Goober5000
@@ -7417,13 +7413,11 @@ void sexp_change_ai_class( int n )
 		{
 			ship_subsystem_set_new_ai_class(ship_num, CTEXT(n), new_ai_class);
 
-#ifndef NO_NETWORK
 			// send a network packet if we need to
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0))
 			{
 				send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, CTEXT(n), new_ai_class);
 			}
-#endif
 		}
 	}
 	// just the one ship
@@ -7431,13 +7425,11 @@ void sexp_change_ai_class( int n )
 	{
 		ship_set_new_ai_class(ship_num, new_ai_class);
 
-#ifndef NO_NETWORK
 		// send a network packet if we need to
 		if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0))
 		{
 			send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, NULL, new_ai_class);
 		}
-#endif
 	}
 }
 
@@ -8949,7 +8941,7 @@ void sexp_grant_medal( int n )
 
 	if ( i < Num_medals ) {
 		Player->stats.m_medal_earned = i;
-#ifndef NO_NETWORK
+
 		if ( Game_mode & GM_MULTIPLAYER ) {
 			for ( int j = 0; j < MAX_PLAYERS; j++ ) {
 				if ( MULTI_CONNECTED(Net_players[j]) ) {
@@ -8957,7 +8949,6 @@ void sexp_grant_medal( int n )
 				}
 			}
 		}
-#endif
 	}
 }
 
@@ -12155,7 +12146,6 @@ int sexp_num_kills(int node)
 		return 0;
 	}
 	
-#ifndef NO_NETWORK
 	int np_index;
 
 	// in multiplayer, search through all players
@@ -12167,9 +12157,7 @@ int sexp_num_kills(int node)
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
-	else 
-#endif
-	{
+	else {
 		// me
 		if(Player_obj == &Objects[Ships[sindex].objnum]){
 			p = Player;
@@ -12200,7 +12188,6 @@ int sexp_num_type_kills(int node)
 		return 0;
 	}
 	
-#ifndef NO_NETWORK
 	int np_index;
 
 	// in multiplayer, search through all players
@@ -12212,9 +12199,7 @@ int sexp_num_type_kills(int node)
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
-	else
-#endif
-	{
+	else {
 		// me
 		if(Player_obj == &Objects[Ships[sindex].objnum]){
 			p = Player;
@@ -12258,7 +12243,6 @@ int sexp_num_class_kills(int node)
 		return 0;
 	}
 	
-#ifndef NO_NETWORK
 	int np_index;
 
 	// in multiplayer, search through all players
@@ -12270,9 +12254,7 @@ int sexp_num_class_kills(int node)
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
-	else
-#endif
-	{
+	else {
 		// me
 		if(Player_obj == &Objects[Ships[sindex].objnum]){
 			p = Player;
@@ -16650,9 +16632,7 @@ void sexp_modify_variable(char *text, int index)
 {
 	Assert(index >= 0 && index < MAX_SEXP_VARIABLES);
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
-#ifndef NO_NETWORK
 	Assert( !MULTIPLAYER_CLIENT );
-#endif
 
 	strcpy(Sexp_variables[index].text, text);
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
@@ -16667,11 +16647,9 @@ void sexp_modify_variable(int n)
 	char *new_text;
 	char number_as_str[TOKEN_LENGTH];
 
-#ifndef NO_NETWORK
 	// Only do single player of multi host
 	if ( MULTIPLAYER_CLIENT )
 		return;
-#endif
 
 	if (n != -1)
 	{

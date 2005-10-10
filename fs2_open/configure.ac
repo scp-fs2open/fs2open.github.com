@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.21 2005-07-12 18:14:53 mrduckman Exp $
+dnl $Id: configure.ac,v 1.22 2005-10-10 17:21:02 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -38,13 +38,6 @@ AC_SUBST(LDFLAGS)
 
 dnl The configuration options
 dnl -------------------------
-
-AC_ARG_ENABLE(networking, 
-	AC_HELP_STRING([--disable-networking],
-		[TEST: disable networking]),
-		[fs2_networking=$enableval],
-		[fs2_networking=yes],
-)
 
 AC_ARG_ENABLE(sound,
 	AC_HELP_STRING([--disable-sound],
@@ -181,12 +174,6 @@ dnl define compiler switches
 
 if test "$fs2_inferno" = "yes" ; then
 	AC_DEFINE([INF_BUILD])
-	fs2_networking=no
-fi
-
-if ! test "$fs2_networking" = "yes" ; then
-	AC_DEFINE([NO_NETWORK])
-	AC_DEFINE([NO_STANDALONE])
 fi
 
 if test "fs2_demo" = "yes" ; then
@@ -473,7 +460,6 @@ if test "x$fs2_static_ogg" != "x" ; then
 	echo Static OGG Vorbis from . : $fs2_static_ogg
 fi
 echo
-echo Networking enabled ..... : $fs2_networking
 echo Sound enabled .......... : $fs2_sound
 echo Text-to-speech enabled . : $fs2_speech
 echo

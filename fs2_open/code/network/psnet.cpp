@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/PsNet.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 03:35:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-10-10 17:21:08 $
+ * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.9  2005/05/12 17:49:15  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -146,8 +150,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #ifdef _WIN32
 #include <windows.h>
@@ -3143,5 +3145,3 @@ void psnet_reliable_send_ack(net_addr *addr,ushort id_num)
 }
 
 #endif  // #ifndef PSNET2
-
-#endif // !NO_NETWORK

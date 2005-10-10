@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.110 $
- * $Date: 2005-10-09 09:13:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.111 $
+ * $Date: 2005-10-10 17:21:10 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2005/10/09 09:13:29  wmcoolmon
+ * Added warpin/warpout speed override values to ships.tbl
+ *
  * Revision 2.109  2005/10/09 00:43:09  wmcoolmon
  * Extendable modular tables (XMTs); added weapon dialogs to the Lab
  *
@@ -693,9 +696,7 @@
 #include "palman/palman.h"
 #include "weapon/trails.h"
 #include "ai/ai.h"
-#ifndef NO_NETWORK
 #include "network/multi_oo.h"
-#endif
 #include "hud/hudparse.h"
 #include "render/3d.h"
 
@@ -1205,10 +1206,8 @@ typedef struct ship {
 	float level2_tag_total;							// total tag time
 	float level2_tag_left;							// total tag remaining	
 
-   #ifndef NO_NETWORK
 	// old-style object update stuff
 	np_update		np_updates[MAX_PLAYERS];	// for both server and client
-   #endif  // ifndef NO_NETWORK
 
 	// lightning timestamp
 	int lightning_stamp;

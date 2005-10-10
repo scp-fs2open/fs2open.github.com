@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.240 $
- * $Date: 2005-10-10 01:14:11 $
- * $Author: wmcoolmon $
+ * $Revision: 2.241 $
+ * $Date: 2005-10-10 17:21:10 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.240  2005/10/10 01:14:11  wmcoolmon
+ * Tidied up code a bit
+ *
  * Revision 2.239  2005/10/09 17:38:49  wmcoolmon
  * Added names to the 'limits reached' dialogs in ship/weapons.tbl
  *
@@ -1694,11 +1697,8 @@
 #include "mission/missioncampaign.h"
 #include "radar/radarsetup.h"
 #include "object/objectdock.h"
-
-#ifndef NO_NETWORK
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
-#endif
 
 
 
@@ -4388,7 +4388,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->tag_left = -1.0f;
 	shipp->level2_tag_left = -1.0f;
 
-#ifndef NO_NETWORK
 	// multiplayer field initializations
 	for (i = 0; i < MAX_PLAYERS; i++ ) {
 		shipp->np_updates[i].update_stamp = -1;
@@ -4400,7 +4399,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	extern int oo_interp_count[MAX_SHIPS];	
 	oo_arrive_time_count[shipp - Ships] = 0;				
 	oo_interp_count[shipp - Ships] = 0;	
-#endif
 
 	shipp->primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
@@ -5022,7 +5020,6 @@ void ship_render(object * obj)
 		// maybe set squad logo bitmap
 		model_set_insignia_bitmap(-1);
 
-#ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			// if its any player's object
 			int np_index = multi_find_player_by_object( obj );
@@ -5032,9 +5029,7 @@ void ship_render(object * obj)
 		}
 		// in single player, we want to render model insignias on all ships in alpha beta and gamma
 		// Goober5000 - and also on wings that have their logos set
-		else
-#endif
-		{
+		else {
 			// if its an object in my squadron
 			if(ship_in_my_squadron(shipp)) {
 				model_set_insignia_bitmap(Player->insignia_texture);
@@ -5401,10 +5396,9 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 				if ( &Objects[so->objnum] == Player_obj )
 					continue;
 
-#ifndef NO_NETWORK
 				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) )
 					continue;
-#endif
+
 				if ( (Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)) && !(Ships[Objects[so->objnum].instance].flags2 & (SF2_VANISHED)) )
 					// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 					// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
@@ -6489,7 +6483,6 @@ void ship_check_player_distance_sub(player *p, int multi_target=-1)
 
 void ship_check_player_distance()
 {
-#ifndef NO_NETWORK
 	int idx;
 
 	// multiplayer
@@ -6506,9 +6499,7 @@ void ship_check_player_distance()
 		}
 	}
 	// single player
-	else 
-#endif
-	{
+	else {
 		// maybe blow him up
 		ship_check_player_distance_sub(Player);
 	}		
@@ -6523,7 +6514,6 @@ void observer_process_post(object *objp)
 
 	Assert(objp->type == OBJ_OBSERVER);
 
-#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		// if I'm just an observer
 		if (MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM])) {
@@ -6537,7 +6527,6 @@ void observer_process_post(object *objp)
 			}
 		}
 	}
-#endif
 }
 
 // reset some physics info when ship's engines goes from disabled->enabled 
@@ -6769,10 +6758,7 @@ void ship_process_post(object * obj, float frametime)
 		shipp->flags |= SF_AMMO_COUNT_RECORDED;
 	}
 
-#ifndef NO_NETWORK
-	if(!(Game_mode & GM_STANDALONE_SERVER))
-#endif
-	{
+	if(!(Game_mode & GM_STANDALONE_SERVER)) {
 		// Plot ship on the radar.  What about multiplayer ships?
 		if ( obj != Player_obj )			// don't plot myself.
 			radar_plot_object( obj );
@@ -6846,11 +6832,9 @@ void ship_process_post(object * obj, float frametime)
 	} else {
 		//	Do AI.
 
-#ifndef NO_NETWORK
 		// for multiplayer people.  return here if in multiplay and not the host
 		if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) )
 			return;	
-#endif
 
 		// MWA -- moved the code to maybe fire swarm missiles to after the check for
 		// multiplayer master.  Only single player and multi server needs to do this code
@@ -7918,11 +7902,10 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 	// do not need to check any objects other than themselves for the count
 	fired = -1;
 	check_count = 1;
-#ifndef NO_NETWORK
+
 	if ( MULTIPLAYER_CLIENT && (objp != Player_obj) ){
 		check_count = 0;
 	}
-#endif
 
 	if (check_count && (shipp->cmeasure_count <= 0) ) {
 		if ( objp == Player_obj ) {
@@ -7957,7 +7940,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 	
 send_countermeasure_fired:
-#ifndef NO_NETWORK
+
 	// the new way of doing things
 	// if(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING){
 	if(Game_mode & GM_MULTIPLAYER){
@@ -7970,7 +7953,6 @@ send_countermeasure_fired:
 		//	send_countermeasure_fired_packet( objp, cmeasure_count, fired );
 		//}
 	//}
-#endif
 
 	return (fired>0);		// return 0 if not fired, 1 otherwise
 }
@@ -8563,12 +8545,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					// and if I am a client in multiplayer
 					int check_ammo = 1;
 
-#ifndef NO_NETWORK
 					if ( MULTIPLAYER_CLIENT && (obj != Player_obj) )
 					{
 						check_ammo = 0;
 					}
-#endif
 
 					// not enough ammo
 					if ( check_ammo && ( swp->primary_bank_ammo[bank_to_fire] <= 0) )
@@ -8765,14 +8745,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	
 	// if multiplayer and we're client-side firing, send the packet
 	// if((Game_mode & GM_MULTIPLAYER) && (Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING)){
-#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		// if i'm a client, and this is not me, don't send
 		if(!(MULTIPLAYER_CLIENT && (shipp != Player_ship))){
 			send_NEW_primary_fired_packet( shipp, banks_fired );
 		}
 	}
-#endif
 
 	// post a primary fired event
 	if(Game_mode & GM_DEMO_RECORD){
@@ -8785,7 +8763,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// function to find the player given the object *.  It had better return a valid player
 		// or our internal structure as messed up.
 		if( Game_mode & GM_MULTIPLAYER ) {
-#ifndef NO_NETWORK
 			if ( Net_player->flags & NETINFO_FLAG_AM_MASTER ) {
 				int player_num;
 
@@ -8794,7 +8771,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 				Net_players[player_num].m_player->stats.mp_shots_fired += num_fired;
 			}
-#endif
 		} else {
 			Player->stats.mp_shots_fired += num_fired;
 		}
@@ -9107,23 +9083,20 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	wip = &Weapon_info[weapon];
 
 	have_timeout = 0;			// used to help tell whether or not we have a timeout
-#ifndef NO_NETWORK
+
 	if ( MULTIPLAYER_MASTER ) {
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
 		starting_bank_count = swp->secondary_bank_ammo[bank];
 	}
-#endif
 
 	if (ship_fire_secondary_detonate(obj, swp)) {
 		// in multiplayer, master sends a secondary fired packet with starting signature of -1 -- indicates
 		// to client code to set the detonate timer to 0.
-#ifndef NO_NETWORK
 		if ( MULTIPLAYER_MASTER ) {
 			// MWA -- 4/6/98  Assert invalid since the bank count could have gone to 0.
 			//Assert(starting_bank_count != 0);
 			send_secondary_fired_packet( shipp, 0, starting_bank_count, 1, allow_swarm );
 		}
-#endif
 	
 		//	For all banks, if ok to fire a weapon, make it wait a bit.
 		//	Solves problem of fire button likely being down next frame and
@@ -9176,10 +9149,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			} else {
 				// multiplayer clients should always fire the weapon here, so return only if not
 				// a multiplayer client.
-#ifndef NO_NETWORK
-				if ( !MULTIPLAYER_CLIENT )
-#endif
-				{
+				if ( !MULTIPLAYER_CLIENT ) {
 					return 0;
 				}
 			}
@@ -9202,9 +9172,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			}
 			else
 			{
-#ifndef NO_NETWORK
 				if ( !MULTIPLAYER_CLIENT )
-#endif
 				{
 					return 0;
 				}
@@ -9238,10 +9206,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	// Here is where we check if weapons subsystem is capable of firing the weapon.
 	// do only in single plyaer or if I am the server of a multiplayer game
-#ifndef NO_NETWORK
-	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER )
-#endif
-	{
+	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER ) {
 		if ( ship_weapon_maybe_fail(shipp) ) {
 			if ( obj == Player_obj ) 
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
@@ -9270,11 +9235,10 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		// weapons, we might or might not check ammo counts depending on game mode, who is firing,
 		// and if I am a client in multiplayer
 		check_ammo = 1;
-#ifndef NO_NETWORK
+
 		if ( MULTIPLAYER_CLIENT && (obj != Player_obj) ){
 			check_ammo = 0;
 		}
-#endif
 
 		if ( check_ammo && ( swp->secondary_bank_ammo[bank] <= 0) ) {
 			if ( shipp->objnum == OBJ_INDEX(Player_obj) ) {
@@ -9320,11 +9284,9 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
-#ifndef NO_NETWORK
 			if ( Game_mode & GM_MULTIPLAYER ) {
 				Assert( Weapon_info[weapon].subtype == WP_MISSILE );
 			}
-#endif
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
@@ -9394,7 +9356,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 done_secondary:
 
 	if(num_fired > 0){
-#ifndef NO_NETWORK
 		// if I am the master of a multiplayer game, send a secondary fired packet along with the
 		// first network signatures for the newly created weapons.  if nothing got fired, send a failed
 		// packet if 
@@ -9402,10 +9363,9 @@ done_secondary:
 			Assert(starting_sig != 0);
 			send_secondary_fired_packet( shipp, starting_sig, starting_bank_count, num_fired, allow_swarm );			
 		}
-#endif
+
 		// STATS
 		if (obj->flags & OF_PLAYER_SHIP) {
-#ifndef NO_NETWORK
 			// in multiplayer -- only the server needs to keep track of the stats.  Call the cool
 			// function to find the player given the object *.  It had better return a valid player
 			// or our internal structure as messed up.
@@ -9418,10 +9378,7 @@ done_secondary:
 
 					Net_players[player_num].m_player->stats.ms_shots_fired += num_fired;
 				}				
-			}
-			else
-#endif
-			{
+			} else {
 				Player->stats.ms_shots_fired += num_fired;
 			}
 		}
@@ -11899,11 +11856,9 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 //       player ship.
 int ship_dumbfire_threat(ship *sp)
 {
-#ifndef NO_NETWORK
 	if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER) ) {
 		return 0;
 	}
-#endif
 
 	if (ai_endangered_by_weapon(&Ai_info[sp->ai_index]) > 0) {
 		return 1;
@@ -12363,25 +12318,17 @@ warn_player_done:
 		int ship_index;
 
 		// multiplayer tvt - this is client side.
-#ifndef NO_NETWORK
 		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
 			ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS, 0.0f, -1, 0, Net_player->p_info.team );
-		} 
-		else 
-#endif
-		{
+		} else {
 			ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS );
 		}
 
 		if ( ship_index >= 0 ) {
 			// multiplayer - make sure I just send to myself
-#ifndef NO_NETWORK
 			if(Game_mode & GM_MULTIPLAYER){
 				message_send_builtin_to_player(msg_type, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, MY_NET_PLAYER_NUM, -1);
-			} 
-			else 
-#endif
-			{
+			} else {
 				message_send_builtin_to_player(msg_type, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
 			}
 			Player->allow_warn_timestamp = timestamp(PLAYER_ALLOW_WARN_INTERVAL);
@@ -12499,7 +12446,6 @@ void ship_maybe_ask_for_help(ship *sp)
 		return;
 	}
 
-#ifndef NO_NETWORK
 	// determine team filter if TvT
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		if(sp->team == TEAM_FRIENDLY){
@@ -12508,7 +12454,6 @@ void ship_maybe_ask_for_help(ship *sp)
 			multi_team_filter = 1;
 		}
 	}
-#endif
 
 	// handle awacs ship as a special case
 	if (Ship_info[sp->ship_info_index].flags & SIF_HAS_AWACS) {
@@ -12579,7 +12524,6 @@ void ship_scream(ship *sp)
 		return;
 	}
 
-#ifndef NO_NETWORK
 	// multiplayer tvt
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		if(sp->team == TEAM_FRIENDLY){
@@ -12588,7 +12532,6 @@ void ship_scream(ship *sp)
 			multi_team_filter = 1;
 		}
 	}
-#endif
 
 	message_send_builtin_to_player(MESSAGE_WINGMAN_SCREAM, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_scream_timestamp = timestamp(PLAYER_SCREAM_INTERVAL);
@@ -12693,7 +12636,6 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	int multi_team_filter = -1;
 
-#ifndef NO_NETWORK
 	// multiplayer tvt
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		if(sp->team == TEAM_FRIENDLY){
@@ -12702,7 +12644,6 @@ void ship_maybe_tell_about_rearm(ship *sp)
 			multi_team_filter = 1;
 		}
 	}
-#endif
 
 	if ( message_type >= 0 ) {
 		if ( rand() & 1 ) {
@@ -12843,12 +12784,10 @@ void ship_do_cargo_revealed( ship *shipp, int from_network )
 	
 	nprintf(("Network", "Revealing cargo for %s\n", shipp->ship_name));
 
-#ifndef NO_NETWORK
 	// send the packet if needed
 	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
 		send_cargo_revealed_packet( shipp );		
 	}
-#endif
 
 	shipp->flags |= SF_CARGO_REVEALED;
 	shipp->time_cargo_revealed = Missiontime;	
@@ -12869,13 +12808,11 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 	
 	nprintf(("Network", "Revealing cap ship subsys cargo for %s\n", shipp->ship_name));
 
-#ifndef NO_NETWORK
 	// send the packet if needed
 	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
 		int subsystem_index = ship_get_index_from_subsys(subsys, shipp->objnum);
 		send_subsystem_cargo_revealed_packet( shipp, subsystem_index );		
 	}
-#endif
 
 	subsys->subsys_cargo_revealed = 1;
 	subsys->time_subsys_cargo_revealed = Missiontime;
@@ -12898,12 +12835,10 @@ void ship_do_cargo_hidden( ship *shipp, int from_network )
 	
 	nprintf(("Network", "Hiding cargo for %s\n", shipp->ship_name));
 
-#ifndef NO_NETWORK
 	// send the packet if needed
 	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
 		send_cargo_hidden_packet( shipp );		
 	}
-#endif
 
 	shipp->flags &= ~SF_CARGO_REVEALED;
 
@@ -12921,13 +12856,11 @@ void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from
 	
 	nprintf(("Network", "Hiding cap ship subsys cargo for %s\n", shipp->ship_name));
 
-#ifndef NO_NETWORK
 	// send the packet if needed
 	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
 		int subsystem_index = ship_get_index_from_subsys(subsys, shipp->objnum);
 		send_subsystem_cargo_hidden_packet( shipp, subsystem_index );		
 	}
-#endif
 
 	subsys->subsys_cargo_revealed = 0;
 
@@ -13219,17 +13152,13 @@ void ship_page_in()
 	}
 
 	// page in insignia bitmaps
-#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		for(i=0; i<MAX_PLAYERS; i++){
 			if(MULTI_CONNECTED(Net_players[i]) && (Net_players[i].m_player != NULL) && (Net_players[i].m_player->insignia_texture >= 0)){
 				bm_page_in_xparent_texture(Net_players[i].m_player->insignia_texture);
 			}
 		}
-	}
-	else
-#endif
-	{
+	} else {
 		if((Player != NULL) && (Player->insignia_texture >= 0)){
 			bm_page_in_xparent_texture(Player->insignia_texture);
 		}
@@ -13491,7 +13420,6 @@ int is_support_allowed(object *objp)
 			return 0;
 		}
 	}
-#ifndef NO_NETWORK
 	else
 	{
 		// multiplayer version behaves differently.  Depending on mode:
@@ -13512,7 +13440,6 @@ int is_support_allowed(object *objp)
 			}
 		}
 	}
-#endif
 
 	// Goober5000 - extra check for existence of support ship
 	if ( (The_mission.support_ships.ship_class < 0) &&

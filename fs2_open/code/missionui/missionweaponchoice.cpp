@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-09-27 02:36:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.59 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.57  2005/09/16 17:02:50  Goober5000
  * roll back taylor's loadout fix and do it this way: it saves memory
  * (but thanks to taylor for drawing attention to the difference between wing slots and wss slots!)
@@ -686,14 +690,11 @@
 #include "lighting/lighting.h"
 #include "hud/hudbrackets.h"
 #include "model/model.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
-#endif
 
 
 
@@ -1292,7 +1293,6 @@ void weapon_button_do(int i)
 				wl_reset_to_defaults();
 				break;
 
-#ifndef NO_NETWORK
 			case WL_BUTTON_MULTI_LOCK:
 				Assert(Game_mode & GM_MULTIPLAYER);				
 				// the "lock" button has been pressed
@@ -1303,7 +1303,6 @@ void weapon_button_do(int i)
 					Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.disable();
 				}
 				break;
-#endif
 
 			case WL_BUTTON_APPLY_ALL:
 				wl_apply_current_loadout_to_all_ships_in_current_wing();
@@ -1374,7 +1373,6 @@ void weapon_buttons_init()
 		b->button.link_hotspot(Buttons[gr_screen.res][i].hotspot);
 	}
 
-#ifndef NO_NETWORK
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		Buttons[gr_screen.res][WL_BUTTON_RESET].button.hide();
 		Buttons[gr_screen.res][WL_BUTTON_RESET].button.disable();		
@@ -1389,10 +1387,7 @@ void weapon_buttons_init()
 				Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.disable();				
 			}
 		}
-	}
-	else
-#endif
-	{		
+	} else {		
 		Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.hide();
 		Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.disable();
 	}
@@ -1676,7 +1671,7 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
 {
 	int	rval = 0;
 
-#if !defined NO_NETWORK && !defined FS2_DEMO
+#if !defined FS2_DEMO
 	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
 		if (weapon_flags & DOGFIGHT_WEAPON)
 			rval = 1;
@@ -2106,13 +2101,11 @@ void wl_reset_selected_slot()
 	int i;
 	Selected_wl_slot = -1;
 
-#ifndef NO_NETWORK
 	// in multiplayer, select the slot of the player's ship by default
 	if((Game_mode & GM_MULTIPLAYER) && !MULTI_PERM_OBSERVER(Net_players[MY_NET_PLAYER_NUM]) && (Wss_slots[Net_player->p_info.ship_index].ship_class >= 0)){
 		wl_set_selected_slot(Net_player->p_info.ship_index);
 		return;
 	}
-#endif
 
 	for ( i=0; i<MAX_WSS_SLOTS; i++ ) {
 		if ( !ss_disabled_slot(i) ) {
@@ -2642,7 +2635,6 @@ void weapon_select_close_team()
 // briefing state is entered.
 void weapon_select_common_init()
 {
-#ifndef NO_NETWORK
 	int idx;
 
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
@@ -2653,10 +2645,7 @@ void weapon_select_common_init()
 
 		// re-initialize for me specifically
 		weapon_select_init_team(Common_team);
-	}
-	else 
-#endif
-	{	
+	} else {	
 		// initialize for my own team
 		weapon_select_init_team(Common_team);
 	}
@@ -2678,11 +2667,9 @@ void weapon_select_init()
 	common_set_interface_palette("WeaponPalette");
 	common_flash_button_init();
 
-#ifndef NO_NETWORK
 	// for multiplayer, change the state in my netplayer structure
 	if ( Game_mode & GM_MULTIPLAYER )
 		Net_player->state = NETPLAYER_STATE_WEAPON_SELECT;
-#endif
 
 	ship_stop_animation();
 	stop_weapon_animation();
@@ -2845,15 +2832,11 @@ int drop_icon_on_slot(int bank_num)
 		return 0;
 	}
 
-#ifndef NO_NETWORK
 	if(Game_mode & GM_MULTIPLAYER){
 		if(multi_ts_disabled_slot(Selected_wl_slot)){
 			return 0;
 		}
-	}
-	else
-#endif
-	{
+	} else {
 		if ( ss_disabled_slot( Selected_wl_slot ) ){
 			return 0;
 		}
@@ -3576,12 +3559,10 @@ void weapon_select_do(float frametime)
 		common_render_selected_screen_button();
 	}
 
-#ifndef NO_NETWORK
 	// maybe blit the multiplayer "locked" button
 	if((Game_mode & GM_MULTIPLAYER) && multi_ts_is_locked()){
 		Buttons[gr_screen.res][WL_BUTTON_MULTI_LOCK].button.draw_forced(2);
 	}
-#endif
 
 	if ( wl_icon_being_carried() ) {
 		int mx, my, sx, sy;
@@ -3685,8 +3666,6 @@ void weapon_select_do(float frametime)
 
 	// should render the chatbox as close to the end as possible so it overlaps all controls
 	if(!Background_playing){
-
-#ifndef NO_NETWORK
 		// render some extra stuff in multiplayer
 		if(Game_mode & GM_MULTIPLAYER){				
 			// render the chatbox
@@ -3701,7 +3680,6 @@ void weapon_select_do(float frametime)
 			// blit the "ships/players" locked button
 			// multi_ts_blit_locked_button();
 		}
-#endif
 	}
 
 	// blit help overlay if active
@@ -3712,13 +3690,9 @@ void weapon_select_do(float frametime)
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
 	// the ship model is not in memory
 	if ( Commit_pressed ) {
-#ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			multi_ts_commit_pressed();			
-		}
-		else
-#endif
-		{
+		} else {
 			commit_pressed();
 		}		
 		Commit_pressed = 0;
@@ -4001,12 +3975,10 @@ void wl_pick_icon_from_list(int index)
 {
 	int weapon_class, mx, my;
 
-#ifndef NO_NETWORK
 	// if this is a multiplayer game and the player is an observer, he can never pick any weapons up
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 		return;
 	}
-#endif
 
 	// if a weapon is being carried, do nothing
 	if ( wl_icon_being_carried() ) {
@@ -4726,7 +4698,6 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 {
 	int update=0;
 	int sound=-1;
-#ifndef NO_NETWORK
 	net_player *pl;
 
 	// get the appropriate net player
@@ -4739,7 +4710,6 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 	} else {
 		pl = NULL;
 	}
-#endif
 
 	switch(mode){
 	case WSS_SWAP_SLOT_SLOT:
@@ -4762,7 +4732,6 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 	}	
 
 	if ( update ) {
-#ifndef NO_NETWORK
 		if ( MULTIPLAYER_HOST ) {
 			int size;
 			ubyte wss_data[MAX_PACKET_SIZE-20];
@@ -4771,9 +4740,7 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 			Assert(pl != NULL);
 			send_wss_update_packet(pl->p_info.team,wss_data, size);
 		}
-#endif
 
-#ifndef NO_NETWORK
 		if(Game_mode & GM_MULTIPLAYER){
 			Assert(pl != NULL);
 
@@ -4781,10 +4748,7 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 			if(pl->p_info.team == Net_player->p_info.team){
 				wl_synch_interface();			
 			}
-		}
-		else
-#endif
-		{
+		} else {
 			wl_synch_interface();
 		}
 	}
@@ -4796,7 +4760,6 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 {
 	int mode;
 	int update=0;
-#ifndef NO_NETWORK
 	net_player *pl;
 
 	// get the appropriate net player
@@ -4809,23 +4772,19 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 	} else {
 		pl = NULL;
 	}
-#endif
 
 	common_flash_button_init();
-#ifndef NO_NETWORK
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_HOST ) {
 		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 			// set the global pointers to the right pools
 			ss_set_team_pointers(pl->p_info.team);
 		}
-#endif
 
 		mode = wss_get_mode(from_bank, from_list, to_bank, to_list, ship_slot);
 		if ( mode >= 0 ) {
 			update = wl_apply(mode, from_bank, from_list, to_bank, to_list, ship_slot, player_index, dont_play_sound);
 		}		
 
-#ifndef NO_NETWORK
 		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 			// set the global pointers to the right pools
 			ss_set_team_pointers(Net_player->p_info.team);
@@ -4833,7 +4792,6 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 	} else {
 		send_wss_request_packet(Net_player->player_id, from_bank, from_list, to_bank, to_list, ship_slot, -1, WSS_WEAPON_SELECT);
 	}
-#endif
 
 	return update;
 }

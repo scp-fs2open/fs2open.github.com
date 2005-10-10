@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-08-09 10:06:47 $
+ * $Revision: 2.27 $
+ * $Date: 2005-10-10 17:21:05 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/08/09 10:06:47  taylor
+ * well that was rather stupid of me, this would crash if old + new pilots went over MAX_PILOTS
+ *
  * Revision 2.25  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -294,10 +297,7 @@
 #include "mission/missioncampaign.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 
@@ -616,13 +616,13 @@ void player_select_init()
 //	}
 		
 	// if we found a pilot
-#if defined(DEMO) || defined(OEM_BUILD) || defined(E3_BUILD) || defined(PRESS_TOUR_BUILD) || defined(NO_NETWORK) // not for FS2_DEMO
+#if defined(DEMO) || defined(OEM_BUILD) || defined(E3_BUILD) || defined(PRESS_TOUR_BUILD) // not for FS2_DEMO
 	player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);	
 #elif defined(MULTIPLAYER_BETA_BUILD)
 	player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);	
 #else
 	if (player_select_get_last_pilot_info()) {
-		if (Player_select_last_is_multi) {
+		if (Player_select_last_is_multi && !Networking_disabled) {
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 		} else {
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
@@ -1014,9 +1014,12 @@ void player_select_button_pressed(int n)
 		Player_select_autoaccept = 0;
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 		game_feature_not_in_demo_popup();
-#elif defined(NO_NETWORK)
-		game_feature_disabled_popup();
 #else
+		if ( Networking_disabled ) {
+			game_feature_disabled_popup();
+			break;
+		}
+
 		// switch to multiplayer mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_MULTI) {
 			// play a little sound
@@ -1063,10 +1066,8 @@ int player_select_create_new_pilot()
 		strcpy(Pilots[idx + 1], Pilots[idx]);		
 	}	
 
-#ifndef NO_NETWORK
 	// by default, set the default netgame protocol to be VMT
 	Multi_options_g.protocol = NET_TCP;	
-#endif
 
 	// select the beginning of the list
 	Player_select_pilot = 0;

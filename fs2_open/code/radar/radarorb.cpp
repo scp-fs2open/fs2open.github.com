@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-09-17 19:12:37 $
- * $Author: phreak $
+ * $Revision: 1.17 $
+ * $Date: 2005-10-10 17:21:09 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/09/17 19:12:37  phreak
+ * radar bitmap should render the correct color using -orbradar
+ *
  * Revision 1.15  2005/07/25 03:13:25  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -252,7 +255,6 @@ void radar_plot_object_orb( object *objp )
 	vec3d	world_pos = objp->pos;	
 	float		awacs_level;
 
-#ifndef NO_NETWORK
 	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
 	if( Game_mode & GM_STANDALONE_SERVER ){
@@ -263,7 +265,6 @@ void radar_plot_object_orb( object *objp )
 	if ( MULTIPLAYER_CLIENT && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ){
 		return;
 	}
-#endif
 
 	// get team-wide awacs level for the object if not ship
 	int ship_is_visible = 0;

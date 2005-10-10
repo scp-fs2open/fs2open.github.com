@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-22 10:18:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.12  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -160,10 +164,7 @@
 #include "weapon/emp.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 #define HUD_WINGMAN_STATUS_NUM_FRAMES	5
@@ -452,7 +453,6 @@ void hud_wingman_status_init_late_wings()
 */
 }
 
-#ifndef NO_NETWORK
 // function which marks the other team wing as not used for the wingman status gauge
 void hud_wingman_kill_multi_teams()
 {
@@ -478,7 +478,6 @@ void hud_wingman_kill_multi_teams()
 
 	HUD_wingman_status[wing_index].ignore = 1;
 }
-#endif
 
 
 // called once per level to init the wingman status gauge.  Loads in the frames the first time
@@ -511,9 +510,7 @@ void hud_init_wingman_status_gauge()
 	}
 
 	hud_wingman_status_init_late_wings();
-#ifndef NO_NETWORK
 	hud_wingman_kill_multi_teams();
-#endif
 	hud_wingman_status_update();
 }
 

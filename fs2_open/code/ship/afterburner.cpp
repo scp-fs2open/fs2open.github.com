@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-22 10:18:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2005-10-10 17:21:10 $
+ * $Author: taylor $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/22 10:18:35  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.15  2005/07/16 04:41:04  Goober5000
  * cleanup and clarification of phreak's fix of a bug propagated by me and penguin
  * --Goober5000
@@ -297,11 +301,7 @@ void afterburners_start(object *objp)
 	}
 
 	// Check if there is enough afterburner fuel
-#ifndef NO_NETWORK
 	if ( (shipp->afterburner_fuel < MIN_AFTERBURNER_FUEL_TO_ENGAGE) && !MULTIPLAYER_CLIENT ) {
-#else
-	if ( (shipp->afterburner_fuel < MIN_AFTERBURNER_FUEL_TO_ENGAGE) ) {
-#endif
 		if ( objp == Player_obj ) {
 			snd_play( &Snds[SND_ABURN_FAIL] );
 		}
@@ -397,12 +397,7 @@ void afterburners_update(object *objp, float fl_frametime)
 	}
 
 	// single player, multiplayer servers, and clients for their own ships
-	// (when we are running with NO_NETWORK defined, we are always in single-player mode;
-	// therefore this code block should always execute)
-#ifndef NO_NETWORK
-	if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER || (objp == Player_obj))
-#endif
-	{
+	if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER || (objp == Player_obj)) {
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
 
@@ -416,8 +411,7 @@ void afterburners_update(object *objp, float fl_frametime)
 				}
 			}
 			return;
-		}
-		else {
+		} else {
 			// Check if there is enough afterburner fuel
 			if ( shipp->afterburner_fuel <= 0 ) {
 				shipp->afterburner_fuel = 0.0f;

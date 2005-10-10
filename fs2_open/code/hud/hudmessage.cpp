@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-25 08:21:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/25 08:21:59  Goober5000
+ * more bugs and tweaks
+ * --Goober5000
+ *
  * Revision 2.16  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -484,10 +488,7 @@
 #include "ship/ship.h"
 #include "parse/parselo.h"
 #include "mission/missionmessage.h"		// for MAX_MISSION_MESSAGES
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 
@@ -877,13 +878,11 @@ void HUD_fixed_printf(float duration, char * format, ...)
 	char		tmp[HUD_MSG_LENGTH_MAX];
 	int		msg_length;
 
-#ifndef NO_NETWORK
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state != NETGAME_STATE_IN_MISSION)){
 		nprintf(("Network","HUD_fixed_printf bailing because not in multiplayer game play state\n"));
 		return;
 	}
-#endif
 
 	va_start(args, format);
 	vsprintf(tmp, format, args);
@@ -981,13 +980,11 @@ void HUD_printf(char *format, ...)
 	char tmp[HUD_MSG_LENGTH_MAX];
 	int len;
 
-#ifndef NO_NETWORK
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
 		nprintf(("Network","HUD_printf bailing because not in multiplayer game play state\n"));
 		return;
 	}
-#endif
 
 	va_start(args, format);
 	vsprintf(tmp, format, args);
@@ -1029,13 +1026,11 @@ void HUD_sourced_printf(int source, char *format, ...)
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
 
-#ifndef NO_NETWORK
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
 		nprintf(("Network","HUD_sourced_printf bailing because not in multiplayer game play state\n"));
 		return;
 	}
-#endif
 	
 	va_start(args, format);
 	vsprintf(tmp, format, args);

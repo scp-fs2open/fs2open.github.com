@@ -9,11 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-07-18 03:45:08 $
+ * $Revision: 2.13 $
+ * $Date: 2005-10-10 17:21:07 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/18 03:45:08  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.11  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -132,8 +139,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include "network/multi_pinfo.h"
 #include "ui/ui.h"
@@ -1001,5 +1006,3 @@ net_player *multi_pinfo_get_next_player(net_player *np)
 	
 	return NULL;
 }
-
-#endif // !NO_NETWORK
