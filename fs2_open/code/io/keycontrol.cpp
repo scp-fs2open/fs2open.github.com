@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-09-27 06:39:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.61 $
+ * $Date: 2005-10-10 17:14:31 $
+ * $Author: taylor $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/09/27 06:39:23  Goober5000
+ * small fix, bah
+ * --Goober5000
+ *
  * Revision 2.59  2005/09/25 08:25:15  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -558,16 +562,12 @@
 #include "freespace2/freespace.h"	//For time compression stuff
 #include "species_defs/species_defs.h"
 #include "asteroid/asteroid.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "network/multi_pause.h"
 #include "network/multi_observer.h"
 #include "network/multi_endgame.h"
-#endif
-
 #include "autopilot/autopilot.h"
 
 // --------------------------------------------------------------
@@ -1521,7 +1521,6 @@ void process_debug_keys(int k)
 		}
 
 
-#ifndef NO_NETWORK
 		case KEY_DEBUGGED + KEY_D:
 			extern int OO_update_index;			
 
@@ -1540,7 +1539,6 @@ void process_debug_keys(int k)
 				}
 			}
 			break;
-#endif
 
 		// change player ship to next flyable type
 		case KEY_DEBUGGED + KEY_RIGHT:
@@ -1886,15 +1884,10 @@ void game_do_end_mission_popup()
 	int	pf_flags, choice;
 //	char	savegame_filename[_MAX_FNAME];
 
-#ifndef NO_NETWORK
 	// do the multiplayer version of this
 	if(Game_mode & GM_MULTIPLAYER){
 		multi_quit_game(PROMPT_ALL);
-	}
-	else
-#endif
-	{
-
+	} else {
 		// single player version....
 		// do housekeeping things.
 		game_stop_time();
@@ -1939,7 +1932,6 @@ void game_do_end_mission_popup()
 // handle pause keypress
 void game_process_pause_key()
 {
-#ifndef NO_NETWORK
 	// special processing for multiplayer
 	if (Game_mode & GM_MULTIPLAYER) {							
 		if(Multi_pause_status){
@@ -1947,10 +1939,7 @@ void game_process_pause_key()
 		} else {
 			multi_pause_request(1);
 		}		
-	}
-	else
-#endif
-	{
+	} else {
 		gameseq_post_event( GS_EVENT_PAUSE_GAME );
 	}
 }
@@ -2003,13 +1992,11 @@ void game_process_cheats(int k)
 		return;
 	}
 
-#ifndef NO_NETWORK
 	// no cheats in multiplayer, ever
 	if(Game_mode & GM_MULTIPLAYER){
 		Cheats_enabled = 0;
 		return;
 	}
-#endif
 
 	k = key_to_ascii(k);
 
@@ -2265,7 +2252,6 @@ int button_function_critical(int n, net_player *p = NULL)
 
 	Assert(n >= 0);
    
-#ifndef NO_NETWORK
 	// multiplayer clients should leave critical button bits alone and pass them to the server instead
 	if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)) {
 		// if this flag is set, we should apply the button itself (came from the server)
@@ -2273,7 +2259,6 @@ int button_function_critical(int n, net_player *p = NULL)
 			return 0;
 		}
 	}
-#endif
 
 	// in single player mode make sure we're using the player object and the player himself, otherwise use the object and
 	// player pertaining to the passed net_player
@@ -2281,7 +2266,7 @@ int button_function_critical(int n, net_player *p = NULL)
 	if (p == NULL) {
 		objp = Player_obj;
 		pl = Player;
-#ifndef NO_NETWORK
+
 		if(Game_mode & GM_MULTIPLAYER){
 			npl = Net_player;
 
@@ -2290,7 +2275,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				return 0;
 			}
 		}
-#endif
+
 		at_self = 1;
 	} else {
 		objp = &Objects[p->m_player->objnum];
@@ -2315,13 +2300,11 @@ int button_function_critical(int n, net_player *p = NULL)
 					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(250);	//	1/4 second delay until can fire
 				}
 
-#ifndef NO_NETWORK
 				// multiplayer server should maintain bank/link status here
 				if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 					Assert(npl != NULL);
 					multi_server_update_player_weapons(npl,shipp);										
 				}					
-#endif
 			}			
 			break;
 
@@ -2354,13 +2337,11 @@ int button_function_critical(int n, net_player *p = NULL)
 				}
 			}
 
-#ifndef NO_NETWORK
 			// multiplayer server should maintain bank/link status here
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
-			}					
-#endif
+			}
 			break;
 
 		// increase weapon recharge rate
@@ -2369,13 +2350,11 @@ int button_function_critical(int n, net_player *p = NULL)
 				control_used(INCREASE_WEAPON);
 			increase_recharge_rate(objp, WEAPONS);
 
-#ifndef NO_NETWORK
 			// multiplayer server should maintain bank/link status here
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
-			}					
-#endif
+			}
 			break;
 
 		// decrease weapon recharge rate
@@ -2384,13 +2363,11 @@ int button_function_critical(int n, net_player *p = NULL)
 				control_used(DECREASE_WEAPON);
 			decrease_recharge_rate(objp, WEAPONS);
 
-#ifndef NO_NETWORK
 			// multiplayer server should maintain bank/link status here
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
-			}								
-#endif
+			}
 			break;
 
 		// increase shield recharge rate
@@ -2399,13 +2376,11 @@ int button_function_critical(int n, net_player *p = NULL)
 				control_used(INCREASE_SHIELD);
 			increase_recharge_rate(objp, SHIELDS);
 
-#ifndef NO_NETWORK
 			// multiplayer server should maintain bank/link status here
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
-			}								
-#endif
+			}
 			break;
 
 		// decrease shield recharge rate
@@ -2414,13 +2389,11 @@ int button_function_critical(int n, net_player *p = NULL)
 				control_used(DECREASE_SHIELD);
 			decrease_recharge_rate(objp, SHIELDS);
 
-#ifndef NO_NETWORK
 			// multiplayer server should maintain bank/link status here
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
-			}								
-#endif
+			}
 			break;
 
 		// increase energy to engines
@@ -2429,13 +2402,11 @@ int button_function_critical(int n, net_player *p = NULL)
 				control_used(INCREASE_ENGINE);
 			increase_recharge_rate(objp, ENGINES);
 
-#ifndef NO_NETWORK
 			// multiplayer server should maintain bank/link status here
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
-			}							
-#endif
+			}
 			break;
 
 		// decrease energy to engines
@@ -2444,13 +2415,11 @@ int button_function_critical(int n, net_player *p = NULL)
    			control_used(DECREASE_ENGINE);
 			decrease_recharge_rate(objp, ENGINES);
 
-#ifndef NO_NETWORK
 			// multiplayer server should maintain bank/link status here
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
-			}										
-#endif
+			}
 			break;
 
 		// equalize recharge rates
@@ -2461,13 +2430,12 @@ int button_function_critical(int n, net_player *p = NULL)
 
 			set_default_recharge_rates(objp);
 			snd_play( &Snds[SND_ENERGY_TRANS] );
-#ifndef NO_NETWORK
+
 			// multiplayer server should maintain bank/link status here
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Assert(npl != NULL);
 				multi_server_update_player_weapons(npl,&Ships[objp->instance]);										
-			}										
-#endif
+			}
 			break;
 
 		// equalize shield energy to all quadrants
@@ -2828,11 +2796,10 @@ int button_function(int n)
 		// toggle auto-match target speed
 		case TOGGLE_AUTO_MATCH_TARGET_SPEED:
 			// multiplayer observers can't match target speed
-#ifndef NO_NETWORK
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
 				break;
 			}
-#endif	
+
 			Player->flags ^= PLAYER_FLAGS_AUTO_MATCH_SPEED;			
 			control_used(TOGGLE_AUTO_MATCH_TARGET_SPEED);
 			hud_gauge_popup_start(HUD_AUTO_SPEED);
@@ -3128,13 +3095,12 @@ int button_function(int n)
 
 		// end the mission
 		case END_MISSION:
-#ifndef NO_NETWORK
 			// in multiplayer, all end mission requests should go through the server
 			if(Game_mode & GM_MULTIPLAYER){				
 				multi_handle_end_mission_request();
 				break;
 			}
-#endif
+
 			control_used(END_MISSION);
 			
 			if (collide_predict_large_ship(Player_obj, 200.0f)) {
@@ -3241,7 +3207,6 @@ int button_function(int n)
 			return button_function_critical(XFER_LASER);
 			break;
 
-#ifndef NO_NETWORK
 		// message all netplayers button
 		case MULTI_MESSAGE_ALL:
 			multi_msg_key_down(MULTI_MSG_ALL);
@@ -3265,8 +3230,7 @@ int button_function(int n)
 		// if i'm an observer, zoom to my targeted object
 		case MULTI_OBSERVER_ZOOM_TO:
 			multi_obs_zoom_to_target();
-			break;		
-#endif
+			break;
 
 		// toggle between high and low HUD contrast
 		case TOGGLE_HUD_CONTRAST:
@@ -3274,7 +3238,6 @@ int button_function(int n)
 			hud_toggle_contrast();
 			break;
 
-#ifndef NO_NETWORK
 		// toggle network info
 		case MULTI_TOGGLE_NETINFO:
 			extern int Multi_display_netinfo;
@@ -3305,7 +3268,7 @@ int button_function(int n)
 				send_self_destruct_packet();
 			}
 			break;
-#endif
+
 		case TOGGLE_HUD:
 			gamesnd_play_iface(SND_USER_SELECT);
 			hud_toggle_draw();

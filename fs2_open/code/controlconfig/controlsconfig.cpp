@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-22 10:18:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2005-10-10 17:14:30 $
+ * $Author: taylor $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/22 10:18:37  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.16  2005/07/13 02:50:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -382,11 +386,9 @@
 #include "popup/popup.h"
 #include "ui/uidefs.h"
 #include "globalincs/alphacolors.h"
-
-#ifndef NO_NETWORK
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
-#endif
+
 
 #ifndef NDEBUG
 #include "hud/hud.h"
@@ -747,6 +749,7 @@ int control_config_detect_axis()
 {
 	int i, d, axis = -1, delta = 16384;
 	int axes_values[JOY_NUM_AXES];
+	int dx, dy, dz, fudge = 7;
 
 	joystick_read_raw_axis(JOY_NUM_AXES, axes_values);
 	for (i=0; i<JOY_NUM_AXES; i++) {
@@ -757,6 +760,18 @@ int control_config_detect_axis()
 		}
 	}
 
+	if ( (axis == -1) && Use_mouse_to_fly ) {
+		mouse_get_delta( &dx, &dy, &dz );
+
+		if ( (dx > fudge) || (dx < -fudge) ) {
+			axis = 0;
+		} else if ( (dy > fudge) || (dy < -fudge) ) {
+			axis = 1;
+		} else if ( (dz > fudge) || (dz < -fudge) ) {
+			axis = 2;
+		}
+	}
+		
 	return axis;
 }
 
@@ -2472,12 +2487,10 @@ int check_control(int id, int key)
 
 	last_key = key;
 
-#ifndef NO_NETWORK
 	// if we're in multiplayer text enter (for chat) mode, check to see if we should ignore controls
 	if ((Game_mode & GM_MULTIPLAYER) && multi_ignore_controls()){
 		return 0;
 	}
-#endif
 
 	if (Control_config[id].type == CC_TYPE_CONTINUOUS) {
 		if (joy_down(Control_config[id].joy_id) || joy_down_count(Control_config[id].joy_id, 1)) {
