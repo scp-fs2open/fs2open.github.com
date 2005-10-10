@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.239 $
- * $Date: 2005-10-09 17:38:49 $
+ * $Revision: 2.240 $
+ * $Date: 2005-10-10 01:14:11 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.239  2005/10/09 17:38:49  wmcoolmon
+ * Added names to the 'limits reached' dialogs in ship/weapons.tbl
+ *
  * Revision 2.238  2005/10/09 09:13:29  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -10748,15 +10751,18 @@ object *ship_find_repair_ship( object *requester_obj )
 	Assert((requester_obj->instance >= 0) && (requester_obj->instance < MAX_OBJECTS));
 
 	// if support ships are not allowed, then no support ship can repair!
-	if ( !is_support_allowed(requester_obj) )
+	if ( !is_support_allowed(requester_obj) ) {
 		return NULL;
+	}
 
 	num_support_ships = 0;
 	num_available_support_ships = 0;
 
 	requester_ship = &Ships[requester_obj->instance];
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ((objp->type == OBJ_SHIP) && !(objp->flags & OF_SHOULD_BE_DEAD)) {
+	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+	{
+		if ((objp->type == OBJ_SHIP) && !(objp->flags & OF_SHOULD_BE_DEAD))
+		{
 			ship			*shipp;
 			ship_info	*sip;
 			float			dist;
@@ -10766,40 +10772,48 @@ object *ship_find_repair_ship( object *requester_obj )
 			shipp = &Ships[objp->instance];
 			sip = &Ship_info[shipp->ship_info_index];
 
-			if ( shipp->team != requester_ship->team )
+			if ( shipp->team != requester_ship->team ) {
 				continue;
+			}
 
-			if ( !(sip->flags & SIF_SUPPORT) )
+			if ( !(sip->flags & SIF_SUPPORT) ) {
 				continue;
+			}
 
 			// don't deal with dying support ships
-			if ( shipp->flags & (SF_DYING | SF_DEPARTING) )
+			if ( shipp->flags & (SF_DYING | SF_DEPARTING) ) {
 				continue;
+			}
 
 			dist = vm_vec_dist_quick(&objp->pos, &requester_obj->pos);
-			support_ships[num_support_ships] = objp-Objects;
+			support_ships[num_support_ships] = OBJ_INDEX(objp);
 
-			if (!(Ai_info[shipp->ai_index].ai_flags & AIF_REPAIRING)) {
+			if (!(Ai_info[shipp->ai_index].ai_flags & AIF_REPAIRING))
+			{
 				num_available_support_ships++;
-				if (dist < min_dist) {
+				if (dist < min_dist)
+				{
 					min_dist = dist;
 					nearest_support_ship = objp;
 				}
 			}
 
-			if ( num_support_ships >= MAX_SUPPORT_SHIPS_PER_TEAM ) {
+			if ( num_support_ships >= MAX_SUPPORT_SHIPS_PER_TEAM )
+			{
 				mprintf(("Why is there more than %d support ships in this mission?\n",MAX_SUPPORT_SHIPS_PER_TEAM));
 				break;
-			} else {
+			}
+			else
+			{
 				support_ships[num_support_ships] = OBJ_INDEX(objp);
 				num_support_ships++;
 			}
 		}
 	}
 
-	if (nearest_support_ship != NULL)
+	if (nearest_support_ship != NULL) {
 		return nearest_support_ship;
-	else if (num_support_ships >= MAX_SUPPORT_SHIPS_PER_TEAM) {
+	} else if (num_support_ships >= MAX_SUPPORT_SHIPS_PER_TEAM) {
 		Assert(&Objects[support_ships[0]] != NULL);
 		return &Objects[support_ships[0]];
 	} else {
