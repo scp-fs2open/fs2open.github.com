@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2005/10/10 17:19:07  taylor
+ * remove NO_NETWORK
+ * little sanity on model_load() calls
+ * fix cmeasure bug where a blank entry was getting added
+ *
  * Revision 2.134  2005/10/09 23:56:22  Kazan
  * some weird character was on the head of weapons.cpp
  *
@@ -2615,7 +2620,6 @@ void parse_cmeasure(bool replace)
 	bool create_if_not_found = true;
 
 	cmeasurep = &Cmeasure_info[Num_cmeasure_types];
-	Num_cmeasure_types++;
 
 	char buf[NAME_LENGTH];
 	required_string("$Name:");
