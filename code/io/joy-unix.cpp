@@ -537,11 +537,17 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 {
 	int i;
 	
-	if (!Joy_inited)
+	if (!Joy_inited) {
+		// fake a return value so that controlconfig doesn't get freaky with no joystick
+		for (i = 0; i < num_axes; i++) {
+			axis[i] = 32768;
+		}
+
 		return 0;
+	}
 
 	Assert( num_axes <= JOY_NUM_AXES );
-	
+
 	for (i = 0; i < num_axes; i++) {
 		if (i < joy_num_axes) {
 			axis[i] = SDL_JoystickGetAxis(sdljoy, i) + 32768;
