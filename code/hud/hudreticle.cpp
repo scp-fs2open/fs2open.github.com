@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-22 10:18:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.9  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -234,10 +238,7 @@
 #include "hud/hudtargetbox.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 
@@ -449,11 +450,9 @@ void hud_update_reticle( player *pp )
 	int rval;
 	ship *shipp;
 
-#ifndef NO_NETWORK
 	// multiplayer clients won't call this routine
 	if ( MULTIPLAYER_CLIENT || MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
 		return;
-#endif
 
 	shipp = &Ships[Objects[pp->objnum].instance];
 

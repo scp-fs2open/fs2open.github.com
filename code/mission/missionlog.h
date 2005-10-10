@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2005-10-10 17:21:05 $
+ * $Author: taylor $
  *
  * Header file to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.2  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -180,9 +184,7 @@ extern void mission_log_init();
 // adds an entry to the mission log.  The name is a string identifier that is the object
 // of the event.  The multiplayer version of this takes the actual entry number to modify.
 extern void mission_log_add_entry(int type, char *pname, char *sname, int index = -1 );
-#ifndef NO_NETWORK
-  extern void mission_log_add_entry_multi( int type, char *pname, char *sname, int index, fix timestamp, int flags );
-#endif
+extern void mission_log_add_entry_multi( int type, char *pname, char *sname, int index, fix timestamp, int flags );
 
 // function to determine if event happened and what time it happened
 extern int mission_log_get_time( int type, char *name, char *sname, fix *time);

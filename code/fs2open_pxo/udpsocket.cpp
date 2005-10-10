@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-07-13 02:50:49 $
- * $Author: Goober5000 $
+ * $Revision: 1.11 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.9  2005/03/02 21:18:18  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -50,8 +54,6 @@
  *
  */
 
-
-#ifndef NO_NETWORK
 
 #pragma warning(disable:4710)	// function not inlined
 #pragma warning(disable:4711)	// function inlined
@@ -196,5 +198,3 @@ int UDP_Socket::SendPacket(char *buffer, int plen, std::string &to, int toport)
 	int sent = sendto(this->socket, buffer, plen, 0, (sockaddr *)&to_addr, to_size);
 	return sent;
 }
-
-#endif // !NO_NETWORK

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.71 $
- * $Date: 2005-10-09 08:03:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.72 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2005/10/09 08:03:19  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.70  2005/09/25 08:25:15  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -505,10 +508,8 @@
 #include "ship/awacs.h"
 #include "parse/parselo.h"
 #include "cmdline/cmdline.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
+
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);
@@ -1309,11 +1310,9 @@ void hud_target_hotkey_add_remove( int k, object *ctarget, int how_to_add )
 {
 	htarget_list *hitem, *plist;
 
-#ifndef NO_NETWORK
 	// don't do anything if a standalone multiplayer server
 	if ( MULTIPLAYER_STANDALONE )
 		return;
-#endif
 
 	if ( k < 0 || k > 7 ) {
 		nprintf(("Warning", "Bogus hotkey %d sent to hud_target_hotkey_add_remove\n"));
@@ -1851,10 +1850,7 @@ void hud_target_common(int team, int next_flag)
 
 			if ( !hud_team_matches_filter(team, shipp->team) ) {
 				// if we're in multiplayer dogfight, ignore this
-#ifndef NO_NETWORK
-				if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
-#endif
-				{
+				if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 					continue;
 				}
 			}
@@ -2609,10 +2605,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	// filter on team, except in multiplayer
 	if ( !hud_team_matches_filter(esct->team, esct->shipp->team) ) {
 		// if we're in multiplayer dogfight, ignore this
-#ifndef NO_NETWORK
-		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
-#endif
-		{
+		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 			return;
 		}
 	}
@@ -5768,11 +5761,7 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	// If playing on lowest skill level, sensors don't affect targeting
 	// If dead, still allow player to target, despite any subsystem damage
 	// If i'm a multiplayer observer, allow me to target
-#ifndef NO_NETWORK
 	if ( (Game_skill_level == 0) || (Game_mode & GM_DEAD) || ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)) ) {
-#else
-	if ( (Game_skill_level == 0) || (Game_mode & GM_DEAD) ) {
-#endif
 		return 1;
 	}
 
@@ -5867,11 +5856,8 @@ void hud_target_next_list(int hostile, int next_flag)
 
 		// choose from the correct team
 		if ( !hud_team_matches_filter(valid_team, shipp->team) ) {
-#ifndef NO_NETWORK
 			// if we're in multiplayer dogfight, ignore this
-			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
-#endif
-			{
+			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 				continue;
 			}
 		}
@@ -6068,11 +6054,8 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 		// only consider friendly ships
 		if ( !hud_team_matches_filter(Player_ship->team, shipp->team)) {
-#ifndef NO_NETWORK
 			// if we're in multiplayer dogfight, ignore this
-			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
-#endif
-			{
+			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 				continue;
 			}
 		}

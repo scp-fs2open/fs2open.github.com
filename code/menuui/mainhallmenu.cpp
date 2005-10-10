@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-09-06 17:26:39 $
+ * $Revision: 2.36 $
+ * $Date: 2005-10-10 17:21:05 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/09/06 17:26:39  taylor
+ * fix mouse position setting in non-standard resolutions
+ *
  * Revision 2.34  2005/07/22 10:18:36  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -485,13 +488,10 @@
 #include "menuui/fishtank.h"
 #include "mission/missioncampaign.h"
 #include "parse/parselo.h"
-
-#ifndef NO_NETWORK
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/multi_voice.h"
 #include "network/multi.h"
-#endif
 
 #ifndef NDEBUG
 #include "cutscene/movie.h"
@@ -860,7 +860,6 @@ int Recording = 0;
 // connection status and errors
 void main_hall_do_multi_ready()
 {
-#ifndef NO_NETWORK
 	int error;
 
 	error = psnet_get_network_status();
@@ -945,7 +944,6 @@ void main_hall_do_multi_ready()
 
 	// select protocol
 	psnet_use_protocol(Multi_options_g.protocol);
-#endif  // ifndef NO_NETWORK
 }
 
 
@@ -1151,7 +1149,6 @@ void main_hall_init(int main_hall_num)
 	// set the game_mode based on the type of player
 	Assert( Player != NULL );
 
-#ifndef NO_NETWORK
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ){
 		Game_mode = GM_MULTIPLAYER;
 	} else {
@@ -1166,9 +1163,6 @@ void main_hall_init(int main_hall_num)
 		Main_hall_netgame_started = 1;
 		main_hall_do_multi_ready();
 	}
-#else
-	Game_mode = GM_NORMAL;
-#endif // ifndef NO_NETWORK
 
 	if(Cmdline_start_mission) {
 		strcpy(Game_current_mission_filename, Cmdline_start_mission);
@@ -1292,14 +1286,10 @@ void main_hall_do(float frametime)
 			gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);			
 #else
 
-#ifndef NO_NETWORK
 			if (Player->flags & PLAYER_FLAGS_IS_MULTI){
 				gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 				main_hall_do_multi_ready();
-			}
-			else
-#endif // ifndef NO_NETWORK
-			{				
+			} else {				
 				if(strlen(Main_hall_campaign_cheat)){
 					gameseq_post_event(GS_EVENT_CAMPAIGN_CHEAT);
 				} else {

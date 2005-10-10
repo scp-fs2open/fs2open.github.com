@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-10-09 08:03:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2005-10-10 17:21:10 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/10/09 08:03:21  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.18  2005/09/27 02:36:56  Goober5000
  * clarification
  * --Goober5000
@@ -344,12 +347,10 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 #define FULLY_TARGETABLE		(viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE)
 
 
-#ifndef NO_NETWORK
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
 	if((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM])){
 		return ALWAYS_TARGETABLE;
 	}
-#endif
 
 	// Goober5000
 	shipp = &Ships[target->instance];

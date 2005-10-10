@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-07-16 06:33:16 $
- * $Author: wmcoolmon $
+ * $Revision: 1.20 $
+ * $Date: 2005-10-10 17:21:05 $
+ * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/07/16 06:33:16  wmcoolmon
+ * Commented out lines 554 and 555 so the code would compile
+ *
  * Revision 1.18  2005/07/14 13:25:03  mrduckman
  * Restored messages to on-focus channel. If it doesn't work, we'll work around with a pseudo-cmd.
  *
@@ -80,8 +83,6 @@
  *
  */
 
-
-#ifndef NO_NETWORK
 
 // 4786 = identifier truncated in the debug information
 // 4710 = function not inlined
@@ -816,5 +817,3 @@ std::vector<std::string> irc_client::SplitOnStr(std::string haystack, std::strin
 
 	return Lines;
 }
-
-#endif // !NO_NETWORK

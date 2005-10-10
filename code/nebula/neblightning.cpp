@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-22 10:18:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/22 10:18:40  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.9  2005/07/13 03:26:00  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -101,11 +105,8 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "weapon/emp.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
-#endif
 
 
 extern int Cmdline_nohtl;
@@ -696,12 +697,10 @@ void nebl_process()
 		return;
 	}		
 	
-#ifndef NO_NETWORK
 	// non servers in multiplayer don't do this
 	if((Game_mode & GM_MULTIPLAYER) && !MULTIPLAYER_MASTER){
 		return;
 	}
-#endif
 
 	// if there's no chosen storm
 	if(Storm == NULL){
@@ -873,12 +872,10 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 	bolt->used = 1;	
 	bolt->width = bi->b_poly_pct * bolt_len;
 
-#ifndef NO_NETWORK
 	// if i'm a multiplayer master, send a bolt packet
 	if(MULTIPLAYER_MASTER){
 		send_lightning_packet(type, start, strike);
 	}
-#endif
 }
 
 // get the current # of active lightning bolts

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-09-27 02:36:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.42  2005/09/14 20:03:40  taylor
  * fix ace badges not getting displayed in debriefing
  *
@@ -511,8 +515,6 @@
 #include "globalincs/globals.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -528,7 +530,7 @@
 extern int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[32];
 extern int PXO_port;
-#endif
+
 
 #define MAX_TOTAL_DEBRIEF_LINES	200
 
@@ -583,14 +585,12 @@ int Debrief_more_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-#ifndef NO_NETWORK
 #define MULTI_LIST_TEAM_OFFSET					16		
 
 int Debrief_multi_list_team_max_display[GR_NUM_RESOLUTIONS] = {
 	9,	// GR_640
 	12	// GR_1024
 };
-#endif
 
 int Debrief_list_coords[GR_NUM_RESOLUTIONS][4] = {
 	{	// GR_640
@@ -1025,12 +1025,11 @@ void debrief_load_voice_file(int voice_num, char *name)
 			break;
 		}
 
-#ifndef NO_NETWORK
 		// Don't bother to ask for the CD in multiplayer
 		if ( Game_mode & GM_MULTIPLAYER ) {
 			break;
 		}
-#endif
+
 		// couldn't load voice, ask user to insert CD (if necessary)
 
 		// if ( Debrief_voice_ask_for_cd ) {
@@ -1161,7 +1160,6 @@ void debrief_unpause()
 	fsspeech_pause(false);
 }
 
-#ifndef NO_NETWORK
 // function to deal with inserting possible promition and badge stages into the debriefing
 // on the clients
 void debrief_multi_fixup_stages()
@@ -1197,13 +1195,9 @@ void debrief_set_multi_clients( int stage_count, int active_stages[] )
 	int i;
 
 	// set up the right briefing for this guy
-#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		Debriefing = &Debriefings[Net_player->p_info.team];
-	}
-	else
-#endif
-	{
+	} else {
 		Debriefing = &Debriefings[0];			
 	}
 
@@ -1251,7 +1245,6 @@ void debrief_multi_server_stuff()
 	// send the information to all clients.
 	send_debrief_info( stage_count, stages );
 }
-#endif // ifndef NO_NETWORK
 
 
 // --------------------------------------------------------------------------------------
@@ -1266,19 +1259,15 @@ int debrief_set_stages_and_multi_stuff()
 	int i;
 	debriefing	*debriefp;
 
-#ifndef NO_NETWORK
 	if ( MULTIPLAYER_CLIENT ) {
 		return 0;
 	}
-#endif
 
 	Num_debrief_stages = 0;
 
-#ifndef NO_NETWORK
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		debrief_multi_server_stuff();
 	}
-#endif
 
 	// check to see if player is a traitor (looking at his team).  If so, use the special
 	// traitor debriefing.  Only done in single player
@@ -1325,12 +1314,10 @@ void debrief_buttons_init()
 	for(i=0; i<NUM_DEBRIEF_TEXT; i++){
 		// multiplayer specific text
 		if((i == MP_TEXT_INDEX_1) || (i == MP_TEXT_INDEX_2) || (i == MP_TEXT_INDEX_3)){
-#ifndef NO_NETWORK
 			// only add if in multiplayer mode
 			if(Game_mode & GM_MULTIPLAYER){
 				Debrief_ui_window.add_XSTR(&Debrief_strings[gr_screen.res][i]);
 			}
-#endif
 		} 
 		// all other text
 		else {
@@ -1347,7 +1334,6 @@ void debrief_buttons_init()
 	Buttons[gr_screen.res][TEXT_SCROLL_DOWN].button.set_hotkey(KEY_DOWN);
 	Buttons[gr_screen.res][ACCEPT_BUTTON].button.set_hotkey(KEY_CTRLED+KEY_ENTER);
 
-#ifndef NO_NETWORK
 	// if in multiplayer, disable the button for all players except the host
 	// also disable for squad war matches
 	if(Game_mode & GM_MULTIPLAYER){
@@ -1355,7 +1341,6 @@ void debrief_buttons_init()
 			Buttons[gr_screen.res][REPLAY_MISSION].button.disable();
 		}
 	}
-#endif
 }
 
 // --------------------------------------------------------------------------------------
@@ -1374,7 +1359,6 @@ void debrief_ui_init()
 	help_overlay_load(DEBRIEFING_OVERLAY);
 	help_overlay_set_state(DEBRIEFING_OVERLAY,0);
 
-#ifndef NO_NETWORK
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// close down any old instances of the chatbox
 		chatbox_close();
@@ -1385,10 +1369,7 @@ void debrief_ui_init()
 		List_region.create(&Debrief_ui_window, "", Debrief_list_coords[gr_screen.res][0], Debrief_list_coords[gr_screen.res][1], Debrief_list_coords[gr_screen.res][2], Debrief_list_coords[gr_screen.res][3], 0, 1);
 		List_region.hide();
 
-	}
-	else
-#endif
-	{
+	} else {
 		Background_bitmap = bm_load(Debrief_single_name[gr_screen.res]);
 	}
 
@@ -1628,7 +1609,6 @@ void debrief_traitor_init()
 	}
 }
 
-#ifndef NO_NETWORK
 // initialization for listing of players in game
 void debrief_multi_list_init()
 {
@@ -1784,7 +1764,6 @@ void debrief_kick_selected_player()
 		multi_kick_player(Multi_list[Multi_list_select].net_player_index);
 	}
 }
-#endif  // ifndef NO_NETWORK
 
 
 // get optional mission popup text 
@@ -1838,17 +1817,11 @@ void debrief_accept(int ok_to_post_start_game_event)
 
 	Debrief_accepted = 1;
 	// save mission stats
-#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		// note that multi_debrief_accept_hit() will handle all mission_campaign_* calls on its own
 		// as well as doing stats transfers, etc.
 		multi_debrief_accept_hit();
-
-	}
-	else
-#endif
-	{
-
+	} else {
 		int play_commit_sound = 1;
 		// only write the player's stats if he's accepted
 
@@ -2212,13 +2185,9 @@ void debrief_button_pressed(int num)
 			break;
 
 		case REPLAY_MISSION:
-#ifndef NO_NETWORK
 			if(Game_mode & GM_MULTIPLAYER){
 				multi_debrief_replay_hit();
-			}
-			else
-#endif
-			{			
+			} else {			
 				debrief_replay_pressed();	
 			}
 			break;
@@ -2264,7 +2233,6 @@ void debrief_button_pressed(int num)
 			gameseq_post_event(GS_EVENT_VIEW_MEDALS);
 			break;
 
-#ifndef NO_NETWORK
 		case PLAYER_SCROLL_UP:
 			debrief_multi_list_scroll_up();
 			break;
@@ -2280,7 +2248,6 @@ void debrief_button_pressed(int num)
 		case MULTI_KICK:
 			debrief_kick_selected_player();
 			break;
-#endif
 	} // end swtich
 }
 
@@ -2341,7 +2308,6 @@ void debrief_check_buttons()
 		}
 	}
 
-#ifndef NO_NETWORK
 	int y, z;
 
 	if ( !(Game_mode & GM_MULTIPLAYER) ) 
@@ -2367,7 +2333,6 @@ void debrief_check_buttons()
 		Debrief_should_show_popup = 1;
 	}
 	*/
-#endif
 }
 
 void debrief_text_stage_init(char *src, int type)
@@ -2486,13 +2451,9 @@ void debrief_init()
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
 
 	// set up the right briefing for this guy
-#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 		Debriefing = &Debriefings[Net_player->p_info.team];
-	}
-	else
-#endif
-	{
+	} else {
 		Debriefing = &Debriefings[0];			
 	}
 
@@ -2513,11 +2474,7 @@ void debrief_init()
 
 	Debrief_multi_voice_loaded = 0;
 
-#ifndef NO_NETWORK
 	if ( (Game_mode & GM_CAMPAIGN_MODE) && ( !MULTIPLAYER_CLIENT )	) {
-#else
-	if (Game_mode & GM_CAMPAIGN_MODE) {
-#endif
 		// MUST store goals and events first - may be used to evaluate next mission
 		// store goals and events
 		mission_campaign_store_goals_and_events_and_variables();
@@ -2540,11 +2497,9 @@ void debrief_init()
 	debrief_award_init();
 	show_stats_init();
 	debrief_voice_init();
-#ifndef NO_NETWORK
+
+
 	if (Game_mode & GM_MULTIPLAYER) {
-
-
-
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 		// ***** FS2NetD Debrief ****
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
@@ -2623,10 +2578,10 @@ void debrief_init()
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 		// ***** End FS2NetD Debrief ****
 		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-
 	}
+
 	debrief_multi_list_init();
-#endif
+
 //	rank_bitmaps_clear();
 //	rank_bitmaps_load();
 
@@ -2637,9 +2592,7 @@ void debrief_init()
 	// set up the Debrief_stages[] and Recommendations[] arrays.  Only do the following stuff
 	// for non-clients (i.e. single and game server).  Multiplayer clients will get their debriefing
 	// info directly from the server.
-#ifndef NO_NETWORK
 	if ( !MULTIPLAYER_CLIENT ) {
-#endif
 		debrief_set_stages_and_multi_stuff();
 
 		if ( Num_debrief_stages <= 0 ) {
@@ -2647,7 +2600,6 @@ void debrief_init()
 		} else {
 			debrief_voice_load_all();
 		}
-#ifndef NO_NETWORK
 	} else {
 		// multiplayer client may have already received their debriefing info.  If they have not,
 		// then set the num debrief stages to 0
@@ -2655,7 +2607,6 @@ void debrief_init()
 			Num_debrief_stages = 0;
 		}
 	}
-#endif
 
 	/*
 	if (mission_evaluate_primary_goals() == PRIMARY_GOALS_COMPLETE) {
@@ -2723,7 +2674,6 @@ void debrief_init()
 	}
 */
 
-#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_init();
 
@@ -2731,12 +2681,7 @@ void debrief_init()
 		if (!(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Buttons[gr_screen.res][MULTI_KICK].button.disable();
 		}
-
-
-	}
-	else
-#endif
-	{
+	} else {
 		Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.disable();
 		Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.disable();
 		Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.disable();
@@ -2768,7 +2713,6 @@ void debrief_close()
 	// if the mission wasn't accepted, clear out my stats
 	// we need to evaluate a little differently for multiplayer since the conditions for "accepting" 
 	// are a little bit different
-#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		// if stats weren't accepted, backout my own stats
 		if (multi_debrief_stats_accept_code() != 1) {
@@ -2782,10 +2726,7 @@ void debrief_close()
 				scoring_backout_accept( &Player->stats );
 			}
 		}
-	}
-	else
-#endif
-	{
+	} else {
 		// single player
 		if( !Debrief_accepted || !(Game_mode & GM_CAMPAIGN_MODE) ){
 			scoring_backout_accept( &Player->stats );
@@ -2816,9 +2757,7 @@ void debrief_close()
 
 	debrief_voice_unload_all();
 	common_music_close();
-#ifndef NO_NETWORK
 	chatbox_close();
-#endif
 
 //	rank_bitmaps_release();
 
@@ -2855,11 +2794,10 @@ void debrief_close()
 	common_free_interface_palette();		// restore game palette
 	show_stats_close();
 
-#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER){
 		multi_debrief_close();
 	}
-#endif
+
 	if(Debrief_stats_kills != NULL)
 	{
 		delete[] Debrief_stats_kills;
@@ -2888,15 +2826,10 @@ void debrief_do_keys(int new_k)
 			int pf_flags;
 			int choice;
 
-#ifndef NO_NETWORK
 			// multiplayer accept popup is a little bit different
 			if (Game_mode & GM_MULTIPLAYER) {		
 				multi_debrief_esc_hit();
-
-			}
-			else
-#endif
-			{
+			} else {
 				// display the normal debrief popup
 				if (!Turned_traitor && !Must_replay_mission && (Game_mode & GM_CAMPAIGN_MODE)) {
 					pf_flags = PF_BODY_BIG; // | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON;
@@ -3016,7 +2949,6 @@ void debrief_do_frame(float frametime)
 		}
 	}
 
-#ifndef NO_NETWORK
 	int str_w, str_h;
 
 	// first thing is to load the files
@@ -3066,16 +2998,15 @@ void debrief_do_frame(float frametime)
 		debrief_voice_load_all();
 		Debrief_multi_voice_loaded = 1;
 	}
-#endif
 
 	if ( help_overlay_active(DEBRIEFING_OVERLAY) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Debrief_ui_window.set_ignore_gadgets(1);
 	}
 
-#ifndef NO_NETWORK
+
 	k = chatbox_process();
-#endif
+
 	if ( Game_mode & GM_NORMAL ) {
 		new_k = Debrief_ui_window.process(k);
 	} else {
@@ -3125,11 +3056,9 @@ void debrief_do_frame(float frametime)
 	debrief_voice_play();
 	common_music_do();
 
-#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_do_frame();
 	}
-#endif
 
 	// Now do all the rendering for the frame
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
@@ -3234,11 +3163,8 @@ void debrief_do_frame(float frametime)
 	}
 
 	debrief_render_stagenum();
-#ifndef NO_NETWORK
 	debrief_multi_list_draw();
-#endif
 
-#ifndef NO_NETWORK
 	// render some extra stuff in multiplayer
 	if (Game_mode & GM_MULTIPLAYER) {
 		// render the chatbox last
@@ -3250,7 +3176,6 @@ void debrief_do_frame(float frametime)
 		// render the status indicator for the voice system
 		multi_common_voice_display_status();
 	}
-#endif
 
 	// AL 3-6-98: Needed to move key reading here, since popups are launched from this code, and we don't
 	//				  want to include the mouse pointer which is drawn in the flip
@@ -3299,7 +3224,6 @@ void debrief_do_frame(float frametime)
 		Debrief_skip_popup_already_shown = 1;
 	}
 
-#ifndef NO_NETWORK
 	// check to see if we should be showing a pilot info popup in multiplayer (if a guy was double clicked)
 	if ((Game_mode & GM_MULTIPLAYER) && Debrief_should_show_popup) {
 		Assert((Multi_list_select >= 0) && (Multi_list_select < Multi_list_size));
@@ -3307,10 +3231,8 @@ void debrief_do_frame(float frametime)
 
 		Debrief_should_show_popup = 0;
 	}
-#endif
 }
 
-#ifndef NO_NETWORK
 void debrief_rebuild_player_list()
 {
 	int i;
@@ -3337,7 +3259,6 @@ void debrief_handle_player_drop()
 {
 	debrief_rebuild_player_list();
 }
-#endif
 
 void debrief_disable_accept()
 {

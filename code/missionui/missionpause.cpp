@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.14  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -104,10 +108,7 @@
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"	
 #include "controlconfig/controlsconfig.h"
-
-#ifndef NO_NETWORK
 #include "network/multi_pause.h"
-#endif
 
 
 
@@ -189,9 +190,7 @@ void pause_set_type(int type)
 // initialize the pause screen
 void pause_init(int multi)
 {
-#ifdef NO_NETWORK
 	Assert(multi == 0);
-#endif
 
 	// if we're already paused. do nothing
 	if ( Paused ) {
@@ -201,10 +200,7 @@ void pause_init(int multi)
 	// pause all beam weapon sounds
 	beam_pause_sounds();
 
-#ifndef NO_NETWORK
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
-#endif
-
 		if(Pause_type == PAUSE_TYPE_NORMAL)	{
 			Pause_saved_screen = gr_save_screen();
 		}
@@ -216,21 +212,17 @@ void pause_init(int multi)
 		//common_set_interface_palette();  // set the interface palette
 		Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
 
-#ifndef NO_NETWORK
 		if (multi) {
 			Pause_win.set_mask_bmap(Pause_multi_mask[gr_screen.res]);
 			Pause_background_bitmap = bm_load(Pause_multi_fname[gr_screen.res]);
 
 			multi_pause_init(&Pause_win);		
 		} else {
-#endif
 			Pause_background_bitmap = bm_load(Pause_bmp_name[gr_screen.res]);
-#ifndef NO_NETWORK
 		}
 	} else {
 		multi_pause_init(NULL);
 	}
-#endif
 
 	Paused = 1;
 }
@@ -242,13 +234,9 @@ void pause_do(int multi)
 	char *pause_str = XSTR("Paused", 767);
 	int str_w, str_h;
 
-#ifndef NO_NETWORK
 	if(Game_mode & GM_STANDALONE_SERVER){
 		multi_pause_do();
-	}
-	else
-#endif
-	{		
+	} else {		
 		//	RENDER A GAME FRAME HERE AS THE BACKGROUND (if normal pause)
 
 		if(Pause_type == PAUSE_TYPE_NORMAL)	{
@@ -281,14 +269,10 @@ void pause_do(int multi)
 			}
 		}
 	
-#ifndef NO_NETWORK
 		// the multi paused screen will do its own window processing
 		if (multi) {
 			multi_pause_do();
-		}
-		else
-#endif
-		{
+		} else {
 			// otherwise process the ui window here
 			k = Pause_win.process() & ~KEY_DEBUGGED;
 			switch (k) {  
@@ -342,13 +326,9 @@ void pause_close(int multi)
 	beam_unpause_sounds();
 
 	// deinit stuff
-#ifndef NO_NETWORK
 	if(Game_mode & GM_STANDALONE_SERVER){
 		multi_pause_close();
-	}
-	else
-#endif
-	{
+	} else {
 		if(Pause_saved_screen != -1) {
 			gr_free_screen(Pause_saved_screen);
 			Pause_saved_screen = -1;
@@ -361,11 +341,10 @@ void pause_close(int multi)
 
 		Pause_win.destroy();		
 		game_flush();
-#ifndef NO_NETWORK
+
 		if (multi) {
 			multi_pause_close();
 		}
-#endif
 
 		// unpause all the music
 		audiostream_unpause_all();		

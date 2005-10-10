@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/PopupDead.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-25 05:24:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2005-10-10 17:21:09 $
+ * $Author: taylor $
  *
  * C module for the death popup
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/25 05:24:17  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.8  2005/07/22 10:18:40  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -158,11 +162,8 @@
 #include "gamesequence/gamesequence.h"
 #include "popup/popup.h"
 #include "mission/missioncampaign.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multiutil.h"
-#endif
 
 
 UI_WINDOW	Popupdead_window;
@@ -277,9 +278,7 @@ void popupdead_start()
 	Popupdead_num_choices = 0;
 	Popupdead_multi_type = -1;
 
-#ifndef NO_NETWORK
 	if ( Game_mode & GM_NORMAL ) {
-#endif
 		// also do a campaign check here?
 		if (0) { //((Player->show_skip_popup) && (!Popupdead_skip_already_shown) && (Game_mode & GM_CAMPAIGN_MODE) && (Game_mode & GM_NORMAL) && (Player->failures_this_session >= PLAYER_MISSION_FAILURE_LIMIT)) {
 			// init the special preliminary death popup that gives the skip option
@@ -301,7 +300,6 @@ void popupdead_start()
 			Popupdead_button_text[2] = XSTR( "Return To Briefing", 107);
 			Popupdead_num_choices = POPUPDEAD_NUM_CHOICES;
 		}
-#ifndef NO_NETWORK
 	} else {
 		// in multiplayer, we have different choices depending on respawn mode, etc.
 
@@ -340,7 +338,6 @@ void popupdead_start()
 			}
 		}
 	}
-#endif
 
 	// create buttons
 	for (i=0; i < Popupdead_num_choices; i++) {

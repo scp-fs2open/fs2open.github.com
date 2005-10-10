@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.18 $
- * $Date: 2005-09-27 05:25:18 $
- * $Author: Goober5000 $
+ * $Revision: 1.19 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/09/27 05:25:18  Goober5000
+ * initial commit of basic IFF code
+ * --Goober5000
+ *
  * Revision 1.17  2005/09/27 02:36:57  Goober5000
  * clarification
  * --Goober5000
@@ -138,16 +142,15 @@
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST
 // ****************************************************************
+#define MAX_SHIP_TYPES_MULTI	130
+
 #ifdef INF_BUILD
 #define MAX_SHIP_TYPES		250
 #else
 #define MAX_SHIP_TYPES		130
 #endif
 
-// INF_BUILD error check...
-#if defined(INF_BUILD) && !defined(NO_NETWORK)
-#error "Networking *must* be disabled with Inferno builds.  Please #define NO_NETWORK."
-#endif
+
 
 
 #define MAX_WINGS				25

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-09-26 04:08:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.57 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/09/26 04:08:53  Goober5000
+ * some more cleanup
+ * --Goober5000
+ *
  * Revision 2.55  2005/09/26 02:15:03  Goober5000
  * okay, this should all be working :)
  * --Goober5000
@@ -555,7 +559,6 @@
 #include "object/objectdock.h"
 #include "render/3dinternal.h"
 #include "hud/hudnavigation.h"	//kazan
-
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
@@ -574,12 +577,9 @@
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
 #include "radar/radarsetup.h"
-
-#ifndef NO_NETWORK
 #include "network/multiutil.h"
 #include "network/multi_voice.h"
 #include "network/multi_pmsg.h"
-#endif
 
 
 
@@ -1689,7 +1689,6 @@ void hud_maybe_display_supernova()
 	gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
 }
 
-#ifndef NO_NETWORK
 // render multiplayer ping time to the server if appropriate
 void hud_render_multi_ping()
 {
@@ -1718,7 +1717,6 @@ void hud_render_multi_ping()
 		}
 	}
 }
-#endif  // ifndef NO_NETWORK
 
 // render all the 2D gauges on the HUD
 void HUD_render_2d(float frametime)
@@ -1860,7 +1858,6 @@ void HUD_render_2d(float frametime)
 		// text flash gauge
 		hud_maybe_show_text_flash_icon();
 
-#ifndef NO_NETWORK
 		// maybe show the netlag icon
 		if(Game_mode & GM_MULTIPLAYER){
 			hud_maybe_show_netlag_icon();
@@ -1869,7 +1866,6 @@ void HUD_render_2d(float frametime)
 				hud_render_observer();					
 			}
 		}
-#endif
 
 		// draw the reticle
 		hud_show_reticle();
@@ -1976,20 +1972,16 @@ void HUD_render_2d(float frametime)
 		// show the directives popup and/or training popup
 		message_training_display();
 
-#ifndef NO_NETWORK
 		// if this is a multiplayer game, blit any icons/bitmaps indicating voice recording or playback
 		if(Game_mode & GM_MULTIPLAYER){
 			hud_show_voice_status();
 		}
-#endif
 	}
 
 	hud_show_messages();
 
-#ifndef NO_NETWORK
 	// maybe render any necessary multiplayer text messaging strings being entered
 	hud_maybe_render_multi_text();
-#endif
 
 	// show red alert notify gauge when moving to red alert
 	hud_maybe_display_red_alert();	
@@ -2007,9 +1999,7 @@ void HUD_render_2d(float frametime)
 		}
 	}
 
-#ifndef NO_NETWORK
 	hud_render_multi_ping();	
-#endif
 }
 
 
@@ -2039,7 +2029,6 @@ void update_throttle_sound()
 	float percent_throttle;
 //	int	throttle_pitch;
 
-#ifndef NO_NETWORK
 	// if we're a multiplayer observer, stop any engine sounds from playing and return
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 		// stop engine sound if it is playing
@@ -2051,7 +2040,6 @@ void update_throttle_sound()
 		// return
 		return;
 	}
-#endif
 
 	if ( timestamp_elapsed(throttle_sound_check_id) ) {
 
@@ -2499,7 +2487,6 @@ void hud_show_kills_gauge()
 	}
 }
 
-#ifndef NO_NETWORK
 // maybe show the netlag icon on the hud
 void hud_maybe_show_netlag_icon()
 {
@@ -2541,7 +2528,6 @@ void hud_maybe_show_netlag_icon()
 		gr_aabitmap(Netlag_coords[gr_screen.res][0], Netlag_coords[gr_screen.res][1]);
 	}
 }
-#endif  // ifndef NO_NETWORK
 
 // load in kills gauge if required
 void hud_init_kills_gauge()
@@ -2748,12 +2734,10 @@ void hud_support_view_blit()
 		return;
 	}
 
-#ifndef NO_NETWORK
 	// don't render this gauge for multiplayer observers
 	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))){
 		return;
 	}
-#endif
 
 	// If we haven't determined yet who the rearm ship is, try to!
 	if (Hud_support_objnum == -1) {
@@ -3146,14 +3130,10 @@ void hud_add_objective_messsage(int type, int status)
 	Objective_display.goal_type=type;
 	Objective_display.goal_status=status;
 
-#ifndef NO_NETWORK
 	// if this is a multiplayer tvt game
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
 		mission_goal_fetch_num_resolved(type, &Objective_display.goal_nresolved, &Objective_display.goal_ntotal, Net_player->p_info.team);
-	}
-	else
-#endif
-	{
+	} else {
 		mission_goal_fetch_num_resolved(type, &Objective_display.goal_nresolved, &Objective_display.goal_ntotal);
 	}
 
@@ -3317,7 +3297,6 @@ void hud_maybe_display_objective_message()
 	}
 }
 
-#ifndef NO_NETWORK
 void hud_show_voice_status()
 {
 	char play_callsign[CALLSIGN_LEN+5];
@@ -3347,7 +3326,6 @@ void hud_show_voice_status()
 		break;
 	}	
 }
-#endif  // ifndef NO_NETWORK
 
 void hud_subspace_notify_abort()
 {
@@ -3386,7 +3364,6 @@ int hud_objective_notify_active()
 	return Objective_notify_active;
 }
 
-#ifndef NO_NETWORK
 // render multiplayer text message currently being entered if any
 void hud_maybe_render_multi_text()
 {
@@ -3401,7 +3378,6 @@ void hud_maybe_render_multi_text()
 		gr_string(Multi_msg_coords[gr_screen.res][0], Multi_msg_coords[gr_screen.res][1], txt);
 	}
 }
-#endif
 
 // set the offset values for this render frame
 void HUD_set_offsets(object *viewer_obj, int wiggedy_wack)

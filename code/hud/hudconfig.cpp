@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-07-22 10:18:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.19  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1866,7 +1870,6 @@ void hud_config_backup()
 	HUD_config_backup = HUD_config;
 }
 
-#ifndef NO_NETWORK
 void hud_config_as_observer(ship *shipp,ai_info *aif)
 {
 	// store the current hus
@@ -1879,7 +1882,6 @@ void hud_config_as_observer(ship *shipp,ai_info *aif)
 	// initialize the observer HUD
 	hud_observer_init(shipp,aif);	
 }
-#endif
 
 void hud_config_as_player()
 {

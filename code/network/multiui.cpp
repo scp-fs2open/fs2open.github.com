@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-07-18 03:45:09 $
+ * $Revision: 2.42 $
+ * $Date: 2005-10-10 17:21:07 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/07/18 03:45:09  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.40  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -578,8 +585,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #ifdef _WIN32
 #include <winsock.h>	// for inet_addr()
@@ -10090,5 +10095,3 @@ int multi_passwd_popup(char *passwd)
 
 	return Multi_passwd_done;
 }
-
-#endif // !NO_NETWORK

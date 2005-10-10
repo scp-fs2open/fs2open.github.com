@@ -11,11 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.31 $
- * $Date: 2005-07-13 02:50:49 $
- * $Author: Goober5000 $
+ * $Revision: 1.32 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.30  2005/06/29 18:49:37  taylor
  * various FS2NetD fixes:
  *  - replace timer stuff with something that more accurately works cross-platform and without being affected by load
@@ -135,8 +139,6 @@
  *
  */
 
-
-#ifndef NO_NETWORK
 
 // 4018 = signed/unsigned mismatch
 // 4663 = new template specification syntax
@@ -881,5 +883,3 @@ void SendPingReply(TCP_Socket &Socket, int tstamp)
 
 	Socket.SendData((char*)&rping, sizeof(rping));
 }
-
-#endif // !NO_NETWORK

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2005-10-10 17:21:07 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.23  2005/07/07 16:36:58  taylor
  * various compiler warning fixes (some of these from dizzy)
  *
@@ -385,8 +389,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include <limits.h>		// this is need even when not building debug!!
 
@@ -2254,5 +2256,3 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 
 	PACKET_SET_SIZE();
 }
-
-#endif // !NO_NETWORK

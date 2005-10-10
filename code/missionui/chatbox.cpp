@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-07-13 03:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.10  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -311,8 +315,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include "ui/ui.h"
 #include "missionui/chatbox.h"
@@ -1438,5 +1440,3 @@ void chatbox_reset_timestamps()
 		Chatbox_buttons[gr_screen.res][idx].button.reset_timestamps();
 	}
 }
-
-#endif // !NO_NETWORK

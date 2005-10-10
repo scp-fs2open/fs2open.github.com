@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-09-27 02:36:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.45 $
+ * $Date: 2005-10-10 17:21:07 $
+ * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/09/27 02:36:58  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.43  2005/09/25 22:23:39  Kazan
  * correct an error
  *
@@ -510,8 +514,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include <limits.h>
 
@@ -8799,5 +8801,3 @@ void process_self_destruct_packet(ubyte *data, header *hinfo)
 	// do eet
 	ship_self_destruct(&Objects[Net_players[np_index].m_player->objnum]);
 }
-
-#endif // !NO_NETWORK

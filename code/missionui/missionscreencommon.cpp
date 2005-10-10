@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-09-27 02:36:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2005-10-10 17:21:06 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.24  2005/09/05 09:38:18  taylor
  * merge of OSX tree
  * a lot of byte swaps were still missing, will hopefully be fully network compatible now
@@ -392,15 +396,12 @@
 #include "ship/ship.h"
 #include "render/3d.h"
 #include "lighting/lighting.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "network/multiteamselect.h"
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
-#endif
 
 
 
@@ -800,30 +801,25 @@ void common_select_init()
 
 	Common_select_inited = 1;
 
-#ifndef NO_NETWORK
 	// this handles the case where the player played a multiplayer game but now is in single player (in one instance
 	// of Freespace)
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		chatbox_close();
 	}
-#endif
 
 	// get the value of the team
 	Common_team = 0;							// assume the first team -- we'll change this value if we need to
-#ifndef NO_NETWORK
+
 	if ( (Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_TEAMS )
 		Common_team = Net_player->p_info.team;
-#endif
 
 	ship_select_common_init();	
 	weapon_select_common_init();
 	common_flash_button_init();
 
-#ifndef NO_NETWORK
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		multi_ts_common_init();
 	}
-#endif
 
 	// restore loadout from Player_loadout if this is the same mission as the one previously played
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -892,11 +888,8 @@ int common_select_do(float frametime)
 		Active_ui_window->set_ignore_gadgets(0);
 	}
 
-#ifndef NO_NETWORK
 	k = chatbox_process();
-#else
-	k = 0;
-#endif
+
 	if ( Game_mode & GM_NORMAL ) {
 		new_k = Active_ui_window->process(k);
 	} else {
@@ -1085,14 +1078,10 @@ void common_check_keys(int k)
 				}
 			}
 
-#ifndef NO_NETWORK
 			// prompt the host of a multiplayer game
 			if(Game_mode & GM_MULTIPLAYER){
 				multi_quit_game(PROMPT_ALL);
-			}
-			else
-#endif
-			{
+			} else {
 				// go through the single player quit process
 				// return to the main menu
 /*
@@ -1257,11 +1246,11 @@ void common_select_close()
 	weapon_select_close_team();
 
 	weapon_select_close();
-#ifndef NO_NETWORK
+
 	if(Game_mode & GM_MULTIPLAYER){
 		multi_ts_close();
 	} 
-#endif
+
 	ship_select_close();	
 	brief_close();	
 
@@ -1547,6 +1536,14 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 	short player_id;	
 	short ishort;
 
+	// this function assumes that the data is going to be used over the network
+	// so make a non-network version of this function if needed
+	Assert( Game_mode & GM_MULTIPLAYER );
+
+	if ( !(Game_mode & GM_MULTIPLAYER) )
+		return 0;
+
+
 	// write the ship pool 
 	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
 		if ( Ss_pool[i] > 0 ) {	
@@ -1615,11 +1612,10 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 
 	// add a netplayer address to identify who should play the sound
 	player_id = -1;
-#ifndef NO_NETWORK
+
 	if(player_index != -1){
 		player_id = Net_players[player_index].player_id;		
 	}
-#endif
 
 	player_id = INTEL_SHORT( player_id );
 	memcpy(block+offset,&player_id,sizeof(player_id));
@@ -1635,6 +1631,14 @@ int restore_wss_data(ubyte *block)
 	ubyte	b1, b2,sound;	
 	short ishort;
 	short player_id;	
+
+	// this function assumes that the data is going to be used over the network
+	// so make a non-network version of this function if needed
+	Assert( Game_mode & GM_MULTIPLAYER );
+
+	if ( !(Game_mode & GM_MULTIPLAYER) )
+		return 0;
+
 
 	// restore ship pool
 	sanity=0;
@@ -1713,7 +1717,6 @@ int restore_wss_data(ubyte *block)
 	player_id = INTEL_SHORT( player_id );
 	offset += sizeof(short);
 	
-#ifndef NO_NETWORK
 	// determine if I'm the guy who should be playing the sound
 	if((Net_player != NULL) && (Net_player->player_id == player_id)){
 		// play the sound
@@ -1725,7 +1728,6 @@ int restore_wss_data(ubyte *block)
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		ss_synch_interface();
 	}	
-#endif
 
 	return offset;
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-08-31 08:11:58 $
- * $Author: Goober5000 $
+ * $Revision: 1.13 $
+ * $Date: 2005-10-10 17:21:03 $
+ * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/08/31 08:11:58  Goober5000
+ * hm, typo
+ * --Goober5000
+ *
  * Revision 1.11  2005/08/31 08:09:51  Goober5000
  * All wings will now form on their respective leaders, not just certain starting wings.
  * If this breaks anything, the old code is commented out.  You know who to yell at. ;)
@@ -2363,11 +2367,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	current_goal = &aip->goals[0];
 
-#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER ){
 		send_ai_info_update_packet( objp, AI_UPDATE_ORDERS );
 	}
-#endif
 
 	// if this object was flying in formation off of another object, remove the flag that tells him
 	// to do this.  The form-on-my-wing command is removed from the goal list as soon as it is called, so

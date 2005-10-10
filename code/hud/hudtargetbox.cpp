@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-09-25 08:25:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.60 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/09/25 08:25:15  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.58  2005/09/25 05:26:13  Goober5000
  * bah
  * --Goober5000
@@ -471,11 +475,7 @@
 #include "parse/parselo.h"
 #include "object/objectdock.h"
 #include "species_defs/species_defs.h"
-
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 #ifndef NDEBUG
 #include "hud/hudets.h"
@@ -2206,12 +2206,10 @@ int hud_targetbox_static_maybe_blit(float frametime)
 	if ( Game_skill_level == 0 )
 		return 0;
 
-#ifndef NO_NETWORK
 	// if multiplayer observer, don't show static
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 		return 0;
 	}
-#endif
 
 	sensors_str = ship_get_subsystem_strength( Player_ship, SUBSYSTEM_SENSORS );
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.36 $
- * $Date: 2005-10-09 09:13:28 $
- * $Author: wmcoolmon $
+ * $Revision: 1.37 $
+ * $Date: 2005-10-10 17:21:02 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2005/10/09 09:13:28  wmcoolmon
+ * Added warpin/warpout speed override values to ships.tbl
+ *
  * Revision 1.35  2005/10/09 03:13:13  wmcoolmon
  * Much better laser weapon/pof handling, removed a couple unneccessary
  * warnings (used to try and track down a bug)
@@ -975,14 +978,9 @@
 #include "parse/parselo.h"
 #include "object/objectdock.h"
 #include "ai/aiinternal.h"
-
-#ifndef NO_NETWORK
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 //#include "network/multi_team.h"
-#endif
-
-// still need this...
 #include "network/multi.h"
 
 #include "autopilot/autopilot.h"
@@ -3979,7 +3977,6 @@ void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee
 		return;
 	}
 
-#ifndef NO_NETWORK
 	// if this is a multi game, we currently only support one-on-one docking
 	if (Game_mode & GM_MULTIPLAYER)
 	{
@@ -3995,7 +3992,6 @@ void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee
 			return;
 		}
 	}
-#endif
 
 	// link the two objects
 	dock_dock_objects(docker, docker_point, dockee, dockee_point);
@@ -4025,12 +4021,10 @@ void ai_do_objects_docked_stuff(object *docker, int docker_point, object *dockee
 		}
 	}
 
-#ifndef NO_NETWORK
 	// add multiplayer hook here to deal with docked objects.  We need to only send information
 	// about the object that is docking.  Both flags will get updated.
 	if ( MULTIPLAYER_MASTER )
 		send_ai_info_update_packet( docker, AI_UPDATE_DOCK );
-#endif
 }
 
 // code which is called when objects become undocked. Equivalent of above function.
@@ -4046,13 +4040,11 @@ void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 		return;
 	}
 
-#ifndef NO_NETWORK
 	// add multiplayer hook here to deal with undocked objects.  Do it before we
 	// do anything else.  We don't need to send info for both objects, since multi
 	// only supports one docked object
 	if ( MULTIPLAYER_MASTER )
 		send_ai_info_update_packet( docker, AI_UPDATE_UNDOCK );
-#endif
 
 	if (docker->type == OBJ_SHIP && dockee->type == OBJ_SHIP)
 	{
@@ -7281,10 +7273,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 
 	//	Make it take longer for enemies to get player's allies in range based on skill level.
 	// but don't bias team v. team missions
-#ifndef NO_NETWORK
-	if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) )
-#endif
-	{
+	if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ) {
 		if (Ships[pobjp->instance].team != Ships[Player_obj->instance].team) {
 			range_time += In_range_time[Game_skill_level];
 		}
@@ -10765,13 +10754,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 	// multiplayer
 	int p_index;
 	p_index = -1;
-#ifndef NO_NETWORK
+
 	if(Game_mode & GM_MULTIPLAYER){
 		p_index = multi_find_player_by_object(repaired_objp);		
-	}		
-	else
-#endif
-	{		
+	} else {		
 		if(repaired_objp == Player_obj){
 			p_index = Player_num;
 		}
@@ -10932,9 +10918,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		}
 	}
 
-#ifndef NO_NETWORK
 	multi_maybe_send_repair_info( repaired_objp, repair_objp, how );
-#endif
 }
 
 // Goober5000 - clean up my own dock mode
@@ -12439,23 +12423,15 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 					repair_aip->submode_start_time = Missiontime;
 
 					// if repairing player object -- tell him done with repair
-#ifndef NO_NETWORK
-					if ( !MULTIPLAYER_CLIENT )
-#endif
-					{
+					if ( !MULTIPLAYER_CLIENT ) {
 						ai_do_objects_repairing_stuff( objp, &Objects[support_objnum], REPAIR_INFO_COMPLETE );
 					}
 				}
 			}
 		} else if (aip->ai_flags & AIF_AWAITING_REPAIR) {
 			//	If this ship has been awaiting repair for 90+ seconds, abort.
-#ifndef NO_NETWORK
 			if ( !MULTIPLAYER_CLIENT ) {
 				if ((Game_mode & GM_MULTIPLAYER) || (objp != Player_obj)) {
-#else
-			{
-				if (objp != Player_obj) {
-#endif
 					if ((repair_aip->goal_objnum == OBJ_INDEX(objp)) && (timestamp_elapsed(aip->abort_rearm_timestamp))) {
 						ai_abort_rearm_request(objp);
 						aip->next_rearm_request_timestamp = timestamp(NEXT_REARM_TIMESTAMP);

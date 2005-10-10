@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-10-08 15:37:26 $
+ * $Revision: 2.29 $
+ * $Date: 2005-10-10 17:21:03 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/10/08 15:37:26  taylor
+ * fix several asteroid problems, little code duplication but this actually works and is less error prone than the previous method
+ *
  * Revision 2.27  2005/09/25 22:29:35  Kazan
  * my bad
  *
@@ -386,12 +389,9 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "species_defs/species_defs.h"
-
-#ifndef NO_NETWORK
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
-#endif
 
 
 //WMC - we want asteroid ability with demo!!
@@ -646,7 +646,6 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		angs.b = frand() * 2*PI;
 		angs.h = frand() * 2*PI;
 	} else {
-#ifndef NO_NETWORK
 		signature = multi_assign_network_signature( MULTI_SIG_ASTEROID );
 		rand_base = signature;
 
@@ -659,7 +658,6 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		angs.p = static_randf( rand_base++ ) * 2*PI;
 		angs.b = static_randf( rand_base++ ) * 2*PI;
 		angs.h = static_randf( rand_base++ ) * 2*PI;
-#endif
 	}
 
 	vm_angles_2_matrix(&orient, &angs);
@@ -754,11 +752,9 @@ void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec)
 	if (new_objp == NULL)
 		return;
 
-#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER ){
 		send_asteroid_create( new_objp, parent_objp, asteroid_type, relvec );
 	}
-#endif
 
 	//	Now, bash some values.
 	vm_vec_scale_add(&new_objp->pos, &parent_objp->pos, relvec, 0.5f * parent_objp->radius);
@@ -970,10 +966,8 @@ void asteroid_level_init()
 // 0 from this function.  We will force a wrap on the clients when server tells us
 int asteroid_should_wrap(object *objp, asteroid_field *asfieldp)
 {
-#ifndef NO_NETWORK
 	if ( MULTIPLAYER_CLIENT )
 		return 0;
-#endif
 
 	if (objp->pos.xyz.x < asfieldp->min_bound.xyz.x) {
 		return 1;
@@ -1130,11 +1124,9 @@ void maybe_throw_asteroid(int count)
 					// this line gives too many collision pairs.
 					// asteroid_update_collide(objp);
 
-#ifndef NO_NETWORK
 					if ( MULTIPLAYER_MASTER ) {
 						send_asteroid_throw( objp );
 					}
-#endif
 				}
 			}
 
@@ -1213,10 +1205,8 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 
 					asteroid_update_collide(objp);
 
-#ifndef NO_NETWORK
 					if ( MULTIPLAYER_MASTER )
 						send_asteroid_throw( objp );
-#endif
 				}
 			}
 		}
@@ -1664,11 +1654,9 @@ void asteroid_hit( object * asteroid_obj, object * other_obj, vec3d * hitpos, fl
 		return;
 	}
 
-#ifndef NO_NETWORK
 	if ( MULTIPLAYER_MASTER ){
 		send_asteroid_hit( asteroid_obj, other_obj, hitpos, damage );
 	}
-#endif
 
 	asteroid_obj->hull_strength -= damage;
 
@@ -1803,10 +1791,7 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 
 		// multiplayer clients won't go through the following code.  asteroid_sub_create will send
 		// a create packet to the client in the above named function
-#ifndef NO_NETWORK
 		if ( !MULTIPLAYER_CLIENT ) {
-#endif
-
 			// if this isn't true it's just debris, and debris doesn't break up
 			if (asp->asteroid_type <= ASTEROID_TYPE_LARGE)
 			{
@@ -1844,9 +1829,7 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 						break;
 				}
 			}
-#ifndef NO_NETWORK
 		}
-#endif
 
 		asp->final_death_time = timestamp(-1);
 	}
@@ -1950,12 +1933,10 @@ void asteroid_update_collide_flag(object *asteroid_objp)
 	asp->collide_objnum = -1;
 	asp->collide_objsig = -1;
 
-#ifndef NO_NETWORK
 	// multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		return;
 	}
-#endif
 
 	num_escorts = hud_escort_num_ships_on_list();
 

@@ -1,6 +1,4 @@
 
-#ifndef NO_NETWORK
-
 #ifndef WIN32	// Goober5000
 
 #include "globalincs/pstypes.h"
@@ -136,5 +134,3 @@ void std_update_player_ping(net_player *p)
 }
 
 #endif		// Goober5000 - #ifndef WIN32
-
-#endif // !NO_NETWORK

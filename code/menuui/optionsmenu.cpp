@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-22 10:18:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2005-10-10 17:21:05 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/22 10:18:37  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.16  2005/07/13 03:15:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -317,11 +321,8 @@
 #include "io/timer.h"
 #include "nebula/neb.h"
 #include "weapon/beam.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "menuui/optionsmenumulti.h"
-#endif
 
 
 
@@ -511,9 +512,7 @@ static struct {
 
 static int Tab = 0;
 static int Options_menu_inited = 0;
-#ifndef NO_NETWORK
 static int Options_multi_inited = 0;
-#endif
 static int Options_detail_inited = 0;
 static int Button_bms[NUM_COMMONS][MAX_BMAPS_PER_GADGET];
 
@@ -851,9 +850,8 @@ void options_tab_setup(int set_palette)
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
-#ifndef NO_NETWORK
 			options_multi_select();
-#endif			
+
 			// need to hide the hud config and control config buttons
 			// Buttons[gr_screen.res][CONTROL_CONFIG_BUTTON].button.hide();
 			// Buttons[gr_screen.res][HUD_CONFIG_BUTTON].button.hide();
@@ -872,9 +870,7 @@ void options_tab_close()
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
-#ifndef NO_NETWORK
 			options_multi_unselect();		
-#endif
 #endif
 			break;
 
@@ -893,16 +889,15 @@ void options_change_tab(int n)
 		game_feature_not_in_demo_popup();
 		return;
 	}
-#elif defined(NO_NETWORK)
-	if (n == MULTIPLAYER_TAB) {
-		game_feature_disabled_popup();
-		return;
-	}
 #endif
 
 	switch (n) {
-#ifndef NO_NETWORK
 		case MULTIPLAYER_TAB:
+			if ( Networking_disabled ) {
+				game_feature_disabled_popup();
+				return;
+			}
+
 			if ( !Options_multi_inited ) {
 				// init multiplayer
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
@@ -913,7 +908,6 @@ void options_change_tab(int n)
 			}
 
 			break;
-#endif
 
 		case DETAIL_LEVELS_TAB:
 			if (!Options_detail_inited) {
@@ -1058,14 +1052,12 @@ void options_button_pressed(int n)
 			game_feature_not_in_demo_popup();
 #else
 
-#ifndef NO_NETWORK
 			// can't go to the hud config screen when a multiplayer observer
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 				options_add_notify(XSTR( "Cannot use HUD config when an observer!", 375));
 				break;
 			}
-#endif  // ifndef NO_NETWORK
 
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_HUD_CONFIG);
@@ -1219,14 +1211,12 @@ void options_sliders_update()
 
 void options_accept()
 {
-#ifndef NO_NETWORK
 	// apply the selected multiplayer options
 	if ( Options_multi_inited ) {
 		#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 		options_multi_accept();
 		#endif
 	}
-#endif  // ifndef NO_NETWORK
 
 #ifndef NO_SOUND
 	// If music is zero volume, disable
@@ -1393,9 +1383,7 @@ void options_menu_close()
 	}
 
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
-#ifndef NO_NETWORK
 	options_multi_close();
-#endif
 #endif
 
 	Ui_window.destroy();
@@ -1408,9 +1396,7 @@ void options_menu_close()
 	//audiostream_unpause_all();
 	
 	Options_menu_inited = 0;
-#ifndef NO_NETWORK
 	Options_multi_inited = 0;
-#endif
 	Options_detail_inited = 0;
 
 
@@ -1504,14 +1490,12 @@ void options_menu_do_frame(float frametime)
 
 		case KEY_TAB:
 		case KEY_RIGHT:  // activate next tab
-#ifndef NO_NETWORK
 			// check to see if the multiplayer options screen wants to eat the tab kay
 			if ((k == KEY_TAB) && (Tab == MULTIPLAYER_TAB)) {
 				if (options_multi_eat_tab()) {
 					break;
 				}
 			}
-#endif
 
 			i = Tab + 1;
 			if (i >= NUM_TABS)
@@ -1561,13 +1545,9 @@ void options_menu_do_frame(float frametime)
 	options_sliders_update();
 
 	// if we're in the multiplayer options tab, get the background bitmap from the options multi module
-#ifndef NO_NETWORK
 	if(Tab == MULTIPLAYER_TAB){
 		i = options_multi_background_bitmap();
-	}
-	else
-#endif
-	{
+	} else {
 		i = Backgrounds[gr_screen.res][Tab].bitmap;
 	}
 
@@ -1584,9 +1564,7 @@ void options_menu_do_frame(float frametime)
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
 #if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
-#ifndef NO_NETWORK
 			options_multi_do(k);
-#endif
 #endif
 			break;
 
@@ -1655,12 +1633,10 @@ void options_menu_do_frame(float frametime)
 	}
 	//==============================================================================
 
-#ifndef NO_NETWORK
 	// maybe blit a waveform
 	if(Tab == MULTIPLAYER_TAB){
 		options_multi_vox_process_waveform();
 	}
-#endif
 	
 /*  Debug code: Graphs the joystick range scaling
 {

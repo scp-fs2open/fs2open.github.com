@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-07-22 10:18:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.23  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -191,11 +195,9 @@
 #include "globalincs/systemvars.h"
 #include "playerman/player.h"
 #include "hud/hudparse.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multiutil.h"
-#endif
+
 
 int Show_escort_view;
 
@@ -367,7 +369,6 @@ int escort_compare_func(const void *e1, const void *e2)
 	escort1 = (escort_info*) e1;
 	escort2 = (escort_info*) e2;
 
-#ifndef NO_NETWORK
 	// multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		int n1, n2;
@@ -384,10 +385,7 @@ int escort_compare_func(const void *e1, const void *e2)
 				ret = 1;
 			}
 		}
-	} 
-	else
-#endif
-	{
+	} else {
 		diff = escort2->priority - escort1->priority;
 
 		if (diff != 0) {
@@ -416,7 +414,6 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 	// start with none on list
 	*num_escorts = 0;
 
-#ifndef NO_NETWORK
 	int idx;
 
 	// multiplayer dogfight
@@ -440,9 +437,7 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 		}
 	}
 	// all others 
-	else 
-#endif
-	{
+	else {
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 			Assert( so->objnum >= 0 && so->objnum < MAX_OBJECTS);
 			if((so->objnum < 0) || (so->objnum >= MAX_OBJECTS)){
@@ -573,10 +568,7 @@ void merge_escort_lists(escort_info *complete_escorts, int num_complete_escorts)
 	}
 
 	// copy for Escort_ships to complete_escorts to retain hit_info
-#ifndef NO_NETWORK
-	if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
-#endif
-	{
+	if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 		for (i=0; i<top_complete_escorts; i++) {
 			for (j=0; j<Num_escort_ships; j++) {
 				if (Escort_ships[j].obj_signature == complete_escorts[i].obj_signature) {
@@ -653,7 +645,6 @@ void hud_escort_cull_list()
 {
 	int i, objnum;
 
-#ifndef NO_NETWORK
 	int np_index;
 
 	// multiplayer dogfight
@@ -669,9 +660,7 @@ void hud_escort_cull_list()
 		}
 	} 
 	// everything else
-	else 
-#endif
-	{
+	else {
 		for ( i = 0; i < Num_escort_ships; i++ ) {
 			objnum = Escort_ships[i].objnum;
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
@@ -691,13 +680,11 @@ int hud_escort_set_gauge_color(int index, int friendly)
 
 	shi = &Escort_ships[index].hit_info;
 
-#ifndef NO_NETWORK
 	// multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		hud_set_gauge_color(HUD_ESCORT_VIEW);
 		return 0;
 	}
-#endif
 	
 	if(friendly){
 		hud_set_gauge_color(HUD_ESCORT_VIEW, HUD_C_DIM);
@@ -731,7 +718,6 @@ int hud_escort_set_gauge_color(int index, int friendly)
 	return is_flashing;
 }
 
-#ifndef NO_NETWORK
 // multiplayer dogfight
 void hud_escort_show_icon_dogfight(int x, int y, int index)
 {
@@ -782,19 +768,16 @@ void hud_escort_show_icon_dogfight(int x, int y, int index)
 	}
 #endif
 }
-#endif
 
 // draw the shield icon and integrity for the escort ship
 void hud_escort_show_icon(int x, int y, int index)
 {
 #ifndef NEW_HUD
-#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && index <= 2)
 	{
 		hud_escort_show_icon_dogfight(x, y, index);
 		return;
 	}
-#endif
 
 	float	shields, integrity;
 	int		screen_integrity, offset;
@@ -911,7 +894,6 @@ void hud_display_escort()
 	// draw bottom of box
 	GR_AABITMAP(Escort_gauges[2].first_frame, Escort_coords[gr_screen.res][3][0], Escort_coords[gr_screen.res][Num_escort_ships][1]);
 
-#ifndef NO_NETWORK
 	// multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		// draw the escort ship data
@@ -926,9 +908,7 @@ void hud_display_escort()
 		}
 	}
 	// everything else
-	else 
-#endif
-	{
+	else {
 		// draw the escort ship data
 		for ( i = 0; i < Num_escort_ships; i++ ) {
 			objp = &Objects[Escort_ships[i].objnum];
@@ -1015,12 +995,10 @@ void hud_add_remove_ship_escort(int objnum, int supress_feedback)
 {
 	int in_escort, i;
 
-#ifndef NO_NETWORK
 	// no ships on the escort list in multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		return;
 	}
-#endif
 
 	if ( objnum < 0 ) {
 		Int3();
@@ -1054,12 +1032,10 @@ void hud_remove_ship_from_escort(int objnum)
 {
 	int in_escort, i;
 
-#ifndef NO_NETWORK
 	// no ships on the escort list in multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		return;
 	}
-#endif
 
 	if ( objnum < 0 ) {
 		Int3();
@@ -1087,12 +1063,10 @@ void hud_escort_ship_hit(object *objp, int quadrant)
 	int					num, i;
 	shield_hit_info	*shi;
 
-#ifndef NO_NETWORK
 	// no ships on the escort list in multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
 		return;
 	}
-#endif
 
 	for ( i = 0; i < Num_escort_ships; i++ ) {
 		if ( Escort_ships[i].objnum == OBJ_INDEX(objp) ) {

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-09-25 05:13:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-10-10 17:21:03 $
+ * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/09/25 05:13:05  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.18  2005/09/24 07:07:15  Goober5000
  * another species overhaul
  * --Goober5000
@@ -302,12 +306,9 @@
 #include "species_defs/species_defs.h"
 #include "ship/ship.h"
 #include "radar/radarsetup.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#endif
 
 
 
@@ -348,10 +349,8 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 {
 	if (debris_p->is_hull)	{
 		// tell everyone else to blow up the piece of debris
-#ifndef NO_NETWORK
 		if( MULTIPLAYER_MASTER )
 			send_debris_update_packet(debris_obj,DEBRIS_UPDATE_NUKE);
-#endif
 
 		int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
 		fireball_create( &debris_obj->pos, fireball_type, OBJ_INDEX(debris_obj), debris_obj->radius*1.75f);
@@ -863,11 +862,10 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	// assign the network signature.  The signature will be 0 for non-hull pieces, but since that
 	// is our invalid signature, it should be okay.
 	obj->net_signature = 0;
-#ifndef NO_NETWORK
+
 	if ( (Game_mode & GM_MULTIPLAYER) && hull_flag ) {
 		obj->net_signature = multi_get_next_network_signature( MULTI_SIG_DEBRIS );
 	}
-#endif
 
 	// -- No long need shield: bset_shield_strength(obj, 100.0f);		//	Hey!  Set to some meaningful value!
 
@@ -1042,12 +1040,10 @@ void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float dama
 		particle_emit( &pe, PARTICLE_FIRE, 0 );
 	}
 
-#ifndef NO_NETWORK
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
 		return;
 	}
-#endif
 
 	if ( damage < 0.0f ) {
 		damage = 0.0f;
@@ -1059,11 +1055,9 @@ void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float dama
 		debris_start_death_roll(debris_obj, debris_p );
 	} else {
 		// otherwise, give all the other players an update on the debris
-#ifndef NO_NETWORK
 		if(MULTIPLAYER_MASTER){
 			send_debris_update_packet(debris_obj,DEBRIS_UPDATE_UPDATE);
 		}
-#endif
 	}
 }
 

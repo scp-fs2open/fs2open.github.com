@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-07-22 10:18:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/22 10:18:38  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.11  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -97,10 +101,8 @@
 #include "object/object.h"
 #include "ai/ai.h"
 #include "globalincs/alphacolors.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
+
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
@@ -274,12 +276,10 @@ void ssm_create(vec3d *target, vec3d *start, int ssm_index, ssm_firing_info *ove
 			ssm_get_random_start_pos(&ssm->sinfo.start_pos[idx], start, &dir, ssm_index);
 		}
 
-#ifndef NO_NETWORK
 		// if we're the server, send a packet
 		if(MULTIPLAYER_MASTER){
 			//
 		}
-#endif
 	}
 
 	// clear timestamps, handles, etc

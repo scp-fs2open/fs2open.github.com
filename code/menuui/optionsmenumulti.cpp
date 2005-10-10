@@ -9,11 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-18 03:45:07 $
+ * $Revision: 2.10 $
+ * $Date: 2005-10-10 17:21:05 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/18 03:45:07  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.8  2005/07/13 03:15:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -234,8 +241,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #include "ui/ui.h"
 #include "io/key.h"
@@ -2592,5 +2597,3 @@ int options_multi_eat_tab()
 
 	return 0;
 }
-
-#endif // !NO_NETWORK

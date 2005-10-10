@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-07-25 05:23:33 $
- * $Author: Goober5000 $
+ * $Revision: 1.20 $
+ * $Date: 2005-10-10 17:21:03 $
+ * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/07/25 05:23:33  Goober5000
+ * whoops
+ * --Goober5000
+ *
  * Revision 1.18  2005/07/25 03:13:24  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -1033,7 +1037,6 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 	{
 
 		// make side even for team vs. team
-#ifndef NO_NETWORK
 		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
@@ -1043,10 +1046,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 				wait *= Ship_fire_delay_scale_friendly[Game_skill_level];
 				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			}
-		}
-		else
-#endif
-		{
+		} else {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
 				if (Ships[aip->shipnum].team == TEAM_FRIENDLY) {
@@ -1189,7 +1189,6 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						flak_range = flak_get_range(objp);
 					}
 
-#ifndef NO_NETWORK
 					// in multiplayer (and the master), then send a turret fired packet.
 					if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 						int subsys_index;
@@ -1202,7 +1201,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum );
 						}
 					}
-#endif				
+
 					if ( wip->launch_snd != -1 ) {
 						// Don't play turret firing sound if turret sits on player ship... it gets annoying.
 						if ( parent_objnum != OBJ_INDEX(Player_obj) ) {						
@@ -1275,7 +1274,6 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 			}
 		}
 		
-#ifndef NO_NETWORK
 		// in multiplayer (and the master), then send a turret fired packet.
 		if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 			int subsys_index;
@@ -1284,7 +1282,6 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 			Assert( subsys_index != -1 );
 			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum );
 		}
-#endif
 	}
 }
 

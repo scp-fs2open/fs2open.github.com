@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-09-27 02:36:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.40 $
+ * $Date: 2005-10-10 17:21:08 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/09/27 02:36:58  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.38  2005/08/20 20:29:47  taylor
  * Fix an old unix define, should be SCP_UNIX
  *
@@ -346,8 +350,6 @@
  * $NoKeywords: $
  */
 
-
-#ifndef NO_NETWORK
 
 #if defined _WIN32
 #include <winsock.h>
@@ -4663,5 +4665,3 @@ int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, ve
 	}
 }
 #pragma optimize("", on)
-
-#endif  // ifndef NO_NETWORK

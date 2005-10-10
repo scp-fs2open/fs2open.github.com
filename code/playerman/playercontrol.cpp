@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.33 $
+ * $Date: 2005-10-10 17:21:09 $
+ * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.31  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -576,11 +580,8 @@
 #include "weapon/weapon.h"
 #include "object/objectdock.h"
 #include "camera/camera.h"
-
-#ifndef NO_NETWORK
 #include "network/multiutil.h"
 #include "network/multi_oo.h"
-#endif
 
 #ifndef NDEBUG
 #include "io/key.h"
@@ -1213,12 +1214,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (check_control(FIRE_SECONDARY)) {
 			ci->fire_secondary_count++;
 
-#ifndef NO_NETWORK
 			// if we're a multiplayer client, set our accum bits now
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 				Net_player->s_info.accum_buttons |= OOC_FIRE_SECONDARY;
 			}
-#endif
 		}
 
 
@@ -1409,12 +1408,10 @@ void player_clear_speed_matching()
 //				match_on_text	=>	default parm (NULL), used to overide HUD output when matching toggled on
 void player_match_target_speed(char *no_target_text, char *match_off_text, char *match_on_text)
 {
-#ifndef NO_NETWORK
 	// multiplayer observers can't match target speed
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
 		return;
 	}
-#endif
 
 	if ( Player_ai->target_objnum == -1) {
 		if ( no_target_text ) {
@@ -1542,15 +1539,12 @@ void player_save_target_and_weapon_link_prefs()
 
 	if ( Player->flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
 		// multiplayer observers can't match target speed
-#ifndef NO_NETWORK
 		if(!((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))) )
-#endif
 		{
 			Player->save_flags |= PLAYER_FLAGS_AUTO_MATCH_SPEED;
 		}		
 	}
 
-#ifndef NO_NETWORK
 	// if we're in multiplayer mode don't do this because we will desync ourselves with the server
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
@@ -1564,7 +1558,6 @@ void player_save_target_and_weapon_link_prefs()
 			Player->flags &= ~PLAYER_FLAGS_LINK_SECONDARY;
 		}
 	}
-#endif
 }
 
 // Store some player preferences to Player->save_flags
@@ -1834,7 +1827,6 @@ int player_inspect_cargo(float frametime, char *outstr)
 			} else {
 				Assert( Game_mode & GM_MULTIPLAYER );
 
-#ifndef NO_NETWORK
 				int pn;
 
 				// get a player num from the object, then get a callsign from the player structure.
@@ -1845,12 +1837,6 @@ int player_inspect_cargo(float frametime, char *outstr)
 				} else {
 					sprintf(outstr, "%s", Net_players[pn].m_player->short_callsign );
 				}
-#else
-				// should never be here
-				Error(__FILE__, __LINE__,
-						"Illegal state in player_inspect_cargo(), Game_mode=%d\n",
-						Game_mode);
-#endif
 			}
 		} else {
 			sprintf(outstr, XSTR( "Scanned", 85) );

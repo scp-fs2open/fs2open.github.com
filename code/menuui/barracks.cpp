@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-09-22 19:16:48 $
+ * $Revision: 2.28 $
+ * $Date: 2005-10-10 17:21:05 $
  * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/09/22 19:16:48  taylor
+ * fix screen update of pilot list when you delete one of them
+ *
  * Revision 2.26  2005/08/18 01:15:41  taylor
  * Address a couple of pilot code issues
  *  - make the same MAX_PILOTS in the barracks that the playerselect screen has since it's a problem here too
@@ -1329,9 +1332,12 @@ void barracks_button_pressed(int n)
 		case B_PILOT_MULTI_MODE_BUTTON:
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 			game_feature_not_in_demo_popup();
-#elif defined(NO_NETWORK)
-			game_feature_disabled_popup();
 #else
+			if ( Networking_disabled ) {
+				game_feature_disabled_popup();
+				break;
+			}
+
 			if (Player_sel_mode != PLAYER_SELECT_MODE_MULTI) {
 				gamesnd_play_iface(SND_USER_SELECT);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
@@ -1746,10 +1752,13 @@ void barracks_do_frame(float frametime)
 
 			case KEY_TAB:  // switch mode (simgle/multi)
 #if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-	game_feature_not_in_demo_popup();
-#elif defined(NO_NETWORK)
-				game_feature_disabled_popup();
+				game_feature_not_in_demo_popup();
 #else
+				if ( Networking_disabled ) {
+					game_feature_disabled_popup();
+					break;
+				}
+
 				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 				} else {

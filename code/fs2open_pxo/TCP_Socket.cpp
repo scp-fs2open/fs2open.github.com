@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-07-13 02:50:49 $
- * $Author: Goober5000 $
+ * $Revision: 1.17 $
+ * $Date: 2005-10-10 17:21:04 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.15  2005/06/29 18:49:37  taylor
  * various FS2NetD fixes:
  *  - replace timer stuff with something that more accurately works cross-platform and without being affected by load
@@ -78,8 +82,6 @@
  *
  */
 
-
-#ifndef NO_NETWORK
 
 // 4100 = unreferenced formal parameter
 // 4511 = copy constructor could not be generated
@@ -465,5 +467,3 @@ bool TCP_Socket::AcceptConnections(sproc server_process)
 }
 
 #endif
-
-#endif // !NO_NETWORK

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-09-25 08:25:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.59 $
+ * $Date: 2005-10-10 17:21:11 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/09/25 08:25:14  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.57  2005/09/03 17:48:21  phreak
  * don't wrap the U_offset variable since it causes the beam to jump once it gets reset.
  *
@@ -963,12 +967,10 @@ int beam_fire(beam_fire_info *fire_info)
 		return -1;
 	}
 
-#ifndef NO_NETWORK
 	// if we're a multiplayer master - send a packet
 	if(MULTIPLAYER_MASTER){
 		send_beam_fired_packet(fire_info->shooter, fire_info->turret, fire_info->target, fire_info->beam_info_index, &new_item->binfo, (ubyte)fire_info->fighter_beam);
 	}
-#endif
 
 	// start the warmup phase
 	beam_start_warmup(new_item);		
@@ -3272,20 +3274,15 @@ void beam_handle_collisions(beam *b)
 			case OBJ_WEAPON:
 				// detonate the missile
 				Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
-#ifndef NO_NETWORK
-				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER)
-#endif
-				{
+
+				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 					weapon_hit(&Objects[target], NULL, &Objects[target].pos);
 				}
 				break;
 
 			case OBJ_ASTEROID:
 				// hit the asteroid
-#ifndef NO_NETWORK
-				if(!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER)
-#endif
-				{
+				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
 				}
 				break;

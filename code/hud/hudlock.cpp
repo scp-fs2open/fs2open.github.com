@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-09-01 04:14:04 $
+ * $Revision: 2.18 $
+ * $Date: 2005-10-10 17:21:04 $
  * $Author: taylor $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/09/01 04:14:04  taylor
+ * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
+ *
  * Revision 2.16  2005/07/24 18:31:59  taylor
  * address possible div-by-0 problem
  *
@@ -346,10 +349,7 @@
 #include "graphics/2d.h"
 #include "object/object.h"
 #include "mission/missionparse.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
-#endif
 
 
 
@@ -657,10 +657,7 @@ int hud_abort_lock()
 	// if the target is friendly, don't lock!
 	if ( hud_team_matches_filter(Player_ship->team, target_team)) {
 		// if we're in multiplayer dogfight, ignore this
-#ifndef NO_NETWORK
-		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)))
-#endif
-		{
+		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 			return 1;
 		}
 	}
@@ -758,12 +755,10 @@ void hud_update_lock_indicator(float frametime)
 	weapon_info	*wip;
 	vec3d		lock_world_pos;
 
-#ifndef NO_NETWORK
 	// if i'm a multiplayer observer, bail here
 	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
 		return;
 	}
-#endif
 
 	Assert(Player_ai->target_objnum != -1);
 

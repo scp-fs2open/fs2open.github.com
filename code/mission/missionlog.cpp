@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-22 10:18:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-10-10 17:21:05 $
+ * $Author: taylor $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/22 10:18:39  Goober5000
+ * CVS header tweaks
+ * --Goober5000
+ *
  * Revision 2.9  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -231,12 +235,9 @@
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#endif
 
 
 
@@ -423,13 +424,11 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	int last_entry_save;
 	log_entry *entry;	
 
-#ifndef NO_NETWORK
 	// multiplayer clients don't use this function to add log entries -- they will get
 	// all their info from the host
 	if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) ){
 		return;
 	}
-#endif
 
 	last_entry_save = last_entry;
 
@@ -473,15 +472,11 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	case LOG_SHIP_DISABLED:
 	case LOG_SHIP_DISARMED:
 	case LOG_SELF_DESTRUCT:
-#ifndef NO_NETWORK
 		// multiplayer. callsign is passed in for ship destroyed and self destruct
 		if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_callsign(pname) >= 0)){
 			int np_index = multi_find_player_by_callsign(pname);
 			index = multi_get_player_ship( np_index );
-		}
-		else
-#endif
-		{
+		} else {
 			index = ship_name_lookup( pname );
 		}
 
@@ -503,7 +498,6 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 			if ( sname ) {
 				int team;
 
-#ifndef NO_NETWORK
 				// multiplayer, player name will possibly be sent in
 				if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_callsign(sname) >= 0)){
 					// get the player's ship
@@ -517,10 +511,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 					else {
 						team = TEAM_FRIENDLY;
 					}
-				}
-				else 
-#endif
-				{
+				} else {
 					index = ship_name_lookup( sname );
 					// no ship, then it probably exited -- check the exited 
 					if ( index == -1 ) {
@@ -605,12 +596,10 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 
 	entry->timestamp = Missiontime;
 
-#ifndef NO_NETWORK
 	// if in multiplayer and I am the master, send this log entry to everyone
 	if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ){
 		send_mission_log_packet( last_entry );
 	}
-#endif
 
 	last_entry++;
 
@@ -624,7 +613,6 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 
 }
 
-#ifndef NO_NETWORK
 // function, used in multiplayer only, which adds an entry sent by the host of the game, into
 // the mission log.  The index of the log entry is passed as one of the parameters in addition to
 // the normal parameters used for adding an entry to the log
@@ -662,7 +650,6 @@ void mission_log_add_entry_multi( int type, char *pname, char *sname, int index,
 	entry->flags = flags;
 	entry->timestamp = timestamp;
 }
-#endif
 
 // function to determine is the given event has taken place count number of times.
 
