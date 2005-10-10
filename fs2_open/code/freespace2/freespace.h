@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 02:50:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-10-10 17:16:22 $
+ * $Author: taylor $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 02:50:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/06/03 06:39:26  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -237,6 +241,8 @@ extern int Game_ships_tbl_valid;
 // if the weapons.tbl the player has is valid
 extern int Game_weapons_tbl_valid;
 
+// to disable networking at runtime
+extern int Networking_disabled;
 
 // this is a mission actually designed at Volition
 #define MAX_BUILTIN_MISSIONS					100

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.184 $
- * $Date: 2005-10-09 08:03:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.185 $
+ * $Date: 2005-10-10 17:16:21 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.184  2005/10/09 08:03:19  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.183  2005/09/30 09:47:06  taylor
  * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
  * add -cache_bitmaps and have bitmap caching between levels off by default
@@ -1414,8 +1417,6 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
 #include "jumpnode/jumpnode.h"
 #include "autopilot/autopilot.h"
-
-#ifndef NO_NETWORK
 #include "network/multi.h"
 #include "network/multi_dogfight.h"
 #include "network/multi_endgame.h"
@@ -1431,7 +1432,6 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "network/multiutil.h"
 extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "network/fs2ox.h"
-#endif
 
 
 
@@ -1550,6 +1550,9 @@ float flFrametime;
 #endif
 
 int	Framerate_cap = 120;
+
+// to determine if networking should be disabled, needs to be done first thing
+int Networking_disabled = 0;
 
 // for the model page in system
 extern void model_page_in_start();
@@ -2297,15 +2300,11 @@ void game_level_init(int seed)
 		// if no seed was passed, seed the generator either from the time value, or from the
 		// netgame security flags -- ensures that all players in multiplayer game will have the
 		// same randon number sequence (with static rand functions)
-#ifndef NO_NETWORK
 		if ( Game_mode & GM_NORMAL ) {
 			Game_level_seed = time(NULL);
 		} else {
 			Game_level_seed = Netgame.security;
 		}
-#else
-		Game_level_seed = time(NULL);
-#endif  // ifndef NO_NETWORK
 	} else {
 		// mwa 9/17/98 -- maybe this assert isn't needed????
 		Assert( !(Game_mode & GM_MULTIPLAYER) );
@@ -2421,7 +2420,6 @@ void freespace_stop_mission()
 	Game_mode &= ~GM_IN_MISSION;
 }
 
-#ifndef NO_NETWORK
 // called at frame interval to process networking stuff
 void game_do_networking()
 {
@@ -2442,7 +2440,6 @@ void game_do_networking()
 		multi_pause_do_frame();
 	}	
 }
-#endif // ifndef NO_NETWORK
 
 
 // Loads the best palette for this level, based
@@ -2536,9 +2533,7 @@ shader busy_shader;
 // was set.
 void game_loading_callback(int count)
 {	
-#ifndef NO_NETWORK
 	game_do_networking();
-#endif
 
 	Assert( Game_loading_callback_inited==1 );
 	Assert( Game_loading_ani != NULL );
@@ -2821,29 +2816,23 @@ int game_start_mission()
 	game_level_init();
 	load_gl_init = time(NULL) - load_gl_init;
 	
-#ifndef NO_NETWORK
 	if (Game_mode & GM_MULTIPLAYER) {
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;
 
 		// clear multiplayer stats
 		init_multiplayer_stats();
 	}
-#endif
 
 	game_busy( NOX("** starting mission_load() **") );
 	load_mission_load = time(NULL);
 	if (mission_load()) {
-#ifndef NO_NETWORK
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		} else {
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
 		}
-#else
-			popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
-#endif // ifndef NO_NETWORK
+
 		return 0;
 	}
 	load_mission_load = time(NULL) - load_mission_load;
@@ -3177,7 +3166,7 @@ void game_init()
 	}		
 	e1 = timer_get_milliseconds();
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 	if (Is_standalone) {
 		std_init_standalone();
 	}
@@ -3420,7 +3409,6 @@ void game_init()
 	}
 //#endif
 	
-#ifndef NO_NETWORK
 	// attempt to load up master tracker registry info (login and password)
 	Multi_tracker_id = -1;		
 
@@ -3450,7 +3438,6 @@ void game_init()
 	} else {		
 		strcpy(Multi_tracker_squad_name, ptr);
 	}
-#endif  // ifndef NO_NETWORK
 
 	// If less than 48MB of RAM, use low memory model.
 	if (
@@ -3506,9 +3493,7 @@ void game_init()
 
 	gameseq_init();
 
-#ifndef NO_NETWORK
 	multi_init();	
-#endif  // ifndef NO_NETWORK
 
 	// standalone's don't use hte joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
@@ -3537,10 +3522,9 @@ void game_init()
 		hud_positions_init();		//Setup hud positions
 	}
 	
-#ifndef NO_NETWORK
 	// initialize psnet
 	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
-#endif
+
 	init_animating_pointer();	
 	asteroid_init();
 	mission_brief_common_init();	// Mark all the briefing structures as empty.		
@@ -3914,7 +3898,7 @@ void game_show_eye_pos(vec3d *eye_pos, matrix* eye_orient)
 	gr_printf(20, 100 - font_height, "Xr:%f Yr:%f Zr:%f", rot_angles.p, rot_angles.b, rot_angles.h);
 }
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 void game_show_standalone_framerate()
 {
 	float frame_rate=30.0f;
@@ -4337,7 +4321,6 @@ extern void render_shields();
 
 void player_repair_frame(float frametime)
 {
-#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 		int idx;
 		for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -4354,7 +4337,7 @@ void player_repair_frame(float frametime)
 			}
 		}
 	}	
-#endif  // ifndef NO_NETWORK
+
 	if ( (Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER) && (Player_ship != NULL) && !(Player_ship->flags & SF_DYING) ) {
 		ai_do_repair_frame(Player_obj, &Ai_info[Ships[Player_obj->instance].ai_index], frametime);
 	}
@@ -4504,7 +4487,6 @@ void say_view_target()
 				Show_viewing_from_self = 1;
 			}
 		} else {
-#ifndef NO_NETWORK
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER) && (Player_obj->type == OBJ_OBSERVER)){
 				HUD_fixed_printf(2.0f,XSTR( "Viewing from observer\n", 187));
 				Show_viewing_from_self = 1;
@@ -4512,10 +4494,6 @@ void say_view_target()
 				if (Show_viewing_from_self)
 					HUD_fixed_printf(2.0f, XSTR( "Viewing from self\n", 188));
 			}
-#else
-				if (Show_viewing_from_self)
-					HUD_fixed_printf(2.0f, XSTR( "Viewing from self\n", 188));
-#endif  // NO_NETWORK
 		}
 	}
 
@@ -5010,21 +4988,15 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	g3_set_view_matrix( eye_pos, eye_orient, Viewer_zoom );
 	
 	// maybe offset the HUD (jitter stuff)
-#ifndef NO_NETWORK
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
-#else
-	dont_offset = 0;
-#endif
 	HUD_set_offsets(Viewer_obj, !dont_offset);
 	
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
 	// do this becaues of the disjointed nature of this system (in terms of setup and execution).
 	// must be done before ships are rendered
-#ifndef NO_NETWORK
 	if ( MULTIPLAYER_CLIENT ) {
 		shield_point_multi_setup();
 	}
-#endif
 
 	// don't set proj/view matrix before this call, breaks OGL
 /*	gr_setup_background_fog(true);
@@ -5124,37 +5096,29 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 		hud_show_radar();
 	}
 
-#ifndef NO_NETWORK
 	if( (Game_detail_flags & DETAIL_FLAG_HUD) && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) ) ) {
-#else
-	if (Game_detail_flags & DETAIL_FLAG_HUD) {
-#endif
 		hud_maybe_clear_head_area();
 		anim_render_all(0, flFrametime);
 	}
 		
 
-#ifndef NO_NETWORK
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
 		extern void multi_display_netinfo();
 		multi_display_netinfo();
 	}	
-#endif
 
 	game_tst_frame_pre();
 
 #ifndef NDEBUG
 	do_timing_test(flFrametime);
 
-#ifndef NO_NETWORK
 	extern int OO_update_index;	
 	multi_rate_display(OO_update_index, 375, 0);
 
 	// test
 	extern void oo_display();
 	oo_display();			
-#endif
 #endif
 	
 	g3_end_frame();
@@ -5317,9 +5281,6 @@ void game_flip_page_and_time_it()
 
 void game_simulation_frame()
 {
-//	mprintf(("about to render a frame\n"));
-
-#ifndef NO_NETWORK
 	// blow ships up in multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
@@ -5346,11 +5307,9 @@ void game_simulation_frame()
 
 		dogfight_blown = 1;
 	}
-#endif  // ifndef NO_NETWORK
 
 	// process AWACS stuff - do this first thing
 	awacs_process();
-//mprintf(("awacs procesed\n"));
 
 	//Do autopilot stuff
 	NavSystem_Do();
@@ -5375,7 +5334,6 @@ void game_simulation_frame()
 	// the basic idea being that because it con be confusing to deal with them on a multi-frame basis, they are only valid for
 	// frame
 	ship_process_targeting_lasers();	
-//mprintf(("targeting lasers procesed\n"));
 
 	// do this here so that it works for multiplayer
 	if ( Viewer_obj ) {
@@ -5402,15 +5360,7 @@ void game_simulation_frame()
 	} else {
 		physics_set_viewer( NULL, PHYSICS_VIEWER_FRONT );
 	}
-//mprintf(("view stuff done\n"));
 
-#define	VM_PADLOCK_UP					(1 << 7)
-#define	VM_PADLOCK_REAR				(1 << 8)
-#define	VM_PADLOCK_LEFT				(1 << 9)
-#define	VM_PADLOCK_RIGHT				(1 << 10)
-		
-
-#ifndef NO_NETWORK
 	// evaluate mission departures and arrivals before we process all objects.
 	if ( !(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && !multi_endgame_ending()) ) {
 
@@ -5435,29 +5385,12 @@ void game_simulation_frame()
 			mission_eval_goals();
 		}
 	}
-#else  // NO_NETWORK
-	// mharris FIXME -- this is too fragile - too much of this stuff is
-	// copied from the ifndef block above...
-	if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
-		mission_parse_eval_stuff();
-	}
-
-	obj_move_all(flFrametime);
-
-	if ( !(Game_mode & GM_DEMO_PLAYBACK)) {
-		mission_eval_goals();
-	}
-#endif  // ifndef NO_NETWORK
-//mprintf(("arivals\\departures done\n"));
 
 	// always check training objectives, even in multiplayer missions. we need to do this so that the directives gauge works properly on clients
 	if(!(Game_mode & GM_DEMO_PLAYBACK)){
 		training_check_objectives();
 	}
-//	mprintf(("objectives procesed\n"));
-
 	
-#ifndef NO_NETWORK
 	// do all interpolation now
 	if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !multi_endgame_ending() && !(Netgame.flags & NG_FLAG_SERVER_LOST)) {
 		// client side processing of warping in effect stages
@@ -5473,15 +5406,11 @@ void game_simulation_frame()
 
 
 	}
-//	mprintf(("interpolation procesed\n"));
-
-#endif  // ifndef NO_NETWORK
 
 	// only process the message queue when the player is "in" the game
 	if ( !Pre_player_entry ){
 		message_queue_process();				// process any messages send to the player
 	}
-//mprintf(("message queue procesed\n"));
 
 	if(!(Game_mode & GM_DEMO_PLAYBACK)){
 		message_maybe_distort();				// maybe distort incoming message if comms damaged
@@ -5489,16 +5418,12 @@ void game_simulation_frame()
 		player_process_pending_praise();		// maybe send off a delayed praise message to the player
 		player_maybe_play_all_alone_msg();	// mabye tell the player he is all alone	
 	}
-//mprintf(("assorted player stuff procesed\n"));
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){		
 		// process some stuff every frame (before frame is rendered)
 		emp_process_local();
 
 		hud_update_frame();						// update hud systems
-//mprintf(("HUD updated\n"));
-
-
 
 		if (!physics_paused)	{
 			// Move particle system
@@ -5515,11 +5440,9 @@ void game_simulation_frame()
 
 			shockwave_move_all(flFrametime);	// update all the shockwaves
 		}
-//mprintf(("physics stuff procesed\n"));
 
 		// subspace missile strikes
 		ssm_process();
-//mprintf(("SSM procesed\n"));
 
 #ifndef NO_SOUND
 		obj_snd_do_frame();						// update the object-linked persistant sounds
@@ -5532,10 +5455,8 @@ void game_simulation_frame()
 		if ( Game_subspace_effect ) {
 			game_start_subspace_ambient_sound();
 		}
-//mprintf(("sound procesed\n"));
 #endif
 	}
-//	mprintf(("frame rendered\n"));
 }
 
 // Maybe render and process the dead-popup
@@ -5595,7 +5516,6 @@ void game_maybe_do_dead_popup(float frametime)
 				break;
 			}
 		} else {
-#ifndef NO_NETWORK
 			switch( choice ) {
 
 			case POPUPDEAD_DO_MAIN_HALL:
@@ -5616,10 +5536,6 @@ void game_maybe_do_dead_popup(float frametime)
 				leave_popup = 0;
 				break;
 			}
-#else
-			// should never really be here if NO_NETWORK...
-			Assert( Game_mode & GM_NORMAL );
-#endif  // ifndef NO_NETWORK
 		}
 
 		if ( leave_popup ) {
@@ -5754,15 +5670,11 @@ void game_frame(int paused)
 		actually_playing = game_actually_playing();
 	
 		
-	#ifndef NO_NETWORK
 		if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
 			if (!(Game_mode & GM_STANDALONE_SERVER)){
 				Assert( OBJ_INDEX(Player_obj) >= 0 );
 			}
 		}
-	#else
-		Assert( OBJ_INDEX(Player_obj) >= 0 );
-	#endif  // ifndef NO_NETWORK
 	
 		if (Missiontime > Entry_delay_time){
 			Pre_player_entry = 0;
@@ -5804,12 +5716,10 @@ void game_frame(int paused)
 					}
 				}
 				
-	#ifndef NO_NETWORK
 				// if we're not the master, we may have to send the server-critical ship status button_info bits
 				if ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)){
 					multi_maybe_send_ship_status();
 				}
-	#endif  // ifndef NO_NETWORK
 			}
 		}
 	
@@ -5820,11 +5730,9 @@ void game_frame(int paused)
 		// otherwise too many lights are added.
 		light_reset();
 	
-	#ifndef NO_NETWORK
 		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
 			return;
 		}
-	#endif  // ifndef NO_NETWORK
 		
 		game_simulation_frame(); 
 		
@@ -5851,13 +5759,11 @@ void game_frame(int paused)
 			game_render_frame_setup(&eye_pos, &eye_orient);
 			game_render_frame( &eye_pos, &eye_orient );
 
-#ifndef NO_NETWORK
 			// save the eye position and orientation
 			if ( Game_mode & GM_MULTIPLAYER ) {
 				Net_player->s_info.eye_pos = eye_pos;
 				Net_player->s_info.eye_orient = eye_orient;
 			}
-#endif  // ifndef NO_NETWORK
 
 			if(!(Viewer_mode & VM_FREECAMERA))
 			{
@@ -5867,7 +5773,6 @@ void game_frame(int paused)
 
 			// check to see if we should display the death died popup
 			if(Game_mode & GM_DEAD_BLEW_UP){				
-#ifndef NO_NETWORK
 				if(Game_mode & GM_MULTIPLAYER){
 					// catch the situation where we're supposed to be warping out on this transition
 					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
@@ -5877,16 +5782,11 @@ void game_frame(int paused)
 						popupdead_start();
 					}
 				} else {
-#endif  // ifndef NO_NETWORK
-
 					if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
 						Player_died_popup_wait = -1;
 						popupdead_start();
 					}
-
-#ifndef NO_NETWORK
 				}
-#endif
 			}
 
 			// hack - sometimes this seems to slip by in multiplayer. this should guarantee that we catch it
@@ -5976,7 +5876,7 @@ void game_frame(int paused)
 #endif		
 		} else {
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 			game_show_standalone_framerate();
 #endif
 		}
@@ -6021,11 +5921,9 @@ int saved_timestamp_ticker = -1;
 
 void game_reset_time()
 {
-#ifndef NO_NETWORK
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
 		return ;
 	}
-#endif
 	
 	//	Last_time = timer_get_fixed_seconds();
 	game_start_time();
@@ -6180,7 +6078,7 @@ void game_set_frametime(int state)
 		}
 	}
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 	if((Game_mode & GM_STANDALONE_SERVER) && 
 		(f2fl(Frametime) < ((float)1.0/(float)Multi_options_g.std_framecap))){
 
@@ -6246,7 +6144,7 @@ void game_do_frame()
 //	if (Player_ship->flags & SF_DYING)
 //		flFrametime /= 15.0;
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_set_standalone_missiontime(f2fl(Missiontime));
 	}
@@ -6271,14 +6169,12 @@ void game_do_frame()
 	monitor_update();			// Update monitor variables
 }
 
-#ifndef NO_NETWORK
 void multi_maybe_do_frame()
 {
 	if ( (Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_IN_MISSION) && !Multi_pause_status){
 		game_do_frame(); 
 	}
 }
-#endif  // ifndef NO_NETWORK
 
 int Joymouse_button_status = 0;
 
@@ -6435,12 +6331,10 @@ int game_poll()
 		}
 	}
 
-#ifndef NO_NETWORK
 	// if we should be ignoring keys because of some multiplayer situations
 	if((Game_mode & GM_MULTIPLAYER) && multi_ignore_controls(k)){
 		return 0;
 	}
-#endif  // ifndef NO_NETWORK
 
 	// If a popup is running, don't process all the Fn keys
 	if( popup_active() ) {
@@ -6469,11 +6363,9 @@ int game_poll()
 //			if (state != GS_STATE_INITIAL_PLAYER_SELECT) {
 
 			// don't allow f2 while warping out in multiplayer	
-#ifndef NO_NETWORK
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_WARPING_OUT)){
 				break;
 			}
-#endif
 
 			switch (state) {
 				case GS_STATE_INITIAL_PLAYER_SELECT:
@@ -6523,11 +6415,10 @@ int game_poll()
 
 		case KEY_ESC | KEY_SHIFTED:
 			// make sure to quit properly out of multiplayer
-#ifndef NO_NETWORK
 			if(Game_mode & GM_MULTIPLAYER){
 				multi_quit_game(PROMPT_NONE);
 			}
-#endif
+
 			gameseq_post_event( GS_EVENT_QUIT_GAME );
 			k = 0;
 
@@ -6759,7 +6650,6 @@ void game_process_event( int current_state, int event )
 			}
 #endif
 
-#ifndef NO_NETWORK
 			if (Game_mode & GM_MULTIPLAYER) {
 				// if we're respawning, make sure we change the view mode so that the hud shows up
 				if (current_state == GS_STATE_DEATH_BLEW_UP) {
@@ -6776,9 +6666,6 @@ void game_process_event( int current_state, int event )
 			// clear multiplayer button info			
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
-#else
-				gameseq_set_state(GS_STATE_GAME_PLAY, 1);
-#endif
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			//Framecount = 0;
@@ -7164,13 +7051,11 @@ void game_leave_state( int old_state, int new_state )
 				}
 			}
 			
-#ifndef NO_NETWORK
 			// COMMAND LINE OPTION
 			if (Cmdline_multi_stream_chat_to_file){
 				cfwrite_string(NOX("-------------------------------------------\n"),Multi_chat_stream);
 				cfclose(Multi_chat_stream);
 			}
-#endif  // ifndef NO_NETWORK
 			break;
 
 		case GS_STATE_DEBRIEF:
@@ -7180,11 +7065,9 @@ void game_leave_state( int old_state, int new_state )
 			}
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_DOGFIGHT_DEBRIEF:
 			multi_df_debrief_close();
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_LOAD_MISSION_MENU:
 			mission_load_menu_close();
@@ -7264,11 +7147,9 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_OPTIONS_MENU:
 			//game_start_time();
-#ifndef NO_NETWORK
 			if(new_state == GS_STATE_MULTI_JOIN_GAME){
 				multi_join_clear_game_list();
 			}
-#endif  // ifndef NO_NETWORK
 			options_menu_close();
 			break;
 
@@ -7311,11 +7192,9 @@ void game_leave_state( int old_state, int new_state )
 				// when in multiplayer and going back to the main menu, send a leave game packet
 				// right away (before calling stop mission).  stop_mission was taking to long to
 				// close mission down and I want people to get notified ASAP.
-#ifndef NO_NETWORK
 				if ( (Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MAIN_MENU) ){
 					multi_quit_game(PROMPT_NONE);
 				}
-#endif  // ifndef NO_NETWORK
 
 				freespace_stop_mission();			
 				set_time_compression(1.0f);
@@ -7348,7 +7227,6 @@ void game_leave_state( int old_state, int new_state )
 			hud_config_close();
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_NET_CHAT:
 			fs2ox_close();
 			break;
@@ -7382,7 +7260,6 @@ void game_leave_state( int old_state, int new_state )
 				}
 			}			
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_CONTROL_CONFIG:
 			control_config_close();
@@ -7436,7 +7313,6 @@ void game_leave_state( int old_state, int new_state )
 			}
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_MISSION_SYNC:
 			// if we're moving into the options menu, don't do anything
 			if(new_state == GS_STATE_OPTIONS_MENU){
@@ -7456,13 +7332,12 @@ void game_leave_state( int old_state, int new_state )
 				Game_mode |= GM_IN_MISSION;
 			}			
 			break;		
-#endif  // ifndef NO_NETWORK
    
 		case GS_STATE_VIEW_CUTSCENES:
 			cutscenes_screen_close();
 			break;
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_close();
 	  		break;
@@ -7479,7 +7354,6 @@ void game_leave_state( int old_state, int new_state )
 			break;
 #endif
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_PAUSED:
 			// if ( end_mission ){
 				pause_close(1);
@@ -7489,13 +7363,11 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_INGAME_PRE_JOIN:
 			multi_ingame_select_close();
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_INITIAL_PLAYER_SELECT:			
 			player_select_close();			
 			break;		
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_START_GAME:
 			multi_start_game_close();
 			break;
@@ -7503,7 +7375,6 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_MULTI_HOST_OPTIONS:
 			multi_host_options_close();
 			break;				
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_END_OF_CAMPAIGN:
 			mission_campaign_end_close();
@@ -7530,13 +7401,11 @@ void game_enter_state( int old_state, int new_state )
 {
 	switch (new_state) {
 		case GS_STATE_MAIN_MENU:				
-#ifndef NO_NETWORK
 			// in multiplayer mode, be sure that we are not doing networking anymore.
 			if ( Game_mode & GM_MULTIPLAYER ) {
 				Assert( Net_player != NULL );
 				Net_player->flags &= ~NETINFO_FLAG_DO_NETWORKING;
 			}
-#endif  // ifndef NO_NETWORK
 
 			set_time_compression(1.0f);
 	
@@ -7587,11 +7456,9 @@ void game_enter_state( int old_state, int new_state )
 			}
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_DOGFIGHT_DEBRIEF:
 			multi_df_debrief_init();
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_LOAD_MISSION_MENU:
 			mission_load_menu_init();
@@ -7660,11 +7527,9 @@ void game_enter_state( int old_state, int new_state )
 			weapon_select_init();
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_TEAM_SELECT:		
 			multi_ts_init();
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_GAME_PAUSED:
 			game_stop_time();
@@ -7769,7 +7634,6 @@ void mouse_force_pos(int x, int y);
 					game_start_time();
 
 			// when coming from the multi paused state, reset the timestamps
-#ifndef NO_NETWORK
 			if ( (Game_mode & GM_MULTIPLAYER) && (old_state == GS_STATE_MULTI_PAUSED) ){
 				multi_reset_timestamps();
 			}
@@ -7796,7 +7660,6 @@ void mouse_force_pos(int x, int y);
 			if(Game_mode & GM_MULTIPLAYER){
 				multi_ping_reset_players();
 			}
-#endif  // ifndef NO_NETWORK
 
 			Game_subspace_effect = 0;
 			if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
@@ -7811,18 +7674,15 @@ void mouse_force_pos(int x, int y);
 #endif
 			joy_ff_mission_init(Ship_info[Player_ship->ship_info_index].rotation_time);
 
-#ifndef NO_NETWORK
 			// clear multiplayer button info			i
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
-#endif
 			break;
 
 		case GS_STATE_HUD_CONFIG:
 			hud_config_init();
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_NET_CHAT:
 			fs2ox_init();
 			break;
@@ -7850,7 +7710,6 @@ void mouse_force_pos(int x, int y);
 			}
 
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_CONTROL_CONFIG:
 			control_config_init();
@@ -7919,7 +7778,6 @@ void mouse_force_pos(int x, int y);
 			mission_hotkey_init();
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_MISSION_SYNC:
 			// if we're coming from the options screen, don't do any
 			if(old_state == GS_STATE_OPTIONS_MENU){
@@ -7951,13 +7809,12 @@ void mouse_force_pos(int x, int y);
 				break;
 			}
 			break;		
-#endif  // ifndef NO_NETWORK
    
 		case GS_STATE_VIEW_CUTSCENES:
 			cutscenes_screen_init();
 			break;
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_init();
 			break;
@@ -7975,7 +7832,6 @@ void mouse_force_pos(int x, int y);
 			break;
 #endif  // ifndef NO_STANDALONE
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_PAUSED:
 			pause_init(1);
 			break;
@@ -7983,13 +7839,11 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_INGAME_PRE_JOIN:
 			multi_ingame_select_init();
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_INITIAL_PLAYER_SELECT:
 			player_select_init();
 			break;		
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_START_GAME:
 			multi_start_game_init();
 			break;
@@ -7997,7 +7851,6 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_MULTI_HOST_OPTIONS:
 			multi_host_options_init();
 			break;		
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_END_OF_CAMPAIGN:
 			mission_campaign_end_init();
@@ -8020,7 +7873,6 @@ void game_do_state_common(int state,int no_networking)
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
 
-#ifndef NO_NETWORK
 	multi_log_process();	
 
 	if (no_networking) {
@@ -8045,7 +7897,6 @@ void game_do_state_common(int state,int no_networking)
 		
 		game_do_networking();
 	}
-#endif  // ifndef NO_NETWORK
 }
 
 // Called once a frame.
@@ -8142,12 +7993,10 @@ void game_do_state(int state)
 			debrief_do_frame(flFrametime);
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_DOGFIGHT_DEBRIEF:
 			game_set_frametime(GS_STATE_MULTI_DOGFIGHT_DEBRIEF);
 			multi_df_debrief_do();
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_SHIP_SELECT:
 			game_set_frametime(GS_STATE_SHIP_SELECT);
@@ -8169,7 +8018,6 @@ void game_do_state(int state)
 			hud_config_do_frame(flFrametime);
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_NET_CHAT:
 			game_set_frametime(GS_STATE_NET_CHAT);
 			fs2ox_do_frame();
@@ -8190,7 +8038,6 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_MULTI_CLIENT_SETUP);
 			multi_game_client_setup_do_frame();
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_CONTROL_CONFIG:
 			game_set_frametime(GS_STATE_CONTROL_CONFIG);
@@ -8255,7 +8102,7 @@ void game_do_state(int state)
 			cutscenes_screen_do_frame();
 			break;
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			game_set_frametime(GS_STATE_STANDALONE_MAIN);
 			multi_standalone_wait_do();
@@ -8267,7 +8114,6 @@ void game_do_state(int state)
 			break;	
 #endif  // ifndef NO_STANDALONE
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_PAUSED:
 			game_set_frametime(GS_STATE_MULTI_PAUSED);
 			pause_do(1);
@@ -8282,7 +8128,6 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_INGAME_PRE_JOIN);
 			multi_ingame_select_do();
 			break;
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_EVENT_DEBUG:
 	#ifndef NDEBUG
@@ -8291,7 +8136,7 @@ void game_do_state(int state)
 	#endif
 			break;
 
-#if !defined(NO_NETWORK) && !defined(NO_STANDALONE)
+#if !defined(NO_STANDALONE)
 		case GS_STATE_STANDALONE_POSTGAME:
 			game_set_frametime(GS_STATE_STANDALONE_POSTGAME);
 			multi_standalone_postgame_do();
@@ -8303,7 +8148,6 @@ void game_do_state(int state)
 			player_select_do();
 			break;
 
-#ifndef NO_NETWORK
 		case GS_STATE_MULTI_MISSION_SYNC:
 			game_set_frametime(GS_STATE_MULTI_MISSION_SYNC);
 			multi_sync_do();
@@ -8318,7 +8162,6 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_MULTI_HOST_OPTIONS);
 			multi_host_options_do();
 			break;		
-#endif  // ifndef NO_NETWORK
 
 		case GS_STATE_END_OF_CAMPAIGN:
 			mission_campaign_end_do();
@@ -8549,8 +8392,6 @@ int WinMainSub(int argc, char *argv[])
 #endif
 {
 
-
-
 #ifdef _DEBUG
 #ifdef _WIN32
 	void memblockinfo_output_memleak();
@@ -8559,6 +8400,12 @@ int WinMainSub(int argc, char *argv[])
 #endif
 
 	int state;		
+
+	// check if networking should be disabled, this could probably be done later but the sooner the better
+	// TODO: remove this when multi is fixed to handle more than MAX_SHIP_TYPES_MULTI
+	if ( MAX_SHIP_TYPES > MAX_SHIP_TYPES_MULTI ) {
+		Networking_disabled = 1;
+	}
 
 #ifdef _WIN32
 	// Don't let more than one instance of Freespace run.
@@ -8653,7 +8500,6 @@ int WinMainSub(int argc, char *argv[])
    parse_cmdline(argc, argv);
 #endif
 
-#ifndef NO_NETWORK
 #ifdef STANDALONE_ONLY_BUILD
 	Is_standalone = 1;
 	nprintf(("Network", "Standalone running"));
@@ -8662,7 +8508,6 @@ int WinMainSub(int argc, char *argv[])
 		nprintf(("Network", "Standalone running"));
 	}
 #endif
-#endif  // ifndef NO_NETWORK
 
 
 #ifdef _WIN32
@@ -8675,9 +8520,7 @@ int WinMainSub(int argc, char *argv[])
 
 	if (Cmdline_SpewMission_CRCs) // -missioncrcs
 	{
-#ifndef NO_NETWORK
 		multi_spew_pxo_checksums(1024, "FS2MissionsCRCs.txt");
-#endif
 		game_shutdown();
 		return 0;
 	}
@@ -8685,9 +8528,7 @@ int WinMainSub(int argc, char *argv[])
 
 	if (Cmdline_SpewTable_CRCs)
 	{
-#ifndef NO_NETWORK
 		multi_spew_table_checksums(50, "FS2TablesCRCs.txt");
-#endif
 		game_shutdown();
 		return 0;
 	}
@@ -8889,10 +8730,8 @@ void game_shutdown(void)
 		mission_campaign_savefile_save();
 	}
 
-#ifndef NO_NETWORK
 	// load up common multiplayer icons
 	multi_unload_common_icons();
-#endif  // ifndef NO_NETWORK
 	
 	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
@@ -8903,13 +8742,11 @@ void game_shutdown(void)
 	mission_campaign_close();	// close out the campaign stuff
 	message_mission_close();	// clear loaded table data from message.tbl
 	mission_parse_close();		// clear out any extra memory that may be in use by mission parsing
-#ifndef NO_NETWORK
 	multi_voice_close();			// close down multiplayer voice (including freeing buffers, etc)
 	multi_log_close();
 #ifdef MULTI_USE_LAG
 	multi_lag_close();
 #endif
-#endif  // ifndef NO_NETWORK
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
 #if !defined(PRESS_TOUR_BUILD) && !defined(PD_BUILD)
@@ -8927,9 +8764,7 @@ void game_shutdown(void)
 	snd_close();
 	event_music_close();
 	gamesnd_close();		// close out gamesnd, needs to happen *after* other sounds are closed
-#ifndef NO_NETWORK
 	psnet_close();
-#endif
 
 	model_free_all();
 	bm_unload_all();			// unload/free bitmaps, has to be called *after* model_free_all()!
@@ -10575,7 +10410,7 @@ int Game_ships_tbl_checksums[NUM_SHIPS_TBL_CHECKSUMS] = {
 
 void verify_ships_tbl()
 {	
-#if defined(NDEBUG) || defined(NO_NETWORK)
+#if defined(NDEBUG)
 	Game_ships_tbl_valid = 1;
 #else
 	// this is still needed for LAN play but skip it if we are using FS2NetD
@@ -10662,7 +10497,7 @@ void verify_weapons_tbl()
 	cfclose(detect);
 	detect = NULL;
 
-#if defined(NDEBUG) || defined(NO_NETWORK)
+#if defined(NDEBUG)
 	Game_weapons_tbl_valid = 1;
 #else
 	// this is still needed for LAN play but skip it if we are using FS2NetD
@@ -10704,7 +10539,6 @@ int game_hacked_data()
 {
 	int retval = 0;
 
-#ifndef NO_NETWORK
 	//omfg modular tables
 	if(module_ship_weapons_loaded)
 	{
@@ -10745,7 +10579,6 @@ int game_hacked_data()
 
 	if (tvalid_cfg != NULL)
 		cfclose(tvalid_cfg);
-#endif
 
 	// not hacked
 	return retval;
