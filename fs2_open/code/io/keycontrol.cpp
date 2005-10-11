@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-10-10 17:14:31 $
- * $Author: taylor $
+ * $Revision: 2.62 $
+ * $Date: 2005-10-11 05:24:34 $
+ * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/10/10 17:14:31  taylor
+ * remove NO_NETWORK
+ * fix controlconfig so that axes can be set to joystick/mouse using the mouse (required when no joystick attached)
+ *
  * Revision 2.60  2005/09/27 06:39:23  Goober5000
  * small fix, bah
  * --Goober5000
@@ -733,7 +737,9 @@ int Normal_key_set[] = {
 
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
-	NAV_CYCLE
+	NAV_CYCLE,
+	
+	TOGGLE_GLIDING
 };
 
 int Dead_key_set[] = {
@@ -865,7 +871,8 @@ int Non_critical_key_set[] = {
 
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
-	NAV_CYCLE
+	NAV_CYCLE,
+	TOGGLE_GLIDING
 };
 
 
@@ -2800,7 +2807,7 @@ int button_function(int n)
 				break;
 			}
 
-			Player->flags ^= PLAYER_FLAGS_AUTO_MATCH_SPEED;			
+			Player->flags ^= PLAYER_FLAGS_AUTO_MATCH_SPEED;					
 			control_used(TOGGLE_AUTO_MATCH_TARGET_SPEED);
 			hud_gauge_popup_start(HUD_AUTO_SPEED);
 			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
@@ -2810,7 +2817,8 @@ int button_function(int n)
 					player_match_target_speed();
 				}
 			}
-			else {
+			else
+			{
 //				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto match target deactivated", -1));
 				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
 				player_match_target_speed();
@@ -3306,6 +3314,21 @@ int button_function(int n)
 		case NAV_CYCLE:
 			if (!Sel_NextNav())
 				gamesnd_play_iface(SND_GENERAL_FAIL);
+			break;
+		
+		case TOGGLE_GLIDING:
+			control_used(TOGGLE_GLIDING);
+			if(Player_obj != NULL)
+			{
+				if(object_get_gliding(Player_obj))
+				{
+					object_set_gliding(Player_obj, false);
+				}
+				else if(Ship_info[Player_ship->ship_info_index].can_glide)
+				{
+					object_set_gliding(Player_obj, true);
+				}
+			}
 			break;
 
 		// following are not handled here, but we need to bypass the Int3()

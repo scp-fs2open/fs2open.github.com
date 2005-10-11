@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.15 $
- * $Date: 2005-07-13 03:35:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2005-10-11 05:24:34 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/13 03:35:31  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.14  2005/04/25 00:28:58  wmcoolmon
  * subsystem sounds
  *
@@ -653,6 +657,10 @@ void obj_observer_move(float frame_time);
 // Goober5000
 int object_is_docked(object *objp);
 void obj_move_one_docked_object(object *objp, object *parent_objp);
+
+//WMC
+void object_set_gliding(object *objp, bool enable=true);
+bool object_get_gliding(object *objp);
 
 
 #endif

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 03:35:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-10-11 05:24:34 $
+ * $Author: wmcoolmon $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 03:35:35  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.9  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -186,6 +190,7 @@
 #define	PF_WARP_OUT				(1 << 12)	//	Use when ship is warping out
 #define	PF_SPECIAL_WARP_OUT	(1 << 13)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
 #define PF_BOOSTER_ON		(1 << 14)
+#define PF_GLIDING			(1 << 15)
 
 //information for physics sim for an object
 typedef struct physics_info {
@@ -238,6 +243,8 @@ typedef struct physics_info {
 	int		afterburner_decay;	// timestamp used to control how long ship shakes after afterburner released
 	int		shockwave_decay;		// timestamp used to control how long ship affected after hit by shockwave
 	int		reduced_damp_decay;	// timestamp used to control how long ship ship has reduced damp physics	
+	
+	vec3d glide_saved_vel;	//WMC - the key variable for gliding. Saves the orientation that velocity will be applied on.
 } physics_info;
 
 // All of these are numbers from -1.0 to 1.0 indicating

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.13 $
- * $Date: 2005-07-13 02:50:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2005-10-11 05:24:33 $
+ * $Author: wmcoolmon $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/13 02:50:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.12  2005/07/13 02:30:52  Goober5000
  * removed autopilot #define
  * --Goober5000
@@ -504,8 +508,11 @@ typedef struct config_item {
 #define AUTO_PILOT_TOGGLE								115
 #define NAV_CYCLE										116
 
+//Gliding
+#define TOGGLE_GLIDING									117
+
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 117
+#define CCFG_MAX 118
 
 extern int Failed_key_index;
 extern int Invert_heading;
