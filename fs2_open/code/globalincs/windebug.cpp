@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-09-15 05:19:25 $
+ * $Revision: 2.28 $
+ * $Date: 2005-10-11 08:30:37 $
  * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/09/15 05:19:25  taylor
+ * gah, I still messed that up.  Add a NULL check and have register_malloc() actually handle the correct pointer
+ *
  * Revision 2.26  2005/09/14 20:38:12  taylor
  * some vm_* fixage for Windows
  *
@@ -1603,6 +1606,26 @@ char *_vm_strdup( const char *ptr )
 		return NULL;
 
 	strcpy( dst, ptr );
+	return dst;
+}
+
+#ifndef NDEBUG
+char *_vm_strndup( const char *ptr, int size, char *filename, int line )
+#else
+char *_vm_strndup( const char *ptr, int size )
+#endif
+{
+	char *dst;
+
+	dst = (char *)vm_malloc( size+1 );
+
+	if (!dst)
+		return NULL;
+
+	strncpy( dst, ptr, size );
+	// make sure it has a NULL terminiator
+	dst[size] = '\0';
+
 	return dst;
 }
 

@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/10/09 03:13:13  wmcoolmon
+ * Much better laser weapon/pof handling, removed a couple unneccessary
+ * warnings (used to try and track down a bug)
+ *
  * Revision 2.55  2005/10/09 00:43:09  wmcoolmon
  * Extendable modular tables (XMTs); added weapon dialogs to the Lab
  *
@@ -835,7 +839,7 @@ typedef struct weapon_info {
                
     int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
-    float WeaponMinRange;           // *M�imum weapon range, default is 0 -Et1
+    float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
 
 
 	float weapon_submodel_rotate_accell;
@@ -959,6 +963,7 @@ extern char	*Weapon_names[MAX_WEAPON_TYPES];
 
 int weapon_info_lookup(char *name = NULL);
 void weapon_init();					// called at game startup
+void weapon_close();				// called at game shutdown
 void weapon_level_init();			// called before the start of each level
 void weapon_render(object * obj);
 void weapon_delete( object * obj );

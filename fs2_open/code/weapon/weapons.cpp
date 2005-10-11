@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2005/10/10 17:32:59  taylor
+ * actual cmeasure fix, don't know why the hell it didn't end up other commit
+ *
  * Revision 2.135  2005/10/10 17:19:07  taylor
  * remove NO_NETWORK
  * little sanity on model_load() calls
@@ -929,7 +932,7 @@ extern int Cmdline_load_only_used;
 static int *used_weapons = NULL;
 
 int	Num_spawn_types = 0;
-char	(*Spawn_namez)[NAME_LENGTH];
+char **Spawn_names = NULL;
 
 int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
 int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
@@ -1161,8 +1164,9 @@ void parse_wi_flags(weapon_info *weaponp)
 				//We need more spawning slots
 				//allocate in slots of 10
 				if((Num_spawn_types % 10) == 0) {
-					Spawn_namez = (char (*)[32])vm_realloc(Spawn_namez, Num_spawn_types+10);
+					Spawn_names = (char **)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
 				}
+
 				int	skip_length, name_length;
 				char	*temp_string;
 
@@ -1180,7 +1184,7 @@ void parse_wi_flags(weapon_info *weaponp)
 					name_length = num_start - temp_string - skip_length;
 				}
 
-				strncpy(Spawn_namez[i], &(weapon_strings[i][skip_length]), name_length);
+				Spawn_names[Num_spawn_types] = vm_strndup( &weapon_strings[i][skip_length], name_length );
 				Num_spawn_types++;
 			} else {
 				Warning(LOCATION, "Illegal to have two spawn types for one weapon.\nIgnoring weapon %s", weaponp->name);
@@ -1391,7 +1395,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->rearm_rate = 1.0f;
 	
 	wip->weapon_range = 999999999.9f;
-	// *M�imum weapon range, default is 0 -Et1
+	// *Minimum weapon range, default is 0 -Et1
 	wip->WeaponMinRange = 0.0f;
 	wip->spawn_type = -1;
 	
@@ -2719,7 +2723,7 @@ void translate_spawn_types()
 
 			for (j=0; j<Num_weapon_types; j++)
 			{
-				if (!stricmp(Spawn_namez[spawn_type], Weapon_info[j].name))
+				if (!stricmp(Spawn_names[spawn_type], Weapon_info[j].name))
 				{
 					Weapon_info[i].spawn_type = (short)j;
 					if (i == j)
@@ -3158,6 +3162,14 @@ void weapon_init()
 	weapon_level_init();
 }
 
+// call from game_shutdown() only!!
+void weapon_close()
+{
+	if (Spawn_names != NULL) {
+		vm_free(Spawn_names);
+		Spawn_names = NULL;
+	}
+}
 
 // This will get called at the start of each level.
 void weapon_level_init()
