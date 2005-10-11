@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.241 $
- * $Date: 2005-10-10 17:21:10 $
- * $Author: taylor $
+ * $Revision: 2.242 $
+ * $Date: 2005-10-11 05:24:34 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.241  2005/10/10 17:21:10  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.240  2005/10/10 01:14:11  wmcoolmon
  * Tidied up code a bit
  *
@@ -2489,6 +2492,11 @@ int parse_ship(bool replace)
 
 	if(optional_string("$Slide decel:"))
 		stuff_float(&sip->slide_decel );
+		
+	if(optional_string("$Glide:"))
+	{
+		stuff_boolean(&sip->can_glide);
+	}
 
 	if(optional_string("$Warpin speed:"))
 	{

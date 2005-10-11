@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-10-10 17:21:08 $
- * $Author: taylor $
+ * $Revision: 2.46 $
+ * $Date: 2005-10-11 05:24:34 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/10/10 17:21:08  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.44  2005/09/10 21:10:19  taylor
  * make sure smart shields can't send the strength of a quadrant over the max
  *
@@ -1490,6 +1493,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
 				objp->phys_info.rotvel = tmp;
 			} else {
+				if(objp == Player_obj && !(objp->phys_info.flags & PF_GLIDING))mprintf(("Not gliding"));
 				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
 			}
 
@@ -2520,4 +2524,27 @@ void obj_reset_all_collisions()
 int object_is_docked(object *objp)
 {
 	return (objp->dock_list != NULL);
+}
+
+//Makes an object start 'gliding'
+//that is, it will continue on the same velocity that it was going,
+//regardless of orientation -WMC
+void object_set_gliding(object *objp, bool enable)
+{
+	Assert(objp != NULL);
+
+	if(enable) {
+		objp->phys_info.flags |= PF_GLIDING;
+		objp->phys_info.glide_saved_vel = Player_obj->phys_info.vel;
+	} else {
+		objp->phys_info.flags &= ~PF_GLIDING;
+	}
+}
+
+//Makes an object stop gliding -WMC
+bool object_get_gliding(object *objp)
+{
+	Assert(objp != NULL);
+
+	return ((objp->phys_info.flags & PF_GLIDING) != 0);
 }

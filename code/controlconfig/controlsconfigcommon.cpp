@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 02:30:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2005-10-11 05:24:33 $
+ * $Author: wmcoolmon $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 02:30:52  Goober5000
+ * removed autopilot #define
+ * --Goober5000
+ *
  * Revision 2.11  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -588,6 +592,8 @@ config_item Control_config[CCFG_MAX + 1] = {
 	// Auto Navigation Systen
 	{ KEY_ALTED |					KEY_A,			-1, COMPUTER_TAB, false, "Toggle Auto Pilot"},
 	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, false, "Cycle Nav Points"},
+	
+	{ KEY_ALTED |					KEY_G,			-1, SHIP_TAB, false, "Toggle gliding"},
 
 	{                           -1,					-1, -1,			 false,	"" }
 };

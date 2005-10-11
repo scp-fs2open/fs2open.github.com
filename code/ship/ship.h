@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.111 $
- * $Date: 2005-10-10 17:21:10 $
- * $Author: taylor $
+ * $Revision: 2.112 $
+ * $Date: 2005-10-11 05:24:34 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2005/10/10 17:21:10  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.110  2005/10/09 09:13:29  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -1555,6 +1558,8 @@ typedef struct ship_info {
 	float weapon_model_draw_distance;
 	
 	int armor_type_idx;
+	
+	bool can_glide;
 } ship_info;
 
 extern int num_wings;

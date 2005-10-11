@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-04-05 05:53:23 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-11 05:24:34 $
+ * $Author: wmcoolmon $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/04/05 05:53:23  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.10  2005/01/11 21:25:58  Goober5000
  * fixed two small things with physics
  * --Goober500
@@ -796,8 +799,18 @@ void physics_sim(vec3d* position, matrix* orient, physics_info* pi, float sim_ti
 	// check flag which tells us whether or not to do velocity translation
 	if (pi->flags & PF_CONST_VEL) {
 		vm_vec_scale_add2(position, &pi->vel, sim_time);
-	} else {
+	}
+	else
+	{
+		vec3d final_pos;
+		if(pi->flags & PF_GLIDING) {
+			vm_vec_scale_add(&final_pos, position, &pi->glide_saved_vel, sim_time);
+		}
 		physics_sim_vel(position, pi, sim_time, orient);
+		if(pi->flags & PF_GLIDING) {
+			*position = final_pos;
+			pi->vel = pi->glide_saved_vel;
+		}
 
 		physics_sim_rot(orient, pi, sim_time);
 
