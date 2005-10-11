@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-10-10 17:21:03 $
+ * $Revision: 2.30 $
+ * $Date: 2005-10-11 12:24:04 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/10/10 17:21:03  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.28  2005/10/08 15:37:26  taylor
  * fix several asteroid problems, little code duplication but this actually works and is less error prone than the previous method
  *
@@ -2116,23 +2119,10 @@ void asteroid_parse_tbl()
 
 		// sanity check for debris type sizes
 		for (i = Num_species; i >= 0; i--) {
-			// generic debris type
-			if ( i == 0 ) {
-				Assert( asteroid_tally[i] < NUM_DEBRIS_SIZES );
-
-				if ( asteroid_tally[i] >= NUM_DEBRIS_SIZES ) {
-					// too many sizes specified, don't increment Num_debris_types and we'll overwrite
-					// the current entry with the next
-					break;
-				}
-
-				// we're safe to continue
-				asteroid_tally[i]++;
-				Num_debris_types++;
-				break;
-			}
-			// check for a species debris type
-			else if ( stristr(asip->name, Species_info[i-1].species_name) ) {
+			// must remain in proper order
+			//   0 - generic debris types
+			// > 0 - species specific debris types
+			if ( (i == 0) || stristr(asip->name, Species_info[i-1].species_name) ) {
 				Assert( asteroid_tally[i] < NUM_DEBRIS_SIZES );
 
 				if ( asteroid_tally[i] >= NUM_DEBRIS_SIZES ) {
