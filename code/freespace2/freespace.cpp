@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.186 $
- * $Date: 2005-10-11 07:43:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.187 $
+ * $Date: 2005-10-11 08:30:36 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.186  2005/10/11 07:43:09  wmcoolmon
+ * Topdown updates
+ *
  * Revision 2.185  2005/10/10 17:16:21  taylor
  * remove NO_NETWORK
  * whether multi is disabled or not is now determined at runtime
@@ -8753,6 +8756,7 @@ void game_shutdown(void)
 	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
 	particle_close();			// close out the particle system
+	weapon_close();					// free any memory that was allocated for the weapons
 	ship_close();					// free any memory that was allocated for the ships
 	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
 	unload_animating_pointer();// frees the frames used for the animating mouse pointer

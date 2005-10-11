@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.33 $
- * $Date: 2005-09-06 05:32:12 $
+ * $Revision: 2.34 $
+ * $Date: 2005-10-11 08:30:37 $
  * $Author: taylor $
- * $Revision: 2.33 $
- * $Date: 2005-09-06 05:32:12 $
+ * $Revision: 2.34 $
+ * $Date: 2005-10-11 08:30:37 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/09/06 05:32:12  taylor
+ * use exit(EXIT_FAILURE) rather than abort() so that all atexit() calls will actually get executed
+ *
  * Revision 2.32  2005/07/31 01:30:48  taylor
  * print file and line info for Int3() calls to the logfile so that they are easier to debug with basic error reports
  *
@@ -954,6 +957,9 @@ void vm_free_all();
 	// allocates some RAM for a string
 	char *_vm_strdup( const char *ptr, char *filename, int line );
 
+	// allocates some RAM for a string of a certain length
+	char *_vm_strndup( const char *ptr, int size, char *filename, int line );
+
 	// Frees some RAM. 
 	void _vm_free( void *ptr, char *filename=NULL, int line=-1 );
 
@@ -964,6 +970,7 @@ void vm_free_all();
 	#define vm_malloc(size) _vm_malloc((size),__FILE__,__LINE__)
 	#define vm_free(ptr) _vm_free((ptr),__FILE__,__LINE__)
 	#define vm_strdup(ptr) _vm_strdup((ptr),__FILE__,__LINE__)
+	#define vm_strndup(ptr, size) _vm_strndup((ptr),(size),__FILE__,__LINE__)
 	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size),__FILE__,__LINE__)
 	
 #else
@@ -975,6 +982,9 @@ void vm_free_all();
 	// allocates some RAM for a string
 	char *_vm_strdup( const char *ptr );
 
+	// allocates some RAM for a strings of a certain length
+	char *_vm_strndup( const char *ptr, int size );
+
 	// Frees some RAM. 
 	void _vm_free( void *ptr );
 
@@ -985,6 +995,7 @@ void vm_free_all();
 	#define vm_malloc(size) _vm_malloc(size)
 	#define vm_free(ptr) _vm_free(ptr)
 	#define vm_strdup(ptr) _vm_strdup(ptr)
+	#define vm_strndup(ptr, size) _vm_strndup((ptr),(size))
 	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size))
 
 

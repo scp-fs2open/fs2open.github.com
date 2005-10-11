@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.22 $
- * $Date: 2005-09-22 11:21:22 $
+ * $Revision: 2.23 $
+ * $Date: 2005-10-11 08:30:38 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/09/22 11:21:22  taylor
+ * delay for fox OS X, SDL messes up for some reason and though I don't like this, even Apple does it
+ *
  * Revision 2.21  2005/09/14 20:38:12  taylor
  * some vm_* fixage for Windows
  *
@@ -598,6 +601,26 @@ char *_vm_strdup( const char *ptr )
 		return NULL;
 
 	strcpy( dst, ptr );
+
+	return dst;
+}
+
+#ifndef NDEBUG
+char *_vm_strndup( const char *ptr, int size, char *filename, int line )
+#else
+char *_vm_strndup( const char *ptr, int size )
+#endif
+{
+	char *dst;
+
+	dst = (char *)vm_malloc( size+1 );
+
+	if (!dst)
+		return NULL;
+
+	strncpy( dst, ptr, size );
+	// make sure it has a NULL terminiator
+	dst[size] = '\0';
 
 	return dst;
 }
