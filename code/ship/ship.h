@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.112 $
- * $Date: 2005-10-11 05:24:34 $
+ * $Revision: 2.113 $
+ * $Date: 2005-10-11 07:43:10 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2005/10/11 05:24:34  wmcoolmon
+ * Gliding
+ *
  * Revision 2.111  2005/10/10 17:21:10  taylor
  * remove NO_NETWORK
  *
@@ -1560,6 +1563,9 @@ typedef struct ship_info {
 	int armor_type_idx;
 	
 	bool can_glide;
+	
+	bool topdown_offset_def;
+	vec3d topdown_offset;
 } ship_info;
 
 extern int num_wings;

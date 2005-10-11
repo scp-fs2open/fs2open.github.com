@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.62 $
- * $Date: 2005-10-11 05:24:34 $
+ * $Revision: 2.63 $
+ * $Date: 2005-10-11 07:43:10 $
  * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/10/11 05:24:34  wmcoolmon
+ * Gliding
+ *
  * Revision 2.61  2005/10/10 17:14:31  taylor
  * remove NO_NETWORK
  * fix controlconfig so that axes can be set to joystick/mouse using the mouse (required when no joystick attached)
@@ -2599,9 +2602,6 @@ int button_function_demo_valid(int n)
 		if(!Perspective_locked)
 		{
 			Viewer_mode ^= VM_TOPDOWN;
-			if(Viewer_mode & VM_TOPDOWN) {
-				Viewer_mode &= ~VM_TOPDOWN;
-			}
 		}
 		else
 		{

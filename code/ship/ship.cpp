@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.242 $
- * $Date: 2005-10-11 05:24:34 $
+ * $Revision: 2.243 $
+ * $Date: 2005-10-11 07:43:10 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.242  2005/10/11 05:24:34  wmcoolmon
+ * Gliding
+ *
  * Revision 2.241  2005/10/10 17:21:10  taylor
  * remove NO_NETWORK
  *
@@ -2130,6 +2133,8 @@ void init_ship_entry(int ship_info_index)
 	sip->forward_decel = 0.0f;
 	sip->slide_accel = 0.0f;
 	sip->slide_decel = 0.0f;
+	
+	sip->can_glide = false;
 
 	sip->warpin_speed = 0.0f;
 	sip->warpout_speed = 0.0f;
@@ -2221,6 +2226,9 @@ void init_ship_entry(int ship_info_index)
 	
 	vm_vec_zero(&sip->closeup_pos);
 	sip->closeup_zoom = 0.5f;
+	
+	sip->topdown_offset_def = false;
+	vm_vec_zero(&sip->topdown_offset);
 	
 	sip->shield_icon_index = 255;		// stored as ubyte
 	sip->icon_filename[0] = 0;
@@ -3100,6 +3108,11 @@ strcpy(parse_error_text, temp_error);
 
 	if(optional_string("$Closeup_zoom:"))
 		stuff_float(&sip->closeup_zoom);
+		
+	if(optional_string("$Topdown offset:")) {
+		sip->topdown_offset_def = true;
+		stuff_vector(&sip->topdown_offset);
+	}
 
 	if (optional_string("$Shield_icon:")) {
 		char tmpbuf[NAME_LENGTH];
