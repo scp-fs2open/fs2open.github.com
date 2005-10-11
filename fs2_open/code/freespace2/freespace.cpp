@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.185 $
- * $Date: 2005-10-10 17:16:21 $
- * $Author: taylor $
+ * $Revision: 2.186 $
+ * $Date: 2005-10-11 07:43:09 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.185  2005/10/10 17:16:21  taylor
+ * remove NO_NETWORK
+ * whether multi is disabled or not is now determined at runtime
+ * clean out some crap and old debug messages that were littered about
+ *
  * Revision 2.184  2005/10/09 08:03:19  wmcoolmon
  * New SEXP stuff
  *
@@ -4930,9 +4935,21 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 					Viewer_obj = NULL;
 			} else if (Viewer_mode & VM_TOPDOWN) {
 					angles rot_angles = {PI/2.0f,0.0f,0.0f};
-					eye_pos->xyz.x = Viewer_obj->pos.xyz.x;
-					eye_pos->xyz.y = Viewer_obj->pos.xyz.y + Viewer_obj->radius * 25.0f;
-					eye_pos->xyz.z = Viewer_obj->pos.xyz.z;
+					bool position_override = false;
+					if(Viewer_obj->type == OBJ_SHIP) {
+						ship_info *sip = &Ship_info[Ships[Viewer_obj->instance].ship_info_index];
+						if(sip->topdown_offset_def) {
+							eye_pos->xyz.x = Viewer_obj->pos.xyz.x + sip->topdown_offset.xyz.x;
+							eye_pos->xyz.x = Viewer_obj->pos.xyz.y + sip->topdown_offset.xyz.y;
+							eye_pos->xyz.x = Viewer_obj->pos.xyz.z + sip->topdown_offset.xyz.z;
+							position_override = true;
+						}
+					}
+					if(!position_override) {
+						eye_pos->xyz.x = Viewer_obj->pos.xyz.x;
+						eye_pos->xyz.y = Viewer_obj->pos.xyz.y + Viewer_obj->radius * 25.0f;
+						eye_pos->xyz.z = Viewer_obj->pos.xyz.z;
+					}
 					vm_angles_2_matrix(eye_orient, &rot_angles);
 					Viewer_obj = NULL;
 			} else {
