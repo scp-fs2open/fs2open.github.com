@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.72 $
- * $Date: 2005-10-10 17:21:04 $
+ * $Revision: 2.73 $
+ * $Date: 2005-10-12 05:43:40 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.71  2005/10/09 08:03:19  wmcoolmon
  * New SEXP stuff
  *
@@ -1215,27 +1218,27 @@ object *hud_reticle_pick_target()
 //  debris gets targeted during the previous pass.  When the
 //  command is executed again, the target is culled.
 
-//	if ( ship_in_list && debris_in_list ) {
-//		// cull debris
-//		reticle_list	*rl, *next;
-//		
-//		rl = GET_FIRST(&Reticle_cur_list);
-//		while ( rl != &Reticle_cur_list ) {
-//			next = rl->next;
-//			if ( (rl->objp->type == OBJ_DEBRIS) || (rl->objp->type == OBJ_ASTEROID) ){
-//				list_remove(&Reticle_cur_list,rl);
-//				rl->flags = 0;
-//			}
-//			rl = next;
-//		}
-//	}
+	if ( !Cmdline_ybugfix && ship_in_list && debris_in_list ) {
+		// cull debris
+		reticle_list	*rl, *next;
+		
+		rl = GET_FIRST(&Reticle_cur_list);
+		while ( rl != &Reticle_cur_list ) {
+			next = rl->next;
+			if ( (rl->objp->type == OBJ_DEBRIS) || (rl->objp->type == OBJ_ASTEROID) ){
+				list_remove(&Reticle_cur_list,rl);
+				rl->flags = 0;
+			}
+			rl = next;
+		}
+	}
 	
 	for ( cur_rl = GET_FIRST(&Reticle_cur_list); cur_rl != END_OF_LIST(&Reticle_cur_list); cur_rl = GET_NEXT(cur_rl) ) {
 
 //      The following was added to replace the culling method used above.  Rather than
 //      cull the debris, just skip to the next object if there's ships in the FOV.
 
-		if ( ship_in_list && debris_in_list ) {
+		if ( Cmdline_ybugfix && ship_in_list && debris_in_list ) {
 			if ( (cur_rl->objp->type == OBJ_DEBRIS) || (cur_rl->objp->type == OBJ_ASTEROID) ){
 				continue;
 			}
@@ -1278,7 +1281,7 @@ object *hud_reticle_pick_target()
 			// if there are ships and debris present,  loop through to find the ship(s)
 			// otherwise, pick the first object
 
-			if ( ship_in_list && debris_in_list ) {
+			if ( Cmdline_ybugfix && ship_in_list && debris_in_list ) {
 
 				for ( cur_rl = GET_FIRST(&Reticle_cur_list); cur_rl != END_OF_LIST(&Reticle_cur_list); cur_rl = GET_NEXT(cur_rl) ) {
 

@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.113 $
- * $Date: 2005-09-30 09:47:06 $
+ * $Revision: 2.114 $
+ * $Date: 2005-10-12 05:43:40 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2005/09/30 09:47:06  taylor
+ * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
+ * add -cache_bitmaps and have bitmap caching between levels off by default
+ * when -cache_bitmaps is used then use C-BMP for top-right memory listing, and just BMP otherwise
+ *
  * Revision 2.112  2005/09/25 08:23:38  Goober5000
  * remove unneeded #include
  * --Goober5000
@@ -959,6 +964,9 @@ cmdline_parm no_fpscap("-no_fps_capping", NULL);
 
 cmdline_parm tbp("-tbp", NULL ); // TBP warp effects -Et1
 cmdline_parm wcsaga("-wcsaga", NULL);
+
+cmdline_parm ybugfix_arg("-y_bug_fix", NULL);  // Temporary... REMOVEME LATER!!
+int Cmdline_ybugfix = 0; // Temporary... REMOVEME LATER!!
 
 int Cmdline_mpnoreturn = 0;
 int Cmdline_show_stats = 0;
@@ -2038,6 +2046,11 @@ bool SetCmdlineParams()
 
 	if ( tga16_arg.found() ) {
 		Cmdline_tga16 = 1;
+	}
+
+	// Temporary... REMOVEME LATER!!
+	if ( ybugfix_arg.found() ) {
+		Cmdline_ybugfix = 1;
 	}
 
 #ifdef WIN32

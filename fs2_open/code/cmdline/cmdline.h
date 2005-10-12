@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.75 $
- * $Date: 2005-09-30 09:47:06 $
+ * $Revision: 2.76 $
+ * $Date: 2005-10-12 05:43:40 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2005/09/30 09:47:06  taylor
+ * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
+ * add -cache_bitmaps and have bitmap caching between levels off by default
+ * when -cache_bitmaps is used then use C-BMP for top-right memory listing, and just BMP otherwise
+ *
  * Revision 2.74  2005/09/21 03:55:31  Goober5000
  * add option for warp flash; mess with the cmdlines a bit
  * --Goober5000
@@ -609,6 +614,8 @@ extern int Cmdline_tga16;
 
 extern int Cmdline_wcsaga;
 extern int Cmdline_tbp;
+
+extern int Cmdline_ybugfix;  // Temporary... REMOVEME LATER!!
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif
