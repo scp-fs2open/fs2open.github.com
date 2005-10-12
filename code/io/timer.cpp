@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-05-26 09:21:28 $
+ * $Revision: 2.13 $
+ * $Date: 2005-10-12 05:45:35 $
  * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/05/26 09:21:28  taylor
+ * forgot to take into account F1_0 on timer_get_fixed_seconds(), remove those stupid CRs too
+ *
  * Revision 2.11  2005/05/26 04:27:11  taylor
  * timer changes to fix game_busy() on the loading screen and 100% incorrect values on some machines,
  *   don't know if this is going to work that great but it's more like the Linux SDL code now which
@@ -138,8 +141,9 @@
 	#define USE_TIMING
 #endif
 
-#if defined _WIN32
+#ifdef _WIN32
 static longlong Timer_last_value = 0, Timer_base = 0, Timer_freq = 0;
+static const int precision = 1;
 #endif
 
 static int Timer_inited = 0;
@@ -150,6 +154,9 @@ void timer_close()
 {
 	if ( Timer_inited )	{
 		Timer_inited = 0;
+#ifdef _WIN32
+		timeEndPeriod(precision); 
+#endif
 		DELETE_CRITICAL_SECTION( Timer_lock );
 	}
 }
@@ -157,18 +164,12 @@ void timer_close()
 void timer_init()
 {
 	if ( !Timer_inited )	{
-#if defined _WIN32
-		LARGE_INTEGER tmp;
-
-		if ( !QueryPerformanceFrequency(&tmp) )
-			Error( LOCATION, "Unable to use High Performance Timer!  Aborting...\n" );
-
-		Timer_freq = tmp.QuadPart;
-
-		QueryPerformanceCounter(&tmp);
-		Timer_base = Timer_last_value = tmp.QuadPart;
-#endif
 		INITIALIZE_CRITICAL_SECTION( Timer_lock );
+
+#ifdef _WIN32
+		timeBeginPeriod(precision);
+		Timer_base = Timer_last_value = timeGetTime();
+#endif
 
 		Timer_inited = 1;
 
@@ -176,32 +177,27 @@ void timer_init()
 	}
 }
 
-// Fills Time_now with the ticks since program start
-#ifdef _WIN32
-static void timer_get(LARGE_INTEGER * out)
+static uint timer_get()
 {
-	ENTER_CRITICAL_SECTION( Timer_lock );
+#ifdef _WIN32
+	longlong time_now;
 
-	LARGE_INTEGER time_tmp;
-	longlong Time_now;
+	time_now = timeGetTime();
 
-	QueryPerformanceCounter(&time_tmp);
-	if ( time_tmp.QuadPart < Timer_last_value )	{
-		// The clock has rolled!
-		Timer_base = time_tmp.QuadPart;
-		mprintf(( "TIMER ROLLED!\n" ));
-		// Hack: I'm not accounting for the time before roll occured,
-		// since I'm not sure at what value this timer is going to roll at.
-	//	Time_now = time_tmp.QuadPart;
+	if ( time_now < Timer_last_value ) {
+		// the clock has rolled!
+		Timer_base = time_now;
+		mprintf(("TIMER ROLLED!\n"));
 	}
-	Time_now = time_tmp.QuadPart - Timer_base;
-	Timer_last_value = time_tmp.QuadPart;
 
-	out->QuadPart = Time_now;
-	
-	LEAVE_CRITICAL_SECTION( Timer_lock );
+	Timer_last_value = time_now;
+
+	return (uint)(time_now - Timer_base);
+#else
+	return SDL_GetTicks();
+#endif
 }
-#endif // _WIN32
+
 
 fix timer_get_fixed_seconds()
 {
@@ -210,81 +206,11 @@ fix timer_get_fixed_seconds()
 		return 0;
 	}
 
-#if defined(_WIN32)
-	LARGE_INTEGER temp_large;
-
-	timer_get(&temp_large);
-
-	temp_large.QuadPart *= 65536;
-	temp_large.QuadPart /= Timer_freq;
-
-
-	return (fix)temp_large.QuadPart;
-
-/*
-	int tmp;
-
-#if defined(_MSC_VER)
-	// Timing in fixed point (16.16) seconds.
-	// Can be used for up to 1000 hours
-	_asm	mov edx, temp_large.HighPart
-	_asm	mov eax, temp_large.LowPart
-
-	_asm	shld    edx, eax, 16            ; Keep 32+11 bits
-	_asm	shl     eax, 16			
-	// edx:eax = number of 1.19Mhz pulses elapsed.
-	_asm	mov     ebx, Timer_freq
-
-	// Make sure we won't divide overflow.  Make time wrap at about 9 hours
-sub_again:
-	_asm	sub     edx, ebx	; subtract until negative...
-	_asm	jns     sub_again	; ...to prevent divide overflow...
-	_asm	add     edx, ebx	; ...then add in to get correct value.
-	_asm	div     ebx
-	//eax = fixed point seconds elapsed...
-	_asm mov tmp, eax
-
-#elif defined(__GNUC__)
-
- 	// Timing in fixed point (16.16) seconds.
- 	// Can be used for up to 1000 hours
-	asm(
-		 "mov   %1, %%edx;"		  // temp_large.HighPart
-		 "mov   %2, %%eax;"		  // temp_large.LowPart
-
-		 "shld  $16,%%eax,%%edx;"			 // Keep 32+11 bits
-		 "shl   $16,%%eax;"
-		 // edx:eax = number of 1.19Mhz pulses elapsed.
-		 "mov   %3,%%ebx;"		  // Timer_freq
-
-		 // Make sure we won't divide overflow.  Make time wrap at about 9 hours
-		 "sub_again:"
-		 "sub   %%ebx,%%edx;"	  // subtract until negative...
-		 "jns   sub_again;"		  // ...to prevent divide overflow..."
-		 "add   %%ebx,%%edx;"	  // ...then add in to get correct value."
-		 "div   %%ebx;"
-		 //eax = fixed point seconds elapsed...
-		 "mov   %%eax,%0;"		  // tmp
-		 : "=g" (tmp)
-		 : "g" (temp_large.HighPart), "g" (temp_large.LowPart), "g" (Timer_freq)
-		 : "edx", "eax", "ebx" );
-
-#else
-#error unknown Win32 compiler
-#endif
-
-	return tmp;
-*/
-#elif defined(SCP_UNIX)
-
-	__extension__ long long a = SDL_GetTicks();
+	longlong a = timer_get();
 
 	a *= 65536;
-	return (fix)(a / 1000);
 
-#else
-#error unknown architecture/compiler
-#endif
+	return (fix)(a / 1000);
 }
 
 fix timer_get_fixed_secondsX()
@@ -304,71 +230,7 @@ int timer_get_milliseconds()
 		return 0;
 	}
 
-#if defined(_WIN32)
-	LARGE_INTEGER temp_large;
-
-	timer_get(&temp_large);
-
-	temp_large.QuadPart *= (longlong)1000;
-	temp_large.QuadPart /= Timer_freq;
-
-
-	return (int)temp_large.QuadPart;
-
-/*
-	int tmp;
-
-#if defined(_MSC_VER)
-	// Timing in milliseconds.
-	_asm	mov edx, temp_large.HighPart
-	_asm	mov eax, temp_large.LowPart
-
-	//_asm	shld    edx, eax, 16            ; Keep 32+11 bits
-	//_asm	shl     eax, 16			
-	// edx:eax = number of 1.19Mhz pulses elapsed.
-	_asm	mov     ebx, Timer_freq
-	// Make sure we won't divide overflow.  Make time wrap at about 9 hours
-sub_again:
-	_asm	sub     edx, ebx	; subtract until negative...
-	_asm	jns     sub_again	; ...to prevent divide overflow...
-	_asm	add     edx, ebx	; ...then add in to get correct value.
-	_asm	div     ebx
-	//eax = milliseconds elapsed...
-	_asm mov tmp, eax
-
-//	tmp = (int)timeGetTime();
-#elif defined(__GNUC__)
-	// Timing in milliseconds.
-	asm(
-		 "mov   %1,%%edx;\n"			// temp_large.HighPart
-		 "mov   %2,%%eax;\n"			// temp_large.LowPart  
-		 // edx:eax = number of 1.19Mhz pulses elapsed.
-		 "mov   %3,%%ebx;\n"			// Timer_freq
-		 // Make sure we won't divide overflow.  Make time wrap at about 9 hours
-		 "sub_again2:"
-		 "sub   %%ebx,%%edx;\n"		// subtract until negative...
-		 "jns   sub_again2;\n"		// ...to prevent divide overflow...
-		 "add   %%ebx,%%edx;\n"		// ...then add in to get correct value.
-		 "div   %%ebx;\n"
-		 //eax = milliseconds elapsed...
-		 "mov   %%eax,%0;\n"		// tmp
-		 : "=g" (tmp)
-		 : "g" (temp_large.HighPart), "g" (temp_large.LowPart), "g" (Timer_freq)
-		 : "edx", "eax", "ebx");
-#else
-#error unknown Win32 compiler
-#endif
-
-	return tmp;
-*/
-#elif defined(SCP_UNIX)
-
-	return SDL_GetTicks();
-
-#else
-#error unknown architecture/compiler
-#endif
-
+	return timer_get();
 }
 
 int timer_get_microseconds()
@@ -378,72 +240,7 @@ int timer_get_microseconds()
 		return 0;
 	}
 
-#if defined(_WIN32)
-	LARGE_INTEGER temp_large;
-
-	timer_get(&temp_large);
-
-	temp_large.QuadPart *= (longlong)1000000;
-	temp_large.QuadPart /= Timer_freq;
-
-
-	return (int)temp_large.QuadPart;
-
-/*
-	int tmp;
-
-#if defined(_MSC_VER)
-
-	// Timing in milliseconds.
-	_asm	mov edx, temp_large.HighPart
-	_asm	mov eax, temp_large.LowPart
-
-	//_asm	shld    edx, eax, 16            ; Keep 32+11 bits
-	//_asm	shl     eax, 16			
-	// edx:eax = number of 1.19Mhz pulses elapsed.
-	_asm	mov     ebx, Timer_freq
-
-	// Make sure we won't divide overflow.  Make time wrap at about 9 hours
-sub_again:
-	_asm	sub     edx, ebx	; subtract until negative...
-	_asm	jns     sub_again	; ...to prevent divide overflow...
-	_asm	add     edx, ebx	; ...then add in to get correct value.
-	_asm	div     ebx
-	//eax = milliseconds elapsed...
-	_asm mov tmp, eax
-
-#elif defined(__GNUC__)
-	// Timing in milliseconds.
-	asm(
-		 "mov   %1,%%edx;\n"			// temp_large.HighPart
-		 "mov   %2,%%eax;\n"			// temp_large.LowPart  
-		 // edx:eax = number of 1.19Mhz pulses elapsed.
-		 "mov   %3,%%ebx;\n"			// Timer_freq
-		 // Make sure we won't divide overflow.  Make time wrap at about 9 hours
-		 "sub_again3:"
-		 "sub   %%ebx,%%edx;\n"		// subtract until negative...
-		 "jns   sub_again3;\n"		// ...to prevent divide overflow...
-		 "add   %%ebx,%%edx;\n"		// ...then add in to get correct value.
-		 "div   %%ebx;\n"
-		 //eax = milliseconds elapsed...
-		 "mov   %%eax,%0;\n"		// tmp
-		 : "=g" (tmp)
-		 : "g" (temp_large.HighPart), "g" (temp_large.LowPart), "g" (Timer_freq)
-		 : "edx", "eax", "ebx");
-
-#else
-#error unknown Win32 compiler
-#endif
-
-	return tmp;
-*/
-#elif defined(SCP_UNIX)
-
-	return SDL_GetTicks() * 1000;
-
-#else
-#error unknown architecture/compiler
-#endif
+	return timer_get() * 1000;
 }
 
 // 0 means invalid,
