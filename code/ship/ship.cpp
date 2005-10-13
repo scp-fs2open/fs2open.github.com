@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.243 $
- * $Date: 2005-10-11 07:43:10 $
+ * $Revision: 2.244 $
+ * $Date: 2005-10-13 18:47:45 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243  2005/10/11 07:43:10  wmcoolmon
+ * Topdown updates
+ *
  * Revision 2.242  2005/10/11 05:24:34  wmcoolmon
  * Gliding
  *
@@ -7392,7 +7395,11 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->ai_index = ai_get_slot(n);
 	Assert( shipp->ai_index >= 0 );
 
-	sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
+	if(ship_name == NULL) {
+		sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
+	} else {
+		strcpy(shipp->ship_name, ship_name);
+	}
 
 	ship_set_default_weapons(shipp, sip);	//	Moved up here because ship_set requires that weapon info be valid.  MK, 4/28/98
 	ship_set(n, objnum, ship_type);
