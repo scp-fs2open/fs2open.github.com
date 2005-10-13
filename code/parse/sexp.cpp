@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.171 $
- * $Date: 2005-10-10 17:21:08 $
- * $Author: taylor $
+ * $Revision: 2.172 $
+ * $Date: 2005-10-13 23:23:32 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.171  2005/10/10 17:21:08  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.170  2005/10/09 08:10:03  wmcoolmon
  * Minor update to ship-create description
  *
@@ -10007,7 +10010,7 @@ void sexp_ships_guardian( int n, int guardian )
 	}
 }
 
-int sexp_ship_create(int n)
+void sexp_ship_create(int n)
 {
 	int new_ship_class = -1;
 	char *new_ship_name;
@@ -10018,7 +10021,7 @@ int sexp_ship_create(int n)
 
 	new_ship_name = CTEXT(n);
 	if(ship_name_lookup(new_ship_name) > -1) {
-		return 1;
+		return;
 	}
 	
 	//Get ship class
@@ -10027,7 +10030,7 @@ int sexp_ship_create(int n)
 
 	if(new_ship_class == -1) {
 		Warning(LOCATION, "Invalid ship class passed to ship-create; ship type '%s' does not exist", CTEXT(n));
-		return SEXP_NAN;
+		return;
 	}
 
 	n = CDR(n);
@@ -10060,11 +10063,7 @@ int sexp_ship_create(int n)
 		vm_angles_2_matrix(&new_ship_ori, &new_ship_ang);
 	}
 
-	if(ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name) < 0) {
-		return SEXP_NAN;
-	}
-
-	return 2;
+	ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name);
 }
 
 void sexp_ship_vanish_helper(object *objp, dock_function_info *infop)
@@ -13614,7 +13613,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 			
 			case OP_SHIP_CREATE:
-				sexp_val = sexp_ship_create ( node );
+				sexp_ship_create ( node );
+				sexp_val = 1;
 				break;
 
 			case OP_SHIP_VANISH:
@@ -14714,7 +14714,6 @@ int query_operator_return_type(int op)
 		case OP_NUM_SHIPS_IN_BATTLE:
 		case OP_CURRENT_SPEED:
 		case OP_NAV_DISTANCE:	//kazan
-		case OP_SHIP_CREATE: //WMC
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -14895,6 +14894,7 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
+		case OP_SHIP_CREATE: //WMC
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
