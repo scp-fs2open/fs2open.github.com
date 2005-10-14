@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.173 $
- * $Date: 2005-10-14 07:06:58 $
+ * $Revision: 2.174 $
+ * $Date: 2005-10-14 09:29:56 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.173  2005/10/14 07:06:58  Goober5000
+ * stuff for WMC: fix sexp description and three warnings; plus add some
+ * bulletproofing to name-specified ship_create
+ * --Goober5000
+ *
  * Revision 2.172  2005/10/13 23:23:32  wmcoolmon
  * Make ship_create not return a value
  *
@@ -1357,6 +1362,7 @@ sexp_oper Operators[] = {
 	{ "cap-waypoint-speed",			OP_CAP_WAYPOINT_SPEED,			2, 2			},
 	{ "special-warpout-name",		OP_SET_SPECIAL_WARPOUT_NAME,	2, 2 },
 	{ "ship-create",					OP_SHIP_CREATE,					5, 8	},	//WMC
+	{ "weapon-create",					OP_WEAPON_CREATE,				5, 10	},	// Goober5000
 	{ "ship-vanish",					OP_SHIP_VANISH,					1, INT_MAX	},
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
@@ -2249,6 +2255,25 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (ship_name_lookup(CTEXT(node), 0) < 0) {
 					if (Fred_running || mission_parse_ship_arrived(CTEXT(node))){  // == 0 when still on arrival list
 						return SEXP_CHECK_INVALID_SHIP;
+					}
+				}
+
+				break;
+
+			case OPF_SHIP_OR_NONE:
+				if (type2 != SEXP_ATOM_STRING)
+				{
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING))		// none is okay
+				{
+					if (ship_name_lookup(CTEXT(node), 1) < 0)
+					{
+						if (Fred_running || mission_parse_ship_arrived(CTEXT(node)))  // == 0 when still on arrival list
+						{
+							return SEXP_CHECK_INVALID_SHIP;
+						}
 					}
 				}
 
@@ -8615,24 +8640,15 @@ void sexp_set_cargo(int n)
 	{
 		if (subsystem)
 		{
-			ship_subsys *ss;
-
-			// find the ship subsystem by searching ship's subsys_list
-			ss = GET_FIRST( &Ships[ship_num].subsys_list );
-			while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
+			ship_subsys *ss = ship_get_subsys(&Ships[ship_num], subsystem);
+			if (ss == NULL)
 			{
-				// if we found the subsystem
-				if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
-				{
-					// set cargo
-					ss->subsys_cargo_name = cargo_index | (ss->subsys_cargo_name & CARGO_NO_DEPLETE);
-					return;
-				}
-
-				ss = GET_NEXT( ss );
+				Int3();
+				return;
 			}
-			// we reached end of ship subsys list without finding subsys_name
-			Int3();
+
+			// set cargo
+			ss->subsys_cargo_name = cargo_index | (ss->subsys_cargo_name & CARGO_NO_DEPLETE);
 		}
 		else
 		{
@@ -10023,9 +10039,7 @@ void sexp_ship_create(int n)
 	bool change_angles = false;
 
 	new_ship_name = CTEXT(n);
-	if(ship_name_lookup(new_ship_name) > -1) {
-		return;
-	}
+	// no need to skip if ship name already exists, because ship_create will take care of it
 	
 	//Get ship class
 	n = CDR(n);
@@ -10067,6 +10081,101 @@ void sexp_ship_create(int n)
 	}
 
 	ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name);
+}
+
+// Goober5000
+void sexp_weapon_create(int n)
+{
+	int weapon_class, parent_objnum, target_objnum, weapon_objnum;
+	ship_subsys *targeted_ss;
+
+	vec3d weapon_pos = vmd_zero_vector;
+	angles weapon_angles = {0};
+	matrix weapon_orient = vmd_identity_matrix;
+	int is_locked;
+	bool change_angles = false;
+
+	parent_objnum = -1;
+	if (stricmp(CTEXT(n), SEXP_NONE_STRING))
+	{
+		int parent_ship = ship_name_lookup(CTEXT(n));
+
+		if (parent_ship >= 0)
+			parent_objnum = Ships[parent_ship].objnum;
+	}
+	n = CDR(n);
+	
+	weapon_class = weapon_info_lookup(CTEXT(n));
+	n = CDR(n);
+	if (weapon_class < 0)
+	{
+		Warning(LOCATION, "Invalid weapon class passed to weapon-create; weapon type '%s' does not exist", CTEXT(n));
+		return;
+	}
+
+	weapon_pos.xyz.x = (float) eval_num(n);
+	n = CDR(n);
+	weapon_pos.xyz.y = (float) eval_num(n);
+	n = CDR(n);
+	weapon_pos.xyz.z = (float) eval_num(n);
+	n = CDR(n);
+
+	if (n >= 0)
+	{
+		weapon_angles.p = eval_num(n) * (PI/180.0f);
+		n = CDR(n);
+		change_angles = true;
+	}
+
+	if (n >= 0)
+	{
+		weapon_angles.b = eval_num(n) * (PI/180.0f);
+		n = CDR(n);
+		change_angles = true;
+	}
+
+	if (n >= 0)
+	{
+		weapon_angles.h = eval_num(n) * (PI/180.0f);
+		n = CDR(n);
+		change_angles = true;
+	}
+
+	// This is a costly function, so only do it if needed
+	if (change_angles)
+	{
+		vm_angles_2_matrix(&weapon_orient, &weapon_angles);
+	}
+
+	target_objnum = -1;
+	if (n >= 0)
+	{
+		int target_ship = ship_name_lookup(CTEXT(n));
+
+		if (target_ship >= 0)
+			target_objnum = Ships[target_ship].objnum;
+
+		n = CDR(n);
+	}
+
+	targeted_ss = NULL;
+	if (n >= 0)
+	{
+		if (target_objnum >= 0)
+		{
+			targeted_ss = ship_get_subsys(&Ships[Objects[target_objnum].instance], CTEXT(n));
+		}
+		n = CDR(n);
+	}
+
+	is_locked = (target_objnum >= 0) ? 1 : 0;	// assume full lock; this lets lasers track if people want them to
+
+	// create the weapon
+	weapon_objnum = weapon_create(&weapon_pos, &weapon_orient, weapon_class, parent_objnum, -1, is_locked);
+
+	// maybe make the weapon track its target
+	if (is_locked)
+		weapon_set_tracking_info(weapon_objnum, parent_objnum, target_objnum, is_locked, targeted_ss);
 }
 
 void sexp_ship_vanish_helper(object *objp, dock_function_info *infop)
@@ -13620,6 +13729,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = 1;
 				break;
 
+			case OP_WEAPON_CREATE:
+				sexp_weapon_create ( node );
+				sexp_val = 1;
+				break;
+
 			case OP_SHIP_VANISH:
 				sexp_ship_vanish( node );
 				sexp_val = 1;
@@ -14898,6 +15012,7 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
 		case OP_SHIP_CREATE: //WMC
+		case OP_WEAPON_CREATE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -15067,6 +15182,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else if(argnum == 1)
 				return OPF_SHIP_CLASS_NAME;
+			else
+				return OPF_NUMBER;
+
+		case OP_WEAPON_CREATE:
+			if (argnum == 0)
+				return OPF_SHIP_OR_NONE;
+			else if (argnum == 1)
+				return OPF_WEAPON_NAME;
+			else if (argnum == 8)
+				return OPF_SHIP;
+			else if (argnum == 9)
+				return OPF_SUBSYSTEM;
 			else
 				return OPF_NUMBER;
 
@@ -17067,6 +17194,7 @@ int get_subcategory(int sexp_id)
 		case OP_CAP_WAYPOINT_SPEED:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
 		case OP_SHIP_CREATE:
+		case OP_WEAPON_CREATE:
 		case OP_SHIP_VANISH:
 		case OP_SUPERNOVA_START:
 		case OP_SHIP_VAPORIZE:
@@ -18774,7 +18902,24 @@ sexp_help_struct Sexp_help[] = {
 		"\t5: Z position\r\n"
 		"\t6: Pitch (optional)\r\n"
 		"\t7: Bank (optional)\r\n"
-		"\t8: Heading (optional)\r\n"},
+		"\t8: Heading (optional)\r\n"
+	},
+
+	// Goober5000
+	{ OP_WEAPON_CREATE, "weapon-create\r\n"
+		"\tCreates a new weapon\r\n"
+		"\tTakes 5 to 10 arguments...\r\n"
+		"\t 1: Name of parent ship (or " SEXP_NONE_STRING " for no parent)\r\n"
+		"\t 2: Class of new weapon\r\n"
+		"\t 3: X position\r\n"
+		"\t 4: Y position\r\n"
+		"\t 5: Z position\r\n"
+		"\t 6: Pitch (optional)\r\n"
+		"\t 7: Bank (optional)\r\n"
+		"\t 8: Heading (optional)\r\n"
+		"\t 9: Targeted ship (optional)\r\n"
+		"\t10: Targeted subsystem (optional)\r\n"
+	},
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
 		"\tCheck whether ship is visible on Player's radar\r\n"
