@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.172 $
- * $Date: 2005-10-13 23:23:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.173 $
+ * $Date: 2005-10-14 07:06:58 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.172  2005/10/13 23:23:32  wmcoolmon
+ * Make ship_create not return a value
+ *
  * Revision 2.171  2005/10/10 17:21:08  taylor
  * remove NO_NETWORK
  *
@@ -10034,11 +10037,11 @@ void sexp_ship_create(int n)
 	}
 
 	n = CDR(n);
-	new_ship_pos.xyz.x = eval_num(n);
+	new_ship_pos.xyz.x = (float) eval_num(n);
 	n = CDR(n);
-	new_ship_pos.xyz.y = eval_num(n);
+	new_ship_pos.xyz.y = (float) eval_num(n);
 	n = CDR(n);
-	new_ship_pos.xyz.z = eval_num(n);
+	new_ship_pos.xyz.z = (float) eval_num(n);
 
 	n = CDR(n);
 	if(n != -1) {
@@ -18763,9 +18766,6 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_SHIP_CREATE, "ship-create\r\n"
 		"\tCreates a new ship\r\n"
-		"\tReturns NAN if ship couldn't be created;\r\n"
-		"\tReturns 1 if the ship already existed;\r\n"
-		"\tReturns 2 if the ship was created\r\n"
 		"\tTakes 5 to 8 arguments...\r\n"
 		"\t1: Name of new ship\r\n"
 		"\t2: Class of new ship\r\n"
