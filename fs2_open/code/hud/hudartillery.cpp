@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-10-14 07:22:24 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.12  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -340,7 +343,7 @@ void ssm_process()
 						vm_vector_2_matrix(&orient, &temp, NULL, NULL);
 
 						// fire the missile and flash the screen
-						weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, 1, -1, 1);
+						weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
 
 						// this makes this particular missile done
 						moveup->done_flags[idx] = 1;

@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-10-10 17:21:03 $
- * $Author: taylor $
+ * $Revision: 1.21 $
+ * $Date: 2005-10-14 07:22:23 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/10/10 17:21:03  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.19  2005/07/25 05:23:33  Goober5000
  * whoops
  * --Goober5000
@@ -1164,7 +1167,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			
 			for (int i=0; i < wip->shots; i++)
 			{		
-				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, 0, -1, 1);
+				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
 			
 
@@ -1258,7 +1261,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	vm_vector_2_matrix(&turret_orient, &turret_fvec, NULL, NULL);
 
 	// create weapon and homing info
-	weapon_objnum = weapon_create(&turret_pos, &turret_orient, tsi->weapon_class, tsi->parent_objnum, 0, -1, 1);
+	weapon_objnum = weapon_create(&turret_pos, &turret_orient, tsi->weapon_class, tsi->parent_objnum, -1, 1);
 	weapon_set_tracking_info(weapon_objnum, tsi->parent_objnum, tsi->target_objnum, 1, tsi->target_subsys);
 
 	// do other cool stuff if weapon is created.
