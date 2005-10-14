@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.244 $
- * $Date: 2005-10-13 18:47:45 $
+ * $Revision: 2.245 $
+ * $Date: 2005-10-14 02:13:52 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.244  2005/10/13 18:47:45  wmcoolmon
+ * Fixage for ship_create
+ *
  * Revision 2.243  2005/10/11 07:43:10  wmcoolmon
  * Topdown updates
  *
@@ -14536,6 +14539,9 @@ typedef struct DamageTypeStruct
 
 std::vector<DamageTypeStruct>	Damage_types;
 
+//Gives the index into the Damage_types[] vector of a
+//specified damage type name
+//returns -1 if not found
 int damage_type_get_idx(char *name)
 {
 	//This should never be bigger than INT_MAX anyway
@@ -14548,6 +14554,8 @@ int damage_type_get_idx(char *name)
 	return -1;
 }
 
+//Either loads a new damage type, or returns the index
+//of one with the same name as given
 int damage_type_add(char *name)
 {
 	int i = damage_type_get_idx(name);
@@ -14572,7 +14580,10 @@ int damage_type_add(char *name)
 
 //****************************Calculation type addition
 
+//4 steps to add a new one
+
 //Armor types
+//STEP 1: Add a define
 #define AT_TYPE_ADDITIVE			0
 #define AT_TYPE_MULTIPLICATIVE			1
 #define AT_TYPE_EXPONENTIAL			2
@@ -14582,6 +14593,7 @@ int damage_type_add(char *name)
 #define AT_TYPE_INSTANT_CUTOFF			6
 #define AT_TYPE_INSTANT_REVERSE_CUTOFF		7
 
+//STEP 2: Add the name string to the array
 char *TypeNames[] = {
 	"additive",
 	"multiplicative",
@@ -14593,6 +14605,7 @@ char *TypeNames[] = {
 	"instant reverse cutoff",
 };
 
+//STEP 3: Add the default value
 float TypeDefaultValues[] = {
 	0.0f,	//additive
 	1.0f,	//multiplicatve
@@ -14606,6 +14619,7 @@ float TypeDefaultValues[] = {
 
 const int Num_armor_calculation_types = sizeof(TypeNames)/sizeof(char*);
 
+//STEP 4: Add the calculation to the switch statement.
 float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wip)
 {
 	if(wip->damage_type_idx < 0)
@@ -14683,10 +14697,10 @@ float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wi
 ArmorType::ArmorType(char* in_name)
 {
 	uint len = strlen(in_name);
-	if(len >= NAME_LENGTH)
-	{
+	if(len >= NAME_LENGTH) {
 		Warning(LOCATION, "Armor name %s is %d characters too long, and will be truncated", in_name, len - NAME_LENGTH);
 	}
+	
 	strncpy(Name, in_name, NAME_LENGTH-1);
 }
 
@@ -14700,8 +14714,6 @@ void ArmorType::ParseData()
 	required_string("$Damage Type:");
 	do
 	{
-		DamageTypes.clear();
-
 		stuff_string(buf, F_NAME, NULL);
 		adt.DamageTypeIndex = damage_type_add(buf);
 
@@ -14719,22 +14731,24 @@ void ArmorType::ParseData()
 
 			if(i == Num_armor_calculation_types)
 			{
-				adt.Calculations.push_back(0);
 				Warning(LOCATION, "Armor '%s': Armor calculation type '%s' is invalid, and has been reset to default calculation type '%s'", Name, buf, TypeNames[adt.Calculations[adt.Calculations.size()-1]]);
+				required_string("+Value:");
+				float bogus_float;
+				stuff_float(&bogus_float);
 			}
 			else
 			{
 				adt.Calculations.push_back(i);
+				//+Value
+				required_string("+Value:");
+				stuff_float(&temp_float);
+				adt.Arguments.push_back(temp_float);
 			}
-
-			//+Value
-			required_string("+Value:");
-			stuff_float(&temp_float);
-			adt.Arguments.push_back(temp_float);
-
 		} while(optional_string("+Calculation:"));
 
-		DamageTypes.push_back(adt);
+		if(adt.Calculations.size() > 0) {
+			DamageTypes.push_back(adt);
+		}
 
 	} while(optional_string("$Damage Type"));
 }
