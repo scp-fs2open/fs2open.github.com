@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.245 $
- * $Date: 2005-10-14 02:13:52 $
- * $Author: wmcoolmon $
+ * $Revision: 2.246 $
+ * $Date: 2005-10-14 07:06:59 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.245  2005/10/14 02:13:52  wmcoolmon
+ * armor.tbl work
+ *
  * Revision 2.244  2005/10/13 18:47:45  wmcoolmon
  * Fixage for ship_create
  *
@@ -7398,7 +7401,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->ai_index = ai_get_slot(n);
 	Assert( shipp->ai_index >= 0 );
 
-	if(ship_name == NULL) {
+	if ((ship_name == NULL) || (ship_name_lookup(ship_name) < 0) || (ship_find_exited_ship_by_name(ship_name) < 0)) {
 		sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
 	} else {
 		strcpy(shipp->ship_name, ship_name);
