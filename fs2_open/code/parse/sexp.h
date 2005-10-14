@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.96 $
- * $Author: wmcoolmon $
- * $Date: 2005-10-09 08:03:21 $
+ * $Revision: 2.97 $
+ * $Author: Goober5000 $
+ * $Date: 2005-10-14 09:29:56 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2005/10/09 08:03:21  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.95  2005/10/09 06:10:59  wmcoolmon
  * Added sexps set-object-speed-x, set-object-speed-y, set-object-speed-z,
  * and ship-create
@@ -765,8 +768,8 @@ struct ship_subsys;
 #define OPF_SSM_CLASS			50		// Goober5000 - an SSM class
 #define OPF_FLEXIBLE_ARGUMENT	51		// Goober5000 - special to match for when-argument
 #define OPF_ANYTHING			52		// Goober5000 - anything goes
-
 #define OPF_SKYBOX_MODEL_NAME	53		// taylor - changing skybox model
+#define OPF_SHIP_OR_NONE		54		// Goober5000 - an "optional" ship argument
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -1126,11 +1129,13 @@ struct ship_subsys;
 #define OP_SET_SKYBOX_MODEL					(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // taylor
 
 #define OP_SHIP_CREATE						(0X00b5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_SET_OBJECT_SPEED_X					(0X00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_SET_OBJECT_SPEED_Y					(0X00b7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_SET_OBJECT_SPEED_Z					(0X00b8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_OBJECT_SPEED_X				(0X00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_OBJECT_SPEED_Y				(0X00b7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_OBJECT_SPEED_Z				(0X00b8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 
-#define OP_MISSION_SET_NEBULA					(0x00b9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_MISSION_SET_NEBULA				(0x00b9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+
+#define OP_WEAPON_CREATE					(0x00ba	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 /* made obsolete by Goober5000
 // debugging sexpressions
@@ -1236,6 +1241,7 @@ struct ship_subsys;
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
 #define SEXP_ARGUMENT_STRING		"<argument>"
+#define SEXP_NONE_STRING			"<none>"
 
 // macros for accessing sexpression atoms
 #define CAR(n)		(Sexp_nodes[n].first)
