@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.246 $
- * $Date: 2005-10-14 07:06:59 $
+ * $Revision: 2.247 $
+ * $Date: 2005-10-14 07:22:24 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.246  2005/10/14 07:06:59  Goober5000
+ * stuff for WMC: fix sexp description and three warnings; plus add some
+ * bulletproofing to name-specified ship_create
+ * --Goober5000
+ *
  * Revision 2.245  2005/10/14 02:13:52  wmcoolmon
  * armor.tbl work
  *
@@ -7898,7 +7903,7 @@ int ship_fire_primary_debug(object *objp)
 	vm_vec_add(&wpos, &objp->pos, &(objp->orient.vec.fvec) );
 	if (i != MAX_WEAPONS) {
 		int weapon_objnum;
-		weapon_objnum = weapon_create( &wpos, &objp->orient, i, OBJ_INDEX(objp), 0 );
+		weapon_objnum = weapon_create( &wpos, &objp->orient, i, OBJ_INDEX(objp) );
 		weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(objp), Ai_info[shipp->ai_index].target_objnum);
 		return 1;
 	} else
@@ -8667,7 +8672,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				
 						// create the weapon -- the network signature for multiplayer is created inside
 						// of weapon_create
-						weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj),0, new_group_id );
+						weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj), new_group_id );
 	
 						weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 	
@@ -9324,7 +9329,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj), 0, -1, aip->current_target_is_locked);
+			weapon_num = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
 			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
 
 

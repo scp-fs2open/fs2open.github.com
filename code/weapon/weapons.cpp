@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2005/10/11 08:30:37  taylor
+ * fix memory freakage from dynamic spawn weapon types
+ *
  * Revision 2.136  2005/10/10 17:32:59  taylor
  * actual cmeasure fix, don't know why the hell it didn't end up other commit
  *
@@ -4423,7 +4426,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 //
 // Returns:  index of weapon in the Objects[] array, -1 if the weapon object was not created
 int Weapons_created = 0;
-int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objnum, int secondary_flag, int group_id, int is_locked, int is_spawned )
+int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned )
 {
 	int			n, objnum;
 	int num_deleted;
@@ -4431,7 +4434,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objn
 	weapon		*wp;
 	weapon_info	*wip;
 
-	wip = &Weapon_info[weapon_id];
+	wip = &Weapon_info[weapon_type];
 
 	//I am hopeing that this way does not alter the input orient matrix
 	//Feild of Fire code -Bobboau
@@ -4446,10 +4449,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objn
 		vm_vector_2_matrix( orient, &f, NULL, NULL);
 	}
 
-	Assert(weapon_id >= 0 && weapon_id < Num_weapon_types);
+	Assert(weapon_type >= 0 && weapon_type < Num_weapon_types);
 
 	// beam weapons should never come through here!
-	Assert(!(Weapon_info[weapon_id].wi_flags & WIF_BEAM));
+	Assert(!(Weapon_info[weapon_type].wi_flags & WIF_BEAM));
 
 	num_deleted = 0;
 	if (Num_weapons >= MAX_WEAPONS-5) {
@@ -4500,7 +4503,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_id, int parent_objn
 		objp->phys_info.flags |= PF_CONST_VEL;
 	}
 
-	wp->weapon_info_index = weapon_id;
+	wp->weapon_info_index = weapon_type;
 	wp->lifeleft = wip->lifetime;
 
 	wp->objnum = objnum;
@@ -4752,7 +4755,7 @@ void spawn_child_weapons(object *objp)
 		vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
 
 		vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
-		weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, 1, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+		weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
 
 		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
 		if (weapon_objnum != -1) {
@@ -5323,18 +5326,18 @@ int weapon_create_group_id()
 }
 
 //Call before weapons_page_in to mark a weapon as used
-void weapon_mark_as_used(int weapon_id)
+void weapon_mark_as_used(int weapon_type)
 {
-	if (weapon_id < 0)
+	if (weapon_type < 0)
 		return;
 
 	if ( used_weapons == NULL )
 		return;
 
-	Assert( weapon_id < MAX_WEAPON_TYPES );
+	Assert( weapon_type < MAX_WEAPON_TYPES );
 
-	if (weapon_id < Num_weapon_types) {
-		used_weapons[weapon_id]++;
+	if (weapon_type < Num_weapon_types) {
+		used_weapons[weapon_type]++;
 	}
 }
 

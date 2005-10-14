@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.46 $
+ * $Date: 2005-10-14 07:22:24 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.44  2005/09/27 02:36:58  Goober5000
  * clarification
  * --Goober5000
@@ -3817,7 +3820,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		multi_set_network_signature( wnet_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), 0, -1, 1);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1);
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd != -1 ) {
 			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
@@ -8485,7 +8488,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &dir);
 
 	// create the weapon object	
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), 0, -1, 1);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1);
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd != -1 ) {
 			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
