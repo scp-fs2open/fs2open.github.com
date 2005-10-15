@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.187 $
- * $Date: 2005-10-11 08:30:36 $
+ * $Revision: 2.188 $
+ * $Date: 2005-10-15 20:53:28 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.187  2005/10/11 08:30:36  taylor
+ * fix memory freakage from dynamic spawn weapon types
+ *
  * Revision 2.186  2005/10/11 07:43:09  wmcoolmon
  * Topdown updates
  *
@@ -4621,6 +4624,11 @@ vec3d	Dead_player_last_vel = {1.0f, 1.0f, 1.0f};
 
 inline void render_environment(int&i, matrix*new_orient, float new_zoom){
 vec3d nv = ZERO_VECTOR;
+
+	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (gr_screen.static_environment_map < 0) ) {
+		return;
+	}
+
 	bm_set_render_target(
 		(Game_subspace_effect)?
 			gr_screen.dynamic_environment_map 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-10-15 20:27:32 $
+ * $Revision: 2.57 $
+ * $Date: 2005-10-15 20:53:29 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/10/15 20:27:32  taylor
+ * make some code a bit more readable
+ * speed up index buffer generation just a tad (maybe 1/3rd)
+ *
  * Revision 2.55  2005/09/23 23:07:11  Goober5000
  * bettered the web cursor bitmap error message
  * --Goober5000
@@ -1430,37 +1434,43 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 
 	//get a render target for static environment maps
 	gr_screen.static_environment_map = bm_make_render_target(X,Y, BMP_TEX_STATIC_RENDER_TARGET|BMP_TEX_CUBEMAP);
-	//clear out the 6 faces
-	bm_set_render_target(gr_screen.static_environment_map,0);
-	gr_clear();
-	bm_set_render_target(gr_screen.static_environment_map,1);
-	gr_clear();
-	bm_set_render_target(gr_screen.static_environment_map,2);
-	gr_clear();
-	bm_set_render_target(gr_screen.static_environment_map,3);
-	gr_clear();
-	bm_set_render_target(gr_screen.static_environment_map,4);
-	gr_clear();
-	bm_set_render_target(gr_screen.static_environment_map,5);
-	gr_clear();
+
+	if (gr_screen.static_environment_map >= 0) {
+		//clear out the 6 faces
+		bm_set_render_target(gr_screen.static_environment_map,0);
+		gr_clear();
+		bm_set_render_target(gr_screen.static_environment_map,1);
+		gr_clear();
+		bm_set_render_target(gr_screen.static_environment_map,2);
+		gr_clear();
+		bm_set_render_target(gr_screen.static_environment_map,3);
+		gr_clear();
+		bm_set_render_target(gr_screen.static_environment_map,4);
+		gr_clear();
+		bm_set_render_target(gr_screen.static_environment_map,5);
+		gr_clear();
+	}
 
 	bm_set_render_target(-1);
 
 	//get the dynamic environment map
 	gr_screen.dynamic_environment_map = bm_make_render_target(X,Y, BMP_TEX_DYNAMIC_RENDER_TARGET|BMP_TEX_CUBEMAP);
-	//clear it out
-	bm_set_render_target(gr_screen.dynamic_environment_map,0);
-	gr_clear();
-	bm_set_render_target(gr_screen.dynamic_environment_map,1);
-	gr_clear();
-	bm_set_render_target(gr_screen.dynamic_environment_map,2);
-	gr_clear();
-	bm_set_render_target(gr_screen.dynamic_environment_map,3);
-	gr_clear();
-	bm_set_render_target(gr_screen.dynamic_environment_map,4);
-	gr_clear();
-	bm_set_render_target(gr_screen.dynamic_environment_map,5);
-	gr_clear();
+
+	if (gr_screen.dynamic_environment_map >= 0) {
+		//clear it out
+		bm_set_render_target(gr_screen.dynamic_environment_map,0);
+		gr_clear();
+		bm_set_render_target(gr_screen.dynamic_environment_map,1);
+		gr_clear();
+		bm_set_render_target(gr_screen.dynamic_environment_map,2);
+		gr_clear();
+		bm_set_render_target(gr_screen.dynamic_environment_map,3);
+		gr_clear();
+		bm_set_render_target(gr_screen.dynamic_environment_map,4);
+		gr_clear();
+		bm_set_render_target(gr_screen.dynamic_environment_map,5);
+		gr_clear();
+	}
 
 	//set the render target back to the back buffer
 	bm_set_render_target(-1);
