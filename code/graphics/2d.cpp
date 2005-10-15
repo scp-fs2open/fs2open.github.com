@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-09-23 23:07:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2005-10-15 20:27:32 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/09/23 23:07:11  Goober5000
+ * bettered the web cursor bitmap error message
+ * --Goober5000
+ *
  * Revision 2.54  2005/09/05 09:38:18  taylor
  * merge of OSX tree
  * a lot of byte swaps were still missing, will hopefully be fully network compatible now
@@ -1876,48 +1880,84 @@ short find_first_index_vb(poly_list *plist, int idx, poly_list *v){
 
 
 
-void poly_list::allocate(int virts){
-		if(virts <= currently_allocated)return;
-		if(vert!=NULL){vm_free((void*)vert); vert = NULL;}
-		if(norm!=NULL){vm_free((void*)norm); norm = NULL;}
-		if(virts)vert = (vertex*)vm_malloc(sizeof(vertex)*virts);
-		if(virts)norm = (vec3d*)vm_malloc(sizeof(vec3d)*virts);
-		n_verts = 0;
-		currently_allocated = virts;
+void poly_list::allocate(int _verts)
+{
+	if (_verts <= currently_allocated)
+		return;
+
+	if (vert != NULL) {
+		vm_free(vert);
+		vert = NULL;
+	}
+
+	if (norm != NULL) {
+		vm_free(norm);
+		norm = NULL;
+	}
+
+	if (_verts) {
+		vert = (vertex*)vm_malloc(sizeof(vertex) * _verts);
+		norm = (vec3d*)vm_malloc(sizeof(vec3d)* _verts);
+	}
+
+	n_verts = 0;
+	currently_allocated = _verts;
 }
 
-poly_list::~poly_list(){
-	if(vert!=NULL)vm_free(vert); 
-	if(norm!=NULL)vm_free(norm);
+poly_list::~poly_list()
+{
+	if (vert != NULL) {
+		vm_free(vert);
+		vert = NULL;
+	}
+
+	if (norm != NULL) {
+		vm_free(norm);
+		norm = NULL;
+	}
 }
 
 poly_list poly_list_index_bufer_internal_list;
 
-void poly_list::make_index_buffer(){
+void poly_list::make_index_buffer()
+{
+	int nverts = 0;
+	int j, z = 0;
+	ubyte *nverts_good = NULL;
 
+	// using vm_malloc() heare rather than 'new' so we get the extra out-of-memory check
+	nverts_good = (ubyte *) vm_malloc(n_verts);
 
-		int nverts = 0;
-		for( int j = 0; j<n_verts; j++){
-			if((find_first_index(this, j)) == j)nverts++;
+	Assert( nverts_good != NULL );
+	memset( nverts_good, 0, n_verts );
+
+	for (j = 0; j < n_verts; j++) {
+		if ((find_first_index(this, j)) == j) {
+			nverts++;
+			nverts_good[j] = 1;
 		}
+	}
 
-		poly_list_index_bufer_internal_list.n_verts = 0;
-		int z = 0;
-		poly_list_index_bufer_internal_list.allocate(nverts);
-		for(int k = 0; k<n_verts; k++){
-			if(find_first_index(this, k) != k){
-				continue;
-			}
-			poly_list_index_bufer_internal_list.vert[z] = vert[k];
-			poly_list_index_bufer_internal_list.norm[z] = norm[k];
-			poly_list_index_bufer_internal_list.n_verts++;
-			Assert(find_first_index(&poly_list_index_bufer_internal_list, z) == z);
-			z++;
-		}
-		Assert(nverts == poly_list_index_bufer_internal_list.n_verts);
+	poly_list_index_bufer_internal_list.n_verts = 0;
+	poly_list_index_bufer_internal_list.allocate(nverts);
 
-		(*this) = poly_list_index_bufer_internal_list;
+	for (j = 0; j < n_verts; j++) {
+		if ( !nverts_good[j] )
+			continue;
 
+		poly_list_index_bufer_internal_list.vert[z] = vert[j];
+		poly_list_index_bufer_internal_list.norm[z] = norm[j];
+		poly_list_index_bufer_internal_list.n_verts++;
+		Assert(find_first_index(&poly_list_index_bufer_internal_list, z) == z);
+		z++;
+	}
+
+	Assert(nverts == poly_list_index_bufer_internal_list.n_verts);
+
+	if (nverts_good != NULL)
+		vm_free(nverts_good);
+
+	(*this) = poly_list_index_bufer_internal_list;
 }
 
 poly_list& poly_list::operator = (poly_list &other_list){
