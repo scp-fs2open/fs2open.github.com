@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.126 $
- * $Date: 2005-09-24 07:45:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.127 $
+ * $Date: 2005-10-15 20:28:26 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2005/09/24 07:45:31  Goober5000
+ * cleaned up some more thruster stuff; honestly, the thruster code is such a
+ * mess that it should probably be reverted to the retail version
+ * --Goober5000
+ *
  * Revision 2.125  2005/08/05 15:33:45  taylor
  * fix 3-D shockwave frame detection so that it will use the proper number of frames for the animation (not less, not more)
  *
@@ -5444,6 +5449,10 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		memcpy( (model_list.vert) + model_list.n_verts, list[i].vert, sizeof(vertex) * list[i].n_verts);
 		memcpy( (model_list.norm) + model_list.n_verts, list[i].norm, sizeof(vec3d) * list[i].n_verts);
 		model_list.n_verts += list[i].n_verts;
+	}
+
+	if ( model_list.n_verts > SHRT_MAX ) {
+		Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, model_list.n_verts, SHRT_MAX);
 	}
 
 	// IBX stuff
