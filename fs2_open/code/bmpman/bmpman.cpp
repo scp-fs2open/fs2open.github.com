@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.67 $
- * $Date: 2005-10-10 17:21:03 $
+ * $Revision: 2.68 $
+ * $Date: 2005-10-15 20:42:40 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/10/10 17:21:03  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.66  2005/09/30 09:47:05  taylor
  * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
  * add -cache_bitmaps and have bitmap caching between levels off by default
@@ -3456,7 +3459,8 @@ int bm_make_render_target( int &x_res, int &y_res, int flags )
 
 
 //	gr_bm_load( type, n, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
-	gr_bm_make_render_target( n, x_res, y_res, flags );
+	if ( gr_bm_make_render_target(n, x_res, y_res, flags) == false )
+		return -1;
 	//API render target function gets called here
 
 
