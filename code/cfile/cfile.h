@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 02:50:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2005-10-16 23:15:46 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.11  2005/04/05 05:53:14  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -646,7 +650,7 @@ void cf_sort_filenames( int n, char **list, int sort, file_list_info *info = NUL
 //         size        - File size
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
-int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, int *size, int *offset, bool localize = false);
+int cf_find_file_location( char *filespec, int filespec_max, int pathtype, char *pack_filename, int *size, int *offset, bool localize = false);
 
 // Functions to change directories
 int cfile_chdir(char *dir);

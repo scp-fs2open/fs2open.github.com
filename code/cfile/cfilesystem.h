@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 02:50:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2005-10-16 23:15:46 $
+ * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,10 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.2  2004/08/11 05:06:19  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -79,9 +83,11 @@ extern cf_pathtype Pathtypes[CF_MAX_PATH_TYPES];
 // If filename isn't null it will also tack the filename
 // on the end, creating a completely valid filename.
 // Input:   pathtype  - CF_TYPE_??
+//			path_max  - Maximum characters in the path
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
-void cf_create_default_path_string( char *path, int pathtype, char *filename=NULL, bool localize = false);
+//Returns 0 if result would be too long (invalid result)
+int cf_create_default_path_string( char *path, uint path_max, int pathtype, char *filename=NULL, bool localize = false);
 
 
 #endif	//_CFILESYSTEM_H

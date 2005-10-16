@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-05-12 17:49:10 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-10-16 23:15:46 $
+ * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,10 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/05/12 17:49:10  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.25  2005/01/30 12:50:08  taylor
  * merge with Linux/OSX tree - p0130
  *
@@ -335,17 +339,30 @@ int cf_get_packfile_count(cf_root *root)
 
 	// count up how many packfiles we're gonna have
 	packfile_count = 0;
-	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
+	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )
+	{
 		strcpy( filespec, root->path );
 		
-		if(strlen(Pathtypes[i].path)) { 
+		if(strlen(Pathtypes[i].path))
+		{
+			if(strlen(filespec) + strlen(Pathtypes[i].path) + strlen(DIR_SEPARATOR_STR)
+				>= sizeof(filespec))
+			{
+				Warning(LOCATION, "Path '%s' too long to add '%s' safely.", filespec, Pathtypes[i].path);
+				continue;
+			}
 			strcat( filespec, Pathtypes[i].path );
-			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR ) {
+			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR )
+			{
 				strcat( filespec, DIR_SEPARATOR_STR );
 			}
 		}
 
 #if defined _WIN32
+		if(strlen(filespec) + 4 >= sizeof(filespec)) {
+			Warning(LOCATION, "Could not concatenate '*.vp' to filespec; path too long.");
+			continue;
+		}
 		strcat( filespec, "*.vp" );
 
 		int find_handle;
@@ -364,6 +381,10 @@ int cf_get_packfile_count(cf_root *root)
 			_findclose( find_handle );
 		}	
 #elif defined SCP_UNIX
+		if(strlen(filespec) + 10 >= sizeof(filespec)) {
+			Warning(LOCATION, "Could not concatenate '*.vp' to filespec; path too long.");
+			continue;
+		}
 		strcat( filespec, "*.[vV][pP]" );
 
 		glob_t globinfo;
@@ -964,7 +985,7 @@ void cf_free_secondary_filelist()
 //         size        - File size
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
-int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, int *size, int *offset, bool localize )
+int cf_find_file_location( char *filespec, int filespec_max, int pathtype, char *pack_filename, int *size, int *offset, bool localize )
 {
 	int i;
 	int cfs_slow_search = 0;
@@ -1036,7 +1057,7 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 		}
  
 		if (cfs_slow_search) {
-			cf_create_default_path_string( longname, search_order[i], filespec, localize );
+			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
 #if defined _WIN32
 			if(!Cmdline_safeloading)
@@ -1107,29 +1128,32 @@ int cf_find_file_location( char *filespec, int pathtype, char *pack_filename, in
 
 		if (localize) {
 			// create localized filespec
-			char temp[MAX_PATH_LEN];
+			char *temp = new char[strlen(filespec)+1];
 			strcpy(temp, filespec);
-			lcl_add_dir_to_path_with_filename(filespec);
-			
-			if ( !stricmp(filespec, f->name_ext) )	{
-				if ( size ) *size = f->size;
-				if ( offset ) *offset = f->pack_offset;
-				if ( pack_filename ) {
-					cf_root * r = cf_get_root(f->root_index);
+			if(lcl_add_dir_to_path_with_filename(filespec, filespec_max))
+			{
+				if ( !stricmp(filespec, f->name_ext) )	{
+					if ( size ) *size = f->size;
+					if ( offset ) *offset = f->pack_offset;
+					if ( pack_filename ) {
+						cf_root * r = cf_get_root(f->root_index);
 
-					strcpy( pack_filename, r->path );
-					if ( f->pack_offset < 1 )	{
-						strcat( pack_filename, Pathtypes[f->pathtype_index].path );
-						if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR ) {
-							strcat( pack_filename, DIR_SEPARATOR_STR );
+						strcpy( pack_filename, r->path );
+						if ( f->pack_offset < 1 )	{
+							strcat( pack_filename, Pathtypes[f->pathtype_index].path );
+							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR ) {
+								strcat( pack_filename, DIR_SEPARATOR_STR );
+							}
+							strcat( pack_filename, f->name_ext );
 						}
-						strcat( pack_filename, f->name_ext );
 					}
+					delete temp;
+					return 1;
 				}
-				return 1;
 			}
 			// restore original filespec
 			strcpy(filespec, temp);
+			delete temp;
 		}
 
 		// file either not localized or localized version not found
@@ -1245,7 +1269,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 	char filespec[MAX_PATH_LEN];
 
 #if defined _WIN32
-	cf_create_default_path_string( filespec, pathtype, filter );
+	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, filter );
 
 	_finddata_t find;
 	int find_handle;
@@ -1442,7 +1466,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 	// Search the default directories
 #if defined _WIN32
-	cf_create_default_path_string( filespec, pathtype, filter );
+	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, filter );
 	mprintf(("cf_get_file_list_preallocated looking for type=%d, filter=\"%s\"\n",
 				pathtype, filter));
 
@@ -1588,9 +1612,11 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 // If filename isn't null it will also tack the filename
 // on the end, creating a completely valid filename.
 // Input:   pathtype  - CF_TYPE_??
+//			path_max  - Maximum characters in the path
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
-void cf_create_default_path_string( char *path, int pathtype, char *filename, bool localize )
+//Returns 0 if the result would be too long (invalid result)
+int cf_create_default_path_string( char *path, uint path_max, int pathtype, char *filename, bool localize )
 {
 #ifdef SCP_UNIX
 	if ( filename && strpbrk(filename,"/")  ) {
@@ -1598,63 +1624,107 @@ void cf_create_default_path_string( char *path, int pathtype, char *filename, bo
 	if ( filename && strpbrk(filename,"/\\:")  ) {
 #endif
 		// Already has full path
+		//check it's not too long
+		if(strlen(filename) > path_max) {
+			return 0;
+		}
 		strcpy( path, filename );
 
 	} else {
 		cf_root *root = cf_get_root(0);
 
 		if (!root) {
+			if(strlen(filename) > path_max) {
+				return 0;
+			}
 			strcpy(path, filename);
-			return;
+			return 1;
 		}
 
 		Assert(CF_TYPE_SPECIFIED(pathtype));
 
 		// force a specific directory to search for player files
-		if ( (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
+		if ( (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) )
+		{
+			//check it's not too long
+			if(strlen(Pilot_file_path) > path_max) {
+				return 0;
+			}
 			strcpy(path, Pilot_file_path);
 		} else {
+			//check it's not too long
+			if(strlen(root->path) > path_max) {
+				return 0;
+			}
 			strcpy(path, root->path);
 		}
 
+		//check that path isn't too long
+		if(strlen(path) + strlen(Pathtypes[pathtype].path) + strlen(DIR_SEPARATOR_STR) > path_max) {
+			return 0;
+		}
 		strcat(path, Pathtypes[pathtype].path);
 
 		// Don't add slash for root directory
-		if (Pathtypes[pathtype].path[0] != '\0') {
-			if ( path[strlen(path)-1] != DIR_SEPARATOR_CHAR ) {
+		if (Pathtypes[pathtype].path[0] != '\0')
+		{
+			if ( path[strlen(path)-1] != DIR_SEPARATOR_CHAR )
+			{
+				if(strlen(path) + strlen(DIR_SEPARATOR_STR) > path_max) {
+					return 0;
+				}
+
 				strcat(path, DIR_SEPARATOR_STR);
 			}
 		}
 
 #ifdef INF_BUILD
 		// keep pilot files separated for an Inferno build since they aren't compatible
-		if ( pathtype == CF_TYPE_SINGLE_PLAYERS ) {
+		if ( pathtype == CF_TYPE_SINGLE_PLAYERS )
+		{
+			if(strlen(path) + strlen(inferno) + strlen(DIR_SEPARATOR_STR) > path_max) {
+				return 0;
+			}
 			strcat(path, "inferno");
 			strcat(path, DIR_SEPARATOR_STR);
 		}
 #endif
 
 		// add filename
-		if (filename) {
+		if (filename)
+		{
+			if(strlen(path) + strlen(filename) > path_max) {
+				return 0;
+			}
 			strcat(path, filename);
 
 			// localize filename
-			if (localize) {
+			if (localize)
+			{
 				// create copy of path
-				char temp_path[MAX_PATH_LEN];
+				char *temp_path = new char[path_max+1];
 				strcpy(temp_path, path);
 
 				// localize the path
-				lcl_add_dir_to_path_with_filename(path);
+				if(lcl_add_dir_to_path_with_filename(path, path_max))
+				{
 
-				// verify localized path
-				FILE *fp = fopen(path, "rb");
-				if (fp) {
-					fclose(fp);
-				} else {
-					strcpy(path, temp_path);
+					// verify localized path
+					FILE *fp = fopen(path, "rb");
+					if (fp)
+					{
+						fclose(fp);
+						delete temp_path;
+						return 1;
+					}
 				}
+
+				//If localization didn't work, go back to the original string
+				strcpy(path, temp_path);
+				delete temp_path;
 			}
 		}
 	}
+
+	return 1;
 }

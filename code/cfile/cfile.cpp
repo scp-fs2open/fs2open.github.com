@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-04-19 06:22:20 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2005-10-16 23:15:46 $
+ * $Author: wmcoolmon $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/04/19 06:22:20  taylor
+ * 8 months I've been meaning to put this in the Linux tree, me == moron
+ *
  * Revision 2.29  2005/04/05 05:53:14  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -709,7 +712,7 @@ int cf_delete( char *filename, int dir_type )
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	cf_create_default_path_string( longname, dir_type, filename );
+	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
 
 	FILE *fp = fopen(longname, "rb");
 	if (fp) {
@@ -740,7 +743,7 @@ int cf_access( char *filename, int dir_type, int mode )
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	cf_create_default_path_string( longname, dir_type, filename );
+	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
 
 	return access(longname,mode);
 }
@@ -753,7 +756,7 @@ int cf_exist( char *filename, int dir_type )
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	cf_create_default_path_string( longname, dir_type, filename );
+	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
 
 	FILE *fp = fopen(longname, "rb");
 	if (fp) {
@@ -772,7 +775,7 @@ void cf_attrib(char *filename, int set, int clear, int dir_type)
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	cf_create_default_path_string( longname, dir_type, filename );
+	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
 
 	FILE *fp = fopen(longname, "rb");
 	if (fp) {
@@ -793,8 +796,8 @@ int cf_rename(char *old_name, char *name, int dir_type)
 	char old_longname[_MAX_PATH];
 	char new_longname[_MAX_PATH];
 	
-	cf_create_default_path_string( old_longname, dir_type, old_name );
-	cf_create_default_path_string( new_longname, dir_type, name );
+	cf_create_default_path_string( old_longname, sizeof(old_longname)-1, dir_type, old_name );
+	cf_create_default_path_string( new_longname, sizeof(old_longname)-1, dir_type, name );
 
 	ret_code = rename(old_longname, new_longname );		
 	if(ret_code != 0){
@@ -904,7 +907,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 			// Create the directory if necessary
 			cf_create_directory( dir_type );
 
-			cf_create_default_path_string( longname, dir_type, file_path );
+			cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, file_path );
 		}
 		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
@@ -926,7 +929,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 	strcpy(copy_file_path, file_path);
 
 
-	if ( cf_find_file_location( copy_file_path, dir_type, longname, &size, &offset, localize ) )	{
+	if ( cf_find_file_location( copy_file_path, sizeof(copy_file_path)-1, dir_type, longname, &size, &offset, localize ) )	{
 
 		// Fount it, now create a cfile out of it
 		

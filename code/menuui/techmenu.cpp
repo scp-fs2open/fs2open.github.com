@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-09-20 04:37:01 $
+ * $Revision: 2.32 $
+ * $Date: 2005-10-16 23:15:47 $
  * $Author: wmcoolmon $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/09/20 04:37:01  wmcoolmon
+ * Fixed techroom crash if there are no entries to display; removed
+ * unneeded MULTIPLAYER_BETA_BUILD define that disallowed supercaps
+ *
  * Revision 2.30  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -1556,7 +1560,8 @@ void techroom_init()
 	*/
 
 	// unflag fullneb 
-	The_mission.flags &= ~MISSION_FLAG_FULLNEB;
+	//WMC - shouldn't need this
+	//The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 
 	// set up UI stuff
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-08-25 22:33:48 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-10-16 23:15:47 $
+ * $Author: wmcoolmon $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/08/25 22:33:48  taylor
+ * fix crash from oversized buffer data requests with OGGs
+ *
  * Revision 2.22  2005/08/25 06:32:42  taylor
  * fix Int3() when we are an OGG and need silence data
  *
@@ -1279,7 +1282,7 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 
 	int FileSize, FileOffset;
 
-	if ( !cf_find_file_location(pszFilename, CF_TYPE_ANY, fullpath, &FileSize, &FileOffset ))	{
+	if ( !cf_find_file_location(pszFilename, strlen(pszFilename), CF_TYPE_ANY, fullpath, &FileSize, &FileOffset ))	{
 		goto OPEN_ERROR;
 	}
 
