@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2005-10-16 23:15:46 $
+ * $Author: wmcoolmon $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/05/18 14:01:31  taylor
  * some basic Polish language support from the icculus.org version (Janusz Dziemidowicz)
  *
@@ -138,7 +142,7 @@ void lcl_set_language(int lang);
 void lcl_add_dir(char *current_path);
 
 // maybe add localized directory to full path with file name when opening a localized file
-void lcl_add_dir_to_path_with_filename(char *current_path);
+int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max);
 
 // open the externalization file for use during parsing (call before parsing a given file)
 void lcl_ext_open();

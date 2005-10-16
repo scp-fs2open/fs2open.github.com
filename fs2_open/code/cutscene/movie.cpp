@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-05-12 17:37:48 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-10-16 23:15:46 $
+ * $Author: wmcoolmon $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/05/12 17:37:48  taylor
+ * add an extra gr_flip() after gr_clear() to make sure the change is made active
+ *
  * Revision 2.25  2005/04/24 06:52:23  wmcoolmon
  * Enabled movies in windowed mode; if this causes problems for people, they can always use -dnoshowvid
  *
@@ -99,7 +102,7 @@ int movie_find(char *filename, char *out_name)
 		strcat( search_name, movie_ext[i] );
 
 		// try and find the file
-    	if ( cf_find_file_location(search_name, CF_TYPE_ANY, full_path, &size, &offset, 0) ) {
+    	if ( cf_find_file_location(search_name, sizeof(search_name)-1, CF_TYPE_ANY, full_path, &size, &offset, 0) ) {
 			// if it's not in a packfile then we're done
 			if (offset == 0) {
 				strcpy( out_name, full_path );

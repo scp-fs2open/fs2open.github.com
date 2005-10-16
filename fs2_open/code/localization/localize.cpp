@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-05-18 14:01:31 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-10-16 23:15:46 $
+ * $Author: wmcoolmon $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/05/18 14:01:31  taylor
+ * some basic Polish language support from the icculus.org version (Janusz Dziemidowicz)
+ *
  * Revision 2.15  2005/05/12 17:49:13  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -774,14 +777,14 @@ void lcl_add_dir(char *current_path)
 }
 
 // maybe add localized directory to full path with file name when opening a localized file
-void lcl_add_dir_to_path_with_filename(char *current_path)
+int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max)
 {
-	char temp[MAX_PATH_LEN];
-
 	// if the disk extension is 0 length, don't add enything
 	if (strlen(Lcl_languages[Lcl_current_lang].lang_ext) <= 0) {
-		return;
+		return 1;
 	}
+
+	char *temp = new char[path_max+1];
 
 	// find position of last slash and copy rest of filename (not counting slash) to temp
 	// mark end of current path with '\0', so strcat will work
@@ -794,12 +797,20 @@ void lcl_add_dir_to_path_with_filename(char *current_path)
 		last_slash[1] = '\0';
 	}
 
+	if(strlen(current_path) + strlen(Lcl_languages[Lcl_current_lang].lang_ext) + strlen(DIR_SEPARATOR_STR) + strlen(temp) > path_max) {
+		delete temp;
+		return 0;
+	}
+
 	// add extension
 	strcat(current_path, Lcl_languages[Lcl_current_lang].lang_ext);
 	strcat(current_path, DIR_SEPARATOR_STR);
 
 	// copy rest of filename from temp
 	strcat(current_path, temp);
+
+	delete temp;
+	return 1;
 }
 
 
