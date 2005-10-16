@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="code"
 	SccProjectName="&quot;$/Freespace2/code&quot;, UCACAAAA"
 	SccLocalPath=".">
@@ -26,7 +26,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="1"
-				AdditionalIncludeDirectories="..\..\code,c:\mssdk\include,c:\dxsdk\include,c:\speech_api\include,..\..\..\oggvorbis-sdk\include"
+				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include"
 				PreprocessorDefinitions="NDEBUG,WIN32,_WINDOWS"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
@@ -60,6 +60,12 @@
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
@@ -72,10 +78,11 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				OptimizeForProcessor="1"
-				AdditionalIncludeDirectories="..\..\code,c:\mssdk\include,c:\dxsdk\include,c:\speech_api\include,..\..\..\oggvorbis-sdk\include"
+				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include"
 				PreprocessorDefinitions="_DEBUG,WIN32,_WINDOWS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
+				BufferSecurityCheck="TRUE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile=".\Debug\Profile/code.pch"
 				AssemblerListingLocation=".\Debug\Profile/"
@@ -107,12 +114,32 @@
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="AI"
 			Filter="">
+			<File
+				RelativePath="..\..\code\ai\ai.cpp">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\ai.h">
+			</File>
 			<File
 				RelativePath="..\..\code\ai\AiBig.cpp">
 				<FileConfiguration
@@ -155,18 +182,6 @@
 			<File
 				RelativePath="..\..\code\ai\AiTurret.cpp">
 			</File>
-			<File
-				RelativePath="..\..\code\ai\ai.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\ai\ai.h">
-			</File>
 		</Filter>
 		<Filter
 			Name="Anim"
@@ -198,13 +213,13 @@
 			Name="Bmpman"
 			Filter="">
 			<File
+				RelativePath="..\..\code\bmpman\bm_internal.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Bmpman\BmpMan.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\Bmpman\BmpMan.h">
-			</File>
-			<File
-				RelativePath="..\..\code\bmpman\bm_internal.h">
 			</File>
 		</Filter>
 		<Filter
@@ -221,6 +236,12 @@
 			Name="CFile"
 			Filter="">
 			<File
+				RelativePath="..\..\code\CFile\cfile.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\CFile\cfile.h">
+			</File>
+			<File
 				RelativePath="..\..\code\CFile\CfileArchive.cpp">
 			</File>
 			<File
@@ -234,12 +255,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\CFile\CfileSystem.h">
-			</File>
-			<File
-				RelativePath="..\..\code\CFile\cfile.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\CFile\cfile.h">
 			</File>
 		</Filter>
 		<Filter
@@ -326,22 +341,10 @@
 				RelativePath="..\..\code\directx\strmiids.lib">
 			</File>
 			<File
-				RelativePath="..\..\code\DirectX\vD3dcaps.h">
-			</File>
-			<File
-				RelativePath="..\..\code\DirectX\vDinput.h">
-			</File>
-			<File
-				RelativePath="..\..\code\DirectX\vDinput.lib">
-			</File>
-			<File
-				RelativePath="..\..\code\DirectX\vDsound.h">
-			</File>
-			<File
-				RelativePath="..\..\code\DirectX\vDsound.lib">
-			</File>
-			<File
 				RelativePath="..\..\code\DirectX\vasync.h">
+			</File>
+			<File
+				RelativePath="..\..\code\DirectX\vD3dcaps.h">
 			</File>
 			<File
 				RelativePath="..\..\code\DirectX\vd3drmdef.h">
@@ -356,6 +359,12 @@
 				RelativePath="..\..\code\DirectX\vd3dvec.inl">
 			</File>
 			<File
+				RelativePath="..\..\code\DirectX\vDinput.h">
+			</File>
+			<File
+				RelativePath="..\..\code\DirectX\vDinput.lib">
+			</File>
+			<File
 				RelativePath="..\..\code\DirectX\vdplay.h">
 			</File>
 			<File
@@ -363,6 +372,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\DirectX\vdsetup.h">
+			</File>
+			<File
+				RelativePath="..\..\code\DirectX\vDsound.h">
+			</File>
+			<File
+				RelativePath="..\..\code\DirectX\vDsound.lib">
 			</File>
 			<File
 				RelativePath="..\..\code\DirectX\vdvp.h">
@@ -433,6 +448,15 @@
 				RelativePath="..\..\code\GlobalIncs\AlphaColors.h">
 			</File>
 			<File
+				RelativePath="..\..\code\GlobalIncs\crypt.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\GlobalIncs\crypt.h">
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\globals.h">
+			</File>
+			<File
 				RelativePath="..\..\code\GlobalIncs\LinkList.h">
 			</File>
 			<File
@@ -445,22 +469,13 @@
 				RelativePath="..\..\code\GlobalIncs\SystemVars.h">
 			</File>
 			<File
-				RelativePath="..\..\code\GlobalIncs\WinDebug.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\GlobalIncs\crypt.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\GlobalIncs\crypt.h">
-			</File>
-			<File
-				RelativePath="..\..\code\globalincs\globals.h">
-			</File>
-			<File
 				RelativePath="..\..\code\GlobalIncs\version.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\GlobalIncs\version.h">
+			</File>
+			<File
+				RelativePath="..\..\code\GlobalIncs\WinDebug.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -473,16 +488,16 @@
 				RelativePath="..\..\code\Graphics\2d.h">
 			</File>
 			<File
-				RelativePath="..\..\code\Graphics\GrInternal.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Graphics\TMAPPER.H">
-			</File>
-			<File
 				RelativePath="..\..\code\graphics\grbatch.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\graphics\grbatch.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Graphics\GrInternal.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Graphics\TMAPPER.H">
 			</File>
 			<Filter
 				Name="SoftwareGr"
@@ -510,10 +525,16 @@
 					RelativePath="..\..\code\Graphics\GrD3D.cpp">
 				</File>
 				<File
+					RelativePath="..\..\code\graphics\grd3dbatch.cpp">
+				</File>
+				<File
 					RelativePath="..\..\code\graphics\GrD3DBmpman.cpp">
 				</File>
 				<File
 					RelativePath="..\..\code\graphics\GrD3DCalls.cpp">
+				</File>
+				<File
+					RelativePath="..\..\code\graphics\grd3dlight.cpp">
 				</File>
 				<File
 					RelativePath="..\..\code\graphics\GrD3DParticle.cpp">
@@ -522,19 +543,13 @@
 					RelativePath="..\..\code\Graphics\GrD3DRender.cpp">
 				</File>
 				<File
+					RelativePath="..\..\code\graphics\GrD3Dsetup.cpp">
+				</File>
+				<File
 					RelativePath="..\..\code\graphics\GrD3DStateBlock.cpp">
 				</File>
 				<File
 					RelativePath="..\..\code\Graphics\GrD3DTexture.cpp">
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\GrD3Dsetup.cpp">
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3dbatch.cpp">
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3dlight.cpp">
 				</File>
 				<Filter
 					Name="Headers"
@@ -543,25 +558,25 @@
 						RelativePath="..\..\code\Graphics\GrD3D.h">
 					</File>
 					<File
+						RelativePath="..\..\code\graphics\grd3dbatch.h">
+					</File>
+					<File
 						RelativePath="..\..\code\graphics\GrD3DBmpman.h">
 					</File>
 					<File
 						RelativePath="..\..\code\Graphics\GrD3DInternal.h">
 					</File>
 					<File
-						RelativePath="..\..\code\graphics\GrD3DParticle.h">
-					</File>
-					<File
-						RelativePath="..\..\code\graphics\GrD3DStateBlock.h">
-					</File>
-					<File
-						RelativePath="..\..\code\graphics\grd3dbatch.h">
-					</File>
-					<File
 						RelativePath="..\..\code\graphics\grd3dlight.h">
 					</File>
 					<File
+						RelativePath="..\..\code\graphics\GrD3DParticle.h">
+					</File>
+					<File
 						RelativePath="..\..\code\graphics\grd3dsetup.h">
+					</File>
+					<File
+						RelativePath="..\..\code\graphics\GrD3DStateBlock.h">
 					</File>
 				</Filter>
 			</Filter>
@@ -624,22 +639,10 @@
 				RelativePath="..\..\code\Hud\HUD.h">
 			</File>
 			<File
-				RelativePath="..\..\code\hud\HUDNavigation.cpp">
+				RelativePath="..\..\code\Hud\HudArtillery.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\hud\HUDNavigation.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Hud\HUDObserver.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Hud\HUDObserver.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Hud\HUDWingmanStatus.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Hud\HUDWingmanStatus.h">
+				RelativePath="..\..\code\Hud\HudArtillery.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Hud\HUDbrackets.cpp">
@@ -681,6 +684,21 @@
 				RelativePath="..\..\code\Hud\HUDmessage.h">
 			</File>
 			<File
+				RelativePath="..\..\code\hud\HUDNavigation.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\hud\HUDNavigation.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Hud\HUDObserver.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Hud\HUDObserver.h">
+			</File>
+			<File
+				RelativePath="..\..\code\hud\hudparse.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\Hud\HUDreticle.cpp">
 			</File>
 			<File
@@ -711,13 +729,10 @@
 				RelativePath="..\..\code\Hud\HUDtargetbox.h">
 			</File>
 			<File
-				RelativePath="..\..\code\Hud\HudArtillery.cpp">
+				RelativePath="..\..\code\Hud\HUDWingmanStatus.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\Hud\HudArtillery.h">
-			</File>
-			<File
-				RelativePath="..\..\code\hud\hudparse.cpp">
+				RelativePath="..\..\code\Hud\HUDWingmanStatus.h">
 			</File>
 		</Filter>
 		<Filter
@@ -754,12 +769,6 @@
 				RelativePath="..\..\code\Io\Mouse.h">
 			</File>
 			<File
-				RelativePath="..\..\code\Io\Timer.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Io\Timer.h">
-			</File>
-			<File
 				RelativePath="..\..\code\Io\sw_error.hpp">
 			</File>
 			<File
@@ -770,6 +779,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Io\swff_lib.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Io\Timer.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Io\Timer.h">
 			</File>
 		</Filter>
 		<Filter
@@ -812,7 +827,13 @@
 			Name="Math"
 			Filter="">
 			<File
+				RelativePath="..\..\code\math\bitarray.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Math\Fix.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Math\fix.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Math\Floating.cpp">
@@ -827,6 +848,12 @@
 				RelativePath="..\..\code\Math\Fvi.h">
 			</File>
 			<File
+				RelativePath="..\..\code\Math\spline.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Math\spline.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Math\StaticRand.cpp">
 			</File>
 			<File
@@ -837,18 +864,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Math\VecMat.h">
-			</File>
-			<File
-				RelativePath="..\..\code\math\bitarray.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Math\fix.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Math\spline.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Math\spline.h">
 			</File>
 		</Filter>
 		<Filter
@@ -865,6 +880,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\MenuUI\Credits.h">
+			</File>
+			<File
+				RelativePath="..\..\code\MenuUI\fishtank.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\MenuUI\fishtank.h">
 			</File>
 			<File
 				RelativePath="..\..\code\MenuUI\MainHallMenu.cpp">
@@ -909,6 +930,12 @@
 				RelativePath="..\..\code\MenuUI\SnazzyUI.h">
 			</File>
 			<File
+				RelativePath="..\..\code\menuui\storybook.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\menuui\storybook.h">
+			</File>
+			<File
 				RelativePath="..\..\code\MenuUI\TechMenu.cpp">
 			</File>
 			<File
@@ -919,18 +946,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\MenuUI\TrainingMenu.h">
-			</File>
-			<File
-				RelativePath="..\..\code\MenuUI\fishtank.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\MenuUI\fishtank.h">
-			</File>
-			<File
-				RelativePath="..\..\code\menuui\storybook.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\menuui\storybook.h">
 			</File>
 		</Filter>
 		<Filter
@@ -1192,6 +1207,12 @@
 				RelativePath="..\..\code\Object\Object.h">
 			</File>
 			<File
+				RelativePath="..\..\code\object\objectdock.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\objectdock.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Object\ObjectSnd.cpp">
 			</File>
 			<File
@@ -1199,12 +1220,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Object\ObjectSort.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\object\objectdock.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\object\objectdock.h">
 			</File>
 		</Filter>
 		<Filter
@@ -1265,13 +1280,13 @@
 				RelativePath="..\..\code\Parse\PARSELO.CPP">
 			</File>
 			<File
+				RelativePath="..\..\code\Parse\parselo.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Parse\SEXP.CPP">
 			</File>
 			<File
 				RelativePath="..\..\code\Parse\SEXP.H">
-			</File>
-			<File
-				RelativePath="..\..\code\Parse\parselo.h">
 			</File>
 		</Filter>
 		<Filter
@@ -1368,6 +1383,9 @@
 				RelativePath="..\..\code\Render\3dClipper.cpp">
 			</File>
 			<File
+				RelativePath="..\..\code\Render\3ddraw.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\Render\3dInternal.h">
 			</File>
 			<File
@@ -1379,25 +1397,10 @@
 			<File
 				RelativePath="..\..\code\Render\3dSetup.cpp">
 			</File>
-			<File
-				RelativePath="..\..\code\Render\3ddraw.cpp">
-			</File>
 		</Filter>
 		<Filter
 			Name="Ship"
 			Filter="">
-			<File
-				RelativePath="..\..\code\ship\AWACS.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\ship\AWACS.h">
-			</File>
 			<File
 				RelativePath="..\..\code\ship\Afterburner.cpp">
 				<FileConfiguration
@@ -1409,6 +1412,18 @@
 			</File>
 			<File
 				RelativePath="..\..\code\ship\Afterburner.h">
+			</File>
+			<File
+				RelativePath="..\..\code\ship\AWACS.cpp">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ship\AWACS.h">
 			</File>
 			<File
 				RelativePath="..\..\code\ship\Shield.cpp">
@@ -1475,30 +1490,6 @@
 			Name="Sound"
 			Filter="">
 			<File
-				RelativePath="..\..\code\Sound\AudioStr.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Sound\AudioStr.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Sound\RBAudio.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Sound\RBAudio.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Sound\Sound.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Sound\Sound.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Sound\WinMIDI.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Sound\WinMIDI.h">
-			</File>
-			<File
 				RelativePath="..\..\code\sound\acm-openal.cpp">
 			</File>
 			<File
@@ -1509,6 +1500,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\sound\audiostr-openal.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Sound\AudioStr.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Sound\AudioStr.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Sound\channel.h">
@@ -1547,16 +1544,34 @@
 				RelativePath="..\..\code\Sound\midiseq.h">
 			</File>
 			<File
+				RelativePath="..\..\code\Sound\RBAudio.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Sound\RBAudio.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Sound\rtvoice.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\Sound\rtvoice.h">
 			</File>
 			<File
+				RelativePath="..\..\code\Sound\Sound.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Sound\Sound.h">
+			</File>
+			<File
 				RelativePath="..\..\code\sound\speech.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\sound\speech.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Sound\WinMIDI.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Sound\WinMIDI.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Sound\winmidi_base.cpp">
@@ -1629,6 +1644,9 @@
 				RelativePath="..\..\code\UI\GADGET.cpp">
 			</File>
 			<File
+				RelativePath="..\..\code\UI\icon.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\UI\INPUTBOX.cpp">
 			</File>
 			<File
@@ -1644,10 +1662,16 @@
 				RelativePath="..\..\code\UI\SCROLL.cpp">
 			</File>
 			<File
+				RelativePath="..\..\code\UI\slider.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\Ui\SLIDER2.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\UI\UI.H">
+			</File>
+			<File
+				RelativePath="..\..\code\UI\UiDefs.h">
 			</File>
 			<File
 				RelativePath="..\..\code\UI\UIDRAW.cpp">
@@ -1656,16 +1680,7 @@
 				RelativePath="..\..\code\UI\UIMOUSE.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\UI\UiDefs.h">
-			</File>
-			<File
 				RelativePath="..\..\code\UI\WINDOW.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\UI\icon.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\UI\slider.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -1830,49 +1845,16 @@
 			Name="Network"
 			Filter="">
 			<File
-				RelativePath="..\..\code\Network\Multi.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\Multi.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\MultiMsgs.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\MultiTeamSelect.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\MultiTeamSelect.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\MultiUI.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\MultiUI.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\MultiUtil.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\MultiUtil.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\PsNet.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\PsNet.h">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\Psnet2.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\Network\Psnet2.h">
-			</File>
-			<File
 				RelativePath="..\..\code\network\fs2ox.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\network\fs2ox.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\Multi.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\Multi.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Network\multi_campaign.cpp">
@@ -2007,7 +1989,40 @@
 				RelativePath="..\..\code\Network\multilag.h">
 			</File>
 			<File
+				RelativePath="..\..\code\Network\MultiMsgs.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\Network\multimsgs.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\MultiTeamSelect.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\MultiTeamSelect.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\MultiUI.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\MultiUI.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\MultiUtil.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\MultiUtil.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\PsNet.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\PsNet.h">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\Psnet2.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\Network\Psnet2.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Network\stand_gui.cpp">
@@ -2056,6 +2071,9 @@
 				RelativePath="..\..\code\fs2open_pxo\Client.h">
 			</File>
 			<File
+				RelativePath="..\..\code\fs2open_pxo\protocol.h">
+			</File>
+			<File
 				RelativePath="..\..\code\fs2open_pxo\TCP_Client.cpp">
 			</File>
 			<File
@@ -2063,9 +2081,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\fs2open_pxo\TCP_Socket.h">
-			</File>
-			<File
-				RelativePath="..\..\code\fs2open_pxo\protocol.h">
 			</File>
 			<File
 				RelativePath="..\..\code\fs2open_pxo\udpsocket.cpp">
@@ -2112,6 +2127,16 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Autopilot\Autopilot.h">
+			</File>
+		</Filter>
+		<Filter
+			Name="iff_defs"
+			Filter="">
+			<File
+				RelativePath="..\..\code\iff_defs\iff_defs.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\iff_defs\iff_defs.h">
 			</File>
 		</Filter>
 		<File

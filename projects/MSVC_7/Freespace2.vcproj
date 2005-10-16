@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="Freespace2"
 	SccProjectName="&quot;$/Freespace2&quot;, RHWBAAAA"
 	SccLocalPath=".">
@@ -21,7 +21,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				OptimizeForProcessor="1"
-				AdditionalIncludeDirectories="..\..\code,c:\mssdk\include,c:\dxsdk\include,c:\speech_api\include"
+				AdditionalIncludeDirectories="..\..\code"
 				PreprocessorDefinitions="NO_CD_CHECK,_DEBUG,WIN32,_WINDOWS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -37,20 +37,16 @@
 				CompileAs="0"
 				UndefinePreprocessorDefinitions="NDEBUG"/>
 			<Tool
-				Name="VCCustomBuildTool"
-				Description="Copying build..."
-				CommandLine="copy $(InputPath) &quot;$(FS2PATH)/fs2_open_d.exe&quot;
-"
-				Outputs="$(FS2PATH)/fs2_open_d.exe"/>
+				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libjpeg_d.lib code.lib"
 				OutputFile="Debug/fs2_open_d.exe"
-				LinkIncremental="1"
+				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="debug,c:\mssdk\lib,c:\dxsdk\lib,c:\speech_api\lib,..\..\..\oggvorbis-sdk\lib"
-				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
+				AdditionalLibraryDirectories="debug,..\..\oggvorbis\lib"
+				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/fs2_open_d.pdb"
 				GenerateMapFile="TRUE"
@@ -76,7 +72,13 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -94,7 +96,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="1"
-				AdditionalIncludeDirectories="..\..\code,c:\mssdk\include,c:\dxsdk\include,c:\speech_api\include"
+				AdditionalIncludeDirectories="..\..\code"
 				PreprocessorDefinitions="NDEBUG,WIN32,_WINDOWS"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
@@ -109,11 +111,7 @@
 				CompileAs="0"
 				UndefinePreprocessorDefinitions="_DEBUG"/>
 			<Tool
-				Name="VCCustomBuildTool"
-				Description="Copying build..."
-				CommandLine="copy $(InputPath) &quot;$(FS2PATH)/fs2_open_r.exe&quot;
-"
-				Outputs="$(FS2PATH)/fs2_open_r.exe"/>
+				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
@@ -121,8 +119,8 @@
 				OutputFile="Release/fs2_open_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="release,c:\mssdk\lib,c:\dxsdk\lib,c:\speech_api\lib,..\..\..\oggvorbis-sdk\lib"
-				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
+				AdditionalLibraryDirectories="release,..\..\oggvorbis\lib"
+				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Release/fs2_open_r.pdb"
 				GenerateMapFile="TRUE"
@@ -148,10 +146,21 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
+		<File
+			RelativePath="..\..\code\FREESPACE2\app_icon.ico">
+		</File>
 		<File
 			RelativePath="..\..\code\FREESPACE2\FreeSpace.cpp">
 		</File>
@@ -177,15 +186,6 @@
 			RelativePath="..\..\code\FREESPACE2\FreespaceResource.h">
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\LevelPaging.cpp">
-		</File>
-		<File
-			RelativePath="..\..\code\FREESPACE2\LevelPaging.h">
-		</File>
-		<File
-			RelativePath="..\..\code\FREESPACE2\app_icon.ico">
-		</File>
-		<File
 			RelativePath="..\..\code\freespace2\goal_com.bmp">
 		</File>
 		<File
@@ -202,6 +202,12 @@
 		</File>
 		<File
 			RelativePath="..\..\code\graphics\grstub.h">
+		</File>
+		<File
+			RelativePath="..\..\code\FREESPACE2\LevelPaging.cpp">
+		</File>
+		<File
+			RelativePath="..\..\code\FREESPACE2\LevelPaging.h">
 		</File>
 	</Files>
 	<Globals>
