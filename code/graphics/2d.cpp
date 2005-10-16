@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-10-15 20:53:29 $
+ * $Revision: 2.58 $
+ * $Date: 2005-10-16 11:20:43 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/10/15 20:53:29  taylor
+ * properly handle cases where bm_make_render_target() might have failed
+ *
  * Revision 2.56  2005/10/15 20:27:32  taylor
  * make some code a bit more readable
  * speed up index buffer generation just a tad (maybe 1/3rd)
@@ -1865,11 +1868,11 @@ bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2){
 }
 
 //finds the first occorence of a vertex within a poly list
-short find_first_index(poly_list *plist, int idx){
+int find_first_index(poly_list *plist, int idx){
 	vec3d norm = plist->norm[idx];
 	vertex vert = plist->vert[idx];
 	int missed = 0;
-	for(short i = 0; i<plist->n_verts; i++){
+	for(ushort i = 0; i<plist->n_verts; i++){
 		if(same_vert(&plist->vert[i+ missed], &vert, &plist->norm[i+missed], &norm)){
 			return i;
 		}
@@ -1879,8 +1882,8 @@ short find_first_index(poly_list *plist, int idx){
 //index_buffer[j] = find_first_index_vb(&list[i], j, &model_list);
 
 //given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-short find_first_index_vb(poly_list *plist, int idx, poly_list *v){
-	for(short i = 0; i<v->n_verts; i++){
+int find_first_index_vb(poly_list *plist, int idx, poly_list *v){
+	for(ushort i = 0; i<v->n_verts; i++){
 		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
 			return i;
 		}

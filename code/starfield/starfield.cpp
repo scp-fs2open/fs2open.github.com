@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-10-09 08:03:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.57 $
+ * $Date: 2005-10-16 11:20:43 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/10/09 08:03:21  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.55  2005/07/18 03:45:09  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -591,7 +594,7 @@ void perspective_bitmap_allocate_poly_list(int x, int y){
 // draw a perspective bitmap based on angles and radius
 #define MAX_PERSPECTIVE_DIVISIONS			5
 void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta );
-void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags, int env, short *index_buffer)
+void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags, int env, ushort *index_buffer)
 {
 	float p_phi = 10.0f;
 	float p_theta = 10.0f;
@@ -689,13 +692,13 @@ void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scal
 
 			//	memset(&index_buffer[s], 0, sizeof(short) * 6);
 
-				index_buffer[s++] = short((idx		* (div_y + 1)) + s_idx +		start);	//0
-				index_buffer[s++] = short(((idx+1)	* (div_y + 1)) + s_idx +		start);	//2
-				index_buffer[s++] = short(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
+				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx +		start);	//0
+				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx +		start);	//2
+				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
 
-				index_buffer[s++] = short((idx		* (div_y + 1)) + s_idx +		start);	//0
-				index_buffer[s++] = short(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
-				index_buffer[s++] = short((idx		* (div_y + 1)) + s_idx + 1 +	start);	//1		
+				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx +		start);	//0
+				index_buffer[s++] = ushort(((idx+1)	* (div_y + 1)) + s_idx + 1 +	start);	//3
+				index_buffer[s++] = ushort((idx		* (div_y + 1)) + s_idx + 1 +	start);	//1		
 
 			}
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.64 $
- * $Date: 2005-08-20 20:34:50 $
+ * $Revision: 2.65 $
+ * $Date: 2005-10-16 11:20:43 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/08/20 20:34:50  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 2.63  2005/07/18 03:44:00  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -683,8 +688,8 @@ typedef struct color {
 struct index_list{
 	index_list():index_buffer(NULL){};
 	~index_list(){if(index_buffer)vm_free(index_buffer);};
-	void allocate_index_buffer(int size){if(index_buffer)vm_free(index_buffer); index_buffer = (short*)vm_malloc(sizeof(short) * size);};
-	short* index_buffer;
+	void allocate_index_buffer(int size){if(index_buffer)vm_free(index_buffer); index_buffer = (ushort*)vm_malloc(sizeof(ushort) * size);};
+	ushort *index_buffer;
 };
 
 //this should be basicly just like it is in the VB
@@ -765,10 +770,10 @@ struct colored_vector{
 bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2);
 
 //finds the first occorence of a vertex within a poly list
-short find_first_index(poly_list *plist, int idx);
+int find_first_index(poly_list *plist, int idx);
 
 //given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-short find_first_index_vb(poly_list *plist, int idx, poly_list *v);
+int find_first_index_vb(poly_list *plist, int idx, poly_list *v);
 
 
 struct line_list{
@@ -1042,7 +1047,7 @@ typedef struct screen {
 	int	 (*gf_make_buffer)(poly_list*, uint flags);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_set_buffer)(int);
-	void (*gf_render_buffer)(int, int, short*);
+	void (*gf_render_buffer)(int, int, ushort*);
 	int	 (*gf_make_flat_buffer)(poly_list*);
 	int	 (*gf_make_line_buffer)(line_list*);
 	

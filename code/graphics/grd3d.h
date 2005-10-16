@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.19 $
- * $Date: 2005-07-13 02:50:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-10-16 11:20:43 $
+ * $Author: taylor $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/07/13 02:50:47  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.18  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -225,7 +229,7 @@ void gr_d3d_get_region(int front, int w, int h, ubyte *data);
 
 int gr_d3d_make_buffer(poly_list *list, uint flags);
 void gr_d3d_destroy_buffer(int idx);
-void gr_d3d_render_buffer(int start, int n_prim, short* index_list);
+void gr_d3d_render_buffer(int start, int n_prim, ushort* index_list);
 void gr_d3d_set_buffer(int idx);
 int gr_d3d_make_flat_buffer(poly_list *list);
 int gr_d3d_make_line_buffer(line_list *list);

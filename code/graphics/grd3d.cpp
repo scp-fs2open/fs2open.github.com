@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.87 $
- * $Date: 2005-08-23 17:06:28 $
- * $Author: matt $
+ * $Revision: 2.88 $
+ * $Date: 2005-10-16 11:20:43 $
+ * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2005/08/23 17:06:28  matt
+ * Changed rect_size_y - 1 to rect_size_y. Not really that important, but much more correct. I'll stop barraging cvs now :)
+ *
  * Revision 2.86  2005/08/23 16:57:28  matt
  * Fixed another screen save bug relating to having your window positioned offscreen. Still isn't great for when the window is offscreen top left
  *
@@ -2407,19 +2410,19 @@ IDirect3DIndexBuffer8 *global_index_buffer = NULL;
 int index_buffer_size = 0;
 
 
-void gr_d3d_render_buffer(int start, int n_prim, short* index_buffer)
+void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer)
 {
 	if(set_buffer == NULL)return;
 	if(index_buffer != NULL){
 		if(index_buffer_size < n_prim * 3 || !global_index_buffer){
 			if(global_index_buffer)global_index_buffer->Release();
-			GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(short), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
+			GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(ushort), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
 			index_buffer_size = n_prim * 3;
 		}
-		short* i_buffer;
+		ushort* i_buffer;
 	//	global_index_buffer->Lock(start, n_prim * 3 * sizeof(short), (BYTE **)&index_buffer, D3DLOCK_DISCARD);
 		global_index_buffer->Lock(0, 0, (BYTE **)&i_buffer, D3DLOCK_DISCARD);
-		memcpy(i_buffer, index_buffer, n_prim*3*sizeof(short));
+		memcpy(i_buffer, index_buffer, n_prim*3*sizeof(ushort));
 		global_index_buffer->Unlock();
 		GlobalD3DVars::lpD3DDevice->SetIndices(global_index_buffer, 0);
 	}

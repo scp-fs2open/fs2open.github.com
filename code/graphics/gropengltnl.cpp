@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.27 $
- * $Date: 2005-09-05 09:36:41 $
+ * $Revision: 1.28 $
+ * $Date: 2005-10-16 11:20:43 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2005/09/05 09:36:41  taylor
+ * merge of OSX tree
+ * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
+ * fix OGL version check, it would allow a required major version to be higher if the required minor version was lower than current
+ *
  * Revision 1.26  2005/08/29 02:23:04  phreak
  * Get rid of alpha blending when using the htl drawing fuctions for lines and spheres.
  * Right now, gr_opengl_draw_htl_line and gr_opengl_draw_htl_sphere are only used in fred, so
@@ -414,7 +419,7 @@ extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
-void gr_opengl_render_buffer(int start, int n_prim, short* index_buffer)
+void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 {
 #ifndef GL_NO_HTL
 
@@ -528,17 +533,17 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_buffer)
 			end_tmp = (GL_max_elements_indices - 1);
 			count_tmp = (end_tmp - start_tmp + 1);
 
-			glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+			glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
 
 			while (end_tmp < end) {
 				start_tmp += (GL_max_elements_indices - 1);
 				end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
 				count_tmp = (end_tmp - start_tmp + 1);
 
-				glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+				glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
 			}
 		} else {
-			glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start);
+			glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
 		}
 	} else {
 		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
@@ -574,17 +579,17 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_buffer)
 				end_tmp = (GL_max_elements_indices - 1);
 				count_tmp = (end_tmp - start_tmp + 1);
 
-				glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+				glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
 
 				while (end_tmp < end) {
 					start_tmp += (GL_max_elements_indices - 1);
 					end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
 					count_tmp = (end_tmp - start_tmp + 1);
 
-					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
 				}
 			} else {
-				glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start);
+				glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
 			}
 		} else {
 			glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
@@ -616,17 +621,17 @@ void gr_opengl_render_buffer(int start, int n_prim, short* index_buffer)
 					end_tmp = (GL_max_elements_indices - 1);
 					count_tmp = (end_tmp - start_tmp + 1);
 
-					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
 
 					while (end_tmp < end) {
 						start_tmp += (GL_max_elements_indices - 1);
 						end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
 						count_tmp = (end_tmp - start_tmp + 1);
 
-						glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start_tmp);
+						glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
 					}
 				} else {
-					glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, (ushort*)index_buffer + start);
+					glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
 				}
 			} else {
 				glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
