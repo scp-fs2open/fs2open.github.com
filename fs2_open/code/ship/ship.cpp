@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.247 $
- * $Date: 2005-10-14 07:22:24 $
+ * $Revision: 2.248 $
+ * $Date: 2005-10-16 18:54:12 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.247  2005/10/14 07:22:24  Goober5000
+ * removed an unneeded parameter and renamed some stuff
+ * --Goober5000
+ *
  * Revision 2.246  2005/10/14 07:06:59  Goober5000
  * stuff for WMC: fix sexp description and three warnings; plus add some
  * bulletproofing to name-specified ship_create
@@ -7406,7 +7410,9 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->ai_index = ai_get_slot(n);
 	Assert( shipp->ai_index >= 0 );
 
-	if ((ship_name == NULL) || (ship_name_lookup(ship_name) < 0) || (ship_find_exited_ship_by_name(ship_name) < 0)) {
+	// Goober5000 - if no ship name specified, or if specified ship already exists,
+	// or if specified ship has exited, use a default name
+	if ((ship_name == NULL) || (ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0)) {
 		sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
 	} else {
 		strcpy(shipp->ship_name, ship_name);
