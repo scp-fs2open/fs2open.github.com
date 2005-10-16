@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.174 $
- * $Date: 2005-10-14 09:29:56 $
+ * $Revision: 2.175 $
+ * $Date: 2005-10-16 00:32:30 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174  2005/10/14 09:29:56  Goober5000
+ * add weapon-create sexp
+ * --Goober5000
+ *
  * Revision 2.173  2005/10/14 07:06:58  Goober5000
  * stuff for WMC: fix sexp description and three warnings; plus add some
  * bulletproofing to name-specified ship_create
@@ -10038,8 +10042,16 @@ void sexp_ship_create(int n)
 	matrix new_ship_ori = vmd_identity_matrix;
 	bool change_angles = false;
 
-	new_ship_name = CTEXT(n);
-	// no need to skip if ship name already exists, because ship_create will take care of it
+	// get ship name - none means don't specify it
+	// if ship with this name already exists, ship_create will respond appropriately
+	if (!stricmp(CTEXT(n), SEXP_NONE_STRING))
+	{
+		new_ship_name = NULL;
+	}
+	else
+	{
+		new_ship_name = CTEXT(n);
+	}
 	
 	//Get ship class
 	n = CDR(n);
@@ -18895,7 +18907,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SHIP_CREATE, "ship-create\r\n"
 		"\tCreates a new ship\r\n"
 		"\tTakes 5 to 8 arguments...\r\n"
-		"\t1: Name of new ship\r\n"
+		"\t1: Name of new ship (use \"" SEXP_NONE_STRING \"" for a default name)\r\n"
 		"\t2: Class of new ship\r\n"
 		"\t3: X position\r\n"
 		"\t4: Y position\r\n"
@@ -18909,7 +18921,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_WEAPON_CREATE, "weapon-create\r\n"
 		"\tCreates a new weapon\r\n"
 		"\tTakes 5 to 10 arguments...\r\n"
-		"\t 1: Name of parent ship (or " SEXP_NONE_STRING " for no parent)\r\n"
+		"\t 1: Name of parent ship (or \"" SEXP_NONE_STRING \"" for no parent)\r\n"
 		"\t 2: Class of new weapon\r\n"
 		"\t 3: X position\r\n"
 		"\t 4: Y position\r\n"
