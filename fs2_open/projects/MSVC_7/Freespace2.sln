@@ -1,21 +1,27 @@
-Microsoft Visual Studio Solution File, Format Version 7.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Freespace2", "..\MSVC_7\Freespace2.vcproj", "{71E37997-891B-46BF-B20F-084292CC8591}"
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Freespace2", "Freespace2.vcproj", "{71E37997-891B-46BF-B20F-084292CC8591}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FF5667D2-3F94-4C79-B5EC-48A5E7DF4544} = {FF5667D2-3F94-4C79-B5EC-48A5E7DF4544}
+		{F533047F-0AAF-4CF8-AFE5-42A6EDD2592B} = {F533047F-0AAF-4CF8-AFE5-42A6EDD2592B}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "code", "..\MSVC_7\code.vcproj", "{FF5667D2-3F94-4C79-B5EC-48A5E7DF4544}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "code", "code.vcproj", "{FF5667D2-3F94-4C79-B5EC-48A5E7DF4544}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libjpeg", "..\MSVC_7\libjpeg.vcproj", "{F533047F-0AAF-4CF8-AFE5-42A6EDD2592B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libjpeg", "libjpeg.vcproj", "{F533047F-0AAF-4CF8-AFE5-42A6EDD2592B}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wxFRED2", "..\MSVC_7\wxFRED2.vcproj", "{4EA84CE3-9B0D-4C30-B7C4-470419DB3074}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wxFRED2", "wxFRED2.vcproj", "{4EA84CE3-9B0D-4C30-B7C4-470419DB3074}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FF5667D2-3F94-4C79-B5EC-48A5E7DF4544} = {FF5667D2-3F94-4C79-B5EC-48A5E7DF4544}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
-		ConfigName.0 = Debug
-		ConfigName.1 = Release
-	EndGlobalSection
-	GlobalSection(ProjectDependencies) = postSolution
-		{71E37997-891B-46BF-B20F-084292CC8591}.0 = {F533047F-0AAF-4CF8-AFE5-42A6EDD2592B}
-		{71E37997-891B-46BF-B20F-084292CC8591}.1 = {FF5667D2-3F94-4C79-B5EC-48A5E7DF4544}
-		{4EA84CE3-9B0D-4C30-B7C4-470419DB3074}.0 = {FF5667D2-3F94-4C79-B5EC-48A5E7DF4544}
+		Debug = Debug
+		Release = Release
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{71E37997-891B-46BF-B20F-084292CC8591}.Debug.ActiveCfg = Debug|Win32
