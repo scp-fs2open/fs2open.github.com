@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.248 $
- * $Date: 2005-10-16 18:54:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.249 $
+ * $Date: 2005-10-16 23:15:13 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.248  2005/10/16 18:54:12  Goober5000
+ * I need to bone up on my bulletproofing
+ * --Goober5000
+ *
  * Revision 2.247  2005/10/14 07:22:24  Goober5000
  * removed an unneeded parameter and renamed some stuff
  * --Goober5000
@@ -14729,6 +14733,7 @@ void ArmorType::ParseData()
 	do
 	{
 		stuff_string(buf, F_NAME, NULL);
+		adt.clear();
 		adt.DamageTypeIndex = damage_type_add(buf);
 
 		required_string("+Calculation:");
