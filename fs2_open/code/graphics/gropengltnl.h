@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.13 $
- * $Date: 2005-09-05 09:36:41 $
+ * $Revision: 1.14 $
+ * $Date: 2005-10-16 11:20:43 $
  * $Author: taylor $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/09/05 09:36:41  taylor
+ * merge of OSX tree
+ * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
+ * fix OGL version check, it would allow a required major version to be higher if the required minor version was lower than current
+ *
  * Revision 1.12  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -113,7 +118,7 @@ void opengl_init_vertex_buffers();
 int gr_opengl_make_buffer(poly_list *list, uint flags);
 void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
-void gr_opengl_render_buffer(int start, int n_prim, short* index_list);
+void gr_opengl_render_buffer(int start, int n_prim, ushort *index_list);
 void gr_opengl_render_to_env(int FACE);
 
 void gr_opengl_start_state_block();

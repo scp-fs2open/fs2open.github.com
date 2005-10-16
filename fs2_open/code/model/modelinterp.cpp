@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.127 $
- * $Date: 2005-10-15 20:28:26 $
+ * $Revision: 2.128 $
+ * $Date: 2005-10-16 11:20:43 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2005/10/15 20:28:26  taylor
+ * add error message in case the number of verts on a submodel is in excess of SHRT_MAX
+ *
  * Revision 2.126  2005/09/24 07:45:31  Goober5000
  * cleaned up some more thruster stuff; honestly, the thruster code is such a
  * mess that it should probably be reverted to the retail version
@@ -5410,7 +5413,7 @@ void recode_bsp(int offset, ubyte *bsp_data);
 void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer);
 poly_list model_list;
 void generate_vertex_buffers(bsp_info* model, polymodel * pm){
-	int i;
+	int i, first_index;
 	for(i =0; i<MAX_MODEL_TEXTURES; i++){
 		list[i].n_prim=0;
 		list[i].n_verts=0;
@@ -5451,8 +5454,8 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model_list.n_verts += list[i].n_verts;
 	}
 
-	if ( model_list.n_verts > SHRT_MAX ) {
-		Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, model_list.n_verts, SHRT_MAX);
+	if ( model_list.n_verts > USHRT_MAX ) {
+		Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, model_list.n_verts, USHRT_MAX);
 	}
 
 	// IBX stuff
@@ -5468,7 +5471,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 
 		// figure up how big this section of data is going to be
 		ibx_size += ibx_verts * sizeof(float) * 8; // first set of data (here)
-		ibx_size += ibx_verts * sizeof(short); // second set of data (next "for" statement)
+		ibx_size += ibx_verts * sizeof(ushort); // second set of data (next "for" statement)
 
 		// safety check for this section
 		// ibuffer_info.size should be greater than or equal to ibx_size at this point
@@ -5533,16 +5536,18 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		model->buffer[model->n_buffers].index_buffer.allocate_index_buffer(list[i].n_verts);
 		for(int j = 0; j < list[i].n_verts; j++){
 			if ( ibuffer_info.read != NULL ) {
-				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = cfread_short( ibuffer_info.read );
+				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = cfread_ushort( ibuffer_info.read );
 			} else {
-				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = find_first_index_vb(&list[i], j, &model_list);
-				Assert(model->buffer[model->n_buffers].index_buffer.index_buffer[j] != -1);
+				first_index = find_first_index_vb(&list[i], j, &model_list);
+				Assert(first_index != -1);
+				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = (ushort)first_index;
+
 				Assert(same_vert(&model_list.vert[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].vert[j], &model_list.norm[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].norm[j]));
 			//	Assert(find_first_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
 
 				// try to write out generated index buffer for later use
 				if ( ibuffer_info.write != NULL ) {
-					cfwrite_short( model->buffer[model->n_buffers].index_buffer.index_buffer[j], ibuffer_info.write );
+					cfwrite_ushort( model->buffer[model->n_buffers].index_buffer.index_buffer[j], ibuffer_info.write );
 				}
 			}
 		}
