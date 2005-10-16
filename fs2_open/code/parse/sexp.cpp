@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.175 $
- * $Date: 2005-10-16 00:32:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.176 $
+ * $Date: 2005-10-16 10:12:14 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.175  2005/10/16 00:32:30  Goober5000
+ * ship-create now generates a default name if you specify "<none>" for the ship name
+ * --Goober5000
+ *
  * Revision 2.174  2005/10/14 09:29:56  Goober5000
  * add weapon-create sexp
  * --Goober5000
@@ -18907,7 +18911,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SHIP_CREATE, "ship-create\r\n"
 		"\tCreates a new ship\r\n"
 		"\tTakes 5 to 8 arguments...\r\n"
-		"\t1: Name of new ship (use \"" SEXP_NONE_STRING \"" for a default name)\r\n"
+		"\t1: Name of new ship (use \"" SEXP_NONE_STRING "\" for a default name)\r\n"
 		"\t2: Class of new ship\r\n"
 		"\t3: X position\r\n"
 		"\t4: Y position\r\n"
@@ -18921,7 +18925,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_WEAPON_CREATE, "weapon-create\r\n"
 		"\tCreates a new weapon\r\n"
 		"\tTakes 5 to 10 arguments...\r\n"
-		"\t 1: Name of parent ship (or \"" SEXP_NONE_STRING \"" for no parent)\r\n"
+		"\t 1: Name of parent ship (or \"" SEXP_NONE_STRING "\" for no parent)\r\n"
 		"\t 2: Class of new weapon\r\n"
 		"\t 3: X position\r\n"
 		"\t 4: Y position\r\n"
@@ -19326,18 +19330,11 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tJump node to hide\r\n"
 	},
 
-
-
 	// taylor
-
 	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
-
 		"\tSets the current skybox model\r\n\r\n"
-
 		"Takes 1 argument...\r\n"
-
 		"\t1:\tModel filename (with .pof extension) to switch to\r\n\r\n"
-
 		"If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
 
 	},
