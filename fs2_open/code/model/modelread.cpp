@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.75 $
- * $Date: 2005-10-02 23:00:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.76 $
+ * $Date: 2005-10-17 01:51:01 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2005/10/02 23:00:39  Goober5000
+ * juxtaposition for clarity
+ * --Goober5000
+ *
  * Revision 2.74  2005/09/15 23:54:58  Kazan
  * comment out superfluous debug message
  *
@@ -1679,7 +1683,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 	fp = cfopen(filename,"rb");
 	if (!fp){
-		if(ferror == 1)Error( LOCATION, "Can't open file <%s>",filename);
+		if(ferror == 1)Error( LOCATION, "Can't open model file <%s>",filename);
+		else Warning(LOCATION, "Can't open model file <%s>",filename);
 		return -1;
 	}		
 

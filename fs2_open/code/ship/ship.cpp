@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.249 $
- * $Date: 2005-10-16 23:15:13 $
+ * $Revision: 2.250 $
+ * $Date: 2005-10-17 01:51:01 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.249  2005/10/16 23:15:13  wmcoolmon
+ * Small fix for amor code
+ *
  * Revision 2.248  2005/10/16 18:54:12  Goober5000
  * I need to bone up on my bulletproofing
  * --Goober5000
@@ -7306,12 +7309,12 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->modelnum = sip->modelnum;
 
 	if(strcmp(sip->shockwave_pof_file,""))
-		sip->shockwave_model = model_load(sip->shockwave_pof_file, 0, NULL);
+		sip->shockwave_model = model_load(sip->shockwave_pof_file, 0, NULL, 0);
 	else
 		sip->shockwave_model = -1;
 	
 	if(strcmp(sip->shockwave_name,""))
-		sip->shockwave_info_index = model_load(sip->shockwave_name, 0, NULL);
+		sip->shockwave_info_index = shockwave_add(sip->shockwave_name);
 	else
 		sip->shockwave_info_index = -1;
 
