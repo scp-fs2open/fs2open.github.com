@@ -11,81 +11,6 @@
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release/Profile"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="$(WXWIN)/include,$(WXWIN)/contrib/include,$(WXWIN)/lib/msw"
-				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG"
-				StringPooling="TRUE"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\Release/Profile/wxFRED2.pch"
-				AssemblerListingLocation=".\Release/Profile/"
-				ObjectFile=".\Release/Profile/"
-				ProgramDataBaseFileName=".\Release/Profile/"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="_DEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"
-				Description="Copying build..."
-				CommandLine="copy $(InputPath) &quot;$(FS2PATH)\fred2_open_wx_r.exe&quot;
-copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;
-"
-				Outputs="$(FS2PATH)\fred2_open_wx_r.exe;$(FS2PATH)\wxfred.xrc"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw26_xrc.lib wxmsw26_html.lib wxmsw26_adv.lib wxmsw26_core.lib wxbase26_xml.lib wxbase26.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib"
-				OutputFile="Release/fred2_open_wx_r.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
-				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile=".\Release/fred2_open_wx_r.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\Release/Profile/fred2_open_wx_r.map"
-				SubSystem="2"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Release/wxFRED2.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-				AdditionalIncludeDirectories="../../code/wxfred2/res;$(WXWIN)/include;$(WXWIN)/contrib/include"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\Debug"
 			IntermediateDirectory=".\Debug\Profile"
@@ -96,7 +21,7 @@ copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxf
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="$(WXWIN)/include,$(WXWIN)/contrib/include,$(WXWIN)/lib/mswd"
-				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
@@ -113,16 +38,15 @@ copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxf
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy $(InputPath) &quot;$(FS2PATH)/fred2_open_wx_d.exe&quot;
+				CommandLine="copy &quot;$(InputPath)&quot; &quot;$(FS2PATH)/fred2_open_wx_d.exe&quot;
 copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;
 "
 				Outputs="$(FS2PATH)/fred2_open_wx_d.exe;$(FS2PATH)\wxfred.xrc"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw26d_xrc.lib wxmsw26d_html.lib wxmsw26d_adv.lib wxmsw26d_core.lib wxbase26d_xml.lib wxbase26d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib"
 				OutputFile="Debug/fred2_open_wx_d.exe"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
 				IgnoreDefaultLibraryNames="libcd.lib,libcid.lib"
@@ -130,14 +54,16 @@ copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxf
 				ProgramDatabaseFile=".\Debug/fred2_open_wx_d.pdb"
 				GenerateMapFile="TRUE"
 				MapFileName=".\Debug\Profile/fred2_open_wx_d.map"
-				SubSystem="2"/>
+				SubSystem="2"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
 				PreprocessorDefinitions="_DEBUG"
 				MkTypLibCompatible="TRUE"
 				SuppressStartupBanner="TRUE"
 				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/wxFRED2.tlb"/>
+				TypeLibraryName=".\Debug/wxFRED2.tlb"
+				HeaderFileName=""/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -147,6 +73,83 @@ copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxf
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="../../code/wxfred2/res;$(WXWIN)/include;$(WXWIN)/contrib/include"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory=".\Release"
+			IntermediateDirectory=".\Release/Profile"
+			ConfigurationType="1"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="$(WXWIN)/include,$(WXWIN)/contrib/include,$(WXWIN)/lib/msw"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
+				StringPooling="TRUE"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="TRUE"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderFile=".\Release/Profile/wxFRED2.pch"
+				AssemblerListingLocation=".\Release/Profile/"
+				ObjectFile=".\Release/Profile/"
+				ProgramDataBaseFileName=".\Release/Profile/"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"
+				DebugInformationFormat="3"
+				CompileAs="0"
+				UndefinePreprocessorDefinitions="_DEBUG"/>
+			<Tool
+				Name="VCCustomBuildTool"
+				Description="Copying build..."
+				CommandLine="copy &quot;$(InputPath)&quot; &quot;$(FS2PATH)\fred2_open_wx_r.exe&quot;
+copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxfred.xrc&quot;
+"
+				Outputs="$(FS2PATH)\fred2_open_wx_r.exe;$(FS2PATH)\wxfred.xrc"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw26_xrc.lib wxmsw26_html.lib wxmsw26_adv.lib wxmsw26_core.lib wxbase26_xml.lib wxbase26.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib"
+				OutputFile="Release/fred2_open_wx_r.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="$(WXWIN)/lib,$(WXWIN)/lib/vc_lib"
+				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile=".\Release/fred2_open_wx_r.pdb"
+				GenerateMapFile="TRUE"
+				MapFileName=".\Release/Profile/fred2_open_wx_r.map"
+				SubSystem="2"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="TRUE"
+				SuppressStartupBanner="TRUE"
+				TargetEnvironment="1"
+				TypeLibraryName=".\Release/wxFRED2.tlb"
+				HeaderFileName=""/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
 				AdditionalIncludeDirectories="../../code/wxfred2/res;$(WXWIN)/include;$(WXWIN)/contrib/include"/>
 			<Tool
@@ -169,42 +172,302 @@ copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxf
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
 				RelativePath="..\..\code\wxfred2\aboutbox.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\asteroidfieldeditor.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\campaigneditor.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\commandbriefingeditor.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\debriefingeditor.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\fredframe.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\missionspecseditor.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\setglobalshipflagseditor.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\shieldsystemeditor.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\voiceactingmanagereditor.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\voicefilemanager.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\wxfred2.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\wxfred2\wxfred_xrc.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -326,7 +589,7 @@ copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxf
 		<File
 			RelativePath="..\..\code\wxfred2\wxfred.xrc">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Compiling XRC resources..."
@@ -335,7 +598,7 @@ copy &quot;$(ProjectDir)..\..\code\wxfred2\wxfred.xrc&quot; &quot;$(FS2PATH)\wxf
 					Outputs="$(InputDir)$(InputName)_xrc.inl"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Compiling XRC resources..."
