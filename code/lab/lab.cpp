@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-10-09 09:18:10 $
+ * $Revision: 1.20 $
+ * $Date: 2005-10-17 01:51:01 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/10/09 09:18:10  wmcoolmon
+ * Added warpin/warpout speed values to the lab
+ *
  * Revision 1.18  2005/10/09 00:43:08  wmcoolmon
  * Extendable modular tables (XMTs); added weapon dialogs to the Lab
  *
@@ -49,11 +52,11 @@ static GUIScreen *Lab_screen = NULL;
 
 static int Selected_weapon_index = -1;
 
-static int ShipSelectShipIndex = -1;
-static int ShipSelectModelNum = -1;
-static int ModelLOD = 0;
+static int LabViewerShipIndex = -1;
+static int LabViewerModelNum = -1;
+static int LabViewerModelLOD = 0;
 static int ModelFlags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
-void change_lod(Tree* caller);
+void change_ship_lod(Tree* caller);
 
 //*****************************Ship Options Window*******************************
 static Window* ShipOptWin = NULL;
@@ -176,8 +179,8 @@ void ship_flags_window(Button *caller)
 	y += soc[i++]->GetHeight() + 10;
 	soc[i] = (Checkbox*) cwp->AddChild(new Checkbox("IN TECH DATABASE MULTI", 0, y));
 
-	if(ShipSelectShipIndex != -1)
-		set_ship_flags_ship(&Ship_info[ShipSelectShipIndex]);
+	if(LabViewerShipIndex != -1)
+		set_ship_flags_ship(&Ship_info[LabViewerShipIndex]);
 
 	cwp->SetCloseFunction(zero_ship_flags_win);
 }
@@ -338,8 +341,8 @@ void ship_variables_window(Button *caller)
 	SVW_ADD_TEXT("Mission vel (z)");
 	*/
 
-	if(ShipSelectShipIndex != -1)
-		set_ship_variables_ship(&Ship_info[ShipSelectShipIndex]);
+	if(LabViewerShipIndex != -1)
+		set_ship_variables_ship(&Ship_info[LabViewerShipIndex]);
 
 	ShipVarWin->SetCloseFunction(zero_ship_var_win);
 }
@@ -479,7 +482,7 @@ void ships_make_window(Button* caller)
 			lod_name = "LOD ";
 			lod_name += buf;
 
-			cmp->AddItem(ctip, lod_name, j, false, change_lod);
+			cmp->AddItem(ctip, lod_name, j, false, change_ship_lod);
 		}
 	}
 
@@ -513,11 +516,11 @@ void make_another_window(Button* caller)
 
 	DescWin = (Window*)Lab_screen->Add(new Window("Description", gr_screen.max_w - gr_screen.max_w/3 - 50, gr_screen.max_h - gr_screen.max_h/6 - 50, gr_screen.max_w/3, gr_screen.max_h/6));
 	DescText = (Text*)DescWin->AddChild(new Text("Description Text", "No ship selected.", 0, 0));
-	if(ShipSelectShipIndex != -1)
+	if(LabViewerShipIndex != -1)
 	{
-		DescText->SetText(Ship_info[ShipSelectShipIndex].tech_desc);
-		DescWin->SetCaption(Ship_info[ShipSelectShipIndex].name);
-		//DescText->SetSaveStringPtr(&Ship_info[ShipSelectShipIndex].tech_desc, T_ST_ONENTER, T_ST_MALLOC);
+		DescText->SetText(Ship_info[LabViewerShipIndex].tech_desc);
+		DescWin->SetCaption(Ship_info[LabViewerShipIndex].name);
+		//DescText->SetSaveStringPtr(&Ship_info[LabViewerShipIndex].tech_desc, T_ST_ONENTER, T_ST_MALLOC);
 	}
 		
 	DescText->SetCloseFunction(zero_descwin);
@@ -548,7 +551,7 @@ void ship_zero_subsys(GUIObject* caller)
 
 void ship_change_subsys(Tree *caller)
 {
-	ship_info *sip = &Ship_info[ShipSelectShipIndex];
+	ship_info *sip = &Ship_info[LabViewerShipIndex];
 	model_subsystem *msp = &sip->subsystems[(int)(caller->GetSelectedItem()->GetData())];
 	
 	int i = 0;
@@ -585,47 +588,56 @@ void ship_subsys_window(Button* caller)
 	SSW_ADD_TEXT("Radius");
 	SSW_ADD_TEXT("Turn rate");
 	
-	if(ShipSelectShipIndex != -1)
-		ship_update_subsys_window(&Ship_info[ShipSelectShipIndex]);
+	if(LabViewerShipIndex != -1)
+		ship_update_subsys_window(&Ship_info[LabViewerShipIndex]);
 		
 	ShipSubsysWin->SetCloseFunction(ship_zero_subsys);
 }
 */
 //*****************************Ship display stuff*******************************
 
-void change_lod(Tree* caller)
+void labviewer_change_model(char* model_fname, int lod=0, int ship_index=-1)
 {
-	if(ShipSelectModelNum != -1)
+	if(LabViewerModelNum != -1)
 	{
-		model_page_out_textures(ShipSelectModelNum);
-		//model_unload(ShipSelectModelNum);
+		model_page_out_textures(LabViewerModelNum);
+		model_unload(LabViewerModelNum);
 	}
-	ShipSelectShipIndex = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
-	ModelLOD = (int)(caller->GetSelectedItem()->GetData());
-	ShipSelectModelNum = model_load(Ship_info[ShipSelectShipIndex].pof_file, 0, NULL);
+	LabViewerModelNum = model_load(model_fname, 0, NULL, 0);
+	LabViewerModelLOD = lod;
+	LabViewerShipIndex = ship_index;
+}
+
+void change_ship_lod(Tree* caller)
+{
+	int ship_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
+
+	labviewer_change_model(Ship_info[ship_index].pof_file
+		, caller->GetSelectedItem()->GetData()
+		, ship_index);
 
 	if(DescText != NULL && DescWin != NULL)
 	{
-		DescWin->SetCaption(Ship_info[ShipSelectShipIndex].name);
-		DescText->SetText(Ship_info[ShipSelectShipIndex].tech_desc);
-		//DescText->SetSaveStringPtr(&Ship_info[ShipSelectShipIndex].tech_desc, T_ST_ONENTER, T_ST_MALLOC);
+		DescWin->SetCaption(Ship_info[LabViewerShipIndex].name);
+		DescText->SetText(Ship_info[LabViewerShipIndex].tech_desc);
+		//DescText->SetSaveStringPtr(&Ship_info[LabViewerShipIndex].tech_desc, T_ST_ONENTER, T_ST_MALLOC);
 	}
 
 	if(ShipOptWin != NULL)
 	{
-		set_ship_flags_ship(&Ship_info[ShipSelectShipIndex]);
+		set_ship_flags_ship(&Ship_info[LabViewerShipIndex]);
 	}
 
 	if(ShipVarWin != NULL)
 	{
-		set_ship_variables_ship(&Ship_info[ShipSelectShipIndex]);
+		set_ship_variables_ship(&Ship_info[LabViewerShipIndex]);
 	}
 	
 	//WMC - disabled because I don't feel like making it work right now
 	/*
 	if(ShipSubsysWin != NULL)
 	{
-		ship_update_subsys_window(&Ship_info[ShipSelectShipIndex]);
+		ship_update_subsys_window(&Ship_info[LabViewerShipIndex]);
 	}
 	*/
 }
@@ -807,6 +819,11 @@ void change_weapon(Tree* caller)
 {
 	Selected_weapon_index = (int)(caller->GetSelectedItem()->GetData());
 
+	if(Weapon_info[Selected_weapon_index].render_type == WRT_POF)
+	{
+		labviewer_change_model(Weapon_info[Selected_weapon_index].pofbitmap_name);
+	}
+
 	if(WeapVarWin != NULL)
 	{
 		weap_set_variables(&Weapon_info[Selected_weapon_index]);
@@ -819,26 +836,42 @@ static int Trackball_mode = 1;
 static int Trackball_active = 0;
 void show_ship(float frametime)
 {
-	static float ShipSelectScreenShipRot = 0.0f;
-	static matrix ShipScreenOrient = IDENTITY_MATRIX;
+	static float LabViewerShipRot = 0.0f;
+	static matrix LabViewerOrient = IDENTITY_MATRIX;
 
-	if(ShipSelectModelNum == -1)
+	if(LabViewerModelNum == -1) {
+		int w, h;
+		gr_get_string_size(&w, &h, "Viewer off");
+		gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, "Viewer off", false);
 		return;
+	}
+
+	/*if(sip == NULL)
+	{
+		draw_model_icon(LabViewerModelNum, ModelFlags, .5f / 1.25f, 0, 0, gr_screen.clip_right, gr_screen.clip_bottom);
+		return;
+	}*/
 
 	float rev_rate;
 	angles rot_angles, view_angles;
 	int z;
-	ship_info *sip = &Ship_info[ShipSelectShipIndex];
+	ship_info *sip = NULL;
+	if(LabViewerShipIndex > -1) {
+		sip = &Ship_info[LabViewerShipIndex];
+	}
 
 	// get correct revolution rate
 
 	rev_rate = REVOLUTION_RATE;
-	z = sip->flags;
-	if (z & SIF_BIG_SHIP) {
-		rev_rate *= 1.7f;
-	}
-	if (z & SIF_HUGE_SHIP) {
-		rev_rate *= 3.0f;
+	if(sip != NULL)
+	{
+		z = sip->flags;
+		if (z & SIF_BIG_SHIP) {
+			rev_rate *= 1.7f;
+		}
+		if (z & SIF_HUGE_SHIP) {
+			rev_rate *= 3.0f;
+		}
 	}
 
 	// rotate the ship as much as required for this frame
@@ -849,27 +882,27 @@ void show_ship(float frametime)
 			mouse_get_delta(&dx, &dy);
 			if (dx || dy) {
 				vm_trackball(-dx, -dy, &mat1);
-				vm_matrix_x_matrix(&mat2, &mat1, &ShipScreenOrient);
-				ShipScreenOrient = mat2;
+				vm_matrix_x_matrix(&mat2, &mat1, &LabViewerOrient);
+				LabViewerOrient = mat2;
 			}
 	}
 	else
 	{
-		ShipSelectScreenShipRot += PI2 * frametime / rev_rate;
-		while (ShipSelectScreenShipRot > PI2){
-			ShipSelectScreenShipRot -= PI2;	
+		LabViewerShipRot += PI2 * frametime / rev_rate;
+		while (LabViewerShipRot > PI2){
+			LabViewerShipRot -= PI2;	
 		}
 
 		// setup stuff needed to render the ship
 		view_angles.p = -0.6f;
 		view_angles.b = 0.0f;
 		view_angles.h = 0.0f;
-		vm_angles_2_matrix(&ShipScreenOrient, &view_angles);
+		vm_angles_2_matrix(&LabViewerOrient, &view_angles);
 
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
-		rot_angles.h = ShipSelectScreenShipRot;
-		vm_rotate_matrix_by_angles(&ShipScreenOrient, &rot_angles);
+		rot_angles.h = LabViewerShipRot;
+		vm_rotate_matrix_by_angles(&LabViewerOrient, &rot_angles);
 	}
 
 //	gr_set_clip(Tech_ship_display_coords[gr_screen.res][0], Tech_ship_display_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);	
@@ -877,7 +910,34 @@ void show_ship(float frametime)
 
 	// render the ship
 	g3_start_frame(1);
-	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
+	if(sip != NULL) {
+		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
+	}
+	else
+	{
+		//FIND THE LARGEST RADIUS
+		polymodel *pm = model_get(LabViewerModelNum);
+		bsp_info *bs = NULL;	//tehe
+		float largest_radius = 0.0f;
+		for(int i = 0; i < pm->n_models; i++)
+		{
+			if(!pm->submodel[i].is_thruster)
+			{
+				bs = &pm->submodel[i];
+				if(bs->rad > largest_radius)
+					largest_radius = bs->rad;
+				break;
+			}
+		}
+
+		//MAKE A VECTOR FROM IT
+		vec3d closeup_pos;
+		closeup_pos.xyz.x = 0.0f;
+		closeup_pos.xyz.y = 0.0f;
+		closeup_pos.xyz.z = -(largest_radius);
+
+		g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, PI/2.0f);
+	}
 	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
@@ -891,9 +951,9 @@ void show_ship(float frametime)
 	// lighting for techroom
 
 	model_set_outline_color(255, 255, 255);
-	model_clear_instance(ShipSelectModelNum);
-	model_set_detail_level(ModelLOD);
-	model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, ModelFlags);
+	model_clear_instance(LabViewerModelNum);
+	model_set_detail_level(LabViewerModelLOD);
+	model_render(LabViewerModelNum, &LabViewerOrient, &vmd_zero_vector, ModelFlags);
 
 	if (!Cmdline_nohtl) 
 	{
@@ -923,9 +983,9 @@ void lab_init()
 	beam_pause_sounds();
 
 	//If we were viewing a ship, load 'er up
-	if(ShipSelectShipIndex != -1)
+	if(LabViewerShipIndex != -1)
 	{
-		ShipSelectModelNum = model_load(Ship_info[ShipSelectShipIndex].pof_file, 0, NULL);
+		LabViewerModelNum = model_load(Ship_info[LabViewerShipIndex].pof_file, 0, NULL);
 	}
 
 	//If you want things to stay as you left them, uncomment this and "delete Lab_screen"
@@ -1003,12 +1063,12 @@ void lab_close()
 {
 	delete Lab_screen;
 
-	if(ShipSelectModelNum != -1)
+	if(LabViewerModelNum != -1)
 	{
-		model_page_out_textures(ShipSelectModelNum);
-		//model_unload(ShipSelectModelNum);
+		model_page_out_textures(LabViewerModelNum);
+		//model_unload(LabViewerModelNum);
 	}
-	ShipSelectModelNum = -1;
+	LabViewerModelNum = -1;
 	beam_unpause_sounds();
 	//audiostream_unpause_all();
 	game_flush();
