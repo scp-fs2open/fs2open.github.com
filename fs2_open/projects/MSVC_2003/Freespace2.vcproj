@@ -49,7 +49,7 @@
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="Debug,..\..\oggvorbis\lib,..\..\dx8sdk\lib,c:\dxsdk\lib\"
-				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
+				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/fs2_open_d.pdb"
 				GenerateMapFile="TRUE"
