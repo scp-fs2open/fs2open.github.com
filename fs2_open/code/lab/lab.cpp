@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-10-17 01:51:01 $
+ * $Revision: 1.21 $
+ * $Date: 2005-10-17 01:54:15 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/10/17 01:51:01  wmcoolmon
+ * Weapon models now shown in lab
+ *
  * Revision 1.19  2005/10/09 09:18:10  wmcoolmon
  * Added warpin/warpout speed values to the lab
  *
@@ -938,7 +941,7 @@ void show_ship(float frametime)
 
 		g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, PI/2.0f);
 	}
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f, Max_draw_distance);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	// lighting for techroom
