@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-09 01:50:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2005-10-17 05:48:18 $
+ * $Author: taylor $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/10/09 01:50:04  wmcoolmon
+ * Bumped MAX_PAIRS to prevent objects flying through other objects
+ *
  * Revision 2.9  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -281,23 +284,36 @@
 
 
 
-#define MAX_PAIRS 10000	//	Bumped back to 10,000 by WMC
+//#define MAX_PAIRS 10000	//	Bumped back to 10,000 by WMC
 			//	Reduced from 10,000 to 6,000 by MK on 4/1/98.
 			//	Most I saw was 3400 in sm1-06a, the asteriod mission.  No other mission came close.
+#define MIN_PAIRS	2500	// start out with this many pairs
+#define PAIRS_BUMP	1000		// increase by this many avialable pairs when more are needed
 
 // the next 3 variables are used for pair statistics
 // also in weapon.cpp there is Weapons_created.
 int Pairs_created = 0;
 int Num_pairs = 0;
+int Num_pairs_allocated = 0;
 int Num_pairs_checked = 0;
 int pairs_not_created = 0;
 
 int Num_pairs_hwm = 0;
 
-obj_pair Obj_pairs[MAX_PAIRS];
+obj_pair *Obj_pairs = NULL;
 
 obj_pair pair_used_list;
 obj_pair pair_free_list;
+
+void obj_pairs_close()
+{
+	if (Obj_pairs != NULL) {
+		vm_free(Obj_pairs);
+		Obj_pairs = NULL;
+	}
+
+	Num_pairs_allocated = 0;
+}
 
 void obj_reset_pairs()
 {
@@ -307,15 +323,33 @@ void obj_reset_pairs()
 
 	pair_used_list.a = pair_used_list.b = NULL;		
 	pair_used_list.next = NULL;
-	pair_free_list.a = pair_free_list.b = NULL;		
-	pair_free_list.next = &Obj_pairs[0];
-	
+	pair_free_list.a = pair_free_list.b = NULL;
+
 	Num_pairs = 0;
-	for (i=0; i<MAX_PAIRS; i++ )	{
-		Obj_pairs[i].a = Obj_pairs[i].b = NULL;
+
+	if (Obj_pairs != NULL) {
+		vm_free(Obj_pairs);
+		Obj_pairs = NULL;
+	}
+
+	Obj_pairs = (obj_pair*) vm_malloc_q( sizeof(obj_pair) * MIN_PAIRS );
+
+	if ( Obj_pairs == NULL ) {
+		mprintf(("Unable to create space for collision pairs!!\n"));
+		return;
+	}
+
+	Num_pairs_allocated = MIN_PAIRS;
+
+	memset( Obj_pairs, 0, sizeof(obj_pair) * MIN_PAIRS );
+
+	for (i = 0; i < MIN_PAIRS; i++) {
 		Obj_pairs[i].next = &Obj_pairs[i+1];
 	}
-	Obj_pairs[MAX_PAIRS-1].next = NULL;
+
+	Obj_pairs[MIN_PAIRS-1].next = NULL;
+
+	pair_free_list.next = &Obj_pairs[0];
 }
 
 // returns true if we should reject object pair if one is child of other.
@@ -357,6 +391,8 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	int swapped = 0;	
 	
 	check_collision = NULL;
+
+	if ( Num_pairs_allocated == 0 ) return;		// don't have anything to add the pair too
 
 	if ( A==B ) return;		// Don't check collisions with yourself
 
@@ -582,6 +618,65 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		return;
 	}
 
+	Num_pairs++;
+/*	if (Num_pairs > Num_pairs_hwm) {
+		Num_pairs_hwm = Num_pairs;
+		//nprintf(("AI", "Num_pairs high water mark = %i\n", Num_pairs_hwm));
+	}
+*/
+
+	if ( Num_pairs >= (Num_pairs_allocated - 20) ) {
+		int i;
+
+		Assert( Obj_pairs != NULL );
+
+		int old_pair_count = Num_pairs_allocated;
+		obj_pair *old_pairs_ptr = Obj_pairs;
+
+		// determine where we need to update the "previous" ptrs to
+		int prev_free_mark = (pair_free_list.next - old_pairs_ptr);
+		int prev_used_mark = (pair_used_list.next - old_pairs_ptr);
+
+		Obj_pairs = (obj_pair*) vm_realloc_q( Obj_pairs, sizeof(obj_pair) * (Num_pairs_allocated + PAIRS_BUMP) );
+
+		// allow us to fail here and only if we don't do we setup the new pairs
+
+		if (Obj_pairs == NULL) {
+			// failed, just go back to the way we were and use only the pairs we have already
+			Obj_pairs = old_pairs_ptr;
+		} else {
+			Num_pairs_allocated += PAIRS_BUMP;
+
+			Assert( Obj_pairs != NULL );
+
+			// have to reset all of the "next" ptrs for the old set and handle the new set
+			for (i = 0; i < Num_pairs_allocated; i++) {
+				if (i >= old_pair_count) {
+					memset( &Obj_pairs[i], 0, sizeof(obj_pair) );
+					Obj_pairs[i].next = &Obj_pairs[i+1];
+				} else {
+					if (Obj_pairs[i].next != NULL) {
+						// the "next" ptr will end up going backwards for used pairs so we have
+						// to allow for that with this craziness...
+						int next_mark = (Obj_pairs[i].next - old_pairs_ptr);
+						Obj_pairs[i].next = &Obj_pairs[next_mark];
+					}
+
+					// catch that last NULL from the previously allocated set
+					if ( i == (old_pair_count-1) ) {
+						Obj_pairs[i].next = &Obj_pairs[i+1];
+					}
+				}
+			}
+
+			Obj_pairs[Num_pairs_allocated-1].next = NULL;
+
+			// reset the "previous" ptrs
+			pair_free_list.next = &Obj_pairs[prev_free_mark];
+			pair_used_list.next = &Obj_pairs[prev_used_mark];
+		}
+	}
+
 	// get a new obj_pair from the free list
 	obj_pair * new_pair = pair_free_list.next;
 	pair_free_list.next = new_pair->next;
@@ -608,13 +703,6 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		new_pair->next = pair_used_list.next;
 		pair_used_list.next = new_pair;
 	}
-	
-	Num_pairs++;
-/*	if (Num_pairs > Num_pairs_hwm) {
-		Num_pairs_hwm = Num_pairs;
-		//nprintf(("AI", "Num_pairs high water mark = %i\n", Num_pairs_hwm));
-	}
-*/
 
 	A->num_pairs++;
 	B->num_pairs++;

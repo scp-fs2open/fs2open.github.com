@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-10-11 08:30:37 $
+ * $Revision: 2.29 $
+ * $Date: 2005-10-17 05:48:18 $
  * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/10/11 08:30:37  taylor
+ * fix memory freakage from dynamic spawn weapon types
+ *
  * Revision 2.27  2005/09/15 05:19:25  taylor
  * gah, I still messed that up.  Add a NULL check and have register_malloc() actually handle the correct pointer
  *
@@ -1539,9 +1542,9 @@ void unregister_malloc(char *filename, int size, void *ptr)
 #endif
 
 #ifndef NDEBUG
-void *_vm_malloc( int size, char *filename, int line )
+void *_vm_malloc( int size, char *filename, int line, int quiet )
 #else
-void *_vm_malloc( int size )
+void *_vm_malloc( int size, int quiet )
 #endif
 {
 	void *ptr = NULL;
@@ -1553,7 +1556,11 @@ void *_vm_malloc( int size )
 	{
 		mprintf(( "Malloc failed!!!!!!!!!!!!!!!!!!!\n" ));
 
-			Error(LOCATION, "Malloc Failed!\n");
+		if (quiet) {
+			return NULL;
+		}
+
+		Error(LOCATION, "Malloc Failed!\n");
 	}
 #ifndef NDEBUG
 	TotalRam += size;
@@ -1571,7 +1578,11 @@ void *_vm_malloc( int size )
 	if ( ptr == NULL )	{
 		mprintf(( "HeapAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
 
-			Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
+		if (quiet) {
+			return NULL;
+		}
+
+		Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
 				"virtual memory size, or installing more physical RAM.\n");
 
 	}
@@ -1675,9 +1686,9 @@ void vm_free_all()
 }
 
 #ifndef NDEBUG
-void *_vm_realloc( void *ptr, int size, char *filename, int line )
+void *_vm_realloc( void *ptr, int size, char *filename, int line, int quiet )
 #else
-void *_vm_realloc( void *ptr, int size )
+void *_vm_realloc( void *ptr, int size, int quiet )
 #endif
 {
 	// if this is the first time it's used then we need to malloc it first
@@ -1704,6 +1715,11 @@ void *_vm_realloc( void *ptr, int size )
 	if (ret_ptr == NULL) {
 		mprintf(( "realloc failed!!!!!!!!!!!!!!!!!!!\n" ));
 
+		if (quiet && (size > 0) && (ptr != NULL)) {
+			// realloc doesn't touch the original ptr in the case of failure so we could still use it
+			return NULL;
+		}
+
 		Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
 			"virtual memory size, or installing more physical RAM.\n");
 	}
@@ -1723,6 +1739,11 @@ void *_vm_realloc( void *ptr, int size )
 
 	if (ret_ptr == NULL) {
 		mprintf(( "HeapReAlloc failed!!!!!!!!!!!!!!!!!!!\n" ));
+
+		if (quiet && (size > 0) && (ptr != NULL)) {
+			// realloc doesn't touch the original ptr in the case of failure so we could still use it
+			return NULL;
+		}
 
 		Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
 			"virtual memory size, or installing more physical RAM.\n");

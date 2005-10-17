@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.34 $
- * $Date: 2005-10-11 08:30:37 $
+ * $Revision: 2.35 $
+ * $Date: 2005-10-17 05:48:18 $
  * $Author: taylor $
- * $Revision: 2.34 $
- * $Date: 2005-10-11 08:30:37 $
+ * $Revision: 2.35 $
+ * $Date: 2005-10-17 05:48:18 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/10/11 08:30:37  taylor
+ * fix memory freakage from dynamic spawn weapon types
+ *
  * Revision 2.33  2005/09/06 05:32:12  taylor
  * use exit(EXIT_FAILURE) rather than abort() so that all atexit() calls will actually get executed
  *
@@ -952,7 +955,7 @@ void vm_free_all();
 	// Debug versions
 
 	// Allocates some RAM.
-	void *_vm_malloc( int size, char *filename=NULL, int line=-1 );
+	void *_vm_malloc( int size, char *filename = NULL, int line = -1, int quiet = 0 );
 
 	// allocates some RAM for a string
 	char *_vm_strdup( const char *ptr, char *filename, int line );
@@ -961,23 +964,27 @@ void vm_free_all();
 	char *_vm_strndup( const char *ptr, int size, char *filename, int line );
 
 	// Frees some RAM. 
-	void _vm_free( void *ptr, char *filename=NULL, int line=-1 );
+	void _vm_free( void *ptr, char *filename = NULL, int line= -1 );
 
 	// reallocates some RAM
-	void *_vm_realloc( void *ptr, int size, char *filename = NULL, int line=-1);
+	void *_vm_realloc( void *ptr, int size, char *filename = NULL, int line= -1, int quiet = 0 );
 
 	// Easy to use macros
-	#define vm_malloc(size) _vm_malloc((size),__FILE__,__LINE__)
+	#define vm_malloc(size) _vm_malloc((size),__FILE__,__LINE__,0)
 	#define vm_free(ptr) _vm_free((ptr),__FILE__,__LINE__)
 	#define vm_strdup(ptr) _vm_strdup((ptr),__FILE__,__LINE__)
 	#define vm_strndup(ptr, size) _vm_strndup((ptr),(size),__FILE__,__LINE__)
-	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size),__FILE__,__LINE__)
+	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size),__FILE__,__LINE__,0)
+
+	// quiet macro versions which don't report errors
+	#define vm_malloc_q(size) _vm_malloc((size),__FILE__,__LINE__,1)
+	#define vm_realloc_q(ptr, size) _vm_realloc((ptr),(size),__FILE__,__LINE__,1)
 	
 #else
 	// Release versions
 
 	// Allocates some RAM.
-	void *_vm_malloc( int size );
+	void *_vm_malloc( int size, int quiet = 0 );
 
 	// allocates some RAM for a string
 	char *_vm_strdup( const char *ptr );
@@ -989,15 +996,18 @@ void vm_free_all();
 	void _vm_free( void *ptr );
 
 	// reallocates some RAM
-	void *_vm_realloc( void *ptr, int size );
+	void *_vm_realloc( void *ptr, int size, int quiet = 0 );
 
 	// Easy to use macros
-	#define vm_malloc(size) _vm_malloc(size)
+	#define vm_malloc(size) _vm_malloc((size),0)
 	#define vm_free(ptr) _vm_free(ptr)
 	#define vm_strdup(ptr) _vm_strdup(ptr)
 	#define vm_strndup(ptr, size) _vm_strndup((ptr),(size))
-	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size))
+	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size),0)
 
+	// quiet macro versions which don't report errors
+	#define vm_malloc_q(size) _vm_malloc((size),1)
+	#define vm_realloc_q(ptr, size) _vm_realloc((ptr),(size),1)
 
 #endif
 

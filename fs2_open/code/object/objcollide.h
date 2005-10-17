@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2005-10-17 05:48:18 $
+ * $Author: taylor $
  *
  * Header file for all the Collide????.cpp modules
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:35:31  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -176,6 +180,7 @@ extern int collision_type;
 #define SUBMODEL_ROT_HIT		1
 void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_rot_hit);
 
+void obj_pairs_close();
 void obj_reset_pairs();
 void obj_add_pair( object *A, object *B, int check_time = -1, int add_to_end = 0 );
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.188 $
- * $Date: 2005-10-15 20:53:28 $
+ * $Revision: 2.189 $
+ * $Date: 2005-10-17 05:48:17 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.188  2005/10/15 20:53:28  taylor
+ * properly handle cases where bm_make_render_target() might have failed
+ *
  * Revision 2.187  2005/10/11 08:30:36  taylor
  * fix memory freakage from dynamic spawn weapon types
  *
@@ -8776,6 +8779,7 @@ void game_shutdown(void)
 #ifdef MULTI_USE_LAG
 	multi_lag_close();
 #endif
+	obj_pairs_close();		// free memory from object collision pairs
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
 #if !defined(PRESS_TOUR_BUILD) && !defined(PD_BUILD)
