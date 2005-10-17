@@ -1,12 +1,16 @@
 /*
  * $Logfile: $
- * $Revision: 1.14 $
- * $Date: 2005-09-05 09:38:19 $
- * $Author: taylor $
+ * $Revision: 1.15 $
+ * $Date: 2005-10-17 00:02:09 $
+ * $Author: wmcoolmon $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/09/05 09:38:19  taylor
+ * merge of OSX tree
+ * a lot of byte swaps were still missing, will hopefully be fully network compatible now
+ *
  * Revision 1.13  2005/08/26 17:05:13  taylor
  * fix strange static issue experienced with TBP briefing voices
  *
@@ -439,7 +443,7 @@ BOOL WaveFile::Open (char *pszFilename)
 
 	int FileSize, FileOffset;
 
-	if ( !cf_find_file_location(pszFilename, CF_TYPE_ANY, fullpath, &FileSize, &FileOffset ))	{
+	if ( !cf_find_file_location(pszFilename, strlen(pszFilename), CF_TYPE_ANY, fullpath, &FileSize, &FileOffset ))	{
 		goto OPEN_ERROR;
 	}
 
