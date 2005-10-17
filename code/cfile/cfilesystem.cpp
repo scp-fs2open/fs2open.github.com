@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-10-16 23:15:46 $
+ * $Revision: 2.28 $
+ * $Date: 2005-10-17 00:13:28 $
  * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/10/16 23:15:46  wmcoolmon
+ * Hardened cfile against array overflows
+ *
  * Revision 2.26  2005/05/12 17:49:10  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -1305,7 +1308,7 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 	}
 
 #elif defined SCP_UNIX
-	cf_create_default_path_string( filespec, pathtype, NULL );
+	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, NULL );
 
 	DIR *dirp;
 	struct dirent *dir;
@@ -1503,7 +1506,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	}
 
 #elif defined SCP_UNIX
-	cf_create_default_path_string( filespec, pathtype, NULL );
+	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, NULL );
 
 	DIR *dirp;
 	struct dirent *dir;

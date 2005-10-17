@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-10-16 23:15:46 $
+ * $Revision: 2.32 $
+ * $Date: 2005-10-17 00:13:28 $
  * $Author: wmcoolmon $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/10/16 23:15:46  wmcoolmon
+ * Hardened cfile against array overflows
+ *
  * Revision 2.30  2005/04/19 06:22:20  taylor
  * 8 months I've been meaning to put this in the Linux tree, me == moron
  *
@@ -544,7 +547,7 @@ int cfile_push_chdir(int type)
 	Assert(Cfile_stack_pos < CFILE_STACK_MAX);
 	strcpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory);
 
-	cf_create_default_path_string( dir, type, NULL );
+	cf_create_default_path_string( dir, sizeof(dir)-1, type, NULL );
 	_strlwr(dir);
 
 	Drive = strchr(dir, ':');
@@ -839,7 +842,7 @@ void cf_create_directory( int dir_type )
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string( longname, dir_tree[i], NULL );
+		cf_create_default_path_string( longname, sizeof(longname)-1, dir_tree[i], NULL );
 
 		if ( _mkdir(longname)==0 )	{
 			mprintf(( "CFILE: Created new directory '%s'\n", longname ));
