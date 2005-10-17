@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-10-17 00:02:46 $
+ * $Revision: 2.34 $
+ * $Date: 2005-10-17 02:09:29 $
  * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/10/17 00:02:46  wmcoolmon
+ * Change this back for MSVC.NET?
+ *
  * Revision 2.32  2005/09/20 02:48:37  taylor
  * fix a couple of things that Valgrind complained about
  *
@@ -1641,7 +1644,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 #ifdef _WIN32
 	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
 	// type problems (FIXME for a later date since I don't like this with future code) - taylor
-	ds_sound_device = alcOpenDevice( NOX("DirectSound") );
+	ds_sound_device = alcOpenDevice( (const ALubyte *) NOX("DirectSound") );
 #else
 	ds_sound_device = alcOpenDevice( NULL );
 #endif
