@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-09-20 02:48:37 $
- * $Author: taylor $
+ * $Revision: 2.33 $
+ * $Date: 2005-10-17 00:02:46 $
+ * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/09/20 02:48:37  taylor
+ * fix a couple of things that Valgrind complained about
+ *
  * Revision 2.31  2005/07/31 01:35:43  taylor
  * we only care about fmt and data tags so once we have them bail out, fixes some really bad seek errors in crappy wav files
  *
@@ -1638,7 +1641,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 #ifdef _WIN32
 	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
 	// type problems (FIXME for a later date since I don't like this with future code) - taylor
-	ds_sound_device = alcOpenDevice( (ALubyte *)NOX("DirectSound") );
+	ds_sound_device = alcOpenDevice( NOX("DirectSound") );
 #else
 	ds_sound_device = alcOpenDevice( NULL );
 #endif
