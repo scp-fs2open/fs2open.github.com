@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.76 $
- * $Date: 2005-10-17 01:51:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.77 $
+ * $Date: 2005-10-17 14:23:21 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2005/10/17 01:51:01  wmcoolmon
+ * Weapon models now shown in lab
+ *
  * Revision 2.75  2005/10/02 23:00:39  Goober5000
  * juxtaposition for clarity
  * --Goober5000
@@ -2705,53 +2708,42 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	char tmp_name[MAX_FILENAME_LEN];
 	memset(tmp_name, 0, MAX_FILENAME_LEN);
 	strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+	strlwr(tmp_name);
 
 	pm->transparent[i]=0;	//it's transparent
 	pm->ambient[i]=0;		//ambient glow
 	pm->is_ani[i]=0;		//animated textures
 	pm->num_frames[i]=1;	// number of frames - default 1 (no animation)
 
-	if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
-	{
+	if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap")) {
 		// Don't load textures for thruster animations or invisible textures
 		// or warp models!-Bobboau
 		pm->textures[i] = -1;
-	}
-	else
-	{
-		if(strstr(tmp_name, "-trans") || strstr(tmp_name, "shockwave"))
-		{
-			pm->transparent[i]=1;
+	} else {
+		if (strstr(tmp_name, "-trans") || strstr(tmp_name, "shockwave")) {
+			pm->transparent[i] = 1;
 		}
 
-		if(strstr(tmp_name, "-amb"))
-		{
-			pm->ambient[i]=1;
+		if (strstr(tmp_name, "-amb")) {
+			pm->ambient[i] = 1;
 		}
 
 		pm->textures[i] = bm_load_animation(tmp_name, &pm->num_frames[i], &pm->fps[i], 1, CF_TYPE_MAPS);
-		if (pm->textures[i]<0)	//if I couldn't find the PCX see if there is an ani-Bobboau
-		{	
-			// don't need to see this message
-			//mprintf(("For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+		if ( pm->textures[i] < 0 ) {	//if I couldn't find the PCX see if there is an ani-Bobboau
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
 
 			pm->textures[i] = bm_load( tmp_name );
 
-			if(pm->textures[i]<0)
-			{
+			if ( pm->textures[i] < 0 ) {
 				Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
 				pm->textures[i] = -1;
 				pm->is_ani[i] = 0;	//this isn't an animated texture after all
-				mprintf((" or %s.pcx.\n",tmp_name));
-			}
-			else
-			{
+				nprintf(("Maps", " or %s.pcx.\n",tmp_name));
+			} else {
 				pm->is_ani[i] = 0;
-				mprintf((" but I did find %s.\n", bm_get_filename(pm->textures[i])));
+				nprintf(("Maps", " but I did find %s.\n", bm_get_filename(pm->textures[i])));
 			}
-		}
-		else
-		{
+		} else {
 			pm->is_ani[i] = 1;
 		}
 	}
@@ -2769,24 +2761,24 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
+		strlwr(tmp_name);
 
 		pm->glow_textures[i] = bm_load_animation( tmp_name, &pm->glow_numframes[i], &pm->glow_fps[i], 1, CF_TYPE_MAPS );
-		if (pm->glow_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
+		if ( pm->glow_textures[i] < 0 ) {	//if I couldn't find the PCX see if there is an ani-Bobboau
 				
-			// don't need to see this message
-			//mprintf(("For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
 
 			pm->glow_is_ani[i] = 0;
 			pm->glow_textures[i] = bm_load( tmp_name );
 			pm->glow_numframes[i] = 1;
 
-			if(pm->glow_textures[i]<0){
+			if ( pm->glow_textures[i] < 0 ) {
 			//	Warning( LOCATION, "Couldn't open glow_texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
 				pm->glow_textures[i] = -1;
 				pm->glow_is_ani[i] = 0;	//this isn't an animated texture after all
-				mprintf((" or %s.pcx.\n", tmp_name));
-			}else{
-				mprintf((" but I did find %s.\n", bm_get_filename(pm->glow_textures[i])));
+				nprintf(("Maps", " or %s.pcx.\n", tmp_name));
+			} else {
+				nprintf(("Maps", " but I did find %s.\n", bm_get_filename(pm->glow_textures[i])));
 			}
 		} else {
 			pm->glow_is_ani[i] = 1;
@@ -2801,12 +2793,11 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
+		strlwr(tmp_name);
 
 		pm->specular_textures[i] = bm_load( tmp_name );
 		if (pm->specular_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
-			
-			// don't need to see this message
-			//mprintf(("For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
 		//	pm->specular_textures[i] = pm->textures[i];
 
 		}
