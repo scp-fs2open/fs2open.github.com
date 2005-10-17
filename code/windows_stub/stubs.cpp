@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.23 $
- * $Date: 2005-10-11 08:30:38 $
+ * $Revision: 2.24 $
+ * $Date: 2005-10-17 05:48:18 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/10/11 08:30:38  taylor
+ * fix memory freakage from dynamic spawn weapon types
+ *
  * Revision 2.22  2005/09/22 11:21:22  taylor
  * delay for fox OS X, SDL messes up for some reason and though I don't like this, even Apple does it
  *
@@ -525,14 +528,18 @@ int vm_init(int min_heap_size)
 }
 
 #ifndef NDEBUG
-void *_vm_malloc( int size, char *filename, int line )
+void *_vm_malloc( int size, char *filename, int line, int quiet )
 #else
-void *_vm_malloc( int size )
+void *_vm_malloc( int size, int quiet )
 #endif
 {
 	void *ptr = malloc( size );
 
 	if (!ptr)	{
+		if (quiet) {
+			return NULL;
+		}
+
 		Error(LOCATION, "Out of memory.");
 	}
 
@@ -556,9 +563,9 @@ void *_vm_malloc( int size )
 }
 
 #ifndef NDEBUG
-void *_vm_realloc( void *ptr, int size, char *filename, int line )
+void *_vm_realloc( void *ptr, int size, char *filename, int line, int quiet )
 #else
-void *_vm_realloc( void *ptr, int size )
+void *_vm_realloc( void *ptr, int size, int quiet )
 #endif
 {
 	if (ptr == NULL)
@@ -567,6 +574,11 @@ void *_vm_realloc( void *ptr, int size )
 	void *ret_ptr = realloc( ptr, size );
 
 	if (!ret_ptr)	{
+		if (quiet && (size > 0) && (ptr != NULL)) {
+			// realloc doesn't touch the original ptr in the case of failure so we could still use it
+			return NULL;
+		}
+
 		Error(LOCATION, "Out of memory.");
 	}
 
