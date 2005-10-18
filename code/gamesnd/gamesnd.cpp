@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-10-16 11:19:57 $
+ * $Revision: 2.26 $
+ * $Date: 2005-10-18 14:57:32 $
  * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/10/16 11:19:57  taylor
+ * (NULL != (int)0);  the size and type of NULL is platform and implementation dependant and should only be used for pointers!
+ * fix naughty bug that would set the flyby sound filenames to NULL
+ *
  * Revision 2.24  2005/09/25 07:07:34  Goober5000
  * partial commit; hang on
  * --Goober5000
@@ -468,6 +472,11 @@ void gamesnd_parse_soundstbl()
 	int		rval;
 	int		num_game_sounds = 0;
 	int		num_iface_sounds = 0;
+	int		i;
+	char	cstrtemp[NAME_LENGTH+3];
+	char	missing_species_names[MAX_SPECIES * (NAME_LENGTH+2)];
+	ubyte	missing_species[MAX_SPECIES];
+	int		sanity_check = 0;
 
 	// open localization
 	lcl_ext_open();
@@ -505,48 +514,43 @@ void gamesnd_parse_soundstbl()
 	// parse flyby sound section	
 	required_string("#Flyby Sounds Start");
 
-	char cstrtemp[NAME_LENGTH+3];
+	memset( &missing_species_names, 0, sizeof(missing_species_names) );
+	memset( &missing_species, 1, sizeof(missing_species) );	// assume they are all missing
 
-	while ( !check_for_string("#Flyby Sounds End") )
+	while ( !check_for_string("#Flyby Sounds End") && (sanity_check <= Num_species) )
 	{
-		for (int i = 0; i < Num_species; i++)
-		{
+		for (i = 0; i < Num_species; i++) {
 			species_info *species = &Species_info[i];
 
 			sprintf(cstrtemp, "$%s:", species->species_name);
-			if (check_for_string(cstrtemp))
-			{
+
+			if ( check_for_string(cstrtemp) ) {
 				gamesnd_parse_line(&species->snd_flyby_fighter, cstrtemp);
 				gamesnd_parse_line(&species->snd_flyby_bomber, cstrtemp);
+				missing_species[i] = 0;
+				sanity_check--;
+			} else {
+				sanity_check++;
 			}
 		}
+	}
+
+	// if we are missing any species then report it
+	for (i = 0; i < Num_species; i++) {
+		if ( missing_species[i] ) {
+			strcat(missing_species_names, Species_info[i].species_name);
+			strcat(missing_species_names, "\n");
+		}
+	}
+
+	if ( strlen(missing_species_names) ) {
+		Error( LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", missing_species_names );
 	}
 
 	required_string("#Flyby Sounds End");
 
 	// close localization
 	lcl_ext_close();
-
-
-	// check for any missing info
-	char errormsg[65 + (MAX_SPECIES * (NAME_LENGTH+1))];
-	bool species_missing = false;
-	strcpy(errormsg, "The following species are missing flyby sounds in sounds.tbl:\n");
-	for (int i = 0; i < Num_species; i++)
-	{
-		if (Species_info[i].snd_flyby_fighter.filename[0] == '\0')
-		{
-			strcat(errormsg, Species_info[i].species_name);
-			strcat(errormsg, "\n");
-			species_missing = true;
-		}
-	}
-	strcat(errormsg, "\0");
-
-	if (species_missing)
-	{
-		Error(LOCATION, errormsg);
-	}
 }
 
 
