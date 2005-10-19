@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2005/10/14 07:22:24  Goober5000
+ * removed an unneeded parameter and renamed some stuff
+ * --Goober5000
+ *
  * Revision 2.137  2005/10/11 08:30:37  taylor
  * fix memory freakage from dynamic spawn weapon types
  *
@@ -2720,9 +2724,11 @@ void translate_spawn_types()
 
 	for (i=0; i<Num_weapon_types; i++)
 	{
-		if (Weapon_info[i].spawn_type != -1)
+		if ( (Weapon_info[i].spawn_type > -1) && (Weapon_info[i].spawn_type < Num_spawn_types) )
 		{
 			int	spawn_type = Weapon_info[i].spawn_type;
+
+			Assert( spawn_type < Num_spawn_types );
 
 			for (j=0; j<Num_weapon_types; j++)
 			{
@@ -2733,6 +2739,8 @@ void translate_spawn_types()
 					{
 						Warning(LOCATION, "Weapon %s spawns itself.  Infinite recursion?\n", Weapon_info[i].name);
 					}
+
+					break;
 				}
 			}
 		}
@@ -2971,8 +2979,6 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 		strcpy(parse_error_text, "");
 	}
 
-	translate_spawn_types();
-
 	// close localization
 	lcl_ext_close();
 }
@@ -3161,6 +3167,9 @@ void weapon_init()
 			Weapons_inited = 1;
 		}
 	}
+
+	// translate all spawn type weapons to referrence the appropriate spawned weapon entry
+	translate_spawn_types();
 
 	weapon_level_init();
 }
