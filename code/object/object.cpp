@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-10-11 05:24:34 $
+ * $Revision: 2.47 $
+ * $Date: 2005-10-19 04:23:05 $
  * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/10/11 05:24:34  wmcoolmon
+ * Gliding
+ *
  * Revision 2.45  2005/10/10 17:21:08  taylor
  * remove NO_NETWORK
  *
@@ -1493,7 +1496,6 @@ void obj_move_call_physics(object *objp, float frametime)
 				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
 				objp->phys_info.rotvel = tmp;
 			} else {
-				if(objp == Player_obj && !(objp->phys_info.flags & PF_GLIDING))mprintf(("Not gliding"));
 				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
 			}
 
