@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.113 $
- * $Date: 2005-10-11 07:43:10 $
+ * $Revision: 2.114 $
+ * $Date: 2005-10-20 06:37:34 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2005/10/11 07:43:10  wmcoolmon
+ * Topdown updates
+ *
  * Revision 2.112  2005/10/11 05:24:34  wmcoolmon
  * Gliding
  *
@@ -1456,6 +1459,7 @@ typedef struct ship_info {
 	float		slide_decel;
 	float		warpin_speed;
 	float		warpout_speed;
+	float		warpout_plyr_speed;
 
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
 	uint		flags2;							//	See SIF2_xxxx - added by Goober5000
