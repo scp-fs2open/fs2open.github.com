@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.77 $
- * $Date: 2005-10-17 14:23:21 $
+ * $Revision: 2.78 $
+ * $Date: 2005-10-20 15:33:44 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2005/10/17 14:23:21  taylor
+ * lowercase filenames in model_load_textures()
+ * turn texture loading debug messages back on but under "Maps" so they are easy to turn off if not wanted
+ *
  * Revision 2.76  2005/10/17 01:51:01  wmcoolmon
  * Weapon models now shown in lab
  *
@@ -1685,9 +1689,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	//getcwd(pwd, 128);
 
 	fp = cfopen(filename,"rb");
-	if (!fp){
-		if(ferror == 1)Error( LOCATION, "Can't open model file <%s>",filename);
-		else Warning(LOCATION, "Can't open model file <%s>",filename);
+
+	if (!fp) {
+		if (ferror == 1) {
+			Error( LOCATION, "Can't open model file <%s>", filename );
+		} else {
+			Warning( LOCATION, "Can't open model file <%s>", filename );
+		}
+
 		return -1;
 	}		
 
@@ -1963,7 +1972,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				//mprintf(0,"Got chunk SOBJ, len=%d\n",len);
 
 				n = cfread_int(fp);
-				mprintf(("SOBJ IDed itself as %d", n));
+				//mprintf(("SOBJ IDed itself as %d", n));
 
 				Assert(n < pm->n_models );
 
@@ -2812,6 +2821,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
 {
 	int i, num, arc_idx;
+	polymodel *pm = NULL;
 
 	if ( !model_initted )
 		model_init();
@@ -2847,7 +2857,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	mprintf(( "Loading model '%s'\n", filename ));
 
-	polymodel * pm = (polymodel *)vm_malloc( sizeof(polymodel) );
+	pm = (polymodel *)vm_malloc( sizeof(polymodel) );
+	Assert( pm != NULL );
 	
 	Polygon_models[num] = pm;
 	
@@ -2871,6 +2882,12 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	pm->used_this_mission = 0;
 
 	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
+		if (pm != NULL) {
+			vm_free(pm);
+			pm = NULL;
+		}
+
+		Polygon_models[num] = NULL;
 		return -1;
 	}
 
