@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-10-10 17:21:09 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2005-10-20 06:38:18 $
+ * $Author: wmcoolmon $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/10/10 17:21:09  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.32  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -1284,47 +1287,60 @@ void read_player_controls(object *objp, float frametime)
 
 			memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
 
-			if ( (objp->type == OBJ_SHIP) && (!(Game_mode & GM_DEAD)) )	{
-
+			if ( (objp->type == OBJ_SHIP) && (!(Game_mode & GM_DEAD)) )
+			{
 				Warpout_time += flFrametime;
+				int target_warpout_speed = ship_get_warpout_speed(objp);
 
-				if ( Warpout_forced )	{
+				if ( Warpout_forced )
+				{
 
-					Ships[objp->instance].current_max_speed = TARGET_WARPOUT_SPEED*2.0f;
+					Ships[objp->instance].current_max_speed = target_warpout_speed*2.0f;
 
-					float diff = TARGET_WARPOUT_SPEED-objp->phys_info.fspeed;				
+					float diff = target_warpout_speed-objp->phys_info.fspeed;				
 					if ( diff < 0.0f ) diff = 0.0f;
 					
-					Player->ci.forward = ((TARGET_WARPOUT_SPEED+diff) / Ships[objp->instance].current_max_speed);
+					Player->ci.forward = ((target_warpout_speed+diff) / Ships[objp->instance].current_max_speed);
 
-				} else {
+				}
+				else
+				{
 					int warp_failed=0;
 					// check if warp ability has been disabled
-					if ( Ships[objp->instance].flags & ( SF_WARP_BROKEN|SF_WARP_NEVER ) ) {
+					if ( Ships[objp->instance].flags & ( SF_WARP_BROKEN|SF_WARP_NEVER ) )
+					{
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot warp out at this time.", 81));
 						warp_failed=1;
-					} else {
+					}
+					else
+					{
 						int	can_warp = 0;
-						if ( (!warp_failed) && (Ships[objp->instance].current_max_speed >= TARGET_WARPOUT_SPEED) )	{
+						if ( (!warp_failed) && (Ships[objp->instance].current_max_speed >= target_warpout_speed) )
+						{
 							can_warp = 1;
-						} else {
-							if (Ship_info[Ships[objp->instance].ship_info_index].max_overclocked_speed < TARGET_WARPOUT_SPEED) {
+						}
+						else
+						{
+							if (Ship_info[Ships[objp->instance].ship_info_index].max_overclocked_speed < target_warpout_speed) {
 								// Cannot go fast enough, so abort sequence.
 								warp_failed=1;
-								HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Unable to engage warp... ship must be able to reach %.1f km/s", 82), TARGET_WARPOUT_SPEED );
+								HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Unable to engage warp... ship must be able to reach %.1f km/s", 82), target_warpout_speed );
 								can_warp = 0;
-							} else {
-								Ships[objp->instance].current_max_speed = TARGET_WARPOUT_SPEED + 5.0f;
+							}
+							else
+							{
+								Ships[objp->instance].current_max_speed = target_warpout_speed + 5.0f;
 								//Ships[objp->instance].current_max_speed = Ship_info[Ships[objp->instance].ship_info_index].max_overclocked_speed;
 								can_warp = 1;
 							}
 						}
-						if (can_warp) {
-							float diff = TARGET_WARPOUT_SPEED-objp->phys_info.fspeed;				
+						if (can_warp)
+						{
+							float diff = target_warpout_speed-objp->phys_info.fspeed;				
 							if ( diff < 0.0f ) 
 								diff = 0.0f;
 						
-							Player->ci.forward = ((TARGET_WARPOUT_SPEED+diff) / Ships[objp->instance].current_max_speed);
+							Player->ci.forward = ((target_warpout_speed+diff) / Ships[objp->instance].current_max_speed);
 						}
 					}
 
@@ -1334,13 +1350,13 @@ void read_player_controls(object *objp, float frametime)
 					}
 				}
 			
-				if ( Player->control_mode == PCM_WARPOUT_STAGE1 )	{
-
+				if ( Player->control_mode == PCM_WARPOUT_STAGE1 )
+				{
 
 					// Wait at least 3 seconds before making sure warp speed is set.
 					if ( Warpout_time>MINIMUM_PLAYER_WARPOUT_TIME )	{
 						// If we are going around 5% of the target speed, progress to next stage
-						float diff = fl_abs(objp->phys_info.fspeed - TARGET_WARPOUT_SPEED )/TARGET_WARPOUT_SPEED;
+						float diff = fl_abs(objp->phys_info.fspeed - target_warpout_speed )/target_warpout_speed;
 						if ( diff < TARGET_WARPOUT_MATCH_PERCENT )	{
 							gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_DONE_STAGE1 );
 						}

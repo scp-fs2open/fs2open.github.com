@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:35:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-10-20 06:38:18 $
+ * $Author: wmcoolmon $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -422,7 +426,7 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient);
 
 //=============================================================
 //===================== PLAYER WARPOUT STUFF ==================
-#define TARGET_WARPOUT_SPEED 40.0f		// speed you need to be going to warpout
+#define PLAYER_WARPOUT_SPEED 40.0f		// speed you need to be going to warpout
 #define TARGET_WARPOUT_MATCH_PERCENT 0.05f	// how close to TARGET_WARPOUT_SPEED you need to be
 #define MINIMUM_PLAYER_WARPOUT_TIME	3.0f		// How long before you can press 'ESC' to abort warpout
 
