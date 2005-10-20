@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-10-10 17:21:10 $
- * $Author: taylor $
+ * $Revision: 2.52 $
+ * $Date: 2005-10-20 06:37:34 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/10/10 17:21:10  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.50  2005/10/09 09:13:29  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -860,11 +863,21 @@ float shipfx_calculate_warp_time(object *objp, int warp_type)
 	if(objp->type == OBJ_SHIP)
 	{
 		ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+
+		//Warpin defined
 		if(warp_type == WT_WARP_IN && sip->warpin_speed != 0.0f) {
 			return ship_get_length(&Ships[objp->instance])/sip->warpin_speed;
+		//Warpout defined
 		} else if(warp_type == WT_WARP_OUT && sip->warpout_speed != 0.0f) {
 			return ship_get_length(&Ships[objp->instance])/sip->warpout_speed;
+		//Player warpout defined
+		} else if(warp_type == WT_WARP_OUT && objp == Player_obj && sip->warpout_plyr_speed != 0.0f) {
+			return ship_get_length(&Ships[objp->instance])/sip->warpout_plyr_speed;
+		//Player warpout not defined
+		} else if(warp_type == WT_WARP_OUT && objp == Player_obj) {
+			return PLAYER_WARPOUT_SPEED;
 		}
+
 	}
 	// Find rad_percent from 0 to 1, 0 being smallest ship, 1 being largest
 	float rad_percent = (objp->radius-SMALLEST_RAD) / (LARGEST_RAD-SMALLEST_RAD);
