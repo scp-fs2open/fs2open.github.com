@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-04-05 05:53:15 $
+ * $Revision: 2.27 $
+ * $Date: 2005-10-20 17:50:00 $
  * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/04/05 05:53:15  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.25  2005/03/19 18:02:33  bobboau
  * added new graphic functions for state blocks
  * also added a class formanageing a new effect
@@ -452,7 +455,7 @@
 int Warp_model;
 int Knossos_warp_ani_used;
 
-#define WARPHOLE_GROW_TIME		(2.5f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
+#define WARPHOLE_GROW_TIME		(2.35f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
 #define MAX_FIREBALL_LOD						4
 

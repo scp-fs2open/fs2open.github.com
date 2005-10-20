@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.251 $
- * $Date: 2005-10-20 06:37:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.252 $
+ * $Date: 2005-10-20 17:50:02 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.251  2005/10/20 06:37:33  wmcoolmon
+ * Oops, guess I didn't commit this stuff
+ *
  * Revision 2.250  2005/10/17 01:51:01  wmcoolmon
  * Weapon models now shown in lab
  *
@@ -2166,7 +2169,7 @@ void init_ship_entry(int ship_info_index)
 
 	sip->warpin_speed = 0.0f;
 	sip->warpout_speed = 0.0f;
-	sip->warpout_plyr_speed = 0.0f;
+	sip->warpout_player_speed = 0.0f;
 	
 	sip->inner_rad = 0.0f;
 	sip->outer_rad = 0.0f;
@@ -2553,8 +2556,8 @@ int parse_ship(bool replace)
 
 	if(optional_string("$Player warpout speed:"))
 	{
-		stuff_float(&sip->warpout_plyr_speed);
-		if(sip->warpout_plyr_speed == 0.0f) {
+		stuff_float(&sip->warpout_player_speed);
+		if(sip->warpout_player_speed == 0.0f) {
 			Warning(LOCATION, "Player warp-out speed cannot be 0; value ignored.");
 		}
 	}

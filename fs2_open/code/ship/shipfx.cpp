@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-10-20 06:37:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.53 $
+ * $Date: 2005-10-20 17:50:03 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/10/20 06:37:34  wmcoolmon
+ * Oops, guess I didn't commit this stuff
+ *
  * Revision 2.51  2005/10/10 17:21:10  taylor
  * remove NO_NETWORK
  *
@@ -865,17 +868,17 @@ float shipfx_calculate_warp_time(object *objp, int warp_type)
 		ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
 
 		//Warpin defined
-		if(warp_type == WT_WARP_IN && sip->warpin_speed != 0.0f) {
-			return ship_get_length(&Ships[objp->instance])/sip->warpin_speed;
+		if ( (warp_type == WT_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
+			return ship_get_length(&Ships[objp->instance]) / sip->warpin_speed;
 		//Warpout defined
-		} else if(warp_type == WT_WARP_OUT && sip->warpout_speed != 0.0f) {
-			return ship_get_length(&Ships[objp->instance])/sip->warpout_speed;
+		} else if ( (warp_type == WT_WARP_OUT) && (sip->warpout_speed != 0.0f) ) {
+			return ship_get_length(&Ships[objp->instance]) / sip->warpout_speed;
 		//Player warpout defined
-		} else if(warp_type == WT_WARP_OUT && objp == Player_obj && sip->warpout_plyr_speed != 0.0f) {
-			return ship_get_length(&Ships[objp->instance])/sip->warpout_plyr_speed;
+		} else if ( (warp_type == WT_WARP_OUT) && (objp == Player_obj) && (sip->warpout_player_speed != 0.0f) ) {
+			return ship_get_length(&Ships[objp->instance]) / sip->warpout_player_speed;
 		//Player warpout not defined
-		} else if(warp_type == WT_WARP_OUT && objp == Player_obj) {
-			return PLAYER_WARPOUT_SPEED;
+		} else if ( (warp_type == WT_WARP_OUT) && (objp == Player_obj) ) {
+			return ship_get_length(&Ships[objp->instance]) / PLAYER_WARPOUT_SPEED;
 		}
 
 	}
