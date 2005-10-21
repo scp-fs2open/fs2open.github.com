@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-07-22 09:59:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2005-10-21 11:32:15 $
+ * $Author: taylor $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/07/22 09:59:30  Goober5000
+ * unhide null vector bug
+ * --Goober5000
+ *
  * Revision 2.23  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -1674,7 +1678,9 @@ float vm_vec_dot_to_point(vec3d *dir, vec3d *p1, vec3d *p2)
 	vec3d	tvec;
 
 	vm_vec_sub(&tvec, p2, p1);
-	vm_vec_normalize(&tvec);
+
+	if ( !IS_VEC_NULL(&tvec) )
+		vm_vec_normalize(&tvec);
 
 	return vm_vec_dot(dir, &tvec);
 
