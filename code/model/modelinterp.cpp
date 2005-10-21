@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.128 $
- * $Date: 2005-10-16 11:20:43 $
+ * $Revision: 2.129 $
+ * $Date: 2005-10-21 11:32:15 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2005/10/16 11:20:43  taylor
+ * use unsigned index buffers
+ *
  * Revision 2.127  2005/10/15 20:28:26  taylor
  * add error message in case the number of verts on a submodel is in excess of SHRT_MAX
  *
@@ -5177,8 +5180,10 @@ void parse_tmap(int offset, ubyte *bsp_data){
 			*N = *vp(p);
 
 	  	problem_count += check_values(N);
-		vm_vec_normalize(N);
-//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
+		if ( !IS_VEC_NULL(N) ) {
+			vm_vec_normalize(N);
+//			vm_vec_scale(N, global_scaleing_factor);//global scaleing
+		}
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_verts)+1];
 		N = &list[pof_tex].norm[(list[pof_tex].n_verts)+1];
@@ -5193,8 +5198,10 @@ void parse_tmap(int offset, ubyte *bsp_data){
 			*N = *vp(p);
 
 	 	problem_count += check_values(N);
-		vm_vec_normalize(N);
-//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
+		if ( !IS_VEC_NULL(N) ) {
+			vm_vec_normalize(N);
+//			vm_vec_scale(N, global_scaleing_factor);//global scaleing
+		}
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_verts)+2];
 		N = &list[pof_tex].norm[(list[pof_tex].n_verts)+2];
@@ -5209,8 +5216,10 @@ void parse_tmap(int offset, ubyte *bsp_data){
 			*N = *vp(p);
 
 		problem_count += check_values(N);
-		vm_vec_normalize(N);
-//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
+		if ( !IS_VEC_NULL(N) ) {
+			vm_vec_normalize(N);
+//			vm_vec_scale(N, global_scaleing_factor);//global scaleing
+		}
 
 		list[pof_tex].n_verts += 3;
 		list[pof_tex].n_prim++;
