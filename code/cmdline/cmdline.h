@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.76 $
- * $Date: 2005-10-12 05:43:40 $
- * $Author: taylor $
+ * $Revision: 2.77 $
+ * $Date: 2005-10-22 04:28:16 $
+ * $Author: unknownplayer $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2005/10/12 05:43:40  taylor
+ * temporary cmdline option, -y_bug_fix, to switch between original code (default) and previous attempt at the Y-bug fix
+ *
  * Revision 2.75  2005/09/30 09:47:06  taylor
  * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
  * add -cache_bitmaps and have bitmap caching between levels off by default
@@ -616,6 +619,8 @@ extern int Cmdline_wcsaga;
 extern int Cmdline_tbp;
 
 extern int Cmdline_ybugfix;  // Temporary... REMOVEME LATER!!
+
+extern int Cmdline_UseNewAI;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif

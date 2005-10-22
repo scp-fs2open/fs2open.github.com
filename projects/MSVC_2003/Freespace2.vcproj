@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="Freespace2"
+	RootNamespace="Freespace2"
 	SccProjectName="&quot;$/Freespace2&quot;, RHWBAAAA"
 	SccLocalPath=".">
 	<Platforms>
@@ -39,7 +40,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy &quot;$(InputPath)&quot; &quot;$(FS2PATH)/fs2_open_d.exe&quot;
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_d.exe&quot;
 "
 				Outputs="$(FS2PATH)/fs2_open_d.exe"/>
 			<Tool
@@ -118,8 +119,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy &quot;$(InputPath)&quot; &quot;$(FS2PATH)/fs2_open_r.exe&quot;
-"
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;$(FS2PATH)/fs2_open_r.exe&quot;"
 				Outputs="$(FS2PATH)/fs2_open_r.exe"/>
 			<Tool
 				Name="VCLinkerTool"
@@ -128,7 +128,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="Release,..\..\oggvorbis\lib,..\..\dx8sdk\lib,c:\dxsdk\lib"
-				IgnoreDefaultLibraryNames="libc.lib,libcd.lib"
+				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Release/fs2_open_r.pdb"
 				GenerateMapFile="TRUE"

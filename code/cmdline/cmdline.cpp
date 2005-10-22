@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.114 $
- * $Date: 2005-10-12 05:43:40 $
- * $Author: taylor $
+ * $Revision: 2.115 $
+ * $Date: 2005-10-22 04:28:16 $
+ * $Author: unknownplayer $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.114  2005/10/12 05:43:40  taylor
+ * temporary cmdline option, -y_bug_fix, to switch between original code (default) and previous attempt at the Y-bug fix
+ *
  * Revision 2.113  2005/09/30 09:47:06  taylor
  * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
  * add -cache_bitmaps and have bitmap caching between levels off by default
@@ -843,6 +846,7 @@ Flag exe_params[] =
 	{ "-loadonlyused",		"Loads only used weapons",					true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 	{ "-tga16",				"Convert 32-bit TGAs to 16-bit",			true,	0,					EASY_DEFAULT,		"Experimental",	"", },
+	{ "-UseNewAI",			"Always use the new AI's",					true,	0,					EASY_DEFAULT,		"Experimental", "", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pos", },
@@ -965,6 +969,8 @@ cmdline_parm no_fpscap("-no_fps_capping", NULL);
 cmdline_parm tbp("-tbp", NULL ); // TBP warp effects -Et1
 cmdline_parm wcsaga("-wcsaga", NULL);
 
+cmdline_parm UseNewAI("-UseNewAI", NULL);
+
 cmdline_parm ybugfix_arg("-y_bug_fix", NULL);  // Temporary... REMOVEME LATER!!
 int Cmdline_ybugfix = 0; // Temporary... REMOVEME LATER!!
 
@@ -1062,6 +1068,8 @@ int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
 
 int Cmdline_NoFPSCap; // Disable FPS capping - kazan
+
+int Cmdline_UseNewAI;	// Always use the new AI code (weapon select and stuff)
 
 //char FreeSpace_Directory[256]; // allievating a cfilesystem problem caused by fred -- Kazan
 
@@ -2051,6 +2059,11 @@ bool SetCmdlineParams()
 	// Temporary... REMOVEME LATER!!
 	if ( ybugfix_arg.found() ) {
 		Cmdline_ybugfix = 1;
+	}
+
+	if (UseNewAI.found())
+	{
+		Cmdline_UseNewAI = 1;
 	}
 
 #ifdef WIN32

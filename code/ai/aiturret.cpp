@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-10-14 07:22:23 $
- * $Author: Goober5000 $
+ * $Revision: 1.22 $
+ * $Date: 2005-10-22 04:28:16 $
+ * $Author: unknownplayer $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/10/14 07:22:23  Goober5000
+ * removed an unneeded parameter and renamed some stuff
+ * --Goober5000
+ *
  * Revision 1.20  2005/10/10 17:21:03  taylor
  * remove NO_NETWORK
  *
@@ -84,6 +88,7 @@
 #include "ai/aibig.h"
 #include "object/objectdock.h"
 #include "ai/aiinternal.h"	//Included last, so less includes are needed
+#include "cmdline/cmdline.h"
 
 // How close a turret has to be point at its target before it
 // can fire.  If the dot of the gun normal and the vector from gun
@@ -619,7 +624,7 @@ int get_nearest_enemy_objnum(int turret_parent_objnum, ship_subsys *turret_subsy
 	eeo.nearest_objnum = -1;
 
 	//don't fire anti capital ship turrets at bombs.
-	if ( !((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (big_flag)) )
+	if ( !(((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && (big_flag)) )
 	{
 		// Missile_obj_list
 		for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
@@ -1221,7 +1226,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 	}
 	//Not useful -WMC
-	else if (!(The_mission.flags & MISSION_FLAG_USE_NEW_AI))
+	else if (!((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)))
 	{
 		float wait = 1000.0f * frand_range(0.9f, 1.1f);
 		turret->turret_next_fire_stamp = timestamp((int) wait);
@@ -1250,7 +1255,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
     // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
     //  problems with non-homing swarm weapons -Et1
-	if( (The_mission.flags & MISSION_FLAG_USE_NEW_AI) && !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
+	if( ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
     {
 
         turret_fvec = tsi->turret->turret_last_fire_direction;
