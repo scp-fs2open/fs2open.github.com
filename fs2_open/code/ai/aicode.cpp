@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.37 $
- * $Date: 2005-10-10 17:21:02 $
- * $Author: taylor $
+ * $Revision: 1.38 $
+ * $Date: 2005-10-22 04:28:16 $
+ * $Author: unknownplayer $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2005/10/10 17:21:02  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.36  2005/10/09 09:13:28  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -982,6 +985,7 @@
 #include "network/multiutil.h"
 //#include "network/multi_team.h"
 #include "network/multi.h"
+#include "cmdline/cmdline.h"
 
 #include "autopilot/autopilot.h"
 
@@ -3350,7 +3354,7 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 	}
 
 	// Goober5000 - otherwise the timestamp would never expire
-	if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (aip->target_objnum >= 0))
+	if ( ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && (aip->target_objnum >= 0))
 	{
 		ai_set_goal_maybe_abort_dock(attacker, aip);
 		aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
@@ -6212,7 +6216,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	}
 
 	//not using the new AI, use the old version of this function instead.
-	if (!(The_mission.flags & MISSION_FLAG_USE_NEW_AI))
+	if (!( (The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1) ))
 	{
 		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
@@ -6700,7 +6704,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	}
 #endif
 
-	if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (priority1 == 0))
+	if (((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && (priority1 == 0))
 		ignore_mask |= WIF_HOMING;
 
 	//	Stuff weapon_bank_list with bank index of available weapons.
@@ -6721,7 +6725,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		}
 	}
 
-	if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (priority2 == 0))
+	if (((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && (priority2 == 0))
 		ignore_mask |= WIF_HOMING;
 
 	//	If didn't find anything above, then pick any secondary weapon.
@@ -6753,7 +6757,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
 	// phreak -- rapid dumbfire? let it rip!
-	if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
+	if (((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
 	{	
 		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
 	}
@@ -8490,7 +8494,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		if (is_big_ship)
 		{
 			priority1 = WIF_HUGE;
-			priority2 = (The_mission.flags & MISSION_FLAG_USE_NEW_AI) ? WIF_BOMBER_PLUS : WIF_HOMING;
+			priority2 = ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) ? WIF_BOMBER_PLUS : WIF_HOMING;
 		} 
 		else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) )
 		{
@@ -8502,7 +8506,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			priority1 = WIF_PUNCTURE;
 			priority2 = WIF_HOMING;
 		}
-		else if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
+		else if (((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
 		{	
 			priority1 = 0;								
 			priority2 = 0;
@@ -12709,7 +12713,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		} 
 		else 
 		{
-			if (The_mission.flags & MISSION_FLAG_USE_NEW_AI)
+			if ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1))
 				delay = Shield_manage_delays[NUM_SKILL_LEVELS];	// unknownplayer - treat as if Skill_level is expert
 			else
 				delay = Shield_manage_delays[NUM_SKILL_LEVELS/2];

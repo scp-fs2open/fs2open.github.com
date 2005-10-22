@@ -433,7 +433,7 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 
 		switch ( c_type ) {
 			case BM_TYPE_PCX:
-				mprintf(("MEMLEAK DEBUG: lock pcx\n"));
+				// mprintf(("MEMLEAK DEBUG: lock pcx\n"));		// Someone care to say what this means? - UnknownPlayer
 		  		bm_lock_pcx( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 

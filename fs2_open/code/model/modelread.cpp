@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.78 $
- * $Date: 2005-10-20 15:33:44 $
- * $Author: taylor $
+ * $Revision: 2.79 $
+ * $Date: 2005-10-22 04:28:16 $
+ * $Author: unknownplayer $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2005/10/20 15:33:44  taylor
+ * minor readability fix
+ * plug a memmory leak and possible Polygon_models[] madness if a POF can't be found or is otherwise invalid
+ *
  * Revision 2.77  2005/10/17 14:23:21  taylor
  * lowercase filenames in model_load_textures()
  * turn texture loading debug messages back on but under "Maps" so they are easy to turn off if not wanted
@@ -1692,11 +1696,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 	if (!fp) {
 		if (ferror == 1) {
-			Error( LOCATION, "Can't open model file <%s>", filename );
-		} else {
-			Warning( LOCATION, "Can't open model file <%s>", filename );
+			Error( LOCATION, "Can't open model file <%s>",filename);
 		}
-
+		else {
+			Warning(LOCATION, "Can't open model file <%s>",filename);
+		}
 		return -1;
 	}		
 
