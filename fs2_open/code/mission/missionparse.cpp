@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.119 $
- * $Date: 2005-10-10 17:21:05 $
- * $Author: taylor $
+ * $Revision: 2.120 $
+ * $Date: 2005-10-22 22:25:23 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.118  2005/10/09 08:03:20  wmcoolmon
  * New SEXP stuff
  *
@@ -1229,6 +1232,11 @@ void parse_mission_info(mission *pm)
 		stuff_int(&pm->flags);
 	}
 
+	// Goober5000/UnknownPlayer - hack activate new AI stuff (REMOVEME maybe)
+	extern int Cmdline_UseNewAI;
+	if (Cmdline_UseNewAI)
+		pm->flags |= MISSION_FLAG_USE_NEW_AI;
+
 	// nebula mission stuff
 	Neb2_awacs = -1.0f;
 	if(optional_string("+NebAwacs:")){
@@ -1266,9 +1274,9 @@ void parse_mission_info(mission *pm)
 		stuff_int(&temp);
 
 		if (temp)
-			The_mission.flags |= MISSION_FLAG_RED_ALERT;
+			pm->flags |= MISSION_FLAG_RED_ALERT;
 		else
-			The_mission.flags &= ~MISSION_FLAG_RED_ALERT;
+			pm->flags &= ~MISSION_FLAG_RED_ALERT;
 	} 
 	red_alert_invalidate_timestamp();
 
@@ -1277,9 +1285,9 @@ void parse_mission_info(mission *pm)
 		stuff_int(&temp);
 
 		if (temp)
-			The_mission.flags |= MISSION_FLAG_SCRAMBLE;
+			pm->flags |= MISSION_FLAG_SCRAMBLE;
 		else
-			The_mission.flags &= ~MISSION_FLAG_SCRAMBLE;
+			pm->flags &= ~MISSION_FLAG_SCRAMBLE;
 	}
 
 	// set up support ships
@@ -4213,12 +4221,12 @@ void parse_bitmaps(mission *pm)
 		stuff_int(&Neb2_poof_flags);
 
 		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(
-		if(Fred_running && (The_mission.flags & MISSION_FLAG_FULLNEB)){
+		if(Fred_running && (pm->flags & MISSION_FLAG_FULLNEB)){
 			neb2_post_level_init();
 		}
 	}
 
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(pm->flags & MISSION_FLAG_FULLNEB){
 		// no regular nebula stuff
 		nebula_close();
 	} else {
@@ -4227,7 +4235,7 @@ void parse_bitmaps(mission *pm)
 			
 			// parse the proper nebula type (full or not)	
 			for (z=0; z<NUM_NEBULAS; z++){
-				if(The_mission.flags & MISSION_FLAG_FULLNEB){
+				if(pm->flags & MISSION_FLAG_FULLNEB){
 					if (!stricmp(str, Neb2_filenames[z])) {
 						Nebula_index = z;
 						break;
