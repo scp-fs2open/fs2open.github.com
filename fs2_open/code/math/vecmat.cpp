@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-10-21 11:32:15 $
+ * $Revision: 2.26 $
+ * $Date: 2005-10-22 06:26:30 $
  * $Author: taylor $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/10/21 11:32:15  taylor
+ * fix main NULL vec errors, still at least one left but these were those that happened most often:
+ *   modelinterp.cpp:parse_tmap() -> first IS_VEC_NULL() check would fail, wasn't a second on reassign
+ *   aicode.cpp:ai_path() -> when (Pl_objp->pos == gcvp), fixed globally in vecmat.cpp:vm_vec_dot_to_point()
+ *
  * Revision 2.24  2005/07/22 09:59:30  Goober5000
  * unhide null vector bug
  * --Goober5000
@@ -1678,9 +1683,8 @@ float vm_vec_dot_to_point(vec3d *dir, vec3d *p1, vec3d *p2)
 	vec3d	tvec;
 
 	vm_vec_sub(&tvec, p2, p1);
-
-	if ( !IS_VEC_NULL(&tvec) )
-		vm_vec_normalize(&tvec);
+	// VECMAT-ERROR: NULL VEC3D (p1 == p2)
+	vm_vec_normalize_safe(&tvec);
 
 	return vm_vec_dot(dir, &tvec);
 
