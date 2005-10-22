@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.32 $
- * $Author: Goober5000 $
- * $Date: 2005-09-30 03:19:57 $
+ * $Revision: 2.33 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-10-22 20:17:19 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/09/30 03:19:57  Goober5000
+ * parsing stuff
+ * --Goober5000
+ *
  * Revision 2.31  2005/09/29 04:26:08  Goober5000
  * parse fixage
  * --Goober5000
@@ -450,6 +454,9 @@ extern void stuff_string_white(char *pstr, int len = 0);
 extern void stuff_string_until(char *pstr, char *endstr, int len = 0);
 extern void stuff_string(char *pstr, int type, char *terminators = NULL, int len = 0);
 extern void stuff_string_line(char *pstr, int len);
+
+//alloc
+extern char* alloc_block(char* startstr, char* endstr);
 
 // Exactly the same as stuff string only Malloc's the buffer. 
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override

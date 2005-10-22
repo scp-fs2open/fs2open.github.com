@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.176 $
- * $Date: 2005-10-16 10:12:14 $
- * $Author: taylor $
+ * $Revision: 2.177 $
+ * $Date: 2005-10-22 20:17:19 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.176  2005/10/16 10:12:14  taylor
+ * clean up a couple of things
+ *
  * Revision 2.175  2005/10/16 00:32:30  Goober5000
  * ship-create now generates a default name if you specify "<none>" for the ship name
  * --Goober5000
@@ -1312,7 +1315,7 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
-	{ "mission-set-nebula",					OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
+	{ "mission-set-nebula",					OP_MISSION_SET_NEBULA,				1, 1 }, //-WMC
 	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
@@ -8880,7 +8883,7 @@ void sexp_pre_mission_set_nebula()
 
 void sexp_mission_set_nebula(int n)
 {
-	if(Sexp_nodes[n].value == SEXP_KNOWN_TRUE)
+	if(eval_num(n) > 0)
 	{
 		The_mission.flags |= MISSION_FLAG_FULLNEB;
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
@@ -13961,7 +13964,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = 1;
 				break;
 
-			//-Sesquipedalian
+			//-WMC
 			case OP_MISSION_SET_NEBULA:
 				sexp_mission_set_nebula( node );
 				sexp_val = 1;
@@ -15029,6 +15032,7 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_SPEED_Z:
 		case OP_SHIP_CREATE: //WMC
 		case OP_WEAPON_CREATE:
+		case OP_MISSION_SET_NEBULA:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -15110,7 +15114,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AND_IN_SEQUENCE:
 		case OP_OR:
 		case OP_NOT:
-		case OP_MISSION_SET_NEBULA:
 			return OPF_BOOL;
 
 		case OP_PLUS:
@@ -15141,6 +15144,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_WARP_OUT:
 		case OP_TEAM_SCORE:
 		case OP_RADAR_SET_MAXRANGE: //Kazan
+		case OP_MISSION_SET_NEBULA:	//WMC
 			return OPF_POSITIVE;
 
 		case OP_AI_WARP:								// this operator is obsolete
@@ -18616,7 +18620,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_END_MISSION, "mission-set-nebula\r\n" 
 		"\tTurns nebula on/off\r\n"
 		"\tTakes1 argument...\r\n"
-		"\t1:\tWhether nebula is enabled" },
+		"\t1:\t0 for nebula off, 1 for nebula on" },
 
 	//-Sesquipedalian
 	{ OP_END_MISSION, "end-mission\r\n" 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.65 $
- * $Date: 2005-10-16 11:20:43 $
- * $Author: taylor $
+ * $Revision: 2.66 $
+ * $Date: 2005-10-22 20:17:18 $
+ * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/10/16 11:20:43  taylor
+ * use unsigned index buffers
+ *
  * Revision 2.64  2005/08/20 20:34:50  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -1190,7 +1193,8 @@ void gr_init_res(int res, int mode, int fredx = -1, int fredy = -1);
 
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
 
-#define gr_flip				GR_CALL(gr_screen.gf_flip)
+//#define gr_flip				GR_CALL(gr_screen.gf_flip)
+void gr_flip();
 #define gr_flip_window		GR_CALL(gr_screen.gf_flip_window)
 
 //#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)

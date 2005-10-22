@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.22 $
- * $Date: 2005-10-09 00:43:08 $
+ * $Revision: 1.23 $
+ * $Date: 2005-10-22 20:17:18 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2005/10/09 00:43:08  wmcoolmon
+ * Extendable modular tables (XMTs); added weapon dialogs to the Lab
+ *
  * Revision 1.21  2005/09/25 07:27:33  Goober5000
  * and again
  * --Goober5000
@@ -2831,3 +2834,30 @@ void ImageAnim::Stop()
 	Progress = 0.0f;
 	ElapsedTime = 0.0f;
 }
+#ifdef USE_PYTHON
+//*****************************HUDGauge*******************************
+HUDGauge::HUDGauge(std::string in_name, int x_coord, int y_coord, PyBytecode in_drawfunc, int x_width, int y_height, int in_style)
+:GUIObject(in_name, x_coord, y_coord, x_width, y_height, in_style)
+{
+	Name = in_name;
+
+	DrawFunc = in_drawfunc;
+
+	//Set the type
+	Type = GT_HUDGAUGE;
+}
+
+void HUDGauge::DoDraw(float frametime)
+{
+	if(DrawFunc.Get() != NULL)
+	{
+
+	}
+}
+
+HUDGauge::~HUDGauge()
+{
+	
+}
+
+#endif USE_PYTHON
