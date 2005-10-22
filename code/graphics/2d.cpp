@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-10-16 11:20:43 $
- * $Author: taylor $
+ * $Revision: 2.59 $
+ * $Date: 2005-10-22 20:17:18 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/10/16 11:20:43  taylor
+ * use unsigned index buffers
+ *
  * Revision 2.57  2005/10/15 20:53:29  taylor
  * properly handle cases where bm_make_render_target() might have failed
  *
@@ -2039,4 +2042,16 @@ void gr_shade(int x, int y, int w, int h, bool resize)
 	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
 
 	g3_draw_2d_rect(x,y,w,h,r,g,b,a);
+}
+
+#ifdef USE_PYTHON
+//WMC - nasty nasty hack
+void python_do_frame();
+#endif
+void gr_flip()
+{
+#ifdef USE_PYTHON
+	python_do_frame();
+#endif
+	gr_screen.gf_flip();
 }

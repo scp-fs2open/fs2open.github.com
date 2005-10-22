@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.189 $
- * $Date: 2005-10-17 05:48:17 $
- * $Author: taylor $
+ * $Revision: 2.190 $
+ * $Date: 2005-10-22 20:17:18 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.189  2005/10/17 05:48:17  taylor
+ * dynamically allocate object collision pairs
+ *
  * Revision 2.188  2005/10/15 20:53:28  taylor
  * properly handle cases where bm_make_render_target() might have failed
  *
@@ -2309,6 +2312,10 @@ void init_decals();
 // input: seed =>	DEFAULT PARAMETER (value -1).  Only set by demo playback code.
 void game_level_init(int seed)
 {
+#ifdef USE_PYTHON
+	//Clear python images
+	py_clear_images();
+#endif
 	// seed the random number generator
 	if ( seed == -1 ) {
 		// if no seed was passed, seed the generator either from the time value, or from the
@@ -2363,7 +2370,7 @@ void game_level_init(int seed)
 	init_decals();
 
 	NavSystem_Init();				// zero out the nav system
-	
+
 	ai_level_init();				//	Call this before ship_init() because it reads ai.tbl.
 	ship_level_init();
 	player_level_init();	
@@ -3513,6 +3520,10 @@ void game_init()
 	if(!Is_standalone){
 		joy_init();
 	}
+
+#ifdef USE_PYTHON
+	python_init();					// Seems as good of a place as any -WMC
+#endif
 
 	player_controls_init();
 	model_init();	
@@ -8214,6 +8225,8 @@ void game_do_state(int state)
 			break;
 
    } // end switch(gs_current_state)
+
+//   python_do_frame();
 }
 
 
@@ -8763,7 +8776,9 @@ void game_shutdown(void)
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();
-	
+#ifdef USE_PYTHON
+	python_close();				//Kill python
+#endif
 	shockwave_close();			// release any memory used by shockwave system	
 	fireball_close();				// free fireball system
 	particle_close();			// close out the particle system

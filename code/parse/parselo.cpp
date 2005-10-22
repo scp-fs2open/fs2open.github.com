@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.53 $
+ * $Revision: 2.54 $
  * $Author: wmcoolmon $
- * $Date: 2005-10-09 06:10:58 $
+ * $Date: 2005-10-22 20:17:19 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/10/09 06:10:58  wmcoolmon
+ * Added sexps set-object-speed-x, set-object-speed-y, set-object-speed-z,
+ * and ship-create
+ *
  * Revision 2.52  2005/10/08 18:26:40  wmcoolmon
  * Better readability for parse errors
  *
@@ -1045,6 +1049,32 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 	*outstr = 0;
 }
 
+//Returns a null-terminated character string allocated with vm_malloc() with the data
+char* alloc_text_until(char* instr, char* endstr)
+{
+	Assert(instr && endstr);
+	char *foundstr = stristr(instr, endstr);
+	if(foundstr == NULL)
+	{
+		Error(LOCATION, "Missing [%s] in file");
+		longjmp(parse_abort, 3);
+	}
+	else
+	{
+		char* rstr = NULL;
+		rstr = (char*) malloc((foundstr - instr)*sizeof(char));
+
+		if(rstr != NULL) {
+			strncpy(rstr, instr, foundstr-instr);
+			rstr[foundstr-instr] = '\0';
+		} else {
+			Error(LOCATION, "Could not allocate enough memory in alloc_text_until");
+		}
+
+		return rstr;
+	}
+}
+
 //	Copy text until a certain string is matched.
 //	For example, this is used to copy mission notes, scanning until $END NOTES:
 // is found.
@@ -1097,6 +1127,30 @@ void stuff_string_until(char *pstr, char *endstr, int len)
 	copy_text_until(pstr, Mp, endstr, len);
 	Mp += strlen(pstr);
 	drop_trailing_white_space(pstr);
+}
+
+//WMC
+//Used for allocating large blocks, eg of Python code
+//Returns a null-terminated string allocated with malloc(),
+//or NULL on failure
+char* alloc_block(char* startstr, char* endstr)
+{
+	//Skip the opening thing and any extra stuff
+	required_string(startstr);
+	ignore_white_space();
+
+	//Allocate it
+	char* rval = alloc_text_until(Mp, endstr);
+
+	//Did it fail?
+	if(rval == NULL) {
+		return rval;
+	}
+
+	//Skip the end
+	Mp += strlen(rval);
+	required_string(endstr);
+	return rval;
 }
 
 //	Stuff a string into a string buffer.
@@ -1200,6 +1254,10 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 		if(fhash_active() && (tag_id > -2)){
 			fhash_add_str(pstr, tag_id);
 		}
+	}
+	else
+	{
+		strcpy(pstr, read_str);
 	}
 
 	diag_printf("Stuffed string = [%.30s]\n", pstr);

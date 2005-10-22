@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="code"
+	ProjectGUID="{A9672329-86C9-4528-AE34-49CA64D50A98}"
 	SccProjectName="&quot;$/Freespace2/code&quot;, UCACAAAA"
 	SccLocalPath=".">
 	<Platforms>
@@ -19,6 +20,7 @@
 			ATLMinimizesCRunTimeLibraryUsage="FALSE">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/O2 /Ob2"
 				Optimization="4"
 				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="2"
@@ -27,7 +29,7 @@
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="1"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include"
-				PreprocessorDefinitions="NDEBUG,WIN32,_WINDOWS,USE_OPENAL"
+				PreprocessorDefinitions="NDEBUG,WIN32,_WINDOWS,USE_PYTHON"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile=".\Release\Profile/code.pch"
@@ -79,7 +81,7 @@
 				Optimization="0"
 				OptimizeForProcessor="1"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include"
-				PreprocessorDefinitions="_DEBUG,WIN32,_WINDOWS,USE_OPENAL"
+				PreprocessorDefinitions="_DEBUG,WIN32,_WINDOWS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="TRUE"
@@ -1281,6 +1283,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Parse\parselo.h">
+			</File>
+			<File
+				RelativePath="..\..\code\parse\python.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\parse\python.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Parse\SEXP.CPP">

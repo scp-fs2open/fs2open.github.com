@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.h $
- * $Revision: 1.19 $
- * $Date: 2005-10-09 00:43:08 $
+ * $Revision: 1.20 $
+ * $Date: 2005-10-22 20:17:18 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/10/09 00:43:08  wmcoolmon
+ * Extendable modular tables (XMTs); added weapon dialogs to the Lab
+ *
  * Revision 1.18  2005/09/25 07:27:33  Goober5000
  * and again
  * --Goober5000
@@ -27,6 +30,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
+#include "parse/python.h"
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
@@ -194,7 +198,8 @@ public:
 #define GT_TEXT					4
 #define	GT_CHECKBOX				5
 #define GT_IMAGEANIM			6
-#define GT_NUM_TYPES			6	//Total number of types
+#define GT_HUDGAUGE				7
+#define GT_NUM_TYPES			8	//Total number of types
 
 //States of being for GUIObjects
 #define	GST_NORMAL				0
@@ -232,6 +237,7 @@ class GUIObject : public LinkedList
 	friend class Checkbox;
 	friend class Button;
 	friend class ImageAnim;
+	friend class HUDGauge;
 	friend class GUIScreen;
 	friend class GUISystem;
 private:
@@ -691,6 +697,33 @@ public:
 	void Pause();
 	void Stop();
 };
+#ifdef USE_PYTHON
+//*****************************Button*******************************
+//#define DEFAULT_BUTTON_WIDTH	50
+#define B_BORDERWIDTH			1
+#define B_BORDERHEIGHT			1
+#define DEFAULT_BUTTON_HEIGHT	15
 
-//GLOBALS
+#define BS_STICKY			(1<<31)	//Button stays pressed
+
+#define BCI_COORDS			0
+#define BCI_BUTTON			1
+#define BCI_NUM_ENTRIES		2
+
+class HUDGauge : public GUIObject
+{
+	std::string Name;
+
+	PyBytecode DrawFunc;
+
+protected:
+	void DoDraw(float frametime);
+	//int DoRefreshSize();
+public:
+	HUDGauge(std::string in_name, int x_coord, int y_coord, PyBytecode DrawFunc, int x_width = -1, int y_height = -1, int in_style = 0);
+	~HUDGauge();
+};
+#endif //USE_PYTHON
+
+//*****************************GLOBALS*******************************
 extern GUISystem GUI_system;
