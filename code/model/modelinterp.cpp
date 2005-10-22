@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.129 $
- * $Date: 2005-10-21 11:32:15 $
+ * $Revision: 2.130 $
+ * $Date: 2005-10-22 06:26:30 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2005/10/21 11:32:15  taylor
+ * fix main NULL vec errors, still at least one left but these were those that happened most often:
+ *   modelinterp.cpp:parse_tmap() -> first IS_VEC_NULL() check would fail, wasn't a second on reassign
+ *   aicode.cpp:ai_path() -> when (Pl_objp->pos == gcvp), fixed globally in vecmat.cpp:vm_vec_dot_to_point()
+ *
  * Revision 2.128  2005/10/16 11:20:43  taylor
  * use unsigned index buffers
  *
@@ -5180,10 +5185,9 @@ void parse_tmap(int offset, ubyte *bsp_data){
 			*N = *vp(p);
 
 	  	problem_count += check_values(N);
-		if ( !IS_VEC_NULL(N) ) {
-			vm_vec_normalize(N);
-//			vm_vec_scale(N, global_scaleing_factor);//global scaleing
-		}
+		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
+		vm_vec_normalize_safe(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_verts)+1];
 		N = &list[pof_tex].norm[(list[pof_tex].n_verts)+1];
@@ -5198,10 +5202,9 @@ void parse_tmap(int offset, ubyte *bsp_data){
 			*N = *vp(p);
 
 	 	problem_count += check_values(N);
-		if ( !IS_VEC_NULL(N) ) {
-			vm_vec_normalize(N);
-//			vm_vec_scale(N, global_scaleing_factor);//global scaleing
-		}
+		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
+		vm_vec_normalize_safe(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		V = &list[pof_tex].vert[(list[pof_tex].n_verts)+2];
 		N = &list[pof_tex].norm[(list[pof_tex].n_verts)+2];
@@ -5216,10 +5219,9 @@ void parse_tmap(int offset, ubyte *bsp_data){
 			*N = *vp(p);
 
 		problem_count += check_values(N);
-		if ( !IS_VEC_NULL(N) ) {
-			vm_vec_normalize(N);
-//			vm_vec_scale(N, global_scaleing_factor);//global scaleing
-		}
+		// VECMAT-ERROR: NULL VEC3D (N.x = 0, N.y = 0, N.z = -0)
+		vm_vec_normalize_safe(N);
+//		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
 		list[pof_tex].n_verts += 3;
 		list[pof_tex].n_prim++;
