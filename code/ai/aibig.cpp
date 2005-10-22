@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-10-22 04:28:15 $
- * $Author: unknownplayer $
+ * $Revision: 1.8 $
+ * $Date: 2005-10-22 22:22:41 $
+ * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
@@ -418,7 +418,6 @@
 #include "weapon/weapon.h"
 #include "io/timer.h"
 #include "mission/missionparse.h"
-#include "cmdline/cmdline.h"
 
 
 
@@ -1966,7 +1965,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// the ai will not always go after different ships firing beams at them.
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	bool attack_turret_on_different_ship = ( (The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1) )
+	bool attack_turret_on_different_ship = (The_mission.flags & MISSION_FLAG_USE_NEW_AI)
 		&& (Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target

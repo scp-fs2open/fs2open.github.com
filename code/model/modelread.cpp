@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.79 $
- * $Date: 2005-10-22 04:28:16 $
- * $Author: unknownplayer $
+ * $Revision: 2.80 $
+ * $Date: 2005-10-22 22:22:41 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
@@ -1696,11 +1696,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 	if (!fp) {
 		if (ferror == 1) {
-			Error( LOCATION, "Can't open model file <%s>",filename);
+			Error( LOCATION, "Can't open model file <%s>", filename );
+		} else {
+			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
-		else {
-			Warning(LOCATION, "Can't open model file <%s>",filename);
-		}
+
 		return -1;
 	}		
 

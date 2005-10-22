@@ -1,8 +1,8 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.22 $
- * $Date: 2005-10-22 04:28:16 $
- * $Author: unknownplayer $
+ * $Revision: 1.23 $
+ * $Date: 2005-10-22 22:22:41 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
@@ -88,7 +88,6 @@
 #include "ai/aibig.h"
 #include "object/objectdock.h"
 #include "ai/aiinternal.h"	//Included last, so less includes are needed
-#include "cmdline/cmdline.h"
 
 // How close a turret has to be point at its target before it
 // can fire.  If the dot of the gun normal and the vector from gun
@@ -624,7 +623,7 @@ int get_nearest_enemy_objnum(int turret_parent_objnum, ship_subsys *turret_subsy
 	eeo.nearest_objnum = -1;
 
 	//don't fire anti capital ship turrets at bombs.
-	if ( !(((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && (big_flag)) )
+	if ( !((The_mission.flags & MISSION_FLAG_USE_NEW_AI) && (big_flag)) )
 	{
 		// Missile_obj_list
 		for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
@@ -1226,7 +1225,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 	}
 	//Not useful -WMC
-	else if (!((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)))
+	else if (!(The_mission.flags & MISSION_FLAG_USE_NEW_AI))
 	{
 		float wait = 1000.0f * frand_range(0.9f, 1.1f);
 		turret->turret_next_fire_stamp = timestamp((int) wait);
@@ -1255,7 +1254,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
     // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
     //  problems with non-homing swarm weapons -Et1
-	if( ((The_mission.flags & MISSION_FLAG_USE_NEW_AI) || (Cmdline_UseNewAI == 1)) && !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
+	if( (The_mission.flags & MISSION_FLAG_USE_NEW_AI) && !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
     {
 
         turret_fvec = tsi->turret->turret_last_fire_direction;
