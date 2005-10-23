@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.135 $
- * $Date: 2005-09-20 02:46:52 $
+ * $Revision: 2.136 $
+ * $Date: 2005-10-23 14:12:35 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2005/09/20 02:46:52  taylor
+ * slight speedup for font rendering
+ * fix a couple of things that Valgrind complained about
+ *
  * Revision 2.134  2005/09/05 09:36:41  taylor
  * merge of OSX tree
  * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
@@ -2763,38 +2767,45 @@ void gr_opengl_print_screen(char *filename)
 	strcpy( tmp, filename );
 	strcat( tmp, NOX(".tga"));
 
-	CFILE *f = cfopen(tmp, "wb", CFILE_NORMAL, CF_TYPE_ROOT);
 
-	if (f == NULL)
+	CFILE *cfout = cfopen(tmp, "wb", CFILE_NORMAL, CF_TYPE_ROOT);
+
+	buf = (ubyte*) vm_malloc_q(gr_screen.max_w * gr_screen.max_h * 3);
+
+	if ( (cfout == NULL) || (buf == NULL) ) {
+		if (cfout != NULL)
+			cfclose(cfout);
+
+		if (buf != NULL)
+			vm_free(buf);
+
 		return;
-
-	// Write the TGA header
-	cfwrite_ubyte( 0, f );	//	IDLength;
-	cfwrite_ubyte( 0, f );	//	ColorMapType;
-	cfwrite_ubyte( 2, f );	//	ImageType;		// 2 = 24bpp, uncompressed, 10=24bpp rle compressed
-	cfwrite_ushort( 0, f );	// CMapStart;
-	cfwrite_ushort( 0, f );	//	CMapLength;
-	cfwrite_ubyte( 0, f );	// CMapDepth;
-	cfwrite_ushort( 0, f );	//	XOffset;
-	cfwrite_ushort( 0, f );	//	YOffset;
-	cfwrite_ushort( (ushort)gr_screen.max_w, f );	//	Width;
-	cfwrite_ushort( (ushort)gr_screen.max_h, f );	//	Height;
-	cfwrite_ubyte( 24, f );	//PixelDepth;
-	cfwrite_ubyte( 0, f );	//ImageDesc;
-
-	buf = (ubyte*)vm_malloc(gr_screen.max_w * gr_screen.max_h * 3);
-
-	if (buf == NULL)
-		return;
+	}
 
 	memset(buf, 0, gr_screen.max_w * gr_screen.max_h * 3);
 
+	glReadBuffer(GL_FRONT);
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGR_EXT, GL_UNSIGNED_BYTE, buf);
 
-	cfwrite(buf, gr_screen.max_w * gr_screen.max_h * 3, 1, f);
+	// Write the TGA header
+	cfwrite_ubyte( 0, cfout );		// IDLength;
+	cfwrite_ubyte( 0, cfout );		// ColorMapType;
+	cfwrite_ubyte( 2, cfout );		// ImageType;		// 2 = 24bpp, uncompressed, 10=24bpp rle compressed
+	cfwrite_ushort( 0, cfout );		// CMapStart;
+	cfwrite_ushort( 0, cfout );		// CMapLength;
+	cfwrite_ubyte( 0, cfout );		// CMapDepth;
+	cfwrite_ushort( 0, cfout );		// XOffset;
+	cfwrite_ushort( 0, cfout );		// YOffset;
+	cfwrite_ushort( (ushort)gr_screen.max_w, cfout );	// Width;
+	cfwrite_ushort( (ushort)gr_screen.max_h, cfout );	// Height;
+	cfwrite_ubyte( 24, cfout );		// PixelDepth;
+	cfwrite_ubyte( 0, cfout );		// ImageDesc;
 
-	cfclose(f);
+	// write out the image data
+	cfwrite( buf, gr_screen.max_w * gr_screen.max_h * 3, 1, cfout );
 
+	// done!
+	cfclose(cfout);
 	vm_free(buf);
 }
 
@@ -3282,6 +3293,7 @@ static void gr_opengl_flush_frame_dump()
 		cfwrite_ubyte( 24, f );	//PixelDepth;
 		cfwrite_ubyte( 0, f );	//ImageDesc;
 
+		glReadBuffer(GL_FRONT);
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGR_EXT, GL_UNSIGNED_BYTE, GL_dump_buffer);
 
 		// save the data out
