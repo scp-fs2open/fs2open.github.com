@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-10-17 00:13:28 $
+ * $Revision: 2.29 $
+ * $Date: 2005-10-23 05:37:59 $
  * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/10/17 00:13:28  wmcoolmon
+ * Some cfile changes that slipped by
+ *
  * Revision 2.27  2005/10/16 23:15:46  wmcoolmon
  * Hardened cfile against array overflows
  *
@@ -1685,7 +1688,7 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 		// keep pilot files separated for an Inferno build since they aren't compatible
 		if ( pathtype == CF_TYPE_SINGLE_PLAYERS )
 		{
-			if(strlen(path) + strlen(inferno) + strlen(DIR_SEPARATOR_STR) > path_max) {
+			if(strlen(path) + strlen("inferno") + strlen(DIR_SEPARATOR_STR) > path_max) {
 				return 0;
 			}
 			strcat(path, "inferno");
