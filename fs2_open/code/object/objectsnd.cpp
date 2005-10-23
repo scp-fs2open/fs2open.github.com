@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-09-25 05:13:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-23 19:08:01 $
+ * $Author: taylor $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/09/25 05:13:07  Goober5000
+ * hopefully complete species upgrade
+ * --Goober5000
+ *
  * Revision 2.10  2005/07/13 02:01:30  Goober5000
  * fixed a bunch of "issues" caused by me with the species stuff
  * --Goober5000
@@ -469,6 +473,11 @@ void obj_snd_level_init()
 	Flyby_next_repeat = 1;
 	Flyby_last_objp = NULL;
 	Obj_snd_last_update=0;
+
+	if ( !snd_is_inited() ) {
+		Obj_snd_enabled = FALSE;
+		return;
+	}
 
 	Obj_snd_level_inited=1;
 }

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-09-24 02:40:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.30 $
+ * $Date: 2005-10-23 19:08:01 $
+ * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/09/24 02:40:09  Goober5000
+ * get rid of a whole bunch of Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.28  2005/05/24 03:11:38  taylor
  * an extra bounds check in sound.cpp
  * fix audiostr error when filename is !NULL but 0 in len might hit on SDL debug code
@@ -446,7 +450,7 @@ typedef struct sound	{
 std::vector<sound> Sounds;
 int Num_sounds=0;
 
-int Sound_enabled = TRUE;				// global flag to turn sound on/off
+int Sound_enabled = FALSE;				// global flag to turn sound on/off
 int Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
 int Snd_hram;								// mem (in bytes) used up by storing sounds in soundcard memory
 float Master_sound_volume = 1.0f;	// range is 0 -> 1, used for non-music sound fx
@@ -556,6 +560,7 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 	audiostream_init();
 			
 	ds_initialized = 1;
+	Sound_enabled = TRUE;
 	return 1;
 
 Failure:
@@ -685,16 +690,10 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 			return n;
 		}
 	}
-/*
-	if ( n == MAX_SOUNDS ) {
-#ifndef NDEBUG
-		// spew sound info
-		snd_spew_info();
-#endif
 
-		Int3();
+	if ( !ds_initialized )
 		return -1;
-	}*/
+
 	if(n==Num_sounds)
 	{
 		Sounds.resize(n + 1);
@@ -708,9 +707,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	{
 		snd = &Sounds[n];
 	}
-
-	if ( !ds_initialized )
-		return -1;
 
 	si = &snd->info;
 
