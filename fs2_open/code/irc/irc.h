@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.11 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.12 $
+ * $Date: 2005-10-23 20:34:30 $
+ * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.10  2005/06/09 14:57:38  mrduckman
  * Added LIST command and added comment about PRIVMSG for Channels
  *
@@ -150,7 +154,7 @@ struct irc_chan_link
 class irc_client
 {
 	public:
-		irc_client() : bisConnected(false), channels(NULL), current_channel(NULL) { AddChan("server"); }
+		irc_client() : bisConnected(false), channels(NULL), current_channel(NULL) { AddChan("server"); } // VALGRIND NOTE => not a memory leak!!
 		irc_client(std::string user, std::string pass, std::string server, int port) : bisConnected(false), channels(NULL), current_channel(NULL)
 				{ connect(user, pass, server, port); }
 		~irc_client() { Disconnect(); UnloadChanList(); }

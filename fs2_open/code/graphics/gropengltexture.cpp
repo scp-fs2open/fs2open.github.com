@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.27 $
- * $Date: 2005-10-23 19:07:18 $
+ * $Revision: 1.28 $
+ * $Date: 2005-10-23 20:34:30 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2005/10/23 19:07:18  taylor
+ * make AABITMAP use GL_ALPHA rather than GL_LUMINANCE_ALPHA (now 8-bit instead of 16-bit, fixes several minor rendering issues)
+ *
  * Revision 1.26  2005/09/20 02:46:52  taylor
  * slight speedup for font rendering
  * fix a couple of things that Valgrind complained about
@@ -327,9 +330,12 @@ void opengl_tcache_init (int use_sections)
 	GL_square_textures = 0;
 
 	Textures = (tcache_slot_opengl *)vm_malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
-	if ( !Textures )        {
-		exit(1);
+
+	if ( !Textures ) {
+		fprintf(stderr, "ERROR: Unable to allocate memory for OpenGL texture slots!\n");
+		exit(EXIT_FAILURE);
 	}
+
 	memset( Textures, 0, MAX_BITMAPS * sizeof(tcache_slot_opengl) );
 
 	memset( Tex_used_this_frame, 0, MAX_BITMAPS * sizeof(ubyte) );

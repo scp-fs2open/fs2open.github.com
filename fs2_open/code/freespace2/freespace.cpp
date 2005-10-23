@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.190 $
- * $Date: 2005-10-22 20:17:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.191 $
+ * $Date: 2005-10-23 20:34:29 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.190  2005/10/22 20:17:18  wmcoolmon
+ * mission-set-nebula fixage; remainder of python code
+ *
  * Revision 2.189  2005/10/17 05:48:17  taylor
  * dynamically allocate object collision pairs
  *
@@ -8818,6 +8821,13 @@ void game_shutdown(void)
 	bm_unload_all();			// unload/free bitmaps, has to be called *after* model_free_all()!
 
 	os_cleanup();
+
+	// although the comment in cmdline.cpp said this isn't needed,
+	// Valgrind disagrees (quite possibly incorrectly), but this is just cleaner
+	if (Cmdline_mod != NULL) {
+		delete[] Cmdline_mod;
+		Cmdline_mod = NULL;
+	}
 
 #if 0  // don't have an updater for fs2_open
 	// HACKITY HACK HACK

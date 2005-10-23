@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2005/10/19 20:54:06  taylor
+ * fix some bugs with spawn type weapon assignments, particularly with TBMs
+ *
  * Revision 2.138  2005/10/14 07:22:24  Goober5000
  * removed an unneeded parameter and renamed some stuff
  * --Goober5000
@@ -3178,6 +3181,13 @@ void weapon_init()
 void weapon_close()
 {
 	if (Spawn_names != NULL) {
+		for (int i=0; i<Num_spawn_types; i++) {
+			if (Spawn_names[i] != NULL) {
+				vm_free(Spawn_names[i]);
+				Spawn_names[i] = NULL;
+			}
+		}
+
 		vm_free(Spawn_names);
 		Spawn_names = NULL;
 	}
