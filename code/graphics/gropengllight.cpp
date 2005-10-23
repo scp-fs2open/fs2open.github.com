@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-09-30 09:47:06 $
+ * $Revision: 1.20 $
+ * $Date: 2005-10-23 11:45:06 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/09/30 09:47:06  taylor
+ * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
+ * add -cache_bitmaps and have bitmap caching between levels off by default
+ * when -cache_bitmaps is used then use C-BMP for top-right memory listing, and just BMP otherwise
+ *
  * Revision 1.18  2005/09/05 09:36:41  taylor
  * merge of OSX tree
  * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
@@ -142,6 +147,7 @@ extern float static_point_factor;
 extern float static_light_factor;
 extern float static_tube_factor;
 extern double specular_exponent_value;
+extern float Cmdline_ogl_spec;
 
 
 GLint GL_max_lights = 0;
@@ -351,7 +357,7 @@ void opengl_init_light()
 	opengl_calculate_ambient_factor();
 
 	// only on front, tends to be more believable
-	glMaterialf(GL_FRONT, GL_SHININESS, 80.0f );
+	glMaterialf(GL_FRONT, GL_SHININESS, Cmdline_ogl_spec /*80.0f*/ );
 
 	// more realistic lighting model
 	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);

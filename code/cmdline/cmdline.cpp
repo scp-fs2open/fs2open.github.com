@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.115 $
- * $Date: 2005-10-22 04:28:16 $
- * $Author: unknownplayer $
+ * $Revision: 2.116 $
+ * $Date: 2005-10-23 11:45:06 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2005/10/22 04:28:16  unknownplayer
+ * Added -UseNewAI command line option to force the game to always use
+ * the SCP AI changes. As of now there's some problem in gr_d3d_set_render_target
+ * that crashes the game when it gets to a mission.
+ *
  * Revision 2.114  2005/10/12 05:43:40  taylor
  * temporary cmdline option, -y_bug_fix, to switch between original code (default) and previous attempt at the Y-bug fix
  *
@@ -971,6 +976,8 @@ cmdline_parm wcsaga("-wcsaga", NULL);
 
 cmdline_parm UseNewAI("-UseNewAI", NULL);
 
+cmdline_parm ogl_spec_arg("-ogl_spec", NULL);
+
 cmdline_parm ybugfix_arg("-y_bug_fix", NULL);  // Temporary... REMOVEME LATER!!
 int Cmdline_ybugfix = 0; // Temporary... REMOVEME LATER!!
 
@@ -1080,6 +1087,8 @@ float Cmdline_fov = 0.75f;
 float Cmdline_clip_dist = Default_min_draw_distance;
 extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
+
+float Cmdline_ogl_spec = 80.0f;
 
 int Cmdline_cell = 0;
 int Cmdline_batch_3dunlit = 0;
@@ -2064,6 +2073,16 @@ bool SetCmdlineParams()
 	if (UseNewAI.found())
 	{
 		Cmdline_UseNewAI = 1;
+	}
+
+	if ( ogl_spec_arg.found() ) {
+		Cmdline_ogl_spec = ogl_spec_arg.get_float();
+
+		if ( Cmdline_ogl_spec < 0.0f )
+			Cmdline_ogl_spec = 0.0f;
+
+		if ( Cmdline_ogl_spec > 180.0f )
+			Cmdline_ogl_spec = 180.0f;
 	}
 
 #ifdef WIN32

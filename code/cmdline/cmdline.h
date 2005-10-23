@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.77 $
- * $Date: 2005-10-22 04:28:16 $
- * $Author: unknownplayer $
+ * $Revision: 2.78 $
+ * $Date: 2005-10-23 11:45:06 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2005/10/22 04:28:16  unknownplayer
+ * Added -UseNewAI command line option to force the game to always use
+ * the SCP AI changes. As of now there's some problem in gr_d3d_set_render_target
+ * that crashes the game when it gets to a mission.
+ *
  * Revision 2.76  2005/10/12 05:43:40  taylor
  * temporary cmdline option, -y_bug_fix, to switch between original code (default) and previous attempt at the Y-bug fix
  *
@@ -561,6 +566,7 @@ extern float static_light_factor;
 extern float static_tube_factor;
 extern float static_point_factor;
 extern double specular_exponent_value;
+extern float Cmdline_ogl_spec;
 
 extern int Cmdline_cell;
 extern int Cmdline_nohtl;
