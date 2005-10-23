@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.h $
- * $Revision: 1.20 $
- * $Date: 2005-10-22 20:17:18 $
+ * $Revision: 1.21 $
+ * $Date: 2005-10-23 05:01:49 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/10/22 20:17:18  wmcoolmon
+ * mission-set-nebula fixage; remainder of python code
+ *
  * Revision 1.19  2005/10/09 00:43:08  wmcoolmon
  * Extendable modular tables (XMTs); added weapon dialogs to the Lab
  *
@@ -30,7 +33,9 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
+#ifdef USE_PYTHON
 #include "parse/python.h"
+#endif
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
