@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.136 $
- * $Date: 2005-10-23 14:12:35 $
+ * $Revision: 2.137 $
+ * $Date: 2005-10-23 19:07:18 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2005/10/23 14:12:35  taylor
+ * minor cleanup to screenshot code
+ * force front buffer reads for relevant glReadPixels() calls
+ *
  * Revision 2.135  2005/09/20 02:46:52  taylor
  * slight speedup for font rendering
  * fix a couple of things that Valgrind complained about
@@ -1620,12 +1624,13 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 	}
 
 	if ( gr_screen.current_color.is_alphacolor )	{
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue,gr_screen.current_color.alpha);
+		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 	} else {
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 	}
 
-	glSecondaryColor3ubvEXT(GL_zero_3ub);
+	ubyte s_color[3] = { gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue };
+	glSecondaryColor3ubvEXT(s_color);
 
 	glBegin (GL_QUADS);
 	  glTexCoord2f (u0, v1);
@@ -1640,6 +1645,9 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 	  glTexCoord2f (u0, v0);
 	  glVertex3f (x1, y1, -0.99f);
 	glEnd ();
+
+	// reset the secondary color to 0
+	glSecondaryColor3ubvEXT(GL_zero_3ub);
 
 }
 

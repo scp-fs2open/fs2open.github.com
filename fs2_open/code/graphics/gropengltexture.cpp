@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.26 $
- * $Date: 2005-09-20 02:46:52 $
+ * $Revision: 1.27 $
+ * $Date: 2005-10-23 19:07:18 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2005/09/20 02:46:52  taylor
+ * slight speedup for font rendering
+ * fix a couple of things that Valgrind complained about
+ *
  * Revision 1.25  2005/09/05 09:36:41  taylor
  * merge of OSX tree
  * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
@@ -169,7 +173,6 @@
 
 static tcache_slot_opengl *Textures = NULL;
 
-// TODO: this needs to be usable for GL_SECTIONS as well - taylor
 ubyte Tex_used_this_frame[MAX_BITMAPS];
 
 int GL_texture_ram = 0;
@@ -186,7 +189,7 @@ int GL_last_detail = -1;
 int GL_last_bitmap_type = -1;
 GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
-ubyte GL_xlat[256];
+ubyte GL_xlat[256] = { 0 };
 
 extern int vram_full;
 extern int GLOWMAP;
@@ -335,8 +338,6 @@ void opengl_tcache_init (int use_sections)
 	for( i=0; i<MAX_BITMAPS; i++ )  {
 		Textures[i].bitmap_id = -1;
 	}
-
-	memset( GL_xlat, 0, 256 );
 
 	//GL_last_detail = Detail.hardware_textures;
 	GL_last_bitmap_id = -1;
@@ -641,8 +642,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 
 		case TCACHE_TYPE_AABITMAP:
 		{
-			// this is 16-bit so just set to 2 in order to get the size right
-			byte_mult = 2;
+			byte_mult = 1;		// AABITMAP is 8-bit alpha
 
 			texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
 			texmemp = texmem;
@@ -654,19 +654,17 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 				for (j=0;j<tex_w;j++)
 				{
 					if (i < bmap_h && j < bmap_w) {
-						*texmemp++ = 0xff;
 						*texmemp++ = GL_xlat[bmp_data[i*bmap_w+j]];
 					} else {
-						*texmemp++ = 0;
 						*texmemp++ = 0;
 					}
 				}
 			}
 
 			if (!reload)
-				glTexImage2D (GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, tex_w, tex_h, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
+				glTexImage2D (GL_TEXTURE_2D, 0, GL_ALPHA, tex_w, tex_h, 0, GL_ALPHA, GL_UNSIGNED_BYTE, texmem);
 			else // faster anis
-				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, tex_w, tex_h, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, texmem);
+				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, tex_w, tex_h, GL_ALPHA, GL_UNSIGNED_BYTE, texmem);
 
 			if (texmem != NULL)
 				vm_free (texmem);
