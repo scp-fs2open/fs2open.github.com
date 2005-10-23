@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.137 $
- * $Date: 2005-10-23 19:07:18 $
+ * $Revision: 2.138 $
+ * $Date: 2005-10-23 20:34:29 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2005/10/23 19:07:18  taylor
+ * make AABITMAP use GL_ALPHA rather than GL_LUMINANCE_ALPHA (now 8-bit instead of 16-bit, fixes several minor rendering issues)
+ *
  * Revision 2.136  2005/10/23 14:12:35  taylor
  * minor cleanup to screenshot code
  * force front buffer reads for relevant glReadPixels() calls
@@ -3699,6 +3702,7 @@ int opengl_check_for_errors()
 	return ec;
 }
 
+extern void opengl_tcache_cleanup();
 void gr_opengl_close()
 {
 	if (currently_enabled_lights != NULL) {
@@ -3707,6 +3711,8 @@ void gr_opengl_close()
 	}
 
 	gr_opengl_free_mouse_area();
+
+	opengl_tcache_cleanup();
 
 #ifdef _WIN32
 	wglMakeCurrent(NULL, NULL);

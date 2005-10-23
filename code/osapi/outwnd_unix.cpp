@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-01-31 10:34:38 $
+ * $Revision: 2.6 $
+ * $Date: 2005-10-23 20:34:30 $
  * $Author: taylor $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/01/31 10:34:38  taylor
+ * merge with Linux/OSX tree - p0131
+ *
  * Revision 2.4  2004/07/26 17:50:02  Goober5000
  * last bit of Unix fixorage
  * --Goober5000
@@ -162,7 +165,7 @@
 #include "osapi/osregistry.h"
 #include "cfile/cfilesystem.h"
 
-void outwnd_print(char *id, char *tmp);
+void outwnd_print(char *id = NULL, char *tmp = NULL);
 
 #define MAX_FILTERS 48
 #define MAX_LINE_WIDTH	128
@@ -291,7 +294,10 @@ void outwnd_printf2(char *format, ...)
 {
 	char tmp[MAX_LINE_WIDTH*4];
 	va_list args;
-	
+
+	if (format == NULL)
+		return;
+
 	va_start(args, format);
 	vsprintf(tmp, format, args);
 	va_end(args);
@@ -302,7 +308,10 @@ void outwnd_printf(char *id, char *format, ...)
 {
 	char tmp[MAX_LINE_WIDTH*4];
 	va_list args;
-	
+
+	if ( (id == NULL) || (format == NULL) )
+		return;
+
 	va_start(args, format);
 	vsprintf(tmp, format, args);
 	va_end(args);
@@ -313,6 +322,9 @@ void outwnd_print(char *id, char *tmp)
 {
 	int i;
 	outwnd_filter_struct *temp;
+
+	if ( (id == NULL) || (tmp == NULL) )
+		return;
 
   	if (!outwnd_inited) {
   		fputs("outwnd not initialized yet...  ", stdout);

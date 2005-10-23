@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.68 $
- * $Date: 2005-10-15 20:42:40 $
+ * $Revision: 2.69 $
+ * $Date: 2005-10-23 20:34:28 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2005/10/15 20:42:40  taylor
+ * make sure that bm_make_render_target will handle failure
+ *
  * Revision 2.67  2005/10/10 17:21:03  taylor
  * remove NO_NETWORK
  *
@@ -1342,7 +1345,12 @@ int bm_load( char * real_filename )
 	n = first_slot;
 	Assert( n != -1 );	
 
-	if ( n == -1 ) return -1;
+	if ( n == -1 ) {
+		if (img_cfp != NULL)
+			cfclose(img_cfp);
+
+		return -1;
+	}
 
 
 	rc = gr_bm_load( type, n, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
@@ -1679,6 +1687,10 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 				// if we didn't get anything then bail out now
 				if ( i == 0 ) {
 					mprintf(("EFF: No frame images were found.  EFF, %s, is invalid.\n", filename));
+
+					if (img_cfp != NULL)
+						cfclose(img_cfp);
+
 					return -1;
 				}
 

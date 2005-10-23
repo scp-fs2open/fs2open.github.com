@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.116 $
- * $Date: 2005-10-23 11:45:06 $
+ * $Revision: 2.117 $
+ * $Date: 2005-10-23 20:34:29 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.116  2005/10/23 11:45:06  taylor
+ * add -ogl_shine to adjust the OGL shininess value so that people can play around and find the best value to use
+ *
  * Revision 2.115  2005/10/22 04:28:16  unknownplayer
  * Added -UseNewAI command line option to force the game to always use
  * the SCP AI changes. As of now there's some problem in gr_d3d_set_render_target
@@ -2170,39 +2173,44 @@ int parse_cmdline(int argc, char *argv[])
 #endif
 {
 	mprintf(("I got to parse_cmdline!!\n"));
-   #ifdef _WIN32
-		os_init_cmdline(cmdline);
-   #else
-		char *argptr = NULL;
-		int i;
-		int len = 1;
 
-		argptr = (char *)vm_malloc(1);
-		*argptr = 0;
+#ifdef _WIN32
 
-		for (i = 1; i < argc; i++) {
-			int oldlen = len-1;
+	os_init_cmdline(cmdline);
 
-			len += strlen(argv[i])+1;
+#else
 
-			argptr = (char *)vm_realloc(argptr, len);
-			if (argptr == NULL) {
-				fprintf(stderr, "ERROR: out of memory in parse_cmdline!\n");
-				exit(1);
-			}
-
-			strcpy(argptr+oldlen, argv[i]);
-			strcat(argptr, " ");
-		}
-		os_init_cmdline(argptr);
-
-		if (argptr != NULL) {
-			vm_free(argptr);
-			argptr = NULL;
-		}
-   #endif
+	char *argptr = NULL;
+	int i;
+	int len = 0;
 
 
+	for (i = 1; i < argc; i++) {
+		len += strlen(argv[i]) + 1;
+	}
+
+	argptr = (char*) vm_malloc(len + 1);
+
+	if (argptr == NULL) {
+		fprintf(stderr, "ERROR: Out of memory in parse_cmdline()!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	memset( argptr, 0, len+1 );
+
+	for (i = 1; i < argc; i++) {
+		strcat(argptr, argv[i]);
+		strcat(argptr, " ");
+	}
+
+	os_init_cmdline(argptr);
+
+	if (argptr != NULL) {
+		vm_free(argptr);
+		argptr = NULL;
+	}
+
+#endif
 
 	// --------------- Kazan -------------
 	// If you're looking for the list of if (someparam.found()) { cmdline_someparam = something; } look above at this function
