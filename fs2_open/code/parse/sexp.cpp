@@ -9,13 +9,31 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.178 $
- * $Date: 2005-10-23 04:18:23 $
+ * $Revision: 2.179 $
+ * $Date: 2005-10-23 04:48:26 $
  * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2005/10/23 04:18:23  phreak
+ * various background and nebula sexps
+ *
+ * add-background-bitmap
+ * add-sun-bitmap
+ * remove-background-bitmap
+ * remove-sun-bitmap
+ * nebula-change-storm
+ * nebula-toggle-poofs
+ *
+ * All of these sexps are just stubs for now.
+ * Just want to get in the commit before someone
+ * else commits and i'll make a mess trying to merge.
+ * Everything is compiling fine, so it shouldn't mess up anything.  But you know that murphy guy....
+ *
+ * I've put these sexps in a new fred subcategory called "Backgrounds and Nebula"
+ * along with the sexps "change-skybox-model" and "mission-set-nebula"
+ *
  * Revision 2.177  2005/10/22 20:17:19  wmcoolmon
  * mission-set-nebula fixage; remainder of python code
  *
@@ -1388,9 +1406,9 @@ sexp_oper Operators[] = {
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
-	{ "add-background-bitmap",		OP_ADD_BACKGROUND_BITMAP,			5, 5 }, // phreak
+	{ "add-background-bitmap",		OP_ADD_BACKGROUND_BITMAP,			9, 9 }, // phreak
 	{ "remove-background-bitmap",	OP_REMOVE_BACKGROUND_BITMAP,		1, 1 }, // phreak
-	{ "add-sun-bitmap",				OP_ADD_SUN_BITMAP,					5, 5 }, // phreak
+	{ "add-sun-bitmap",				OP_ADD_SUN_BITMAP,					6, 6 }, // phreak
 	{ "remove-sun-bitmap",			OP_REMOVE_SUN_BITMAP,				1, 1 }, // phreak
 	{ "nebula-change-storm",		OP_NEBULA_CHANGE_STORM,				1, 1 }, // phreak
 	{ "nebula-toggle-poof",			OP_NEBULA_TOGGLE_POOF,				2, 2 }, // phreak
@@ -8918,18 +8936,16 @@ void sexp_mission_set_nebula(int n)
 	}
 }
 
-int sexp_add_background_bitmap(int n)
+void sexp_add_background_bitmap(int n)
 {
-	return -1;
 }
 
 void sexp_remove_background_bitmap(int n)
 {
 }
 
-int sexp_add_sun_bitmap(int n)
+void sexp_add_sun_bitmap(int n)
 {
-	return -1;
 }
 
 void sexp_remove_sun_bitmap(int n)
@@ -14010,7 +14026,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
-				sexp_val = sexp_add_background_bitmap(node);
+				sexp_add_background_bitmap(node);
+				sexp_val = 1;
 				break;
 
 			case OP_REMOVE_BACKGROUND_BITMAP:
@@ -14019,7 +14036,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_ADD_SUN_BITMAP:
-				sexp_val = sexp_add_sun_bitmap(node);
+				sexp_add_sun_bitmap(node);
+				sexp_val = 1;
 				break;
 
 			case OP_REMOVE_SUN_BITMAP:
@@ -16257,7 +16275,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ADD_BACKGROUND_BITMAP:
 			if (argnum == 0)
 				return OPF_STRING;
-			else if (argnum == 4) return OPF_VARIABLE_NAME;
+			else if (argnum == 8) return OPF_VARIABLE_NAME;
 			else return OPF_POSITIVE;
 
 		case OP_REMOVE_BACKGROUND_BITMAP:
@@ -16266,7 +16284,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ADD_SUN_BITMAP:
 			if (argnum == 0)
 				return OPF_STRING;
-			else if (argnum == 4) return OPF_VARIABLE_NAME;
+			else if (argnum == 5) return OPF_VARIABLE_NAME;
 			else return OPF_POSITIVE;
 
 		case OP_REMOVE_SUN_BITMAP:
@@ -19452,12 +19470,16 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"
 		"\tAdds a background bitmap to the sky.  Returns an integer that should be stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
-		"Takes 5 arguments...\r\n"
+		"Takes 9 arguments...\r\n"
 		"\t1:\tBackground bitmap name\r\n"
 		"\t2:\tBitmap heading\r\n"
 		"\t3:\tBitmap pitch\r\n"
 		"\t4:\tBitmap bank\r\n"
-		"\t5:\tVariable to store result\r\n"
+		"\t5:\tBitmap X scale\r\n"
+		"\t6:\tBitmap Y scale\r\n"
+		"\t7:\tBitmap X divisions\r\n"
+		"\t8:\tBitmap Y divisions\r\n"
+		"\t9:\tVariable to store result\r\n"
 	},
 
 	{ OP_REMOVE_BACKGROUND_BITMAP, "remove-background-bitmap\r\n"
@@ -19469,11 +19491,12 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap\r\n"
 		"\tAdds a sun bitmap to the sky.  Returns an integer that should be stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
-		"Takes 5 arguments...\r\n"
+		"Takes 6 arguments...\r\n"
 		"\t1:\tSun bitmap name\r\n"
 		"\t2:\tBitmap heading\r\n"
 		"\t3:\tBitmap pitch\r\n"
 		"\t4:\tBitmap bank\r\n"
+		"\t5:\tBitmap scale\r\n"
 		"\t5:\tVariable to store result\r\n"
 	},
 
