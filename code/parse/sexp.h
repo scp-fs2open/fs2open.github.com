@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.97 $
- * $Author: Goober5000 $
- * $Date: 2005-10-14 09:29:56 $
+ * $Revision: 2.98 $
+ * $Author: phreak $
+ * $Date: 2005-10-23 04:18:23 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2005/10/14 09:29:56  Goober5000
+ * add weapon-create sexp
+ * --Goober5000
+ *
  * Revision 2.96  2005/10/09 08:03:21  wmcoolmon
  * New SEXP stuff
  *
@@ -770,6 +774,10 @@ struct ship_subsys;
 #define OPF_ANYTHING			52		// Goober5000 - anything goes
 #define OPF_SKYBOX_MODEL_NAME	53		// taylor - changing skybox model
 #define OPF_SHIP_OR_NONE		54		// Goober5000 - an "optional" ship argument
+#define OPF_BACKGROUND_BITMAP	55		// phreak - name of a background bitmap
+#define OPF_SUN_BITMAP			56		// phreak - name of a background bitmap
+#define OPF_NEBULA_STORM_TYPE	57		// phreak - name a nebula storm
+#define OPF_NEBULA_POOF			58		// phreak - name of a nebula poof
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -848,6 +856,8 @@ struct ship_subsys;
 #define CHANGE_SUBCATEGORY_HUD								(0x000a | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_CUTSCENES						(0x000b | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_JUMP_NODES						(0x000c | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			(0x000d | OP_CATEGORY_CHANGE)
+
 
 #define	OP_PLUS								(0x0000 | OP_CATEGORY_ARITHMETIC)
 #define	OP_MINUS							(0x0001 | OP_CATEGORY_ARITHMETIC)
@@ -1136,6 +1146,16 @@ struct ship_subsys;
 #define OP_MISSION_SET_NEBULA				(0x00b9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 
 #define OP_WEAPON_CREATE					(0x00ba	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
+//background and nebula related sexps
+#define OP_ADD_BACKGROUND_BITMAP			(0x00bb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_REMOVE_BACKGROUND_BITMAP			(0x00bc | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_ADD_SUN_BITMAP					(0x00bd | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_REMOVE_SUN_BITMAP				(0x00be | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_NEBULA_CHANGE_STORM				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_NEBULA_TOGGLE_POOF				(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+
+
 
 /* made obsolete by Goober5000
 // debugging sexpressions

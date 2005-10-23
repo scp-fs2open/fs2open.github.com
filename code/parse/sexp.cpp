@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.177 $
- * $Date: 2005-10-22 20:17:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.178 $
+ * $Date: 2005-10-23 04:18:23 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.177  2005/10/22 20:17:19  wmcoolmon
+ * mission-set-nebula fixage; remainder of python code
+ *
  * Revision 2.176  2005/10/16 10:12:14  taylor
  * clean up a couple of things
  *
@@ -1315,7 +1318,6 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
-	{ "mission-set-nebula",					OP_MISSION_SET_NEBULA,				1, 1 }, //-WMC
 	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,					0, 0 }, // Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,				1, 1 },
@@ -1383,7 +1385,16 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",			OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
-	{ "set-skybox-model",			OP_SET_SKYBOX_MODEL,			1, 1 },	// taylor
+	
+	//background and nebula sexps
+	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
+	{ "add-background-bitmap",		OP_ADD_BACKGROUND_BITMAP,			5, 5 }, // phreak
+	{ "remove-background-bitmap",	OP_REMOVE_BACKGROUND_BITMAP,		1, 1 }, // phreak
+	{ "add-sun-bitmap",				OP_ADD_SUN_BITMAP,					5, 5 }, // phreak
+	{ "remove-sun-bitmap",			OP_REMOVE_SUN_BITMAP,				1, 1 }, // phreak
+	{ "nebula-change-storm",		OP_NEBULA_CHANGE_STORM,				1, 1 }, // phreak
+	{ "nebula-toggle-poof",			OP_NEBULA_TOGGLE_POOF,				2, 2 }, // phreak
+	{ "set-skybox-model",			OP_SET_SKYBOX_MODEL,				1, 1 },	// taylor
 
 	//HUD funcs -C
 	{ "hud-disable",			OP_HUD_DISABLE,					1, 1 },	// Goober5000
@@ -8907,6 +8918,34 @@ void sexp_mission_set_nebula(int n)
 	}
 }
 
+int sexp_add_background_bitmap(int n)
+{
+	return -1;
+}
+
+void sexp_remove_background_bitmap(int n)
+{
+}
+
+int sexp_add_sun_bitmap(int n)
+{
+	return -1;
+}
+
+void sexp_remove_sun_bitmap(int n)
+{
+}
+
+void sexp_nebula_change_storm(int n)
+{
+}
+
+void sexp_nebula_toggle_poof(int n)
+{
+}
+
+
+
 // sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
 void sexp_end_mission( int n )
 {
@@ -13970,6 +14009,34 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = 1;
 				break;
 
+			case OP_ADD_BACKGROUND_BITMAP:
+				sexp_val = sexp_add_background_bitmap(node);
+				break;
+
+			case OP_REMOVE_BACKGROUND_BITMAP:
+				sexp_remove_background_bitmap(node);
+				sexp_val = 1;
+				break;
+
+			case OP_ADD_SUN_BITMAP:
+				sexp_val = sexp_add_sun_bitmap(node);
+				break;
+
+			case OP_REMOVE_SUN_BITMAP:
+				sexp_remove_sun_bitmap(node);
+				sexp_val = 1;
+				break;
+
+			case OP_NEBULA_CHANGE_STORM:
+				sexp_nebula_change_storm(node);
+				sexp_val = 1;
+				break;
+
+			case OP_NEBULA_TOGGLE_POOF:
+				sexp_nebula_toggle_poof(node);
+				sexp_val = 1;
+				break;
+
 			case OP_END_MISSION:
 				sexp_end_mission( node );
 				sexp_val = 1;
@@ -14489,6 +14556,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
 				sexp_scramble_messages(op_num == OP_SCRAMBLE_MESSAGES );
+				sexp_val = 1;
 				break;
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -15033,6 +15101,12 @@ int query_operator_return_type(int op)
 		case OP_SHIP_CREATE: //WMC
 		case OP_WEAPON_CREATE:
 		case OP_MISSION_SET_NEBULA:
+		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_REMOVE_BACKGROUND_BITMAP:
+		case OP_ADD_SUN_BITMAP:
+		case OP_REMOVE_SUN_BITMAP:
+		case OP_NEBULA_CHANGE_STORM:
+		case OP_NEBULA_TOGGLE_POOF:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -16180,6 +16254,31 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
 				return OPF_JUMP_NODE_NAME;
 
+		case OP_ADD_BACKGROUND_BITMAP:
+			if (argnum == 0)
+				return OPF_STRING;
+			else if (argnum == 4) return OPF_VARIABLE_NAME;
+			else return OPF_POSITIVE;
+
+		case OP_REMOVE_BACKGROUND_BITMAP:
+			return OPF_POSITIVE;
+
+		case OP_ADD_SUN_BITMAP:
+			if (argnum == 0)
+				return OPF_STRING;
+			else if (argnum == 4) return OPF_VARIABLE_NAME;
+			else return OPF_POSITIVE;
+
+		case OP_REMOVE_SUN_BITMAP:
+			return OPF_POSITIVE;
+
+		case OP_NEBULA_CHANGE_STORM:
+			return OPF_STRING;
+
+		case OP_NEBULA_TOGGLE_POOF:
+			if (argnum == 1) return OPF_BOOL;
+			else return OPF_STRING;
+
 		default:
 			Int3();
 	}
@@ -17178,7 +17277,6 @@ int get_subcategory(int sexp_id)
 		case OP_TECH_ADD_WEAPON:
 		case OP_TECH_ADD_INTEL:
 		case OP_TECH_RESET_TO_DEFAULT:
-		case OP_MISSION_SET_NEBULA:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
 		case OP_DONT_COLLIDE_INVISIBLE:
@@ -17229,8 +17327,17 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_SET_SKYBOX_MODEL:
 			return CHANGE_SUBCATEGORY_SPECIAL;
+
+		case OP_SET_SKYBOX_MODEL:
+		case OP_MISSION_SET_NEBULA:
+		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_REMOVE_BACKGROUND_BITMAP:
+		case OP_ADD_SUN_BITMAP:
+		case OP_REMOVE_SUN_BITMAP:
+		case OP_NEBULA_CHANGE_STORM:
+		case OP_NEBULA_TOGGLE_POOF:
+			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
@@ -19342,6 +19449,54 @@ sexp_help_struct Sexp_help[] = {
 		"If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
 
 	},
+
+	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"
+		"\tAdds a background bitmap to the sky.  Returns an integer that should be stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
+		"Takes 5 arguments...\r\n"
+		"\t1:\tBackground bitmap name\r\n"
+		"\t2:\tBitmap heading\r\n"
+		"\t3:\tBitmap pitch\r\n"
+		"\t4:\tBitmap bank\r\n"
+		"\t5:\tVariable to store result\r\n"
+	},
+
+	{ OP_REMOVE_BACKGROUND_BITMAP, "remove-background-bitmap\r\n"
+		"\tRemoves the nth background bitmap from the mission\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tZero based bitmap index from the \'Bitmap\' box in the background editor\r\n"
+		"\t\t\tYou can also use the result of a previous call to add-background-bitmap to remove that added bitmap\r\n"
+	},
+
+	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap\r\n"
+		"\tAdds a sun bitmap to the sky.  Returns an integer that should be stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
+		"Takes 5 arguments...\r\n"
+		"\t1:\tSun bitmap name\r\n"
+		"\t2:\tBitmap heading\r\n"
+		"\t3:\tBitmap pitch\r\n"
+		"\t4:\tBitmap bank\r\n"
+		"\t5:\tVariable to store result\r\n"
+	},
+
+	{ OP_REMOVE_SUN_BITMAP, "remove-sun-bitmap\r\n"
+		"\tRemoves the nth sun from the mission\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tZero based sun index from the \'Suns\' box in the background editor\r\n"
+		"\t\t\tYou can also use the result of a previous call to add-sun-bitmap to remove that added sun\r\n"
+	},
+
+	{ OP_NEBULA_CHANGE_STORM, "nebula-change-storm\r\n"
+		"\tChanges the current nebula storm\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tNebula storm to change to\r\n"
+	},
+
+	{ OP_NEBULA_TOGGLE_POOF, "nebula-toggle-poof\r\n"
+		"\tToggles the state of a nebula poof\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of nebula poof to toggle\r\n"
+		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do oppotide."
+	},
+
 };
 
 
@@ -19378,6 +19533,7 @@ op_menu_struct op_submenu[] =
 	{	"Cutscenes",					CHANGE_SUBCATEGORY_CUTSCENES						},
 	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
 	{	"Special",						CHANGE_SUBCATEGORY_SPECIAL							},
+	{	"Backgrounds and Nebula",		CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			},
 };
 int Num_sexp_help = sizeof(Sexp_help) / sizeof(sexp_help_struct);
 int Num_op_menus = sizeof(op_menu) / sizeof(op_menu_struct);
