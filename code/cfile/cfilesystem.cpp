@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-10-23 05:37:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.30 $
+ * $Date: 2005-10-23 11:44:07 $
+ * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/10/23 05:37:59  wmcoolmon
+ * Ack, missed testing compile under an Inferno build
+ *
  * Revision 2.28  2005/10/17 00:13:28  wmcoolmon
  * Some cfile changes that slipped by
  *
@@ -1153,13 +1156,13 @@ int cf_find_file_location( char *filespec, int filespec_max, int pathtype, char 
 							strcat( pack_filename, f->name_ext );
 						}
 					}
-					delete temp;
+					delete[] temp;
 					return 1;
 				}
 			}
 			// restore original filespec
 			strcpy(filespec, temp);
-			delete temp;
+			delete[] temp;
 		}
 
 		// file either not localized or localized version not found
@@ -1720,14 +1723,14 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 					if (fp)
 					{
 						fclose(fp);
-						delete temp_path;
+						delete[] temp_path;
 						return 1;
 					}
 				}
 
 				//If localization didn't work, go back to the original string
 				strcpy(path, temp_path);
-				delete temp_path;
+				delete[] temp_path;
 			}
 		}
 	}
