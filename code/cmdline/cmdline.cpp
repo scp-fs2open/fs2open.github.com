@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.117 $
- * $Date: 2005-10-23 20:34:29 $
+ * $Revision: 2.118 $
+ * $Date: 2005-10-24 04:48:14 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2005/10/23 20:34:29  taylor
+ * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
+ *
  * Revision 2.116  2005/10/23 11:45:06  taylor
  * add -ogl_shine to adjust the OGL shininess value so that people can play around and find the best value to use
  *
@@ -2084,8 +2087,8 @@ bool SetCmdlineParams()
 		if ( Cmdline_ogl_spec < 0.0f )
 			Cmdline_ogl_spec = 0.0f;
 
-		if ( Cmdline_ogl_spec > 180.0f )
-			Cmdline_ogl_spec = 180.0f;
+		if ( Cmdline_ogl_spec > 128.0f )
+			Cmdline_ogl_spec = 128.0f;
 	}
 
 #ifdef WIN32
