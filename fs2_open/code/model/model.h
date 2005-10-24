@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.65 $
- * $Date: 2005-09-24 07:45:31 $
+ * $Revision: 2.66 $
+ * $Date: 2005-10-24 07:13:04 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/09/24 07:45:31  Goober5000
+ * cleaned up some more thruster stuff; honestly, the thruster code is such a
+ * mess that it should probably be reverted to the retail version
+ * --Goober5000
+ *
  * Revision 2.64  2005/07/13 03:26:00  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1561,9 +1566,20 @@ int model_which_octant_distant( vec3d *pnt, int model_num,matrix *model_orient, 
 // data.  Or NULL if the pnt isn't in the octant.
 int model_which_octant( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct );
 
+typedef struct bobboau_extra_mst_info {
+	int secondary_glow_bitmap;
+	int tertiary_glow_bitmap;
+	vec3d *rovel;
+
+	float trf1;
+	float trf2;
+	float trf3;
+	float tlf;
+} bobboau_extra_mst_info;
+
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num = -1, vec3d *length = &vmd_zero_vector, int bitmapnum = -1, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false);
+void model_set_thrust(int model_num = -1, vec3d *length = &vmd_zero_vector, int bitmapnum = -1, int glow_bitmapnum=-1, float glow_noise=1.0f, bool AB = false, bobboau_extra_mst_info *mst = NULL);
 
 //=========================================================
 // model caching
