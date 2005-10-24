@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.115 $
- * $Date: 2005-10-20 17:50:02 $
- * $Author: taylor $
+ * $Revision: 2.116 $
+ * $Date: 2005-10-24 07:13:05 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2005/10/20 17:50:02  taylor
+ * fix player warpout
+ * basic code cleanup (that previous braces change did nothing for readability)
+ * spell "plyr" correctly
+ * tweak warp shrink time to better match WMC's other changes and avoid the skipping during shrink
+ *
  * Revision 2.114  2005/10/20 06:37:34  wmcoolmon
  * Oops, guess I didn't commit this stuff
  *
@@ -1179,6 +1185,9 @@ typedef struct ship {
 	float	thruster_glow_frame;				// Used to keep track of which frame the engine glow animation should be on.
 	float	thruster_glow_noise;				// Noise for current frame
 
+	int	secondary_thruster_glow_bitmap;	// Bobboau
+	int	tertiary_thruster_glow_bitmap;	// Bobboau
+
 	int	next_engine_stutter;				// timestamp to time the engine stuttering when a ship dies
 
 	float total_damage_received;        // total damage received (for scoring purposes)
@@ -1557,6 +1566,24 @@ typedef struct ship_info {
 	int			n_ABthruster_particles;
 	thruster_particles	normal_thruster_particles[MAX_THRUSTER_PARTICLES];
 	thruster_particles	afterburner_thruster_particles[MAX_THRUSTER_PARTICLES];
+
+	// Bobboau's extra thruster stuff
+	char		thruster_glow_bitmap1[NAME_LENGTH];
+	char		thruster_glow_bitmap1a[NAME_LENGTH];
+	char		thruster_glow_bitmap2[NAME_LENGTH];
+	char		thruster_glow_bitmap2a[NAME_LENGTH];
+	char		thruster_glow_bitmap3[NAME_LENGTH];
+	char		thruster_glow_bitmap3a[NAME_LENGTH];
+	int			thruster_glow1;
+	int			thruster_glow1a;
+	int			thruster_glow2;
+	int			thruster_glow2a;
+	int			thruster_glow3;
+	int			thruster_glow3a;
+	float		thruster01_glow_rad_factor;
+	float		thruster02_glow_rad_factor;
+	float		thruster03_glow_rad_factor;
+	float		thruster_glow_len_factor;
 
 	int splodeing_texture;
 	char splodeing_texture_name[NAME_LENGTH];

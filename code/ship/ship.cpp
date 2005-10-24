@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.252 $
- * $Date: 2005-10-20 17:50:02 $
- * $Author: taylor $
+ * $Revision: 2.253 $
+ * $Date: 2005-10-24 07:13:04 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.252  2005/10/20 17:50:02  taylor
+ * fix player warpout
+ * basic code cleanup (that previous braces change did nothing for readability)
+ * spell "plyr" correctly
+ * tweak warp shrink time to better match WMC's other changes and avoid the skipping during shrink
+ *
  * Revision 2.251  2005/10/20 06:37:33  wmcoolmon
  * Oops, guess I didn't commit this stuff
  *
@@ -2267,7 +2273,8 @@ void init_ship_entry(int ship_info_index)
 	sip->anim_filename[0] = 0;
 	sip->overhead_filename[0] = 0;
 	sip->score = 0;
-/*
+
+	// Bobboau's thruster stuff
 	sip->thruster_glow1 = -1;
 	sip->thruster_glow1a = -1;
 	sip->thruster_glow2 = -1;
@@ -2275,11 +2282,12 @@ void init_ship_entry(int ship_info_index)
 	sip->thruster_glow3 = -1;
 	sip->thruster_glow3a = -1;
 	
-	sip->thruster01_rad_factor = 1.0f;
-	sip->thruster02_rad_factor = 1.0f;
-	sip->thruster02_len_factor = 1.0f;
-	sip->thruster03_rad_factor = 1.0f;
-*/	
+	// Bobboau's thruster stuff
+	sip->thruster01_glow_rad_factor = 1.0f;
+	sip->thruster02_glow_rad_factor = 1.0f;
+	sip->thruster03_glow_rad_factor = 1.0f;
+	sip->thruster_glow_len_factor = 1.0f;
+	
 //	sip->thruster_particle_bitmap01 = -1;
 
 //	strcpy(sip->thruster_particle_bitmap01_name,"thrusterparticle");
@@ -3126,7 +3134,7 @@ strcpy(parse_error_text, temp_error);
 	{
 		stuff_vector(&sip->closeup_pos);
 	}
-	else if(first_time)
+	else if (first_time)
 	{
 		//Calculate from the model file. This is inefficient, but whatever
 		int model_idx = model_load(sip->pof_file, 0, NULL);
@@ -3179,65 +3187,52 @@ strcpy(parse_error_text, temp_error);
 		stuff_int( &sip->score );
 	}
 
-/*
-	if(first_time)
+	if (first_time)
 	{
-		i = sip->species*2;
-		strcpy(sip->thruster_bitmap1, Thrust_glow_anim_names[i]);
-		strcpy(sip->thruster_bitmap2, Thrust_secondary_anim_names[i]);
-		strcpy(sip->thruster_bitmap3, Thrust_tertiary_anim_names[i++]);
-		strcpy(sip->thruster_bitmap1a, Thrust_glow_anim_names[i]);
-		strcpy(sip->thruster_bitmap2a, Thrust_secondary_anim_names[i]);
-		strcpy(sip->thruster_bitmap3a, Thrust_tertiary_anim_names[i]);
+		species_info *species = &Species_info[sip->species];
+
+		strcpy(sip->thruster_glow_bitmap1, species->thruster_info.glow.normal.filename);
+		strcpy(sip->thruster_glow_bitmap1a, species->thruster_info.glow.afterburn.filename);
+
+		strcpy(sip->thruster_glow_bitmap2, species->secondary_thruster_glow_info.normal.filename);
+		strcpy(sip->thruster_glow_bitmap2a, species->secondary_thruster_glow_info.afterburn.filename);
+
+		strcpy(sip->thruster_glow_bitmap3, species->tertiary_thruster_glow_info.normal.filename);
+		strcpy(sip->thruster_glow_bitmap3a, species->tertiary_thruster_glow_info.afterburn.filename);
 	}
 
-	if ( optional_string("$Thruster Bitmap 1:") ){
-		stuff_string( sip->thruster_bitmap1, F_NAME, NULL );
+	if ( optional_string("$Thruster Bitmap 1:") ) {
+		stuff_string( sip->thruster_glow_bitmap1, F_NAME, NULL );
 	}
-	if ( optional_string("$Thruster Bitmap 1a:") ){
-		stuff_string( sip->thruster_bitmap1a, F_NAME, NULL );
+	if ( optional_string("$Thruster Bitmap 1a:") ) {
+		stuff_string( sip->thruster_glow_bitmap1a, F_NAME, NULL );
 	}
-	if ( optional_string("$Thruster01 Radius factor:") ){
-		stuff_float(&sip->thruster01_rad_factor);
-	}
-
-	if ( optional_string("$Thruster Bitmap 2:") ){
-		stuff_string( sip->thruster_bitmap2, F_NAME, NULL );
-	}
-	if ( optional_string("$Thruster Bitmap 2a:") ){
-		stuff_string( sip->thruster_bitmap2a, F_NAME, NULL );
-	}
-	if ( optional_string("$Thruster02 Radius factor:") ){
-		stuff_float(&sip->thruster02_rad_factor);
-	}
-	if ( optional_string("$Thruster01 Length factor:") ){
-		stuff_float(&sip->thruster02_len_factor);
+	if ( optional_string("$Thruster01 Radius factor:") ) {
+		stuff_float(&sip->thruster01_glow_rad_factor);
 	}
 
-	if ( optional_string("$Thruster Bitmap 3:") ){
-		stuff_string( sip->thruster_bitmap3, F_NAME, NULL );
+	if ( optional_string("$Thruster Bitmap 2:") ) {
+		stuff_string( sip->thruster_glow_bitmap2, F_NAME, NULL );
 	}
-	if ( optional_string("$Thruster Bitmap 3a:") ){
-		stuff_string( sip->thruster_bitmap3a, F_NAME, NULL );
+	if ( optional_string("$Thruster Bitmap 2a:") ) {
+		stuff_string( sip->thruster_glow_bitmap2a, F_NAME, NULL );
 	}
-	if ( optional_string("$Thruster03 Radius factor:") ){
-		stuff_float(&sip->thruster03_rad_factor);
+	if ( optional_string("$Thruster02 Radius factor:") ) {
+		stuff_float(&sip->thruster02_glow_rad_factor);
 	}
-*/
+	if ( optional_string("$Thruster01 Length factor:") ) {
+		stuff_float(&sip->thruster_glow_len_factor);
+	}
 
-	// compatibility
-	char dummy[MAX_FILENAME_LEN];
-	float dummyfloat;
-	if (optional_string("$Thruster Bitmap 1:")) stuff_string(dummy, F_NAME, NULL);
-	if (optional_string("$Thruster Bitmap 1a:")) stuff_string(dummy, F_NAME, NULL);
-	if (optional_string("$Thruster01 Radius factor:")) stuff_float(&dummyfloat);
-	if (optional_string("$Thruster Bitmap 2:")) stuff_string(dummy, F_NAME, NULL);
-	if (optional_string("$Thruster Bitmap 2a:")) stuff_string(dummy, F_NAME, NULL);
-	if (optional_string("$Thruster02 Radius factor:")) stuff_float(&dummyfloat);
-	if (optional_string("$Thruster01 Length factor:")) stuff_float(&dummyfloat);
-	if (optional_string("$Thruster Bitmap 3:")) stuff_string(dummy, F_NAME, NULL);
-	if (optional_string("$Thruster Bitmap 3a:")) stuff_string(dummy, F_NAME, NULL);
-	if (optional_string("$Thruster03 Radius factor:")) stuff_float(&dummyfloat);
+	if ( optional_string("$Thruster Bitmap 3:") ) {
+		stuff_string( sip->thruster_glow_bitmap3, F_NAME, NULL );
+	}
+	if ( optional_string("$Thruster Bitmap 3a:") ) {
+		stuff_string( sip->thruster_glow_bitmap3a, F_NAME, NULL );
+	}
+	if ( optional_string("$Thruster03 Radius factor:") ) {
+		stuff_float(&sip->thruster03_glow_rad_factor);
+	}
 
 	while(optional_string("$Thruster Particles:")){
 		thruster_particles* t;
@@ -4436,6 +4431,10 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->subsys_disrupted_flags=0;
 	shipp->subsys_disrupted_check_timestamp=timestamp(0);
 
+	// Bobboau's stuff
+	shipp->secondary_thruster_glow_bitmap = -1;
+	shipp->tertiary_thruster_glow_bitmap = -1;
+
 	// swarm missile stuff
 	shipp->next_swarm_fire = 1;
 
@@ -5048,7 +5047,26 @@ void ship_render(object * obj)
 			if (ft.xyz.y < -1.0f)
 				ft.xyz.y = -1.0f;
 
-			model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
+			//model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise );
+
+			// Bobboau's extra thruster stuff
+			{
+				bool use_AB = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
+
+				bobboau_extra_mst_info mst;
+
+				mst.secondary_glow_bitmap = shipp->secondary_thruster_glow_bitmap;
+				mst.tertiary_glow_bitmap = shipp->tertiary_thruster_glow_bitmap;
+				mst.rovel = &Objects[shipp->objnum].phys_info.rotvel;
+
+				mst.trf1 = si->thruster01_glow_rad_factor;
+				mst.trf2 = si->thruster02_glow_rad_factor;
+				mst.trf3 = si->thruster03_glow_rad_factor;
+				mst.tlf = si->thruster_glow_len_factor;
+
+				model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise, use_AB, &mst );
+			}
+
 			render_flags |= MR_SHOW_THRUSTERS;
 		}
 
@@ -6314,6 +6332,17 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	shipp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
 	shipp->thruster_glow_noise = Noise[framenum];
 
+	// HACK add Bobboau's thruster stuff
+	if ((objp->phys_info.flags & PF_AFTERBURNER_ON) || (objp->phys_info.flags & PF_BOOSTER_ON))
+	{
+		shipp->secondary_thruster_glow_bitmap = species->secondary_thruster_glow_info.afterburn.first_frame;
+		shipp->tertiary_thruster_glow_bitmap = species->tertiary_thruster_glow_info.afterburn.first_frame;
+	}
+	else
+	{
+		shipp->secondary_thruster_glow_bitmap = species->secondary_thruster_glow_info.normal.first_frame;
+		shipp->tertiary_thruster_glow_bitmap = species->tertiary_thruster_glow_info.normal.first_frame;
+	}
 }
 
 
@@ -7839,12 +7868,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
 	ship_set_new_ai_class(n, sip->ai_class);
 	
+	//======================================================
 
-/*
-	Goober5000 (4/17/2005) - I'm commenting this out for the time being; it looks like a whole bunch of unneeded
-	code.  It should be (and probably is) handled elsewhere, like ship_set or ship_create or something.  Contact
-	me if you want to discuss this.
-
+	// Bobboau's thruster stuff again
 	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
 
 	sp->ab_count = 0;
@@ -7886,6 +7912,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			}
 		}
 	}//end AB trails -Bobboau
+
+/*
+	Goober5000 (4/17/2005) - I'm commenting this out for the time being; it looks like a whole bunch of unneeded
+	code.  It should be (and probably is) handled elsewhere, like ship_set or ship_create or something.  Contact
+	me if you want to discuss this.
 
 	ship_weapon	*swp;
 	swp = &sp->weapons;
@@ -13341,6 +13372,37 @@ void ship_page_in_model_textures(int modelnum, int ship_index)
 	// afterburner
 	bm_page_in_texture(sip->ABbitmap);
 
+	// Bobboau's thruster bitmaps
+	if ( strcmp(sip->thruster_glow_bitmap1, "none") ) {
+		sip->thruster_glow1 = bm_load(sip->thruster_glow_bitmap1);
+		bm_page_in_texture(sip->thruster_glow1);
+	}
+
+	if ( strcmp(sip->thruster_glow_bitmap1a, "none") ) {
+		sip->thruster_glow1a = bm_load(sip->thruster_glow_bitmap1a);
+		bm_page_in_texture(sip->thruster_glow1a);
+	}
+
+	if ( strcmp(sip->thruster_glow_bitmap2, "none") ) {
+		sip->thruster_glow2 = bm_load(sip->thruster_glow_bitmap2);
+		bm_page_in_texture(sip->thruster_glow2);
+	}
+
+	if ( strcmp(sip->thruster_glow_bitmap2a, "none") ) {
+		sip->thruster_glow2a = bm_load(sip->thruster_glow_bitmap2a);
+		bm_page_in_texture(sip->thruster_glow2a);
+	}
+
+	if ( strcmp(sip->thruster_glow_bitmap3, "none") ) {
+		sip->thruster_glow3 = bm_load(sip->thruster_glow_bitmap3);
+		bm_page_in_texture(sip->thruster_glow3);
+	}
+
+	if ( strcmp(sip->thruster_glow_bitmap3a, "none") ) {
+		sip->thruster_glow3a = bm_load(sip->thruster_glow_bitmap3a);
+		bm_page_in_texture(sip->thruster_glow3a);
+	}
+
 	// splodeing bitmap
 	if ( strcmp(sip->splodeing_texture_name, "none") ) {
 		sip->splodeing_texture = bm_load(sip->splodeing_texture_name);
@@ -13418,6 +13480,31 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 	// afterburner
 	if (sip->ABbitmap > -1) {
 		bm_page_out(sip->ABbitmap);
+	}
+
+	// Bobboau's thruster bitmaps
+	if (sip->thruster_glow1 > -1) {
+		bm_page_out(sip->thruster_glow1);
+	}
+
+	if (sip->thruster_glow1a > -1) {
+		bm_page_out(sip->thruster_glow1a);
+	}
+
+	if (sip->thruster_glow2 > -1) {
+		bm_page_out(sip->thruster_glow2);
+	}
+
+	if (sip->thruster_glow2a > -1) {
+		bm_page_out(sip->thruster_glow2a);
+	}
+
+	if (sip->thruster_glow3 > -1) {
+		bm_page_out(sip->thruster_glow3);
+	}
+
+	if (sip->thruster_glow3a > -1) {
+		bm_page_out(sip->thruster_glow3a);
 	}
 
 	// slodeing bitmap

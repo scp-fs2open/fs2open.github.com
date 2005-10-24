@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.14 $
- * $Date: 2005-09-27 05:25:19 $
+ * $Revision: 1.15 $
+ * $Date: 2005-10-24 07:13:05 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/09/27 05:25:19  Goober5000
+ * initial commit of basic IFF code
+ * --Goober5000
+ *
  * Revision 1.13  2005/09/27 05:01:52  Goober5000
  * betterizing
  * --Goober5000
@@ -103,6 +107,10 @@ typedef struct species_info {
 	generic_bitmap debris_texture;
 	generic_anim shield_anim;
 	thrust_info thruster_info;
+
+	// Bobboau's thruster stuff
+	thrust_pair secondary_thruster_glow_info;
+	thrust_pair tertiary_thruster_glow_info;
 
 	float awacs_multiplier;
 

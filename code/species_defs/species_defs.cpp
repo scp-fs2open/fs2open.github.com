@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.22 $
- * $Date: 2005-09-27 05:25:19 $
+ * $Revision: 1.23 $
+ * $Date: 2005-10-24 07:13:05 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2005/09/27 05:25:19  Goober5000
+ * initial commit of basic IFF code
+ * --Goober5000
+ *
  * Revision 1.21  2005/09/27 05:01:52  Goober5000
  * betterizing
  * --Goober5000
@@ -330,12 +334,21 @@ void species_init()
 		stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 
-		// old stuff for compatibility
-		char dummy[MAX_FILENAME_LEN];
-		if (optional_string("+Sec_Normal:")) stuff_string(dummy, F_NAME, NULL, MAX_FILENAME_LEN);
-		if (optional_string("+Sec_Afterburn:")) stuff_string(dummy, F_NAME, NULL, MAX_FILENAME_LEN);
-		if (optional_string("+Ter_Normal:")) stuff_string(dummy, F_NAME, NULL, MAX_FILENAME_LEN);
-		if (optional_string("+Ter_Afterburn:")) stuff_string(dummy, F_NAME, NULL, MAX_FILENAME_LEN);
+		// extra thruster stuff, bah
+		if (optional_string("+Sec_Normal:"))
+			stuff_string(species->secondary_thruster_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+
+		// etc.
+		if (optional_string("+Sec_Afterburn:"))
+			stuff_string(species->secondary_thruster_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+
+		// etc.
+		if (optional_string("+Ter_Normal:"))
+			stuff_string(species->tertiary_thruster_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+
+		// etc.
+		if (optional_string("+Ter_Afterburn:"))
+			stuff_string(species->tertiary_thruster_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 
 		// Thruster Glow Anims
