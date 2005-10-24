@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.253 $
- * $Date: 2005-10-24 07:13:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.254 $
+ * $Date: 2005-10-24 12:42:14 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.253  2005/10/24 07:13:04  Goober5000
+ * merge Bobboau's thruster code back in; hopefully this covers everything
+ * --Goober5000
+ *
  * Revision 2.252  2005/10/20 17:50:02  taylor
  * fix player warpout
  * basic code cleanup (that previous braces change did nothing for readability)
@@ -6238,6 +6242,14 @@ void ship_init_thrusters()
 
 		generic_anim_load(&species->thruster_info.flames.normal);
 		generic_anim_load(&species->thruster_info.flames.afterburn);
+
+		// Bobboau's extra thruster stuff
+		{
+			generic_anim_load(&species->secondary_thruster_glow_info.normal);
+			generic_anim_load(&species->secondary_thruster_glow_info.afterburn);
+			generic_anim_load(&species->tertiary_thruster_glow_info.normal);
+			generic_anim_load(&species->tertiary_thruster_glow_info.afterburn);
+		}
 
 		// glows are handled a bit strangely
 		thruster_glow_anim_load(&species->thruster_info.glow.normal);

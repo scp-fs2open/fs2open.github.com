@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.23 $
- * $Date: 2005-10-24 07:13:05 $
- * $Author: Goober5000 $
+ * $Revision: 1.24 $
+ * $Date: 2005-10-24 12:42:14 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2005/10/24 07:13:05  Goober5000
+ * merge Bobboau's thruster code back in; hopefully this covers everything
+ * --Goober5000
+ *
  * Revision 1.22  2005/09/27 05:25:19  Goober5000
  * initial commit of basic IFF code
  * --Goober5000
@@ -312,10 +316,12 @@ void species_init()
 		optional_string("$MiscAnims:");
 
 		// Get its Debris Texture
+		generic_bitmap_init(&species->debris_texture, NULL);
 		required_string("+Debris_Texture:");
 		stuff_string(species->debris_texture.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// Shield Hit Animation
+		generic_anim_init(&species->shield_anim, NULL);
 		required_string("+Shield_Hit_ani:");
 		stuff_string(species->shield_anim.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
@@ -324,29 +330,35 @@ void species_init()
 		required_string("$ThrustAnims:");
 
 		// favor new style
+		generic_anim_init(&species->thruster_info.flames.normal, NULL);
 		if (!optional_string("+Pri_Normal:"))
 			required_string("+Normal:");
 		stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// and again
+		generic_anim_init(&species->thruster_info.flames.afterburn, NULL);
 		if (!optional_string("+Pri_Afterburn:"))
 			required_string("+Afterburn:");
 		stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 
 		// extra thruster stuff, bah
+		generic_anim_init(&species->secondary_thruster_glow_info.normal, NULL);
 		if (optional_string("+Sec_Normal:"))
 			stuff_string(species->secondary_thruster_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// etc.
+		generic_anim_init(&species->secondary_thruster_glow_info.afterburn, NULL);
 		if (optional_string("+Sec_Afterburn:"))
 			stuff_string(species->secondary_thruster_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// etc.
+		generic_anim_init(&species->tertiary_thruster_glow_info.normal, NULL);
 		if (optional_string("+Ter_Normal:"))
 			stuff_string(species->tertiary_thruster_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// etc.
+		generic_anim_init(&species->tertiary_thruster_glow_info.afterburn, NULL);
 		if (optional_string("+Ter_Afterburn:"))
 			stuff_string(species->tertiary_thruster_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
@@ -354,9 +366,11 @@ void species_init()
 		// Thruster Glow Anims
 		required_string("$ThrustGlows:");
 
+		generic_anim_init(&species->thruster_info.glow.normal, NULL);
 		required_string("+Normal:");
 		stuff_string(species->thruster_info.glow.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
-		
+
+		generic_anim_init(&species->thruster_info.glow.afterburn, NULL);
 		required_string("+Afterburn:");
 		stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
