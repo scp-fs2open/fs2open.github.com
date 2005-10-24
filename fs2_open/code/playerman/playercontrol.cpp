@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-10-20 17:50:00 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2005-10-24 02:15:41 $
+ * $Author: wmcoolmon $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/10/20 17:50:00  taylor
+ * fix player warpout
+ * basic code cleanup (that previous braces change did nothing for readability)
+ * spell "plyr" correctly
+ * tweak warp shrink time to better match WMC's other changes and avoid the skipping during shrink
+ *
  * Revision 2.34  2005/10/20 06:38:18  wmcoolmon
  * More player warpout speed stuff
  *
@@ -1319,16 +1325,17 @@ void read_player_controls(object *objp, float frametime)
 						if ( (!warp_failed) && (Ships[objp->instance].current_max_speed >= target_warpout_speed) ) {
 							can_warp = 1;
 						} else {
-							if (Ship_info[Ships[objp->instance].ship_info_index].max_overclocked_speed < target_warpout_speed) {
-								// Cannot go fast enough, so abort sequence.
-								warp_failed=1;
-								HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Unable to engage warp... ship must be able to reach %.1f km/s", 82), target_warpout_speed );
-								can_warp = 0;
-							} else {
+//WMC - Commented this out Oct 23 2005
+//							if (Ship_info[Ships[objp->instance].ship_info_index].max_overclocked_speed < target_warpout_speed) {
+//								// Cannot go fast enough, so abort sequence.
+//								warp_failed=1;
+//								HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Unable to engage warp... ship must be able to reach %.1f km/s", 82), target_warpout_speed );
+//								can_warp = 0;
+//							} else {
 								Ships[objp->instance].current_max_speed = target_warpout_speed + 5.0f;
 								//Ships[objp->instance].current_max_speed = Ship_info[Ships[objp->instance].ship_info_index].max_overclocked_speed;
 								can_warp = 1;
-							}
+//							}
 						}
 
 						if (can_warp) {
