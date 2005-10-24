@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.179 $
- * $Date: 2005-10-23 04:48:26 $
+ * $Revision: 2.180 $
+ * $Date: 2005-10-24 02:53:48 $
  * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.179  2005/10/23 04:48:26  phreak
+ * add-background-bitmap and add-sun-bitmap needed scale values added
+ * also their sexp functions should not return integers.
+ *
  * Revision 2.178  2005/10/23 04:18:23  phreak
  * various background and nebula sexps
  *
@@ -16274,7 +16278,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_ADD_BACKGROUND_BITMAP:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_BACKGROUND_BITMAP;
 			else if (argnum == 8) return OPF_VARIABLE_NAME;
 			else return OPF_POSITIVE;
 
@@ -16283,7 +16287,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_ADD_SUN_BITMAP:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_SUN_BITMAP;
 			else if (argnum == 5) return OPF_VARIABLE_NAME;
 			else return OPF_POSITIVE;
 
@@ -16291,11 +16295,11 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_NEBULA_CHANGE_STORM:
-			return OPF_STRING;
+			return OPF_NEBULA_STORM_TYPE;
 
 		case OP_NEBULA_TOGGLE_POOF:
 			if (argnum == 1) return OPF_BOOL;
-			else return OPF_STRING;
+			else return OPF_NEBULA_POOF;
 
 		default:
 			Int3();
@@ -19469,7 +19473,7 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"
-		"\tAdds a background bitmap to the sky.  Returns an integer that should be stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
+		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
 		"Takes 9 arguments...\r\n"
 		"\t1:\tBackground bitmap name\r\n"
 		"\t2:\tBitmap heading\r\n"
@@ -19490,14 +19494,14 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap\r\n"
-		"\tAdds a sun bitmap to the sky.  Returns an integer that should be stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
+		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
 		"Takes 6 arguments...\r\n"
 		"\t1:\tSun bitmap name\r\n"
 		"\t2:\tBitmap heading\r\n"
 		"\t3:\tBitmap pitch\r\n"
 		"\t4:\tBitmap bank\r\n"
 		"\t5:\tBitmap scale\r\n"
-		"\t5:\tVariable to store result\r\n"
+		"\t6:\tVariable to store result\r\n"
 	},
 
 	{ OP_REMOVE_SUN_BITMAP, "remove-sun-bitmap\r\n"
@@ -19517,7 +19521,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tToggles the state of a nebula poof\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of nebula poof to toggle\r\n"
-		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do oppotide."
+		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do the opposite."
 	},
 
 };
