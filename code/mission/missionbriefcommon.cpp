@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-09-27 02:36:57 $
- * $Author: Goober5000 $
+ * $Revision: 2.45 $
+ * $Date: 2005-10-24 12:42:13 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.43  2005/09/26 06:00:58  Goober5000
  * this should fix the rest of the briefing icon bugs
  * --Goober5000
@@ -2814,6 +2818,9 @@ void generic_bitmap_init(generic_bitmap *gb, char *filename)
 int generic_anim_load(generic_anim *ga)
 {
 	int		fps;
+
+	if ( !strlen(ga->filename) )
+		return -1;
 
 	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps);
 	if ( ga->first_frame < 0)
