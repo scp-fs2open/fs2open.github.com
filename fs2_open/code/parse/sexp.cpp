@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.180 $
- * $Date: 2005-10-24 02:53:48 $
+ * $Revision: 2.181 $
+ * $Date: 2005-10-24 23:28:37 $
  * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180  2005/10/24 02:53:48  phreak
+ * Get the new nebula argument types working in fred.
+ *
  * Revision 2.179  2005/10/23 04:48:26  phreak
  * add-background-bitmap and add-sun-bitmap needed scale values added
  * also their sexp functions should not return integers.
@@ -1103,6 +1106,7 @@
 #include "globalincs/systemvars.h"
 #include "camera/camera.h"
 #include "nebula/neb.h"
+#include "nebula/neblightning.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -3160,6 +3164,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// type checking for modify-variable
 				// string or number -- anything goes
 				break;						
+
+			case OPF_BACKGROUND_BITMAP:
+				break;
+
+			case OPF_SUN_BITMAP:
+				break;
+
+			case OPF_NEBULA_STORM_TYPE:
+				break;
+
+			case OPF_NEBULA_POOF:
+				break;
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -8958,10 +8974,29 @@ void sexp_remove_sun_bitmap(int n)
 
 void sexp_nebula_change_storm(int n)
 {
+	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) return;
+	
+	nebl_set_storm(CTEXT(n));
 }
 
 void sexp_nebula_toggle_poof(int n)
 {
+	char *name = CTEXT(n);
+	int result = eval_sexp(CAR(CDR(n)));
+	int i;
+	
+	for (i = 0; i < MAX_NEB2_POOFS; i++)
+	{
+		if (!stricmp(name,Neb2_poof_filenames[i])) break;
+	}
+
+	//coulnd't find the poof
+	if (i == MAX_NEB2_POOFS) return;
+
+	if (result) Neb2_poof_flags |= (1 << i);
+	else Neb2_poof_flags &= ~(1 << i);
+	
+	neb2_eye_changed();
 }
 
 
