@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.h $
- * $Revision: 2.7 $
- * $Date: 2005-10-09 08:03:20 $
+ * $Revision: 2.8 $
+ * $Date: 2005-10-25 01:21:52 $
  * $Author: wmcoolmon $
  *
  * Header file for HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/10/09 08:03:20  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.6  2005/07/22 09:19:40  wmcoolmon
  * Dynamic AI Class number commit. KNOWN BUG: When AI_CLASS_INCREMENT is hit and vm_realloc is called, memory corruption seems to
  * result. Not at all sure what causes this; if this can't be resolved soon, we can always treat _INCREMENT like _MAX
@@ -333,7 +336,8 @@ struct object;
 #define CARGO_MIN_DOT_TO_REVEAL			0.95		// min dot to proceed to have cargo scanning take place
 
 // structure and defines used for hotkey targeting
-#define MAX_HOTKEY_TARGET_ITEMS		50		// maximum number of ships that can be targeted on *all* keys
+//WMC - bumped from 50 to 150; 10/24/2005
+#define MAX_HOTKEY_TARGET_ITEMS		150		// maximum number of ships that can be targeted on *all* keys
 #define SELECTION_SET					0x5000	// variable used for drawing brackets.  The bracketinng code uses
 															// TEAM_* values.  I picked this value to be totally out of that
 															// range.  Only used for drawing selection sets
