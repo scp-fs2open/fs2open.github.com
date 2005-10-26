@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.138 $
- * $Date: 2005-10-23 20:34:29 $
+ * $Revision: 2.139 $
+ * $Date: 2005-10-26 20:54:18 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2005/10/23 20:34:29  taylor
+ * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
+ *
  * Revision 2.137  2005/10/23 19:07:18  taylor
  * make AABITMAP use GL_ALPHA rather than GL_LUMINANCE_ALPHA (now 8-bit instead of 16-bit, fixes several minor rendering issues)
  *
@@ -1598,7 +1601,7 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
-	int bw, bh, do_resize ;
+	int bw, bh, do_resize;
 
 	if ( (gr_screen.custom_size != -1) && (resize || (gr_screen.rendering_to_texture != -1)) ) {
 		do_resize = 1;
