@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.69 $
- * $Date: 2005-10-23 20:34:28 $
+ * $Revision: 2.70 $
+ * $Date: 2005-10-26 20:53:02 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2005/10/23 20:34:28  taylor
+ * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
+ *
  * Revision 2.68  2005/10/15 20:42:40  taylor
  * make sure that bm_make_render_target will handle failure
  *
@@ -2287,13 +2290,23 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	EFF_FILENAME_CHECK;
 
 	jpg_error = jpeg_read_bitmap( filename, data, NULL, d_size);
- 
+
 	if ( jpg_error != JPEG_ERROR_NONE )	{
 		bm_free_data( bitmapnum );
 		return;
 	}
 
-	
+	if (d_size == 3) {
+		// convert from RGB to BGR so the OpenGL code doesn't have to get freaked out with hacks
+		ubyte bgr_tmp, *bgr = data;
+
+		for (int i = 0; i < (bmp->w * bmp->h * d_size); i += d_size) {
+			bgr_tmp = bgr[i];
+			bgr[i] = bgr[i+2];
+			bgr[i+2] = bgr_tmp;
+		}
+	}
+
 	#ifdef BMPMAN_NDEBUG
 	Assert( be->data_size > 0 );
 	#endif
