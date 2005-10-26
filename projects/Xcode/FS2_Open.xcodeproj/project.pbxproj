@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3419B21B091016C700DC7D47 /* iff_defs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3419B219091016C700DC7D47 /* iff_defs.cpp */; };
+		3419B21C091016C700DC7D47 /* iff_defs.h in Headers */ = {isa = PBXBuildFile; fileRef = 3419B21A091016C700DC7D47 /* iff_defs.h */; };
 		3459585208C3D8CB003B1351 /* SDLMain.h in Headers */ = {isa = PBXBuildFile; fileRef = F5A47A9D01A0482F01D3D55B /* SDLMain.h */; };
 		3459586F08C3D8CB003B1351 /* freespace.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459533508C3D6A0003B1351 /* freespace.h */; };
 		3459587008C3D8CB003B1351 /* levelpaging.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459533E08C3D6A0003B1351 /* levelpaging.h */; };
@@ -711,6 +713,8 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		3419B219091016C700DC7D47 /* iff_defs.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = iff_defs.cpp; sourceTree = "<group>"; };
+		3419B21A091016C700DC7D47 /* iff_defs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = iff_defs.h; sourceTree = "<group>"; };
 		345952CF08C3D69F003B1351 /* ai.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = ai.cpp; sourceTree = "<group>"; };
 		345952D008C3D69F003B1351 /* ai.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ai.h; sourceTree = "<group>"; };
 		345952D108C3D69F003B1351 /* aibig.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = aibig.cpp; sourceTree = "<group>"; };
@@ -1533,6 +1537,15 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		3419B218091016C700DC7D47 /* iff_defs */ = {
+			isa = PBXGroup;
+			children = (
+				3419B219091016C700DC7D47 /* iff_defs.cpp */,
+				3419B21A091016C700DC7D47 /* iff_defs.h */,
+			);
+			path = iff_defs;
+			sourceTree = "<group>";
+		};
 		345952CC08C3D69F003B1351 /* code */ = {
 			isa = PBXGroup;
 			children = (
@@ -1566,6 +1579,7 @@
 				3459535508C3D6A0003B1351 /* globalincs */,
 				3459536208C3D6A0003B1351 /* graphics */,
 				3459539308C3D6A0003B1351 /* hud */,
+				3419B218091016C700DC7D47 /* iff_defs */,
 				345953B908C3D6A0003B1351 /* inetfile */,
 				345953C008C3D6A0003B1351 /* io */,
 				345953D208C3D6A0003B1351 /* irc */,
@@ -3070,6 +3084,7 @@
 				34C71D6E08C455C900459F5B /* midiseq.h in Headers */,
 				34C71D6F08C455CA00459F5B /* midifile.h in Headers */,
 				34A3E7CD08C4BB3800BBC609 /* codec1.h in Headers */,
+				3419B21C091016C700DC7D47 /* iff_defs.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3676,6 +3691,7 @@
 				34C71D6D08C455C600459F5B /* rbaudio.cpp in Sources */,
 				34C71D7008C455CB00459F5B /* midifile.cpp in Sources */,
 				34A3E7CE08C4BB3900BBC609 /* codec1.cpp in Sources */,
+				3419B21B091016C700DC7D47 /* iff_defs.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
