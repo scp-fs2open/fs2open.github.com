@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.77 $
- * $Date: 2005-08-25 22:40:03 $
+ * $Revision: 2.78 $
+ * $Date: 2005-10-26 20:54:18 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2005/08/25 22:40:03  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.76  2005/08/20 16:00:03  matt
  * Fix for D3D white squares issue
  *
@@ -2764,7 +2771,13 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resi
 
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
-	int bw, bh;
+	int bw, bh, do_resize;
+
+	if ( (gr_screen.custom_size != -1) && (resize || (gr_screen.rendering_to_texture != -1)) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
 
 	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
 
@@ -2790,30 +2803,14 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resi
 		v1 = v_scale*i2fl(sy+h)/ fbh;
 	} 
 
-	if(gr_screen.custom_size == -1)
-	{
-		x1 = i2fl(x+gr_screen.offset_x);
-		y1 = i2fl(y+gr_screen.offset_y);
-		x2 = i2fl(x+w+gr_screen.offset_x);
-		y2 = i2fl(y+h+gr_screen.offset_y);
-
-	} else {
-
-		int nx = x+gr_screen.offset_x;
-		int ny = y+gr_screen.offset_y;
-		int nw = x+w+gr_screen.offset_x;
-		int nh = y+h+gr_screen.offset_y;
-
-		if(resize || gr_screen.rendering_to_texture != -1)
-		{
-			gr_resize_screen_pos(&nx, &ny);
-			gr_resize_screen_pos(&nw, &nh);
-		}
-
-		x1 = i2fl(nx);
-		y1 = i2fl(ny);
-		x2 = i2fl(nw);
-		y2 = i2fl(nh);
+	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	x2 = i2fl(x + w + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y2 = i2fl(y + h + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	
+	if ( do_resize ) {
+		gr_resize_screen_posf( &x1, &y1 );
+		gr_resize_screen_posf( &x2, &y2 );
 	}
 
 	src_v = d3d_verts;
@@ -2902,6 +2899,11 @@ void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 	int bw, bh;
 	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
 
+	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+
 	do {
 		reclip = 0;
 		#ifndef NDEBUG
@@ -2909,12 +2911,12 @@ void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 			count++;
 		#endif
 	
-		if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
-		if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
-		if ( dx1 < gr_screen.clip_left ) { sx += gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
-		if ( dy1 < gr_screen.clip_top ) { sy += gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
-		if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
-		if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
+		if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
+		if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
+		if ( dx1 < clip_left ) { sx += clip_left-dx1; dx1 = clip_left; }
+		if ( dy1 < clip_top ) { sy += clip_top-dy1; dy1 = clip_top; }
+		if ( dx2 > clip_right ) { dx2 = clip_right; }
+		if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
 
 		if ( sx < 0 ) {
 			dx1 -= sx;
@@ -2958,10 +2960,10 @@ void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 		Assert( sy+h <= bh );
 		Assert( dx2 >= dx1 );
 		Assert( dy2 >= dy1 );
-		Assert( (dx1 >= gr_screen.clip_left ) && (dx1 <= gr_screen.clip_right) );
-		Assert( (dx2 >= gr_screen.clip_left ) && (dx2 <= gr_screen.clip_right) );
-		Assert( (dy1 >= gr_screen.clip_top ) && (dy1 <= gr_screen.clip_bottom) );
-		Assert( (dy2 >= gr_screen.clip_top ) && (dy2 <= gr_screen.clip_bottom) );
+		Assert( (dx1 >= clip_left ) && (dx1 <= clip_right) );
+		Assert( (dx2 >= clip_left ) && (dx2 <= clip_right) );
+		Assert( (dy1 >= clip_top ) && (dy1 <= clip_bottom) );
+		Assert( (dy2 >= clip_top ) && (dy2 <= clip_bottom) );
 	#endif
 
 	d3d_set_initial_render_state();
@@ -2986,12 +2988,17 @@ void gr_d3d_aabitmap(int x, int y, bool resize)
 	int dy1=y, dy2=y+h-1;
 	int sx=0, sy=0;
 
-	if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
-	if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
-	if ( dx1 < gr_screen.clip_left ) { sx = gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
-	if ( dy1 < gr_screen.clip_top ) { sy = gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
-	if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
-	if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
+	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+	
+	if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
+	if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
+	if ( dx1 < clip_left ) { sx = clip_left-dx1; dx1 = clip_left; }
+	if ( dy1 < clip_top ) { sy = clip_top-dy1; dy1 = clip_top; }
+	if ( dx2 > clip_right )	{ dx2 = clip_right; }
+	if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
 
 	if ( sx < 0 ) return;
 	if ( sy < 0 ) return;
