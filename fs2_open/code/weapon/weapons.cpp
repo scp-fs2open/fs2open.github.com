@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2005/10/23 20:34:30  taylor
+ * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
+ *
  * Revision 2.139  2005/10/19 20:54:06  taylor
  * fix some bugs with spawn type weapon assignments, particularly with TBMs
  *
@@ -1580,6 +1583,8 @@ int parse_weapon(int subtype, bool replace)
 			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
+
+			return -1;
 		}
 
 		if(Num_weapon_types >= MAX_WEAPON_TYPES) {

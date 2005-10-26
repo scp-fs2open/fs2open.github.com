@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.254 $
- * $Date: 2005-10-24 12:42:14 $
+ * $Revision: 2.255 $
+ * $Date: 2005-10-26 00:43:05 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.254  2005/10/24 12:42:14  taylor
+ * init thruster stuff properly so that bmpman doesn't have a fit
+ *
  * Revision 2.253  2005/10/24 07:13:04  Goober5000
  * merge Bobboau's thruster code back in; hopefully this covers everything
  * --Goober5000
@@ -2374,6 +2377,8 @@ int parse_ship(bool replace)
 			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
+
+			return -1;
 		}
 		
 		//Check if there are too many ship classes
