@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-09-06 05:32:12 $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-27 16:23:03 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/09/06 05:32:12  taylor
+ * use exit(EXIT_FAILURE) rather than abort() so that all atexit() calls will actually get executed
+ *
  * Revision 2.10  2005/07/31 01:30:48  taylor
  * print file and line info for Int3() calls to the logfile so that they are easier to debug with basic error reports
  *
@@ -359,7 +362,11 @@ void debug_int3(char *file, int line)
 {
 	mprintf(("Int3(): From %s at line %d\n", file, line));
 
-	exit(EXIT_FAILURE);
+	// we have to call os_deinit() before abort() so we make sure that SDL gets
+	// closed out and we don't lose video/input control
+	os_deinit();
+
+	abort();
 }
 
 #endif		// Goober5000 - #ifndef WIN32
