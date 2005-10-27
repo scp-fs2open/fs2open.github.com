@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.24 $
- * $Date: 2005-10-17 05:48:18 $
+ * $Revision: 2.25 $
+ * $Date: 2005-10-27 16:23:03 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/10/17 05:48:18  taylor
+ * dynamically allocate object collision pairs
+ *
  * Revision 2.23  2005/10/11 08:30:38  taylor
  * fix memory freakage from dynamic spawn weapon types
  *
@@ -135,20 +138,25 @@ void Sleep(int mili)
 	// ewwww, I hate this!!  SDL_Delay() is causing issues for us though and this
 	// basically matches Apple examples of the same thing.  Same as SDL_Delay() but
 	// we aren't hitting up the system for anything during the process
-	int then = SDL_GetTicks() + mili;
+	uint then = SDL_GetTicks() + mili;
 
 	while (then > SDL_GetTicks());
 #else
-	SDL_Delay( long(mili) );
+	SDL_Delay(mili);
 #endif
 }
 
+extern void os_deinit();
 // fatal assertion error
 void WinAssert(char * text, char *filename, int line)
 {
 	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n", text, filename, line);
 
-	exit(EXIT_FAILURE);
+	// we have to call os_deinit() before abort() so we make sure that SDL gets
+	// closed out and we don't lose video/input control
+	os_deinit();
+
+	abort();
 }
 
 // standard warning message
