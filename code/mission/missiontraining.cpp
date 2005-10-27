@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-10-10 17:21:06 $
+ * $Revision: 2.21 $
+ * $Date: 2005-10-27 16:24:24 $
  * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.19  2005/07/22 10:18:40  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -922,6 +925,11 @@ void message_translate_tokens(char *buf, char *text)
 			if (!toke2)  // No second one?
 				break;
 
+			// make sure we don't any type of out-of-bounds issues
+			if ( ((toke2 - text) <= 0) || ((toke2 - text) >= sizeof(temp)) ) {
+				Int3();
+			}
+
 			strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
 			temp[toke2 - text] = 0;  // null terminate string
 			ptr = translate_key(temp);  // try and translate key
@@ -953,8 +961,13 @@ void message_translate_tokens(char *buf, char *text)
 			text = toke2 + 1;  // advance pointers past processed data
 
 			toke1 = strchr(text, '#');
-			if (toke1)  // No second one?
+			if (!toke1)  // No second one?
 				break;
+
+			// make sure we aren't going to have any type of out-of-bounds issues
+			if ( ((toke1 - text) <= 0) || ((toke1 - text) >= sizeof(temp)) ) {
+				Int3();
+			}
 
 			strncpy(temp, text, toke1 - text);  // isolate token into seperate buffer
 			temp[toke1 - text] = 0;  // null terminate string
