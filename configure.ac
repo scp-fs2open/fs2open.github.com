@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.22 2005-10-10 17:21:02 taylor Exp $
+dnl $Id: configure.ac,v 1.23 2005-10-27 16:21:18 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -348,15 +348,6 @@ elif test "$fs2_os_unix" = "yes" ; then
 	AC_DEFINE([NO_DIRECT3D])
 elif test "$fs2_os_osx" = "yes" ; then
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenGL"
-	AC_CHECK_LIB(/System/Library/Frameworks/OpenGL.framework/OpenGL, glBindBufferARB, ,
-		[AC_DEFINE([GL_NO_HTL])
-			echo ""
-			echo "******************************************************"
-			echo "* Warning: Your OpenGL libraries do not support      *"
-			echo "* glBindBufferARB(). HT&L will be disabled. Rebuild  *"
-			echo "* with newer OpenGL libraries to enable HT&L.        *"
-			echo "******************************************************"
-			echo ""])
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
 	## don't need the CFLAGS here if recent SDL is used
@@ -409,6 +400,15 @@ if test "$fs2_os_unix" = "yes" ; then
 	else
 		FS2_LDFLAGS="$FS2_LDFLAGS -logg -lvorbis -lvorbisfile"
 	fi
+elif test "$fs2_os_osx" = "yes" ; then
+	if test "x$fs2_static_ogg" != "x" ; then
+		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbisfile.a"
+		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbis.a"
+		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libogg.a"
+	else
+		FS2_LDFLAGS="$FS2_LDFLAGS -L/sw/lib -logg -lvorbis -lvorbisfile"
+	fi
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/sw/include"
 fi
 
 
@@ -419,7 +419,7 @@ elif test "$fs2_os_unix" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-unknown-pragmas"
 	FS2_CXXFLAGS="$FS2_CXXFLAGS -Wno-deprecated -Wno-char-subscripts"
 elif test "$fs2_os_osx" = "yes" ; then
-	D_CFLAGS="$D_CFLAGS -fsigned-char"
+	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-unknown-pragmas"
 fi
 
 dnl extra OSX frameworks

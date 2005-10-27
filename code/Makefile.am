@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.21 2005-09-30 09:44:19 taylor Exp $
+## $Id: Makefile.am,v 1.22 2005-10-27 16:21:18 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -298,6 +298,7 @@ FS2_SOURCES =	\
 	network/fs2ox.h	\
 	network/multi.cpp	\
 	network/multi.h	\
+	network/multilag.cpp	\
 	network/multilag.h	\
 	network/multimsgs.cpp	\
 	network/multimsgs.h	\
@@ -351,6 +352,9 @@ FS2_SOURCES =	\
 	network/psnet.h	\
 	network/psnet2.cpp	\
 	network/psnet2.h	\
+	network/stand_gui.cpp	\
+	network/stand_gui-unix.cpp	\
+	network/stand_gui.h	\
 	object/collidedebrisship.cpp	\
 	object/collidedebrisweapon.cpp	\
 	object/collideshipship.cpp	\
@@ -486,20 +490,6 @@ JOY_SOURCES =	\
 	io/joy-unix.cpp
 endif
 
-## networking support sources
-if FS2_OS_WIN32
-FS2_SOURCES +=	\
-	network/multilag.cpp	\
-	network/stand_gui.cpp	\
-	network/stand_gui.h
-endif
-
-if FS2_OS_UNIX
-FS2_SOURCES +=	\
-	network/stand_gui-unix.cpp	\
-	network/stand_gui.h
-endif
-
 ## sound support sources
 if FS2_SOUND
 SOUND_SOURCES =	\
@@ -521,6 +511,8 @@ SOUND_SOURCES =	\
 	sound/ds.h	\
 	sound/ds3d.cpp	\
 	sound/ds3d.h	\
+	sound/dscap.cpp	\
+	sound/dscap.h	\
 	sound/midifile.cpp	\
 	sound/midifile.h	\
 	sound/midiseq.h	\
@@ -539,13 +531,6 @@ SOUND_SOURCES =	\
 	sound/fsspeech.h	\
 	sound/speech.cpp	\
 	sound/speech.h
-
-if FS2_OS_WIN32
-SOUND_SOURCES +=	\
-	sound/dscap.cpp	\
-	sound/dscap.h
-endif
-
 endif
 
 ## Win32-specific sources
@@ -629,12 +614,10 @@ FS2OPEN_SOURCES = \
 	freespace2/levelpaging.h
 
 fs2_open_d_SOURCES =	\
-	${FS2OPEN_SOURCES}	\
-	${PLATFORM_SOURCES}
+	${FS2OPEN_SOURCES}
 
 fs2_open_r_SOURCES =	\
-	${FS2OPEN_SOURCES}	\
-	${PLATFORM_SOURCES}
+	${FS2OPEN_SOURCES}
 
 fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a
 fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a
@@ -658,12 +641,10 @@ wxFRED_SOURCES = \
 	wxfred2/wxfred_xrc.h
 
 wxFRED2_d_SOURCES = \
-	${wxFRED_SOURCES}	\
-	${PLATFORM_SOURCES}
+	${wxFRED_SOURCES}
 
 wxFRED2_r_SOURCES =	\
-	${wxFRED_SOURCES}	\
-	${PLATFORM_SOURCES}
+	${wxFRED_SOURCES}
 
 wxFRED2_d_LDADD = libcode.a ../libjpeg/libjpeg.a
 wxFRED2_r_LDADD = libcode.a ../libjpeg/libjpeg.a
