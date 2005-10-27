@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multilag.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-10-10 17:21:07 $
+ * $Revision: 2.9 $
+ * $Date: 2005-10-27 16:21:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.7  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -115,6 +118,7 @@
  * $NoKeywords: $
  */
 
+#ifndef SCP_UNIX
 
 #include <winsock.h>
 #include <wsipx.h>
@@ -779,3 +783,5 @@ DCF(lag_good, "")
 	Multi_streak_stamp = -1;
 	Multi_current_streak = -1;
 }
+
+#endif // !SCP_UNIX

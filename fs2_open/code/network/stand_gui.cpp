@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-10-10 17:21:08 $
+ * $Revision: 2.17 $
+ * $Date: 2005-10-27 16:21:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/10/10 17:21:08  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.15  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -375,6 +378,7 @@
  * $NoKeywords: $
  */
 
+#ifndef SCP_UNIX
 
 #ifdef _WIN32
 #include <windows.h>
@@ -2435,3 +2439,5 @@ void std_deinit_standalone()
 		Standalone_thread = NULL;
 	}
 }
+
+#endif // !SCP_UNIX
