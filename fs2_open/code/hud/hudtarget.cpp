@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.74 $
- * $Date: 2005-10-28 14:49:34 $
+ * $Revision: 2.75 $
+ * $Date: 2005-10-28 14:52:26 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2005/10/28 14:49:34  taylor
+ * some minor cleanup and compiler warning fixes
+ *
  * Revision 2.73  2005/10/12 05:43:40  taylor
  * temporary cmdline option, -y_bug_fix, to switch between original code (default) and previous attempt at the Y-bug fix
  *
@@ -1321,7 +1324,7 @@ void hud_target_hotkey_add_remove( int k, object *ctarget, int how_to_add )
 		return;
 
 	if ( (k < 0) || (k >= MAX_KEYED_TARGETS) ) {
-		nprintf(("Warning", "Bogus hotkey %d sent to hud_target_hotkey_add_remove\n"));
+		nprintf(("Warning", "Bogus hotkey %d sent to hud_target_hotkey_add_remove\n", k));
 		return;
 	}
 
