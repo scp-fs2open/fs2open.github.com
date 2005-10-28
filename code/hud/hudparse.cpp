@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-09-29 04:26:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.36 $
+ * $Date: 2005-10-28 14:47:16 $
+ * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/09/29 04:26:08  Goober5000
+ * parse fixage
+ * --Goober5000
+ *
  * Revision 2.34  2005/09/25 05:13:06  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -481,7 +485,7 @@ static void load_hud_defaults(hud* hud)
 static void load_hud_defaults(hud_info *hud)
 {
 	//X values
-	if(gr_screen.max_w == 640)
+	if(gr_screen.res == GR_640)
 	{
 		//Size defaults
 		hud->Aburn_size[0] = hud->Wenergy_size[0] = 60;
@@ -525,7 +529,7 @@ static void load_hud_defaults(hud_info *hud)
 	for(int i = 0; i < Num_gauge_types; i++)
 	{
 		cg = &gauges[i];
-		if(gr_screen.max_w == 640)
+		if(gr_screen.res == GR_640)
 		{
 			HUD_INT(hud, cg->coord_dest)[0] = cg->defaultx_640;
 			HUD_INT(hud, cg->coord_dest)[1] = cg->defaulty_480;
