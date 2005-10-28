@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-10-19 04:23:05 $
- * $Author: wmcoolmon $
+ * $Revision: 2.48 $
+ * $Date: 2005-10-28 06:10:06 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/10/19 04:23:05  wmcoolmon
+ * Don't need this anymore
+ *
  * Revision 2.46  2005/10/11 05:24:34  wmcoolmon
  * Gliding
  *
@@ -1283,7 +1286,7 @@ int physics_paused = 0, ai_paused = 0;
 
 // Goober5000
 extern void call_doa(object *child, object *parent);
-void move_one_docked_object(object *objp, object *parent_objp)
+void obj_move_one_docked_object(object *objp, object *parent_objp)
 {
 	// in FRED, just move and return
 	if (Fred_running)
