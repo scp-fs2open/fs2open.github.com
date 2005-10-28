@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-05-27 03:37:53 $
+ * $Revision: 2.9 $
+ * $Date: 2005-10-28 06:10:07 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/05/27 03:37:53  Goober5000
+ * moved some prototypes that WMC put in the header file back to the implementation file
+ * --Goober5000
+ *
  * Revision 2.7  2005/05/12 17:49:16  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -408,11 +412,11 @@ void dock_move_docked_children_tree(object *objp, object *parent_objp)
 	// mark as handled
 	objp->flags |= OF_DOCKED_ALREADY_HANDLED;
 
-	// if parent_objp exists, move this object to align with it
+	// if parent_objp exists
 	if (parent_objp != NULL)
 	{
-		extern void move_one_docked_object(object *objp, object *parent_objp);
-		move_one_docked_object(objp, parent_objp);
+		// move this object to align with it
+		obj_move_one_docked_object(objp, parent_objp);
 	}
 
 	// iterate through all docked objects
