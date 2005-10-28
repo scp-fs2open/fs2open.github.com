@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.181 $
- * $Date: 2005-10-24 23:28:37 $
+ * $Revision: 2.182 $
+ * $Date: 2005-10-28 05:25:27 $
  * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.181  2005/10/24 23:28:37  phreak
+ * implementation for nebula-change-storm and nebula-toggle-poof.  looks like they're working
+ *
  * Revision 2.180  2005/10/24 02:53:48  phreak
  * Get the new nebula argument types working in fred.
  *
@@ -8958,10 +8961,98 @@ void sexp_mission_set_nebula(int n)
 
 void sexp_add_background_bitmap(int n)
 {
+	angles ang;
+	int bitmap_idx;
+	float sx, sy;
+	int dx,dy;
+	int sexp_var;
+	int new_number;
+	char *new_text, *bg_bitmap_fname;
+	char number_as_str[TOKEN_LENGTH];
+	int i;
+	starfield_bitmap_instance* sbip;
+
+	//get all the info out of the sexp
+	bitmap_idx = stars_find_bitmap(bg_bitmap_fname = CTEXT(n)); n = CDR(n);
+	ang.h = fl_radian(eval_num(n) % 360); n = CDR(n);
+	ang.p = fl_radian(eval_num(n) % 360); n = CDR(n);
+	ang.b = fl_radian(eval_num(n) % 360); n = CDR(n);
+	sx = eval_num(n) / 10.0f; n = CDR(n);
+	sy = eval_num(n) / 10.0f; n = CDR(n);
+	dx = eval_num(n); n = CDR(n);
+	dy = eval_num(n); n = CDR(n);
+
+	//restrict parameters
+	if (sx > 18) sx = 18;
+	if (sx < 0.1f) sx = 0.1f;
+	if (sy > 18) sy = 18;
+	if (sy < 0.1f) sy = 0.1f;
+	if (dx > 5) dx = 5;
+	if (dx < 1) dx = 1;
+	if (dy > 5) dy = 5;
+	if (dy < 1) dy = 1;
+
+	// ripped from sexp_modify_variable()
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_var = atoi(Sexp_nodes[n].text);
+	
+	// verify variable set
+	Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+
+	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
+	{
+		// get new numerical value
+		new_number = Num_starfield_bitmaps;
+		sprintf(number_as_str, "%d", new_number);
+
+		// assign to variable
+		sexp_modify_variable(number_as_str, sexp_var);
+	}
+	else
+	{
+		Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+		return;
+	}
+
+	//sanity checking
+	if (bitmap_idx < 0)
+	{
+		Error(LOCATION, "sexp-add-background-bitmap: Background bitmap %s not found!", bg_bitmap_fname);
+		return;
+	}
+	
+	if (Num_starfield_bitmaps >= MAX_STARFIELD_BITMAPS)
+	{
+		Error(LOCATION, "sexp-add-background-bitmap: Too many background bitmaps in mission!");
+		return;
+	}
+
+	//get the pointer to the next bitmap, increase bitmap count
+	sbip = &Starfield_bitmap_instance[Num_starfield_bitmaps++];
+	sbip->ang = ang;
+	sbip->div_x = dx;
+	sbip->div_y = dy;
+	strcpy(sbip->filename, bg_bitmap_fname);
+	sbip->scale_x = sx;
+	sbip->scale_y = sy;
+
+	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void sexp_remove_background_bitmap(int n)
 {
+	int slot = eval_sexp(n);
+	
+	for (slot; slot < Num_starfield_bitmaps; slot++)
+	{
+		Starfield_bitmap_instance[slot] = Starfield_bitmap_instance[slot+1];
+	}
+
+	memset(&Starfield_bitmap_instance[slot], 0, sizeof(starfield_bitmap_instance));
+	Num_starfield_bitmaps--;
+
+	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void sexp_add_sun_bitmap(int n)
