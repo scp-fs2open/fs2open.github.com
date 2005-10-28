@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.182 $
- * $Date: 2005-10-28 05:25:27 $
+ * $Revision: 2.183 $
+ * $Date: 2005-10-28 05:48:55 $
  * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.182  2005/10/28 05:25:27  phreak
+ * added implementation for add-background-bitmap and remove-background-bitmap
+ *
  * Revision 2.181  2005/10/24 23:28:37  phreak
  * implementation for nebula-change-storm and nebula-toggle-poof.  looks like they're working
  *
@@ -8977,8 +8980,8 @@ void sexp_add_background_bitmap(int n)
 	ang.h = fl_radian(eval_num(n) % 360); n = CDR(n);
 	ang.p = fl_radian(eval_num(n) % 360); n = CDR(n);
 	ang.b = fl_radian(eval_num(n) % 360); n = CDR(n);
-	sx = eval_num(n) / 10.0f; n = CDR(n);
-	sy = eval_num(n) / 10.0f; n = CDR(n);
+	sx = eval_num(n) / 100.0f; n = CDR(n);
+	sy = eval_num(n) / 100.0f; n = CDR(n);
 	dx = eval_num(n); n = CDR(n);
 	dy = eval_num(n); n = CDR(n);
 
@@ -19601,15 +19604,15 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"
 		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
 		"Takes 9 arguments...\r\n"
-		"\t1:\tBackground bitmap name\r\n"
-		"\t2:\tBitmap heading\r\n"
-		"\t3:\tBitmap pitch\r\n"
-		"\t4:\tBitmap bank\r\n"
-		"\t5:\tBitmap X scale\r\n"
-		"\t6:\tBitmap Y scale\r\n"
-		"\t7:\tBitmap X divisions\r\n"
-		"\t8:\tBitmap Y divisions\r\n"
-		"\t9:\tVariable to store result\r\n"
+		"\t1:\tBackground bitmap name.\r\n"
+		"\t2:\tBitmap heading.\r\n"
+		"\t3:\tBitmap pitch.\r\n"
+		"\t4:\tBitmap bank.\r\n"
+		"\t5:\tBitmap X scale.  Expressed as a percentage of the original size of the bitmap.\r\n"
+		"\t6:\tBitmap Y scale.  Expressed as a percentage of the original size of the bitmap.\r\n"
+		"\t7:\tBitmap X divisions.\r\n"
+		"\t8:\tBitmap Y divisions.\r\n"
+		"\t9:\tVariable to store result.\r\n"
 	},
 
 	{ OP_REMOVE_BACKGROUND_BITMAP, "remove-background-bitmap\r\n"
@@ -19622,12 +19625,12 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap\r\n"
 		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
 		"Takes 6 arguments...\r\n"
-		"\t1:\tSun bitmap name\r\n"
-		"\t2:\tBitmap heading\r\n"
-		"\t3:\tBitmap pitch\r\n"
-		"\t4:\tBitmap bank\r\n"
-		"\t5:\tBitmap scale\r\n"
-		"\t6:\tVariable to store result\r\n"
+		"\t1:\tSun bitmap name.\r\n"
+		"\t2:\tBitmap heading.\r\n"
+		"\t3:\tBitmap pitch.\r\n"
+		"\t4:\tBitmap bank.\r\n"
+		"\t5:\tBitmap scale.  Expressed as a percentage of the original size of the bitmap.\r\n"
+		"\t6:\tVariable to store result.\r\n"
 	},
 
 	{ OP_REMOVE_SUN_BITMAP, "remove-sun-bitmap\r\n"
