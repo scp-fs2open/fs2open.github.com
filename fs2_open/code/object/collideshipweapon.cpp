@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-10-10 17:21:08 $
+ * $Revision: 2.22 $
+ * $Date: 2005-10-28 14:48:26 $
  * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/10/10 17:21:08  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.20  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -252,6 +255,7 @@ extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
 int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *pair );
 float estimate_ship_speed_upper_limit( object *ship, float time );
 extern float flFrametime;
+extern int Cmdline_decals;
 
 
 //	If weapon_obj is likely to hit ship_obj sooner than current aip->danger_weapon_objnum,
@@ -327,7 +331,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 		ship_apply_whack( &force, hitpos, ship_obj );
 	}
 
-	if(quadrant_num == -1){
+	if( (quadrant_num == -1) && Cmdline_decals ){
 		weapon_info	*wip = &Weapon_info[Weapons[weapon_obj->instance].weapon_info_index];
 		decal_point dec;
 		dec.orient = weapon_obj->orient;
