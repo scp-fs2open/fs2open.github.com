@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.70 $
- * $Date: 2005-10-26 20:53:02 $
+ * $Revision: 2.71 $
+ * $Date: 2005-10-28 14:49:34 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2005/10/26 20:53:02  taylor
+ * convert Jpegs from RGB to BGR after read, OpenGL had a problem with this, D3D still works fine
+ *
  * Revision 2.69  2005/10/23 20:34:28  taylor
  * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
  *
@@ -2230,7 +2233,7 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	if ( (be->type == BM_TYPE_DDS) && (dds_bpp == 32) ) {
 		uint *swap_tmp;
 
-		for (uint i = 0; i < be->mem_taken; i += 4) {
+		for (uint i = 0; i < (uint)be->mem_taken; i += 4) {
 			swap_tmp = (uint *)(data + i);
 			*swap_tmp = INTEL_INT(*swap_tmp);
 		}

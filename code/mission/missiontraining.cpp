@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-10-27 16:24:24 $
+ * $Revision: 2.22 $
+ * $Date: 2005-10-28 14:49:35 $
  * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/10/27 16:24:24  taylor
+ * some minor fixes to message_translate_tokens(), fixes a bug and adds some out-of-bounds checks
+ *
  * Revision 2.20  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -926,7 +929,7 @@ void message_translate_tokens(char *buf, char *text)
 				break;
 
 			// make sure we don't any type of out-of-bounds issues
-			if ( ((toke2 - text) <= 0) || ((toke2 - text) >= sizeof(temp)) ) {
+			if ( ((toke2 - text) <= 0) || ((toke2 - text) >= (ptr_s)sizeof(temp)) ) {
 				Int3();
 			}
 
@@ -965,7 +968,7 @@ void message_translate_tokens(char *buf, char *text)
 				break;
 
 			// make sure we aren't going to have any type of out-of-bounds issues
-			if ( ((toke1 - text) <= 0) || ((toke1 - text) >= sizeof(temp)) ) {
+			if ( ((toke1 - text) <= 0) || ((toke1 - text) >= (ptr_s)sizeof(temp)) ) {
 				Int3();
 			}
 

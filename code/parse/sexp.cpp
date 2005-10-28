@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.183 $
- * $Date: 2005-10-28 05:48:55 $
- * $Author: phreak $
+ * $Revision: 2.184 $
+ * $Date: 2005-10-28 14:49:35 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.183  2005/10/28 05:48:55  phreak
+ * Added extra documentation for add-background-bitmap and add-sun-bitmap
+ *
  * Revision 2.182  2005/10/28 05:25:27  phreak
  * added implementation for add-background-bitmap and remove-background-bitmap
  *
@@ -9047,7 +9050,7 @@ void sexp_remove_background_bitmap(int n)
 {
 	int slot = eval_sexp(n);
 	
-	for (slot; slot < Num_starfield_bitmaps; slot++)
+	for (; slot < Num_starfield_bitmaps; slot++)
 	{
 		Starfield_bitmap_instance[slot] = Starfield_bitmap_instance[slot+1];
 	}
