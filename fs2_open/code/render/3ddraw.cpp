@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-08-25 22:32:55 $
+ * $Revision: 2.46 $
+ * $Date: 2005-10-28 14:45:55 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/08/25 22:32:55  taylor
+ * since the geomtry_batcher can send more verts than non-HTL code can handle, avoid drawing in that case to avoid crashing
+ *
  * Revision 2.44  2005/07/18 03:45:09  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -552,6 +555,12 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 		return 0;
 	}
 
+	// if we have too many verts to stick into Vbuf0 then bail out and don't draw anything
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return 1;
+	}
+
 	cc.cc_or = 0;
 	cc.cc_and = 0xff;
 
@@ -562,10 +571,6 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 	 	return 0;
 	}
 */
-
-	// if we have too many verts to stick into Vbuf0 then bail out and don't draw anything
-	if (nv >= TMAP_MAX_VERTS) 
-		return 0;
 
 	for (i=0;i<nv;i++) {
 		vertex *p;
@@ -655,6 +660,11 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
 		}
 		gr_tmapper( nv, pointlist, tmap_flags );
 		return 0;
+	}
+
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return 1;
 	}
 
 	cc.cc_or = 0; cc.cc_and = 0xff;
@@ -1440,6 +1450,11 @@ float g3_draw_poly_constant_sw_area(int nv, vertex **pointlist, uint tmap_flags,
 	float p_area = 0.0f;
 
 	Assert( G3_count == 1 );
+
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return 0.0f;
+	}
 
 	cc.cc_or = 0;
 	cc.cc_and = 0xff;

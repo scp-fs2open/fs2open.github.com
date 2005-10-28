@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.131 $
- * $Date: 2005-10-24 07:13:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.132 $
+ * $Date: 2005-10-28 14:45:55 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2005/10/24 07:13:04  Goober5000
+ * merge Bobboau's thruster code back in; hopefully this covers everything
+ * --Goober5000
+ *
  * Revision 2.130  2005/10/22 06:26:30  taylor
  * couple of changes to NULL vec fixes which better match what Volition would have done (makes both Goober and myself happier :))
  * keep track of what was an error (even if erroneous) and why with "VECMAT-ERROR" comment
@@ -1520,6 +1524,11 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 
 	if ( nv < 0 )	return;
 
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return;
+	}
+
 	#ifndef NDEBUG
 	modelstats_num_polys++;
 	#endif
@@ -1652,6 +1661,12 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	#endif
 
 	if ( nv < 0 ) return;
+
+	// if we have too many verts to stick into Vbuf0 then bail out and don't draw anything
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return;
+	}
 
 	verts = (model_tmap_vert *)(p+44);
 	if(!Cmdline_nohtl) {
@@ -3972,7 +3987,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	if(!Cmdline_nohtl)gr_set_lighting(true,true);
 
-	if (objp != NULL) {
+	if ( (objp != NULL) && Cmdline_decals) {
 		vec3d decal_z_corection = View_position;
 	//	vm_vec_sub(&decal_z_corection, &Eye_position, pos);
 		if(decal_z_corection.xyz.x != 0 && decal_z_corection.xyz.y != 0 && decal_z_corection.xyz.z != 0)
@@ -4209,7 +4224,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 			//this is used for the secondary thruster glows 
 			//it only needs to be calculated once so I'm doing it here -Bobboau
-				norm /* = bank->norm[j] */;
+				/* norm = bank->norm[j] */;
 				norm.xyz.z = -1.0f;
 				norm.xyz.x = 1.0f;
 				norm.xyz.y = -1.0f;

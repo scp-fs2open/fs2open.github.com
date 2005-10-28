@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-04-05 05:53:20 $
+ * $Revision: 2.11 $
+ * $Date: 2005-10-28 14:45:55 $
  * $Author: taylor $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/04/05 05:53:20  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.9  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -643,14 +646,19 @@ void model_collide_flatpoly(ubyte * p)
 {
 	int i;
 	int nv;
-	vec3d * points[TMAP_MAX_VERTS];
+	vec3d *points[TMAP_MAX_VERTS];
 	short *verts;
 
 	nv = w(p+36);
-	if ( nv < 0 ) return;	
+	if ( nv < 0 ) return;
+
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return;
+	}
 
 	verts = (short *)(p+44);
-	
+
 	for (i=0;i<nv;i++)	{
 		points[i] = Mc_point_list[verts[i*2]];
 	}
@@ -677,11 +685,16 @@ void model_collide_tmappoly(ubyte * p)
 	int i;
 	int nv;
 	uv_pair uvlist[TMAP_MAX_VERTS];
-	vec3d * points[TMAP_MAX_VERTS];
+	vec3d *points[TMAP_MAX_VERTS];
 	model_tmap_vert *verts;
 
 	nv = w(p+36);
 	if ( nv < 0 ) return;
+
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return;
+	}
 
 	int tmap_num = w(p+40);
 	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);	// Goober5000
