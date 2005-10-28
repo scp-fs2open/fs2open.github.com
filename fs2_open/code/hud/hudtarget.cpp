@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.73 $
- * $Date: 2005-10-12 05:43:40 $
+ * $Revision: 2.74 $
+ * $Date: 2005-10-28 14:49:34 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2005/10/12 05:43:40  taylor
+ * temporary cmdline option, -y_bug_fix, to switch between original code (default) and previous attempt at the Y-bug fix
+ *
  * Revision 2.72  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -1317,7 +1320,7 @@ void hud_target_hotkey_add_remove( int k, object *ctarget, int how_to_add )
 	if ( MULTIPLAYER_STANDALONE )
 		return;
 
-	if ( k < 0 || k > 7 ) {
+	if ( (k < 0) || (k >= MAX_KEYED_TARGETS) ) {
 		nprintf(("Warning", "Bogus hotkey %d sent to hud_target_hotkey_add_remove\n"));
 		return;
 	}
@@ -1524,6 +1527,7 @@ void hud_keyed_targets_clear()
 	// clear out the keyed target list
 	for (i = 0; i < MAX_KEYED_TARGETS; i++ )
 		list_init( &(Players[Player_num].keyed_targets[i]) );
+
 	Players[Player_num].current_hotkey_set = -1;
 
 	// place all of the hoykey target items back onto the free list
