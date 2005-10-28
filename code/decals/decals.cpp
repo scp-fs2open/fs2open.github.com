@@ -1696,6 +1696,12 @@ void decal_create_tmappoly(ubyte * p)
 
 	nv = dw(p+36);
 	if ( nv < 0 ) return;
+
+	if ( nv > TMAP_MAX_VERTS ) {
+		Int3();
+		return;
+	}
+
 //TIMERBAR_PUSH(TIMERBAR_WHITE);
 	verts = (model_tmap_vert *)(p+44);
 
