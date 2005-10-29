@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-10-10 17:21:06 $
+ * $Revision: 2.60 $
+ * $Date: 2005-10-29 12:26:58 $
  * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.58  2005/09/27 02:36:57  Goober5000
  * clarification
  * --Goober5000
@@ -1001,7 +1004,7 @@ typedef struct wl_icon_info
 } wl_icon_info;
 
 wl_icon_info	Wl_icons_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-wl_icon_info	*Wl_icons;
+wl_icon_info	*Wl_icons = NULL;
 
 int Plist[MAX_WEAPON_TYPES];	// used to track scrolling of primary icon list
 int Plist_start, Plist_size;
@@ -1238,6 +1241,8 @@ int wl_get_pilot_subsys_index(p_object *pobjp)
 // Pause the current weapon animation
 void wl_pause_anim()
 {
+	Assert( Wl_icons != NULL );
+
 	if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
 		anim_pause(Wl_icons[Weapon_anim_class].wl_anim_instance);
 	}
@@ -1246,6 +1251,8 @@ void wl_pause_anim()
 // Unpause the current weapon animation
 void wl_unpause_anim()
 {
+	Assert( Wl_icons != NULL );
+
 	if ( Weapon_anim_class >= 0 && Wl_icons[Weapon_anim_class].wl_anim_instance ) {
 		anim_unpause(Wl_icons[Weapon_anim_class].wl_anim_instance);
 	}
@@ -1696,6 +1703,7 @@ void wl_set_disabled_weapons(int ship_class)
 		return;
 
 	Assert(ship_class >= 0 && ship_class < MAX_SHIP_TYPES);
+	Assert( Wl_icons != NULL );
 
 	sip = &Ship_info[ship_class];
 
@@ -1829,6 +1837,8 @@ void wl_load_icons(int weapon_class)
 	int num_frames, i;
 	weapon_info *wip = &Weapon_info[weapon_class];
 
+	Assert( Wl_icons != NULL );
+
 	icon = &Wl_icons[weapon_class];
 
 	if(!Cmdline_ship_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
@@ -1868,6 +1878,8 @@ void wl_load_anim(int weapon_class)
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
 	wl_icon_info	*icon;
 	weapon_info *wip = &Weapon_info[weapon_class];
+
+	Assert( Wl_icons != NULL );
 
 	icon = &Wl_icons[weapon_class];
 	Assert( icon->wl_anim == NULL );
@@ -1932,6 +1944,8 @@ void wl_load_all_anims()
 
 	int i;
 
+	Assert( Wl_icons != NULL );
+
 	// init anim members for weapon animations
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		Wl_icons[i].wl_anim = NULL;
@@ -1959,6 +1973,9 @@ void wl_unload_all_anim_instances()
 {
 	// stop any weapon anim instances
 	int i;
+
+	Assert( Wl_icons != NULL );
+
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		if ( Wl_icons[i].wl_anim_instance ) {
 			anim_release_render_instance(Wl_icons[i].wl_anim_instance);
@@ -1979,6 +1996,8 @@ void wl_unload_all_anim_instances()
 void wl_unload_all_anims()
 {
 	int i;
+
+	Assert( Wl_icons != NULL );
 
 	// unload overhead anim instances
 	for ( i = 0; i < Num_ship_types; i++ ) {
@@ -2004,6 +2023,8 @@ void wl_load_all_icons()
 
 	int i, j;
 
+	Assert( Wl_icons != NULL );
+
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		// clear out data
 		Wl_icons[i].wl_anim = NULL;
@@ -2027,6 +2048,8 @@ void wl_unload_icons()
 {
 	int					i,j;
 	wl_icon_info		*icon;
+
+	Assert( Wl_icons != NULL );
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		icon = &Wl_icons[i];
@@ -4171,6 +4194,9 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 //
 void stop_weapon_animation()
 {
+	if (Weapon_anim_class < 0)
+		return;
+
 	if (Wl_icons[Weapon_anim_class].wl_anim_instance == NULL)
 		return;
 
