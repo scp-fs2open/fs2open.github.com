@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-10-10 17:21:06 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-10-29 22:09:29 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.25  2005/09/27 02:36:57  Goober5000
  * clarification
  * --Goober5000
@@ -1428,7 +1431,7 @@ void wss_direct_restore_loadout()
 		if ( wp->ship_index[0] == -1 ) {
 			p_object *p_objp;
 			j=0;
-			for ( p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
+			for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
 				slot = &Player_loadout.unit_data[i*MAX_WING_SLOTS+j];
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
 					p_objp->ship_class = slot->ship_class;

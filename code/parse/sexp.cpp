@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.184 $
- * $Date: 2005-10-28 14:49:35 $
- * $Author: taylor $
+ * $Revision: 2.185 $
+ * $Date: 2005-10-29 22:09:30 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.184  2005/10/28 14:49:35  taylor
+ * some minor cleanup and compiler warning fixes
+ *
  * Revision 2.183  2005/10/28 05:48:55  phreak
  * Added extra documentation for add-background-bitmap and add-sun-bitmap
  *
@@ -2309,8 +2312,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (ship_name_lookup(CTEXT(node), 0) < 0) {
-					if (Fred_running || mission_parse_ship_arrived(CTEXT(node))){  // == 0 when still on arrival list
+				if (ship_name_lookup(CTEXT(node), 0) < 0)
+				{
+					if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
+					{
 						return SEXP_CHECK_INVALID_SHIP;
 					}
 				}
@@ -2327,7 +2332,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				{
 					if (ship_name_lookup(CTEXT(node), 1) < 0)
 					{
-						if (Fred_running || mission_parse_ship_arrived(CTEXT(node)))  // == 0 when still on arrival list
+						if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
 						{
 							return SEXP_CHECK_INVALID_SHIP;
 						}
@@ -2343,13 +2348,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if (ship_name_lookup(CTEXT(node), 1) < 0) {
-					if (Fred_running || mission_parse_ship_arrived(CTEXT(node))) {		// == 0 when still on arrival list
-						if (type == OPF_SHIP){													// return invalid ship if not also looking for point
+					if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
+					{
+						if (type == OPF_SHIP)
+						{													// return invalid ship if not also looking for point
 							return SEXP_CHECK_INVALID_SHIP;
 						}
 
-						if (waypoint_lookup(CTEXT(node)) < 0){
-							if (verify_vector(CTEXT(node))){						// verify return non-zero on invalid point
+						if (waypoint_lookup(CTEXT(node)) < 0)
+						{
+							if (verify_vector(CTEXT(node)))					// verify return non-zero on invalid point
+							{
 								return SEXP_CHECK_INVALID_POINT;
 							}
 						}
@@ -2376,7 +2385,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if ((ship_name_lookup(CTEXT(node), 1) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0)) {
-					if (Fred_running || mission_parse_ship_arrived(CTEXT(node))) {		// == 0 when still on arrival list
+					if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
+					{
 						if (type != OPF_SHIP_WING_POINT){									// return invalid if not also looking for point
 							return SEXP_CHECK_INVALID_SHIP_WING;
 						}
@@ -2440,15 +2450,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (shipnum >= 0){
 					ship_class = Ships[shipnum].ship_info_index;
 				} else {
-					// must try to find the ship in the ship_arrival_list
-					p_object *parse_obj;
+					// must try to find the ship in the arrival list
+					p_object *p_objp = mission_parse_get_arrival_ship(shipname);
 
-					parse_obj = mission_parse_get_arrival_ship( shipname );
-					if ( parse_obj == NULL ){
+					if (!p_objp)
 						return SEXP_CHECK_INVALID_SHIP;
-					}
 
-					ship_class = parse_obj->ship_class;
+					ship_class = p_objp->ship_class;
 				}
 
 				// check for the special "hull" value
@@ -2616,7 +2624,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						valid = 1;
 					}
 
-					if (!Fred_running && !mission_parse_ship_arrived(CTEXT(node)))	// 0 when on arrival list
+					if (!Fred_running && mission_parse_get_arrival_ship(CTEXT(node)))
 					{
 						valid = 1;
 					}
@@ -2661,7 +2669,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if (ship_name_lookup(CTEXT(node), 1) < 0)
 				{
-					if (Fred_running || mission_parse_ship_arrived(CTEXT(node)))	// == 0 when still on arrival list
+					if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
 					{
 						return SEXP_CHECK_INVALID_SHIP;
 					}
@@ -3031,7 +3039,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 					if ( stricmp(CTEXT(node), "<any wingman>"))  // not a special token?
 						if ((ship_name_lookup(CTEXT(node)) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
-							if (Fred_running || mission_parse_ship_arrived(CTEXT(node)))  // == 0 when still on arrival list
+							if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
 								return SEXP_CHECK_INVALID_MSG_SOURCE;
 				}
 
@@ -7271,7 +7279,7 @@ void sexp_change_iff( int n )
 	char *ship_or_wing_name, *new_iff;
 	int i, ship_num, wing_num, new_team;
 	wing *wingp;
-	p_object *parse_obj;
+	p_object *p_objp;
 
 	Assert ( n >= 0 );
 	new_iff = CTEXT(n);
@@ -7315,9 +7323,9 @@ void sexp_change_iff( int n )
 			sexp_ingame_ship_change_iff(ship_num, new_team);
 		}
 		// change ship yet to arrive
-		else if (parse_obj = mission_parse_get_arrival_ship(ship_or_wing_name), parse_obj)
+		else if (p_objp = mission_parse_get_arrival_ship(ship_or_wing_name), p_objp)
 		{
-			sexp_parse_ship_change_iff(parse_obj, new_team);
+			sexp_parse_ship_change_iff(p_objp, new_team);
 		}
 		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
 		else if (wing_num != -1)
@@ -7331,11 +7339,11 @@ void sexp_change_iff( int n )
 			}
 
 			// ships yet to arrive
-			for (parse_obj = GET_FIRST(&ship_arrival_list); parse_obj != END_OF_LIST(&ship_arrival_list); parse_obj = GET_NEXT(parse_obj))
+			for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
-				if (parse_obj->wingnum == wing_num)
+				if (p_objp->wingnum == wing_num)
 				{
-					sexp_parse_ship_change_iff(parse_obj, new_team);
+					sexp_parse_ship_change_iff(p_objp, new_team);
 				}
 			}
 		}
@@ -8633,12 +8641,12 @@ int sexp_is_cargo(int n)
 		// not arrived yet
 		else
 		{
-			p_object *parse_obj;
+			p_object *p_objp;
 
 			// find cargo for the parse object
-			parse_obj = mission_parse_get_arrival_ship( ship );
-			Assert ( parse_obj );
-			cargo_index = int(parse_obj->cargo1);
+			p_objp = mission_parse_get_arrival_ship(ship);
+			Assert (p_objp);
+			cargo_index = (int) p_objp->cargo1;
 		}
 	}
 
@@ -8729,12 +8737,12 @@ void sexp_set_cargo(int n)
 	{
 		if (!subsystem)
 		{
-			p_object *parse_obj;
+			p_object *p_objp;
 
 			// set cargo for the parse object
-			parse_obj = mission_parse_get_arrival_ship( ship );
-			Assert ( parse_obj );
-			parse_obj->cargo1 = char(cargo_index | (parse_obj->cargo1 & CARGO_NO_DEPLETE));
+			p_objp = mission_parse_get_arrival_ship(ship);
+			Assert (p_objp);
+			p_objp->cargo1 = char(cargo_index | (p_objp->cargo1 & CARGO_NO_DEPLETE));
 		}
 	}
 }
@@ -8800,7 +8808,7 @@ void sexp_exchange_cargo( int n )
 	shipname1 = CTEXT(n);
 	shipname2 = CTEXT(CDR(n));
 
-	// find the ships -- if neither in the mission, the abort
+	// find the ships -- if neither in the mission, abort
 	shipnum1 = ship_name_lookup(shipname1);
 	shipnum2 = ship_name_lookup(shipname2);
 	if ( (shipnum1 == -1) || (shipnum2 == -1) )
@@ -8818,7 +8826,7 @@ void sexp_exchange_cargo( int n )
 	Ships[shipnum2].cargo1 = char(temp);
 }
 
-void sexp_cap_waypont_speed(int n)
+void sexp_cap_waypoint_speed(int n)
 {
 	char *shipname;
 	int shipnum;
@@ -8973,9 +8981,8 @@ void sexp_add_background_bitmap(int n)
 	int dx,dy;
 	int sexp_var;
 	int new_number;
-	char *new_text, *bg_bitmap_fname;
+	char *bg_bitmap_fname;
 	char number_as_str[TOKEN_LENGTH];
-	int i;
 	starfield_bitmap_instance* sbip;
 
 	//get all the info out of the sexp
@@ -9293,60 +9300,125 @@ void sexp_allow_weapon( int n )
 	mission_campaign_save_persistent( CAMPAIGN_PERSISTENT_WEAPON, sindex );
 }
 
+// Goober5000
+// generic function for all those sexps that set flags
+void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int p_object_flag, int p_object_flag2, int set_it, int include_players_in_ship_lookup = 0)
+{
+	char *ship_name;
+	int ship_index;
+
+	// loop for all ships in the sexp
+	for (; node >= 0; node = CDR(node))
+	{
+		// get ship name
+		ship_name = CTEXT(node);
+
+		// check to see if ship destroyed or departed.  In either case, do nothing.
+		if (mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL))
+			continue;
+
+		// see if ship exists in-mission
+		ship_index = ship_name_lookup(ship_name, include_players_in_ship_lookup ? 1 : 0);
+
+		// if ship is in-mission
+		if (ship_index >= 0)
+		{
+			// see if we have an object flag to set
+			if (object_flag)
+			{
+				// set or clear?
+				if (set_it)
+					Objects[Ships[ship_index].objnum].flags |= object_flag;
+				else
+					Objects[Ships[ship_index].objnum].flags &= ~object_flag;
+			}
+
+			// see if we have an object flag2 to set
+			if (object_flag2)
+			{
+/*
+				// set or clear?
+				if (set_it)
+					Objects[Ships[ship_index].objnum].flags2 |= object_flag2;
+				else
+					Objects[Ships[ship_index].objnum].flags2 &= ~object_flag2;
+*/
+			}
+
+			// see if we have a ship flag to set
+			if (ship_flag)
+			{
+				// set or clear?
+				if (set_it)
+					Ships[ship_index].flags |= ship_flag;
+				else
+					Ships[ship_index].flags &= ~ship_flag;
+			}
+
+			// see if we have a ship flag2 to set
+			if (ship_flag2)
+			{
+				// set or clear?
+				if (set_it)
+					Ships[ship_index].flags2 |= ship_flag2;
+				else
+					Ships[ship_index].flags2 &= ~ship_flag2;
+			}
+		}
+		// if it's not in-mission
+		else
+		{
+			// grab it from the arrival list
+			p_object *p_objp = mission_parse_get_arrival_ship(ship_name);
+			if (!p_objp)
+			{
+				Int3();		// guess we'll have to track down allender
+				continue;
+			}
+
+			// see if we have a p_object flag to set
+			if (p_object_flag)
+			{
+				// set or clear?
+				if (set_it)
+					p_objp->flags |= p_object_flag;
+				else
+					p_objp->flags &= ~p_object_flag;
+			}
+
+			// see if we have a p_object flag2 to set
+			if (p_object_flag2)
+			{
+				// set or clear?
+				if (set_it)
+					p_objp->flags2 |= p_object_flag2;
+				else
+					p_objp->flags2 &= ~p_object_flag2;
+			}
+		}
+	}
+}
+
 // modified by Goober5000; now it should work properly
 // function to deal with breaking/fixing the warp engines on ships/wings.
 // --repairable is true when we are breaking the warp drive (can be repaired)
 // --damage_it is true when we are sabotaging it, one way or the other; false when fixing it
 void sexp_deal_with_warp( int n, int repairable, int damage_it )
 {
-	int index, flag;
-	char *name;
+	int ship_flag, p_object_flag;
 
-	for ( ; n != -1; n = CDR(n) ) {
-		name = CTEXT(n);
-		index = ship_name_lookup(name);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) )
-			continue;
-
-		// we can only operate on ships which are in the mission
-		if ( index != -1 ) {
-
-			// set the flag value accoring to whether we are destroying the warp or just breaking it
-			if ( repairable )
-				flag = SF_WARP_BROKEN;
-			else
-				flag = SF_WARP_NEVER;
-
-			if ( damage_it )
-				Ships[index].flags |= flag;
-			else
-				Ships[index].flags &= ~flag;
-
-		} else {
-			// maybe this ship has yet to arrive.  Get a possible parse object and set the flag if found
-			p_object *pobjp;
-
-			pobjp = mission_parse_get_arrival_ship( name );
-#ifndef NDEBUG
-			if ( pobjp == NULL ) {
-				Int3();				// warning, find allender -- should be impossible
-				continue;
-			}
-#endif
-			if ( repairable )
-				flag = P_SF_WARP_BROKEN;
-			else
-				flag = P_SF_WARP_NEVER;		// Goober5000 - was BROKEN... bug, no?
-
-			if ( damage_it )
-				pobjp->flags |= flag;
-			else
-				pobjp->flags &= ~flag;
-
-		}
+	if (repairable)
+	{
+		ship_flag = SF_WARP_BROKEN;
+		p_object_flag = P_SF_WARP_BROKEN;
 	}
+	else
+	{
+		ship_flag = SF_WARP_NEVER;
+		p_object_flag = P_SF_WARP_NEVER;
+	}
+
+	sexp_deal_with_ship_flag(n, 0, 0, ship_flag, 0, p_object_flag, 0, damage_it);
 }
 
 // function which is used to tell the AI when it is okay to fire certain secondary
@@ -9677,234 +9749,87 @@ int sexp_goal_incomplete( int n )
 
 // protects/unprotects a ship.  The flag tells us whether or not the protect bit should be set (flag==1)
 // or cleared (flag==0)
-void sexp_protect_ships( int n, int flag )
+void sexp_protect_ships(int n, int flag)
 {
-	char *ship_name;
-	int num;
-
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num >= 0 ) {
-			if ( flag )
-				Objects[Ships[num].objnum].flags |= OF_PROTECTED;
-			else
-				Objects[Ships[num].objnum].flags &= ~OF_PROTECTED;
-		} else {
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj ) {
-				if ( flag )
-					parse_obj->flags |= P_OF_PROTECTED;
-				else
-					parse_obj->flags &= ~P_OF_PROTECTED;
-
-	#ifndef NDEBUG
-			} else {
-				Int3();	// get allender -- could be a potential problem here
-	#endif
-			}
-		}
-	}
+	sexp_deal_with_ship_flag(n, OF_PROTECTED, 0, 0, 0, P_OF_PROTECTED, 0, flag);
 }
 
 // protects/unprotects a ship.  The flag tells us whether or not the protect bit should be set (flag==1)
 // or cleared (flag==0)
-void sexp_beam_protect_ships( int n, int flag )
+void sexp_beam_protect_ships(int n, int flag )
 {
-	char *ship_name;
-	int num;
-
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num >= 0 ) {
-			if ( flag )
-				Objects[Ships[num].objnum].flags |= OF_BEAM_PROTECTED;
-			else
-				Objects[Ships[num].objnum].flags &= ~OF_BEAM_PROTECTED;
-		} else {
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj ) {
-				if ( flag )
-					parse_obj->flags |= P_OF_BEAM_PROTECTED;
-				else
-					parse_obj->flags &= ~P_OF_BEAM_PROTECTED;
-
-	#ifndef NDEBUG
-			} else {
-				Int3();	// get allender -- could be a potential problem here
-	#endif
-			}
-		}
-	}
+	sexp_deal_with_ship_flag(n, OF_BEAM_PROTECTED, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
 }
 
-
 // Goober5000 - sets the "dont collide invisible" flag on a list of ships
-void sexp_dont_collide_invisible( int n, int dont_collide )
+void sexp_dont_collide_invisible(int n, int dont_collide)
 {
-	char *ship_name;
-	int num;
-
-	for ( ; n != -1; n = CDR(n) )
-	{
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 )
-		{
-			if ( dont_collide )
-			{
-				Ships[num].flags2 |= SF2_DONT_COLLIDE_INVIS;
-			}
-			else
-			{
-				Ships[num].flags2 &= ~SF2_DONT_COLLIDE_INVIS;
-			}
-
-		}
-		else
-		{
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj )
-			{
-				if ( dont_collide )
-					parse_obj->flags |= P_SF2_DONT_COLLIDE_INVIS;
-				else
-					parse_obj->flags &= ~P_SF2_DONT_COLLIDE_INVIS;
-
-	#ifndef NDEBUG
-			}
-			else
-			{
-				Int3();	// could be a potential problem here
-	#endif
-			}
-		}
-	}
+	sexp_deal_with_ship_flag(n, 0, 0, 0, SF2_DONT_COLLIDE_INVIS, P_SF2_DONT_COLLIDE_INVIS, 0, dont_collide);
 }
 
 // Goober5000 - sets the vaporize flag on a list of ships
-void sexp_ships_vaporize( int n, int vaporize )
+void sexp_ships_vaporize(int n, int vaporize)
 {
-	char *ship_name;
-	int num;
-
-	for ( ; n != -1; n = CDR(n) )
-	{
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 )
-		{
-			if ( vaporize )
-			{
-				Ships[num].flags |= SF_VAPORIZE;
-			}
-			else
-			{
-				Ships[num].flags &= ~SF_VAPORIZE;
-			}
-
-		}
-		else
-		{
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj )
-			{
-				if ( vaporize )
-					parse_obj->flags |= P_SF_VAPORIZE;
-				else
-					parse_obj->flags &= ~P_SF_VAPORIZE;
-
-	#ifndef NDEBUG
-			}
-			else
-			{
-				Int3();	// could be a potential problem here
-	#endif
-			}
-		}
-	}
+	sexp_deal_with_ship_flag(n, 0, 0, SF_VAPORIZE, 0, P_SF_VAPORIZE, 0, vaporize);
 }
 
 // sexpression to make ships "visible" and "invisible" to sensors.  The visible parameter is true
 // when making ships visible, false otherwise
-void sexp_ships_visible( int n, int visible )
+void sexp_ships_visible(int n, int visible)
 {
-	char *ship_name;
-	int num;
+	sexp_deal_with_ship_flag(n, 0, 0, SF_HIDDEN_FROM_SENSORS, 0, P_SF_HIDDEN_FROM_SENSORS, 0, !visible);
 
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
+	// we also have to add any escort ships that were made visible
+	if (visible)
+	{
+		for (; n >= 0; n = CDR(n))
+		{
+			int shipnum = ship_name_lookup(CTEXT(n));
+			if (shipnum < 0)
+				continue;
 
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
+			if (Ships[shipnum].flags & SF_ESCORT)
+				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+		}
+	}
+}
 
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 ) {
-			if ( !visible ) {
-				Ships[num].flags |= SF_HIDDEN_FROM_SENSORS;
-			} else {
-				Ships[num].flags &= ~SF_HIDDEN_FROM_SENSORS;
-				if (Ships[num].flags & SF_ESCORT) {
-					// SEND add escort request
-					hud_add_ship_to_escort(Ships[num].objnum, 1);
-				}
-			}
+// Goober5000
+void sexp_ships_stealthy(int n, int stealthy)
+{
+	sexp_deal_with_ship_flag(n, 0, 0, 0, SF2_STEALTH, P_SF2_STEALTH, 0, stealthy);
 
-		} else {
-			p_object *parse_obj;
+	// we also have to add any escort ships that were made visible
+	if (!stealthy)
+	{
+		for (; n >= 0; n = CDR(n))
+		{
+			int shipnum = ship_name_lookup(CTEXT(n));
+			if (shipnum < 0)
+				continue;
 
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj ) {
-				if ( !visible )
-					parse_obj->flags |= P_SF_HIDDEN_FROM_SENSORS;
-				else
-					parse_obj->flags &= ~P_SF_HIDDEN_FROM_SENSORS;
+			if (Ships[shipnum].flags & SF_ESCORT)
+				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+		}
+	}
+}
 
-	#ifndef NDEBUG
-			} else {
-				Int3();	// get allender -- could be a potential problem here
-	#endif
-			}
+// Goober5000
+void sexp_friendly_stealth_invisible(int n, int invisible)
+{
+	sexp_deal_with_ship_flag(n, 0, 0, 0, SF2_FRIENDLY_STEALTH_INVIS, P_SF2_FRIENDLY_STEALTH_INVIS, 0, invisible);
+
+	// we also have to add any escort ships that were made visible
+	if (!invisible)
+	{
+		for (; n >= 0; n = CDR(n))
+		{
+			int shipnum = ship_name_lookup(CTEXT(n));
+			if (shipnum < 0)
+				continue;
+
+			if (Ships[shipnum].flags & SF_ESCORT)
+				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
 		}
 	}
 }
@@ -9967,166 +9892,10 @@ void sexp_ship_tag( int n, int tag )
 	ship_apply_tag(ship_num, tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum].pos, &start, ssm_index);
 }
 
-// Goober5000
-void sexp_ships_stealthy(int n, int stealthy)
-{
-	char *ship_name;
-	int num;
-
-	for ( ; n != -1; n = CDR(n) )
-	{
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 )
-		{
-			if ( stealthy )
-			{
-				Ships[num].flags2 |= SF2_STEALTH;
-			}
-			else
-			{
-				Ships[num].flags2 &= ~SF2_STEALTH;
-
-				// add to escort list because we became visible
-				if (Ships[num].flags & SF_ESCORT)
-				{
-					// SEND add escort request
-					hud_add_ship_to_escort(Ships[num].objnum, 1);
-				}
-			}
-		}
-		else
-		{
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj )
-			{
-				if ( stealthy )
-				{
-					parse_obj->flags |= P_SF2_STEALTH;
-				}
-				else
-				{
-					parse_obj->flags &= ~P_SF2_STEALTH;
-				}
-
-	#ifndef NDEBUG
-			} else {
-				Int3();	// could be a potential problem here
-	#endif
-			}
-		}
-	}
-}
-
-// Goober5000
-void sexp_friendly_stealth_invisible(int n, int invisible)
-{
-	char *ship_name;
-	int num;
-
-	for ( ; n != -1; n = CDR(n) )
-	{
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 )
-		{
-			if ( invisible )
-			{
-				Ships[num].flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
-			}
-			else
-			{
-				Ships[num].flags2 &= ~SF2_FRIENDLY_STEALTH_INVIS;
-
-				// add to escort list because we became visible
-				if (Ships[num].flags & SF_ESCORT)
-				{
-					// SEND add escort request
-					hud_add_ship_to_escort(Ships[num].objnum, 1);
-				}
-			}
-		}
-		else
-		{
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj )
-			{
-				if ( invisible )
-				{
-					parse_obj->flags |= P_SF2_FRIENDLY_STEALTH_INVIS;
-				}
-				else
-				{
-					parse_obj->flags &= ~P_SF2_FRIENDLY_STEALTH_INVIS;
-				}
-
-	#ifndef NDEBUG
-			} else {
-				Int3();	// could be a potential problem here
-	#endif
-			}
-		}
-	}
-}
-
 // sexpression to toggle invulnerability flag of ships.
 void sexp_ships_invulnerable( int n, int invulnerable )
 {
-	char *ship_name;
-	object *objp;
-	int num;
-
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 ) {
-			objp = &Objects[Ships[num].objnum];
-			if ( invulnerable )
-				objp->flags |= OF_INVULNERABLE;
-			else
-				objp->flags &= ~OF_INVULNERABLE;
-		} else {
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj ) {
-				if ( invulnerable )
-					parse_obj->flags |= P_SF_INVULNERABLE;
-				else
-					parse_obj->flags &= ~P_SF_INVULNERABLE;
-
-	#ifndef NDEBUG
-			} else {
-				Int3();	// get allender -- could be a potential problem here
-	#endif
-			}
-		}
-	}
+	sexp_deal_with_ship_flag(n, OF_INVULNERABLE, 0, 0, 0, P_SF_INVULNERABLE, 0, invulnerable);
 }
 
 // Goober5000
@@ -10213,20 +9982,20 @@ void sexp_ships_guardian( int n, int guardian )
 		if ( num != -1 ) {
 			Ships[num].ship_guardian_threshold = guardian ? SHIP_GUARDIAN_THRESHOLD_DEFAULT : 0;
 		} else {
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj ) {
+			p_object *p_objp = mission_parse_get_arrival_ship(ship_name);
+			if (p_objp)
+			{
 				if ( guardian )
-					parse_obj->flags |= P_SF_GUARDIAN;
+					p_objp->flags |= P_SF_GUARDIAN;
 				else
-					parse_obj->flags &= ~P_SF_GUARDIAN;
-
-	#ifndef NDEBUG
-			} else {
-				Int3();	// get allender -- could be a potential problem here
-	#endif
+					p_objp->flags &= ~P_SF_GUARDIAN;
 			}
+	#ifndef NDEBUG
+			else
+			{
+				Int3();	// get allender -- could be a potential problem here
+			}
+	#endif
 		}
 	}
 }
@@ -10434,43 +10203,7 @@ void sexp_ship_lights_off(int node) //-WMCoolmon
 
 void sexp_shields_off(int n, int shields_off ) //-Sesquipedalian
 {
-	char *ship_name;
-	object *objp;
-	int num;
-
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
-			continue;
-
-		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
-		// in a list until created
-		num = ship_name_lookup(ship_name);
-		if ( num != -1 ) {
-			objp = &Objects[Ships[num].objnum];
-			if ( shields_off )
-				objp->flags |= OF_NO_SHIELDS; 
-			else
-				objp->flags &= ~OF_NO_SHIELDS; 
-		} else {
-			p_object *parse_obj;
-
-			parse_obj = mission_parse_get_arrival_ship( ship_name );
-			if ( parse_obj ) {
-				if ( shields_off )
-					parse_obj->flags |= P_OF_NO_SHIELDS;
-				else
-					parse_obj->flags &= ~P_OF_NO_SHIELDS;
-
-	#ifndef NDEBUG
-			} else {
-				Int3();	// get allender -- could be a potential problem here
-	#endif
-			}
-		}
-	}
+	sexp_deal_with_ship_flag(n, OF_NO_SHIELDS, 0, 0, 0, P_OF_NO_SHIELDS, 0, shields_off);
 }
 
 // Goober5000
@@ -10518,7 +10251,7 @@ void sexp_kamikaze(int n, int kamikaze)
 	int kdamage;
 	char *ship_or_wing_name;
 	wing *wingp;
-	p_object *parse_obj;
+	p_object *p_objp;
 	
 	kdamage = 0;
 	if (kamikaze)
@@ -10549,9 +10282,9 @@ void sexp_kamikaze(int n, int kamikaze)
 			sexp_ingame_ship_kamikaze(ship_num, kdamage);
 		}
 		// change ship yet to arrive
-		else if (parse_obj = mission_parse_get_arrival_ship(ship_or_wing_name), parse_obj)
+		else if (p_objp = mission_parse_get_arrival_ship(ship_or_wing_name), p_objp)
 		{
-			sexp_parse_ship_kamikaze(parse_obj, kdamage);
+			sexp_parse_ship_kamikaze(p_objp, kdamage);
 		}
 		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
 		else if (wing_num != -1)
@@ -10565,11 +10298,11 @@ void sexp_kamikaze(int n, int kamikaze)
 			}
 
 			// ships yet to arrive
-			for (parse_obj = GET_FIRST(&ship_arrival_list); parse_obj != END_OF_LIST(&ship_arrival_list); parse_obj = GET_NEXT(parse_obj))
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
-				if (parse_obj->wingnum == wing_num)
+				if (p_objp->wingnum == wing_num)
 				{
-					sexp_parse_ship_kamikaze(parse_obj, kdamage);
+					sexp_parse_ship_kamikaze(p_objp, kdamage);
 				}
 			}
 		}
@@ -10613,7 +10346,7 @@ void sexp_ship_change_alt_name(int n)
 {
 	int i, ship_num, wing_num;
 	char *ship_or_wing_name, *new_alt_name;
-	p_object *parse_obj;
+	p_object *p_objp;
 	wing *wingp;
 
 	// get the alt-name
@@ -10642,9 +10375,9 @@ void sexp_ship_change_alt_name(int n)
 			sexp_ingame_ship_alt_name(ship_num, new_alt_name);
 		}
 		// change ship yet to arrive
-		else if (parse_obj = mission_parse_get_arrival_ship(ship_or_wing_name), parse_obj)
+		else if (p_objp = mission_parse_get_arrival_ship(ship_or_wing_name), p_objp)
 		{
-			sexp_parse_ship_alt_name(parse_obj, new_alt_name);
+			sexp_parse_ship_alt_name(p_objp, new_alt_name);
 		}
 		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
 		else if (wing_num != -1)
@@ -10658,11 +10391,11 @@ void sexp_ship_change_alt_name(int n)
 			}
 
 			// ships yet to arrive
-			for (parse_obj = GET_FIRST(&ship_arrival_list); parse_obj != END_OF_LIST(&ship_arrival_list); parse_obj = GET_NEXT(parse_obj))
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
-				if (parse_obj->wingnum == wing_num)
+				if (p_objp->wingnum == wing_num)
 				{
-					sexp_parse_ship_alt_name(parse_obj, new_alt_name);
+					sexp_parse_ship_alt_name(p_objp, new_alt_name);
 				}
 			}
 		}
@@ -14510,7 +14243,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_CAP_WAYPOINT_SPEED:
 				sexp_val = 1;
-				sexp_cap_waypont_speed(node);
+				sexp_cap_waypoint_speed(node);
 				break;
 
 			case OP_TURRET_TAGGED_ONLY_ALL:

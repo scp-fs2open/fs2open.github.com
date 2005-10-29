@@ -1510,6 +1510,14 @@ SOURCE=..\..\code\Object\ObjectSnd.h
 
 SOURCE=..\..\code\Object\ObjectSort.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\parseobjectdock.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\parseobjectdock.h
+# End Source File
 # End Group
 # Begin Group "Observer"
 

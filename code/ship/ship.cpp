@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.255 $
- * $Date: 2005-10-26 00:43:05 $
- * $Author: taylor $
+ * $Revision: 2.256 $
+ * $Date: 2005-10-29 22:09:31 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.255  2005/10/26 00:43:05  taylor
+ * make sure that XMTs don't try to still create an invalid entry when +nocreate is used
+ *
  * Revision 2.254  2005/10/24 12:42:14  taylor
  * init thruster stuff properly so that bmpman doesn't have a fit
  *
@@ -1781,7 +1784,7 @@ extern void render_path_points(object *objp);
 #endif
 
 // mwa -- removed 11/24/97 int	num_ships = 0;
-int	num_wings = 0;
+int	Num_wings = 0;
 int	Num_reinforcements = 0;
 ship	Ships[MAX_SHIPS];
 ship	*Player_ship;
@@ -3903,7 +3906,7 @@ void ship_level_init()
 		Ships_exited[i].obj_signature = -1;
 	}
 
-	num_wings = 0;
+	Num_wings = 0;
 	for (i = 0; i < MAX_WINGS; i++ )
 	{
 		Wings[i].num_waves = -1;
@@ -9880,7 +9883,7 @@ int wing_name_lookup(char *name, int ignore_count)
 	if ( Fred_running )
 		wing_limit = MAX_WINGS;
 	else
-		wing_limit = num_wings;
+		wing_limit = Num_wings;
 
 	if (Fred_running || ignore_count ) {  // current_count not used for Fred..
 		for (i=0; i<wing_limit; i++)
@@ -9901,7 +9904,7 @@ int wing_name_lookup(char *name, int ignore_count)
 int wing_lookup(char *name)
 {
    int idx;
-	for(idx=0;idx<num_wings;idx++)
+	for(idx=0;idx<Num_wings;idx++)
 		if(strcmp(Wings[idx].name,name)==0)
 		   return idx;
 
@@ -9988,11 +9991,10 @@ int ship_type_name_lookup(char *name)
 // checks the (arrival & departure) state of a ship.  Return values:
 // -1: has yet to arrive in mission
 //  0: is currently in mission
-//  1: has been destroyed, departed, or never existsed
+//  1: has been destroyed, departed, or never existed
 int ship_query_state(char *name)
 {
 	int i;
-	p_object *objp;
 
 	// bogus
 	if(name == NULL){
@@ -10009,14 +10011,8 @@ int ship_query_state(char *name)
 		}
 	}
 
-	objp = GET_FIRST(&ship_arrival_list);
-	while (objp != END_OF_LIST(&ship_arrival_list)) {
-		if (!stricmp(name, objp->name)){
-			return -1;
-		}
-
-		objp = GET_NEXT(objp);
-	}
+	if (mission_parse_get_arrival_ship(name))
+		return 1;
 
 	return 1;
 }
@@ -11520,7 +11516,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 	// iterate through starting wings of player.  Add ship indices of ships which meet
 	// given criteria
 	count = 0;
-	for (i = 0; i < num_wings; i++ ) {
+	for (i = 0; i < Num_wings; i++ ) {
 		int wingnum;
 
 		wingnum = -1;
@@ -13097,8 +13093,8 @@ void ship_page_in()
 
 	// Mark any ships that might warp in in the future as used
 	//
-	p_object * p_objp;
-	for( p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp) )	{
+	for(p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+	{
 		nprintf(( "Paging","Found future arrival ship '%s'\n", p_objp->name ));
 		ship_class_used[p_objp->ship_class]++;
 
@@ -13783,8 +13779,8 @@ int wing_has_conflicting_teams(int wing_index)
 	int first_team, idx;
 
 	// sanity checks
-	Assert((wing_index >= 0) && (wing_index < num_wings) && (Wings[wing_index].current_count > 0));
-	if((wing_index < 0) || (wing_index >= num_wings) || (Wings[wing_index].current_count <= 0)){
+	Assert((wing_index >= 0) && (wing_index < Num_wings) && (Wings[wing_index].current_count > 0));
+	if((wing_index < 0) || (wing_index >= Num_wings) || (Wings[wing_index].current_count <= 0)){
 		return -1;
 	}
 
@@ -13815,33 +13811,28 @@ int wing_has_conflicting_teams(int wing_index)
 int ship_get_reinforcement_team(int r_index)
 {
 	int wing_index;
-	p_object *objp;
+	p_object *p_objp;
 
 	// sanity checks
 	Assert((r_index >= 0) && (r_index < Num_reinforcements));
-	if((r_index < 0) || (r_index >= Num_reinforcements)){
+	if ((r_index < 0) || (r_index >= Num_reinforcements))
 		return -1;
-	}
 
 	// if the reinforcement is a ship	
-	objp = mission_parse_get_arrival_ship( Reinforcements[r_index].name );
-	if(objp != NULL){
-		return objp->team;
-	}
+	p_objp = mission_parse_get_arrival_ship(Reinforcements[r_index].name);
+	if (p_objp != NULL)
+		return p_objp->team;
 
 	// if the reinforcement is a ship
 	wing_index = wing_lookup(Reinforcements[r_index].name);
-	if(wing_index >= 0){		
-		// go through the ship arrival list and find the first ship in this wing
-		objp = GET_FIRST(&ship_arrival_list);
-		while( objp != END_OF_LIST(&ship_arrival_list) )	{
+	if (wing_index >= 0)
+	{		
+		// go through the ship arrival list and find any ship in this wing
+		for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+		{
 			// check by wingnum			
-			if (objp->wingnum == wing_index) {
-				return objp->team;
-			}
-
-			// next
-			objp = GET_NEXT(objp);
+			if (p_objp->wingnum == wing_index)
+				return p_objp->team;
 		}
 	}
 

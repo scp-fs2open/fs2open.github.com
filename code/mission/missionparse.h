@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.70 $
+ * $Revision: 2.71 $
  * $Author: Goober5000 $
- * $Date: 2005-09-27 02:36:57 $
+ * $Date: 2005-10-29 22:09:29 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.69  2005/09/25 18:44:51  taylor
  * fix Subsys_status leak, wasn't a problem in game but can be touchy on exit
  *
@@ -470,6 +474,7 @@
 #include "graphics/2d.h"
 
 struct wing;
+struct p_dock_instance;
 
 #define NUM_NEBULAS			3				// how many background nebulas we have altogether
 #define NUM_NEBULA_COLORS	9
@@ -675,8 +680,9 @@ typedef struct subsys_status {
 //	information from a $OBJECT: definition is read into this struct to
 // be copied into the real object, ship, etc. structs
 typedef struct p_object {
-	struct p_object *next, *prev;
 	char	name[NAME_LENGTH];
+	p_object *next, *prev;
+
 	vec3d	pos;
 	matrix	orient;
 	int	ship_class;
@@ -685,6 +691,7 @@ typedef struct p_object {
 	int	behavior;							// ai_class;
 	int	ai_goals;							// sexp of lists of goals that this ship should try and do
 	char	cargo1;
+
 	int	status_count;
 	int	status_type[MAX_OBJECT_STATUS];
 	int	status[MAX_OBJECT_STATUS];
@@ -715,15 +722,15 @@ typedef struct p_object {
 	int	hotkey;								// hotkey number (between 0 and 9) -1 means no hotkey
 	int	score;
 	int	orders_accepted;					// which orders this ship will accept from the player
-	char	docked_with[NAME_LENGTH];
-	char	docker_point[NAME_LENGTH];
-	char	dockee_point[NAME_LENGTH];
+	p_dock_instance	*dock_list;				// Goober5000 - parse objects this parse object is docked to
+	object *created_object;					// Goober5000
 	int	group;								// group object is within or -1 if none.
 	int	persona_index;
 	float	kamikaze_damage;					// base damage for a kamikaze attack
 	int	special_exp_index;
 	int special_hitpoint_index;
 	ushort net_signature;					// network signature this object can have
+	int destroy_before_mission_time;
 
 	char	wing_status_wing_index;			// wing index (0-4) in wingman status gauge
 	char	wing_status_wing_pos;			// wing position (0-5) in wingman status gauge
@@ -756,7 +763,7 @@ typedef struct p_object {
 #define P_OF_PLAYER_START			(1<<6)
 #define P_SF_NO_ARRIVAL_MUSIC		(1<<7)
 #define P_SF_NO_ARRIVAL_WARP		(1<<8)
-#define P_SF_NO_DEPARTURE_WARP	(1<<9)
+#define P_SF_NO_DEPARTURE_WARP		(1<<9)
 #define P_SF_LOCKED					(1<<10)
 #define P_SF_INVULNERABLE			(1<<11)
 #define P_SF_HIDDEN_FROM_SENSORS	(1<<12)
@@ -777,7 +784,7 @@ typedef struct p_object {
 
 // the following parse object flags are used internally by Freespace
 #define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship
-#define P_SF_INITIALLY_DOCKED		(1<<27)	// is this parse object initially docked with something else
+#define P_SF_DOCK_LEADER			(1<<27)	// Goober5000 - a docked parse object that is the leader of its group
 #define P_SF_CANNOT_ARRIVE			(1<<28)	// used to indicate that this ship's arrival cue will never be true
 #define P_SF_WARP_BROKEN			(1<<29)	// warp engine should be broken for this ship
 #define P_SF_WARP_NEVER				(1<<30)	// warp drive is destroyed
@@ -799,19 +806,19 @@ typedef struct p_object {
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
 //#define blah							(1<<30)
-//#define blah							(1<<31)
+#define P2_ALREADY_HANDLED				(1<<31)	// Goober5000 - used for docking currently, but could be used generically
 
 
-extern p_object ship_arrival_list;			// used by sexpression parser
+// Goober5000
+#define MAX_PARSE_OBJECTS		100				// this shall also be the maximum number of ships on the arrival list
+#define POBJ_INDEX(pobjp) (pobjp-Parse_objects)
+extern p_object Parse_objects[MAX_PARSE_OBJECTS];
+extern int Num_parse_objects;
 
-
-#define MAX_SHIP_ARRIVALS		90			// maximum of 90 objects can arrive later
-#define MAX_WING_ARRIVALS		20			// maximum of 20 wings can arrive later
-
-extern p_object ship_arrivals[MAX_SHIP_ARRIVALS];
-extern int num_ship_arrivals;
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;
+extern p_object Ship_arrival_list;
+
 
 typedef struct {
 	int		default_ship;  // default ship type for player start point (recommended choice)
@@ -860,10 +867,10 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 extern texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
 
 int parse_main(char *mission_name, int flags = 0, int importFSM = 0);
-int mission_parse_ship_arrived(char *shipname);
-p_object *mission_parse_get_arrival_ship( char *name );
-p_object *mission_parse_get_arrival_ship( ushort net_signature );
-p_object *mission_parse_get_original_ship( ushort net_signature );
+p_object *mission_parse_get_arrival_ship(ushort net_signature);
+p_object *mission_parse_get_arrival_ship(char *name);
+p_object *mission_parse_get_parse_object(ushort net_signature);
+p_object *mission_parse_get_parse_object(char *name);
 int parse_create_object(p_object *objp);
 
 void mission_parse_close();
@@ -916,6 +923,9 @@ void conv_fix_punctuation();
 void restore_default_weapons(char *ships_tbl);
 void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
+
+// Goober5000
+void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);
 
 // Goober5000
 extern int Knossos_warp_ani_used;

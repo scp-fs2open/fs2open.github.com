@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2005-10-29 22:09:29 $
+ * $Author: Goober5000 $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.9  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -554,7 +557,7 @@ void mission_hotkey_set_defaults()
 	}
 
 	// Check for wings with a hotkey assigned
-	for ( i = 0; i < num_wings; i++ ) {
+	for ( i = 0; i < Num_wings; i++ ) {
 		wp = &Wings[i];
 
 		if ( wp->hotkey == -1 )  
@@ -678,7 +681,7 @@ int get_wing_hotkeys(int n)
 {
 	int i, total = 0xffffffff;
 
-	Assert((n >= 0) && (n < num_wings));
+	Assert((n >= 0) && (n < Num_wings));
 	for (i=0; i<Wings[n].current_count; i++) {
 		int ship_index;
 
@@ -823,7 +826,7 @@ int hotkey_build_team_listing(int team, int y)
 		}
 	}
 
-	for (i=0; i<num_wings; i++) {
+	for (i=0; i<Num_wings; i++) {
 		if (Wings[i].current_count && (hotkey_get_team( Wings[i].ship_index[Wings[i].special_ship] ) == team)) {
 
 			// special check for the player's wing.  If he's in a wing, and the only guy left, don't

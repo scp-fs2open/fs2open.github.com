@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-08-24 07:20:36 $
+ * $Revision: 2.24 $
+ * $Date: 2005-10-29 22:09:29 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/08/24 07:20:36  Goober5000
+ * tweaky optimization based on the current version of stristr and
+ * the current version of the expanded music.tbl
+ * --Goober5000
+ *
  * Revision 2.22  2005/07/20 02:37:32  taylor
  * move the "none.wav" init to event_music_init() so it only runs through once (fixes no mission music when modular tbls are used)
  *
@@ -1586,8 +1591,8 @@ int hostile_ships_to_arrive()
 {
 	p_object *p_objp;
 
-	p_objp = GET_FIRST(&ship_arrival_list);
-	while( p_objp != END_OF_LIST(&ship_arrival_list) )	{
+	p_objp = GET_FIRST(&Ship_arrival_list);
+	while( p_objp != END_OF_LIST(&Ship_arrival_list) )	{
 		if ( (p_objp->team != Player_ship->team) && !(p_objp->flags & P_SF_CANNOT_ARRIVE) ) {
 			return 1;
 		}
