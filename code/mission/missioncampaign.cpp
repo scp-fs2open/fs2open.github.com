@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-09-16 00:03:51 $
+ * $Revision: 2.32 $
+ * $Date: 2005-10-29 12:25:49 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/09/16 00:03:51  taylor
+ * didn't mean to leave that in there
+ *
  * Revision 2.30  2005/08/22 22:24:22  Goober5000
  * some tweaks to parselo, plus ensure that Unicode files don't crash
  * --Goober5000
@@ -1638,7 +1641,12 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			pool_count = cfread_int(fp);
 			// don't set this again and again (for WMC)
 			if (set_defaults) {
-				Player_loadout.ship_pool[ship_info_lookup(s_name[i])] = pool_count;
+				sid = ship_info_lookup(s_name[i]);
+
+				if (sid < 0)
+					continue;
+
+				Player_loadout.ship_pool[sid] = pool_count;
 			}
 		}
 
@@ -1647,7 +1655,12 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			pool_count = cfread_int(fp);
 			// don't set this again and again (for WMC)
 			if (set_defaults) {
-				Player_loadout.weapon_pool[weapon_info_lookup(w_name[i])] = pool_count;
+				wid = weapon_info_lookup(w_name[i]);
+
+				if (wid < 0)
+					continue;
+
+				Player_loadout.weapon_pool[wid] = pool_count;
 			}
 		}
 
