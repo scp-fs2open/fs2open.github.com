@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-10-14 07:22:24 $
+ * $Revision: 2.47 $
+ * $Date: 2005-10-29 22:09:30 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/10/14 07:22:24  Goober5000
+ * removed an unneeded parameter and renamed some stuff
+ * --Goober5000
+ *
  * Revision 2.45  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -3255,7 +3259,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	PACKET_SET_SIZE();
 
 	// do a sanity check on the wing to be sure that we are actually working on a valid wing
-	if ( (index < 0) || (index >= num_wings) || (Wings[index].num_waves == -1) ) {
+	if ( (index < 0) || (index >= Num_wings) || (Wings[index].num_waves == -1) ) {
 		nprintf(("Network", "invalid index %d for wing create packet\n"));
 		return;
 	}

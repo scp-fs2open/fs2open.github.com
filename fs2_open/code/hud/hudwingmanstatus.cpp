@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-10-29 22:09:29 $
+ * $Author: Goober5000 $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.13  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -440,7 +443,7 @@ void hud_wingman_status_init_late_wings()
 /*
 	int i, j, wing_index;
 
-	for ( i = 0; i < num_wings; i++ ) {
+	for ( i = 0; i < Num_wings; i++ ) {
 		wing_index = ship_squadron_wing_lookup(Wings[i].name);
 
 		if ( (wing_index >= 0) && (Wings[i].total_arrived_count == 0) ) {
@@ -581,7 +584,7 @@ void hud_wingman_status_blit_middle_frame(int num_wings_to_draw)
 	}
 
 	// don't draw for 1 or 2 wings
-	if((num_wings == 1) || (num_wings == 2)){
+	if((Num_wings == 1) || (Num_wings == 2)){
 		return;
 	}
 

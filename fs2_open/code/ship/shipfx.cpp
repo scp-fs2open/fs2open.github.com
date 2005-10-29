@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-10-20 17:50:03 $
- * $Author: taylor $
+ * $Revision: 2.54 $
+ * $Date: 2005-10-29 22:09:31 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/10/20 17:50:03  taylor
+ * fix player warpout
+ * basic code cleanup (that previous braces change did nothing for readability)
+ * spell "plyr" correctly
+ * tweak warp shrink time to better match WMC's other changes and avoid the skipping during shrink
+ *
  * Revision 2.52  2005/10/20 06:37:34  wmcoolmon
  * Oops, guess I didn't commit this stuff
  *
@@ -982,7 +988,7 @@ void shipfx_warpin_start( object *objp )
 	}
 	
 	// The ending zero mean this is a warp-in effect
-	if ( !(shipp->flags & SF_INITIALLY_DOCKED) ) {
+	if (shipp->flags & SF_DOCK_LEADER) {
 		int warp_objnum;
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.13 $
- * $Date: 2005-10-10 17:21:03 $
- * $Author: taylor $
+ * $Revision: 1.14 $
+ * $Date: 2005-10-29 22:09:28 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/10/10 17:21:03  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.12  2005/08/31 08:11:58  Goober5000
  * hm, typo
  * --Goober5000
@@ -754,7 +757,7 @@ void ai_post_process_mission()
 	if ( !Fred_running )
 	{
 		// Goober5000 - make all wings form on their respective leaders
-		for ( i = 0; i < num_wings; i++ )
+		for ( i = 0; i < Num_wings; i++ )
 		{
 			ai_maybe_add_form_goal( &Wings[i] );
 		}
@@ -1146,7 +1149,7 @@ void ai_goal_purge_all_invalid_goals( ai_goal *aigp )
 	}
 
 	// we must do the same for the wing goals
-	for (i = 0; i < num_wings; i++ )
+	for (i = 0; i < Num_wings; i++ )
 		ai_goal_purge_invalid_goals( aigp, Wings[i].ai_goals );
 }
 
@@ -1956,7 +1959,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			status = SHIP_STATUS_ARRIVED;
 		}
 		// goal ship is still on the arrival list
-		else if ( !mission_parse_ship_arrived(aigp->ship_name) )
+		else if ( mission_parse_get_arrival_ship(aigp->ship_name) )
 		{
 			status = SHIP_STATUS_NOT_ARRIVED;
 		}

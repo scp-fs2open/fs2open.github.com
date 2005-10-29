@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-10-29 09:06:52 $
- * $Author: wmcoolmon $
+ * $Revision: 2.52 $
+ * $Date: 2005-10-29 22:09:29 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/10/29 09:06:52  wmcoolmon
+ * Safeguard against saved loadout and loadout changes.
+ *
  * Revision 2.50  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -3014,9 +3017,9 @@ int create_wings()
 					} else {
 						if ( wb->is_late) {
 							found_pobj = 0;
-							for ( p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
+							for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
 								if ( p_objp->wingnum == WING_INDEX(wp) ) {
-									if ( ws->sa_index == (p_objp-ship_arrivals) ) {
+									if ( ws->sa_index == POBJ_INDEX(p_objp) ) {
 										p_objp->ship_class = Wss_slots[slot_index].ship_class;
 										wl_update_parse_object_weapons(p_objp, &Wss_slots[i*MAX_WING_SLOTS+j]);
 										found_pobj = 1;
@@ -3071,7 +3074,7 @@ int create_wings()
 				case WING_SLOT_EMPTY:	
 					// delete ship that is not going to be used by the wing
 					if ( wb->is_late ) {
-						list_remove( &ship_arrival_list, &ship_arrivals[ws->sa_index]);
+						list_remove( &Ship_arrival_list, &Parse_objects[ws->sa_index]);
 						wp->wave_count--;
 						Assert(wp->wave_count >= 0);
 					}
@@ -3203,7 +3206,7 @@ int ss_return_saindex(int slot_num)
 // ss_return_ship()
 //
 // For a given wing slot, return the ship index if the ship has been created.  
-// Otherwise, find the index into ship_arrivals[] for the ship
+// Otherwise, find the index into Parse_objects[] for the ship
 //
 //	input:	wing_block	=>		wing block of ship to find
 //				wing_slot	=>		wing slot of ship to find
@@ -3238,10 +3241,10 @@ int ss_return_ship(int wing_block, int wing_slot, int *ship_index, p_object **pp
 
 	ws = &Ss_wings[wing_block].ss_slots[wing_slot];
 
-	// Check to see if ship is on the ship_arrivals[] list
+	// Check to see if ship is on the ship arrivals list
 	if ( ws->sa_index != -1 ) {
 		*ship_index = -1;
-		*ppobjp = &ship_arrivals[ws->sa_index];
+		*ppobjp = &Parse_objects[ws->sa_index];
 	} else {
 		*ship_index = Wings[Ss_wings[wing_block].wingnum].ship_index[wing_slot];
 		Assert(*ship_index != -1);		
@@ -3267,9 +3270,9 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 		return;
 	}
 
-	// Check to see if ship is on the ship_arrivals[] list
+	// Check to see if ship is on the ship arrivals list
 	if ( ws->sa_index != -1 ) {
-		strcpy(name, ship_arrivals[ws->sa_index].name);
+		strcpy(name, Parse_objects[ws->sa_index].name);
 	} else {
 		ship *sp;
 		sp = &Ships[wp->ship_index[wing_slot]];
@@ -3370,7 +3373,7 @@ int ss_fixup_team_data(team_data *tdata)
 
 		if ( wp->current_count == 0 ) {
 
-			for ( p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
+			for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
 					ship_in_parse_player = 0;
 			
@@ -3601,10 +3604,10 @@ void ss_init_wing_info(int wing_num,int starting_wing_num)
 		p_object *p_objp;
 		// Temporarily fill in the current count and initialize the ship list in the wing
 		// This gets cleaned up before the mission is started
-		for ( p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
+		for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
 			if ( p_objp->wingnum == WING_INDEX(wp) ) {
 				slot = &ss_wing->ss_slots[ss_wing->num_slots++];
-				slot->sa_index = p_objp-ship_arrivals;
+				slot->sa_index = POBJ_INDEX(p_objp);
 				slot->original_ship_class = p_objp->ship_class;
 			}
 			ss_wing->is_late = 1;
@@ -3683,13 +3686,13 @@ void ss_init_units()
 					}
 				}
 			} else {
-				if ( ship_arrivals[ss_slot->sa_index].flags & P_SF_LOCKED ) {
+				if ( Parse_objects[ss_slot->sa_index].flags & P_SF_LOCKED ) {
 					ss_slot->status = WING_SLOT_DISABLED;
 					ss_slot->status |= WING_SLOT_LOCKED;
 				} else {
 					ss_slot->status = WING_SLOT_FILLED;
 				}
-				if ( ship_arrivals[ss_slot->sa_index].flags & P_OF_PLAYER_START ) {
+				if ( Parse_objects[ss_slot->sa_index].flags & P_OF_PLAYER_START ) {
 					if ( ss_slot->status & WING_SLOT_LOCKED ) {
 						// Int3();	// Get Alan
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.116 $
- * $Date: 2005-10-24 07:13:05 $
+ * $Revision: 2.117 $
+ * $Date: 2005-10-29 22:09:31 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.116  2005/10/24 07:13:05  Goober5000
+ * merge Bobboau's thruster code back in; hopefully this covers everything
+ * --Goober5000
+ *
  * Revision 2.115  2005/10/20 17:50:02  taylor
  * fix player warpout
  * basic code cleanup (that previous braces change did nothing for readability)
@@ -985,7 +989,7 @@ extern color IFF_colors[MAX_IFF_COLORS][2];
 #define	SF_ARRIVING_STAGE_2		(1 << 25)	// ship is arriving. In other words, doing warp in effect, stage 2
 #define  SF_ARRIVING             (SF_ARRIVING_STAGE_1|SF_ARRIVING_STAGE_2)
 #define	SF_ENGINES_ON				(1 << 24)	// engines sound should play if set
-#define	SF_INITIALLY_DOCKED		(1 << 23)	// used by Fred to tell if this ship is initially docked with something else
+#define	SF_DOCK_LEADER			(1 << 23)	// Goober5000 - this guy is in charge of everybody he's docked to
 #define	SF_CARGO_REVEALED			(1 << 22)	// ship's cargo is revealed to all friendly ships
 #define	SF_FROM_PLAYER_WING		(1	<< 21)	// set for ships that are members of any player starting wing
 #define	SF_PRIMARY_LINKED			(1 << 20)	// ships primary weapons are linked together
@@ -1602,7 +1606,7 @@ typedef struct ship_info {
 	vec3d topdown_offset;
 } ship_info;
 
-extern int num_wings;
+extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;
 

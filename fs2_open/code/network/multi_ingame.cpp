@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2005-10-29 22:09:30 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.24  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -1401,7 +1404,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		}
 
 		// lookup ship in the original ships array
-		p_objp = mission_parse_get_original_ship(net_signature);
+		p_objp = mission_parse_get_parse_object(net_signature);
 		if(p_objp == NULL){
 			// if this ship is part of wing not on its current wave, look for its "original" by subtracting out wave #
 			p_objp = mission_parse_get_arrival_ship((ushort)(net_signature - (ushort)net_sig_modify));
@@ -1717,7 +1720,7 @@ void send_ingame_wings_packet( net_player *player )
 	BUILD_HEADER( WINGS_INGAME_PACKET );
 
 	// iterate through the wings list
-	for ( i = 0; i < num_wings; i++ ) {
+	for ( i = 0; i < Num_wings; i++ ) {
 		wing *wingp;
 
 		wingp = &Wings[i];

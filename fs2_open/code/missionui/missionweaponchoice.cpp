@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-10-29 12:26:58 $
- * $Author: taylor $
+ * $Revision: 2.61 $
+ * $Date: 2005-10-29 22:09:30 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/10/29 12:26:58  taylor
+ * Add some error checking and handling to better deal with possible problems, and to let us know what/where they are
+ *
  * Revision 2.59  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -2362,7 +2365,7 @@ void wl_get_ship_weapons(int ship_index, int *wep, int *wep_count)
 	}
 }
 
-// set wep and wep_count from a ship which sits in the ship_arrivals[] list at index sa_index
+// set wep and wep_count from a ship which sits in the ship arrivals list at index sa_index
 void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_count)
 {
 	int				i,	pilot_index;
@@ -2370,7 +2373,7 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
 	ship_info		*sip;
 	p_object			*pobjp;
 
-	pobjp = &ship_arrivals[sa_index];
+	pobjp = &Parse_objects[sa_index];
 	sip = &Ship_info[ship_class];
 
 	pilot_index = wl_get_pilot_subsys_index(pobjp);

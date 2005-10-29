@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2005-10-29 22:09:29 $
+ * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.16  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -838,7 +841,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		}
 	}
 
-	for ( i = 0; i < num_wings; i++ ) {
+	for ( i = 0; i < Num_wings; i++ ) {
 		// if this wing is a player starting wing, skip it since we added it above
 		for ( j = 0; j < MAX_STARTING_WINGS; j++ ) {
 			if ( i == Starting_wings[j] )
@@ -1392,7 +1395,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 		}
 	}
 
-	for ( i = 0; i < num_wings; i++ ) {
+	for ( i = 0; i < Num_wings; i++ ) {
 		int shipnum;
 
 		if ( (Wings[i].flags & WF_WING_GONE) || (Wings[i].current_count == 0) )
@@ -1803,7 +1806,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		}
 
 		Assert ( ainfo->shipnum != -1 );
-		Assert ( (wingnum >= 0) && (wingnum < num_wings) );
+		Assert ( (wingnum >= 0) && (wingnum < Num_wings) );
 
 		// get the team for the wing
 		Assert ( Wings[wingnum].ship_index[0] != -1 );
@@ -2206,7 +2209,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
 	}
 
 	// check to see if the reinforcement called was a wing.
-	for (i = 0; i < num_wings; i++ ) {
+	for (i = 0; i < Num_wings; i++ ) {
 		if ( !stricmp(rp->name, Wings[i].name) ) {
 			// found a wingname.  Call the parse function to create all the ships in this wing
 			// we must set the arrival cue of the wing to true, otherwise, this won't work!!
@@ -2224,7 +2227,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
 
 	// if we found no wing name that matched the reinforcement name, then look for a ship
 	// of the same name
-	if ( i == num_wings ) {
+	if ( i == Num_wings ) {
 		p_objp = mission_parse_get_arrival_ship( rp->name );
 		if ( p_objp ) {
 			// by resetting the reinforcement flag, we will allow code which normally handles arrivals
