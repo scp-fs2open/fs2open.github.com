@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.80 $
- * $Date: 2005-10-22 22:22:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.81 $
+ * $Date: 2005-10-29 09:00:41 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2005/10/22 22:22:41  Goober5000
+ * rolled back UnknownPlayer's commit
+ * --Goober5000
+ *
  * Revision 2.78  2005/10/20 15:33:44  taylor
  * minor readability fix
  * plug a memmory leak and possible Polygon_models[] madness if a POF can't be found or is otherwise invalid
@@ -2246,7 +2250,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						bay->type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
 
 					bay->num_slots = cfread_int(fp);
-					Assert( bay->num_slots == 2 );					// Get Allender if Asserted!
+					Assert( bay->num_slots == MAX_DOCK_SLOTS );					// Get Allender if Asserted!
 					for (j = 0; j < bay->num_slots; j++) {
 						cfread_vector( &(bay->pnt[j]), fp );
 						cfread_vector( &(bay->norm[j]), fp );
