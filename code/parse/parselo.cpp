@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.54 $
+ * $Revision: 2.55 $
  * $Author: wmcoolmon $
- * $Date: 2005-10-22 20:17:19 $
+ * $Date: 2005-10-29 09:02:13 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/10/22 20:17:19  wmcoolmon
+ * mission-set-nebula fixage; remainder of python code
+ *
  * Revision 2.53  2005/10/09 06:10:58  wmcoolmon
  * Added sexps set-object-speed-x, set-object-speed-y, set-object-speed-z,
  * and ship-create
@@ -1062,7 +1065,7 @@ char* alloc_text_until(char* instr, char* endstr)
 	else
 	{
 		char* rstr = NULL;
-		rstr = (char*) malloc((foundstr - instr)*sizeof(char));
+		rstr = (char*) vm_malloc((foundstr - instr)*sizeof(char));
 
 		if(rstr != NULL) {
 			strncpy(rstr, instr, foundstr-instr);
@@ -1133,22 +1136,68 @@ void stuff_string_until(char *pstr, char *endstr, int len)
 //Used for allocating large blocks, eg of Python code
 //Returns a null-terminated string allocated with malloc(),
 //or NULL on failure
+//Does depth checks for the start and end strings
 char* alloc_block(char* startstr, char* endstr)
 {
+	Assert(startstr != NULL && endstr != NULL);
+	Assert(stricmp(startstr, endstr));
+
+	char* rval = NULL;
+	uint elen = strlen(endstr);
+	uint slen = strlen(startstr);
+	uint flen = 0;
+
 	//Skip the opening thing and any extra stuff
 	required_string(startstr);
 	ignore_white_space();
 
 	//Allocate it
-	char* rval = alloc_text_until(Mp, endstr);
+	char* pos = Mp;
 
-	//Did it fail?
-	if(rval == NULL) {
-		return rval;
+	//Depth checking
+	int level = 1;
+	while(*pos++ != EOF_CHAR)
+	{
+		if(!strnicmp(pos, startstr, slen))
+		{
+			level++;
+		}
+		else if(!strnicmp(pos, endstr, elen))
+		{
+			level--;
+		}
+
+		if(level<=0)
+		{
+			break;
+		}
 	}
 
-	//Skip the end
-	Mp += strlen(rval);
+	//Check that we left the file
+	if(level > 0)
+	{
+		Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" in file", startstr, endstr);
+		longjmp(parse_abort, 3);
+	}
+	else
+	{
+		//Set final length for faster calcs
+		flen = pos-Mp;
+
+		//Allocate the memory
+		rval = (char*) vm_malloc((flen)*sizeof(char));
+
+		//Copy the text (if memory was allocated)
+		if(rval != NULL) {
+			strncpy(rval, Mp, flen);
+			rval[flen] = '\0';
+		} else {
+			return NULL;
+		}
+	}
+
+	//Skip the copied stuff
+	Mp += flen;
 	required_string(endstr);
 	return rval;
 }
