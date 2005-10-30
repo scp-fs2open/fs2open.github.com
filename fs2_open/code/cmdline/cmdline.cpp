@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.119 $
- * $Date: 2005-10-30 06:44:56 $
+ * $Revision: 2.120 $
+ * $Date: 2005-10-30 18:19:58 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2005/10/30 06:44:56  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.118  2005/10/24 04:48:14  taylor
  * not sure what I was smoking there, max shininess value is 128, not 180
  *
@@ -1877,11 +1880,40 @@ bool SetCmdlineParams()
 		Cmdline_ambient_factor = ambient_factor_arg.get_int();
 	}
 
+	if(get_flags_arg.found())
+	{
+		mprintf(("I got to get_flags_arg.found()!!\n"));
+		FILE *fp = fopen("flags.lch","w");
+
+		if(fp == NULL)
+		{
+			MessageBox(NULL,"Error creating flag list for launcher", "Error", MB_OK);
+			return false; 
+		}
+
+		int easy_flag_size	= sizeof(EasyFlag);
+		int flag_size		= sizeof(Flag);
+
+		int num_easy_flags	= sizeof(easy_flags) / easy_flag_size;
+		int num_flags		= sizeof(exe_params) / flag_size;
+
+		// Launcher will check its using structures of the same size
+		fwrite(&easy_flag_size, sizeof(int), 1, fp);
+		fwrite(&flag_size, sizeof(int), 1, fp);
+
+		fwrite(&num_easy_flags, sizeof(int), 1, fp);
+		fwrite(&easy_flags, sizeof(easy_flags), 1, fp);
+
+		fwrite(&num_flags, sizeof(int), 1, fp);
+		fwrite(&exe_params, sizeof(exe_params), 1, fp);
+
+		fclose(fp);
+		return false; 
+	}
+
 	if(output_scripting_arg.found())
 	{
-		
 		Output_scripting_meta = true;
-		return false;
 	}
 
 	if(output_sexp_arg.found())
@@ -1970,37 +2002,6 @@ bool SetCmdlineParams()
 
 		fclose(fp);
 		return false;
-	}
-
-	if(get_flags_arg.found())
-	{
-		mprintf(("I got to get_flags_arg.found()!!\n"));
-		FILE *fp = fopen("flags.lch","w");
-
-		if(fp == NULL)
-		{
-			MessageBox(NULL,"Error creating flag list for launcher", "Error", MB_OK);
-			return false; 
-		}
-
-		int easy_flag_size	= sizeof(EasyFlag);
-		int flag_size		= sizeof(Flag);
-
-		int num_easy_flags	= sizeof(easy_flags) / easy_flag_size;
-		int num_flags		= sizeof(exe_params) / flag_size;
-
-		// Launcher will check its using structures of the same size
-		fwrite(&easy_flag_size, sizeof(int), 1, fp);
-		fwrite(&flag_size, sizeof(int), 1, fp);
-
-		fwrite(&num_easy_flags, sizeof(int), 1, fp);
-		fwrite(&easy_flags, sizeof(easy_flags), 1, fp);
-
-		fwrite(&num_flags, sizeof(int), 1, fp);
-		fwrite(&exe_params, sizeof(exe_params), 1, fp);
-
-		fclose(fp);
-		return false; 
 	}
 
 	Cmdline_d3d_lesstmem = !d3d_lesstmem_arg.found();
