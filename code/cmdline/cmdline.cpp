@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.120 $
- * $Date: 2005-10-30 18:19:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.121 $
+ * $Date: 2005-10-30 20:00:22 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2005/10/30 18:19:58  wmcoolmon
+ * Fix scripting.html
+ *
  * Revision 2.119  2005/10/30 06:44:56  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -1237,7 +1240,7 @@ void os_validate_parms(char *cmdline)
 				if (result != kCFUserNotificationDefaultResponse)
 					exit(0);
 #else
-				// if we got a -help, --help, or -h then show the help text, otherwise so unknown option
+				// if we got a -help, --help, or -h then show the help text, otherwise show unknown option
 				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") ) {
 					printf("FS2 Open: The Source Code Project, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 					printf("Website: http://scp.indiegames.us\n");
@@ -2183,51 +2186,12 @@ int fred2_parse_cmdline(int argc, char *argv[])
 	return SetCmdlineParams();
 }
 
-#ifdef _WIN32
-int parse_cmdline(char *cmdline)
-#else
-int parse_cmdline(int argc, char *argv[])
-#endif
-{
-	mprintf(("I got to parse_cmdline!!\n"));
 
-#ifdef _WIN32
+int parse_cmdline(char *cmdline)
+{
+	mprintf(("I got to parse_cmdline()!!\n"));
 
 	os_init_cmdline(cmdline);
-
-#else
-
-	char *argptr = NULL;
-	int i;
-	int len = 0;
-
-
-	for (i = 1; i < argc; i++) {
-		len += strlen(argv[i]) + 1;
-	}
-
-	argptr = (char*) vm_malloc(len + 1);
-
-	if (argptr == NULL) {
-		fprintf(stderr, "ERROR: Out of memory in parse_cmdline()!\n");
-		exit(EXIT_FAILURE);
-	}
-
-	memset( argptr, 0, len+1 );
-
-	for (i = 1; i < argc; i++) {
-		strcat(argptr, argv[i]);
-		strcat(argptr, " ");
-	}
-
-	os_init_cmdline(argptr);
-
-	if (argptr != NULL) {
-		vm_free(argptr);
-		argptr = NULL;
-	}
-
-#endif
 
 	// --------------- Kazan -------------
 	// If you're looking for the list of if (someparam.found()) { cmdline_someparam = something; } look above at this function
