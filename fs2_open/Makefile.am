@@ -2,7 +2,7 @@
 #
 # This file uses GNU Automake to generate makefiles
 
-SUBDIRS = libjpeg code
+SUBDIRS = libjpeg lua code
 
 
 EXTRA_DIST =	\
