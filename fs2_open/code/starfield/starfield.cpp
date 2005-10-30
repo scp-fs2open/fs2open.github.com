@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-10-16 11:20:43 $
+ * $Revision: 2.58 $
+ * $Date: 2005-10-30 20:03:40 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/10/16 11:20:43  taylor
+ * use unsigned index buffers
+ *
  * Revision 2.56  2005/10/09 08:03:21  wmcoolmon
  * New SEXP stuff
  *
@@ -2376,6 +2379,9 @@ void stars_set_background_model(char *model_name, char *texture_name)
 int stars_find_bitmap(char *name)
 {
 	int idx;
+
+	if (name == NULL)
+		return -1;
 
 	// lookup
 	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){

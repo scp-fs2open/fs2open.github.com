@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-10-30 19:21:45 $
- * $Author: wmcoolmon $
+ * $Revision: 2.35 $
+ * $Date: 2005-10-30 20:03:39 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/10/30 19:21:45  wmcoolmon
+ * Return an error if mission_campaign_next_mission() is called when the campaign has no missions
+ *
  * Revision 2.33  2005/10/30 10:45:19  taylor
  * fix a couple of campaign savefile bugs for WMC
  *
@@ -2544,6 +2547,9 @@ int mission_campaign_find_mission( char *name )
 {
 	int i;
 	char realname[_MAX_PATH];
+
+	if (name == NULL)
+		return -1;
 
 	// look for an extension on the file.  If no extension, add default ".fsm" onto the
 	// end of the filename

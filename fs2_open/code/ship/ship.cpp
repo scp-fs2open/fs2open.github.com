@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.257 $
- * $Date: 2005-10-30 06:44:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.258 $
+ * $Date: 2005-10-30 20:03:40 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.257  2005/10/30 06:44:58  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.256  2005/10/29 22:09:31  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -9885,6 +9888,9 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 int wing_name_lookup(char *name, int ignore_count)
 {
 	int i, wing_limit;
+
+	if (name == NULL)
+		return -1;
 
 	if ( Fred_running )
 		wing_limit = MAX_WINGS;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.121 $
- * $Date: 2005-10-29 22:09:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.122 $
+ * $Date: 2005-10-30 20:03:39 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.121  2005/10/29 22:09:29  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.120  2005/10/22 22:25:23  Goober5000
  * made Cmdline_UseNewAI toggle the mission flag, plus fixed a few other flag-related potential bugs
  * --Goober5000
@@ -5449,6 +5453,9 @@ int mission_parse_get_multi_mission_info( char *filename )
 p_object *mission_parse_get_arrival_ship(char *name)
 {
 	p_object *p_objp;
+
+	if (name == NULL)
+		return NULL;
 
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{

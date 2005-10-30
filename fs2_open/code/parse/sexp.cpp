@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.185 $
- * $Date: 2005-10-29 22:09:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.186 $
+ * $Date: 2005-10-30 20:03:39 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.185  2005/10/29 22:09:30  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.184  2005/10/28 14:49:35  taylor
  * some minor cleanup and compiler warning fixes
  *
@@ -1822,6 +1826,7 @@ void sexp_unmark_persistent( int n )
 // just frees up the specified sexp node,  Leaves link chains untouched.
 int free_one_sexp(int num)
 {
+	Assert( (num >= 0) && (num < MAX_SEXP_NODES) );
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert( !(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT) );
 
@@ -1840,6 +1845,7 @@ int free_sexp(int num)
 {
 	int i, rest, count = 0;
 
+	Assert( (num >= 0) && (num < MAX_SEXP_NODES) );
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert( !(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT) );
 
@@ -2018,6 +2024,8 @@ int find_parent_operator(int node)
 {
 	int i;
 
+	Assert( (node >= 0) && (node < MAX_SEXP_NODES) );
+
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR){
 		node = find_sexp_list(node);
 	}
@@ -2044,6 +2052,8 @@ int find_parent_operator(int node)
 int is_sexp_top_level( int node )
 {
 	int i;
+
+	Assert( (node >= 0) && (node < MAX_SEXP_NODES) );
 
 	if ( Sexp_nodes[node].type == SEXP_NOT_USED ){
 		return 0;
@@ -3511,6 +3521,8 @@ int stuff_sexp_variable_list()
 //
 void build_sexp_text_string(char *buffer, int node, int mode)
 {
+	Assert( (node >= 0) && (node < MAX_SEXP_NODES) );
+
 	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
 
 		int sexp_variables_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
@@ -5234,6 +5246,9 @@ int sexp_determine_team(char *subj)
 {
 	int team = 0;
 
+	if (subj == NULL)
+		return 0;
+
 	if (!stricmp(subj, "<any friendly>")){
 		team = TEAM_FRIENDLY;
 	} else if (!stricmp(subj, "<any hostile>")){
@@ -5257,6 +5272,8 @@ int sexp_distance(int n)
 	char *sname1, *sname2;
 	wing *wingp;
 	ship_obj *so;
+
+	Assert( n >= 0 );
 
 	sname1 = CTEXT(n);
 	sname2 = CTEXT(CDR(n));
@@ -5452,6 +5469,8 @@ int sexp_distance_subsystem(int n)	// Goober5000
 	wing *wingp;
 	ship_obj *so;
 
+	Assert( n >= 0 );
+
 	obj_name = CTEXT(n);
 	ship_with_subsys = CTEXT(CDR(n));
 	subsys_name = CTEXT(CDR(CDR(n)));
@@ -5573,6 +5592,9 @@ void sexp_set_object_speed(int n, int axis)
 {
 	ship_obj *so;
 	int idx;
+
+	Assert( n >= 0 );
+
 	char *object_name = CTEXT(n);
 	n = CDR(n);
 	int object_speed = eval_num(n);
@@ -5658,6 +5680,9 @@ int sexp_get_object_relative_coordinates(int n, int index)
 {
 	vec3d relative_location;
 	ship_obj *so;
+
+	Assert( n >= 0 );
+
 	char *object_name = CTEXT(n);
 	n = CDR(n);
 	int team, obj;
@@ -5734,6 +5759,9 @@ int sexp_get_object_relative_coordinates(int n, int index)
 int sexp_get_object_coordinates(int n, int index) 
 {
 	ship_obj *so;
+
+	Assert( n >= 0 );
+
 	char *object_name = CTEXT(n);
 	n = CDR(n);
 	int team, obj;
@@ -5804,6 +5832,9 @@ void sexp_set_object_position(int n)
 	ship_obj *so;
 	object* objp;
 	int team, obj,i;
+
+	Assert( n >= 0 );
+
 	char *object_name = CTEXT(n);
 	n = CDR(n);
 
@@ -5896,7 +5927,9 @@ void sexp_set_ship_position(int n)
 {
 	char *ship_name;
 	int ship_num, x, y, z;
-	
+
+	Assert( n >= 0 );
+
 	ship_name = CTEXT(n);
 	n = CDR(n);
 
@@ -5973,7 +6006,9 @@ void sexp_set_ship_facing(int n)
 	vec3d location;
 	char *ship_name;
 	int ship_num, turn_time, bank;
-	
+
+	Assert( n >= 0 );
+
 	ship_name = CTEXT(n);
 	n = CDR(n);
 
@@ -6018,6 +6053,8 @@ void sexp_set_ship_facing_object(int n)
 	char *target_name;
 	int ship_num, team, obj;
 	int turn_time, bank;
+
+	Assert( n >= 0 );
 
 	ship_name = CTEXT(n);
 	n = CDR(n);
@@ -6168,6 +6205,10 @@ int sexp_skill_level_at_least( int n )
 	char *level_name;
 
 	level_name = CTEXT(n);
+
+	if (level_name == NULL)
+		return 0;
+
 	for (i = 0; i < NUM_SKILL_LEVELS; i++ ) {
 		if ( !stricmp(level_name, Skill_level_names(i, 0)) ) {
 			if ( Game_skill_level >= i ){
@@ -6203,6 +6244,10 @@ int sexp_was_medal_granted(int n)
 	}
 
 	medal_name = CTEXT(n);
+
+	if (medal_name == NULL)
+		return 0;
+
 	for (i=0; i<Num_medals; i++) {
 		if (!stricmp(medal_name, Medals[i].name))
 			break;
@@ -6281,6 +6326,8 @@ int sexp_depart_node_delay( int n )
 	char *jump_node_name, *name;
 	fix latest_time, this_time;
 
+	Assert( n >= 0 );
+
 	delay = atoi( CTEXT(n) );
 	n = CDR(n);
 	jump_node_name = CTEXT(n);
@@ -6322,6 +6369,8 @@ int sexp_destroyed_departed_delay( int n )
 	int count, total;
 	fix delay, latest_time;
 	char *name;
+
+	Assert( n >= 0 );
 
 	// get the delay
 	delay = i2f(eval_num(n));
@@ -6534,6 +6583,8 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 
 	num_known = 0;
 	count = 0;
+
+	Assert( n >= 0 );
 
 	// get delay
 	delay = eval_num(n);
@@ -6790,6 +6841,9 @@ int waypoint_lookup(char *name)
 	char buf[128];
 	int i;
 	object *ptr;
+
+	if (name == NULL)
+		return -1;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -7355,6 +7409,8 @@ int sexp_is_ship_class( int n )
 {
 	int ship_num, ship_class_num;
 
+	Assert( n >= 0 );
+
 	// get class
 	ship_class_num = ship_info_lookup(CTEXT(n));
 	n = CDR(n);
@@ -7385,6 +7441,8 @@ int sexp_is_ship_class( int n )
 int sexp_is_ship_type( int n )
 {
 	int ship_num, ship_type_num;
+
+	Assert( n >= 0 );
 
 	// get type
 	ship_type_num = ship_type_name_lookup(CTEXT(n));
@@ -7650,6 +7708,8 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 		return;
 	}
 
+	Assert( (name != NULL) && (who_from != NULL) && (priority != NULL) );
+
 	// determine the priority of the message
 	if ( !stricmp(priority, "low") )
 		ipriority = MESSAGE_PRIORITY_LOW;
@@ -7899,6 +7959,8 @@ void sexp_play_sound_from_table(int n)
 	vec3d origin;
 	int sound_index;
 
+	Assert( n >= 0 );
+
 	// read in data --------------------------------
 	origin.xyz.x = (float)eval_num(n);
 	n = CDR(n);
@@ -7916,6 +7978,8 @@ void sexp_play_sound_from_table(int n)
 // Goober5000
 void sexp_close_sound_from_file(int n)
 {
+	Assert( (n >= 0) && (n < MAX_SEXP_NODES) );
+
 	if (Sexp_nodes[Sexp_nodes[n].first].value != SEXP_KNOWN_TRUE)
 	{
 		sexp_stop_music(0);
@@ -7962,6 +8026,8 @@ void sexp_explosion_effect(int n)
 	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, fireball_type, sound_index;
 	int emp_intensity, emp_duration;
 	shockwave_create_info sci;
+
+	Assert( n >= 0 );
 
 	// read in data --------------------------------
 	origin.xyz.x = (float)eval_num(n);
@@ -8336,6 +8402,11 @@ void sexp_next_mission( int n )
 	int i;
 
 	mission_name = CTEXT(n);
+
+	if (mission_name == NULL) {
+		Error( LOCATION, "Mission name is NULL in campaign file for next-mission command!");
+	}
+
 	for (i = 0; i < Campaign.num_missions; i++) {
 		if ( !stricmp(Campaign.missions[i].name, mission_name) ) {
 			Campaign.next_mission = i;
@@ -8985,8 +9056,25 @@ void sexp_add_background_bitmap(int n)
 	char number_as_str[TOKEN_LENGTH];
 	starfield_bitmap_instance* sbip;
 
+	
 	//get all the info out of the sexp
 	bitmap_idx = stars_find_bitmap(bg_bitmap_fname = CTEXT(n)); n = CDR(n);
+
+	//sanity checking
+	if (bitmap_idx < 0)
+	{
+		if (bg_bitmap_fname == NULL)
+		{
+			Error(LOCATION, "sexp-add-background-bitmap: Background bitmap name is NULL!");
+		}
+		else
+		{
+			Error(LOCATION, "sexp-add-background-bitmap: Background bitmap %s not found!", bg_bitmap_fname);
+		}
+
+		return;
+	}
+
 	ang.h = fl_radian(eval_num(n) % 360); n = CDR(n);
 	ang.p = fl_radian(eval_num(n) % 360); n = CDR(n);
 	ang.b = fl_radian(eval_num(n) % 360); n = CDR(n);
@@ -9004,6 +9092,8 @@ void sexp_add_background_bitmap(int n)
 	if (dx < 1) dx = 1;
 	if (dy > 5) dy = 5;
 	if (dy < 1) dy = 1;
+
+	Assert( (n >= 0) && (n < MAX_SEXP_NODES) );
 
 	// ripped from sexp_modify_variable()
 	// get sexp_variable index
@@ -9029,12 +9119,6 @@ void sexp_add_background_bitmap(int n)
 	}
 
 	//sanity checking
-	if (bitmap_idx < 0)
-	{
-		Error(LOCATION, "sexp-add-background-bitmap: Background bitmap %s not found!", bg_bitmap_fname);
-		return;
-	}
-	
 	if (Num_starfield_bitmaps >= MAX_STARFIELD_BITMAPS)
 	{
 		Error(LOCATION, "sexp-add-background-bitmap: Too many background bitmaps in mission!");
@@ -9056,8 +9140,10 @@ void sexp_add_background_bitmap(int n)
 void sexp_remove_background_bitmap(int n)
 {
 	int slot = eval_sexp(n);
-	
-	for (; slot < Num_starfield_bitmaps; slot++)
+
+	Assert( (slot >= 0) && (slot < Num_starfield_bitmaps) );
+
+	for (; slot < Num_starfield_bitmaps-1; slot++)
 	{
 		Starfield_bitmap_instance[slot] = Starfield_bitmap_instance[slot+1];
 	}
@@ -9088,7 +9174,9 @@ void sexp_nebula_toggle_poof(int n)
 	char *name = CTEXT(n);
 	int result = eval_sexp(CAR(CDR(n)));
 	int i;
-	
+
+	if (name == NULL) return;
+
 	for (i = 0; i < MAX_NEB2_POOFS; i++)
 	{
 		if (!stricmp(name,Neb2_poof_filenames[i])) break;
@@ -9128,6 +9216,10 @@ void sexp_good_time_to_rearm( int n )
 
 	team_name = CTEXT(n);
 	time = eval_num(CDR(n));						// this is the time for how long a good rearm is active -- in seconds
+
+	if (team_name == NULL)
+		return;
+
 	for ( i = 0; i < Num_team_names; i++ ) {
 		if ( !stricmp(team_name, Team_names[i]) ) {
 			int team;
@@ -9165,6 +9257,10 @@ void sexp_grant_medal( int n )
 
 	Assert(Player->stats.m_medal_earned < 0);  // Mission has problems.  Tried to grant 2 medals in 1 mission.
 	medal_name = CTEXT(n);
+
+	if (medal_name == NULL)
+		return;
+
 	for (i = 0; i < Num_medals; i++ ) {
 		if ( !stricmp(medal_name, Medals[i].name) )
 			break;
@@ -9624,6 +9720,12 @@ int sexp_event_status( int n, int want_true )
 	int i, result;
 
 	name = CTEXT(n);
+
+	if (name == NULL) {
+		Int3();
+		return 0;
+	}
+
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name, name) ) {
@@ -9655,6 +9757,12 @@ int sexp_event_delay_status( int n, int want_true )
 	fix delay;
 
 	name = CTEXT(n);
+
+	if (name == NULL) {
+		Int3();
+		return 0;
+	}
+
 	delay = i2f(eval_num(CDR(n)));
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
@@ -9689,6 +9797,11 @@ int sexp_event_incomplete( int n )
 
 	name = CTEXT(n);
 
+	if (name == NULL) {
+		Int3();
+		return 0;
+	}
+	
 	for (i = 0; i < Num_mission_events; i++ ) {
 		if ( !stricmp(Mission_events[i].name, name ) ) {
 			// if the formula is still >= 0 (meaning it is still getting eval'ed), then
@@ -10009,6 +10122,8 @@ void sexp_ship_create(int n)
 	matrix new_ship_ori = vmd_identity_matrix;
 	bool change_angles = false;
 
+	Assert( n >= 0 );
+
 	// get ship name - none means don't specify it
 	// if ship with this name already exists, ship_create will respond appropriately
 	if (!stricmp(CTEXT(n), SEXP_NONE_STRING))
@@ -10073,6 +10188,8 @@ void sexp_weapon_create(int n)
 	matrix weapon_orient = vmd_identity_matrix;
 	int is_locked;
 	bool change_angles = false;
+
+	Assert( n >= 0 );
 
 	parent_objnum = -1;
 	if (stricmp(CTEXT(n), SEXP_NONE_STRING))
@@ -10312,7 +10429,7 @@ void sexp_kamikaze(int n, int kamikaze)
 // Goober5000
 void sexp_ingame_ship_alt_name(int ship_num, char *alt_name)
 {
-	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
+	Assert( (ship_num >= 0) && (ship_num < MAX_SHIPS) && (alt_name != NULL) );
 
 	// see if this is actually the ship class
 	if (!stricmp(Ship_info[Ships[ship_num].ship_info_index].name, alt_name))
@@ -10328,7 +10445,7 @@ void sexp_ingame_ship_alt_name(int ship_num, char *alt_name)
 // Goober5000
 void sexp_parse_ship_alt_name(p_object *parse_obj, char *alt_name)
 {
-	Assert(parse_obj);
+	Assert( (parse_obj != NULL) && (alt_name != NULL) );
 
 	// see if this is actually the ship class
 	if (!stricmp(Ship_class_names[parse_obj->ship_class], alt_name))
@@ -16347,6 +16464,9 @@ int verify_vector(char *text)
 	char *str;
 	int i, z, len = 0;
 
+	if (text == NULL)
+		return -1;
+
 	for (i=0; i<Num_waypoint_lists; i++) {
 		len = strlen(str = Waypoint_lists[i].name);
 		if (!strnicmp(str, text, len)){
@@ -16667,6 +16787,11 @@ char *CTEXT(int n)
 {
 	int sexp_variable_index;
 	char variable_name[TOKEN_LENGTH];
+
+	if ( n < 0 ) {
+		Int3();
+		return NULL;
+	}
 
 	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
 	// the CTEXT wrapper, when-argument would probably be infeasibly difficult to code.
