@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-10-29 22:09:30 $
+ * $Revision: 2.27 $
+ * $Date: 2005-10-30 20:20:43 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/10/29 22:09:30  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.25  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -201,8 +205,8 @@
  * PXO stats store reporting.
  * 
  * 78    9/11/98 2:10p Allender
- * base temporary parse_object's ai_goals to -1 so that we don't try and
- * free sepxressions that shouldn't be freed
+ * base temporary parse object's ai_goals to -1 so that we don't try and
+ * free sexpressions that shouldn't be freed
  * 
  * 77    8/07/98 10:16a Allender
  * use obj_set_flags for the COULD_BE_PLAYER flag
