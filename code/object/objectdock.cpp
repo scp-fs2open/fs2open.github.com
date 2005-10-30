@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-10-28 06:10:07 $
+ * $Revision: 2.10 $
+ * $Date: 2005-10-30 20:20:44 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/10/28 06:10:07  Goober5000
+ * nitpicked a rather dumb non-bug
+ * --Goober5000
+ *
  * Revision 2.8  2005/05/27 03:37:53  Goober5000
  * moved some prototypes that WMC put in the header file back to the implementation file
  * --Goober5000
@@ -634,7 +638,7 @@ void dock_undock_objects(object *objp1, object *objp2)
 // dock list functions -------------------------------------------------------------------------------------------
 bool dock_check_assume_hub()
 {
-	// There are several ways of handling ships to other ships.  Level 1, the simplest, is the one-docker, one-dockee
+	// There are several ways of handling ships docking to other ships.  Level 1, the simplest, is the one-docker, one-dockee
 	// model used in retail FS2.  Level 2 is the hub model, where we stipulate that any given set of docked ships
 	// includes one ship to which all other ships are docked.  No ship except for the hub ship can be docked to more than
 	// one ship.  Level 3 is the daisy-chain model, where you can string ships along and make a rooted tree.
