@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.117 $
- * $Date: 2005-10-29 22:09:31 $
+ * $Revision: 2.118 $
+ * $Date: 2005-10-30 23:45:45 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2005/10/29 22:09:31  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.116  2005/10/24 07:13:05  Goober5000
  * merge Bobboau's thruster code back in; hopefully this covers everything
  * --Goober5000
@@ -1413,7 +1417,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SHIP_TYPE_SENTRYGUN				9
 #define SHIP_TYPE_ESCAPEPOD				10
 #define SHIP_TYPE_SUPERCAP					11
-#define SHIP_TYPE_STEALTH					12
+#define SHIP_TYPE_STEALTH					12	// this is really never used, because a stealth ship must also be some other class (fighter, etc.)
 #define SHIP_TYPE_FIGHTER					13
 #define SHIP_TYPE_BOMBER					14
 #define SHIP_TYPE_DRYDOCK					15
@@ -1727,6 +1731,7 @@ typedef struct ship_counts {
 extern char *Ship_type_names[MAX_SHIP_TYPE_COUNTS];
 extern int Ship_type_flags[MAX_SHIP_TYPE_COUNTS];					// SIF_* flags for each ship type
 extern ship_counts	Ship_counts[MAX_SHIP_TYPE_COUNTS];
+extern int Ship_type_priorities[MAX_SHIP_TYPE_COUNTS];
 
 
 // Use the below macros when you want to find the index of an array element in the
@@ -1868,6 +1873,7 @@ extern void ship_add_ship_type_kill_count( int ship_info_flag );
 extern int ship_get_type(char* output, ship_info* sip);
 extern int ship_get_default_orders_accepted( ship_info *sip );
 extern int ship_query_general_type(int ship);
+extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
 extern int get_quadrant(vec3d *hit_pnt);						//	Return quadrant num of last hit ponit.
@@ -2073,6 +2079,9 @@ void ship_animation_set_inital_states(ship *shipp);
 int ship_starting_wing_lookup(char *wing_name);
 int ship_squadron_wing_lookup(char *wing_name);
 int ship_tvt_wing_lookup(char *wing_name);
+
+// Goober5000
+int ship_class_compare(int ship_class_1, int ship_class_2);
 
 void ship_vanished(object *objp);
 
