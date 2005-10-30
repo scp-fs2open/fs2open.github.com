@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.192 $
- * $Date: 2005-10-30 06:44:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.193 $
+ * $Date: 2005-10-30 20:00:22 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.192  2005/10/30 06:44:56  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.191  2005/10/23 20:34:29  taylor
  * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
  *
@@ -5323,7 +5326,7 @@ void game_flip_page_and_time_it()
 	t2 = timer_get_fixed_seconds();
 	d = t2 - t1;
 	t = (gr_screen.max_w*gr_screen.max_h*gr_screen.bytes_per_pixel)/1024;
-	sprintf( transfer_text, NOX("%d MB/s"), fixmuldiv(t,65,d) );
+	sprintf( transfer_text, NOX("%d MB/s"), (int)fixmuldiv(t,65,d) );
 }
 
 void game_simulation_frame()
@@ -8434,20 +8437,11 @@ DCF(pofspew, "")
 	game_spew_pof_info();
 }
 
-#ifdef _WIN32
-int PASCAL WinMainSub(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
-#else
-int WinMainSub(int argc, char *argv[])
-#endif
+// returns:
+//		0 on an error
+//		1 on a clean exit
+int game_main(char *cmdline)
 {
-
-#ifdef _DEBUG
-#ifdef _WIN32
-	void memblockinfo_output_memleak();
-	atexit(memblockinfo_output_memleak);
-#endif
-#endif
-
 	int state;		
 
 	// check if networking should be disabled, this could probably be done later but the sooner the better
@@ -8456,14 +8450,12 @@ int WinMainSub(int argc, char *argv[])
 		Networking_disabled = 1;
 	}
 
-#ifdef _WIN32
-	// Don't let more than one instance of Freespace run.
-	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
-	if ( hwnd )	{
-		SetForegroundWindow(hwnd);
-		return 0;
-	}
+#ifndef NDEBUG				
+	extern void windebug_memwatch_init();
+	windebug_memwatch_init();
+#endif
 
+#ifdef _WIN32
 	// Find out how much RAM is on this machine
 	MEMORYSTATUS ms;
 	ms.dwLength = sizeof(MEMORYSTATUS);
@@ -8475,79 +8467,39 @@ int WinMainSub(int argc, char *argv[])
 	Mem_starttime_virtual   = ms.dwAvailVirtual;
 
 	if ( game_do_ram_check(Freespace_total_ram) == -1 ) {
-		return 0;
+		return 1;
 	}
 
 	if ( ms.dwTotalVirtual < 1024 )	{
 		MessageBox( NULL, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197), MB_OK );
-		return 0;
+		return 1;
 	}
 
 	if (!vm_init(24*1024*1024)) {
 		MessageBox( NULL, XSTR( "Not enough memory to run Freespace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK );
-		return 0;
+		return 1;
 	}
 		
 	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
 	if (!tmp_mem) {
 		MessageBox(NULL, XSTR( "Not enough memory to run Freespace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK);
-		return 0;
+		return 1;
 	}
 
 	vm_free(tmp_mem);
 	tmp_mem = NULL;
 
-	//=====================================================
-	// Make sure we're running in the right directory.
-	char exe_dir[1024];
-
-	if ( GetModuleFileName( hInst, exe_dir, 1023 ) > 0 )	{
-		char *p = exe_dir + strlen(exe_dir);
-
-		// chop off the filename
-		while( (p>exe_dir) && (*p!='\\') && (*p!='/') && (*p!=':') )	{
-			p--;
-		}
-		*p = 0;
-
-		// Set directory
-		if ( strlen(exe_dir) > 0 )	{
-			SetCurrentDirectory(exe_dir);
-		}
-
-#if 0 // no launcher for fs2_open
-		// check for updated freespace.exe
-		game_maybe_update_launcher(exe_dir);
-#endif
-
-	}
 #else
+
 	vm_init(0); 
-	
-	// create user's directory
-	char userdir[MAX_PATH];
 
-	snprintf(userdir, MAX_PATH, "%s/%s/", detect_home(), Osreg_user_dir);
-	_mkdir(userdir);
-#endif
+#endif // _WIN32
 
-	
-	#ifndef NDEBUG				
-	{
-		extern void windebug_memwatch_init();
-		windebug_memwatch_init();
+
+	if ( !parse_cmdline(cmdline) ) {
+		return 1;
 	}
-	#endif
 
-
-#ifdef _WIN32
-	if(parse_cmdline(szCmdLine) == false)
-	{
-		return 0;
-	}
-#else
-   parse_cmdline(argc, argv);
-#endif
 
 #ifdef STANDALONE_ONLY_BUILD
 	Is_standalone = 1;
@@ -8559,9 +8511,7 @@ int WinMainSub(int argc, char *argv[])
 #endif
 
 
-#ifdef _WIN32
 	init_cdrom();
-#endif
 
 	game_init();
 
@@ -8581,40 +8531,17 @@ int WinMainSub(int argc, char *argv[])
 		game_shutdown();
 		return 0;
 	}
+
 	// maybe spew pof stuff
 	if(Cmdline_spew_pof_info){
 		game_spew_pof_info();
 		game_shutdown();
-		return 1;
+		return 0;
 	}
 
-// Windows code now plays the intro movie in game_init
-
-	movie_play( NOX("intro.mve"));
-
-/* not using this anymore, it's not doing anything anyway - taylor
-#ifndef _WIN32
-	// non-demo, non-standalone, play the intro movie
-	if(!Is_standalone){
-#ifndef DEMO
-#ifdef RELEASE_REAL
-		char *plist[5];
-		if( (cf_get_file_list(2, plist, CF_TYPE_MULTI_PLAYERS, NOX("*.plr"))	<= 0) && (cf_get_file_list(2, plist, CF_TYPE_SINGLE_PLAYERS, NOX("*.plr"))	<= 0) ){
-			// prompt for cd 2
-#ifdef _WIN32
-#if defined(OEM_BUILD)
-			game_do_cd_check_specific(FS_CDROM_VOLUME_1, 1);
-#else
-			game_do_cd_check_specific(FS_CDROM_VOLUME_2, 2);
-#endif // defined(OEM_BUILD)
-#endif // ifdef WIN32
-		}
-#endif // ifdef RELEASE_REAL
+	if (!Is_standalone) {
+		movie_play( NOX("intro.mve") );
 	}
-
-#endif // ifndef DEMO
-#endif // !_WIN32
-*/
 
 	if (Is_standalone){
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
@@ -8630,8 +8557,6 @@ int WinMainSub(int argc, char *argv[])
 		if ( state == GS_STATE_QUIT_GAME ){
 			break;
 		}
-
-
 	} 
 
 #ifdef FS2_DEMO
@@ -8645,19 +8570,91 @@ int WinMainSub(int argc, char *argv[])
 
 	game_shutdown();
 
-#ifdef _WIN32
-	return 1;
-#else
 	return 0;
-#endif
 }
 
+
+// ------------------------------------------------------------------------------
+// Platform specific main() functions, nothing directly related to game function
+// should go here.  Direct game related info should go in the game_main() function
+// TODO: this should end up in a separate file in the not too distant future.
+//
+
 #ifdef _WIN32
+// Windows Specific
 int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
-#else
-int main(int argc, char *argv[])
-#endif
 {
+	int result = -1;
+
+	::CoInitialize(NULL);
+
+#ifdef _DEBUG
+	void memblockinfo_output_memleak();
+	atexit(memblockinfo_output_memleak);
+#endif
+
+	DBUGFILE_INIT();
+
+	// Don't let more than one instance of Freespace run.
+	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
+	if ( hwnd )	{
+		SetForegroundWindow(hwnd);
+		return 0;
+	}
+
+	//=====================================================
+	// Make sure we're running in the right directory.
+	char exe_dir[1024];
+	
+	if ( GetModuleFileName( hInst, exe_dir, 1023 ) > 0 )	{
+		char *p = exe_dir + strlen(exe_dir);
+		
+		// chop off the filename
+		while( (p>exe_dir) && (*p!='\\') && (*p!='/') && (*p!=':') )	{
+			p--;
+		}
+		*p = 0;
+		
+		// Set directory
+		if ( strlen(exe_dir) > 0 )	{
+			SetCurrentDirectory(exe_dir);
+		}
+	}
+
+
+#ifdef _MSC_VER
+	__try {
+#endif
+		result = !game_main(szCmdLine);
+#ifdef _MSC_VER
+	} __except( RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread") ) {
+		// Do nothing here - RecordExceptionInfo() has already done
+		// everything that is needed. Actually this code won't even
+		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
+		// the __except clause.
+	}
+#endif // _MSC_VER
+
+	DBUGFILE_DEINIT();
+
+	::CoUninitialize();
+
+#ifndef _MINGW
+	_CrtDumpMemoryLeaks();
+#endif
+
+	return result;
+}
+
+#else
+
+// *NIX specific
+int main(int argc, char *argv[])
+{
+	int result = EXIT_FAILURE;
+	char *argptr = NULL;
+	int i, len = 0;
+	char userdir[MAX_PATH];
 
 #ifdef APPLE_APP
 	// Finder sets the working directory to the root of the drive so we have to get a little creative
@@ -8665,54 +8662,56 @@ int main(int argc, char *argv[])
 	strncpy(full_path, *argv, 1024);
 #endif
 
-#ifdef _WIN32
-#ifdef _DEBUG
-	void memblockinfo_output_memleak();
-	atexit(memblockinfo_output_memleak);
-#endif
-	::CoInitialize(NULL);
-#endif
-
 	DBUGFILE_INIT();
-	int result = -1;
 
-#ifdef _WIN32
-#if defined(_MSC_VER)
-	__try	{
-#endif
-		result = WinMainSub(hInst, hPrev, szCmdLine, nCmdShow);
-#if defined(_MSC_VER)
-	}	__except(RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread"))	{
+	// create user's directory	
+	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
+	_mkdir(userdir);
 
-		// Do nothing here - RecordExceptionInfo() has already done
-		// everything that is needed. Actually this code won't even
-		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
-		// the __except clause.
+
+	// clean up the cmdline to just send arguments through
+	for (i = 1; i < argc; i++) {
+		len += strlen(argv[i]) + 1;
 	}
-#endif
 
-#else
+	argptr = (char*) calloc(len + 1, sizeof(char));
+	
+	if (argptr == NULL) {
+		fprintf(stderr, "ERROR: Out of memory in main()!\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	memset( argptr, 0, len+1 );
+	
+	for (i = 1; i < argc; i++) {
+		strcat(argptr, argv[i]);
+		strcat(argptr, " ");
+	}
+
+	// switch to game_main()
 	try {
-		result = WinMainSub(argc, argv);
+		result = game_main(argptr);
+
+		if (argptr != NULL) {
+			free(argptr);
+			argptr = NULL;
+		}
 	} catch ( ... ) {
-		fprintf(stderr, "Caught exception in main\n");
-		result = 1;
+		fprintf(stderr, "Caught exception in main()!\n");
+		result = EXIT_FAILURE;
 	}
-#endif
 
-	DBUGFILE_DEINIT()
-
-
-#ifdef _WIN32
-	::CoUninitialize();
-
-#ifndef _MINGW
-	_CrtDumpMemoryLeaks();
-#endif // !_MINGW
-#endif
+	DBUGFILE_DEINIT();
 
 	return result;
 }
+
+#endif // _WIN32
+
+//
+// End of platform specific main() section
+// ------------------------------------------------------------------------------
+
 
 #if 0  // don't have an updater for fs2_open
 // launch the fslauncher program on exit
@@ -10121,7 +10120,7 @@ int init_cdrom()
 
 	rval = 1;
 
-	#ifndef DEMO
+#ifndef DEMO
 	i = find_freespace_cd();
 
 	rval = set_cdrom_path(i);
@@ -10133,7 +10132,7 @@ int init_cdrom()
 		nprintf(("CD", "FreeSpace CD not found\n"));
 	}
 	*/
-	#endif
+#endif
 
 	return rval;
 }

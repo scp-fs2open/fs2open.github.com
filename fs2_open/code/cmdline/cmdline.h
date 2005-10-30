@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.78 $
- * $Date: 2005-10-23 11:45:06 $
+ * $Revision: 2.79 $
+ * $Date: 2005-10-30 20:00:22 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2005/10/23 11:45:06  taylor
+ * add -ogl_shine to adjust the OGL shininess value so that people can play around and find the best value to use
+ *
  * Revision 2.77  2005/10/22 04:28:16  unknownplayer
  * Added -UseNewAI command line option to force the game to always use
  * the SCP AI changes. As of now there's some problem in gr_d3d_set_render_target
@@ -504,11 +507,8 @@
 #ifndef FS_CMDLINE_HEADER_FILE
 #define FS_CMDLINE_HEADER_FILE
 
-#ifdef _WIN32
+
 int parse_cmdline(char *cmdline);
-#else
-int parse_cmdline(int argc, char *argv[]);
-#endif
 
 int fred2_parse_cmdline(int argc, char *argv[]);
 // COMMAND LINE SETTINGS
