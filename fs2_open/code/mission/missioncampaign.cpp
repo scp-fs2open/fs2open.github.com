@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-10-30 10:45:19 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2005-10-30 19:21:45 $
+ * $Author: wmcoolmon $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/10/30 10:45:19  taylor
+ * fix a couple of campaign savefile bugs for WMC
+ *
  * Revision 2.32  2005/10/29 12:25:49  taylor
  * bullet-proof the loadout read a little bit (did this before and had it locally, must have missed CVS)
  *
@@ -1898,8 +1901,11 @@ void campaign_savefile_load(char *fname, char *pname)
 // set successfully
 int mission_campaign_next_mission()
 {
-	if ( (Campaign.next_mission == -1) || (strlen(Campaign.name) == 0) ) // will be set to -1 when there is no next mission
+	if ( (Campaign.next_mission == -1) || (strlen(Campaign.name) == 0)) // will be set to -1 when there is no next mission
 		return -1;
+
+	if(Campaign.num_missions < 1)
+		return -2;
 
 	Campaign.current_mission = Campaign.next_mission;	
 	strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
