@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-10-10 17:21:05 $
+ * $Revision: 2.37 $
+ * $Date: 2005-10-30 20:03:38 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.35  2005/09/06 17:26:39  taylor
  * fix mouse position setting in non-standard resolutions
  *
@@ -1916,7 +1919,7 @@ void main_hall_mouse_grab_region(int region)
 	Main_hall_door_sound_handles[region] = snd_play(&Snds_iface[Main_hall->door_sounds[region][0]],Main_hall->door_sound_pan[region]);				
 
 	// start the sound playing at the right spot relative to the completion of the animation		
-	if(Main_hall_door_anim_instance[region]->frame_num != -1){			
+	if( (Main_hall_door_anim_instance[region] != NULL) && (Main_hall_door_anim_instance[region]->frame_num != -1) ) {			
 			snd_set_pos(Main_hall_door_sound_handles[region],&Snds_iface[SND_MAIN_HALL_DOOR_OPEN],
 							(float)Main_hall_door_anim_instance[region]->frame_num / (float)Main_hall_door_anim_instance[region]->parent->total_frames,1);
 	}				

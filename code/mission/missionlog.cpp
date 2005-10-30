@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-10-10 17:21:05 $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-30 20:03:39 $
  * $Author: taylor $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.10  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -671,6 +674,7 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 					found = 1;
 			} else {
 				// for non dock/undock goals, then the names are important!
+				Assert( pname );
 				if ( stricmp(entry->pname, pname) )
 					goto next_entry;
 				if ( !sname || !stricmp(sname, entry->sname) )

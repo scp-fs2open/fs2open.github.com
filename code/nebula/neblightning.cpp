@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-10-10 17:21:06 $
+ * $Revision: 2.12 $
+ * $Date: 2005-10-30 20:03:39 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.10  2005/07/22 10:18:40  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -1388,6 +1391,9 @@ int nebl_get_bolt_index(char *name)
 int nebl_get_storm_index(char *name)
 {
 	int idx;
+
+	if (name == NULL)
+		return -1;
 
 	for(idx=0; idx<Num_bolt_types; idx++){
 		if(!strcmp(name, Storm_types[idx].name)){
