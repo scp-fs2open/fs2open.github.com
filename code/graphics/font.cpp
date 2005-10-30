@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-07-02 19:42:15 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-10-30 06:44:57 $
+ * $Author: wmcoolmon $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/02 19:42:15  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.13  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -954,7 +957,7 @@ void grx_set_font(int fontnum)
 		return;
 	}
 
-	if ( fontnum >= 0 ) {
+	if ( fontnum >= 0 && fontnum < Num_fonts) {
 		Current_font = &Fonts[fontnum];
 	}
 }

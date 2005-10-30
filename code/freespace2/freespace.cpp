@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.191 $
- * $Date: 2005-10-23 20:34:29 $
- * $Author: taylor $
+ * $Revision: 2.192 $
+ * $Date: 2005-10-30 06:44:56 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.191  2005/10/23 20:34:29  taylor
+ * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
+ *
  * Revision 2.190  2005/10/22 20:17:18  wmcoolmon
  * mission-set-nebula fixage; remainder of python code
  *
@@ -1452,6 +1455,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "network/multiutil.h"
 extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "network/fs2ox.h"
+#include "parse/scripting.h"
 
 
 
@@ -3524,9 +3528,7 @@ void game_init()
 		joy_init();
 	}
 
-#ifdef USE_PYTHON
-	python_init();					// Seems as good of a place as any -WMC
-#endif
+	script_init();			//WMc
 
 	player_controls_init();
 	model_init();	

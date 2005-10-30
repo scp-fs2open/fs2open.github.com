@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-10-22 20:17:18 $
+ * $Revision: 2.60 $
+ * $Date: 2005-10-30 06:44:57 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/10/22 20:17:18  wmcoolmon
+ * mission-set-nebula fixage; remainder of python code
+ *
  * Revision 2.58  2005/10/16 11:20:43  taylor
  * use unsigned index buffers
  *
@@ -737,6 +740,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/dbugfile.h"
 #include "graphics/grbatch.h"
+#include "parse/scripting.h"
 
 // 3dnow stuff
 // #include "amd3d.h"
@@ -2053,5 +2057,10 @@ void gr_flip()
 #ifdef USE_PYTHON
 	python_do_frame();
 #endif
+	uint max = Script_globalhooks.size();
+	for(uint i = 0; i < max; i++)
+	{
+		Script_system.RunBytecode(Script_globalhooks[i]);
+	}
 	gr_screen.gf_flip();
 }

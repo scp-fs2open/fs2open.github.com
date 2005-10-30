@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2005-10-30 06:44:59 $
+ * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.4  2004/07/26 20:47:56  Kazan
  * remove MCD complete
  *
@@ -227,7 +230,7 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 }
 
 // create a muzzle flash from a flak gun based upon firing position and weapon type
-void flak_muzzle_flash(vec3d *pos, vec3d *dir, int turret_weapon_class)
+void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_weapon_class)
 {
 	// sanity
 	Assert((turret_weapon_class >= 0) && (turret_weapon_class < Num_weapon_types));
@@ -250,7 +253,7 @@ void flak_muzzle_flash(vec3d *pos, vec3d *dir, int turret_weapon_class)
 	// maybe skip this flash
 	if(!(Flak_muzzle_mod % FLAK_MUZZLE_MOD)){
 		// call the muzzle flash code
-		mflash_create(pos, dir, Weapon_info[turret_weapon_class].muzzle_flash);
+		mflash_create(pos, dir, pip, Weapon_info[turret_weapon_class].muzzle_flash);
 	}
 
 	Flak_muzzle_mod++;

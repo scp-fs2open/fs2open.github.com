@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-10-29 22:09:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.48 $
+ * $Date: 2005-10-30 06:44:57 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/10/29 22:09:30  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.46  2005/10/14 07:22:24  Goober5000
  * removed an unneeded parameter and renamed some stuff
  * --Goober5000
@@ -8499,7 +8503,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		}
 
 		// create a muzzle flash from a flak gun based upon firing position and weapon type
-		flak_muzzle_flash(&pos, &dir, wid);
+		flak_muzzle_flash(&pos, &dir, &objp->phys_info, wid);
 
 		// set its range explicitly - make it long enough so that it's guaranteed to still exist when the server tells us it blew up
 		flak_set_range(&Objects[weapon_objnum], &pos, (float)flak_range);

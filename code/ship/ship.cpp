@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.256 $
- * $Date: 2005-10-29 22:09:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.257 $
+ * $Date: 2005-10-30 06:44:58 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.256  2005/10/29 22:09:31  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.255  2005/10/26 00:43:05  taylor
  * make sure that XMTs don't try to still create an invalid entry when +nocreate is used
  *
@@ -5752,6 +5756,8 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	}
 
 	if ( shockwave_speed > 0 ) {
+		strcpy(sci.name, sip->shockwave_name);
+		strcpy(sci.pof_name, sip->shockwave_pof_file);
 		sci.inner_rad = inner_rad;
 		sci.outer_rad = outer_rad;
 		sci.blast = max_blast;
@@ -8786,7 +8792,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	
 							if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
 							{
-								flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, swp->primary_bank_weapons[bank_to_fire]);
+								flak_muzzle_flash(&firing_pos,&obj->orient.vec.fvec, &obj->phys_info, swp->primary_bank_weapons[bank_to_fire]);
 							}
 						}
 						// create the muzzle flash effect

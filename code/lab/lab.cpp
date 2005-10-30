@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-10-17 01:54:15 $
+ * $Revision: 1.22 $
+ * $Date: 2005-10-30 06:44:57 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/10/17 01:54:15  wmcoolmon
+ * Make weapons clip less
+ *
  * Revision 1.20  2005/10/17 01:51:01  wmcoolmon
  * Weapon models now shown in lab
  *
@@ -738,7 +741,7 @@ void weap_set_variables(weapon_info *wip)
 	
 	WVW_SET_WI_VAR(damage_type_idx);
 	
-	WVW_SET_WI_VAR(shockwave_speed);
+	WVW_SET_WI_VAR(shockwave.speed);
 	
 	WVW_SET_WI_VAR(turn_time);
 	WVW_SET_WI_VAR(fov);

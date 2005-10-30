@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-10-09 08:03:20 $
+ * $Revision: 2.40 $
+ * $Date: 2005-10-30 06:44:57 $
  * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/10/09 08:03:20  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.38  2005/06/21 00:20:24  taylor
  * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
  *   and this makes it so much easier to realize that
@@ -551,6 +554,26 @@ void neb2_init()
 		if(Neb2_poof_count < MAX_NEB2_POOFS){
 			strcpy(Neb2_poof_filenames[Neb2_poof_count++], name);
 		}
+	}
+
+	//Distance
+	if(optional_string("#Fog Distance"))
+	{
+		char buf[32];
+		int len = sizeof(Neb_ship_fog_vals_d3d)/sizeof(Neb_ship_fog_vals_d3d[0]);
+
+		for(int i = 0; i < len; i++)
+		{
+			Assert(i < sizeof(Ship_type_names)/sizeof(Ship_type_names[0]));
+
+			//Create the var string and parse it if necessary
+			sprintf(buf, "$%s:", Ship_type_names[i]);
+			if(optional_string(buf)) {
+				stuff_float_list((float *)&(Neb_ship_fog_vals_d3d[i]), 2);
+			}
+		}
+
+		required_string("#End");
 	}
 
 	// should always have 6 neb poofs
@@ -1450,7 +1473,7 @@ void neb2_eye_changed()
 void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 {
 
-	int nNfog_index;	
+	int nNfog_index = -1;	
 
 	// default values in case something truly nasty happens
 	*fnear = 10.0f;

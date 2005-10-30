@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-08-25 22:40:04 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2005-10-30 06:44:59 $
+ * $Author: wmcoolmon $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/08/25 22:40:04  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.18  2005/08/07 09:25:55  taylor
  * some minor cleanup
  * don't load the default 2d shockwave graphics if we have a default 3d shockwave, they won't get used and only take up memory
@@ -363,11 +370,8 @@ extern int Show_area_effect;
 //				failure			=>	-1
 //
 // Goober5000 - now parent_objnum can be allowed to be -1
-int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay, int model, int info_index)
+int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay)
 {
-	if(info_index < 0 || info_index > MAX_SHOCKWAVE_TYPES)
-		info_index = 0;
-
 	int				i, objnum, real_parent;
 	shockwave		*sw;
 	shockwave_info	*si;
@@ -381,6 +385,20 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 
 	if ( i == MAX_SHOCKWAVES ) {
 		return -1;
+	}
+
+	//Find the info_index and model
+	int info_index = 0;
+	int model = -1;
+	if(strlen(sci->name))
+	{
+		info_index = shockwave_add(sci->name);
+		if(info_index < 0) {
+			info_index = 0;
+		}
+	}
+	if(strlen(sci->pof_name)) {
+		model = model_load(sci->pof_name, 0, NULL);
 	}
 
 	// real_parent is the guy who caused this shockwave to happen
@@ -894,4 +912,17 @@ int shockwave_add(char *bm_name)
 	
 	Warning(LOCATION, "Could not add shockwave type %s, as MAX_SHOCKWAVE_TYPES has been reached. Contact an fs2_open coder if you REALLY think you need more than %d shockwaves", bm_name, MAX_SHOCKWAVE_TYPES-NUM_DEFAULT_SHOCKWAVE_TYPES);
 	return -1;
+}
+
+//Loads a shockwave in preparation for a mission
+void shockwave_create_info::load()
+{
+	if(strlen(name))
+	{
+		shockwave_add(name);
+	}
+	if(strlen(pof_name))
+	{
+		model_load(pof_name, 0, NULL);
+	}
 }
