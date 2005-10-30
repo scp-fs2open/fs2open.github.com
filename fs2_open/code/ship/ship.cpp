@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.258 $
- * $Date: 2005-10-30 20:03:40 $
- * $Author: taylor $
+ * $Revision: 2.259 $
+ * $Date: 2005-10-30 23:45:45 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.258  2005/10/30 20:03:40  taylor
+ * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
+ * fix Mantis bug #381
+ * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
+ *
  * Revision 2.257  2005/10/30 06:44:58  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -1890,6 +1895,53 @@ int Ship_type_flags[MAX_SHIP_TYPE_COUNTS] = {
 	SIF_GAS_MINER,
 	SIF_CORVETTE,
 	SIF_KNOSSOS_DEVICE,
+};
+
+// Goober5000
+/*
+Priority order is:
+SHIP_TYPE_NONE
+SHIP_TYPE_NAVBUOY
+SHIP_TYPE_SENTRYGUN
+SHIP_TYPE_ESCAPEPOD
+SHIP_TYPE_CARGO
+SHIP_TYPE_REPAIR_REARM
+SHIP_TYPE_STEALTH
+SHIP_TYPE_FIGHTER
+SHIP_TYPE_BOMBER
+SHIP_TYPE_FIGHTER_BOMBER
+SHIP_TYPE_TRANSPORT
+SHIP_TYPE_FREIGHTER
+SHIP_TYPE_AWACS
+SHIP_TYPE_GAS_MINER
+SHIP_TYPE_CRUISER
+SHIP_TYPE_CORVETTE
+SHIP_TYPE_CAPITAL
+SHIP_TYPE_SUPERCAP
+SHIP_TYPE_DRYDOCK
+SHIP_TYPE_KNOSSOS_DEVICE
+*/
+int Ship_type_priorities[MAX_SHIP_TYPE_COUNTS] = {
+	0,	// SHIP_TYPE_NONE
+	4,	// SHIP_TYPE_CARGO
+	9,	// SHIP_TYPE_FIGHTER_BOMBER
+	14,	// SHIP_TYPE_CRUISER
+	11,	// SHIP_TYPE_FREIGHTER
+	16,	// SHIP_TYPE_CAPITAL
+	10,	// SHIP_TYPE_TRANSPORT
+	5,	// SHIP_TYPE_REPAIR_REARM
+	1,	// SHIP_TYPE_NAVBUOY
+	2,	// SHIP_TYPE_SENTRYGUN
+	3,	// SHIP_TYPE_ESCAPEPOD
+	17,	// SHIP_TYPE_SUPERCAP
+	6,	// SHIP_TYPE_STEALTH
+	7,	// SHIP_TYPE_FIGHTER
+	8,	// SHIP_TYPE_BOMBER
+	18,	// SHIP_TYPE_DRYDOCK
+	12,	// SHIP_TYPE_AWACS
+	13,	// SHIP_TYPE_GAS_MINER
+	15,	// SHIP_TYPE_CORVETTE
+	19,	// SHIP_TYPE_KNOSSOS_DEVICE
 };
 
 ship_counts Ship_counts[MAX_SHIP_TYPE_COUNTS];
@@ -11354,9 +11406,14 @@ int ship_query_general_type(int ship)
 
 int ship_query_general_type(ship *shipp)
 {
+	return ship_class_query_general_type(shipp->ship_info_index);
+}
+
+int ship_class_query_general_type(int ship_class)
+{
 	int flags;
 
-	flags = Ship_info[shipp->ship_info_index].flags;
+	flags = Ship_info[ship_class].flags;
 	switch (flags & SIF_ALL_SHIP_TYPES) {
 		case SIF_CARGO:
 			return SHIP_TYPE_CARGO;
@@ -14671,6 +14728,24 @@ int ship_tvt_wing_lookup(char *wing_name)
 	}
 
 	return -1;
+}
+
+
+// Goober5000
+// currently only used in FRED, but probably useful elsewhere too
+int ship_class_compare(int ship_class_1, int ship_class_2)
+{
+	// grab priorities
+	int priority1 = Ship_type_priorities[ship_class_query_general_type(ship_class_1)];
+	int priority2 = Ship_type_priorities[ship_class_query_general_type(ship_class_2)];
+
+	// standard compare
+	if (priority1 < priority2)
+		return -1;
+	else if (priority1 > priority2)
+		return 1;
+	else
+		return 0;
 }
 
 //**************************************************************
