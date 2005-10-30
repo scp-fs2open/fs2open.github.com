@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-10-29 12:25:49 $
+ * $Revision: 2.33 $
+ * $Date: 2005-10-30 10:45:19 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/10/29 12:25:49  taylor
+ * bullet-proof the loadout read a little bit (did this before and had it locally, must have missed CVS)
+ *
  * Revision 2.31  2005/09/16 00:03:51  taylor
  * didn't mean to leave that in there
  *
@@ -991,6 +994,11 @@ int mission_campaign_savefile_save()
 	if ( strlen(Campaign.filename) == 0 )
 		return 0;
 
+	// make sure that we don't try to save if the campaign is missing since it's
+	// a pretty good bet that the data isn't sane.
+	if ( Campaign_file_missing )
+		return 0;
+
 	memset(filename, 0, _MAX_FNAME);
 	mission_campaign_savefile_generate_root(filename, pl);
 
@@ -1617,8 +1625,11 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		}
 	
 		// read all intel entries in
-		for (idx=0; idx<intel_count && idx<Intel_info_size; idx++) {
+		for (idx=0; idx<intel_count; idx++) {
 			in = cfread_ubyte(fp);
+
+			if (idx >= Intel_info_size)
+				continue;
 
 			if (in) {
 				Intel_info[idx].flags |= IIF_IN_TECH_DATABASE;
