@@ -1578,6 +1578,34 @@ SOURCE=..\..\code\Palman\PalMan.h
 # Begin Group "Parse"
 
 # PROP Default_Filter ""
+# Begin Group "Scripting"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\parse\lua.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\lua.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\python.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\python.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\scripting.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\parse\scripting.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=..\..\code\Parse\Encrypt.cpp
