@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.122 $
- * $Date: 2005-10-30 20:03:39 $
- * $Author: taylor $
+ * $Revision: 2.123 $
+ * $Date: 2005-10-30 20:42:45 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2005/10/30 20:03:39  taylor
+ * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
+ * fix Mantis bug #381
+ * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
+ *
  * Revision 2.121  2005/10/29 22:09:29  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -5738,11 +5743,14 @@ int mission_did_ship_arrive(p_object *objp)
 void mission_maybe_make_ship_arrive(p_object *p_objp)
 {
 	// try to create ship
-	if (mission_did_ship_arrive(p_objp) < 0)
+	int objnum = mission_did_ship_arrive(p_objp);
+	if (objnum < 0)
 		return;
 
-	// maybe remove from arrival list
-	if (p_objp != Arriving_support_ship)
+	// remove from arrival list
+	if (p_objp == Arriving_support_ship)
+		mission_parse_support_arrived(objnum);
+	else
 		list_remove(&Ship_arrival_list, p_objp);
 }
 
