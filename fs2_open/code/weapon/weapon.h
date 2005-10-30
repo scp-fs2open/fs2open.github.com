@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/10/14 07:22:24  Goober5000
+ * removed an unneeded parameter and renamed some stuff
+ * --Goober5000
+ *
  * Revision 2.57  2005/10/11 08:30:37  taylor
  * fix memory freakage from dynamic spawn weapon types
  *
@@ -500,6 +504,7 @@
 #include "graphics/2d.h"
 #include "globalincs/globals.h"
 #include "weapon/trails.h"
+#include "weapon/shockwave.h"
 
 struct object;
 struct ship_subsys;
@@ -720,14 +725,21 @@ typedef struct weapon_info {
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 
-	float	blast_force;						// force this weapon exhibits when hitting an object
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
+
+	shockwave_create_info shockwave;
+	shockwave_create_info dinky_shockwave;
+	fix arm_time;
+	float arm_dist;
+	float arm_radius;
+	/*float	blast_force;						// force this weapon exhibits when hitting an object
 	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
-	float	shockwave_speed;					// speed of shockwave ( 0 means none )
-	int		shockwave_info_index;
-	char	shockwave_name[NAME_LENGTH];
-	char	shockwave_pof_name[NAME_LENGTH];	// Name of the pof for the shockwave, if useing it's own
-	int		shockwave_model;					//model for the shock wave -Bobboau
+	float	shockwave_speed;					// speed of shockwave ( 0 means none )*/
+
+	//int		shockwave_info_index;
+	//char	shockwave_name[NAME_LENGTH];
+	//char	shockwave_pof_name[NAME_LENGTH];	// Name of the pof for the shockwave, if useing it's own
+	//int		shockwave_model;					//model for the shock wave -Bobboau
 
 	float	armor_factor, shield_factor, subsystem_factor;	//	in 0.0..2.0, scale of damage done to type of thing
 	float	lifetime;							//	How long this thing lives.
@@ -768,6 +780,9 @@ typedef struct weapon_info {
 
 	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
 	float	impact_explosion_radius;		// How big the explosion should be
+
+	int dinky_impact_weapon_expl_index;
+	float dinky_impact_explosion_radius;
 
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect

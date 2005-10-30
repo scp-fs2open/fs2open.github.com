@@ -28,8 +28,8 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="1"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include"
-				PreprocessorDefinitions="NDEBUG,WIN32,_WINDOWS,USE_PYTHON"
+				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
+				PreprocessorDefinitions="NDEBUG,WIN32,_WINDOWS,USE_LUA"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile=".\Release\Profile/code.pch"
@@ -79,9 +79,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				OptimizeForProcessor="1"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include"
-				PreprocessorDefinitions="_DEBUG,WIN32,_WINDOWS"
+				OptimizeForProcessor="0"
+				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
+				PreprocessorDefinitions="_DEBUG,WIN32,_WINDOWS,USE_LUA"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="TRUE"
@@ -1223,6 +1223,12 @@
 			<File
 				RelativePath="..\..\code\Object\ObjectSort.cpp">
 			</File>
+			<File
+				RelativePath="..\..\code\object\parseobjectdock.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\parseobjectdock.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Observer"
@@ -1279,6 +1285,12 @@
 				RelativePath="..\..\code\Parse\Encrypt.h">
 			</File>
 			<File
+				RelativePath="..\..\code\parse\lua.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\parse\lua.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Parse\PARSELO.CPP">
 			</File>
 			<File
@@ -1289,6 +1301,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\parse\python.h">
+			</File>
+			<File
+				RelativePath="..\..\code\parse\scripting.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\parse\scripting.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Parse\SEXP.CPP">

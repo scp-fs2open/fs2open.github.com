@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-10-10 17:21:03 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2005-10-30 06:44:56 $
+ * $Author: wmcoolmon $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/10/10 17:21:03  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.19  2005/09/25 05:13:05  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -318,7 +321,8 @@
 #define DEBRIS_SOUND_DELAY						2000	// time to start debris sound after created
 
 // limit the number of hull debris chunks that can exist.  
-#define	MAX_HULL_PIECES		10
+//#define	MAX_HULL_PIECES		10
+#define MAX_HULL_PIECES			MAX_DEBRIS_PIECES //-WMCD
 int		Num_hull_pieces;		// number of hull pieces in existance
 debris	Hull_debris_list;		// head of linked list for hull debris chunks, for quick search
 
@@ -338,7 +342,7 @@ int Debris_num_submodels = 0;
 #define	MAX_SPEED_SMALL_DEBRIS		200					// maximum velocity of small debris piece
 #define	MAX_SPEED_BIG_DEBRIS			150					// maximum velocity of big debris piece
 #define	MAX_SPEED_CAPITAL_DEBRIS	100					// maximum velocity of capital debris piece
-#define	DEBRIS_SPEED_DEBUG
+//#define	DEBRIS_SPEED_DEBUG
 
 // ---------------------------------------------------------------------------------------
 // debris_start_death_roll()

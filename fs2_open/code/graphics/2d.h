@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.66 $
- * $Date: 2005-10-22 20:17:18 $
+ * $Revision: 2.67 $
+ * $Date: 2005-10-30 06:44:57 $
  * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/10/22 20:17:18  wmcoolmon
+ * mission-set-nebula fixage; remainder of python code
+ *
  * Revision 2.65  2005/10/16 11:20:43  taylor
  * use unsigned index buffers
  *
@@ -659,6 +662,7 @@ extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
 extern float Min_draw_distance;
 extern float Max_draw_distance;
+extern int Gr_inited;
 
 // This is a structure used by the shader to keep track
 // of the values you want to use in the shade primitive.

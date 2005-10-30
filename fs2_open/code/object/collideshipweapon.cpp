@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-10-28 14:48:26 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2005-10-30 06:44:58 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/10/28 14:48:26  taylor
+ * don't do any decal processing if decals are not enabled
+ *
  * Revision 2.21  2005/10/10 17:21:08  taylor
  * remove NO_NETWORK
  *
@@ -484,7 +487,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 	if ( valid_hit_occured )	{
 		ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 	} else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_obj)) {
-		if (dist < wip->inner_radius) {
+		if (dist < wip->shockwave.inner_rad) {
 			vec3d	vec_to_ship;
 
 			vm_vec_normalized_dir(&vec_to_ship, &ship_obj->pos, &weapon_obj->pos);

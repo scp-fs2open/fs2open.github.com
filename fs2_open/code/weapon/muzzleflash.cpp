@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-10-30 06:44:59 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.5  2004/07/26 20:47:56  Kazan
  * remove MCD complete
  *
@@ -220,7 +223,7 @@ void mflash_level_close()
 }
 
 // create a muzzle flash on the guy
-void mflash_create(vec3d *gun_pos, vec3d *gun_dir, int mflash_type)
+void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type)
 {	
 	// mflash *mflashp;
 	mflash_info *mi;
@@ -271,7 +274,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, int mflash_type)
 		// fire it up
 		memset(&p, 0, sizeof(particle_info));
 		vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mi->blob_offset[idx]);
-		p.vel = vmd_zero_vector;		
+		vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
 		p.rad = mi->blob_radius[idx];
 		p.type = PARTICLE_BITMAP;
 		p.optional_data = mi->blob_anims[idx];

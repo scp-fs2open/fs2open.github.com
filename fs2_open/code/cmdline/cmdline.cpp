@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.118 $
- * $Date: 2005-10-24 04:48:14 $
- * $Author: taylor $
+ * $Revision: 2.119 $
+ * $Date: 2005-10-30 06:44:56 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2005/10/24 04:48:14  taylor
+ * not sure what I was smoking there, max shininess value is 128, not 180
+ *
  * Revision 2.117  2005/10/23 20:34:29  taylor
  * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
  *
@@ -715,6 +718,7 @@
 #include "globalincs/systemvars.h"
 #include "network/multi.h"
 #include "hud/hudconfig.h"
+#include "parse/scripting.h"
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>
@@ -872,6 +876,7 @@ Flag exe_params[] =
 	{ "-dis_collisions",	"Disable collisions",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 	{ "-dis_weapons",		"Disable weapon rendering",					true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 	{ "-output_sexps",		"Outputs SEXPs to sexps.html",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
+	{ "-output_scripting",	"Outputs scripting to scripting.html",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -943,6 +948,7 @@ cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 cmdline_parm get_flags_arg("-get_flags",NULL);
 cmdline_parm output_sexp_arg("-output_sexps",NULL);	//WMC - outputs all SEXPs to sexps.html
+cmdline_parm output_scripting_arg("-output_scripting",NULL);	//WMC
 cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
 cmdline_parm fred2_htl_arg("-fredhtl",NULL);
@@ -1869,6 +1875,13 @@ bool SetCmdlineParams()
 	if(ambient_factor_arg.found())
 	{
 		Cmdline_ambient_factor = ambient_factor_arg.get_int();
+	}
+
+	if(output_scripting_arg.found())
+	{
+		
+		Output_scripting_meta = true;
+		return false;
 	}
 
 	if(output_sexp_arg.found())

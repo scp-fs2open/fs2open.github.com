@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.141  2005/10/26 00:43:06  taylor
+ * make sure that XMTs don't try to still create an invalid entry when +nocreate is used
+ *
  * Revision 2.140  2005/10/23 20:34:30  taylor
  * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
  *
@@ -855,7 +858,6 @@
 #include "io/timer.h"
 #include "gamesnd/gamesnd.h"
 #include "cmeasure/cmeasure.h"
-#include "weapon/shockwave.h"
 #include "math/staticrand.h"
 #include "weapon/swarm.h"
 #include "ship/shiphit.h"
@@ -1316,6 +1318,67 @@ void parse_wi_flags(weapon_info *weaponp)
 
 }
 
+void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
+{
+	char buf[32];
+
+	sprintf(buf, "%sShockwave damage:", pre_char);
+	if(optional_string(buf)) {
+		stuff_float(&sci->damage);
+	}
+
+	sprintf(buf, "%sBlast Force:", pre_char);
+	if(optional_string(buf)) {
+		stuff_float(&sci->blast);
+	}
+
+	sprintf(buf, "%sInner Radius:", pre_char);
+	if(optional_string(buf)) {
+		stuff_float(&sci->inner_rad);
+	}
+
+	sprintf(buf, "%sOuter Radius:", pre_char);
+	if(optional_string(buf)) {
+		stuff_float(&sci->outer_rad);
+	}
+
+	sprintf(buf, "%sShockwave Speed:", pre_char);
+	if(optional_string(buf)) {
+		stuff_float(&sci->speed);
+	}
+
+	sprintf(buf, "%sShockwave Rotation:", pre_char);
+	if(optional_string(buf)) {
+		float angs[3];
+		stuff_float_list(angs, 3);
+		for(int i = 0; i < 3; i++)
+		{
+			angs[i] = angs[i] * (PI2/180.0f);
+			while(angs[i] < 0)
+			{
+				angs[i] += PI2;
+			}
+			while(angs[i] > PI2)
+			{
+				angs[i] -= PI2;
+			}
+		}
+		sci->rot_angles.p = angs[0];
+		sci->rot_angles.b = angs[1];
+		sci->rot_angles.h = angs[2];
+	}
+
+	sprintf(buf, "%sShockwave Model:", pre_char);
+	if(optional_string(buf)) {
+		stuff_string(sci->name, F_NAME, NULL);
+	}
+
+	sprintf(buf, "%sShockwave Name:", pre_char);
+	if(optional_string(buf)) {
+		stuff_string(sci->pof_name, F_NAME, NULL);
+	}
+}
+
 void init_weapon_entry(int weap_info_index)
 {
 	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
@@ -1369,16 +1432,10 @@ void init_weapon_entry(int weap_info_index)
 	wip->damage = 0.0f;
 	
 	wip->damage_type_idx = -1;
-	
-	wip->blast_force = 0;
-	wip->inner_radius = 0;
-	wip->outer_radius = 0;
-	
-	wip->shockwave_speed = 0;
-	wip->shockwave_model = -1;
-	wip->shockwave_pof_name[0] = '\0';
-	wip->shockwave_info_index = -1;
-	wip->shockwave_name[0] = '\0';
+
+	wip->arm_time = 0;
+	wip->arm_dist = 0.0f;
+	wip->arm_radius = 0.0f;
 	
 	wip->armor_factor = 1.0f;
 	wip->shield_factor = 1.0f;
@@ -1428,6 +1485,9 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
+
+	wip->dinky_impact_explosion_radius = 1.0f;
+	wip->dinky_impact_weapon_expl_index = -1;
 
 	wip->muzzle_flash = -1;
 
@@ -1814,6 +1874,9 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("$Damage:")) {
 		stuff_float(&wip->damage);
+		//WMC - now that shockwave damage can be set for them individually,
+		//do this automagically
+		wip->shockwave.damage = wip->damage;
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -1823,45 +1886,40 @@ int parse_weapon(int subtype, bool replace)
 		wip->damage_type_idx = damage_type_add(buf);
 	}
 
-	// secondary weapons require these values
-	// for primary weapons they're optional
-	//Made them all optional for modular tables -C
-	if(optional_string("$Blast Force:")){
-		stuff_float( &(wip->blast_force) );
-		diag_printf ("Weapon blast force -- %7.3f\n", wip->blast_force);
+	if(optional_string("$Arm time:")) {
+		float flit;
+		stuff_float(&flit);
+		wip->arm_time = fl2f(flit);
 	}
 
-	if(optional_string("$Inner Radius:")){
-		stuff_float( &(wip->inner_radius) );
-		if ( wip->inner_radius != 0 ) {
-			wip->wi_flags |= WIF_AREA_EFFECT;
-		}
-		diag_printf ("Weapon inner blast radius -- %7.3f\n", wip->inner_radius);
+	if(optional_string("$Arm distance:")) {
+		stuff_float(&wip->arm_dist);
 	}
 
-	if(optional_string("$Outer Radius:")){
-		stuff_float( &(wip->outer_radius) );
-		if ( wip->outer_radius != 0 ) {
-			wip->wi_flags |= WIF_AREA_EFFECT;
-		}
-		diag_printf ("Weapon outer blast radius -- %7.3f\n", wip->outer_radius);
+	if(optional_string("$Arm radius:")) {
+		stuff_float(&wip->arm_radius);
 	}
 
-	if(optional_string("$Shockwave Speed:")){
-		stuff_float( &(wip->shockwave_speed) );
-		if ( wip->shockwave_speed != 0 ) {
-			wip->wi_flags |= WIF_SHOCKWAVE;
-		}
-		diag_printf ("Shockwave speed -- %7.3f\n", wip->shockwave_speed);
+	parse_shockwave_info(&wip->shockwave, "$");
+
+	//Check for needing to set flags
+	if ( wip->shockwave.speed != 0.0f ) {
+		wip->wi_flags |= WIF_SHOCKWAVE;
 	}
-	//End prim/second fiasco
-	
-	if(optional_string("$Shockwave Model:")){
-		stuff_string( wip->shockwave_pof_name, F_NAME, NULL);
+	if(wip->shockwave.inner_rad != 0.0f || wip->shockwave.outer_rad != 0.0f) {
+		wip->wi_flags |= WIF_AREA_EFFECT;
 	}
-	
-	if(optional_string("$Shockwave name:")) {
-		stuff_string( wip->shockwave_name, F_NAME, NULL);
+
+	//Retain compatibility
+	if(first_time)
+	{
+		wip->dinky_shockwave = wip->shockwave;
+		wip->dinky_shockwave.damage /= 4.0f;
+	}
+
+	if(optional_string("$Dinky shockwave:"))
+	{
+		parse_shockwave_info(&wip->dinky_shockwave, "+");
 	}
 
 	if(optional_string("$Armor Factor:")) {
@@ -2091,7 +2149,7 @@ int parse_weapon(int subtype, bool replace)
 	// also make sure EMP is friendly - Goober5000
 	if (wip->wi_flags & WIF_EMP)
 	{
-		if (!wip->outer_radius)
+		if (!wip->shockwave.outer_rad)
 		{
 			Warning(LOCATION, "Outer blast radius of weapon %s is zero - EMP will not work.\nAdd $Outer Radius to weapon table entry.\n", wip->name);
 		}
@@ -2153,19 +2211,36 @@ int parse_weapon(int subtype, bool replace)
 		stuff_string(wip->anim_filename, F_NAME, NULL);
 	}
 
+	char impact_ani_file[FILESPEC_LENGTH];
 	if ( optional_string("$Impact Explosion:") ) {
-		char impact_ani_file[FILESPEC_LENGTH];
 		stuff_string(impact_ani_file, F_NAME, NULL);
 		if ( stricmp(impact_ani_file,NOX("none")))	{
 			wip->impact_weapon_expl_index = get_weapon_expl_info_index(impact_ani_file);
-			//int num_frames, fps;
-			//wip->impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, &fps, 1 );
 		}
 	}
 	
 	if(optional_string("$Impact Explosion Radius:")) {
 		stuff_float(&wip->impact_explosion_radius);
 	}
+
+	if ( optional_string("$Dinky Impact Explosion:") )
+	{
+		stuff_string(impact_ani_file, F_NAME, NULL);
+		if ( stricmp(impact_ani_file,NOX("none")))	{
+			wip->dinky_impact_weapon_expl_index = get_weapon_expl_info_index(impact_ani_file);
+		}
+	}
+	else if(first_time)
+	{
+		wip->dinky_impact_weapon_expl_index = wip->impact_weapon_expl_index;
+	}
+
+	if(optional_string("$Dinky Impact Explosion Radius:")) {
+		stuff_float(&wip->dinky_impact_explosion_radius);
+	} else if(first_time) {
+		wip->dinky_impact_explosion_radius = wip->impact_explosion_radius;
+	}
+
 	// muzzle flash
 	char mflash_string[255] = "";
 	if( optional_string("$Muzzleflash:") ){
@@ -3971,7 +4046,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		//	If a HEAT seeking (rather than ASPECT seeking) homing missile, verify that target is in viewcone.
 		if (wip->wi_flags & WIF_HOMING_HEAT) {
-			if ((old_dot < wip->fov) && (dist_to_target > wip->inner_radius*1.1f)) {	//	Delay finding new target one frame to allow detonation.
+			if ((old_dot < wip->fov) && (dist_to_target > wip->shockwave.inner_rad*1.1f)) {	//	Delay finding new target one frame to allow detonation.
 				find_homing_object(obj, num);
 				return;			//	Maybe found a new homing object.  Return, process more next frame.
 			} else	//	Subtract out life based on how far from target this missile points.
@@ -4965,7 +5040,7 @@ void weapon_do_electronics_affect(object *ship_objp, vec3d *blast_pos, int wi_in
 
 		// see if subsys point is within damage sphere
 		dist = vm_vec_dist_quick(blast_pos, &subsys_world_pos);
-		if ( dist < wip->outer_radius )
+		if ( dist < wip->shockwave.outer_rad )
 		{
 			//use new style electronics disruption
 			if (wip->elec_use_new_style)
@@ -5146,7 +5221,7 @@ void weapon_do_area_effect(object *wobjp, vec3d *pos, object *other_obj)
 
 	wip = &Weapon_info[Weapons[wobjp->instance].weapon_info_index];	
 	wp = &Weapons[wobjp->instance];
-	Assert(wip->inner_radius != 0);	
+	Assert(wip->shockwave.inner_rad != 0);	
 
 	// only blast ships and asteroids
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
@@ -5161,7 +5236,7 @@ void weapon_do_area_effect(object *wobjp, vec3d *pos, object *other_obj)
 			}
 		}
 
-		if ( weapon_area_calc_damage(objp, pos, wip->inner_radius, wip->outer_radius, wip->blast_force, wip->damage, &blast, &damage, wip->outer_radius) == -1 ){
+		if ( weapon_area_calc_damage(objp, pos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->shockwave.blast, wip->damage, &blast, &damage, wip->shockwave.outer_rad) == -1 ){
 			continue;
 		}
 
@@ -5191,6 +5266,55 @@ void weapon_do_area_effect(object *wobjp, vec3d *pos, object *other_obj)
 //	}
 }
 
+//	----------------------------------------------------------------------
+//	weapon_armed(weapon)
+//
+//	Call to figure out if a weapon is armed or not
+//
+//Weapon is armed when...
+//1: Weapon is shot down by weapon
+//OR
+//1: weapon is destroyed before arm time
+//2: weapon is destroyed before arm distance from ship
+//3: weapon is outside arm radius from target ship
+bool weapon_armed(weapon *wp)
+{
+	Assert(wp != NULL);
+
+	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+
+	if((wp->weapon_flags & WF_DESTROYED_BY_WEAPON)
+		&& !wip->arm_time
+		&& wip->arm_dist == 0.0f
+		&& wip->arm_radius == 0.0f)
+	{
+		return true;
+	}
+	else
+	{
+		object *wobj = &Objects[wp->objnum];
+		object *pobj;
+		vec3d spos;
+
+		if(wobj->parent > -1) {
+			pobj = &Objects[wobj->parent];
+		} else {
+			pobj = NULL;
+		}
+
+		if(((wip->arm_time) && (Missiontime - wp->creation_time < wip->arm_time))
+			|| ((wip->arm_dist) && (pobj == NULL || pobj->type == OBJ_NONE || (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist)))
+			|| ((wip->arm_radius) && (wp->homing_object == NULL
+				|| (wp->homing_subsys == NULL && vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius)
+				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius))))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 
 //	----------------------------------------------------------------------
 //	weapon_hit()
@@ -5213,14 +5337,23 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 	int			weapon_type = Weapons[num].weapon_info_index;
 	object		*weapon_parent_objp;
 	weapon_info	*wip;
+	weapon *wp;
+
+	//This is an expensive check
+	bool armed_weapon = weapon_armed(&Weapons[num]);
 	// int np_index;
 
 	Assert((weapon_type >= 0) && (weapon_type < MAX_WEAPONS));
 	if((weapon_type < 0) || (weapon_type >= MAX_WEAPONS)){
 		return;
 	}
+	wp = &Weapons[weapon_obj->instance];
 	wip = &Weapon_info[weapon_type];
-	weapon_parent_objp = &Objects[weapon_obj->parent];
+	if(weapon_obj->parent > -1) {
+		weapon_parent_objp = &Objects[weapon_obj->parent];
+	} else {
+		weapon_parent_objp = NULL;
+	}
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	// if( ((wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (other_obj == Player_obj) ){
@@ -5228,9 +5361,15 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 		weapon_hit_do_sound(other_obj, wip, hitpos);
 	}
 
-	if ( wip->impact_weapon_expl_index > -1 )	{
+	if ( wip->impact_weapon_expl_index > -1 && armed_weapon)
+	{
 		int expl_ani_handle = weapon_get_expl_handle(wip->impact_weapon_expl_index, hitpos, wip->impact_explosion_radius);
 		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
+	}
+	else if(wip->dinky_impact_weapon_expl_index > -1 && !armed_weapon)
+	{
+		int expl_ani_handle = weapon_get_expl_handle(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
+		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 
 	weapon_obj->flags |= OF_SHOULD_BE_DEAD;
@@ -5241,23 +5380,19 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 	if ( wip->wi_flags & WIF_AREA_EFFECT ) {
 	// if ( wip->subtype & WP_MISSILE && wip->wi_flags & WIF_AREA_EFFECT ) {
 		if ( wip->wi_flags & WIF_SHOCKWAVE ) {
-			float actual_damage = wip->damage;
 			// Shockwaves caused by weapons hitting weapons are 1/4 as powerful
 			if ( ((other_obj) && (other_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags & WF_DESTROYED_BY_WEAPON)) {
-				actual_damage /= 4.0f;
 				sw_flag |= SW_WEAPON_KILL;
 			}
-			shockwave_create_info sci;
-			sci.blast = wip->blast_force;
-			sci.damage = actual_damage;
-			sci.inner_rad = wip->inner_radius;
-			sci.outer_rad = wip->outer_radius;
-			sci.speed = wip->shockwave_speed;
-			sci.rot_angles.p = 0.0f;
-			sci.rot_angles.b = 0.0f;
-			sci.rot_angles.h = 0.0f;
 
-			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &sci, sw_flag, -1, wip->shockwave_model, wip->shockwave_info_index);
+			if(!weapon_armed(&Weapons[num]))
+			{
+				shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &wip->dinky_shockwave, sw_flag, -1);
+			}
+			else
+			{
+				shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &wip->shockwave, sw_flag, -1);
+			}
 //			snd_play_3d( &Snds[SND_SHOCKWAVE_IMPACT], hitpos, &Eye_position );
 		}
 		else {
@@ -5278,7 +5413,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 			{
 				continue;
 			}
-			if ( weapon_area_calc_damage(objp, hitpos, wip->inner_radius, wip->outer_radius, wip->blast_force, wip->damage, &blast, &damage, wip->outer_radius) == -1 ){
+			if ( weapon_area_calc_damage(objp, hitpos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->shockwave.blast, wip->damage, &blast, &damage, wip->shockwave.outer_rad) == -1 ){
 				continue;
 			}
 
@@ -5288,7 +5423,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 
 	// check if this is an EMP weapon
 	if(wip->wi_flags & WIF_EMP){
-		emp_apply(&weapon_obj->pos, wip->inner_radius, wip->outer_radius, wip->emp_intensity, wip->emp_time);
+		emp_apply(&weapon_obj->pos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->emp_intensity, wip->emp_time);
 	}	
 
 	// spawn weapons - note the change from FS 1 multiplayer.
@@ -5459,15 +5594,9 @@ void weapons_page_in()
 //		}
 
 
-		if( strlen(wip->shockwave_pof_name) )
-			wip->shockwave_model = model_load(wip->shockwave_pof_name, 0, NULL);
-		else
-			wip->shockwave_model = -1;
-		
-		if( strlen(wip->shockwave_name) )
-			wip->shockwave_info_index = shockwave_add(wip->shockwave_name);
-		else
-			wip->shockwave_info_index = -1;
+		//Load shockwaves
+		wip->shockwave.load();
+		wip->dinky_shockwave.load();
 
 		// trail bitmaps
 		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.bitmap > -1) )	{

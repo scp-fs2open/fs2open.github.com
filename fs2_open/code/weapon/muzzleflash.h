@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2005-10-30 06:44:59 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -51,6 +55,8 @@
 #ifndef __FS2_MUZZLEFLASH_HEADER_FILE
 #define __FS2_MUZZLEFLASH_HEADER_FILE
 
+#include "physics/physics.h"
+
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH DEFINES/VARS
 // 
@@ -77,7 +83,7 @@ void mflash_level_init();
 void mflash_level_close();
 
 // create a muzzle flash on the guy
-void mflash_create(vec3d *gun_pos, vec3d *gun_dir, int mflash_type);
+void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash_type);
 
 // process muzzle flash stuff
 void mflash_process_all();

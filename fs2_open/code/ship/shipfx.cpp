@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-10-29 22:09:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.55 $
+ * $Date: 2005-10-30 06:44:58 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/10/29 22:09:31  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.53  2005/10/20 17:50:03  taylor
  * fix player warpout
  * basic code cleanup (that previous braces change did nothing for readability)
@@ -1715,7 +1719,7 @@ void shipfx_flash_create(object *objp, ship * shipp, vec3d *gun_pos, vec3d *gun_
 		vec3d real_pos;
 		vm_vec_unrotate(&real_pos, gun_pos,&objp->orient);
 		vm_vec_add2(&real_pos, &objp->pos);			
-		mflash_create(&real_pos, gun_dir, Weapon_info[weapon_info_index].muzzle_flash);		
+		mflash_create(&real_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash);		
 	}
 
 	if ( pm->num_lights < 1 ) return;
@@ -3043,17 +3047,15 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 		}
 
 		// create the shockwave
-		shockwave_create_info sci2;
+		shockwave_create_info sci2 = *sci;
 		sci2.blast = (sci->blast / (float)sip->shockwave_count) * frand_range(0.75f, 1.25f);
 		sci2.damage = (sci->damage / (float)sip->shockwave_count) * frand_range(0.75f, 1.25f);
-		sci2.inner_rad = sci->inner_rad;
-		sci2.outer_rad = sci->outer_rad;
 		sci2.speed = sci->speed * frand_range(0.75f, 1.25f);
 		sci2.rot_angles.p = frand_range(0.0f, 1.99f*PI);
 		sci2.rot_angles.b = frand_range(0.0f, 1.99f*PI);
 		sci2.rot_angles.h = frand_range(0.0f, 1.99f*PI);
 
-		shockwave_create(shipp->objnum, &shockwave_pos, &sci2, SW_SHIP_DEATH, (int)frand_range(0.0f, 350.0f), sip->shockwave_model, sip->shockwave_info_index);
+		shockwave_create(shipp->objnum, &shockwave_pos, &sci2, SW_SHIP_DEATH, (int)frand_range(0.0f, 350.0f));
 		// shockwave_create(shipp->objnum, &objp->pos, sip->shockwave_speed, sip->inner_rad, sip->outer_rad, sip->damage, sip->blast, SW_SHIP_DEATH);
 
 		// next shockwave

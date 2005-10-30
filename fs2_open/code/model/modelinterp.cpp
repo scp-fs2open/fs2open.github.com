@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.132 $
- * $Date: 2005-10-28 14:45:55 $
- * $Author: taylor $
+ * $Revision: 2.133 $
+ * $Date: 2005-10-30 06:44:57 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2005/10/28 14:45:55  taylor
+ * more TMAP_MAX_VERTS overflow protection for non-HTL usage (these are the things that need to be addressed to fix non-HTL)
+ * fix some compiler warning messages
+ * don't do any decal processing if decals are disabled, the math was a waste of CPU cycles in that case
+ *
  * Revision 2.131  2005/10/24 07:13:04  Goober5000
  * merge Bobboau's thruster code back in; hopefully this covers everything
  * --Goober5000
@@ -3997,6 +4002,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		g3_start_instance_matrix(&decal_z_corection, NULL, use_api);		
 		decal_render_all(objp);
 		g3_done_instance(use_api);
+		//Nasty hack to get the other Get_fog functions to work
+		neb2_get_fog_intensity(objp);
 	}
 
 

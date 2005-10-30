@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.23 $
- * $Date: 2005-10-22 22:22:41 $
- * $Author: Goober5000 $
+ * $Revision: 1.24 $
+ * $Date: 2005-10-30 06:44:56 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2005/10/22 22:22:41  Goober5000
+ * rolled back UnknownPlayer's commit
+ * --Goober5000
+ *
  * Revision 1.21  2005/10/14 07:22:23  Goober5000
  * removed an unneeded parameter and renamed some stuff
  * --Goober5000
@@ -1187,7 +1191,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					// if the gun is a flak gun
 					if(wip->wi_flags & WIF_FLAK){			
 						// show a muzzle flash
-						flak_muzzle_flash(turret_pos, turret_fvec, turret_weapon_class);
+						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
 						// pick a firing range so that it detonates properly			
 						flak_pick_range(objp, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));

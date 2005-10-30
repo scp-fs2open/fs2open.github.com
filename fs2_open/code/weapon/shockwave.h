@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.9 $
- * $Date: 2005-08-05 15:33:45 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-10-30 06:44:59 $
+ * $Author: wmcoolmon $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/08/05 15:33:45  taylor
+ * fix 3-D shockwave frame detection so that it will use the proper number of frames for the animation (not less, not more)
+ *
  * Revision 2.8  2005/07/24 06:01:37  wmcoolmon
  * Multiple shockwaves support.
  *
@@ -115,6 +118,7 @@
 #define __SHOCKWAVE_H__
 
 #include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 
 struct object;
 
@@ -157,12 +161,18 @@ typedef struct shockwave {
 } shockwave;
 
 typedef struct shockwave_create_info {
+	char name[NAME_LENGTH];
+	char pof_name[NAME_LENGTH];
+
 	float inner_rad;
 	float outer_rad;
 	float damage;
 	float blast;
 	float speed;
 	angles rot_angles;
+
+	shockwave_create_info() {memset(this, 0, sizeof(shockwave_create_info));}
+	void load();
 } shockwave_create_info;
 
 extern shockwave			Shockwaves[MAX_SHOCKWAVES];
@@ -173,7 +183,7 @@ void shockwave_level_init();
 void shockwave_level_close();
 void shockwave_delete(object *objp);
 void shockwave_move_all(float frametime);
-int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay = -1, int model = -1, int info_index=-1);
+int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay = -1);
 void shockwave_render(object *objp);
 int shockwave_weapon_index(int index);
 float shockwave_max_radius(int index);

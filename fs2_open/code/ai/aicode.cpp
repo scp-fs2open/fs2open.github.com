@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.39 $
- * $Date: 2005-10-22 22:22:41 $
- * $Author: Goober5000 $
+ * $Revision: 1.40 $
+ * $Date: 2005-10-30 06:44:55 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2005/10/22 22:22:41  Goober5000
+ * rolled back UnknownPlayer's commit
+ * --Goober5000
+ *
  * Revision 1.37  2005/10/10 17:21:02  taylor
  * remove NO_NETWORK
  *
@@ -6789,7 +6793,7 @@ int compute_num_homing_objects(object *target_objp)
 //	If it's a shockwave weapon, tell your team about it!
 void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index)
 {
-	if ((firing_objp->type == OBJ_SHIP) && (Weapon_info[weapon_index].shockwave_speed > 0.0f)) {
+	if ((firing_objp->type == OBJ_SHIP) && (Weapon_info[weapon_index].shockwave.speed > 0.0f)) {
 		ship_obj	*so;
 		int		firing_ship_team;
 
@@ -13847,7 +13851,7 @@ int ai_find_shockwave_weapon(object *objp, ai_info *aip)
 		wip = &Weapon_info[wp->weapon_info_index];
 		Assert( wip->subtype == WP_MISSILE );
 
-		if (wip->shockwave_speed > 0.0f) {
+		if (wip->shockwave.speed > 0.0f) {
 			float	dist;
 
 			dist = vm_vec_dist_quick(&objp->pos, &A->pos);
@@ -13957,7 +13961,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		weapon_info	*wip = &Weapon_info[weaponp->weapon_info_index];
 		object *target_ship_obj = NULL;
 
-		if (wip->shockwave_speed == 0.0f) {
+		if (wip->shockwave.speed == 0.0f) {
 			aip->ai_flags &= ~AIF_AVOID_SHOCKWAVE_WEAPON;
 			aip->shockwave_object = -1;
 			return 0;
@@ -13967,7 +13971,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		vec3d	expected_pos;		//	Position at which we expect the weapon to detonate.
 		int		pos_set = 0;
 
-		danger_dist = wip->outer_radius;
+		danger_dist = wip->shockwave.outer_rad;
 		//	Set predicted position of detonation.
 		//	If an aspect locked missile, assume it will detonate at the homing position.
 		//	If not, which is not possible in a default FreeSpace weapon, then predict it will detonate at some

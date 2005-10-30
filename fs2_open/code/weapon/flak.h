@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2005-10-30 06:44:59 $
+ * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -45,6 +49,8 @@
 
 #ifndef _FLAK_WEAPONS_HEADER_FILE
 #define _FLAK_WEAPONS_HEADER_FILE
+
+#include "physics/physics.h"
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 // FLAK DEFINES/VARS
@@ -78,7 +84,7 @@ void flak_pick_range(object *objp, vec3d *predicted_target_pos, float weapon_sub
 void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_strength);
 
 // create a muzzle flash from a flak gun based upon firing position and weapon type
-void flak_muzzle_flash(vec3d *pos, vec3d *dir, int turret_weapon_class);
+void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_weapon_class);
 
 // maybe detonate a flak shell early/late (call from weapon_process_pre(...))
 void flak_maybe_detonate(object *obj);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-03-25 06:57:36 $
+ * $Revision: 2.7 $
+ * $Date: 2005-10-30 06:44:58 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/03/25 06:57:36  wmcoolmon
+ * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
+ *
  * Revision 2.5  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -185,11 +188,11 @@ int collide_weapon_weapon( obj_pair * pair )
 
 		if (Weapons[A->instance].lifeleft == 0.01f) {
 			dist = vm_vec_dist_quick(&A->pos, &wpA->homing_pos);
-			nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipA->name, dist, wipA->inner_radius, wipA->outer_radius));
+			//nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipA->name, dist, wipA->inner_radius, wipA->outer_radius));
 		}
 		if (Weapons[B->instance].lifeleft == 0.01f) {
 			dist = vm_vec_dist_quick(&A->pos, &wpB->homing_pos);
-			nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipB->name, dist, wipB->inner_radius, wipB->outer_radius));
+			//nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipB->name, dist, wipB->inner_radius, wipB->outer_radius));
 		}
 #endif
 		return 1;
