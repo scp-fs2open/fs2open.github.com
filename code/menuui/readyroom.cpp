@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-09-16 02:51:54 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2005-10-30 19:22:31 $
+ * $Author: wmcoolmon $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/09/16 02:51:54  taylor
+ * when changing a campaign in the campaign room make sure that the mainhall is properly set without having to play a mission first
+ *
  * Revision 2.19  2005/07/18 03:45:07  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -1001,7 +1004,9 @@ int sim_room_maybe_resume_savegame()
 
 int readyroom_continue_campaign()
 {
-	if (mission_campaign_next_mission()) {  // is campaign and next mission valid?
+	int mc_rval = mission_campaign_next_mission();
+	if (mc_rval == -1)
+	{  // is campaign and next mission valid?
 
 #ifdef FS2_DEMO
 		int reset_campaign = 0;
@@ -1018,6 +1023,12 @@ int readyroom_continue_campaign()
 		popup(0, 1, POPUP_OK, XSTR( "The campaign is over.  To replay the campaign, either create a new pilot or restart the campaign in the campaign room.", 112) );
 		return -1;
 #endif
+	}
+	else if(mc_rval == -2)
+	{
+		gamesnd_play_iface(SND_GENERAL_FAIL);
+		popup(0, 1, POPUP_OK, NOX("The current campaign has no missions") );
+		return -1;
 	}
 
 	// CD CHECK
