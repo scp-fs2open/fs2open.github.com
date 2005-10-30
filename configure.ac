@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.23 2005-10-27 16:21:18 taylor Exp $
+dnl $Id: configure.ac,v 1.24 2005-10-30 10:46:23 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -440,7 +440,7 @@ LIBS="$FS2_LIBS"
 
 
 dnl The makefiles we create
-AC_OUTPUT([Makefile libjpeg/Makefile code/Makefile])
+AC_OUTPUT([Makefile libjpeg/Makefile lua/Makefile code/Makefile])
 
 
 echo

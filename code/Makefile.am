@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.22 2005-10-27 16:21:18 taylor Exp $
+## $Id: Makefile.am,v 1.23 2005-10-30 10:46:23 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -367,14 +367,20 @@ FS2_SOURCES =	\
 	object/object.cpp	\
 	object/object.h	\
 	object/objectsort.cpp	\
+	object/parseobjectdock.cpp	\
+	object/parseobjectdock.h	\
 	observer/observer.cpp	\
 	observer/observer.h	\
 	palman/palman.cpp	\
 	palman/palman.h	\
 	parse/encrypt.cpp	\
 	parse/encrypt.h	\
+	parse/lua.cpp	\
+	parse/lua.h	\
 	parse/parselo.cpp	\
 	parse/parselo.h	\
+	parse/scripting.cpp	\
+	parse/scripting.h	\
 	parse/sexp.cpp	\
 	parse/sexp.h	\
 	particle/particle.cpp	\
@@ -619,8 +625,8 @@ fs2_open_d_SOURCES =	\
 fs2_open_r_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a
-fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a
+fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
+fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
 
 ##
 ## End MAIN binary
