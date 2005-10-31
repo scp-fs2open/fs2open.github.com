@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ParseObjectDock.cpp $
- * $Revision: 1.1 $
- * $Date: 2005-10-29 22:09:30 $
+ * $Revision: 1.2 $
+ * $Date: 2005-10-31 09:12:16 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system for parse objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/10/29 22:09:30  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  */
 
 #include "globalincs/pstypes.h"
@@ -33,10 +37,8 @@ void dock_dock_docked_children_tree(p_object *objp, p_object *parent_objp);
 // management prototypes
 
 void dock_add_instance(p_object *objp, char *dockpoint, p_object *other_objp);
-//void dock_remove_instance(p_object *objp, object *other_objp);
 p_dock_instance *dock_find_instance(p_object *objp, p_object *other_objp);
 p_dock_instance *dock_find_instance(p_object *objp, char *dockpoint);
-//int dock_count_instances(p_object *objp);
 
 
 bool object_is_docked(p_object *objp)
