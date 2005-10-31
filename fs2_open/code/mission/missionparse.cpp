@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.123 $
- * $Date: 2005-10-30 20:42:45 $
+ * $Revision: 2.124 $
+ * $Date: 2005-10-31 09:09:41 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2005/10/30 20:42:45  Goober5000
+ * fix the support ship spawning bug
+ * --Goober5000
+ *
  * Revision 2.122  2005/10/30 20:03:39  taylor
  * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
  * fix Mantis bug #381
@@ -5245,7 +5249,13 @@ void mission_parse_set_arrival_locations()
 void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info *infop)
 {
 	// all ships except the leader should have a locked false arrival cue
-	if (Sexp_nodes[pobjp->arrival_cue].value != SEXP_KNOWN_FALSE)
+	bool leader_flag;
+	if (Fred_running)
+		leader_flag = (pobjp->arrival_cue != Locked_sexp_false);
+	else
+		leader_flag = (Sexp_nodes[pobjp->arrival_cue].value != SEXP_KNOWN_FALSE);
+
+	if (leader_flag)
 	{
 		p_object *existing_leader;
 
@@ -5256,15 +5266,22 @@ void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info 
 		existing_leader = infop->maintained_variables.objp_value;
 		if (existing_leader != NULL)
 		{
-			// bad bad bad... unmark him
-			existing_leader->flags &= ~P_SF_DOCK_LEADER;
+			// keep existing leader if he has a higher priority than us
+			if (ship_class_compare(pobjp->ship_class, existing_leader->ship_class) < 0)
+			{
+				// set my arrival cue to false
+				free_sexp2(pobjp->arrival_cue);
+				pobjp->arrival_cue = Locked_sexp_false;
+				return;
+			}
 
-			// set his arrival cue to false
+			// otherwise, unmark the existing leader and set his arrival cue to false
+			existing_leader->flags &= ~P_SF_DOCK_LEADER;
 			free_sexp2(existing_leader->arrival_cue);
 			existing_leader->arrival_cue = Locked_sexp_false;
 		}
 
-		// mark and save us as the leader
+		// mark and save me as the leader
 		pobjp->flags |= P_SF_DOCK_LEADER;
 		infop->maintained_variables.objp_value = pobjp;
 	}
