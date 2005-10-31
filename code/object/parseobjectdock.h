@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ParseObjectDock.h $
- * $Revision: 1.1 $
- * $Date: 2005-10-29 22:09:30 $
+ * $Revision: 1.2 $
+ * $Date: 2005-10-31 09:12:16 $
  * $Author: Goober5000 $
  *
  * New docking system for parse objects, used only on mission load
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/10/29 22:09:30  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  */
 
 #ifndef _PARSE_OBJECT_DOCK_H
@@ -40,15 +44,8 @@ typedef struct p_dock_function_info {
 	// The following were originally unions, but it became necessary to use structs
 	// for certain functions that need to maintain two or more values.
 	struct {
-//		bool		bool_value;
-//		char		char_value;
 		int			int_value;
-//		float		float_value;
-//		double		double_value;
-
 		p_object*	objp_value;
-//		vec3d*		vecp_value;
-//		vec3d*		vecp_value2;
 	} parameter_variables, maintained_variables;
 
 
@@ -62,32 +59,14 @@ typedef struct p_dock_function_info {
 
 bool object_is_docked(p_object *objp);
 
-// get the first object in objp's dock list
-//p_object *dock_get_first_docked_object(p_object *objp);
-
-// check whether objp is part of a docked pair
-//bool dock_check_docked_one_on_one(p_object *objp);
-/*
-// count objects directly docked to objp
-int dock_count_direct_docked_objects(p_object *objp);
-
-// count objects directly or indirectly docked with objp
-int dock_count_total_docked_objects(p_object *objp);
-*/
 // check whether other_objp is directly docked to objp
 bool dock_check_find_direct_docked_object(p_object *objp, p_object *other_objp);
-/*
-// check whether other_objp is directly or indirectly docked to objp
-bool dock_check_find_docked_object(p_object *objp, p_object *other_objp);
 
 // find the object occupying objp's specified dockpoint
 p_object *dock_find_object_at_dockpoint(p_object *objp, int dockpoint);
-*/
+
 // find objp's dockpoint being occupied by other_objp
 char *dock_find_dockpoint_used_by_object(p_object *objp, p_object *other_objp);
-
-// calculate the center of all docked objects (returned in dest)
-//void dock_calc_docked_center(vec3d *dest, p_object *objp);
 
 // Überfunction for evaluating all objects that could possibly be docked to objp.  This will
 // call "function" for each docked object.  The function should store its intermediate and
