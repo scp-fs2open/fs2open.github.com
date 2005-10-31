@@ -24,7 +24,6 @@ typedef struct script_lua_func_list {
 typedef struct script_lua_obj_func_list {
 	const char *name;
 	lua_CFunction func;
-	int type;
 	const char *description;
 } script_lua_obj_func_list;
 
@@ -68,39 +67,22 @@ struct script_lua_udata
 	lua_setmetatable(L, -2)
 
 //*************************Lua defines*************************
-enum {
-	LUA_OPER_METHOD		=0,
-	LUA_OPER_ADDITION,
-	LUA_OPER_SUBTRACTION,
-	LUA_OPER_MULTIPLICATION,
-	LUA_OPER_DIVISION,
-	LUA_OPER_POWER,
-	LUA_OPER_UNARY,
-	LUA_OPER_CONCATENATION,
-	LUA_OPER_EQUALTO,
-	LUA_OPER_LESSTHAN,
-	LUA_OPER_LESSTHANEQUALTO,
-	LUA_OPER_INDEX,
-	LUA_OPER_NEWINDEX,
-	LUA_OPER_CALL
-};
-
-char *Lua_opers[] = {
-	"__index",
-	"__add",
-	"__sub",
-	"__mult",
-	"__div",
-	"__pow",
-	"__unm",
-	"__concat",
-	"__eq",
-	"__lt",
-	"__le",
-	"__index",
-	"__newindex",
-	"__call",
-};
+//These are the various types of operators you can
+//set in Lua. Define these in script_lua_obj_func_list
+#define	LUA_OPER_METHOD				"__index"
+#define	LUA_OPER_ADDITION			"__add"
+#define LUA_OPER_SUBTRACTION		"__sub"
+#define LUA_OPER_MULTIPLICATION		"__mult"
+#define LUA_OPER_DIVISION			"__div"
+#define LUA_OPER_POWER				"__pow"
+#define LUA_OPER_UNARY				"__unm"
+#define LUA_OPER_CONCATENATION		"__concat"
+#define LUA_OPER_EQUALTO			"__eq"
+#define LUA_OPER_LESSTHAN			"__lt"
+#define LUA_OPER_LESSTHANEQUALTO	"__le"
+#define LUA_OPER_INDEX				"__index"
+#define LUA_OPER_NEWINDEX			"__newindex"
+#define LUA_OPER_CALL				"__call"
 
 //*************************Functions*************************
 int script_remove_lib(lua_State *L, char *name)
@@ -131,49 +113,51 @@ void lua_stackdump(lua_State *L)
 	for(int argnum = 1; argnum <= stacksize; argnum++)
 	{
 		int type = lua_type(L, argnum);
+		sprintf(buf, "\r\n%d: ", argnum);
+		strcat(stackdump, buf);
 		switch(type)
 		{
 			case LUA_TNIL:
-				strcat(stackdump, "\r\nNIL");
+				strcat(stackdump, "NIL");
 				break;
 			case LUA_TNUMBER:
 				d = lua_tonumber(L, argnum);
-				sprintf(buf, "\r\nNumber [%f]",d);
+				sprintf(buf, "Number [%f]",d);
 				strcat(stackdump, buf);
 				break;
 			case LUA_TBOOLEAN:
 				b = lua_toboolean(L, argnum);
-				sprintf(buf, "\r\nBoolean [%d]",b);
+				sprintf(buf, "Boolean [%d]",b);
 				strcat(stackdump, buf);
 				break;
 			case LUA_TSTRING:
 				s = (char *)lua_tostring(L, argnum);
-				sprintf(buf, "\r\nString [%s]",s);
+				sprintf(buf, "String [%s]",s);
 				strcat(stackdump, buf);
 				break;
 			case LUA_TTABLE:
-				strcat(stackdump, "\r\nTable");
+				strcat(stackdump, "Table");
 				break;
 			case LUA_TFUNCTION:
-				strcat(stackdump, "\r\nFunction");
+				strcat(stackdump, "Function");
 				break;
 			case LUA_TUSERDATA:
 				v = lua_touserdata(L, argnum);
-				sprintf(buf, "\r\nUserdata [%d]", v);
+				sprintf(buf, "Userdata [%d]", v);
 				strcat(stackdump, buf);
 				break;
 			case LUA_TTHREAD:
 				ls = lua_tothread(L, argnum);
-				sprintf(buf, "\r\nThread [%d]", ls);
+				sprintf(buf, "Thread [%d]", ls);
 				strcat(stackdump, buf);
 				break;
 			case LUA_TLIGHTUSERDATA:
 				v = lua_touserdata(L, argnum);
-				sprintf(buf, "\r\nLight userdata [%d]", v);
+				sprintf(buf, "Light userdata [%d]", v);
 				strcat(stackdump, buf);
 				break;
 			default:
-				sprintf(buf, "\r\n<UNKNOWN>: %s (%d) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
+				sprintf(buf, "<UNKNOWN>: %s (%d) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
 				strcat(stackdump, buf);
 				break;
 		}
@@ -209,6 +193,8 @@ int script_return_args(lua_State *L, char *fmt, ...)
 			case 's':
 				lua_pushstring(L, va_arg(vl, char *));
 				break;
+			case 'u':	//Just let nargs increment; it should already be on the stack
+				break;
 			default:
 				Error(LOCATION, "Bad character passed to script_return_args; (%c)", *fmt);
 		}
@@ -238,7 +224,6 @@ int script_parse_args(lua_State *L, char *fmt, ...)
 
 	if(total_args < needed_args) {
 		Warning(LOCATION, "Not enough arguments for function");
-		lua_stackdump(L);
 		return 0;
 	}
 
@@ -296,7 +281,6 @@ int script_parse_args(lua_State *L, char *fmt, ...)
 					*va_arg(vl, const char **) = lua_tostring(L, nargs);
 				} else {
 					Warning(LOCATION, "Argument %d is an invalid type; string expected", nargs);
-					lua_stackdump(L);
 					if(!optional_args) return 0;
 				}
 				break;
@@ -372,20 +356,20 @@ static int lua_fs2_lvec_print(lua_State *L)
 	if(!script_parse_args(L, "u", LUA_UDATA("fs2.lvec", v3p)))
 		return 0;
 
-	Error(LOCATION, "VECTOR: %f %f %f", v3p->xyz.x, v3p->xyz.y, v3p->xyz.z);
+	Warning(LOCATION, "VECTOR: %f %f %f", v3p->xyz.x, v3p->xyz.y, v3p->xyz.z);
 	return 0;
 }
 
 static int lua_fs2_lvec_get(lua_State *L)
 {
 	vec3d *v3p;
-	int idx;
-	if(!script_parse_args(L, "ui", LUA_UDATA("fs2.lvec", v3p), &idx))
+	int idx=0;
+	if(!script_parse_args(L, "u|i", LUA_UDATA("fs2.lvec", v3p), &idx))
 		return 0;
 
 	if(idx < 3 && idx > -1)
 	{
-		Error(LOCATION, "VECTOR: %f", v3p->a1d[idx]);
+		Warning(LOCATION, "VECTOR: %f", v3p->a1d[idx]);
 	}
 	return 0;
 }
@@ -408,8 +392,8 @@ static const script_lua_obj_func_list lua_fs2_wvec_funcs[] = {
 };
 
 static const script_lua_obj_func_list lua_fs2_lvec_funcs[] = {
-	{"print", lua_fs2_lvec_print, LUA_OPER_METHOD, "Prints contents of vector"},
-	//{"get", lua_fs2_lvec_get, LUA_OPER_INDEX},
+	{"print", lua_fs2_lvec_print, "Prints contents of vector"},
+	{LUA_OPER_INDEX, lua_fs2_lvec_get},
 	{SCRIPT_END_LIST},
 };
 
@@ -450,12 +434,10 @@ static int lua_msn_getShipInfo(lua_State *L)
 	if(idx < 0)
 		return 0;
 
-	lua_ship_info *lsip = (lua_ship_info*) lua_newuserdata(L, sizeof(lua_ship_info));
-	luaL_getmetatable(L, "ship_info");
-	lua_setmetatable(L, -2);
+	lua_ship_info *lsip = LUA_NEW_OBJ(L, "fs2.ship_info", lua_ship_info);
 	lsip->sip = &Ship_info[idx];
 
-	return 1;
+	return LUA_RETURN_OBJECT;
 }
 
 static int lua_msn_newShip(lua_State *L)
@@ -553,20 +535,18 @@ static lua_msn_ship_getTarget(lua_State *L)
 }
 
 static const script_lua_obj_func_list lua_msn_ship_funcs[] = {
-	{"setSpeed", lua_msn_ship_setSpeed, LUA_OPER_METHOD, "Sets ship speed: (x speed, y speed, z speed)"},
-	{"setName", lua_msn_ship_setName, LUA_OPER_METHOD, "Changes ship name: (new name)"},
-	{"getTarget", lua_msn_ship_getTarget, LUA_OPER_METHOD, "Returns handle to ship's targetted ship"},
+	{"setSpeed", lua_msn_ship_setSpeed, "Sets ship speed: (x speed, y speed, z speed)"},
+	{"setName", lua_msn_ship_setName, "Changes ship name: (new name)"},
+	{"getTarget", lua_msn_ship_getTarget, "Returns handle to ship's targetted ship"},
 	{SCRIPT_END_LIST},
 };
 
 //LIBRARY define
 static const script_lua_obj_list lua_msn_lib_obj[] = {
-	//{"fs2.lvec", lua_fs2_lvec_funcs},
 	{"fs2.ship", lua_msn_ship_funcs, "Ship handle"},
 	{SCRIPT_END_LIST},
 };
 static const script_lua_func_list lua_msn_lib[] = {
-	//{"lvec", lua_fs2_lvec},
 	{"newShip", lua_msn_newShip, "Creates a new ship and returns a handle to it: (ship name, class name, x pos, y pos, z pos; x rot, y rot, z rot)"},
 	{SCRIPT_END_LIST},
 };
@@ -837,60 +817,46 @@ int script_state::CreateLuaState(const script_lua_lib_list *libraries)
 				//Get the absolute position of the object metatable for later use
 				int table_loc = lua_gettop(L);
 
-				ofunc = (script_lua_obj_func_list*)obj->object_funcs;
-
-				//***Check for methods and indexes at the same time, I think these are invalid
-				bool methods = false;
-
-				for (; ofunc->name; ofunc++)
-				{
-					if(ofunc->type == LUA_OPER_METHOD)
-					{
-						methods = true;
-						break;
-					}
-				}
-
-				if(methods)
-				{
-					for(ofunc = (script_lua_obj_func_list*)obj->object_funcs; ofunc->name; ofunc++)
-					{
-						if(ofunc->type == LUA_OPER_INDEX && methods)
-						{
-								Error(LOCATION, "Attempt to use both methods and indexing in \"%s\"; contact a coder", obj->object_name);
-						}
-					}
-				}
-
 				//***Add the functions into the metatables
-				bool table_set;
-				uint oper_max = sizeof(Lua_opers)/sizeof(char*);
-
-				for(uint i = 0; i < oper_max; i++)
+				//Because both the [] operator and function list share the "__index"
+				//entry in the metatable, we must check for both and give an error
+				//to be safe
+				bool index_oper_already = false;
+				bool index_meth_already = false;
+				for (ofunc = (script_lua_obj_func_list*)obj->object_funcs; ofunc->name || ofunc->func; ofunc++)
 				{
-					table_set = false;
-					for (ofunc = (script_lua_obj_func_list*)obj->object_funcs; ofunc->name; ofunc++)
+					if(!strnicmp(ofunc->name, "__", 2))
 					{
-						if(ofunc->type == i && i == LUA_OPER_METHOD)
+						if(!stricmp(ofunc->name, "__index"))
 						{
-							if(!table_set)
-							{
-								lua_pushstring(L, Lua_opers[i]);
-								lua_pushvalue(L, table_loc);  // pushes the metatable
-								lua_settable(L, table_loc);  // metatable.__index = metatable
-								table_set = true;
+							if(!index_meth_already){
+								index_oper_already = true;
+							} else {
+								Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", obj->object_name);
 							}
-							lua_pushstring(L, ofunc->name);
-							lua_pushcclosure(L, ofunc->func, 0);
-							lua_settable(L, -3);
 						}
-						else if(ofunc->type == i)
+						//TODO: Get this working
+						lua_pushstring(L, ofunc->name);
+						lua_pushcclosure(L, ofunc->func, 0);
+						lua_settable(L, table_loc);
+					}
+					else	//This is an object method
+					{
+						if(index_oper_already) {
+							Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", obj->object_name);
+						}
+
+						if(!index_meth_already)
 						{
-							//TODO: Get this working
-							/*lua_pushstring(L, Lua_opers[i]);
-							lua_pushcfunction(L, ofunc->func);
-							lua_settable(L, -2);*/
+							//Create the metatable
+							lua_pushstring(L, "__index");
+							lua_pushvalue(L, table_loc);  // pushes the metatable
+							lua_settable(L, table_loc);  // metatable.__index = metatable
+							index_meth_already = true;
 						}
+						lua_pushstring(L, ofunc->name);
+						lua_pushcclosure(L, ofunc->func, 0);
+						lua_settable(L, -3);
 					}
 				}
 			}
