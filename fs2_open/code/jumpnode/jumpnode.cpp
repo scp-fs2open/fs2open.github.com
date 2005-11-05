@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-06-29 18:53:07 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-11-05 05:08:58 $
+ * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/06/29 18:53:07  taylor
+ * FRED2 does special stuff for jumpnode handling so don't try and delete the obj ourselves when FRED is running
+ *
  * Revision 2.15  2005/06/19 02:28:55  taylor
  * add a _fast version of bm_unload() to be used in modelinterp and future graphics API code
  * clean up some modelinterp code to not use memcpy() everywhere so it's more platform compatible and matches old code (Jens Granseuer)
@@ -316,9 +319,9 @@ jump_node *jumpnode_get_which_in(object *objp)
 bool jumpnode_check_for_duplicates()
 {
 	jump_node *reference, *other;
-	for (reference = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(reference); reference = (jump_node *)reference->get_next())
+	for (reference = Jump_nodes.get_first(); !Jump_nodes.is_end(reference); reference = reference->get_next())
 	{
-		for (other = (jump_node*) reference->get_next(); !Jump_nodes.is_end(other); other = (jump_node *)other->get_next())
+		for (other =  reference->get_next(); !Jump_nodes.is_end(other); other = other->get_next())
 		{
 			if (!stricmp(reference->get_name_ptr(), other->get_name_ptr()))
 				return true;
