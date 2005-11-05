@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.58 $
+ * $Date: 2005-11-05 10:26:09 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.56  2005/09/26 04:08:53  Goober5000
  * some more cleanup
  * --Goober5000
@@ -2310,7 +2313,7 @@ int hud_anim_load(hud_anim *ha)
 
 	ha->first_frame = bm_load_animation(ha->filename, &ha->num_frames, &fps);
 	if ( ha->first_frame == -1 ) {
-		Int3();	// couldn't load animation file in
+		Warning(LOCATION, "Couldn't load hud animation for file '%s'", ha->filename);
 		return -1;
 	}
 	Assert(fps != 0);
