@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.188 $
- * $Date: 2005-11-05 07:42:09 $
- * $Author: phreak $
+ * $Revision: 2.189 $
+ * $Date: 2005-11-05 11:00:50 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.188  2005/11/05 07:42:09  phreak
+ * add/remove-sun-bitmap.  Also changed "Ship_arrival_list" to "Ship_arrival_list" since the former technically doesn't exist due to the capital 'S'.
+ *
  * Revision 2.187  2005/11/05 05:06:13  wmcoolmon
  * turret-change-weapon
  *
@@ -7402,7 +7405,7 @@ void sexp_change_iff( int n )
 			}
 
 			// ships yet to arrive
-			for (p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
 				if (p_objp->wingnum == wing_num)
 				{
@@ -10516,7 +10519,7 @@ void sexp_kamikaze(int n, int kamikaze)
 			}
 
 			// ships yet to arrive
-			for (p_object *p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
 				if (p_objp->wingnum == wing_num)
 				{
@@ -10609,7 +10612,7 @@ void sexp_ship_change_alt_name(int n)
 			}
 
 			// ships yet to arrive
-			for (p_object *p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
 				if (p_objp->wingnum == wing_num)
 				{
