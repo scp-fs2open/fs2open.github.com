@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2005/10/30 06:44:59  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.141  2005/10/26 00:43:06  taylor
  * make sure that XMTs don't try to still create an invalid entry when +nocreate is used
  *
@@ -5288,7 +5291,7 @@ bool weapon_armed(weapon *wp)
 		&& wip->arm_dist == 0.0f
 		&& wip->arm_radius == 0.0f)
 	{
-		return true;
+		return false;
 	}
 	else
 	{
@@ -5308,11 +5311,11 @@ bool weapon_armed(weapon *wp)
 				|| (wp->homing_subsys == NULL && vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius)
 				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius))))
 		{
-			return true;
+			return false;
 		}
 	}
 
-	return false;
+	return true;
 }
 
 
