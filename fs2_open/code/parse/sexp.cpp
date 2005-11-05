@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.187 $
- * $Date: 2005-11-05 05:06:13 $
- * $Author: wmcoolmon $
+ * $Revision: 2.188 $
+ * $Date: 2005-11-05 07:42:09 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.187  2005/11/05 05:06:13  wmcoolmon
+ * turret-change-weapon
+ *
  * Revision 2.186  2005/10/30 20:03:39  taylor
  * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
  * fix Mantis bug #381
@@ -7399,7 +7402,7 @@ void sexp_change_iff( int n )
 			}
 
 			// ships yet to arrive
-			for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			for (p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
 				if (p_objp->wingnum == wing_num)
 				{
@@ -9162,10 +9165,102 @@ void sexp_remove_background_bitmap(int n)
 
 void sexp_add_sun_bitmap(int n)
 {
+	angles ang;
+	int bitmap_idx;
+	float sx;
+	int sexp_var;
+	int new_number;
+	char *sun_bitmap_fname;
+	char number_as_str[TOKEN_LENGTH];
+	starfield_bitmap_instance* sbip;
+
+	
+	//get all the info out of the sexp
+	bitmap_idx = stars_find_sun(sun_bitmap_fname = CTEXT(n)); n = CDR(n);
+
+	//sanity checking
+	if (bitmap_idx < 0)
+	{
+		if (sun_bitmap_fname == NULL)
+		{
+			Error(LOCATION, "sexp-add-sun-bitmap: Background bitmap name is NULL!");
+		}
+		else
+		{
+			Error(LOCATION, "sexp-add-sun-bitmap: Sun %s not found!", sun_bitmap_fname);
+		}
+
+		return;
+	}
+
+	ang.h = fl_radian(eval_num(n) % 360); n = CDR(n);
+	ang.p = fl_radian(eval_num(n) % 360); n = CDR(n);
+	ang.b = fl_radian(eval_num(n) % 360); n = CDR(n);
+	sx = eval_num(n) / 100.0f; n = CDR(n);
+
+	//restrict parameters
+	if (sx > 50) sx = 50;
+	if (sx < 0.1f) sx = 0.1f;
+	
+	Assert( (n >= 0) && (n < MAX_SEXP_NODES) );
+
+	// ripped from sexp_modify_variable()
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_var = atoi(Sexp_nodes[n].text);
+	
+	// verify variable set
+	Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+
+	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
+	{
+		// get new numerical value
+		new_number = Num_suns;
+		sprintf(number_as_str, "%d", new_number);
+
+		// assign to variable
+		sexp_modify_variable(number_as_str, sexp_var);
+	}
+	else
+	{
+		Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+		return;
+	}
+
+	//sanity checking
+	if (Num_suns >= MAX_STARFIELD_BITMAPS)
+	{
+		Error(LOCATION, "sexp-add-sun-bitmap: Too many suns in mission!");
+		return;
+	}
+
+	//get the pointer to the next bitmap, increase bitmap count
+	sbip = &Suns[Num_suns++];
+	sbip->ang = ang;
+	sbip->div_x = 1;
+	sbip->div_y = 1;
+	strcpy(sbip->filename, sun_bitmap_fname);
+	sbip->scale_x = sx;
+	sbip->scale_y = sx;
+
+	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void sexp_remove_sun_bitmap(int n)
 {
+	int slot = eval_sexp(n);
+
+	Assert((slot >= 0) && (slot < Num_suns) );
+
+	for (; slot < Num_suns-1; slot++)
+	{
+		Suns[slot] = Suns[slot+1];
+	}
+
+	memset(&Suns[slot], 0, sizeof(starfield_bitmap_instance));
+	Num_suns--;
+
+	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void sexp_nebula_change_storm(int n)
@@ -10421,7 +10516,7 @@ void sexp_kamikaze(int n, int kamikaze)
 			}
 
 			// ships yet to arrive
-			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			for (p_object *p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
 				if (p_objp->wingnum == wing_num)
 				{
@@ -10514,7 +10609,7 @@ void sexp_ship_change_alt_name(int n)
 			}
 
 			// ships yet to arrive
-			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			for (p_object *p_objp = GET_FIRST(&ship_arrival_list); p_objp != END_OF_LIST(&ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
 				if (p_objp->wingnum == wing_num)
 				{
