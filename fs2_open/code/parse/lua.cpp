@@ -299,7 +299,8 @@ int script_parse_args(lua_State *L, char *fmt, ...)
 				optional_args = true;
 				break;
 			default:
-				Error(LOCATION, "Bad character passed to script_parse_args; (%c)", *fmt);
+				Error(LOCATION, "Bad character passed to script_parse_args; (%c)", *(fmt-1));
+				break;
 		}
 		nargs++;
 	}
@@ -356,6 +357,9 @@ int script_return_args(lua_State *L, char *fmt, ...)
 //While you don't _need_ to add object defines here, it's a good idea
 //so you can catch misspellings and make sure the name isn't taken already
 //note that all object names should start with "fs2." to prevent conflicts
+//
+//IMPORTANT: Before you can use a type, it MUST be defined in a library
+//				that exists in the current state
 #define LUA_CVAR_LVEC			"fs2.lvec"
 #define LUA_CVAR_WVEC			"fs2.wvec"
 #define LUA_CVAR_SHIP			"fs2.ship"
@@ -379,10 +383,65 @@ static int lua_fs2_lvec(lua_State *L)
 	return LUA_RETURN_OBJECT;
 }
 
+static int lua_fs2_vec__addition(lua_State *L)
+{
+	vec3d *v3a, *v3b, *v3r;
+	if(!script_parse_args(L, "oo", LUA_CVAR(LUA_CVAR_LVEC, v3a), LUA_CVAR(LUA_CVAR_LVEC, v3b)))
+		return 0;
+
+	v3r = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
+
+	vm_vec_add(v3r, v3a, v3b);
+
+	return LUA_RETURN_OBJECT;
+}
+
+static int lua_fs2_vec__subtraction(lua_State *L)
+{
+	vec3d *v3a, *v3b, *v3r;
+	if(!script_parse_args(L, "oo", LUA_CVAR(LUA_CVAR_LVEC, v3a), LUA_CVAR(LUA_CVAR_LVEC, v3b)))
+		return 0;
+
+	v3r = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
+
+	vm_vec_sub(v3r, v3a, v3b);
+
+	return LUA_RETURN_OBJECT;
+}
+
+static int lua_fs2_vec__multiplication(lua_State *L)
+{
+	vec3d *v3a, *v3b, *v3r;
+	float f;
+	if(script_parse_args(L, "of", LUA_CVAR(LUA_CVAR_LVEC, v3a), &f))
+	{
+		v3r = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
+
+		vm_vec_copy_scale(v3r, v3a, f);
+
+		return LUA_RETURN_OBJECT;
+	}
+	else if(script_parse_args(L, "oo", LUA_CVAR(LUA_CVAR_LVEC, v3a), LUA_CVAR(LUA_CVAR_LVEC, v3b)))
+	{
+		v3r = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
+
+		v3r->xyz.x = v3a->xyz.x * v3b->xyz.x;
+		v3r->xyz.y = v3a->xyz.y * v3b->xyz.y;
+		v3r->xyz.z = v3a->xyz.z * v3b->xyz.z;
+
+		return LUA_RETURN_OBJECT;
+	}
+
+	//Neither is valid...
+
+	return LUA_RETURN_NOTHING;
+}
+
+
 static int lua_fs2_vec__tostring(lua_State *L)
 {
 	vec3d *v3p;
-	if(!script_parse_args(L, "u", LUA_CVAR(LUA_CVAR_LVEC, v3p)))
+	if(!script_parse_args(L, "o", LUA_CVAR(LUA_CVAR_LVEC, v3p)))
 		return 0;
 
 	char buf[32];
@@ -395,7 +454,7 @@ static int lua_fs2_vec__index(lua_State *L)
 {
 	vec3d *v3p;
 	int idx=0;
-	if(!script_parse_args(L, "u|i", LUA_CVAR(LUA_CVAR_LVEC, v3p), &idx))
+	if(!script_parse_args(L, "o|i", LUA_CVAR(LUA_CVAR_LVEC, v3p), &idx))
 		return 0;
 
 	if(idx < 0 || idx > 2) {
@@ -406,8 +465,11 @@ static int lua_fs2_vec__index(lua_State *L)
 }
 
 static const script_lua_obj_func_list lua_fs2_lvec_funcs[] = {
+	{LUA_OPER_ADDITION, lua_fs2_vec__addition, "Adds two vectors"},
+	{LUA_OPER_SUBTRACTION, lua_fs2_vec__subtraction, "Subtracts one vector from another"},
+	{LUA_OPER_MULTIPLICATION, lua_fs2_vec__multiplication, "Multiplies two vectors, or a vector times a number"},
 	{LUA_OPER_TOSTRING, lua_fs2_vec__tostring, "Converts vector to string"},
-	{LUA_OPER_INDEX, lua_fs2_vec__index, "Returns index into vector"},
+	//{LUA_OPER_INDEX, lua_fs2_vec__index, "Returns index into vector"},
 	{SCRIPT_END_LIST},
 };
 
@@ -426,8 +488,11 @@ static int lua_fs2_wvec(lua_State *L)
 }
 
 static const script_lua_obj_func_list lua_fs2_wvec_funcs[] = {
+	{LUA_OPER_ADDITION, lua_fs2_vec__addition, "Adds two vectors"},
+	{LUA_OPER_SUBTRACTION, lua_fs2_vec__subtraction, "Subtracts one vector from another"},
+	{LUA_OPER_MULTIPLICATION, lua_fs2_vec__multiplication, "Multiplies two vectors, or a vector times a number"},
 	{LUA_OPER_TOSTRING, lua_fs2_vec__tostring, "Converts vector to string"},
-	{LUA_OPER_INDEX, lua_fs2_vec__index, "Returns index into vector"},
+	//{LUA_OPER_INDEX, lua_fs2_vec__index, "Returns index into vector"},
 	{SCRIPT_END_LIST},
 };
 
@@ -473,15 +538,6 @@ static const script_lua_func_list lua_base_lib[] = {
 };
 
 //**********LIBRARY: Mission (msn)
-typedef struct lua_ship
-{
-	ship *shipp;
-} lua_ship;
-
-typedef struct lua_ship_info
-{
-	ship_info *sip;
-} lua_ship_info;
 
 static int lua_msn_getShipInfo(lua_State *L)
 {
@@ -519,7 +575,7 @@ static int lua_msn_newShip(lua_State *L)
 	if(si_idx < 0)
 	{
 		//couldn't find it
-		return 0;
+		return LUA_RETURN_NOTHING;
 	}
 
 	//Create the ship
@@ -529,63 +585,61 @@ static int lua_msn_newShip(lua_State *L)
 	if(s_idx > -1)
 	{
 		//Make the lua ship object and set the ptr to NULL
-		lua_ship *lsp = LUA_NEW_OBJ(L, LUA_CVAR_SHIP, lua_ship);
-		lsp->shipp = &Ships[s_idx];
-		return 1;
+		ship *shipp = &Ships[s_idx];
+		return script_return_args(L, "p", LUA_CVAR(LUA_CVAR_SHIP, shipp));
 	}
 
-	return 0;
+	return LUA_RETURN_NOTHING;
 }
 
 static lua_msn_ship_setSpeed(lua_State *L)
 {
-	lua_ship *lsp = NULL;
+	ship *shipp = NULL;
 	vec3d vel;
 
-	if(!script_parse_args(L, "ufff", LUA_CVAR(LUA_CVAR_SHIP, lsp), &vel.xyz.x, &vel.xyz.y, &vel.xyz.z))
-		return 0;
+	if(!script_parse_args(L, "pfff", LUA_CVAR(LUA_CVAR_SHIP, shipp), &vel.xyz.x, &vel.xyz.y, &vel.xyz.z))
+		return LUA_RETURN_NOTHING;
 
 	//Set the speed
-	Objects[lsp->shipp->objnum].phys_info.vel = vel;
+	Objects[shipp->objnum].phys_info.vel = vel;
 
 	//We're done!
-	return 0;
+	return LUA_RETURN_NOTHING;
 }
 
 static lua_msn_ship_setName(lua_State *L)
 {
-	lua_ship *lsp = NULL;
+	ship *shipp = NULL;
 	char *name = NULL;
 
-	if(!script_parse_args(L, "us", LUA_CVAR(LUA_CVAR_SHIP, lsp), &name))
-		return 0;
+	if(!script_parse_args(L, "ps", LUA_CVAR(LUA_CVAR_SHIP, shipp), &name))
+		return LUA_RETURN_NOTHING;
 
 	//Set the name
 	if(strlen(name)) {
-		strcpy(lsp->shipp->ship_name, name);
+		strcpy(shipp->ship_name, name);
 	} else {
-		sprintf(lsp->shipp->ship_name, "Ship %d", SHIP_INDEX(lsp->shipp));
+		sprintf(shipp->ship_name, "Ship %d", SHIP_INDEX(shipp));
 	}
 
 	//We're done!
-	return 0;
+	return LUA_RETURN_NOTHING;
 }
 
 static lua_msn_ship_getTarget(lua_State *L)
 {
-	lua_ship *lsp = NULL;
+	ship *shipp = NULL;
 
-	if(!script_parse_args(L, "u", LUA_CVAR(LUA_CVAR_SHIP, lsp)))
+	if(!script_parse_args(L, "p", LUA_CVAR(LUA_CVAR_SHIP, shipp)))
 		return 0;
 
-	if(lsp->shipp->ai_index != -1)
+	if(shipp->ai_index != -1)
 	{
-		ai_info *aip= &Ai_info[lsp->shipp->ai_index];
+		ai_info *aip= &Ai_info[shipp->ai_index];
 		if(aip->target_objnum && Objects[aip->target_objnum].type == OBJ_SHIP)
 		{
-			lua_ship *lsp = LUA_NEW_OBJ(L, LUA_CVAR_SHIP, lua_ship);
-			lsp->shipp = &Ships[Objects[aip->target_objnum].instance];
-			return 1;
+			ship *tshipp = &Ships[Objects[aip->target_objnum].instance];
+			return script_return_args(L, "p", LUA_CVAR(LUA_CVAR_SHIP, tshipp));
 		}
 	}
 
@@ -909,7 +963,6 @@ int script_state::CreateLuaState(const script_lua_lib_list *libraries)
 								Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", obj->object_name);
 							}
 						}
-						//TODO: Get this working
 						lua_pushstring(L, ofunc->name);
 						lua_pushcclosure(L, ofunc->func, 0);
 						lua_settable(L, table_loc);
