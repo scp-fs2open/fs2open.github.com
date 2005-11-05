@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-11-05 08:38:36 $
+ * $Revision: 2.50 $
+ * $Date: 2005-11-05 08:39:10 $
  * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/11/05 08:38:36  wmcoolmon
+ * Fix for this old and silly bug.
+ *
  * Revision 2.48  2005/10/28 06:10:06  Goober5000
  * nitpicked a rather dumb non-bug
  * --Goober5000
@@ -811,7 +814,7 @@ int free_object_slots(int num_used)
 float get_max_shield_quad(object *objp)
 {
 	Assert(objp);
-	if(objp->type == OBJ_SHIP) {
+	if(objp->type != OBJ_SHIP) {
 		return 0.0f;
 	}
 
