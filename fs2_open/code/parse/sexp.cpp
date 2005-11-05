@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.186 $
- * $Date: 2005-10-30 20:03:39 $
- * $Author: taylor $
+ * $Revision: 2.187 $
+ * $Date: 2005-11-05 05:06:13 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.186  2005/10/30 20:03:39  taylor
+ * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
+ * fix Mantis bug #381
+ * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
+ *
  * Revision 2.185  2005/10/29 22:09:30  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -1358,6 +1363,7 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-clear",			OP_TURRET_TAGGED_CLEAR_ALL,		1,	1		},
 	{ "turret-tagged-specific",			OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
+	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,		5, 5},	//WMC
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
 	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
@@ -11560,6 +11566,94 @@ void sexp_turret_tagged_clear_all(int node)
 	}
 }
 
+void sexp_turret_change_weapon(int node)
+{	
+	int sindex;
+	int windex;	//hehe
+	ship_subsys *turret = NULL;	
+	ship_weapon *swp = NULL;
+
+	// get the firing ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0 || Ships[sindex].objnum < 0){
+		return;
+	}
+
+	//Get subsystem
+	node = CDR(node);
+	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	if(turret == NULL){
+		return;
+	}
+	swp = &turret->weapons;
+
+	node = CDR(node);
+	windex = weapon_info_lookup(CTEXT(node));
+	if(windex < 0) {
+		return;
+	}
+
+	//Get the slot
+	float capacity, size;
+	int prim_slot = 0;
+	int sec_slot = 0;
+
+	node = CDR(node);
+	prim_slot = eval_num(node);
+
+	node = CDR(node);
+	sec_slot = eval_num(node);
+
+	if(prim_slot)
+	{
+		if(prim_slot > MAX_SHIP_PRIMARY_BANKS) {
+			return;
+		}
+
+		if(prim_slot > swp->num_primary_banks) {
+			swp->num_primary_banks++;
+			prim_slot = swp->num_primary_banks;
+		}
+
+		//Get an index
+		prim_slot--;
+
+		//Get the max capacity
+		capacity = (float) swp->primary_bank_capacity[prim_slot];
+		size = (float) Weapon_info[windex].cargo_size;
+
+		//Set various vars
+		swp->primary_bank_start_ammo[prim_slot] = (int) (capacity / size);
+		swp->primary_bank_ammo[prim_slot] = swp->primary_bank_start_ammo[prim_slot];
+		swp->primary_bank_weapons[prim_slot] = windex;
+		swp->primary_bank_rearm_time[prim_slot] = timestamp(0);
+	}
+	else if(sec_slot)
+	{
+		if(sec_slot > MAX_SHIP_PRIMARY_BANKS) {
+			return;
+		}
+
+		if(sec_slot > swp->num_secondary_banks) {
+			swp->num_secondary_banks++;
+			sec_slot = swp->num_secondary_banks;
+		}
+
+		//Get an index
+		sec_slot--;
+
+		//Get the max capacity
+		capacity = (float) swp->secondary_bank_capacity[sec_slot];
+		size = (float) Weapon_info[windex].cargo_size;
+
+		//Set various vars
+		swp->secondary_bank_start_ammo[sec_slot] = (int) (capacity / size);
+		swp->secondary_bank_ammo[sec_slot] = swp->secondary_bank_start_ammo[sec_slot];
+		swp->secondary_bank_weapons[sec_slot] = windex;
+		swp->secondary_bank_rearm_time[sec_slot] = timestamp(0);
+	}
+}
+
 // Goober5000
 void sexp_set_subsys_rotation_lock(int node, int locked)
 {
@@ -14333,6 +14427,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_turret_lock_all(node);
 				break;
 
+			case OP_TURRET_CHANGE_WEAPON:
+				sexp_val = 1;
+				sexp_turret_change_weapon(node);
+				break;
+
 			case OP_ADD_REMOVE_ESCORT:
 				sexp_val = 1;
 				sexp_add_remove_escort(node);
@@ -15012,6 +15111,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_FREE_ALL:
 		case OP_TURRET_LOCK:
 		case OP_TURRET_LOCK_ALL:
+		case OP_TURRET_CHANGE_WEAPON:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
@@ -15991,6 +16091,17 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			} else {
 				return OPF_SUBSYSTEM;
+			}
+		
+		case OP_TURRET_CHANGE_WEAPON:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else if(argnum == 1) {
+				return OPF_SUBSYSTEM;
+			} else if(argnum == 2) {
+				return OPF_WEAPON_NAME;
+			} else if(argnum > 2) {
+				return OPF_POSITIVE;
 			}
 
 		case OP_LOCK_ROTATING_SUBSYSTEM:
@@ -17275,6 +17386,7 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_TAGGED_CLEAR_ALL:
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
+		case OP_TURRET_CHANGE_WEAPON:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
 		case OP_RED_ALERT:
@@ -18905,6 +19017,14 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_TURRET_LOCK_ALL, "turret-lock-all\r\n"
 		"\tSets all turret weapons on the specified ship to be deactivated\r\n"},
+
+	{ OP_TURRET_CHANGE_WEAPON, "turret-change-weapon\r\n"
+		"\tSets a given turret weapon slot to the specified weapon\r\n"
+		"\t1: Ship turret is on\r\n"
+		"\t2: Turret\r\n"
+		"\t3: Weapon to set slot to\r\n"
+		"\t4: Primary slot (or 0 to use secondary)\r\n"
+		"\t5: Secondary slot (or 0 to use primary)"},
 
 	{ OP_ADD_REMOVE_ESCORT, "add-remove-escort\r\n"
 		"\tAdds or removes a ship from an escort list.\r\n"

@@ -9,13 +9,31 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.98 $
- * $Author: phreak $
- * $Date: 2005-10-23 04:18:23 $
+ * $Revision: 2.99 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-11-05 05:06:13 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2005/10/23 04:18:23  phreak
+ * various background and nebula sexps
+ *
+ * add-background-bitmap
+ * add-sun-bitmap
+ * remove-background-bitmap
+ * remove-sun-bitmap
+ * nebula-change-storm
+ * nebula-toggle-poofs
+ *
+ * All of these sexps are just stubs for now.
+ * Just want to get in the commit before someone
+ * else commits and i'll make a mess trying to merge.
+ * Everything is compiling fine, so it shouldn't mess up anything.  But you know that murphy guy....
+ *
+ * I've put these sexps in a new fred subcategory called "Backgrounds and Nebula"
+ * along with the sexps "change-skybox-model" and "mission-set-nebula"
+ *
  * Revision 2.97  2005/10/14 09:29:56  Goober5000
  * add weapon-create sexp
  * --Goober5000
@@ -1154,6 +1172,8 @@ struct ship_subsys;
 #define OP_REMOVE_SUN_BITMAP				(0x00be | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_NEBULA_CHANGE_STORM				(0x00bf | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_NEBULA_TOGGLE_POOF				(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+
+#define OP_TURRET_CHANGE_WEAPON				(0x00c1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 
 
 
