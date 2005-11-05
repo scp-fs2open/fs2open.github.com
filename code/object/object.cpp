@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-10-28 06:10:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.49 $
+ * $Date: 2005-11-05 08:38:36 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/10/28 06:10:06  Goober5000
+ * nitpicked a rather dumb non-bug
+ * --Goober5000
+ *
  * Revision 2.47  2005/10/19 04:23:05  wmcoolmon
  * Don't need this anymore
  *
@@ -807,7 +811,9 @@ int free_object_slots(int num_used)
 float get_max_shield_quad(object *objp)
 {
 	Assert(objp);
-	Assert(objp->type == OBJ_SHIP);
+	if(objp->type == OBJ_SHIP) {
+		return 0.0f;
+	}
 
 	return Ships[objp->instance].ship_max_shield_strength / MAX_SHIELD_SECTIONS;
 }
