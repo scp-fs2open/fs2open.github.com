@@ -239,8 +239,29 @@ script_hook script_state::ParseChunk(char* debug_str)
 		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
 	}
 
-	if(check_for_string("["))
+	if(check_for_string("[["))
 	{
+		//Lua from file
+
+		//Lua
+		rval.language = SC_LUA;
+
+		char *filename = alloc_block("[[", "]]");
+
+#ifdef LUA
+		//Load from file
+		luaL_loadfile(GetLuaSession(), filename);
+
+		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+#endif
+		//dealloc
+		//commented out b/c it may crash and i don't want to test it now
+		//vm_free(filename);
+	}
+	else if(check_for_string("["))
+	{
+		//Lua string
+
 		//Assume Lua
 		rval.language = SC_LUA;
 
@@ -254,10 +275,13 @@ script_hook script_state::ParseChunk(char* debug_str)
 		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 #endif
 		//free the mem
+		//WTF THIS CRASHES
 		//vm_free(raw_lua);
 	}
 	else if(check_for_string("{"))
 	{
+		//Python string
+
 		//Assume python
 		rval.language = SC_PYTHON;
 
@@ -271,6 +295,9 @@ script_hook script_state::ParseChunk(char* debug_str)
 	}
 	else
 	{
+		//Python eval
+		//Maybe remove this and force brackets, or use custom system?
+
 		//Assume python
 		rval.language = SC_PYTHON;
 
