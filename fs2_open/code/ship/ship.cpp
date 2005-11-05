@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.259 $
- * $Date: 2005-10-30 23:45:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.260 $
+ * $Date: 2005-11-05 05:11:29 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259  2005/10/30 23:45:45  Goober5000
+ * stuff for comparing ship classes
+ * --Goober5000
+ *
  * Revision 2.258  2005/10/30 20:03:40  taylor
  * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
  * fix Mantis bug #381
@@ -7734,6 +7738,11 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
+
+	//No need to change model! -C
+	if(sp->modelnum == sip->modelnum) {
+		return;
+	}
 
 	// make sure we can actually change models
 	if (Ship_info[sp->ship_info_index].n_subsystems != sip->n_subsystems)
