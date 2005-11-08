@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-10-24 12:42:13 $
- * $Author: taylor $
+ * $Revision: 2.46 $
+ * $Date: 2005-11-08 01:04:00 $
+ * $Author: wmcoolmon $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/10/24 12:42:13  taylor
+ * init thruster stuff properly so that bmpman doesn't have a fit
+ *
  * Revision 2.44  2005/09/27 02:36:57  Goober5000
  * clarification
  * --Goober5000
@@ -2825,7 +2828,7 @@ int generic_anim_load(generic_anim *ga)
 	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps);
 	if ( ga->first_frame < 0)
 	{
-		Int3();	// couldn't load animation file in
+		Warning(LOCATION, "Couldn't load animation %s", ga->filename);
 		return -1;
 	}
 

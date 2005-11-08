@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.55 $
+ * $Revision: 2.56 $
  * $Author: wmcoolmon $
- * $Date: 2005-10-29 09:02:13 $
+ * $Date: 2005-11-08 01:04:00 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/10/29 09:02:13  wmcoolmon
+ * Better alloc_block function
+ *
  * Revision 2.54  2005/10/22 20:17:19  wmcoolmon
  * mission-set-nebula fixage; remainder of python code
  *
@@ -334,8 +337,8 @@
 #define	RS_MAX_TRIES	5
 
 //To keep people from bypassing table checksums with modular tables -C
-bool	modular_tables_loaded = false;
-bool	module_ship_weapons_loaded = false;
+bool	Modular_tables_loaded = false;
+bool	Module_ship_weapons_loaded = false;
 
 char	parse_error_text[64];//for my better error mesages-Bobboau
 char		Current_filename[128];

@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.71 $
- * $Date: 2005-10-28 14:49:34 $
- * $Author: taylor $
+ * $Revision: 2.72 $
+ * $Date: 2005-11-08 01:03:59 $
+ * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2005/10/28 14:49:34  taylor
+ * some minor cleanup and compiler warning fixes
+ *
  * Revision 2.70  2005/10/26 20:53:02  taylor
  * convert Jpegs from RGB to BGR after read, OpenGL had a problem with this, D3D still works fine
  *
@@ -825,6 +828,7 @@ extern int Cmdline_cache_bitmaps;
 int GLOWMAP = -1;
 int SPECMAP = -1;
 int ENVMAP = -1;
+int BUMPMAP = -1;
 
 bitmap_entry bm_bitmaps[MAX_BITMAPS];
 

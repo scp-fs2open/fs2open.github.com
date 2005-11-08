@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.40 $
- * $Date: 2005-10-30 06:44:55 $
+ * $Revision: 1.41 $
+ * $Date: 2005-11-08 01:03:59 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2005/10/30 06:44:55  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 1.39  2005/10/22 22:22:41  Goober5000
  * rolled back UnknownPlayer's commit
  * --Goober5000
@@ -3477,10 +3480,10 @@ void ai_ignore_object(object *ignorer, object *ignored, int priority)
 
 	} else {
 	*/ {
-		aip->ignore_objnum = ignored - Objects;
+		aip->ignore_objnum = OBJ_INDEX(ignored);
 		aip->ignore_signature = ignored->signature;
 		aip->ai_flags &= ~AIF_TEMPORARY_IGNORE;
-		ignored->flags |= OF_PROTECTED;					// set protected bit of ignored ship.
+		//ignored->flags |= OF_PROTECTED;					// set protected bit of ignored ship.
 	}
 
 }

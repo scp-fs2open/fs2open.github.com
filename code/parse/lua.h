@@ -7,7 +7,8 @@ extern "C" {
 	#include "lualib.h"
 }
 
-extern const script_lua_lib_list Lua_libraries[];
+extern const struct script_lua_lib_list Lua_libraries[];
+extern void lua_stackdump(lua_State *L, char *stackdump);
 
 #endif //USE_LUA
 #endif //_LUA_H

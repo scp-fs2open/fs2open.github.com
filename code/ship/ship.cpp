@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.260 $
- * $Date: 2005-11-05 05:11:29 $
+ * $Revision: 2.261 $
+ * $Date: 2005-11-08 01:04:02 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.260  2005/11/05 05:11:29  wmcoolmon
+ * Slight optimization
+ *
  * Revision 2.259  2005/10/30 23:45:45  Goober5000
  * stuff for comparing ship classes
  * --Goober5000
@@ -1779,7 +1782,7 @@
 
 extern bool splodeing;
 
-extern bool module_ship_weapons_loaded;
+extern bool Module_ship_weapons_loaded;
 extern float splode_level;
 
 extern int splodeingtexture;
@@ -3919,8 +3922,8 @@ void ship_init()
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK
-				modular_tables_loaded = true;
-				module_ship_weapons_loaded = true;
+				Modular_tables_loaded = true;
+				Module_ship_weapons_loaded = true;
 				strcat(tbl_file_names[i], ".tbm");
 				parse_shiptbl(tbl_file_names[i], true);
 			}
@@ -4740,7 +4743,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		if ( model_system->model_num == -1 ) {
-			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem %s on ship type %s.\nNot linking into ship!\n\n(This warning means that a subsystem was present in %s and not present in the model\nit should probably be removed from the table or added to the model.)\n", model_system->subobj_name, sinfo->name, current_ship_table );
+			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem '%s' on ship type '%s'.\nNot linking into ship!\n\n(This warning means that a subsystem was present in %s and not present in the model\nit should probably be removed from the table or added to the model.)\n", model_system->subobj_name, sinfo->name, current_ship_table );
 			continue;
 		}
 
@@ -6286,7 +6289,7 @@ int thruster_glow_anim_load(generic_anim *ga)
 	ga->first_frame = bm_load(ga->filename);
 	if (ga->first_frame < 0)
 	{
-		Int3();	// couldn't load bitmap file in
+		Warning(LOCATION, "Couldn't load thruster glow animation '%s'", ga->filename);
 		return -1;
 	}
 	ga->num_frames = NOISE_NUM_FRAMES;
@@ -13252,7 +13255,10 @@ void ship_page_in()
 
 					#ifndef NDEBUG
 						for ( j = 0; j < sip->n_subsystems; j++ )	{
-							Assert( sip->subsystems[j].model_num == sip->modelnum );
+							//Assert( sip->subsystems[j].model_num == sip->modelnum );
+							if(sip->subsystems[j].model_num != sip->modelnum) {
+								Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].name, sip->pof_file);
+							}
 						}
 					#endif
 				}
@@ -14847,15 +14853,29 @@ float TypeDefaultValues[] = {
 
 const int Num_armor_calculation_types = sizeof(TypeNames)/sizeof(char*);
 
+int calculation_type_get(char *str)
+{
+	for(int i = 0; i < Num_armor_calculation_types; i++)
+	{
+		if(!stricmp(TypeNames[i], str))
+			return i;
+	}
+
+	return -1;
+}
+
 //STEP 4: Add the calculation to the switch statement.
 float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wip)
 {
+	//If the weapon has no damage type, just return damage
 	if(wip->damage_type_idx < 0)
 		return damage_applied;
 	
+	//Initialize vars
 	uint i,num;
 	ArmorDamageType *adtp = NULL;
 
+	//Find the entry in the weapon that corresponds to the given weapon damage type
 	num = DamageTypes.size();
 	for(i = 0; i < num; i++)
 	{
@@ -14866,13 +14886,24 @@ float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wi
 		}
 	}
 
+	//curr_arg is a pointer to the current calculation type value
 	float	*curr_arg = NULL;
+
+	//Make sure that we _have_ an armor entry for this damage type
 	if(adtp != NULL)
 	{
+		//How many calculations do we have to do?
 		num = adtp->Calculations.size();
+		//This would be a problem
+		Assert(num == adtp->Arguments.size());
+
+		//Used for instant cutoffs, to instantly end the loop
 		bool end_now = false;
+
+		//LOOP!
 		for(i = 0; i < num; i++)
 		{
+			//Set curr_arg
 			curr_arg = &adtp->Arguments[i];
 			switch(adtp->Calculations[i])
 			{
@@ -14936,38 +14967,39 @@ void ArmorType::ParseData()
 {
 	ArmorDamageType adt;
 	char buf[NAME_LENGTH];
-	int i;
 	float temp_float;
+	int calc_type = -1;
 
+	//Get the damage types
 	required_string("$Damage Type:");
 	do
 	{
+		//Get damage type name
 		stuff_string(buf, F_NAME, NULL);
+		
+		//Clear the struct and set the index
 		adt.clear();
 		adt.DamageTypeIndex = damage_type_add(buf);
 
+		//Get calculation and argument
 		required_string("+Calculation:");
 		do
 		{
 			//+Calculation
 			stuff_string(buf, F_NAME, NULL);
 
-			for(i = 0; i < Num_armor_calculation_types; i++)
-			{
-				if(!stricmp(TypeNames[i], buf))
-					break;
-			}
+			calc_type = calculation_type_get(buf);
 
-			if(i == Num_armor_calculation_types)
+			//Make sure we have a valid calculation type
+			if(calc_type == -1)
 			{
-				Warning(LOCATION, "Armor '%s': Armor calculation type '%s' is invalid, and has been reset to default calculation type '%s'", Name, buf, TypeNames[adt.Calculations[adt.Calculations.size()-1]]);
+				Warning(LOCATION, "Armor '%s': Armor calculation type '%s' is invalid, and has been skipped", Name, buf);
 				required_string("+Value:");
-				float bogus_float;
-				stuff_float(&bogus_float);
+				stuff_float(&temp_float);
 			}
 			else
 			{
-				adt.Calculations.push_back(i);
+				adt.Calculations.push_back(calc_type);
 				//+Value
 				required_string("+Value:");
 				stuff_float(&temp_float);
@@ -14975,11 +15007,17 @@ void ArmorType::ParseData()
 			}
 		} while(optional_string("+Calculation:"));
 
-		if(adt.Calculations.size() > 0) {
+		//If we have calculations in this damage type, add it
+		if(adt.Calculations.size() > 0)
+		{
+			if(adt.Calculations.size() != adt.Arguments.size())
+			{
+				Warning(LOCATION, "Armor '%s', damage type %d: Armor has a different number of calculation types than arguments (%d, %d)", Name, DamageTypes.size(), adt.Calculations.size(), adt.Arguments.size());
+			}
 			DamageTypes.push_back(adt);
 		}
 
-	} while(optional_string("$Damage Type"));
+	} while(optional_string("$Damage Type:"));
 }
 
 //********************************Global functions
@@ -15050,7 +15088,7 @@ void armor_init()
 		for(int i = 0; i < num_files; i++)
 		{
 			//HACK HACK HACK
-			modular_tables_loaded = true;
+			Modular_tables_loaded = true;
 			strcat(tbl_file_names[i], ".tbm");
 			armor_parse_table(tbl_file_names[i]);
 		}

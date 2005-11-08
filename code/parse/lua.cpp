@@ -20,6 +20,8 @@ typedef struct script_lua_func_list {
 	const char *name;
 	lua_CFunction func;
 	const char *description;
+	const char *args;
+	const char *retvals;
 } script_lua_func_list;
 
 //Function entry for an object
@@ -27,6 +29,8 @@ typedef struct script_lua_obj_func_list {
 	const char *name;
 	lua_CFunction func;
 	const char *description;
+	const char *args;
+	const char *retvals;
 } script_lua_obj_func_list;
 
 //Object entry for a library
@@ -46,14 +50,42 @@ typedef struct script_lua_lib_list
 	const char *description;
 }script_lua_lib_list;
 
+//LUA_NEW_OBJ(lua_State, object name, object struct)
+#define LUA_NEW_OBJ(L,n,s)					\
+	(s *) lua_newuserdata(L, sizeof(s));	\
+	luaL_getmetatable(L, n);				\
+	lua_setmetatable(L, -2)
+
 //Used with the args functions to check a function type
 //You should really use LUA_CVAR though
-struct script_lua_udata
+struct script_lua_opdata
 {
 	char *meta;
 	void **buf;
 
-	script_lua_udata(char* in_meta, void** in_buf){meta=in_meta; buf=in_buf;}
+	script_lua_opdata(char* in_meta, void** in_buf){meta=in_meta; buf=in_buf;}
+};
+
+struct script_lua_odata
+{
+	char *meta;
+	void *buf;
+	int size;
+
+	script_lua_odata(char *in_meta, void *in_buf, int in_size){meta=in_meta;buf=in_buf;size=in_size;}
+};
+
+template <class StoreType> class lua_cvar
+{
+	char meta[NAME_LENGTH];
+public:
+	lua_cvar(char *in_meta){sprintf(meta, "fs2.%s", in_meta);}
+
+	char *GetName(){return meta;}
+	//StoreType *Create(lua_State *L){StoreType *ptr = (StoreType*)LUA_NEW_OBJ(L, meta, StoreType); return ptr;}
+	script_lua_odata Return(StoreType *obj){return script_lua_odata(meta, obj, sizeof(StoreType));}
+	script_lua_odata Parse(StoreType *ptr){return script_lua_odata(meta, ptr, sizeof(StoreType));}
+	script_lua_opdata ParsePtr(StoreType **ptr){return script_lua_opdata(meta, ptr);}
 };
 
 /*struct script_lua_pdata
@@ -72,12 +104,6 @@ struct script_lua_udata
 #define LUA_CVAR(n, p) script_lua_udata(n, (void**)&p)
 
 //#define LUA_PTR(n, p) script_lua_pdata(n, (void*)p)
-
-//LUA_NEW_OBJ(lua_State, object name, object struct)
-#define LUA_NEW_OBJ(L,n,s)					\
-	(s *) lua_newuserdata(L, sizeof(s));	\
-	luaL_getmetatable(L, n);				\
-	lua_setmetatable(L, -2)
 //*************************Lua return values*************************
 #define LUA_RETURN_NOTHING		0
 #define LUA_RETURN_OBJECT		1
@@ -115,9 +141,8 @@ int script_remove_lib(lua_State *L, char *name)
 	return 0;
 }
 
-void lua_stackdump(lua_State *L)
+void lua_stackdump(lua_State *L, char *stackdump)
 {
-	char stackdump[10240] = "\0";
 	char buf[512];
 	int stacksize = lua_gettop(L);
 
@@ -179,8 +204,6 @@ void lua_stackdump(lua_State *L)
 				break;
 		}
 	}
-
-	Warning(LOCATION, "LUA STACKDUMP:%s",stackdump);
 }
 
 //script_parse_args(state, arguments, variables)
@@ -266,31 +289,31 @@ int script_parse_args(lua_State *L, char *fmt, ...)
 			case 'o':
 				if(lua_isuserdata(L, nargs))
 				{
-					script_lua_udata ud = va_arg(vl, script_lua_udata);
-					(*ud.buf) = luaL_checkudata(L, nargs, ud.meta);
-					if((*ud.buf) == NULL) {
-						Warning(LOCATION, "Argument %d is the wrong type of userdata; %s expected", nargs, ud.meta);
+					script_lua_odata od = va_arg(vl, script_lua_odata);
+					void *ptr = luaL_checkudata(L, nargs, od.meta);
+					if(ptr == NULL) {
+						Warning(LOCATION, "Argument %d is the wrong type of userdata; %s expected", nargs, od.meta);
 					}
+					memcpy(od.buf, ptr, od.size);
 				}
 				else
 				{
-					Warning(LOCATION, "Argument %d is an invalid type %d; type '%s' expected", nargs, lua_type(L, nargs), va_arg(vl, script_lua_udata).meta);
+					Warning(LOCATION, "Argument %d is an invalid type %d; type '%s' expected", nargs, lua_type(L, nargs), va_arg(vl, script_lua_odata).meta);
 					if(!optional_args) return 0;
 				}
 				break;
 			case 'p':
 				if(lua_isuserdata(L, nargs))
 				{
-					script_lua_udata pd = va_arg(vl, script_lua_udata);
-					void **ptr = (void**)luaL_checkudata(L, nargs, pd.meta);
-					(*pd.buf) = *ptr;
+					script_lua_opdata pd = va_arg(vl, script_lua_opdata);
+					(*pd.buf) = luaL_checkudata(L, nargs, pd.meta);
 					if((*pd.buf) == NULL) {
 						Warning(LOCATION, "Argument %d is the wrong type of userdata; %s expected", nargs, pd.meta);
 					}
 				}
 				else
 				{
-					Warning(LOCATION, "Argument %d is an invalid type %d; type '%s' expected", nargs, lua_type(L, nargs), va_arg(vl, script_lua_udata).meta);
+					Warning(LOCATION, "Argument %d is an invalid type %d; type '%s' expected", nargs, lua_type(L, nargs), va_arg(vl, script_lua_opdata).meta);
 					if(!optional_args) return 0;
 				}
 				break;
@@ -331,20 +354,18 @@ int script_return_args(lua_State *L, char *fmt, ...)
 			case 'i':
 				lua_pushnumber(L, va_arg(vl, int));
 				break;
-			case 'p':	//WMC - this isn't working right
-				{
-					script_lua_udata ud = va_arg(vl, script_lua_udata);
-					void **newud = (void**)lua_newuserdata(L, sizeof(void*));
-					luaL_getmetatable(L, ud.meta);
-					lua_setmetatable(L, -2);
-					*newud = *ud.buf;
-				}
-				break;
 			case 's':
 				lua_pushstring(L, va_arg(vl, char *));
 				break;
 			case 'o':	//Just let nargs increment; it should already be on the stack
-				break;
+				{
+					script_lua_odata od = va_arg(vl, script_lua_odata);
+					void *newod = (void*)lua_newuserdata(L, sizeof(void*));
+					luaL_getmetatable(L, od.meta);
+					lua_setmetatable(L, -2);
+					memcpy(newod, od.buf, od.size);
+					break;
+				}
 			default:
 				Error(LOCATION, "Bad character passed to script_return_args; (%c)", *fmt);
 		}
@@ -360,11 +381,11 @@ int script_return_args(lua_State *L, char *fmt, ...)
 //
 //IMPORTANT: Before you can use a type, it MUST be defined in a library
 //				that exists in the current state
-#define LUA_CVAR_LVEC			"fs2.lvec"
-#define LUA_CVAR_WVEC			"fs2.wvec"
-#define LUA_CVAR_SHIP			"fs2.ship"
-#define LUA_CVAR_SHIP_INFO		"fs2.ship_info"
-#define LUA_CVAR_MODEL			"fs2.model"
+static lua_cvar<vec3d>			l_lvec("lvec");
+static lua_cvar<vec3d>			l_wvec("wvec");
+static lua_cvar<polymodel*>		l_model("model");
+static lua_cvar<ship_info*>		l_ship_info("ship_info");
+static lua_cvar<ship*>			l_ship("ship");
 
 //*************************Libraries*************************
 
@@ -375,61 +396,48 @@ static int lua_fs2_lvec(lua_State *L)
 	vec3d v3 = vmd_zero_vector;
 	script_parse_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
 
-	vec3d* v3p = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
-	v3p->xyz.x = v3.xyz.x;
-	v3p->xyz.y = v3.xyz.y;
-	v3p->xyz.z = v3.xyz.z;
-
-	return LUA_RETURN_OBJECT;
+	return script_return_args(L, "o", l_lvec.Return(&v3));
 }
 
 static int lua_fs2_vec__addition(lua_State *L)
 {
-	vec3d *v3a, *v3b, *v3r;
-	if(!script_parse_args(L, "oo", LUA_CVAR(LUA_CVAR_LVEC, v3a), LUA_CVAR(LUA_CVAR_LVEC, v3b)))
+	vec3d v3a, v3b, v3r;
+	if(!script_parse_args(L, "oo", l_lvec.Parse(&v3a), l_lvec.Parse(&v3b)))
 		return 0;
 
-	v3r = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
+	vm_vec_add(&v3r, &v3a, &v3b);
 
-	vm_vec_add(v3r, v3a, v3b);
-
-	return LUA_RETURN_OBJECT;
+	return script_return_args(L, "o", l_lvec.Return(&v3r));
 }
 
 static int lua_fs2_vec__subtraction(lua_State *L)
 {
-	vec3d *v3a, *v3b, *v3r;
-	if(!script_parse_args(L, "oo", LUA_CVAR(LUA_CVAR_LVEC, v3a), LUA_CVAR(LUA_CVAR_LVEC, v3b)))
+	vec3d v3a, v3b, v3r;
+	if(!script_parse_args(L, "oo", l_lvec.Parse(&v3a), l_lvec.Parse(&v3b)))
 		return 0;
 
-	v3r = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
+	vm_vec_sub(&v3r, &v3a, &v3b);
 
-	vm_vec_sub(v3r, v3a, v3b);
-
-	return LUA_RETURN_OBJECT;
+	return script_return_args(L, "o", l_lvec.Return(&v3r));
 }
 
 static int lua_fs2_vec__multiplication(lua_State *L)
 {
-	vec3d *v3a, *v3b, *v3r;
+	vec3d v3a, v3b, v3r;
 	float f;
-	if(script_parse_args(L, "of", LUA_CVAR(LUA_CVAR_LVEC, v3a), &f))
+	if(script_parse_args(L, "of", l_lvec.Parse(&v3a), &f))
 	{
-		v3r = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
+		vm_vec_copy_scale(&v3r, &v3a, f);
 
-		vm_vec_copy_scale(v3r, v3a, f);
-
-		return LUA_RETURN_OBJECT;
+		return script_return_args(L, "o", l_lvec.Return(&v3r));
 	}
-	else if(script_parse_args(L, "oo", LUA_CVAR(LUA_CVAR_LVEC, v3a), LUA_CVAR(LUA_CVAR_LVEC, v3b)))
+	else if(script_parse_args(L, "oo", l_lvec.Parse(&v3a), l_lvec.Parse(&v3b)))
 	{
-		v3r = LUA_NEW_OBJ(L, LUA_CVAR_LVEC, vec3d);
+		v3r.xyz.x = v3a.xyz.x * v3b.xyz.x;
+		v3r.xyz.y = v3a.xyz.y * v3b.xyz.y;
+		v3r.xyz.z = v3a.xyz.z * v3b.xyz.z;
 
-		v3r->xyz.x = v3a->xyz.x * v3b->xyz.x;
-		v3r->xyz.y = v3a->xyz.y * v3b->xyz.y;
-		v3r->xyz.z = v3a->xyz.z * v3b->xyz.z;
-
-		return LUA_RETURN_OBJECT;
+		return script_return_args(L, "o", l_lvec.Return(&v3r));
 	}
 
 	//Neither is valid...
@@ -440,28 +448,44 @@ static int lua_fs2_vec__multiplication(lua_State *L)
 
 static int lua_fs2_vec__tostring(lua_State *L)
 {
-	vec3d *v3p;
-	if(!script_parse_args(L, "o", LUA_CVAR(LUA_CVAR_LVEC, v3p)))
+	vec3d v3p;
+	if(!script_parse_args(L, "o", l_lvec.Parse(&v3p)))
 		return 0;
 
 	char buf[32];
-	sprintf(buf, "(%f, %f, %f)", v3p->xyz.x, v3p->xyz.y, v3p->xyz.z);
+	sprintf(buf, "(%f, %f, %f)", v3p.xyz.x, v3p.xyz.y, v3p.xyz.z);
 
 	return script_return_args(L, "s", buf);
 }
 
 static int lua_fs2_vec__index(lua_State *L)
 {
-	vec3d *v3p;
+	vec3d v3p;
 	int idx=0;
-	if(!script_parse_args(L, "o|i", LUA_CVAR(LUA_CVAR_LVEC, v3p), &idx))
+	if(!script_parse_args(L, "o|i", l_lvec.Parse(&v3p), &idx))
 		return 0;
 
 	if(idx < 0 || idx > 2) {
 		return 0;
 	}
 
-	return script_return_args(L, "f", v3p->a1d[idx]);
+	return script_return_args(L, "f", v3p.a1d[idx]);
+}
+
+static int lua_fs2_vec_print(lua_State *L)
+{
+	vec3d v3p;
+	int idx=0;
+	if(!script_parse_args(L, "o|i", l_lvec.Parse(&v3p), &idx))
+		return 0;
+
+	if(idx < 0 || idx > 2) {
+		return 0;
+	}
+
+	//Error(LOCATION, "%f %f %f", v3p.xyz.x, v3p.xyz.y, v3p.xyz.z);
+
+	return 0;
 }
 
 static const script_lua_obj_func_list lua_fs2_lvec_funcs[] = {
@@ -469,6 +493,7 @@ static const script_lua_obj_func_list lua_fs2_lvec_funcs[] = {
 	{LUA_OPER_SUBTRACTION, lua_fs2_vec__subtraction, "Subtracts one vector from another"},
 	{LUA_OPER_MULTIPLICATION, lua_fs2_vec__multiplication, "Multiplies two vectors, or a vector times a number"},
 	{LUA_OPER_TOSTRING, lua_fs2_vec__tostring, "Converts vector to string"},
+	{"print", lua_fs2_vec_print, "Prints a vector"},
 	//{LUA_OPER_INDEX, lua_fs2_vec__index, "Returns index into vector"},
 	{SCRIPT_END_LIST},
 };
@@ -479,12 +504,12 @@ static int lua_fs2_wvec(lua_State *L)
 	vec3d v3 = vmd_zero_vector;
 	script_parse_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
 
-	vec3d* v3p = LUA_NEW_OBJ(L, LUA_CVAR_WVEC, vec3d);
-	v3p->xyz.x = v3.xyz.x;
-	v3p->xyz.y = v3.xyz.y;
-	v3p->xyz.z = v3.xyz.z;
+	vec3d v3p;
+	v3p.xyz.x = v3.xyz.x;
+	v3p.xyz.y = v3.xyz.y;
+	v3p.xyz.z = v3.xyz.z;
 
-	return LUA_RETURN_OBJECT;
+	return script_return_args(L, "o", l_wvec.Return(&v3p));
 }
 
 static const script_lua_obj_func_list lua_fs2_wvec_funcs[] = {
@@ -499,8 +524,8 @@ static const script_lua_obj_func_list lua_fs2_wvec_funcs[] = {
 //*****LIBRARY CLASSES
 
 static const script_lua_obj_list lua_base_lib_obj[] = {
-	{LUA_CVAR_LVEC, lua_fs2_lvec_funcs, "Local vector"},
-	{LUA_CVAR_WVEC, lua_fs2_wvec_funcs, "World vector"},
+	{l_lvec.GetName(), lua_fs2_lvec_funcs, "Local vector"},
+	{l_wvec.GetName(), lua_fs2_wvec_funcs, "World vector"},
 	{SCRIPT_END_LIST},
 };
 
@@ -552,7 +577,18 @@ static int lua_msn_getShipInfo(lua_State *L)
 
 	ship_info *sip = &Ship_info[idx];
 
-	return script_return_args(L, "p", LUA_CVAR(LUA_CVAR_SHIP_INFO, sip));
+	return script_return_args(L, "o", l_ship_info.Return(&sip));
+}
+
+static int lua_msn_ShipInfo_print(lua_State *L)
+{
+	ship_info *sip;
+	if(!script_parse_args(L, "o", l_ship_info.Parse(&sip)))
+		return 0;
+
+	//Error(LOCATION, "%s", sip->name);
+
+	return 0;
 }
 
 static int lua_msn_newShip(lua_State *L)
@@ -586,7 +622,7 @@ static int lua_msn_newShip(lua_State *L)
 	{
 		//Make the lua ship object and set the ptr to NULL
 		ship *shipp = &Ships[s_idx];
-		return script_return_args(L, "p", LUA_CVAR(LUA_CVAR_SHIP, shipp));
+		return script_return_args(L, "o", l_ship.Return(&shipp));
 	}
 
 	return LUA_RETURN_NOTHING;
@@ -597,7 +633,7 @@ static lua_msn_ship_setSpeed(lua_State *L)
 	ship *shipp = NULL;
 	vec3d vel;
 
-	if(!script_parse_args(L, "pfff", LUA_CVAR(LUA_CVAR_SHIP, shipp), &vel.xyz.x, &vel.xyz.y, &vel.xyz.z))
+	if(!script_parse_args(L, "offf", l_ship.Parse(&shipp), &vel.xyz.x, &vel.xyz.y, &vel.xyz.z))
 		return LUA_RETURN_NOTHING;
 
 	//Set the speed
@@ -612,7 +648,7 @@ static lua_msn_ship_setName(lua_State *L)
 	ship *shipp = NULL;
 	char *name = NULL;
 
-	if(!script_parse_args(L, "ps", LUA_CVAR(LUA_CVAR_SHIP, shipp), &name))
+	if(!script_parse_args(L, "os", l_ship.Parse(&shipp), &name))
 		return LUA_RETURN_NOTHING;
 
 	//Set the name
@@ -630,7 +666,7 @@ static lua_msn_ship_getTarget(lua_State *L)
 {
 	ship *shipp = NULL;
 
-	if(!script_parse_args(L, "p", LUA_CVAR(LUA_CVAR_SHIP, shipp)))
+	if(!script_parse_args(L, "o", l_ship.Parse(&shipp)))
 		return 0;
 
 	if(shipp->ai_index != -1)
@@ -639,7 +675,7 @@ static lua_msn_ship_getTarget(lua_State *L)
 		if(aip->target_objnum && Objects[aip->target_objnum].type == OBJ_SHIP)
 		{
 			ship *tshipp = &Ships[Objects[aip->target_objnum].instance];
-			return script_return_args(L, "p", LUA_CVAR(LUA_CVAR_SHIP, tshipp));
+			return script_return_args(L, "o", l_ship.Return(&tshipp));
 		}
 	}
 
@@ -648,6 +684,7 @@ static lua_msn_ship_getTarget(lua_State *L)
 }
 
 static const script_lua_obj_func_list lua_msn_shipinfo_funcs[] = {
+	{"print",lua_msn_ShipInfo_print, "Prints ship name"},
 	{SCRIPT_END_LIST},
 };
 
@@ -660,17 +697,79 @@ static const script_lua_obj_func_list lua_msn_ship_funcs[] = {
 
 //LIBRARY define
 static const script_lua_obj_list lua_msn_lib_obj[] = {
-	{LUA_CVAR_SHIP, lua_msn_ship_funcs, "Ship handle"},
-	{LUA_CVAR_SHIP_INFO, lua_msn_shipinfo_funcs, "Ship info handle"},
+	{l_ship.GetName(),		 lua_msn_ship_funcs, "Ship handle"},
+	{l_ship_info.GetName(),	 lua_msn_shipinfo_funcs, "Ship info handle"},
 	{SCRIPT_END_LIST},
 };
 static const script_lua_func_list lua_msn_lib[] = {
-	{"newShip", lua_msn_newShip, "Creates a new ship and returns a handle to it: (ship name, class name, x pos, y pos, z pos; x rot, y rot, z rot)"},
-	{"getShipInfo", lua_msn_getShipInfo, "Gets ship info object"},
+	{"newShip",			lua_msn_newShip, "Creates a new ship and returns a handle to it: (ship name, class name, x pos, y pos, z pos; x rot, y rot, z rot)"},
+	{"getShipInfo",		lua_msn_getShipInfo, "Gets ship info object"},
 	{SCRIPT_END_LIST},
 };
 
 //**********LIBRARY: Graphics (grl)
+//*****Class: model
+static int lua_grpc_model_getFilename(lua_State *L)
+{
+	polymodel *pm;
+	if(!script_parse_args(L, "o", l_model.Parse(&pm)))
+		return 0;
+
+	return script_return_args(L, "s", pm->filename);
+}
+
+static int lua_grpc_model_getnumEyepoints(lua_State *L)
+{
+	polymodel *pm;
+	if(!script_parse_args(L, "o", l_model.Parse(&pm)))
+		return 0;
+
+	return script_return_args(L, "s", pm->filename);
+}
+
+static int lua_grpc_model_getEyepointPos(lua_State *L)
+{
+	polymodel *pm;
+	int idx;
+	if(!script_parse_args(L, "oi", l_model.Parse(&pm), &idx))
+		return 0;
+
+	if(idx > -1 && idx < pm->n_view_positions)
+	{
+		return script_return_args(L, "o", l_lvec.Return(&pm->view_positions[idx].pnt));
+	}
+
+	return LUA_RETURN_NOTHING;
+}
+
+static const script_lua_obj_func_list lua_grpc_model_funcs[] = {
+	{"getFilename",			lua_grpc_model_getFilename, "Gets the model's filename",
+							NULL,"string"},
+	{"getnumEyepoints",		lua_grpc_model_getnumEyepoints, "Gets number of eyepoints on ship",
+							NULL,"number"},
+	{"getEyepointPos",		lua_grpc_model_getEyepointPos, "Gets selected eye position",
+							"number","lvec"},
+	{SCRIPT_END_LIST},
+};
+
+//*****Functions: Graphics library
+static int lua_grpc_loadModel(lua_State *L)
+{
+	char *model_name;
+	if(!script_parse_args(L, "s", &model_name))
+		return 0;
+
+	int idx = model_load(model_name, 0, NULL, 0);
+	if(idx != -1)
+	{
+		polymodel *pm = model_get(idx);
+		if(pm != NULL) {
+			return script_return_args(L, "o", l_model.Return(&pm));
+		}
+	}
+
+	return LUA_RETURN_NOTHING;
+}
 static int lua_grpc_setColor(lua_State *L)
 {
 	if(!Gr_inited)
@@ -816,6 +915,8 @@ static int lua_grpc_flashScreen(lua_State *L)
 
 //LIBRARY define
 static const script_lua_func_list lua_grpc_lib[] = {
+	{"loadModel",		lua_grpc_loadModel, "Loads the given model and returns a handle to it",
+						"string","model"},
 	{"setColor", lua_grpc_setColor, "Sets the current drawing color: (red, green, blue; alpha)"},
 	{"setFont", lua_grpc_setFont, "Sets the current drawing font: (font number)"},
 	{"drawPixel", lua_grpc_drawPixel, "Draws a pixel using the current color: (x, y; resize)"},
@@ -828,12 +929,8 @@ static const script_lua_func_list lua_grpc_lib[] = {
 	{SCRIPT_END_LIST},
 };
 
-static const script_lua_obj_func_list lua_grpc_model_funcs[] = {
-	{SCRIPT_END_LIST},
-};
-
 static const script_lua_obj_list lua_grpc_lib_obj[] = {
-	{LUA_CVAR_MODEL, lua_grpc_model_funcs, "Model"},
+	{l_model.GetName(), lua_grpc_model_funcs, "Model"},
 	{SCRIPT_END_LIST},
 };
 
@@ -1009,7 +1106,24 @@ void output_lib_meta(FILE *fp, const script_lua_lib_list *lib)
 		fputs("<dd><dl>", fp);
 		for(func = lib->library_funcs; func->name != NULL; func++)
 		{
-			fprintf(fp, "<dt><b>%s()</b></dt><dd>%s</dd>", func->name, func->description);
+			fprintf(fp, "<dt><b>%s()</b></dt>", func->name);
+			if(func->args != NULL) {
+				fprintf(fp, "<dd><b>Arguments:</b> %s</dd>", func->args);
+			} else {
+				fputs("<dd><b>Arguments:</b> None</dd>", fp);
+			}
+
+			if(func->description != NULL) {
+				fprintf(fp, "<dd>%s</dd>", func->description);
+			} else {
+				fputs("<dd>No description</dd>", fp);
+			}
+
+			if(func->retvals != NULL) {
+				fprintf(fp, "<dd><b>Return values: %s</dd>", func->retvals);
+			} else {
+				fputs("<dd><b>Return values:</b> None</dd>", fp);
+			}
 		}
 		fputs("</dl></dd>", fp);
 	}
@@ -1023,7 +1137,24 @@ void output_lib_meta(FILE *fp, const script_lua_lib_list *lib)
 			fputs("<dd><dl>", fp);
 			for(ofunc = obj->object_funcs; ofunc->name != NULL; ofunc++)
 			{
-				fprintf(fp, "<dt><b>%s()</b></dt><dd>%s</dd>", ofunc->name, ofunc->description);
+				fprintf(fp, "<dt><b>%s()</b></dt>", ofunc->name);
+				if(ofunc->args != NULL) {
+					fprintf(fp, "<dd><b>Arguments:</b> %s</dd>", ofunc->args);
+				} else {
+					fputs("<dd><b>Arguments:</b> None</dd>", fp);
+				}
+
+				if(ofunc->description != NULL) {
+					fprintf(fp, "<dd>%s</dd>", ofunc->description);
+				} else {
+					fputs("<dd>No description</dd>", fp);
+				}
+
+				if(ofunc->retvals != NULL) {
+					fprintf(fp, "<dd><b>Return values: %s</dd>", ofunc->retvals);
+				} else {
+					fputs("<dd><b>Return values:</b> None</dd>", fp);
+				}
 			}
 			fputs("</dl></dd>", fp);
 		}

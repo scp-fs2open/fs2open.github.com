@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/10/30 06:44:59  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.58  2005/10/14 07:22:24  Goober5000
  * removed an unneeded parameter and renamed some stuff
  * --Goober5000
@@ -533,8 +536,9 @@ extern int Num_weapon_subtypes;
 #define	WIF_REMOTE			(1 << 4)				//	Can be remotely detonated by parent.
 #define	WIF_PUNCTURE		(1 << 5)				//	Punctures armor, damaging subsystems.
 #define	WIF_SUPERCAP		(1 << 6)				//	This is a weapon which does supercap class damage (meaning, it applies real damage to supercap ships)
-#define	WIF_AREA_EFFECT	(1 << 7)				//	Explosion has an area effect
-#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
+//#define	WIF_AREA_EFFECT	(1 << 7)				//	Explosion has an area effect
+//#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
+//WMC - These are no longer needed so these spots are free
 #define  WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
 															// don't set this and the weapon turns, collision detection
 															// won't work, I promise!
@@ -770,6 +774,7 @@ typedef struct weapon_info {
 
 	int	launch_snd;
 	int	impact_snd;
+	int disarmed_impact_snd;
 	int	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
 	
 	// Specific to weapons with TRAILS:
@@ -961,6 +966,39 @@ typedef struct missile_obj {
 } missile_obj;
 extern missile_obj Missile_obj_list;
 
+// WEAPON EXPLOSION INFO
+#define MAX_WEAPON_EXPL_LOD						4
+#define MAX_WEAPON_EXPL_INFO					20
+
+typedef struct weapon_expl_lod {
+	char	filename[MAX_FILENAME_LEN];
+	int	bitmap_id;
+	int	num_frames;
+	int	fps;
+} weapon_expl_lod;
+
+typedef struct weapon_expl_info	{
+	int					lod_count;	
+	weapon_expl_lod		lod[MAX_WEAPON_EXPL_LOD];
+} weapon_expl_info;
+
+class weapon_explosions
+{
+private:
+	int ExplosionNum;
+	weapon_expl_info ExplosionInfo[MAX_WEAPON_EXPL_INFO];
+
+	int GetIndex(char *filename);
+public:
+	weapon_explosions(){ExplosionNum=0;}
+
+	int Load(char *filename);
+	int GetAnim(int weapon_expl_index, vec3d *pos, float size);
+	void PageIn(int idx);
+};
+
+extern weapon_explosions Weapon_explosions;
+
 extern weapon_info Weapon_info[MAX_WEAPON_TYPES];
 
 extern int Num_weapon_types;			// number of weapons in the game
@@ -1039,12 +1077,9 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 // call to get the "color" of the laser at the given moment (since glowing lasers can cycle colors)
 void weapon_get_laser_color(color *c, object *objp);
 
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos);
+void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed);
 
 // return a scale factor for damage which should be applied for 2 collisions
 float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
-
-// return handle to explosion ani
-int weapon_get_expl_handle(int weapon_expl_index, vec3d *pos, float size);
 
 #endif

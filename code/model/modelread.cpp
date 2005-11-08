@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.81 $
- * $Date: 2005-10-29 09:00:41 $
+ * $Revision: 2.82 $
+ * $Date: 2005-11-08 01:04:00 $
  * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/10/29 09:00:41  wmcoolmon
+ * Minor change to an assert
+ *
  * Revision 2.80  2005/10/22 22:22:41  Goober5000
  * rolled back UnknownPlayer's commit
  * --Goober5000
@@ -1558,7 +1561,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		// Goober5000 - notify if there's a mismatch
 		if ( stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
 		{
-			Warning(LOCATION, "Subsystem \"%s\" in model %s is represented as \"%s\" in ships.tbl.  "
+			Warning(LOCATION, "Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  "
 				"Although FS2_OPEN 3.6 and later will catch and correct this error, earlier "
 				"versions (as well as retail FS2) will not.  You are advised to fix this if "
 				"you plan to support earlier versions of Freespace.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name);
@@ -2250,7 +2253,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						bay->type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
 
 					bay->num_slots = cfread_int(fp);
-					Assert( bay->num_slots == MAX_DOCK_SLOTS );					// Get Allender if Asserted!
+
+					if(bay->num_slots != 2) {
+						Warning(LOCATION, "Model '%s' has %d dockpoints in model file; models must have %d dock slots per dock point.", filename, bay->num_slots, 2);
+					}
+
 					for (j = 0; j < bay->num_slots; j++) {
 						cfread_vector( &(bay->pnt[j]), fp );
 						cfread_vector( &(bay->norm[j]), fp );

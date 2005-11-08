@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.30 $
- * $Date: 2005-09-26 04:53:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2005-11-08 01:03:59 $
+ * $Author: wmcoolmon $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/09/26 04:53:19  Goober5000
+ * moved these per taylor's recommendation
+ * --Goober5000
+ *
  * Revision 2.29  2005/09/26 04:08:53  Goober5000
  * some more cleanup
  * --Goober5000
@@ -602,6 +606,7 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
 extern int SPECMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
 extern int ENVMAP;	//this holds a reference to a map that is for environment mapping -Bobboau
+extern int BUMPMAP;	//blah blah bumpmapping
 
 int bm_is_compressed(int num);
 int bm_get_tcache_type(int num);
