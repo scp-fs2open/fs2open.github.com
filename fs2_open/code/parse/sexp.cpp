@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.189 $
- * $Date: 2005-11-05 11:00:50 $
+ * $Revision: 2.190 $
+ * $Date: 2005-11-08 01:04:00 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.189  2005/11/05 11:00:50  wmcoolmon
+ * Fixed capitalization
+ *
  * Revision 2.188  2005/11/05 07:42:09  phreak
  * add/remove-sun-bitmap.  Also changed "Ship_arrival_list" to "Ship_arrival_list" since the former technically doesn't exist due to the capital 'S'.
  *
@@ -11346,7 +11349,11 @@ void sexp_beam_fire(int node)
 
 	// see if the optional subsystem can be found	
 	fire_info.target_subsys = NULL;
-	fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(CDR(CDR(CDR(node)))));	
+	node = CDR(CDR(CDR(node)));
+	if(node != -1)
+	{
+		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(node));	
+	}
 
 	// if it has no primary weapons
 	if(fire_info.turret->weapons.num_primary_banks <= 0){

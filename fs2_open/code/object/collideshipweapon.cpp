@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-10-30 06:44:58 $
+ * $Revision: 2.24 $
+ * $Date: 2005-11-08 01:04:00 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/10/30 06:44:58  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.22  2005/10/28 14:48:26  taylor
  * don't do any decal processing if decals are not enabled
  *
@@ -458,7 +461,13 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 		}
 	}
 
-	if (valid_hit_occured && do_model_check && !(ship_obj->flags & OF_NO_SHIELDS) && quadrant_num == -1 && !(Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) && (Ship_info[shipp->ship_info_index].flags2 & SIF2_SURFACE_SHIELDS)) {
+	if (	valid_hit_occured
+		&& do_model_check
+		&& !(ship_obj->flags & OF_NO_SHIELDS)
+		&& quadrant_num == -1
+		&& !(Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS)
+		&& (Ship_info[shipp->ship_info_index].flags2 & SIF2_SURFACE_SHIELDS))
+	{
 		// _argv[-1], 16 Jan 2005: Surface shields.
 		// Surface shields allow for shields on a ship without a shield mesh.  Good for putting real shields
 		// on the Lucifer.  This also fixes the strange bug where shots will occasionally go through the

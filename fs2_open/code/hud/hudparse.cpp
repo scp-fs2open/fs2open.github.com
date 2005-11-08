@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-10-28 14:47:16 $
- * $Author: taylor $
+ * $Revision: 2.37 $
+ * $Date: 2005-11-08 01:03:59 $
+ * $Author: wmcoolmon $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/10/28 14:47:16  taylor
+ * fix issue where GR_640 based non-standard resolutions (ie. 800x600) would use GR_1024 screen coordinates/sizes
+ *
  * Revision 2.35  2005/09/29 04:26:08  Goober5000
  * parse fixage
  * --Goober5000
@@ -1020,7 +1023,7 @@ void hud_positions_init()
 	for(int i = 0; i < num_files; i++)
 	{
 		//HACK HACK HACK
-		modular_tables_loaded = true;
+		Modular_tables_loaded = true;
 		strcat(tbl_file_names[i], ".tbm");
 		parse_hud_gauges_tbl(tbl_file_names[i]);
 	}

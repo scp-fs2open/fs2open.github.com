@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.35 $
- * $Date: 2005-10-17 05:48:18 $
- * $Author: taylor $
- * $Revision: 2.35 $
- * $Date: 2005-10-17 05:48:18 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2005-11-08 01:03:59 $
+ * $Author: wmcoolmon $
+ * $Revision: 2.36 $
+ * $Date: 2005-11-08 01:03:59 $
+ * $Author: wmcoolmon $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/10/17 05:48:18  taylor
+ * dynamically allocate object collision pairs
+ *
  * Revision 2.34  2005/10/11 08:30:37  taylor
  * fix memory freakage from dynamic spawn weapon types
  *
@@ -567,6 +570,7 @@ typedef struct bitmap {
 
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
+extern void _cdecl LuaError(char * filename, int line, struct lua_State *L);
 extern void _cdecl Error( char * filename, int line, char * format, ... );
 extern void _cdecl Warning( char * filename, int line, char * format, ... );
 

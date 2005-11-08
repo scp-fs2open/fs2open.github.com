@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.33 $
+ * $Revision: 2.34 $
  * $Author: wmcoolmon $
- * $Date: 2005-10-22 20:17:19 $
+ * $Date: 2005-11-08 01:04:00 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/10/22 20:17:19  wmcoolmon
+ * mission-set-nebula fixage; remainder of python code
+ *
  * Revision 2.32  2005/09/30 03:19:57  Goober5000
  * parsing stuff
  * --Goober5000
@@ -395,7 +398,7 @@ extern jmp_buf parse_abort;
 
 //For modular TBL files -C
 #define MAX_TBL_PARTS 32
-extern bool modular_tables_loaded;
+extern bool Modular_tables_loaded;
 
 // 1K on the stack? seems to work...
 // JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.

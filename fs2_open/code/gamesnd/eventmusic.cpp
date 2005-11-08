@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-10-29 22:09:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2005-11-08 01:03:59 $
+ * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/10/29 22:09:29  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.23  2005/08/24 07:20:36  Goober5000
  * tweaky optimization based on the current version of stristr and
  * the current version of the expanded music.tbl
@@ -482,7 +486,7 @@ void event_music_init()
 	for(i = 0; i < num_files; i++)
 	{
 		//HACK HACK HACK
-		modular_tables_loaded = true;
+		Modular_tables_loaded = true;
 		strcat(tbl_file_names[i], ".tbm");
 		event_music_parse_musictbl(tbl_file_names[i], true);
 	}

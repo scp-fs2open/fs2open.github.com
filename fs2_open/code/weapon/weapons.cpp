@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2005/11/05 05:12:21  wmcoolmon
+ * Fix(?) for checking whether a weapon is armed or not
+ *
  * Revision 2.142  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -891,7 +894,7 @@ DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 #endif
 
 static int Weapon_flyby_sound_timer;	
-extern bool module_ship_weapons_loaded;
+extern bool Module_ship_weapons_loaded;
 
 weapon Weapons[MAX_WEAPONS];
 weapon_info Weapon_info[MAX_WEAPON_TYPES];
@@ -911,31 +914,13 @@ char *Weapon_subtype_names[] = {
 };
 int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
 
-
-// WEAPON EXPLOSION INFO
-#define MAX_weapon_expl_lod						4
-#define MAX_Weapon_expl_info					20
-
-typedef struct weapon_expl_lod {
-	char	filename[MAX_FILENAME_LEN];
-	int	bitmap_id;
-	int	num_frames;
-	int	fps;
-} weapon_expl_lod;
-
-typedef struct weapon_expl_info	{
-	int					lod_count;	
-	weapon_expl_lod		lod[MAX_weapon_expl_lod];
-} weapon_expl_info;
-
-weapon_expl_info Weapon_expl_info[MAX_Weapon_expl_info];
-
-int Num_weapon_expl = 0;
+weapon_explosions Weapon_explosions;
 
 int Num_weapon_types = 0;
 
 int Num_weapons = 0;
 int Weapons_inited = 0;
+int Weapon_expl_initted = 0;
 
 int laser_model_inner = -1;
 int laser_model_outer = -1;
@@ -983,11 +968,206 @@ int		Weapon_impact_timer;			// timer, initalized at start of each mission
 extern int Max_allowed_player_homers[];
 extern int compute_num_homing_objects(object *target_objp);
 
-// 
+int weapon_explosions::GetIndex(char *filename)
+{
+	for (int i=0; i<ExplosionNum; i++) {
+		if ( !stricmp(ExplosionInfo[i].lod[0].filename, filename)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+int weapon_explosions::Load(char *filename)
+{
+	//Check if it exists
+	int idx = GetIndex(filename);
+	if(idx != -1) {
+		return idx;
+	}
+
+	//Guess not. Check if we are full
+	if(ExplosionNum >= MAX_WEAPON_EXPL_INFO) {
+		Warning(LOCATION, "Could not load weapon explosion '%s', because the maximum of %d weapon explosions has been reached.", filename, MAX_WEAPON_EXPL_INFO);
+		return -1;
+	}
+
+	//OK, we can assume we have an entry to play with
+	weapon_expl_info *wei = &ExplosionInfo[ExplosionNum];
+
+	wei->lod_count = 0;
+
+	strcpy(wei->lod[0].filename, filename);
+	wei->lod[0].bitmap_id = bm_load_animation(filename, &wei->lod[0].num_frames, &wei->lod[0].fps, 1);
+
+	if(wei->lod[0].bitmap_id < 0)
+	{
+		Warning(LOCATION, "Weapon explosion '%s' does not have an LOD0 anim!", filename);
+	}
+	else
+	{
+		wei->lod_count = 1;
+	}
+
+	if(MAX_FILENAME_LEN - strlen(filename) > 2)
+	{
+		for(idx = 1; idx < MAX_WEAPON_EXPL_LOD; idx++)
+		{
+			sprintf(wei->lod[idx].filename, "%s_%d", filename, idx);
+			wei->lod[idx].bitmap_id = bm_load_animation(wei->lod[idx].filename, &wei->lod[idx].num_frames, &wei->lod[idx].fps, 1);
+
+			if(wei->lod[idx].bitmap_id > 0)
+			{
+				//This does not necessarily mean that all previous LODs exist
+				wei->lod_count = idx+1;
+			}
+		}
+
+		//Check for any LODs before the lowest that don't have an image loaded
+		int j;
+		for(idx = 0; idx < wei->lod_count; idx++)
+		{
+			if(wei->lod[idx].bitmap_id < 0)
+			{
+				Warning(LOCATION, "Missing file %s (LOD %d) for weapon explosion %s", wei->lod[idx].filename, idx, wei->lod[0].filename);
+
+				//Get the next lowest LOD image
+				for(j = idx+1; j < wei->lod_count; j++)
+				{
+					if(wei->lod[j].bitmap_id)
+					{
+						wei->lod[idx].bitmap_id = wei->lod[j].bitmap_id;
+						wei->lod[idx].fps = wei->lod[j].fps;
+						wei->lod[idx].num_frames = wei->lod[j].num_frames;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		Warning(LOCATION, "Filename '%s' is too long to have any LODs.", filename);
+	}
+
+	if(!wei->lod_count)
+	{
+		//We didn't load anything!
+		return -1;
+	}
+
+	ExplosionNum++;
+	return ExplosionNum-1;
+}
+
+void weapon_explosions::PageIn(int idx)
+{
+	if(idx < 0 || idx > ExplosionNum) {
+		return;
+	}
+
+	weapon_expl_info *wei = &ExplosionInfo[idx];
+	for(int j = 0; j < wei->lod_count; j++)
+	{
+		bm_page_in_xparent_texture(wei->lod[j].bitmap_id, wei->lod[j].num_frames);
+	}
+}
+
+int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
+{
+	if(weapon_expl_index < 0 || weapon_expl_index > ExplosionNum) {
+		return -1;
+	}
+
+	//Get our weapon expl for the day
+	weapon_expl_info *wei = &ExplosionInfo[weapon_expl_index];
+
+	if (wei->lod_count == 1) {
+		return wei->lod[0].bitmap_id;
+	}
+
+	// now we have to do some work
+	vertex v;
+	int x, y, w, h, bm_size;
+	int must_stop = 0;
+	int best_lod = 1;
+	int behind = 0;
+
+	// start the frame
+	extern float Viewer_zoom;
+	extern int G3_count;
+
+	if(!G3_count){
+		g3_start_frame(1);
+		must_stop = 1;
+	}
+	g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
+
+	// get extents of the rotated bitmap
+	g3_rotate_vertex(&v, pos);
+
+	// if vertex is behind, find size if in front, then drop down 1 LOD
+	if (v.codes & CC_BEHIND) {
+		float dist = vm_vec_dist_quick(&Eye_position, pos);
+		vec3d temp;
+
+		behind = 1;
+		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.vec.fvec, dist);
+		g3_rotate_vertex(&v, &temp);
+
+		// if still behind, bail and go with default
+		if (v.codes & CC_BEHIND) {
+			behind = 0;
+		}
+	}
+
+	if (!g3_get_bitmap_dims(wei->lod[0].bitmap_id, &v, size, &x, &y, &w, &h, &bm_size)) {
+		if (Detail.hardware_textures == 4) {
+			// straight LOD
+			if(w <= bm_size/8){
+				best_lod = 3;
+			} else if(w <= bm_size/2){
+				best_lod = 2;
+			} else if(w <= 1.3f*bm_size){
+				best_lod = 1;
+			} else {
+				best_lod = 0;
+			}
+		} else {
+			// less aggressive LOD for lower detail settings
+			if(w <= bm_size/8){
+				best_lod = 3;
+			} else if(w <= bm_size/3){
+				best_lod = 2;
+			} else if(w <= (1.15f*bm_size)){
+				best_lod = 1;
+			} else {
+				best_lod = 0;
+			}		
+		}
+	}
+
+	// if it's behind, bump up LOD by 1
+	if (behind) {
+		best_lod++;
+	}
+
+	// end the frame
+	if(must_stop){
+		g3_end_frame();
+	}
+
+	best_lod = MIN(best_lod, wei->lod_count - 1);
+	return wei->lod[best_lod].bitmap_id;
+}
+
+/*
 void parse_weapon_expl_tbl(char* longname)
 {
 	int	rval, idx;
-	char base_filename[256] = "";
+	char base_filename[MAX_FILENAME_LEN] = "";
+	bool first_time;
+	weapon_expl_info *wei = NULL;
 
 	// open localization
 	lcl_ext_open();
@@ -1001,49 +1181,69 @@ void parse_weapon_expl_tbl(char* longname)
 	}
 
 	required_string("#Start");
-	while (required_string_either("#End","$Name:")) {
-		Assert( Num_weapon_expl < MAX_Weapon_expl_info);
+	while (required_string_either("#End","$Name:"))
+	{
+		//Assume yes
+		first_time = true;
 
 		// base filename
 		required_string("$Name:");
 		stuff_string(base_filename, F_NAME, NULL);
 
+		//Does it exist
+		idx = get_weapon_expl_info_index(base_filename);
+
+		//If so get the old index
+		if(idx > -1)
+		{
+			wei = &Weapon_expl_info[idx];
+			first_time = false;
+		}
+		else if(Num_weapon_expl >= MAX_WEAPON_EXPL_INFO)
+		{
+			Warning(LOCATION, "Maximum number of weapon explosion entries reached; current number is %d, maximum is %d. All entries after '%s' will be skipped.", wei->lod[0].filename, Num_weapon_expl, MAX_WEAPON_EXPL_INFO);
+			skip_to_start_of_string("#End");
+			break;
+		}
+		else
+		{
+			wei = &Weapon_expl_info[Num_weapon_expl];
+			Num_weapon_expl++;
+			first_time = true;
+		}
+
 		// # of lod levels - make sure old fireball.tbl is compatible
-		Weapon_expl_info[Num_weapon_expl].lod_count = 1;
-		if(optional_string("$LOD:")){
-			stuff_int(&Weapon_expl_info[Num_weapon_expl].lod_count);
+		if(first_time) {
+			wei->lod_count = 1;
+		}
+
+		//Do we have an LOD num
+		if(optional_string("$LOD:"))
+		{
+			stuff_int(&wei->lod_count);
+
+			if(wei->lod_count > MAX_WEAPON_EXPL_LOD)
+			{
+				Warning(LOCATION, "Weapon explosion '%s' has %d LODs, but the maximum is %d. Only the first %d will be used", wei->lod_count, MAX_WEAPON_EXPL_LOD, MAX_WEAPON_EXPL_LOD);
+				wei->lod_count = MAX_WEAPON_EXPL_LOD;
+			}
 		}
 
 		// stuff default filename
-		strcpy(Weapon_expl_info[Num_weapon_expl].lod[0].filename, base_filename);
+		strcpy(wei->lod[0].filename, base_filename);
 
 		// stuff LOD level filenames
-		for(idx=1; idx<Weapon_expl_info[Num_weapon_expl].lod_count; idx++){
-			if(idx >= MAX_weapon_expl_lod){
-				break;
-			}
-
-			sprintf(Weapon_expl_info[Num_weapon_expl].lod[idx].filename, "%s_%d", base_filename, idx);
+		for(idx=1; idx<wei->lod_count; idx++)
+		{
+			sprintf(wei->lod[idx].filename, "%s_%d", base_filename, idx);
 		}
-
-		Num_weapon_expl++;
 	}
 	required_string("#End");
 
 	// close localization
 	lcl_ext_close();
-}
+}*/
 
-int get_weapon_expl_info_index(char *filename)
-{
-	for (int i=0; i<MAX_Weapon_expl_info; i++) {
-		if ( stricmp(Weapon_expl_info[i].lod[0].filename, filename) == 0) {
-			return i;
-		}
-	}
-
-	return -1;
-}
 // ----------------------------------------------------------------------
 // missile_obj_list_init()
 //
@@ -1463,6 +1663,7 @@ void init_weapon_entry(int weap_info_index)
 	
 	wip->launch_snd = -1;
 	wip->impact_snd = -1;
+	wip->disarmed_impact_snd = -1;
 	wip->flyby_snd = -1;
 	
 	wip->rearm_rate = 1.0f;
@@ -1879,7 +2080,9 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&wip->damage);
 		//WMC - now that shockwave damage can be set for them individually,
 		//do this automagically
-		wip->shockwave.damage = wip->damage;
+		if(first_time) {
+			wip->shockwave.damage = wip->damage;
+		}
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -1904,14 +2107,6 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	parse_shockwave_info(&wip->shockwave, "$");
-
-	//Check for needing to set flags
-	if ( wip->shockwave.speed != 0.0f ) {
-		wip->wi_flags |= WIF_SHOCKWAVE;
-	}
-	if(wip->shockwave.inner_rad != 0.0f || wip->shockwave.outer_rad != 0.0f) {
-		wip->wi_flags |= WIF_AREA_EFFECT;
-	}
 
 	//Retain compatibility
 	if(first_time)
@@ -2056,6 +2251,9 @@ int parse_weapon(int subtype, bool replace)
 
 	//Impact sound
 	parse_sound("$ImpactSnd:", &wip->impact_snd, wip->name);
+
+	//Disarmed impact sound
+	parse_sound("$Disarmed ImpactSnd:", &wip->impact_snd, wip->name);
 
 	if (subtype == WP_MISSILE)
 	{
@@ -2218,7 +2416,7 @@ int parse_weapon(int subtype, bool replace)
 	if ( optional_string("$Impact Explosion:") ) {
 		stuff_string(impact_ani_file, F_NAME, NULL);
 		if ( stricmp(impact_ani_file,NOX("none")))	{
-			wip->impact_weapon_expl_index = get_weapon_expl_info_index(impact_ani_file);
+			wip->impact_weapon_expl_index = Weapon_explosions.Load(impact_ani_file);
 		}
 	}
 	
@@ -2230,7 +2428,7 @@ int parse_weapon(int subtype, bool replace)
 	{
 		stuff_string(impact_ani_file, F_NAME, NULL);
 		if ( stricmp(impact_ani_file,NOX("none")))	{
-			wip->dinky_impact_weapon_expl_index = get_weapon_expl_info_index(impact_ani_file);
+			wip->dinky_impact_weapon_expl_index = Weapon_explosions.Load(impact_ani_file);
 		}
 	}
 	else if(first_time)
@@ -3201,6 +3399,37 @@ void reset_weapon_info()
 }
 
 void weapons_info_close();
+/*
+void weapon_expl_info_init()
+{
+	weapon_expl_info *wei;
+	int i, j;
+
+	Num_weapon_expl = 0;
+	parse_weapon_expl_tbl("weapon_expl.tbl");
+
+	//Modular tables
+	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+	char *tbl_file_names[MAX_TBL_PARTS];
+	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-wxp.tbm", CF_SORT_REVERSE);
+	for(i = 0; i < num_files; i++)
+	{
+		//HACK HACK HACK
+		Modular_tables_loaded = true;
+		strcat(tbl_file_names[i], ".tbm");
+		parse_weapon_expl_tbl(tbl_file_names[i]);
+	}
+
+	//Load all weapon explosions
+	for(i = 0; i < Num_weapon_expl; i++)
+	{
+		wei = &Weapon_expl_info[i];
+		for(j = 0; j < wei->lod_count; j++)
+		{
+			wei->lod[j].bitmap_id = bm_load_animation(wei->lod[j].filename, &wei->lod[j].num_frames, &wei->lod[j].fps, 1);
+		}
+	}
+}*/
 // This will get called once at game startup
 void weapon_init()
 {
@@ -3209,24 +3438,10 @@ void weapon_init()
 	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
 	char *tbl_file_names[MAX_TBL_PARTS];
 
-	if ( !Weapons_inited ) {
-#ifndef FS2_DEMO
-		// parse weapon_exp.tbl
-		Num_weapon_expl = 0;
-		parse_weapon_expl_tbl("weapon_expl.tbl");
-
-		int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-wxp.tbm", CF_SORT_REVERSE);
-		for(int i = 0; i < num_files; i++)
-		{
-			//HACK HACK HACK
-			modular_tables_loaded = true;
-			module_ship_weapons_loaded = true;
-			strcat(tbl_file_names[i], ".tbm");
-			parse_weapon_expl_tbl(tbl_file_names[i]);
-		}
-
-#endif
-
+	if ( !Weapons_inited )
+	{
+		//Init weapon explosion info
+		//weapon_expl_info_init();
 
 		// parse weapons.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {
@@ -3243,8 +3458,8 @@ void weapon_init()
 			for(int i = 0; i < num_files; i++)
 			{
 				//HACK HACK HACK
-				modular_tables_loaded = true;
-				module_ship_weapons_loaded = true;
+				Modular_tables_loaded = true;
+				Module_ship_weapons_loaded = true;
 				strcat(tbl_file_names[i], ".tbm");
 				parse_weaponstbl(tbl_file_names[i], true);
 			}
@@ -3258,6 +3473,17 @@ void weapon_init()
 	translate_spawn_types();
 
 	weapon_level_init();
+}
+void weapons_info_close(){
+	for(int i = 0; i<MAX_WEAPON_TYPES; i++){
+		if(Weapon_info[i].desc)vm_free(Weapon_info[i].desc);
+		if(Weapon_info[i].tech_desc)vm_free(Weapon_info[i].tech_desc);
+	}
+
+	if (used_weapons != NULL) {
+		delete[] used_weapons;
+		used_weapons = NULL;
+	}
 }
 
 // call from game_shutdown() only!!
@@ -4062,8 +4288,9 @@ void weapon_home(object *obj, int num, float frame_time)
 		} else if (wip->wi_flags & WIF_HOMING_ASPECT) {	//	subtract life as if max turn is 90 degrees.
 			if (wip->fov < 0.95f)
 				wp->lifeleft -= flFrametime * (0.95f - old_dot);
-		} else
-			Assert(0);	//	Hmm, a homing missile, but not aspect or heat?
+		} else {
+			Warning(LOCATION, "Tried to make weapon '%s' home, but found it wasn't aspect-seeking or heat-seeking!", wip->name);
+		}
 
 
 		//	Control speed based on dot product to goal.  If close to straight ahead, move
@@ -4880,6 +5107,24 @@ void spawn_child_weapons(object *objp)
 	}
 }
 
+//Figures out whether to play disarmed or armed hit sound, checks that the
+//chosen one exists, and plays it
+void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
+{
+	if(is_armed)
+	{
+		if(wip->impact_snd != -1) {
+			snd_play_3d( &Snds[wip->impact_snd], hitpos, &Eye_position );
+		}
+	}
+	else
+	{
+		if(wip->disarmed_impact_snd != -1) {
+			snd_play_3d(&Snds[wip->disarmed_impact_snd], hitpos, &Eye_position);
+		}
+	}
+}
+
 // -----------------------------------------------------------------------
 // weapon_hit_do_sound()
 //
@@ -4891,7 +5136,7 @@ void spawn_child_weapons(object *objp)
 //
 // Note: Uses Weapon_impact_timer global for timer variable
 //
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos)
+void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed)
 {
 	int	is_hull_hit;
 	float shield_str;
@@ -4900,8 +5145,9 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos)
 	if	( wip->subtype != WP_MISSILE ) {		
 		if ( !hit_obj ) {
 			// flak weapons make sounds		
-			if(wip->wi_flags & WIF_FLAK){
-				snd_play_3d( &Snds[wip->impact_snd], hitpos, &Eye_position );				
+			if(wip->wi_flags & WIF_FLAK)
+			{
+				weapon_play_impact_sound(wip, hitpos, is_armed);				
 			}
 			return;
 		}
@@ -4913,7 +5159,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos)
 
 		case OBJ_ASTEROID:
 			if ( timestamp_elapsed(Weapon_impact_timer) ) {
-				snd_play_3d( &Snds[wip->impact_snd], hitpos, &Eye_position );
+				weapon_play_impact_sound(wip, hitpos, is_armed);	
 				Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
 			}
 			return;
@@ -4925,7 +5171,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos)
 	}
 
 	if ( hit_obj == NULL ) {
-		snd_play_3d( &Snds[wip->impact_snd], hitpos, &Eye_position );
+		weapon_play_impact_sound(wip, hitpos, is_armed);
 		return;
 	}
 
@@ -4961,18 +5207,14 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos)
 					if ( hit_obj == Player_obj )
 						snd_play_3d( &Snds[SND_PLAYER_HIT_LASER], hitpos, &Eye_position );
 					else {
-						if ( wip->impact_snd != -1 ) {
-							snd_play_3d( &Snds[wip->impact_snd], hitpos, &Eye_position );
-						}
+						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
 					break;
 				case WP_MISSILE:
 					if ( hit_obj == Player_obj ) 
 						snd_play_3d( &Snds[SND_PLAYER_HIT_MISSILE], hitpos, &Eye_position);
 					else {
-						if ( wip->impact_snd != -1 ) {
-							snd_play_3d( &Snds[wip->impact_snd], hitpos, &Eye_position );
-						}
+						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
 					break;
 				default:	
@@ -5215,7 +5457,7 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
 //				pos			=>		world pos of explosion center
 //				other_obj	=>		object pointer to ship that weapon impacted on (can be NULL)
 //
-void weapon_do_area_effect(object *wobjp, vec3d *pos, object *other_obj)
+void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos, object *other_obj)
 {
 	weapon_info	*wip;
 	weapon *wp;
@@ -5224,7 +5466,7 @@ void weapon_do_area_effect(object *wobjp, vec3d *pos, object *other_obj)
 
 	wip = &Weapon_info[Weapons[wobjp->instance].weapon_info_index];	
 	wp = &Weapons[wobjp->instance];
-	Assert(wip->shockwave.inner_rad != 0);	
+	Assert(sci->inner_rad != 0);	
 
 	// only blast ships and asteroids
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
@@ -5239,7 +5481,7 @@ void weapon_do_area_effect(object *wobjp, vec3d *pos, object *other_obj)
 			}
 		}
 
-		if ( weapon_area_calc_damage(objp, pos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->shockwave.blast, wip->damage, &blast, &damage, wip->shockwave.outer_rad) == -1 ){
+		if ( weapon_area_calc_damage(objp, pos, sci->inner_rad, sci->outer_rad, sci->blast, sci->damage, &blast, &damage, sci->outer_rad) == -1 ){
 			continue;
 		}
 
@@ -5305,8 +5547,8 @@ bool weapon_armed(weapon *wp)
 			pobj = NULL;
 		}
 
-		if(((wip->arm_time) && (Missiontime - wp->creation_time < wip->arm_time))
-			|| ((wip->arm_dist) && (pobj == NULL || pobj->type == OBJ_NONE || (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist)))
+		if(		((wip->arm_time) && ((Missiontime - wp->creation_time) < wip->arm_time))
+			|| ((wip->arm_dist) && (pobj != NULL && pobj->type != OBJ_NONE && (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist)))
 			|| ((wip->arm_radius) && (wp->homing_object == NULL
 				|| (wp->homing_subsys == NULL && vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius)
 				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius))))
@@ -5361,45 +5603,44 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	// if( ((wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) && (Player_obj != NULL) && (other_obj == Player_obj) ){
 	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
-		weapon_hit_do_sound(other_obj, wip, hitpos);
+		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon);
 	}
 
 	if ( wip->impact_weapon_expl_index > -1 && armed_weapon)
 	{
-		int expl_ani_handle = weapon_get_expl_handle(wip->impact_weapon_expl_index, hitpos, wip->impact_explosion_radius);
+		int expl_ani_handle = Weapon_explosions.GetAnim(wip->impact_weapon_expl_index, hitpos, wip->impact_explosion_radius);
 		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 	else if(wip->dinky_impact_weapon_expl_index > -1 && !armed_weapon)
 	{
-		int expl_ani_handle = weapon_get_expl_handle(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
+		int expl_ani_handle = Weapon_explosions.GetAnim(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
 		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 
 	weapon_obj->flags |= OF_SHOULD_BE_DEAD;
 
+	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
 
-	// check if this is an area effect weapon
-	if ( wip->wi_flags & WIF_AREA_EFFECT ) {
-	// if ( wip->subtype & WP_MISSILE && wip->wi_flags & WIF_AREA_EFFECT ) {
-		if ( wip->wi_flags & WIF_SHOCKWAVE ) {
-			// Shockwaves caused by weapons hitting weapons are 1/4 as powerful
-			if ( ((other_obj) && (other_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags & WF_DESTROYED_BY_WEAPON)) {
-				sw_flag |= SW_WEAPON_KILL;
-			}
+	if ( ((other_obj) && (other_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags & WF_DESTROYED_BY_WEAPON)) {
+		sw_flag |= SW_WEAPON_KILL;
+	}
 
-			if(!weapon_armed(&Weapons[num]))
-			{
-				shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &wip->dinky_shockwave, sw_flag, -1);
-			}
-			else
-			{
-				shockwave_create(OBJ_INDEX(weapon_obj), hitpos, &wip->shockwave, sw_flag, -1);
-			}
-//			snd_play_3d( &Snds[SND_SHOCKWAVE_IMPACT], hitpos, &Eye_position );
+	//Which shockwave?
+	shockwave_create_info *sci = &wip->shockwave;
+	if(!armed_weapon) {
+		sci = &wip->dinky_shockwave;
+	}
+
+	// check if this is an area effect weapon (ie has shockwave
+	if ( sci->inner_rad != 0.0f || sci->outer_rad != 0.0f)
+	{
+		if(sci->speed > 0.0f)
+		{
+			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {
-			weapon_do_area_effect(weapon_obj, hitpos, other_obj);
+			weapon_do_area_effect(weapon_obj, sci, hitpos, other_obj);
 		}
 	}
 
@@ -5507,7 +5748,8 @@ void weapons_page_in()
 {
 	int i, j, idx;
 
-	if (Cmdline_load_only_used) {
+	if (Cmdline_load_only_used)
+	{
 		Assert( used_weapons != NULL );
 
 		// for weapons in weaponry pool
@@ -5531,7 +5773,8 @@ void weapons_page_in()
 	}
 
 	// Page in bitmaps for all used weapons
-	for (i=0; i<Num_weapon_types; i++ )	{
+	for (i=0; i<Num_weapon_types; i++ )
+	{
 		if (Cmdline_load_only_used) {
 			if (!used_weapons[i]) {
 				nprintf(("Weapons", "Not loading weapon id %d (%s)\n", i, Weapon_info[i].name));
@@ -5601,6 +5844,10 @@ void weapons_page_in()
 		wip->shockwave.load();
 		wip->dinky_shockwave.load();
 
+		//Explosions
+		Weapon_explosions.PageIn(wip->impact_weapon_expl_index);
+		Weapon_explosions.PageIn(wip->dinky_impact_weapon_expl_index);
+
 		// trail bitmaps
 		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.bitmap > -1) )	{
 			bm_page_in_texture( wip->tr_info.bitmap );
@@ -5647,20 +5894,18 @@ void weapons_page_in()
 	}
 
 	// explosion ani's
-	for (i=0; i<Num_weapon_expl; i++) {
-		int bitmap_handle, nframes, fps;
+	/*
+	weapon_expl_info *wei;
+	for (i=0; i<Num_weapon_expl; i++)
+	{
+		wei = &Weapon_expl_info[i];
 
-		for (j=0; j<Weapon_expl_info[i].lod_count; j++) {
-			//load ani
-			bitmap_handle = bm_load_animation(Weapon_expl_info[i].lod[j].filename, &nframes, &fps, 1);
-			Weapon_expl_info[i].lod[j].bitmap_id = bitmap_handle;
-			Weapon_expl_info[i].lod[j].fps = fps;
-			Weapon_expl_info[i].lod[j].num_frames = nframes;
-
+		for (j=0; j<Weapon_expl_info[i].lod_count; j++)
+		{
 			// page it in
-			bm_page_in_xparent_texture(bitmap_handle, nframes);
+			bm_page_in_xparent_texture(wei->lod[j].bitmap_id, wei->lod[j].num_frames);
 		}
-	}
+	}*/
 
 	// Counter measures
 	for (i=0; i<Num_cmeasure_types; i++ )	{
@@ -5978,97 +6223,3 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	return total_scale;
 }
 
-int weapon_get_expl_handle(int weapon_expl_index, vec3d *pos, float size)
-{
-	weapon_expl_info *wei = &Weapon_expl_info[weapon_expl_index];
-
-	if (wei->lod_count == 1) {
-		return wei->lod[0].bitmap_id;
-	}
-
-	// now we have to do some work
-	vertex v;
-	int x, y, w, h, bm_size;
-	int must_stop = 0;
-	int best_lod = 1;
-	int behind = 0;
-
-	// start the frame
-	extern float Viewer_zoom;
-	extern int G3_count;
-
-	if(!G3_count){
-		g3_start_frame(1);
-		must_stop = 1;
-	}
-	g3_set_view_matrix(&Eye_position, &Eye_matrix, Viewer_zoom);
-
-	// get extents of the rotated bitmap
-	g3_rotate_vertex(&v, pos);
-
-	// if vertex is behind, find size if in front, then drop down 1 LOD
-	if (v.codes & CC_BEHIND) {
-		float dist = vm_vec_dist_quick(&Eye_position, pos);
-		vec3d temp;
-
-		behind = 1;
-		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.vec.fvec, dist);
-		g3_rotate_vertex(&v, &temp);
-
-		// if still behind, bail and go with default
-		if (v.codes & CC_BEHIND) {
-			behind = 0;
-		}
-	}
-
-	if (!g3_get_bitmap_dims(wei->lod[0].bitmap_id, &v, size, &x, &y, &w, &h, &bm_size)) {
-		if (Detail.hardware_textures == 4) {
-			// straight LOD
-			if(w <= bm_size/8){
-				best_lod = 3;
-			} else if(w <= bm_size/2){
-				best_lod = 2;
-			} else if(w <= 1.3f*bm_size){
-				best_lod = 1;
-			} else {
-				best_lod = 0;
-			}
-		} else {
-			// less aggressive LOD for lower detail settings
-			if(w <= bm_size/8){
-				best_lod = 3;
-			} else if(w <= bm_size/3){
-				best_lod = 2;
-			} else if(w <= (1.15f*bm_size)){
-				best_lod = 1;
-			} else {
-				best_lod = 0;
-			}		
-		}
-	}
-
-	// if it's behind, bump up LOD by 1
-	if (behind) {
-		best_lod++;
-	}
-
-	// end the frame
-	if(must_stop){
-		g3_end_frame();
-	}
-
-	best_lod = MIN(best_lod, wei->lod_count - 1);
-	return wei->lod[best_lod].bitmap_id;
-}
-
-void weapons_info_close(){
-	for(int i = 0; i<MAX_WEAPON_TYPES; i++){
-		if(Weapon_info[i].desc)vm_free(Weapon_info[i].desc);
-		if(Weapon_info[i].tech_desc)vm_free(Weapon_info[i].tech_desc);
-	}
-
-	if (used_weapons != NULL) {
-		delete[] used_weapons;
-		used_weapons = NULL;
-	}
-}

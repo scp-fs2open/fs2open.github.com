@@ -66,7 +66,10 @@ int script_state::RunBytecode(script_hook &hd)
 		{
 #ifdef USE_LUA
 			lua_getref(GetLuaSession(), hd.index);
-			lua_pcall(GetLuaSession(), 0, 1, 0);
+			if(lua_pcall(GetLuaSession(), 0, 1, 0) != 0)
+			{
+				LuaError(LOCATION, GetLuaSession());
+			}
 			return 1;
 #endif
 		}

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.193 $
- * $Date: 2005-10-30 20:00:22 $
- * $Author: taylor $
+ * $Revision: 2.194 $
+ * $Date: 2005-11-08 01:03:59 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.193  2005/10/30 20:00:22  taylor
+ * same basic cleanup and self-sanity changes
+ * split up WinMain() and main() so it doesn't resemble ifdef hell
+ * rename WinMainSub() to game_main() and move anything that should have been in WinMain() to WinMain()
+ *
  * Revision 2.192  2005/10/30 06:44:56  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -10591,15 +10596,15 @@ DCF(wepspew, "display the checksum for the current weapons.tbl")
 
 // if the game is running using hacked data
 void multi_update_valid_tables(); // in multiutil.obj
-extern bool modular_tables_loaded;
-extern bool module_ship_weapons_loaded;
+extern bool Modular_tables_loaded;
+extern bool Module_ship_weapons_loaded;
 
 int game_hacked_data()
 {
 	int retval = 0;
 
 	//omfg modular tables
-	if(module_ship_weapons_loaded)
+	if(Module_ship_weapons_loaded)
 	{
 		return 1;
 	}

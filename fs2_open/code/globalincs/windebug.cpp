@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-10-17 05:48:18 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2005-11-08 01:03:59 $
+ * $Author: wmcoolmon $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/10/17 05:48:18  taylor
+ * dynamically allocate object collision pairs
+ *
  * Revision 2.28  2005/10/11 08:30:37  taylor
  * fix memory freakage from dynamic spawn weapon types
  *
@@ -223,6 +226,7 @@
 #include "osapi/osapi.h"
 #include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"
+#include "parse/lua.h"
 
 #ifdef _MSC_VER
 #include <crtdbg.h>
@@ -845,14 +849,15 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 
 }
 
+const char* Separator = "------------------------------------------------------------------\r\n" ;
+
 
 void DumpCallsStack( DumpBuffer& dumpBuffer )
 {
-	const char* separator = "------------------------------------------------------------------\r\n" ;
 	static PE_Debug PE_debug ;
 
 	dumpBuffer.Printf( "\r\nCall stack:\r\n" ) ;
-	dumpBuffer.Printf( separator ) ;
+	dumpBuffer.Printf( Separator ) ;
 
 	// The structure of the stack frames is the following:
 	// EBP -> parent stack frame EBP
@@ -907,7 +912,7 @@ void DumpCallsStack( DumpBuffer& dumpBuffer )
 	}  while( TRUE ) ;
 
 
-	dumpBuffer.Printf( separator ) ;
+	dumpBuffer.Printf( Separator ) ;
 	PE_debug.ClearReport() ;  // Prepare for future calls
 }
 
@@ -997,6 +1002,55 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 #endif
 
 } 
+
+void _cdecl LuaError(char * filename, int line, struct lua_State *L)
+{
+	int val;
+
+	gr_force_windowed();
+	
+
+	/*
+	va_start(args, format);
+	vsprintf(AssertText1,format,args);
+	va_end(args);
+	*/
+	
+	//sprintf(AssertText2,"LuaError: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
+
+	dumpBuffer.Clear();
+	//dumpBuffer.Printf(AssertText1);
+	dumpBuffer.Printf("LUA ERROR: %s", lua_tostring(L, -1));
+	lua_pop(L, -1);
+
+	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf(Separator);
+
+	AssertText2[0] = '\0';
+	dumpBuffer.Printf("\r\nLUA Stack:");
+	lua_stackdump(L, AssertText2);
+	dumpBuffer.Printf( AssertText2 );
+
+	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf(Separator);
+
+	dump_text_to_clipboard(dumpBuffer.buffer);
+
+	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
+	dumpBuffer.Printf( "\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
+
+	stay_minimized = true;
+	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_YESNOCANCEL );
+	stay_minimized = false;
+
+	ShowCursor(false);
+
+	if (val == IDCANCEL ) {
+		exit(1);
+	} else if(val == IDYES) {
+		Int3();
+	}
+}
 
 void _cdecl Error( char * filename, int line, char * format, ... )
 {

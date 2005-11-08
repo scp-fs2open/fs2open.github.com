@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-10-30 06:44:57 $
+ * $Revision: 2.49 $
+ * $Date: 2005-11-08 01:04:00 $
  * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/10/30 06:44:57  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.47  2005/10/29 22:09:30  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -8576,7 +8579,9 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	if(Player_obj == NULL){
 		return;
 	}
-	weapon_hit_do_sound(Player_obj, wip, &Player_obj->pos);
+	
+	//Assume the weapon is armed -WMC
+	weapon_hit_do_sound(Player_obj, wip, &Player_obj->pos, true);
 
 	// we need to do 3 things here. player pain (game flash), weapon hit sound, ship_apply_whack()
 	ship_hit_pain((float)udamage);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-10-10 17:21:11 $
- * $Author: taylor $
+ * $Revision: 2.60 $
+ * $Date: 2005-11-08 01:04:02 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/10/10 17:21:11  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.58  2005/09/25 08:25:14  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -3261,7 +3264,7 @@ void beam_handle_collisions(beam *b)
 		if(do_damage && !physics_paused){
 			// maybe draw an explosion
 			if(wi->impact_weapon_expl_index >= 0){
-				int ani_handle = weapon_get_expl_handle(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
+				int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
 				particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle );
 			}
 
