@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cfilearchiver/CfileArchiver.cpp $
- * $Revision: 2.3 $
- * $Date: 2005-09-08 00:09:31 $
+ * $Revision: 2.4 $
+ * $Date: 2005-11-13 06:38:04 $
  * $Author: taylor $
  *
  * Program to create an archive file for use with cfile stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/09/08 00:09:31  taylor
+ * fix building/linking of command line tools under Linux/OSX
+ * add tools as targets to OSX project file
+ *
  * Revision 2.2  2005/01/30 12:50:08  taylor
  * merge with Linux/OSX tree - p0130
  *
@@ -52,8 +56,31 @@
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 
+
 static int data_error;
 static int no_dir;
+
+// right out of pstypes.h but we don't want to use the INTEL_INT macro here
+// since it would require SDL which isn't used on WIN32 platforms
+#if BYTE_ORDER == BIG_ENDIAN
+#define INT_SWAP(x)	(								\
+						(x << 24) |					\
+						(((ulong)x) >> 24) |		\
+						((x & 0x0000ff00) << 8) |	\
+						((x & 0x00ff0000) >> 8)		\
+						)
+#else
+#define INT_SWAP(x) (x)
+#endif
+
+
+size_t fswrite_int(int *wint, FILE *stream)
+{
+	int tmp = *wint;
+	tmp = INT_SWAP(tmp);
+
+	return fwrite(&tmp, 1, sizeof(int), stream);
+}
 
 unsigned int Total_size=16; // Start with size of header
 unsigned int Num_files =0;
@@ -79,26 +106,34 @@ char tmp_data[BLOCK_SIZE];		// 1 MB
 
 void write_header()
 {
+	int ver = VERSION_NUMBER;
+
 	fseek(fp_out, 0, SEEK_SET);
 	fwrite("VPVP", 1, 4, fp_out);
-	int ver = VERSION_NUMBER;
-	fwrite(&ver, 1, 4, fp_out);
-	fwrite(&Total_size, 1, 4, fp_out);
-	fwrite(&Num_files, 1, 4, fp_out);
+	fswrite_int(&ver, fp_out);
+	fswrite_int((int*)&Total_size, fp_out);
+	fswrite_int((int*)&Num_files, fp_out);
 }
 
 int write_index(char *hf, char *df)
 {
-	FILE *h = fopen(hf, "rb");
-	if (!h) return 0;
-	FILE *d = fopen(df, "a+b");
-	if (!d) return 0;
-	for (unsigned int i=0;i<Num_files;i++) {
+	FILE *h = NULL, *d = NULL;
+	unsigned int i;
+
+	h = fopen(hf, "rb");
+	d = fopen(df, "a+b");
+
+	if ( (h == NULL) || (d == NULL) )
+		return 0;
+
+	for (i = 0; i < Num_files; i++) {
 		fread(tmp_data, 32+4+4+4, 1, h);
 		fwrite(tmp_data, 32+4+4+4, 1, d);
 	}
+
 	fclose(h);
 	fclose(d);
+
 	return 1;
 }
 
@@ -121,16 +156,18 @@ void pack_file( char *filespec, char *filename, int filesize, _fs_time_t time_wr
 		return;
 	}
 
-	memset( path, 0, sizeof(path));
-	strcpy( path, filename );
-	if ( strlen(filename)>31 )	{
+	if ( strlen(filename) > 31 )	{
 		printf( "Filename '%s' too long\n", filename );
 		exit(1);
 	}
-	fwrite( &Total_size, 1, 4, fp_out_hdr );
-	fwrite( &filesize, 1, 4, fp_out_hdr );
+
+	memset( path, 0, sizeof(path) );
+	strcpy( path, filename );
+
+	fswrite_int( (int*)&Total_size, fp_out_hdr );
+	fswrite_int( &filesize, fp_out_hdr );
 	fwrite( &path, 1, 32, fp_out_hdr );
-	fwrite( &time_write, 1, sizeof(_fs_time_t), fp_out_hdr);
+	fswrite_int( (int*)&time_write, fp_out_hdr );
 
 	Total_size += filesize;
 	Num_files++;
@@ -169,17 +206,21 @@ void add_directory( char * dirname)
 	char path[256];
 	char *pathptr = path;
 	char *tmpptr;
+	int i = 0;
 
 	strcpy(path, dirname);
-	fwrite(&Total_size, 1, 4, fp_out_hdr);
-	int i = 0;
-	fwrite(&i, 1, 4, fp_out_hdr);
+
+	fswrite_int( (int*)&Total_size, fp_out_hdr);
+	fswrite_int( &i, fp_out_hdr);
+
 	// strip out any directories that this dir is a subdir of
-	while ((tmpptr = strchr(pathptr, DIR_SEPARATOR_CHAR)) != NULL) {
+	while ( (tmpptr = strchr(pathptr, DIR_SEPARATOR_CHAR)) != NULL ) {
 		pathptr = tmpptr+1;
 	}
+
 	fwrite(pathptr, 1, 32, fp_out_hdr);
-	fwrite(&i, 1, 4, fp_out_hdr); // timestamp = 0
+	fswrite_int( &i, fp_out_hdr); // timestamp = 0
+
 	Num_files++;
 }
 
@@ -191,28 +232,11 @@ void pack_directory( char * filespec)
 #endif
 	char tmp[512];
 	char tmp1[512];
-
-/*
-	char dir_name[512];
-	char *last_slash;
-
-	last_slash = strrchr(filespec, '\\');
-	if ( last_slash ) {
-		strcpy(dir_name, last_slash+1);
-	} else {
-		strcpy(dir_name, filespec);
-	}
-
-	if ( !stricmp(dir_name, "voice") ) {
-		return;
-	}
-*/
-
 	char *ts;
 
 	// strip trailing slash
-	ts = filespec+(strlen(filespec)-1);
-	while(*ts == DIR_SEPARATOR_CHAR && ts > filespec)
+	ts = filespec + (strlen(filespec) - 1);
+	while ( (*ts == DIR_SEPARATOR_CHAR) && (ts > filespec) )
 		*ts = '\0';
 
 	strcpy( tmp1, filespec );
@@ -296,11 +320,11 @@ int verify_directory( char *filespec )
 
 	// strip trailing '/'
 	ts = filespec+(strlen(filespec)-1);
-	while(*ts == DIR_SEPARATOR_CHAR && ts > filespec)
+	while ( (*ts == DIR_SEPARATOR_CHAR) && (ts > filespec) )
 		*ts = '\0';
 
 	// make sure last directory is named "data", ignoring case
-	dd = filespec+(strlen(filespec)-4);
+	dd = filespec + (strlen(filespec) - 4);
 	if ( stricmp( dd, "data" ) )
 		data_error = 1;
 	
@@ -310,8 +334,8 @@ int verify_directory( char *filespec )
 void print_instructions()
 {
 	printf( "Creates a vp archive out of a FreeSpace data tree.\n\n" );
-	printf( "Usage:		cfilearchiver archive_name src_dir\n");
-	printf( "Example:	cfilearchiver freespace /tmp/freespace/data\n\n");
+	printf( "Usage:     cfilearchiver archive_name src_dir\n");
+	printf( "Example:   cfilearchiver freespace /tmp/freespace/data\n\n");
 	printf( "Directory structure options:\n" );
 	printf( "   Effects                   (.ani .pcx .neb .tga)\n" );
 	printf( "   Fonts                     (.vf)\n" );
