@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.5 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2005-11-13 06:44:18 $
+ * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.4  2005/01/21 08:25:14  taylor
  * fill in gr_opengl_set_texture_addressing()
  * add support for non-power-of-two textures for cards that have it
@@ -109,8 +113,17 @@ extern ogl_extension GL_Extensions[];
 //#define GL_ARB_VBO_MAP_BUFFER			23
 //#define GL_ARB_VBO_UNMAP_BUFFER			24
 
+#define GL_ARB_GETCOMPRESSEDTEXIMAGE	25
+//#define GL_EXT_GEN_FRAMEBUFFERS			26
+//#define GL_EXT_GEN_RENDERBUFFERS		27
+//#define GL_EXT_BIND_FRAMEBUFFER			28
+//#define GL_EXT_FRAMEBUFFER_TEX2D		29
+//#define GL_EXT_RENDERBUFFER_STORAGE		30
+//#define GL_EXT_FRAMEBUFFER_RENDERBUF	31
 
-#define GL_NUM_EXTENSIONS				25
+
+//#define GL_NUM_EXTENSIONS				32
+#define GL_NUM_EXTENSIONS				26
 
 
 int opengl_get_extensions();
@@ -150,6 +163,13 @@ int opengl_extension_is_enabled(int idx);
 #define glGenBuffersARB GLEXT_CALL(PFNGLGENBUFFERSARBPROC, GL_ARB_VBO_GEN_BUFFER)
 #define glBufferDataARB GLEXT_CALL(PFNGLBUFFERDATAARBPROC, GL_ARB_VBO_BUFFER_DATA)
 #define glDrawRangeElements GLEXT_CALL(PFNGLDRAWRANGEELEMENTSPROC, GL_DRAW_RANGE_ELEMENTS)
+#define glGetCompressedTexImageARB GLEXT_CALL(PFNGLGETCOMPRESSEDTEXIMAGEARBPROC, GL_ARB_GETCOMPRESSEDTEXIMAGE);
+//#define glGenFramebuffersEXT GLEXT_CALL(PFNGLGENFRAMEBUFFERSEXTPROC, GL_EXT_GEN_FRAMEBUFFERS);
+//#define glGenRenderbuffersEXT GLEXT_CALL(PFNGLGENRENDERBUFFERSEXTPROC, GL_EXT_GEN_RENDERBUFFERS);
+//#define glBindFramebufferEXT GLEXT_CALL(PFNGLBINDFRAMEBUFFEREXTPROC, GL_EXT_BIND_FRAMEBUFFER);
+//#define glFramebufferTexture2DEXT GLEXT_CALL(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC, GL_EXT_FRAMEBUFFER_TEX2D);
+//#define glRenderbufferStorageEXT GLEXT_CALL(PFNGLRENDERBUFFERSTORAGEEXTPROC, GL_EXT_RENDERBUFFER_STORAGE);
+//#define glFramebufferRenderbufferEXT GLEXT_CALL(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC, GL_EXT_FRAMEBUFFER_RENDERBUF);
 #endif // _WIN32
 
 #endif // _GROPENGLEXT_H

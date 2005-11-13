@@ -14,8 +14,6 @@
 #include <d3d8.h>
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
-#include "cmdline/cmdline.h"
-
 
 
 // Uncomment this to disable checking if states are already set, slower but useful for searching for bugs

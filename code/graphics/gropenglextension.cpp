@@ -10,13 +10,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.9 $
- * $Date: 2005-06-19 02:37:02 $
+ * $Revision: 1.10 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/06/19 02:37:02  taylor
+ * general cleanup, remove some old code
+ * speed up gr_opengl_flip() just a tad
+ * inverted gamma slider fix that Sticks made to D3D
+ * possible fix for ATI green screens
+ * move opengl_check_for_errors() out of gropentnl so we can use it everywhere
+ * fix logged OGL info from debug builds to be a little more readable
+ * if an extension is found but required function is not then fail
+ * try to optimize glDrawRangeElements so we are not rendering more than the card is optimized for
+ * some 2d matrix usage checks
+ *
  * Revision 1.8  2005/05/12 17:49:12  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -91,33 +102,40 @@ ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
 	{0, "GL_ARB_vertex_buffer_object",0}
 };*/
 
-ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
+ogl_extension GL_Extensions[GL_NUM_EXTENSIONS] =
 {
-	{0, 0, "glFogCoordfEXT", "GL_EXT_fog_coord",0},
-	{0, 0, "glFogCoordPointerEXT", "GL_EXT_fog_coord",0},
-	{0, 0, "glMultiTexCoord2fARB", "GL_ARB_multitexture",1},		//required for glow maps
-	{0, 0, "glActiveTextureARB", "GL_ARB_multitexture",1},		//required for glow maps
+	{0, 0, "glFogCoordfEXT", "GL_EXT_fog_coord", 0},
+	{0, 0, "glFogCoordPointerEXT", "GL_EXT_fog_coord", 0},
+	{0, 0, "glMultiTexCoord2fARB", "GL_ARB_multitexture", 1},		//required for glow maps
+	{0, 0, "glActiveTextureARB", "GL_ARB_multitexture", 1},		//required for glow maps
 	{0, 0, NULL, "GL_ARB_texture_env_add", 1},					//required for glow maps
-	{0, 0, "glCompressedTexImage2D", "GL_ARB_texture_compression",0},
-	{0, 0, NULL, "GL_EXT_texture_compression_s3tc",0},
+	{0, 0, "glCompressedTexImage2D", "GL_ARB_texture_compression", 0},
+	{0, 0, NULL, "GL_EXT_texture_compression_s3tc", 0},
 	{0, 0, NULL, "GL_EXT_texture_filter_anisotropic", 0},
 	{0, 0, NULL, "GL_NV_fog_distance", 0},
 	{0, 0, "glSecondaryColor3fvEXT", "GL_EXT_secondary_color", 0},
 	{0, 0, "glSecondaryColor3ubvEXT", "GL_EXT_secondary_color", 0},
-	{0, 0, NULL, "GL_ARB_texture_env_combine",0},
-	{0, 0, NULL, "GL_EXT_texture_env_combine",0},
-	{0, 0, "glLockArraysEXT", "GL_EXT_compiled_vertex_array",0},
-	{0, 0, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array",0},
-	{0, 0, "glLoadTransposeMatrixfARB", "GL_ARB_transpose_matrix",	1},
-	{0, 0, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix",1},
-	{0, 0, "glClientActiveTextureARB", "GL_ARB_multitexture",1},
+	{0, 0, NULL, "GL_ARB_texture_env_combine", 0},
+	{0, 0, NULL, "GL_EXT_texture_env_combine", 0},
+	{0, 0, "glLockArraysEXT", "GL_EXT_compiled_vertex_array", 0},
+	{0, 0, "glUnlockArraysEXT", "GL_EXT_compiled_vertex_array", 0},
+	{0, 0, "glLoadTransposeMatrixfARB", "GL_ARB_transpose_matrix", 1},
+	{0, 0, "glMultTransposeMatrixfARB", "GL_ARB_transpose_matrix", 1},
+	{0, 0, "glClientActiveTextureARB", "GL_ARB_multitexture", 1},
 	{0, 0, "glDrawRangeElements", "GL_EXT_draw_range_elements", 1},
 	{0, 0, NULL, "GL_ARB_texture_mirrored_repeat", 0},
 	{0, 0, NULL, "GL_ARB_texture_non_power_of_two", 0},
-	{0, 0, "glBindBufferARB", "GL_ARB_vertex_buffer_object",0},
-	{0, 0, "glDeleteBuffersARB", "GL_ARB_vertex_buffer_object",0},
-	{0, 0, "glGenBuffersARB", "GL_ARB_vertex_buffer_object",0},
-	{0, 0, "glBufferDataARB", "GL_ARB_vertex_buffer_object",0}
+	{0, 0, "glBindBufferARB", "GL_ARB_vertex_buffer_object", 0},
+	{0, 0, "glDeleteBuffersARB", "GL_ARB_vertex_buffer_object", 0},
+	{0, 0, "glGenBuffersARB", "GL_ARB_vertex_buffer_object", 0},
+	{0, 0, "glBufferDataARB", "GL_ARB_vertex_buffer_object", 0},
+	{0, 0, "glGetCompressedTexImageARB", "GL_ARB_texture_compression", 0}
+//	{0, 0, "glGenFramebuffersEXT", "GL_EXT_framebuffer_object", 0},
+//	{0, 0, "glGenRenderbuffersEXT", "GL_EXT_framebuffer_object", 0},
+//	{0, 0, "glBindFramebufferEXT", "GL_EXT_framebuffer_object", 0},
+//	{0, 0, "glFramebufferTexture2DEXT", "GL_EXT_framebuffer_object", 0},
+//	{0, 0, "glRenderbufferStorageEXT", "GL_EXT_framebuffer_object", 0},
+//	{0, 0, "glFramebufferRenderbufferEXT", "GL_EXT_framebuffer_object", 0}
 };
 
 //tries to find a certain extension

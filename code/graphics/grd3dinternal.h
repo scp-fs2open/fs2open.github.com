@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.47 $
- * $Date: 2005-07-19 04:52:56 $
+ * $Revision: 2.48 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/07/19 04:52:56  taylor
+ * fix resize fixes
+ *
  * Revision 2.46  2005/07/13 02:50:47  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -423,7 +426,25 @@
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 
-const int NUM_COMPRESSION_TYPES = 5;
+
+// easy macro for doing a Release() on d3d stuff
+// we give release three chances and Assert() if there is still a reference
+//   x	==  the texture/surface/etc. that you want to release
+//   i  ==  the integer that will get the ref count (must be declared in calling function)
+#define D3D_RELEASE(x, i)	{		\
+	(i) = 0;						\
+	if ( (x) != NULL ) {			\
+		(i) = (x)->Release();		\
+		if ( (i) > 0 ) {			\
+			(i) = (x)->Release();	\
+		}							\
+		if ( (i) > 0 ) {			\
+			(i) = (x)->Release();	\
+		}							\
+		Assert( (i) < 1 );			\
+		(x) = NULL;					\
+	}								\
+}
 
 /* Structures */
 

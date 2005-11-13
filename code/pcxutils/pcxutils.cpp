@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-09-06 02:40:24 $
+ * $Revision: 2.10 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * code to deal with pcx files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/09/06 02:40:24  taylor
+ * fix for -pcx32 on big-endian
+ *
  * Revision 2.8  2005/02/04 10:12:32  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -245,7 +248,7 @@ int pcx_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bp
 // static ubyte Pcx_load[1024*768 + 768 + sizeof(PCXHeader)];
 // int Pcx_load_offset = 0;
 // int Pcx_load_size = 0;
-
+/*
 // #define GET_BUF()			do { buffer = &Pcx_load[Pcx_load_offset]; if(Pcx_load_offset + buffer_size > Pcx_load_size) { buffer_size = Pcx_load_size - Pcx_load_offset; } } while(0);
 int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette )
 {
@@ -342,8 +345,16 @@ int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette 
 
 	return PCX_ERROR_NONE;
 }
+*/
 
-int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
+#if BYTE_ORDER == BIG_ENDIAN
+typedef struct { ubyte a, r, g, b; } COLOR32;
+#else
+typedef struct { ubyte b, g, r, a; } COLOR32;
+#endif
+
+//int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data, ubyte bpp, int aabitmap, int nondark )
+int pcx_read_bitmap( char * real_filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap, int nondark )
 {
 	PCXHeader header;
 	CFILE * PCXfile;
@@ -354,9 +365,9 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 	ubyte *pixdata;
 	char filename[MAX_FILENAME_LEN];
 	ubyte palette[768];	
-	ushort bit_16;	
+	ushort bit_16;
+	COLOR32 bit_32;
 	ubyte r, g, b, al;
-		
 	
 	strcpy( filename, real_filename );
 	char *p = strchr( filename, '.' );
@@ -401,7 +412,7 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 	// Read in a character which should be 12 to be extended palette file
 
 	cfseek( PCXfile, -768, CF_SEEK_END );
-	cfread( palette, 3, 256, PCXfile );
+	cfread( palette, 1, (3 * 256), PCXfile );
 	cfseek( PCXfile, sizeof(PCXHeader), CF_SEEK_SET );
 	
 	buffer_size = 1024;
@@ -410,9 +421,8 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 //	Assert( buffer_size == 1024 );	// AL: removed to avoid optimized warning 'unreachable code'
 	
 	buffer_size = cfread( buffer, 1, buffer_size, PCXfile );
-	
 
-	count = 0;	
+	count = 0;
 
 	for (row=0; row<ysize;row++)      {
 	
@@ -438,43 +448,81 @@ int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data )
 				}
 			}
 			// stuff the pixel
-			if ( col < xsize ){								
-				// stuff the 24 bit value				
-				r = palette[data*3];
-				g = palette[data*3 + 1];
-				b = palette[data*3 + 2];
+			if ( col < xsize ) {
+				// 8-bit PCX reads
+				if ( byte_size == 1 ) {
+					*pixdata++ = data;
+				} else {
+					// 16-bit AABITMAP reads
+					if ( (byte_size == 2) && aabitmap ) {
+						// stuff the pixel
+						// memcpy(pixdata, &data, 2);
+						*((ushort*)pixdata) = (ushort)data;
+					} else {
+						// stuff the 24 bit value				
+						r = palette[data*3];
+						g = palette[data*3 + 1];
+						b = palette[data*3 + 2];
 
-				// clear the pixel
-				bit_16 = 0;
-					
-				// if the color matches the transparent color, make it so
-				al = 255;
-				if((0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2])){
-					r = b = 0;
-					g = 255;
-					al = 0;					
-				} 
+						// clear the pixel
+						bit_16 = 0;
+						memset(&bit_32, 0, sizeof(COLOR32));
 
-				// stuff the color
-	
-				bm_set_components((ubyte*)&bit_16, &r, &g, &b, &al);				
-	
-				
-				// stuff the pixel
-				*((ushort*)pixdata) = bit_16;				
-				pixdata += 2;
+						// 16-bit non-darkening reads
+						if ( (byte_size == 2) && nondark ) {
+							al = 0;
+							if (palman_is_nondarkening(r, g, b)) {
+								al = 255;
+							}
+						} else {
+							// if the color matches the transparent color, make it so
+							al = 255;
+							if((0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2])){
+								r = b = 0;
+								g = 255;
+								al = 0;					
+							}
+						}
+
+						// normal 16-bit reads
+						if ( byte_size == 2 ) {
+							// stuff the color
+							bm_set_components((ubyte*)&bit_16, &r, &g, &b, &al);				
+
+							// stuff the pixel
+							*((ushort*)pixdata) = bit_16;
+						}
+						// normal 32-bit reads
+						else if ( byte_size == 4 ) {
+							if ( /*(r == 0) && (b == 0) && (g == 255) && (al == 0)*/ 0 ) {
+								memset(&bit_32, 0, sizeof(COLOR32));
+							} else {
+								bit_32.r = r;
+								bit_32.g = g;
+								bit_32.b = b;
+								bit_32.a = al;
+							}
+
+							// stuff the pixel
+							*((COLOR32*)pixdata) = bit_32;
+						}
+					}
+
+					pixdata += byte_size;
+				}
 			}
+
 			count--;
 		}
 
-		org_data += (xsize * 2);
+		org_data += (xsize * byte_size);
 	}
 	
 	cfclose(PCXfile);
 	
 	return PCX_ERROR_NONE;
 }
-
+/*
 int pcx_read_bitmap_16bpp_aabitmap( char * real_filename, ubyte *org_data )
 {
 	PCXHeader header;
@@ -695,6 +743,7 @@ int pcx_read_bitmap_16bpp_nondark( char * real_filename, ubyte *org_data )
 	return PCX_ERROR_NONE;
 }
 
+
 int pcx_read_bitmap_32(char *real_filename, ubyte *org_data )
 {
 	PCXHeader header;
@@ -813,6 +862,7 @@ int pcx_read_bitmap_32(char *real_filename, ubyte *org_data )
 
 	return PCX_ERROR_NONE;
 }
+*/
 
 // subroutine for writing an encoded byte pair
 // returns count of bytes written, 0 if error

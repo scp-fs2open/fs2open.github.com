@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.28 $
- * $Date: 2005-10-16 11:20:43 $
+ * $Revision: 1.29 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2005/10/16 11:20:43  taylor
+ * use unsigned index buffers
+ *
  * Revision 1.27  2005/09/05 09:36:41  taylor
  * merge of OSX tree
  * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
@@ -288,6 +291,9 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 
 	buffer_num = opengl_find_first_free_buffer();
 
+	// clear out any old errors before we continue with this
+	opengl_check_for_errors();
+
 	//we have a valid buffer
 	if (buffer_num > -1) {
 		int arsize = 0, make_vbo = 0;
@@ -437,7 +443,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 	bool use_spec = false;
 
 	int end = ((n_prim * 3) - 1);
-	int count = (n_prim * 3);
+	int count = (end - start + 1); //(n_prim * 3);
 	int start_tmp, end_tmp, count_tmp, multiple_elements = 0;
 
 	opengl_vertex_buffer *vbp = g_vbp;
@@ -508,7 +514,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 		gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
 
 		opengl_switch_arb(pass_one, 1);
-		gr_opengl_set_additive_tex_env();
+		opengl_set_additive_tex_env();
 
 		pass_one++; // bump!
 	}
@@ -605,7 +611,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 //	opengl_default_light_settings();
 
 	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/GL_max_lights > 0) ) {
-		gr_opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+		opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 		opengl_switch_arb(1,0);
 		opengl_switch_arb(2,0);
 
@@ -902,18 +908,6 @@ void gr_opengl_start_clip_plane()
 	glEnable(GL_CLIP_PLANE0);
 }
 
-//face -1 is to turn it off, the rest are right, left, up, down , front, and back
-
-//++++++++++++++++++this isn't used anymore!!!!!
-//needs to be set up in in the render-to-texture stuff
-/*
-void gr_opengl_render_to_env(int FACE)
-{
-	if (Cmdline_nohtl)
-		return;
-}
-*/
-
 //************************************State blocks************************************
 
 //this is an array of reference counts for state block IDs
@@ -922,19 +916,28 @@ static uint n_state_blocks = 0;
 static GLuint current_state_block;
 
 //this is used for places in the array that a state block ID no longer exists
-#define EMPTY_STATE_BOX_REF_COUNT	0xFFFFFFFF
+#define EMPTY_STATE_BOX_REF_COUNT	0xffffffff
 
 int opengl_get_new_state_block_internal()
 {
 	uint i;
-	for(i = 0; i < n_state_blocks; i++)
-		if(state_blocks[i] == EMPTY_STATE_BOX_REF_COUNT) return i;
 
-	//oh crap, we need more state blocks
-	//"i" should be n_state_blocks + 1 since we got here.
-	state_blocks = (GLuint*)vm_realloc(state_blocks, i);
+	if (state_blocks == NULL) {
+		state_blocks = (GLuint*)vm_malloc(sizeof(GLuint));
+		memset(&state_blocks[n_state_blocks], 'f', sizeof(GLuint));
+		n_state_blocks++;
+	}
 
-	state_blocks[n_state_blocks]=0;
+	for (i = 0; i < n_state_blocks; i++) {
+		if (state_blocks[i] == EMPTY_STATE_BOX_REF_COUNT) {
+			return i;
+		}
+	}
+
+	// "i" should be n_state_blocks since we got here.
+	state_blocks = (GLuint*)vm_realloc(state_blocks, sizeof(GLuint) * i);
+	memset(&state_blocks[i], 'f', sizeof(GLuint));
+
 	n_state_blocks++;
 
 	return n_state_blocks-1;
@@ -973,7 +976,7 @@ void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
 	if (Cmdline_nohtl)
 		return;
 
-	gr_opengl_set_state(GL_current_tex_src, ALPHA_BLEND_NONE, GL_current_ztype);
+	opengl_set_state(GL_current_tex_src, ALPHA_BLEND_NONE, GL_current_ztype);
 	glBegin(GL_LINES);
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 		glSecondaryColor3ubvEXT(GL_zero_3ub);
@@ -998,7 +1001,7 @@ void gr_opengl_draw_htl_sphere(float rad)
 	if (quad == NULL)
 		return;
 
-	gr_opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
+	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
 	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 	glSecondaryColor3ubvEXT(GL_zero_3ub);
 

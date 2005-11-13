@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-08-20 20:34:51 $
+ * $Revision: 2.53 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/08/20 20:34:51  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 2.51  2005/06/19 09:04:40  taylor
  * make sure to reset size to 0 on texture free
  *
@@ -636,14 +641,14 @@
 #include "graphics/2d.h"
 #include "globalincs/pstypes.h"
 #include "bmpman/bmpman.h"
-#include "io/key.h"
 #include "globalincs/systemvars.h"
 #include "osapi/osregistry.h"
 #include "debugconsole/dbugfile.h"
 #include "graphics/grd3dbmpman.h"
-#include "cmdline/cmdline.h"
+#include "ddsutils/ddsutils.h"
 
-#include "network/multi_log.h"
+
+extern int Cmdline_mipmap;
 
 
 static tcache_slot_d3d *Textures = NULL;
@@ -765,7 +770,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 	// Dont prepare
 	bool use_mipmapping = (bitmap_type != TCACHE_TYPE_INTERFACE);
 
-	if(Cmdline_d3dmipmap == 0) {
+	if(Cmdline_mipmap == 0) {
 		use_mipmapping = 0;
 	}
 
@@ -780,8 +785,8 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 			d3d8_format  = (bpp == 32) ? D3DFMT_A8R8G8B8 : default_alpha_tformat;
 			break;
 
-		case TCACHE_TYPE_XPARENT:
-			Int3();
+//		case TCACHE_TYPE_XPARENT:
+//			Int3();
 
 		default:
 			surface_desc = (bpp == 32) ? NULL : &NonAlphaTextureFormat;
@@ -801,8 +806,6 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 		*v_scale = 1.0f;
 	}
 
-	bool use_dxt = (bpp == 32) && Cmdline_pcx32dds && (bitmap_type != TCACHE_TYPE_AABITMAP);
-
 	IDirect3DTexture8 *texture_handle = (IDirect3DTexture8 *) thandle; 
 	if(!reload) {
 
@@ -811,7 +814,7 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 			*tex_w, *tex_h,
 			use_mipmapping ? 0 : 1, 
 			0,
-			use_dxt ? D3DFMT_DXT5 : d3d8_format, 
+			d3d8_format, 
 			D3DPOOL_MANAGED, 
 			&texture_handle)))
 		{
@@ -820,21 +823,9 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 		}
 	}
 
-	// Careful, these surfaces are used for difference purposes depending on the Cmdline_pcx32dds codepath
-	IDirect3DSurface8 *dds_surface = NULL; 
 	IDirect3DSurface8 *d3d_surface = NULL; 
 
-	if(use_dxt)	
-	{
-		// Get dds surface to copy to
-		texture_handle->GetSurfaceLevel(0, &dds_surface);   
-
-		// Create new surface
-		GlobalD3DVars::lpD3DDevice->CreateImageSurface(*tex_w, *tex_h, d3d8_format, &d3d_surface);
-	}
-	else
-		texture_handle->GetSurfaceLevel(0, &d3d_surface);   
-
+	texture_handle->GetSurfaceLevel(0, &d3d_surface);   
 
 	// lock texture here
 	D3DLOCKED_RECT locked_rect;
@@ -991,13 +982,6 @@ void *d3d_vimage_to_texture(int bitmap_type, int bpp, void *thandle, ushort *dat
 		return NULL;
 	}
 
-	if(use_dxt)	
-	{
-		// Copy data back and free data, this copy should compress the texture
-		D3DXLoadSurfaceFromSurface(dds_surface, NULL, NULL, d3d_surface, NULL, NULL, D3DX_FILTER_NONE, 0); 
-		d3d_surface->Release();
-	}
-
 	if( use_mipmapping ) {
 		D3DXFilterTexture( texture_handle, NULL, 0, D3DX_DEFAULT);
 	}
@@ -1071,22 +1055,40 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 	// setup texture/bitmap flags
 	flags = 0;
 	switch(bitmap_type){
-	case TCACHE_TYPE_AABITMAP:
-		flags |= BMP_AABITMAP;
-		bpp = 8;
-		break;
-	case TCACHE_TYPE_NORMAL:
-		flags |= BMP_TEX_OTHER;
-	case TCACHE_TYPE_XPARENT:
-		flags |= BMP_TEX_XPARENT;				
-		break;
-	case TCACHE_TYPE_NONDARKENING:		
-		Int3();
-		flags |= BMP_TEX_NONDARK;
-		break;
-	case TCACHE_TYPE_INTERFACE:
-		flags |= BMP_TEX_XPARENT;   
-		break;
+		case TCACHE_TYPE_AABITMAP:
+			flags |= BMP_AABITMAP;
+			bpp = 8;
+			break;
+		case TCACHE_TYPE_NORMAL:
+			flags |= BMP_TEX_OTHER;
+			break;
+		case TCACHE_TYPE_INTERFACE:
+		case TCACHE_TYPE_XPARENT:
+			flags |= BMP_TEX_XPARENT;				
+			break;
+		case TCACHE_TYPE_NONDARKENING:		
+			Int3();
+			flags |= BMP_TEX_NONDARK;
+			break;
+		case TCACHE_TYPE_COMPRESSED:
+			switch (bm_is_compressed(bitmap_handle)) {
+				case DDS_DXT1:				//dxt1
+					bpp = 24;
+					flags |= BMP_TEX_DXT1;
+					break;
+				case DDS_DXT3:				//dxt3
+					bpp = 32;
+					flags |= BMP_TEX_DXT3;
+					break;
+				case DDS_DXT5:				//dxt5
+					bpp = 32;
+					flags |= BMP_TEX_DXT5;
+					break;
+				default:
+					Assert( 0 );
+					break;
+			}
+			break;
 	}
 	
 	// lock the bitmap into the proper format
@@ -1098,7 +1100,12 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 
 	int max_w = bmp->w;
 	int max_h = bmp->h; 
-		
+
+	// if we ended up locking a texture that wasn't originally compressed then this should catch it
+	if ( bm_is_compressed(bitmap_handle) ) {
+		bitmap_type = TCACHE_TYPE_COMPRESSED;
+	}
+
 	if ( (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE) && (bitmap_type != TCACHE_TYPE_COMPRESSED) )	{
 		// Detail.debris_culling goes from 0 to 4.
 		max_w /= 16 >> Detail.hardware_textures;
@@ -1130,7 +1137,7 @@ bool d3d_preload_texture_func(int bitmap_id)
 	return 1;
 }
 
-bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte flags, float *u_scale, float *v_scale );
+bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, int bitmap_type, float *u_scale, float *v_scale );
 
 int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage )
 {
@@ -1141,7 +1148,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, floa
 		return 0;
 	}
 
-	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, (ubyte) 16, (ubyte) bitmap_type, u_scale, v_scale) == true) 
+	if(d3d_lock_and_set_internal_texture(stage, bitmap_id, (ubyte) 16, bitmap_type, u_scale, v_scale) == true) 
 	{
 	 	D3D_last_bitmap_id = -1;
 	 	return 1;

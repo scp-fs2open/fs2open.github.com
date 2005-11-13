@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-10-30 06:44:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.41 $
+ * $Date: 2005-11-13 06:44:18 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/10/30 06:44:57  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.39  2005/10/09 08:03:20  wmcoolmon
  * New SEXP stuff
  *
@@ -564,7 +567,7 @@ void neb2_init()
 
 		for(int i = 0; i < len; i++)
 		{
-			Assert(i < sizeof(Ship_type_names)/sizeof(Ship_type_names[0]));
+			Assert( i < (int)(sizeof(Ship_type_names) / sizeof(Ship_type_names[0])) );
 
 			//Create the var string and parse it if necessary
 			sprintf(buf, "$%s:", Ship_type_names[i]);
@@ -676,7 +679,7 @@ void neb2_post_level_init()
 								loaded = true;
 							break;*/
 						case 3:
-							if(pcx_read_bitmap_32(Neb2_texture_name, Neb2_htl_fog_data) == PCX_ERROR_NONE)
+							if(pcx_read_bitmap(Neb2_texture_name, Neb2_htl_fog_data, NULL, 4) == PCX_ERROR_NONE)
 								loaded = true;
 							break;
 					}
