@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/jpgutils/jpgutils.cpp $
- * $Revision: 1.19 $
- * $Date: 2005-03-12 05:21:36 $
- * $Author: wmcoolmon $
+ * $Revision: 1.20 $
+ * $Date: 2005-11-13 06:52:06 $
+ * $Author: taylor $
  * 
  * source for handling jpeg stuff
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/03/12 05:21:36  wmcoolmon
+ * whee!
+ *
  * Revision 1.18  2005/03/12 04:59:14  taylor
  * absolute header location for jpeglib.h in jpgutils.cpp (thanks WMC)
  * update VC6 project files to correct versions that work properly with internal libjpeg
@@ -273,6 +276,7 @@ int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int
 		jpeg_calc_output_dimensions(&jpeg_info);
 
 		// set the output components to be 'dest_size' (so we can support 16/24/32-bit images with this one function)
+		// NOTE: only 24-bit is actually supported right now, we don't currently up/down sample at all
 		jpeg_info.output_components = dest_size;
 		jpeg_info.out_color_components = dest_size;	// may need/have to match above
 
@@ -288,7 +292,7 @@ int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int
 		while (jpeg_info.output_scanline < jpeg_info.output_height) {
 			jpeg_read_scanlines(&jpeg_info, buffer, 1);
 
-			memcpy(image_data, buffer[0], size); // have to use [0] here or the output is wrong
+			memcpy(image_data, *buffer, size);
 			image_data += size;
 		}
 
