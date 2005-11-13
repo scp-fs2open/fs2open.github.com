@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.121 $
- * $Date: 2005-10-30 20:00:22 $
+ * $Revision: 2.122 $
+ * $Date: 2005-11-13 06:55:38 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.121  2005/10/30 20:00:22  taylor
+ * same basic cleanup and self-sanity changes
+ * split up WinMain() and main() so it doesn't resemble ifdef hell
+ * rename WinMainSub() to game_main() and move anything that should have been in WinMain() to WinMain()
+ *
  * Revision 2.120  2005/10/30 18:19:58  wmcoolmon
  * Fix scripting.html
  *
@@ -810,17 +815,15 @@ Flag exe_params[] =
 {
 	{ "-spec",				"Enable specular",							true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.spec", },
 	{ "-glow",				"Enable glowmaps",							true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.glow", },
-	{ "-pcx32",				"Enable 32bit textures",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pcx32", },
 	{ "-jpgtga",			"Enable jpg,tga textures",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.jpgtga", },
-	{ "-d3dmipmap",			"Enable mipmapping",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3dmipmap", },
+	{ "-mipmap",			"Enable mipmapping",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nomotiondebris",},
 	{ "-2d_poof",			"Stops fog intersect hull",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.2d_poof", },
-	{ "-cell",				"Enable cell shading",						true,	0,					EASY_DEFAULT,		"Graphics",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.cell", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"", },
 	{ "-cache_bitmaps",		"Cache bitmaps between missions",			true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"", },
 
-	{ "-pcx2dds",			"Compress pcx",								true,	0,					EASY_DEFAULT,		"Game Speed",	"", },
-	{ "-d3d_no_vsync",		"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_no_vsync", },
+	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"", },
+	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"", },
 
 	{ "-dualscanlines",		"Another pair of scanning lines",			true,	0,					EASY_DEFAULT,		"HUD",			"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.dualscanlines", },
 	{ "-targetinfo",		"Enable info next to target",				true,	0,					EASY_DEFAULT,		"HUD",			"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.targetinfo", },
@@ -853,21 +856,20 @@ Flag exe_params[] =
 	{ "-oldfire",			"",											true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.oldfire", },
 	{ "-nohtl",				"Software mode (very slow)",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.nohtl", },
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
-	{ "-dnoshowvid",		"Disable video playback",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.dnoshowvid", },
+	{ "-nomovies",			"Disable video playback",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 	{ "-safeloading",		"",											true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.safeloading", },
 	{ "-query_speech",		"Does this build have speech?",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.query_speech", },
 	{ "-d3d_bad_tsys",		"Enable inefficient textures",				false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.d3d_bad_tsys", },
 	{ "-novbo",				"Disable OpenGL VBO",						true,	0,					EASY_DEFAULT,		"Troubleshoot",	"",	},
 	{ "-noibx",				"Don't use cached index buffers (IBX)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"",	},
+	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 
 	{ "-env",				"environment mapping",						true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.env", },
 	{ "-alpha_env",			"uses alpha for env maping",				true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.alpha_env", },
 	{ "-decals",			"impact decals",							true,	0,					EASY_DEFAULT,		"Experimental",	"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.decals", },
-	{ "-loadonlyused",		"Loads only used weapons",					true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 	{ "-tga16",				"Convert 32-bit TGAs to 16-bit",			true,	0,					EASY_DEFAULT,		"Experimental",	"", },
-	{ "-UseNewAI",			"Always use the new AI's",					true,	0,					EASY_DEFAULT,		"Experimental", "", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://dynamic4.gamespy.com/~freespace/fsdoc/index.php?pagename=Command-Line%20Reference#x2d.pos", },
@@ -883,6 +885,9 @@ Flag exe_params[] =
 	{ "-dis_weapons",		"Disable weapon rendering",					true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 	{ "-output_sexps",		"Outputs SEXPs to sexps.html",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 	{ "-output_scripting",	"Outputs scripting to scripting.html",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
+#ifdef SCP_UNIX
+	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
+#endif
 };
 
 // here are the command line parameters that we will be using for FreeSpace
@@ -910,14 +915,13 @@ cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
 cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player missions
 cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Change to phreaks options including new targetting code
 cmdline_parm targetinfo_arg("-targetinfo", NULL);	//Adds ship name/class to right of target box -C
-cmdline_parm dnoshowvid_arg("-dnoshowvid", NULL); // Allows video streaming
+cmdline_parm nomovies_arg("-nomovies", NULL); // Allows video streaming
 cmdline_parm noscalevid_arg("-noscalevid", NULL); // disable video scaling that fits to window
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	//turns off parsing errors -C
 cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
 cmdline_parm fps_arg("-fps", NULL);
 cmdline_parm pos_arg("-pos", NULL);
-cmdline_parm cache_ani_arg("-cache_ani", NULL);  
-cmdline_parm d3dmipmap_arg("-d3dmipmap", NULL);
+cmdline_parm mipmap_arg("-mipmap", NULL);
 cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
 cmdline_parm fov_arg("-fov", NULL);	// comand line FOV -Bobboau
 cmdline_parm clip_dist_arg("-clipdist", NULL);
@@ -935,17 +939,15 @@ cmdline_parm htl_arg("-nohtl", NULL); //Use HT&L
 cmdline_parm cell_arg("-cell", NULL);
 cmdline_parm jpgtga_arg("-jpgtga",NULL);
 cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);
-cmdline_parm d3d_no_vsync_arg("-d3d_no_vsync", NULL);
+cmdline_parm no_vsync_arg("-no_vsync", NULL);
 #ifdef SCP_UNIX
 	cmdline_parm no_grab("-nograb", NULL);
 #endif
 cmdline_parm pcx32_arg("-pcx32",NULL);
-cmdline_parm pcx32dds_arg("-pcx2dds",NULL);
 cmdline_parm timerbar_arg("-timerbar", NULL);
 cmdline_parm stats_arg("-stats", NULL);
 cmdline_parm query_speech_arg("-query_speech", NULL);
 cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);
-cmdline_parm dxt_arg("-dxt",NULL);
 cmdline_parm d3d_particle_arg("-d3d_particle",NULL);
 cmdline_parm show_mem_usage_arg("-show_mem_usage",NULL);
 cmdline_parm rt_arg("-rt",NULL);
@@ -972,13 +974,14 @@ cmdline_parm dis_collisions("-dis_collisions", NULL);
 cmdline_parm dis_weapons("-dis_weapons", NULL);
 cmdline_parm noibx_arg("-noibx", NULL);
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);
+cmdline_parm img2dds_arg("-img2dds", NULL);
+cmdline_parm loadallweapons_arg("-loadallweps", NULL);
 #ifdef WIN32
 cmdline_parm fix_bugs("-fixbugs", NULL);
 cmdline_parm disable_crashing("-nocrash", NULL);
 #endif
 
 //Experimental
-cmdline_parm load_only_used("-loadonlyused", NULL);
 cmdline_parm tga16_arg("-tga16", NULL); // 32-bit TGA to 16-bit conversion
 
 cmdline_parm poof_2d_arg("-2d_poof", NULL);
@@ -1042,7 +1045,7 @@ int Cmdline_window = 0;
 int Cmdline_allslev = 0;
 int Cmdline_dualscanlines	= 0;
 int Cmdline_targetinfo = 0;
-int Cmdline_dnoshowvid = 0;
+int Cmdline_nomovies = 0;
 int Cmdline_noscalevid = 0;
 int Cmdline_noparseerrors = 0;
 int Cmdline_show_fps = 0;
@@ -1050,10 +1053,8 @@ int Cmdline_show_pos = 0;
 int Cmdline_safeloading = 0;
 int Cmdline_nospec = 0;
 int Cmdline_noglow = 0;
-int Cmdline_dxt = 0;
 
-int Cmdline_cache_ani = 0;
-int Cmdline_d3dmipmap = 0;
+int Cmdline_mipmap = 0;
 int Cmdline_rt = 0;
 int Cmdline_ingamejoin = 0;
 char *Cmdline_start_mission = NULL;
@@ -1068,11 +1069,11 @@ int Cmdline_2d_poof			= 0;
 int Cmdline_nohtl = 0;
 int Cmdline_jpgtga = 0;
 int Cmdline_no_set_gamma = 0;
-int Cmdline_d3d_no_vsync = 0;
+int Cmdline_no_vsync = 0;
 int Cmdline_pcx32 = 0;
-int Cmdline_pcx32dds = 0;
 int Cmdline_nomotiondebris = 0;
 int Cmdline_query_speech = 0;
+int Cmdline_img2dds = 0;
 
 int Cmdline_show_mem_usage = 0;
 int Cmdline_d3d_lesstmem = 0;
@@ -1086,7 +1087,7 @@ int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
 
 //Experimental
-int Cmdline_load_only_used;
+int Cmdline_load_all_weapons = 0;
 int Cmdline_tga16 = 0;
 
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
@@ -1473,9 +1474,9 @@ bool SetCmdlineParams()
 		Cmdline_NoFPSCap = 1;
 	}
 
-	if(load_only_used.found())
+	if(loadallweapons_arg.found())
 	{
-		Cmdline_load_only_used = 1;
+		Cmdline_load_all_weapons = 1;
 	}
 
 	if(poof_2d_arg.found())
@@ -1639,8 +1640,8 @@ bool SetCmdlineParams()
 		Cmdline_targetinfo = 1;
 	}
 
-	if(dnoshowvid_arg.found() ) {
-		Cmdline_dnoshowvid = 1;
+	if(nomovies_arg.found() ) {
+		Cmdline_nomovies = 1;
 	}
 
 	if ( noscalevid_arg.found() ) {
@@ -1704,12 +1705,8 @@ bool SetCmdlineParams()
 		Cmdline_nomotiondebris = 1;
 	}
 
-	if( cache_ani_arg.found() ) {
-		Cmdline_cache_ani = 1;
-	}
-
-	if( d3dmipmap_arg.found() ) {
-		Cmdline_d3dmipmap = 1;
+	if( mipmap_arg.found() ) {
+		Cmdline_mipmap = 1;
 	}
 
 	if( stats_arg.found() ) {
@@ -1792,9 +1789,9 @@ bool SetCmdlineParams()
 		Cmdline_no_set_gamma = 1;
 	}
 
-	if(d3d_no_vsync_arg.found() )
+	if(no_vsync_arg.found() )
 	{
-		Cmdline_d3d_no_vsync = 1;
+		Cmdline_no_vsync = 1;
 	}
 
 #ifdef SCP_UNIX
@@ -1809,9 +1806,10 @@ bool SetCmdlineParams()
 		Cmdline_pcx32 = 1;
 	}
 
-	if(pcx32dds_arg.found() )
-	{
-		Cmdline_pcx32dds = 1;
+	if ( img2dds_arg.found() ) {
+		Cmdline_img2dds = 1;
+		// we also can use -jpgtga without the bad memory usage
+		Cmdline_jpgtga = 1;
 	}
 
 	if(glow_arg.found() )
@@ -1831,15 +1829,6 @@ bool SetCmdlineParams()
 	if(ship_choice_3d_arg.found() )
 	{
 		Cmdline_ship_choice_3d = 1;
-	}
-
-	if(dxt_arg.found()) {
-		Cmdline_dxt = dxt_arg.get_int();
-
-		if(Cmdline_dxt < 0 || Cmdline_dxt > 5)
-		{
-			Cmdline_dxt = 0;
-		}
 	}
 
 	if(d3d_particle_arg.found()) {
