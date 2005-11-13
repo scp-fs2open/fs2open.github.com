@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-11-05 10:26:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.59 $
+ * $Date: 2005-11-13 23:02:04 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/11/05 10:26:09  wmcoolmon
+ * Int3() --> Warning
+ *
  * Revision 2.57  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -2312,10 +2315,19 @@ int hud_anim_load(hud_anim *ha)
 	int		fps;
 
 	ha->first_frame = bm_load_animation(ha->filename, &ha->num_frames, &fps);
-	if ( ha->first_frame == -1 ) {
+
+	// Goober5000 - try to bypass the Volition bug
+	if ( (ha->first_frame == -1) && !stricmp(ha->filename, "FadeIconS-FreighterCW") )
+	{
+		ha->first_frame = bm_load_animation("FadeIconS-FreighterWC", &ha->num_frames, &fps);
+	}
+
+	if ( ha->first_frame == -1 )
+	{
 		Warning(LOCATION, "Couldn't load hud animation for file '%s'", ha->filename);
 		return -1;
 	}
+
 	Assert(fps != 0);
 	ha->total_time = i2fl(ha->num_frames)/fps;
 	return 0;
