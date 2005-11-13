@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-10-30 20:03:40 $
+ * $Revision: 2.59 $
+ * $Date: 2005-11-13 06:50:57 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/10/30 20:03:40  taylor
+ * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
+ * fix Mantis bug #381
+ * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
+ *
  * Revision 2.57  2005/10/16 11:20:43  taylor
  * use unsigned index buffers
  *
@@ -2371,7 +2376,7 @@ void stars_set_background_model(char *model_name, char *texture_name)
 		return;
 	}
 
-	Nmodel_num = model_load(model_name, 0, NULL);
+	Nmodel_num = model_load(model_name, 0, NULL, 0);
 	Nmodel_bitmap = bm_load(texture_name);
 }
 
