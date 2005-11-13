@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-10-30 06:44:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.56 $
+ * $Date: 2005-11-13 22:27:17 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/10/30 06:44:58  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.54  2005/10/29 22:09:31  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -929,6 +932,28 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 	objp->phys_info.flags &= (~PF_WARP_IN);
 }
 
+// Validate reference_objnum
+int shipfx_special_warp_objnum_valid(int objnum)
+{
+	object *special_objp;
+
+	// must be a valid object
+	if ((objnum < 0) || (objnum >= MAX_OBJECTS))
+		return 0;
+
+	special_objp = &Objects[objnum];
+
+	// must be a ship
+	if (special_objp->type != OBJ_SHIP)
+		return 0;
+
+	// must be a knossos
+	if (!(Ship_info[Ships[special_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE))
+		return 0;
+
+	return 1;
+}
+
 // JAS - code to start the ship doing the warp in effect
 // This also starts the animating 3d effect playing.
 // There are two modes, stage 1 and stage 2.   Stage 1 is
@@ -939,92 +964,101 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 // time.
 void shipfx_warpin_start( object *objp )
 {
-	ship *shipp;
+	int warp_objnum;
 	float effect_time, effect_radius;
-	
-	shipp = &Ships[objp->instance];
+	ship *shipp = &Ships[objp->instance];
 
-	if ( shipp->flags & SF_ARRIVING )	{
+	if (shipp->flags & SF_ARRIVING)
+	{
 		mprintf(( "Ship is already arriving!\n" ));
+		Int3();
 		return;
 	}
 
 	// post a warpin event
-	if(Game_mode & GM_DEMO_RECORD){
+	if(Game_mode & GM_DEMO_RECORD)
+	{
 		demo_POST_warpin(objp->signature, shipp->flags);
 	}
 
+	// docked ships who are not dock leaders don't use the warp effect code
+	// (the dock leader takes care of the whole group)
+	if (object_is_docked(objp) && !(shipp->flags & SF_DOCK_LEADER))
+	{
+		return;
+	}
+
 	// if there is no arrival warp, then skip the whole thing
-	if ( shipp->flags & SF_NO_ARRIVAL_WARP )	{
+	if (shipp->flags & SF_NO_ARRIVAL_WARP)
+	{
 		shipfx_actually_warpin(shipp,objp);
 		return;
 	}
-	
+
 	// VALIDATE special_warp_objnum
-	if (shipp->special_warp_objnum >= 0) {
-			
-		int ref_objnum = shipp->special_warp_objnum;
-		int valid_reference_ship = FALSE;
-
-		// Validate reference_objnum
-		if ((ref_objnum >= 0) && (ref_objnum < MAX_OBJECTS)) {
-			object *sp_objp = &Objects[ref_objnum];
-			if (sp_objp->type == OBJ_SHIP) {
-				if (Ship_info[Ships[sp_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
-					valid_reference_ship = TRUE;
-				}
-			}
-		}
-
-		if (valid_reference_ship != TRUE) {
+	if (shipp->special_warp_objnum >= 0)
+	{
+		if (!shipfx_special_warp_objnum_valid(shipp->special_warp_objnum))
+		{
 			shipp->special_warp_objnum = -1;
 		}
 	}
 
 	// only move warp effect pos if not special warp in.
-	if (shipp->special_warp_objnum >= 0) {
+	if (shipp->special_warp_objnum >= 0)
+	{
 		Assert(!(Game_mode & GM_MULTIPLAYER));
 		polymodel *pm;
 		pm = model_get(shipp->modelnum);
 		vm_vec_scale_add(&shipp->warp_effect_pos, &objp->pos, &objp->orient.vec.fvec, -pm->mins.xyz.z);
-	} else {
+	}
+	else
+	{
 		vm_vec_scale_add( &shipp->warp_effect_pos, &objp->pos, &objp->orient.vec.fvec, objp->radius );
 	}
+
+
+	// start the warp-in effect here ------------------------------------------------------------
+
 	
-	// The ending zero mean this is a warp-in effect
-	if (shipp->flags & SF_DOCK_LEADER) {
-		int warp_objnum;
+	// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
+	// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
+	effect_time = shipfx_calculate_warp_time(objp, WT_WARP_IN) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
+	effect_radius = shipfx_calculate_effect_radius(objp);
 
-		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
-		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
-		effect_time = shipfx_calculate_warp_time(objp, WT_WARP_IN) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
-		effect_radius = shipfx_calculate_effect_radius(objp);
-
-		// maybe special warpin
-		if (shipp->special_warp_objnum >= 0) {
-			// cap radius to size of knossos
-			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
-			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
-		} else {
-			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
-		}
-		if (warp_objnum < 0 )	{	// JAS: This must always be created, if not, just warp the ship in
-			shipfx_actually_warpin(shipp,objp);
-			return;
-		}
-
-		shipp->warp_effect_fvec = Objects[warp_objnum].orient.vec.fvec;
-		// maybe negate if special warp effect
-		if (shipp->special_warp_objnum >= 0) {
-			if (vm_vec_dotprod(&shipp->warp_effect_fvec, &objp->orient.vec.fvec) < 0) {
-				vm_vec_negate(&shipp->warp_effect_fvec);
-			}
-		}
-
-
-		shipp->final_warp_time = timestamp(fl2i(SHIPFX_WARP_DELAY*1000.0f));
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+	// maybe special warpin
+	if (shipp->special_warp_objnum >= 0)
+	{
+		// cap radius to size of knossos
+		effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
+		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
 	}
+	else
+	{
+		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
+	}
+
+	// JAS: This must always be created, if not, just warp the ship in
+	if (warp_objnum < 0 )
+	{
+		shipfx_actually_warpin(shipp,objp);
+		return;
+	}
+
+	shipp->warp_effect_fvec = Objects[warp_objnum].orient.vec.fvec;
+
+	// maybe negate if special warp effect
+	if (shipp->special_warp_objnum >= 0)
+	{
+		if (vm_vec_dotprod(&shipp->warp_effect_fvec, &objp->orient.vec.fvec) < 0)
+		{
+			vm_vec_negate(&shipp->warp_effect_fvec);
+		}
+	}
+
+	// flag as warping
+	shipp->final_warp_time = timestamp(fl2i(SHIPFX_WARP_DELAY*1000.0f));
+	shipp->flags |= SF_ARRIVING_STAGE_1;
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
