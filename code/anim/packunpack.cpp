@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-05-24 03:13:36 $
+ * $Revision: 2.11 $
+ * $Date: 2005-11-13 06:40:19 $
  * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,9 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/05/24 03:13:36  taylor
+ * extra check to make sure that RLE reading never goes over frame size in new ANI formats
+ *
  * Revision 2.9  2005/05/23 05:58:31  taylor
  * quick catch for some corrupted anis, only a partial fix but it will do until something
  *  a bit more heavy duty comes along in the near future
@@ -257,11 +260,8 @@ anim_instance *init_anim_instance(anim *ptr, int bpp)
 	inst->stop_now = FALSE;
 	inst->aa_color = NULL;
 
-	if(bpp == 16){
-		inst->frame = (ubyte *) vm_malloc(inst->parent->width * inst->parent->height * 2);
-	} else {
-		inst->frame = (ubyte *) vm_malloc(inst->parent->width * inst->parent->height);
-	}
+	inst->frame = (ubyte *) vm_malloc(inst->parent->width * inst->parent->height * (bpp/8));
+
 	return inst;
 }
 
@@ -845,8 +845,9 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 	ubyte bit_8 = 0;
 	ubyte al = 0;
 	ubyte r, g, b;
+	int pixel_size = (bpp / 8);
 	anim *a = ai->parent;
-	Assert(a);	
+	Assert(a);
 
 	// if this is an aabitmap, don't run through the palette
 	if(aabitmap){
@@ -863,31 +864,57 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 	} else {		
 		// if the pixel value is 255, or is the xparent color, make it so		
 		if(((a->palette[pix*3] == a->xparent_r) && (a->palette[pix*3+1] == a->xparent_g) && (a->palette[pix*3+2] == a->xparent_b)) ){
-			r = b = 0;
-			g = 255;
-			bm_set_components((ubyte*)&bit_16, &r, &g, &b, &al);
-		} else {
-			// stuff the 24 bit value
-			memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
+			if (pixel_size > 2) {
+				bit_24 = 0;
+			} else {
+				r = b = 0;
+				g = 255;
 
-			// convert to 16 bit
-			convert_24_to_16(bit_24, &bit_16);
+				bm_set_components((ubyte*)&bit_16, &r, &g, &b, &al);
+			}
+		} else {
+			if (pixel_size > 2) {
+				ubyte pixel[4];
+				pixel[0] = ai->parent->palette[pix * 3 + 2];
+				pixel[1] = ai->parent->palette[pix * 3 + 1];
+				pixel[2] = ai->parent->palette[pix * 3];
+				pixel[4] = 255;
+				memcpy(&bit_24, pixel, sizeof(int));
+
+				if (pixel_size == 4) {
+					bit_24 = INTEL_INT(bit_24);
+				}
+			} else {
+				// stuff the 24 bit value
+				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
+
+				// convert to 16 bit
+				convert_24_to_16(bit_24, &bit_16);
+			}
 		}
 	}
 
 	// stuff the pixel
-	switch(bpp){
-	case 16 :
-		memcpy(data, &bit_16, sizeof(ushort));
-		return sizeof(ushort);
+	switch (bpp) {
+		case 32:
+		case 24:
+			memcpy(data, &bit_24, pixel_size);
+			break;
 
-	case 8 :
-		*data = bit_8;		
-		return sizeof(ubyte);	
+		case 16:
+			memcpy(data, &bit_16, pixel_size);
+			break;
+
+		case 8:
+			*data = bit_8;
+			break;
+
+		default:
+			Int3();
+			return 0;
 	}
 
-	Int3();
-	return 0;
+	return pixel_size;
 }
 
 // unpack a pixel given the passed index and the anim_instance's palette, return bytes stuffed
@@ -899,6 +926,7 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count, int
 	ushort bit_16 = 0;	
 	ubyte bit_8 = 0;
 	anim *a = ai->parent;
+	int pixel_size = (bpp / 8);
 	ubyte r, g, b;
 	Assert(a);	
 
@@ -917,34 +945,55 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count, int
 	} else {		
 		// if the pixel value is 255, or is the xparent color, make it so		
 		if(((a->palette[pix*3] == a->xparent_r) && (a->palette[pix*3+1] == a->xparent_g) && (a->palette[pix*3+2] == a->xparent_b)) ){
-			r = b = 0;
-			g = 255;
-			bm_set_components((ubyte*)&bit_16, &r, &g, &b, &al);
+			if (pixel_size > 2) {
+				bit_24 = 0;
+			} else {
+				r = b = 0;
+				g = 255;
+				
+				bm_set_components((ubyte*)&bit_16, &r, &g, &b, &al);
+			}
 		} else {
-			// stuff the 24 bit value
-			memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
+			if (pixel_size > 2) {
+				ubyte pixel[4];
+				pixel[0] = ai->parent->palette[pix * 3 + 2];
+				pixel[1] = ai->parent->palette[pix * 3 + 1];
+				pixel[2] = ai->parent->palette[pix * 3];
+				pixel[4] = 255;
+				memcpy(&bit_24, pixel, sizeof(int));
 
-			// convert to 16 bit
-			convert_24_to_16(bit_24, &bit_16);
+				if (pixel_size == 4) {
+					bit_24 = INTEL_INT(bit_24);
+				}
+			} else {
+				// stuff the 24 bit value
+				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
+				
+				// convert to 16 bit
+				convert_24_to_16(bit_24, &bit_16);
+			}
 		}
 	}
 	
 	// stuff the pixel
-	for(idx=0; idx<count; idx++){
-		switch(bpp){
-		case 16 :
-			memcpy(data + (idx*2), &bit_16, sizeof(ushort));
-			break;
-		case 8 :
-			*(data + idx) = bit_8;
-			break;
-		}
+	for (idx=0; idx<count; idx++) {
+		switch (bpp) {
+			case 32:
+			case 24:
+				memcpy(data + (idx * pixel_size), &bit_24, pixel_size);
+				break;
+
+			case 16:
+				memcpy(data + (idx * pixel_size), &bit_16, pixel_size);
+				break;
+
+			case 8:
+				*(data + idx) = bit_8;
+				break;
+			}
 	}
 
-	if(bpp == 16){
-		return sizeof(ushort) * count;
-	}
-	return sizeof(ubyte) * count;
+	return (pixel_size * count);
 }
 
 // ptr = packed data to unpack
@@ -955,7 +1004,7 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 {
 	int	xlate_pal, value, count = 0;
 	int stuffed;			
-	int pixel_size = (bpp == 16) ? 2 : 1;
+	int pixel_size = (bpp / 8);
 
 	if ( pal_translate == NULL ) {
 		xlate_pal = 0;
@@ -1142,7 +1191,7 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 	int	xlate_pal, value, count = 0;
 	int	offset = 0;
 	int stuffed;	
-	int pixel_size = (bpp == 16) ? 2 : 1;
+	int pixel_size = (bpp / 8);
 
 	if ( pal_translate == NULL ) {
 		xlate_pal = 0;
