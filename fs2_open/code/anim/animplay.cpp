@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-05-28 19:40:59 $
+ * $Revision: 2.18 $
+ * $Date: 2005-11-13 06:39:38 $
  * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/05/28 19:40:59  taylor
+ * fix ani corruption detection so that certain streaming anis don't hit it (check was wrong anyway)
+ *
  * Revision 2.16  2005/05/23 05:58:31  taylor
  * quick catch for some corrupted anis, only a partial fix but it will do until something
  *  a bit more heavy duty comes along in the near future
@@ -992,10 +995,6 @@ anim *anim_load(char *real_filename, int file_mapped)
 	CFILE			*fp;
 	int			count,idx;
 	char name[_MAX_PATH];
-
-	if(Cmdline_cache_ani) {
-	 	file_mapped = PAGE_FROM_MEM;
-	}
 
 	Assert ( real_filename != NULL );
 
