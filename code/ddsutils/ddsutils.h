@@ -85,6 +85,7 @@ int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp = NULL);
 //returns a string from a DDS error code
 const char* dds_error_string(int code);
 
-extern int Texture_compression_enabled;
+extern int Texture_compression_available;
+extern int Use_compressed_textures;
 
 #endif //__DDS_H
