@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.82 $
- * $Date: 2005-11-08 01:04:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.83 $
+ * $Date: 2005-11-13 06:47:26 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2005/11/08 01:04:00  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.81  2005/10/29 09:00:41  wmcoolmon
  * Minor change to an assert
  *
@@ -2744,7 +2747,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		// or warp models!-Bobboau
 		pm->textures[i] = -1;
 	} else {
-		if (strstr(tmp_name, "-trans") || strstr(tmp_name, "shockwave")) {
+		// check if we should be transparent, include "-trans" but make sure to skip anything that might be "-transport"
+		if ( (strstr(tmp_name, "-trans") && !strstr(tmp_name, "-transpo")) || strstr(tmp_name, "shockwave") ) {
 			pm->transparent[i] = 1;
 		}
 
