@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-11-08 01:03:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2005-11-13 05:25:59 $
+ * $Author: phreak $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/11/08 01:03:59  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.29  2005/10/17 05:48:18  taylor
  * dynamically allocate object collision pairs
  *
@@ -1005,6 +1008,8 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 void _cdecl LuaError(char * filename, int line, struct lua_State *L)
 {
+#ifdef USE_LUA
+
 	int val;
 
 	gr_force_windowed();
@@ -1050,6 +1055,8 @@ void _cdecl LuaError(char * filename, int line, struct lua_State *L)
 	} else if(val == IDYES) {
 		Int3();
 	}
+
+#endif
 }
 
 void _cdecl Error( char * filename, int line, char * format, ... )
