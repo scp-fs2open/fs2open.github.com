@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-10-16 23:15:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.28 $
+ * $Date: 2005-11-13 06:46:10 $
+ * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/10/16 23:15:46  wmcoolmon
+ * Hardened cfile against array overflows
+ *
  * Revision 2.26  2005/05/12 17:37:48  taylor
  * add an extra gr_flip() after gr_clear() to make sure the change is made active
  *
@@ -129,7 +132,7 @@ bool movie_play(char *name)
 
 	extern int Is_standalone;
 	if(Is_standalone) return false;
- 	if(Cmdline_dnoshowvid) return false;
+ 	if(Cmdline_nomovies) return false;
 	//Commented this out since we have dnoshowvid -WMC
  	//if(Cmdline_window) return false;
 
@@ -154,13 +157,13 @@ bool movie_play(char *name)
    		GlobalD3DVars::D3D_activate = 0;
 		GlobalD3DVars::lpD3DDevice->EndScene();
 	  	GlobalD3DVars::lpD3DDevice->Present(NULL,NULL,NULL,NULL);
-	//	d3d_lost_device();
+		d3d_lost_device();
 	}
 
 	// reset the gr_* stuff before trying to play a movie
-	gr_flip(); // in the case of D3D this should recover the device
 	gr_clear();
-	gr_flip(); // need an extra flip here to cycle in the clear'd buffer
+	gr_zbuffer_clear(1);
+	gr_flip(); // cycle in the clear'd buffer
 
 	// This clears the screen
  	InvalidateRect((HWND) os_get_window(), NULL, TRUE);

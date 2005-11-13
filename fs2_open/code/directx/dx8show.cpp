@@ -1,3 +1,4 @@
+#include <windows.h>
 #include <dshow.h>
 #include <stdio.h>
 
@@ -113,6 +114,9 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
     {
         HRESULT load_attempt = pGB->RenderFile(wFile, NULL);
 
+		// f%#$ing DivX6...
+		SetForegroundWindow(ghApp);
+
         // Have the graph builder construct its the appropriate graph automatically
         if(FAILED(load_attempt))
 		{
@@ -142,12 +146,13 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
 		pBV->get_VideoWidth(&width);
 		pBV->get_VideoHeight(&height);
 
-        JIF(InitVideoWindow(ghApp,width, height));
+	//	JIF(InitVideoWindow(ghApp,width, height));
 
 		if (!g_bAudioOnly)
         {
             JIF(pVW->put_Owner((OAHWND)ghApp));
             JIF(pVW->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_VISIBLE));
+			JIF(InitVideoWindow(ghApp, width, height));
 			JIF(pVW->SetWindowForeground(OATRUE));
  		}
 
