@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-10-10 17:17:45 $
+ * $Revision: 2.54 $
+ * $Date: 2005-11-13 06:49:05 $
  * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/10/10 17:17:45  taylor
+ * remove NO_NETWORK
+ * clean out some old debug messages that were littered about
+ *
  * Revision 2.52  2005/10/06 07:53:01  taylor
  * make sure player death message works when using a NO_NETWORK build
  *
@@ -2666,7 +2670,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 		//	If weapon hits ship on same team and that ship not targeted and parent of weapon not player,
 		//	don't do damage.
 		//	Ie, player can always do damage.  AI can only damage team if that ship is targeted.
-		if (wp->target_num != ship_obj-Objects) {
+		if (wp->target_num != OBJ_INDEX(ship_obj)) {
 			if ((ship_p->team == wp->team) && !(Objects[other_obj->parent].flags & OF_PLAYER_SHIP) ) {
 				/*char	ship_name[64];
 

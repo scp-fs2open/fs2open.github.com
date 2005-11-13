@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.261 $
- * $Date: 2005-11-08 01:04:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.262 $
+ * $Date: 2005-11-13 06:49:04 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.261  2005/11/08 01:04:02  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.260  2005/11/05 05:11:29  wmcoolmon
  * Slight optimization
  *
@@ -13107,8 +13110,6 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 
 // Page in bitmaps for all the ships in this level
 
-extern int Cmdline_load_only_used;
-
 void ship_page_in()
 {
 	int i,j,k;
@@ -13146,26 +13147,24 @@ void ship_page_in()
 				Knossos_warp_ani_used = 1;
 
 			// mark any weapons as being used, saves memory and time if we don't load them all
-			if (Cmdline_load_only_used) {
-				ship_weapon *swp = &Ships[i].weapons;
+			ship_weapon *swp = &Ships[i].weapons;
 
-				for (j = 0; j < swp->num_primary_banks; j++)
-					weapon_mark_as_used(swp->primary_bank_weapons[j]);
+			for (j = 0; j < swp->num_primary_banks; j++)
+				weapon_mark_as_used(swp->primary_bank_weapons[j]);
 
-				for (j = 0; j < swp->num_secondary_banks; j++)
-					weapon_mark_as_used(swp->secondary_bank_weapons[j]);
+			for (j = 0; j < swp->num_secondary_banks; j++)
+				weapon_mark_as_used(swp->secondary_bank_weapons[j]);
 
-				// get weapons for all capship subsystems (turrets)
-				ship_subsys *ptr = GET_FIRST(&Ships[i].subsys_list);
-				while (ptr != END_OF_LIST(&Ships[i].subsys_list)) {
-					for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
-						weapon_mark_as_used(ptr->weapons.primary_bank_weapons[j]);
+			// get weapons for all capship subsystems (turrets)
+			ship_subsys *ptr = GET_FIRST(&Ships[i].subsys_list);
+			while (ptr != END_OF_LIST(&Ships[i].subsys_list)) {
+				for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
+					weapon_mark_as_used(ptr->weapons.primary_bank_weapons[j]);
 
-					for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
-						weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[j]);
+				for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
+					weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[j]);
 
-					ptr = GET_NEXT(ptr);
-				}
+				ptr = GET_NEXT(ptr);
 			}
 
 			num_subsystems_needed += Ship_info[Ships[i].ship_info_index].n_subsystems;
@@ -13179,19 +13178,17 @@ void ship_page_in()
 		nprintf(( "Paging","Found future arrival ship '%s'\n", p_objp->name ));
 		ship_class_used[p_objp->ship_class]++;
 
-		if (Cmdline_load_only_used) {
-			// This will go through Subsys_index[] and grab all weapons: primary, secondary, and turrets
-			for (i = p_objp->subsys_index; i < (p_objp->subsys_index + p_objp->subsys_count); i++) {
-				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-					if (Subsys_status[i].primary_banks[j] > -1) {
-						weapon_mark_as_used(Subsys_status[i].primary_banks[j]);
-					}
+		// This will go through Subsys_index[] and grab all weapons: primary, secondary, and turrets
+		for (i = p_objp->subsys_index; i < (p_objp->subsys_index + p_objp->subsys_count); i++) {
+			for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
+				if (Subsys_status[i].primary_banks[j] > -1) {
+					weapon_mark_as_used(Subsys_status[i].primary_banks[j]);
 				}
+			}
 
-				for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
-					if (Subsys_status[i].secondary_banks[j] > -1) {
-						weapon_mark_as_used(Subsys_status[i].secondary_banks[j]);
-					}
+			for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
+				if (Subsys_status[i].secondary_banks[j] > -1) {
+					weapon_mark_as_used(Subsys_status[i].secondary_banks[j]);
 				}
 			}
 		}
@@ -13287,22 +13284,20 @@ void ship_page_in()
 
 			// more weapon marking, the weapon info in Ship_info[] is the default
 			// loadout which isn't specified by missionparse unless it's different
-			if (Cmdline_load_only_used) {
-				for (j = 0; j < sip->num_primary_banks; j++)
-					weapon_mark_as_used(sip->primary_bank_weapons[j]);
+			for (j = 0; j < sip->num_primary_banks; j++)
+				weapon_mark_as_used(sip->primary_bank_weapons[j]);
 
-				for (j = 0; j < sip->num_secondary_banks; j++)
-					weapon_mark_as_used(sip->secondary_bank_weapons[j]);
+			for (j = 0; j < sip->num_secondary_banks; j++)
+				weapon_mark_as_used(sip->secondary_bank_weapons[j]);
 
-				for (j = 0; j < sip->n_subsystems; j++) {
-					model_subsystem *msp = &sip->subsystems[j];
+			for (j = 0; j < sip->n_subsystems; j++) {
+				model_subsystem *msp = &sip->subsystems[j];
 
-					for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
-						weapon_mark_as_used(msp->primary_banks[k]);
+				for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
+					weapon_mark_as_used(msp->primary_banks[k]);
 
-					for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
-						weapon_mark_as_used(msp->secondary_banks[k]);
-				}
+				for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
+					weapon_mark_as_used(msp->secondary_banks[k]);
 			}
 		}
 	}
