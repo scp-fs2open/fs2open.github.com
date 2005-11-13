@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.79 $
- * $Date: 2005-10-30 20:00:22 $
+ * $Revision: 2.80 $
+ * $Date: 2005-11-13 06:55:38 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2005/10/30 20:00:22  taylor
+ * same basic cleanup and self-sanity changes
+ * split up WinMain() and main() so it doesn't resemble ifdef hell
+ * rename WinMainSub() to game_main() and move anything that should have been in WinMain() to WinMain()
+ *
  * Revision 2.78  2005/10/23 11:45:06  taylor
  * add -ogl_shine to adjust the OGL shininess value so that people can play around and find the best value to use
  *
@@ -547,7 +552,7 @@ extern char *Cmdline_almission;	//DTP for autoload mission
 extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
 extern int Cmdline_allslev;
 extern int Cmdline_dualscanlines;
-extern int Cmdline_dnoshowvid;	//WMC Toggles movie playing support
+extern int Cmdline_nomovies;	//WMC Toggles movie playing support
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
 extern char *Cmdline_mod; //DTP for mod support
 extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.
@@ -556,8 +561,7 @@ extern int Cmdline_safeloading;
 extern int Cmdline_nospec;
 extern int Cmdline_orb_radar;
 
-extern int Cmdline_cache_ani;
-extern int Cmdline_d3dmipmap;
+extern int Cmdline_mipmap;
 
 extern int Cmdline_beams_no_pierce_shields;	// Goober5000
 extern float Cmdline_fov;
@@ -570,15 +574,15 @@ extern float Cmdline_ogl_spec;
 
 extern int Cmdline_cell;
 extern int Cmdline_nohtl;
-extern int Cmdline_dxt;
 extern int Cmdline_jpgtga;
 extern int Cmdline_no_set_gamma;
-extern int Cmdline_d3d_no_vsync;
+extern int Cmdline_no_vsync;
 extern int Cmdline_pcx32;
-extern int Cmdline_pcx32dds;
 extern int Cmdline_nomotiondebris;
 extern int Cmdline_cache_bitmaps;
 extern int Cmdline_noibx;
+extern int Cmdline_img2dds;
+extern int Cmdline_load_all_weapons;
 
 #ifdef SCP_UNIX
 	extern int Cmdline_no_grab;
