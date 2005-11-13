@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-09-05 09:38:19 $
+ * $Revision: 2.17 $
+ * $Date: 2005-11-13 06:49:32 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/09/05 09:38:19  taylor
+ * merge of OSX tree
+ * a lot of byte swaps were still missing, will hopefully be fully network compatible now
+ *
  * Revision 2.15  2005/05/12 17:49:17  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -132,6 +136,7 @@
 
 extern int Cmdline_jpgtga;
 extern int Cmdline_tga16;
+
 
 // -----------------
 //
@@ -407,13 +412,18 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 			}
 			// otherwise we stay at what size we already are
 			else {
+				memset( &pixel32, 0xff, sizeof(int) );
 				memcpy( &pixel32, *src, bytes_per_pixel );
 
-				if (bytes_per_pixel == 4)
+#if BYTE_ORDER == BIG_ENDIAN
+				// on big-endian it will be used as ARGB so switch it back to BGRA
+				if ( dest_size == 4 ) {
 					pixel32 = INTEL_INT(pixel32);
+				}
+#endif
 
 				// should have it's own alpha settings so just copy it out as is
-				memcpy( *dst, &pixel32, bytes_per_pixel );
+				memcpy( *dst, &pixel32, dest_size );
 			}
 		}
 		// 8 or 16 bit
