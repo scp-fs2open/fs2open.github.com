@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.144  2005/11/08 01:04:02  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.143  2005/11/05 05:12:21  wmcoolmon
  * Fix(?) for checking whether a weapon is armed or not
  *
@@ -931,7 +934,6 @@ char	*Weapon_names[MAX_WEAPON_TYPES];
 
 int     First_secondary_index = -1;
 
-extern int Cmdline_load_only_used;
 static int *used_weapons = NULL;
 
 int	Num_spawn_types = 0;
@@ -3524,16 +3526,14 @@ void weapon_level_init()
 	// emp effect
 	emp_level_init();
 
-	if (Cmdline_load_only_used) {
-		if (used_weapons == NULL)
-			used_weapons = new int[Num_weapon_types];
+	if (used_weapons == NULL)
+		used_weapons = new int[Num_weapon_types];
 
-		Assert( used_weapons != NULL );
+	Assert( used_weapons != NULL );
 
-		// clear out used_weapons between missions
-		if (used_weapons != NULL)
-			memset(used_weapons, 0, Num_weapon_types * sizeof(int));
-	}
+	// clear out used_weapons between missions
+	if (used_weapons != NULL)
+		memset(used_weapons, 0, Num_weapon_types * sizeof(int));
 
 	Weapon_flyby_sound_timer = timestamp(0);
 	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
@@ -5748,34 +5748,30 @@ void weapons_page_in()
 {
 	int i, j, idx;
 
-	if (Cmdline_load_only_used)
-	{
-		Assert( used_weapons != NULL );
+	Assert( used_weapons != NULL );
 
-		// for weapons in weaponry pool
-		for (i = 0; i < Num_teams; i++) {
-			for (j = 0; j < Num_weapon_types; j++) {
-				used_weapons[j] += Team_data[i].weaponry_pool[j];
-			}
-		}
-
-		// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
-		// assigned directly to a ship
-		for (i = 0; i < Num_weapon_types; i++) {
-			// we only want entries that already exist
-			if (!used_weapons[i])
-				continue;
-
-			// if it's got a spawn type then grab it
-			if (Weapon_info[i].spawn_type > -1)
-				used_weapons[(int)Weapon_info[i].spawn_type]++;
+	// for weapons in weaponry pool
+	for (i = 0; i < Num_teams; i++) {
+		for (j = 0; j < Num_weapon_types; j++) {
+			used_weapons[j] += Team_data[i].weaponry_pool[j];
 		}
 	}
 
+	// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
+	// assigned directly to a ship
+	for (i = 0; i < Num_weapon_types; i++) {
+		// we only want entries that already exist
+		if (!used_weapons[i])
+			continue;
+
+		// if it's got a spawn type then grab it
+		if (Weapon_info[i].spawn_type > -1)
+			used_weapons[(int)Weapon_info[i].spawn_type]++;
+	}
+
 	// Page in bitmaps for all used weapons
-	for (i=0; i<Num_weapon_types; i++ )
-	{
-		if (Cmdline_load_only_used) {
+	for (i=0; i<Num_weapon_types; i++ )	{
+		if (!Cmdline_load_all_weapons) {
 			if (!used_weapons[i]) {
 				nprintf(("Weapons", "Not loading weapon id %d (%s)\n", i, Weapon_info[i].name));
 				continue;
