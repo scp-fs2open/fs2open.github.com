@@ -3,7 +3,8 @@
 
 
 
-int Texture_compression_enabled=0;
+int Texture_compression_available = 0;
+int Use_compressed_textures = 0;
 
 
 int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, int *size)
@@ -45,26 +46,26 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 		return DDS_ERROR_BAD_HEADER;
 
 	// read header variables
-	dds_header.dwSize				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwSize );
-	dds_header.dwFlags				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwFlags );
-	dds_header.dwHeight				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwHeight );
-	dds_header.dwWidth				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwWidth );
-	dds_header.dwPitchOrLinearSize	= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwPitchOrLinearSize );
-	dds_header.dwDepth				= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwDepth);
-	dds_header.dwMipMapCount		= cfread_uint(ddsfile); //INTEL_INT( dds_header.dwMipMapCount );
+	dds_header.dwSize				= cfread_uint(ddsfile);
+	dds_header.dwFlags				= cfread_uint(ddsfile);
+	dds_header.dwHeight				= cfread_uint(ddsfile);
+	dds_header.dwWidth				= cfread_uint(ddsfile);
+	dds_header.dwPitchOrLinearSize	= cfread_uint(ddsfile);
+	dds_header.dwDepth				= cfread_uint(ddsfile);
+	dds_header.dwMipMapCount		= cfread_uint(ddsfile);
 
 	// skip over the crap we don't care about
 	for (int i = 0; i < 11; i++)
 		trash = cfread_uint(ddsfile);
 
-	dds_header.ddpfPixelFormat.dwSize				= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwSize );
-	dds_header.ddpfPixelFormat.dwFlags				= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwFlags );
-	dds_header.ddpfPixelFormat.dwFourCC				= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwFourCC );
-	dds_header.ddpfPixelFormat.dwRGBBitCount		= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwRGBBitCount );
-	dds_header.ddpfPixelFormat.dwRBitMask			= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwRBitMask );
-	dds_header.ddpfPixelFormat.dwGBitMask			= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwGBitMask );
-	dds_header.ddpfPixelFormat.dwBBitMask			= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwBBitMask );
-	dds_header.ddpfPixelFormat.dwRGBAlphaBitMask	= cfread_uint(ddsfile); //INTEL_INT( dds_header.ddpfPixelFormat.dwRGBAlphaBitMask );
+	dds_header.ddpfPixelFormat.dwSize				= cfread_uint(ddsfile);
+	dds_header.ddpfPixelFormat.dwFlags				= cfread_uint(ddsfile);
+	dds_header.ddpfPixelFormat.dwFourCC				= cfread_uint(ddsfile);
+	dds_header.ddpfPixelFormat.dwRGBBitCount		= cfread_uint(ddsfile);
+	dds_header.ddpfPixelFormat.dwRBitMask			= cfread_uint(ddsfile);
+	dds_header.ddpfPixelFormat.dwGBitMask			= cfread_uint(ddsfile);
+	dds_header.ddpfPixelFormat.dwBBitMask			= cfread_uint(ddsfile);
+	dds_header.ddpfPixelFormat.dwRGBAlphaBitMask	= cfread_uint(ddsfile);
 
 	// calculate the type and size of the data
 	if (dds_header.ddpfPixelFormat.dwFlags & DDPF_FOURCC) {
@@ -142,6 +143,11 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 		// close file and return
 		cfclose(ddsfile);
 		ddsfile = NULL;
+	}
+
+	if ( !Use_compressed_textures && (ct != DDS_UNCOMPRESSED) && (ct != DDS_DXT_INVALID) ) {
+		ct = DDS_DXT_INVALID;
+		retval = DDS_ERROR_UNSUPPORTED;
 	}
 
 	return retval;
