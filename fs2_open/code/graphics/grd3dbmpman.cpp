@@ -27,6 +27,8 @@
 #include "graphics/grd3dbmpman.h"
 #include "globalincs/systemvars.h"
 #include "jpgutils/jpgutils.h"
+#include "anim/animplay.h"
+#include "anim/packunpack.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -34,10 +36,16 @@
 extern int Cmdline_jpgtga;
 
 D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
-bool Supports_compression[NUM_COMPRESSION_TYPES];
 
 int d3d_get_valid_texture_size(int value, bool width);
 
+
+
+static inline int is_power_of_two(int w, int h)
+{
+	return ( ((w == 32) || (w == 64) || (w == 128) || (w == 256) || (w == 512) || (w == 1024) || (w == 2048) || (w == 4096)) &&
+			 ((h == 32) || (h == 64) || (h == 128) || (h == 256) || (h == 512) || (h == 1024) || (h == 2048) || (h == 4096)) );
+}
 
 // anything API specific to freeing bm data
 void gr_d3d_bm_free_data(int n)
@@ -68,58 +76,290 @@ void gr_d3d_bm_create(int n)
 	d3d_bitmap_entry[n].tinterface = NULL;
 }
 
+IDirect3DTexture8 *d3d_make_compressed_texture( ubyte *in_data, int width, int height, int alpha = 1 )
+{
+	IDirect3DTexture8 *thandle = NULL;
+	IDirect3DSurface8 *dds_surface = NULL;
+	RECT source_rect;
+	HRESULT hr = D3D_OK;
+	int i;
+
+	if ( FAILED( GlobalD3DVars::lpD3DDevice->CreateTexture( width, height, 1, 0,
+															(alpha) ? D3DFMT_DXT5 : D3DFMT_DXT1,
+															D3DPOOL_MANAGED, &thandle ) ) )
+	{
+		Int3();
+		return NULL;
+	}
+
+	thandle->GetSurfaceLevel( 0, &dds_surface );
+
+	source_rect.left = source_rect.top = 0;
+	source_rect.right = width;
+	source_rect.bottom = height;
+
+	hr = D3DXLoadSurfaceFromMemory( dds_surface, NULL, NULL, in_data, (alpha) ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8,
+							   (width * (3+alpha)), NULL, &source_rect, D3DX_FILTER_NONE, 0 );
+
+	D3D_RELEASE( dds_surface, i );
+
+	if ( hr != D3D_OK ) {
+		Int3();
+		return NULL;
+	}
+
+	return thandle;
+}
+
+extern void bm_clean_slot(int n);
+
+static int d3d_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
+{	
+	anim			*the_anim;
+	anim_instance	*the_anim_instance;
+	bitmap			*bm;
+	ubyte			*frame_data;
+	int				size, i, alpha;
+	int				first_frame, nframes;
+
+
+	first_frame = be->info.ani.first_frame;
+	nframes = bm_bitmaps[first_frame].info.ani.num_frames;
+
+	// bpp can always be 24-bit since we don't do images with alpha here
+//	bpp = (bpp == 32) ? bpp : 24;
+	bpp = 32;
+
+	alpha = (bpp == 32);
+
+	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename)) == NULL ) {
+		return 1;
+	}
+
+	if ( (the_anim_instance = init_anim_instance(the_anim, bpp)) == NULL ) {
+		anim_free(the_anim);
+		return 1;
+	}
+
+	int can_drop_frames = 0;
+
+	if ( the_anim->total_frames != bm_bitmaps[first_frame].info.ani.num_frames )	{
+		can_drop_frames = 1;
+	}
+
+	bm = &bm_bitmaps[first_frame].bm;
+	size = bm->w * bm->h * (bpp >> 3);
+
+	for ( i=0; i<nframes; i++ )	{
+		be = &bm_bitmaps[first_frame+i];
+		bmp = &bm_bitmaps[first_frame+i].bm;
+
+		// Unload any existing data
+		bm_clean_slot( first_frame+i );
+
+		bmp->flags = 0;
+
+		bmp->bpp = bpp;
+
+		frame_data = anim_get_next_raw_buffer(the_anim_instance, 0, 0, bmp->bpp);
+
+		Assert( frame_data != NULL );
+
+		nprintf(("BMPMAN", "Attempting to compress '%s', original size %.3fM ... ", be->filename, ((float)size/1024.0f)/1024.0f));
+
+		d3d_bitmap_entry[first_frame+i].tinterface = (IDirect3DBaseTexture8*) d3d_make_compressed_texture( frame_data, bmp->w, bmp->h, alpha );
+		
+		if ( d3d_bitmap_entry[first_frame+i].tinterface == NULL ) {
+			free_anim_instance(the_anim_instance);
+			anim_free(the_anim);
+
+			nprintf(("BMPMAN", "compression failed!!\n"));
+
+			return 1;
+		}
+
+		bmp->data = 0;
+		bmp->palette = NULL;
+		be->comp_type = (alpha) ? BM_TYPE_DXT5 : BM_TYPE_DXT1;
+		// not sure how to get actual size on D3D, might as well best-guess it...
+		be->mem_taken = (size / (alpha) ? 4 : 6); // should be DXT1 which should give a 6:1 ratio
+
+		bm_update_memory_used( first_frame + i, be->mem_taken );
+
+		nprintf(("BMPMAN", "new size is %.3fM.\n", ((float)be->mem_taken/1024.0f)/1024.0f));
+
+		// Skip a frame
+		if ( (i < nframes-1)  && can_drop_frames )	{
+			frame_data = anim_get_next_raw_buffer(the_anim_instance, 0, 0, bm->bpp);
+		}
+	}
+
+	free_anim_instance(the_anim_instance);
+	anim_free(the_anim);
+	
+	return 0;
+}
+
+static int d3d_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, int flags )
+{
+	ubyte *data = NULL;
+	int error_code = 1;
+	int byte_size = 0;
+	int alpha = 1;
+
+
+	// don't use for EFFs, if they were wanting to be DDS then they should already be that way
+	if ( be->type == BM_TYPE_EFF ) {
+		return 1;
+	}
+
+	Assert( (be->type == BM_TYPE_PCX) ||
+			(be->type == BM_TYPE_TGA) ||
+			(be->type == BM_TYPE_JPG) );
+
+	Assert( !(flags & BMP_AABITMAP) );
+
+	// PCX need to be loaded as 32-bit
+	if ( (be->type == BM_TYPE_PCX) && (bpp == 16) )
+		bpp = 32;
+
+	bm_clean_slot( bitmapnum );
+
+	byte_size = (bpp >> 3);
+	Assert( (byte_size == 3) || (byte_size == 4) );
+	alpha = (byte_size != 3);
+
+	// stupid D3D, we have to read everything at 32-bit apparently
+	Assert( byte_size == 4 );
+
+	data = (ubyte*)vm_malloc(bmp->w * bmp->h * byte_size);
+
+	Assert( data != NULL );
+
+	if ( data == NULL )
+		return 1;
+
+	// read in bitmap data
+	if (be->type == BM_TYPE_PCX) {
+		Assert( bpp == 32 );
+		error_code = pcx_read_bitmap( be->filename, data, NULL, byte_size );
+	} else if (be->type == BM_TYPE_TGA) {
+	//	error_code = targa_read_bitmap( be->filename, data, NULL, byte_size );
+		error_code = 1;
+	} else if (be->type == BM_TYPE_JPG) {
+	//	error_code = jpeg_read_bitmap( be->filename, data, NULL, byte_size );
+		error_code = 1;
+	} else {
+		Assert( 0 );
+	}
+
+	nprintf(("BMPMAN", "Attempting to compress '%s', original size %.3fM ... ", be->filename, ((float)(bmp->w * bmp->h * byte_size)/1024.0f)/1024.0f));
+
+	// NOTE: this assumes that the *_ERROR_NONE #define's are going to be 0
+	if (error_code) {
+		if (data != NULL) {
+			vm_free(data);
+			data = NULL;
+		}
+
+		nprintf(("BMPMAN", "initial read failed!!\n"));
+
+		return 1;
+	}
+
+	// now for the attempt to compress the data
+	d3d_bitmap_entry[bitmapnum].tinterface = (IDirect3DBaseTexture8*) d3d_make_compressed_texture( data, bmp->w, bmp->h, alpha );
+
+	if (d3d_bitmap_entry[bitmapnum].tinterface == NULL) {
+		if (data != NULL) {
+			vm_free(data);
+			data = NULL;
+		}
+
+		nprintf(("BMPMAN", "compression failed!!\n"));
+
+		return 1;
+	}
+
+	bmp->data = 0;
+	bmp->bpp = (alpha) ? (ubyte)32 : (ubyte)24;
+	bmp->palette = NULL;
+	be->comp_type = (alpha) ? BM_TYPE_DXT5 : BM_TYPE_DXT1;
+	// not sure how to get actual size on D3D, might as well best-guess it...
+	be->mem_taken = (bmp->w * bmp->h * byte_size / ((alpha) ? 4 : 6)); // in best case we should have 4:1 for DXT5, 6:1 for DXT1
+
+	bm_update_memory_used( bitmapnum, be->mem_taken );
+
+	nprintf(("BMPMAN", "new size is %.3fM.\n", ((float)be->mem_taken/1024.0f)/1024.0f));
+
+	vm_free(data);
+
+	return 0;
+}
+
 // create a texture from data stored in memory
-IDirect3DTexture8 *d3d_make_texture(void *data, int bitmapnum, int size, int type, int flags) 
+IDirect3DTexture8 *d3d_make_texture(void *data, int bitmapnum, int size, int type, int flags, char *filename) 
 {
 	D3DXIMAGE_INFO source_desc;
-	if(FAILED(D3DXGetImageInfoFromFileInMemory(data, size,	&source_desc))) {
+	IDirect3DTexture8 *ptexture = NULL;
+	D3DFORMAT use_format  = D3DFMT_UNKNOWN;
+	ubyte comp_type = BM_TYPE_NONE;
+
+	if ( FAILED(D3DXGetImageInfoFromFileInMemory(data, size, &source_desc)) ) {
 		return NULL;
 	} 
 
-	D3DFORMAT use_format  = D3DFMT_UNKNOWN;
-
-	// User is requesting we use compressed textures then pretend that the source is compressed
-	// DX will workout that its not but it means it can use the same code as before
-	if(Cmdline_dxt)
-	{
-		source_desc.Format = default_compressed_format;
-	}	
+	// OGL doesn't support DXT2 or DXT4 so don't support it here either
+	Assert( (source_desc.Format != D3DFMT_DXT2) && (source_desc.Format != D3DFMT_DXT4) );
 
 	// Determine the destination (texture) format to hold the image
 	switch(source_desc.Format)
 	{
-		case D3DFMT_DXT1: if(Supports_compression[0]) {use_format = D3DFMT_DXT1; break;}
-		case D3DFMT_DXT2: if(Supports_compression[1]) {use_format = D3DFMT_DXT2; break;}
-		case D3DFMT_DXT3: if(Supports_compression[2]) {use_format = D3DFMT_DXT3; break;}
-		case D3DFMT_DXT4: if(Supports_compression[3]) {use_format = D3DFMT_DXT4; break;}
-		case D3DFMT_DXT5: if(Supports_compression[4]) {use_format = D3DFMT_DXT5; break;}
+		case D3DFMT_DXT1:
+		case D3DFMT_DXT3:
+		case D3DFMT_DXT5:
+			break;
+
 		default:
 		{
 			bool use_alpha_format = false;	// initialization added by Goober5000
 
 			// Determine if the destination format needs to store alpha details
-			switch(type)
+			switch (type)
 			{
-			case BM_TYPE_TGA: use_alpha_format = (source_desc.Format == D3DFMT_A8R8G8B8); break; // 32 Bit TGAs only
-			case BM_TYPE_JPG: use_alpha_format = false; break; // JPG: Never 
-			case BM_TYPE_DDS: use_alpha_format = true;  break; // DDS: Always
-			default: Assert(0);	// just in case -- Goober5000
+				case BM_TYPE_TGA:
+					use_alpha_format = (source_desc.Format == D3DFMT_A8R8G8B8);
+					break;
+
+				case BM_TYPE_JPG:
+					use_alpha_format = false;
+					break;
+
+				case BM_TYPE_DDS:
+					use_alpha_format = (source_desc.Format == D3DFMT_A8R8G8B8);
+					break;
+
+				default:
+					Assert(0);	// just in case -- Goober5000
 			}
 
-			if(gr_screen.bits_per_pixel == 32) {
+			if (gr_screen.bits_per_pixel == 32) {
 				use_format = use_alpha_format ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8;
 			} else {
 				use_format = use_alpha_format ? default_alpha_tformat : default_non_alpha_tformat;
 			}
+
+			if ( Cmdline_img2dds && (type != BM_TYPE_DDS) ) {
+				use_format = (use_alpha_format) ? D3DFMT_DXT5 : D3DFMT_DXT1;
+				comp_type = (use_alpha_format) ? BM_TYPE_DXT5 : BM_TYPE_DXT1;
+			}
 		}
 	}
-
-	extern D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
 
 	float *uscale = &(d3d_bitmap_entry[bitmapnum].uscale);
 	float *vscale = &(d3d_bitmap_entry[bitmapnum].vscale);
 	  
-	bool use_mipmapping = (Cmdline_d3dmipmap > 0);
+	bool use_mipmapping = (Cmdline_mipmap > 0);
 
 	DWORD filter = D3DX_FILTER_LINEAR; // Linear, enough to smooth rescales but not too much blur
 
@@ -134,7 +374,6 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int bitmapnum, int size, int typ
 	  	filter |=D3DX_FILTER_DITHER;
 	}
 
-	IDirect3DTexture8 *ptexture = NULL;
 	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
 		GlobalD3DVars::lpD3DDevice,
 		data, size,
@@ -151,69 +390,65 @@ IDirect3DTexture8 *d3d_make_texture(void *data, int bitmapnum, int size, int typ
 		&source_desc, 
 		NULL, &ptexture);
 
+	if ( SUCCEEDED(hr) && (comp_type != BM_TYPE_NONE) ) {
+		bm_bitmaps[bitmapnum].comp_type = comp_type;
+	}
+
 	return SUCCEEDED(hr) ? ptexture : NULL;
 }
 
-// read an image file header using D3DX
-bool d3d_read_header_d3dx(char *file, CFILE *img_cfp, int type, int *w, int *h, int *bpp, int *bm_size)
+// create D3D texture from an image file
+int d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum)
 {
 	char filename[MAX_FILENAME_LEN];
-	CFILE *d3dx_file;
-	int size = 0;
-	void *img_data = NULL;
 
-	if (img_cfp == NULL) {
-		strcpy( filename, file);
-		char *p = strchr( filename, '.' );
-		if ( p ) *p = 0;
+	strcpy( filename, file);
+	char *p = strchr( filename, '.' );
+	if ( p ) *p = 0;
 
-		// only use formats that aren't otherwise supported since that's faster than
-		// reading the entire file just to get the header info.
-		switch (type) {
-			case BM_TYPE_JPG:
-				strcat( filename, ".jpg" );
-				break;
+	switch (type) {
+		case BM_TYPE_DXT1:
+		case BM_TYPE_DXT3:
+		case BM_TYPE_DXT5:
+		case BM_TYPE_DDS:
+			strcat( filename, ".dds" );
+			break;
 
-			default:
-				return false;
-		}
+		case BM_TYPE_TGA:
+			strcat( filename, ".tga" );
+			break;
 
-		d3dx_file = cfopen( filename , "rb" );
+		case BM_TYPE_JPG:
+			strcat( filename, ".jpg" );
+			break;
 
-		if (d3dx_file == NULL){
-			return false;
-		}
-	} else {
-		d3dx_file = img_cfp;
+		default:
+			return 0;
 	}
 
-	size = cfilelength(d3dx_file);
+	CFILE *img_file = cfopen( filename , "rb" );
 
-	img_data = vm_malloc(size); //I freed this - Bobboau
-
-	if (img_data == NULL)
-		return false;
-
-	cfread(img_data, size, 1, d3dx_file);	
-
-	if (img_cfp == NULL) {
-		cfclose(d3dx_file);
-		d3dx_file = NULL;
+	if (img_file == NULL) {
+		DBUGFILE_OUTPUT_1("Failed to open through cfopen '%s'", filename);
+		return 0;
 	}
 
-	D3DXIMAGE_INFO source_desc;
-	if(FAILED(D3DXGetImageInfoFromFileInMemory(img_data, size,	&source_desc))) {
-		vm_free(img_data);//right here -Bobboau
-		return false;
-	} 
+	int size = cfilelength(img_file);
+	void *img_data = vm_malloc(size);
 
-	if(w) *w = source_desc.Width;
-	if(h) *h = source_desc.Height;
-	if(bpp) *bpp = (source_desc.Depth / 8);
-	if(bm_size) *bm_size = (source_desc.Width * source_desc.Height * (source_desc.Depth / 8));
-	
-	vm_free(img_data);//and right here -Bobboau
-	return true;
+	if  (img_data == NULL)
+		return 0;
+
+	cfread(img_data, size, 1, img_file);	
+
+	cfclose(img_file);
+	img_file = NULL;
+
+	d3d_bitmap_entry[bitmapnum].tinterface = (IDirect3DBaseTexture8*) d3d_make_texture(img_data, bitmapnum, size, type, flags, filename);
+
+	vm_free(img_data);
+
+	return 1;
 }
 
 // Load an image and validate it while retrieving information for later use
@@ -246,6 +481,28 @@ int gr_d3d_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, in
 			mprintf(("dds: Couldn't open '%s' -- error description %s\n", filename, dds_error_string(dds_error)));
 			return -1;
 		}
+		
+		switch (dds_ct) {
+			case DDS_DXT1:
+				*c_type = BM_TYPE_DXT1;
+				break;
+				
+			case DDS_DXT3:
+				*c_type = BM_TYPE_DXT3;
+				break;
+				
+			case DDS_DXT5:
+				*c_type = BM_TYPE_DXT5;
+				break;
+				
+			case DDS_UNCOMPRESSED:
+				*c_type = BM_TYPE_DDS;
+				break;
+				
+			default:
+				Error(LOCATION, "bad DDS file compression.  Not using DXT1,3,5 %s", filename);
+				return -1;
+		}
 	}
 	// if its a tga file
 	else if (type == BM_TYPE_TGA) {
@@ -259,7 +516,6 @@ int gr_d3d_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, in
 	else if (type == BM_TYPE_PCX) {
 		int pcx_error = pcx_read_header( filename, img_cfp, w, h, bpp, NULL );		
 		if ( pcx_error != PCX_ERROR_NONE )	{
-			DBUGFILE_OUTPUT_1("bm_pcx: Cant load %s",filename);
 			mprintf(( "bm_pcx: Couldn't open '%s'\n", filename ));
 			return -1;
 		}
@@ -271,14 +527,10 @@ int gr_d3d_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, in
 			mprintf(( "jpg: Couldn't open '%s'\n", filename ));
 			return -1;
 		}
-	}
-	// send anything else through D3DX
-	else {
-		if(d3d_read_header_d3dx( filename, img_cfp, type, w, h, bpp, bm_size) == false) {
-			DBUGFILE_OUTPUT_1("not bm_pcx: Cant load %s",filename);
-			mprintf(( "not bm_pcx: Couldn't open '%s'\n", filename ));
-			return -1;
-		}
+	} else {
+		Assert( 0 );
+		
+		return -1;
 	}
 
 	return 0;
@@ -289,8 +541,7 @@ void gr_d3d_bm_init(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	d3d_bitmap_entry[n].flags = 0;
-	d3d_bitmap_entry[n].tinterface = NULL;
+	memset( &d3d_bitmap_entry[n], 0, sizeof(D3DBitmapData) );
 }
 
 extern void gr_d3d_preload_init();
@@ -303,63 +554,13 @@ void gr_d3d_bm_page_in_start()
 		GlobalD3DVars::lpD3DDevice->ResourceManagerDiscardBytes(0);
 }
 
-// create D3D texture from an image file
-void *d3d_lock_d3dx_types(char *file, int type, ubyte flags, int bitmapnum)
-{
-	char filename[MAX_FILENAME_LEN];
-
-	strcpy( filename, file);
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-
-	switch (type) {
-		case BM_TYPE_DDS:
-			strcat( filename, ".dds" );
-			break;
-		
-		case BM_TYPE_TGA:
-			strcat( filename, ".tga" );
-			break;
-		
-		case BM_TYPE_JPG:
-			strcat( filename, ".jpg" );
-			break;
-
-		default:
-			return NULL;
-	}
-
-	CFILE *targa_file = cfopen( filename , "rb" );
-
-	if (targa_file == NULL) {
-		DBUGFILE_OUTPUT_1("Failed to open through cfopen '%s'", filename);
-		return NULL;
-	}
-
-	int size = cfilelength(targa_file);
-	void *tga_data = vm_malloc(size);
-
-	if  (tga_data == NULL)
-		return NULL;
-
-	cfread(tga_data, size, 1, targa_file);	
-
-	cfclose(targa_file);
-	targa_file = NULL;
-
-	IDirect3DTexture8 *ptexture = d3d_make_texture(tga_data, bitmapnum, size, type, flags);
-
-	vm_free(tga_data);
-
-	return ptexture;
-}
-
 // Lock an image files data into memory
 int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags)
 {
 	ubyte c_type = BM_TYPE_NONE;
 	char realname[MAX_FILENAME_LEN];
 	ubyte true_bpp;
+	int try_compress = 0;
 
 	bitmap_entry *be = &bm_bitmaps[bitmapnum];
 	bitmap *bmp = &be->bm;
@@ -374,44 +575,13 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 		true_bpp = bpp;
 	}
 
-	// make sure we use the real graphic type for EFFs
-	if ( be->type == BM_TYPE_EFF ) {
-		c_type = be->info.eff.type;
-		strcpy(realname, be->info.eff.filename);
-	} else {
-		c_type = be->type;
-		strcpy(realname, be->filename);
-	}
-
-	if (c_type > BM_TYPE_32_BIT_FORMATS) {
-		if(d3d_bitmap_entry[bitmapnum].tinterface == NULL) {
-			Assert(be->ref_count == 1);
-	
-			switch ( c_type ) {
-				// We'll let D3DX handle this
-				case BM_TYPE_JPG:
-				case BM_TYPE_DDS:
-				case BM_TYPE_TGA:
-					d3d_bitmap_entry[bitmapnum].tinterface = 
-						(IDirect3DBaseTexture8 *) d3d_lock_d3dx_types(realname, c_type, flags, bitmapnum);			
-					break;
-
-				default:
-					Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", c_type );
-					return -1;
-			}
-
-			bm_update_memory_used( bitmapnum, be->mem_taken );
-		}
-	} else if ( (bmp->data == 0) && (d3d_bitmap_entry[bitmapnum].tinterface == NULL) || (true_bpp != bmp->bpp && bmp->bpp != 32)) {
+	if ( (bmp->data == 0) && (d3d_bitmap_entry[bitmapnum].tinterface == NULL) ) {
 		Assert(be->ref_count == 1);
 
 		if ( c_type != BM_TYPE_USER ) {
 			if ( bmp->data == 0 ) {
 				mprintf (("Loading %s for the first time.\n", filename));
-			} else if ( bpp != bmp->bpp ) {
-				mprintf (("Reloading %s from bitdepth %d to bitdepth %d\n", filename, bmp->bpp, true_bpp));
-			} 
+			}
 		}
 
 		if ( !Bm_paging )	{
@@ -431,19 +601,69 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 		   	BM_SELECT_SCREEN_FORMAT();
 		}
 
+		// make sure we use the real graphic type for EFFs
+		if ( be->type == BM_TYPE_EFF ) {
+			c_type = be->info.ani.eff.type;
+			strcpy(realname, be->info.ani.eff.filename);
+		} else {
+			c_type = be->type;
+			strcpy(realname, be->filename);
+		}
+
+		try_compress = (Cmdline_img2dds && Texture_compression_available && is_power_of_two(bmp->w, bmp->h) && !(flags & BMP_AABITMAP) && !Is_standalone);
+
 		switch ( c_type ) {
 			case BM_TYPE_PCX:
-				// mprintf(("MEMLEAK DEBUG: lock pcx\n"));		// Someone care to say what this means? - UnknownPlayer
+				if (try_compress && (true_bpp >= 16)) {
+					if ( !d3d_bm_lock_compress(handle, bitmapnum, be, bmp, true_bpp, flags) ) {
+						break;
+					}
+				}
+
 		  		bm_lock_pcx( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
-			case BM_TYPE_ANI: 
+			case BM_TYPE_ANI:
+				if (try_compress && (true_bpp >= 16) && !(flags & BMP_TEX_XPARENT)) {
+					if ( !d3d_bm_lock_ani_compress(handle, bitmapnum, be, bmp, true_bpp, flags) ) {
+						break;
+					}
+				}
+
 				bm_lock_ani( handle, bitmapnum, be, bmp, true_bpp, flags );
+				break;
+
+			case BM_TYPE_TGA:
+				/*if (try_compress && (true_bpp >= 24)) {
+					if ( !d3d_bm_lock_compress(handle, bitmapnum, be, bmp, true_bpp, flags) ) {
+						break;
+					}
+				}*/
+				
+				d3d_lock_d3dx_types(realname, c_type, flags, bitmapnum);			
+				break;
+				
+			case BM_TYPE_JPG:
+				/*if (try_compress) {
+					if ( !d3d_bm_lock_compress(handle, bitmapnum, be, bmp, true_bpp, flags) ) {
+						break;
+					}
+				}*/
+				
+				d3d_lock_d3dx_types(realname, c_type, flags, bitmapnum);			
+				break;
+
+			case BM_TYPE_DDS:
+			case BM_TYPE_DXT1:
+			case BM_TYPE_DXT3:
+			case BM_TYPE_DXT5:
+				d3d_lock_d3dx_types(realname, c_type, flags, bitmapnum);			
 				break;
 
 			case BM_TYPE_USER:	
 				bm_lock_user( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
+
 			default:
 				Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", c_type );
 				return -1;
@@ -463,8 +683,9 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 }
 
 // Lock a image file's data into memory and set it as a texture
-bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte flags, float *u_scale, float *v_scale )
+bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, int bitmap_type, float *u_scale, float *v_scale )
 {
+	ubyte true_bpp;
 	int bitmapnum = handle % MAX_BITMAPS;
 	Assert( bm_bitmaps[bitmapnum].handle == handle );		// INVALID BITMAP HANDLE
 
@@ -472,21 +693,89 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 
 	if(bm_bitmaps[bitmapnum].type == BMP_TEX_DYNAMIC_RENDER_TARGET || bm_bitmaps[bitmapnum].type == BMP_TEX_STATIC_RENDER_TARGET)return true;
 
+	if (Is_standalone) {
+		true_bpp = 8;
+	}
+	// not really sure how well this is going to work out in every case but...
+	else if ( Cmdline_jpgtga && (bm_bitmaps[bitmapnum].bm.true_bpp > bpp) ) {
+		true_bpp = bm_bitmaps[bitmapnum].bm.true_bpp;
+	} else {
+		true_bpp = bpp;
+	}
+
+	ubyte bmp_flags = 0;
+	switch (bitmap_type) {
+		case TCACHE_TYPE_AABITMAP:
+			bmp_flags |= BMP_AABITMAP;
+			break;
+		case TCACHE_TYPE_NORMAL:
+			bmp_flags |= BMP_TEX_OTHER;
+			break;
+		case TCACHE_TYPE_INTERFACE:
+		case TCACHE_TYPE_XPARENT:
+			bmp_flags |= BMP_TEX_XPARENT;				
+			break;
+		case TCACHE_TYPE_NONDARKENING:		
+			Int3();
+			bmp_flags |= BMP_TEX_NONDARK;
+			break;
+		case TCACHE_TYPE_COMPRESSED:
+			switch (bm_is_compressed(handle)) {
+				case DDS_DXT1:				//dxt1
+					bmp_flags |= BMP_TEX_DXT1;
+					break;
+				case DDS_DXT3:				//dxt3
+					bmp_flags |= BMP_TEX_DXT3;
+					break;
+				case DDS_DXT5:				//dxt5
+					bmp_flags |= BMP_TEX_DXT5;
+					break;
+				default:
+					Assert( 0 );
+					break;
+			}
+			break;
+	}
+
 	if (bm_bitmaps[bitmapnum].type == BM_TYPE_EFF) {
-		c_type = bm_bitmaps[bitmapnum].info.eff.type;
+		c_type = bm_bitmaps[bitmapnum].info.ani.eff.type;
 	} else {
 		c_type = bm_bitmaps[bitmapnum].type;
 	}
 
-	int valid_type = 
-		c_type == BM_TYPE_TGA || 
-		c_type == BM_TYPE_DDS || 
-		c_type == BM_TYPE_JPG;
+	int valid_type = 0;
 
-	if(valid_type)	
-	{
+	int try_compress = (Cmdline_img2dds && Texture_compression_available && 
+						is_power_of_two(bm_bitmaps[bitmapnum].bm.w, bm_bitmaps[bitmapnum].bm.h) && 
+						!(bmp_flags & BMP_AABITMAP) && !Is_standalone);
+
+	switch ( c_type ) {
+		case BM_TYPE_DXT1:
+		case BM_TYPE_DXT3:
+		case BM_TYPE_DXT5:
+		case BM_TYPE_DDS:
+		case BM_TYPE_JPG:
+		case BM_TYPE_TGA:
+			valid_type = 1;
+			break;
+
+		case BM_TYPE_ANI:
+		case BM_TYPE_PCX:
+			if ( try_compress && (true_bpp >= 16) && !(bmp_flags & BMP_TEX_XPARENT) ) {
+				valid_type = 1;
+			} else {
+				valid_type = 0;
+			}
+			break;
+	
+		default:
+			valid_type = 0;
+			break;
+	}
+
+	if (valid_type) {
 		// There is no internal texture
-		bm_lock(handle, bpp, flags );
+		bm_lock(handle, true_bpp, bmp_flags );
 		bm_unlock(handle); 
 		
 	 	if(u_scale) *u_scale = d3d_bitmap_entry[bitmapnum].uscale;
@@ -504,7 +793,7 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, ubyte f
 			tcache_slot_d3d t;
 			t.bitmap_id = -1;
 
-			d3d_create_texture(handle, flags, &t, 0); 
+			d3d_create_texture(handle, bitmap_type, &t, 0); 
 			d3d_bitmap_entry[bitmapnum].uscale = t.u_scale;
 	 		d3d_bitmap_entry[bitmapnum].vscale = t.v_scale;
 		  	d3d_bitmap_entry[bitmapnum].tinterface = t.d3d8_thandle;

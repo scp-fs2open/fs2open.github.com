@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.139 $
- * $Date: 2005-10-26 20:54:18 $
+ * $Revision: 2.140 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2005/10/26 20:54:18  taylor
+ * D3D missed the non-standard resolution updates for aabitmaps, should fix briefing icon positioning
+ *
  * Revision 2.138  2005/10/23 20:34:29  taylor
  * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
  *
@@ -915,8 +918,6 @@ static WORD original_gamma_ramp[3][256];
 
 int VBO_ENABLED = 0;
 
-extern int Texture_compression_enabled;
-
 static int GL_dump_frames = 0;
 static ubyte *GL_dump_buffer = NULL;
 static int GL_dump_frame_number = 0;
@@ -950,7 +951,7 @@ static float max_aniso=1.0f;			//max anisotropic filtering ratio
 static float GL_uv_resize_offset_u = 0.0f;
 static float GL_uv_resize_offset_v = 0.0f;
 
-void (*gr_opengl_set_tex_src)(gr_texture_source ts);
+void (*opengl_set_tex_src)(gr_texture_source ts);
 
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
@@ -1034,15 +1035,13 @@ void opengl_go_fullscreen(HWND wnd)
 
 void opengl_minimize()
 {
-	mprintf(("opengl_minimize\n"));
-	
 #ifdef _WIN32
-	HWND wnd=(HWND)os_get_window();
+	HWND wnd = (HWND)os_get_window();
 
-//	os_suspend();
+	os_suspend();
 	ShowWindow(wnd, SW_MINIMIZE);
-	ChangeDisplaySettings(NULL,0);
-//	os_resume();
+	ChangeDisplaySettings(NULL, 0);
+	os_resume();
 #else
 	// lets not minimize if we are in windowed mode
 	if (!(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN))
@@ -1064,7 +1063,7 @@ gr_texture_source	GL_current_tex_src=TEXTURE_SOURCE_NONE;
 gr_alpha_blend		GL_current_alpha_blend=ALPHA_BLEND_NONE;
 gr_zbuffer_type		GL_current_ztype=ZBUFFER_TYPE_NONE;
 
-void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
+void opengl_set_tex_state_combine_arb(gr_texture_source ts)
 {
 	switch (ts) {
 		case TEXTURE_SOURCE_NONE:
@@ -1113,7 +1112,7 @@ void gr_opengl_set_tex_state_combine_arb(gr_texture_source ts)
 	}
 }
 
-void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
+void opengl_set_tex_state_combine_ext(gr_texture_source ts)
 {
 	switch (ts) {
 		case TEXTURE_SOURCE_NONE:
@@ -1157,7 +1156,7 @@ void gr_opengl_set_tex_state_combine_ext(gr_texture_source ts)
 }
 
 
-void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
+void opengl_set_tex_state_no_combine(gr_texture_source ts)
 {
 	switch (ts) {
 		case TEXTURE_SOURCE_NONE:
@@ -1197,10 +1196,10 @@ void gr_opengl_set_tex_state_no_combine(gr_texture_source ts)
 	GL_current_tex_src=ts;
 }
 
-void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
+void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt)
 {
 
-	gr_opengl_set_tex_src(ts);
+	opengl_set_tex_src(ts);
 
 
 	switch (ab) {
@@ -1302,7 +1301,8 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h);
 void opengl_tcache_frame ();
 void gr_opengl_flip()
 {
-	if (!OGL_enabled) return;
+	if (!OGL_enabled)
+		return;
 
 	gr_reset_clip();
 
@@ -1579,7 +1579,7 @@ void gr_opengl_shade(int x,int y,int w,int h)
 }
 */
 
-void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize)
+void gr_opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize)
 {
 //	mprintf(("gr_opengl_aabitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s\n", 
   //				x, y, w, h, 
@@ -1597,13 +1597,13 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 		return;
 	}
 
-	gr_opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+	opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
 	int bw, bh, do_resize;
 
-	if ( (gr_screen.custom_size != -1) && (resize || (gr_screen.rendering_to_texture != -1)) ) {
+	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
 		do_resize = 1;
 	} else {
 		do_resize = 0;
@@ -1657,7 +1657,7 @@ void gr_opengl_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool r
 
 }
 
-void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
+void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize)
 {
 	int reclip;
 	#ifndef NDEBUG
@@ -1667,13 +1667,19 @@ void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 	int dx1=x, dx2=x+w-1;
 	int dy1=y, dy2=y+h-1;
 
-	int bw, bh;
+	int bw, bh, do_resize;
 	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
 
-	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
+
+	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
 	do {
 		reclip = 0;
@@ -1739,22 +1745,29 @@ void gr_opengl_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 	#endif
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	gr_opengl_aabitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
+	gr_opengl_aabitmap_ex_internal(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize);
 }
 
 void gr_opengl_aabitmap(int x, int y, bool resize)
 {
-	int w, h;
+	int w, h, do_resize;
 
 	bm_get_info( gr_screen.current_bitmap, &w, &h, NULL );
+
+	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
+
 	int dx1=x, dx2=x+w-1;
 	int dy1=y, dy2=y+h-1;
 	int sx=0, sy=0;
 
-	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
 	if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
 	if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
@@ -1769,7 +1782,7 @@ void gr_opengl_aabitmap(int x, int y, bool resize)
 	if ( sy >= h ) return;
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-	gr_aabitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
+	gr_aabitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize);
 }
 
 
@@ -1778,16 +1791,22 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 	TIMERBAR_PUSH(4);
 
 	int width, spacing, letter;
-	int x, y;
+	int x, y, do_resize;
 
 	if ( !Current_font || (*s == 0) )	{
 		return;
 	}
 
-	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
+
+	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
 	gr_set_bitmap(Current_font->bitmap_id);
 
@@ -1857,15 +1876,14 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 
 void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 {
-	if(resize || gr_screen.rendering_to_texture != -1)
-	{
+	if (resize || gr_screen.rendering_to_texture != -1) {
 		gr_resize_screen_pos(&x1, &y1);
 		gr_resize_screen_pos(&x2, &y2);
 	}
 
 	int clipped = 0, swapped=0;
 
-	gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 	
 	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);
 	
@@ -1966,7 +1984,7 @@ void gr_opengl_gradient(int x1, int y1, int x2, int y2, bool resize)
 
 	INT_CLIPLINE(x1,y1,x2,y2,gr_screen.clip_left,gr_screen.clip_top,gr_screen.clip_right,gr_screen.clip_bottom,return,clipped=1,swapped=1);
 
-	gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 
 	int aa = swapped ? 0 : gr_screen.current_color.alpha;
 	int ba = swapped ? gr_screen.current_color.alpha : 0;
@@ -2007,7 +2025,7 @@ void gr_opengl_circle( int xc, int yc, int d, bool resize )
 {
 	int p,x, y, r;
 
-	if(resize || gr_screen.rendering_to_texture != -1)
+	if (resize || gr_screen.rendering_to_texture != -1)
 		gr_resize_screen_pos(&xc, &yc);
 
 	r = d/2;
@@ -2317,7 +2335,7 @@ void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int 
 	// render with spec lighting only
 	opengl_default_light_settings(0, 0, 1);
 
-	gr_opengl_set_modulate_tex_env();
+	opengl_set_modulate_tex_env();
 
 	glBlendFunc(GL_ONE,GL_ONE);
 	glDepthMask(GL_FALSE);
@@ -2415,7 +2433,7 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 		}
 	}
 
-	gr_opengl_set_state( texture_source, alpha_blend, zbuffer_type );
+	opengl_set_state( texture_source, alpha_blend, zbuffer_type );
 }
 
 void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_scaler )
@@ -2452,7 +2470,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 				return;
 			}
-			gr_opengl_set_additive_tex_env();
+			opengl_set_additive_tex_env();
 			stage++; // bump
 		}
 
@@ -2462,7 +2480,7 @@ void gr_opengl_tmapper_internal( int nv, vertex ** verts, uint flags, int is_sca
 				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 				return;
 			}
-			gr_opengl_set_additive_tex_env();
+			opengl_set_additive_tex_env();
 			stage++; // bump
 		}
 
@@ -2900,9 +2918,9 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	}
 	
   	if (gr_screen.current_fog_mode != fog_mode) {
-	  	if (OGL_fogmode==3)
+	  	if (OGL_fogmode==3) {
 			glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
-
+		}
 		// Um.. this is not the correct way to fog in software, probably doesnt matter though
 		else if (OGL_fogmode==2 && Cmdline_nohtl)
 		{
@@ -2978,7 +2996,7 @@ void gr_opengl_flash(int r, int g, int b)
 	CAP(b,0,255);
 	
 	if ( r || g || b ) {
-		gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
+		opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
 		
 		float x1, x2, y1, y2;
 		x1 = i2fl(gr_screen.clip_left+gr_screen.offset_x);
@@ -3028,7 +3046,7 @@ void gr_opengl_zbuffer_clear(int mode)
 		gr_zbuffering_mode = GR_ZBUFF_FULL;
 		gr_global_zbuffering = 1;
 		
-		gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
+		opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
 		glClear ( GL_DEPTH_BUFFER_BIT );
 	} else {
 		gr_zbuffering = 0;
@@ -3112,7 +3130,7 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 		glReadBuffer(GL_BACK);
 //	}
 
-	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+	opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 	
 	if (gr_screen.bits_per_pixel == 16) {
 		glReadPixels(0, gr_screen.max_h-h, w, h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
@@ -3158,7 +3176,7 @@ void gr_opengl_save_mouse_area(int x, int y, int w, int h)
         
 	Assert( (w * h) <= MAX_MOUSE_SAVE_SIZE );
 
-	gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+	opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
         
 	// this should really only have to be malloc'd once
 	if (GL_saved_mouse_data == NULL)
@@ -3425,7 +3443,7 @@ void gr_opengl_bitmap_internal(int x,int y,int w,int h,int sx,int sy)
 
 	int htemp=(int)pow((double)2,ceil(log10((double)h)/log10((double)2)));
 	int wtemp=(int)pow((double)2,ceil(log10((double)w)/log10((double)2)));
-	//gr_opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+	//opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 
 	glGenTextures(1, &tex);
 
@@ -3664,7 +3682,7 @@ void opengl_render_timer_bar(int colour, float x, float y, float w, float h)
 
 	y += 5;
 
-	gr_opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
+	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
 
 	glColor3fv(pre_set_colours[colour]);
 
@@ -3697,7 +3715,7 @@ int opengl_check_for_errors()
 		error = glGetError();
 		
 		if (error != GL_NO_ERROR) {
-			nprintf(("OpenGL", "!!ERROR!!: %s\n", gluErrorString(error)));
+			nprintf(("OpenGL", "OGL Error: %s (%i)\n", gluErrorString(error), error));
 			ec++;
 		}
 	} while (error != GL_NO_ERROR);
@@ -4223,17 +4241,17 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	Mouse_hidden--;
 
 	//if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
-	Texture_compression_enabled=((GL_Extensions[GL_TEX_COMP_S3TC].enabled) && (GL_Extensions[GL_COMP_TEX].enabled));
+	Use_compressed_textures = opengl_extension_is_enabled(GL_TEX_COMP_S3TC);
+	Texture_compression_available = opengl_extension_is_enabled(GL_COMP_TEX);
 
 	//setup anisotropic filtering if found
-	if (GL_Extensions[GL_TEX_FILTER_ANSIO].enabled)
-	{
+	if ( opengl_extension_is_enabled(GL_TEX_FILTER_ANSIO) ) {
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
 	}
 
 	//allow VBOs to be used
-	if ( (!Cmdline_nohtl) && (!Cmdline_novbo) && (GL_Extensions[GL_ARB_VBO_BIND_BUFFER].enabled))
+	if ( !Cmdline_nohtl && !Cmdline_novbo && opengl_extension_is_enabled(GL_ARB_VBO_BIND_BUFFER) )
 		VBO_ENABLED = 1;
 	
 //	glTexParameteri(GL_TEXTURE_2D,GL_GENERATE_MIPMAP_SGIS,GL_TRUE);
@@ -4259,23 +4277,25 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
 
 	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled) {
-		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_arb;
+		opengl_set_tex_src = opengl_set_tex_state_combine_arb;
 	} else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled) {
-		gr_opengl_set_tex_src = gr_opengl_set_tex_state_combine_ext;
+		opengl_set_tex_src = opengl_set_tex_state_combine_ext;
 	} else {
-		gr_opengl_set_tex_src = gr_opengl_set_tex_state_no_combine;
+		opengl_set_tex_src = opengl_set_tex_state_no_combine;
 	}
 
 	// setup the lighting stuff that will get used later
 	opengl_init_light();
 
 	glDisable(GL_LIGHTING); //making sure of it
+	glDisable(GL_MULTISAMPLE_ARB);
 
 	mprintf(( "  Max texture units: %i\n", GL_supported_texture_units ));
 	mprintf(( "  Max elements vertices: %i\n", GL_max_elements_vertices ));
 	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
-	mprintf(( "  Texture compression enabled: %s\n", Texture_compression_enabled ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
 	mprintf(( "\n" ));
 
 	// This stops fred crashing if no textures are set

@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/bmpman/bm_internal.h $
- * $Revision: 2.3 $
- * $Date: 2005-04-21 15:49:20 $
+ * $Revision: 2.4 $
+ * $Date: 2005-11-13 06:44:17 $
  * $Author: taylor $
  *
  * bmpman info that's internal to bmpman related files only
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/04/21 15:49:20  taylor
+ * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
+ *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
+ *  - a little "stupid" fix for dds bitmap reading
+ *  - fix it so that memory is released properly on bitmap read errors
+ *  - some cleanup to model texture loading
+ *  - allow model textures to get released rather than just unloaded, saves bitmap slots
+ *  - bump MAX_BITMAPS to 4750, should be able to decrease after public testing of new code
+ *
  * Revision 2.2  2005/03/03 14:29:37  bobboau
  * fixed a small error from my earlier commit.
  *
@@ -62,24 +71,26 @@
 
 /// Moved from cpp file ///////////////////
 // Consider these 'protected' structures and functions that should only be used by special bitmap functions
-typedef struct bm_extra_info {
+typedef union bm_extra_info {
 	struct {
 		// Stuff needed for animations
 		int		first_frame;								// used for animations -- points to index of first frame
-		ubyte		num_frames;									// used for animation -- number of frames in the animation
-		ubyte		fps;											// used for animation -- frames per second
+		ubyte	num_frames;									// used for animation -- number of frames in the animation
+		ubyte	fps;										// used for animation -- frames per second
+
+		struct {
+			// stuff for static animations
+			ubyte	type;									// type for individual images
+			char	filename[MAX_FILENAME_LEN];				// filename for individual images
+		} eff;
 	} ani;
+
 	struct {
 		// Stuff needed for user bitmaps
 		void		*data;									// For user bitmaps, this is where the data comes from
 		ubyte		bpp;									// For user bitmaps, this is what format the data is
 		ubyte		flags;									// Flags passed to bm_create
 	} user;
-	struct {
-		// Stuff for static animations
-		ubyte		type;									// type for individual images
-		char		filename[MAX_FILENAME_LEN];				// filename for individual images
-	} eff;
 } bm_extra_info;
 
 
@@ -92,7 +103,8 @@ typedef struct bitmap_entry	{
 	int		handle;										// Handle = id*MAX_BITMAPS + bitmapnum
 	int		last_used;									// When this bitmap was last used
 
-	ubyte		type;											// PCX, USER, ANI, etc
+	ubyte		type;									// PCX, USER, ANI, etc
+	ubyte		comp_type;								// What sort of compressed type, BM_TYPE_NONE if not compressed
 	signed char	ref_count;								// Number of locks on bitmap.  Can't unload unless ref_count is 0.
 
 	int		dir_type;								// which directory this was loaded from (to skip other locations with same name)

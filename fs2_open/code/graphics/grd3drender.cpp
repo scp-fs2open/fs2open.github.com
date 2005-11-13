@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.78 $
- * $Date: 2005-10-26 20:54:18 $
+ * $Revision: 2.79 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2005/10/26 20:54:18  taylor
+ * D3D missed the non-standard resolution updates for aabitmaps, should fix briefing icon positioning
+ *
  * Revision 2.77  2005/08/25 22:40:03  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -877,7 +880,7 @@ void gr_d3d_set_state( gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type 
 	case TEXTURE_SOURCE_DECAL:
 		d3d_SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR );
 		d3d_SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR );
-		if( Cmdline_d3dmipmap ) {
+		if( Cmdline_mipmap ) {
 			d3d_SetTextureStageState(0, D3DTSS_MIPFILTER, D3DTEXF_LINEAR );
 		  	const float f_bias = -2.0f;
 		 	d3d_SetTextureStageState(0, D3DTSS_MIPMAPLODBIAS, *((LPDWORD) (&f_bias)));

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:35:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2005-11-13 06:44:18 $
+ * $Author: taylor $
  *
  * header file for PCX utilities
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:35:34  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/02/04 10:12:32  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -106,11 +110,12 @@ extern "C" {
 #define PCX_ERROR_MEMORY			7
 
 extern int pcx_read_header(char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, ubyte *pal = NULL );
-extern int pcx_read_bitmap_8bpp( char * filename, ubyte *org_data, ubyte *palette );
-extern int pcx_read_bitmap_16bpp( char * filename, ubyte *org_data );
-extern int pcx_read_bitmap_16bpp_aabitmap( char *filename, ubyte *org_data );
-extern int pcx_read_bitmap_16bpp_nondark( char *filename, ubyte *org_data );
-extern int pcx_read_bitmap_32(char *real_filename, ubyte *data );
+//extern int pcx_read_bitmap_8bpp( char * filename, ubyte *org_data, ubyte *palette );
+//extern int pcx_read_bitmap_16bpp( char * filename, ubyte *org_data );
+//extern int pcx_read_bitmap_16bpp_aabitmap( char *filename, ubyte *org_data );
+//extern int pcx_read_bitmap_16bpp_nondark( char *filename, ubyte *org_data );
+//extern int pcx_read_bitmap_32(char *real_filename, ubyte *data );
+extern int pcx_read_bitmap(char *filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap = 0, int nondark = 0);
 
 // Dumps a 8bpp bitmap to a file.
 // Set rowoff to -w for upside down bitmaps.

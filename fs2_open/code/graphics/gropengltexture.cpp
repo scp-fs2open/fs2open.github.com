@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.28 $
- * $Date: 2005-10-23 20:34:30 $
+ * $Revision: 1.29 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2005/10/23 20:34:30  taylor
+ * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
+ *
  * Revision 1.27  2005/10/23 19:07:18  taylor
  * make AABITMAP use GL_ALPHA rather than GL_LUMINANCE_ALPHA (now 8-bit instead of 16-bit, fixes several minor rendering issues)
  *
@@ -205,7 +208,7 @@ extern int Interp_multitex_cloakmap;
 static int GL_texture_units_enabled[32]={0};
 
 
-void gr_opengl_set_additive_tex_env()
+void opengl_set_additive_tex_env()
 {
 	if (opengl_extension_is_enabled(GL_ARB_ENV_COMBINE))
 	{
@@ -230,7 +233,7 @@ void gr_opengl_set_additive_tex_env()
 	}
 }
 
-void gr_opengl_set_modulate_tex_env()
+void opengl_set_modulate_tex_env()
 {
 	if (opengl_extension_is_enabled(GL_ARB_ENV_COMBINE))
 	{
@@ -366,10 +369,11 @@ void opengl_free_texture_with_handle(int handle)
 void opengl_tcache_flush ()
 {
 	int i;
-
+	printf("flushing!\n");
 	for( i=0; i<MAX_BITMAPS; i++ )  {
-		opengl_free_texture ( &Textures[i] );
+		opengl_free_texture( &Textures[i] );
 	}
+
 	if (GL_textures_in != 0) {
 		mprintf(( "WARNING: VRAM is at %d instead of zero after flushing!\n", GL_textures_in ));
 		GL_textures_in = 0;
@@ -532,6 +536,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 		mprintf(( "ARGHH!!! Texture already used this frame!  Cannot free it!\n" ));
 		return 0;
 	}
+
 	if ( !reload )  {
 		// save the bpp since it will get reset - fixes anis being 0 bpp
 		saved_bpp = t->bpp;
@@ -571,21 +576,22 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 	// set the byte per pixel multiplier
 	byte_mult = (t->bpp >> 3);
 
-	// GL_BGRA_EXT is *much* faster with some hardware/drivers but never slower
+	// GL_BGRA_EXT is *much* faster with some hardware/drivers
 	if (byte_mult == 4) {
 		texFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
-		intFormat = GL_RGBA;
+		intFormat = (gr_screen.bits_per_pixel == 32) ? GL_RGBA8 : GL_RGB5_A1;
 		glFormat = GL_BGRA_EXT;
 	} else if (byte_mult == 3) {
 		texFormat = GL_UNSIGNED_BYTE;
-		intFormat = GL_RGB;
+		intFormat = GL_RGB8;
 		glFormat = GL_BGR_EXT;
 	} else if (byte_mult == 2) {
 		texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-		intFormat = GL_RGBA;
+		intFormat = GL_RGB5_A1;
 		glFormat = GL_BGRA_EXT;
 	} else if (byte_mult == 1) {
 		texFormat = GL_UNSIGNED_BYTE;
+		Assert( bitmap_type == TCACHE_TYPE_AABITMAP );
 	} else {
 		texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 		intFormat = GL_RGBA;
@@ -609,7 +615,7 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 			switch (bm_is_compressed(texture_handle))
 			{
 				case DDS_DXT1:
-					ctype = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+					ctype = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 					block_size = 8;
 					break;
 
@@ -756,11 +762,11 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 			break;
 		}
 	}//end switch
-	
+
 	t->bitmap_id = texture_handle;
 	t->time_created = GL_frame_count;
 	Tex_used_this_frame[idx] = 0;
-	if (bitmap_type & TCACHE_TYPE_COMPRESSED) {
+	if (bitmap_type == TCACHE_TYPE_COMPRESSED) {
 		t->size = bm_get_size(texture_handle);
 	} else {
 		t->size = tex_w * tex_h * byte_mult;
@@ -838,8 +844,13 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 
 	// set the bits per pixel
 	tslot->bpp = bmp->bpp;
-	
-	   // DDOI - TODO
+
+	// if we ended up locking a texture that wasn't originally compressed then this should catch it
+	if ( bm_is_compressed(bitmap_handle) ) {
+		bitmap_type = TCACHE_TYPE_COMPRESSED;
+	}
+
+	// DDOI - TODO
 	if ( (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE) && (bitmap_type != TCACHE_TYPE_COMPRESSED) )      {
 		// max_w /= D3D_texture_divider;
 		// max_h /= D3D_texture_divider;
@@ -1042,4 +1053,57 @@ void gr_opengl_set_texture_addressing(int mode)
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	}
+}
+
+int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, int height, int alpha )
+{
+	Assert( in_data != NULL );
+
+	GLuint tex;
+	GLint compressed = GL_FALSE;
+	GLint compressed_size = 0;
+	ubyte *out_data = NULL;
+	GLint testing = 0;
+
+	if ( !Texture_compression_available )
+		return 0;
+
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+
+	// a quick proxy test.  this will tell us if it's possible without wasting a lot of time and resources in the attempt
+	glTexImage2D(GL_PROXY_TEXTURE_2D, 0, (alpha) ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, (alpha) ? GL_BGRA_EXT : GL_BGR_EXT, GL_UNSIGNED_BYTE, in_data);
+	glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &compressed);
+	glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &testing);
+
+	if ( (compressed == GL_FALSE) || (testing == 0) ) {
+		glDeleteTextures(1, &tex);
+		return 0;
+	}
+
+	// alright, it should work if we are still here, now do it for real
+	glTexImage2D(GL_TEXTURE_2D, 0, (alpha) ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, (alpha) ? GL_BGRA_EXT : GL_BGR_EXT, GL_UNSIGNED_BYTE, in_data);
+
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &compressed);
+
+	// if we got this far then it should have worked, but check anyway
+	Assert( compressed != GL_FALSE );
+
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &compressed_size);
+
+	out_data = (ubyte*)vm_malloc(compressed_size * sizeof(ubyte));
+
+	Assert( out_data != NULL );
+
+	memset(out_data, 0, compressed_size * sizeof(ubyte));
+
+	glGetCompressedTexImageARB(GL_TEXTURE_2D, 0, out_data);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDeleteTextures(1, &tex);
+
+	// send the data back out
+	*compressed_data = out_data;
+
+	return compressed_size;
 }

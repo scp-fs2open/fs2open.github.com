@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.12 $
- * $Date: 2005-09-20 02:46:53 $
+ * $Revision: 1.13 $
+ * $Date: 2005-11-13 06:44:18 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/09/20 02:46:53  taylor
+ * slight speedup for font rendering
+ * fix a couple of things that Valgrind complained about
+ *
  * Revision 1.11  2005/09/05 09:36:41  taylor
  * merge of OSX tree
  * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
@@ -95,6 +99,8 @@ void opengl_switch_arb(int unit, int state);
 
 typedef struct tcache_slot_opengl {
 	GLuint	texture_handle;
+//	GLuint	frameb_handle;
+//	GLuint	depthb_handle;
 	float	u_scale, v_scale;
 	int	bitmap_id;
 	int	size;
@@ -137,8 +143,8 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 int opengl_create_texture_sub(int bitmap_type, int texture_handle, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data = NULL, tcache_slot_opengl *t = NULL, int resize = 0, int reload = 0, int fail_on_full = 0);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL, int fail_on_full = 0);
 int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
-void gr_opengl_set_additive_tex_env();
-void gr_opengl_set_modulate_tex_env();
+void opengl_set_additive_tex_env();
+void opengl_set_modulate_tex_env();
 void gr_opengl_set_tex_env_scale(float scale);
 int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_preload_init();

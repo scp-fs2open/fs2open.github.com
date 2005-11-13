@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.12 $
- * $Date: 2005-08-29 02:20:56 $
- * $Author: phreak $
+ * $Revision: 2.13 $
+ * $Date: 2005-11-13 06:44:18 $
+ * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/08/29 02:20:56  phreak
+ * Record state changes in gr_opengl_set_state()
+ *
  * Revision 2.11  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -141,7 +144,7 @@ const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
 void gr_opengl_init(int reinit=0);
 void gr_opengl_cleanup(int minimize=1);
 void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler);
-void gr_opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt);
+void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt);
 void gr_opengl_bitmap(int x, int y);
 void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy);
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0 );

@@ -9,6 +9,11 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/08/20 20:34:51  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 2.50  2005/05/01 23:23:18  phreak
  * added CVS info to top of file.
  *
@@ -37,7 +42,8 @@
 
 #include "debugconsole/timerbar.h"
 #include "debugconsole/dbugfile.h"
-#include "cmdline/cmdline.h"   
+#include "cmdline/cmdline.h"
+#include "ddsutils/ddsutils.h"
 
 
 
@@ -729,35 +735,13 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 		Cmdline_pcx32 = 0;
 
 	// Check compressed textures here
-	extern bool Supports_compression[NUM_COMPRESSION_TYPES];
-	D3DFORMAT compression_types[NUM_COMPRESSION_TYPES] =
-	{
-		D3DFMT_DXT1, 
-		D3DFMT_DXT2, 
-		D3DFMT_DXT3, 
-		D3DFMT_DXT4, 
-		D3DFMT_DXT5 
-	};
+	Use_compressed_textures = ( d3d_texture_format_is_supported(D3DFMT_DXT1, adapter, mode) &&
+								d3d_texture_format_is_supported(D3DFMT_DXT3, adapter, mode) &&
+								d3d_texture_format_is_supported(D3DFMT_DXT5, adapter, mode) );
 
-	for(int ct = 0; ct < NUM_COMPRESSION_TYPES; ct++)
-	{
-		Supports_compression[ct] = d3d_texture_format_is_supported(compression_types[ct], adapter, mode);
-	}
-
-  	if(Cmdline_dxt && Supports_compression[Cmdline_dxt-1] && D3D_32bit) 
-	{
-		Cmdline_dxt = 0;
-	}
-	else
-	{
-		default_compressed_format = (D3DFORMAT) (D3DFMT_DXT1 + Cmdline_dxt - 1);
-	}
-
-	// Make sure this device supports the compression
-	if(Supports_compression[4] == 0)
-	{
-		Cmdline_pcx32dds = 0;
-	}
+	Texture_compression_available = ( d3d_texture_format_is_supported(D3DFMT_A8R8G8B8, adapter, mode) &&
+									  d3d_texture_format_is_supported(D3DFMT_X8R8G8B8, adapter, mode) &&
+									  Use_compressed_textures );
 }
 
 /**
@@ -1131,7 +1115,7 @@ bool d3d_init_device()
 		GlobalD3DVars::d3dpp.FullScreen_RefreshRateInHz      = D3DPRESENT_RATE_DEFAULT;
 		GlobalD3DVars::d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
 
-		if(Cmdline_d3d_no_vsync && got_caps && GlobalD3DVars::d3d_caps.PresentationIntervals & D3DPRESENT_INTERVAL_IMMEDIATE) {
+		if(Cmdline_no_vsync && got_caps && GlobalD3DVars::d3d_caps.PresentationIntervals & D3DPRESENT_INTERVAL_IMMEDIATE) {
 			GlobalD3DVars::d3dpp.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 		}
 
