@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-10-17 02:09:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.35 $
+ * $Date: 2005-11-14 05:12:01 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/10/17 02:09:29  wmcoolmon
+ * Fix redmenace's compile problem
+ *
  * Revision 2.33  2005/10/17 00:02:46  wmcoolmon
  * Change this back for MSVC.NET?
  *
@@ -626,11 +629,7 @@ static int AL_play_position = 0;
 #endif
 
 ALCdevice *ds_sound_device = NULL;
-#ifdef _WIN32
-ALCcontext_struct *ds_sound_context = NULL;
-#else
-void *ds_sound_context = NULL;
-#endif
+ALCcontext *ds_sound_context = NULL;
 
 
 //--------------------------------------------------------------------------
@@ -1644,7 +1643,11 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 #ifdef _WIN32
 	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
 	// type problems (FIXME for a later date since I don't like this with future code) - taylor
+#ifdef AL_VERSION_1_1
+	ds_sound_device = alcOpenDevice( (const ALCchar *) NOX("DirectSound") );
+#else
 	ds_sound_device = alcOpenDevice( (const ALubyte *) NOX("DirectSound") );
+#endif // AL_VERSION_1_1
 #else
 	ds_sound_device = alcOpenDevice( NULL );
 #endif
@@ -1702,8 +1705,12 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 
 	// make sure we can actually use AL_BYTE_LOKI (Mac OpenAL doesn't have it)
 #ifndef _WIN32
+#ifdef AL_VERSION_1_1
+	AL_play_position = alIsExtensionPresent( (const ALchar*)"AL_LOKI_play_position" );
+#else
 	AL_play_position = alIsExtensionPresent( (ALubyte*)"AL_LOKI_play_position" );
-#endif
+#endif // AL_VERSION_1_1
+#endif // !_WIN32
 
 	// not a big deal here, but for consitancy sake
 	if (Ds_use_ds3d && ds3d_init(0) != 0)
