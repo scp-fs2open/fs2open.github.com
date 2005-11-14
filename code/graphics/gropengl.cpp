@@ -2,13 +2,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.140 $
- * $Date: 2005-11-13 06:44:18 $
+ * $Revision: 2.141 $
+ * $Date: 2005-11-14 08:39:00 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 2.139  2005/10/26 20:54:18  taylor
  * D3D missed the non-standard resolution updates for aabitmaps, should fix briefing icon positioning
  *
@@ -1038,10 +1046,10 @@ void opengl_minimize()
 #ifdef _WIN32
 	HWND wnd = (HWND)os_get_window();
 
-	os_suspend();
+//	os_suspend();
 	ShowWindow(wnd, SW_MINIMIZE);
 	ChangeDisplaySettings(NULL, 0);
-	os_resume();
+//	os_resume();
 #else
 	// lets not minimize if we are in windowed mode
 	if (!(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN))
