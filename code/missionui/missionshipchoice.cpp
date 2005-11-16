@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-10-29 22:09:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.53 $
+ * $Date: 2005-11-16 05:46:27 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/10/29 22:09:29  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.51  2005/10/29 09:06:52  wmcoolmon
  * Safeguard against saved loadout and loadout changes.
  *
@@ -661,10 +665,10 @@ typedef struct ss_wing_info
 //ss_wing_info	Ss_wings[MAX_WING_BLOCKS];		// holds ui info for wings and wing slots
 
 ss_wing_info	Ss_wings_teams[MAX_TVT_TEAMS][MAX_WING_BLOCKS];
-ss_wing_info	*Ss_wings;
+ss_wing_info	*Ss_wings = NULL;
 
 ss_icon_info	Ss_icons_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
-ss_icon_info	*Ss_icons;
+ss_icon_info	*Ss_icons = NULL;
 
 int Ss_mouse_down_on_region = -1;
 
@@ -1057,6 +1061,8 @@ void init_active_list()
 	int i;
 	ss_active_item	*sai;
 
+	Assert( Ss_pool != NULL );
+
 	clear_active_list();
 
 	// build the active list
@@ -1383,6 +1389,7 @@ void maybe_change_selected_wing_ship(int wb_num, int ws_num)
 
 	Assert(wb_num >= 0 && wb_num < MAX_WING_BLOCKS);
 	Assert(ws_num >= 0 && ws_num < MAX_WING_SLOTS);	
+	Assert( (Ss_wings != NULL) && (Wss_slots != NULL) );
 	
 	if ( Ss_wings[wb_num].wingnum < 0 ) {
 		return;
@@ -1473,6 +1480,8 @@ void ss_maybe_drop_icon()
 
 void ss_anim_pause()
 {
+	Assert( Ss_icons != NULL );
+
 	if ( Selected_ss_class >= 0 && Ss_icons[Selected_ss_class].ss_anim_instance ) {
 		anim_pause(Ss_icons[Selected_ss_class].ss_anim_instance);
 	}
@@ -1480,6 +1489,8 @@ void ss_anim_pause()
 
 void ss_anim_unpause()
 {
+	Assert( Ss_icons != NULL );
+
 	if ( Selected_ss_class >= 0 && Ss_icons[Selected_ss_class].ss_anim_instance ) {
 		anim_unpause(Ss_icons[Selected_ss_class].ss_anim_instance);
 	}
@@ -1991,11 +2002,12 @@ void ship_select_do(float frametime)
 
 	ss_maybe_drop_icon();
 
-	if(!Cmdline_ship_choice_3d && Ss_icons[Selected_ss_class].ss_anim != NULL)
+	Assert( Ss_icons != NULL );
+
+	if(!Cmdline_ship_choice_3d)
 	{
-		if (Selected_ss_class >= 0)
+		if ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim != NULL) )
 		{
-			Assert(Selected_ss_class >= 0);
 			if ( Ss_icons[Selected_ss_class].ss_anim_instance->frame_num == Ss_icons[Selected_ss_class].ss_anim_instance->stop_at ) { 
 				nprintf(("anim", "Frame number = %d, Stop at %d\n", Ss_icons[Selected_ss_class].ss_anim_instance->frame_num, Ss_icons[Selected_ss_class].ss_anim_instance->stop_at));
 				anim_play_struct aps;
@@ -2081,95 +2093,95 @@ void ship_select_do(float frametime)
 	//////////////////////////////////
 	// Render and draw the 3D model //
 	//////////////////////////////////
-	if(Cmdline_ship_choice_3d || Ss_icons[Selected_ss_class].ss_anim == NULL)
+	if( Cmdline_ship_choice_3d || ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim == NULL)) )
 	{
-	// check we have a valid ship class selected
-	if (Selected_ss_class >= 0 && ShipSelectModelNum >= 0)
-	{
+		// check we have a valid ship class selected
+		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
+		{
 	
-		// now render the trackball ship, which is unique to the ships tab
-		float rev_rate;
-		angles rot_angles, view_angles;
-		int z;
-		ship_info *sip = &Ship_info[Selected_ss_class];
+			// now render the trackball ship, which is unique to the ships tab
+			float rev_rate;
+			angles rot_angles, view_angles;
+			int z;
+			ship_info *sip = &Ship_info[Selected_ss_class];
 	
-		// get correct revolution rate
+			// get correct revolution rate
 	
-		rev_rate = REVOLUTION_RATE;
-		z = sip->flags;
-		if (z & SIF_BIG_SHIP) {
-			rev_rate *= 1.7f;
-		}
-		if (z & SIF_HUGE_SHIP) {
-			rev_rate *= 3.0f;
-		}
-	
-		// rotate the ship as much as required for this frame
-		ShipSelectScreenShipRot += PI2 * frametime / rev_rate;
-		while (ShipSelectScreenShipRot > PI2){
-			ShipSelectScreenShipRot -= PI2;	
-		}
-	
-		// turn off fogging
-		//gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	
-		//	reorient ship
-	/*	if (Trackball_active) {
-			int dx, dy;
-			matrix mat1, mat2;
-	
-			if (Trackball_active) {
-				mouse_get_delta(&dx, &dy);
-				if (dx || dy) {
-					vm_trackball(-dx, -dy, &mat1);
-					vm_matrix_x_matrix(&mat2, &mat1, &Techroom_ship_orient);
-					Techroom_ship_orient = mat2;
-				}
+			rev_rate = REVOLUTION_RATE;
+			z = sip->flags;
+			if (z & SIF_BIG_SHIP) {
+				rev_rate *= 1.7f;
+			}
+			if (z & SIF_HUGE_SHIP) {
+				rev_rate *= 3.0f;
 			}
 	
-		} else {
-	*/		// setup stuff needed to render the ship
-			view_angles.p = -0.6f;
-			view_angles.b = 0.0f;
-			view_angles.h = 0.0f;
-			vm_angles_2_matrix(&ShipScreenOrient, &view_angles);
+			// rotate the ship as much as required for this frame
+			ShipSelectScreenShipRot += PI2 * frametime / rev_rate;
+			while (ShipSelectScreenShipRot > PI2){
+				ShipSelectScreenShipRot -= PI2;	
+			}
 	
-			rot_angles.p = 0.0f;
-			rot_angles.b = 0.0f;
-			rot_angles.h = ShipSelectScreenShipRot;
-			vm_rotate_matrix_by_angles(&ShipScreenOrient, &rot_angles);
-	//	}
+			// turn off fogging
+			//gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+
+			//	reorient ship
+			/*	if (Trackball_active) {
+				int dx, dy;
+				matrix mat1, mat2;
+
+				if (Trackball_active) {
+					mouse_get_delta(&dx, &dy);
+					if (dx || dy) {
+						vm_trackball(-dx, -dy, &mat1);
+						vm_matrix_x_matrix(&mat2, &mat1, &Techroom_ship_orient);
+						Techroom_ship_orient = mat2;
+					}
+				}
 	
-	//	gr_set_clip(Tech_ship_display_coords[gr_screen.res][0], Tech_ship_display_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);	
-		gr_set_clip(Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);		
+			} else {
+				*/		// setup stuff needed to render the ship
+				view_angles.p = -0.6f;
+				view_angles.b = 0.0f;
+				view_angles.h = 0.0f;
+				vm_angles_2_matrix(&ShipScreenOrient, &view_angles);
 	
-		// render the ship
-		g3_start_frame(1);
-		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
-		if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+				rot_angles.p = 0.0f;
+				rot_angles.b = 0.0f;
+				rot_angles.h = ShipSelectScreenShipRot;
+				vm_rotate_matrix_by_angles(&ShipScreenOrient, &rot_angles);
+		//	}
 	
-		// lighting for techroom
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.y = 1.0f;	
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		// light_filter_reset();
-		light_rotate_all();
-		// lighting for techroom
+		//	gr_set_clip(Tech_ship_display_coords[gr_screen.res][0], Tech_ship_display_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);	
+			gr_set_clip(Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);		
 	
-		model_clear_instance(ShipSelectModelNum);
-		model_set_detail_level(0);
-		model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+			// render the ship
+			g3_start_frame(1);
+			g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
+			if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+			if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
-		if (!Cmdline_nohtl) 
-		{
-			gr_end_view_matrix();
-			gr_end_proj_matrix();
+			// lighting for techroom
+			light_reset();
+			vec3d light_dir = vmd_zero_vector;
+			light_dir.xyz.y = 1.0f;	
+			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+			// light_filter_reset();
+			light_rotate_all();
+			// lighting for techroom
+	
+			model_clear_instance(ShipSelectModelNum);
+			model_set_detail_level(0);
+			model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+			if (!Cmdline_nohtl) 
+			{
+				gr_end_view_matrix();
+				gr_end_proj_matrix();
+			}
+
+			g3_end_frame();
 		}
-	
-		g3_end_frame();
-	}
 	}
 
 	gr_reset_clip();
@@ -2242,6 +2254,8 @@ void ss_unload_icons()
 	int					i,j;
 	ss_icon_info		*icon;
 
+	Assert( Ss_icons != NULL );
+
 	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
 		icon = &Ss_icons[i];
 
@@ -2292,6 +2306,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 
 	Assert( screen_offset >= 0 && screen_offset <= 3 );
 	Assert( ship_class >= 0 );
+	Assert( (Ss_pool != NULL) && (Ss_icons != NULL) );
 	ss_icon = &Ss_icons[ship_class];
 
 	num_x = Ship_list_coords[gr_screen.res][screen_offset][2];
@@ -2370,6 +2385,8 @@ void stop_ship_animation()
 
 	if ( Ship_anim_class == -1 ) 
 		return;
+
+	Assert( Ss_icons != NULL );
 
 	ss_icon = &Ss_icons[Ship_anim_class];
 
@@ -2468,6 +2485,7 @@ void start_ship_animation(int ship_class, int play_sound)
 
 		ss_icon_info	*ss_icon;
 		Assert( ship_class >= 0 );
+		Assert( Ss_icons != NULL );
 		
 		if ( Ship_anim_class == ship_class ) 
 			return;
@@ -2510,6 +2528,8 @@ void start_ship_animation(int ship_class, int play_sound)
 //
 void unload_ship_anims()
 {
+	Assert( Ss_icons != NULL );
+
 	for ( int i = 0; i < MAX_SHIP_TYPES; i++ ) {
 		if ( Ss_icons[i].ss_anim ) {
 			anim_free(Ss_icons[i].ss_anim);
@@ -2524,6 +2544,8 @@ void unload_ship_anims()
 //
 void unload_ship_anim_instances()
 {
+	Assert( Ss_icons != NULL );
+
 	for ( int i = 0; i < MAX_SHIP_TYPES; i++ ) {
 		if ( Ss_icons[i].ss_anim_instance ) {
 			anim_release_render_instance(Ss_icons[i].ss_anim_instance);
@@ -2615,6 +2637,7 @@ int pick_from_ship_list(int screen_offset, int ship_class)
 {
 	int rval = -1;
 	Assert(ship_class >= 0);
+	Assert( Ss_pool != NULL );
 
 	if ( Wss_num_wings == 0 )
 		return rval;
@@ -2648,6 +2671,7 @@ void pick_from_wing(int wb_num, int ws_num)
 	int slot_index;
 	Assert(wb_num >= 0 && wb_num < MAX_WING_BLOCKS);
 	Assert(ws_num >= 0 && ws_num < MAX_WING_SLOTS);
+	Assert( (Ss_wings != NULL) && (Wss_slots != NULL) );
 	
 	ss_wing_info *wb;
 	ss_slot_info *ws;
@@ -2730,7 +2754,9 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 	color			*color_to_draw = NULL;
 	//shader			*shader_to_use = NULL;
 
-	Assert(wb_num >= 0 && wb_num < MAX_WING_BLOCKS);		
+	Assert(wb_num >= 0 && wb_num < MAX_WING_BLOCKS);
+	Assert( (Ss_wings != NULL) && (Wss_slots != NULL) && (Ss_icons != NULL) );
+
 	wb = &Ss_wings[wb_num];
 	
 	if ( wb->wingnum == -1 )
@@ -2874,6 +2900,8 @@ void ss_make_slot_empty(int slot_index)
 	ss_wing_info	*wb;
 	ss_slot_info	*ws;
 
+	Assert( Ss_wings != NULL );
+
 	// calculate the wing #
 	wing_num = slot_index / MAX_WING_SLOTS;
 	slot_num = slot_index % MAX_WING_SLOTS;
@@ -2893,6 +2921,8 @@ void ss_make_slot_full(int slot_index)
 	int wing_num,slot_num;
 	ss_wing_info	*wb;
 	ss_slot_info	*ws;
+
+	Assert( Ss_wings != NULL );
 
 	// calculate the wing #
 	wing_num = slot_index / MAX_WING_SLOTS;
@@ -2917,6 +2947,8 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 	}
 	else
 	{
+		Assert( Ss_icons != NULL );
+
 		ss_icon_info *icon = &Ss_icons[ship_class];
 		if(icon->icon_bmaps[bmap_num] != -1)
 		{
@@ -2981,6 +3013,8 @@ int create_wings()
 	int cleanup_ship_index[MAX_WING_SLOTS];
 	int i,j,k;
 	int found_pobj;
+
+	Assert( (Ss_wings != NULL) && (Wss_slots != NULL) );
 
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 		
@@ -3185,6 +3219,8 @@ int ss_return_original_ship_class(int slot_num)
 {
 	int wnum, snum;
 
+	Assert( Ss_wings != NULL );
+
 	wnum = slot_num/MAX_WING_SLOTS;
 	snum = slot_num%MAX_WING_SLOTS;
 
@@ -3195,6 +3231,8 @@ int ss_return_original_ship_class(int slot_num)
 int ss_return_saindex(int slot_num)
 {
 	int wnum, snum;
+
+	Assert( Ss_wings != NULL );
 
 	wnum = slot_num/MAX_WING_SLOTS;
 	snum = slot_num%MAX_WING_SLOTS;
@@ -3229,6 +3267,8 @@ int ss_return_ship(int wing_block, int wing_slot, int *ship_index, p_object **pp
 
 	ss_slot_info	*ws;
 
+	Assert( Ss_wings != NULL );
+
 	if (!Wss_num_wings) {
 		*ppobjp = NULL;
 		*ship_index = Player_obj->instance;
@@ -3261,6 +3301,8 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 {
 	ss_slot_info	*ws;
 	wing				*wp;
+
+	Assert( Ss_wings != NULL );
 
 	ws = &Ss_wings[wing_block].ss_slots[wing_slot];
 	wp = &Wings[Ss_wings[wing_block].wingnum];		
@@ -3300,6 +3342,8 @@ int ss_get_selected_ship()
 void ss_reset_selected_ship()
 {
 	int i;
+
+	Assert( (Ss_pool != NULL) && (Wss_slots != NULL) );
 
 	Selected_ss_class = -1;
 
@@ -3422,6 +3466,8 @@ void ss_init_pool(team_data *pteam)
 {
 	int i;
 
+	Assert( Ss_pool != NULL );
+
 	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
 		Ss_pool[i] = -1;
 	}
@@ -3436,6 +3482,9 @@ void ss_init_pool(team_data *pteam)
 void ss_load_icons(int ship_class)
 {
 	ss_icon_info	*icon;
+
+	Assert( Ss_icons != NULL );
+
 	icon = &Ss_icons[ship_class];
 	ship_info *sip = &Ship_info[ship_class];
 
@@ -3469,6 +3518,8 @@ void ss_load_all_icons()
 
 	int i, j;
 
+	Assert( (Ss_pool != NULL) && (Ss_icons != NULL) );
+
 	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
 		// clear out data
 		Ss_icons[i].current_icon_bitmap = -1;
@@ -3493,6 +3544,8 @@ void ss_load_anim(int ship_class)
 {
 	ss_icon_info	*icon;
 
+	Assert( Ss_icons != NULL );
+
 	icon = &Ss_icons[ship_class];
 
 	// load the compressed ship animation into memory 
@@ -3512,6 +3565,8 @@ void ss_load_all_anims()
 
 	int i;
 
+	Assert( Ss_pool != NULL );
+
 	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
 		if ( Ss_pool[i] > 0 ) {
 			ss_load_anim(i);
@@ -3527,6 +3582,8 @@ int ss_disabled_slot(int slot_num)
 	if ( Wss_num_wings <= 0 ){
 		return 0;
 	}
+
+	Assert( Ss_wings != NULL );
 
 	// HACK HACK HACK - call the team select function in multiplayer
 	if(Game_mode & GM_MULTIPLAYER) {
@@ -3544,6 +3601,8 @@ int ss_valid_slot(int slot_num)
 	if (ss_disabled_slot(slot_num))
 		return 0;
 
+	Assert( Ss_wings != NULL );
+
 	status = Ss_wings[slot_num/MAX_WING_SLOTS].ss_slots[slot_num%MAX_WING_SLOTS].status;
 
 	return (status & WING_SLOT_FILLED) && !(status & WING_SLOT_EMPTY);
@@ -3554,6 +3613,8 @@ void ss_clear_slots()
 {
 	int				i,j;
 	ss_slot_info	*slot;
+
+	Assert( (Wss_slots != NULL) && (Ss_wings != NULL) );
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		Wss_slots[i].ship_class = -1;
@@ -3574,6 +3635,8 @@ void ss_clear_wings()
 {
 	int idx;
 
+	Assert( Ss_wings != NULL );
+
 	for(idx=0;idx<MAX_STARTING_WINGS;idx++){
 		Ss_wings[idx].wingnum = -1;
 		Ss_wings[idx].num_slots = 0;
@@ -3587,7 +3650,9 @@ void ss_init_wing_info(int wing_num,int starting_wing_num)
 	wing				*wp;
 	ss_wing_info	*ss_wing;
 	ss_slot_info	*slot;
-		
+
+	Assert( Ss_wings != NULL );
+
 	ss_wing = &Ss_wings[wing_num];	
 
 	if ( Starting_wings[starting_wing_num] < 0 ) {
@@ -3627,6 +3692,8 @@ int ss_wing_slot_is_console_player(int index)
 		return 0;
 	}
 
+	Assert( Ss_wings != NULL );
+
 	if ( Ss_wings[wingnum].ss_slots[slotnum].status & WING_SLOT_IS_PLAYER ) {
 		return 1;
 	}
@@ -3641,6 +3708,8 @@ void ss_init_units()
 	wing				*wp;
 	ss_slot_info	*ss_slot;
 	ss_wing_info	*ss_wing;	
+
+	Assert( (Ss_wings != NULL) && (Wss_slots != NULL) );
 
 	for ( i = 0; i < Wss_num_wings; i++ ) {
 
@@ -3719,11 +3788,22 @@ void ss_init_units()
 // set the necessary pointers
 void ss_set_team_pointers(int team)
 {
+	Assert( (team >= 0) && (team < MAX_TVT_TEAMS) );
+
 	Ss_wings = Ss_wings_teams[team];
 	Ss_icons = Ss_icons_teams[team];
-	Ss_pool = Ss_pool_teams[team];
-	Wl_pool = Wl_pool_teams[team];
-	Wss_slots = Wss_slots_teams[team];
+}
+
+// reset the necessary pointers to defaults
+void ss_reset_team_pointers()
+{
+	Assert( !Ship_select_open );
+
+	if ( Ship_select_open )
+		return;
+
+	Ss_wings = NULL;
+	Ss_icons = NULL;
 }
 
 // initialize team specific stuff
@@ -3732,11 +3812,7 @@ void ship_select_init_team_data(int team_num)
 	int idx;
 
 	// set up the pointers to initialize the data structures.
-	Ss_wings = Ss_wings_teams[team_num];
-	Ss_icons = Ss_icons_teams[team_num];
-	Ss_pool = Ss_pool_teams[team_num];
-	Wl_pool = Wl_pool_teams[team_num];
-	Wss_slots = Wss_slots_teams[team_num];
+	common_set_team_pointers(team_num);
 	
 	ss_fixup_team_data(&Team_data[team_num]);
 	ss_init_pool(&Team_data[team_num]);
@@ -3800,6 +3876,8 @@ void ss_synch_interface()
 {
 	int				i;
 	ss_slot_info	*slot;
+
+	Assert( Ss_wings != NULL );
 
 	int old_list_start = SS_active_list_start;
 
@@ -3874,6 +3952,8 @@ int ss_dump_to_list(int from_slot, int to_list, int *sound)
 	int i, fwnum, fsnum;
 	wss_unit	*slot;
 
+	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
+
 	slot = &Wss_slots[from_slot];
 
 	// ensure from_slot has a ship to pick up
@@ -3908,6 +3988,8 @@ int ss_grab_from_list(int from_list, int to_slot, int *sound)
 	wss_unit        *slot;
 	int i, wep[MAX_SHIP_WEAPONS], wep_count[MAX_SHIP_WEAPONS];
 
+	Assert( (Ss_pool != NULL) && (Wss_slots != NULL) );
+
 	slot = &Wss_slots[to_slot];
 
 	// ensure that pool has ship
@@ -3941,6 +4023,8 @@ int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 {
 	int i, wep[MAX_SHIP_WEAPONS], wep_count[MAX_SHIP_WEAPONS];
 	wss_unit        *slot;
+
+	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// ensure that pool has ship
 	if ( Ss_pool[from_list] <= 0 )
@@ -4044,9 +4128,12 @@ void ss_recalc_multiplayer_slots()
 	
 	// no wings
 	if ( Wss_num_wings <= 0 ) {
+		Assert( Wss_slots != NULL );
 		Wss_slots[0].ship_class = Team_data[Common_team].default_ship;
 		return;
 	}
+
+	Assert( Ss_wings != NULL );
 
 	for ( i = 0; i < Wss_num_wings; i++ ) {
 		ss_wing = &Ss_wings[i];

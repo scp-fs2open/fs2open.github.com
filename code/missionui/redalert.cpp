@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-10-10 17:21:06 $
+ * $Revision: 2.21 $
+ * $Date: 2005-11-16 05:46:27 $
  * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.19  2005/09/26 04:08:54  Goober5000
  * some more cleanup
  * --Goober5000
@@ -236,6 +239,7 @@
 #include "gamesnd/gamesnd.h"
 #include "gamesequence/gamesequence.h"
 #include "missionui/missionscreencommon.h"
+#include "missionui/missionweaponchoice.h"
 #include "io/key.h"
 #include "graphics/font.h"
 #include "mission/missionbriefcommon.h"
@@ -568,6 +572,9 @@ void red_alert_init()
 
 	red_alert_voice_load();
 
+	// we have to setup the weaponselect pointers before moving on
+	weapon_select_common_init();
+
 	Text_delay = timestamp(200);
 
 	Red_alert_voice_started = 0;
@@ -581,6 +588,8 @@ void red_alert_close()
 
 		red_alert_voice_stop();
 		red_alert_voice_unload();
+
+		weapon_select_close_team();
 
 		if (Background_bitmap >= 0) {
 			bm_release(Background_bitmap);

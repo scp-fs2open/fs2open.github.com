@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-11-16 05:46:27 $
+ * $Author: taylor $
  *
  * Header file to support functions that allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/03/31 11:11:56  Goober5000
  * changed a bunch of literal constants to their #define'd keywords
  * --Goober5000
@@ -309,9 +313,6 @@ int	create_default_player_ship( int use_last_flown = 1 );
 void	update_player_ship(int si_index);
 
 void ss_synch_interface();
-
-// set the necessary pointers
-void ss_set_team_pointers(int team);
 
 // called by multiplayer team select to set the slot based flags
 void ss_make_slot_empty(int slot_index);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-10-10 17:21:07 $
+ * $Revision: 2.19 $
+ * $Date: 2005-11-16 05:46:27 $
  * $Author: taylor $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.17  2005/09/27 02:36:58  Goober5000
  * clarification
  * --Goober5000
@@ -2423,7 +2426,7 @@ void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int sh
 	}
 
 	// set the proper pool pointers
-	ss_set_team_pointers(pl->p_info.team);
+	common_set_team_pointers(pl->p_info.team);
 
 	sound = -1;
 	switch(type){
@@ -2484,7 +2487,7 @@ void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int sh
 	}	
 
 	// set the proper pool pointers
-	ss_set_team_pointers(Net_player->p_info.team);
+	common_set_team_pointers(Net_player->p_info.team);
 }
 
 // drop a carried icon 

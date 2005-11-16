@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.49 $
- * $Date: 2005-11-08 01:04:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.50 $
+ * $Date: 2005-11-16 05:46:27 $
+ * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2005/11/08 01:04:00  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.48  2005/10/30 06:44:57  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -5938,14 +5941,14 @@ void process_wss_update_packet(ubyte *data, header *hinfo)
 		}			
 	} else {
 		// set the proper pool pointers
-		ss_set_team_pointers((int)team);
+		common_set_team_pointers((int)team);
 
 		// read in the block of data, and apply it to the weapons/ship pools
 		offset += restore_wss_data(data + offset);
 		PACKET_SET_SIZE();
 
 		// set the pool pointers back to my own team
-		ss_set_team_pointers(Net_player->p_info.team);
+		common_set_team_pointers(Net_player->p_info.team);
 
 		// sync the interface if this was for my own team
 		if((int)team == Net_player->p_info.team){

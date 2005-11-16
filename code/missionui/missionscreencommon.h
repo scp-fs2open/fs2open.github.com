@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.10 $
- * $Date: 2005-10-17 01:51:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2005-11-16 05:46:27 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  *
@@ -205,6 +205,10 @@ int restore_wss_data(ubyte *block);
 
 struct ship_info;
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip=NULL, bool resize=true);
+
+void common_set_team_pointers(int team);
+void common_reset_team_pointers();
+
 ///////////////////////////////////////////////////////////
 // NEWSTUFF END
 ///////////////////////////////////////////////////////////
