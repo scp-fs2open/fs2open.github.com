@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-10-23 11:44:07 $
+ * $Revision: 2.31 $
+ * $Date: 2005-11-16 21:25:34 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/10/23 11:44:07  taylor
+ * fix memory errors from new[]/delete[] mismatch
+ *
  * Revision 2.29  2005/10/23 05:37:59  wmcoolmon
  * Ack, missed testing compile under an Inferno build
  *
@@ -729,7 +732,7 @@ void cf_search_root_path(int root_index)
 			do {
 				if (!(find.attrib & _A_SUBDIR)) {
 
-					char *ext = strchr( find.name, '.' );
+					char *ext = strrchr( find.name, '.' );
 					if ( ext )	{
 						if ( is_ext_in_list( Pathtypes[i].extensions, ext ) )	{
 							// Found a file!!!!
@@ -776,7 +779,7 @@ void cf_search_root_path(int root_index)
 						continue;
 					}
 					
-					char *ext = strchr( dir->d_name, '.' );
+					char *ext = strrchr( dir->d_name, '.' );
 					if ( ext )	{
 						if ( is_ext_in_list( Pathtypes[i].extensions, ext ) )	{
 							// Found a file!!!!
@@ -881,7 +884,7 @@ void cf_search_root_pack(int root_index)
 			for (j=CF_TYPE_ROOT; j<CF_MAX_PATH_TYPES; j++ )	{
 				
 				if ( !stricmp( search_path, Pathtypes[j].path ))	{
-					char *ext = strchr( find.filename, '.' );
+					char *ext = strrchr( find.filename, '.' );
 					if ( ext )	{
 						if ( is_ext_in_list( Pathtypes[j].extensions, ext ) )	{
 							// Found a file!!!!
@@ -1202,7 +1205,7 @@ int cf_matches_spec(char *filespec, char *filename)
 	src_ext = strrchr(filespec, '*');
 	if(!src_ext)
 	{
-		src_ext = strchr(filespec, '.');
+		src_ext = strrchr(filespec, '.');
 		if (!src_ext)
 			return 1;
 	}
@@ -1240,7 +1243,7 @@ int cf_file_already_in_list( int num_files, char **list, char *filename )
 	char name_no_extension[MAX_PATH_LEN];
 
 	strcpy(name_no_extension, filename );
-	char *p = strchr( name_no_extension, '.' );
+	char *p = strrchr( name_no_extension, '.' );
 	if ( p ) *p = 0;
 
 	for (i=0; i<num_files; i++ )	{
@@ -1429,7 +1432,7 @@ int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME
 	char name_no_extension[MAX_PATH_LEN];
 
 	strcpy(name_no_extension, filename );
-	char *p = strchr( name_no_extension, '.' );
+	char *p = strrchr( name_no_extension, '.' );
 	if ( p ) *p = 0;
 
 	for (i=0; i<num_files; i++ )	{
