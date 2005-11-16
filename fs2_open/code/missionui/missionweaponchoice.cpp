@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-10-29 22:09:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.62 $
+ * $Date: 2005-11-16 05:46:27 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/10/29 22:09:30  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.60  2005/10/29 12:26:58  taylor
  * Add some error checking and handling to better deal with possible problems, and to let us know what/where they are
  *
@@ -1427,6 +1431,8 @@ void wl_render_overhead_view(float frametime)
 	wl_ship_class_info	*wl_ship;
 	int						ship_class;
 
+	Assert( Wss_slots != NULL );
+
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
 
 	// check if ship class has changed and maybe play sound
@@ -1671,6 +1677,8 @@ void wl_render_overhead_view(float frametime)
 //
 int wl_get_ship_class(int wl_slot)
 {
+	Assert( Wss_slots != NULL );
+
 	return Wss_slots[wl_slot].ship_class;
 }
 
@@ -1739,6 +1747,8 @@ void maybe_select_wl_slot(int block, int slot)
 	if ( Wss_num_wings <= 0 )
 		return;
 
+	Assert( Wss_slots != NULL );
+
 	sidx = block*MAX_WING_SLOTS + slot;
 	if ( Wss_slots[sidx].ship_class < 0 ) {
 		return;
@@ -1801,6 +1811,8 @@ void maybe_select_new_ship_weapon(int index)
 		return;
 	}
 
+	Assert( Wss_slots != NULL );
+
 	wep = Wss_slots[Selected_wl_slot].wep;
 	wep_count = Wss_slots[Selected_wl_slot].wep_count;
 
@@ -1820,6 +1832,8 @@ void maybe_select_new_ship_weapon(int index)
 void wl_init_pool(team_data *td)
 {
 	int i;
+
+	Assert( Wl_pool != NULL );
 
 	/* Goober5000 - isn't this superfluous?
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
@@ -1947,7 +1961,7 @@ void wl_load_all_anims()
 
 	int i;
 
-	Assert( Wl_icons != NULL );
+	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
 
 	// init anim members for weapon animations
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
@@ -2026,7 +2040,7 @@ void wl_load_all_icons()
 
 	int i, j;
 
-	Assert( Wl_icons != NULL );
+	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 		// clear out data
@@ -2127,6 +2141,8 @@ void wl_reset_selected_slot()
 	int i;
 	Selected_wl_slot = -1;
 
+	Assert( Wss_slots != NULL );
+
 	// in multiplayer, select the slot of the player's ship by default
 	if((Game_mode & GM_MULTIPLAYER) && !MULTI_PERM_OBSERVER(Net_players[MY_NET_PLAYER_NUM]) && (Wss_slots[Net_player->p_info.ship_index].ship_class >= 0)){
 		wl_set_selected_slot(Net_player->p_info.ship_index);
@@ -2156,6 +2172,8 @@ void wl_maybe_reset_selected_slot()
 {
 	int reset=0;
 
+	Assert( Wss_slots != NULL );
+
 	if ( Selected_wl_slot == -1 ) {
 		reset = 1;
 	}
@@ -2177,6 +2195,8 @@ void wl_maybe_reset_selected_weapon_class()
 
 	if ( Selected_wl_class >= 0 ) 
 		return;
+
+	Assert( Wss_slots != NULL );
 
 	// try to locate a weapon class to show animation for
 	// first check for a weapon on the ship
@@ -2274,6 +2294,7 @@ void wl_set_selected_slot(int slot_num)
 
 	Selected_wl_slot = slot_num;
 	if ( Selected_wl_slot >= 0 ) {
+		Assert( Wss_slots != NULL );
 		wl_set_disabled_weapons(Wss_slots[slot_num].ship_class);
 	}
 }
@@ -2504,6 +2525,8 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 {
 	int i, wi_index;
 
+	Assert( Wl_pool != NULL );
+
 	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ ) {
 		wi_index = wep[i];
 		if ( wi_index >= 0 ) {
@@ -2585,7 +2608,9 @@ void wl_fill_slots()
 	int i, j;	
 	int wep[MAX_SHIP_WEAPONS];
 	int wep_count[MAX_SHIP_WEAPONS];
-	
+
+	Assert( Wss_slots != NULL );
+
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		if ( Wss_slots[i].ship_class < 0 ){
 			continue;
@@ -2607,6 +2632,8 @@ void wl_fill_slots()
 void wl_init_icon_lists()
 {
 	int i;
+
+	Assert( Wl_pool != NULL );
 
 	Plist_start = 0;		// offset into Plist[]
 	Slist_start = 0;
@@ -2630,11 +2657,28 @@ void wl_init_icon_lists()
 	}
 }
 
+// set the necessary pointers
+void wl_set_team_pointers(int team)
+{
+	Assert( (team >= 0) && (team < MAX_TVT_TEAMS) );
+	
+	Wl_icons = Wl_icons_teams[team];
+}
+
+// reset the necessary pointers to defaults
+void wl_reset_team_pointers()
+{
+	Assert( !Weapon_select_open );
+	
+	if ( Weapon_select_open )
+		return;
+	
+	Wl_icons = NULL;
+}
 // initialize team specific weapon select data structures
 void weapon_select_init_team(int team_num)
 {
-	Wl_icons = Wl_icons_teams[team_num];
-	ss_set_team_pointers(team_num);
+	common_set_team_pointers(team_num);
 
 	wl_init_pool(&Team_data[team_num]);
 	wl_init_icon_lists();
@@ -2706,6 +2750,7 @@ void weapon_select_init()
 	Last_wl_ship_class = -1;
 
 	wl_maybe_reset_selected_slot();
+	Assert( Wss_slots != NULL );
 	wl_set_disabled_weapons(Wss_slots[Selected_wl_slot].ship_class);
 
 	help_overlay_set_state(WL_OVERLAY,0);
@@ -2868,6 +2913,8 @@ int drop_icon_on_slot(int bank_num)
 		}
 	}
 
+	Assert( Wss_slots != NULL );
+
 	// check if slot exists
 	if ( Wss_slots[Selected_wl_slot].wep_count[bank_num] < 0 ) {
 		return 0;
@@ -2950,6 +2997,7 @@ int do_mouse_over_ship_weapon(int index)
 
 	dropped_on_slot = 0;
 	Assert(Selected_wl_slot >= 0);
+	Assert(Wss_slots != NULL);
 
 	if ( ss_disabled_slot( Selected_wl_slot ) )
 		return 0;
@@ -3593,6 +3641,7 @@ void weapon_select_do(float frametime)
 	if ( wl_icon_being_carried() ) {
 		int mx, my, sx, sy;
 		Assert(Carried_wl_icon.weapon_class < MAX_WEAPON_TYPES);
+		Assert( (Wss_slots != NULL) && (Wl_icons != NULL) );
 		mouse_get_pos_unscaled( &mx, &my );
 		sx = mx + Wl_delta_x;
 		sy = my + Wl_delta_y;
@@ -3910,6 +3959,7 @@ void wl_draw_ship_weapons(int index)
 		return;
 
 	Assert(index >= 0 && index < MAX_WSS_SLOTS);
+	Assert(Wss_slots != NULL);
 	wep = Wss_slots[index].wep;
 	wep_count = Wss_slots[index].wep_count;
 
@@ -3952,6 +4002,8 @@ void wl_draw_ship_weapons(int index)
 void draw_wl_icon_with_number(int list_count, int weapon_class)
 {
 	Assert( list_count >= 0 && list_count < 8 );
+	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
+
 
 	if(Wl_icons[weapon_class].can_use)
 	{
@@ -4021,6 +4073,8 @@ void wl_pick_icon_from_list(int index)
 	if ( weapon_class < 0 ) 
 		return;
 
+	Assert( Wl_pool != NULL );
+
 	// no weapons left of that class
 	if ( Wl_pool[weapon_class] <= 0 ) {
 		return;
@@ -4052,6 +4106,8 @@ void pick_from_ship_slot(int num)
 
 	if ( ss_disabled_slot( Selected_wl_slot ) )
 		return;
+
+	Assert( (Wss_slots != NULL) && (Wl_icons != NULL) );
 
 	wep = Wss_slots[Selected_wl_slot].wep;
 	wep_count = Wss_slots[Selected_wl_slot].wep_count;
@@ -4341,6 +4397,9 @@ void wl_swap_weapons(int ship_slot, int from_bank, int to_bank)
 {
 	wss_unit	*slot;
 	int	tmp;
+
+	Assert( Wss_slots != NULL );
+
 	slot = &Wss_slots[ship_slot];
 
 	if ( from_bank == to_bank ) {
@@ -4364,6 +4423,8 @@ void wl_saturate_bank(int ship_slot, int bank)
 	wss_unit	*slot;
 	int		max_count, overflow;
 
+	Assert( Wss_slots != NULL );
+
 	slot = &Wss_slots[ship_slot];
 
 	if ( (slot->wep[bank] < 0) || (slot->wep_count[bank] <= 0) ) {
@@ -4373,6 +4434,8 @@ void wl_saturate_bank(int ship_slot, int bank)
 	max_count = wl_calc_missile_fit(slot->wep[bank], Ship_info[slot->ship_class].secondary_bank_ammo_capacity[bank-3]);
 	overflow = slot->wep_count[bank] - max_count;
 	if ( overflow > 0 ) {
+		Assert( Wl_pool != NULL );
+
 		slot->wep_count[bank] -= overflow;
 		// add overflow back to pool
 		Wl_pool[slot->wep[bank]] += overflow;
@@ -4387,6 +4450,9 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 {
 	wss_unit	*slot;
 	int class_mismatch_flag, forced_update;
+
+	Assert( Wss_slots != NULL );
+
 	slot = &Wss_slots[ship_slot];
 
 	// usually zero, unless we have a strange update thingy
@@ -4412,6 +4478,8 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 	if ( slot->wep_count[to_bank] < 0 ) {
 		return forced_update;
 	}
+
+	Assert( Wl_pool != NULL );
 
 	// ensure banks are compatible as far as primary and secondary
 	class_mismatch_flag = (IS_BANK_PRIMARY(from_bank) && IS_BANK_SECONDARY(to_bank)) || (IS_BANK_SECONDARY(from_bank) && IS_BANK_PRIMARY(to_bank));
@@ -4531,6 +4599,9 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound)
 int wl_dump_to_list(int from_bank, int to_list, int ship_slot, int *sound)
 {
 	wss_unit	*slot;
+
+	Assert( (Wss_slots != NULL) && (Wl_pool != NULL) );
+
 	slot = &Wss_slots[ship_slot];
 
 	// ensure that source bank exists and has something to pick from
@@ -4554,6 +4625,9 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 {
 	int update=0;
 	wss_unit	*slot;
+
+	Assert( (Wss_slots != NULL) && (Wl_pool != NULL) );
+
 	slot = &Wss_slots[ship_slot];
 	int max_fit;
 
@@ -4639,6 +4713,9 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound)
 int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound)
 {
 	wss_unit	*slot;
+
+	Assert( (Wss_slots != NULL) && (Wl_pool != NULL) );
+
 	slot = &Wss_slots[ship_slot];
 	int max_fit;
 
@@ -4806,7 +4883,7 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_HOST ) {
 		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 			// set the global pointers to the right pools
-			ss_set_team_pointers(pl->p_info.team);
+			common_set_team_pointers(pl->p_info.team);
 		}
 
 		mode = wss_get_mode(from_bank, from_list, to_bank, to_list, ship_slot);
@@ -4816,7 +4893,7 @@ int wl_drop(int from_bank,int from_list,int to_bank,int to_list, int ship_slot, 
 
 		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
 			// set the global pointers to the right pools
-			ss_set_team_pointers(Net_player->p_info.team);
+			common_set_team_pointers(Net_player->p_info.team);
 		}
 	} else {
 		send_wss_request_packet(Net_player->player_id, from_bank, from_list, to_bank, to_list, ship_slot, -1, WSS_WEAPON_SELECT);
@@ -4863,6 +4940,8 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	// for all ships in the wing
 	for (cur_wing_slot = 0; cur_wing_slot < MAX_WING_SLOTS; cur_wing_slot++)
 	{
+		Assert( Wss_slots != NULL );
+
 		// get the slot for this ship
 		cur_wss_slot = cur_wing_block * MAX_WING_SLOTS + cur_wing_slot;
 

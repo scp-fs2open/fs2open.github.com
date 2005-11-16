@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-10-29 22:09:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2005-11-16 05:46:27 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/10/29 22:09:29  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.26  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -436,6 +440,32 @@ static int InterfacePaletteBitmap = -1; // PCX file that holds the interface pal
 color Icon_colors[NUM_ICON_FRAMES];
 shader Icon_shaders[NUM_ICON_FRAMES];
 
+loadout_data Player_loadout;	// what the ship and weapon loadout is... used since we want to use the 
+								// same loadout if the mission is played again
+
+//wss_unit	Wss_slots[MAX_WSS_SLOTS];				// slot data struct
+//int		Wl_pool[MAX_WEAPON_TYPES];				// weapon pool 
+//int		Ss_pool[MAX_SHIP_TYPES];				// ship pool
+//int		Wss_num_wings;								// number of player wings
+
+wss_unit	Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
+int		Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+int		Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
+int		Wss_num_wings_teams[MAX_TVT_TEAMS];
+
+wss_unit	*Wss_slots = NULL;
+int		*Wl_pool = NULL;
+int		*Ss_pool = NULL;
+int		Wss_num_wings;
+
+//////////////////////////////////////////////////////////////////
+// Externs
+//////////////////////////////////////////////////////////////////
+extern void ss_set_team_pointers(int team);
+extern void ss_reset_team_pointers();
+extern void wl_set_team_pointers(int team);
+extern void wl_reset_team_pointers();
+
 //////////////////////////////////////////////////////////////////
 // UI 
 //////////////////////////////////////////////////////////////////
@@ -749,6 +779,32 @@ int common_flash_bright()
 	return Flash_bright;
 }
 
+// set the necessary pointers
+void common_set_team_pointers(int team)
+{
+	Assert( (team >= 0) && (team < MAX_TVT_TEAMS) );
+
+	Wss_slots = Wss_slots_teams[team];
+	Ss_pool = Ss_pool_teams[team];
+	Wl_pool = Wl_pool_teams[team];
+
+	ss_set_team_pointers(team);
+	wl_set_team_pointers(team);
+}
+
+// reset the necessary pointers to defaults
+void common_reset_team_pointers()
+{
+	ss_reset_team_pointers();
+	wl_reset_team_pointers();
+
+	// these are done last so that we can make use of the Assert()'s in the above
+	// functions to make sure the screens are exited and this is safe
+	Wss_slots = NULL;
+	Ss_pool = NULL;
+	Wl_pool = NULL;
+}
+
 // common_select_init() will load in animations and bitmaps that are common to the 
 // briefing/ship select/weapon select screens.  The global Common_select_inited is set
 // after this function is called once, and is only cleared when common_select_close()
@@ -815,6 +871,8 @@ void common_select_init()
 
 	if ( (Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_TEAMS )
 		Common_team = Net_player->p_info.team;
+
+	common_set_team_pointers(Common_team);
 
 	ship_select_common_init();	
 	weapon_select_common_init();
@@ -1274,6 +1332,9 @@ void common_select_close()
 	*/
 
 	common_music_close();
+
+	common_reset_team_pointers();
+
 	Common_select_inited = 0;
 }
 
@@ -1331,28 +1392,12 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 
 // NEWSTUFF BEGIN
 
-loadout_data Player_loadout;	// what the ship and weapon loadout is... used since we want to use the 
-										// same loadout if the mission is played again
-
-//wss_unit	Wss_slots[MAX_WSS_SLOTS];				// slot data struct
-//int		Wl_pool[MAX_WEAPON_TYPES];				// weapon pool 
-//int		Ss_pool[MAX_SHIP_TYPES];				// ship pool
-//int		Wss_num_wings;								// number of player wings
-
-wss_unit	Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
-int		Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-int		Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
-int		Wss_num_wings_teams[MAX_TVT_TEAMS];
-
-wss_unit	*Wss_slots;
-int		*Wl_pool;
-int		*Ss_pool;
-int		Wss_num_wings;
-
 // save ship selection loadout to the Player_loadout struct
 void wss_save_loadout()
 {
 	int i,j;
+
+	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// save the ship pool
 	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
@@ -1380,6 +1425,8 @@ void wss_restore_loadout()
 {
 	int i,j;
 	wss_unit	*slot;
+
+	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// only restore if mission hasn't changed
 	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
@@ -1484,6 +1531,8 @@ int wss_slots_all_empty()
 {
 	int i;
 
+	Assert( Wss_slots != NULL );
+
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		if ( Wss_slots[i].ship_class >= 0 ) 
 			break;
@@ -1499,6 +1548,8 @@ int wss_slots_all_empty()
 int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_ship_slot)
 {
 	int mode, to_slot_empty=0;
+
+	Assert( Wss_slots != NULL );
 
 	if ( wl_ship_slot >= 0 ) {
 		// weapons loadout
@@ -1542,6 +1593,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 	// this function assumes that the data is going to be used over the network
 	// so make a non-network version of this function if needed
 	Assert( Game_mode & GM_MULTIPLAYER );
+	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	if ( !(Game_mode & GM_MULTIPLAYER) )
 		return 0;
@@ -1638,10 +1690,10 @@ int restore_wss_data(ubyte *block)
 	// this function assumes that the data is going to be used over the network
 	// so make a non-network version of this function if needed
 	Assert( Game_mode & GM_MULTIPLAYER );
+	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	if ( !(Game_mode & GM_MULTIPLAYER) )
 		return 0;
-
 
 	// restore ship pool
 	sanity=0;
