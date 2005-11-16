@@ -4,13 +4,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/acm-openal.cpp $
- * $Revision: 2.2 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.3 $
+ * $Date: 2005-11-16 09:16:24 $
  * $Author: taylor $
  *
  * OS independant ADPCM decoder
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.1  2005/04/05 11:48:22  taylor
  * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
  * better error handling for OpenAL functions
@@ -432,7 +436,7 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 		return -1;
 	}
 
-	fmt->sample_frame_size = dest_bps/8*pwfxSrc->nChannels;
+	fmt->sample_frame_size = ((dest_bps / 8) * pwfxSrc->nChannels);
 
 	if ( !max_dest_bytes ) {
 		max_dest_bytes = new_size;
@@ -440,6 +444,17 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 
 	// convert to PCM
 	rc = read_sample_fmt_adpcm(*dest, rw, fmt);
+
+	int left_over = (src_len - fmt->bytes_processed);
+
+	if ( (left_over > 0) && (left_over < fmt->adpcm.wav.nBlockAlign) ) {
+		// hmm, we have some left over, probably a crappy file.  just add in the
+		// remainder since we don't have enough frame size left over for a decode
+		// but we should have decoded most of the data already
+		mprintf(("ACM ERROR: Have leftover data after decode!!\n"));
+
+		fmt->bytes_processed += left_over;
+	}
 
 	// send back actual sizes
 	*dest_len = rc;
