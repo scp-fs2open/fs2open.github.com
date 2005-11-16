@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.145  2005/11/13 06:49:05  taylor
+ * -loadonlyused in on by default now, can be turned off with -loadallweps
+ *
  * Revision 2.144  2005/11/08 01:04:02  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -5426,6 +5429,10 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
 	#define	SHAKE_CONST 3000
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
+
+	// don't waste time here if there is no blast force
+	if ( blast == 0.0f )
+		return;
 
 	// apply blast force based on distance from center of explosion
 	vm_vec_sub(&vec_blast_to_ship, &ship_obj->pos, blast_pos);
