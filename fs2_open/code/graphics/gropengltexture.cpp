@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.29 $
- * $Date: 2005-11-13 06:44:18 $
+ * $Revision: 1.30 $
+ * $Date: 2005-11-16 07:45:35 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 1.28  2005/10/23 20:34:30  taylor
  * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
  *
@@ -369,7 +377,7 @@ void opengl_free_texture_with_handle(int handle)
 void opengl_tcache_flush ()
 {
 	int i;
-	printf("flushing!\n");
+
 	for( i=0; i<MAX_BITMAPS; i++ )  {
 		opengl_free_texture( &Textures[i] );
 	}
