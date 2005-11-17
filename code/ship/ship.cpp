@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.262 $
- * $Date: 2005-11-13 06:49:04 $
+ * $Revision: 2.263 $
+ * $Date: 2005-11-17 02:31:36 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.262  2005/11/13 06:49:04  taylor
+ * -loadonlyused in on by default now, can be turned off with -loadallweps
+ *
  * Revision 2.261  2005/11/08 01:04:02  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -5770,8 +5773,8 @@ int ship_explode_area_calc_damage( vec3d *pos1, vec3d *pos2, float inner_rad, fl
 
 void ship_blow_up_area_apply_blast( object *exp_objp)
 {
-	ship_info	*sip;
-	Assert( exp_objp->type == OBJ_SHIP );
+	ship *shipp;
+	ship_info *sip;
 	float	inner_rad, outer_rad, max_damage, max_blast, shockwave_speed;
 	shockwave_create_info sci;
 
@@ -5779,9 +5782,19 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	if (The_mission.game_type & MISSION_TYPE_TRAINING){
 		return;
 	}
-		
-	if ((exp_objp->hull_strength <= KAMIKAZE_HULL_ON_DEATH) && (Ai_info[Ships[exp_objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (Ships[exp_objp->instance].special_exp_index < 0)) {
-		float override = Ai_info[Ships[exp_objp->instance].ai_index].kamikaze_damage;
+
+	Assert( exp_objp != NULL );
+	Assert( exp_objp->type == OBJ_SHIP );
+	Assert( exp_objp->instance >= 0 );
+
+	shipp = &Ships[exp_objp->instance];
+	sip = &Ship_info[shipp->ship_info_index];
+
+	Assert( (shipp != NULL) && (sip != NULL) );
+
+
+	if ((exp_objp->hull_strength <= KAMIKAZE_HULL_ON_DEATH) && (Ai_info[Ships[exp_objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (shipp->special_exp_index < 0)) {
+		float override = Ai_info[shipp->ai_index].kamikaze_damage;
 
 		inner_rad = exp_objp->radius*2.0f;
 		outer_rad = exp_objp->radius*4.0f; // + (override * 0.3f);
@@ -5789,10 +5802,8 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 		max_blast = override * 5.0f;
 		shockwave_speed = 100.0f;
 	} else {
-		sip = &Ship_info[Ships[exp_objp->instance].ship_info_index];
-
-		if (Ships[exp_objp->instance].special_exp_index != -1) {
-			int start = Ships[exp_objp->instance].special_exp_index;
+		if (shipp->special_exp_index != -1) {
+			int start = shipp->special_exp_index;
 			int propagates;
 			inner_rad = (float) atoi(Sexp_variables[start+INNER_RAD].text);
 			outer_rad = (float) atoi(Sexp_variables[start+OUTER_RAD].text);
@@ -5831,7 +5842,7 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 		sci.rot_angles.p = frand_range(0.0f, 1.99f*PI);
 		sci.rot_angles.b = frand_range(0.0f, 1.99f*PI);
 		sci.rot_angles.h = frand_range(0.0f, 1.99f*PI);
-		shipfx_do_shockwave_stuff(&Ships[exp_objp->instance], &sci);
+		shipfx_do_shockwave_stuff(shipp, &sci);
 		// shockwave_create(Ships[exp_objp->instance].objnum, &exp_objp->pos, shockwave_speed, inner_rad, outer_rad, max_damage, max_blast, SW_SHIP_DEATH);
 	} else {
 		object *objp;
