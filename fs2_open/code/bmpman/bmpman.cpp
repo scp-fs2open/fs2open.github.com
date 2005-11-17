@@ -10,13 +10,21 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.73 $
- * $Date: 2005-11-13 06:44:17 $
+ * $Revision: 2.74 $
+ * $Date: 2005-11-17 02:30:49 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2005/11/13 06:44:17  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 2.72  2005/11/08 01:03:59  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -1597,7 +1605,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	int anim_fps = 0, anim_frames = 0;
 	int anim_width = 0, anim_height = 0;
 	int handle = -1;
-	ubyte type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
+	ubyte type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
 	bool found = false;
 	int bpp = 0, mm_lvl = 0, img_size = 0;
 	char clean_name[MAX_FILENAME_LEN];
@@ -1660,7 +1668,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 
 	// it's an effect file, any readable image type with eff being txt
 	if (type == BM_TYPE_EFF) {
-		if ( bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &c_type) != 0 ) {
+		if ( bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &eff_type) != 0 ) {
 			mprintf(("BMPMAN: Error reading EFF\n"));
 			return -1;
 		} else {
@@ -1685,7 +1693,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		return -1;
 	}
 
-	if ( can_drop_frames ) {
+	if ( (can_drop_frames) && (type != BM_TYPE_EFF) ) {
 		if ( Bm_low_mem == 1 ) {
 			reduced = 1;
 			anim_frames = (anim_frames+1)/2;
@@ -1710,13 +1718,13 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	
 		if (type == BM_TYPE_EFF) {
 			sprintf(bm_bitmaps[n+i].info.ani.eff.filename, "%s_%.4d", clean_name, i);
-			ubyte dds_type = BM_TYPE_NONE;
-			if (!gr_bm_load(c_type, n+i, bm_bitmaps[n+i].info.ani.eff.filename, NULL, &anim_width, &anim_height, &bpp, &dds_type, &mm_lvl, &img_size)) {
-				bm_bitmaps[n+i].info.ani.eff.type = (dds_type == BM_TYPE_NONE) ? c_type : dds_type;
-			} else {
+			bm_bitmaps[n+i].info.ani.eff.type = eff_type;
+
+			// gr_bm_load() returns non-0 on failure
+			if ( gr_bm_load(eff_type, n+i, bm_bitmaps[n+i].info.ani.eff.filename, NULL, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size) ) {
 				// if we didn't get anything then bail out now
 				if ( i == 0 ) {
-					mprintf(("EFF: No frame images were found.  EFF, %s, is invalid.\n", filename));
+					Warning(LOCATION, "EFF: No frame images were found.  EFF, %s, is invalid.\n", filename);
 
 					if (img_cfp != NULL)
 						cfclose(img_cfp);
@@ -1724,7 +1732,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 					return -1;
 				}
 
-				mprintf(("EFF: Unable to load all frames for '%s', stopping at #%d\n", filename, i));
+				Warning(LOCATION, "EFF: Unable to load all frames for '%s', stopping at #%d\n", filename, i);
 
 				// reset total frames to current
 				anim_frames = i;
@@ -1754,6 +1762,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		bm_bitmaps[n+i].bm.data = 0;
 		bm_bitmaps[n+i].bm.palette = NULL;
 		bm_bitmaps[n+i].type = type;
+		bm_bitmaps[n+i].comp_type = c_type;
 		bm_bitmaps[n+i].palette_checksum = 0;
 		bm_bitmaps[n+i].signature = Bm_next_signature++;
 		bm_bitmaps[n+i].handle = first_handle*MAX_BITMAPS + n+i;
@@ -3358,11 +3367,7 @@ int bm_is_compressed(int num)
 
 	Assert(num == bm_bitmaps[n].handle);
 
-	if (bm_bitmaps[n].type == BM_TYPE_EFF) {
-		type = bm_bitmaps[n].info.ani.eff.type;
-	} else {
-		type = bm_bitmaps[n].comp_type;
-	}
+	type = bm_bitmaps[n].comp_type;
 
 	switch (type) {
 		case BM_TYPE_DXT1:
