@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.263 $
- * $Date: 2005-11-17 02:31:36 $
+ * $Revision: 2.264 $
+ * $Date: 2005-11-17 20:52:02 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.263  2005/11/17 02:31:36  taylor
+ * fix crash on kamikaze deaths
+ *
  * Revision 2.262  2005/11/13 06:49:04  taylor
  * -loadonlyused in on by default now, can be turned off with -loadallweps
  *
@@ -6357,7 +6360,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 {
 	float rate;
 	int framenum;
-	generic_anim *flame_anim, *glow_anim;
+	generic_anim *flame_anim; //, *glow_anim;
 	ship_info	*sinfo = &Ship_info[shipp->ship_info_index];
 	species_info *species = &Species_info[sinfo->species];
 
@@ -6367,19 +6370,19 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if (objp->phys_info.flags & PF_AFTERBURNER_ON)
 	{
 		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
-		glow_anim = &species->thruster_info.glow.afterburn;			// select afterburner glow
+	//	glow_anim = &species->thruster_info.glow.afterburn;			// select afterburner glow
 		rate = 1.5f;		// go at 1.5x faster when afterburners on
 	}
 	else if (objp->phys_info.flags & PF_BOOSTER_ON)
 	{
 		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
-		glow_anim = &species->thruster_info.glow.afterburn;			// select afterburner glow
+	//	glow_anim = &species->thruster_info.glow.afterburn;			// select afterburner glow
 		rate = 2.5f;		// go at 2.5x faster when boosters on
 	}
 	else
 	{
 		flame_anim = &species->thruster_info.flames.normal;			// select normal flame
-		glow_anim = &species->thruster_info.glow.normal;				// select normal glow
+	//	glow_anim = &species->thruster_info.glow.normal;				// select normal glow
 
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
@@ -6412,7 +6415,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 //	mprintf(( "TF: %.2f\n", shipp->thruster_frame ));
 
 	// Do it for glow bitmaps
-
+/*
 	Assert( frametime > 0.0f );
 	shipp->thruster_glow_frame += frametime * rate;
 
@@ -6432,18 +6435,21 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	
 	// Get the bitmap for this frame
 	shipp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
+*/
 	shipp->thruster_glow_noise = Noise[framenum];
 
 	// HACK add Bobboau's thruster stuff
 	if ((objp->phys_info.flags & PF_AFTERBURNER_ON) || (objp->phys_info.flags & PF_BOOSTER_ON))
 	{
-		shipp->secondary_thruster_glow_bitmap = species->secondary_thruster_glow_info.afterburn.first_frame;
-		shipp->tertiary_thruster_glow_bitmap = species->tertiary_thruster_glow_info.afterburn.first_frame;
+		shipp->thruster_glow_bitmap = sinfo->thruster_glow1a;
+		shipp->secondary_thruster_glow_bitmap = sinfo->thruster_glow2a;
+		shipp->tertiary_thruster_glow_bitmap = sinfo->thruster_glow3a;
 	}
 	else
 	{
-		shipp->secondary_thruster_glow_bitmap = species->secondary_thruster_glow_info.normal.first_frame;
-		shipp->tertiary_thruster_glow_bitmap = species->tertiary_thruster_glow_info.normal.first_frame;
+		shipp->thruster_glow_bitmap = sinfo->thruster_glow1;
+		shipp->secondary_thruster_glow_bitmap = sinfo->thruster_glow2;
+		shipp->tertiary_thruster_glow_bitmap = sinfo->thruster_glow3;
 	}
 }
 
