@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-10-18 14:57:32 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2005-11-17 05:12:42 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/10/18 14:57:32  taylor
+ * make sure gamesnd_parse_soundstbl() doesn't inf-loop because of species problems
+ * if we have missing species then report that before the end of table section check so we're sure to know what's missing
+ *
  * Revision 2.25  2005/10/16 11:19:57  taylor
  * (NULL != (int)0);  the size and type of NULL is platform and implementation dependant and should only be used for pointers!
  * fix naughty bug that would set the flyby sound filenames to NULL
@@ -314,7 +318,6 @@ void parse_sound(char* tag, int *idx_dest, char* object_name)
 	char buf[MAX_FILENAME_LEN];
 	int idx;
 
-	(*idx_dest) = -1;
 	if(optional_string(tag))
 	{
 		stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
