@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.194 $
- * $Date: 2005-11-08 01:03:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.195 $
+ * $Date: 2005-11-17 02:29:21 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.194  2005/11/08 01:03:59  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.193  2005/10/30 20:00:22  taylor
  * same basic cleanup and self-sanity changes
  * split up WinMain() and main() so it doesn't resemble ifdef hell
@@ -3846,9 +3849,9 @@ void game_show_framerate()
 	}
 	 	
 	if ( Show_mem  ) {
-		
+
 		int sx,sy,dy;
-		sx = GR_1024 ? 870 : 530;
+		sx = (gr_screen.res == GR_1024) ? 870 : 530;
 		sy = 15;
 		dy = gr_get_font_height() + 1;
 
