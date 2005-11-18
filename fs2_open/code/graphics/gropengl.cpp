@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.141 $
- * $Date: 2005-11-14 08:39:00 $
+ * $Revision: 2.142 $
+ * $Date: 2005-11-18 13:13:47 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.141  2005/11/14 08:39:00  taylor
+ * didn't mean for that to hit CVS, stops FRED2 from crashing on exit
+ *
  * Revision 2.140  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -3717,18 +3720,16 @@ void gr_opengl_draw_line_list(colored_vector *lines, int num)
 
 int opengl_check_for_errors()
 {
-	int ec = 0, error = GL_NO_ERROR;
-
-	do {
-		error = glGetError();
-		
-		if (error != GL_NO_ERROR) {
-			nprintf(("OpenGL", "OGL Error: %s (%i)\n", gluErrorString(error), error));
-			ec++;
-		}
-	} while (error != GL_NO_ERROR);
-
-	return ec;
+	GLenum error = GL_NO_ERROR;
+	
+	error = glGetError();
+	
+	if (error != GL_NO_ERROR) {
+		nprintf(("OpenGL", "OpenGL ERROR: %s (%i)\n", gluErrorString(error), error));
+		return 1;
+	}
+	
+	return 0;
 }
 
 extern void opengl_tcache_cleanup();
