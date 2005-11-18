@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.124 $
- * $Date: 2005-10-31 09:09:41 $
+ * $Revision: 2.125 $
+ * $Date: 2005-11-18 07:53:27 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2005/10/31 09:09:41  Goober5000
+ * bit of tweakage
+ * --Goober5000
+ *
  * Revision 2.123  2005/10/30 20:42:45  Goober5000
  * fix the support ship spawning bug
  * --Goober5000
@@ -1176,6 +1180,12 @@ void parse_init();
 void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop);
 void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
+
+// Goober5000
+void mission_parse_mark_non_arrival(p_object *p_objp);
+void mission_parse_mark_non_arrival(wing *wingp);
+void mission_parse_mark_non_arrivals();
+
 
 MONITOR(NumShipArrivals);
 MONITOR(NumShipDepartures);
@@ -3511,7 +3521,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 					wingp->total_departed += num_remaining;
 				}
 
-				Sexp_nodes[wingp->arrival_cue].value = SEXP_KNOWN_FALSE;
+				mission_parse_mark_non_arrival(wingp);	// Goober5000
 				return 0;
 			}
 
@@ -3563,7 +3573,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 	num_create_save = num_to_create;
 
-	wingnum = wingp - Wings;					// get the wing number
+	wingnum = WING_INDEX(wingp);					// get the wing number
 
 	// if there are no ships to create, then all ships must be player start ships -- do nothing in this case.
 	if ( num_to_create == 0 ){
@@ -4832,6 +4842,10 @@ void post_process_mission()
 
 	init_ai_system();
 
+	// Goober5000 - this needs to be called only once after parsing of objects and wings is complete
+	// (for individual invalidation, see mission_parse_mark_non_arrival)
+	mission_parse_mark_non_arrivals();
+
 	// deal with setting up arrival location for all ships.  Must do this now after all ships are created
 	mission_parse_set_arrival_locations();
 
@@ -5722,7 +5736,7 @@ int mission_did_ship_arrive(p_object *objp)
 			// it is not on the arrival list (as shown by above if statement).
 			shipnum = ship_name_lookup( name );
 			if ( shipnum == -1 ) {
-				Sexp_nodes[objp->arrival_cue].value = SEXP_KNOWN_FALSE;
+				mission_parse_mark_non_arrival(objp);	// Goober5000
 				return -1;
 			}
 
@@ -5745,12 +5759,16 @@ int mission_did_ship_arrive(p_object *objp)
 				event_music_arrival(Ships[Objects[object_num].instance].team);
 			}
 		return object_num;
-	} else {
+	}
+	/* Goober5000 - this is redundant, especially with the streamlined marking
+	else
+	{
 		// check to see if the arrival cue of this ship is known false -- if so, then remove
 		// the parse object from the ship
 		if ( Sexp_nodes[objp->arrival_cue].value == SEXP_KNOWN_FALSE )
 			objp->flags |= P_SF_CANNOT_ARRIVE;
 	}
+	*/
 
 	return -1;
 
@@ -5771,7 +5789,38 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 		list_remove(&Ship_arrival_list, p_objp);
 }
 
-// funciton to set a flag on all parse objects on ship arrival list which cannot
+// Goober5000
+void mission_parse_mark_non_arrival(p_object *p_objp)
+{
+	// mark the sexp
+	Sexp_nodes[p_objp->arrival_cue].value = SEXP_KNOWN_FALSE;
+
+	// mark the flag
+	p_objp->flags |= P_SF_CANNOT_ARRIVE;
+}
+
+// Goober5000
+void mission_parse_mark_non_arrival(wing *wingp)
+{
+	int wingnum = WING_INDEX(wingp);
+
+	// mark the sexp
+	Sexp_nodes[wingp->arrival_cue].value = SEXP_KNOWN_FALSE;
+
+	// look through all ships yet to arrive...
+	for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+	{
+		// ...and find the ones in this wing
+		if (p_objp->wingnum == wingnum)
+		{
+			// mark the flag
+			p_objp->flags |= P_SF_CANNOT_ARRIVE;
+		}
+	}	
+}
+
+// Goober5000 - now only called upon mission start
+// function to set a flag on all parse objects on ship arrival list which cannot
 // arrive in the mission
 void mission_parse_mark_non_arrivals()
 {
@@ -5887,7 +5936,9 @@ void mission_eval_arrivals()
 		mission_maybe_make_ship_arrive(Arriving_support_ship);
 	}
 
-	mission_parse_mark_non_arrivals();			// mark parse objects which can no longer arrive
+	// Goober5000 - it's not very efficient to do it this way; I changed it to use
+	// mission_parse_mark_non_arrival(object or wing) when something is invalidated
+	//mission_parse_mark_non_arrivals();			// mark parse objects which can no longer arrive
 
 
 	// we must also check to see if there are waves of a wing that must
