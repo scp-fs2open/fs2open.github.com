@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.24 $
- * $Date: 2005-10-24 12:42:14 $
+ * $Revision: 1.25 $
+ * $Date: 2005-11-21 23:57:26 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2005/10/24 12:42:14  taylor
+ * init thruster stuff properly so that bmpman doesn't have a fit
+ *
  * Revision 1.23  2005/10/24 07:13:05  Goober5000
  * merge Bobboau's thruster code back in; hopefully this covers everything
  * --Goober5000
@@ -116,6 +119,7 @@
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
 #include "iff_defs/iff_defs.h"
+#include "graphics/generic.h"
 
 
 int Num_species;
@@ -343,24 +347,24 @@ void species_init()
 
 
 		// extra thruster stuff, bah
-		generic_anim_init(&species->secondary_thruster_glow_info.normal, NULL);
+		generic_bitmap_init(&species->thruster_secondary_glow_info.normal, NULL);
 		if (optional_string("+Sec_Normal:"))
-			stuff_string(species->secondary_thruster_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->thruster_secondary_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// etc.
-		generic_anim_init(&species->secondary_thruster_glow_info.afterburn, NULL);
+		generic_bitmap_init(&species->thruster_secondary_glow_info.afterburn, NULL);
 		if (optional_string("+Sec_Afterburn:"))
-			stuff_string(species->secondary_thruster_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->thruster_secondary_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// etc.
-		generic_anim_init(&species->tertiary_thruster_glow_info.normal, NULL);
+		generic_bitmap_init(&species->thruster_tertiary_glow_info.normal, NULL);
 		if (optional_string("+Ter_Normal:"))
-			stuff_string(species->tertiary_thruster_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->thruster_tertiary_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 		// etc.
-		generic_anim_init(&species->tertiary_thruster_glow_info.afterburn, NULL);
+		generic_bitmap_init(&species->thruster_tertiary_glow_info.afterburn, NULL);
 		if (optional_string("+Ter_Afterburn:"))
-			stuff_string(species->tertiary_thruster_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->thruster_tertiary_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 
 
 		// Thruster Glow Anims

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.15 $
- * $Date: 2005-10-24 07:13:05 $
- * $Author: Goober5000 $
+ * $Revision: 1.16 $
+ * $Date: 2005-11-21 23:57:26 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/10/24 07:13:05  Goober5000
+ * merge Bobboau's thruster code back in; hopefully this covers everything
+ * --Goober5000
+ *
  * Revision 1.14  2005/09/27 05:25:19  Goober5000
  * initial commit of basic IFF code
  * --Goober5000
@@ -73,9 +77,17 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "graphics/generic.h"
 #include "gamesnd/gamesnd.h"
 #include "mission/missionbriefcommon.h"
 
+// for bitmap thrusters
+typedef struct thrust_pair_bitmap {
+	generic_bitmap normal;
+	generic_bitmap afterburn;
+} thrust_pair_bitmap;
+
+// for animated thrusters
 typedef struct thrust_pair {
 	generic_anim normal;
 	generic_anim afterburn;
@@ -109,8 +121,8 @@ typedef struct species_info {
 	thrust_info thruster_info;
 
 	// Bobboau's thruster stuff
-	thrust_pair secondary_thruster_glow_info;
-	thrust_pair tertiary_thruster_glow_info;
+	thrust_pair_bitmap thruster_secondary_glow_info;
+	thrust_pair_bitmap thruster_tertiary_glow_info;
 
 	float awacs_multiplier;
 
