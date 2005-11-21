@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_settings.cpp $
- * $Revision: 1.1 $
- * $Date: 2005-11-21 00:50:02 $
+ * $Revision: 1.2 $
+ * $Date: 2005-11-21 00:52:19 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/11/21 00:50:02  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  */
 
 
@@ -142,6 +146,7 @@ void ai_settings_init()
 
 	// init retail entry first
 	init_setting_to_default(&Ai_settings[0]);
+	Default_ai_setting = 0;
 	Num_ai_settings = 1;
 
 	// Goober5000 - check for table file
@@ -296,10 +301,10 @@ void ai_settings_init()
 	
 	required_string("#End");
 
-	// set default
-	Default_ai_setting = ai_setting_lookup(default_setting_name);
-	if (Default_ai_setting < 0)
-		Default_ai_setting = 0;
+	// set default if specified
+	int temp = ai_setting_lookup(default_setting_name);
+	if (temp >= 0)
+		Default_ai_setting = temp;
 }
 
 int ai_setting_lookup(char *name)
