@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.2 $
- * $Date: 2005-11-21 03:47:51 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2005-11-21 15:01:18 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/11/21 03:47:51  Goober5000
+ * bah and double bah
+ * --Goober5000
+ *
  * Revision 1.1  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -250,7 +254,7 @@ void ai_profiles_init()
 				parse_float_list(temp_list, NUM_SKILL_LEVELS);
 
 				for (i = 0; i < NUM_SKILL_LEVELS; i++)
-					profile->predict_position_delay[i] = (long) (temp_list[i] * F1_0);
+					profile->predict_position_delay[i] = fl2f(temp_list[i]);
 			}
 
 			if (optional_string("$Player Shield Recharge Scale:"))
