@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.126 $
- * $Date: 2005-11-21 00:46:12 $
+ * $Revision: 2.127 $
+ * $Date: 2005-11-21 02:43:37 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2005/11/21 00:46:12  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.125  2005/11/18 07:53:27  Goober5000
  * made arrival invalidation more efficient
  * (probably only a small speedup, but meh)
@@ -899,7 +903,6 @@
 #include "network/multi_respawn.h"
 #include "network/multi_endgame.h"
 #include "object/parseobjectdock.h"
-#include "ai/ai_settings.h"
 
 
 
@@ -1493,17 +1496,17 @@ void parse_mission_info(mission *pm)
 	}
 
 	// Goober5000 - AI on a per-mission basis
-	The_mission.ai_options = &Ai_settings[Default_ai_setting];
-	if (optional_string("$AI Setting:"))
+	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
+	if (optional_string("$AI Profile:"))
 	{
-		int setting;
+		int index;
 		char temp[NAME_LENGTH];
 
 		stuff_string(temp, F_NAME, NULL);
-		setting = ai_setting_lookup(temp);
+		index = ai_profile_lookup(temp);
 
-		if (setting >= 0)
-			The_mission.ai_options = &Ai_settings[setting];
+		if (index >= 0)
+			The_mission.ai_profile = &Ai_profiles[index];
 	}
 }
 

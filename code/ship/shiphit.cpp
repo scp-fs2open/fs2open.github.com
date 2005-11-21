@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-11-21 01:53:57 $
+ * $Revision: 2.57 $
+ * $Date: 2005-11-21 02:43:30 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/11/21 01:53:57  Goober5000
+ * add a flag to re-enable shockwaves damaging subsystems (from FS1)
+ * --Goober5000
+ *
  * Revision 2.55  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -1032,7 +1036,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
-		if ((Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP)) && !(The_mission.ai_options->flags & AIOF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
+		if ((Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP)) && !(The_mission.ai_profile->flags & AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
 			return damage;
 		else {
 			damage_left = Shockwaves[other_obj->instance].damage/4.0f;
@@ -1157,7 +1161,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		if (damage_to_apply > 0.1f && !(MULTIPLAYER_CLIENT) && !(Game_mode & GM_DEMO_PLAYBACK)) {
 			//	Decrease damage to subsystems to player ships.
 			if (ship_obj->flags & OF_PLAYER_SHIP){
-				damage_to_apply *= The_mission.ai_options->subsys_damage_scale[Game_skill_level];
+				damage_to_apply *= The_mission.ai_profile->subsys_damage_scale[Game_skill_level];
 			}
 		
 			// Goober5000 - subsys guardian
@@ -2372,8 +2376,8 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		else {
 			// Do a little "skill" balancing for the player in single player and coop multiplayer
 			if (ship_obj->flags & OF_PLAYER_SHIP)	{
-				damage *= The_mission.ai_options->player_damage_scale[Game_skill_level];
-				subsystem_damage *= The_mission.ai_options->player_damage_scale[Game_skill_level];
+				damage *= The_mission.ai_profile->player_damage_scale[Game_skill_level];
+				subsystem_damage *= The_mission.ai_profile->player_damage_scale[Game_skill_level];
 			}		
 		}
 	}

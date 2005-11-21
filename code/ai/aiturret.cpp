@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.25 $
- * $Date: 2005-11-21 00:46:05 $
+ * $Revision: 1.26 $
+ * $Date: 2005-11-21 02:43:30 $
  * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2005/11/21 00:46:05  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 1.24  2005/10/30 06:44:56  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -630,7 +634,7 @@ int get_nearest_enemy_objnum(int turret_parent_objnum, ship_subsys *turret_subsy
 	eeo.nearest_objnum = -1;
 
 	//don't fire anti capital ship turrets at bombs.
-	if ( !((The_mission.ai_options->flags & AIOF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS) && (big_flag)) )
+	if ( !((The_mission.ai_profile->flags & AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS) && (big_flag)) )
 	{
 		// Missile_obj_list
 		for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
@@ -1054,32 +1058,32 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
-				wait *= The_mission.ai_options->ship_fire_delay_scale_friendly[Game_skill_level] * 0.5f;
+				wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level] * 0.5f;
 				wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
 			} else {
-				wait *= The_mission.ai_options->ship_fire_delay_scale_friendly[Game_skill_level];
+				wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
 				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			}
 		} else {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
 				if (Ships[aip->shipnum].team == TEAM_FRIENDLY) {
-					wait *= The_mission.ai_options->ship_fire_delay_scale_friendly[Game_skill_level] * 0.5f;
+					wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level] * 0.5f;
 				} else {
-					wait *= The_mission.ai_options->ship_fire_delay_scale_hostile[Game_skill_level] * 0.5f;
+					wait *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level] * 0.5f;
 				}	
 				wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
 
 			} else if (wip->wi_flags & WIF_HUGE) {
 				// make huge weapons fire independently of team
-				wait *= The_mission.ai_options->ship_fire_delay_scale_friendly[Game_skill_level];
+				wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
 				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			} else {
 				// give team friendly an advantage
 				if (Ships[aip->shipnum].team == TEAM_FRIENDLY) {
-					wait *= The_mission.ai_options->ship_fire_delay_scale_friendly[Game_skill_level];
+					wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
 				} else {
-					wait *= The_mission.ai_options->ship_fire_delay_scale_hostile[Game_skill_level];
+					wait *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level];
 				}	
 				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			}
@@ -1232,7 +1236,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 	}
 	//Not useful -WMC
-	else if (!(The_mission.ai_options->flags & AIOF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY))
+	else if (!(The_mission.ai_profile->flags & AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY))
 	{
 		float wait = 1000.0f * frand_range(0.9f, 1.1f);
 		turret->turret_next_fire_stamp = timestamp((int) wait);
@@ -1261,7 +1265,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
     // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
     //  problems with non-homing swarm weapons -Et1
-	if( (The_mission.ai_options->flags & AIOF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY) && !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
+	if( (The_mission.ai_profile->flags & AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY) && !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
     {
         turret_fvec = tsi->turret->turret_last_fire_direction;
     }

@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.147  2005/11/21 00:46:06  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.146  2005/11/16 21:27:31  taylor
  * don't try to apply a shockwave force if there is no actual force to apply, avoids needless math and fixes a NULL vec3d warning
  *
@@ -3845,7 +3849,7 @@ void find_homing_object(object *weapon_objp, int num)
 					//	For co-op, it's probably also OK.
 					if (!( Game_mode & GM_MULTIPLAYER )) {
 						int	num_homers = compute_num_homing_objects(objp);
-						if (The_mission.ai_options->max_allowed_player_homers[Game_skill_level] < num_homers)
+						if (The_mission.ai_profile->max_allowed_player_homers[Game_skill_level] < num_homers)
 							continue;
 					}
 				}
