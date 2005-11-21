@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.1 $
- * $Date: 2005-11-21 02:43:30 $
+ * $Revision: 1.2 $
+ * $Date: 2005-11-21 03:47:51 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  */
 
 
@@ -199,43 +203,43 @@ void ai_profiles_init()
 		while (!check_for_string("$Profile Name:") && !check_for_string("#End"))
 		{
 			if (optional_string("$Player Afterburner Recharge Scale:"))
-				stuff_float_list(profile->afterburner_recharge_scale, NUM_SKILL_LEVELS);
+				parse_float_list(profile->afterburner_recharge_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Max Beam Friendly Fire Damage:"))
-				stuff_float_list(profile->beam_friendly_damage_cap, NUM_SKILL_LEVELS);
+				parse_float_list(profile->beam_friendly_damage_cap, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Player Countermeasure Life Scale:"))
-				stuff_float_list(profile->cmeasure_life_scale, NUM_SKILL_LEVELS);
+				parse_float_list(profile->cmeasure_life_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Countermeasure Firing Chance:"))
-				stuff_float_list(profile->cmeasure_fire_chance, NUM_SKILL_LEVELS);
+				parse_float_list(profile->cmeasure_fire_chance, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI In Range Time:"))
-				stuff_float_list(profile->in_range_time, NUM_SKILL_LEVELS);
+				parse_float_list(profile->in_range_time, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Always Links Ammo Weapons:"))
-				stuff_float_list(profile->link_ammo_levels_always, NUM_SKILL_LEVELS);
+				parse_float_list(profile->link_ammo_levels_always, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Maybe Links Ammo Weapons:"))
-				stuff_float_list(profile->link_ammo_levels_maybe, NUM_SKILL_LEVELS);
+				parse_float_list(profile->link_ammo_levels_maybe, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Always Links Energy Weapons:"))
-				stuff_float_list(profile->link_energy_levels_always, NUM_SKILL_LEVELS);
+				parse_float_list(profile->link_energy_levels_always, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Maybe Links Energy Weapons:"))
-				stuff_float_list(profile->link_energy_levels_maybe, NUM_SKILL_LEVELS);
+				parse_float_list(profile->link_energy_levels_maybe, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Max Missles Locked on Player:"))
-				stuff_int_list(profile->max_allowed_player_homers, NUM_SKILL_LEVELS);
+				parse_int_list(profile->max_allowed_player_homers, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Max Player Attackers:"))
-				stuff_int_list(profile->max_attackers, NUM_SKILL_LEVELS);
+				parse_int_list(profile->max_attackers, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Max Incoming Asteroids:"))
-				stuff_int_list(profile->max_incoming_asteroids, NUM_SKILL_LEVELS);
+				parse_int_list(profile->max_incoming_asteroids, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Player Damage Factor:") || optional_string("$AI Damage Reduction to Player Hull:"))
-				stuff_float_list(profile->player_damage_scale, NUM_SKILL_LEVELS);
+				parse_float_list(profile->player_damage_scale, NUM_SKILL_LEVELS);
 
 			// represented in fractions of F1_0
 			if (optional_string("$Predict Position Delay:"))
@@ -243,32 +247,32 @@ void ai_profiles_init()
 				int i;
 				float temp_list[NUM_SKILL_LEVELS];
 
-				stuff_float_list(temp_list, NUM_SKILL_LEVELS);
+				parse_float_list(temp_list, NUM_SKILL_LEVELS);
 
 				for (i = 0; i < NUM_SKILL_LEVELS; i++)
 					profile->predict_position_delay[i] = (long) (temp_list[i] * F1_0);
 			}
 
 			if (optional_string("$Player Shield Recharge Scale:"))
-				stuff_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
+				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Shield Manage Delay:") || optional_string("$AI Shield Manage Delays:"))
-				stuff_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
+				parse_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Friendly AI Fire Delay Scale:"))
-				stuff_float_list(profile->ship_fire_delay_scale_friendly, NUM_SKILL_LEVELS);
+				parse_float_list(profile->ship_fire_delay_scale_friendly, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Hostile AI Fire Delay Scale:"))
-				stuff_float_list(profile->ship_fire_delay_scale_hostile, NUM_SKILL_LEVELS);
+				parse_float_list(profile->ship_fire_delay_scale_hostile, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
-				stuff_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
+				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Turn Time Scale:"))
-				stuff_float_list(profile->turn_time_scale, NUM_SKILL_LEVELS);
+				parse_float_list(profile->turn_time_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Player Weapon Recharge Scale:"))
-				stuff_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
+				parse_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
 
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 

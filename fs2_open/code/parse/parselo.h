@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.35 $
+ * $Revision: 2.36 $
  * $Author: Goober5000 $
- * $Date: 2005-11-21 00:46:12 $
+ * $Date: 2005-11-21 03:47:51 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/11/21 00:46:12  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.34  2005/11/08 01:04:00  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -489,10 +493,15 @@ extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist
 	int max, char *description);
 extern int get_string(char *str);
 extern void stuff_parenthesized_vector(vec3d *vp);
-void stuff_boolean(int *i, bool a_to_eol=true);
-void stuff_boolean(bool *b, bool a_to_eol=true);
-int check_for_string(char *pstr);
-int check_for_string_raw(char *pstr);
+extern void stuff_boolean(int *i, bool a_to_eol=true);
+extern void stuff_boolean(bool *b, bool a_to_eol=true);
+extern int check_for_string(char *pstr);
+extern int check_for_string_raw(char *pstr);
+
+// from aicode.cpp
+extern void parse_float_list(float *plist, int size);
+extern void parse_int_list(int *ilist, int size);
+
 
 // general
 extern void reset_parse();
