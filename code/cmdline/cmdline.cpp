@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.123 $
- * $Date: 2005-11-18 08:03:23 $
+ * $Revision: 2.124 $
+ * $Date: 2005-11-21 00:46:06 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2005/11/18 08:03:23  Goober5000
+ * Wiki links updated; many thanks to StratComm :)
+ * --Goober5000
+ *
  * Revision 2.122  2005/11/13 06:55:38  taylor
  * cmdline option cleanup:
- * remove from launcher -pcx32, -cell, -UseNewAI
+ * remove from launcher -pcx32, -cell, -
+
  * remove from game -loadonlyused, -dxt, -pcx2dds
  * rename -d3dmipmap, -d3d_no_vsync, -dnoshowvid to non API specific sounding names
  * add -nograb into help output under Linux/OSX
@@ -839,7 +844,6 @@ Flag exe_params[] =
 	{ "-ballistic_gauge",	"Enable the analog ballistic ammo gauge",	true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ballistic_gauge", },
 
 	{ "-nobeampierce",		"Disable beams piercing shields",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nobeampierce", },
-	{ "-smart_shields",		"Enable Smart Shields",						true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-smart_shields", },
 	{ "-ship_choice_3d",	"Use models for ship selection",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ship_choice_3d", },
 	{ "-3dwarp",			"Enable 3d warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
@@ -977,7 +981,6 @@ cmdline_parm orb_radar("-orbradar",NULL);
 cmdline_parm use_3dwarp("-3dwarp", NULL);
 cmdline_parm use_warp_flash("-warp_flash", NULL);
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
-cmdline_parm smart_shields("-smart_shields", NULL);
 cmdline_parm dis_collisions("-dis_collisions", NULL);
 cmdline_parm dis_weapons("-dis_weapons", NULL);
 cmdline_parm noibx_arg("-noibx", NULL);
@@ -1002,8 +1005,6 @@ cmdline_parm no_fpscap("-no_fps_capping", NULL);
 
 cmdline_parm tbp("-tbp", NULL ); // TBP warp effects -Et1
 cmdline_parm wcsaga("-wcsaga", NULL);
-
-cmdline_parm UseNewAI("-UseNewAI", NULL);
 
 cmdline_parm ogl_spec_arg("-ogl_spec", NULL);
 
@@ -1044,7 +1045,6 @@ int Cmdline_d3d_particle = 0;
 int Cmdline_orb_radar = 0;
 int Cmdline_3dwarp = 0;
 int Cmdline_warp_flash = 0;
-int Cmdline_smart_shields = 0;
 int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
 int Cmdline_noibx = 0;
@@ -1102,8 +1102,6 @@ int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
 
 int Cmdline_NoFPSCap; // Disable FPS capping - kazan
-
-int Cmdline_UseNewAI;	// Always use the new AI code (weapon select and stuff)
 
 //char FreeSpace_Directory[256]; // allievating a cfilesystem problem caused by fred -- Kazan
 
@@ -2062,15 +2060,6 @@ bool SetCmdlineParams()
 		Cmdline_cache_bitmaps = 0;
 	}
 
-	if ( smart_shields.found())
-	{
-		Cmdline_smart_shields = 1;
-	}
-	else
-	{
-		Cmdline_smart_shields = 0;
-	}
-
 	if(dis_collisions.found())
 		Cmdline_dis_collisions = 1;
 
@@ -2088,11 +2077,6 @@ bool SetCmdlineParams()
 	// Temporary... REMOVEME LATER!!
 	if ( ybugfix_arg.found() ) {
 		Cmdline_ybugfix = 1;
-	}
-
-	if (UseNewAI.found())
-	{
-		Cmdline_UseNewAI = 1;
 	}
 
 	if ( ogl_spec_arg.found() ) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-11-05 08:39:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.51 $
+ * $Date: 2005-11-21 00:46:12 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/11/05 08:39:10  wmcoolmon
+ * Forgot the breathalyzer
+ *
  * Revision 2.49  2005/11/05 08:38:36  wmcoolmon
  * Fix for this old and silly bug.
  *
@@ -889,8 +892,6 @@ void set_shield_strength(object *objp, float strength)
 	}
 }
 
-extern int Cmdline_smart_shields;
-
 //	Recharge whole shield.
 //	Apply delta/MAX_SHIELD_SECTIONS to each shield section.
 void add_shield_strength(object *objp, float delta)
@@ -900,7 +901,7 @@ void add_shield_strength(object *objp, float delta)
 
 	section_max = get_max_shield_quad(objp);
 
-	if (!Cmdline_smart_shields)
+	if (!(The_mission.ai_options->flags & AIOF_SMART_SHIELD_MANAGEMENT))
 	{
 		for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
 			objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;

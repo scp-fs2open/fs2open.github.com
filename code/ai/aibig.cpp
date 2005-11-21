@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-10-22 22:22:41 $
+ * $Revision: 1.9 $
+ * $Date: 2005-11-21 00:46:05 $
  * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/10/22 22:22:41  Goober5000
+ * rolled back UnknownPlayer's commit
+ * --Goober5000
+ *
  * Revision 1.6  2005/09/01 04:14:03  taylor
  * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
  *
@@ -1230,7 +1234,7 @@ void ai_big_chase()
 	} else if (En_objp->flags & OF_PROTECTED) {	//	If protected and we're not attacking a subsystem, stop attacking!
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
 		aip->target_objnum = -1;
-		if (find_enemy(Pl_objp-Objects, MAX_ENEMY_DISTANCE, Skill_level_max_attackers[Game_skill_level]) == -1) {
+		if (find_enemy(Pl_objp-Objects, MAX_ENEMY_DISTANCE, The_mission.ai_options->max_attackers[Game_skill_level]) == -1) {
 			ai_do_default_behavior(Pl_objp);
 			return;
 		}
@@ -1965,7 +1969,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// the ai will not always go after different ships firing beams at them.
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	bool attack_turret_on_different_ship = (The_mission.flags & MISSION_FLAG_USE_NEW_AI)
+	bool attack_turret_on_different_ship = (The_mission.ai_options->flags & AIOF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
 		&& (Weapon_info[weapon_objp->instance].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target

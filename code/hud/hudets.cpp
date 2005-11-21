@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-04-15 11:41:27 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2005-11-21 00:46:12 $
+ * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/04/15 11:41:27  taylor
+ * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
+ *
  * Revision 2.15  2005/04/15 11:36:54  taylor
  * new GCC = new warning messages, yippeeee!!
  *
@@ -222,11 +225,6 @@ float Energy_levels[NUM_ENERGY_LEVELS] = {0.0f,  0.0833f, 0.167f, 0.25f, 0.333f,
 
 int Weapon_energy_cheat = 0;
 
-// skill level scaling of the amount of energy that is allocated to the weapons and 
-// shields
-float	Skill_level_weapon_energy_scale[NUM_SKILL_LEVELS] = {10.0f, 4.0f, 2.5f, 2.0f, 1.5f};
-float Skill_level_shield_energy_scale[NUM_SKILL_LEVELS] = {4.0f, 2.0f, 1.5f, 1.25f, 1.0f};
-
 #define ZERO_INDEX			0
 #define ONE_THIRD_INDEX		4
 #define ONE_HALF_INDEX		6
@@ -387,7 +385,7 @@ void update_ets(object* objp, float fl_frametime)
 	// update weapon energy
 	max_new_weapon_energy = fl_frametime * MAX_WEAPON_REGEN_PER_SECOND * max_g;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
-		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * Skill_level_weapon_energy_scale[Game_skill_level];
+		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_options->weapon_energy_scale[Game_skill_level];
 	} else {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy;
 	}
@@ -399,7 +397,7 @@ void update_ets(object* objp, float fl_frametime)
 	float shield_delta;
 	max_new_shield_energy = fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * max_s;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
-		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * Skill_level_shield_energy_scale[Game_skill_level];
+		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_options->shield_energy_scale[Game_skill_level];
 	} else {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy;
 	}

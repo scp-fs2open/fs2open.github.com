@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.146  2005/11/16 21:27:31  taylor
+ * don't try to apply a shockwave force if there is no actual force to apply, avoids needless math and fixes a NULL vec3d warning
+ *
  * Revision 2.145  2005/11/13 06:49:05  taylor
  * -loadonlyused in on by default now, can be turned off with -loadallweps
  *
@@ -970,7 +973,6 @@ int		Weapon_impact_timer;			// timer, initalized at start of each mission
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
 
-extern int Max_allowed_player_homers[];
 extern int compute_num_homing_objects(object *target_objp);
 
 int weapon_explosions::GetIndex(char *filename)
@@ -3843,7 +3845,7 @@ void find_homing_object(object *weapon_objp, int num)
 					//	For co-op, it's probably also OK.
 					if (!( Game_mode & GM_MULTIPLAYER )) {
 						int	num_homers = compute_num_homing_objects(objp);
-						if (Max_allowed_player_homers[Game_skill_level] < num_homers)
+						if (The_mission.ai_options->max_allowed_player_homers[Game_skill_level] < num_homers)
 							continue;
 					}
 				}

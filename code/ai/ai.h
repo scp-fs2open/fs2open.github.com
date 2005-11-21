@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.7 $
- * $Date: 2005-07-27 17:22:22 $
+ * $Revision: 1.8 $
+ * $Date: 2005-11-21 00:46:05 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/07/27 17:22:22  Goober5000
+ * more tweaks to the dock code
+ * --Goober5000
+ *
  * Revision 1.6  2005/07/25 03:13:24  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -733,7 +737,6 @@ extern int Num_ai_classes;
 extern int Ai_firing_enabled;
 
 extern char	*Skill_level_names(int skill_level, int translate = 1);
-extern int	Skill_level_max_attackers[NUM_SKILL_LEVELS];
 extern int Ai_goal_signature;
 
 // need access to following data in AiBig.cpp

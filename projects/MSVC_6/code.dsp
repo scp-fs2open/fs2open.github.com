@@ -102,6 +102,14 @@ SOURCE=..\..\code\ai\ai.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\ai\ai_settings.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\ai\ai_settings.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\ai\AiBig.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
