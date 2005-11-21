@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-10-10 17:21:10 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2005-11-21 00:46:05 $
+ * $Author: Goober5000 $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/10/10 17:21:10  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.16  2005/07/22 10:18:35  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -234,8 +237,6 @@ static int		Player_afterburner_start_time;
 #define DISENGAGE_TIME								1500	// time in ms to play faded loop sound when afterburner disengages
 
 
-float	Skill_level_afterburner_recharge_scale[NUM_SKILL_LEVELS] = {5.0f, 3.0f, 2.0f, 1.5f, 1.0f};
-
 // ----------------------------------------------------------------------------
 // afterburner_level_init()
 //          
@@ -403,7 +404,7 @@ void afterburners_update(object *objp, float fl_frametime)
 
 			if ( shipp->afterburner_fuel < sip->afterburner_fuel_capacity ) {
 				float recharge_scale;
-				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * Skill_level_afterburner_recharge_scale[Game_skill_level];
+				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * The_mission.ai_options->afterburner_recharge_scale[Game_skill_level];
 				shipp->afterburner_fuel += (sip->afterburner_recover_rate * fl_frametime * recharge_scale);
 
 				if ( shipp->afterburner_fuel >  sip->afterburner_fuel_capacity){

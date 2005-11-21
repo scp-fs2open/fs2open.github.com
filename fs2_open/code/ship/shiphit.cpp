@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-11-13 06:49:05 $
- * $Author: taylor $
+ * $Revision: 2.55 $
+ * $Date: 2005-11-21 00:46:05 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/11/13 06:49:05  taylor
+ * -loadonlyused in on by default now, can be turned off with -loadallweps
+ *
  * Revision 2.53  2005/10/10 17:17:45  taylor
  * remove NO_NETWORK
  * clean out some old debug messages that were littered about
@@ -688,9 +691,6 @@ typedef struct spark_pair {
 vec3d	Dead_camera_pos;
 vec3d	Original_vec_to_deader;
 
-//	Decrease damage applied to a subsystem based on skill level.
-float	Skill_level_subsys_damage_scale[NUM_SKILL_LEVELS] = {0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
-
 bool is_subsys_destroyed(ship *shipp, int submodel)
 {
 	ship_subsys *subsys;
@@ -1152,7 +1152,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		if (damage_to_apply > 0.1f && !(MULTIPLAYER_CLIENT) && !(Game_mode & GM_DEMO_PLAYBACK)) {
 			//	Decrease damage to subsystems to player ships.
 			if (ship_obj->flags & OF_PLAYER_SHIP){
-				damage_to_apply *= Skill_level_subsys_damage_scale[Game_skill_level];
+				damage_to_apply *= The_mission.ai_options->subsys_damage_scale[Game_skill_level];
 			}
 		
 			// Goober5000 - subsys guardian
@@ -2172,9 +2172,6 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 	}					
 }
 
-float Skill_level_player_damage_scale[NUM_SKILL_LEVELS] = {0.25f, 0.5f, 0.65f, 0.85f, 1.0f};
-
-
 // If a ship is dying and it gets hit, shorten its deathroll.
 //	But, if it's a player, don't decrease below MIN_PLAYER_DEATHROLL_TIME
 void shiphit_hit_after_death(object *ship_obj, float damage)
@@ -2370,8 +2367,8 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		else {
 			// Do a little "skill" balancing for the player in single player and coop multiplayer
 			if (ship_obj->flags & OF_PLAYER_SHIP)	{
-				damage *= Skill_level_player_damage_scale[Game_skill_level];
-				subsystem_damage *= Skill_level_player_damage_scale[Game_skill_level];
+				damage *= The_mission.ai_options->player_damage_scale[Game_skill_level];
+				subsystem_damage *= The_mission.ai_options->player_damage_scale[Game_skill_level];
 			}		
 		}
 	}

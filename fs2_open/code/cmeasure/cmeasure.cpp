@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-04-05 05:53:15 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2005-11-21 00:46:06 $
+ * $Author: Goober5000 $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/05 05:53:15  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.5  2004/07/26 20:47:25  Kazan
  * remove MCD complete
  *
@@ -237,7 +240,7 @@
 #include "ship/ship.h"
 #include "math/staticrand.h"
 #include "object/object.h"
-
+#include "mission/missionparse.h"
 
 
 cmeasure_info Cmeasure_info[MAX_CMEASURE_TYPES];
@@ -367,8 +370,6 @@ void cmeasure_process_post(object * objp, float frame_time)
 
 }
 
-float Skill_level_cmeasure_life_scale[NUM_SKILL_LEVELS] = {3.0f, 2.0f, 1.5f, 1.25f, 1.0f};
-
 // creates one countermeasure.  A ship fires 1 of these per launch.  rand_val is used
 // in multiplayer.  If -1, then create a random number.  If non-negative, use this
 // number for static_rand functions
@@ -423,7 +424,7 @@ int cmeasure_create( object * source_obj, vec3d * pos, int cm_type, int rand_val
 
 	cmp->lifeleft = static_randf(arand) * (cmeasurep->life_max - cmeasurep->life_min) / cmeasurep->life_min;
 	if (source_obj->flags & OF_PLAYER_SHIP){
-		cmp->lifeleft *= Skill_level_cmeasure_life_scale[Game_skill_level];
+		cmp->lifeleft *= The_mission.ai_options->cmeasure_life_scale[Game_skill_level];
 	}
 	cmp->lifeleft = cmeasurep->life_min + cmp->lifeleft * (cmeasurep->life_max - cmeasurep->life_min);
 

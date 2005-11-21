@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-11-08 01:04:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.61 $
+ * $Date: 2005-11-21 00:46:05 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/11/08 01:04:02  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.59  2005/10/10 17:21:11  taylor
  * remove NO_NETWORK
  *
@@ -631,9 +634,6 @@ int Beam_good_shot_octants[BEAM_NUM_GOOD_OCTANTS][4] = {
 	{ 5, 1, 1, 0 },
 	{ 4, 0, 1, 0 },
 };
-
-// damage cap values for friendly beam fire
-float Beam_friendly_cap[NUM_SKILL_LEVELS] = { 0.0f, 5.0f, 10.0f, 20.0f, 30.0f };
 
 // beam lighting effects
 int Beam_lighting = 1;
@@ -3548,8 +3548,8 @@ float beam_get_ship_damage(beam *b, object *objp)
 	//-- Goober5000
 
 	// same team. yikes
-	if((b->team == Ships[objp->instance].team) && (Weapon_info[b->weapon_info_index].damage > Beam_friendly_cap[Game_skill_level])){
-		return Beam_friendly_cap[Game_skill_level] * attenuation;
+	if((b->team == Ships[objp->instance].team) && (Weapon_info[b->weapon_info_index].damage > The_mission.ai_options->beam_friendly_damage_cap[Game_skill_level])){
+		return The_mission.ai_options->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	}
 
 	// normal damage

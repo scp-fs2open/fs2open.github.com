@@ -11,11 +11,19 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.80 $
- * $Date: 2005-11-13 06:55:38 $
- * $Author: taylor $
+ * $Revision: 2.81 $
+ * $Date: 2005-11-21 00:46:06 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2005/11/13 06:55:38  taylor
+ * cmdline option cleanup:
+ * remove from launcher -pcx32, -cell, -UseNewAI
+ * remove from game -loadonlyused, -dxt, -pcx2dds
+ * rename -d3dmipmap, -d3d_no_vsync, -dnoshowvid to non API specific sounding names
+ * add -nograb into help output under Linux/OSX
+ * add -loadallweps and -img2dds
+ *
  * Revision 2.79  2005/10/30 20:00:22  taylor
  * same basic cleanup and self-sanity changes
  * split up WinMain() and main() so it doesn't resemble ifdef hell
@@ -621,7 +629,6 @@ extern int Cmdline_env;
 extern int Cmdline_decals;
 
 extern int Cmdline_ballistic_gauge;
-extern int Cmdline_smart_shields;
 
 extern int Cmdline_tga16;
 
@@ -629,8 +636,6 @@ extern int Cmdline_wcsaga;
 extern int Cmdline_tbp;
 
 extern int Cmdline_ybugfix;  // Temporary... REMOVEME LATER!!
-
-extern int Cmdline_UseNewAI;
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif

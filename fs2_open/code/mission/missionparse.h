@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.71 $
+ * $Revision: 2.72 $
  * $Author: Goober5000 $
- * $Date: 2005-10-29 22:09:29 $
+ * $Date: 2005-11-21 00:46:12 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2005/10/29 22:09:29  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.70  2005/09/27 02:36:57  Goober5000
  * clarification
  * --Goober5000
@@ -469,6 +473,7 @@
 
 #include <setjmp.h>
 #include "ai/ai.h"
+#include "ai/ai_settings.h"
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"
@@ -527,10 +532,10 @@ struct p_dock_instance;
 #define MISSION_FLAG_CURRENTLY_UNUSED_2			(1<<9)
 #define MISSION_FLAG_NO_BRIEFING				(1<<10)	// no briefing, jump right into mission - Goober5000
 #define MISSION_FLAG_NO_DEBRIEFING				(1<<11)	// no debriefing, just like red-alert - Goober5000
-#define MISSION_FLAG_USE_NEW_AI					(1<<12)	// use SCP AI fixes.  Allows old missions to be balanced. -phreak
+#define MISSION_FLAG_CURRENTLY_UNUSED_3			(1<<12)
 #define MISSION_FLAG_ALLOW_DOCK_TREES			(1<<13)	// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
 #define MISSION_FLAG_2D_MISSION					(1<<14) // Mission is meant to be played top-down style; 2D physics and movement.
-#define MISSION_FLAG_CURRENTLY_UNUSED_3			(1<<15)
+#define MISSION_FLAG_CURRENTLY_UNUSED_4			(1<<15)
 #define MISSION_FLAG_RED_ALERT					(1<<16)	// a red-alert mission - Goober5000
 #define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
 
@@ -573,6 +578,8 @@ typedef struct mission {
 	char	skybox_model[NAME_LENGTH];
 	int		contrail_threshold;
 	int		ambient_light_level;
+
+	ai_setting *ai_options;
 } mission;
 
 // cargo defines

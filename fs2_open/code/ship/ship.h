@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.118 $
- * $Date: 2005-10-30 23:45:45 $
+ * $Revision: 2.119 $
+ * $Date: 2005-11-21 00:46:05 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2005/10/30 23:45:45  Goober5000
+ * stuff for comparing ship classes
+ * --Goober5000
+ *
  * Revision 2.117  2005/10/29 22:09:31  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -1329,8 +1333,6 @@ typedef struct exited_ship {
 } exited_ship;
 
 extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
-extern float Ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS];
-extern float Ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
 
 // a couple of functions to get at the data
 extern void ship_add_exited_ship( ship *shipp, int reason );

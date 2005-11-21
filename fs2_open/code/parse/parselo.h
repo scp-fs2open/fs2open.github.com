@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.34 $
- * $Author: wmcoolmon $
- * $Date: 2005-11-08 01:04:00 $
+ * $Revision: 2.35 $
+ * $Author: Goober5000 $
+ * $Date: 2005-11-21 00:46:12 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/11/08 01:04:00  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.33  2005/10/22 20:17:19  wmcoolmon
  * mission-set-nebula fixage; remainder of python code
  *
@@ -472,7 +475,7 @@ extern void stuff_int(int *i);
 extern void stuff_sound(int *dest);
 extern void stuff_ubyte(ubyte *i);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
-extern int stuff_int_list(int *ilp, int max_ints, int lookup_type);
+extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern int stuff_float_list(float* flp, int max_floats);
 extern int stuff_vector_list(vec3d *vlp, int max_vecs);
 extern int stuff_bool_list(bool *blp, int max_bools);

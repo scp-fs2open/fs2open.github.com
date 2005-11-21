@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.125 $
- * $Date: 2005-11-18 07:53:27 $
+ * $Revision: 2.126 $
+ * $Date: 2005-11-21 00:46:12 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.125  2005/11/18 07:53:27  Goober5000
+ * made arrival invalidation more efficient
+ * (probably only a small speedup, but meh)
+ * --Goober5000
+ *
  * Revision 2.124  2005/10/31 09:09:41  Goober5000
  * bit of tweakage
  * --Goober5000
@@ -894,6 +899,7 @@
 #include "network/multi_respawn.h"
 #include "network/multi_endgame.h"
 #include "object/parseobjectdock.h"
+#include "ai/ai_settings.h"
 
 
 
@@ -1263,11 +1269,6 @@ void parse_mission_info(mission *pm)
 		stuff_int(&pm->flags);
 	}
 
-	// Goober5000/UnknownPlayer - hack activate new AI stuff (REMOVEME maybe)
-	extern int Cmdline_UseNewAI;
-	if (Cmdline_UseNewAI)
-		pm->flags |= MISSION_FLAG_USE_NEW_AI;
-
 	// nebula mission stuff
 	Neb2_awacs = -1.0f;
 	if(optional_string("+NebAwacs:")){
@@ -1489,7 +1490,21 @@ void parse_mission_info(mission *pm)
 	if (!(found640) && (found1024))
 	{
 		Warning(LOCATION, "Mission: %s\nhas a 1024x768 loading screen but no 640x480 loading screen!",pm->name);
-	}	
+	}
+
+	// Goober5000 - AI on a per-mission basis
+	The_mission.ai_options = &Ai_settings[Default_ai_setting];
+	if (optional_string("$AI Setting:"))
+	{
+		int setting;
+		char temp[NAME_LENGTH];
+
+		stuff_string(temp, F_NAME, NULL);
+		setting = ai_setting_lookup(temp);
+
+		if (setting >= 0)
+			The_mission.ai_options = &Ai_settings[setting];
+	}
 }
 
 void parse_player_info(mission *pm)

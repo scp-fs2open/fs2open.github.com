@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.264 $
- * $Date: 2005-11-17 20:52:02 $
- * $Author: taylor $
+ * $Revision: 2.265 $
+ * $Date: 2005-11-21 00:46:05 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.264  2005/11/17 20:52:02  taylor
+ * fix for thruster glows (affecting TBP mainly but OC as well):
+ *  - thruster glows should always come from ship entry rather than species (it will be initted by the species entry at first)
+ *  - this obviously needs some work done on it but that gets dangerously close to a rewrite and that isn't something I have time for
+ *
  * Revision 2.263  2005/11/17 02:31:36  taylor
  * fix crash on kamikaze deaths
  *
@@ -8401,10 +8406,6 @@ int ship_stop_fire_primary(object * obj)
 
 
 
-//	Multiplicative delay factors for increasing skill levels.
-float Ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS] =  {4.0f, 2.5f, 1.75f, 1.25f, 1.0f};
-float Ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS] = {2.0f, 1.4f, 1.25f, 1.1f, 1.0f};
-
 int tracers[MAX_SHIPS][4][4];
 
 float ship_get_subsystem_strength( ship *shipp, int type );
@@ -8559,9 +8560,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		float next_fire_delay = (float) winfo_p->fire_wait * 1000.0f;
 		if (!(obj->flags & OF_PLAYER_SHIP) ) {
 			if (shipp->team == Ships[Player_obj->instance].team){
-				next_fire_delay *= Ship_fire_delay_scale_friendly[Game_skill_level];
+				next_fire_delay *= The_mission.ai_options->ship_fire_delay_scale_friendly[Game_skill_level];
 			} else {
-				next_fire_delay *= Ship_fire_delay_scale_hostile[Game_skill_level];
+				next_fire_delay *= The_mission.ai_options->ship_fire_delay_scale_hostile[Game_skill_level];
 			}
 		}
 

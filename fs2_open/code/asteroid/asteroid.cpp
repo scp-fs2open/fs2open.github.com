@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-10-11 12:24:04 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2005-11-21 00:46:05 $
+ * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/10/11 12:24:04  taylor
+ * little cleaner since the two sets weren't needed
+ *
  * Revision 2.29  2005/10/10 17:21:03  taylor
  * remove NO_NETWORK
  *
@@ -1085,8 +1088,6 @@ void asteroid_aim_at_target(object *objp, object *asteroid_objp, float delta_tim
 	vm_vec_scale_add(&asteroid_objp->last_pos, &asteroid_objp->pos, &asteroid_objp->phys_info.vel, -flFrametime);
 }
 
-int	Max_incoming_asteroids[NUM_SKILL_LEVELS] = {3, 4, 5, 7, 10};
-
 //	Call once per frame to maybe throw an asteroid at a ship.
 //	"count" asteroids already targeted on 
 void maybe_throw_asteroid(int count)
@@ -1101,7 +1102,7 @@ void maybe_throw_asteroid(int count)
 
 	nprintf(("AI", "Incoming asteroids: %i\n", count));
 
-	if (count > Max_incoming_asteroids[Game_skill_level])
+	if (count > The_mission.ai_options->max_incoming_asteroids[Game_skill_level])
 		return;
 
 	Next_asteroid_throw = timestamp(1000 + 1200 * count/(Game_skill_level+1));
