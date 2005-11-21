@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.23 2005-10-30 10:46:23 taylor Exp $
+## $Id: Makefile.am,v 1.24 2005-11-21 14:57:08 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -42,6 +42,8 @@ FS2_SOURCES =	\
 	ai/aiinternal.h	\
 	ai/ailocal.h	\
 	ai/aiturret.cpp	\
+	ai/ai_profiles.cpp	\
+	ai/ai_profiles.h	\
 	anim/animplay.cpp	\
 	anim/animplay.h	\
 	anim/packunpack.cpp	\
