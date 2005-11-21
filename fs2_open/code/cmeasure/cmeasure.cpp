@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-11-21 00:46:06 $
+ * $Revision: 2.8 $
+ * $Date: 2005-11-21 02:43:30 $
  * $Author: Goober5000 $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/11/21 00:46:06  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.6  2005/04/05 05:53:15  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -424,7 +428,7 @@ int cmeasure_create( object * source_obj, vec3d * pos, int cm_type, int rand_val
 
 	cmp->lifeleft = static_randf(arand) * (cmeasurep->life_max - cmeasurep->life_min) / cmeasurep->life_min;
 	if (source_obj->flags & OF_PLAYER_SHIP){
-		cmp->lifeleft *= The_mission.ai_options->cmeasure_life_scale[Game_skill_level];
+		cmp->lifeleft *= The_mission.ai_profile->cmeasure_life_scale[Game_skill_level];
 	}
 	cmp->lifeleft = cmeasurep->life_min + cmp->lifeleft * (cmeasurep->life_max - cmeasurep->life_min);
 

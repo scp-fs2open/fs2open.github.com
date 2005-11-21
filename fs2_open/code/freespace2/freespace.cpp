@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.196 $
- * $Date: 2005-11-21 00:46:06 $
+ * $Revision: 2.197 $
+ * $Date: 2005-11-21 02:43:30 $
  * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.196  2005/11/21 00:46:06  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.195  2005/11/17 02:29:21  taylor
  * pretty sure my brain wasn't working that day
  *
@@ -3554,7 +3558,7 @@ void game_init()
 	armor_init();
 	weapon_init();	
 	ai_init();
-	ai_settings_init();		// Goober5000
+	ai_profiles_init();		// Goober5000
 	ship_init();						// read in ships.tbl	
 
 	player_init();	

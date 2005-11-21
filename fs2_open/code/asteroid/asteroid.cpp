@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-11-21 00:46:05 $
+ * $Revision: 2.32 $
+ * $Date: 2005-11-21 02:43:30 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/11/21 00:46:05  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.30  2005/10/11 12:24:04  taylor
  * little cleaner since the two sets weren't needed
  *
@@ -1102,7 +1106,7 @@ void maybe_throw_asteroid(int count)
 
 	nprintf(("AI", "Incoming asteroids: %i\n", count));
 
-	if (count > The_mission.ai_options->max_incoming_asteroids[Game_skill_level])
+	if (count > The_mission.ai_profile->max_incoming_asteroids[Game_skill_level])
 		return;
 
 	Next_asteroid_throw = timestamp(1000 + 1200 * count/(Game_skill_level+1));

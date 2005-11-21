@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.265 $
- * $Date: 2005-11-21 00:46:05 $
+ * $Revision: 2.266 $
+ * $Date: 2005-11-21 02:43:30 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.265  2005/11/21 00:46:05  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.264  2005/11/17 20:52:02  taylor
  * fix for thruster glows (affecting TBP mainly but OC as well):
  *  - thruster glows should always come from ship entry rather than species (it will be initted by the species entry at first)
@@ -8560,9 +8564,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		float next_fire_delay = (float) winfo_p->fire_wait * 1000.0f;
 		if (!(obj->flags & OF_PLAYER_SHIP) ) {
 			if (shipp->team == Ships[Player_obj->instance].team){
-				next_fire_delay *= The_mission.ai_options->ship_fire_delay_scale_friendly[Game_skill_level];
+				next_fire_delay *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
 			} else {
-				next_fire_delay *= The_mission.ai_options->ship_fire_delay_scale_hostile[Game_skill_level];
+				next_fire_delay *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level];
 			}
 		}
 

@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.72 $
+ * $Revision: 2.73 $
  * $Author: Goober5000 $
- * $Date: 2005-11-21 00:46:12 $
+ * $Date: 2005-11-21 02:43:37 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2005/11/21 00:46:12  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.71  2005/10/29 22:09:29  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -473,7 +477,7 @@
 
 #include <setjmp.h>
 #include "ai/ai.h"
-#include "ai/ai_settings.h"
+#include "ai/ai_profiles.h"
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"
@@ -579,7 +583,7 @@ typedef struct mission {
 	int		contrail_threshold;
 	int		ambient_light_level;
 
-	ai_setting *ai_options;
+	ai_profile_t *ai_profile;
 } mission;
 
 // cargo defines

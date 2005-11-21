@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-11-21 00:46:12 $
+ * $Revision: 2.52 $
+ * $Date: 2005-11-21 02:43:37 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/11/21 00:46:12  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.50  2005/11/05 08:39:10  wmcoolmon
  * Forgot the breathalyzer
  *
@@ -901,7 +905,7 @@ void add_shield_strength(object *objp, float delta)
 
 	section_max = get_max_shield_quad(objp);
 
-	if (!(The_mission.ai_options->flags & AIOF_SMART_SHIELD_MANAGEMENT))
+	if (!(The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT))
 	{
 		for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
 			objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;

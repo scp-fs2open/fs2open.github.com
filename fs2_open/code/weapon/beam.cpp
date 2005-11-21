@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-11-21 00:46:05 $
+ * $Revision: 2.62 $
+ * $Date: 2005-11-21 02:43:30 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/11/21 00:46:05  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.60  2005/11/08 01:04:02  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -3548,8 +3552,8 @@ float beam_get_ship_damage(beam *b, object *objp)
 	//-- Goober5000
 
 	// same team. yikes
-	if((b->team == Ships[objp->instance].team) && (Weapon_info[b->weapon_info_index].damage > The_mission.ai_options->beam_friendly_damage_cap[Game_skill_level])){
-		return The_mission.ai_options->beam_friendly_damage_cap[Game_skill_level] * attenuation;
+	if((b->team == Ships[objp->instance].team) && (Weapon_info[b->weapon_info_index].damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level])){
+		return The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	}
 
 	// normal damage

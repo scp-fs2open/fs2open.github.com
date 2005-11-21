@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.42 $
- * $Date: 2005-11-21 00:46:05 $
+ * $Revision: 1.43 $
+ * $Date: 2005-11-21 02:43:30 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2005/11/21 00:46:05  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 1.41  2005/11/08 01:03:59  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -1982,7 +1986,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 		if (!(flags & AITTV_FAST) && !(sexp_flags & AITTV_VIA_SEXP) ){
 			if (objp->type == OBJ_SHIP){
 				if (Ships[objp->instance].team != Ships[Player_obj->instance].team){
-					turn_time *= The_mission.ai_options->turn_time_scale[Game_skill_level];
+					turn_time *= The_mission.ai_profile->turn_time_scale[Game_skill_level];
 				}
 			}
 		}
@@ -3191,11 +3195,11 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 	if (aip->target_objnum >= 0)
 	{
 		// allow the rearm timestamp to eventually expire
-		if (The_mission.ai_options->flags & AIOF_AI_CHASE_ALLOWS_REARM)
+		if (The_mission.ai_profile->flags & AIPF_AI_CHASE_ALLOWS_REARM)
 			ai_set_goal_maybe_abort_dock(attacker, aip);
 
 		// keep target for a short time
-		if (The_mission.ai_options->flags & AIOF_AI_CHASE_DISABLES_DYNAMIC_TARGETING_TEMPORARILY)
+		if (The_mission.ai_profile->flags & AIPF_AI_CHASE_DISABLES_DYNAMIC_TARGETING_TEMPORARILY)
 			aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 	}
 
@@ -4308,7 +4312,7 @@ void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *pla
 	} else {
 		*enemy_pos = en_objp->pos;
 
-		aip->next_predict_pos_time = Missiontime + The_mission.ai_options->predict_position_delay[Game_skill_level];
+		aip->next_predict_pos_time = Missiontime + The_mission.ai_profile->predict_position_delay[Game_skill_level];
 		aip->last_predicted_enemy_pos = *enemy_pos;
 	}
 
@@ -6055,7 +6059,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	}
 
 	//not using the new AI, use the old version of this function instead.
-	if (!(The_mission.ai_options->flags & AIOF_SMART_PRIMARY_WEAPON_SELECTION))
+	if (!(The_mission.ai_profile->flags & AIPF_SMART_PRIMARY_WEAPON_SELECTION))
 	{
 		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
@@ -6299,9 +6303,9 @@ void set_primary_weapon_linkage(object *objp)
 	}
 
 	// regular lasers
-	if (shipp->weapon_energy > The_mission.ai_options->link_energy_levels_always[Game_skill_level]) {
+	if (shipp->weapon_energy > The_mission.ai_profile->link_energy_levels_always[Game_skill_level]) {
 		shipp->flags |= SF_PRIMARY_LINKED;
-	} else if (shipp->weapon_energy > The_mission.ai_options->link_energy_levels_maybe[Game_skill_level]) {
+	} else if (shipp->weapon_energy > The_mission.ai_profile->link_energy_levels_maybe[Game_skill_level]) {
 		if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f)
 			shipp->flags |= SF_PRIMARY_LINKED;
 	}
@@ -6332,11 +6336,11 @@ void set_primary_weapon_linkage(object *objp)
 		ammo_pct = float (current_ammo) / float (total_ammo) * 100.0f;
 
 		// link according to defined levels
-		if (ammo_pct > The_mission.ai_options->link_ammo_levels_always[Game_skill_level])
+		if (ammo_pct > The_mission.ai_profile->link_ammo_levels_always[Game_skill_level])
 		{
 			shipp->flags |= SF_PRIMARY_LINKED;
 		}
-		else if (ammo_pct > The_mission.ai_options->link_ammo_levels_maybe[Game_skill_level])
+		else if (ammo_pct > The_mission.ai_profile->link_ammo_levels_maybe[Game_skill_level])
 		{
 			if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f)
 			{
@@ -6543,7 +6547,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	}
 #endif
 
-	if ((The_mission.ai_options->flags & AIOF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0))
+	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0))
 		ignore_mask |= WIF_HOMING;
 
 	//	Stuff weapon_bank_list with bank index of available weapons.
@@ -6564,7 +6568,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		}
 	}
 
-	if ((The_mission.ai_options->flags & AIOF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0))
+	if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0))
 		ignore_mask |= WIF_HOMING;
 
 	//	If didn't find anything above, then pick any secondary weapon.
@@ -6596,7 +6600,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
 	// phreak -- rapid dumbfire? let it rip!
-	if ((The_mission.ai_options->flags & AIOF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
+	if ((The_mission.ai_profile->flags & AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
 	{	
 		aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
 	}
@@ -6716,7 +6720,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 				int	swarmers = 0;
 				if (wip->wi_flags & WIF_SWARM)
 					swarmers = 2;	//	Note, always want to be able to fire swarmers if no currently incident homers.
-				if (The_mission.ai_options->max_allowed_player_homers[Game_skill_level] < num_homers + swarmers) {
+				if (The_mission.ai_profile->max_allowed_player_homers[Game_skill_level] < num_homers + swarmers) {
 					return 0;
 				}
 			} else if (num_homers > 3) {
@@ -7062,7 +7066,7 @@ void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, 
 
 	//	Make it take longer for enemies to get player's allies in range based on skill level.
 	if (Ships[pobjp->instance].team != Ships[Player_obj->instance].team)
-		range_time += The_mission.ai_options->in_range_time[Game_skill_level];
+		range_time += The_mission.ai_profile->in_range_time[Game_skill_level];
 
 	//nprintf(("AI", "time enemy in range = %7.3f\n", aip->time_enemy_in_range));
 
@@ -7118,7 +7122,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 	// but don't bias team v. team missions
 	if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ) {
 		if (Ships[pobjp->instance].team != Ships[Player_obj->instance].team) {
-			range_time += The_mission.ai_options->in_range_time[Game_skill_level];
+			range_time += The_mission.ai_profile->in_range_time[Game_skill_level];
 		}
 	}
 	//nprintf(("AI", "time enemy in range = %7.3f\n", aip->time_enemy_in_range));
@@ -8333,7 +8337,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		if (is_big_ship)
 		{
 			priority1 = WIF_HUGE;
-			priority2 = (The_mission.ai_options->flags & AIOF_SMART_SECONDARY_WEAPON_SELECTION) ? WIF_BOMBER_PLUS : WIF_HOMING;
+			priority2 = (The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) ? WIF_BOMBER_PLUS : WIF_HOMING;
 		} 
 		else if ( (esip != NULL) && (esip->flags & SIF_BOMBER) )
 		{
@@ -8345,7 +8349,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			priority1 = WIF_PUNCTURE;
 			priority2 = WIF_HOMING;
 		}
-		else if ((The_mission.ai_options->flags & AIOF_SMART_SECONDARY_WEAPON_SELECTION) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
+		else if ((The_mission.ai_profile->flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
 		{	
 			priority1 = 0;								
 			priority2 = 0;
@@ -9892,10 +9896,10 @@ int ai_maybe_limit_attackers(int attacked_objnum)
 		int num_attacking;
 		num_attacking = num_ships_attacking(attacked_objnum);
 
-		if (num_attacking == The_mission.ai_options->max_attackers[Game_skill_level]) {
+		if (num_attacking == The_mission.ai_profile->max_attackers[Game_skill_level]) {
 			remove_farthest_attacker(attacked_objnum);
 			rval=0;
-		} else if (num_attacking > The_mission.ai_options->max_attackers[Game_skill_level]) {
+		} else if (num_attacking > The_mission.ai_profile->max_attackers[Game_skill_level]) {
 			rval=1;
 		}
 		//nprintf(("AI", "Num attacking player = %i\n", num_attacking));
@@ -12352,9 +12356,9 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 			//	For ships on player's team, have constant, average chance to fire.
 			//	For enemies, increasing chance with higher skill level.
 			if (shipp->team == Player_ship->team)
-				fire_chance = The_mission.ai_options->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
+				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
 			else
-				fire_chance = The_mission.ai_options->cmeasure_fire_chance[Game_skill_level];
+				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[Game_skill_level];
 
 			//	Decrease chance to fire at lower ai class.
 			fire_chance *= (float) aip->ai_class/Num_ai_classes;
@@ -12548,11 +12552,11 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		//	Ships on player's team are treated as if Skill_level is average.
 		if (Ships[objp->instance].team != Player_ship->team)
 		{
-			delay = The_mission.ai_options->shield_manage_delay[Game_skill_level];
+			delay = The_mission.ai_profile->shield_manage_delay[Game_skill_level];
 		} 
 		else 
 		{
-			delay = The_mission.ai_options->shield_manage_delay[NUM_SKILL_LEVELS/2];
+			delay = The_mission.ai_profile->shield_manage_delay[NUM_SKILL_LEVELS/2];
 		}
 
 		//	Scale between 1x and 3x based on ai_class
@@ -14314,7 +14318,7 @@ void ai_frame(int objnum)
 		} else if (aip->resume_goal_time == -1) {
 			// AL 12-9-97: Don't allow cargo and navbuoys to set their aip->target_objnum
 			if ( !(Ship_info[shipp->ship_info_index].flags & SIF_HARMLESS) ) {
-				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_options->max_attackers[Game_skill_level]);		//	Attack up to 25K units away.
+				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]);		//	Attack up to 25K units away.
 				if (target_objnum != -1) {
 					if (aip->target_objnum != target_objnum)
 						aip->aspect_locked_time = 0.0f;
@@ -14378,7 +14382,7 @@ void ai_frame(int objnum)
 	if ((aip->resume_goal_time > 0) && (aip->resume_goal_time < Missiontime)) {
 		aip->active_goal = AI_GOAL_NONE;
 		aip->resume_goal_time = -1;
-		target_objnum = find_enemy(objnum, 2000.0f, The_mission.ai_options->max_attackers[Game_skill_level]);
+		target_objnum = find_enemy(objnum, 2000.0f, The_mission.ai_profile->max_attackers[Game_skill_level]);
 		if (target_objnum != -1) {
 			if (aip->target_objnum != target_objnum) {
 				aip->aspect_locked_time = 0.0f;
@@ -14770,7 +14774,7 @@ void ai_do_default_behavior(object *obj)
 	ship_flags = Ship_info[Ships[obj->instance].ship_info_index].flags;
 	if (!is_instructor(obj) && (ship_flags & (SIF_FIGHTER | SIF_BOMBER)))
 	{
-		int enemy_objnum = find_enemy(OBJ_INDEX(obj), 1000.0f, The_mission.ai_options->max_attackers[Game_skill_level]);
+		int enemy_objnum = find_enemy(OBJ_INDEX(obj), 1000.0f, The_mission.ai_profile->max_attackers[Game_skill_level]);
 		set_target_objnum(aip, enemy_objnum);
 		aip->mode = AIM_CHASE;
 		aip->submode = SM_ATTACK;
