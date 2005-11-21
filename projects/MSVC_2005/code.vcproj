@@ -1321,6 +1321,39 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\graphics\generic.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="4"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\graphics\generic.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\graphics\grbatch.cpp"
 				>
 				<FileConfiguration

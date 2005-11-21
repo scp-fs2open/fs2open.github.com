@@ -490,6 +490,12 @@
 				RelativePath="..\..\code\Graphics\2d.h">
 			</File>
 			<File
+				RelativePath="..\..\code\graphics\generic.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\graphics\generic.h">
+			</File>
+			<File
 				RelativePath="..\..\code\graphics\grbatch.cpp">
 			</File>
 			<File
