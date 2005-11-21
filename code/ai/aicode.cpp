@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.43 $
- * $Date: 2005-11-21 02:43:30 $
+ * $Revision: 1.44 $
+ * $Date: 2005-11-21 03:47:51 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.43  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 1.42  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -1526,16 +1530,16 @@ void parse_ai_class()
 	Ai_class_names[Num_ai_classes] = aicp->name;
 
 	required_string("$accuracy:");
-	stuff_float_list(aicp->ai_accuracy, NUM_SKILL_LEVELS);
+	parse_float_list(aicp->ai_accuracy, NUM_SKILL_LEVELS);
 
 	required_string("$evasion:");
-	stuff_float_list(aicp->ai_evasion, NUM_SKILL_LEVELS);
+	parse_float_list(aicp->ai_evasion, NUM_SKILL_LEVELS);
 
 	required_string("$courage:");
-	stuff_float_list(aicp->ai_courage, NUM_SKILL_LEVELS);
+	parse_float_list(aicp->ai_courage, NUM_SKILL_LEVELS);
 
 	required_string("$patience:");
-	stuff_float_list(aicp->ai_patience, NUM_SKILL_LEVELS);
+	parse_float_list(aicp->ai_patience, NUM_SKILL_LEVELS);
 }
 
 void reset_ai_class_names()

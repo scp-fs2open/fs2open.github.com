@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.56 $
- * $Author: wmcoolmon $
- * $Date: 2005-11-08 01:04:00 $
+ * $Revision: 2.57 $
+ * $Author: Goober5000 $
+ * $Date: 2005-11-21 03:47:51 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/11/08 01:04:00  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.55  2005/10/29 09:02:13  wmcoolmon
  * Better alloc_block function
  *
@@ -2890,3 +2893,32 @@ void backspace(char* src)
 
 	*dest = '\0';
 }
+
+
+// Goober5000 - ugh, I can't see why they didn't just use stuff_*_list for these;
+// the only differece is the lack of parentheses
+
+// from aicode.cpp
+// Stuff a list of floats at *plist.
+void parse_float_list(float *plist, int size)
+{
+	int i;
+
+	for (i=0; i<size; i++)
+	{
+		stuff_float(&plist[i]);
+	}
+}
+
+// from aicode.cpp
+// Stuff a list of ints at *plist.
+void parse_int_list(int *ilist, int size)
+{
+	int i;
+
+	for (i=0; i<size; i++)
+	{
+		stuff_int(&ilist[i]);
+	}
+}
+
