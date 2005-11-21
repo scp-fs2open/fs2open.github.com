@@ -556,6 +556,14 @@ SOURCE=..\..\code\Graphics\Font.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\graphics\generic.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\graphics\generic.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Graphics\GrZbuffer.cpp
 # End Source File
 # Begin Source File
