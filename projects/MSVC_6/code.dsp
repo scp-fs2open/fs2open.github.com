@@ -102,11 +102,11 @@ SOURCE=..\..\code\ai\ai.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ai\ai_settings.cpp
+SOURCE=..\..\code\ai\ai_profiles.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\ai\ai_settings.h
+SOURCE=..\..\code\ai\ai_profiles.h
 # End Source File
 # Begin Source File
 
