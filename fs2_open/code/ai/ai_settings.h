@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_settings.h $
- * $Revision: 1.1 $
- * $Date: 2005-11-21 00:50:02 $
+ * $Revision: 1.2 $
+ * $Date: 2005-11-21 01:53:57 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/11/21 00:50:02  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  */
 
 #ifndef _AI_SETTINGS_H_
@@ -34,6 +38,7 @@
 #define AIOF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS						(1 << 7)
 #define AIOF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY					(1 << 8)
 #define AIOF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY		(1 << 9)
+#define AIOF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS				(1 << 10)
 
 
 #define MAX_AI_SETTINGS	5

@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_settings.cpp $
- * $Revision: 1.2 $
- * $Date: 2005-11-21 00:52:19 $
+ * $Revision: 1.3 $
+ * $Date: 2005-11-21 01:53:57 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/11/21 00:52:19  Goober5000
+ * whoops
+ * --Goober5000
+ *
  * Revision 1.1  2005/11/21 00:50:02  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -238,7 +242,7 @@ void ai_settings_init()
 			if (optional_string("$Max Incoming Asteroids:"))
 				stuff_int_list(setting->max_incoming_asteroids, NUM_SKILL_LEVELS);
 
-			if (optional_string("$AI Damage Reduction to Player Hull:"))
+			if (optional_string("$Player Damage Factor:") || optional_string("$AI Damage Reduction to Player Hull:"))
 				stuff_float_list(setting->player_damage_scale, NUM_SKILL_LEVELS);
 
 			// represented in fractions of F1_0
@@ -256,7 +260,7 @@ void ai_settings_init()
 			if (optional_string("$Player Shield Recharge Scale:"))
 				stuff_float_list(setting->shield_energy_scale, NUM_SKILL_LEVELS);
 
-			if (optional_string("$AI Shield Manage Delays:"))
+			if (optional_string("$AI Shield Manage Delay:") || optional_string("$AI Shield Manage Delays:"))
 				stuff_float_list(setting->shield_manage_delay, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Friendly AI Fire Delay Scale:"))
@@ -265,7 +269,7 @@ void ai_settings_init()
 			if (optional_string("$Hostile AI Fire Delay Scale:"))
 				stuff_float_list(setting->ship_fire_delay_scale_hostile, NUM_SKILL_LEVELS);
 
-			if (optional_string("$AI Damage Reduction to Player Subsys:"))
+			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 				stuff_float_list(setting->subsys_damage_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Turn Time Scale:"))
@@ -293,6 +297,8 @@ void ai_settings_init()
 			set_flag(setting, "$don't insert random turret fire delay:", AIOF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY);
 
 			set_flag(setting, "$hack improve non-homing swarm turret fire accuracy:", AIOF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY);
+
+			set_flag(setting, "$shockwaves damage small ship subsystems:", AIOF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS);
 
 			// find next valid option
 			skip_to_start_of_string_either("$", "#");

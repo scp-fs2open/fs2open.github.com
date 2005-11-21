@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-11-21 00:46:05 $
+ * $Revision: 2.56 $
+ * $Date: 2005-11-21 01:53:57 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/11/21 00:46:05  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.54  2005/11/13 06:49:05  taylor
  * -loadonlyused in on by default now, can be turned off with -loadallweps
  *
@@ -1027,7 +1031,8 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	if ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))	// Goober5000 check for NULL
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
-		if ( Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP))
+		// Goober5000 - added back in via flag
+		if ((Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP)) && !(The_mission.ai_options->flags & AIOF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
 			return damage;
 		else {
 			damage_left = Shockwaves[other_obj->instance].damage/4.0f;
