@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.266 $
- * $Date: 2005-11-21 02:43:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.267 $
+ * $Date: 2005-11-21 13:04:08 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.266  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.265  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -10113,7 +10117,7 @@ int ship_query_state(char *name)
 	}
 
 	if (mission_parse_get_arrival_ship(name))
-		return 1;
+		return -1;
 
 	return 1;
 }
