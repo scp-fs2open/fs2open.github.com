@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/11/08 01:04:02  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.59  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -989,10 +992,11 @@ private:
 	weapon_expl_info ExplosionInfo[MAX_WEAPON_EXPL_INFO];
 
 	int GetIndex(char *filename);
-public:
-	weapon_explosions(){ExplosionNum=0;}
 
-	int Load(char *filename);
+public:
+	weapon_explosions();
+
+	int Load(char *filename = NULL, int exptected_lods = MAX_WEAPON_EXPL_LOD);
 	int GetAnim(int weapon_expl_index, vec3d *pos, float size);
 	void PageIn(int idx);
 };

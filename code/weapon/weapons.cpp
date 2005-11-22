@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.148  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.147  2005/11/21 00:46:06  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -979,8 +983,30 @@ int		Weapon_impact_timer;			// timer, initalized at start of each mission
 
 extern int compute_num_homing_objects(object *target_objp);
 
+
+
+weapon_explosions::weapon_explosions()
+{
+	int i, j;
+
+	memset( &ExplosionInfo, 0, sizeof(weapon_expl_info) * MAX_WEAPON_EXPL_INFO );
+
+	for ( i = 0; i < MAX_WEAPON_EXPL_INFO; i++ ) {
+		for ( j = 0; j < MAX_WEAPON_EXPL_LOD; j++ ) {
+			ExplosionInfo[i].lod[j].bitmap_id = -1;
+		}
+	}
+
+	ExplosionNum = 0;
+}
+
 int weapon_explosions::GetIndex(char *filename)
 {
+	if ( filename == NULL ) {
+		Int3();
+		return -1;
+	}
+
 	for (int i=0; i<ExplosionNum; i++) {
 		if ( !stricmp(ExplosionInfo[i].lod[0].filename, filename)) {
 			return i;
@@ -990,8 +1016,14 @@ int weapon_explosions::GetIndex(char *filename)
 	return -1;
 }
 
-int weapon_explosions::Load(char *filename)
+int weapon_explosions::Load(char *filename, int expected_lods)
 {
+	char name_tmp[MAX_FILENAME_LEN] = "";
+	int bitmap_id = -1;
+	int nframes, nfps;
+
+	Assert( expected_lods <= MAX_WEAPON_EXPL_LOD );
+
 	//Check if it exists
 	int idx = GetIndex(filename);
 	if(idx != -1) {
@@ -1015,45 +1047,42 @@ int weapon_explosions::Load(char *filename)
 	if(wei->lod[0].bitmap_id < 0)
 	{
 		Warning(LOCATION, "Weapon explosion '%s' does not have an LOD0 anim!", filename);
+
+		// if we don't have the first then it's only safe to assume that the rest are missing or not usable
+		return -1;
 	}
 	else
 	{
 		wei->lod_count = 1;
 	}
 
-	if(MAX_FILENAME_LEN - strlen(filename) > 2)
+	// 2 chars for the lod, 4 for the extension that gets added automatically
+	if ( wei->lod_count && (MAX_FILENAME_LEN - strlen(filename) > 6) )
 	{
-		for(idx = 1; idx < MAX_WEAPON_EXPL_LOD; idx++)
+		for(idx = 1; idx < expected_lods; idx++)
 		{
-			sprintf(wei->lod[idx].filename, "%s_%d", filename, idx);
-			wei->lod[idx].bitmap_id = bm_load_animation(wei->lod[idx].filename, &wei->lod[idx].num_frames, &wei->lod[idx].fps, 1);
+			sprintf(name_tmp, "%s_%d", filename, idx);
 
-			if(wei->lod[idx].bitmap_id > 0)
+			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, 1);
+
+			if ( bitmap_id > 0 )
 			{
-				//This does not necessarily mean that all previous LODs exist
-				wei->lod_count = idx+1;
+				strcpy(wei->lod[idx].filename, name_tmp);
+				wei->lod[idx].bitmap_id = bitmap_id;
+				wei->lod[idx].num_frames = nframes;
+				wei->lod[idx].fps = nfps;
+
+				wei->lod_count++;
+			}
+			else
+			{
+				break;
 			}
 		}
 
-		//Check for any LODs before the lowest that don't have an image loaded
-		int j;
-		for(idx = 0; idx < wei->lod_count; idx++)
+		if ( wei->lod_count != expected_lods )
 		{
-			if(wei->lod[idx].bitmap_id < 0)
-			{
-				Warning(LOCATION, "Missing file %s (LOD %d) for weapon explosion %s", wei->lod[idx].filename, idx, wei->lod[0].filename);
-
-				//Get the next lowest LOD image
-				for(j = idx+1; j < wei->lod_count; j++)
-				{
-					if(wei->lod[j].bitmap_id)
-					{
-						wei->lod[idx].bitmap_id = wei->lod[j].bitmap_id;
-						wei->lod[idx].fps = wei->lod[j].fps;
-						wei->lod[idx].num_frames = wei->lod[j].num_frames;
-					}
-				}
-			}
+			Warning(LOCATION, "For '%s', %i of %i LODs are missing!", filename, expected_lods - wei->lod_count, expected_lods);
 		}
 	}
 	else
@@ -1073,14 +1102,17 @@ int weapon_explosions::Load(char *filename)
 
 void weapon_explosions::PageIn(int idx)
 {
-	if(idx < 0 || idx > ExplosionNum) {
-		return;
-	}
+	int i;
 
-	weapon_expl_info *wei = &ExplosionInfo[idx];
-	for(int j = 0; j < wei->lod_count; j++)
-	{
-		bm_page_in_xparent_texture(wei->lod[j].bitmap_id, wei->lod[j].num_frames);
+	if ( (idx < 0) || (idx >= ExplosionNum) )
+		return;
+
+	weapon_expl_info *wei = &ExplosionInfo[i];
+
+	for ( i = 0; i < wei->lod_count; i++ ) {
+		if ( wei->lod[i].bitmap_id >= 0 ) {
+			bm_page_in_xparent_texture( wei->lod[i].bitmap_id, wei->lod[i].num_frames );
+		}
 	}
 }
 
@@ -1172,19 +1204,18 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 	return wei->lod[best_lod].bitmap_id;
 }
 
-/*
+
 void parse_weapon_expl_tbl(char* longname)
 {
-	int	rval, idx;
+	int	rval;
 	char base_filename[MAX_FILENAME_LEN] = "";
-	bool first_time;
-	weapon_expl_info *wei = NULL;
+	int lod_count = MAX_WEAPON_EXPL_LOD;
 
 	// open localization
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse %s!  Code = %i.\n", rval, longname);
+		Warning(LOCATION, "Unable to parse %s!  Code = %i.\n", rval, longname);
 	}
 	else {
 		read_file_text(NOX(longname));
@@ -1194,66 +1225,30 @@ void parse_weapon_expl_tbl(char* longname)
 	required_string("#Start");
 	while (required_string_either("#End","$Name:"))
 	{
-		//Assume yes
-		first_time = true;
-
 		// base filename
 		required_string("$Name:");
 		stuff_string(base_filename, F_NAME, NULL);
 
-		//Does it exist
-		idx = get_weapon_expl_info_index(base_filename);
-
-		//If so get the old index
-		if(idx > -1)
-		{
-			wei = &Weapon_expl_info[idx];
-			first_time = false;
-		}
-		else if(Num_weapon_expl >= MAX_WEAPON_EXPL_INFO)
-		{
-			Warning(LOCATION, "Maximum number of weapon explosion entries reached; current number is %d, maximum is %d. All entries after '%s' will be skipped.", wei->lod[0].filename, Num_weapon_expl, MAX_WEAPON_EXPL_INFO);
-			skip_to_start_of_string("#End");
-			break;
-		}
-		else
-		{
-			wei = &Weapon_expl_info[Num_weapon_expl];
-			Num_weapon_expl++;
-			first_time = true;
-		}
-
-		// # of lod levels - make sure old fireball.tbl is compatible
-		if(first_time) {
-			wei->lod_count = 1;
-		}
-
 		//Do we have an LOD num
 		if(optional_string("$LOD:"))
 		{
-			stuff_int(&wei->lod_count);
+			stuff_int(&lod_count);
 
-			if(wei->lod_count > MAX_WEAPON_EXPL_LOD)
+			if(lod_count > MAX_WEAPON_EXPL_LOD)
 			{
-				Warning(LOCATION, "Weapon explosion '%s' has %d LODs, but the maximum is %d. Only the first %d will be used", wei->lod_count, MAX_WEAPON_EXPL_LOD, MAX_WEAPON_EXPL_LOD);
-				wei->lod_count = MAX_WEAPON_EXPL_LOD;
+				Warning(LOCATION, "Weapon explosion '%s' has %d LODs, but the maximum is %d. Only the first %d will be used.", base_filename, lod_count, MAX_WEAPON_EXPL_LOD, MAX_WEAPON_EXPL_LOD);
+				lod_count = MAX_WEAPON_EXPL_LOD;
 			}
 		}
 
-		// stuff default filename
-		strcpy(wei->lod[0].filename, base_filename);
-
-		// stuff LOD level filenames
-		for(idx=1; idx<wei->lod_count; idx++)
-		{
-			sprintf(wei->lod[idx].filename, "%s_%d", base_filename, idx);
-		}
+		// pass it off for final checking and loading
+		Weapon_explosions.Load( base_filename, lod_count );
 	}
 	required_string("#End");
 
 	// close localization
 	lcl_ext_close();
-}*/
+}
 
 // ----------------------------------------------------------------------
 // missile_obj_list_init()
@@ -3410,13 +3405,11 @@ void reset_weapon_info()
 }
 
 void weapons_info_close();
-/*
+
 void weapon_expl_info_init()
 {
-	weapon_expl_info *wei;
-	int i, j;
+	int i;
 
-	Num_weapon_expl = 0;
 	parse_weapon_expl_tbl("weapon_expl.tbl");
 
 	//Modular tables
@@ -3430,21 +3423,11 @@ void weapon_expl_info_init()
 		strcat(tbl_file_names[i], ".tbm");
 		parse_weapon_expl_tbl(tbl_file_names[i]);
 	}
+}
 
-	//Load all weapon explosions
-	for(i = 0; i < Num_weapon_expl; i++)
-	{
-		wei = &Weapon_expl_info[i];
-		for(j = 0; j < wei->lod_count; j++)
-		{
-			wei->lod[j].bitmap_id = bm_load_animation(wei->lod[j].filename, &wei->lod[j].num_frames, &wei->lod[j].fps, 1);
-		}
-	}
-}*/
 // This will get called once at game startup
 void weapon_init()
 {
-	atexit(weapons_info_close);
 	int rval;
 	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
 	char *tbl_file_names[MAX_TBL_PARTS];
@@ -3452,7 +3435,7 @@ void weapon_init()
 	if ( !Weapons_inited )
 	{
 		//Init weapon explosion info
-		//weapon_expl_info_init();
+		weapon_expl_info_init();
 
 		// parse weapons.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {
@@ -3485,21 +3468,30 @@ void weapon_init()
 
 	weapon_level_init();
 }
-void weapons_info_close(){
-	for(int i = 0; i<MAX_WEAPON_TYPES; i++){
-		if(Weapon_info[i].desc)vm_free(Weapon_info[i].desc);
-		if(Weapon_info[i].tech_desc)vm_free(Weapon_info[i].tech_desc);
+
+
+// call from game_shutdown() only!!
+void weapon_close()
+{
+	int i;
+
+	for (i = 0; i<MAX_WEAPON_TYPES; i++) {
+		if (Weapon_info[i].desc) {
+			vm_free(Weapon_info[i].desc);
+			Weapon_info[i].desc = NULL;
+		}
+
+		if (Weapon_info[i].tech_desc) {
+			vm_free(Weapon_info[i].tech_desc);
+			Weapon_info[i].tech_desc = NULL;
+		}
 	}
 
 	if (used_weapons != NULL) {
 		delete[] used_weapons;
 		used_weapons = NULL;
 	}
-}
 
-// call from game_shutdown() only!!
-void weapon_close()
-{
 	if (Spawn_names != NULL) {
 		for (int i=0; i<Num_spawn_types; i++) {
 			if (Spawn_names[i] != NULL) {
@@ -5593,6 +5585,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 
 	int			num = weapon_obj->instance;
 	int			weapon_type = Weapons[num].weapon_info_index;
+	int			expl_ani_handle;
 	object		*weapon_parent_objp;
 	weapon_info	*wip;
 	weapon *wp;
@@ -5621,12 +5614,12 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 
 	if ( wip->impact_weapon_expl_index > -1 && armed_weapon)
 	{
-		int expl_ani_handle = Weapon_explosions.GetAnim(wip->impact_weapon_expl_index, hitpos, wip->impact_explosion_radius);
+		expl_ani_handle = Weapon_explosions.GetAnim(wip->impact_weapon_expl_index, hitpos, wip->impact_explosion_radius);
 		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 	else if(wip->dinky_impact_weapon_expl_index > -1 && !armed_weapon)
 	{
-		int expl_ani_handle = Weapon_explosions.GetAnim(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
+		expl_ani_handle = Weapon_explosions.GetAnim(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
 		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 
@@ -5841,13 +5834,6 @@ void weapons_page_in()
 		if (wip->external_model_num == -1)
 			wip->external_model_num = wip->model_num;
 
-		// If this has an impact vclip page it in.
-//		if ( wip->impact_explosion_ani > -1 )	{
-//			int nframes, fps;
-//			bm_get_info( wip->impact_explosion_ani, NULL, NULL, NULL, &nframes, &fps );
-//			bm_page_in_xparent_texture( wip->impact_explosion_ani, nframes );
-//		}
-
 
 		//Load shockwaves
 		wip->shockwave.load();
@@ -5901,20 +5887,6 @@ void weapons_page_in()
 		}
 
 	}
-
-	// explosion ani's
-	/*
-	weapon_expl_info *wei;
-	for (i=0; i<Num_weapon_expl; i++)
-	{
-		wei = &Weapon_expl_info[i];
-
-		for (j=0; j<Weapon_expl_info[i].lod_count; j++)
-		{
-			// page it in
-			bm_page_in_xparent_texture(wei->lod[j].bitmap_id, wei->lod[j].num_frames);
-		}
-	}*/
 
 	// Counter measures
 	for (i=0; i<Num_cmeasure_types; i++ )	{
