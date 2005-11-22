@@ -12,6 +12,13 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2005/11/22 00:01:11  taylor
+ * combine weapon_info_close() and weapon_close()
+ * changes to allow use of weapon_expl.tbl and the modular table versions once more
+ *  - the tables aren't required (but a warning will be produced if weapon_expl.tbl doesn't exist)
+ *  - don't back load LODs, if it's not there then don't use it
+ *  - handle a couple of error conditions a bit better
+ *
  * Revision 2.148  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -1107,7 +1114,7 @@ void weapon_explosions::PageIn(int idx)
 	if ( (idx < 0) || (idx >= ExplosionNum) )
 		return;
 
-	weapon_expl_info *wei = &ExplosionInfo[i];
+	weapon_expl_info *wei = &ExplosionInfo[idx];
 
 	for ( i = 0; i < wei->lod_count; i++ ) {
 		if ( wei->lod[i].bitmap_id >= 0 ) {
