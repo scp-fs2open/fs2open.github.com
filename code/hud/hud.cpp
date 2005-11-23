@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-11-23 00:49:51 $
+ * $Revision: 2.61 $
+ * $Date: 2005-11-23 04:05:23 $
  * $Author: phreak $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/11/23 00:49:51  phreak
+ * Player repair rearm completion timer display added.
+ *
  * Revision 2.59  2005/11/13 23:02:04  Goober5000
  * fix the icons.tbl bug
  * --Goober5000
@@ -2818,16 +2821,16 @@ void hud_support_view_blit()
 		{
 			if (Player_rearm_eta > 0)
 			{
-				sprintf(outstr, "%02d:%.2f", (int)Player_rearm_eta/60, Player_rearm_eta - 60*(int)(Player_rearm_eta/60));
-				gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
+				sprintf(outstr, "%02d:%.2f", (int)Player_rearm_eta/60, Player_rearm_eta - 60*(int)(Player_rearm_eta/60));		
 			}
 			else
 			{
 				sprintf(outstr, "Waiting...");
-				gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
 			}	
 		}
-	} else if (Player_ai->ai_flags & AIF_REPAIR_OBSTRUCTED) {
+		gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
+	}
+	else if (Player_ai->ai_flags & AIF_REPAIR_OBSTRUCTED) {
 		sprintf(outstr, XSTR( "obstructed", 229));
 		gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
 	} else {
