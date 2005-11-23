@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.124 $
- * $Date: 2005-11-21 00:46:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.125 $
+ * $Date: 2005-11-23 00:43:20 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2005/11/21 00:46:06  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.123  2005/11/18 08:03:23  Goober5000
  * Wiki links updated; many thanks to StratComm :)
  * --Goober5000
@@ -841,6 +845,7 @@ Flag exe_params[] =
 	{ "-dualscanlines",		"Another pair of scanning lines",			true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dualscanlines", },
 	{ "-targetinfo",		"Enable info next to target",				true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-targetinfo", },
 	{ "-orbradar",			"Enables 3d radar",							true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-orbradar", },
+	{ "-rearm_timer",		"Enable Rearm/Repair Completion Timer",		true,	0,					EASY_DEFAULT,		"HUD",			"", },
 	{ "-ballistic_gauge",	"Enable the analog ballistic ammo gauge",	true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ballistic_gauge", },
 
 	{ "-nobeampierce",		"Disable beams piercing shields",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nobeampierce", },
@@ -1009,6 +1014,9 @@ cmdline_parm wcsaga("-wcsaga", NULL);
 cmdline_parm ogl_spec_arg("-ogl_spec", NULL);
 
 cmdline_parm ybugfix_arg("-y_bug_fix", NULL);  // Temporary... REMOVEME LATER!!
+
+cmdline_parm rearm_timer_arg("-rearm_timer", NULL);
+
 int Cmdline_ybugfix = 0; // Temporary... REMOVEME LATER!!
 
 int Cmdline_mpnoreturn = 0;
@@ -1121,6 +1129,8 @@ int Cmdline_batch_3dunlit = 0;
 // Goober5000
 int Cmdline_wcsaga = 0;
 int Cmdline_tbp = 0;
+
+int Cmdline_rearm_timer = 0;
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -2087,6 +2097,11 @@ bool SetCmdlineParams()
 
 		if ( Cmdline_ogl_spec > 128.0f )
 			Cmdline_ogl_spec = 128.0f;
+	}
+
+	if (rearm_timer_arg.found())
+	{
+		Cmdline_rearm_timer = 1;
 	}
 
 #ifdef WIN32

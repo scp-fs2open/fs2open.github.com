@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.81 $
- * $Date: 2005-11-21 00:46:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.82 $
+ * $Date: 2005-11-23 00:43:20 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/11/21 00:46:06  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 2.80  2005/11/13 06:55:38  taylor
  * cmdline option cleanup:
  * remove from launcher -pcx32, -cell, -UseNewAI
@@ -634,6 +638,8 @@ extern int Cmdline_tga16;
 
 extern int Cmdline_wcsaga;
 extern int Cmdline_tbp;
+
+extern int Cmdline_rearm_timer;
 
 extern int Cmdline_ybugfix;  // Temporary... REMOVEME LATER!!
 
