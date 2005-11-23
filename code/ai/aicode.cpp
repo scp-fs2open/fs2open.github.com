@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.44 $
- * $Date: 2005-11-21 03:47:51 $
- * $Author: Goober5000 $
+ * $Revision: 1.45 $
+ * $Date: 2005-11-23 00:46:26 $
+ * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2005/11/21 03:47:51  Goober5000
+ * bah and double bah
+ * --Goober5000
+ *
  * Revision 1.43  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -12265,6 +12269,9 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 			if (Missiontime - repair_aip->submode_start_time > REARM_SOUND_DELAY) {
 				int repaired;
 
+				if (objp==Player_obj && Player_rearm_eta <= 0) 
+					Player_rearm_eta = ship_calculate_rearm_duration(objp);
+
 				repaired = ship_do_rearm_frame( objp, frametime );		// hook to do missile rearming
 
 				//	See if fully repaired.  If so, cause process to stop.
@@ -12295,6 +12302,7 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 		//              do this check, since this is a looping sound, and may continue on if rearm/repair
 		//              finishes abnormally once sound begins looping.
 		if ( objp == Player_obj ) {
+			Player_rearm_eta = 0;
 			player_stop_repair_sound();
 		}
 	}
