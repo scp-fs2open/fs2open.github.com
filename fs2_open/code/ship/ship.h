@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.120 $
- * $Date: 2005-11-21 23:57:26 $
- * $Author: taylor $
+ * $Revision: 2.121 $
+ * $Date: 2005-11-23 01:06:58 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2005/11/21 23:57:26  taylor
+ * some minor thruster cleanup, if you could actually use the term "clean"
+ *
  * Revision 2.119  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -1856,6 +1859,7 @@ extern int ship_subsys_disrupted(ship *sp, int type);
 extern void ship_subsys_set_disrupted(ship_subsys *ss, int time);
 
 extern int	ship_do_rearm_frame( object *objp, float frametime );
+extern float ship_calculate_rearm_duration( object *objp );
 extern void	ship_wing_cleanup( int shipnum, wing *wingp );
 
 extern object *ship_find_repair_ship( object *requester );

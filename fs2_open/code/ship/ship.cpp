@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.268 $
- * $Date: 2005-11-21 23:57:26 $
- * $Author: taylor $
+ * $Revision: 2.269 $
+ * $Date: 2005-11-23 01:06:58 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.268  2005/11/21 23:57:26  taylor
+ * some minor thruster cleanup, if you could actually use the term "clean"
+ *
  * Revision 2.267  2005/11/21 13:04:08  taylor
  * i minus u ;)  (should fix overzealous directives list)
  *
@@ -10628,16 +10631,106 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 #define		HULL_REPAIR_RATE		0.15f			//	Percent of hull repaired per second.
 #define		SUBSYS_REPAIR_RATE	0.10f			// Percent of subsystems repaired per second.
 
+#define REARM_NUM_MISSILES_PER_BATCH 4		// how many missiles are dropped in per load sound
+#define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH	100	// how many bullets are dropped in per load sound
+
+//calculates approximate time in seconds it would take to rearm and repair object.
+float ship_calculate_rearm_duration( object *objp )
+{
+	ship* sp;
+	ship_info* sip;
+	ship_subsys* ssp;
+	ship_weapon* swp;
+	weapon_info* wip;
+
+	float shield_rep_time = 0;
+	float subsys_rep_time = 0;
+	float hull_rep_time = 0;
+	float prim_rearm_time = 0;
+	float sec_rearm_time = 0;
+
+	float max_hull_repair;
+	float max_subsys_repair;
+
+	int i;
+	int num_reloads;
+	
+	Assert(objp->type == OBJ_SHIP);
+
+	sp = &Ships[objp->instance];
+	swp = &sp->weapons;
+	sip = &Ship_info[sp->ship_info_index];
+
+	//find out time to repair shields
+	shield_rep_time = (sp->ship_max_shield_strength - get_shield_strength(objp)) / (sp->ship_max_shield_strength * SHIELD_REPAIR_RATE);
+	
+	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
+	//calculate hull_repair_time;
+	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength))
+	{
+		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * HULL_REPAIR_RATE);
+	}
+
+	//caluclate subsystem repair time
+	ssp = GET_FIRST(&sp->subsys_list);
+	while (ssp != END_OF_LIST(&sp->subsys_list))
+	{
+		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * 0.01f);
+		if (max_subsys_repair > ssp->current_hits) 
+		{
+			subsys_rep_time += (max_subsys_repair - ssp->current_hits) / (ssp->max_hits * HULL_REPAIR_RATE);
+		}
+
+		ssp = GET_NEXT( ssp );
+	}
+
+	//now do the primary rearm time
+	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+	{
+		for (i = 0; i < swp->num_primary_banks; i++)
+		{
+			wip = &Weapon_info[swp->primary_bank_weapons[i]];
+			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			{
+				//check how many full reloads we need
+				num_reloads = (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i])/REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
+
+				//take into account a fractional reload
+				if ((swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]) % REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH != 0)
+					num_reloads++;
+
+				prim_rearm_time += num_reloads * wip->rearm_rate;
+			}
+		}
+	}
+
+	//and on to secondary rearm time
+	for (i = 0; i < swp->num_secondary_banks; i++)
+	{
+			wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+	
+			//check how many full reloads we need
+			num_reloads = (swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i])/REARM_NUM_MISSILES_PER_BATCH;
+
+			//take into account a fractional reload
+			if ((swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]) % REARM_NUM_MISSILES_PER_BATCH != 0)
+				num_reloads++;
+
+			sec_rearm_time += num_reloads * wip->rearm_rate;
+	}
+
+	//sum them up and you've got an estimated rearm time.
+	return shield_rep_time + hull_rep_time + subsys_rep_time + prim_rearm_time + sec_rearm_time;
+}
+
+
+
 // ==================================================================================
 // ship_do_rearm_frame()
 //
 // function to rearm a ship.  This function gets called from the ai code ai_do_rearm_frame (or
 // some function of a similar name).  Returns 1 when ship is fully repaired and rearmed, 0 otherwise
 //
-
-#define REARM_NUM_MISSILES_PER_BATCH 4		// how many missiles are dropped in per load sound
-#define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH	100	// how many bullets are dropped in per load sound
-
 int ship_do_rearm_frame( object *objp, float frametime )
 {
 	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok;
