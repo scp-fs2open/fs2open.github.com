@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2005/11/22 04:50:52  taylor
+ * yuck, ugly mistake on my part  (thanks Goober!)
+ *
  * Revision 2.149  2005/11/22 00:01:11  taylor
  * combine weapon_info_close() and weapon_close()
  * changes to allow use of weapon_expl.tbl and the modular table versions once more
@@ -5919,8 +5922,75 @@ void weapons_page_in()
 			}
 		}
 	}
+}
+
+// page_in function for cheaters, grabs all weapons that weren't already in a mission
+// and loads the models for them.  Non-model graphics elements will get loaded when
+// they are rendered for the first time.  Maybe not the best way to do this but faster
+// and a lot less error prone.
+void weapons_page_in_cheats()
+{
+	int i;
+
+	// don't bother if they are all loaded already
+	if ( Cmdline_load_all_weapons )
+		return;
 
 
+	Assert( used_weapons != NULL );
+
+	// page in models for all weapon types that aren't already loaded
+	for (i=0; i<Num_weapon_types; i++ )	{
+		// skip over anything that's already loaded
+		if (used_weapons[i]) {
+			continue;
+		}
+		
+		weapon_info *wip = &Weapon_info[i];
+		
+		wip->wi_flags &= (~WIF_THRUSTER);		// Assume no thrusters
+
+		if ( wip->render_type == WRT_POF ) {
+			wip->model_num = model_load( wip->pofbitmap_name, 0, NULL );
+				
+			polymodel *pm = model_get( wip->model_num );
+				
+			// If it has a model, and the model pof has thrusters, then set
+			// the flags
+			if ( pm->n_thrusters > 0 )	{
+				//mprintf(( "Weapon %s has thrusters!\n", wip->name ));
+				wip->wi_flags |= WIF_THRUSTER;
+			}
+		}
+		
+		wip->external_model_num = -1;
+		
+		if ( strlen(wip->external_model_name) )
+			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
+		
+		if (wip->external_model_num == -1)
+			wip->external_model_num = wip->model_num;
+		
+		
+		//Load shockwaves
+		wip->shockwave.load();
+		wip->dinky_shockwave.load();
+	}
+
+	// Counter measures
+	for (i=0; i<Num_cmeasure_types; i++ )	{
+		cmeasure_info *cmeasurep;
+		
+		cmeasurep = &Cmeasure_info[i];
+		
+		Assert( strlen(cmeasurep->pof_name) );
+		
+		cmeasurep->model_num = model_load( cmeasurep->pof_name, 0, NULL );
+		
+		if ( cmeasurep->model_num < 0 ) {
+			Error( LOCATION, "Unable to load countermeasure POF for '%s' (%s)", cmeasurep->cmeasure_name, cmeasurep->pof_name);
+		}
+	}
 }
 
 // call to get the "color" of the laser at the given moment (since glowing lasers can cycle colors)
