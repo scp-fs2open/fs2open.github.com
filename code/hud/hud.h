@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.19 $
- * $Date: 2005-10-09 08:03:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2005-11-23 00:49:51 $
+ * $Author: phreak $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/10/09 08:03:19  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.18  2005/09/26 04:08:53  Goober5000
  * some more cleanup
  * --Goober5000
@@ -388,6 +391,7 @@ extern float HUD_offset_y;
 
 // Global: integrity of player's target
 extern float Pl_target_integrity;
+extern float Player_rearm_eta;
 
 void HUD_init_colors();
 void HUD_init();

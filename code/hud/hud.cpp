@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-11-13 23:02:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.60 $
+ * $Date: 2005-11-23 00:49:51 $
+ * $Author: phreak $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/11/13 23:02:04  Goober5000
+ * fix the icons.tbl bug
+ * --Goober5000
+ *
  * Revision 2.58  2005/11/05 10:26:09  wmcoolmon
  * Int3() --> Warning
  *
@@ -543,6 +547,7 @@
 
 #include "hud/hud.h"
 #include "asteroid/asteroid.h"
+#include "cmdline/cmdline.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
@@ -1034,6 +1039,7 @@ static int					Pl_hud_is_bright;
 
 // timers used for popup gauges
 int HUD_popup_timers[NUM_HUD_GAUGES];
+float Player_rearm_eta = 0;
 
 // forward declarations
 void update_throttle_sound();
@@ -2794,17 +2800,33 @@ void hud_support_view_blit()
 	}
 
 	show_time = 0;
-	if ( Player_ai->ai_flags & AIF_BEING_REPAIRED ) {
+	if (Player_ai->ai_flags & AIF_BEING_REPAIRED) {
 		Assert(Player_ship->ship_max_hull_strength > 0);
-		if (  (ship_get_subsystem_strength(Player_ship, SUBSYSTEM_ENGINE) < 1.0 ) ||
-				(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_SENSORS) < 1.0 ) ||
-				(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_WEAPONS) < 1.0 ) ||
-				(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_COMMUNICATION) < 1.0 ) ) {
-			sprintf(outstr, XSTR( "repairing", 227));
-		} else {
-			sprintf(outstr, XSTR( "rearming", 228));
+		
+		if (!Cmdline_rearm_timer)
+		{
+			if (  (ship_get_subsystem_strength(Player_ship, SUBSYSTEM_ENGINE) < 1.0 ) ||
+					(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_SENSORS) < 1.0 ) ||
+					(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_WEAPONS) < 1.0 ) ||
+					(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_COMMUNICATION) < 1.0 ) ) {
+				sprintf(outstr, XSTR( "repairing", 227));
+			} else {
+				sprintf(outstr, XSTR( "rearming", 228));
+			}
 		}
-		gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
+		else
+		{
+			if (Player_rearm_eta > 0)
+			{
+				sprintf(outstr, "%02d:%.2f", (int)Player_rearm_eta/60, Player_rearm_eta - 60*(int)(Player_rearm_eta/60));
+				gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
+			}
+			else
+			{
+				sprintf(outstr, "Waiting...");
+				gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
+			}	
+		}
 	} else if (Player_ai->ai_flags & AIF_REPAIR_OBSTRUCTED) {
 		sprintf(outstr, XSTR( "obstructed", 229));
 		gr_string(0x8000, Support_text_val_coords[gr_screen.res][1], outstr);
