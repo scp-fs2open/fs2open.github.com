@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.63 $
- * $Date: 2005-10-11 07:43:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.64 $
+ * $Date: 2005-11-23 06:53:22 $
+ * $Author: taylor $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/10/11 07:43:10  wmcoolmon
+ * Topdown updates
+ *
  * Revision 2.62  2005/10/11 05:24:34  wmcoolmon
  * Gliding
  *
@@ -2030,6 +2033,12 @@ void game_process_cheats(int k)
 #else
 	if( !strcmp(Cheat_code, cryptstring) && !(Game_mode & GM_MULTIPLAYER)){
 		Cheats_enabled = 1;
+
+		// cheating allows the changing of weapons so we have to grab anything
+		// that we don't already have loaded, just in case
+		extern void weapons_page_in_cheats();
+		weapons_page_in_cheats();
+
 		HUD_printf("Cheats enabled");
 	}
 	if( !strcmp(Cheat_code_fish, cryptstring) ){
