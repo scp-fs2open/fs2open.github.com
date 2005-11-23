@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.190 $
- * $Date: 2005-11-08 01:04:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.191 $
+ * $Date: 2005-11-23 06:55:47 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.190  2005/11/08 01:04:00  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.189  2005/11/05 11:00:50  wmcoolmon
  * Fixed capitalization
  *
@@ -3426,6 +3429,13 @@ int get_sexp(char *token)
 				n = CDR(start);
 
 				sexp_set_skybox_model_preload( CTEXT(n) );
+				break;
+
+			case OP_TURRET_CHANGE_WEAPON:
+				// weapon to change to is arg #3
+				n = CDDDR(start);
+
+				weapon_mark_as_used( weapon_info_lookup(CTEXT(n) ));
 				break;
 		}
 	}
