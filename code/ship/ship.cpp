@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.269 $
- * $Date: 2005-11-23 01:06:58 $
- * $Author: phreak $
+ * $Revision: 2.270 $
+ * $Date: 2005-11-23 06:54:28 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.269  2005/11/23 01:06:58  phreak
+ * Added the function to estimate rearm and repair time.
+ *
  * Revision 2.268  2005/11/21 23:57:26  taylor
  * some minor thruster cleanup, if you could actually use the term "clean"
  *
@@ -8897,13 +8900,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								target = NULL;
 							}
 
-							set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
-							
-							range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
-	
 							//if we have a target and its in range
-							if ((target != NULL) && (range_to_target < flak_range))
+							if (target != NULL)
 							{
+								set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
+								range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
+
 								//set flak range to range of ship
 								flak_pick_range(&Objects[weapon_objnum],&predicted_pos,wepstr);
 							}
