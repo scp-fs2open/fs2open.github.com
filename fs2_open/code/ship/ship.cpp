@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.270 $
- * $Date: 2005-11-23 06:54:28 $
+ * $Revision: 2.271 $
+ * $Date: 2005-11-23 06:59:09 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.270  2005/11/23 06:54:28  taylor
+ * crash fix for using flak without having something targetted
+ *
  * Revision 2.269  2005/11/23 01:06:58  phreak
  * Added the function to estimate rearm and repair time.
  *
@@ -8891,7 +8894,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							object *target;
 							vec3d predicted_pos;
 							float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
-							float range_to_target;
+							float range_to_target = flak_range;
 							float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
 
 							if (aip->target_objnum != -1) {
@@ -8900,12 +8903,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								target = NULL;
 							}
 
-							//if we have a target and its in range
-							if (target != NULL)
-							{
+							if (target != NULL) {
 								set_predicted_enemy_pos(&predicted_pos,obj,target,aip);
 								range_to_target=vm_vec_dist(&predicted_pos, &obj->pos);
+							}
 
+							//if we have a target and its in range
+							if ( (target != NULL) && (range_to_target < flak_range) )
+							{
 								//set flak range to range of ship
 								flak_pick_range(&Objects[weapon_objnum],&predicted_pos,wepstr);
 							}
