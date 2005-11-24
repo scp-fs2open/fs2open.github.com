@@ -8,11 +8,20 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.5 $
- * $Date: 2005-11-24 08:46:11 $
+ * $Revision: 1.6 $
+ * $Date: 2005-11-24 09:08:44 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/11/24 08:46:11  Goober5000
+ * * cleaned up mission_do_departure
+ *   * fixed a hidden crash (array index being -1; would only
+ * be triggered for ships w/o subspace drives under certain conditions)
+ *   * removed finding a new fighterbay target because it might screw up missions
+ *   * improved clarity, code flow, and readability :)
+ * * added custom AI flag for disabling warpouts if navigation subsystem fails
+ * --Goober5000
+ *
  * Revision 1.4  2005/11/24 07:27:14  taylor
  * fix fred2 startup crash (we probably need to Assert() this case so it doesn't easily happen again)
  *
@@ -306,7 +315,7 @@ void ai_profiles_init()
 
 			set_flag(profile, "$shockwaves damage small ship subsystems:", AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS);
 
-			set_flag(profile, "$navigation subsystem governs warpout capability", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP);
+			set_flag(profile, "$navigation subsystem governs warpout capability:", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP);
 
 			// find next valid option
 			skip_to_start_of_string_either("$", "#");
