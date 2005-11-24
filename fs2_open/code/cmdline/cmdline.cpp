@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.125 $
- * $Date: 2005-11-23 00:43:20 $
+ * $Revision: 2.126 $
+ * $Date: 2005-11-24 06:37:47 $
  * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.125  2005/11/23 00:43:20  phreak
+ * Command lines for rearm countdown timer.
+ *
  * Revision 2.124  2005/11/21 00:46:06  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -838,6 +841,7 @@ Flag exe_params[] =
 	{ "-2d_poof",			"Stops fog intersect hull",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-2d_poof", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-cache_bitmaps",		"Cache bitmaps between missions",			true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-cache_bitmaps", },
+	{ "-missile_lighting",	"Apply Lighting to Missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,	"Graphics",		"", },
 
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
@@ -1016,6 +1020,7 @@ cmdline_parm ogl_spec_arg("-ogl_spec", NULL);
 cmdline_parm ybugfix_arg("-y_bug_fix", NULL);  // Temporary... REMOVEME LATER!!
 
 cmdline_parm rearm_timer_arg("-rearm_timer", NULL);
+cmdline_parm missile_lighting_arg("-missile_lighting", NULL);
 
 int Cmdline_ybugfix = 0; // Temporary... REMOVEME LATER!!
 
@@ -1131,6 +1136,7 @@ int Cmdline_wcsaga = 0;
 int Cmdline_tbp = 0;
 
 int Cmdline_rearm_timer = 0;
+int Cmdline_missile_lighting = 0;
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -2102,6 +2108,11 @@ bool SetCmdlineParams()
 	if (rearm_timer_arg.found())
 	{
 		Cmdline_rearm_timer = 1;
+	}
+
+	if (missile_lighting_arg.found())
+	{
+		Cmdline_missile_lighting = 1;
 	}
 
 #ifdef WIN32
