@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.1 $
- * $Date: 2005-11-21 02:43:30 $
+ * $Revision: 1.2 $
+ * $Date: 2005-11-24 08:46:11 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  */
 
 #ifndef _AI_PROFILES_H_
@@ -35,6 +39,7 @@
 #define AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY					(1 << 8)
 #define AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY		(1 << 9)
 #define AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS				(1 << 10)
+#define AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP							(1 << 11)
 
 
 #define MAX_AI_PROFILES	5

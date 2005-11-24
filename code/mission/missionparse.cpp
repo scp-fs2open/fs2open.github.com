@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.127 $
- * $Date: 2005-11-21 02:43:37 $
+ * $Revision: 2.128 $
+ * $Date: 2005-11-24 08:46:10 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2005/11/21 02:43:37  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.126  2005/11/21 00:46:12  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -6098,45 +6102,35 @@ void mission_eval_arrivals()
 	Mission_arrival_timestamp = timestamp(ARRIVAL_TIMESTAMP);
 }
 
+// Goober5000
+// this only checks the warp drive; we might be able to depart some other way (e.g. by entering a docking bay)
+int ship_can_use_warp_drive(ship *shipp)
+{
+	// must *have* a subspace drive
+	if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+		return 0;
+
+	// navigation must work
+	if (!ship_navigation_ok_to_warp(shipp))
+		return 0;
+
+	return 1;
+}
+
 // called to make object objp depart.
-int mission_do_departure( object *objp )
+int mission_do_departure(object *objp)
 {
 	ship *shipp;
 	int temp = -1;
 //	vec3d v;
 
-	Assert ( objp->type == OBJ_SHIP );
+	Assert (objp->type == OBJ_SHIP);
 	shipp = &Ships[objp->instance];
 	ai_info *aip = &Ai_info[shipp->ai_index];
-	ai_goal *aigp = &aip->goals[aip->active_goal];
-
-	// Goober5000 - if ship has no subspace drive but is cued to warp out, find it somewhere to depart
-	if ((shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) && (shipp->departure_location != DEPART_AT_DOCK_BAY))
-	{
-		// locate a capital ship on the same team:
-		if ((temp = ship_get_ship_with_dock_bay(shipp->team)) >= 0)
-		{
-			shipp->departure_location = DEPART_AT_DOCK_BAY;
-			shipp->departure_anchor = temp;
-		}
-		// if we couldn't find anybody, we're doomed! ;)
-		else
-		{
-			shipp->flags &= ~SF_DEPARTING;
-
-			// engage enemy
-			aip->target_objnum = -1;	// force reacquisition of target
-			aip->enemy_wing = -1;		// same with wing
-			aigp->ai_mode = AI_GOAL_CHASE_ANY;
-			aigp->ai_submode = SM_ATTACK;
-			ai_attack_object( objp, NULL, aigp->priority, NULL );
-			return 0;
-		}
-	}
 
 	// if departing to a docking bay, try to find the anchor ship to depart to.  If not found, then
 	// just make it warp out like anything else.
-	if ( shipp->departure_location == DEPART_AT_DOCK_BAY )
+	if (shipp->departure_location == DEPART_AT_DOCK_BAY)
 	{
 		int anchor_shipnum;
 		char *name;
@@ -6145,61 +6139,62 @@ int mission_do_departure( object *objp )
 		name = Parse_names[shipp->departure_anchor];
 
 		// see if ship is yet to arrive.  If so, then warp.
-		// Goober5000 - ships which have no warp drives MUST not warp
-		if ( mission_parse_get_arrival_ship( name ) )
-			if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
-				goto do_departure_warp;
+		if (mission_parse_get_arrival_ship(name))
+		{
+			goto try_to_warp;
+		}
 
 		// see if ship is in mission.  If not, then we can assume it was destroyed or departed since
 		// it is not on the arrival list (as shown by above if statement).
 		anchor_shipnum = ship_name_lookup( name );
-
-		// Goober5000 - ships which have no warp drives MUST not warp
-		if ( anchor_shipnum == -1 )
-			if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
-				goto do_departure_warp;
+		if (anchor_shipnum == -1)
+		{
+			goto try_to_warp;
+		}
 
 //		if ( ( aip->goal_signature != Objects[aip->goal_objnum].signature) )
 //		{
 //		}
 
 		// make sure ship not dying or departing
-		if (!(Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING)))
+		if (Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
 		{
-			// also make sure fighterbays aren't destroyed
-			if (!ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]))
-			{
-				if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
-				{
-					MONITOR_INC(NumShipDepartures,1);
-
-					return 1;
-				}
-			}
+			goto try_to_warp;
 		}
-		
-		// if we reached this point, we can't depart via dockbay
 
-		// if we have no subspace drive, do something else
-		if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+		// make sure fighterbays aren't destroyed
+		if (ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]))
 		{
-			shipp->flags &= ~SF_DEPARTING;
+			goto try_to_warp;
+		}
 
-			// engage enemy
-			aip->target_objnum = -1;	// force reacquisition of target
-			aip->enemy_wing = -1;		// same with wing
-			aigp->ai_mode = AI_GOAL_CHASE_ANY;
-			aigp->ai_submode = SM_ATTACK;
-			ai_attack_object( objp, NULL, aigp->priority, NULL );
-			return 0;
+		// find a path
+		if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
+		{
+			MONITOR_INC(NumShipDepartures,1);
+
+			return 1;
 		}
 	}
 
-do_departure_warp:
-	ai_set_mode_warp_out( objp, &Ai_info[Ships[objp->instance].ai_index] );
-	MONITOR_INC(NumShipDepartures,1);
+try_to_warp:
+	// Goober5000 - make sure we can actually warp
+	if (ship_can_use_warp_drive(shipp))
+	{
+		ai_set_mode_warp_out(objp, &Ai_info[Ships[objp->instance].ai_index]);
+		MONITOR_INC(NumShipDepartures,1);
 
-	return 1;
+		return 1;
+	}
+	else
+	{
+		shipp->flags &= ~SF_DEPARTING;
+
+		// find something else to do
+		aip->mode = AIM_NONE;
+
+		return 0;
+	}
 }
 
 // put here because mission_eval_arrivals is here.  Might move these to a better location

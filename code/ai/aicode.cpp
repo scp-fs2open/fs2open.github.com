@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.45 $
- * $Date: 2005-11-23 00:46:26 $
- * $Author: phreak $
+ * $Revision: 1.46 $
+ * $Date: 2005-11-24 08:46:11 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.45  2005/11/23 00:46:26  phreak
+ * Calculate player repair timer when the support ship docks to him.
+ *
  * Revision 1.44  2005/11/21 03:47:51  Goober5000
  * bah and double bah
  * --Goober5000
@@ -13609,13 +13612,37 @@ void ai_maybe_depart(object *objp)
 //	Warp this ship out.
 void ai_warp_out(object *objp)
 {
+	ship *shipp = &Ships[objp->instance];
+	ai_info	*aip = &Ai_info[shipp->ai_index];
+
 	// if dying, don't warp out.
-	if (Ships[objp->instance].flags & SF_DYING) {
+	if (shipp->flags & SF_DYING)
 		return;
+
+	// Goober5000 - I seriously don't think this needs a custom AI flag,
+	// but if it turns out it does, this is where to add it
+	// if (whatever)
+	{
+		// Goober5000 - check for engine or navigation failure
+		if (!ship_engine_ok_to_warp(shipp) || !ship_navigation_ok_to_warp(shipp))
+		{
+			// you shouldn't hit this... if you do, then I need to add a check for it
+			// in whatever function initiates a warpout
+			Assert (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE));
+
+			// flag us as trying to warp so that this function keeps getting called
+			// (in other words, if we can't warp just yet, we want to warp at the first
+			// opportunity)
+			aip->submode = AIS_WARP_1;
+			aip->ai_flags |= AIF_TRYING_UNSUCCESSFULLY_TO_WARP;
+
+			return;
+		}
+
+		// Goober5000 - make sure the flag is clear (if it was previously set)
+		aip->ai_flags &= ~AIF_TRYING_UNSUCCESSFULLY_TO_WARP;
 	}
 
-	ai_info	*aip;
-	aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	switch (aip->submode) {
 	case AIS_WARP_1:
@@ -13629,7 +13656,7 @@ void ai_warp_out(object *objp)
 			aip->submode_start_time = Missiontime;
 
 			// maybe recalculate collision pairs.
-			if (ship_get_warpout_speed(objp) > ship_get_max_speed(&Ships[objp->instance])) {
+			if (ship_get_warpout_speed(objp) > ship_get_max_speed(shipp)) {
 				// recalculate collision pairs
 				OBJ_RECALC_PAIRS(objp);	
 			}
@@ -13649,7 +13676,7 @@ void ai_warp_out(object *objp)
 		goal_speed = ship_get_warpout_speed(objp);
 
 		// HUGE ships go immediately to AIS_WARP_4
-		if (Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HUGE_SHIP) {
+		if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
 			aip->submode = AIS_WARP_4;
 			aip->submode_start_time = Missiontime;
 			break;
@@ -14239,16 +14266,16 @@ void ai_frame(int objnum)
 	// Set globals defining the current object and its enemy object.
 	Pl_objp = &Objects[objnum];
 
-	if (aip->mode == AIM_WARP_OUT) {
+	// warping out?
+	if ((aip->mode == AIM_WARP_OUT) || (aip->ai_flags & AIF_TRYING_UNSUCCESSFULLY_TO_WARP))
+	{
 		ai_warp_out(Pl_objp);
-		return;
-	}
 
-/*	//	HACK! TEST! REMOVE ME!
-	if (Ship_info[shipp->ship_info_index].flags & SIF_BIG_SHIP)
-		if (shipp->team == Player_ship->team)
-			aip->mode = AIM_CHASE;
-*/
+		// Goober5000 - either we were never trying unsuccessfully, or we were but now
+		// we're successful... in either case, since we're actually warping we simply return
+		if (!(aip->ai_flags & AIF_TRYING_UNSUCCESSFULLY_TO_WARP))
+			return;
+	}
 
 //	if (!strnicmp(Ships[Pl_objp->instance].ship_name, "cancer", 6))
 //		nprintf(("AI", "Ship %s: mode = %s, submode = %i\n", Ships[Pl_objp->instance].ship_name, Mode_text[aip->mode], aip->submode));

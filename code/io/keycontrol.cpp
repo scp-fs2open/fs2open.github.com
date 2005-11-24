@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.64 $
- * $Date: 2005-11-23 06:53:22 $
- * $Author: taylor $
+ * $Revision: 2.65 $
+ * $Date: 2005-11-24 08:46:11 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/11/23 06:53:22  taylor
+ * when using cheats be sure to properly load up all weapons that aren't already paged in
+ *
  * Revision 2.63  2005/10/11 07:43:10  wmcoolmon
  * Topdown updates
  *
@@ -3122,10 +3125,13 @@ int button_function(int n)
 			
 			if (collide_predict_large_ship(Player_obj, 200.0f)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR( "** WARNING ** Collision danger.  Warpout not activated.", 39));
-			} else if (!ship_can_warp(Player_ship)  /*ship_get_subsystem_strength( Player_ship, SUBSYSTEM_ENGINE ) < 0.1f*/) {
+				HUD_printf(XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
+			} else if (!ship_engine_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR( "Engine failure.  Cannot engage warp drive.", 40));
+				HUD_printf(XSTR("Engine failure.  Cannot engage subspace drive.", 40));
+			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", -1));
 			} else {
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
 			}			
