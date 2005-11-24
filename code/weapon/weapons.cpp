@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2005/11/23 06:53:22  taylor
+ * when using cheats be sure to properly load up all weapons that aren't already paged in
+ *
  * Revision 2.150  2005/11/22 04:50:52  taylor
  * yuck, ugly mistake on my part  (thanks Goober!)
  *
@@ -3631,6 +3634,8 @@ void weapon_render(object *obj)
 
 		case WRT_POF:	{
 				uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_LIGHTING;
+
+				if (Cmdline_missile_lighting) render_flags &= ~MR_NO_LIGHTING;
 
 				model_clear_instance(wip->model_num);
 
