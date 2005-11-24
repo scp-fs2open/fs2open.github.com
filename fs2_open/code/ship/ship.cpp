@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.271 $
- * $Date: 2005-11-23 06:59:09 $
- * $Author: taylor $
+ * $Revision: 2.272 $
+ * $Date: 2005-11-24 03:07:35 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.271  2005/11/23 06:59:09  taylor
+ * yeah I know, I should have noticed that little jewel *before* the commit
+ *
  * Revision 2.270  2005/11/23 06:54:28  taylor
  * crash fix for using flak without having something targetted
  *
@@ -11022,6 +11025,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			aip->rearm_release_delay = timestamp(1200);
 		}
 	}
+
+	if (objp == Player_obj) Player_rearm_eta -= frametime;
 
 	return 0;
 }
