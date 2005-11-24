@@ -8,11 +8,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.4 $
- * $Date: 2005-11-24 07:27:14 $
- * $Author: taylor $
+ * $Revision: 1.5 $
+ * $Date: 2005-11-24 08:46:11 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/11/24 07:27:14  taylor
+ * fix fred2 startup crash (we probably need to Assert() this case so it doesn't easily happen again)
+ *
  * Revision 1.3  2005/11/21 15:01:18  taylor
  * little cleaner, lot more friendly to 64-bit archs (long type is usually 64-bit there)
  *
@@ -302,6 +305,8 @@ void ai_profiles_init()
 			set_flag(profile, "$hack improve non-homing swarm turret fire accuracy:", AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY);
 
 			set_flag(profile, "$shockwaves damage small ship subsystems:", AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS);
+
+			set_flag(profile, "$navigation subsystem governs warpout capability", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP);
 
 			// find next valid option
 			skip_to_start_of_string_either("$", "#");

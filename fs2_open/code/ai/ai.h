@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.8 $
- * $Date: 2005-11-21 00:46:05 $
+ * $Revision: 1.9 $
+ * $Date: 2005-11-24 08:46:11 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/11/21 00:46:05  Goober5000
+ * add ai_settings.tbl
+ * --Goober5000
+ *
  * Revision 1.7  2005/07/27 17:22:22  Goober5000
  * more tweaks to the dock code
  * --Goober5000
@@ -305,6 +309,7 @@ struct object;
 
 // Goober5000
 #define	AIF_UNLOAD_PRIMARIES				(1 << 24)	//	Fire primaries as fast as possible!
+#define AIF_TRYING_UNSUCCESSFULLY_TO_WARP	(1 << 25)	// Trying to warp, but can't warp at the moment
 
 #define	AIF_AVOID_SHOCKWAVE		(AIF_AVOID_SHOCKWAVE_SHIP | AIF_AVOID_SHOCKWAVE_WEAPON)
 #define	AIF_FORMATION			(AIF_FORMATION_WING | AIF_FORMATION_OBJECT)

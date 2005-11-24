@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.121 $
- * $Date: 2005-11-23 01:06:58 $
- * $Author: phreak $
+ * $Revision: 2.122 $
+ * $Date: 2005-11-24 08:46:10 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.121  2005/11/23 01:06:58  phreak
+ * Added the function to estimate rearm and repair time.
+ *
  * Revision 2.120  2005/11/21 23:57:26  taylor
  * some minor thruster cleanup, if you could actually use the term "clean"
  *
@@ -1888,7 +1891,9 @@ int ship_primary_bank_has_ammo(int shipnum);	// check if current primary bank ha
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 
 void ship_departed( int num );
-int ship_can_warp(ship *sp);		// check if ship has engine power to warp
+int ship_engine_ok_to_warp(ship *sp);		// check if ship has engine power to warp
+int ship_navigation_ok_to_warp(ship *sp);	// check if ship has navigation power to warp
+
 int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm);
 int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, vec3d* subsys_pos, int do_facing_check=1, float *dot_out=NULL, vec3d *vec_out=NULL);
 ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos);

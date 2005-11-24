@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.272 $
- * $Date: 2005-11-24 03:07:35 $
- * $Author: phreak $
+ * $Revision: 2.273 $
+ * $Date: 2005-11-24 08:46:10 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.272  2005/11/24 03:07:35  phreak
+ * Forgot to add in the part where the rearm timer actually counts down.  Minor oversight
+ *
  * Revision 2.271  2005/11/23 06:59:09  taylor
  * yeah I know, I should have noticed that little jewel *before* the commit
  *
@@ -12006,19 +12009,38 @@ int ship_primary_bank_has_ammo(int shipnum)
 
 // see if there is enough engine power to allow the ship to warp
 // returns 1 if ship is able to warp, otherwise return 0
-int ship_can_warp(ship *sp)
+int ship_engine_ok_to_warp(ship *sp)
 {
-	float	engine_str;
+	float	engine_strength;
 
-	engine_str = ship_get_subsystem_strength( sp, SUBSYSTEM_ENGINE );
+	engine_strength = ship_get_subsystem_strength( sp, SUBSYSTEM_ENGINE );
 	// Note that ship can always warp at lowest skill level
-	if ( (Game_skill_level == 0) ||  (engine_str >= SHIP_MIN_ENGINES_TO_WARP) ){
+	if ( (Game_skill_level == 0) ||  (engine_strength >= SHIP_MIN_ENGINES_TO_WARP) ){
 		return 1;
 	} else {
 		return 0;
 	}
 }
 
+// Goober5000
+// see if there is enough navigation power to allow the ship to warp
+// returns 1 if ship is able to warp, otherwise return 0
+int ship_navigation_ok_to_warp(ship *sp)
+{
+	float	navigation_strength;
+
+	// if not using the special flag, always okay
+	if (!(The_mission.ai_profile->flags & AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP))
+		return 1;
+
+	navigation_strength = ship_get_subsystem_strength( sp, SUBSYSTEM_NAVIGATION );
+	// Note that ship can always warp at lowest skill level
+	if ( (Game_skill_level == 0) ||  (navigation_strength >= SHIP_MIN_NAV_TO_WARP) ){
+		return 1;
+	} else {
+		return 0;
+	}
+}
 
 // Calculate the normal vector from a subsystem position and its first path point
 // input:	sp	=>	pointer to ship that is parent of subsystem
