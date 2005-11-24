@@ -8,11 +8,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.3 $
- * $Date: 2005-11-21 15:01:18 $
+ * $Revision: 1.4 $
+ * $Date: 2005-11-24 07:27:14 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/11/21 15:01:18  taylor
+ * little cleaner, lot more friendly to 64-bit archs (long type is usually 64-bit there)
+ *
  * Revision 1.2  2005/11/21 03:47:51  Goober5000
  * bah and double bah
  * --Goober5000
@@ -166,7 +169,7 @@ void ai_profiles_init()
 	}
 	else
 	{
-		nprintf(("No ai_profiles.tbl found; using defaults."));
+		mprintf(("No ai_profiles.tbl found; using defaults."));
 		return;
 	}
 
