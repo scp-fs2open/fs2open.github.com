@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.29 $
- * $Date: 2005-11-13 06:44:18 $
- * $Author: taylor $
+ * $Revision: 1.30 $
+ * $Date: 2005-11-30 03:07:54 $
+ * $Author: phreak $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 1.28  2005/10/16 11:20:43  taylor
  * use unsigned index buffers
  *
@@ -976,7 +984,7 @@ void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
 	if (Cmdline_nohtl)
 		return;
 
-	opengl_set_state(GL_current_tex_src, ALPHA_BLEND_NONE, GL_current_ztype);
+	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
 	glBegin(GL_LINES);
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 		glSecondaryColor3ubvEXT(GL_zero_3ub);
