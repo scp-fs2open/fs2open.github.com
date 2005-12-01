@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-10-20 17:50:00 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2005-12-01 07:45:21 $
+ * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/10/20 17:50:00  taylor
+ * fix player warpout
+ * basic code cleanup (that previous braces change did nothing for readability)
+ * spell "plyr" correctly
+ * tweak warp shrink time to better match WMC's other changes and avoid the skipping during shrink
+ *
  * Revision 2.26  2005/04/05 05:53:15  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -644,7 +650,15 @@ void fireball_init()
 
 	mprintf(("loading warp model"));
 	Warp_model = -1;
-	Warp_model = model_load("warp.pof", 0, NULL, 0);
+
+	// Goober5000 - check for existence of file before trying to load it
+	CFILE *tempfile = cfopen("warp.pof", "rb");
+	if (tempfile != NULL)
+	{
+		cfclose(tempfile);
+		Warp_model = model_load("warp.pof", 0, NULL, 0);
+	}
+
 	mprintf((" %d\n", Warp_model));
 
 
