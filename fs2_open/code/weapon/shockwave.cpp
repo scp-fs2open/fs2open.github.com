@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-10-30 06:44:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2005-12-01 07:45:21 $
+ * $Author: Goober5000 $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/10/30 06:44:59  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.19  2005/08/25 22:40:04  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -762,7 +765,14 @@ void shockwave_level_init()
 
 	// try and load in a 3d shockwave first
 	mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
-	default_shockwave_model = model_load("shockwave.pof", 0, NULL, 0);
+
+	// Goober5000 - check for existence of file before trying to load it
+	CFILE *tempfile = cfopen("shockwave.pof", "rb");
+	if (tempfile != NULL)
+	{
+		cfclose(tempfile);
+		default_shockwave_model = model_load("shockwave.pof", 0, NULL, 0);
+	}
 
 	if (default_shockwave_model >= 0) {
 		mprintf(("SHOCKWAVE =>  Default model load: SUCCEEDED!!\n"));
