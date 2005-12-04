@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.122 $
- * $Date: 2005-11-24 08:46:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.123 $
+ * $Date: 2005-12-04 18:58:07 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2005/11/24 08:46:10  Goober5000
+ * * cleaned up mission_do_departure
+ *   * fixed a hidden crash (array index being -1; would only
+ * be triggered for ships w/o subspace drives under certain conditions)
+ *   * removed finding a new fighterbay target because it might screw up missions
+ *   * improved clarity, code flow, and readability :)
+ * * added custom AI flag for disabling warpouts if navigation subsystem fails
+ * --Goober5000
+ *
  * Revision 2.121  2005/11/23 01:06:58  phreak
  * Added the function to estimate rearm and repair time.
  *
@@ -739,6 +748,7 @@
 #include "network/multi_oo.h"
 #include "hud/hudparse.h"
 #include "render/3d.h"
+#include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
@@ -887,7 +897,7 @@ public:
 	//Get
 	char *GetNamePtr(){return Name;}
 	bool IsName(char *in_name){return (strnicmp(in_name,Name,strlen(Name)) == 0);}
-	float GetDamage(float damage_applied, struct ship_info *sip, struct weapon_info *wip);
+	float GetDamage(float damage_applied, int in_damage_type_idx);
 	
 	//Set
 	void ParseData();
@@ -1500,17 +1510,19 @@ typedef struct ship_info {
 	float		max_speed, min_speed, max_accel;
 
 	// ship explosion info
+	shockwave_create_info shockwave;
+	int	explosion_propagates;				// If true, then the explosion propagates
+	int	shockwave_count;						// the # of total shockwaves
+	/*
 	float inner_rad;								// radius within which maximum damage is applied
 	float	outer_rad;								// radius at which no damage is applied
 	float damage;									// maximum damage applied from ship explosion
 	float blast;									// maximum blast impulse from ship explosion									
-	int	explosion_propagates;				// If true, then the explosion propagates
 	float	shockwave_speed;						// speed at which shockwave expands, 0 means no shockwave
-	int	shockwave_count;						// the # of total shockwaves
 	char shockwave_pof_file[NAME_LENGTH];			// POF file to load/associate with ship's shockwave
 	int shockwave_model;
 	char shockwave_name[NAME_LENGTH];
-	int shockwave_info_index;
+	int shockwave_info_index;*/
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
@@ -1526,6 +1538,7 @@ typedef struct ship_info {
 	float		afterburner_burn_rate;			// rate in fuel/second that afterburner consumes fuel
 	float		afterburner_recover_rate;		//	rate in fuel/second that afterburner recovers fuel
 
+	int		cmeasure_type;						// Type of countermeasures this ship carries
 	int		cmeasure_max;						//	Number of charges of countermeasures this ship can hold.
 
 	int num_primary_banks;										// Actual number of primary banks (property of model)
@@ -2092,7 +2105,7 @@ int ship_class_compare(int ship_class_1, int ship_class_2);
 
 void ship_vanished(object *objp);
 
-int armor_get_name_idx(char* name);
+int armor_type_get_idx(char* name);
 
 void armor_init();
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-11-21 02:43:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.58 $
+ * $Date: 2005-12-04 18:58:07 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.56  2005/11/21 01:53:57  Goober5000
  * add a flag to re-enable shockwaves damaging subsystems (from FS1)
  * --Goober5000
@@ -1008,8 +1012,10 @@ typedef struct {
 // Shockwave damage is handled here.  If other_obj->type == OBJ_SHOCKWAVE, it's a shockwave.
 // apply the same damage to all subsystems.
 //	Note: A negative damage number means to destroy the corresponding subsystem.  For example, call with -SUBSYSTEM_ENGINE to destroy engine.
+//
+//WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
 
-float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage)
+float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, bool *hull_should_apply_armor)
 {
 	vec3d			g_subobj_pos;
 	float				damage_left;
@@ -1018,6 +1024,11 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	ship				*ship_p;
 	sublist			subsys_list[MAX_SUBSYS_LIST];
 	vec3d			hitpos2;
+
+	//WMC - first, set this to damage if it isn't NULL, in case we want to return with no damage to subsystems
+	if(hull_should_apply_armor != NULL) {
+		*hull_should_apply_armor = true;
+	}
 
 	Assert(ship_obj);	// Goober5000 (but other_obj might be NULL via sexp)
 	Assert(hitpos);		// Goober5000
@@ -1032,7 +1043,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	}
 
 	//	Shockwave damage is applied like weapon damage.  It gets consumed.
-	if ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))	// Goober5000 check for NULL
+	if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE))	// Goober5000 check for NULL
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
@@ -1112,10 +1123,34 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		}
 	}
 
+	int dmg_type_idx = -1;
+	if(other_obj->type == OBJ_SHOCKWAVE) {
+		dmg_type_idx = Shockwaves[other_obj->instance].damage_type_idx;
+	}
+	else if(other_obj->type == OBJ_WEAPON) {
+		dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+	}
+
+	//This function is screwy
+	if(count)
+	{
+		//Change damage to hull based on armor type of closest subsystem
+		if(subsys_list[0].ptr->system_info->armor_type_idx > -1)
+		{
+			damage = Armor_types[subsys_list[0].ptr->system_info->armor_type_idx].GetDamage(damage, dmg_type_idx);
+			if(hull_should_apply_armor) {
+				*hull_should_apply_armor = false;
+			}
+		}
+
+		//Possibly some future feature will be to set different values for the two above things. Should be easy enough
+	}
+
 	//	Now scan the sorted list of subsystems in range.
 	//	Apply damage to the nearest one first, subtracting off damage as we go.
 	int	i, j;
-	for (j=0; j<count; j++) {
+	for (j=0; j<count; j++)
+	{
 		float	dist, range;
 		ship_subsys	*subsys;
 
@@ -1158,7 +1193,8 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		}
 
 		// if we're not in CLIENT_NODAMAGE multiplayer mode (which is a the NEW way of doing things)
-		if (damage_to_apply > 0.1f && !(MULTIPLAYER_CLIENT) && !(Game_mode & GM_DEMO_PLAYBACK)) {
+		if (damage_to_apply > 0.1f && !(MULTIPLAYER_CLIENT) && !(Game_mode & GM_DEMO_PLAYBACK))
+		{
 			//	Decrease damage to subsystems to player ships.
 			if (ship_obj->flags & OF_PLAYER_SHIP){
 				damage_to_apply *= The_mission.ai_profile->subsys_damage_scale[Game_skill_level];
@@ -1177,10 +1213,17 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 				}
 			}
 
+			// decrease the damage left to apply to the ship subsystems
+			// WMC - since armor aborbs damage, subtract the amount of damage before we apply armor
+			damage_left -= damage_to_apply;
+
+			//Apply armor to damage
+			damage_to_apply = Armor_types[subsys->system_info->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx);
+
 			subsys->current_hits -= damage_to_apply;
 			ship_p->subsys_info[subsys->system_info->type].current_hits -= damage_to_apply;
 
-			damage_left -= damage_to_apply;		// decrease the damage left to apply to the ship subsystems
+			
 
 			if (subsys->current_hits < 0.0f) {
 				damage_left -= subsys->current_hits;
@@ -1208,6 +1251,14 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	//	Note: I changed this to return damage_left and it completely screwed up balance.
 	//	It had taken a few MX-50s to destory an Anubis (with 40% hull), then it took maybe ten.
 	//	So, I left it alone. -- MK, 4/15/98
+	//WMC - MK, whoever you are, thank you for that comment.
+	if(count)
+	{
+		if(subsys_list[0].ptr->system_info->carry_no_damage)
+		{
+			return damage_left;
+		}
+	}
 	return damage;
 }
 
@@ -2325,6 +2376,8 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	Assert(ship_obj->instance >= 0);
 	Assert(ship_obj->type == OBJ_SHIP);
 	shipp = &Ships[ship_obj->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	weapon_info *wip = NULL;
 
 	// maybe adjust damage done by shockwave for BIG|HUGE
 	maybe_shockwave_damage_adjust(ship_obj, other_obj, &damage);
@@ -2341,24 +2394,19 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		other_obj_is_shockwave = 0;
 	}
 
+	if(other_obj_is_weapon)
+	{
+		wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
+	}
+
 	// update lethality of ship doing damage - modified by Goober5000
 	if (other_obj_is_weapon || other_obj_is_shockwave) {
 		ai_update_lethality(ship_obj, other_obj, damage);
 	}
 
-	// if this is a weapon
-	if (other_obj_is_weapon)
-	{
-		ship_info* sip = &Ship_info[shipp->ship_info_index];
-		weapon_info *wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
-		if(!(sip->flags & SIF2_DISABLE_WEAP_DAMAGE_SCALING))
-			damage *= weapon_get_damage_scale(wip, other_obj, ship_obj);
-		
-		if(sip->armor_type_idx != -1)
-		{
-			damage = Armor_types[sip->armor_type_idx].GetDamage(damage, sip, wip);
-		}
-	}
+	if(!(sip->flags & SIF2_DISABLE_WEAP_DAMAGE_SCALING))
+		damage *= weapon_get_damage_scale(wip, other_obj, ship_obj);
+
 
 	MONITOR_INC( ShipHits, 1 );
 
@@ -2464,11 +2512,33 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
 		int	weapon_info_index;		
 		float pre_subsys = subsystem_damage;
-		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, subsystem_damage);
+		bool apply_hull_armor = true;
+
+		subsystem_damage = do_subobj_hit_stuff(ship_obj, other_obj, hitpos, subsystem_damage, &apply_hull_armor);
+
 		if(subsystem_damage > 0.0f){
 			damage *= (subsystem_damage / pre_subsys);
 		} else {
 			damage = 0.0f;
+		}
+
+		//Do armor stuff
+		if (apply_hull_armor && (other_obj_is_weapon || other_obj_is_shockwave))
+		{
+			int dmg_type_idx = -1;
+			if(other_obj_is_weapon)
+			{
+				dmg_type_idx = wip->damage_type_idx;
+			}
+			else if(other_obj_is_shockwave)
+			{
+				dmg_type_idx = Shockwaves[other_obj->instance].damage_type_idx;
+			}
+			
+			if(sip->armor_type_idx != -1)
+			{
+				damage = Armor_types[sip->armor_type_idx].GetDamage(damage, dmg_type_idx);
+			}
 		}
 
 		// continue with damage?

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-11-13 22:27:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.57 $
+ * $Date: 2005-12-04 18:58:07 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/11/13 22:27:17  Goober5000
+ * this should fix the no-warp-effect bug
+ * --Goober5000
+ *
  * Revision 2.55  2005/10/30 06:44:58  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -3040,7 +3044,6 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 	sip = &Ship_info[shipp->ship_info_index];
 	objp = &Objects[shipp->objnum];	
 
-	Assert(sip->shockwave_count > 0);
 	if(sip->shockwave_count <= 0){
 		return;
 	}
