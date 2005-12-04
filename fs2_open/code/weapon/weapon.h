@@ -12,6 +12,13 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/11/22 00:01:11  taylor
+ * combine weapon_info_close() and weapon_close()
+ * changes to allow use of weapon_expl.tbl and the modular table versions once more
+ *  - the tables aren't required (but a warning will be produced if weapon_expl.tbl doesn't exist)
+ *  - don't back load LODs, if it's not there then don't use it
+ *  - handle a couple of error conditions a bit better
+ *
  * Revision 2.60  2005/11/08 01:04:02  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -539,6 +546,7 @@ extern int Num_weapon_subtypes;
 #define	WIF_REMOTE			(1 << 4)				//	Can be remotely detonated by parent.
 #define	WIF_PUNCTURE		(1 << 5)				//	Punctures armor, damaging subsystems.
 #define	WIF_SUPERCAP		(1 << 6)				//	This is a weapon which does supercap class damage (meaning, it applies real damage to supercap ships)
+#define WIF_CMEASURE		(1 << 7)				// Weapon acts as a countermeasure
 //#define	WIF_AREA_EFFECT	(1 << 7)				//	Explosion has an area effect
 //#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
 //WMC - These are no longer needed so these spots are free
@@ -729,6 +737,7 @@ typedef struct weapon_info {
 	float	laser_head_radius, laser_tail_radius;
 
 	float	max_speed;							// initial speed of the weapon
+	float	free_flight_time;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 
@@ -749,6 +758,8 @@ typedef struct weapon_info {
 	//int		shockwave_model;					//model for the shock wave -Bobboau
 
 	float	armor_factor, shield_factor, subsystem_factor;	//	in 0.0..2.0, scale of damage done to type of thing
+	float life_min;
+	float life_max;
 	float	lifetime;							//	How long this thing lives.
 	float energy_consumed;					// Energy used up when weapon is fired
 	int	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
@@ -996,7 +1007,7 @@ private:
 public:
 	weapon_explosions();
 
-	int Load(char *filename = NULL, int exptected_lods = MAX_WEAPON_EXPL_LOD);
+	int Load(char *filename = NULL, int specified_lods = MAX_WEAPON_EXPL_LOD);
 	int GetAnim(int weapon_expl_index, vec3d *pos, float size);
 	void PageIn(int idx);
 };
@@ -1008,6 +1019,7 @@ extern weapon_info Weapon_info[MAX_WEAPON_TYPES];
 extern int Num_weapon_types;			// number of weapons in the game
 extern int Num_weapons;
 extern int First_secondary_index;
+extern int Default_cmeasure_index;
 
 extern tertiary_weapon_info Tertiary_weapon_info[MAX_TERTIARY_WEAPON_TYPES];
 extern int Num_tertiary_weapon_types;

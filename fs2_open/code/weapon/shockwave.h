@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.10 $
- * $Date: 2005-10-30 06:44:59 $
+ * $Revision: 2.11 $
+ * $Date: 2005-12-04 19:02:36 $
  * $Author: wmcoolmon $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/10/30 06:44:59  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.9  2005/08/05 15:33:45  taylor
  * fix 3-D shockwave frame detection so that it will use the proper number of frames for the animation (not less, not more)
  *
@@ -148,6 +151,7 @@ typedef struct shockwave {
 	float		speed, radius;
 	float		inner_radius, outer_radius, damage;
 	int			weapon_info_index;	// -1 if shockwave not caused by weapon	
+	int			damage_type_idx;			//What type of damage this shockwave does to armor
 	vec3d		pos;
 	float		blast;					// amount of blast to apply
 	int			next_blast;				// timestamp for when to apply next blast damage
@@ -171,7 +175,9 @@ typedef struct shockwave_create_info {
 	float speed;
 	angles rot_angles;
 
-	shockwave_create_info() {memset(this, 0, sizeof(shockwave_create_info));}
+	int damage_type_idx;
+
+	shockwave_create_info() {memset(this, 0, sizeof(shockwave_create_info));damage_type_idx=-1;}
 	void load();
 } shockwave_create_info;
 
