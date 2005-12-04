@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-10-30 20:03:38 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2005-12-04 19:06:01 $
+ * $Author: wmcoolmon $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/10/30 20:03:38  taylor
+ * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
+ * fix Mantis bug #381
+ * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
+ *
  * Revision 2.36  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
  *
@@ -621,8 +626,10 @@ typedef struct main_hall_defines {
 
 
 // use main hall 0 by default
-main_hall_defines Main_hall_defines[GR_NUM_RESOLUTIONS][NUM_MAIN_HALLS];
+main_hall_defines Main_hall_defines[GR_NUM_RESOLUTIONS][MAIN_HALLS_MAX];
 main_hall_defines *Main_hall = &Main_hall_defines[0][0];
+
+int Num_main_halls = 0;
 
 int Vasudan_funny = 0;
 int Vasudan_funny_plate = -1;
@@ -993,7 +1000,7 @@ void main_hall_init(int main_hall_num)
 {
 	if ( Main_hall_inited ) {
 		return;
-	}	
+	}
 
 	int idx,s_idx;
 	char temp[100], whee[100];	
@@ -1001,12 +1008,21 @@ void main_hall_init(int main_hall_num)
 	// read in the main hall table
 	main_hall_read_table();
 
+	if(!Num_main_halls) {
+		Error(LOCATION, "No main halls were loaded to initialize.");
+	}
+
+	if ((main_hall_num < 0) || (main_hall_num >= Num_main_halls)) {
+		Warning(LOCATION, "Tried to load a main hall %d, but valid main halls are only 0 through %d; defaulting to main hall 0", main_hall_num, Num_main_halls-1);
+		main_hall_num = 0;
+	}
+
 	// create the snazzy interface and load up the info from the table
 	snazzy_menu_init();
 	read_menu_tbl(NOX("MAIN HALL"), temp, whee, Main_hall_region, &Main_hall_num_options, 0);
 
 	// assign the proper main hall data
-	Assert((main_hall_num >= 0) && (main_hall_num < NUM_MAIN_HALLS));
+	Assert((main_hall_num >= 0) && (main_hall_num < Num_main_halls));
 	Main_hall = &Main_hall_defines[gr_screen.res][main_hall_num];	
 
 	// tooltip strings
@@ -1041,7 +1057,7 @@ void main_hall_init(int main_hall_num)
 	// load the mask
 	Main_hall_mask = bm_load(Main_hall->mask);
 	if (Main_hall_mask < 0) {
-		Error(LOCATION,"Could not load in %s!", Main_hall->mask);
+		Error(LOCATION,"Could not load in main hall mask '%s'!", Main_hall->mask);
 	} else {
 		// get a pointer to bitmap by using bm_lock(), so we can feed it to he snazzy menu system
 		Main_hall_mask_bitmap = bm_lock(Main_hall_mask, 8, BMP_AABITMAP);
@@ -2196,13 +2212,18 @@ void main_hall_read_table()
 
 	// go for it
 	count = 0;
-	while(!optional_string("#end")){
-
+	while(!optional_string("#end"))
+	{
 		// read in 2 resolutions
-		for(m_idx=0; m_idx<GR_NUM_RESOLUTIONS; m_idx++){
+		for(m_idx=0; m_idx<GR_NUM_RESOLUTIONS; m_idx++)
+		{
 			// maybe use a temp main hall stuct
-			if(count >= NUM_MAIN_HALLS){
+			if(count >= MAIN_HALLS_MAX)
+			{
 				m = &temp;
+				Warning(LOCATION, "Number of main halls in mainhall.tbl has exceeded max of %d. All further main halls will be ignored.", MAIN_HALLS_MAX);
+				//WMC - break, because there's nothing after this loop to parse
+				break;
 			} else {
 				m = &Main_hall_defines[m_idx][count];
 			}
@@ -2334,10 +2355,12 @@ void main_hall_read_table()
 			}
 		}
 
-		if(count < NUM_MAIN_HALLS){
+		if(count < MAIN_HALLS_MAX){
 			count++;
 		}
 	}
+
+	Num_main_halls = count;
 
 	// are we funny?
 	if(Vasudan_funny){
