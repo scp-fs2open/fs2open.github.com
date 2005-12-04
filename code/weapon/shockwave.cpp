@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-12-01 07:45:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2005-12-04 19:02:36 $
+ * $Author: wmcoolmon $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/12/01 07:45:21  Goober5000
+ * bypass annoying warnings when loading optional models
+ * --Goober5000
+ *
  * Revision 2.20  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -433,6 +437,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	sw->delay_stamp = delay;
 
 	sw->rot_angles = sci->rot_angles;
+	sw->damage_type_idx = sci->damage_type_idx;
 
 	si = &Shockwave_info[sw->shockwave_info_index];
 //	sw->total_time = i2fl(si->num_frames) / si->fps;	// in seconds
