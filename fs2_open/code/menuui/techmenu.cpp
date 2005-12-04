@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-10-16 23:15:47 $
+ * $Revision: 2.33 $
+ * $Date: 2005-12-04 19:05:06 $
  * $Author: wmcoolmon $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/10/16 23:15:47  wmcoolmon
+ * Hardened cfile against array overflows
+ *
  * Revision 2.31  2005/09/20 04:37:01  wmcoolmon
  * Fixed techroom crash if there are no entries to display; removed
  * unneeded MULTIPLAYER_BETA_BUILD define that disallowed supercaps
@@ -1207,8 +1210,10 @@ void techroom_change_tab(int num)
 				Weapon_list_size = 0;
 				mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
 
-				for (i=0; i<MAX_WEAPON_TYPES; i++) {
-					if (Weapon_info[i].wi_flags & mask) { 
+				for (i=0; i<Num_weapon_types; i++)
+				{
+					if (Weapon_info[i].wi_flags & mask)
+					{ 
 						//following was commented out to fix the tech room crash bug when modified weapons.tbl is used.  Fix by Phreak, implemented by Sesquipedalian.
 						// note: hack here to exclude dogfight weapons -- dont put weapon in if it has same description as pvs weapon
 						//if ((Weapon_list_size > 0) && (!strcmp(Weapon_info[i].tech_desc, Weapon_list[Weapon_list_size-1].desc))) {
@@ -1667,18 +1672,27 @@ void techroom_close()
 
 	fsspeech_stop();
 	techroom_stop_anim(-1);
-	for (i=0; i<Weapon_list_size; i++) {
-		if ( Weapon_list[i].animation ) {
-			anim_free(Weapon_list[i].animation);
-			Weapon_list[i].animation = NULL;
+
+	if (Weapon_list != NULL)
+	{
+		for (i=0; i<Weapon_list_size; i++)
+		{
+			if ( Weapon_list[i].animation ) {
+				anim_free(Weapon_list[i].animation);
+				Weapon_list[i].animation = NULL;
+			}
+			if( Weapon_list[i].bitmap >= 0 ){
+				bm_release(Weapon_list[i].bitmap);
+				Weapon_list[i].bitmap = -1;
+			}
 		}
-		if( Weapon_list[i].bitmap >= 0 ){
-			bm_release(Weapon_list[i].bitmap);
-			Weapon_list[i].bitmap = -1;
-		}
+		delete[] Weapon_list;
+		Weapon_list = NULL;
+		Weapon_list_size = 0;
 	}
 
-	for (i=0; i<MAX_INTEL_ENTRIES; i++){
+	for (i=0; i<Intel_list_size; i++)
+	{
 		if (Intel_list[i].animation != NULL) {
 			anim_free(Intel_list[i].animation);
 			Intel_list[i].animation = NULL;
@@ -1688,10 +1702,17 @@ void techroom_close()
 			Intel_list[i].bitmap = -1;
 		}
 	}
+	Intel_list_size = 0;
 
 	// since we may be loading so much data that level loads don't work
 	// be sure sure to free all models and textures when we leave - taylor
 	model_free_all();
+	Ship_list_size = 0;
+	if(Ship_list != NULL)
+	{
+		delete[] Ship_list;
+		Ship_list = NULL;
+	}
 
 	Ships_loaded = 0;
 	Weapons_loaded = 0;
@@ -1725,17 +1746,6 @@ void techroom_close()
 	// restore detail settings
 	/*Detail.detail_distance = Tech_detail_backup;
 	Detail.hardware_textures = Tech_texture_backup;*/
-
-	if(Ship_list != NULL)
-	{
-		delete[] Ship_list;
-		Ship_list = NULL;
-	}
-
-	if (Weapon_list != NULL) {
-		delete[] Weapon_list;
-		Weapon_list = NULL;
-	}
 }
 
 void techroom_do_frame(float frametime)
