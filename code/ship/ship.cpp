@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.274 $
- * $Date: 2005-12-04 18:58:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.275 $
+ * $Date: 2005-12-04 22:44:00 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.274  2005/12/04 18:58:07  wmcoolmon
+ * subsystem + shockwave armor support; countermeasures as weapons
+ *
  * Revision 2.273  2005/11/24 08:46:10  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only
@@ -8192,6 +8195,9 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 	shipp = &Ships[objp->instance];
 	sip = &Ship_info[shipp->ship_info_index];
 
+	int arand = myrand();
+
+
 	// in the case where the server is an observer, he can launch countermeasures unless we do this.
 	if( objp->type == OBJ_OBSERVER){
 		return 0;
@@ -8249,7 +8255,6 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 	// cmeasure_create fires 1 countermeasure.  returns -1 if not fired, otherwise a non-negative
 	// value
 	//fired = cmeasure_create( objp, &pos, shipp->current_cmeasure, rand_val );
-	int arand = myrand();
 	cobjnum = weapon_create(&pos, &objp->orient, shipp->current_cmeasure, OBJ_INDEX(objp));
 	if(cobjnum > -1)
 	{
