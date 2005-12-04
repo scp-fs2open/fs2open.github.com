@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.62 $
- * $Date: 2005-11-16 05:46:27 $
- * $Author: taylor $
+ * $Revision: 2.63 $
+ * $Date: 2005-12-04 18:55:42 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/11/16 05:46:27  taylor
+ * bunch of error checking and code cleanup for the team stuff in ship/weapon select
+ *
  * Revision 2.61  2005/10/29 22:09:30  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -1423,6 +1426,8 @@ void wl_render_overhead_view(float frametime)
 {
 	//For 3d ships
 	static float WeapSelectScreenShipRot = 0.0f;
+	static int last_ship_class = -1;
+	static int display_type = -1;
 
 	if ( Selected_wl_slot == -1 ) {
 		return;
@@ -1434,6 +1439,12 @@ void wl_render_overhead_view(float frametime)
 	Assert( Wss_slots != NULL );
 
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
+	if (ship_class < 0 || ship_class > Num_ship_types)
+	{
+		Warning(LOCATION, "ivalid ship class (%d) passed for render_overhead_view", ship_class);
+		return;
+	}
+	ship_info * sip = &Ship_info[ship_class];
 
 	// check if ship class has changed and maybe play sound
 	if (Last_wl_ship_class != ship_class) {
@@ -1446,22 +1457,85 @@ void wl_render_overhead_view(float frametime)
 	wl_ship = &Wl_ships[ship_class];
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
 
-	//Maybe do 3D
-	if(Cmdline_ship_choice_3d || !strlen(Ship_info[ship_class].overhead_filename))
+	if(last_ship_class != ship_class)
 	{
-		ship_info * sip = &Ship_info[ship_class];
-		if (ship_class < 0)
+		if(Cmdline_ship_choice_3d || !strlen(sip->overhead_filename))
 		{
-			mprintf(("No ship class passed for render_overhead_view"));
-			return;
+			if (wl_ship->model_num < 0)
+			{
+				wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				model_page_in_textures(wl_ship->model_num, ship_class);
+			}
+
+			if(wl_ship->model_num > -1)
+			{
+				if(Cmdline_ship_choice_3d)
+				{
+					display_type = 2;
+				}
+				else
+				{
+					display_type = 1;
+				}
+			}
 		}
+
+		if(display_type < 0)
+		{
+			if ( wl_ship->overhead_bitmap < 0 )
+			{
+				//Load the anim?
+				if (gr_screen.res == GR_640)
+				{
+					// lo-res
+					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
+				} else {
+					// high-res
+					char filename[NAME_LENGTH+2] = "2_";
+					strcat(filename, sip->overhead_filename);
+					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
+				}
+
+				// load the bitmap
+				if (gr_screen.res == GR_640)
+				{
+					// lo-res
+					wl_ship->overhead_bitmap = bm_load(sip->overhead_filename);
+				} else {
+					// high-res
+					char filename[NAME_LENGTH+2] = "2_";
+					strcat(filename, sip->overhead_filename);
+					wl_ship->overhead_bitmap = bm_load(filename);
+				}
+			}
+
+			//Did we load anything?
+			if ( wl_ship->overhead_bitmap < 0 )
+			{
+				if(last_ship_class != ship_class)
+				{
+					Warning(LOCATION, "Unable to load overhead image for ship '%s', generating one instead", sip->name);
+				}
+				display_type = 1;
+			} else {
+				display_type = 0;
+			}
+		}
+	}
 		
+
+	//Maybe do 2D
+	if(display_type == 0 && wl_ship->overhead_bitmap > -1)
+	{
+		gr_set_bitmap(wl_ship->overhead_bitmap);
+		gr_bitmap(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1]);
+	}
+	else
+	{
 		// Load the necessary model file, if necessary
 		if (wl_ship->model_num < 0)
 		{
 			wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-			
-			// page in ship textures properly (takes care of nondimming pixels)
 			model_page_in_textures(wl_ship->model_num, ship_class);
 		}
 		
@@ -1638,30 +1712,6 @@ void wl_render_overhead_view(float frametime)
 			
 		}
 	}
-	else
-	{
-		if ( wl_ship->wl_anim_instance == NULL ) {
-			if ( wl_ship->overhead_bitmap < 0 ) {
-				// load the bitmap
-				if (gr_screen.res == GR_640)
-				{
-					// lo-res
-					wl_ship->overhead_bitmap = bm_load(Ship_info[ship_class].overhead_filename);
-				} else {
-					// high-res
-					char filename[NAME_LENGTH+2] = "2_";
-					strcat(filename, Ship_info[ship_class].overhead_filename);
-					wl_ship->overhead_bitmap = bm_load(filename);
-				}
-				if ( wl_ship->overhead_bitmap < 0 ) {
-					Int3();			// bad things happened
-					return;
-				}
-			}
-			gr_set_bitmap(wl_ship->overhead_bitmap);
-			gr_bitmap(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1]);
-		}
-	}
 
 	//Draw ship name
 	char						name[NAME_LENGTH + CALLSIGN_LEN];
@@ -1669,6 +1719,8 @@ void wl_render_overhead_view(float frametime)
 	ss_return_name(Selected_wl_slot/MAX_WING_SLOTS, Selected_wl_slot%MAX_WING_SLOTS, name);
 	gr_set_color_fast(&Color_normal);
 	gr_string(Wl_ship_name_coords[gr_screen.res][0], Wl_ship_name_coords[gr_screen.res][1], name);
+
+	last_ship_class = ship_class;
 }
 
 // ---------------------------------------------------------------------------------
@@ -1994,7 +2046,7 @@ void wl_unload_all_anim_instances()
 	Assert( Wl_icons != NULL );
 
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		if ( Wl_icons[i].wl_anim_instance ) {
+		if ( Wl_icons[i].wl_anim_instance != NULL) {
 			anim_release_render_instance(Wl_icons[i].wl_anim_instance);
 			Wl_icons[i].wl_anim_instance = NULL;
 		}
@@ -2002,7 +2054,7 @@ void wl_unload_all_anim_instances()
 
 	// stop any overhead anim instances
 	for ( i = 0; i < Num_ship_types; i++ ) {
-		if ( Wl_ships[i].wl_anim_instance ) {
+		if ( Wl_ships[i].wl_anim_instance != NULL) {
 			anim_release_render_instance(Wl_ships[i].wl_anim_instance);
 			Wl_ships[i].wl_anim_instance = NULL;
 		}
