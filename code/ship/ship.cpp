@@ -10,13 +10,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.273 $
- * $Date: 2005-11-24 08:46:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.274 $
+ * $Date: 2005-12-04 18:58:07 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.273  2005/11/24 08:46:10  Goober5000
+ * * cleaned up mission_do_departure
+ *   * fixed a hidden crash (array index being -1; would only
+ * be triggered for ships w/o subspace drives under certain conditions)
+ *   * removed finding a new fighterbay target because it might screw up missions
+ *   * improved clarity, code flow, and readability :)
+ * * added custom AI flag for disabling warpouts if navigation subsystem fails
+ * --Goober5000
+ *
  * Revision 2.272  2005/11/24 03:07:35  phreak
  * Forgot to add in the part where the rearm timer actually counts down.  Minor oversight
  *
@@ -2293,17 +2302,17 @@ void init_ship_entry(int ship_info_index)
 	sip->warpout_speed = 0.0f;
 	sip->warpout_player_speed = 0.0f;
 	
-	sip->inner_rad = 0.0f;
+	sip->explosion_propagates = 0;
+	sip->shockwave_count = 0;
+/*	sip->inner_rad = 0.0f;
 	sip->outer_rad = 0.0f;
 	sip->damage = 0.0f;
 	sip->blast = 0.0f;
-	sip->explosion_propagates = 0;
 	sip->shockwave_speed = 0.0f;
-	sip->shockwave_count = 1;
 	sip->shockwave_model = -1;
 	strcpy(sip->shockwave_pof_file, "");
 	sip->shockwave_info_index = -1;
-	strcpy(sip->shockwave_name,"");
+	strcpy(sip->shockwave_name,"");*/
 	
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
@@ -2373,7 +2382,9 @@ void init_ship_entry(int ship_info_index)
 	sip->ABAlpha_factor = 1.0f;
 	sip->ABlife = 5.0f;
 	
+	sip->cmeasure_type = Default_cmeasure_index;
 	sip->cmeasure_max = 0;
+
 	sip->scan_time = 2000;
 	
 	sip->engine_snd = -1;
@@ -2690,28 +2701,34 @@ int parse_ship(bool replace)
 	}
 
 	// get ship explosion info
+	shockwave_create_info *sci = &sip->shockwave;
 	if(optional_string("$Expl inner rad:")){
-		stuff_float(&sip->inner_rad);
+		stuff_float(&sci->inner_rad);
 	}
 
 	if(optional_string("$Expl outer rad:")){
-		stuff_float(&sip->outer_rad);
+		stuff_float(&sci->outer_rad);
 	}
 
 	if(optional_string("$Expl damage:")){
-		stuff_float(&sip->damage);
+		stuff_float(&sci->damage);
 	}
 
 	if(optional_string("$Expl blast:")){
-		stuff_float(&sip->blast);
+		stuff_float(&sci->blast);
 	}
 
 	if(optional_string("$Expl Propagates:")){
 		stuff_boolean(&sip->explosion_propagates);
 	}
 
+	if(optional_string("$Shockwave Damage Type:")) {
+		stuff_string(buf, F_NAME);
+		sci->damage_type_idx = damage_type_add(buf);
+	}
+
 	if(optional_string("$Shockwave Speed:")){
-		stuff_float( &sip->shockwave_speed );
+		stuff_float( &sci->speed );
 	}
 
 	if(optional_string("$Shockwave Count:")){
@@ -2719,11 +2736,11 @@ int parse_ship(bool replace)
 	}
 
 	if(optional_string("$Shockwave model:")){
-		stuff_string( sip->shockwave_pof_file, F_NAME, NULL);
+		stuff_string( sci->pof_name, F_NAME, NULL);
 	}
 	
 	if(optional_string("$Shockwave name:")) {
-		stuff_string( sip->shockwave_name, F_NAME, NULL);
+		stuff_string( sci->name, F_NAME, NULL);
 	}
 
 char temp_error[64];
@@ -2846,7 +2863,7 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
-	if(optional_string("$Show Weapon Models:"))
+	if(optional_string("$Show Primary Models:"))
 	{
 		sip->draw_models = true;
 		stuff_bool_list(sip->draw_primary_models, sip->num_primary_banks);
@@ -2963,7 +2980,7 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
     
-	if(optional_string("$Show Weapon Models:"))
+	if(optional_string("$Show Secondary Models:"))
 	{
 		sip->draw_models = true;
 		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
@@ -2979,6 +2996,19 @@ strcpy(parse_error_text, temp_error);
 
 			if (sip->allowed_bank_restricted_weapons[i][j] & DOGFIGHT_WEAPON)
 				sip->allowed_weapons[j] |= DOGFIGHT_WEAPON;
+		}
+	}
+
+	//Set ship ballistic flag if necessary
+	for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++)
+	{
+		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		{
+			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags2 & WIF2_BALLISTIC))
+			{
+				sip->flags |= SIF_BALLISTIC_PRIMARIES;
+				break;
+			}
 		}
 	}
 
@@ -3044,7 +3074,7 @@ strcpy(parse_error_text, temp_error);
 	if(optional_string("$Armor Type:"))
 	{
 		stuff_string(buf, F_NAME, NULL);
-		sip->armor_type_idx = armor_get_name_idx(buf);
+		sip->armor_type_idx = armor_type_get_idx(buf);
 
 		if(sip->armor_type_idx == -1)
 			Warning(LOCATION,"Invalid armor name %s specified in ship class %s", buf, sip->name);
@@ -3088,6 +3118,8 @@ strcpy(parse_error_text, temp_error);
 				sip->flags |= SIF_SENTRYGUN;
 			else if ( !stricmp( NOX("escapepod"), ship_strings[i]))
 				sip->flags |= SIF_ESCAPEPOD;
+			else if ( !stricmp( NOX("stealth"), ship_strings[i]))
+				sip->flags |= SIF_SHIP_CLASS_STEALTH;
 			else if ( !stricmp( NOX("no type"), ship_strings[i]))
 				sip->flags |= SIF_NO_SHIP_TYPE;
 			else if ( !stricmp( NOX("ship copy"), ship_strings[i]))
@@ -3111,7 +3143,7 @@ strcpy(parse_error_text, temp_error);
 			else if ( !stricmp( NOX("no_fred"), ship_strings[i]))
 				sip->flags |= SIF_NO_FRED;
 			else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
-				sip->flags |= SIF_BALLISTIC_PRIMARIES;
+				break;	//Do nothing
 			else if( !stricmp( NOX("flash"), ship_strings[i]))
 				sip->flags2 |= SIF2_FLASH;
 			else if ( !stricmp( NOX("surface shields"), ship_strings[i]))
@@ -3143,7 +3175,6 @@ strcpy(parse_error_text, temp_error);
 	{
 		Warning(LOCATION, "Player-allowed ship %s has too many secondary banks (%d).  Maximum for player-allowed ships is currently %d; maximum for all other ships is %d.\n", sip->name, sip->num_secondary_banks, MAX_PLAYER_SECONDARY_BANKS, MAX_SHIP_SECONDARY_BANKS);
 	}
-
 
 	// be friendly; ensure ballistic flags check out
 	if (pbank_capacity_specified)
@@ -3239,6 +3270,17 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
+	if(optional_string("$Countermeasure type:")) {
+		stuff_string(buf, F_NAME);
+		int res = weapon_info_lookup(buf);
+		if(res == -1) {
+			Warning(LOCATION, "Could not find weapon type '%s' to use as countermeasure on ship class '%s'", sip->name);
+		} else if(Weapon_info[res].wi_flags & WIF_BEAM) {
+			Warning(LOCATION, "Attempt made to set a beam weapon as a countermeasure on ship class '%s'", sip->name);
+		} else {
+			sip->cmeasure_type = res;
+		}
+	}
 
 	if(optional_string("$Countermeasures:"))
 		stuff_int(&sip->cmeasure_max);
@@ -3426,7 +3468,7 @@ strcpy(parse_error_text, temp_error);
 	}
 	
 	else if ( optional_string("$Stealth") ) {
-		Warning(LOCATION, "Ship %s is missing the colon after \"$Stealth\".", sip->name);
+		Warning(LOCATION, "Ship %s is missing the colon after \"$Stealth\". Note that you may also use the ship flag \"stealth\".", sip->name);
 		sip->flags |= SIF_SHIP_CLASS_STEALTH;
 	}
 
@@ -3552,6 +3594,7 @@ strcpy(parse_error_text, temp_error);
 				sp->rotation_snd = -1;
 				
 				sp->targetable = 1;
+				sp->carry_no_damage = 0;
 				
 				sp->n_triggers = 0;
 				sp->triggers = NULL;
@@ -3580,6 +3623,11 @@ strcpy(parse_error_text, temp_error);
 				{
 					Error(LOCATION, "Optional not working");
 				}
+			}
+
+			if(optional_string("$Armor Type:")) {
+				stuff_string(buf, F_NAME);
+				sp->armor_type_idx = armor_type_get_idx(buf);
 			}
 
 			//	Get default primary bank weapons
@@ -3632,6 +3680,9 @@ strcpy(parse_error_text, temp_error);
 
 			if(optional_string("+non-targetable"))
 				sp->targetable = 0;
+
+			if(optional_string("+carry-no-damage"))
+				sp->carry_no_damage = 1;
 
 			while(optional_string("$animation=triggered")){
 				queued_animation *current_trigger;
@@ -3859,68 +3910,67 @@ void parse_shiptbl(char* longname, bool is_chunk)
 	reset_parse();
 
 	// parse default ship
-	if(!is_chunk)
+	//Override default player ship
+	if(optional_string("#Default Player Ship"))
 	{
-		required_string("#Default Player Ship");
 		required_string("$Name:");
 		stuff_string(default_player_ship, F_NAME, NULL, 254);
 		required_string("#End");
-
-		required_string("#Engine Wash Info");
+	}
+	//Add engine washes
+	//This will override if they already exist
+	if(optional_string("#Engine Wash Info"))
+	{
 		while (required_string_either("#End", "$Name:"))
 		{
-			parse_engine_wash(false);
+			parse_engine_wash(is_chunk);
 		}
 
 		required_string("#End");
+	}
 
-		required_string("#Ship Classes");
+	//Add ship classes
+	if(optional_string("#Ship Classes"))
+	{
 
-		while (required_string_either("#End","$Name:")) {
-			Assert( Num_ship_types <= MAX_SHIP_TYPES );	// Goober5000 - should be <=
-
-			if ( parse_ship(false) ) {
+		while (required_string_either("#End","$Name:"))
+		{
+			if ( parse_ship(is_chunk) ) {
 				continue;
 			}
 		}
 
 		required_string("#End");
 	}
-	else
+
+	//Set default player ship
+	int i = 0;
+	if(!strlen(default_player_ship))
 	{
-		//Override default player ship
-		if(optional_string("#Default Player Ship"))
+		for(i = 0; i < Num_ship_types; i++)
 		{
-			required_string("$Name:");
-			stuff_string(default_player_ship, F_NAME, NULL, 254);
-			required_string("#End");
-		}
-		//Add engine washes
-		//This will override if they already exist
-		if(optional_string("#Engine Wash Info"))
-		{
-			while (required_string_either("#End", "$Name:"))
-			{
-				parse_engine_wash(true);
+			if(Ship_info[i].flags & SIF_DEFAULT_PLAYER_SHIP) {
+				strcpy(default_player_ship, Ship_info[i].name);
+				break;
 			}
-
-			required_string("#End");
 		}
+	}
 
-		//Add ship classes
-		if(optional_string("#Ship Classes"))
+	if(i == Num_ship_types)
+	{
+		for(i = 0; i < Num_ship_types; i++)
 		{
-
-			while (required_string_either("#End","$Name:")) {
-				Assert( Num_ship_types <= MAX_SHIP_TYPES );	// Goober5000 - should be <=
-
-				if ( parse_ship(true) ) {
-					continue;
-				}
-				
+			if(Ship_info[i].flags & SIF_PLAYER_SHIP) {
+				strcpy(default_player_ship, Ship_info[i].name);
+				break;
 			}
-
-			required_string("#End");
+		}
+	}
+	if(i == Num_ship_types)
+	{
+		if(Num_ship_types > 0)
+		{
+			strcpy(default_player_ship, Ship_info[0].name);
 		}
 	}
 	
@@ -3975,6 +4025,7 @@ void ship_init()
 		{			
 			Num_engine_wash_types = 0;
 			Num_ship_types = 0;
+			strcpy(default_player_ship, "");
 
 			//Parse main TBL first
 			parse_shiptbl("ships.tbl", false);
@@ -4530,7 +4581,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		swp->current_secondary_bank = -1;
 	}
 
-	shipp->current_cmeasure = 0;
+	shipp->current_cmeasure = sip->cmeasure_type;
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
 
@@ -5872,11 +5923,11 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 				shockwave_speed = 0.0f;
 			}
 		} else {
-			inner_rad = sip->inner_rad;
-			outer_rad = sip->outer_rad;
-			max_damage = sip->damage;
-			max_blast  = sip->blast;
-			shockwave_speed = sip->shockwave_speed;
+			inner_rad = sip->shockwave.inner_rad;
+			outer_rad = sip->shockwave.outer_rad;
+			max_damage = sip->shockwave.damage;
+			max_blast  = sip->shockwave.blast;
+			shockwave_speed = sip->shockwave.speed;
 		}
 	}
 
@@ -5888,8 +5939,8 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	}
 
 	if ( shockwave_speed > 0 ) {
-		strcpy(sci.name, sip->shockwave_name);
-		strcpy(sci.pof_name, sip->shockwave_pof_file);
+		strcpy(sci.name, sip->shockwave.name);
+		strcpy(sci.pof_name, sip->shockwave.pof_name);
 		sci.inner_rad = inner_rad;
 		sci.outer_rad = outer_rad;
 		sci.blast = max_blast;
@@ -7511,16 +7562,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 	shipp->modelnum = sip->modelnum;
 
-	if(strcmp(sip->shockwave_pof_file,""))
-		sip->shockwave_model = model_load(sip->shockwave_pof_file, 0, NULL, 0);
-	else
-		sip->shockwave_model = -1;
-	
-	if(strcmp(sip->shockwave_name,""))
-		sip->shockwave_info_index = shockwave_add(sip->shockwave_name);
-	else
-		sip->shockwave_info_index = -1;
-
 	// model stuff
 	shipp->n_subsystems = 0;
 	shipp->subsystems = NULL;
@@ -8138,11 +8179,18 @@ int ship_fire_primary_debug(object *objp)
 // clients in the game fire countermeasure the same way
 int ship_launch_countermeasure(object *objp, int rand_val)
 {
-	int	fired, check_count, cmeasure_count;
+	if(!Countermeasures_enabled) {
+		return 0;
+	}
+
+	int	check_count, cmeasure_count;
+	int cobjnum=-1;
 	vec3d	pos;
 	ship	*shipp;
+	ship_info *sip;
 
 	shipp = &Ships[objp->instance];
+	sip = &Ship_info[shipp->ship_info_index];
 
 	// in the case where the server is an observer, he can launch countermeasures unless we do this.
 	if( objp->type == OBJ_OBSERVER){
@@ -8162,16 +8210,24 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 	// we might check the count of countermeasures left depending on game state.  Multiplayer clients
 	// do not need to check any objects other than themselves for the count
-	fired = -1;
 	check_count = 1;
 
 	if ( MULTIPLAYER_CLIENT && (objp != Player_obj) ){
 		check_count = 0;
 	}
 
-	if (check_count && (shipp->cmeasure_count <= 0) ) {
+	if (check_count && (shipp->cmeasure_count <= 0) || sip->cmeasure_type < 0)
+	{
 		if ( objp == Player_obj ) {
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No more countermeasure charges.", 485));
+			if(sip->cmeasure_max < 1 || sip->cmeasure_type < 0) {
+				//TODO: multi-lingual support
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Not equipped with countermeasures", -1));
+			} else if(shipp->current_cmeasure < 0) {
+				//TODO: multi-lingual support
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No countermeasures selected", -1));
+			} else if(shipp->cmeasure_count <= 0) {
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No more countermeasure charges.", 485));
+			}
 			snd_play( &Snds[SND_OUT_OF_MISSLES], 0.0f );
 		}
 
@@ -8192,31 +8248,29 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 	// cmeasure_create fires 1 countermeasure.  returns -1 if not fired, otherwise a non-negative
 	// value
-	fired = cmeasure_create( objp, &pos, shipp->current_cmeasure, rand_val );
+	//fired = cmeasure_create( objp, &pos, shipp->current_cmeasure, rand_val );
+	int arand = myrand();
+	cobjnum = weapon_create(&pos, &objp->orient, shipp->current_cmeasure, OBJ_INDEX(objp));
+	if(cobjnum > -1)
+	{
+		cmeasure_set_ship_launch_vel(&Objects[cobjnum], objp, arand);
+		nprintf(("Network", "Cmeasure created by %s\n", shipp->ship_name));
 
-	// Play sound effect for counter measure launch
-	Assert(shipp->current_cmeasure < Num_cmeasure_types);
-	if ( Cmeasure_info[shipp->current_cmeasure].launch_sound != -1 ) {
-		snd_play_3d( &Snds[Cmeasure_info[shipp->current_cmeasure].launch_sound], &pos, &View_position );
-	}
+		// Play sound effect for counter measure launch
+		Assert(shipp->current_cmeasure < Num_weapon_types);
+		if ( Weapon_info[shipp->current_cmeasure].launch_snd > -1 ) {
+			snd_play_3d( &Snds[Weapon_info[shipp->current_cmeasure].launch_snd], &pos, &View_position );
+		}
 
-	
 send_countermeasure_fired:
-
-	// the new way of doing things
-	// if(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING){
-	if(Game_mode & GM_MULTIPLAYER){
-		send_NEW_countermeasure_fired_packet( objp, cmeasure_count, fired );
+		// the new way of doing things
+		// if(Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING){
+		if(Game_mode & GM_MULTIPLAYER){
+			send_NEW_countermeasure_fired_packet( objp, cmeasure_count, arand );
+		}
 	}
-	// }
-	// the old way of doing things
-	//else {
-	 //	if ( MULTIPLAYER_MASTER ){
-		//	send_countermeasure_fired_packet( objp, cmeasure_count, fired );
-		//}
-	//}
 
-	return (fired>0);		// return 0 if not fired, 1 otherwise
+	return (cobjnum>0);		// return 0 if not fired, 1 otherwise
 }
 
 // internal function.. see if enough time has elapsed to play fail sound again
@@ -13379,8 +13433,10 @@ void ship_page_in()
 	//
 	int num_ship_types_used = 0;
 
-	for (i=0; i<Num_ship_types; i++ )	{//Num_ship_types not MAX_SHIPTYPES ship_class_used is dynamicly allocated to Num_ship_types -Bobboau
-		if ( ship_class_used[i]  )	{
+	for (i=0; i<Num_ship_types; i++ )
+	{//Num_ship_types not MAX_SHIPTYPES ship_class_used is dynamicly allocated to Num_ship_types -Bobboau
+		if ( ship_class_used[i]  )
+		{
 			ship_info *sip = &Ship_info[i];
 
 			num_ship_types_used++;
@@ -13466,7 +13522,10 @@ void ship_page_in()
 			for (j = 0; j < sip->num_secondary_banks; j++)
 				weapon_mark_as_used(sip->secondary_bank_weapons[j]);
 
-			for (j = 0; j < sip->n_subsystems; j++) {
+			weapon_mark_as_used(sip->cmeasure_type);
+
+			for (j = 0; j < sip->n_subsystems; j++)
+			{
 				model_subsystem *msp = &sip->subsystems[j];
 
 				for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
@@ -13475,6 +13534,9 @@ void ship_page_in()
 				for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
 					weapon_mark_as_used(msp->secondary_banks[k]);
 			}
+
+			//Page in the shockwave stuff. -C
+			sip->shockwave.load();
 		}
 	}
 
@@ -13938,7 +14000,7 @@ float ship_get_exp_damage(object* objp)
 	if (shipp->special_exp_index != -1) {
 		damage = (float) atoi(Sexp_variables[shipp->special_exp_index+DAMAGE].text);
 	} else {
-		damage = Ship_info[shipp->ship_info_index].damage;
+		damage = Ship_info[shipp->ship_info_index].shockwave.damage;
 	}
 
 	return damage;
@@ -13955,7 +14017,7 @@ float ship_get_exp_outer_rad(object *ship_objp)
 	Assert(ship_objp->type == OBJ_SHIP);
 
 	if (Ships[ship_objp->instance].special_exp_index == -1) {
-		outer_rad = Ship_info[Ships[ship_objp->instance].ship_info_index].outer_rad;
+		outer_rad = Ship_info[Ships[ship_objp->instance].ship_info_index].shockwave.outer_rad;
 	} else {
 		outer_rad = (float) atoi(Sexp_variables[Ships[ship_objp->instance].special_exp_index+OUTER_RAD].text);
 	}
@@ -15027,10 +15089,10 @@ int calculation_type_get(char *str)
 }
 
 //STEP 4: Add the calculation to the switch statement.
-float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wip)
+float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx)
 {
 	//If the weapon has no damage type, just return damage
-	if(wip->damage_type_idx < 0)
+	if(in_damage_type_idx < 0)
 		return damage_applied;
 	
 	//Initialize vars
@@ -15041,7 +15103,7 @@ float ArmorType::GetDamage(float damage_applied, ship_info *sip, weapon_info *wi
 	num = DamageTypes.size();
 	for(i = 0; i < num; i++)
 	{
-		if(DamageTypes[i].DamageTypeIndex == wip->damage_type_idx)
+		if(DamageTypes[i].DamageTypeIndex == in_damage_type_idx)
 		{
 			adtp = &DamageTypes[i];
 			break;
@@ -15184,7 +15246,7 @@ void ArmorType::ParseData()
 
 //********************************Global functions
 
-int armor_get_name_idx(char* name)
+int armor_type_get_idx(char* name)
 {
 	int i, num;
 	num = Armor_types.size();
