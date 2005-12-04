@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.16 $
- * $Date: 2005-10-11 05:24:34 $
+ * $Revision: 2.17 $
+ * $Date: 2005-12-04 19:07:49 $
  * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/10/11 05:24:34  wmcoolmon
+ * Gliding
+ *
  * Revision 2.15  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -394,7 +397,7 @@
 #define OBJ_START				4		//a starting point marker (player start, etc)
 #define OBJ_WAYPOINT			5		//a waypoint object, maybe only ever used by Fred
 #define OBJ_DEBRIS			6		//a flying piece of ship debris
-#define OBJ_CMEASURE			7		//a countermeasure, such as chaff
+//#define OBJ_CMEASURE			7		//a countermeasure, such as chaff
 #define OBJ_GHOST				8		//so far, just a placeholder for when a player dies.
 #define OBJ_POINT				9		//generic object type to display a point in Fred.
 #define OBJ_SHOCKWAVE		10		// a shockwave

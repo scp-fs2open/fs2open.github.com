@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.66 $
- * $Date: 2005-10-24 07:13:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.67 $
+ * $Date: 2005-12-04 19:07:48 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/10/24 07:13:04  Goober5000
+ * merge Bobboau's thruster code back in; hopefully this covers everything
+ * --Goober5000
+ *
  * Revision 2.65  2005/09/24 07:45:31  Goober5000
  * cleaned up some more thruster stuff; honestly, the thruster code is such a
  * mess that it should probably be reverted to the retail version
@@ -761,6 +765,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	vec3d	pnt;										// center point of this subsystem
 	float		radius;									// the extent of the subsystem
 	float		max_subsys_strength;					// maximum hits of this subsystem
+	int armor_type_idx;								//Armor type on teh subsystem -C
 
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
@@ -806,6 +811,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
 	ubyte	targetable;	//can you target this thing
+	ubyte	carry_no_damage; //does it carry damage? -C
 } model_subsystem;
 
 typedef struct model_special {

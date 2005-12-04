@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CMeasure/CMeasure.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-11-21 02:43:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-12-04 19:07:48 $
+ * $Author: wmcoolmon $
  *
  * Counter measures.  Created by Mike Kulas, May 12, 1997.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.7  2005/11/21 00:46:06  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -237,26 +241,31 @@
  * $NoKeywords: $
  */
 
-#include "globalincs/systemvars.h"
 #include "cmeasure/cmeasure.h"
-#include "freespace2/freespace.h"
-#include "model/model.h"
+//#include "freespace2/freespace.h"
+//#include "model/model.h"
 #include "ship/ship.h"
 #include "math/staticrand.h"
 #include "object/object.h"
+#include "weapon/weapon.h"
+#include "hud/hud.h"
+#include "gamesnd/gamesnd.h"
+#include "network/multimsgs.h"
 #include "mission/missionparse.h"
 
 
-cmeasure_info Cmeasure_info[MAX_CMEASURE_TYPES];
-cmeasure Cmeasures[MAX_CMEASURES];
+//cmeasure_info Cmeasure_info[MAX_CMEASURE_TYPES];
+//cmeasure Cmeasures[MAX_CMEASURES];
 
-int	Num_cmeasure_types = 0;
-int	Num_cmeasures = 0;
-int	Cmeasure_inited = 0;
+//int	Num_cmeasure_types = 0;
+//int	Num_cmeasures = 0;
+//int	Cmeasure_inited = 0;
 int	Cmeasures_homing_check = 0;
 int	Countermeasures_enabled = 1;			//	Debug, set to 0 means no one can fire countermeasures.
 
 // This will get called at the start of each level.
+//Not anymore - WMC
+/*
 void cmeasure_init()
 {
 	int i;
@@ -271,8 +280,8 @@ void cmeasure_init()
 		Cmeasures[i].subtype = CMEASURE_UNUSED;
 	}
 		
-}
-
+}*/
+/*
 void cmeasure_render(object * objp)
 {
 	// JAS TODO: Replace with proper fireball
@@ -286,16 +295,6 @@ void cmeasure_render(object * objp)
 		Int3();	//	Hey, what are we doing in here?
 		return;
 	}
-
-//	float				size = -1.0f;
-//	vertex			p;
-//	g3_rotate_vertex(&p, &objp->pos );
-//	if ( rand() > RAND_MAX/2 )	{
-//		gr_set_color( 255, 0, 0 );
-//	} else {
-//		gr_set_color( 255, 255, 255 );
-//	}
-//	g3_draw_sphere(&p, 100.0f );
 	
 	if ( cmip->model_num > -1 )	{
 		model_clear_instance(cmip->model_num);
@@ -303,39 +302,8 @@ void cmeasure_render(object * objp)
 	} else {
 		mprintf(( "Not rendering countermeasure because model_num is negative\n" ));
 	}
-
-
+}*/
 /*
-	// JAS TODO: Replace with proper fireball
-	int				framenum = -1;
-	float				size = -1.0f;
-	vertex			p;
-	cmeasure			*cmp;
-
-	fireball_data	*fd;
-
-	cmp = &Cmeasures[objp->instance];
-	fd = &Fireball_data[FIREBALL_SHIP_EXPLODE1];
-
-	switch (cmp->subtype) {
-	case CMEASURE_UNUSED:
-		Int3();	//	Hey, what are we doing in here?
-		break;
-	default:
-		framenum = (int) (fd->num_frames * Cmeasures[objp->instance].lifeleft*4) % fd->num_frames;
-		size = objp->radius;
-		break;
-	}
-
-	Assert(framenum != -1);
-	Assert(size != -1.0f);
-
-	gr_set_bitmap(fd->bitmap_id + framenum);
-	g3_rotate_vertex(&p, &objp->pos );
-	g3_draw_bitmap(&p, 0, size*0.5f, TMAP_FLAG_TEXTURED );
-*/
-}
-
 void cmeasure_delete( object * objp )
 {
 	int num;
@@ -347,15 +315,15 @@ void cmeasure_delete( object * objp )
 	Cmeasures[num].subtype = CMEASURE_UNUSED;
 	Num_cmeasures--;
 	Assert( Num_cmeasures >= 0 );
-}
+}*/
 
 // broke cmeasure_move into two functions -- process_pre and process_post (as was done with
 // all *_move functions).  Nothing to do for process_pre
-
+/*
 void cmeasure_process_pre( object *objp, float frame_time)
 {
-}
-
+}*/
+/*
 void cmeasure_process_post(object * objp, float frame_time)
 {
 	int num;
@@ -372,11 +340,12 @@ void cmeasure_process_post(object * objp, float frame_time)
 		}
 	}
 
-}
+}*/
 
 // creates one countermeasure.  A ship fires 1 of these per launch.  rand_val is used
 // in multiplayer.  If -1, then create a random number.  If non-negative, use this
 // number for static_rand functions
+/*
 int cmeasure_create( object * source_obj, vec3d * pos, int cm_type, int rand_val )
 {
 	int		n, objnum, parent_objnum, arand;
@@ -384,11 +353,6 @@ int cmeasure_create( object * source_obj, vec3d * pos, int cm_type, int rand_val
 	ship		*shipp;
 	cmeasure	*cmp;
 	cmeasure_info	*cmeasurep;
-
-#ifndef NDEBUG
-	if (!Countermeasures_enabled || !Ai_firing_enabled)
-		return -1;
-#endif
 
 	Cmeasures_homing_check = 2;		//	Tell homing code to scan everything for two frames.  If only one frame, get sync problems due to objects being created at end of frame!
 
@@ -447,47 +411,105 @@ int cmeasure_create( object * source_obj, vec3d * pos, int cm_type, int rand_val
 	
 	Num_cmeasures++;
 
+	//Set countermeasure velocity
 	vec3d vel, rand_vec;
 
+	//Get cmeasure rear velocity in world
 	vm_vec_scale_add(&vel, &source_obj->phys_info.vel, &source_obj->orient.vec.fvec, -25.0f);
 
+	//Get random velocity vector
 	static_randvec(arand+1, &rand_vec);
 
+	//Add it to the rear velocity
 	vm_vec_scale_add2(&vel, &rand_vec, 2.0f);
 
 	obj->phys_info.vel = vel;
 
 	vm_vec_zero(&obj->phys_info.rotvel);
+	vm_vec_zero(&obj->phys_info.max_vel);
+	vm_vec_zero(&obj->phys_info.max_rotvel);
 
 	// blow out his reverse thrusters. Or drag, same thing.
 	obj->phys_info.rotdamp = 10000.0f;
 	obj->phys_info.side_slip_time_const = 10000.0f;
 
-	vm_vec_zero(&obj->phys_info.max_vel);		// make so he can't turn on his own VOLITION anymore.
 	obj->phys_info.max_vel.xyz.z = -25.0f;
 	vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.max_vel.xyz.z );
 
-	vm_vec_zero(&obj->phys_info.max_rotvel);	// make so he can't change speed on his own VOLITION anymore.
-
-//	obj->phys_info.flags |= PF_USE_VEL;
-
 	return arand;										// need to return this value for multiplayer purposes
+}*/
+
+//Used to set a countermeasure velocity after being launched from a ship as a countermeasure
+//ie not as a primary or secondary.
+void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand)
+{
+	vec3d vel, rand_vec;
+
+	//Get cmeasure rear velocity in world
+	vm_vec_scale_add(&vel, &parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec, -25.0f);
+
+	//Get random velocity vector
+	static_randvec(arand+1, &rand_vec);
+
+	//Add it to the rear velocity
+	vm_vec_scale_add2(&vel, &rand_vec, 2.0f);
+
+	objp->phys_info.vel = vel;
+
+	//Zero out this stuff so it isn't moving
+	vm_vec_zero(&objp->phys_info.rotvel);
+	vm_vec_zero(&objp->phys_info.max_vel);
+	vm_vec_zero(&objp->phys_info.max_rotvel);
+	
+	//Idunnit. -WMC
+	//objp->phys_info.flags |= PF_CONST_VEL;
+
+	//WMC - I don't think this stuff is needed with the flag I set
+	//WMC - Or maybe it is.
+	
+	// blow out his reverse thrusters. Or drag, same thing.
+	objp->phys_info.rotdamp = 10000.0f;
+	objp->phys_info.side_slip_time_const = 10000.0f;
+
+	objp->phys_info.max_vel.xyz.z = -25.0f;
+	vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
 }
 
-void cmeasure_select_next(object *objp)
+void cmeasure_select_next(ship *shipp)
 {
-	ship	*shipp;
+	Assert(shipp != NULL);
+	int i, new_index;
 
-	Assert(objp->type == OBJ_SHIP);
+	for (i = 1; i < Num_weapon_types; i++)
+	{
+		new_index = (shipp->current_cmeasure + i) % Num_weapon_types;
 
-	shipp = &Ships[objp->instance];
-	shipp->current_cmeasure++;
-
-	if (shipp->current_cmeasure >= Num_cmeasure_types)
-		shipp->current_cmeasure = 0;
+		if(Weapon_info[new_index].wi_flags & WIF_CMEASURE)
+		{
+			shipp->current_cmeasure = new_index;
+			return;
+		}
+	}
 
 	//snd_play( &Snds[SND_CMEASURE_CYCLE] );
 
 	mprintf(("Countermeasure type set to %i in frame %i\n", shipp->current_cmeasure, Framecount));
 }
 
+// If this is a player countermeasure, let the player know he evaded a missile
+void cmeasure_maybe_alert_success(object *objp)
+{
+	//Is this a countermeasure, and does it have a parent
+	if ( objp->type != OBJ_WEAPON || objp->parent < 0) {
+		return;
+	}
+
+	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_CMEASURE);
+
+	if ( objp->parent == OBJ_INDEX(Player_obj) ) {
+		hud_start_text_flash(XSTR("Evaded", 1430), 800);
+		snd_play(&Snds[SND_MISSILE_EVADED_POPUP]);
+	} else if ( Objects[objp->parent].flags & OF_PLAYER_SHIP ) {
+		send_countermeasure_success_packet( objp->parent );
+	}
+}

@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.31 $
- * $Date: 2005-11-08 01:03:59 $
+ * $Revision: 2.32 $
+ * $Date: 2005-12-04 19:07:48 $
  * $Author: wmcoolmon $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/11/08 01:03:59  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.30  2005/09/26 04:53:19  Goober5000
  * moved these per taylor's recommendation
  * --Goober5000
@@ -466,7 +469,7 @@ void bm_release(int n);
 // It returns a negative number if it couldn't load
 // the bitmap.   On success, it returns the bitmap
 // number of the first frame and nframes is set.
-extern int bm_load_animation( char * filename, int * nframes, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
+extern int bm_load_animation( char * filename, int * nframes = NULL, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
 
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_unlock.   Only lock

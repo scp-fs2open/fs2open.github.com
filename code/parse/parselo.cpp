@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.57 $
- * $Author: Goober5000 $
- * $Date: 2005-11-21 03:47:51 $
+ * $Revision: 2.58 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-12-04 19:07:49 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/11/21 03:47:51  Goober5000
+ * bah and double bah
+ * --Goober5000
+ *
  * Revision 2.56  2005/11/08 01:04:00  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -345,6 +349,8 @@ bool	Module_ship_weapons_loaded = false;
 
 char	parse_error_text[64];//for my better error mesages-Bobboau
 char		Current_filename[128];
+char		Current_filename_ex[128];
+char		Current_filename_sub[128];	//Last attempted file to load, don't know if ex or not.
 char		Error_str[ERROR_LENGTH];
 int		my_errno;
 int		Warning_count, Error_count;
@@ -1704,7 +1710,7 @@ void read_file_text(char *filename, int mode, char *processed_text, char *raw_te
 	// copy the filename
 	if (!filename)
 		longjmp(parse_abort, 10);
-	strcpy(Current_filename, filename);
+	strcpy(Current_filename_sub, filename);
 
 	// read the raw text
 	read_raw_file_text(filename, mode, raw_text);
@@ -1717,7 +1723,7 @@ void read_file_text(char *filename, int mode, char *processed_text, char *raw_te
 void read_file_text_from_array(char *array, char *processed_text, char *raw_text)
 {
 	// we have no filename, so copy a substitute
-	strcpy(Current_filename, "internal default file");
+	strcpy(Current_filename_sub, "internal default file");
 
 	// if we have no raw buffer, set it as the array
 	if (raw_text == NULL)
@@ -2499,11 +2505,15 @@ void reset_parse()
 	Error_count = 0;
 
 	strcpy(parse_error_text, "");//better error mesages-Bobboau
+
+	strcpy(Current_filename, Current_filename_sub);
 }
 
 void reset_parse_ex(char *text)
 {
 	ex_Mp = text;
+	
+	strcpy(Current_filename_ex, Current_filename_sub);
 }
 
 // Display number of warnings and errors at the end of a parse.
