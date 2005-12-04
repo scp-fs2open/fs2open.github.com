@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-11-16 05:46:27 $
- * $Author: taylor $
+ * $Revision: 2.54 $
+ * $Date: 2005-12-04 19:07:48 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/11/16 05:46:27  taylor
+ * bunch of error checking and code cleanup for the team stuff in ship/weapon select
+ *
  * Revision 2.52  2005/10/29 22:09:29  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -612,7 +615,7 @@
 //////////////////////////////////////////////////////
 // Game-wide Globals
 //////////////////////////////////////////////////////
-char default_player_ship[255] = NOX("GTF Ulysses");
+char default_player_ship[255];
 int Select_default_ship = 0;
 int Ship_select_open = 0;	// This game-wide global flag is set to 1 to indicate that the ship
 									// select screen has been opened and memory allocated.  This flag
@@ -936,7 +939,7 @@ char *ss_tooltip_handler(char *str)
 		int x, y, w, h;
 
 		str2 = Ship_info[Selected_ss_class].desc;
-		if (!str2)
+		if (str2 == NULL)
 			return NULL;
 
 		gr_get_string_size(&w, &h, str2);
@@ -3081,7 +3084,7 @@ int create_wings()
 				case WING_SLOT_EMPTY|WING_SLOT_IS_PLAYER:
 					if ( ws->status & WING_SLOT_IS_PLAYER ) {						
 						popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player %s must select a place in player wing", 462), Player->callsign);
-						//return -1;
+						return -1;
 					}
 					break;
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.197 $
- * $Date: 2005-11-21 02:43:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.198 $
+ * $Date: 2005-12-04 19:07:48 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.197  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.196  2005/11/21 00:46:06  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -2404,7 +2408,7 @@ void game_level_init(int seed)
 	particle_init();				// Reset the particle system
 	fireball_init();
 	debris_init();
-	cmeasure_init();
+//	cmeasure_init();			//WMC - cmeasures are now weapons
 	shield_hit_init();				//	Initialize system for showing shield hits
 	radar_mission_init();
 	mission_init_goals();

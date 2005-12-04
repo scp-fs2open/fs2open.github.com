@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-11-21 02:43:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.53 $
+ * $Date: 2005-12-04 19:07:49 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/11/21 02:43:37  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.51  2005/11/21 00:46:12  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -732,7 +736,7 @@ int free_object_slots(int num_used)
 				case OBJ_FIREBALL:
 				case OBJ_WEAPON:
 				case OBJ_DEBRIS:
-				case OBJ_CMEASURE:
+//				case OBJ_CMEASURE:
 					obj_list[olind++] = OBJ_INDEX(objp);
 					break;
 
@@ -1213,8 +1217,8 @@ void obj_delete(int objnum)
 	case OBJ_ASTEROID:
 		asteroid_delete(objp);
 		break;
-	case OBJ_CMEASURE:
-		cmeasure_delete( objp );
+/*	case OBJ_CMEASURE:
+		cmeasure_delete( objp );*/
 		break;
 	case OBJ_GHOST:
 		if((!Game_mode & GM_MULTIPLAYER)){
@@ -1762,11 +1766,11 @@ void obj_move_all_pre(object *objp, float frametime)
 			asteroid_process_pre(objp,frametime);
 		}
 		break;
-	case OBJ_CMEASURE:
+/*	case OBJ_CMEASURE:
 		if (!physics_paused){
 			cmeasure_process_pre(objp, frametime);
 		}
-		break;
+		break;*/
 	case OBJ_WAYPOINT:
 		break;  // waypoints don't move..
 	case OBJ_GHOST:
@@ -1954,10 +1958,10 @@ void obj_move_all_post(object *objp, float frametime)
 		if (!physics_paused)
 			asteroid_process_post(objp, frametime);
 		break;
-	case OBJ_CMEASURE:
+/*	case OBJ_CMEASURE:
 		if (!physics_paused)
 			cmeasure_process_post(objp, frametime);
-		break;
+		break;*/
 	case OBJ_WAYPOINT:
 		break;  // waypoints don't move..
 	case OBJ_GHOST:
@@ -2141,9 +2145,9 @@ void obj_render(object *obj)
 	case OBJ_ASTEROID:
 		asteroid_render(obj);
 		break;
-	case OBJ_CMEASURE:
+/*	case OBJ_CMEASURE:
 		cmeasure_render(obj);
-		break;
+		break;*/
 	case OBJ_JUMP_NODE:
 		obj->jnp->render(&obj->pos, &Eye_position);
 //		jumpnode_render(obj, &obj->pos, &Eye_position);
@@ -2387,11 +2391,11 @@ int obj_team(object *objp)
 			Assert(team != -1);
 			break;
 
-		case OBJ_CMEASURE:
+/*		case OBJ_CMEASURE:
 			Assert( objp->instance >= 0 && objp->instance < MAX_CMEASURES);
 			team = Cmeasures[objp->instance].team;
 			break;
-
+*/
 		case OBJ_WEAPON:
 			Assert( objp->instance >= 0 && objp->instance < MAX_WEAPONS );
 			team = Weapons[objp->instance].team;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.75 $
- * $Date: 2005-10-28 14:52:26 $
- * $Author: taylor $
+ * $Revision: 2.76 $
+ * $Date: 2005-12-04 19:07:48 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2005/10/28 14:52:26  taylor
+ * hmm, didn't even notice that earlier
+ *
  * Revision 2.74  2005/10/28 14:49:34  taylor
  * some minor cleanup and compiler warning fixes
  *
@@ -5394,8 +5397,13 @@ void hud_maybe_flash_weapon(int index)
 // render the coutermeasure HUD gauge
 void hud_show_cmeasure_gague()
 {
-	if ( Cmeasure_gauge.first_frame == -1 ) {
+	if ( Cmeasure_gauge.first_frame == -1) {
 		Int3();	// failed to load coutermeasure gauge background
+		return;
+	}
+
+	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
+	if(sip->cmeasure_max < 0 || sip->cmeasure_type < 0){
 		return;
 	}
 

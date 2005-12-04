@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.50 $
- * $Date: 2005-11-16 05:46:27 $
- * $Author: taylor $
+ * $Revision: 2.51 $
+ * $Date: 2005-12-04 19:07:49 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/11/16 05:46:27  taylor
+ * bunch of error checking and code cleanup for the team stuff in ship/weapon select
+ *
  * Revision 2.49  2005/11/08 01:04:00  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -587,6 +590,7 @@
 #include "mission/missionbriefcommon.h"
 #include "network/multi_log.h"
 #include "object/objectdock.h"
+#include "cmeasure/cmeasure.h"
 
 
 #pragma warning(push)
@@ -7375,8 +7379,11 @@ void process_countermeasure_success_packet( ubyte *data, header *hinfo )
 	offset = HEADER_LENGTH;
 	PACKET_SET_SIZE();
 
-	hud_start_text_flash(XSTR("Evaded", 1430), 800);
-	snd_play(&Snds[SND_MISSILE_EVADED_POPUP]);
+	//Do this instead so there's less repeat code
+	//Player_obj is necessary...infinitely recursive function calls != FTW
+	cmeasure_maybe_alert_success(Player_obj);
+	/*hud_start_text_flash(XSTR("Evaded", 1430), 800);
+	snd_play(&Snds[SND_MISSILE_EVADED_POPUP]);*/
 }
 
 #define UPDATE_IS_PAUSED		(1<<0)

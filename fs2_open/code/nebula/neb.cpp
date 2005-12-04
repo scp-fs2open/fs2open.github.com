@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-11-13 06:44:18 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2005-12-04 19:07:48 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 2.40  2005/10/30 06:44:57  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -928,16 +936,17 @@ int neb2_skip_render(object *objp, float z_depth)
 			return 1;
 		}
 		break;
-
+/*
 	// any countermeasures over 100 meters away
 	case OBJ_CMEASURE:		
 		if(z_depth >= 100.0f){
 			return 1;
 		}
 		break;	
-
+*/
 	// hmmm. unknown object type - should probably let it through
 	default:
+		Int3();
 		return 0;
 	}
 

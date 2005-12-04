@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.65 $
- * $Date: 2005-11-24 08:46:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.66 $
+ * $Date: 2005-12-04 19:07:48 $
+ * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/11/24 08:46:11  Goober5000
+ * * cleaned up mission_do_departure
+ *   * fixed a hidden crash (array index being -1; would only
+ * be triggered for ships w/o subspace drives under certain conditions)
+ *   * removed finding a new fighterbay target because it might screw up missions
+ *   * improved clarity, code flow, and readability :)
+ * * added custom AI flag for disabling warpouts if navigation subsystem fails
+ * --Goober5000
+ *
  * Revision 2.64  2005/11/23 06:53:22  taylor
  * when using cheats be sure to properly load up all weapons that aren't already paged in
  *
@@ -636,7 +645,7 @@ bool Perspective_locked=false;
 extern int AI_watch_object;
 extern int Countermeasures_enabled;
 
-extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage);
+extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, bool *hull_should_apply_armor);
 
 extern void mission_goal_mark_all_true( int type );
 
@@ -1284,7 +1293,7 @@ void process_debug_keys(int k)
 
 					get_subsystem_world_pos(objp, Player_ai->targeted_subsys, &g_subobj_pos);
 
-					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, (float) -Player_ai->targeted_subsys->system_info->type); //100.0f);
+					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, (float) -Player_ai->targeted_subsys->system_info->type, NULL); //100.0f);
 
 					if ( sp->subsys_info[SUBSYSTEM_ENGINE].current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );

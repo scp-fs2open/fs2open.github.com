@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.46 $
- * $Date: 2005-11-24 08:46:11 $
- * $Author: Goober5000 $
+ * $Revision: 1.47 $
+ * $Date: 2005-12-04 19:07:48 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.46  2005/11/24 08:46:11  Goober5000
+ * * cleaned up mission_do_departure
+ *   * fixed a hidden crash (array index being -1; would only
+ * be triggered for ships w/o subspace drives under certain conditions)
+ *   * removed finding a new fighterbay target because it might screw up missions
+ *   * improved clarity, code flow, and readability :)
+ * * added custom AI flag for disabling warpouts if navigation subsystem fails
+ * --Goober5000
+ *
  * Revision 1.45  2005/11/23 00:46:26  phreak
  * Calculate player repair timer when the support ship docks to him.
  *
@@ -11495,7 +11504,7 @@ void process_subobjects(int objnum)
 						{
 							case OBJ_SHIP:
 							case OBJ_DEBRIS:
-							case OBJ_CMEASURE:
+//							case OBJ_CMEASURE:
 							case OBJ_WEAPON:
 								if(obj_team(objp) != shipp->team)
 									enemies_present = 1;
