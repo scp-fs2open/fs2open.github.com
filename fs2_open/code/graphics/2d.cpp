@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-10-30 06:44:57 $
+ * $Revision: 2.61 $
+ * $Date: 2005-12-04 18:59:18 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/10/30 06:44:57  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.59  2005/10/22 20:17:18  wmcoolmon
  * mission-set-nebula fixage; remainder of python code
  *
@@ -1565,8 +1568,9 @@ void gr_set_cursor_bitmap(int n, int lock)
 	if (!locked || (lock == GR_CURSOR_UNLOCK)) {
 		// if we are changing the cursor to something different
 		// then unload the previous cursor's data - taylor
-		if ( (Gr_cursor >= 0) && (Gr_cursor != n) )
-			bm_unload(Gr_cursor);
+		if ( (Gr_cursor >= 0) && (Gr_cursor != n) ) {
+			gr_unset_cursor_bitmap(Gr_cursor);
+		}
 
 		Gr_cursor = n;
 	} else {
@@ -1584,7 +1588,10 @@ void gr_unset_cursor_bitmap(int n)
 		return;
 
 	if (Gr_cursor == n)
+	{
+		bm_unload(Gr_cursor);
 		Gr_cursor = -1;
+	}
 }
 
 // retrieves the current bitmap
