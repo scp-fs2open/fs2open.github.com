@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.153  2005/12/04 19:02:36  wmcoolmon
+ * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
+ *
  * Revision 2.152  2005/11/24 06:37:17  phreak
  * Apply lighting to missiles if -missile_lighting command line is set.
  *
@@ -1905,9 +1908,9 @@ int parse_weapon(int subtype, bool replace)
 	{
 		stuff_string(fname, F_NAME);
 
-		if(!stricmp("Laser", fname)) {
+		if(!stricmp("Primary", fname)) {
 			wip->subtype = WP_LASER;
-		} else if(!stricmp("Missile", fname)) {
+		} else if(!stricmp("Secondary", fname)) {
 			wip->subtype = WP_MISSILE;
 		} else {
 			Warning(LOCATION, "Unknown subtype on weapon '%s'", wip->name);
