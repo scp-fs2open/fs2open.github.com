@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-12-04 19:05:06 $
- * $Author: wmcoolmon $
+ * $Revision: 2.34 $
+ * $Date: 2005-12-06 03:17:48 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/12/04 19:05:06  wmcoolmon
+ * Better weapon handling for techroom (more dynamic-limits friendly)
+ *
  * Revision 2.32  2005/10/16 23:15:47  wmcoolmon
  * Hardened cfile against array overflows
  *
@@ -1662,7 +1665,7 @@ void techroom_init()
 	}
 
 	Anim_playing_id = -1;
-	mprintf(("Techroom successfully initialized, now changing tab..."));
+	mprintf(("Techroom successfully initialized, now changing tab...\n"));
 	techroom_change_tab(Tab);
 }
 

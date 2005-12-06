@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-11-08 01:03:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.38 $
+ * $Date: 2005-12-06 03:17:48 $
+ * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/11/08 01:03:59  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.36  2005/10/28 14:47:16  taylor
  * fix issue where GR_640 based non-standard resolutions (ie. 800x600) would use GR_1024 screen coordinates/sizes
  *
@@ -874,7 +877,7 @@ int parse_hud_gauges_tbl(char* longname)
 	lcl_ext_open();
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		nprintf(("Warning", "Unable to parse %s!  Code = %i.\n", longname, rval));
+		mprintf(("Unable to parse %s!  Code = %i.\n", longname, rval));
 		lcl_ext_close();
 		return 0;
 	}

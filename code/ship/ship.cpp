@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.276 $
- * $Date: 2005-12-05 09:09:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.277 $
+ * $Date: 2005-12-06 03:17:48 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.276  2005/12/05 09:09:53  wmcoolmon
+ * Oops, arand should only be generated if it isn't passed to the function as well.
+ *
  * Revision 2.275  2005/12/04 22:44:00  Goober5000
  * fix compiler error
  * --Goober5000
@@ -15297,7 +15300,7 @@ void armor_parse_table(char* filename)
 	lcl_ext_open();
 	if(setjmp(parse_abort) != 0)
 	{
-		nprintf(("Warning", "Unable to parse %s!", filename));
+		mprintf(("Unable to parse %s!\n", filename));
 		lcl_ext_close();
 		return;
 	}

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.25 $
- * $Date: 2005-12-04 19:07:48 $
- * $Author: wmcoolmon $
+ * $Revision: 1.26 $
+ * $Date: 2005-12-06 03:17:48 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 1.23  2005/10/22 20:17:18  wmcoolmon
  * mission-set-nebula fixage; remainder of python code
  *
@@ -190,7 +193,7 @@ void GUISystem::ParseClassInfo(char* filename)
 	lcl_ext_open();
 	if(setjmp(parse_abort) != 0)
 	{
-		nprintf(("Warning", "Unable to parse %s!", filename));
+		mprintf(("Unable to parse %s!\n", filename));
 		lcl_ext_close();
 		return;
 	}
