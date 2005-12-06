@@ -11,12 +11,13 @@
 
 struct CFILE;
 
-#define DDS_ERROR_NONE					0		//everything went fine
-#define DDS_ERROR_INVALID_FILENAME		1		//bad filename
-#define DDS_ERROR_NO_MEM				2		//not enough mem to load
-#define DDS_ERROR_UNSUPPORTED			3		//not a readable format		
-#define DDS_ERROR_INVALID_FORMAT		4		//can only use dxtc1, dxtc3, dxtc5
-#define DDS_ERROR_BAD_HEADER			5		//header was not "DDS "
+#define DDS_ERROR_NONE					0		// everything went fine
+#define DDS_ERROR_INVALID_FILENAME		1		// bad or missing file
+#define DDS_ERROR_UNSUPPORTED			2		// a known format but one we don't support
+#define DDS_ERROR_INVALID_FORMAT		3		// format that's not supported
+#define DDS_ERROR_BAD_HEADER			4		// header was not "DDS "
+#define DDS_ERROR_NO_COMPRESSION		5		// file is compressed, compression isn't supported
+#define DDS_ERROR_NON_POWER_OF_2		6		// file is not a power of 2 in dimensions
 
 
 #define DDS_DXT_INVALID				-1
@@ -76,7 +77,7 @@ typedef struct _DDSURFACEDESC2
 //reads a dds header
 //returns one of the error values
 //'compression_type' comes back as one of the DDS_DXTC* defines
-int dds_read_header(char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, int *size = 0);
+int dds_read_header(char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, int *size = 0, ubyte *palette = NULL);
 
 //reads bitmap
 //size of the data it stored in size
