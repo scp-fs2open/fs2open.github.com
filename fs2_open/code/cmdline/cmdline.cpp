@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.127 $
- * $Date: 2005-11-24 06:46:39 $
- * $Author: phreak $
+ * $Revision: 2.128 $
+ * $Date: 2005-12-06 03:17:48 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2005/11/24 06:46:39  phreak
+ * Added wiki help for -rearm_timer and -missile_lighting
+ *
  * Revision 2.126  2005/11/24 06:37:47  phreak
  * Added -missile_lighting command line
  *
@@ -1141,6 +1144,34 @@ int Cmdline_tbp = 0;
 int Cmdline_rearm_timer = 0;
 int Cmdline_missile_lighting = 0;
 
+
+#ifndef NDEBUG
+// NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
+void cmdline_debug_print_cmdline()
+{
+	cmdline_parm *parmp;
+	int found = 0;
+
+	mprintf(("Passed cmdline options:"));
+
+	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
+		if ( parmp->name_found ) {
+			if ( parmp->args != NULL ) {
+				mprintf(("\n  %s %s", parmp->name, parmp->args));
+			} else {
+				mprintf(("\n  %s", parmp->name));
+			}
+			found++;
+		}
+	}
+
+	if ( !found )
+		mprintf(("\n  <none>"));
+
+	mprintf(("\n"));
+}
+#endif
+
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
 {
@@ -1550,6 +1581,8 @@ bool SetCmdlineParams()
 	// run with no sound
 	if ( nosound_arg.found() ) {
 		Cmdline_freespace_no_sound = 1;
+		// and since music is automatically unusable...
+		Cmdline_freespace_no_music = 1; 
 	}
 
 	// run with no music
@@ -2199,7 +2232,7 @@ int fred2_parse_cmdline(int argc, char *argv[])
 
 int parse_cmdline(char *cmdline)
 {
-	mprintf(("I got to parse_cmdline()!!\n"));
+//	mprintf(("I got to parse_cmdline()!!\n"));
 
 	os_init_cmdline(cmdline);
 

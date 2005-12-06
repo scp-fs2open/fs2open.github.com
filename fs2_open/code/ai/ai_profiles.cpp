@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.6 $
- * $Date: 2005-11-24 09:08:44 $
- * $Author: Goober5000 $
+ * $Revision: 1.7 $
+ * $Date: 2005-12-06 03:17:48 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/11/24 09:08:44  Goober5000
+ * bah, forgot a colon
+ * --Goober5000
+ *
  * Revision 1.5  2005/11/24 08:46:11  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only
@@ -181,7 +185,7 @@ void ai_profiles_init()
 	}
 	else
 	{
-		mprintf(("No ai_profiles.tbl found; using defaults."));
+		mprintf(("No ai_profiles.tbl found; using defaults.\n"));
 		return;
 	}
 

@@ -17,7 +17,7 @@ int script_test(script_state *st)
 	int rval;
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		nprintf(("Warning", "Unable to parse scripting.tbl!  Code = %i.\n", rval));
+		mprintf(("Unable to parse scripting.tbl!  Code = %i.\n", rval));
 		return 0;
 	}
 	else

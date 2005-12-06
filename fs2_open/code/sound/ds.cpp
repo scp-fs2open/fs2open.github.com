@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-11-14 05:12:01 $
+ * $Revision: 2.36 $
+ * $Date: 2005-12-06 03:17:48 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/11/14 05:12:01  taylor
+ * now able to build with OpenAL 1.0 and 1.1 thanks to newer OpenAL CVS changes (patch from icculus.org FS2 mailing list)
+ *
  * Revision 2.34  2005/10/17 02:09:29  wmcoolmon
  * Fix redmenace's compile problem
  *
@@ -1637,7 +1640,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 //	Ds_use_ds3d = 1;
 	Ds_use_ds3d = 0;
 
-	nprintf(( "Sound", "SOUND ==> Initializing OpenAL...\n" ));
+	mprintf(("Initializing OpenAL...\n"));
 
 	// load OpenAL
 #ifdef _WIN32
@@ -1653,7 +1656,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 #endif
 
 	if (ds_sound_device == NULL) {
-		nprintf(("Sound", "SOUND ==> Couldn't open OpenAL device\n"));
+		mprintf(("ERROR: Couldn't open OpenAL device!\n"));
 		return -1;
 	}
 
@@ -1661,7 +1664,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	ds_sound_context = alcCreateContext( ds_sound_device, attr );
 
 	if (ds_sound_context == NULL) {
-		nprintf(("Sound", "SOUND ==> Couldn't create OpenAL context\n"));
+		mprintf(("ERROR: Couldn't create OpenAL context!\n"));
 		alcCloseDevice( ds_sound_device );
 		return -1;
 	}
@@ -1669,16 +1672,14 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	alcMakeContextCurrent( ds_sound_context );
 
 	if (alcGetError( ds_sound_device ) != ALC_NO_ERROR) {
-		nprintf(("Sound", "SOUND ==> Couldn't initialize OpenAL\n"));
+		mprintf(("ERROR: Couldn't initialize OpenAL!\n"));
 		return -1;
 	}
 
-	mprintf(( "OpenAL INITED!\n" ));
-	mprintf(( "\n" ));
-	mprintf(( "Vendor     : %s\n", alGetString( AL_VENDOR ) ));
-	mprintf(( "Renderer   : %s\n", alGetString( AL_RENDERER ) ));
-	mprintf(( "Version    : %s\n", alGetString( AL_VERSION ) ));
-	mprintf(( "Extensions : \n" ));
+	mprintf(( "  OpenAL Vendor     : %s\n", alGetString( AL_VENDOR ) ));
+	mprintf(( "  OpenAL Renderer   : %s\n", alGetString( AL_RENDERER ) ));
+	mprintf(( "  OpenAL Version    : %s\n", alGetString( AL_VERSION ) ));
+	mprintf(( "  OpenAL Extensions : \n" ));
 
 	// print out OpenAL extensions
 	OAL_extensions=(const char*)alGetString( AL_EXTENSIONS );
@@ -1695,7 +1696,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 		curext = strtok(extlist, " ");
 
 		while (curext) {
-			mprintf(( "    %s\n", curext ));
+			mprintf(( "      %s\n", curext ));
 			curext = strtok(NULL, " ");
 		}
 
@@ -1726,6 +1727,8 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	ds_build_vol_lookup();
 	ds_init_channels();
 	ds_init_buffers();
+
+	mprintf(("... OpenAL successfully initialized!\n"));
 #else
 	HRESULT			hr;
 	HWND				hwnd;
