@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-12-04 19:06:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.39 $
+ * $Date: 2005-12-06 03:14:45 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/12/04 19:06:01  wmcoolmon
+ * Slightly better main hall error handling
+ *
  * Revision 2.37  2005/10/30 20:03:38  taylor
  * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
  * fix Mantis bug #381
@@ -2106,7 +2109,7 @@ void main_hall_blit_version()
 	int w;
 
 	// format the version string
-	get_version_string(version_string);
+	get_version_string(version_string, sizeof(version_string));
 
 	// get the length of the string
 	gr_get_string_size(&w,NULL,version_string);

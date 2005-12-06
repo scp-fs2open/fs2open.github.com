@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-10-10 17:21:05 $
+ * $Revision: 2.28 $
+ * $Date: 2005-12-06 03:14:45 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.26  2005/08/09 10:06:47  taylor
  * well that was rather stupid of me, this would crash if old + new pilots went over MAX_PILOTS
  *
@@ -1519,7 +1522,7 @@ void player_select_display_copyright()
 	gr_set_color_fast(&Color_white);
 
 //	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
-	get_version_string(Copyright_msg1);
+	get_version_string(Copyright_msg1, sizeof(Copyright_msg1));
 	if (Lcl_gr) {
 		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\xA8');
 	} else {
