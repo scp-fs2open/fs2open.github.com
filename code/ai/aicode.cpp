@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.47 $
- * $Date: 2005-12-04 19:07:48 $
- * $Author: wmcoolmon $
+ * $Revision: 1.48 $
+ * $Date: 2005-12-06 03:15:47 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.47  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 1.46  2005/11/24 08:46:11  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only
@@ -7133,6 +7136,8 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 	float	weapon_speed, range_time;
 	ship	*shipp = &Ships[pobjp->instance];
 
+	Assert( eobjp != NULL );
+
 	weapon_speed = ai_get_weapon_speed(&shipp->weapons);
 	weapon_speed = MAX(weapon_speed, 1.0f);		// set not less than 1
 
@@ -8796,6 +8801,8 @@ void ai_chase()
 	}
 
 	//nprintf(("AI", "%7s ", Submode_text[aip->submode]));
+
+	Assert( En_objp != NULL );
 
 	if ( En_objp->type == OBJ_SHIP ) {
 		enemy_sip_flags = Ship_info[Ships[En_objp->instance].ship_info_index].flags;
