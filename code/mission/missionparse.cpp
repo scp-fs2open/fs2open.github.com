@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.128 $
- * $Date: 2005-11-24 08:46:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.129 $
+ * $Date: 2005-12-06 02:57:57 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2005/11/24 08:46:10  Goober5000
+ * * cleaned up mission_do_departure
+ *   * fixed a hidden crash (array index being -1; would only
+ * be triggered for ships w/o subspace drives under certain conditions)
+ *   * removed finding a new fighterbay target because it might screw up missions
+ *   * improved clarity, code flow, and readability :)
+ * * added custom AI flag for disabling warpouts if navigation subsystem fails
+ * --Goober5000
+ *
  * Revision 2.127  2005/11/21 02:43:37  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -1512,6 +1521,8 @@ void parse_mission_info(mission *pm)
 		if (index >= 0)
 			The_mission.ai_profile = &Ai_profiles[index];
 	}
+
+	Assert( The_mission.ai_profile != NULL );
 }
 
 void parse_player_info(mission *pm)
