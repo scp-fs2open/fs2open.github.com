@@ -12,7 +12,6 @@
 #include <string.h>
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
-#include "cfile/cfile.h"
 #include "osapi/osapi.h"
 
 #include <stdio.h>
@@ -81,7 +80,7 @@ typedef struct Profile
 // REGISTRY FUNCTIONS
 //
 
-static char *read_line_from_file(CFILE *fp)
+static char *read_line_from_file(FILE *fp)
 {
 	char *buf, *buf_start;
 	int buflen, len, eol;
@@ -96,7 +95,7 @@ static char *read_line_from_file(CFILE *fp)
 			return NULL;
 		}
 		
-		if (cfgets(buf_start, 80, fp) == NULL) {
+		if (fgets(buf_start, 80, fp) == NULL) {
 			if (buf_start == buf) {
 				vm_free(buf);
 				return NULL;
@@ -166,8 +165,13 @@ static char *trim_string(char *str)
 static Profile *profile_read(char *file)
 {
 	char fullname[MAX_PATH_LEN];
+	FILE *fp = NULL;
+	char *str;
+
 	snprintf(fullname, MAX_PATH_LEN, "%s%s%s%s%s", detect_home(), DIR_SEPARATOR_STR, Osreg_user_dir, DIR_SEPARATOR_STR, file);
-	CFILE *fp = cfopen(fullname, "rt");
+
+	fp = fopen(fullname, "rt");
+
 	if (fp == NULL)
 		return NULL;
 
@@ -179,7 +183,6 @@ static Profile *profile_read(char *file)
 
 	KeyValue **kvp_ptr = NULL;
 		
-	char *str;
 	while ((str = read_line_from_file(fp)) != NULL) {
 		char *ptr = trim_string(str);
 		
@@ -237,7 +240,7 @@ static Profile *profile_read(char *file)
 		vm_free(str);
 	}
 	
-	cfclose(fp);
+	fclose(fp);
 
 	return profile;
 }
@@ -283,6 +286,7 @@ static Profile *profile_update(Profile *profile, char *section, char *key, char 
 	
 	Section **sp_ptr = &(profile->sections);
 	Section *sp = profile->sections;
+
 	while (sp != NULL) {
 		if (strcmp(section, sp->name) == 0) {
 			KeyValue **kvp_ptr = &(sp->pairs);
@@ -350,6 +354,7 @@ static char *profile_get_value(Profile *profile, char *section, char *key)
 		return NULL;
 	
 	Section *sp = profile->sections;
+
 	while (sp != NULL) {
 		if (strcmp(section, sp->name) == 0) {
 			KeyValue *kvp = sp->pairs;
@@ -371,38 +376,40 @@ static char *profile_get_value(Profile *profile, char *section, char *key)
 
 static void profile_save(Profile *profile, char *file)
 {
-	CFILE *fp;
-	
+	FILE *fp = NULL;
 	char tmp[MAX_PATH] = "";
 	char tmp2[MAX_PATH] = "";
+	char fullname[MAX_PATH_LEN];
 	
 	if (profile == NULL)
 		return;
 
-	char fullname[MAX_PATH_LEN];
 	snprintf(fullname, MAX_PATH_LEN, "%s%s%s%s%s", detect_home(), DIR_SEPARATOR_STR, Osreg_user_dir, DIR_SEPARATOR_STR, file);
-	fp = cfopen(fullname, "wt");
+
+	fp = fopen(fullname, "wt");
+
 	if (fp == NULL)
 		return;
 	
 	Section *sp = profile->sections;
+
 	while (sp != NULL) {
 		sprintf(tmp, NOX("[%s]\n"), sp->name);
-		cfputs(tmp, fp);
+		fputs(tmp, fp);
 		
 		KeyValue *kvp = sp->pairs;
 		while (kvp != NULL) {
 			sprintf(tmp2, NOX("%s=%s\n"), kvp->key, kvp->value);
-			cfputs(tmp2, fp);
+			fputs(tmp2, fp);
 			kvp = kvp->next;
 		}
 		
-		cfwrite_char('\n', fp);
+		fprintf(fp, "\n");
 		
 		sp = sp->next;
 	}
 	
-	cfclose(fp);
+	fclose(fp);
 }
 
 // os registry functions -------------------------------------------------------------
@@ -441,8 +448,8 @@ static char tmp_string_data[1024];
 
 char *os_config_read_string(char *section, char *name, char *default_value)
 {
-	nprintf(( "Warning", "REGISTRY: %s in %s at line %d, thread %d - section = \"%s\", name = \"%s\", default value: \"%s\"\n", 
-			__FUNCTION__, __FILE__, __LINE__, getpid(), section, name, default_value ));
+	nprintf(( "Registry", "os_config_read_string(): section = \"%s\", name = \"%s\", default value: \"%s\"\n",
+			  (section) ? section : DEFAULT_SECTION, name, (default_value) ? default_value : NOX("NULL") ));
 
 	Profile *p = profile_read(PROFILE_NAME);
 
@@ -450,6 +457,7 @@ char *os_config_read_string(char *section, char *name, char *default_value)
 		section = DEFAULT_SECTION;
 
 	char *ptr = profile_get_value(p, section, name);
+
 	if (ptr != NULL) {
 		strncpy(tmp_string_data, ptr, 1023);
 		default_value = tmp_string_data;
@@ -468,6 +476,7 @@ unsigned int os_config_read_uint(char *section, char *name, unsigned int default
 		section = DEFAULT_SECTION;
 		
 	char *ptr = profile_get_value(p, section, name);
+
 	if (ptr != NULL) {
 		default_value = atoi(ptr);
 	}
