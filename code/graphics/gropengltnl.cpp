@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.30 $
- * $Date: 2005-11-30 03:07:54 $
- * $Author: phreak $
+ * $Revision: 1.31 $
+ * $Date: 2005-12-06 02:50:41 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2005/11/30 03:07:54  phreak
+ * texturing shouldn't be on when drawing lines.
+ *
  * Revision 1.29  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -457,6 +460,9 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 	opengl_vertex_buffer *vbp = g_vbp;
 
 
+	// disable all arbs before we start
+	opengl_switch_arb(-1, 0);
+
 	// see if we need to optimize glDrawRangeElements
 	if ( (GL_max_elements_indices == GL_max_elements_vertices) && (count > GL_max_elements_indices) )
 		multiple_elements = 1;
@@ -570,9 +576,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 	if ( use_spec ) {
 		// turn all arbs off before the specular pass
 		// this fixes the glowmap multitexture rendering problem - taylor
-		opengl_switch_arb(0, 0);
-		opengl_switch_arb(1, 0);
-		opengl_switch_arb(2, 0);
+		opengl_switch_arb(-1, 0);
 
 		glClientActiveTextureARB(GL_TEXTURE0_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -658,19 +662,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 	TIMERBAR_POP();
 
 	// make sure everthing gets turned back off, fixes hud issue with spec lighting and VBO crash in starfield
-	for (i = 0; i < 4; i++) {
-		opengl_switch_arb(i, 0);
+	opengl_switch_arb(-1, 0);
 
-		glClientActiveTextureARB(GL_TEXTURE0_ARB+i);
-
-		glDisableClientState( GL_VERTEX_ARRAY );
-		glDisableClientState( GL_NORMAL_ARRAY );
-		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-
-		if (VBO_ENABLED) {
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		}
-	}
 
 #if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)
 	glBegin(GL_LINES);
