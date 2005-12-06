@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.32 $
- * $Date: 2005-12-04 19:07:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.33 $
+ * $Date: 2005-12-06 03:05:53 $
+ * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.31  2005/11/08 01:03:59  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -404,6 +407,38 @@
 #define BM_PIXEL_FORMAT_ARGB				0						// for glide - can assume certain things, like 1555 LFB writes, whee!
 #define BM_PIXEL_FORMAT_D3D				1						// d3d - card dependant. booo!
 #define BM_PIXEL_FORMAT_ARGB_D3D			2						// this card has nice 1555 textures like Glide - ahhhhh!
+
+
+#define	BMP_AABITMAP						(1<<0)				// antialiased bitmap
+#define	BMP_TEX_XPARENT						(1<<1)				// transparent texture
+#define	BMP_TEX_NONDARK						(1<<2)				// nondarkening texture
+#define	BMP_TEX_OTHER						(1<<3)				// so we can identify all "normal" textures
+#define BMP_TEX_DXT1						(1<<4)				// dxt1 compressed 8r8g8b1a (24bit)
+#define BMP_TEX_DXT3						(1<<5)				// dxt3 compressed 8r8g8b4a (32bit)
+#define BMP_TEX_DXT5						(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
+#define BMP_TEX_STATIC_RENDER_TARGET		(1<<7)				// a texture made for being rendered to infreqently
+#define BMP_TEX_DYNAMIC_RENDER_TARGET		(1<<8)				// a texture made for being rendered to freqently
+#define BMP_TEX_CUBEMAP						(1<<9)				// a texture made for cubic environment map
+
+//compressed texture types
+#define BMP_TEX_COMP			( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )
+
+//non compressed textures
+#define BMP_TEX_NONCOMP			( BMP_TEX_XPARENT | BMP_TEX_NONDARK | BMP_TEX_OTHER )
+
+// any texture type
+#define	BMP_TEX_ANY				( BMP_TEX_COMP | BMP_TEX_NONCOMP )
+
+typedef struct bitmap {
+	short	w, h;		// Width and height
+	short	rowsize;	// What you need to add to go to next row
+	ubyte	bpp;		// How many bits per pixel it is. (7,8,15,16,24,32) (what is requested)
+	ubyte	true_bpp;	// How many bits per pixel the image actually is.
+	ubyte	flags;		// See the BMP_???? defines for values
+	ptr_u	data;		// Pointer to data, or maybe offset into VRAM.
+	ubyte *palette;		// If bpp==8, this is pointer to palette.   If the BMP_NO_PALETTE_MAP flag
+						// is not set, this palette just points to the screen palette. (gr_palette)
+} bitmap;
 
 
 extern int bm_inited;

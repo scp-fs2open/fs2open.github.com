@@ -2,12 +2,30 @@
 #include "cfile/cfile.h"
 
 
+/*	Currently supported formats:
+ *		DXT1a	(compressed)
+ *		DXT1c	(compressed)
+ *		DXT3	(compressed)
+ *		DXT5	(compressed)
+ *		uncompressed 1555	(16-bit, 1-bit being alpha)
+ *		uncompressed 8888	(32-bit)
+ *		uncompressed 888	(24-bit, no alpha)
+ *		paletted 8-bit		(256 colors)
+ */
+ 
 
 int Texture_compression_available = 0;
 int Use_compressed_textures = 0;
 
+// power of two check, to verify that a given DDS will always be usable since
+// some may not be power-of-2
+inline int is_power_of_2(int n)
+{
+	return ( n && !(n & (n-1)) );
+}
 
-int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, int *size)
+
+int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, int *size, ubyte *palette)
 {
 	DDSURFACEDESC2 dds_header;
 	int code = 0;
@@ -42,8 +60,10 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	code = cfread_int(ddsfile);
 
 	// check it
-	if (code != DDS_FILECODE)
-		return DDS_ERROR_BAD_HEADER;
+	if (code != DDS_FILECODE) {
+		retval = DDS_ERROR_BAD_HEADER;
+		goto Done;
+	}
 
 	// read header variables
 	dds_header.dwSize				= cfread_uint(ddsfile);
@@ -83,34 +103,36 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 
 		switch (dds_header.ddpfPixelFormat.dwFourCC) {
 			case FOURCC_DXT1:
-				bits=24;
-				ct=DDS_DXT1;
+				bits = 24;
+				ct = DDS_DXT1;
 				break;
 
 			case FOURCC_DXT3:
-				bits=32;
-				ct=DDS_DXT3;
+				bits = 32;
+				ct = DDS_DXT3;
 				break;
 
 			case FOURCC_DXT5:
-				bits=32;
-				ct=DDS_DXT5;
+				bits = 32;
+				ct = DDS_DXT5;
 				break;
 
 			// dxt2 and dxt4 aren't supported
 			case FOURCC_DXT2:
 			case FOURCC_DXT4:
-				retval = DDS_ERROR_INVALID_FORMAT;
+				retval = DDS_ERROR_UNSUPPORTED;
 				ct = DDS_DXT_INVALID;
+				goto Done;
 				break;
 
 			// none of the above
 			default:
-				retval = DDS_ERROR_UNSUPPORTED;
+				retval = DDS_ERROR_INVALID_FORMAT;
 				ct = DDS_DXT_INVALID;
+				goto Done;
 				break;
 		}
-	} else if (dds_header.ddpfPixelFormat.dwFlags & DDPF_RGB) {
+	} else if ( dds_header.ddpfPixelFormat.dwFlags & (DDPF_RGB | DDPF_PALETTEINDEXED8) ) {
 		if (dds_header.dwDepth == 0)
 			dds_header.dwDepth = 1;
 
@@ -120,7 +142,20 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 		ct = DDS_UNCOMPRESSED;
 	} else {
 		// it's not a readable format
-		retval = DDS_ERROR_UNSUPPORTED;
+		retval = DDS_ERROR_INVALID_FORMAT;
+		goto Done;
+	}
+
+	// we don't support compressed, non-power-of-2 images
+	if ( (ct != DDS_UNCOMPRESSED) && (!is_power_of_2(dds_header.dwWidth) || !is_power_of_2(dds_header.dwHeight)) ) {
+		retval = DDS_ERROR_NON_POWER_OF_2;
+		goto Done;
+	}
+
+	// make sure that the video card can handle compressed textures before using them
+	if ( !Use_compressed_textures && (ct != DDS_UNCOMPRESSED) && (ct != DDS_DXT_INVALID) ) {
+		retval = DDS_ERROR_NO_COMPRESSION;
+		goto Done;
 	}
 
 	// stuff important info
@@ -139,15 +174,17 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	if (levels)
 		*levels = dds_header.dwMipMapCount;
 
+	if (palette && (bits == 8)) {
+		cfseek(ddsfile, DDS_OFFSET, CF_SEEK_SET);
+		cfread(palette, 1, 1024, ddsfile);
+	}
+
+
+Done:
 	if (img_cfp == NULL) {
 		// close file and return
 		cfclose(ddsfile);
 		ddsfile = NULL;
-	}
-
-	if ( !Use_compressed_textures && (ct != DDS_UNCOMPRESSED) && (ct != DDS_DXT_INVALID) ) {
-		ct = DDS_DXT_INVALID;
-		retval = DDS_ERROR_UNSUPPORTED;
 	}
 
 	return retval;
@@ -209,9 +246,6 @@ const char *dds_error_string(int code)
 		case DDS_ERROR_NONE:
 			return "No error";
 
-		case DDS_ERROR_NO_MEM:
-			return "Insufficient memory";
-
 		case DDS_ERROR_INVALID_FILENAME:
 			return "File not found";
 
@@ -219,10 +253,16 @@ const char *dds_error_string(int code)
 			return "Filecode did not equal \"DDS \"";
 
 		case DDS_ERROR_INVALID_FORMAT:
-			return "File was compressed, but it was DXT2 or DXT4";
+			return "DDS was in an unsupported/unknown format";
 			
 		case DDS_ERROR_UNSUPPORTED:
-			return "*.DDS files must be uncompressed or use DXT1, DXT3, or DXT5 compression";
+			return "DDS format was known but is not supported (ie. DXT2/DXT4)";
+
+		case DDS_ERROR_NO_COMPRESSION:
+			return "DDS is compressed but compression support is not enabled";
+
+		case DDS_ERROR_NON_POWER_OF_2:
+			return "Cannot load DDS if not power-of-2";
 
 		default:
 			return "Abort, retry, fail?";
