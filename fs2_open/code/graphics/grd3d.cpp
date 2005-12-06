@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.88 $
- * $Date: 2005-10-16 11:20:43 $
+ * $Revision: 2.89 $
+ * $Date: 2005-12-06 02:53:02 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2005/10/16 11:20:43  taylor
+ * use unsigned index buffers
+ *
  * Revision 2.87  2005/08/23 17:06:28  matt
  * Changed rect_size_y - 1 to rect_size_y. Not really that important, but much more correct. I'll stop barraging cvs now :)
  *
@@ -857,7 +860,6 @@ static int D3d_dump_frame_size = 0;
 stage_state current_render_state = NONE;
 
 int In_frame = 0;
-int D3D_32bit = 0;
 
 IDirect3DSurface8 *Gr_saved_surface = NULL;
 Vertex_buffer vertex_buffer[MAX_BUFFERS];

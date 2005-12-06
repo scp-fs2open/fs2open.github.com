@@ -9,6 +9,14 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 2.51  2005/08/20 20:34:51  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -248,7 +256,7 @@ bool d3d_init_win32(int screen_width, int screen_height)
 	} else {
 		// Prepare the window to go full screen
 	#ifndef NDEBUG
-		mprintf(( "Window in debugging mode... mouse clicking may cause problems!\n" ));
+		mprintf(( "  Window in debugging mode... mouse clicking may cause problems!\n" ));
 		SetWindowLong( hwnd, GWL_EXSTYLE, 0 );
 		SetWindowLong( hwnd, GWL_STYLE, WS_POPUP );
 		ShowWindow(hwnd, SW_SHOWNORMAL );
@@ -1122,6 +1130,15 @@ bool d3d_init_device()
 		GlobalD3DVars::d3dpp.Windowed		  = FALSE;
 	}
 
+	D3DADAPTER_IDENTIFIER8 adapter_info;
+	if(SUCCEEDED(GlobalD3DVars::lpD3D->GetAdapterIdentifier(adapter_choice, D3DENUM_NO_WHQL_LEVEL, &adapter_info)))
+	{
+		mprintf(("  Direct3D Adapter        : %s\n", adapter_info.Description));
+		mprintf(("  Direct3D Driver Version : %i.%i.%i.%i\n", HIWORD(adapter_info.DriverVersion.HighPart), LOWORD(adapter_info.DriverVersion.HighPart),
+				 HIWORD(adapter_info.DriverVersion.LowPart), LOWORD(adapter_info.DriverVersion.LowPart)));
+		mprintf(("\n"));
+	}
+
 	GlobalD3DVars::d3dpp.BackBufferFormat = mode.Format;
 
 	//trying to use a higher bit depth in the back buffer, the deepest one posale -Bobboau
@@ -1142,7 +1159,7 @@ bool d3d_init_device()
 	// However it means we cant use Get* functions (aside from GetFrontBuffer, GetCaps, etc)
 	if(got_caps && GlobalD3DVars::d3d_caps.DevCaps & D3DDEVCAPS_PUREDEVICE) {
 	  	vptypes[0] |= D3DCREATE_PUREDEVICE;
-		mprintf(("Using PURE D3D Device"));
+		mprintf(("  Using PURE D3D Device\n"));
 	}
 
 	bool have_device = false;
@@ -1220,14 +1237,14 @@ void d3d_init_vars_from_reg()
 	
 #if 0
 	else {
-		if(D3D_32bit){
+		if(gr_screen.bits_per_pixel == 32){
 			d3d_detect_texture_origin_32();
 		} else {
 			d3d_detect_texture_origin_16();
 		}
 	}
 
-	mprintf(("D3d_rendition_uvs: %d",GlobalD3DVars::D3D_rendition_uvs));
+	mprintf(("  D3d_rendition_uvs: %d",GlobalD3DVars::D3D_rendition_uvs));
 
 	// Not sure now relevent this is now
 	tmp = os_config_read_uint( NULL, "D3DLineOffset", 0xFFFF );
@@ -1236,7 +1253,7 @@ void d3d_init_vars_from_reg()
 	if ( tmp != 0xFFFF )	{
 		D3D_line_offset = ( tmp ) ? 0.5f : 0.0f;
 	} else {
-		if(D3D_32bit){
+		if(gr_screen.bits_per_pixel == 32){
 			d3d_detect_line_offset_32();
 		} else {
 			d3d_detect_line_offset_16();
@@ -1261,10 +1278,10 @@ void d3d_setup_color()
 	d3d_setup_format_components(&NonAlphaTextureFormat, &Gr_t_red, &Gr_t_green, &Gr_t_blue, &Gr_t_alpha);
 	d3d_setup_format_components(&AlphaTextureFormat, &Gr_ta_red, &Gr_ta_green, &Gr_ta_blue, &Gr_ta_alpha);
 
-	mprintf(( "Alpha texture format = " ));
+	mprintf(( "  Alpha texture format = " ));
 	d3d_dump_format(&AlphaTextureFormat);
 
-	mprintf(( "Non-alpha texture format = " ));
+	mprintf(( "  Non-alpha texture format = " ));
 	d3d_dump_format(&NonAlphaTextureFormat);
 
 	if(!Cmdline_nohtl) {
@@ -1295,10 +1312,6 @@ void d3d_setup_color()
 
 		GlobalD3DVars::lpD3DDevice->SetMaterial(&material);
 	}
-
-	// determine 32 bit status
-	D3D_32bit                 = gr_screen.bits_per_pixel == 32 ? 1 : 0;
-	mprintf(("D3D_32bit %d, bits_per_pixel %d",D3D_32bit, gr_screen.bits_per_pixel));
 }
 
 bool d3d_inspect_caps()
@@ -1494,6 +1507,8 @@ void d3d_kill_state_blocks(){
 
 bool gr_d3d_init()
 {
+	mprintf(( "Initializing Direct3D graphics device at %ix%i with %i-bit color...\n", gr_screen.max_w, gr_screen.max_h, gr_screen.bits_per_pixel ));
+
 	GlobalD3DVars::lpD3D = Direct3DCreate8( D3D_SDK_VERSION );
 
 	if( GlobalD3DVars::lpD3D == NULL ) {
@@ -1569,11 +1584,16 @@ bool gr_d3d_init()
 	gr_flip();
 	Mouse_hidden--;
 
+	mprintf(( "  Max texture units: %i\n", GlobalD3DVars::d3d_caps.MaxSimultaneousTextures ));
+	mprintf(( "  Max texture size: %ix%i\n", GlobalD3DVars::d3d_caps.MaxTextureWidth, GlobalD3DVars::d3d_caps.MaxTextureHeight ));
+	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
+
 	TIMERBAR_SET_DRAW_FUNC(d3d_render_timer_bar);
-	mprintf(( "Direct3D Initialized OK!\n" ));
 
 //	d3d_init_environment();
 
+	mprintf(("... Direct3D init is complete!\n"));
 
 	return true;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-12-04 18:59:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.62 $
+ * $Date: 2005-12-06 02:53:02 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/12/04 18:59:18  wmcoolmon
+ * Attempt to fix OpenGL crash-on-debug-exit
+ *
  * Revision 2.60  2005/10/30 06:44:57  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -1348,11 +1351,11 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	// If already inited, shutdown the previous graphics
 	if ( Gr_inited )	{
 		switch( gr_screen.mode )	{
-#ifdef _WIN32
+#ifndef NO_DIRECT3D
 		case GR_DIRECT3D:
 			gr_d3d_cleanup();
 			break;
-#endif  // ifdef _WIN32
+#endif  // !NO_DIRECT3D
 
 		case GR_OPENGL:
 			gr_opengl_cleanup();
