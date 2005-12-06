@@ -478,6 +478,7 @@ int joy_init()
 	// enable event processing of the joystick
 	if ( (SDL_JoystickEventState(SDL_ENABLE)) != SDL_ENABLE ) {
 		mprintf(("ERROR: Unable to initialize joystick event processing!\n"));
+		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 		return 0;
 	}
 
@@ -485,6 +486,7 @@ int joy_init()
 
 	if (n < 1) {
 		mprintf(("No joysticks found\n"));
+		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 		return 0;
 	}
 
@@ -496,6 +498,7 @@ int joy_init()
 
 	if (sdljoy == NULL) {
 		mprintf(("Unable to init joystick %d\n", Cur_joystick));
+		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 		return 0;
 	}
 
