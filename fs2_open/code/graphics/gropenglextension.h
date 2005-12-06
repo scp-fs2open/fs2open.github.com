@@ -9,14 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.6 $
- * $Date: 2005-11-13 06:44:18 $
+ * $Revision: 1.7 $
+ * $Date: 2005-12-06 02:50:41 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 1.5  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -90,7 +98,7 @@ extern ogl_extension GL_Extensions[];
 #define GL_TEXTURE_ENV_ADD				4			// additive texture environment
 #define GL_COMP_TEX						5			// texture compression
 #define GL_TEX_COMP_S3TC				6			// S3TC/DXTC compression format
-#define GL_TEX_FILTER_ANSIO				7			// anisotrophic filtering
+#define GL_TEX_FILTER_ANISO				7			// anisotrophic filtering
 #define GL_NV_RADIAL_FOG				8			// for better looking fog
 #define GL_SECONDARY_COLOR_3FV			9			// for better looking fog
 #define GL_SECONDARY_COLOR_3UBV			10			// specular

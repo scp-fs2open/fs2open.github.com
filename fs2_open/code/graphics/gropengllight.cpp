@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-10-23 11:45:06 $
+ * $Revision: 1.21 $
+ * $Date: 2005-12-06 02:50:41 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/10/23 11:45:06  taylor
+ * add -ogl_shine to adjust the OGL shininess value so that people can play around and find the best value to use
+ *
  * Revision 1.19  2005/09/30 09:47:06  taylor
  * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
  * add -cache_bitmaps and have bitmap caching between levels off by default
@@ -366,7 +369,9 @@ void opengl_init_light()
 
 	// allocate memory for enabled lights
 	Verify(GL_max_lights > 0);
-	currently_enabled_lights = (int*)vm_malloc(GL_max_lights * sizeof(int));
+
+	if ( currently_enabled_lights == NULL )
+		currently_enabled_lights = (int*)vm_malloc(GL_max_lights * sizeof(int));
 
 	if (currently_enabled_lights == NULL)
 		Error( LOCATION, "Unable to allocate memory for lights!\n");

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.30 $
- * $Date: 2005-11-16 07:45:35 $
+ * $Revision: 1.31 $
+ * $Date: 2005-12-06 02:50:41 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2005/11/16 07:45:35  taylor
+ * umm, no one saw that, right? :)
+ *
  * Revision 1.29  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -172,16 +175,13 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
-
+#include "osapi/osregistry.h"
 #include "bmpman/bmpman.h"
-
 #include "cmdline/cmdline.h"
-
 #include "graphics/gropengl.h"
 #include "graphics/gropengltexture.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/grinternal.h"
-
 #include "ddsutils/ddsutils.h"
 
 
@@ -204,6 +204,8 @@ int GL_last_bitmap_type = -1;
 GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
 ubyte GL_xlat[256] = { 0 };
+GLfloat GL_anisotropy = 0.0f;
+GLfloat GL_max_anisotropy = 0.0f;
 
 extern int vram_full;
 extern int GLOWMAP;
@@ -278,10 +280,47 @@ void gr_opengl_set_tex_env_scale(float scale)
 	{}
 }
 
-
-void opengl_set_max_anistropy()
+GLfloat opengl_get_max_anisotropy()
 {
-//	if (GL_Extensions[GL_TEX_FILTER_aniso].enabled)		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
+	if ( !opengl_extension_is_enabled(GL_TEX_FILTER_ANISO) )
+		return 0.0f;
+
+	if ( !GL_max_anisotropy ) {
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &GL_max_anisotropy);
+	}
+
+	return GL_max_anisotropy;
+}
+
+// setup anisotropic filtering if we can
+void opengl_set_anisotropy(GLfloat aniso_value)
+{
+	if ( !opengl_extension_is_enabled(GL_TEX_FILTER_ANISO) )
+		return;
+
+	if ( !GL_max_anisotropy ) {
+		opengl_get_max_anisotropy();
+	}
+
+	if ( !GL_anisotropy ) {
+		char *plevel;
+
+		plevel = os_config_read_string( NULL, NOX("OGL_AnisotropicFilter"), NOX("1.0") );
+		GL_anisotropy = (GLfloat)atof(plevel);
+
+		if ( GL_anisotropy < 1.0f ) {
+			GL_anisotropy = 1.0f;
+		} else if ( GL_anisotropy > GL_max_anisotropy ) {
+			GL_anisotropy = GL_max_anisotropy;
+		}
+	}
+
+	if ( (aniso_value >= 1.0f) && (aniso_value <= GL_max_anisotropy) ) {
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso_value);
+		GL_anisotropy = aniso_value;
+	} else {
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, GL_anisotropy);
+	}
 }
 
 void opengl_switch_arb(int unit, int state)
@@ -289,21 +328,44 @@ void opengl_switch_arb(int unit, int state)
 	if (unit >= GL_supported_texture_units)
 		return;
 
-	if (state)
-	{
-		if (GL_texture_units_enabled[unit])	return;
+	if ( unit < 0 ) {
+		// support a mass disable or all arbs so we don't have to make each call ourselves
+		if ( !state ) {
+			for ( int i = 0; i < GL_supported_texture_units; i++ ) {
+				glActiveTextureARB(GL_TEXTURE0_ARB + i);
+				glDisable(GL_TEXTURE_2D);
+
+				glClientActiveTextureARB(GL_TEXTURE0_ARB + i);
+
+				glDisableClientState( GL_VERTEX_ARRAY );
+				glDisableClientState( GL_NORMAL_ARRAY );
+				glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+
+				if (VBO_ENABLED) {
+					glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+				}
+
+				GL_texture_units_enabled[i] = 0;
+			}
+		}
+
+		return;
+	}
+			
+	if (state) {
+		if (GL_texture_units_enabled[unit])
+			return;
 
 		glActiveTextureARB(GL_TEXTURE0_ARB + unit);
 		glEnable(GL_TEXTURE_2D);
 		GL_texture_units_enabled[unit] = 1;
-	}
-
-	else
-	{
-		if (!GL_texture_units_enabled[unit])	return;
+	} else {
+		if (!GL_texture_units_enabled[unit])
+			return;
 
 		glActiveTextureARB(GL_TEXTURE0_ARB + unit);
 		glDisable(GL_TEXTURE_2D);
+	
 		GL_texture_units_enabled[unit] = 0;
 	}
 }
@@ -340,11 +402,12 @@ void opengl_tcache_init (int use_sections)
 
 	GL_square_textures = 0;
 
-	Textures = (tcache_slot_opengl *)vm_malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
+	if ( Textures == NULL ) {
+		Textures = (tcache_slot_opengl *)vm_malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
+	}
 
 	if ( !Textures ) {
-		fprintf(stderr, "ERROR: Unable to allocate memory for OpenGL texture slots!\n");
-		exit(EXIT_FAILURE);
+		Error(LOCATION, "Unable to allocate memory for OpenGL texture slots!");
 	}
 
 	memset( Textures, 0, MAX_BITMAPS * sizeof(tcache_slot_opengl) );
@@ -598,8 +661,10 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 		intFormat = GL_RGB5_A1;
 		glFormat = GL_BGRA_EXT;
 	} else if (byte_mult == 1) {
-		texFormat = GL_UNSIGNED_BYTE;
 		Assert( bitmap_type == TCACHE_TYPE_AABITMAP );
+		texFormat = GL_UNSIGNED_BYTE;
+		intFormat = GL_ALPHA;
+		glFormat = GL_ALPHA;
 	} else {
 		texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 		intFormat = GL_RGBA;
@@ -662,8 +727,6 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 
 		case TCACHE_TYPE_AABITMAP:
 		{
-			byte_mult = 1;		// AABITMAP is 8-bit alpha
-
 			texmem = (ubyte *) vm_malloc (tex_w*tex_h*byte_mult);
 			texmemp = texmem;
 
@@ -936,7 +999,7 @@ int gr_opengl_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale
 
 	glActiveTextureARB(GL_TEXTURE0_ARB+tex_unit);
 
-	opengl_set_max_anistropy();
+	opengl_set_anisotropy();
 
 	if ((t->bitmap_id < 0) || (bitmap_id != t->bitmap_id)) {
 		ret_val = opengl_create_texture( bitmap_id, bitmap_type, t, fail_on_full );

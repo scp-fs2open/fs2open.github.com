@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.142 $
- * $Date: 2005-11-18 13:13:47 $
+ * $Revision: 2.143 $
+ * $Date: 2005-12-06 02:50:41 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2005/11/18 13:13:47  taylor
+ * get rid of the while() loop, OGL doesn't stack errors (this killed FRED2 for some reason even though no error was present)
+ *
  * Revision 2.141  2005/11/14 08:39:00  taylor
  * didn't mean for that to hit CVS, stops FRED2 from crashing on exit
  *
@@ -955,10 +958,6 @@ extern int CLOAKMAP;
 extern int SPECMAP;
 extern int Interp_cloakmap_alpha;
 
-static const char* OGL_extensions;
-
-static float max_aniso=1.0f;			//max anisotropic filtering ratio
-
 static float GL_uv_resize_offset_u = 0.0f;
 static float GL_uv_resize_offset_v = 0.0f;
 
@@ -981,13 +980,16 @@ extern float	Canv_h2;				// Canvas_height / 2
 extern float	View_zoom;
 
 
-void opengl_go_fullscreen(HWND wnd)
+void opengl_go_fullscreen()
 {
 	if (Cmdline_window)
 		return;
 
 #ifdef _WIN32
 	DEVMODE dm;
+	HWND wnd = (HWND)os_get_window();
+
+	Assert( wnd );
 
 	os_suspend();
 	SetWindowLong( wnd, GWL_EXSTYLE, 0 );
@@ -1270,10 +1272,9 @@ void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type z
 
 void gr_opengl_activate(int active)
 {
-	HWND wnd=(HWND)os_get_window();
 	if (active) {
 		GL_activate++;
-		opengl_go_fullscreen(wnd);
+		opengl_go_fullscreen();
 
 #ifdef SCP_UNIX
 		// Check again and if we didn't go fullscreen turn on grabbing if possible
@@ -2866,7 +2867,7 @@ int gr_opengl_supports_res_interface(int res)
 	return 1;
 }
 
-void opengl_tcache_cleanup ();
+void opengl_tcache_flush();
 void gr_opengl_cleanup(int minimize)
 {	
 	if ( !OGL_enabled )
@@ -2879,6 +2880,8 @@ void gr_opengl_cleanup(int minimize)
 	}
 
 	OGL_enabled = 0;
+
+	opengl_tcache_flush();
 
 #ifdef _WIN32
 	HWND wnd=(HWND)os_get_window();
@@ -3757,6 +3760,221 @@ void gr_opengl_close()
 #endif
 }
 
+int opengl_init_display_device()
+{
+	int bpp = gr_screen.bits_per_pixel;
+
+	Assert( (bpp == 16) || (bpp == 32) );
+
+	if ( (bpp != 16) && (bpp != 32) )
+		return 1;
+
+
+	// screen format
+	switch ( bpp ) {
+		case 16:
+		{
+			Gr_red.bits = 5;
+			Gr_red.shift = 11;
+			Gr_red.scale = 8;
+			Gr_red.mask = 0xF800;
+
+			Gr_green.bits = 6;
+			Gr_green.shift = 5;
+			Gr_green.scale = 4;
+			Gr_green.mask = 0x7E0;
+
+			Gr_blue.bits = 5;
+			Gr_blue.shift = 0;
+			Gr_blue.scale = 8;
+			Gr_blue.mask = 0x1F;		
+
+			break;
+		}
+
+		case 32:
+		{
+			Gr_red.bits = 8;
+			Gr_red.shift = 16;
+			Gr_red.scale = 1;
+			Gr_red.mask = 0xff0000;
+
+			Gr_green.bits = 8;
+			Gr_green.shift = 8;
+			Gr_green.scale = 1;
+			Gr_green.mask = 0x00ff00;
+
+			Gr_blue.bits = 8;
+			Gr_blue.shift = 0;
+			Gr_blue.scale = 1;
+			Gr_blue.mask = 0x0000ff;
+
+			Gr_alpha.bits = 8;
+			Gr_alpha.shift = 24;
+			Gr_alpha.mask = 0xff000000;
+			Gr_alpha.scale = 1;
+
+			break;
+		}
+	}
+
+	// texture format
+	Gr_t_red.bits = 5;
+	Gr_t_red.mask = 0x7c00;
+	Gr_t_red.shift = 10;
+	Gr_t_red.scale = 8;
+	
+	Gr_t_green.bits = 5;
+	Gr_t_green.mask = 0x03e0;
+	Gr_t_green.shift = 5;
+	Gr_t_green.scale = 8;
+	
+	Gr_t_blue.bits = 5;
+	Gr_t_blue.mask = 0x001f;
+	Gr_t_blue.shift = 0;
+	Gr_t_blue.scale = 8;
+	
+	Gr_t_alpha.bits = 1;
+	Gr_t_alpha.mask = 0x8000;
+	Gr_t_alpha.scale = 255;
+	Gr_t_alpha.shift = 15;
+
+	// alpha-texture format
+	Gr_ta_red.bits = 4;
+	Gr_ta_red.mask = 0x0f00;
+	Gr_ta_red.shift = 8;
+	Gr_ta_red.scale = 17;
+	
+	Gr_ta_green.bits = 4;
+	Gr_ta_green.mask = 0x00f0;
+	Gr_ta_green.shift = 4;
+	Gr_ta_green.scale = 17;
+	
+	Gr_ta_blue.bits = 4;
+	Gr_ta_blue.mask = 0x000f;
+	Gr_ta_blue.shift = 0;
+	Gr_ta_blue.scale = 17;
+	
+	Gr_ta_alpha.bits = 4;
+	Gr_ta_alpha.mask = 0xf000;
+	Gr_ta_alpha.shift = 12;
+	Gr_ta_alpha.scale = 17;
+
+	// now init the display device
+#ifdef _WIN32
+	int PixelFormat;
+	HWND wnd = 0;
+
+	mprintf(("  Initializing OpenGL W32...\n"));
+
+	memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
+	
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.cColorBits = (ubyte)bpp;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.cDepthBits = 24;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cRedBits = (ubyte)Gr_red.bits;
+	pfd.cRedShift = (ubyte)Gr_red.shift;
+	pfd.cBlueBits = (ubyte)Gr_blue.bits;
+	pfd.cBlueShift = (ubyte)Gr_blue.shift;
+	pfd.cGreenBits = (ubyte)Gr_green.bits;
+	pfd.cGreenShift = (ubyte)Gr_green.shift;
+	//	pfd.cAlphaBits = (ubyte)Gr_alpha.bits;
+	//	pfd.cAlphaShift = (ubyte)Gr_alpha.shift;
+
+	wnd = (HWND)os_get_window();
+	
+	Assert( wnd != NULL );
+		
+	dev_context = GetDC(wnd);
+	
+	if (!dev_context)
+	{
+		MessageBox(wnd, "Unable to get Device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+	
+	PixelFormat = ChoosePixelFormat(dev_context, &pfd);
+
+	if (!PixelFormat)
+	{
+		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+	
+	if (!SetPixelFormat(dev_context, PixelFormat, &pfd))
+	{
+		MessageBox(wnd, "Unable to set pixel format for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+	
+	rend_context = wglCreateContext(dev_context);
+
+	if (!rend_context)
+	{
+		MessageBox(wnd, "Unable to create rendering context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+	
+	if (!wglMakeCurrent(dev_context, rend_context))
+	{
+		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
+		return 1;
+	}
+	
+	// get the default gamma ramp so that we can restore it on close
+	GetDeviceGammaRamp( dev_context, &original_gamma_ramp );
+
+#else
+
+	int flags = SDL_OPENGL;
+	int r = 0, g = 0, b = 0, depth = 0, db = 1;
+
+	mprintf(("  Initializing SDL...\n"));
+
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+		fprintf (stderr, "Couldn't init SDL: %s", SDL_GetError());
+		return 1;
+	}
+
+	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
+	if ( (Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
+		SDL_WM_GrabInput(SDL_GRAB_ON);
+	}
+
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, Gr_red.bits);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, Gr_green.bits);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, Gr_blue.bits);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, bpp);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, db);
+
+	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, bpp, db));
+
+	if (SDL_SetVideoMode (gr_screen.max_w, gr_screen.max_h, bpp, flags) == NULL) {
+		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError ());
+		return 1;
+	}
+
+	SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &r);
+	SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &g);
+	SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &b);
+	SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &depth);
+	SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &db);
+
+	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", r, g, b, depth, db));
+
+	SDL_ShowCursor(0);
+
+	/* might as well put this here */
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+#endif
+
+	return 0;
+}
+
+
 void opengl_setup_function_pointers()
 {
 	// *****************************************************************************
@@ -3913,11 +4131,8 @@ void gr_opengl_render_to_env(int FACE);
 extern char *Osreg_title;
 void gr_opengl_init(int reinit)
 {
-	char *extlist;
-	char *curext;
 	char *ver;
 	int major = 0, minor = 0;
-	int bpp = gr_screen.bits_per_pixel;
 
 	if(!Cmdline_nohtl) {
 		opengl_init_vertex_buffers();
@@ -3932,265 +4147,49 @@ void gr_opengl_init(int reinit)
 	Cmdline_novbo = 1;
 #endif
 
-	switch( bpp )	{
-	case 16:
-	/*
-		Gr_red=Gr_t_red;
-		Gr_green=Gr_t_green;
-		Gr_blue=Gr_t_blue;
-		Gr_alpha=Gr_t_alpha;
-	*/
-		Gr_red.bits = 5;
-		Gr_red.shift = 11;
-		Gr_red.scale = 8;
-		Gr_red.mask = 0xF800;
-
-		Gr_green.bits = 6;
-		Gr_green.shift = 5;
-		Gr_green.scale = 4;
-		Gr_green.mask = 0x7E0;
-
-		Gr_blue.bits = 5;
-		Gr_blue.shift = 0;
-		Gr_blue.scale = 8;
-		Gr_blue.mask = 0x1F;		
-
-		break;
-
-	case 32:
-		Gr_red.bits = 8;
-		Gr_red.shift = 16;
-		Gr_red.scale = 1;
-		Gr_red.mask = 0xff0000;
-
-		Gr_green.bits = 8;
-		Gr_green.shift = 8;
-		Gr_green.scale = 1;
-		Gr_green.mask = 0x00ff00;
-
-		Gr_blue.bits = 8;
-		Gr_blue.shift = 0;
-		Gr_blue.scale = 1;
-		Gr_blue.mask = 0x0000ff;
-
-		Gr_alpha.bits=8;
-		Gr_alpha.shift=24;
-		Gr_alpha.mask=0xff000000;
-		Gr_alpha.scale=1;
-
-
-		break;
-
-	default:
-		mprintf(("Illegal BPP passed to gr_opengl_init() -- %d",bpp));
-		Int3();	// Illegal bpp
-	}
-
-	Gr_t_red.bits=5;
-	Gr_t_red.mask = 0x7c00;
-	Gr_t_red.shift = 10;
-	Gr_t_red.scale = 8;
-
-	Gr_t_green.bits=5;
-	Gr_t_green.mask = 0x03e0;
-	Gr_t_green.shift = 5;
-	Gr_t_green.scale = 8;
-	
-	Gr_t_blue.bits=5;
-	Gr_t_blue.mask = 0x001f;
-	Gr_t_blue.shift = 0;
-	Gr_t_blue.scale = 8;
-
-	Gr_t_alpha.bits=1;
-	Gr_t_alpha.mask=0x8000;
-	Gr_t_alpha.scale=255;
-	Gr_t_alpha.shift=15;
-
-	/*
-Gr_ta_red: bits=0, mask=f00, scale=17, shift=8
-Gr_ta_green: bits=0, mask=f00, scale=17, shift=4
-Gr_ta_blue: bits=0, mask=f00, scale=17, shift=0
-Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
-*/
-	// DDOI - set these so no one else does!
-	Gr_ta_red.bits=4;
-	Gr_ta_red.mask = 0x0f00;
-	Gr_ta_red.shift = 8;
-	Gr_ta_red.scale = 17;
-
-	Gr_ta_green.bits=4;
-	Gr_ta_green.mask = 0x00f0;
-	Gr_ta_green.shift = 4;
-	Gr_ta_green.scale = 17;
-	
-	Gr_ta_blue.bits=4;
-	Gr_ta_blue.mask = 0x000f;
-	Gr_ta_blue.shift = 0;
-	Gr_ta_blue.scale = 17;
-
-	Gr_ta_alpha.bits=4;
-	Gr_ta_alpha.mask = 0xf000;
-	Gr_ta_alpha.shift = 12;
-	Gr_ta_alpha.scale = 17;
-
 	if ( OGL_enabled )	{
 		gr_opengl_cleanup();
 		OGL_enabled = 0;
 	}
 
-	mprintf(( "Initializing opengl graphics device...\nRes:%dx%dx%d\n",gr_screen.max_w,gr_screen.max_h,gr_screen.bits_per_pixel ));
+	mprintf(( "Initializing OpenGL graphics device at %ix%i with %i-bit color...\n", gr_screen.max_w, gr_screen.max_h, gr_screen.bits_per_pixel ));
 
-#ifdef _WIN32
-	memset(&pfd,0,sizeof(PIXELFORMATDESCRIPTOR));
-
-	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-	pfd.nVersion = 1;
-	pfd.cColorBits = (ubyte)bpp;
-	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.cDepthBits = 24;
-	pfd.iPixelType = PFD_TYPE_RGBA;
-	pfd.cRedBits = (ubyte)Gr_red.bits;
-	pfd.cRedShift = (ubyte)Gr_red.shift;
-	pfd.cBlueBits = (ubyte)Gr_blue.bits;
-	pfd.cBlueShift = (ubyte)Gr_blue.shift;
-	pfd.cGreenBits = (ubyte)Gr_green.bits;
-	pfd.cGreenShift = (ubyte)Gr_green.shift;
-//	pfd.cAlphaBits = (ubyte)Gr_alpha.bits;
-//	pfd.cAlphaShift = (ubyte)Gr_alpha.shift;
-
-
-	int PixelFormat;
-
-	HWND wnd=(HWND)os_get_window();
-
-	Assert(wnd);
-	dev_context=GetDC(wnd);
-
-	if (!dev_context)
-	{
-		MessageBox(wnd, "Unable to get Device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
-		exit(1);		
+	if ( opengl_init_display_device() ) {
+		Error(LOCATION, "Unable to initialize display device!\n");
 	}
-
-	PixelFormat=ChoosePixelFormat(dev_context, &pfd);
-	if (!PixelFormat)
-	{
-		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
-		exit(1);
-	}
-
-	if (!SetPixelFormat(dev_context, PixelFormat, &pfd))
-	{
-		MessageBox(wnd, "Unable to set pixel format for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
-		exit(1);
-	}
-
-	rend_context=wglCreateContext(dev_context);
-	if (!rend_context)
-	{
-		MessageBox(wnd, "Unable to create rendering context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
-		exit(1);
-	}
-	
-	if (!wglMakeCurrent(dev_context, rend_context))
-	{
-		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
-		exit(1);
-	}
-
-	// get the default gamma ramp so that we can restore it on close
-	GetDeviceGammaRamp( dev_context, &original_gamma_ramp );
-#else
-	if (SDL_InitSubSystem (SDL_INIT_VIDEO) < 0)
-	{
-		fprintf (stderr, "Couldn't init SDL: %s", SDL_GetError());
-		exit (1);
-	}
-
-	int flags = SDL_OPENGL;
-
-	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
-	if ( (Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
-		SDL_WM_GrabInput(SDL_GRAB_ON);
-	}
-
-	if (SDL_SetVideoMode (gr_screen.max_w, gr_screen.max_h, gr_screen.bits_per_pixel, flags) == NULL) {
-		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError ());
-		exit (1);
-	}
-
-	int tmp_red = 0;
-	int tmp_green = 0;
-	int tmp_blue = 0;
-	int tmp_depth = 0;
-	int tmp_db = 0;
-
-	SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &tmp_red);
-	SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &tmp_green);
-	SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &tmp_blue);
-	SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, &tmp_depth);
-	SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &tmp_db);
-
-	mprintf(("Actual SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", tmp_red, tmp_green, tmp_blue, tmp_depth, tmp_db));
-
-	SDL_ShowCursor(0);
-
-	/* might as well put this here */
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-
-	HWND wnd = 0;
-#endif
 
 	// version check
 	ver = (char *)glGetString(GL_VERSION);
 	sscanf(ver, "%d.%d", &major, &minor);
 
 	if ( (major < REQUIRED_GL_MAJOR_VERSION) || ((major <= REQUIRED_GL_MAJOR_VERSION) && (minor < REQUIRED_GL_MINOR_VERSION)) ) {
-		Error(LOCATION,"Current GL Version of %i.%i is less than the required version of %i.%i.\nSwitch video modes or update your drivers.", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
+		Error(LOCATION, "Current GL Version of %i.%i is less than the required version of %i.%i.\nSwitch video modes or update your drivers.", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
 	}
 
 	OGL_enabled = 1;
-	if (!reinit)
-	{
-		mprintf(("OPENGL INITED!\n"));
-		mprintf(("\n"));
-		mprintf(( "  Vendor     : %s\n", glGetString( GL_VENDOR ) ));
-		mprintf(( "  Renderer   : %s\n", glGetString( GL_RENDERER ) ));
-		mprintf(( "  Version    : %s\n", ver ));
-		mprintf(( "  Extensions : \n" ));
 
-		//print out extensions
-		OGL_extensions=(const char*)glGetString(GL_EXTENSIONS);
+	// this MUST be done before any other gr_opengl_* or opengl_* funcion calls!!
+	opengl_setup_function_pointers();
 
-		// we use the "+1" here to have an extra NULL char on the end (with the memset())
-		// this is to fix memory errors when the last char in extlist is the same as the token
-		// we are looking for and ultra evil strtok() may still return non-NULL at EOS
-		extlist = (char*)vm_malloc(strlen(OGL_extensions) + 1);
-		memset(extlist, 0, strlen(OGL_extensions) + 1);
+	if (!reinit) {
+		mprintf(( "  OpenGL Vendor     : %s\n", glGetString( GL_VENDOR ) ));
+		mprintf(( "  OpenGL Renderer   : %s\n", glGetString( GL_RENDERER ) ));
+		mprintf(( "  OpenGL Version    : %s\n", ver ));
+		mprintf(( "\n" ));
 
-		if (extlist != NULL) {
-			memcpy(extlist, OGL_extensions, strlen(OGL_extensions));
+		// initialize the extensions and make sure we aren't missing something that we need
+		opengl_get_extensions();
 
-			curext=strtok(extlist, " ");
+		// ready the texture system
+		opengl_tcache_init(0);
 
-			while (curext)
-			{
-				mprintf(( "      %s\n", curext ));
-				curext=strtok(NULL, " ");
-			}
-
-			vm_free(extlist);
-			extlist = NULL;
-		}
-		mprintf(("\n"));
+		opengl_go_fullscreen();
 	}
+
+	opengl_switch_arb(-1, 0);
+	opengl_switch_arb(0, 1);
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
-
-	if (!Cmdline_window && !reinit)
-	{
-		opengl_go_fullscreen(wnd);
-	}
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
@@ -4221,16 +4220,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	glFlush();
 	
 	Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
-		
-	if(!Fred_running)
-		OGL_fogmode=1;
-
-	if (!reinit)
-	{
-		//start extension
-		opengl_get_extensions();
-		opengl_tcache_init (1);
-	}
 
 	gr_opengl_clear();
 
@@ -4239,25 +4228,15 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
 
-//	RunGLTest( 0, NULL, 0, 0, 0, 0.0, 0 );
-
-	opengl_setup_function_pointers();
-
 	Mouse_hidden++;
-	gr_reset_clip();
-	gr_clear();
-	gr_flip();
+	gr_opengl_reset_clip();
+	gr_opengl_clear();
+	gr_opengl_flip();
 	Mouse_hidden--;
 
-	//if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
+	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
 	Use_compressed_textures = opengl_extension_is_enabled(GL_TEX_COMP_S3TC);
 	Texture_compression_available = opengl_extension_is_enabled(GL_COMP_TEX);
-
-	//setup anisotropic filtering if found
-	if ( opengl_extension_is_enabled(GL_TEX_FILTER_ANSIO) ) {
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_aniso);
-	}
 
 	//allow VBOs to be used
 	if ( !Cmdline_nohtl && !Cmdline_novbo && opengl_extension_is_enabled(GL_ARB_VBO_BIND_BUFFER) )
@@ -4266,28 +4245,26 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 //	glTexParameteri(GL_TEXTURE_2D,GL_GENERATE_MIPMAP_SGIS,GL_TRUE);
 //	glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
 
-	glActiveTextureARB(GL_TEXTURE0_ARB);
-	glEnable(GL_TEXTURE_2D);
+	// setup the best fog function found
+	// start with NV Radial Fog (GeForces only)  -- needs t&l, will have to wait
+	if ( opengl_extension_is_enabled(GL_NV_RADIAL_FOG) && !Fred_running ) {
+		OGL_fogmode = 3;
+	} else if ( opengl_extension_is_enabled(GL_FOG_COORDF) && !Fred_running ) {
+		OGL_fogmode = 2;
+	} else if ( !Fred_running ) {
+		OGL_fogmode = 1;
+	}
 
-	//setup the best fog function found
-	//start with NV Radial Fog (GeForces only)  -- needs t&l, will have to wait
-	//if (GL_Extensions[GL_NV_RADIAL_FOG].enabled)
-	//	OGL_fogmode=3;
-	/*else*/
-	if (GL_Extensions[GL_FOG_COORDF].enabled && !Fred_running)
-		OGL_fogmode=2;
-
-	if (GL_Extensions[GL_SECONDARY_COLOR_3UBV].enabled)
+	if ( opengl_extension_is_enabled(GL_SECONDARY_COLOR_3UBV) )
 		glEnable(GL_COLOR_SUM_EXT);
 
 	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &GL_supported_texture_units);
-
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
 
-	if (GL_Extensions[GL_ARB_ENV_COMBINE].enabled) {
+	if ( opengl_extension_is_enabled(GL_ARB_ENV_COMBINE) ) {
 		opengl_set_tex_src = opengl_set_tex_state_combine_arb;
-	} else if (GL_Extensions[GL_EXT_ENV_COMBINE].enabled) {
+	} else if ( opengl_extension_is_enabled(GL_EXT_ENV_COMBINE) ) {
 		opengl_set_tex_src = opengl_set_tex_state_combine_ext;
 	} else {
 		opengl_set_tex_src = opengl_set_tex_state_no_combine;
@@ -4296,7 +4273,7 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	// setup the lighting stuff that will get used later
 	opengl_init_light();
 
-	glDisable(GL_LIGHTING); //making sure of it
+	glDisable(GL_LIGHTING); // just making sure of it
 	glDisable(GL_MULTISAMPLE_ARB);
 
 	mprintf(( "  Max texture units: %i\n", GL_supported_texture_units ));
@@ -4305,7 +4282,6 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
-	mprintf(( "\n" ));
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
@@ -4319,26 +4295,62 @@ Gr_ta_alpha: bits=0, mask=f000, scale=17, shift=c
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
 
 	atexit( gr_opengl_close );
+
+	mprintf(("... OpenGL init is complete!\n"));
 }
 
-DCF(min_ogl, "minimizes opengl")
+DCF(ogl_minimize, "Minimizes opengl")
 {
-	if (Dc_command)
-	{
-		if (gr_screen.mode != GR_OPENGL)
-			return;
-		opengl_minimize();
+	if ( gr_screen.mode != GR_OPENGL ) {
+		dc_printf("Command only available in OpenGL mode.\n");
+		return;
 	}
+
+	if (Dc_command) {
+		dc_get_arg(ARG_TRUE);
+
+		if ( Dc_arg_type & ARG_TRUE )
+			opengl_minimize();
+	}
+
 	if (Dc_help)
-		dc_printf("minimizes opengl\n");
+		dc_printf("If set to true then the OpenGL window will minimize.\n");
 }
 
-DCF(aniso, "toggles anisotropic filtering")
+extern GLfloat GL_anisotropy;
+
+DCF(ogl_anisotropy, "toggles anisotropic filtering")
 {
-	if (Dc_command)
-	{
-		if (max_aniso==1.0f) max_aniso=2.0f;
-		else max_aniso=1.0f;
+	if ( gr_screen.mode != GR_OPENGL ) {
+		dc_printf("Can only set anisotropic filter in OpenGL mode.\n");
+		return;
 	}
-	if (Dc_help) dc_printf("toggles anisotropic filtering");
+
+	if ( Dc_command && !opengl_extension_is_enabled(GL_TEX_FILTER_ANISO) ) {
+		dc_printf("Error: Anisotropic filter is not settable!\n");
+		return;
+	}
+
+	if ( Dc_command ) {
+		dc_get_arg(ARG_FLOAT | ARG_NONE);
+
+		if ( Dc_arg_type & ARG_NONE ) {
+			GL_anisotropy = 0.0f;
+			opengl_set_anisotropy();
+			dc_printf("Anisotropic filter value reset to default level.\n");
+		}
+
+		if ( Dc_arg_type & ARG_FLOAT ) {
+			opengl_set_anisotropy(Dc_arg_float);
+		}
+	}
+
+	if ( Dc_status ) {
+		dc_printf("Current anisotropic filter value is %f\n", GL_anisotropy);
+	}
+
+	if (Dc_help) {
+		dc_printf("Sets OpenGL anisotropic filtering level.\n");
+		dc_printf("Valid values are 1.0 to %f.\n", (float)opengl_get_max_anisotropy());
+	}
 }

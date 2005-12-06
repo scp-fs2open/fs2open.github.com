@@ -9,14 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.13 $
- * $Date: 2005-11-13 06:44:18 $
+ * $Revision: 1.14 $
+ * $Date: 2005-12-06 02:50:41 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 1.12  2005/09/20 02:46:53  taylor
  * slight speedup for font rendering
  * fix a couple of things that Valgrind complained about
@@ -148,7 +156,8 @@ void opengl_set_modulate_tex_env();
 void gr_opengl_set_tex_env_scale(float scale);
 int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_preload_init();
-void opengl_set_max_anistropy();
+GLfloat opengl_get_max_anisotropy();
+void opengl_set_anisotropy(GLfloat aniso_value = 0.0f);
 void gr_opengl_set_texture_panning(float u, float v, bool enable);
 void gr_opengl_set_texture_addressing(int mode);
 
