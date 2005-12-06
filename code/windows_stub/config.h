@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 03:35:31 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-12-06 03:02:28 $
+ * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 03:35:31  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.9  2005/05/30 05:27:30  taylor
  * me is a moron, this broke audio streaming
  *
@@ -48,6 +52,24 @@
 
 
 #if defined _WIN32
+
+// 4127 is constant conditional (assert)
+// 4100 is unreferenced formal parameters,
+// 4514 is unreferenced inline function removed, 
+// 4201 is nameless struct extension used. (used by windows header files)
+// 4410 illegal size for operand... ie... 	fxch st(1)
+// 4611 is _setjmp warning.  Since we use setjmp alot, and we don't really use constructors or destructors, this warning doesn't really apply to us.
+// 4725 is the pentium division bug warning, and I can't seem to get rid of it, even with this pragma.
+//      JS: I figured out the disabling 4725 works, but not on the first function in the module.
+//      So to disable this, I add in a stub function at the top of each module that does nothing.
+// 4710 is inline function not expanded (who cares?)
+// 4711 tells us an inline function was expanded (who cares?)
+// 4702 unreachable code.  I care, but too many to deal with
+// 4201 nonstandard extension used : nameless struct/union (happens a lot in Windows include headers)
+// 4390 emptry control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
+// 4996 depreciated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
+#pragma warning(disable: 4127 4100 4514 4201 4410 4611 4725 4710 4711 4702 4201 4390 4996)
+
 
 #if !defined BYTE_ORDER
  #define LITTLE_ENDIAN 1234
@@ -134,11 +156,14 @@ typedef struct _LARGE_INTEGER {
 } LARGE_INTEGER;
 
 // DDS format stuff ...
-#define DDSD_LINEARSIZE		0x00080000
-#define DDSD_PITCH			0x00000008
-#define DDPF_ALPHAPIXELS	0x00000001
-#define DDPF_FOURCC			0x00000004
-#define DDPF_RGB			0x00000040
+#define DDSD_LINEARSIZE			0x00080000
+#define DDSD_PITCH				0x00000008
+#define DDPF_ALPHAPIXELS		0x00000001
+#define DDPF_FOURCC				0x00000004
+#define DDPF_PALETTEINDEXED4	0x00000008
+#define DDPF_PALETTEINDEXEDTO8	0x00000010
+#define DDPF_PALETTEINDEXED8	0x00000020
+#define DDPF_RGB				0x00000040
 
 typedef struct _DDCOLORKEY {
 	DWORD dwColorSpaceLowValue;
