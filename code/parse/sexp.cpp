@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.191 $
- * $Date: 2005-11-23 06:55:47 $
+ * $Revision: 2.192 $
+ * $Date: 2005-12-06 03:01:25 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.191  2005/11/23 06:55:47  taylor
+ * make sure all weapons that will get used later in a mission get preloaded
+ *
  * Revision 2.190  2005/11/08 01:04:00  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -2672,6 +2675,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if (!stricmp(CTEXT(node), "<No Music>"))
+					break;
+
+				if (Cmdline_freespace_no_music)
 					break;
 
 				for (i=0; i<Num_soundtracks; i++)
