@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_log.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-10-10 17:21:07 $
+ * $Revision: 2.9 $
+ * $Date: 2005-12-06 02:59:10 $
  * $Author: taylor $
  *
  * Header file to support multiplayer logging functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.7  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -104,7 +107,7 @@
 #define MULTI_LOGFILE_NAME						"multi.log"
 
 // echo all ml_printf's to the debug window
-#define MULTI_LOGFILE_ECHO_TO_DEBUG
+//#define MULTI_LOGFILE_ECHO_TO_DEBUG
 
 // how often we'll write an update to the logfile (in seconds)
 #define MULTI_LOGFILE_UPDATE_TIME			2520			// every 42 minutes
