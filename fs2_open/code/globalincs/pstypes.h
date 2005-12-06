@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.36 $
- * $Date: 2005-11-08 01:03:59 $
- * $Author: wmcoolmon $
- * $Revision: 2.36 $
- * $Date: 2005-11-08 01:03:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.37 $
+ * $Date: 2005-12-06 02:55:22 $
+ * $Author: taylor $
+ * $Revision: 2.37 $
+ * $Date: 2005-12-06 02:55:22 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/11/08 01:03:59  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.35  2005/10/17 05:48:18  taylor
  * dynamically allocate object collision pairs
  *
@@ -394,24 +397,6 @@
 //  	#define GAME_CD_CHECK
 //  #endif
 
-
-// 4127 is constant conditional (assert)
-// 4100 is unreferenced formal parameters,
-// 4514 is unreferenced inline function removed, 
-// 4201 is nameless struct extension used. (used by windows header files)
-// 4410 illegal size for operand... ie... 	fxch st(1)
-// 4611 is _setjmp warning.  Since we use setjmp alot, and we don't really use constructors or destructors, this warning doesn't really apply to us.
-// 4725 is the pentium division bug warning, and I can't seem to get rid of it, even with this pragma.
-//      JS: I figured out the disabling 4725 works, but not on the first function in the module.
-//      So to disable this, I add in a stub function at the top of each module that does nothing.
-// 4710 is inline function not expanded (who cares?)
-// 4711 tells us an inline function was expanded (who cares?)
-// 4702 unreachable code.  I care, but too many to deal with
-// 4201 nonstandard extension used : nameless struct/union (happens a lot in Windows include headers)
-// 4390 emptry control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
-// 4996 depreciated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
-#pragma warning(disable: 4127 4100 4514 4201 4410 4611 4725 4710 4711 4702 4201 4390 4996)
-
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
 #include <memory.h>
@@ -436,6 +421,14 @@
 #define STRUCT_CMP(a, b) memcmp((void *) &a, (void *) &b, sizeof(a))
 
 #define LOCAL static			// make module local varilable static.
+
+#ifdef _WIN32
+#define DIR_SEPARATOR_CHAR '\\'
+#define DIR_SEPARATOR_STR  "\\"
+#else
+#define DIR_SEPARATOR_CHAR '/'
+#define DIR_SEPARATOR_STR  "/"
+#endif
 
 #ifdef IAM_64BIT
 typedef __int32 _fs_time_t;  // time_t here is 64-bit and we need 32-bit
@@ -536,37 +529,6 @@ inline void vec3d::set_screen_vert(vertex&vert){
 }
 
 extern int spec;
-
-#define	BMP_AABITMAP						(1<<0)				// antialiased bitmap
-#define	BMP_TEX_XPARENT						(1<<1)				// transparent texture
-#define	BMP_TEX_NONDARK						(1<<2)				// nondarkening texture
-#define	BMP_TEX_OTHER						(1<<3)				// so we can identify all "normal" textures
-#define BMP_TEX_DXT1						(1<<4)				// dxt1 compressed 8r8g8b1a (24bit)
-#define BMP_TEX_DXT3						(1<<5)				// dxt3 compressed 8r8g8b4a (32bit)
-#define BMP_TEX_DXT5						(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
-#define BMP_TEX_STATIC_RENDER_TARGET		(1<<7)				// a texture made for being rendered to infreqently
-#define BMP_TEX_DYNAMIC_RENDER_TARGET		(1<<8)				// a texture made for being rendered to freqently
-#define BMP_TEX_CUBEMAP						(1<<9)				// a texture made for cubic environment map
-
-//compressed texture types
-#define BMP_TEX_COMP			( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )
-
-//non compressed textures
-#define BMP_TEX_NONCOMP			( BMP_TEX_XPARENT | BMP_TEX_NONDARK | BMP_TEX_OTHER )
-
-// any texture type
-#define	BMP_TEX_ANY				( BMP_TEX_COMP | BMP_TEX_NONCOMP )
-
-typedef struct bitmap {
-	short	w, h;		// Width and height
-	short	rowsize;	// What you need to add to go to next row
-	ubyte	bpp;		// How many bits per pixel it is. (7,8,15,16,24,32) (what is requested)
-	ubyte	true_bpp;	// How many bits per pixel the image actually is.
-	ubyte	flags;	// See the BMP_???? defines for values
-	ptr_u	data;		// Pointer to data, or maybe offset into VRAM.
-	ubyte *palette;	// If bpp==8, this is pointer to palette.   If the BMP_NO_PALETTE_MAP flag
-							// is not set, this palette just points to the screen palette. (gr_palette)
-} bitmap;
 
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
