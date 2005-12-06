@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.48 $
- * $Date: 2005-11-13 06:44:18 $
+ * $Revision: 2.49 $
+ * $Date: 2005-12-06 02:53:02 $
  * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 2.47  2005/07/19 04:52:56  taylor
  * fix resize fixes
  *
@@ -569,8 +577,6 @@ enum
 typedef float D3DVALUE;
 
 /* External vars - booo! */
-
-extern int D3D_32bit;
 
 // 16 bit formats for pcx media
 extern D3DFORMAT default_non_alpha_tformat;
