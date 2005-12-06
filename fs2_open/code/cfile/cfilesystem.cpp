@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-11-16 21:25:34 $
+ * $Revision: 2.32 $
+ * $Date: 2005-12-06 03:13:49 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/11/16 21:25:34  taylor
+ * switch from strchr() to strrchr() for extension checks in order to allow for multiple periods in a filename
+ *
  * Revision 2.30  2005/10/23 11:44:07  taylor
  * fix memory errors from new[]/delete[] mismatch
  *
@@ -563,7 +566,7 @@ void cf_build_root_list(char *cdrom_dir)
 	Num_path_roots = 0;
 
 	cf_root	*root;
-	char str_temp[128], *cur_pos;
+	char str_temp[CF_MAX_PATHNAME_LENGTH], *cur_pos;
 
 #ifdef SCP_UNIX
 	// =========================================================================
@@ -571,20 +574,27 @@ void cf_build_root_list(char *cdrom_dir)
 	if (Cmdline_mod) {
 		for (cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
 		{
-			memset(str_temp, 0, 128);
-			strcpy(str_temp, cur_pos);
+			memset(str_temp, 0, CF_MAX_PATHNAME_LENGTH);
+			strncpy(str_temp, cur_pos, CF_MAX_PATHNAME_LENGTH-1);
 
-			strcat(str_temp, DIR_SEPARATOR_STR);
+			strncat(str_temp, DIR_SEPARATOR_STR, (CF_MAX_PATHNAME_LENGTH - strlen(str_temp) - 1));
+
+			// truncated string check
+			if ( (strlen(Cfile_user_dir) + strlen(str_temp) + 1) >= CF_MAX_PATHNAME_LENGTH ) {
+				Int3();
+			}
+
 			root = cf_create_root();
 
-			strcpy( root->path, Cfile_user_dir );
+			strncpy( root->path, Cfile_user_dir, CF_MAX_PATHNAME_LENGTH-1 );
 
 			// do we already have a slash? as in the case of a root directory install
-			if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+			if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
 				strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 			}
 
-			strcat(root->path, str_temp);
+			strncat(root->path, str_temp, (CF_MAX_PATHNAME_LENGTH - strlen(root->path) - 1));
+
 			root->roottype = CF_ROOTTYPE_PATH;
 			cf_build_pack_list(root);
 		}
@@ -594,10 +604,10 @@ void cf_build_root_list(char *cdrom_dir)
 	// =========================================================================
 	// set users HOME directory as default for loading and saving files
 	root = cf_create_root();
-	strcpy( root->path, Cfile_user_dir );
+	strncpy( root->path, Cfile_user_dir, CF_MAX_PATHNAME_LENGTH-1 );
 
 	// do we already have a slash? as in the case of a root directory install
-	if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+	if( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
 		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
 	root->roottype = CF_ROOTTYPE_PATH;
@@ -616,26 +626,27 @@ void cf_build_root_list(char *cdrom_dir)
 		//This for statement is a work of art :D
 		for (cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
 		{
-			
-			//strdup was not behaving reliably
-			//str_temp = vm_strdup(cur_pos);
+			memset(str_temp, 0, CF_MAX_PATHNAME_LENGTH);
+			strncpy(str_temp, cur_pos, CF_MAX_PATHNAME_LENGTH-1);
 
-			memset(str_temp, 0, 128);
-			strcpy(str_temp, cur_pos);
-
-			strcat(str_temp, DIR_SEPARATOR_STR);
+			strncat(str_temp, DIR_SEPARATOR_STR, (CF_MAX_PATHNAME_LENGTH - strlen(str_temp) - 1));
 			root = cf_create_root();
 
 			if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
 				Error(LOCATION, "Can't get current working directory -- %d", errno );
 			}
 
+			// truncated string check
+			if ( (strlen(root->path) + strlen(str_temp) + 1) >= CF_MAX_PATHNAME_LENGTH ) {
+				Int3();
+			}
+
 			// do we already have a slash? as in the case of a root directory install
-			if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+			if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
 				strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 			}
 
-			strcat(root->path, str_temp);
+			strncat(root->path, str_temp, (CF_MAX_PATHNAME_LENGTH - strlen(root->path) - 1));
 			root->roottype = CF_ROOTTYPE_PATH;
 			cf_build_pack_list(root);
 		}
@@ -648,7 +659,7 @@ void cf_build_root_list(char *cdrom_dir)
 	}
 
 	// do we already have a slash? as in the case of a root directory install
-	if(strlen(root->path) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR)){
+	if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
 		strcat(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
 
@@ -665,7 +676,7 @@ void cf_build_root_list(char *cdrom_dir)
 
    //======================================================
 	// Check the real CD if one...
-	if ( cdrom_dir && strlen(cdrom_dir) )	{
+	if ( cdrom_dir && (strlen(cdrom_dir) < CF_MAX_PATHNAME_LENGTH) )	{
 		root = cf_create_root();
 		strcpy( root->path, cdrom_dir );
 		root->roottype = CF_ROOTTYPE_PATH;
@@ -825,7 +836,8 @@ void cf_search_root_pack(int root_index)
 {	
 	cf_root *root = cf_get_root(root_index);
 
-	//mprintf(( "Searching root pack '%s'\n", root->path ));
+	Assert( root != NULL );
+	mprintf(( "Searching root pack '%s'\n", root->path ));
 
 	// Open data		
 	FILE *fp = fopen( root->path, "rb" );
@@ -935,16 +947,6 @@ void cf_build_secondary_filelist(char *cdrom_dir)
 	Num_roots = 0;
 	Num_files = 0;
 
-	// Init the path types
-	for (i=0; i<CF_MAX_PATH_TYPES; i++ )	{
-		//Assert( Pathtypes[i].index == i );
-		// [mharris]  can't modify constant strings, why do this anyhow???
-		// just need to make sure exts are all lc in the definition...
-//  		if ( Pathtypes[i].extensions )	{
-//  			strlwr(Pathtypes[i].extensions);
-//  		}
-	}
-	
 	// Init the root blocks
 	for (i=0; i<CF_MAX_ROOT_BLOCKS; i++ )	{
 		Root_blocks[i] = NULL;

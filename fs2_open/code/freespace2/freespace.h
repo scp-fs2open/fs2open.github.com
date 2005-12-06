@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.8 $
- * $Date: 2005-10-10 17:16:22 $
+ * $Revision: 2.9 $
+ * $Date: 2005-12-06 03:13:49 $
  * $Author: taylor $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/10/10 17:16:22  taylor
+ * remove NO_NETWORK
+ * whether multi is disabled or not is now determined at runtime
+ * clean out some crap and old debug messages that were littered about
+ *
  * Revision 2.7  2005/07/13 02:50:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -380,7 +385,7 @@ void game_feature_not_in_demo_popup();
 void game_feature_disabled_popup();
 
 //	Return version string for demo or full version, depending on build.
-void get_version_string(char *str);
+void get_version_string(char *str, int max_size);
 
 // format the specified time (fixed point) into a nice string
 void game_format_time(fix m_time,char *time_str);

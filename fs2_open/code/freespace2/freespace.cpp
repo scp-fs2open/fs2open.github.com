@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.198 $
- * $Date: 2005-12-04 19:07:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.199 $
+ * $Date: 2005-12-06 03:13:49 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.198  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.197  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -3161,11 +3164,13 @@ char full_path[1024];
 
 void game_init()
 {
-
-
+	int s1, e1;
+//	int s2, e2;
 	char *ptr;
+	char whee[MAX_PATH_LEN];
 
 	Game_current_mission_filename[0] = 0;
+
 
 	// seed the random number generator
 	Game_init_seed = time(NULL);
@@ -3183,10 +3188,24 @@ void game_init()
 	// Initialize the timer before the os
 	timer_init();
 
-	int s1, e1;
-	// int s2, e2;
+	// init os stuff next
+#if !defined(NO_STANDALONE)
+	if (Is_standalone) {
+		std_init_standalone();
+	}
+	else
+#else
+		Assert(!Is_standalone);
+#endif
+	{		
+		os_init( Osreg_class_name, Osreg_app_name );
+	}
 
-	char whee[1024];
+
+#ifndef NDEBUG
+	extern void cmdline_debug_print_cmdline();
+	cmdline_debug_print_cmdline();
+#endif
 
 #ifdef APPLE_APP
 	// some OSX hackery to drop us out of the APP the binary is run from
@@ -3198,35 +3217,21 @@ void game_init()
 
 		*c = '\0';
 	}
-	strncpy(whee, full_path, 1024);
+	strncpy(whee, full_path, MAX_PATH_LEN-1);
 #else
-	GetCurrentDirectory(1024, whee);
+	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
 #endif
 	strcat(whee, DIR_SEPARATOR_STR);
 	strcat(whee, EXE_FNAME);
 
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
-#ifdef _WIN32
-	if(cfile_init(whee, Game_CDROM_dir)){			// initialize before calling any cfopen stuff!!!
-#else
-	if(cfile_init(whee, NULL)){			// initialize before calling any cfopen stuff!!!
-#endif
-		exit(1);
-	}		
-	e1 = timer_get_milliseconds();
 
-#if !defined(NO_STANDALONE)
-	if (Is_standalone) {
-		std_init_standalone();
+	if ( cfile_init(whee, strlen(Game_CDROM_dir) ? Game_CDROM_dir : NULL) ) {			// initialize before calling any cfopen stuff!!!
+		exit(1);
 	}
-	else
-#else
-	Assert(!Is_standalone);
-#endif
-	{		
-		os_init( Osreg_class_name, Osreg_app_name );
-	}
+
+	e1 = timer_get_milliseconds();
 
 	// initialize localization module. Make sure this is down AFTER initialzing OS.
 	lcl_init( detect_lang() );	
@@ -3613,8 +3618,6 @@ void game_init()
 
 	mprintf(("cfile_init() took %d\n", e1 - s1));
 	// mprintf(("1000 cfopens() took %d\n", e2 - s2));	
-
-
 }
 
 char transfer_text[128];
@@ -9468,26 +9471,38 @@ void game_format_time(fix m_time,char *time_str)
 	strcat(time_str,tmp);
 }
 
-//	Stuff version string in *str.
-void get_version_string(char *str)
-{
-//XSTR:OFF
-if ( FS_VERSION_BUILD == 0 ) {
-	sprintf(str,"V%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
-} else {
-	sprintf(str,"V%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+// admittedly this is a bit overkill but it's much safer than the old way
+// x = dest string
+// y = src  string
+// z = max dest string size
+#define SAFE_STRCAT(x, y, z) {	\
+	if ( (strlen((y)) + 1) <= ((z) - strlen(x)) ) {	\
+		strncat((x), (y), (z) - strlen((x)) - 1);	\
+	}	\
 }
 
+//	Stuff version string in *str.
+void get_version_string(char *str, int max_size)
+{
+//XSTR:OFF
+	Assert( max_size > 6 );
+
+	if ( FS_VERSION_BUILD == 0 ) {
+		sprintf(str,"V%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+	} else {
+		sprintf(str,"V%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+	}
+
 #ifdef INF_BUILD
-	strcat(str, " Inferno");
+	SAFE_STRCAT( str, " Inferno", max_size );
 #endif
 
 #ifdef FS2_DEMO
-	strcat(str, " Demo");
+	SAFE_STRCAT( str, " Demo", max_size );
 #endif
 
-#ifdef _DEBUG
-	strcat(str, " Dbg");
+#ifndef NDEBUG
+	SAFE_STRCAT( str, " Dbg", max_size );
 #endif
 
 	// append the CVS "release" version in the $Name variable, but
@@ -9498,21 +9513,24 @@ if ( FS_VERSION_BUILD == 0 ) {
 		strcpy(buffer, RCS_Name + 7);
 		buffer[rcs_name_len-9] = 0;
 
-		strcat(str, " Build: ");
-        strcat(str, buffer);
-	} else {
-		strcat(str, " (fs2_open)");
+		SAFE_STRCAT( str, " Build:", max_size );
+		SAFE_STRCAT( str, buffer, max_size );
 	}
 
 	// Lets get some more info in here
 	switch(gr_screen.mode)
 	{
-		case GR_DIRECT3D: strcat(str, " D3D"); break;
-		case GR_OPENGL:	  strcat(str, " OGL"); break;
+		case GR_DIRECT3D:
+			SAFE_STRCAT( str, " Direct3D", max_size );
+			break;
+
+		case GR_OPENGL:
+			SAFE_STRCAT( str, " OpenGL", max_size );
+			break;
 	}
 
-	extern int Cmdline_nohtl;
-	if(!Cmdline_nohtl) strcat(str, " HT&L"); 
+	if (Cmdline_nohtl)
+		SAFE_STRCAT( str, " non-HT&L", max_size );
 
 //XSTR:ON
 	/*
@@ -10101,14 +10119,14 @@ int find_freespace_cd(char *volume_name)
 	SetCurrentDirectory(oldpath);
 	return cdrom_drive;
 #else
-	STUB_FUNCTION;
+//	STUB_FUNCTION;
 
 	if (volume_name != NULL) {
 		// volume specific checks
 		STUB_FUNCTION;
 	}
 
-	return 0;
+	return -1;
 #endif // _WIN32
 }
 
@@ -10121,7 +10139,7 @@ int set_cdrom_path(int drive_num)
 //		strcpy(CDROM_dir,"j:\\FreeSpaceCD\\");				//set directory
 //		rval = 1;
 //		#else
-		strcpy(Game_CDROM_dir,"");				//set directory
+		memset(Game_CDROM_dir, 0, sizeof(Game_CDROM_dir));
 		rval = 0;
 //		#endif
 	} else {
@@ -10169,6 +10187,10 @@ int game_cd_changed()
 	
 	if ( strlen(Game_CDROM_dir) == 0 ) {
 		init_cdrom();
+	}
+
+	if ( strlen(Game_CDROM_dir) == 0 ) {
+		return 0;
 	}
 
 	found = GetVolumeInformation(Game_CDROM_dir, label, 256, NULL, NULL, NULL, NULL, 0);

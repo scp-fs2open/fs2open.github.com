@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-10-17 00:13:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.33 $
+ * $Date: 2005-12-06 03:13:49 $
+ * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/10/17 00:13:28  wmcoolmon
+ * Some cfile changes that slipped by
+ *
  * Revision 2.31  2005/10/16 23:15:46  wmcoolmon
  * Hardened cfile against array overflows
  *
@@ -374,7 +377,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 int cfile_inited = 0;
 int Cfile_stack_pos = 0;
 
-char Cfile_stack[128][CFILE_STACK_MAX];
+char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
 
 Cfile_block Cfile_block_list[MAX_CFILE_BLOCKS];
 CFILE Cfile_list[MAX_CFILE_BLOCKS];
@@ -405,7 +408,7 @@ void cfile_close()
 int cfile_in_root_dir(char *exe_path)
 {
 	int token_count = 0;
-	char path_copy[2048] = "";
+	char path_copy[CFILE_ROOT_DIRECTORY_LEN] = "";
 	char *tok;
 
 	// bogus
@@ -414,8 +417,8 @@ int cfile_in_root_dir(char *exe_path)
 	}
 
 	// copy the path
-	memset(path_copy, 0, 2048);
-	strncpy(path_copy, exe_path, 2047);
+	memset(path_copy, 0, CFILE_ROOT_DIRECTORY_LEN);
+	strncpy(path_copy, exe_path, CFILE_ROOT_DIRECTORY_LEN - 1);
 
 	// count how many slashes there are in the path
 	tok = strtok(path_copy, DIR_SEPARATOR_STR);
@@ -449,11 +452,12 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 	encrypt_init();	
 
 	if ( !cfile_inited ) {
-		char buf[128];
+		char buf[CFILE_ROOT_DIRECTORY_LEN];
 
 		cfile_inited = 1;
 
-		strcpy(buf, exe_dir);
+		memset(buf, 0, CFILE_ROOT_DIRECTORY_LEN);
+		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
 		i = strlen(buf);
 
 		// are we in a root directory?		
@@ -479,7 +483,7 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 		// set root directory
 		strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
 #ifdef SCP_UNIX
-		snprintf(Cfile_user_dir, MAX_PATH, "%s/%s/", detect_home(), Osreg_user_dir);
+		snprintf(Cfile_user_dir, CFILE_ROOT_DIRECTORY_LEN-1, "%s/%s/", detect_home(), Osreg_user_dir);
 #endif
 
 		for ( i = 0; i < MAX_CFILE_BLOCKS; i++ ) {
@@ -538,28 +542,34 @@ int cfile_chdrive( int DriveNum, int flag )
 int cfile_push_chdir(int type)
 {
 	int e;
-	char dir[128];
-	char OriginalDirectory[128];
-	char *Drive = NULL, *Path = NULL;
+	char dir[CFILE_ROOT_DIRECTORY_LEN];
+	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
+	char *Path = NULL;
 	char NoDir[] = "\\.";
 
-	_getcwd(OriginalDirectory, 127);
+	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
+
 	Assert(Cfile_stack_pos < CFILE_STACK_MAX);
-	strcpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory);
+
+	if ( Cfile_stack_pos >= CFILE_STACK_MAX )
+		return -1;
+
+	strncpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
 
 	cf_create_default_path_string( dir, sizeof(dir)-1, type, NULL );
 	_strlwr(dir);
 
-	Drive = strchr(dir, ':');
+#ifdef _WIN32
+	char *Drive = strchr(dir, ':');
 
 	if (Drive) {
-	   #ifdef _WIN32
 		if (!cfile_chdrive( *(Drive - 1) - 'a' + 1, 1))
 			return 1;
 
 		Path = Drive+1;
-		#endif
-	} else {
+	} else
+#endif // _WIN32
+	{
 		Path = dir;
 	}
 
@@ -570,9 +580,9 @@ int cfile_push_chdir(int type)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-		#ifdef _WIN32
+#ifdef _WIN32
 		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
-		#endif
+#endif
 		return 2;
 	}
 
@@ -583,22 +593,23 @@ int cfile_push_chdir(int type)
 int cfile_chdir(char *dir)
 {
 	int e;
-	char OriginalDirectory[128];
-	char *Drive = NULL, *Path = NULL;
+	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
+	char *Path = NULL;
 	char NoDir[] = "\\.";
 
-	_getcwd(OriginalDirectory, 127);
+	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
 	_strlwr(dir);
 
-	Drive = strchr(dir, ':');
+#ifdef _WIN32
+	char *Drive = strchr(dir, ':');
 	if (Drive)	{
-		#ifdef _WIN32
 		if (!cfile_chdrive( *(Drive - 1) - 'a' + 1, 1))
 			return 1;
 
 		Path = Drive+1;
-		#endif
-	} else {
+	} else
+#endif // _WIN32
+	{
 		Path = dir;
 	}
 
@@ -609,9 +620,9 @@ int cfile_chdir(char *dir)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-		#ifdef _WIN32
+#ifdef _WIN32
 		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
-		#endif
+#endif
 		return 2;
 	}
 
@@ -621,6 +632,10 @@ int cfile_chdir(char *dir)
 int cfile_pop_dir()
 {
 	Assert(Cfile_stack_pos);
+
+	if ( !Cfile_stack_pos )
+		return -1;
+
 	Cfile_stack_pos--;
 	return cfile_chdir(Cfile_stack[Cfile_stack_pos]);
 }
@@ -878,6 +893,11 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 		Error(LOCATION, "file name %s too long, \nmust be less than 31 charicters", file_path);*/
 
 	char longname[_MAX_PATH];
+
+	if ( !cfile_inited ) {
+		Int3();
+		return NULL;
+	}
 
 	//================================================
 	// Check that all the parameters make sense

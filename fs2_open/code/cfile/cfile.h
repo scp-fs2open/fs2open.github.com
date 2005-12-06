@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.13 $
- * $Date: 2005-10-16 23:15:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.14 $
+ * $Date: 2005-12-06 03:13:49 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/10/16 23:15:46  wmcoolmon
+ * Hardened cfile against array overflows
+ *
  * Revision 2.12  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -381,16 +384,6 @@
 
 #include <time.h>
 #include "globalincs/pstypes.h"
-
-#if defined _WIN32
-  #define DIR_SEPARATOR_CHAR '\\'
-  #define DIR_SEPARATOR_STR  "\\"
-#elif defined SCP_UNIX
-  #define DIR_SEPARATOR_CHAR '/'
-  #define DIR_SEPARATOR_STR  "/"
-#else
-  #error unknown OS
-#endif
 
 #define CF_EOF (-1)
 
