@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.89 $
- * $Date: 2005-12-06 02:53:02 $
+ * $Revision: 2.90 $
+ * $Date: 2005-12-06 17:53:25 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2005/12/06 02:53:02  taylor
+ * clean up some D3D debug messages to better match new OGL messages (for easier debugging)
+ * remove D3D_32bit variable since it's basically useless and the same thing can be done another way
+ *
  * Revision 2.88  2005/10/16 11:20:43  taylor
  * use unsigned index buffers
  *
@@ -1683,7 +1687,7 @@ int gr_d3d_save_screen()
 
 	typedef struct { unsigned char b,g,r,a; } TmpC;
 
-	if(D3D_32bit) {
+	if(gr_screen.bits_per_pixel == 32) {
 		for(int j = 0; j < (rect_size_y); j++) {
 		
 			TmpC *src = (TmpC *)  (((char *) src_rect.pBits) + (src_rect.Pitch * j)); 
