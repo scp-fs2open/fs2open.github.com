@@ -10,13 +10,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.31 $
- * $Date: 2005-12-06 02:50:41 $
+ * $Revision: 1.32 $
+ * $Date: 2005-12-07 05:42:50 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2005/12/06 02:50:41  taylor
+ * clean up some init stuff and fix a minor SDL annoyance
+ * make debug messages a bit more readable
+ * clean up the debug console commands for minimize and anisotropic filter setting
+ * make anisotropic filter actually work correctly and have it settable with a reg option
+ * give opengl_set_arb() the ability to disable all features on all arbs at once so I don't have to everywhere
+ *
  * Revision 1.30  2005/11/30 03:07:54  phreak
  * texturing shouldn't be on when drawing lines.
  *
@@ -464,7 +471,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 	opengl_switch_arb(-1, 0);
 
 	// see if we need to optimize glDrawRangeElements
-	if ( (GL_max_elements_indices == GL_max_elements_vertices) && (count > GL_max_elements_indices) )
+	if ( /*(GL_max_elements_indices == GL_max_elements_vertices) &&*/ (count > GL_max_elements_indices) )
 		multiple_elements = 1;
 
 	if ( glIsEnabled(GL_CULL_FACE) )
@@ -574,9 +581,11 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 
 // -------- Begin 2nd (specular) PASS -------------------------------------------- //
 	if ( use_spec ) {
-		// turn all arbs off before the specular pass
+		// turn all previously used arbs off before the specular pass
 		// this fixes the glowmap multitexture rendering problem - taylor
-		opengl_switch_arb(-1, 0);
+		for (i = 0; i < pass_one; i++) {
+			opengl_switch_arb(i, 0);
+		}
 
 		glClientActiveTextureARB(GL_TEXTURE0_ARB);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -624,8 +633,9 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 
 	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/GL_max_lights > 0) ) {
 		opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-		opengl_switch_arb(1,0);
-		opengl_switch_arb(2,0);
+		for (i = 1; i < pass_one; i++) {
+			opengl_switch_arb(i, 0);
+		}
 
 		glLockArraysEXT( 0, vbp->n_verts);
 
