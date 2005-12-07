@@ -10,13 +10,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.31 $
- * $Date: 2005-12-06 02:50:41 $
+ * $Revision: 1.32 $
+ * $Date: 2005-12-07 12:40:51 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2005/12/06 02:50:41  taylor
+ * clean up some init stuff and fix a minor SDL annoyance
+ * make debug messages a bit more readable
+ * clean up the debug console commands for minimize and anisotropic filter setting
+ * make anisotropic filter actually work correctly and have it settable with a reg option
+ * give opengl_set_arb() the ability to disable all features on all arbs at once so I don't have to everywhere
+ *
  * Revision 1.30  2005/11/16 07:45:35  taylor
  * umm, no one saw that, right? :)
  *
@@ -332,6 +339,9 @@ void opengl_switch_arb(int unit, int state)
 		// support a mass disable or all arbs so we don't have to make each call ourselves
 		if ( !state ) {
 			for ( int i = 0; i < GL_supported_texture_units; i++ ) {
+				if (!GL_texture_units_enabled[i])
+					continue;
+
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
 				glDisable(GL_TEXTURE_2D);
 
