@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.128 $
- * $Date: 2005-12-06 03:17:48 $
+ * $Revision: 2.129 $
+ * $Date: 2005-12-07 05:38:32 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2005/12/06 03:17:48  taylor
+ * cleanup some debug log messages:
+ *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
+ *   make sure that OpenAL init failures always get to the debug log
+ *
  * Revision 2.127  2005/11/24 06:46:39  phreak
  * Added wiki help for -rearm_timer and -missile_lighting
  *
@@ -1248,7 +1253,7 @@ void os_parse_parms(char *cmdline)
 
 	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
 		cmdline_offset = strstr(cmdline, parmp->name);
-		if (cmdline_offset) {
+		if (cmdline_offset && (!(*(cmdline_offset + strlen(parmp->name))) || (*(cmdline_offset + strlen(parmp->name)) == ' ')) ) {
 			parmp->name_found = 1;
 			parm_stuff_args(parmp, cmdline_offset);
 		}
