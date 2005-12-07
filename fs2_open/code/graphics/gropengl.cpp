@@ -2,13 +2,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.143 $
- * $Date: 2005-12-06 02:50:41 $
+ * $Revision: 2.144 $
+ * $Date: 2005-12-07 05:39:50 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2005/12/06 02:50:41  taylor
+ * clean up some init stuff and fix a minor SDL annoyance
+ * make debug messages a bit more readable
+ * clean up the debug console commands for minimize and anisotropic filter setting
+ * make anisotropic filter actually work correctly and have it settable with a reg option
+ * give opengl_set_arb() the ability to disable all features on all arbs at once so I don't have to everywhere
+ *
  * Revision 2.142  2005/11/18 13:13:47  taylor
  * get rid of the while() loop, OGL doesn't stack errors (this killed FRED2 for some reason even though no error was present)
  *
@@ -3947,7 +3954,7 @@ int opengl_init_display_device()
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, Gr_red.bits);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, Gr_green.bits);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, Gr_blue.bits);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, bpp);
+//	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, bpp);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, db);
 
 	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, bpp, db));
