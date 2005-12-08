@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.7 $
- * $Date: 2005-12-06 02:50:41 $
+ * $Revision: 1.8 $
+ * $Date: 2005-12-08 15:10:07 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/12/06 02:50:41  taylor
+ * clean up some init stuff and fix a minor SDL annoyance
+ * make debug messages a bit more readable
+ * clean up the debug console commands for minimize and anisotropic filter setting
+ * make anisotropic filter actually work correctly and have it settable with a reg option
+ * give opengl_set_arb() the ability to disable all features on all arbs at once so I don't have to everywhere
+ *
  * Revision 1.6  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -122,6 +129,7 @@ extern ogl_extension GL_Extensions[];
 //#define GL_ARB_VBO_UNMAP_BUFFER			24
 
 #define GL_ARB_GETCOMPRESSEDTEXIMAGE	25
+#define GL_APPLE_CLIENT_STORAGE			26
 //#define GL_EXT_GEN_FRAMEBUFFERS			26
 //#define GL_EXT_GEN_RENDERBUFFERS		27
 //#define GL_EXT_BIND_FRAMEBUFFER			28
@@ -129,10 +137,8 @@ extern ogl_extension GL_Extensions[];
 //#define GL_EXT_RENDERBUFFER_STORAGE		30
 //#define GL_EXT_FRAMEBUFFER_RENDERBUF	31
 
-
 //#define GL_NUM_EXTENSIONS				32
-#define GL_NUM_EXTENSIONS				26
-
+#define GL_NUM_EXTENSIONS				27
 
 int opengl_get_extensions();
 void opengl_print_extensions();

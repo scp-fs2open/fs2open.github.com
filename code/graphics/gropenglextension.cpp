@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-11-13 06:44:18 $
+ * $Revision: 1.11 $
+ * $Date: 2005-12-08 15:10:07 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 1.9  2005/06/19 02:37:02  taylor
  * general cleanup, remove some old code
  * speed up gr_opengl_flip() just a tad
@@ -129,7 +137,8 @@ ogl_extension GL_Extensions[GL_NUM_EXTENSIONS] =
 	{0, 0, "glDeleteBuffersARB", "GL_ARB_vertex_buffer_object", 0},
 	{0, 0, "glGenBuffersARB", "GL_ARB_vertex_buffer_object", 0},
 	{0, 0, "glBufferDataARB", "GL_ARB_vertex_buffer_object", 0},
-	{0, 0, "glGetCompressedTexImageARB", "GL_ARB_texture_compression", 0}
+	{0, 0, "glGetCompressedTexImageARB", "GL_ARB_texture_compression", 0},
+	{0, 0, NULL, "GL_APPLE_client_storage", 0}
 //	{0, 0, "glGenFramebuffersEXT", "GL_EXT_framebuffer_object", 0},
 //	{0, 0, "glGenRenderbuffersEXT", "GL_EXT_framebuffer_object", 0},
 //	{0, 0, "glBindFramebufferEXT", "GL_EXT_framebuffer_object", 0},
