@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-12-04 18:58:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.59 $
+ * $Date: 2005-12-08 15:17:35 $
+ * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/12/04 18:58:07  wmcoolmon
+ * subsystem + shockwave armor support; countermeasures as weapons
+ *
  * Revision 2.57  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -1218,7 +1221,9 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			damage_left -= damage_to_apply;
 
 			//Apply armor to damage
-			damage_to_apply = Armor_types[subsys->system_info->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx);
+			if (subsys->system_info->armor_type_idx >= 0) {
+				damage_to_apply = Armor_types[subsys->system_info->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx);
+			}
 
 			subsys->current_hits -= damage_to_apply;
 			ship_p->subsys_info[subsys->system_info->type].current_hits -= damage_to_apply;
@@ -2404,7 +2409,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		ai_update_lethality(ship_obj, other_obj, damage);
 	}
 
-	if(!(sip->flags & SIF2_DISABLE_WEAP_DAMAGE_SCALING))
+	if((wip != NULL) && !(sip->flags & SIF2_DISABLE_WEAP_DAMAGE_SCALING))
 		damage *= weapon_get_damage_scale(wip, other_obj, ship_obj);
 
 

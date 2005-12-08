@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.277 $
- * $Date: 2005-12-06 03:17:48 $
+ * $Revision: 2.278 $
+ * $Date: 2005-12-08 15:17:35 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.277  2005/12/06 03:17:48  taylor
+ * cleanup some debug log messages:
+ *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
+ *   make sure that OpenAL init failures always get to the debug log
+ *
  * Revision 2.276  2005/12/05 09:09:53  wmcoolmon
  * Oops, arand should only be generated if it isn't passed to the function as well.
  *
@@ -3610,6 +3615,7 @@ strcpy(parse_error_text, temp_error);
 				sp->triggers = NULL;
 				
 				sp->model_num = -1;		// init value for later sanity checking!!
+				sp->armor_type_idx = -1;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-12-04 19:07:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.43 $
+ * $Date: 2005-12-08 15:17:34 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.41  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -876,6 +879,7 @@ int neb2_skip_render(object *objp, float z_depth)
 	case OBJ_NONE:
 	case OBJ_GHOST:
 	case OBJ_BEAM:
+	case OBJ_WAYPOINT:
 		return 0;			
 		
 	// any weapon over 500 meters away 
