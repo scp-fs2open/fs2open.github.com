@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.32 $
- * $Date: 2005-12-07 12:40:51 $
+ * $Revision: 1.33 $
+ * $Date: 2005-12-08 15:10:07 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2005/12/07 12:40:51  taylor
+ * fix last bit of recent spec issue
+ *
  * Revision 1.31  2005/12/06 02:50:41  taylor
  * clean up some init stuff and fix a minor SDL annoyance
  * make debug messages a bit more readable
@@ -683,6 +686,12 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 
 	glBindTexture (GL_TEXTURE_2D, t->texture_handle);
 
+#ifdef __APPLE__
+	if ( opengl_extension_is_enabled(GL_APPLE_CLIENT_STORAGE) && !resize && (byte_mult != 1)) {
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, 1);
+	}
+#endif
+
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -858,6 +867,12 @@ int opengl_create_texture_sub(int bitmap_type, int texture_handle, int bmap_w, i
 	if (!reload) {
 		GL_textures_in += t->size;
 	}
+
+#ifdef __APPLE__
+	if ( opengl_extension_is_enabled(GL_APPLE_CLIENT_STORAGE) && !resize && (byte_mult != 1)) {
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, 0);
+	}
+#endif
 
 	return ret_val;
 }
