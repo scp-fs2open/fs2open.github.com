@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.154  2005/12/05 01:54:16  wmcoolmon
+ * "laser" and "missile" to "primary" and "secondary"
+ *
  * Revision 2.153  2005/12/04 19:02:36  wmcoolmon
  * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
  *
@@ -1595,12 +1598,12 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 
 	sprintf(buf, "%sShockwave Model:", pre_char);
 	if(optional_string(buf)) {
-		stuff_string(sci->name, F_NAME, NULL);
+		stuff_string(sci->pof_name, F_NAME, NULL);
 	}
 
 	sprintf(buf, "%sShockwave Name:", pre_char);
 	if(optional_string(buf)) {
-		stuff_string(sci->pof_name, F_NAME, NULL);
+		stuff_string(sci->name, F_NAME, NULL);
 	}
 }
 
