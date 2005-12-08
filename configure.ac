@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.24 2005-10-30 10:46:23 taylor Exp $
+dnl $Id: configure.ac,v 1.25 2005-12-08 15:07:57 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -231,7 +231,6 @@ else
 fi
 
 if test "$fs2_lite" = "yes" ; then
-	AC_DEFINE([GL_NO_HTL])
 	AC_DEFINE([SCP_LITE])
 fi
 
@@ -318,14 +317,7 @@ if test "$fs2_os_win32" = "yes" ; then
 		FS2_LDFLAGS="$FS2_LDFLAGS -lopengl32 -lglu32"
 	fi
 	AC_CHECK_LIB(opengl32, glBindBufferARB, ,
-		[AC_DEFINE([GL_NO_HTL])
-			echo ""
-			echo "******************************************************"
-			echo "* Warning: Your OpenGL libraries do not support      *"
-			echo "* glBindBufferARB(). HT&L will be disabled. Rebuild  *"
-			echo "* with newer OpenGL libraries to enable HT&L.        *"
-			echo "******************************************************"
-			echo ""])
+		AC_MSG_ERROR([*** OpenGL version does not have the required features!! (ie. glBindBufferARB()) ***]))
 elif test "$fs2_os_unix" = "yes" ; then
 	if test "x$fs2_ogl_libs" != "x" ; then
 		FS2_LDFLAGS="$FS2_LDFLAGS -L$fs2_ogl_libs -lGL -lGLU"
@@ -336,14 +328,7 @@ elif test "$fs2_os_unix" = "yes" ; then
 		FS2_CXXFLAGS="$FS2_CXXFLAGS -I$fs2_ogl_incs"
 	fi
 	AC_CHECK_LIB(GL, glBindBufferARB, ,
-		[AC_DEFINE(GL_NO_HTL)
-			echo ""
-			echo "******************************************************"
-			echo "* Warning: Your OpenGL libraries do not support      *"
-			echo "* glBindBufferARB(). HT&L will be disabled. Rebuild  *"
-			echo "* with newer OpenGL libraries to enable HT&L.        *"
-			echo "******************************************************"
-			echo ""])
+		AC_MSG_ERROR([*** OpenGL version does not have the required features!! (ie. glBindBufferARB()) ***]))
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
 elif test "$fs2_os_osx" = "yes" ; then
