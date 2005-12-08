@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.129 $
- * $Date: 2005-12-06 02:57:57 $
+ * $Revision: 2.130 $
+ * $Date: 2005-12-08 15:11:29 $
  * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2005/12/06 02:57:57  taylor
+ * just to be on the safe side
+ *
  * Revision 2.128  2005/11/24 08:46:10  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only
@@ -6404,6 +6407,7 @@ void mission_parse_fixup_players()
 	obj_merge_created_list();
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( (objp->type == OBJ_SHIP) && (objp->flags & OF_PLAYER_SHIP) ) {
+			game_busy( NOX("** fixing up player/ai stuff **") );	// animate the loading screen, doesn't nothing if the screen is not active
 			ai_clear_ship_goals( &Ai_info[Ships[objp->instance].ai_index] );
 			init_ai_object( OBJ_INDEX(objp) );
 		}

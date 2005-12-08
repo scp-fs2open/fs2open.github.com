@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-21 15:58:07 $
+ * $Revision: 2.9 $
+ * $Date: 2005-12-08 15:11:29 $
  * $Author: taylor $
  *
  * Code to page in all the bitmaps at the beginning of a level.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/21 15:58:07  taylor
+ * initial changes to mission loading and status in debug builds
+ *  - move bmpman page in init to an earlier stage to avoid unloading sexp loaded images
+ *  - small changes to progress reports in debug builds so that it's easier to tell what's slow
+ *  - initialize the loading screen before mission_parse() so that we'll be about to get a more accurate load time
+ * fix memory leak in gamesnd (yes, I made a mistake ;))
+ * make sure we unload models on game shutdown too
+ *
  * Revision 2.7  2005/02/04 20:06:03  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -113,9 +121,12 @@ void level_page_in()
 //	}
 
 	// Most important ones first
+	game_busy( NOX("*** paging in ships ***") );
 	ship_page_in();
 	//Must be called after paging in ships
+	game_busy( NOX("*** paging in weapons ***") );
 	weapons_page_in();
+	game_busy( NOX("*** paging in various effects ***") );
 	fireballs_page_in();
 	particle_page_in();
 	debris_page_in();
