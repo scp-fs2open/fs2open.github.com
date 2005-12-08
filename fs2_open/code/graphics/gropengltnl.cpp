@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.32 $
- * $Date: 2005-12-07 05:42:50 $
+ * $Revision: 1.33 $
+ * $Date: 2005-12-08 15:07:57 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2005/12/07 05:42:50  taylor
+ * partial spec fix, can't mass kill the pointers when they are still needed for the second pass (still something else wrong though)
+ * forgot that the extra rangeelement optimization check isn't needed anymore, just look at indices since that's all we're using
+ *
  * Revision 1.31  2005/12/06 02:50:41  taylor
  * clean up some init stuff and fix a minor SDL annoyance
  * make debug messages a bit more readable
@@ -277,8 +281,6 @@ uint opengl_create_vbo(uint size, GLfloat *data)
 	//        B) It shuts up MSVC about may be used without been initalized
 	GLuint buffer_name=0;
 
-#ifndef GL_NO_HTL
-
 	glGenBuffersARB(1, &buffer_name);
 	
 	//make sure we have one
@@ -293,8 +295,6 @@ uint opengl_create_vbo(uint size, GLfloat *data)
 		}
 	}
 
-#endif // GL_NO_HTL
-
 	return (int)buffer_name;
 }
 
@@ -304,8 +304,6 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		return -1;
 
 	int buffer_num = -1;
-
-#ifndef GL_NO_HTL
 
 	buffer_num = opengl_find_first_free_buffer();
 
@@ -407,16 +405,12 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 			}
 		}
 	}
-	
-#endif // GL_NO_HTL
 
 	return buffer_num;
 }
 	
 void gr_opengl_destroy_buffer(int idx)
 {
-#ifndef GL_NO_HTL
-
 	if (Cmdline_nohtl)
 		return;
 
@@ -434,8 +428,6 @@ void gr_opengl_destroy_buffer(int idx)
 	}
 
 	memset(vbp, 0, sizeof(opengl_vertex_buffer));
-
-#endif // GL_NO_HTL
 }
 
 //#define DRAW_DEBUG_LINES
@@ -445,8 +437,6 @@ extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
 void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 {
-#ifndef GL_NO_HTL
-
 	if (Cmdline_nohtl)
 		return;
 
@@ -471,7 +461,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 	opengl_switch_arb(-1, 0);
 
 	// see if we need to optimize glDrawRangeElements
-	if ( /*(GL_max_elements_indices == GL_max_elements_vertices) &&*/ (count > GL_max_elements_indices) )
+	if ( count > GL_max_elements_indices )
 		multiple_elements = 1;
 
 	if ( glIsEnabled(GL_CULL_FACE) )
@@ -564,7 +554,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 
 			while (end_tmp < end) {
 				start_tmp += (GL_max_elements_indices - 1);
-				end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
+				end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
 				count_tmp = (end_tmp - start_tmp + 1);
 
 				glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
@@ -610,7 +600,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 
 				while (end_tmp < end) {
 					start_tmp += (GL_max_elements_indices - 1);
-					end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
+					end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
 					count_tmp = (end_tmp - start_tmp + 1);
 
 					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
@@ -653,7 +643,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 
 					while (end_tmp < end) {
 						start_tmp += (GL_max_elements_indices - 1);
-						end_tmp = ( (start_tmp + (GL_max_elements_indices - 1)) > end ) ? end : (start_tmp + (GL_max_elements_indices - 1));
+						end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
 						count_tmp = (end_tmp - start_tmp + 1);
 
 						glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
@@ -690,8 +680,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 		glVertex3d(0,0,20);
 	glEnd();
 #endif
-
-#endif // GL_NO_HTL
 }
 
 void gr_opengl_start_instance_matrix(vec3d *offset, matrix* rotation)

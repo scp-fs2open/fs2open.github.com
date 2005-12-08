@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.144 $
- * $Date: 2005-12-07 05:39:50 $
+ * $Revision: 2.145 $
+ * $Date: 2005-12-08 15:07:57 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.144  2005/12/07 05:39:50  taylor
+ * bah, X sucks.  I need to beef up error handling there in order to make all of the platforms happy.
+ *
  * Revision 2.143  2005/12/06 02:50:41  taylor
  * clean up some init stuff and fix a minor SDL annoyance
  * make debug messages a bit more readable
@@ -914,7 +917,7 @@
 
 
 #define REQUIRED_GL_MAJOR_VERSION	1
-#ifdef GL_NO_HTL
+#ifdef __APPLE__ // the Apple GL version is more advanced than the version number lets on
 #define REQUIRED_GL_MINOR_VERSION	1
 #else
 #define REQUIRED_GL_MINOR_VERSION	2
@@ -4141,18 +4144,8 @@ void gr_opengl_init(int reinit)
 	char *ver;
 	int major = 0, minor = 0;
 
-	if(!Cmdline_nohtl) {
-		opengl_init_vertex_buffers();
-	}
-
 	//shut these command line parameters down if they are in use
 	Cmdline_batch_3dunlit = 0;
-
-#ifdef GL_NO_HTL
-	// turn off HT&L and VBO if we can't support it with built libs
-	Cmdline_nohtl = 1;
-	Cmdline_novbo = 1;
-#endif
 
 	if ( OGL_enabled )	{
 		gr_opengl_cleanup();
@@ -4190,6 +4183,8 @@ void gr_opengl_init(int reinit)
 		// ready the texture system
 		opengl_tcache_init(0);
 
+		opengl_init_vertex_buffers();
+
 		opengl_go_fullscreen();
 	}
 
@@ -4215,6 +4210,8 @@ void gr_opengl_init(int reinit)
 	glEnable(GL_BLEND);
 	
 	glEnable(GL_TEXTURE_2D);
+
+	glDisable(GL_MULTISAMPLE_ARB);
 
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -4280,8 +4277,10 @@ void gr_opengl_init(int reinit)
 	// setup the lighting stuff that will get used later
 	opengl_init_light();
 
+	// only used in HTL mode but HTL is not required for this function to work
+	opengl_init_vertex_buffers();
+
 	glDisable(GL_LIGHTING); // just making sure of it
-	glDisable(GL_MULTISAMPLE_ARB);
 
 	mprintf(( "  Max texture units: %i\n", GL_supported_texture_units ));
 	mprintf(( "  Max elements vertices: %i\n", GL_max_elements_vertices ));
