@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.90 $
- * $Date: 2005-12-06 17:53:25 $
+ * $Revision: 2.91 $
+ * $Date: 2005-12-08 15:08:39 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2005/12/06 17:53:25  taylor
+ * 15 individual commits, ya had know I was going to miss something :)
+ *
  * Revision 2.89  2005/12/06 02:53:02  taylor
  * clean up some D3D debug messages to better match new OGL messages (for easier debugging)
  * remove D3D_32bit variable since it's basically useless and the same thing can be done another way
@@ -1652,7 +1655,7 @@ int gr_d3d_save_screen()
 		}
 
 		//We can't write to anything larger than the desktop resolution, so check against it
-		if((pnt.x + gr_screen.max_w) > mode.Width) {
+		if((UINT)(pnt.x + gr_screen.max_w) > mode.Width) {
 			rct.right = mode.Width;
 		}
 		else {
@@ -1660,7 +1663,7 @@ int gr_d3d_save_screen()
 		}
 
 		//And again
-		if((pnt.y + gr_screen.max_h) > mode.Height) {
+		if((UINT)(pnt.y + gr_screen.max_h) > mode.Height) {
 			rct.bottom = mode.Height;
 		}
 		else{
