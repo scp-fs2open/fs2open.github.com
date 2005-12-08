@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-11-17 05:12:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.28 $
+ * $Date: 2005-12-08 15:11:29 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/11/17 05:12:42  wmcoolmon
+ * Small fix for XMTs
+ *
  * Revision 2.26  2005/10/18 14:57:32  taylor
  * make sure gamesnd_parse_soundstbl() doesn't inf-loop because of species problems
  * if we have missing species then report that before the end of table section check so we're sure to know what's missing
@@ -349,10 +352,10 @@ void gamesnd_preload_common_sounds()
 		gs = &Snds[i];
 		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			if ( gs->preload ) {
+				game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
 				gs->id = snd_load(gs);
 			}
 		}
-		game_busy();		// Animate loading cursor... does nothing if loading screen not active.
 	}
 }
 
@@ -370,10 +373,10 @@ void gamesnd_load_gameplay_sounds()
 		gs = &Snds[i];
 		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
 			if ( !gs->preload ) { // don't try to load anything that's already preloaded
+				game_busy( NOX("** preloading gameplay sounds **") );		// Animate loading cursor... does nothing if loading screen not active.
 				gs->id = snd_load(gs);
 			}
 		}
-		game_busy();		// Animate loading cursor... does nothing if loading screen not active.
 	}
 }
 
