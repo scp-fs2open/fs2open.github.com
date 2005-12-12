@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.279 $
- * $Date: 2005-12-12 05:29:59 $
+ * $Revision: 2.280 $
+ * $Date: 2005-12-12 21:32:14 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.279  2005/12/12 05:29:59  taylor
+ * double free and invalid ptr reference fixage
+ *
  * Revision 2.278  2005/12/08 15:17:35  taylor
  * fix several bad crash related problems from WMC's commits on the 4th
  *
@@ -2295,6 +2298,7 @@ void init_ship_entry(int ship_info_index)
 	
 	sip->num_detail_levels = 1;
 	sip->detail_distance[0] = 0;
+	sip->hud_target_lod = -1;
 	strcpy(sip->pof_file, "");
 	strcpy(sip->pof_file_hud, "");
 	
@@ -2617,6 +2621,11 @@ int parse_ship(bool replace)
 	// optional hud targeting model
 	if(optional_string( "$POF target file:")){
 		stuff_string(sip->pof_file_hud, F_NAME, NULL);
+	}
+
+	// optional hud target LOD if not using special hud model
+	if (optional_string( "$POF target LOD:" )) {
+		stuff_int(&sip->hud_target_lod);
 	}
 
 	if(optional_string("$Detail distance:")) {

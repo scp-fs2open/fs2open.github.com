@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.155  2005/12/08 15:33:39  taylor
+ * switch the shockwave pof and normal names back to the correct spots, this was probably causing some
+ *   3-D shockwave usage issues since they wouldn't have rendered
+ *
  * Revision 2.154  2005/12/05 01:54:16  wmcoolmon
  * "laser" and "missile" to "primary" and "secondary"
  *
@@ -1633,6 +1637,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->pofbitmap_name[0] = '\0';
 
 	wip->model_num = -1;
+	wip->hud_target_lod = -1;
 
 	wip->laser_bitmap = -1;
 	wip->laser_bitmap_nframes = 1;
@@ -1978,6 +1983,11 @@ int parse_weapon(int subtype, bool replace)
 			wip->laser_bitmap = -1;
 		}
 		diag_printf ("Model pof file -- %s\n", wip->pofbitmap_name );
+	}
+
+	// a special LOD level to use when rendering the weapon in the hud targetbox
+	if (optional_string( "$POF target LOD:" )) {
+		stuff_int(&wip->hud_target_lod);
 	}
 
 	if (optional_string("$External Model File:")) {

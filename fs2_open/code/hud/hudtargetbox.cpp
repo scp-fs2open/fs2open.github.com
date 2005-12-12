@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-10-10 17:21:04 $
+ * $Revision: 2.61 $
+ * $Date: 2005-12-12 21:32:14 $
  * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.59  2005/09/25 08:25:15  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -1576,6 +1579,11 @@ void hud_render_target_ship(object *target_objp)
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;
 		}
+
+		if (target_sip->hud_target_lod >= 0) {
+			model_set_detail_level(target_sip->hud_target_lod);
+		}
+
 		// maybe render a special hud-target-only model
 		if(target_sip->modelnum_hud >= 0){
 			model_render( target_sip->modelnum_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
@@ -1708,7 +1716,7 @@ void hud_render_target_weapon(object *target_objp)
 	weapon		*wp = NULL;
 	object		*viewer_obj, *viewed_obj;
 	int *replacement_textures = NULL;
-	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, w, h;
+	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
 	float			factor;
 	char			outstr[100];				// temp buffer
 	int flags=0;
@@ -1733,12 +1741,14 @@ void hud_render_target_weapon(object *target_objp)
 		viewed_obj			= target_objp;
 		missile_view		= FALSE;
 		viewed_model_num	= target_wip->model_num;
+		hud_target_lod		= target_wip->hud_target_lod;
 		if ( is_homing && is_player_missile ) {
 			viewer_obj			= target_objp;
 			viewed_obj			= wp->homing_object;
 			missile_view		= TRUE;
 			viewed_model_num	= Ships[wp->homing_object->instance].modelnum;
 			replacement_textures = Ships[wp->homing_object->instance].replacement_textures;
+			hud_target_lod		= Ship_info[Ships[wp->homing_object->instance].ship_info_index].hud_target_lod;
 		}
 
 		if (Targetbox_wire!=0)
@@ -1785,6 +1795,10 @@ void hud_render_target_weapon(object *target_objp)
 
 		hud_render_target_setup(&camera_eye, &camera_orient, View_zoom/3);
 		model_clear_instance(viewed_model_num);
+
+		if (hud_target_lod >= 0) {
+			model_set_detail_level(hud_target_lod);
+		}
 
 		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, replacement_textures);
 		hud_render_target_close();

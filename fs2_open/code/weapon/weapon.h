@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/12/04 19:02:36  wmcoolmon
+ * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
+ *
  * Revision 2.61  2005/11/22 00:01:11  taylor
  * combine weapon_info_close() and weapon_close()
  * changes to allow use of weapon_expl.tbl and the modular table versions once more
@@ -716,6 +719,7 @@ typedef struct weapon_info {
 	int	model_num;							// modelnum of weapon -- -1 if no model
 	char external_model_name[NAME_LENGTH];					//the model rendered on the weapon points of a ship
 	int external_model_num;					//the model rendered on the weapon points of a ship
+	int hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
 
 	char	*tech_desc;								// weapon's description (in tech database)
 	char	tech_anim_filename[NAME_LENGTH];	// weapon's tech room animation

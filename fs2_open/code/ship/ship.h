@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.123 $
- * $Date: 2005-12-04 18:58:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.124 $
+ * $Date: 2005-12-12 21:32:14 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2005/12/04 18:58:07  wmcoolmon
+ * subsystem + shockwave armor support; countermeasures as weapons
+ *
  * Revision 2.122  2005/11/24 08:46:10  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only
@@ -1486,6 +1489,7 @@ typedef struct ship_info {
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
 	int		modelnum;							// ship model
 	int		modelnum_hud;						// model to use when rendering to the HUD (eg, mini supercap)
+	int		hud_target_lod;						// LOD to use for rendering to the HUD targetbox (if not already using special HUD model)
 	float		density;								// density of the ship in g/cm^3 (water  = 1)
 	float		damp;									// drag
 	float		rotdamp;								// rotational drag
