@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.133 $
- * $Date: 2005-10-30 06:44:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.134 $
+ * $Date: 2005-12-12 22:04:19 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2005/10/30 06:44:57  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.132  2005/10/28 14:45:55  taylor
  * more TMAP_MAX_VERTS overflow protection for non-HTL usage (these are the things that need to be addressed to fix non-HTL)
  * fix some compiler warning messages
@@ -3829,9 +3832,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if ( pm->n_detail_levels > 1 )	{
 
 		if ( Interp_flags & MR_LOCK_DETAIL )	{
-			// RT, why use lower texture for just one ship, means we have to cache in another texture.
-			// If the ship is in target the model and its texture are already loaded and cached
-			i = Interp_detail_level;//+1;
+			i = Interp_detail_level+1;
 		} else {
 
 			//gr_set_color(0,128,0);
@@ -3886,9 +3887,9 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		model_current_LOD = detail_level = i-1-tmp_detail_level;
 
 		if ( detail_level < 0 ) 
-			detail_level = 0;
+			model_current_LOD = detail_level = 0;
 		else if (detail_level >= pm->n_detail_levels ) 
-			detail_level = pm->n_detail_levels-1;
+			model_current_LOD = detail_level = pm->n_detail_levels-1;
 
 		//mprintf(( "Depth = %.2f, detail = %d\n", depth, detail_level ));
 
