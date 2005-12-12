@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.278 $
- * $Date: 2005-12-08 15:17:35 $
+ * $Revision: 2.279 $
+ * $Date: 2005-12-12 05:29:59 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.278  2005/12/08 15:17:35  taylor
+ * fix several bad crash related problems from WMC's commits on the 4th
+ *
  * Revision 2.277  2005/12/06 03:17:48  taylor
  * cleanup some debug log messages:
  *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
@@ -5541,11 +5544,15 @@ void ship_subsystems_delete(ship *shipp)
 // Goober5000
 void ship_model_subsystems_delete(ship *shipp)
 {
-	if (shipp->n_subsystems > 0)
+	if (shipp->subsystems != NULL)
 	{
-		for(int n = 0; n<shipp->n_subsystems; n++)
-			if(shipp->subsystems[n].n_triggers)
+		for(int n = 0; n<shipp->n_subsystems; n++) {
+			if(shipp->subsystems[n].triggers != NULL) {
 				vm_free(shipp->subsystems[n].triggers);
+				shipp->subsystems[n].triggers = NULL;
+				shipp->subsystems[n].n_triggers = 0;
+			}
+		}
 
 		vm_free(shipp->subsystems);
 		shipp->n_subsystems = 0;
@@ -11214,7 +11221,7 @@ object *ship_find_repair_ship( object *requester_obj )
 int CLOAKMAP=-1;
 void ship_close()
 {
-	int i;
+	int i, n;
 
 	for (i=0; i<MAX_SHIPS; i++ )	{
 		if ( Ships[i].shield_integrity != NULL && Ships[i].objnum != -1 ) {
@@ -11226,10 +11233,15 @@ void ship_close()
 	// free memory alloced for subsystem storage
 	for ( i = 0; i < Num_ship_types; i++ ) {
 		if ( Ship_info[i].subsystems != NULL ) {
-			for(int n = 0; n<Ship_info[i].n_subsystems; n++)
-				if(Ship_info[i].subsystems[n].n_triggers)
+			for(n = 0; n < Ship_info[i].n_subsystems; n++) {
+				if (Ship_info[i].subsystems[n].triggers != NULL) {
 					vm_free(Ship_info[i].subsystems[n].triggers);
+					Ship_info[i].subsystems[n].triggers = NULL;
+				}
+			}
+
 			vm_free(Ship_info[i].subsystems);
+			Ship_info[i].subsystems = NULL;
 		}
 
 		
