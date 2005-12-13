@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.57 $
- * $Date: 2005-12-04 18:58:07 $
+ * $Revision: 2.58 $
+ * $Date: 2005-12-13 22:32:30 $
  * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2005/12/04 18:58:07  wmcoolmon
+ * subsystem + shockwave armor support; countermeasures as weapons
+ *
  * Revision 2.56  2005/11/13 22:27:17  Goober5000
  * this should fix the no-warp-effect bug
  * --Goober5000
@@ -1916,6 +1919,13 @@ void shipfx_emit_spark( int n, int sn )
 	vec3d outpnt;
 	ship *shipp = &Ships[n];
 	float ship_radius, spark_scale_factor;
+
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	if(sn > -1 && sip->ispew_max_particles == 0)
+		return;
+
+	if(sn < 0 && sip->dspew_max_particles == 0)
+		return;
 	
 	if ( shipp->num_hits <= 0 )
 		return;
@@ -2034,7 +2044,11 @@ void shipfx_emit_spark( int n, int sn )
 			}
 
 			pe.num_low  = 25;				// Lowest number of particles to create (hardware)
-			pe.num_high = 30;				// Highest number of particles to create (hardware)
+			if(sip->ispew_max_particles > 0) {
+				pe.num_high = sip->ispew_max_particles;
+			} else {
+				pe.num_high = 30;				// Highest number of particles to create (hardware)
+			}
 			pe.normal_variance = 1.0f;	//	How close they stick to that normal 0=good, 1=360 degree
 			pe.min_vel = 2.0f;				// How fast the slowest particle can move
 			pe.max_vel = 12.0f;				// How fast the fastest particle can move
@@ -2047,7 +2061,11 @@ void shipfx_emit_spark( int n, int sn )
 			pe.min_rad = 0.7f;				// Min radius
 			pe.max_rad = 1.3f;				// Max radius
 			pe.num_low  = int (20 * spark_num_scale);		// Lowest number of particles to create (hardware)
-			pe.num_high = int (50 * spark_num_scale);		// Highest number of particles to create (hardware)
+			if(sip->dspew_max_particles > 0) {
+				pe.num_high = sip->dspew_max_particles;
+			} else {
+				pe.num_high = int (50 * spark_num_scale);		// Highest number of particles to create (hardware)
+			}
 			pe.normal_variance = 0.2f * spark_width_scale;		//	How close they stick to that normal 0=good, 1=360 degree
 			pe.min_vel = 3.0f;				// How fast the slowest particle can move
 			pe.max_vel = 12.0f;				// How fast the fastest particle can move

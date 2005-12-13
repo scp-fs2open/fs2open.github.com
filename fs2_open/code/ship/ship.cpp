@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.282 $
- * $Date: 2005-12-13 20:20:20 $
+ * $Revision: 2.283 $
+ * $Date: 2005-12-13 22:32:30 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.282  2005/12/13 20:20:20  wmcoolmon
+ * Minor XMT-engine wash fix
+ *
  * Revision 2.281  2005/12/13 18:15:26  taylor
  * Hmm, .triggers isn't ever malloc'd for the Ships[] copy so don't try to free it since it's actully trying to free the Ship_info[] memory instead, which is bad :)
  *   (newer glibc just starting going monkey over this, not sure why it didn't screw up before)
@@ -2459,6 +2462,9 @@ void init_ship_entry(int ship_info_index)
 	
 	sip->n_subsystems = 0;
 	sip->subsystems = NULL;
+
+	sip->ispew_max_particles = -1;
+	sip->dspew_max_particles = -1;
 }
 
 // function to parse the information for a specific ship type.	
@@ -2658,6 +2664,24 @@ int parse_ship(bool replace)
 	{
 		int bogus_bool;
 		stuff_boolean(&bogus_bool);
+	}
+
+	//HACK -
+	//This should really be reworked so that all particle fields
+	//are settable, but erg, just not happening right now -C
+	if(optional_string("$Impact Spew:"))
+	{
+		if(optional_string("+Max particles:"))
+		{
+			stuff_int(&sip->ispew_max_particles);
+		}
+	}
+	if(optional_string("$Damage Spew:"))
+	{
+		if(optional_string("+Max particles:"))
+		{
+			stuff_int(&sip->dspew_max_particles);
+		}
 	}
 
 	if(optional_string("$Density:"))
