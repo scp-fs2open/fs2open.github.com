@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.280 $
- * $Date: 2005-12-12 21:32:14 $
+ * $Revision: 2.281 $
+ * $Date: 2005-12-13 18:15:26 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.280  2005/12/12 21:32:14  taylor
+ * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
+ *
  * Revision 2.279  2005/12/12 05:29:59  taylor
  * double free and invalid ptr reference fixage
  *
@@ -5555,14 +5558,6 @@ void ship_model_subsystems_delete(ship *shipp)
 {
 	if (shipp->subsystems != NULL)
 	{
-		for(int n = 0; n<shipp->n_subsystems; n++) {
-			if(shipp->subsystems[n].triggers != NULL) {
-				vm_free(shipp->subsystems[n].triggers);
-				shipp->subsystems[n].triggers = NULL;
-				shipp->subsystems[n].n_triggers = 0;
-			}
-		}
-
 		vm_free(shipp->subsystems);
 		shipp->n_subsystems = 0;
 		shipp->subsystems = NULL;
