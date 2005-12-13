@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-11-08 01:03:59 $
+ * $Revision: 2.26 $
+ * $Date: 2005-12-13 21:48:39 $
  * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/11/08 01:03:59  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.24  2005/10/29 22:09:29  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -286,6 +289,59 @@ float	Pattern_num_measures[MAX_SOUNDTRACKS][MAX_PATTERNS];
 // stores the number of bytes per measure (data from music.tbl)
 int	Pattern_samples_per_measure[MAX_SOUNDTRACKS][MAX_PATTERNS];
 
+typedef struct pattern_info
+{
+	char *pattern_name;
+	char *pattern_desc;
+	int pattern_can_force;
+	int pattern_loop_for;
+	int pattern_default_next;
+} pattern_info;
+
+pattern_info Pattern_info[] = {
+	{"NRML_1",	"Normal 1",			TRUE,	1,	SONG_NRML_1	},
+	{"NRML_2",	"Normal 2",			TRUE,	1,	SONG_NRML_1	},
+	{"NRML_3",	"Normal 3",			TRUE,	1,	SONG_NRML_1	},
+	{"AARV_1",	"Ally arrival 1",	FALSE,	1,	SONG_NRML_1	},
+	{"AARV_2",	"Ally arrival 2",	FALSE,	1,	SONG_BTTL_2	},
+	{"EARV_1",	"Enemy arrival 1",	FALSE,	1,	SONG_BTTL_1	},
+	{"EARV_2",	"Enemy arrival 2",	FALSE,	1,	SONG_BTTL_3	},
+	{"BTTL_1",	"Battle 1",			TRUE,	1,	SONG_BTTL_2	},
+	{"BTTL_2",	"Battle 2",			TRUE,	1,	SONG_BTTL_3	},
+	{"BTTL_3",	"Battle 3",			TRUE,	1,	SONG_BTTL_1	},
+	{"FAIL_1",	"Failure 1",		FALSE,	1,	SONG_NRML_1	},
+	{"VICT_1",	"Victory 1",		FALSE,	1,	SONG_NRML_1	},
+	{"VICT_2",	"Victory 2",		TRUE,	1,	SONG_NRML_1	},
+	{"DEAD_1",	"Dead 1",			TRUE,	1,	-1			},
+};
+
+int Num_pattern_types = sizeof(Pattern_info)/sizeof(pattern_info);
+
+//Because of how inflexible music.tbl is, to make it flexible, we must keep the stuff
+//in the old order. So to make it reasonable, we use this.
+//This is a list of the old pattern indexes. If you add a song you should
+//add it in the right spot in here, with a value of largest+1.
+int New_pattern_order[] =
+{
+	0,	//normal 1
+	12, //normal 2
+	13, //normal 3
+	1,  //friendly arrival 1
+	6,  //friendly arrival 2
+	2,	//enemy arrival 1
+	7,	//enemy arrival 2
+	3,	//battle 1
+	4,	//battle 2
+	5,	//battle 3
+	10,	//goal failed 1
+	8,	//victory 1
+	9,	//victory 2
+	11,	//death
+};
+
+int Num_new_pattern_order = sizeof(New_pattern_order)/sizeof(int);
+
+/*
 char* Pattern_names[MAX_PATTERNS] =
 {
 //XSTR:OFF
@@ -382,7 +438,7 @@ int Pattern_can_force[MAX_PATTERNS] =
 	TRUE,		// NRML_2
 	TRUE		// NRML_3
 };
-
+*/
 
 int Event_music_enabled = TRUE;
 static int Event_music_inited = FALSE;
@@ -564,7 +620,7 @@ void event_music_force_switch()
 	audiostream_set_sample_cutoff(Patterns[new_pattern].handle, fl2i(Patterns[new_pattern].num_measures * Patterns[new_pattern].samples_per_measure) );
 	Patterns[Current_pattern].next_pattern = Patterns[Current_pattern].default_next_pattern;
 	Patterns[Current_pattern].force_pattern = FALSE;
-	nprintf(("EVENTMUSIC", "EVENTMUSIC => switching to %s from %s\n", Pattern_names[new_pattern], Pattern_names[Current_pattern]));
+	nprintf(("EVENTMUSIC", "EVENTMUSIC => switching to %s from %s\n", Pattern_info[new_pattern].pattern_name, Pattern_info[Current_pattern].pattern_name));
 
 	// actually switch the pattern
 	Current_pattern = new_pattern;
@@ -747,12 +803,13 @@ void event_music_level_init(int force_soundtrack)
 			Event_music_enabled = TRUE;
 		}
 
-		Patterns[i].next_pattern = Pattern_default_next[i];
-		Patterns[i].default_next_pattern = Pattern_default_next[i];
-		Patterns[i].loop_for = Pattern_loop_for[i];
-		Patterns[i].default_loop_for = Pattern_loop_for[i];
+		pattern_info *pip = &Pattern_info[i];
+		Patterns[i].next_pattern = pip->pattern_default_next;
+		Patterns[i].default_next_pattern = pip->pattern_default_next;
+		Patterns[i].loop_for = pip->pattern_loop_for;
+		Patterns[i].default_loop_for = pip->pattern_loop_for;
 		Patterns[i].force_pattern = FALSE;
-		Patterns[i].can_force = Pattern_can_force[i];
+		Patterns[i].can_force = pip->pattern_can_force;
 		Patterns[i].samples_per_measure = Pattern_samples_per_measure[Current_soundtrack_num][i];
 		Patterns[i].num_measures = Pattern_num_measures[Current_soundtrack_num][i];
 	}
@@ -1233,64 +1290,203 @@ int event_music_player_respawn_as_observer()
 	return 0;
 }
 
-void parse_soundtrack()
+bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 {
 	char fname[MAX_FILENAME_LEN];
 	char line_buf[128];
-	int num_patterns = 0;
+	char *token;
+	int count = 0;
 
-	required_string("#Soundtrack Start");
-	required_string("$SoundTrack Name:");
-	stuff_string(Soundtracks[Num_soundtracks].name, F_NAME, NULL);
-	while (required_string_either("#SoundTrack End","$Name:")) {
-		Assert( num_patterns < MAX_PATTERNS );
-		required_string("$Name:");
-		stuff_string(line_buf, F_NAME, NULL);
+	// line_buf holds 3 fields:  filename, num measures, bytes per measure
+	stuff_string(line_buf, F_NAME, NULL);
 
-		// line_buf holds 3 fields:  filename, num measures, bytes per measure
+	//Check if we can add this pattern
+	if( pattern_idx >= MAX_PATTERNS ) {
+		Warning(LOCATION, "Too many $Name: entries for soundtrack %s", Soundtracks[strack_idx].name);
+		return false;
+	}
 
-		char *token;
-		int count = 0;
-		token = strtok( line_buf, NOX(" ,\t"));
-		strcpy(fname, token);
-		while ( token != NULL ) {
-			token = strtok( NULL, NOX(" ,\t") );
-			if ( token == NULL ) {
-				Assert(count == 2 );
-				break;
-			}
-
-			if ( count == 0 ) {
-				Pattern_num_measures[Num_soundtracks][num_patterns] = (float)atof(token);
-
-			} else {
-				Pattern_samples_per_measure[Num_soundtracks][num_patterns] = atoi(token);
-			}
-
-			count++;
-		}	// end while
-
-		// convert from samples per measure to bytes per measure
-		strcpy(Soundtracks[Num_soundtracks].pattern_fnames[num_patterns], fname);
-		num_patterns++;
+	//We can apparently still add this pattern, so go ahead and do it.
+	token = strtok( line_buf, NOX(" ,\t"));
+	strcpy(fname, token);
+	while ( token != NULL )
+	{
+		token = strtok( NULL, NOX(" ,\t") );
+		//If we have no more items, get out and return
+		if ( token == NULL && count != 2)
+		{
+			Warning(LOCATION, "Missing or additional field for soundtrack %s, pattern %s", Soundtracks[strack_idx].name, Pattern_info[pattern_idx].pattern_desc);
+			break;
 		}
-		required_string("#SoundTrack End");
-		Soundtracks[Num_soundtracks].num_patterns = num_patterns;
+
+		
+		if ( count == 0 ) {
+			Pattern_num_measures[strack_idx][pattern_idx] = (float)atof(token);	//Num_measures
+		} else if(count == 1) {
+			Pattern_samples_per_measure[strack_idx][pattern_idx] = atoi(token);	//Samples per measure
+		}
+
+		count++;
+	}	// end while
+
+	strcpy(Soundtracks[strack_idx].pattern_fnames[pattern_idx], fname);
+	return true;
+}
+
+void parse_soundtrack()
+{
+	char namebuf[NAME_LENGTH];
+	int strack_idx = -1;
+	bool nocreate = false;
+
+	//Start parsing soundtrack
+	required_string("#Soundtrack Start");
+
+	//Get the name, and do we have this track already?
+	required_string("$SoundTrack Name:");
+	stuff_string(namebuf, F_NAME, NULL);
+	strack_idx = event_music_get_soundtrack_index(namebuf);
+
+	//Do we have a nocreate?
+	if(optional_string("+nocreate")) {
+		nocreate = true;
+	}
+
+	//Get a valid strack_idx
+	if(strack_idx < 0 && (nocreate || Num_soundtracks >= MAX_SOUNDTRACKS))
+	{
+		if(Num_soundtracks >= MAX_SOUNDTRACKS) {
+			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[Num_soundtracks].name, MAX_SOUNDTRACKS);
+		}
+
+		//Track doesn't exist and has nocreate, so don't create it
+		if ( !skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") && !skip_to_string("#SoundTrack End")) {
+			Int3();
+		}
+
+		return;
+	}
+	else if(strack_idx < 0)
+	{
+		//If we don't have this soundtrack already, create it
+		strack_idx = Num_soundtracks;
+
+		strcpy(Soundtracks[strack_idx].name, namebuf);
+		Soundtracks[strack_idx].num_patterns = 0;
+
 		Num_soundtracks++;
+	}
+
+	int i;
+
+	//If the next string is $Name:, use default Volition stuff
+	if(check_for_string("$Name:"))
+	{
+		int old_pattern_num = 0;
+
+		while (required_string_either("#SoundTrack End","$Name:"))
+		{
+			required_string("$Name:");
+
+			//Find which new pattern index this corresponds to
+			for(i = 0; i < Num_new_pattern_order; i++)
+			{
+				if(New_pattern_order[i] == old_pattern_num)
+				{
+					if(parse_soundtrack_line(strack_idx, i))
+					{
+						//If new pattern is higher, change the old value
+						if(i+1 > Soundtracks[Num_soundtracks].num_patterns) {
+							Soundtracks[Num_soundtracks].num_patterns = i+1;
+						}
+					}
+
+					//Get out of the loop
+					break;
+				}
+			}
+
+			if(i == Num_new_pattern_order)
+			{
+				Warning(LOCATION, "Could not find new index for pattern %d of soundtrack '%s'", old_pattern_num, Soundtracks[strack_idx].name);
+			}
+
+			old_pattern_num++;
+		}
+	}
+	else
+	{
+		//Use our new stuff
+		char tagbuf[64];
+
+		//try the new pattern order
+		for(i = 0; i < Num_pattern_types; i++)
+		{
+			//Check for the tag based on description
+			sprintf(tagbuf, "$%s:", Pattern_info[i].pattern_desc);
+			if(optional_string(tagbuf))
+			{
+				//Parse it
+				if(parse_soundtrack_line(strack_idx, i))
+				{
+					//If the new pattern is higher than the old one, change num_patterns
+					if(i+1 > Soundtracks[Num_soundtracks].num_patterns) {
+						Soundtracks[Num_soundtracks].num_patterns = i+1;
+					}
+				}
+			}
+		}
+	}
+
+	//We're done here.
+	required_string("#SoundTrack End");
 }
 void parse_menumusic()
 {
+	char spoolname[NAME_LENGTH];
 	char fname[MAX_FILENAME_LEN];
-	required_string("$Name:");
-	stuff_string(fname, F_PATHNAME, NULL);
-	Assert( strlen(fname) < (NAME_LENGTH-1) );
-	strcpy( Spooled_music[Num_music_files].name, fname );
+	bool nocreate = false;
 
-	required_string("$Filename:");
-	stuff_string(fname, F_PATHNAME, NULL);
-	if ( strnicmp(fname, NOX("none.wav"), 4)  ) {
-		Assert( strlen(fname) < (MAX_FILENAME_LEN-1) );
-		strcpy( Spooled_music[Num_music_files].filename, fname );
+	required_string("$Name:");
+	stuff_string(spoolname, F_NAME, NULL);
+
+	if(optional_string("+nocreate")) {
+		nocreate = true;
+	}
+
+	int idx = event_music_get_spooled_music_index(spoolname);
+	
+	if(idx < 0 && (nocreate || Num_music_files >= MAX_SPOOLED_MUSIC))
+	{
+		if(Num_music_files >= MAX_SPOOLED_MUSIC) {
+			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files].name, MAX_SPOOLED_MUSIC);
+		}
+
+		if(!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
+			Int3();
+		}
+
+		return;
+	}
+	else if(idx < 0)
+	{
+		idx = Num_music_files;
+
+		strcpy( Spooled_music[idx].name, spoolname );
+		strcpy( Spooled_music[idx].filename, "");
+	}
+
+	if(optional_string("$Filename:"))
+	{
+		stuff_string(fname, F_LNAME, NULL);
+		if ( strnicmp(fname, NOX("none.wav"), 4)  ) {
+			strcpy( Spooled_music[idx].filename, fname );
+		}
+		else
+		{
+			//Clear this
+			strcpy( Spooled_music[idx].filename, "");
+		}
 	}
 
 	Num_music_files++;	
@@ -1315,39 +1511,21 @@ void event_music_parse_musictbl(char* longname, bool is_chunk)
 		read_file_text(longname);
 		reset_parse();		
 
-		if(!is_chunk)
+		// Loop through all the sound-tracks
+		if(check_for_string("#Soundtrack Start"))
 		{
-			// Loop through all the sound-tracks
 			while (required_string_either("#Menu Music Start","#SoundTrack Start")) {
-				Assert(Num_soundtracks < MAX_SOUNDTRACKS);
 				parse_soundtrack();
 			}
+		}
 
-			// Parse the menu music section
-			required_string("#Menu Music Start");
+		// Parse the menu music section
+		if(optional_string("#Menu Music Start"))
+		{
 			while (required_string_either("#Menu Music End","$Name:")) {
-				Assert( Num_music_files < MAX_SPOOLED_MUSIC );
 				parse_menumusic();
 			}
 			required_string("#Menu Music End");
-		}
-		else
-		{
-			// Loop through all the sound-tracks
-			while (required_string_either("#Menu Music Start","#SoundTrack Start")) {
-				Assert(Num_soundtracks < MAX_SOUNDTRACKS);
-				parse_soundtrack();
-			}
-
-			// Parse the menu music section
-			if(optional_string("#Menu Music Start"))
-			{
-				while (required_string_either("#Menu Music End","$Name:")) {
-					Assert( Num_music_files < MAX_SPOOLED_MUSIC );
-					parse_menumusic();
-				}
-				required_string("#Menu Music End");
-			}
 		}
 
 		// close localization
@@ -1616,7 +1794,7 @@ void event_music_get_info(char *outbuf)
 		sprintf(outbuf,XSTR( "Event music is not playing", 213));
 	}
 	else {	
-		sprintf(outbuf,XSTR( "soundtrack: %s [%s]", 214), Soundtracks[Current_soundtrack_num].name, Pattern_description[Current_pattern]);
+		sprintf(outbuf,XSTR( "soundtrack: %s [%s]", 214), Soundtracks[Current_soundtrack_num].name, Pattern_info[Current_pattern].pattern_desc);
 	}
 }
 
@@ -1687,20 +1865,23 @@ void event_music_get_soundtrack_name(char *outbuf)
 // set the current soundtrack based on name
 void event_music_set_soundtrack(char *name)
 {
-	int i;
+	Current_soundtrack_num = event_music_get_soundtrack_index(name);
 
+	if ( Current_soundtrack_num == -1 ) {
+		mprintf(("Current soundtrack set to -1 in event_music_set_soundtrack\n"));
+	}
+}
+
+int event_music_get_soundtrack_index(char *name)
+{
 	// find the correct index for the event music
-	for ( i = 0; i < Num_soundtracks; i++ ) {
+	for ( int i = 0; i < Num_soundtracks; i++ ) {
 		if ( !stricmp(name, Soundtracks[i].name) ) {
-			Current_soundtrack_num = i;
-			break;
+			return i;
 		}
 	}
 
-	if ( i == Num_soundtracks ) {
-		Current_soundtrack_num = -1;
-		mprintf(("Current soundtrack set to -1 in event_music_set_soundtrack\n"));
-	}
+	return -1;
 }
 
 int event_music_get_spooled_music_index(char *name)

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.58 $
+ * $Revision: 2.59 $
  * $Author: wmcoolmon $
- * $Date: 2005-12-04 19:07:49 $
+ * $Date: 2005-12-13 21:48:39 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/12/04 19:07:49  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.57  2005/11/21 03:47:51  Goober5000
  * bah and double bah
  * --Goober5000
@@ -1231,6 +1234,17 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
 			break;
+
+		case F_LNAME:
+			if (!len){
+				final_len = MAX_FILENAME_LEN;
+			}
+			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp, read_len);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
 		case F_NAME:
 			if (!len){
 				final_len = NAME_LENGTH;
@@ -1307,7 +1321,7 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 	}
 
 	// now we want to do any final localization
-	if(type != F_RAW)
+	if(type != F_RAW && type != F_LNAME)
 	{
 		lcl_ext_localize(read_str, pstr, final_len, &tag_id);
 

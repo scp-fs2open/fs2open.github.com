@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.36 $
- * $Author: Goober5000 $
- * $Date: 2005-11-21 03:47:51 $
+ * $Revision: 2.37 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-12-13 21:48:39 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/11/21 03:47:51  Goober5000
+ * bah and double bah
+ * --Goober5000
+ *
  * Revision 2.35  2005/11/21 00:46:12  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -400,6 +404,7 @@ extern jmp_buf parse_abort;
 #define	F_MESSAGE				9	// this is now obsolete for mission messages - all messages in missions should now use $MessageNew and stuff strings as F_MULTITEXT
 #define	F_MULTITEXT				10
 #define F_RAW					11	// for any internal parsing use. Just strips whitespace and copies the text.
+#define F_LNAME					12	//Filenames
 
 #define PARSE_BUF_SIZE			4096
 
