@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-12-13 21:48:39 $
+ * $Revision: 2.27 $
+ * $Date: 2005-12-13 21:50:20 $
  * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/12/13 21:48:39  wmcoolmon
+ * Music TBL to proper XMT file (-mus)
+ *
  * Revision 2.25  2005/11/08 01:03:59  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -1396,8 +1399,8 @@ void parse_soundtrack()
 					if(parse_soundtrack_line(strack_idx, i))
 					{
 						//If new pattern is higher, change the old value
-						if(i+1 > Soundtracks[Num_soundtracks].num_patterns) {
-							Soundtracks[Num_soundtracks].num_patterns = i+1;
+						if(i+1 > Soundtracks[strack_idx].num_patterns) {
+							Soundtracks[strack_idx].num_patterns = i+1;
 						}
 					}
 
@@ -1430,8 +1433,8 @@ void parse_soundtrack()
 				if(parse_soundtrack_line(strack_idx, i))
 				{
 					//If the new pattern is higher than the old one, change num_patterns
-					if(i+1 > Soundtracks[Num_soundtracks].num_patterns) {
-						Soundtracks[Num_soundtracks].num_patterns = i+1;
+					if(i+1 > Soundtracks[strack_idx].num_patterns) {
+						Soundtracks[strack_idx].num_patterns = i+1;
 					}
 				}
 			}
