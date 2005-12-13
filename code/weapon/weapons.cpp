@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.156  2005/12/12 21:32:14  taylor
+ * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
+ *
  * Revision 2.155  2005/12/08 15:33:39  taylor
  * switch the shockwave pof and normal names back to the correct spots, this was probably causing some
  *   3-D shockwave usage issues since they wouldn't have rendered
@@ -1684,7 +1687,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->cargo_size = 1.0f;
 	
 	wip->turn_time = 1.0f;
-	wip->fov = PI;
+	wip->fov = 0;				//should be cos(pi), not pi
 	
 	wip->min_lock_time = 0.0f;
 	wip->lock_pixels_per_sec = 50;
@@ -4007,8 +4010,8 @@ void find_homing_object(object *weapon_objp, int num)
 void find_homing_object_cmeasures_1(object *weapon_objp)
 {
 	object	*objp;
-	weapon	*wp;
-	weapon_info	*wip;
+	weapon	*wp, *cm_wp;
+	weapon_info	*wip, *cm_wip;
 	float		best_dot, dist, dot;
 
 	wp = &Weapons[weapon_objp->instance];
@@ -4016,8 +4019,19 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 
 	best_dot = wip->fov;			//	Note, setting to this avoids comparison below.
 
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if (objp->type == OBJ_WEAPON && (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_CMEASURE)) {
+	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+	{
+		cm_wp = &Weapons[objp->instance];
+		cm_wip = &Weapon_info[cm_wp->weapon_info_index];
+
+		if (objp->type == OBJ_WEAPON && (cm_wip->wi_flags & WIF_CMEASURE))
+		{
+			//don't have a weapon try to home in on itself
+			if (objp==weapon_objp) continue;
+
+			//don't have a weapon try to home in on missiles fired by the same team, unless its the traitor team.
+			if ((wp->team == cm_wp->team) && (wp->team != TEAM_TRAITOR)) continue;
+
 			vec3d	vec_to_object;
 			dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
 
@@ -4031,10 +4045,10 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 				if ((objp->signature != wp->cmeasure_ignore_objnum) && (objp->signature != wp->cmeasure_chase_objnum)) {
 					if (frand() < chance) {
 						wp->cmeasure_ignore_objnum = objp->signature;	//	Don't process this countermeasure again.
-						//nprintf(("Jim", "Frame %i: Weapon #%i ignoring cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+						mprintf(("Frame %i: Weapon #%i ignoring cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
 					} else  {
 						wp->cmeasure_chase_objnum = objp->signature;	//	Don't process this countermeasure again.
-						//nprintf(("Jim", "Frame %i: Weapon #%i CHASING cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+						mprintf(("Frame %i: Weapon #%i CHASING cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
 					}
 				}
 				
@@ -4210,8 +4224,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 		break;
 	case OBJ_WEAPON:
-		// only allowed to home on bombs
-		Assert(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB);
+		// only allowed to home on bombs or countermeasures
+		Assert(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB || Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE);
 		if (wip->wi_flags & WIF_HOMING_ASPECT)
 			find_homing_object_by_sig(obj, wp->target_sig);
 		else
