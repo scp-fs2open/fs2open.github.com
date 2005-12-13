@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.124 $
- * $Date: 2005-12-12 21:32:14 $
- * $Author: taylor $
+ * $Revision: 2.125 $
+ * $Date: 2005-12-13 22:32:30 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2005/12/12 21:32:14  taylor
+ * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
+ *
  * Revision 2.123  2005/12/04 18:58:07  wmcoolmon
  * subsystem + shockwave armor support; countermeasures as weapons
  *
@@ -1527,6 +1530,9 @@ typedef struct ship_info {
 	int shockwave_model;
 	char shockwave_name[NAME_LENGTH];
 	int shockwave_info_index;*/
+
+	int ispew_max_particles;						//Temp field until someone works on particles -C
+	int dspew_max_particles;						//Temp field until someone works on particles -C
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
