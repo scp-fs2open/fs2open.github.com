@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.281 $
- * $Date: 2005-12-13 18:15:26 $
- * $Author: taylor $
+ * $Revision: 2.282 $
+ * $Date: 2005-12-13 20:20:20 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.281  2005/12/13 18:15:26  taylor
+ * Hmm, .triggers isn't ever malloc'd for the Ships[] copy so don't try to free it since it's actully trying to free the Ship_info[] memory instead, which is bad :)
+ *   (newer glibc just starting going monkey over this, not sure why it didn't screw up before)
+ *
  * Revision 2.280  2005/12/12 21:32:14  taylor
  * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
  *
@@ -2232,6 +2236,7 @@ void parse_engine_wash(bool replace)
 			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
+			return;
 		}
 		Engine_wash_info.push_back(ewt);
 		ewp = &Engine_wash_info[Num_engine_wash_types++];
