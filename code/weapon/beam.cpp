@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.62 $
- * $Date: 2005-11-21 02:43:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.63 $
+ * $Date: 2005-12-14 08:07:33 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.61  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -547,7 +551,7 @@ extern int Cmdline_nohtl;
 #define TOOLTIME						1500.0f
 
 // max # of collisions we'll allow per frame
-#define MAX_FRAME_COLLISIONS		5
+#define MAX_FRAME_COLLISIONS		10
 
 // beam flag defines
 #define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
@@ -770,7 +774,7 @@ int beam_start_firing(beam *b);
 void beam_start_warmdown(beam *b);
 
 // add a collision to the beam for this frame (to be evaluated later)
-void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad = -1);
+void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad = -1, int exit_flag = 0);
 
 // sort collisions for the frame
 int beam_sort_collisions_func(const void *e1, const void *e2);
@@ -2635,8 +2639,6 @@ void beam_jitter_aim(beam *b, float aim)
 // collide a beam with a ship, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_ship(obj_pair *pair)
 {
-	// SHUT UP! -- Kazan -- This is massively slowing debug builds down
-	//mprintf(("about to do beam colision\n"));
 	beam *b;		
 	ship *shipp;
 	ship_info *sip;
@@ -2644,6 +2646,8 @@ int beam_collide_ship(obj_pair *pair)
 	int model_num, quad;
 	float widest;
 	weapon_info *bwi;
+	vec3d beam_dir, neg_beam_dir,tmp_vec;
+	static int broke = 0;
 
 	// bogus
 	if(pair == NULL){
@@ -2714,77 +2718,114 @@ int beam_collide_ship(obj_pair *pair)
 
 	polymodel *pm = model_get(model_num);
 
-	// maybe do a sphere line
-	if(widest > pair->b->radius * BEAM_AREA_PERCENT){
-		test_collide.radius = beam_get_widest(b) * 0.5f;
-		//if the shields have any juice check them otherwise check the model
-		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for beams wich have a positive shield factor -Bobboau
-//			mprintf(("I think this ship has shields\n"));
-			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;	
-		}else{	
-//			mprintf(("I'm checking the model\n"));
-			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
-		}
-	} else {	
-		if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) ){	//check shields for type c beams -Bobboau
-//			mprintf(("there is a shield, isn't it\n"));
-			test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
-		}else{	
-//			mprintf(("the model is being checked\n"));
-			test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
-		}
-	}
+	int exit_flag = 0;
+	int collisions_handled = 0;
+	vm_vec_sub(&beam_dir, &b->last_shot, &b->last_start);
+	vm_vec_normalize(&beam_dir);
+	vm_vec_copy_scale(&neg_beam_dir, &beam_dir, -1);
 
-	model_collide(&test_collide);
-
-	quad = -1;
-	if((test_collide.flags & MC_CHECK_SHIELD) || (!(Objects[shipp->objnum].flags & OF_NO_SHIELDS) && !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (Ship_info[shipp->ship_info_index].flags2 & SIF2_SURFACE_SHIELDS)))	//if we're checking shields
+	do
 	{
-		quad = get_quadrant(&test_collide.hit_point);//find which quadrant we hit
-//mprintf(("the thing I hit was hit in quadrant %d\n", quad));
-		//then if the beam does more damage than that quadrant can take
-		if(Objects[shipp->objnum].shield_quadrant[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
-		//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point))))
-		{
-			// _argv[-1], 16 Jan 2005: Don't do another model_collide for surface shields, since we just did this. Just a performance optimization.
-			if (test_collide.flags & MC_CHECK_SHIELD) {
-				//go through the shield and hit the hull -Bobboau
-				if(widest > pair->b->radius * BEAM_AREA_PERCENT)
-				{
-					test_collide.radius = beam_get_widest(b) * 0.5f;
-					test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
-				}
-				else
-				{	
-					test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
-				}
-				model_collide(&test_collide);
+		// maybe do a sphere line
+		if(widest > pair->b->radius * BEAM_AREA_PERCENT){
+			test_collide.radius = beam_get_widest(b) * 0.5f;
+			//if the shields have any juice check them otherwise check the model
+			if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) )
+			{
+				//check shields for beams wich have a positive shield factor -Bobboau
+				test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_SPHERELINE;
+			}	
+			else
+			{	
+				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+			}
+		}
+		else
+		{	
+			if ( !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (get_shield_strength(&Objects[shipp->objnum])) && (bwi->shield_factor >= 0) && ((pm->shield.ntris > 0) && (pm->shield.nverts > 0)) )
+			{
+				//check shields for type c beams -Bobboau
+				test_collide.flags = MC_CHECK_SHIELD | MC_CHECK_RAY;	
+			}
+			else
+			{	
+				test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
 			}
 		}
 
-		// _argv[-1], 16 Jan 2005: There was no point in doing this, and it breaks the surface shield code, so I've commented it out.
-		/*
+		model_collide(&test_collide);
+
+		quad = -1;
+		if((test_collide.flags & MC_CHECK_SHIELD) || (!(Objects[shipp->objnum].flags & OF_NO_SHIELDS) && !(bwi->wi_flags2 & WIF2_PIERCE_SHIELDS) && (Ship_info[shipp->ship_info_index].flags2 & SIF2_SURFACE_SHIELDS)))	//if we're checking shields
+		{
+			quad = get_quadrant(&test_collide.hit_point);//find which quadrant we hit
+			//mprintf(("the thing I hit was hit in quadrant %d\n", quad));
+			//then if the beam does more damage than that quadrant can take
+			if(Objects[shipp->objnum].shield_quadrant[quad] < (bwi->damage * bwi->shield_factor * 2.0f))
+				//if(!(ship_is_shield_up(&Objects[shipp->objnum], get_quadrant(&test_collide.hit_point))))
+			{
+				// _argv[-1], 16 Jan 2005: Don't do another model_collide for surface shields, since we just did this. Just a performance optimization.
+				if (test_collide.flags & MC_CHECK_SHIELD)
+				{
+					//go through the shield and hit the hull -Bobboau
+					if(widest > pair->b->radius * BEAM_AREA_PERCENT)
+					{
+						test_collide.radius = beam_get_widest(b) * 0.5f;
+						test_collide.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+					}
+					else
+					{	
+						test_collide.flags = MC_CHECK_MODEL | MC_CHECK_RAY;	
+					}
+					model_collide(&test_collide);
+				}
+			}
+		}
+
+
+		// if we got a hit
+		if(test_collide.num_hits)
+		{
+			
+			// add to the collision list
+			beam_add_collision(b, pair->b, &test_collide, quad, exit_flag);
+			collisions_handled++;
+			
+	
+			//check collisions heading from the origin of the beam to its endpoint
+			//this handles the beam entering the model
+			if (!exit_flag)
+			{
+				test_collide.p0 = &tmp_vec;
+				vm_vec_add(&tmp_vec, &test_collide.hit_point_world, &beam_dir);
+			}
+			//check collisions heading from the endpoint of the beam to its origin
+			//this handles the beam exiting the model
+			else
+			{
+				test_collide.p0 = &tmp_vec;
+				vm_vec_add(&tmp_vec, &test_collide.hit_point_world, &neg_beam_dir);
+			}
+			
+
+		}
 		else
 		{
-			quad = -1;
+			//break out of the loop if we couldn't find any more exit holes left
+			if (exit_flag) break;
+
+			//didn't find any new enter holes, start finding exit holes.
+			else
+			{
+				exit_flag = 1;
+				
+				test_collide.p0 = &b->last_shot;
+				test_collide.p1 = &b->last_start;
+			}
 		}
-		*/
-	}
 
-
-	// if we got a hit
-	if(test_collide.num_hits)
-	{
-		// add to the collision list
-		beam_add_collision(b, pair->b, &test_collide, quad);
-
-		// if we went through the shield
-		//Goober5000 - nope, not sure what I was thinking for this
-		//if (quad != -1)
-		//{
-		//	Objects[shipp->objnum].shield_quadrant[quad] = 0.0f;	// Bobboau's addition: now works correctly
-		//}
-	}	
+	//even though this this properly terminate, keep the collisions handled low so that the collisions with other ships aren't bumped out
+	}while(beam_will_tool_target(b,pair->b) && collisions_handled < 6);
 
 	// add this guy to the lighting list
 	beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
@@ -3098,7 +3139,7 @@ int beam_collide_early_out(object *a, object *b)
 }
 
 // add a collision to the beam for this frame (to be evaluated later)
-void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad)
+void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad, int exit_flag)
 {
 	beam_collision *bc;
 	int idx;
@@ -3166,6 +3207,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad)
 	}
 	bc->c_objnum = OBJ_INDEX(hit_object);
 	bc->cinfo = *cinfo;
+	bc->is_exit_collision = exit_flag;
 }
 
 // sort collisions for the frame
@@ -3296,7 +3338,8 @@ void beam_handle_collisions(beam *b)
 			case OBJ_SHIP:	
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
-				ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), b->f_collisions[idx].quadrant);
+				//only apply damage if the collision is not an exit collision.  this prevents twice the damage from being done, although it probably be more realistic since two holes are being punched in the ship instead of one.
+				if (!b->f_collisions[idx].is_exit_collision) ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), b->f_collisions[idx].quadrant);
 
 				// if this is the first hit on the player ship. whack him
 				if(do_damage)
