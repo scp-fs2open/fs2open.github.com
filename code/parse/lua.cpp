@@ -15,6 +15,8 @@ int script_remove_lib(lua_State *L, char *name);
 void lua_stackdump(lua_State *L);
 
 //*************************Lua helpers*************************
+//Callback typedef
+#define SCRIPT_LUA_CALLBACK static int
 //Function entry for a library
 typedef struct script_lua_func_list {
 	const char *name;
@@ -391,7 +393,7 @@ static lua_cvar<ship*>			l_ship("ship");
 
 //**********LIBRARY: Base
 //*****CLASS: (l)vec
-static int lua_fs2_lvec(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_lvec(lua_State *L)
 {
 	vec3d v3 = vmd_zero_vector;
 	script_parse_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
@@ -399,7 +401,7 @@ static int lua_fs2_lvec(lua_State *L)
 	return script_return_args(L, "o", l_lvec.Return(&v3));
 }
 
-static int lua_fs2_vec__addition(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_vec__addition(lua_State *L)
 {
 	vec3d v3a, v3b, v3r;
 	if(!script_parse_args(L, "oo", l_lvec.Parse(&v3a), l_lvec.Parse(&v3b)))
@@ -410,7 +412,7 @@ static int lua_fs2_vec__addition(lua_State *L)
 	return script_return_args(L, "o", l_lvec.Return(&v3r));
 }
 
-static int lua_fs2_vec__subtraction(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_vec__subtraction(lua_State *L)
 {
 	vec3d v3a, v3b, v3r;
 	if(!script_parse_args(L, "oo", l_lvec.Parse(&v3a), l_lvec.Parse(&v3b)))
@@ -421,7 +423,7 @@ static int lua_fs2_vec__subtraction(lua_State *L)
 	return script_return_args(L, "o", l_lvec.Return(&v3r));
 }
 
-static int lua_fs2_vec__multiplication(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_vec__multiplication(lua_State *L)
 {
 	vec3d v3a, v3b, v3r;
 	float f;
@@ -446,7 +448,7 @@ static int lua_fs2_vec__multiplication(lua_State *L)
 }
 
 
-static int lua_fs2_vec__tostring(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_vec__tostring(lua_State *L)
 {
 	vec3d v3p;
 	if(!script_parse_args(L, "o", l_lvec.Parse(&v3p)))
@@ -458,7 +460,7 @@ static int lua_fs2_vec__tostring(lua_State *L)
 	return script_return_args(L, "s", buf);
 }
 
-static int lua_fs2_vec__index(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_vec__index(lua_State *L)
 {
 	vec3d v3p;
 	int idx=0;
@@ -472,7 +474,7 @@ static int lua_fs2_vec__index(lua_State *L)
 	return script_return_args(L, "f", v3p.a1d[idx]);
 }
 
-static int lua_fs2_vec_print(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_vec_print(lua_State *L)
 {
 	vec3d v3p;
 	int idx=0;
@@ -499,7 +501,7 @@ static const script_lua_obj_func_list lua_fs2_lvec_funcs[] = {
 };
 
 //*****CLASS: wvec
-static int lua_fs2_wvec(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_wvec(lua_State *L)
 {
 	vec3d v3 = vmd_zero_vector;
 	script_parse_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
@@ -531,21 +533,21 @@ static const script_lua_obj_list lua_base_lib_obj[] = {
 
 //*****LIBRARY FUNCTIONS
 
-static int lua_fs2_print(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_print(lua_State *L)
 {
 	Error(LOCATION, "LUA: %s", lua_tostring(L, -1));
 
 	return 0;
 }
 
-static int lua_fs2_error(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_error(lua_State *L)
 {
 	Error(LOCATION, "LUA ERROR: %s", lua_tostring(L, -1));
 
 	return 0;
 }
 
-static int lua_fs2_getState(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_fs2_getState(lua_State *L)
 {
 	int depth = 0;
 	script_parse_args(L, "|i", &depth);
@@ -564,7 +566,7 @@ static const script_lua_func_list lua_base_lib[] = {
 
 //**********LIBRARY: Mission (msn)
 
-static int lua_msn_getShipInfo(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_msn_getShipInfo(lua_State *L)
 {
 	char *ship_name = NULL;
 	if(!script_parse_args(L, "s", &ship_name))
@@ -580,7 +582,7 @@ static int lua_msn_getShipInfo(lua_State *L)
 	return script_return_args(L, "o", l_ship_info.Return(&sip));
 }
 
-static int lua_msn_ShipInfo_print(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_msn_ShipInfo_print(lua_State *L)
 {
 	ship_info *sip;
 	if(!script_parse_args(L, "o", l_ship_info.Parse(&sip)))
@@ -591,7 +593,7 @@ static int lua_msn_ShipInfo_print(lua_State *L)
 	return 0;
 }
 
-static int lua_msn_newShip(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_msn_newShip(lua_State *L)
 {
 	char *ship_name = NULL;
 	char *class_name = NULL;
@@ -628,7 +630,7 @@ static int lua_msn_newShip(lua_State *L)
 	return LUA_RETURN_NOTHING;
 }
 
-static lua_msn_ship_setSpeed(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_msn_ship_setSpeed(lua_State *L)
 {
 	ship *shipp = NULL;
 	vec3d vel;
@@ -643,7 +645,7 @@ static lua_msn_ship_setSpeed(lua_State *L)
 	return LUA_RETURN_NOTHING;
 }
 
-static lua_msn_ship_setName(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_msn_ship_setName(lua_State *L)
 {
 	ship *shipp = NULL;
 	char *name = NULL;
@@ -662,7 +664,7 @@ static lua_msn_ship_setName(lua_State *L)
 	return LUA_RETURN_NOTHING;
 }
 
-static lua_msn_ship_getTarget(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_msn_ship_getTarget(lua_State *L)
 {
 	ship *shipp = NULL;
 
@@ -709,7 +711,7 @@ static const script_lua_func_list lua_msn_lib[] = {
 
 //**********LIBRARY: Graphics (grl)
 //*****Class: model
-static int lua_grpc_model_getFilename(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_model_getFilename(lua_State *L)
 {
 	polymodel *pm;
 	if(!script_parse_args(L, "o", l_model.Parse(&pm)))
@@ -718,7 +720,7 @@ static int lua_grpc_model_getFilename(lua_State *L)
 	return script_return_args(L, "s", pm->filename);
 }
 
-static int lua_grpc_model_getnumEyepoints(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_model_getnumEyepoints(lua_State *L)
 {
 	polymodel *pm;
 	if(!script_parse_args(L, "o", l_model.Parse(&pm)))
@@ -727,7 +729,7 @@ static int lua_grpc_model_getnumEyepoints(lua_State *L)
 	return script_return_args(L, "s", pm->filename);
 }
 
-static int lua_grpc_model_getEyepointPos(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_model_getEyepointPos(lua_State *L)
 {
 	polymodel *pm;
 	int idx;
@@ -753,7 +755,7 @@ static const script_lua_obj_func_list lua_grpc_model_funcs[] = {
 };
 
 //*****Functions: Graphics library
-static int lua_grpc_loadModel(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_loadModel(lua_State *L)
 {
 	char *model_name;
 	if(!script_parse_args(L, "s", &model_name))
@@ -770,7 +772,7 @@ static int lua_grpc_loadModel(lua_State *L)
 
 	return LUA_RETURN_NOTHING;
 }
-static int lua_grpc_setColor(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_setColor(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
@@ -787,7 +789,7 @@ static int lua_grpc_setColor(lua_State *L)
 	return 0;
 }
 
-static int lua_grpc_setFont(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_setFont(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
@@ -802,7 +804,7 @@ static int lua_grpc_setFont(lua_State *L)
 	return 0;
 }
 
-static int lua_grpc_drawPixel(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_drawPixel(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
@@ -818,7 +820,7 @@ static int lua_grpc_drawPixel(lua_State *L)
 	return 0;
 }
 
-static int lua_grpc_drawLine(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_drawLine(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
@@ -834,7 +836,7 @@ static int lua_grpc_drawLine(lua_State *L)
 	return 0;
 }
 
-static int lua_grpc_drawGradientLine(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_drawGradientLine(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
@@ -850,7 +852,7 @@ static int lua_grpc_drawGradientLine(lua_State *L)
 	return 0;
 }
 
-static int lua_grpc_drawCircle(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_drawCircle(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
@@ -866,7 +868,7 @@ static int lua_grpc_drawCircle(lua_State *L)
 	return 0;
 }
 
-static int lua_grpc_drawCurve(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_drawCurve(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
@@ -881,7 +883,7 @@ static int lua_grpc_drawCurve(lua_State *L)
 	return 0;
 }
 
-static int lua_grpc_drawText(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_drawText(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
@@ -898,7 +900,7 @@ static int lua_grpc_drawText(lua_State *L)
 	return 0;
 }
 
-static int lua_grpc_flashScreen(lua_State *L)
+SCRIPT_LUA_CALLBACK lua_grpc_flashScreen(lua_State *L)
 {
 	if(!Gr_inited)
 		return 0;
