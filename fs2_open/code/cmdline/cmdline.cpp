@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.129 $
- * $Date: 2005-12-07 05:38:32 $
+ * $Revision: 2.130 $
+ * $Date: 2005-12-14 17:58:26 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2005/12/07 05:38:32  taylor
+ * make sure with cmdline option check that it's the actual option (-spec was getting picked out of the -spec_* options by mistake)
+ *
  * Revision 2.128  2005/12/06 03:17:48  taylor
  * cleanup some debug log messages:
  *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
@@ -1250,10 +1253,23 @@ void os_parse_parms(char *cmdline)
 	// locate command line parameters
 	cmdline_parm *parmp;
 	char *cmdline_offset;
+	size_t get_new_offset = 0;
 
 	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
-		cmdline_offset = strstr(cmdline, parmp->name);
-		if (cmdline_offset && (!(*(cmdline_offset + strlen(parmp->name))) || (*(cmdline_offset + strlen(parmp->name)) == ' ')) ) {
+		// while going through the cmdline make sure to grab only the option that we are looking
+		// for but if one similar then keep searching for the exact match
+		do {
+			cmdline_offset = strstr(cmdline + get_new_offset, parmp->name);
+
+			if (cmdline_offset && (*(cmdline_offset + strlen(parmp->name))) && !is_extra_space(*(cmdline_offset + strlen(parmp->name))) ) {
+				// the new offset should be our currently location + the length of the current option
+				get_new_offset = (strlen(cmdline) - strlen(cmdline_offset) + strlen(parmp->name));
+			} else {
+				get_new_offset = 0;
+			}
+		} while ( get_new_offset );
+
+		if (cmdline_offset) {
 			parmp->name_found = 1;
 			parm_stuff_args(parmp, cmdline_offset);
 		}
