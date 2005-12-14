@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-12-14 08:07:33 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.9  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -213,6 +217,7 @@ typedef struct beam_collision {
 	int				c_sig;							// object sig
 	int				c_stamp;							// when we should next apply damage	
 	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
+	int			is_exit_collision;					//does this occur when the beam is exiting the ship
 } beam_collision;
 
 // beam lighting effects
