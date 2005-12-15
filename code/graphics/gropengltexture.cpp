@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.33 $
- * $Date: 2005-12-08 15:10:07 $
+ * $Revision: 1.34 $
+ * $Date: 2005-12-15 16:27:45 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2005/12/08 15:10:07  taylor
+ * add APPLE_client_storage support to improve texture performance and reduce memory usage a tiny bit on OS X
+ *
  * Revision 1.32  2005/12/07 12:40:51  taylor
  * fix last bit of recent spec issue
  *
@@ -339,15 +342,17 @@ void opengl_switch_arb(int unit, int state)
 		return;
 
 	if ( unit < 0 ) {
-		// support a mass disable or all arbs so we don't have to make each call ourselves
+		// support a mass disable on all arbs so we don't have to make each call ourselves
 		if ( !state ) {
 			for ( int i = 0; i < GL_supported_texture_units; i++ ) {
-				if (!GL_texture_units_enabled[i])
-					continue;
+				// only turn off 2D if the arb was previously enabled (fixes a specmap problem)
+				if (GL_texture_units_enabled[i]) {
+					glActiveTextureARB(GL_TEXTURE0_ARB + i);
+					glDisable(GL_TEXTURE_2D);
+				}
 
-				glActiveTextureARB(GL_TEXTURE0_ARB + i);
-				glDisable(GL_TEXTURE_2D);
-
+				// the rest of this is always turned off regardless of whether or not the arb
+				// was previously enabled or not
 				glClientActiveTextureARB(GL_TEXTURE0_ARB + i);
 
 				glDisableClientState( GL_VERTEX_ARRAY );
