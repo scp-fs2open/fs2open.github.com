@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.83 $
- * $Date: 2005-11-13 06:47:26 $
- * $Author: taylor $
+ * $Revision: 2.84 $
+ * $Date: 2005-12-15 04:31:05 $
+ * $Author: phreak $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2005/11/13 06:47:26  taylor
+ * make sure that we don't get "-transport" in with the transparent filename check (TBP bug)
+ *
  * Revision 2.82  2005/11/08 01:04:00  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -3877,7 +3880,7 @@ void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii)
 // I determine I need the correct matrix.   In this code, you can't use
 // vm_vec_2_matrix or anything, since these turrets could be either 
 // right handed or left handed.
-void model_make_turrent_matrix(int model_num, model_subsystem * turret )
+void model_make_turret_matrix(int model_num, model_subsystem * turret )
 {
 	polymodel * pm;
 	vec3d fvec, uvec, rvec;
@@ -3920,7 +3923,7 @@ void model_make_turrent_matrix(int model_num, model_subsystem * turret )
 	turret->flags |= MSS_FLAG_TURRET_MATRIX;
 }
 
-// Tries to move joints so that the turrent points to the point dst.
+// Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
 int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *turret1, angles *turret2, vec3d *pos, vec3d *dst)
@@ -3941,7 +3944,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 
 	// Build the correct turret matrix if there isn't already one
 	if ( !(turret->flags & MSS_FLAG_TURRET_MATRIX) )
-		model_make_turrent_matrix(model_num, turret );
+		model_make_turret_matrix(model_num, turret );
 
 	Assert( turret->flags & MSS_FLAG_TURRET_MATRIX);
 //	Assert( sm->movement_axis == MOVEMENT_AXIS_X );				// Gun must be able to change pitch

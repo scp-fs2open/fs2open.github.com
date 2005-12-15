@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.67 $
- * $Date: 2005-12-04 19:07:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.68 $
+ * $Date: 2005-12-15 04:31:05 $
+ * $Author: phreak $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.66  2005/10/24 07:13:04  Goober5000
  * merge Bobboau's thruster code back in; hopefully this covers everything
  * --Goober5000
@@ -1335,7 +1338,7 @@ extern int modelstats_num_verts;
 extern int modelstats_num_sortnorms;
 #endif
 
-// Tries to move joints so that the turrent points to the point dst.
+// Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 extern int model_rotate_gun(int model_num, model_subsystem * turret, matrix *orient, angles * turret1, angles *turret2, vec3d * pos, vec3d * dst);
 
