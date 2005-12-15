@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/12/12 21:32:14  taylor
+ * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
+ *
  * Revision 2.62  2005/12/04 19:02:36  wmcoolmon
  * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
  *
@@ -790,6 +793,9 @@ typedef struct weapon_info {
 	//	Specific to HEAT homing missiles.
 	float	fov;
 
+	// Seeker strength - for countermeasures overhaul.
+	float seeker_strength;
+
 	int	launch_snd;
 	int	impact_snd;
 	int disarmed_impact_snd;
@@ -875,6 +881,11 @@ typedef struct weapon_info {
 	int				shots;			//the number of shots that will be fired at a time, 
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
+
+	// Countermeasure information
+	float cm_aspect_effectiveness;
+	float cm_heat_effectiveness;
+	float cm_effective_rad;
 
     // *
                

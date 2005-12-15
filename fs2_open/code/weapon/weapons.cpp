@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157  2005/12/13 05:27:36  phreak
+ * various countermeasures related fixes.  Special cases needed to be handled.
+ *
  * Revision 2.156  2005/12/12 21:32:14  taylor
  * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
  *
@@ -1693,6 +1696,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->lock_pixels_per_sec = 50;
 	wip->catchup_pixels_per_sec = 50;
 	wip->catchup_pixel_penalty = 50;
+	wip->seeker_strength = 1.0f;
 	
 	wip->swarm_count = -1;
 	// *Default is 150  -Et1
@@ -1759,6 +1763,11 @@ void init_weapon_entry(int weap_info_index)
 	wip->lssm_stage5_vel=0;		//velocity during final stage
 	wip->lssm_warpin_radius=0;
 	wip->lssm_lock_range=1000000.0f;	//local ssm lock range (optional)
+
+	wip->cm_aspect_effectiveness = 1.0f;
+	wip->cm_heat_effectiveness = 1.0f;
+	wip->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
+
 	
 	wip->b_info.beam_type = -1;
 	wip->b_info.beam_life = -1.0f;
@@ -2281,11 +2290,28 @@ int parse_weapon(int subtype, bool replace)
 				stuff_float(&view_cone_angle);
 				wip->fov = (float)cos((float)(ANG_TO_RAD(view_cone_angle/2.0f)));
 			}
+
+			if (optional_string("+Seeker Strength:"))
+			{
+				//heat default seeker strength is 3
+				wip->seeker_strength = 3;
+				stuff_float(&wip->seeker_strength);
+				if (wip->seeker_strength <= 0)
+				{
+					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
+				}
+			}
 		}
 		else if (wip->wi_flags & WIF_HOMING_ASPECT)
 		{
 			if(optional_string("+Turn Time:")) {
 				stuff_float(&wip->turn_time);
+			}
+
+			if(optional_string("+View Cone:")) {
+				float	view_cone_angle;
+				stuff_float(&view_cone_angle);
+				wip->fov = (float)cos((float)(ANG_TO_RAD(view_cone_angle/2.0f)));
 			}
 
 			if(optional_string("+Min Lock Time:")) {			// minimum time (in seconds) to achieve lock
@@ -2303,6 +2329,17 @@ int parse_weapon(int subtype, bool replace)
 			if(optional_string("+Catch-up Penalty:")) {
 				// number of extra pixels to move while locking as a penalty for catching up for a lock
 				stuff_int(&wip->catchup_pixel_penalty);
+			}
+
+			if (optional_string("+Seeker Strength:"))
+			{
+				//aspect default seeker strength is 2
+				wip->seeker_strength = 2;
+				stuff_float(&wip->seeker_strength);
+				if (wip->seeker_strength <= 0)
+				{
+					Error(LOCATION,"Seeker Strength for missile \'%s\' must be greater than zero.", wip->name);
+				}
 			}
 		}
 		else
@@ -2695,6 +2732,23 @@ int parse_weapon(int subtype, bool replace)
 		if (optional_string("+Lock Range:")) {
 			stuff_float(&wip->lssm_lock_range);
 		}
+	}
+
+	if (optional_string("$Countermeasure:"))
+	{
+		if (!(wip->wi_flags & WIF_CMEASURE))
+		{
+			Warning(LOCATION,"Weapon \'%s\' has countermeasure information defined, but the \"countermeasure\" flag wasn\'t found in the \'$Flags:\' field.\n", wip->name);
+		}
+
+		if (optional_string("+Heat Effectiveness:"))
+			stuff_float(&wip->cm_heat_effectiveness);
+
+		if (optional_string("+Aspect Effectiveness:"))
+			stuff_float(&wip->cm_aspect_effectiveness);
+
+		if (optional_string("+Effective Radius:"))
+			stuff_float(&wip->cm_effective_rad);
 	}
 
 	// beam weapon optional stuff
@@ -4021,46 +4075,54 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 	{
-		cm_wp = &Weapons[objp->instance];
-		cm_wip = &Weapon_info[cm_wp->weapon_info_index];
-
-		if (objp->type == OBJ_WEAPON && (cm_wip->wi_flags & WIF_CMEASURE))
+		//first check if its a weapon, then setup the pointers
+		if (objp->type == OBJ_WEAPON)
 		{
-			//don't have a weapon try to home in on itself
-			if (objp==weapon_objp) continue;
+			cm_wp = &Weapons[objp->instance];
+			cm_wip = &Weapon_info[cm_wp->weapon_info_index];
 
-			//don't have a weapon try to home in on missiles fired by the same team, unless its the traitor team.
-			if ((wp->team == cm_wp->team) && (wp->team != TEAM_TRAITOR)) continue;
+			if (cm_wip->wi_flags & WIF_CMEASURE)
+			{
+				//don't have a weapon try to home in on itself
+				if (objp==weapon_objp) continue;
 
-			vec3d	vec_to_object;
-			dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
+				//don't have a weapon try to home in on missiles fired by the same team, unless its the traitor team.
+				if ((wp->team == cm_wp->team) && (wp->team != TEAM_TRAITOR)) continue;
 
-			if (dist < MAX_CMEASURE_TRACK_DIST) {
-				float	chance;
-				if (wip->wi_flags & WIF_HOMING_ASPECT) {
-					chance = 1.0f/2.0f;	//	aspect seeker this likely to chase a countermeasure
-				} else {
-					chance = 1.0f/1.5f;	//	heat seeker this likely to chase a countermeasure
-				}
-				if ((objp->signature != wp->cmeasure_ignore_objnum) && (objp->signature != wp->cmeasure_chase_objnum)) {
-					if (frand() < chance) {
-						wp->cmeasure_ignore_objnum = objp->signature;	//	Don't process this countermeasure again.
-						mprintf(("Frame %i: Weapon #%i ignoring cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
-					} else  {
-						wp->cmeasure_chase_objnum = objp->signature;	//	Don't process this countermeasure again.
-						mprintf(("Frame %i: Weapon #%i CHASING cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+				vec3d	vec_to_object;
+				dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
+
+				if (dist < cm_wip->cm_effective_rad)
+				{
+					float	chance;
+					if (wip->wi_flags & WIF_HOMING_ASPECT) {
+						chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;	//	aspect seeker this likely to chase a countermeasure
+					} else {
+						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;	//	heat seeker this likely to chase a countermeasure
 					}
-				}
+					if ((objp->signature != wp->cmeasure_ignore_objnum) && (objp->signature != wp->cmeasure_chase_objnum))
+					{
+						if (frand() >= chance) {
+							wp->cmeasure_ignore_objnum = objp->signature;	//	Don't process this countermeasure again.
+							mprintf(("Frame %i: Weapon #%i ignoring cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+						} else  {
+							wp->cmeasure_chase_objnum = objp->signature;	//	Don't process this countermeasure again.
+							mprintf(("Frame %i: Weapon #%i CHASING cmeasure #%i\n", Framecount, OBJ_INDEX(weapon_objp), objp->signature));
+						}
+					}
 				
-				if (objp->signature != wp->cmeasure_ignore_objnum) {
+					if (objp->signature != wp->cmeasure_ignore_objnum)
+					{
 
-					dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
+						dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
-					if (dot > best_dot) {
-						//nprintf(("Jim", "Frame %i: Weapon #%i homing on cmeasure #%i\n", Framecount, weapon_objp-Objects, objp->signature));
-						best_dot = dot;
-						wp->homing_object = objp;
-						cmeasure_maybe_alert_success(objp);
+						if (dot > best_dot)
+						{
+							//nprintf(("Jim", "Frame %i: Weapon #%i homing on cmeasure #%i\n", Framecount, weapon_objp-Objects, objp->signature));
+							best_dot = dot;
+							wp->homing_object = objp;
+							cmeasure_maybe_alert_success(objp);
+						}
 					}
 				}
 			}
