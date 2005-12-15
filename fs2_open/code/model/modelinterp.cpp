@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.134 $
- * $Date: 2005-12-12 22:04:19 $
+ * $Revision: 2.135 $
+ * $Date: 2005-12-15 16:31:03 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2005/12/12 22:04:19  taylor
+ * make sure that the value of model_current_LOD stays with the detail_level value so that it's properly capped when used latter
+ * undo the locked detail level change, all of the LOD textures are cached (or should be) so that really only hurt speed rather than helping
+ *
  * Revision 2.133  2005/10/30 06:44:57  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -1312,6 +1316,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 	int nverts = w(p+8);	
 	int offset = w(p+16);
 	int next_norm = 0;
+	int nnorms = 0;
 
 	ubyte * normcount = p+20;
 	vertex *dest = Interp_points;
@@ -1320,8 +1325,20 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 	// Get pointer to lights
 	Interp_lights = p+20+nverts;
 
-	Assert( nverts < MAX_POLYGON_VECS );
+	// Assert( nverts < MAX_POLYGON_VECS );
 	// Assert( nnorms < MAX_POLYGON_NORMS );
+
+	if (nverts >= MAX_POLYGON_VECS) {
+		Error( LOCATION, "Model '%s' has too many points (%d)! Needs to be less than %d!\n", pm->filename, nverts, MAX_POLYGON_VECS );
+	}
+
+	for (i = 0; i < nverts; i++) {
+		nnorms += normcount[i];
+	}
+
+	if (nnorms >= MAX_POLYGON_NORMS) {
+		Error( LOCATION, "Model '%s' has too many normals (%d)! Needs to be less than %d!\n", pm->filename, nnorms, MAX_POLYGON_NORMS );
+	}
 
 	Interp_num_verts = nverts;
 	#ifndef NDEBUG
@@ -1358,7 +1375,6 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 		for (n=0; n<nverts; n++ )	{
 			vec3d tmp;
-			if(nverts >= MAX_POLYGON_VECS)Error( LOCATION, "model has too many points %d needs to be less than %d\n", nverts ,MAX_POLYGON_VECS );
 
 			Interp_verts[n] = src;
 
@@ -1378,8 +1394,6 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 			src++;		// move to normal
 
 			for (i=0; i<normcount[n]; i++ )	{
-				if(next_norm >= MAX_POLYGON_NORMS)Error( LOCATION, "model has too many normals %d needs to be less than %d\n", next_norm ,MAX_POLYGON_NORMS );
-
 				Interp_light_applied[next_norm] = 0;
 				Interp_norms[next_norm] = src;
 
