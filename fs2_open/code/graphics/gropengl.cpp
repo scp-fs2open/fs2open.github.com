@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.145 $
- * $Date: 2005-12-08 15:07:57 $
+ * $Revision: 2.146 $
+ * $Date: 2005-12-15 16:26:35 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.145  2005/12/08 15:07:57  taylor
+ * remove GL_NO_HTL define since it's basically useless at this point and can produced non-functioning builds
+ * minor cleanup and readability changes
+ * get Apple GL version change in CVS finally, the capabilities of an Apple GL version don't neccessarily correspond to it's features
+ *
  * Revision 2.144  2005/12/07 05:39:50  taylor
  * bah, X sucks.  I need to beef up error handling there in order to make all of the platforms happy.
  *
@@ -4251,9 +4256,9 @@ void gr_opengl_init(int reinit)
 
 	// setup the best fog function found
 	// start with NV Radial Fog (GeForces only)  -- needs t&l, will have to wait
-	if ( opengl_extension_is_enabled(GL_NV_RADIAL_FOG) && !Fred_running ) {
+	/*if ( opengl_extension_is_enabled(GL_NV_RADIAL_FOG) && !Fred_running ) {
 		OGL_fogmode = 3;
-	} else if ( opengl_extension_is_enabled(GL_FOG_COORDF) && !Fred_running ) {
+	} else*/ if ( opengl_extension_is_enabled(GL_FOG_COORDF) && !Fred_running ) {
 		OGL_fogmode = 2;
 	} else if ( !Fred_running ) {
 		OGL_fogmode = 1;
