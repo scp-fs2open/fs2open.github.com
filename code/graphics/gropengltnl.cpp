@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.33 $
- * $Date: 2005-12-08 15:07:57 $
+ * $Revision: 1.34 $
+ * $Date: 2005-12-16 06:48:28 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2005/12/08 15:07:57  taylor
+ * remove GL_NO_HTL define since it's basically useless at this point and can produced non-functioning builds
+ * minor cleanup and readability changes
+ * get Apple GL version change in CVS finally, the capabilities of an Apple GL version don't neccessarily correspond to it's features
+ *
  * Revision 1.32  2005/12/07 05:42:50  taylor
  * partial spec fix, can't mass kill the pointers when they are still needed for the second pass (still something else wrong though)
  * forgot that the extra rangeelement optimization check isn't needed anymore, just look at indices since that's all we're using
@@ -474,7 +479,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 		a = 255;
 	}
 
-	opengl_setup_render_states(r, g, b, a, tmap_type, TMAP_FLAG_TEXTURED, 0);
+	opengl_setup_render_states(r, g, b, a, tmap_type, TMAP_FLAG_TEXTURED);
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
 	// basic setup of all data and first texture
@@ -569,6 +574,46 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 	glUnlockArraysEXT();
 // -------- End 1st PASS --------------------------------------------------------- //
 
+// -------- Begin lighting pass (conditional but should happen before spec pass) - //
+	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/GL_max_lights > 0) ) {
+		opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
+		for (i = 1; i < pass_one; i++) {
+			opengl_switch_arb(i, 0);
+		}
+
+		glLockArraysEXT( 0, vbp->n_verts);
+
+		for(i=0; i< (n_active_gl_lights-1)/GL_max_lights; i++)
+		{
+			opengl_change_active_lights(i+1);
+
+			if (index_buffer != NULL) {
+				if ( multiple_elements ) {
+					start_tmp = 0;
+					end_tmp = (GL_max_elements_indices - 1);
+					count_tmp = (end_tmp - start_tmp + 1);
+
+					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
+
+					while (end_tmp < end) {
+						start_tmp += (GL_max_elements_indices - 1);
+						end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
+						count_tmp = (end_tmp - start_tmp + 1);
+
+						glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
+					}
+				} else {
+					glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
+				}
+			} else {
+				glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
+			}
+		}
+
+		glUnlockArraysEXT();
+	}
+// -------- End lighting PASS ---------------------------------------------------- //
+
 // -------- Begin 2nd (specular) PASS -------------------------------------------- //
 	if ( use_spec ) {
 		// turn all previously used arbs off before the specular pass
@@ -618,46 +663,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 	}
 // -------- End 2nd PASS --------------------------------------------------------- //
 
-	// reset lights to default values
-//	opengl_default_light_settings();
-
-	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/GL_max_lights > 0) ) {
-		opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-		for (i = 1; i < pass_one; i++) {
-			opengl_switch_arb(i, 0);
-		}
-
-		glLockArraysEXT( 0, vbp->n_verts);
-
-		for(i=0; i< (n_active_gl_lights-1)/GL_max_lights; i++)
-		{
-			opengl_change_active_lights(i+1);
-
-			if (index_buffer != NULL) {
-				if ( multiple_elements ) {
-					start_tmp = 0;
-					end_tmp = (GL_max_elements_indices - 1);
-					count_tmp = (end_tmp - start_tmp + 1);
-
-					glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-
-					while (end_tmp < end) {
-						start_tmp += (GL_max_elements_indices - 1);
-						end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
-						count_tmp = (end_tmp - start_tmp + 1);
-
-						glDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-					}
-				} else {
-					glDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
-				}
-			} else {
-				glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
-			}
-		}
-
-		glUnlockArraysEXT();
-	}
 
 	TIMERBAR_POP();
 
