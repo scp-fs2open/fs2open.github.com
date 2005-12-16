@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.283 $
- * $Date: 2005-12-13 22:32:30 $
+ * $Revision: 2.284 $
+ * $Date: 2005-12-16 03:36:21 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.283  2005/12/13 22:32:30  wmcoolmon
+ * Ability to disable damage particle spew on ships
+ *
  * Revision 2.282  2005/12/13 20:20:20  wmcoolmon
  * Minor XMT-engine wash fix
  *
@@ -3354,7 +3357,7 @@ strcpy(parse_error_text, temp_error);
 	{
 		stuff_vector(&sip->closeup_pos);
 	}
-	else if (first_time)
+	else if (first_time && strlen(sip->pof_file))
 	{
 		//Calculate from the model file. This is inefficient, but whatever
 		int model_idx = model_load(sip->pof_file, 0, NULL);
