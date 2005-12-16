@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.63 $
- * $Date: 2005-12-04 18:55:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.64 $
+ * $Date: 2005-12-16 06:51:31 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/12/04 18:55:42  wmcoolmon
+ * Better overhead-view handling
+ *
  * Revision 2.62  2005/11/16 05:46:27  taylor
  * bunch of error checking and code cleanup for the team stuff in ship/weapon select
  *
@@ -1459,6 +1462,8 @@ void wl_render_overhead_view(float frametime)
 
 	if(last_ship_class != ship_class)
 	{
+		display_type = -1;
+
 		if(Cmdline_ship_choice_3d || !strlen(sip->overhead_filename))
 		{
 			if (wl_ship->model_num < 0)
