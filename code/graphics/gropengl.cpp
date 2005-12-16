@@ -2,13 +2,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.147 $
- * $Date: 2005-12-16 06:48:28 $
+ * $Revision: 2.148 $
+ * $Date: 2005-12-16 16:34:35 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.147  2005/12/16 06:48:28  taylor
+ * "House Keeping!!"
+ *   - minor cleanup of things that have bothered me at one time or another
+ *   - slight speedup from state switching
+ *   - slightly better specmap handling, fixes a couple of (not frequent) strange and sorta random issues
+ *   - make sure to only disable HTL arb stuff when in HTL mode
+ *   - handle any extra lighting pass before spec pass so the light can be applied properly
+ *
  * Revision 2.146  2005/12/15 16:26:35  taylor
  * didn't mean for that to hit CVS, it makes neb missions work a little strange
  *
@@ -2376,7 +2384,7 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 	} else {
 		zbuffer_type = ZBUFFER_TYPE_NONE;
 	}
-	
+
 	tmap_type = TCACHE_TYPE_NORMAL;
 
 	if ( flags & TMAP_FLAG_TEXTURED ) {
@@ -2390,13 +2398,13 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ) {
 		if (1) {
 			tmap_type = TCACHE_TYPE_NORMAL;
-			alpha_blend = ALPHA_BLEND_ALPHA_ADDITIVE;
-			
+			alpha_blend = ALPHA_BLEND_ADDITIVE;	// ALPHA_BLEND_ALPHA_ADDITIVE;
+
 			// Blend with screen pixel using src*alpha+dst
 			float factor = gr_screen.current_alpha;
-			
+
 			alpha = 255;
-			
+
 			if ( factor <= 1.0f ) {
 				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
 				r = (r*tmp_alpha)/255;
@@ -2405,12 +2413,12 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 			}
 		} else {
 			tmap_type = TCACHE_TYPE_XPARENT;
-			
+
 			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-			
+
 			// Blend with screen pixel using src*alpha+dst
 			float factor = gr_screen.current_alpha;
-				
+
 			if ( factor > 1.0f ) {
 				alpha = 255;
 			} else {
