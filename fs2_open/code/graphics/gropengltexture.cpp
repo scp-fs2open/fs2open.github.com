@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.34 $
- * $Date: 2005-12-15 16:27:45 $
+ * $Revision: 1.35 $
+ * $Date: 2005-12-16 06:48:28 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2005/12/15 16:27:45  taylor
+ * make sure we always disable all VBO related elements to avoid crashing (new that was a problem, did it anyway, me == stupid)
+ *
  * Revision 1.33  2005/12/08 15:10:07  taylor
  * add APPLE_client_storage support to improve texture performance and reduce memory usage a tiny bit on OS X
  *
@@ -219,8 +222,8 @@ int GL_should_preload = 0;
 ubyte GL_xlat[256] = { 0 };
 GLfloat GL_anisotropy = 0.0f;
 GLfloat GL_max_anisotropy = 0.0f;
+static int vram_full = 0;			// UnknownPlayer
 
-extern int vram_full;
 extern int GLOWMAP;
 extern int SPECMAP;
 extern int CLOAKMAP;
@@ -351,16 +354,18 @@ void opengl_switch_arb(int unit, int state)
 					glDisable(GL_TEXTURE_2D);
 				}
 
-				// the rest of this is always turned off regardless of whether or not the arb
-				// was previously enabled or not
-				glClientActiveTextureARB(GL_TEXTURE0_ARB + i);
+				if ( !Cmdline_nohtl ) {
+					// the rest of this is always turned off regardless of whether or not the arb
+					// was previously enabled or not
+					glClientActiveTextureARB(GL_TEXTURE0_ARB + i);
 
-				glDisableClientState( GL_VERTEX_ARRAY );
-				glDisableClientState( GL_NORMAL_ARRAY );
-				glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+					glDisableClientState( GL_VERTEX_ARRAY );
+					glDisableClientState( GL_NORMAL_ARRAY );
+					glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 
-				if (VBO_ENABLED) {
-					glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+					if (VBO_ENABLED) {
+						glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+					}
 				}
 
 				GL_texture_units_enabled[i] = 0;

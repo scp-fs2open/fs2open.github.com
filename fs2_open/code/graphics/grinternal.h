@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.10 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2005-12-16 06:48:28 $
+ * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.9  2005/04/24 12:56:42  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -288,7 +292,8 @@ typedef enum gr_texture_source {
 } gr_texture_source;
 
 typedef enum gr_alpha_blend {
-	ALPHA_BLEND_NONE,							// 1*SrcPixel + 0*DestPixel
+	ALPHA_BLEND_NONE,					// 1*SrcPixel + 0*DestPixel
+	ALPHA_BLEND_ADDITIVE,				// 1*SrcPixel + 1*DestPixel
 	ALPHA_BLEND_ALPHA_ADDITIVE,			// Alpha*SrcPixel + 1*DestPixel
 	ALPHA_BLEND_ALPHA_BLEND_ALPHA,		// Alpha*SrcPixel + (1-Alpha)*DestPixel
 	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel

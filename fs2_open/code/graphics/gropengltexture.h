@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.14 $
- * $Date: 2005-12-06 02:50:41 $
+ * $Revision: 1.15 $
+ * $Date: 2005-12-16 06:48:28 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/12/06 02:50:41  taylor
+ * clean up some init stuff and fix a minor SDL annoyance
+ * make debug messages a bit more readable
+ * clean up the debug console commands for minimize and anisotropic filter setting
+ * make anisotropic filter actually work correctly and have it settable with a reg option
+ * give opengl_set_arb() the ability to disable all features on all arbs at once so I don't have to everywhere
+ *
  * Revision 1.13  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -137,8 +144,6 @@ extern GLint GL_supported_texture_units;
 extern int GL_should_preload;
 extern ubyte GL_xlat[256];
 
-
-extern int vram_full;
 
 void opengl_tcache_init(int use_sections);
 int opengl_free_texture(tcache_slot_opengl *t);
