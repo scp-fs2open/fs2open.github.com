@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.54 $
- * $Date: 2005-12-04 19:07:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.55 $
+ * $Date: 2005-12-16 06:51:31 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.53  2005/11/16 05:46:27  taylor
  * bunch of error checking and code cleanup for the team stuff in ship/weapon select
  *
@@ -2096,7 +2099,7 @@ void ship_select_do(float frametime)
 	//////////////////////////////////
 	// Render and draw the 3D model //
 	//////////////////////////////////
-	if( Cmdline_ship_choice_3d || ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim == NULL)) )
+	if( Cmdline_ship_choice_3d || ((Ss_icons != NULL) && (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim == NULL)) )
 	{
 		// check we have a valid ship class selected
 		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
