@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.135 $
- * $Date: 2005-12-15 16:31:03 $
+ * $Revision: 2.136 $
+ * $Date: 2005-12-16 06:54:10 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2005/12/15 16:31:03  taylor
+ * fix limits checking messages to actually be useful and hit sooner (wireframe view of some hi-poly models was going out-of-bounds from normals)
+ *
  * Revision 2.134  2005/12/12 22:04:19  taylor
  * make sure that the value of model_current_LOD stays with the detail_level value so that it's properly capped when used latter
  * undo the locked detail level change, all of the LOD textures are cached (or should be) so that really only hurt speed rather than helping
@@ -2757,6 +2760,7 @@ void model_render_insignias(polymodel *pm, int detail_level)
 	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
 	vec3d t1, t2, t3, x;
 	int i1, i2, i3;
+	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT;
 
 	x.xyz.x=0;
 	x.xyz.y=0;
@@ -2808,20 +2812,15 @@ void model_render_insignias(polymodel *pm, int detail_level)
 			vecs[1].u = pm->ins[idx].u[s_idx][1];  vecs[1].v = pm->ins[idx].v[s_idx][1];
 			vecs[2].u = pm->ins[idx].u[s_idx][2];  vecs[2].v = pm->ins[idx].v[s_idx][2];
 
-			// vm_vec_avg3(&x, 
-/*
-			for(int k =0; k < 3; k++){
-				if ( D3D_enabled )	{
-					light_apply_rgb( &vecs[k].r, &vecs[k].g, &vecs[k].b, &pm->ins[idx].vecs[k], &pm->ins[idx].norm[k], 0.8f );
-				} else {
-					vecs[k].b = light_apply( &x, &pm->ins[idx].norm[k], 0.8f );
-				}
+			if (!Cmdline_nohtl) {
+				light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
+				light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
+				light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
+				tmap_flags |= TMAP_FLAG_RGB;
 			}
-			vecs[k].r = (ubyte)255;*/
-//			gr_printf((0), (0), "r %d, g %d, b %d", (int)vecs[k].r, (int)vecs[k].g, (int)vecs[k].b);
+
 			// draw the polygon
-			g3_draw_poly(3, vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
-		//	g3_draw_poly(3, vlist, 0);
+			g3_draw_poly(3, vlist, tmap_flags);
 		}
 	}
 }
