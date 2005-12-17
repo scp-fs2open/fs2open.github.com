@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.159  2005/12/17 00:50:55  wmcoolmon
+ * Better handling of beam overrides (bm_unload textures as they are replaced)
+ *
  * Revision 2.158  2005/12/15 06:03:50  phreak
  * Countermeasres parameters.  Lets users specify how easily missiles are spoofed by countermeasures
  *
@@ -2906,8 +2909,10 @@ int parse_weapon(int subtype, bool replace)
 		beam_weapon_section_info tbsw;
 		beam_weapon_section_info *ip;
 		int bsw_index_override;
+		bool nocreate;
 		while( optional_string("$Section:") )
 		{
+			nocreate = false;
 			bsw_index_override = -1;
 			if(optional_string("+Index:"))
 			{
@@ -2917,14 +2922,48 @@ int parse_weapon(int subtype, bool replace)
 					Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.beam_num_sections -1);
 				}
 			}
+			if(optional_string("+nocreate")) {
+				nocreate = true;
+			}
 
 			//Where are we saving data?
-			if(bsw_index_override > 0 && bsw_index_override < wip->b_info.beam_num_sections) {
-				ip = &wip->b_info.sections[bsw_index_override];
-			} else if(wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS && (bsw_index_override < 0 || bsw_index_override == wip->b_info.beam_num_sections)){
-				ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
-			} else {
-				ip = &tbsw;	//Ignore this section
+			if(bsw_index_override > 0)
+			{
+				if(bsw_index_override < wip->b_info.beam_num_sections)
+				{
+					ip = &wip->b_info.sections[bsw_index_override];
+				}
+				else
+				{
+					if(!nocreate)
+					{
+						if(bsw_index_override == wip->b_info.beam_num_sections)
+						{
+							ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+						}
+						else
+						{
+							Warning(LOCATION, "Invalid index for manually-indexed beam section %d on weapon %s.", bsw_index_override, wip->name);
+						}
+					}
+					else
+					{
+						Warning(LOCATION, "Invalid index for manually-indexed beam section %d, and +nocreate specified, on weapon %s", bsw_index_override, wip->name);
+						ip = &tbsw;
+					}
+
+				}
+			}
+			else
+			{
+				if(wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS) {
+					ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+				}
+				else
+				{
+					Warning(LOCATION, "Too many beam sections for weapon %s - max is %d", wip->name, MAX_BEAM_SECTIONS);
+					ip = &tbsw;
+				}
 			}
 
 			char tex_name[255] = "";
