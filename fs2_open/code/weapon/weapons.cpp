@@ -12,6 +12,18 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.158  2005/12/15 06:03:50  phreak
+ * Countermeasres parameters.  Lets users specify how easily missiles are spoofed by countermeasures
+ *
+ * A missile is given a seeker strength.  Aspect default of 2.  Heat default of 3.  This is a missile's resistance to spoofage
+ * A countermesaure is given an effectiveness for each type.  The defaults for countermeasure heat and aspect effectiveness are both 1.
+ * Also gave the countermeasure an effective range.  Default is 300 meters.
+ *
+ * A missiles chance of being spoofed is calculated by <cm type effectiveness>/<seeker strength>
+ * So by default, 1/2 of aspect seekers will be fooled by a countermeasures, while 1/3 of heat seekers would be spoofed by default.
+ *
+ * Also i gave the option of aspect missiles having a view cone different from 180 degrees.  This parameter is optional and doesn't effect anything already there.
+ *
  * Revision 2.157  2005/12/13 05:27:36  phreak
  * various countermeasures related fixes.  Special cases needed to be handled.
  *
@@ -2754,6 +2766,8 @@ int parse_weapon(int subtype, bool replace)
 	// beam weapon optional stuff
 	if( optional_string("$BeamInfo:"))
 	{
+		int new_tex=-1, new_nframes=1, new_fps=1;
+
 		// beam type
 		if(optional_string("+Type:")) {
 			stuff_int(&wip->b_info.beam_type);
@@ -2798,10 +2812,19 @@ int parse_weapon(int subtype, bool replace)
 		if(optional_string("+PAni:"))
 		{
 			stuff_string(fname, F_NAME, NULL);
-			//TODO: Get rid of this bm_load_animation call. -C
+
 			if(!Fred_running){
-				int num_frames, fps;
-				wip->b_info.beam_particle_ani = bm_load_animation(fname, &num_frames, &fps, 1);
+				new_nframes = 1;
+				new_fps = 1;
+				new_tex = bm_load_animation(fname, &new_nframes, &new_fps, 1);
+				if(new_tex > -1)
+				{
+					if(wip->b_info.beam_particle_ani > -1) {
+						bm_unload(wip->b_info.beam_particle_ani);
+					}
+
+					wip->b_info.beam_particle_ani = new_tex;
+				}
 			}
 		}
 
@@ -2829,11 +2852,21 @@ int parse_weapon(int subtype, bool replace)
 		{
 			stuff_string(fname, F_NAME, NULL);
 			if(!Fred_running){
-				wip->b_info.beam_glow_bitmap = bm_load(fname);
+				new_nframes = 1;
+				new_fps = 1;
+				new_tex = bm_load(fname);
 
-				//TODO: Get rid of this bm_load_animation call. -C
-				if (wip->b_info.beam_glow_bitmap == -1) {
-					wip->b_info.beam_glow_bitmap = bm_load_animation(fname, &wip->b_info.beam_glow_nframes, &wip->b_info.beam_glow_fps);
+				if (new_tex == -1) {
+					new_tex = bm_load_animation(fname, &new_nframes, &new_fps);
+				}
+				if(new_tex > -1)
+				{
+					if(wip->b_info.beam_glow_bitmap > -1) {
+						bm_unload(wip->b_info.beam_glow_bitmap);
+					}
+					wip->b_info.beam_glow_bitmap = new_tex;
+					wip->b_info.beam_glow_nframes = new_nframes;
+					wip->b_info.beam_glow_fps = new_fps;
 				}
 			}
 		}
@@ -2888,7 +2921,7 @@ int parse_weapon(int subtype, bool replace)
 			//Where are we saving data?
 			if(bsw_index_override > 0 && bsw_index_override < wip->b_info.beam_num_sections) {
 				ip = &wip->b_info.sections[bsw_index_override];
-			} else if(wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS){
+			} else if(wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS && (bsw_index_override < 0 || bsw_index_override == wip->b_info.beam_num_sections)){
 				ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
 			} else {
 				ip = &tbsw;	//Ignore this section
@@ -2908,9 +2941,10 @@ int parse_weapon(int subtype, bool replace)
 
 				if(!Fred_running)
 				{
+					new_nframes = 1;
+					new_fps = 1;
 					//Don't load the file yet, in case there's an old one
 					//and the new one doesn't load
-					int new_tex=-1, new_nframes=1, new_fps=1;
 					new_tex = bm_load(tex_name);
 
 					if (new_tex < 0) {
@@ -2920,6 +2954,9 @@ int parse_weapon(int subtype, bool replace)
 					//We got the file, so load the new values
 					if(new_tex > -1)
 					{
+						if(ip->texture > -1) {
+							bm_unload(ip->texture);
+						}
 						ip->texture = new_tex;
 						ip->nframes = new_nframes;
 						ip->fps = new_fps;
