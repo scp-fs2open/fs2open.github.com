@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.160  2005/12/17 00:59:48  wmcoolmon
+ * Added +nocreate and more verbose index handling for beam sections
+ *
  * Revision 2.159  2005/12/17 00:50:55  wmcoolmon
  * Better handling of beam overrides (bm_unload textures as they are replaced)
  *
@@ -2855,13 +2858,14 @@ int parse_weapon(int subtype, bool replace)
 		{
 			stuff_string(fname, F_NAME, NULL);
 			if(!Fred_running){
-				new_nframes = 1;
-				new_fps = 1;
-				new_tex = bm_load(fname);
+				new_tex = bm_load_animation(fname, &new_nframes, &new_fps);
 
-				if (new_tex == -1) {
-					new_tex = bm_load_animation(fname, &new_nframes, &new_fps);
+				if (new_tex < 0) {
+					new_tex = bm_load(fname);
+					new_nframes = 1;
+					new_fps = 1;
 				}
+
 				if(new_tex > -1)
 				{
 					if(wip->b_info.beam_glow_bitmap > -1) {
@@ -2901,10 +2905,7 @@ int parse_weapon(int subtype, bool replace)
 		if (optional_string("+Attenuation:")) {
 			stuff_float(&wip->b_info.damage_threshold);
 		}
-		//=============================HEY YOU!!!!!!!!=============================
-		//I got to this point for modular table stuff.
 		// beam sections
-		//TODO: Add code for handling override rather than addition
 		//beam_weapon_section_info i;
 		beam_weapon_section_info tbsw;
 		beam_weapon_section_info *ip;
@@ -2980,14 +2981,14 @@ int parse_weapon(int subtype, bool replace)
 
 				if(!Fred_running)
 				{
-					new_nframes = 1;
-					new_fps = 1;
 					//Don't load the file yet, in case there's an old one
 					//and the new one doesn't load
-					new_tex = bm_load(tex_name);
+					new_tex = bm_load_animation(tex_name, &new_nframes, &new_fps);
 
 					if (new_tex < 0) {
-						new_tex = bm_load_animation(tex_name, &new_nframes, &new_fps);
+						new_tex = bm_load(tex_name);
+						new_nframes = 1;
+						new_fps = 1;
 					}
 
 					//We got the file, so load the new values
