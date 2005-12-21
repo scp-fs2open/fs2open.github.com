@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.284 $
- * $Date: 2005-12-16 03:36:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.285 $
+ * $Date: 2005-12-21 08:27:37 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.284  2005/12/16 03:36:21  wmcoolmon
+ * Keep a crash from happening if POF file isn't initially specified
+ *
  * Revision 2.283  2005/12/13 22:32:30  wmcoolmon
  * Ability to disable damage particle spew on ships
  *
@@ -4101,6 +4104,7 @@ void ship_init()
 				Modular_tables_loaded = true;
 				Module_ship_weapons_loaded = true;
 				strcat(tbl_file_names[i], ".tbm");
+				mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
 				parse_shiptbl(tbl_file_names[i], true);
 			}
 			ships_inited = 1;
@@ -15385,6 +15389,7 @@ void armor_init()
 			//HACK HACK HACK
 			Modular_tables_loaded = true;
 			strcat(tbl_file_names[i], ".tbm");
+			mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
 			armor_parse_table(tbl_file_names[i]);
 		}
 
