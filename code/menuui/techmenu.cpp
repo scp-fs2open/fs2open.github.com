@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-12-06 03:17:48 $
+ * $Revision: 2.35 $
+ * $Date: 2005-12-21 08:24:51 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/12/06 03:17:48  taylor
+ * cleanup some debug log messages:
+ *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
+ *   make sure that OpenAL init failures always get to the debug log
+ *
  * Revision 2.33  2005/12/04 19:05:06  wmcoolmon
  * Better weapon handling for techroom (more dynamic-limits friendly)
  *
@@ -578,6 +583,7 @@ static int Trackball_mode = 1;
 static int Trackball_active = 0;
 static matrix Techroom_ship_orient = IDENTITY_MATRIX;
 // static int Tech_room_ask_for_cd;
+static int Techroom_show_all = 0;
 
 static int Text_size;
 static int Text_offset;
@@ -1173,12 +1179,17 @@ void techroom_change_tab(int num)
 			mask = multi ? SIF_IN_TECH_DATABASE_M : SIF_IN_TECH_DATABASE;
 			
 			// load ship info if necessary
-			if (Ships_loaded == 0) {
-				Ship_list = new tech_list_entry[Num_ship_types];
-				if(Ship_list == NULL)Error(LOCATION, "Couldn't init ships list!");
+			if ( Ships_loaded == 0 ) {
+				if (Ship_list == NULL) {
+					Ship_list = new tech_list_entry[Num_ship_types];
+
+					if (Ship_list == NULL)
+						Error(LOCATION, "Couldn't init ships list!");
+				}
+
 				Ship_list_size = 0;
 				for (i=0; i<Num_ship_types; i++) {
-					if (Ship_info[i].flags & mask) {
+					if (Techroom_show_all || (Ship_info[i].flags & mask)) {
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
 						Ship_list[Ship_list_size].index = i;
@@ -1207,15 +1218,20 @@ void techroom_change_tab(int num)
 		case WEAPONS_DATA_TAB:
 				
 			// load weapon info & anims if necessary
-			if (Weapons_loaded == 0) {
-				Weapon_list = new tech_list_entry[Num_weapon_types];
-				Assert( Weapon_list != NULL);
+			if ( Weapons_loaded == 0 ) {
+				if (Weapon_list == NULL) {
+					Weapon_list = new tech_list_entry[Num_weapon_types];
+
+					if (Weapon_list == NULL)
+						Error(LOCATION, "Couldn't init ships list!");
+				}
+
 				Weapon_list_size = 0;
 				mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
 
 				for (i=0; i<Num_weapon_types; i++)
 				{
-					if (Weapon_info[i].wi_flags & mask)
+					if (Techroom_show_all || (Weapon_info[i].wi_flags & mask))
 					{ 
 						//following was commented out to fix the tech room crash bug when modified weapons.tbl is used.  Fix by Phreak, implemented by Sesquipedalian.
 						// note: hack here to exclude dogfight weapons -- dont put weapon in if it has same description as pvs weapon
@@ -1270,7 +1286,7 @@ void techroom_change_tab(int num)
 				Intel_list_size = 0;
 				for (i=0; i<Intel_info_size; i++) {
 
-					if (Intel_info[i].flags & IIF_IN_TECH_DATABASE) {
+					if (Techroom_show_all || (Intel_info[i].flags & IIF_IN_TECH_DATABASE)) {
 						// leave option for no animation if string == "none"
 						if (!strcmp(Intel_info[i].anim_filename, "none")) {
 							Intel_list[Intel_list_size].has_anim = 0;
@@ -1314,45 +1330,6 @@ void techroom_change_tab(int num)
 	Cur_entry = 0;
 	techroom_select_new_entry();
 
-}
-
-// special techroom function to show all ships in Ship_info[] rather
-// than just the ones marked as viewable, isn't permanent - taylor
-void techroom_update_ship_list_special(int tab)
-{
-	// for ships only
-	if (tab != SHIPS_DATA_TAB)
-		return;
-
-	// we need space for Ship_list to already be allocated
-	if ( Ships_loaded == 0 )
-		return;
-
-	Assert( Ship_list != NULL );
-
-	int i, font_height, max_num_entries_viewable;
-
-	// show every available ship
-	Ship_list_size = 0;
-	for (i=0; i<Num_ship_types; i++) {
-		// this ship should be displayed, fill out the entry struct
-		Ship_list[Ship_list_size].bitmap = -1;
-		Ship_list[Ship_list_size].index = i;
-		Ship_list[Ship_list_size].animation = NULL;                     // no anim for ships
-		Ship_list[Ship_list_size].has_anim = 0;                         // no anim for ships
-		Ship_list[Ship_list_size].name = Ship_info[i].name;
-		Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
-		Ship_list[Ship_list_size].model_num = -1;
-		Ship_list[Ship_list_size].textures_loaded = 0;
-		Ship_list_size++;
-	}
-
-	Current_list = Ship_list;
-	Current_list_size = Ship_list_size;
-
-	font_height = gr_get_font_height();
-	max_num_entries_viewable = Tech_list_coords[gr_screen.res][SHIP_H_COORD] / font_height;
-	Tech_slider.set_numberItems(Current_list_size > max_num_entries_viewable ? Current_list_size-max_num_entries_viewable : 0);
 }
 
 int techroom_button_pressed(int num)
@@ -1551,6 +1528,8 @@ void techroom_init()
 	Weapons_loaded = 0;
 	Intel_loaded = 0;
 
+	Techroom_show_all = 0;
+
 	// Tech_room_ask_for_cd = 1;
 
 	// backup and bash detail level stuff
@@ -1669,57 +1648,68 @@ void techroom_init()
 	techroom_change_tab(Tab);
 }
 
-void techroom_close()
+void techroom_lists_reset()
 {
 	int i;
 
-	fsspeech_stop();
 	techroom_stop_anim(-1);
 
-	if (Weapon_list != NULL)
-	{
-		for (i=0; i<Weapon_list_size; i++)
-		{
-			if ( Weapon_list[i].animation ) {
-				anim_free(Weapon_list[i].animation);
-				Weapon_list[i].animation = NULL;
-			}
-			if( Weapon_list[i].bitmap >= 0 ){
-				bm_release(Weapon_list[i].bitmap);
-				Weapon_list[i].bitmap = -1;
-			}
-		}
-		delete[] Weapon_list;
-		Weapon_list = NULL;
-		Weapon_list_size = 0;
-	}
+	Current_list = NULL;
+	Current_list_size = 0;
 
-	for (i=0; i<Intel_list_size; i++)
-	{
-		if (Intel_list[i].animation != NULL) {
-			anim_free(Intel_list[i].animation);
-			Intel_list[i].animation = NULL;
-		}
-		if( Intel_list[i].bitmap >= 0 ){
-			bm_release(Intel_list[i].bitmap);
-			Intel_list[i].bitmap = -1;
-		}
-	}
-	Intel_list_size = 0;
-
-	// since we may be loading so much data that level loads don't work
-	// be sure sure to free all models and textures when we leave - taylor
 	model_free_all();
-	Ship_list_size = 0;
-	if(Ship_list != NULL)
-	{
+
+	if (Ship_list != NULL) {
 		delete[] Ship_list;
 		Ship_list = NULL;
 	}
 
+	Ship_list_size = 0;
 	Ships_loaded = 0;
+
+	if (Weapon_list != NULL) {
+		for (i = 0; i < Weapon_list_size; i++) {
+			if (Weapon_list[i].animation != NULL) {
+				anim_free(Weapon_list[i].animation);
+				Weapon_list[i].animation = NULL;
+			}
+
+			if (Weapon_list[i].bitmap >= 0) {
+				bm_release(Weapon_list[i].bitmap);
+				Weapon_list[i].bitmap = -1;
+			}
+		}
+
+		delete[] Weapon_list;
+		Weapon_list = NULL;
+	}
+
+	Weapon_list_size = 0;
 	Weapons_loaded = 0;
+
+	for (i = 0; i < Intel_list_size; i++) {
+		if (Intel_list[i].animation != NULL) {
+			anim_free(Intel_list[i].animation);
+			Intel_list[i].animation = NULL;
+		}
+
+		if (Intel_list[i].bitmap >= 0) {
+			bm_release(Intel_list[i].bitmap);
+			Intel_list[i].bitmap = -1;
+		}
+	}
+
+	Intel_list_size = 0;
 	Intel_loaded = 0;
+}
+
+void techroom_close()
+{
+	fsspeech_stop();
+
+	techroom_lists_reset();
+
+	Techroom_show_all = 0;
 
 	/*
 	if (ShipWin01){
@@ -1827,7 +1817,9 @@ void techroom_do_frame(float frametime)
 			break;
 
 		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
-			techroom_update_ship_list_special(Tab);
+			Techroom_show_all = 1;
+			techroom_lists_reset();
+			techroom_change_tab(Tab);
 			break;
 
 	}	
