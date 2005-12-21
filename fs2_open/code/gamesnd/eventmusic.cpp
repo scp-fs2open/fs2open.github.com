@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-12-13 21:50:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.28 $
+ * $Date: 2005-12-21 08:27:37 $
+ * $Author: taylor $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/12/13 21:50:20  wmcoolmon
+ * Grr, how did I miss this?
+ *
  * Revision 2.26  2005/12/13 21:48:39  wmcoolmon
  * Music TBL to proper XMT file (-mus)
  *
@@ -547,6 +550,7 @@ void event_music_init()
 		//HACK HACK HACK
 		Modular_tables_loaded = true;
 		strcat(tbl_file_names[i], ".tbm");
+		mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
 		event_music_parse_musictbl(tbl_file_names[i], true);
 	}
 	Event_music_inited = TRUE;

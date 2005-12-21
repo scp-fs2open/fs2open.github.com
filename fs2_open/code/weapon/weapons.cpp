@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.161  2005/12/18 20:13:26  wmcoolmon
+ * Swap beam fixed/animation image loading order
+ *
  * Revision 2.160  2005/12/17 00:59:48  wmcoolmon
  * Added +nocreate and more verbose index handling for beam sections
  *
@@ -1269,7 +1272,7 @@ void parse_weapon_expl_tbl(char* longname)
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Warning(LOCATION, "Unable to parse %s!  Code = %i.\n", rval, longname);
+		mprintf(("Unable to parse %s!  Code = %i.\n", rval, longname));
 	}
 	else {
 		read_file_text(NOX(longname));
@@ -3638,6 +3641,7 @@ void weapon_expl_info_init()
 		//HACK HACK HACK
 		Modular_tables_loaded = true;
 		strcat(tbl_file_names[i], ".tbm");
+		mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
 		parse_weapon_expl_tbl(tbl_file_names[i]);
 	}
 }
@@ -3673,6 +3677,7 @@ void weapon_init()
 				Modular_tables_loaded = true;
 				Module_ship_weapons_loaded = true;
 				strcat(tbl_file_names[i], ".tbm");
+				mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
 				parse_weaponstbl(tbl_file_names[i], true);
 			}
 			create_weapon_names();

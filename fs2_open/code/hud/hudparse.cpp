@@ -7,13 +7,18 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-12-06 03:17:48 $
+ * $Revision: 2.39 $
+ * $Date: 2005-12-21 08:27:37 $
  * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/12/06 03:17:48  taylor
+ * cleanup some debug log messages:
+ *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
+ *   make sure that OpenAL init failures always get to the debug log
+ *
  * Revision 2.37  2005/11/08 01:03:59  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -1028,6 +1033,7 @@ void hud_positions_init()
 		//HACK HACK HACK
 		Modular_tables_loaded = true;
 		strcat(tbl_file_names[i], ".tbm");
+		mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
 		parse_hud_gauges_tbl(tbl_file_names[i]);
 	}
 
