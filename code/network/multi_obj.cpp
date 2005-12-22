@@ -712,7 +712,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 
 	// add the object's net signature, type and oo_flags
 	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		GET_DATA( net_sig );		
+		GET_USHORT( net_sig );		
 		GET_DATA( oo_flags );	
 	}
 	// clients always pos and orient stuff only
@@ -953,7 +953,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		GET_INT(ai_flags);
 		GET_INT(ai_mode);
 		GET_INT(ai_submode);
-		GET_DATA(dock_sig);		
+		GET_USHORT(dock_sig);		
 
 		// valid ship?							
 		if((shipp != NULL) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
