@@ -8,11 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.7 $
- * $Date: 2005-12-06 03:17:48 $
+ * $Revision: 1.8 $
+ * $Date: 2005-12-22 04:32:44 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/12/06 03:17:48  taylor
+ * cleanup some debug log messages:
+ *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
+ *   make sure that OpenAL init failures always get to the debug log
+ *
  * Revision 1.6  2005/11/24 09:08:44  Goober5000
  * bah, forgot a colon
  * --Goober5000
@@ -54,19 +59,19 @@ ai_profile_t Ai_profiles[MAX_AI_PROFILES];
 
 
 // utility
-void skill_level_array_copy(int dest[], int src[])
+void skill_level_array_copy_int(int dest[], int src[])
 {
 	memcpy(dest, src, NUM_SKILL_LEVELS * sizeof(int));
 }
 
 // utility
-void skill_level_array_copy(fix dest[], fix src[])
+void skill_level_array_copy_fix(fix dest[], fix src[])
 {
 	memcpy(dest, src, NUM_SKILL_LEVELS * sizeof(fix));
 }
 
 // utility
-void skill_level_array_copy(float dest[], float src[])
+void skill_level_array_copy_float(float dest[], float src[])
 {
 	memcpy(dest, src, NUM_SKILL_LEVELS * sizeof(float));
 }
@@ -98,67 +103,67 @@ void init_profile_to_default(ai_profile_t *profile)
 	profile->flags = 0;
 
 	int	max_incoming_asteroids[NUM_SKILL_LEVELS] = {3, 4, 5, 7, 10};
-	skill_level_array_copy(profile->max_incoming_asteroids, max_incoming_asteroids);
+	skill_level_array_copy_int(profile->max_incoming_asteroids, max_incoming_asteroids);
 
 	int	max_allowed_player_homers[NUM_SKILL_LEVELS] = {2, 3, 4, 7, 99};
-	skill_level_array_copy(profile->max_allowed_player_homers, max_allowed_player_homers);
+	skill_level_array_copy_int(profile->max_allowed_player_homers, max_allowed_player_homers);
 
 	int	max_attackers[NUM_SKILL_LEVELS] = {2, 3, 4, 5, 99};
-	skill_level_array_copy(profile->max_attackers, max_attackers);
+	skill_level_array_copy_int(profile->max_attackers, max_attackers);
 
 	fix predict_position_delay[NUM_SKILL_LEVELS] = {2*F1_0, 3*F1_0/2, 4*F1_0/3, F1_0/2, 0};
-	skill_level_array_copy(profile->predict_position_delay, predict_position_delay);
+	skill_level_array_copy_fix(profile->predict_position_delay, predict_position_delay);
 
 	float cmeasure_life_scale[NUM_SKILL_LEVELS] = {3.0f, 2.0f, 1.5f, 1.25f, 1.0f};
-	skill_level_array_copy(profile->cmeasure_life_scale, cmeasure_life_scale);
+	skill_level_array_copy_float(profile->cmeasure_life_scale, cmeasure_life_scale);
 
 	float weapon_energy_scale[NUM_SKILL_LEVELS] = {10.0f, 4.0f, 2.5f, 2.0f, 1.5f};
-	skill_level_array_copy(profile->weapon_energy_scale, weapon_energy_scale);
+	skill_level_array_copy_float(profile->weapon_energy_scale, weapon_energy_scale);
 
 	float shield_energy_scale[NUM_SKILL_LEVELS] = {4.0f, 2.0f, 1.5f, 1.25f, 1.0f};
-	skill_level_array_copy(profile->shield_energy_scale, shield_energy_scale);
+	skill_level_array_copy_float(profile->shield_energy_scale, shield_energy_scale);
 
 	float afterburner_recharge_scale[NUM_SKILL_LEVELS] = {5.0f, 3.0f, 2.0f, 1.5f, 1.0f};
-	skill_level_array_copy(profile->afterburner_recharge_scale, afterburner_recharge_scale);
+	skill_level_array_copy_float(profile->afterburner_recharge_scale, afterburner_recharge_scale);
 
 	float player_damage_scale[NUM_SKILL_LEVELS] = {0.25f, 0.5f, 0.65f, 0.85f, 1.0f};
-	skill_level_array_copy(profile->player_damage_scale, player_damage_scale);
+	skill_level_array_copy_float(profile->player_damage_scale, player_damage_scale);
 
 	float subsys_damage_scale[NUM_SKILL_LEVELS] = {0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
-	skill_level_array_copy(profile->subsys_damage_scale, subsys_damage_scale);
+	skill_level_array_copy_float(profile->subsys_damage_scale, subsys_damage_scale);
 
 	float beam_friendly_damage_cap[NUM_SKILL_LEVELS] = { 0.0f, 5.0f, 10.0f, 20.0f, 30.0f };
-	skill_level_array_copy(profile->beam_friendly_damage_cap, beam_friendly_damage_cap);
+	skill_level_array_copy_float(profile->beam_friendly_damage_cap, beam_friendly_damage_cap);
 
 	float turn_time_scale[NUM_SKILL_LEVELS] = {3.0f, 2.2f, 1.6f, 1.3f, 1.0f};
-	skill_level_array_copy(profile->turn_time_scale, turn_time_scale);
+	skill_level_array_copy_float(profile->turn_time_scale, turn_time_scale);
 
 	float link_energy_levels_always[NUM_SKILL_LEVELS] = {100.0f, 80.0f, 60.0f, 40.0f, 20.0f};
-	skill_level_array_copy(profile->link_energy_levels_always, link_energy_levels_always);
+	skill_level_array_copy_float(profile->link_energy_levels_always, link_energy_levels_always);
 
 	float link_energy_levels_maybe[NUM_SKILL_LEVELS] = {90.0f, 60.0f, 40.0f, 20.0f, 10.0f};
-	skill_level_array_copy(profile->link_energy_levels_maybe, link_energy_levels_maybe);
+	skill_level_array_copy_float(profile->link_energy_levels_maybe, link_energy_levels_maybe);
 
 	float link_ammo_levels_always[NUM_SKILL_LEVELS] = {95.0f, 80.0f, 60.0f, 40.0f, 20.0f};
-	skill_level_array_copy(profile->link_ammo_levels_always, link_ammo_levels_always);
+	skill_level_array_copy_float(profile->link_ammo_levels_always, link_ammo_levels_always);
 
 	float link_ammo_levels_maybe[NUM_SKILL_LEVELS] = {90.0f, 60.0f, 40.0f, 20.0f, 10.0f};
-	skill_level_array_copy(profile->link_ammo_levels_maybe, link_ammo_levels_maybe);
+	skill_level_array_copy_float(profile->link_ammo_levels_maybe, link_ammo_levels_maybe);
 
 	float in_range_time[NUM_SKILL_LEVELS] = {2.0f, 1.4f, 0.75f, 0.0f, -1.0f};
-	skill_level_array_copy(profile->in_range_time, in_range_time);
+	skill_level_array_copy_float(profile->in_range_time, in_range_time);
 
 	float cmeasure_fire_chance[NUM_SKILL_LEVELS] = {0.2f, 0.3f, 0.5f, 0.9f, 1.1f};
-	skill_level_array_copy(profile->cmeasure_fire_chance, cmeasure_fire_chance);
+	skill_level_array_copy_float(profile->cmeasure_fire_chance, cmeasure_fire_chance);
 
 	float shield_manage_delay[NUM_SKILL_LEVELS] = {5.0f, 4.0f, 2.5f, 1.2f, 0.1f};
-	skill_level_array_copy(profile->shield_manage_delay, shield_manage_delay);
+	skill_level_array_copy_float(profile->shield_manage_delay, shield_manage_delay);
 
 	float ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS] = {4.0f, 2.5f, 1.75f, 1.25f, 1.0f};
-	skill_level_array_copy(profile->ship_fire_delay_scale_hostile, ship_fire_delay_scale_hostile);
+	skill_level_array_copy_float(profile->ship_fire_delay_scale_hostile, ship_fire_delay_scale_hostile);
 
 	float ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS] = {2.0f, 1.4f, 1.25f, 1.1f, 1.0f};
-	skill_level_array_copy(profile->ship_fire_delay_scale_friendly, ship_fire_delay_scale_friendly);
+	skill_level_array_copy_float(profile->ship_fire_delay_scale_friendly, ship_fire_delay_scale_friendly);
 }
 
 // This function parses the data from ai_profiles.tbl
