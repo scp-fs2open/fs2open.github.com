@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.51 $
- * $Date: 2005-12-04 19:07:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.52 $
+ * $Date: 2005-12-22 04:35:04 $
+ * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2005/12/04 19:07:49  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.50  2005/11/16 05:46:27  taylor
  * bunch of error checking and code cleanup for the team stuff in ship/weapon select
  *
@@ -8178,6 +8181,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	int packet_size = 0;	
 	ubyte u_beam_info;
 	char subsys_index;
+	beam_info b_info;
 
 	// only the server should ever be doing this
 	Assert(MULTIPLAYER_MASTER);
@@ -8204,13 +8208,29 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 		return;
 	}
 
+	// swap the beam_info override info into little endian byte order
+	b_info.dir_a.xyz.x = INTEL_FLOAT(&override->dir_a.xyz.x);
+	b_info.dir_a.xyz.y = INTEL_FLOAT(&override->dir_a.xyz.y);
+	b_info.dir_a.xyz.z = INTEL_FLOAT(&override->dir_a.xyz.z);
+
+	b_info.dir_b.xyz.x = INTEL_FLOAT(&override->dir_b.xyz.x);
+	b_info.dir_b.xyz.y = INTEL_FLOAT(&override->dir_b.xyz.y);
+	b_info.dir_b.xyz.z = INTEL_FLOAT(&override->dir_b.xyz.z);
+
+	b_info.delta_ang = INTEL_FLOAT(&override->delta_ang);
+	b_info.shot_count = override->shot_count;
+
+	for (int i = 0; i < b_info.shot_count; i++) {
+		b_info.shot_aim[i] = INTEL_FLOAT(&override->shot_aim[i]);
+	}
+
 	// build the header
 	BUILD_HEADER(BEAM_FIRED);
 	ADD_USHORT(shooter->net_signature);
 	ADD_DATA(subsys_index);
 	ADD_USHORT(target->net_signature);
 	ADD_DATA(u_beam_info);
-	ADD_DATA((*override));  // FIXME: how to swap - taylor
+	ADD_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
 //	ADD_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
 
 	// send to all clients	
@@ -8219,7 +8239,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 
 void process_beam_fired_packet(ubyte *data, header *hinfo)
 {
-	int offset;
+	int i, offset;
 	ushort shooter_sig, target_sig;
 	char subsys_index;
 	ubyte u_beam_info;
@@ -8236,9 +8256,24 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	GET_DATA(subsys_index);
 	GET_USHORT(target_sig);
 	GET_DATA(u_beam_info);
-	GET_DATA(b_info);  // FIXME: how to swap - taylor
+	GET_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
 //	GET_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
 	PACKET_SET_SIZE();
+
+	// swap the beam_info override info into native byte order
+	b_info.dir_a.xyz.x = INTEL_FLOAT(&b_info.dir_a.xyz.x);
+	b_info.dir_a.xyz.y = INTEL_FLOAT(&b_info.dir_a.xyz.y);
+	b_info.dir_a.xyz.z = INTEL_FLOAT(&b_info.dir_a.xyz.z);
+	
+	b_info.dir_b.xyz.x = INTEL_FLOAT(&b_info.dir_b.xyz.x);
+	b_info.dir_b.xyz.y = INTEL_FLOAT(&b_info.dir_b.xyz.y);
+	b_info.dir_b.xyz.z = INTEL_FLOAT(&b_info.dir_b.xyz.z);
+	
+	b_info.delta_ang = INTEL_FLOAT(&b_info.delta_ang);
+	
+	for (i = 0; i < b_info.shot_count; i++) {
+		b_info.shot_aim[i] = INTEL_FLOAT(&b_info.shot_aim[i]);
+	}
 
 	// lookup all relevant data
 	fire_info.beam_info_index = (int)u_beam_info;
@@ -8268,13 +8303,13 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		}
 	}
 
-	if (!fire_info.fighter_beam && (fire_info.turret == NULL)) {
+	if (fire_info.fighter_beam && (fire_info.target == NULL)) {
 		nprintf(("Network", "Couldn't get target info for BEAM weapon!\n"));
 		return;
 	}
 
 	fire_info.turret = ship_get_indexed_subsys( &Ships[fire_info.shooter->instance], (int)subsys_index);
-	if(fire_info.turret == NULL){
+	if (!fire_info.fighter_beam && (fire_info.turret == NULL)) {
 		nprintf(("Network", "Couldn't get turret for BEAM weapon!\n"));
 		return;
 	}

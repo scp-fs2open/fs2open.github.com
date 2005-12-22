@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-10-10 17:21:08 $
+ * $Revision: 2.41 $
+ * $Date: 2005-12-22 04:35:04 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/10/10 17:21:08  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.39  2005/09/27 02:36:58  Goober5000
  * clarification
  * --Goober5000
@@ -1429,28 +1432,42 @@ char* get_text_address( char * text, ubyte * address )
 // return size of packed matrix
 void multi_pack_orient_matrix(ubyte *data,matrix *m)
 {	
-   data[16]=0;
+	data[16] = 0;
+	float x1, y1, x2, y2;
 
 	if(m->vec.rvec.xyz.z < 0) data[16] |= (1<<0);	// X
 	if(m->vec.uvec.xyz.z < 0) data[16] |= (1<<1);	// Y
 	if(m->vec.fvec.xyz.z < 0) data[16] |= (1<<2);	// V
 	if(m->vec.fvec.xyz.x < 0) data[16] |= (1<<3);	// Z
 	if(m->vec.fvec.xyz.y < 0) data[16] |= (1<<4);	// W
-	memcpy(&data[0],&m->vec.rvec.xyz.x,4);			// a
-	memcpy(&data[4],&m->vec.rvec.xyz.y,4);			// b
-	memcpy(&data[8],&m->vec.uvec.xyz.x,4);			// c
-	memcpy(&data[12],&m->vec.uvec.xyz.y,4);			// d
+
+	x1 = INTEL_FLOAT(&m->vec.rvec.xyz.x);
+	y1 = INTEL_FLOAT(&m->vec.rvec.xyz.y);
+	x2 = INTEL_FLOAT(&m->vec.uvec.xyz.x);
+	y2 = INTEL_FLOAT(&m->vec.uvec.xyz.y);
+
+	memcpy(&data[0], &x1, 4);		// a
+	memcpy(&data[4], &y1, 4);		// b
+	memcpy(&data[8], &x2, 4);		// c
+	memcpy(&data[12], &y2, 4);		// d
 }
 
 // return bytes processed
 // non-16 byte version of unpack matrix code
 void multi_unpack_orient_matrix(ubyte *data,matrix *m)
-{	
-	memcpy(&m->vec.rvec.xyz.x, &data[0], 4); 
-	memcpy(&m->vec.rvec.xyz.y, &data[4], 4); 
-	memcpy(&m->vec.uvec.xyz.x, &data[8], 4);  
- 	memcpy(&m->vec.uvec.xyz.y, &data[12],4);     
-	
+{
+	float x1, y1, x2, y2;
+
+	memcpy(&x1, &data[0], 4);
+	memcpy(&y1, &data[4], 4);
+	memcpy(&x2, &data[8], 4);
+ 	memcpy(&y2, &data[12],4);
+
+	m->vec.rvec.xyz.x = INTEL_FLOAT(&x1);
+	m->vec.rvec.xyz.y = INTEL_FLOAT(&y1);
+	m->vec.uvec.xyz.x = INTEL_FLOAT(&x2);
+	m->vec.uvec.xyz.y = INTEL_FLOAT(&y2);
+
 	m->vec.rvec.xyz.z = fl_sqrt(fl_abs(1 - (m->vec.rvec.xyz.x * m->vec.rvec.xyz.x) - (m->vec.rvec.xyz.y * m->vec.rvec.xyz.y))); // X
 	m->vec.uvec.xyz.z = fl_sqrt(fl_abs(1 - (m->vec.uvec.xyz.x * m->vec.uvec.xyz.x) - (m->vec.uvec.xyz.y * m->vec.uvec.xyz.y))); // Y
 	m->vec.fvec.xyz.z = fl_sqrt(fl_abs(1 - (m->vec.rvec.xyz.z * m->vec.rvec.xyz.z) - (m->vec.uvec.xyz.z * m->vec.uvec.xyz.z))); // V
