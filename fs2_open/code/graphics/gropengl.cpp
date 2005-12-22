@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.148 $
- * $Date: 2005-12-16 16:34:35 $
+ * $Revision: 2.149 $
+ * $Date: 2005-12-22 19:15:20 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.148  2005/12/16 16:34:35  taylor
+ * ehh, didn't ever fix that to my satisfaction, bastardize it until more work can be done (so people don't start filing bug reports)
+ *
  * Revision 2.147  2005/12/16 06:48:28  taylor
  * "House Keeping!!"
  *   - minor cleanup of things that have bothered me at one time or another
@@ -2832,8 +2835,17 @@ void gr_opengl_print_screen(char *filename)
 
 	memset(buf, 0, gr_screen.max_w * gr_screen.max_h * 3);
 
-	glReadBuffer(GL_FRONT);
-	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGR_EXT, GL_UNSIGNED_BYTE, buf);
+//	glReadBuffer(GL_FRONT);
+	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGB, GL_UNSIGNED_BYTE, buf);
+
+	// convert from RGB to BGR
+	ubyte bgr_tmp;
+  	 
+	for (int i = 0; i < (gr_screen.max_w * gr_screen.max_h * 3); i += 3) {
+		bgr_tmp = buf[i];
+		buf[i] = buf[i+2];
+		buf[i+2] = bgr_tmp;
+	}
 
 	// Write the TGA header
 	cfwrite_ubyte( 0, cfout );		// IDLength;
