@@ -34,7 +34,7 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	int retval = DDS_ERROR_NONE;
 	int ct = DDS_UNCOMPRESSED;
 	int bits = 0;
-	int trash;
+	int i, trash;
 
 	if (img_cfp == NULL) {
 		// this better not happen.. ever
@@ -75,7 +75,7 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	dds_header.dwMipMapCount		= cfread_uint(ddsfile);
 
 	// skip over the crap we don't care about
-	for (int i = 0; i < 11; i++)
+	for (i = 0; i < 11; i++)
 		trash = cfread_uint(ddsfile);
 
 	dds_header.ddpfPixelFormat.dwSize				= cfread_uint(ddsfile);
