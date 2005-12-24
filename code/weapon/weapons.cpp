@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.162  2005/12/21 08:27:37  taylor
+ * add the name of the modular table about to be parsed to the debug log
+ * a missing weapon_expl table should just be a note in the debug log rather than a popup warning
+ *
  * Revision 2.161  2005/12/18 20:13:26  wmcoolmon
  * Swap beam fixed/animation image loading order
  *
@@ -2931,7 +2935,7 @@ int parse_weapon(int subtype, bool replace)
 			}
 
 			//Where are we saving data?
-			if(bsw_index_override > 0)
+			if(bsw_index_override >= 0)
 			{
 				if(bsw_index_override < wip->b_info.beam_num_sections)
 				{
@@ -2941,19 +2945,24 @@ int parse_weapon(int subtype, bool replace)
 				{
 					if(!nocreate)
 					{
-						if(bsw_index_override == wip->b_info.beam_num_sections)
+						if((bsw_index_override == wip->b_info.beam_num_sections) && (bsw_index_override < MAX_BEAM_SECTIONS))
 						{
 							ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
 						}
 						else
 						{
-							Warning(LOCATION, "Invalid index for manually-indexed beam section %d on weapon %s.", bsw_index_override, wip->name);
+							Warning(LOCATION, "Invalid index for manually-indexed beam section %d (max %d) on weapon %s.", bsw_index_override, MAX_BEAM_SECTIONS, wip->name);
+							ip = &tbsw;
+							memset( ip, 0, sizeof(beam_weapon_section_info) );
+							ip->texture = -1;
 						}
 					}
 					else
 					{
 						Warning(LOCATION, "Invalid index for manually-indexed beam section %d, and +nocreate specified, on weapon %s", bsw_index_override, wip->name);
 						ip = &tbsw;
+						memset( ip, 0, sizeof(beam_weapon_section_info) );
+						ip->texture = -1;
 					}
 
 				}
@@ -2967,6 +2976,8 @@ int parse_weapon(int subtype, bool replace)
 				{
 					Warning(LOCATION, "Too many beam sections for weapon %s - max is %d", wip->name, MAX_BEAM_SECTIONS);
 					ip = &tbsw;
+					memset( ip, 0, sizeof(beam_weapon_section_info) );
+					ip->texture = -1;
 				}
 			}
 
