@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.8 $
- * $Date: 2005-12-08 15:10:07 $
+ * $Revision: 1.9 $
+ * $Date: 2005-12-28 22:28:44 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/12/08 15:10:07  taylor
+ * add APPLE_client_storage support to improve texture performance and reduce memory usage a tiny bit on OS X
+ *
  * Revision 1.7  2005/12/06 02:50:41  taylor
  * clean up some init stuff and fix a minor SDL annoyance
  * make debug messages a bit more readable
@@ -103,33 +106,34 @@ extern ogl_extension GL_Extensions[];
 #define GL_MULTITEXTURE_COORD2F			2			// multitex coordinates
 #define GL_ACTIVE_TEX					3			// currenly active multitexture
 #define GL_TEXTURE_ENV_ADD				4			// additive texture environment
-#define GL_COMP_TEX						5			// texture compression
-#define GL_TEX_COMP_S3TC				6			// S3TC/DXTC compression format
-#define GL_TEX_FILTER_ANISO				7			// anisotrophic filtering
-#define GL_NV_RADIAL_FOG				8			// for better looking fog
-#define GL_SECONDARY_COLOR_3FV			9			// for better looking fog
-#define GL_SECONDARY_COLOR_3UBV			10			// specular
-#define GL_ARB_ENV_COMBINE				11			// spec mapping
-#define GL_EXT_ENV_COMBINE				12			// spec mapping
-#define GL_LOCK_ARRAYS					13			// HTL
-#define GL_UNLOCK_ARRAYS				14			// HTL
-#define GL_LOAD_TRANSPOSE				15			
-#define GL_MULT_TRANSPOSE				16
-#define GL_CLIENT_ACTIVE_TEX			17
-#define GL_DRAW_RANGE_ELEMENTS			18
-#define GL_ARB_TEXTURE_MIRRORED_REPEAT	19
-#define GL_ARB_TEXTURE_NON_POWER_OF_TWO	20
+#define GL_COMP_TEX						5			// 2d compressed texture
+#define GL_COMP_TEX_SUB					6			// 2d compressed sub texture
+#define GL_TEX_COMP_S3TC				7			// S3TC/DXTC compression format
+#define GL_TEX_FILTER_ANISO				8			// anisotrophic filtering
+#define GL_NV_RADIAL_FOG				9			// for better looking fog
+#define GL_SECONDARY_COLOR_3FV			10			// for better looking fog
+#define GL_SECONDARY_COLOR_3UBV			11			// specular
+#define GL_ARB_ENV_COMBINE				12			// spec mapping
+#define GL_EXT_ENV_COMBINE				13			// spec mapping
+#define GL_LOCK_ARRAYS					14			// HTL
+#define GL_UNLOCK_ARRAYS				15			// HTL
+#define GL_LOAD_TRANSPOSE				16			
+#define GL_MULT_TRANSPOSE				17
+#define GL_CLIENT_ACTIVE_TEX			18
+#define GL_DRAW_RANGE_ELEMENTS			19
+#define GL_ARB_TEXTURE_MIRRORED_REPEAT	20
+#define GL_ARB_TEXTURE_NON_POWER_OF_TWO	21
 
 //GL_ARB_vertex_buffer_object FUNCTIONS
-#define GL_ARB_VBO_BIND_BUFFER			21
-#define GL_ARB_VBO_DEL_BUFFER			22
-#define GL_ARB_VBO_GEN_BUFFER			23
-#define GL_ARB_VBO_BUFFER_DATA			24
+#define GL_ARB_VBO_BIND_BUFFER			22
+#define GL_ARB_VBO_DEL_BUFFER			23
+#define GL_ARB_VBO_GEN_BUFFER			24
+#define GL_ARB_VBO_BUFFER_DATA			25
 //#define GL_ARB_VBO_MAP_BUFFER			23
 //#define GL_ARB_VBO_UNMAP_BUFFER			24
 
-#define GL_ARB_GETCOMPRESSEDTEXIMAGE	25
-#define GL_APPLE_CLIENT_STORAGE			26
+#define GL_ARB_GETCOMPRESSEDTEXIMAGE	26
+#define GL_APPLE_CLIENT_STORAGE			27
 //#define GL_EXT_GEN_FRAMEBUFFERS			26
 //#define GL_EXT_GEN_RENDERBUFFERS		27
 //#define GL_EXT_BIND_FRAMEBUFFER			28
@@ -138,7 +142,7 @@ extern ogl_extension GL_Extensions[];
 //#define GL_EXT_FRAMEBUFFER_RENDERBUF	31
 
 //#define GL_NUM_EXTENSIONS				32
-#define GL_NUM_EXTENSIONS				27
+#define GL_NUM_EXTENSIONS				28
 
 int opengl_get_extensions();
 void opengl_print_extensions();
@@ -165,6 +169,7 @@ int opengl_extension_is_enabled(int idx);
 #define glMultiTexCoord2fARB GLEXT_CALL(PFNGLMULTITEXCOORD2FARBPROC, GL_MULTITEXTURE_COORD2F)
 #define glActiveTextureARB GLEXT_CALL(PFNGLACTIVETEXTUREARBPROC, GL_ACTIVE_TEX)
 #define glCompressedTexImage2D GLEXT_CALL(PFNGLCOMPRESSEDTEXIMAGE2DPROC, GL_COMP_TEX)
+#define glCompressedTexSubImage2D GLEXT_CALL(PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC, GL_COMP_TEX_SUB)
 #define glSecondaryColor3fvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3FVEXTPROC, GL_SECONDARY_COLOR_3FV)
 #define glSecondaryColor3ubvEXT GLEXT_CALL(PFNGLSECONDARYCOLOR3UBVEXTPROC, GL_SECONDARY_COLOR_3UBV)
 #define glLockArraysEXT GLEXT_CALL(PFNGLLOCKARRAYSEXTPROC, GL_LOCK_ARRAYS)
