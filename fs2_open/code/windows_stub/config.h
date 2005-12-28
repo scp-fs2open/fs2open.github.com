@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.11 $
- * $Date: 2005-12-06 03:02:28 $
+ * $Revision: 2.12 $
+ * $Date: 2005-12-28 22:34:01 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/12/06 03:02:28  taylor
+ * move the pragma warnings here from pstypes.h for Windows
+ * add indexed palette support for DDS images
+ *
  * Revision 2.10  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -82,6 +86,9 @@
  #endif
 #endif  // BYTE_ORDER
 
+#ifndef snprintf
+#define snprintf _snprintf
+#endif
 
 #else  // ! Win32
 
