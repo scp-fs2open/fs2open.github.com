@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.37 $
- * $Author: wmcoolmon $
- * $Date: 2005-12-13 21:48:39 $
+ * $Revision: 2.38 $
+ * $Author: taylor $
+ * $Date: 2005-12-28 22:17:01 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/12/13 21:48:39  wmcoolmon
+ * Music TBL to proper XMT file (-mus)
+ *
  * Revision 2.36  2005/11/21 03:47:51  Goober5000
  * bah and double bah
  * --Goober5000
@@ -544,4 +547,11 @@ extern char *stristr(const char *str, const char *substr);
 void backspace(char *src);
 
 inline void parse_advance(int s){Mp+=s;}
+
+// parse a modular table, returns the number of files matching the "name_check" filter or 0 if it did nothing
+extern int parse_modular_table(char *name_check, void (*parse_callback)(char *filename), int path_type = CF_TYPE_TABLES, int sort_type = CF_SORT_REVERSE);
+// to know that we are parsing a modular table
+extern bool Parsing_modular_table;
+
+
 #endif

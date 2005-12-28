@@ -9,16 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.37 $
- * $Date: 2005-12-06 02:55:22 $
+ * $Revision: 2.38 $
+ * $Date: 2005-12-28 22:17:01 $
  * $Author: taylor $
- * $Revision: 2.37 $
- * $Date: 2005-12-06 02:55:22 $
+ * $Revision: 2.38 $
+ * $Date: 2005-12-28 22:17:01 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/12/06 02:55:22  taylor
+ * little consolidation:
+ *   move path separator stuff here from cfile.h
+ *   move the pragma warnings to config.h, since they produce warnings on anything that's not MSVC
+ *   move the bmpman related stuff to bmpman.h, if you need this stuff you have to include bmpman.h anyway
+ *
  * Revision 2.36  2005/11/08 01:03:59  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -811,6 +817,23 @@ inline float SWAPFLOAT(float *x)
 int myrand();
 
 
+// lod checker for (modular) table parsing
+typedef struct lod_checker {
+	char filename[MAX_FILENAME_LEN];
+	int num_lods;
+	int override;
+} lod_checker;
+
+
+// admittedly this is a bit overkill but it's much safer than the old way of using a plain strcat()
+// x = dest string
+// y = src  string
+// z = max dest string size
+#define SAFE_STRCAT(x, y, z) {	\
+	if ( (strlen((y)) + 1) <= ((z) - strlen(x)) ) {	\
+		strncat((x), (y), (z) - strlen((x)) - 1);	\
+	}	\
+}
 
 // Callback Loading function. 
 // If you pass a function to this, that function will get called

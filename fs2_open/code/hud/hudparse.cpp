@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-12-21 08:27:37 $
+ * $Revision: 2.40 $
+ * $Date: 2005-12-28 22:17:01 $
  * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/12/21 08:27:37  taylor
+ * add the name of the modular table about to be parsed to the debug log
+ * a missing weapon_expl table should just be a note in the debug log rather than a popup warning
+ *
  * Revision 2.38  2005/12/06 03:17:48  taylor
  * cleanup some debug log messages:
  *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
@@ -876,7 +880,7 @@ void parse_custom_gauge()
 	}
 }
 
-int parse_hud_gauges_tbl(char* longname)
+void parse_hud_gauges_tbl(char* longname)
 {
 	int rval;
 	lcl_ext_open();
@@ -884,7 +888,7 @@ int parse_hud_gauges_tbl(char* longname)
 	{
 		mprintf(("Unable to parse %s!  Code = %i.\n", longname, rval));
 		lcl_ext_close();
-		return 0;
+		return;
 	}
 	else
 	{	
@@ -1002,8 +1006,6 @@ int parse_hud_gauges_tbl(char* longname)
 		}
 	}
 	lcl_ext_close();
-
-	return 1;
 }
 #endif
 
@@ -1019,23 +1021,13 @@ void hud_positions_init()
 	load_hud_defaults(&default_hud);
 #ifndef NEW_HUD
 
-	if(!parse_hud_gauges_tbl("hud_gauges.tbl"))
-	{
+	if ( cf_find_file_location("hud_gauges.tbl", CF_TYPE_TABLES, 0, NULL, NULL, NULL) ) {
+		parse_hud_gauges_tbl("hud_gauges.tbl");
+	} else {
 		calculate_gauges(&default_hud);
 	}
 
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
-
-	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-hdg.tbm", CF_SORT_REVERSE);
-	for(int i = 0; i < num_files; i++)
-	{
-		//HACK HACK HACK
-		Modular_tables_loaded = true;
-		strcat(tbl_file_names[i], ".tbm");
-		mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
-		parse_hud_gauges_tbl(tbl_file_names[i]);
-	}
+	parse_modular_table( NOX("*-hdg.tbm"), parse_hud_gauges_tbl );
 
 	set_current_hud(-1);
 #endif

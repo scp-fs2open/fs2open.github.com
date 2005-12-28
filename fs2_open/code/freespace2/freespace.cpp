@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.199 $
- * $Date: 2005-12-06 03:13:49 $
+ * $Revision: 2.200 $
+ * $Date: 2005-12-28 22:17:01 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.199  2005/12/06 03:13:49  taylor
+ * fix quite a few CFILE issues:
+ *   use #define's for path lengths when possible so it's easier to move between functions
+ *   fix huge Cfile_stack[] issue (how the hell did that get through :v: QA?)
+ *   add Int3() check on cfopen() so it's easier to know if it get's called before cfile is ready to use
+ *   move path separators to pstypes.h
+ *   fix possible string overruns when setting up CFILE roots
+ *   make sure we don't try to init current directory again thinking it's a CD-ROM
+ *   add the list of VP roots to debug log, this will undoubtedly be useful
+ * when -nosound is use go ahead and set -nomusic too to both checks are correct
+ * add list of cmdline options to debug log
+ * fix possible overwrite issues with get_version_string() and remove '(fs2_open)' from string plus change OGL->OpenGL, D3D->Direct3D
+ *
  * Revision 2.198  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -9469,16 +9482,6 @@ void game_format_time(fix m_time,char *time_str)
 	} 
 	sprintf(tmp,"%d",seconds);
 	strcat(time_str,tmp);
-}
-
-// admittedly this is a bit overkill but it's much safer than the old way
-// x = dest string
-// y = src  string
-// z = max dest string size
-#define SAFE_STRCAT(x, y, z) {	\
-	if ( (strlen((y)) + 1) <= ((z) - strlen(x)) ) {	\
-		strncat((x), (y), (z) - strlen((x)) - 1);	\
-	}	\
 }
 
 //	Stuff version string in *str.
