@@ -136,8 +136,36 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 		if (dds_header.dwDepth == 0)
 			dds_header.dwDepth = 1;
 
-		*size = dds_header.dwWidth * dds_header.dwHeight * dds_header.dwDepth * (dds_header.ddpfPixelFormat.dwRGBBitCount / 8);
+		if (dds_header.dwMipMapCount < 1)
+			dds_header.dwMipMapCount = 1;
 
+		int d_width = dds_header.dwWidth;
+		int d_height = dds_header.dwHeight;
+		int d_depth = dds_header.dwDepth;
+		int d_size = 0;
+
+		// calculate full data size for all mipmap levels
+		for (i = 0; i < (int)dds_header.dwMipMapCount; i++) {
+			d_size += d_width * d_height * d_depth * (dds_header.ddpfPixelFormat.dwRGBBitCount / 8);
+
+			d_width /= 2;
+			d_height /= 2;
+			d_depth /= 2;
+
+			if (d_width < 1)
+				d_width = 1;
+
+			if (d_height < 1)
+				d_height = 1;
+
+			if (d_depth < 1)
+				d_depth = 1;
+		}
+
+		Assert( d_size > 0 );
+
+		*size = d_size;
+		
 		bits = dds_header.ddpfPixelFormat.dwRGBBitCount;
 		ct = DDS_UNCOMPRESSED;
 	} else {
