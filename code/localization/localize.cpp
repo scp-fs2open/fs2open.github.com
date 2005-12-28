@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-10-16 23:15:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2005-12-28 22:06:48 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/10/16 23:15:46  wmcoolmon
+ * Hardened cfile against array overflows
+ *
  * Revision 2.16  2005/05/18 14:01:31  taylor
  * some basic Polish language support from the icculus.org version (Janusz Dziemidowicz)
  *
@@ -784,30 +787,27 @@ int lcl_add_dir_to_path_with_filename(char *current_path, uint path_max)
 		return 1;
 	}
 
-	char *temp = new char[path_max+1];
+	int str_size = path_max + 1;
+
+	char *temp = new char[str_size];
 
 	// find position of last slash and copy rest of filename (not counting slash) to temp
 	// mark end of current path with '\0', so strcat will work
 	char *last_slash = strrchr(current_path, DIR_SEPARATOR_CHAR);
 	if (last_slash == NULL) {
-		strcpy(temp, current_path);
+		strncpy(temp, current_path, str_size);
 		current_path[0] = '\0';
 	} else {
-		strcpy(temp, last_slash+1);
+		strncpy(temp, last_slash+1, str_size);
 		last_slash[1] = '\0';
 	}
 
-	if(strlen(current_path) + strlen(Lcl_languages[Lcl_current_lang].lang_ext) + strlen(DIR_SEPARATOR_STR) + strlen(temp) > path_max) {
-		delete temp;
-		return 0;
-	}
-
 	// add extension
-	strcat(current_path, Lcl_languages[Lcl_current_lang].lang_ext);
-	strcat(current_path, DIR_SEPARATOR_STR);
+	SAFE_STRCAT(current_path, Lcl_languages[Lcl_current_lang].lang_ext, path_max);
+	SAFE_STRCAT(current_path, DIR_SEPARATOR_STR, path_max);
 
 	// copy rest of filename from temp
-	strcat(current_path, temp);
+	SAFE_STRCAT(current_path, temp, path_max);
 
 	delete temp;
 	return 1;
