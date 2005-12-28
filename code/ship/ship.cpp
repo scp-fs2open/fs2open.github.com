@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.285 $
- * $Date: 2005-12-21 08:27:37 $
+ * $Revision: 2.286 $
+ * $Date: 2005-12-28 22:17:01 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.285  2005/12/21 08:27:37  taylor
+ * add the name of the modular table about to be parsed to the debug log
+ * a missing weapon_expl table should just be a note in the debug log rather than a popup warning
+ *
  * Revision 2.284  2005/12/16 03:36:21  wmcoolmon
  * Keep a crash from happening if POF file isn't initially specified
  *
@@ -3966,7 +3970,7 @@ engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
 	return NULL;
 }
 
-void parse_shiptbl(char* longname, bool is_chunk)
+void parse_shiptbl(char* longname)
 {
 	strcpy(current_ship_table, longname);
 	// open localization
@@ -3989,7 +3993,7 @@ void parse_shiptbl(char* longname, bool is_chunk)
 	{
 		while (required_string_either("#End", "$Name:"))
 		{
-			parse_engine_wash(is_chunk);
+			parse_engine_wash(Parsing_modular_table);
 		}
 
 		required_string("#End");
@@ -4001,7 +4005,7 @@ void parse_shiptbl(char* longname, bool is_chunk)
 
 		while (required_string_either("#End","$Name:"))
 		{
-			if ( parse_ship(is_chunk) ) {
+			if ( parse_ship(Parsing_modular_table) ) {
 				continue;
 			}
 		}
@@ -4047,7 +4051,7 @@ void parse_shiptbl(char* longname, bool is_chunk)
 	// Guess it isn't -WMC
 	/*
 	strcpy(parse_error_text,"'player ship precedence");
-	if(!is_chunk)
+	if(!Parsing_modular_table)
 	{
 		required_string("$Player Ship Precedence:");
 		Num_player_ship_precedence = stuff_int_list(Player_ship_precedence, MAX_PLAYER_SHIP_CHOICES, SHIP_INFO_TYPE);
@@ -4064,8 +4068,6 @@ void parse_shiptbl(char* longname, bool is_chunk)
 
 	// close localization
 	lcl_ext_close();
-
-	mprintf(("Loaded modular ship table file %s\n", longname));
 }
 
 int ship_show_velocity_dot = 0;
@@ -4079,8 +4081,6 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 void ship_init()
 {
 	int rval;
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
 
 	if ( !ships_inited ) {
 		
@@ -4094,19 +4094,15 @@ void ship_init()
 			strcpy(default_player_ship, "");
 
 			//Parse main TBL first
-			parse_shiptbl("ships.tbl", false);
+			parse_shiptbl("ships.tbl");
 
 			//Then other ones
-			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-shp.tbm", CF_SORT_REVERSE);
-			for(int i = 0; i < num_files; i++)
-			{
-				//HACK HACK HACK
-				Modular_tables_loaded = true;
+			int num_files = parse_modular_table( NOX("*-shp.tbm"), parse_shiptbl );
+
+			if ( num_files > 0 ) {
 				Module_ship_weapons_loaded = true;
-				strcat(tbl_file_names[i], ".tbm");
-				mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
-				parse_shiptbl(tbl_file_names[i], true);
 			}
+
 			ships_inited = 1;
 		}
 
@@ -12188,6 +12184,9 @@ int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, ve
 		vec3d		gpath_point;
 		pm = model_get(sp->modelnum);
 		mp = &pm->paths[ss->system_info->path_num];
+		if (mp == NULL)
+			return 1;
+		//	Int3();
 		if ( mp->nverts >= 2 ) {
 //			path_point = &mp->verts[mp->nverts-1].pos;
 			path_point = &mp->verts[0].pos;
@@ -15379,19 +15378,8 @@ void armor_init()
 {
 	if (!armor_inited) {
 		armor_parse_table("armor.tbl");
-	
-		char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-		char *tbl_file_names[MAX_TBL_PARTS];
-		int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-amr.tbm", CF_SORT_REVERSE);
-	
-		for(int i = 0; i < num_files; i++)
-		{
-			//HACK HACK HACK
-			Modular_tables_loaded = true;
-			strcat(tbl_file_names[i], ".tbm");
-			mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
-			armor_parse_table(tbl_file_names[i]);
-		}
+
+		parse_modular_table( NOX("*-amr.tbm"), armor_parse_table );
 
 		armor_inited = 1;
 	}

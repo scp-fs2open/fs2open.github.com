@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-12-01 07:45:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2005-12-28 22:17:01 $
+ * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/12/01 07:45:21  Goober5000
+ * bypass annoying warnings when loading optional models
+ * --Goober5000
+ *
  * Revision 2.27  2005/10/20 17:50:00  taylor
  * fix player warpout
  * basic code cleanup (that previous braces change did nothing for readability)
@@ -445,6 +449,7 @@
  */
 
 #include <stdlib.h>
+#include <vector>
 
 #include "fireball/fireballs.h"
 #include "graphics/tmapper.h"
@@ -457,6 +462,9 @@
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
 
+
+// make use of the LOD checker for tbl/tbm parsing (from weapons.cpp)
+extern std::vector<lod_checker> LOD_checker;
 
 int Warp_model;
 int Knossos_warp_ani_used;
@@ -537,55 +545,112 @@ void fireball_play_warphole_close_sound(fireball *fb)
 	snd_play_3d(&Snds[sound_index], &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
 }
 
-void fireball_parse_tbl()
+// NOTE: we can't be too trusting here so a tbm will only modify the LOD count, not add an entry
+void parse_fireball_tbl(char *longname)
 {
-	int	rval, idx;
-	char base_filename[256] = "";
+	int rval;
+	lod_checker lod_check;
 
 	// open localization
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse fireball.tbl!  Code = %i.\n", rval);
-	}
-	else {
-		read_file_text(NOX("fireball.tbl"));
+		mprintf(("Unable to parse %s!  Code = %i.\n", rval, longname));
+	} else {
+		read_file_text(longname);
 		reset_parse();		
 	}
 
-	int ntypes = 0;
 	required_string("#Start");
-	while (required_string_either("#End","$Name:")) {
-		Assert( ntypes < MAX_FIREBALL_TYPES);
+
+	while (required_string_either("#End", "$Name:")) {
+		memset( &lod_check, 0, sizeof(lod_checker) );
 
 		// base filename
 		required_string("$Name:");
-		stuff_string(base_filename, F_NAME, NULL);
+		stuff_string(lod_check.filename, F_NAME, NULL);
 
-		// # of lod levels - make sure old fireball.tbl is compatible
-		Fireball_info[ntypes].lod_count = 1;
-		if(optional_string("$LOD:")){
-			stuff_int(&Fireball_info[ntypes].lod_count);
-		}
+		lod_check.override = -1;
 
-		// stuff default filename
-		strcpy(Fireball_info[ntypes].lod[0].filename, base_filename);
-
-		// stuff LOD level filenames
-		for(idx=1; idx<Fireball_info[ntypes].lod_count; idx++){
-			if(idx >= MAX_FIREBALL_LOD){
-				break;
+		// these entries should only be in TBMs, and it has to include at least one
+		if ( Parsing_modular_table ) {
+			if (optional_string("+Explosion_Medium")) {
+				lod_check.override = FIREBALL_EXPLOSION_MEDIUM;
+			} else if (optional_string("+Warp_Effect")) {
+				lod_check.override = FIREBALL_WARP_EFFECT;
+			} else if (optional_string("+Knossos_Effect")) {
+				lod_check.override = FIREBALL_KNOSSOS_EFFECT;
+			} else if (optional_string("+Asteroid")) {
+				lod_check.override = FIREBALL_ASTEROID;
+			} else if (optional_string("+Explosion_Large1")) {
+				lod_check.override = FIREBALL_EXPLOSION_LARGE1;
+			} else {
+				required_string("+Explosion_Large2");
+				lod_check.override = FIREBALL_EXPLOSION_LARGE2;
 			}
-
-			sprintf(Fireball_info[ntypes].lod[idx].filename, "%s_%d", base_filename, idx);
 		}
 
-		ntypes++;
+		lod_check.num_lods = 1;
+
+		// Do we have an LOD num
+		if (optional_string("$LOD:")) {
+			stuff_int(&lod_check.num_lods);
+		}
+
+		if (lod_check.num_lods > MAX_FIREBALL_LOD) {
+			lod_check.num_lods = MAX_FIREBALL_LOD;
+		}
+
+		// we may use one filename for multiple entries so we'll have to handle dupes post parse
+		LOD_checker.push_back(lod_check);
 	}
+
 	required_string("#End");
 
 	// close localization
 	lcl_ext_close();
+}
+
+void fireball_parse_tbl()
+{
+	int i, j;
+
+	memset( &Fireball_info, 0, sizeof(fireball_info) * MAX_FIREBALL_TYPES );
+
+
+	parse_fireball_tbl("fireball.tbl");
+
+	// look for any modular tables
+	parse_modular_table( NOX("*-fbl.tbm"), parse_fireball_tbl );
+
+	// we've got our list so pass it off for final checking and loading.
+	// we assume that entries in fireball.tbl are in the correct order
+	for (i = 0; i < (int)LOD_checker.size(); i++) {
+		if ( (i < MAX_FIREBALL_TYPES) && (LOD_checker[i].override < 0) ) {
+			strcpy( Fireball_info[i].lod[0].filename, LOD_checker[i].filename );
+			Fireball_info[i].lod_count = LOD_checker[i].num_lods;
+		}
+	}
+
+	// having to do this twice is less than optimal, but less error prone too.
+	// this handles (and should only have to handle) TBM related entries
+	for (i = 0; i < (int)LOD_checker.size(); i++) {
+		// try entry replacement
+		if ( (LOD_checker[i].override >= 0) && (LOD_checker[i].override < MAX_FIREBALL_TYPES) ) {
+			strcpy( Fireball_info[LOD_checker[i].override].lod[0].filename, LOD_checker[i].filename );
+			Fireball_info[LOD_checker[i].override].lod_count = LOD_checker[i].num_lods;
+		}
+	}
+
+	// fill in extra LOD filenames
+	for (i = 0; i < MAX_FIREBALL_TYPES; i++) {
+		for (j = 1; j < Fireball_info[i].lod_count; j++) {
+			sprintf( Fireball_info[i].lod[j].filename, "%s_%d", Fireball_info[i].lod[0].filename, j);
+		}
+	}
+
+	// done
+	LOD_checker.clear();
 }
 
 
@@ -652,10 +717,8 @@ void fireball_init()
 	Warp_model = -1;
 
 	// Goober5000 - check for existence of file before trying to load it
-	CFILE *tempfile = cfopen("warp.pof", "rb");
-	if (tempfile != NULL)
-	{
-		cfclose(tempfile);
+	// taylor - changed to use cf_find_file_location() rather than cfopen()
+	if ( cf_find_file_location("warp.pof", CF_TYPE_MODELS, 0, NULL, NULL, NULL) ) {
 		Warp_model = model_load("warp.pof", 0, NULL, 0);
 	}
 
@@ -1106,6 +1169,10 @@ int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size,
 
 	fd = &Fireball_info[fireball_type];
 
+	// check to make sure this fireball type exists
+	if (!fd->lod_count)
+		return -1;
+
 	if ( !(Game_detail_flags & DETAIL_FLAG_FIREBALLS) )	{
 		if ( !((fireball_type == FIREBALL_WARP_EFFECT) || (fireball_type == FIREBALL_KNOSSOS_EFFECT)) )	{
 			return -1;
@@ -1301,5 +1368,7 @@ void fireballs_page_in()
 	}
 
 	bm_page_in_texture( Warp_glow_bitmap );
+
+	bm_page_in_texture( Warp_ball_bitmap );
 
 }

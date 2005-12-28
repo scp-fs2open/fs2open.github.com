@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.15 $
- * $Date: 2005-10-17 00:02:09 $
- * $Author: wmcoolmon $
+ * $Revision: 1.16 $
+ * $Date: 2005-12-28 22:17:02 $
+ * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/10/17 00:02:09  wmcoolmon
+ * CFile stuff
+ *
  * Revision 1.14  2005/09/05 09:38:19  taylor
  * merge of OSX tree
  * a lot of byte swaps were still missing, will hopefully be fully network compatible now
@@ -443,7 +446,7 @@ BOOL WaveFile::Open (char *pszFilename)
 
 	int FileSize, FileOffset;
 
-	if ( !cf_find_file_location(pszFilename, strlen(pszFilename), CF_TYPE_ANY, fullpath, &FileSize, &FileOffset ))	{
+	if ( !cf_find_file_location(pszFilename, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset ))	{
 		goto OPEN_ERROR;
 	}
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-12-21 08:27:37 $
+ * $Revision: 2.29 $
+ * $Date: 2005-12-28 22:17:01 $
  * $Author: taylor $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/12/21 08:27:37  taylor
+ * add the name of the modular table about to be parsed to the debug log
+ * a missing weapon_expl table should just be a note in the debug log rather than a popup warning
+ *
  * Revision 2.27  2005/12/13 21:50:20  wmcoolmon
  * Grr, how did I miss this?
  *
@@ -539,20 +543,11 @@ void event_music_init()
 	}
 
 	//Do teh parsing
-	event_music_parse_musictbl("music.tbl", false);
+	event_music_parse_musictbl("music.tbl");
 
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
+	// look for any modular tables
+	parse_modular_table( NOX("*-mus.tbm"), event_music_parse_musictbl );
 
-	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-mus.tbm", CF_SORT_REVERSE);
-	for(i = 0; i < num_files; i++)
-	{
-		//HACK HACK HACK
-		Modular_tables_loaded = true;
-		strcat(tbl_file_names[i], ".tbm");
-		mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
-		event_music_parse_musictbl(tbl_file_names[i], true);
-	}
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;
 }
@@ -1503,7 +1498,7 @@ void parse_menumusic()
 // event_music_parse_musictbl() will parse the music.tbl file, and set up the Mission_songs[]
 // array
 //
-void event_music_parse_musictbl(char* longname, bool is_chunk)
+void event_music_parse_musictbl(char* longname)
 {
 	int rval;
 

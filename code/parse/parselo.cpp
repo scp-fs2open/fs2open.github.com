@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.59 $
- * $Author: wmcoolmon $
- * $Date: 2005-12-13 21:48:39 $
+ * $Revision: 2.60 $
+ * $Author: taylor $
+ * $Date: 2005-12-28 22:17:01 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/12/13 21:48:39  wmcoolmon
+ * Music TBL to proper XMT file (-mus)
+ *
  * Revision 2.58  2005/12/04 19:07:49  wmcoolmon
  * Final commit of codebase
  *
@@ -349,6 +352,9 @@
 //To keep people from bypassing table checksums with modular tables -C
 bool	Modular_tables_loaded = false;
 bool	Module_ship_weapons_loaded = false;
+
+// to know that a modular table is currently being parsed
+bool	Parsing_modular_table = false;
 
 char	parse_error_text[64];//for my better error mesages-Bobboau
 char		Current_filename[128];
@@ -2944,5 +2950,36 @@ void parse_int_list(int *ilist, int size)
 	{
 		stuff_int(&ilist[i]);
 	}
+}
+
+// parse a modular table of type "name_check" and parse it using the specified function callback
+int parse_modular_table(char *name_check, void (*parse_callback)(char *filename), int path_type, int sort_type)
+{
+	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+	char *tbl_file_names[MAX_TBL_PARTS];
+	int i, num_files = 0;
+
+	if ( (name_check == NULL) || (parse_callback == NULL) ) {
+		Int3();
+		return 0;
+	}
+
+	num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, path_type, name_check, sort_type);
+
+	Parsing_modular_table = true;
+
+	for (i = 0; i < num_files; i++){
+		strcat(tbl_file_names[i], ".tbm");
+		mprintf(("TBM  =>  Starting parse of '%s' ...\n", tbl_file_names[i]));
+		(*parse_callback)(tbl_file_names[i]);
+	}
+
+	Parsing_modular_table = false;
+
+	if (num_files > 0) {
+		Modular_tables_loaded = true;
+	}
+
+	return num_files;
 }
 

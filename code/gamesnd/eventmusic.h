@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.11 $
- * $Date: 2005-12-13 21:48:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2005-12-28 22:17:01 $
+ * $Author: taylor $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/12/13 21:48:39  wmcoolmon
+ * Music TBL to proper XMT file (-mus)
+ *
  * Revision 2.10  2005/07/13 02:50:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -247,7 +250,7 @@ void	event_music_enable();
 void	event_music_pause();
 void	event_music_unpause();
 void	event_music_set_volume_all(float volume);
-void	event_music_parse_musictbl(char* longname, bool is_chunk);
+void	event_music_parse_musictbl(char* longname);
 void	event_music_change_pattern(int new_pattern);
 int	event_music_return_current_pattern();
 void	event_music_first_pattern();

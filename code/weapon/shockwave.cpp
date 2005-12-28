@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-12-04 19:02:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.23 $
+ * $Date: 2005-12-28 22:17:02 $
+ * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/12/04 19:02:36  wmcoolmon
+ * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
+ *
  * Revision 2.21  2005/12/01 07:45:21  Goober5000
  * bypass annoying warnings when loading optional models
  * --Goober5000
@@ -772,10 +775,8 @@ void shockwave_level_init()
 	mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
 
 	// Goober5000 - check for existence of file before trying to load it
-	CFILE *tempfile = cfopen("shockwave.pof", "rb");
-	if (tempfile != NULL)
-	{
-		cfclose(tempfile);
+	// taylor - changed to use cf_find_file_location() rather than cfopen()
+	if ( cf_find_file_location("shockwave.pof", CF_TYPE_MODELS, 0, NULL, NULL, NULL) ) {
 		default_shockwave_model = model_load("shockwave.pof", 0, NULL, 0);
 	}
 

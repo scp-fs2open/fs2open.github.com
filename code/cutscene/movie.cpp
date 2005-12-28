@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-11-13 06:46:10 $
+ * $Revision: 2.29 $
+ * $Date: 2005-12-28 22:17:01 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/11/13 06:46:10  taylor
+ * some minor movie cleanup, not what I would like but enough for now
+ *
  * Revision 2.27  2005/10/16 23:15:46  wmcoolmon
  * Hardened cfile against array overflows
  *
@@ -105,7 +108,7 @@ int movie_find(char *filename, char *out_name)
 		strcat( search_name, movie_ext[i] );
 
 		// try and find the file
-    	if ( cf_find_file_location(search_name, sizeof(search_name)-1, CF_TYPE_ANY, full_path, &size, &offset, 0) ) {
+    	if ( cf_find_file_location(search_name, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0) ) {
 			// if it's not in a packfile then we're done
 			if (offset == 0) {
 				strcpy( out_name, full_path );

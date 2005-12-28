@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.163  2005/12/24 04:18:57  taylor
+ * fix a couple of beam section issues when using modular tables
+ *
  * Revision 2.162  2005/12/21 08:27:37  taylor
  * add the name of the modular table about to be parsed to the debug log
  * a missing weapon_expl table should just be a note in the debug log rather than a popup warning
@@ -990,6 +993,8 @@ int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
 
 weapon_explosions Weapon_explosions;
 
+std::vector<lod_checker> LOD_checker;
+
 int Num_weapon_types = 0;
 
 int Num_weapons = 0;
@@ -1268,9 +1273,9 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 
 void parse_weapon_expl_tbl(char* longname)
 {
-	int	rval;
-	char base_filename[MAX_FILENAME_LEN] = "";
-	int lod_count = MAX_WEAPON_EXPL_LOD;
+	int rval;
+	uint i;
+	lod_checker lod_check;
 
 	// open localization
 	lcl_ext_open();
@@ -1286,24 +1291,33 @@ void parse_weapon_expl_tbl(char* longname)
 	required_string("#Start");
 	while (required_string_either("#End","$Name:"))
 	{
+		memset( &lod_check, 0, sizeof(lod_checker) );
+
 		// base filename
 		required_string("$Name:");
-		stuff_string(base_filename, F_NAME, NULL);
+		stuff_string(lod_check.filename, F_NAME, NULL);
 
 		//Do we have an LOD num
-		if(optional_string("$LOD:"))
+		if (optional_string("$LOD:"))
 		{
-			stuff_int(&lod_count);
-
-			if(lod_count > MAX_WEAPON_EXPL_LOD)
-			{
-				Warning(LOCATION, "Weapon explosion '%s' has %d LODs, but the maximum is %d. Only the first %d will be used.", base_filename, lod_count, MAX_WEAPON_EXPL_LOD, MAX_WEAPON_EXPL_LOD);
-				lod_count = MAX_WEAPON_EXPL_LOD;
-			}
+			stuff_int(&lod_check.num_lods);
 		}
 
-		// pass it off for final checking and loading
-		Weapon_explosions.Load( base_filename, lod_count );
+		// only bother with this if we have 1 or more lods and less than max lods,
+		// otherwise the stardard level loading will take care of the different effects
+		if ( (lod_check.num_lods > 0) || (lod_check.num_lods < MAX_WEAPON_EXPL_LOD) ) {
+			// name check, update lod count if it already exists
+			for (i = 0; i < LOD_checker.size(); i++) {
+				if ( !stricmp(LOD_checker[i].filename, lod_check.filename) ) {
+					LOD_checker[i].num_lods = lod_check.num_lods;
+				}
+			}
+
+			// old entry not found, add new entry
+			if ( i == LOD_checker.size() ) {
+				LOD_checker.push_back(lod_check);
+			}
+		}
 	}
 	required_string("#End");
 
@@ -3403,7 +3417,7 @@ void parse_tertiary()
 static char Default_cmeasure_name[NAME_LENGTH] = "";
 
 char current_weapon_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
-void parse_weaponstbl(char* longname, bool is_chunk)
+void parse_weaponstbl(char* longname)
 {
 	strcpy(current_weapon_table, longname);
 	// open localization
@@ -3416,7 +3430,7 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 	{
 		while (required_string_either("#End", "$Name:")) {
 			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-			if ( parse_weapon(WP_LASER, is_chunk) < 0 ) {
+			if ( parse_weapon(WP_LASER, Parsing_modular_table) < 0 ) {
 				continue;
 			}
 		}
@@ -3428,7 +3442,7 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 	{
 		while (required_string_either("#End", "$Name:")) {
 			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-			if ( parse_weapon(WP_MISSILE, is_chunk) < 0) {
+			if ( parse_weapon(WP_MISSILE, Parsing_modular_table) < 0) {
 				continue;
 			}
 		}
@@ -3439,7 +3453,7 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 	{
 		while (required_string_either("#End", "$Name:")) {
 			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-			if ( parse_weapon(WP_BEAM, is_chunk) < 0) {
+			if ( parse_weapon(WP_BEAM, Parsing_modular_table) < 0) {
 				continue;
 			}
 		}
@@ -3452,7 +3466,7 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 	{
 		while (required_string_either("#End", "$Name:"))
 		{
-			int idx = parse_weapon(WP_MISSILE, is_chunk);
+			int idx = parse_weapon(WP_MISSILE, Parsing_modular_table);
 
 			if(idx < 0) {
 				continue;
@@ -3489,7 +3503,7 @@ void parse_weaponstbl(char* longname, bool is_chunk)
 	// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 	// This list is used to select an alternate weapon when a particular weapon is not available
 	// during weapon selection.
-	if(!is_chunk)
+	if(!Parsing_modular_table)
 	{
 		required_string("$Player Weapon Precedence:");
 	}
@@ -3643,26 +3657,22 @@ void weapon_expl_info_init()
 
 	parse_weapon_expl_tbl("weapon_expl.tbl");
 
-	//Modular tables
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
-	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-wxp.tbm", CF_SORT_REVERSE);
-	for(i = 0; i < num_files; i++)
-	{
-		//HACK HACK HACK
-		Modular_tables_loaded = true;
-		strcat(tbl_file_names[i], ".tbm");
-		mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
-		parse_weapon_expl_tbl(tbl_file_names[i]);
+	// check for, and load, modular tables
+	parse_modular_table( NOX("*-wxp.tbm"), parse_weapon_expl_tbl );
+
+	// we've got our list so pass it off for final checking and loading
+	for (i = 0; i < (int)LOD_checker.size(); i++) {
+		Weapon_explosions.Load( LOD_checker[i].filename, LOD_checker[i].num_lods );
 	}
+
+	// done
+	LOD_checker.clear();
 }
 
 // This will get called once at game startup
 void weapon_init()
 {
-	int rval;
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
+	int i, rval;
 
 	if ( !Weapons_inited )
 	{
@@ -3678,19 +3688,15 @@ void weapon_init()
 			reset_weapon_info();
 			Num_weapon_types = 0;
 			Num_spawn_types = 0;
-			int i;
-			parse_weaponstbl("weapons.tbl", false);
 
-			int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-wep.tbm", CF_SORT_REVERSE);
-			for(i = 0; i < num_files; i++)
-			{
-				//HACK HACK HACK
-				Modular_tables_loaded = true;
+			parse_weaponstbl("weapons.tbl");
+
+			int num_files = parse_modular_table( NOX("*-wep.tbm"), parse_weaponstbl );
+
+			if ( num_files > 0 ) {
 				Module_ship_weapons_loaded = true;
-				strcat(tbl_file_names[i], ".tbm");
-				mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[i]));
-				parse_weaponstbl(tbl_file_names[i], true);
 			}
+
 			create_weapon_names();
 			sort_weapons_by_type();
 
