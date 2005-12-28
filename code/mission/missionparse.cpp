@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.130 $
- * $Date: 2005-12-08 15:11:29 $
+ * $Revision: 2.131 $
+ * $Date: 2005-12-28 22:31:03 $
  * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2005/12/08 15:11:29  taylor
+ * a few game_busy() changes
+ *
  * Revision 2.129  2005/12/06 02:57:57  taylor
  * just to be on the safe side
  *
@@ -6135,7 +6138,7 @@ int ship_can_use_warp_drive(ship *shipp)
 int mission_do_departure(object *objp)
 {
 	ship *shipp;
-	int temp = -1;
+//	int temp = -1;
 //	vec3d v;
 
 	Assert (objp->type == OBJ_SHIP);
