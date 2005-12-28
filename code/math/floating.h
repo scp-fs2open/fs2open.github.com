@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:15:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2005-12-28 22:30:24 $
+ * $Author: taylor $
  *
  * Low-level floating point math macros and routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/07/13 03:15:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.2  2005/03/24 23:36:13  taylor
  * fix compiler warnings with mismatched types and unused variables
  * cleanup some debug messages so they can be turned off if needed
@@ -95,6 +99,7 @@ float frand_range(float min, float max);
 #define flfloor(fl) (int)floor(fl)
 #define f2fl(fx) ((float)(fx)/65536.0f)
 #define fl2f(fl) (int)((fl)*65536.0f)
+#define fl_tan(fl) tanf(fl)
 
 // convert a measurement in degrees to radians
 #define fl_radian(fl)	((float)((fl * 3.14159f)/180.0f))
