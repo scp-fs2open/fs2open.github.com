@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.14 $
- * $Date: 2005-12-06 03:13:49 $
+ * $Revision: 2.15 $
+ * $Date: 2005-12-28 22:06:47 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/12/06 03:13:49  taylor
+ * fix quite a few CFILE issues:
+ *   use #define's for path lengths when possible so it's easier to move between functions
+ *   fix huge Cfile_stack[] issue (how the hell did that get through :v: QA?)
+ *   add Int3() check on cfopen() so it's easier to know if it get's called before cfile is ready to use
+ *   move path separators to pstypes.h
+ *   fix possible string overruns when setting up CFILE roots
+ *   make sure we don't try to init current directory again thinking it's a CD-ROM
+ *   add the list of VP roots to debug log, this will undoubtedly be useful
+ * when -nosound is use go ahead and set -nomusic too to both checks are correct
+ * add list of cmdline options to debug log
+ * fix possible overwrite issues with get_version_string() and remove '(fs2_open)' from string plus change OGL->OpenGL, D3D->Direct3D
+ *
  * Revision 2.13  2005/10/16 23:15:46  wmcoolmon
  * Hardened cfile against array overflows
  *
@@ -639,11 +652,12 @@ void cf_sort_filenames( int n, char **list, int sort, file_list_info *info = NUL
 // CD's and pack files.
 // Input:  filespace   - Filename & extension
 //         pathtype    - See CF_TYPE_ defines in CFILE.H
+//         max_out     - Maximum string size to be stuffed into pack_filename
 // Output: pack_filename - Absolute path and filename of this file.   Could be a packfile or the actual file.
 //         size        - File size
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
-int cf_find_file_location( char *filespec, int filespec_max, int pathtype, char *pack_filename, int *size, int *offset, bool localize = false);
+int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize = false);
 
 // Functions to change directories
 int cfile_chdir(char *dir);

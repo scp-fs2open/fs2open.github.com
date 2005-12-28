@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-12-06 03:13:49 $
+ * $Revision: 2.34 $
+ * $Date: 2005-12-28 22:06:47 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/12/06 03:13:49  taylor
+ * fix quite a few CFILE issues:
+ *   use #define's for path lengths when possible so it's easier to move between functions
+ *   fix huge Cfile_stack[] issue (how the hell did that get through :v: QA?)
+ *   add Int3() check on cfopen() so it's easier to know if it get's called before cfile is ready to use
+ *   move path separators to pstypes.h
+ *   fix possible string overruns when setting up CFILE roots
+ *   make sure we don't try to init current directory again thinking it's a CD-ROM
+ *   add the list of VP roots to debug log, this will undoubtedly be useful
+ * when -nosound is use go ahead and set -nomusic too to both checks are correct
+ * add list of cmdline options to debug log
+ * fix possible overwrite issues with get_version_string() and remove '(fs2_open)' from string plus change OGL->OpenGL, D3D->Direct3D
+ *
  * Revision 2.32  2005/10/17 00:13:28  wmcoolmon
  * Some cfile changes that slipped by
  *
@@ -952,7 +965,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 	strcpy(copy_file_path, file_path);
 
 
-	if ( cf_find_file_location( copy_file_path, sizeof(copy_file_path)-1, dir_type, longname, &size, &offset, localize ) )	{
+	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize ) )	{
 
 		// Fount it, now create a cfile out of it
 		
