@@ -9,14 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.15 $
- * $Date: 2005-12-16 06:48:28 $
+ * $Revision: 1.16 $
+ * $Date: 2005-12-28 22:28:44 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/12/16 06:48:28  taylor
+ * "House Keeping!!"
+ *   - minor cleanup of things that have bothered me at one time or another
+ *   - slight speedup from state switching
+ *   - slightly better specmap handling, fixes a couple of (not frequent) strange and sorta random issues
+ *   - make sure to only disable HTL arb stuff when in HTL mode
+ *   - handle any extra lighting pass before spec pass so the light can be applied properly
+ *
  * Revision 1.14  2005/12/06 02:50:41  taylor
  * clean up some init stuff and fix a minor SDL annoyance
  * make debug messages a bit more readable
@@ -113,11 +121,11 @@
 void opengl_switch_arb(int unit, int state);
 
 typedef struct tcache_slot_opengl {
-	GLuint	texture_handle;
+	GLuint	texture_id;
 //	GLuint	frameb_handle;
 //	GLuint	depthb_handle;
 	float	u_scale, v_scale;
-	int	bitmap_id;
+	int	bitmap_handle;
 	int	size;
 	//char	used_this_frame;
 	int	time_created;
@@ -143,19 +151,14 @@ extern int GL_last_section_y;
 extern GLint GL_supported_texture_units;
 extern int GL_should_preload;
 extern ubyte GL_xlat[256];
-
+extern int GL_mipmap_filter;
 
 void opengl_tcache_init(int use_sections);
-int opengl_free_texture(tcache_slot_opengl *t);
-void opengl_free_texture_with_handle(int handle);
 void opengl_free_texture_slot(int n);
 void opengl_tcache_flush();
 void opengl_tcache_cleanup();
 void opengl_tcache_frame();
-void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
-int opengl_create_texture_sub(int bitmap_type, int texture_handle, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data = NULL, tcache_slot_opengl *t = NULL, int resize = 0, int reload = 0, int fail_on_full = 0);
-int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL, int fail_on_full = 0);
-int gr_opengl_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
+int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
 void opengl_set_additive_tex_env();
 void opengl_set_modulate_tex_env();
 void gr_opengl_set_tex_env_scale(float scale);

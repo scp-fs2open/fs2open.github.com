@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-12-08 15:10:07 $
+ * $Revision: 1.12 $
+ * $Date: 2005-12-28 22:28:44 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/12/08 15:10:07  taylor
+ * add APPLE_client_storage support to improve texture performance and reduce memory usage a tiny bit on OS X
+ *
  * Revision 1.10  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -118,6 +121,7 @@ ogl_extension GL_Extensions[GL_NUM_EXTENSIONS] =
 	{0, 0, "glActiveTextureARB", "GL_ARB_multitexture", 1},		//required for glow maps
 	{0, 0, NULL, "GL_ARB_texture_env_add", 1},					//required for glow maps
 	{0, 0, "glCompressedTexImage2D", "GL_ARB_texture_compression", 0},
+	{0, 0, "glCompressedTexSubImage2D", "GL_ARB_texture_compression", 0},
 	{0, 0, NULL, "GL_EXT_texture_compression_s3tc", 0},
 	{0, 0, NULL, "GL_EXT_texture_filter_anisotropic", 0},
 	{0, 0, NULL, "GL_NV_fog_distance", 0},
