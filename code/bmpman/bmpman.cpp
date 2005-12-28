@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.75 $
- * $Date: 2005-12-06 03:05:53 $
+ * $Revision: 2.76 $
+ * $Date: 2005-12-28 22:04:00 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2005/12/06 03:05:53  taylor
+ * add base support for 8-bit DDS images
+ * clean up some DDS error messages and other minor bug/comment fixes
+ * move bitmap stuff from pstypes.h, it makes more sense here anyway
+ * start of 8-bit palette conversion, needs work but is here for WMCoolmon to look at and play with
+ *
  * Revision 2.74  2005/11/17 02:30:49  taylor
  * correct a little EFF fubar from my -img2dds commit
  * vocalize EFF loading errors so that they get noticed and fixed sooner
@@ -1178,7 +1184,7 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 	if(bpp == 8){
 		Assert(flags & BMP_AABITMAP);
 	} else {
-		Assert( (bpp == 16) || (bpp == 32) );
+		Assert( (bpp == 16) || (bpp == 24) || (bpp == 32) );
 	}
 
 	if ( !bm_inited ) bm_init();
@@ -1195,11 +1201,12 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 	Assert( n > -1 );
 
 	// Out of bitmap slots
-	if ( n == -1 ) return -1;
+	if ( n == -1 )
+		return -1;
 
 	memset( &bm_bitmaps[n], 0, sizeof(bitmap_entry) );
 
-	sprintf( bm_bitmaps[n].filename, "TMP%dx%d", w, h );
+	sprintf( bm_bitmaps[n].filename, "TMP%dx%d+%d", w, h, bpp );
 	bm_bitmaps[n].type = BM_TYPE_USER;
 	bm_bitmaps[n].comp_type = BM_TYPE_NONE;
 	bm_bitmaps[n].palette_checksum = 0;
@@ -1207,18 +1214,18 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 	bm_bitmaps[n].bm.w = (short) w;
 	bm_bitmaps[n].bm.h = (short) h;
 	bm_bitmaps[n].bm.rowsize = (short) w;
-	bm_bitmaps[n].bm.bpp = (unsigned char) bpp;
+	bm_bitmaps[n].bm.bpp = (ubyte) bpp;
 	bm_bitmaps[n].bm.flags = flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 
-	bm_bitmaps[n].info.user.bpp = ubyte(bpp);
+	bm_bitmaps[n].info.user.bpp = (ubyte)bpp;
 	bm_bitmaps[n].info.user.data = data;
-	bm_bitmaps[n].info.user.flags = ubyte(flags);
+	bm_bitmaps[n].info.user.flags = (ubyte)flags;
 
 	bm_bitmaps[n].signature = Bm_next_signature++;
 
-	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
+	bm_bitmaps[n].handle = bm_get_next_handle() * MAX_BITMAPS + n;
 	bm_bitmaps[n].last_used = -1;
 	bm_bitmaps[n].mem_taken = (w * h * (bpp/8));
 
@@ -1747,6 +1754,10 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 
 				break;
 			}
+
+			if ( (img_size <= 0) && (anim_width) && (anim_height) && (bpp) ) {
+				img_size = (anim_width * anim_height * (bpp / 8));
+			}
 		}
 
 		bm_bitmaps[n+i].info.ani.first_frame = n;
@@ -1855,6 +1866,10 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 {	
 	int idx;
 
+	// no transparency for 24 bpp images
+	if ( !(flags & BMP_AABITMAP) && (bmp->bpp == 24) )
+		return;
+
 	if(Pofview_running || Is_standalone){
 		Assert(bmp->bpp == 8);
 
@@ -1865,7 +1880,7 @@ static void bm_convert_format( int bitmapnum, bitmap *bmp, ubyte bpp, ubyte flag
 		if(flags & BMP_AABITMAP){
 			Assert(bmp->bpp == 8);
 		} else {
-			Assert( (bmp->bpp == 16) || (bmp->bpp == 24) || (bmp->bpp == 32) );
+			Assert( (bmp->bpp == 16) || (bmp->bpp == 32) );
 		}
 	}
 
@@ -2099,44 +2114,52 @@ void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, uby
 	if ((bpp != be->info.user.bpp) && !(flags & BMP_AABITMAP))
 		bpp = be->info.user.bpp;
 
-	switch( bpp )	{
-	case 32:	// user 32-bit bitmap
-		bmp->bpp = bpp;
-		bmp->flags = be->info.user.flags;
-		bmp->data = (ptr_u)be->info.user.data;
-		break;
+	switch ( bpp ) {
+		case 32:	// user 32-bit bitmap
+			bmp->bpp = bpp;
+			bmp->flags = be->info.user.flags;
+			bmp->data = (ptr_u)be->info.user.data;
+			break;
 
-	case 16:			// user 16 bit bitmap
-		bmp->bpp = bpp;
-		bmp->flags = be->info.user.flags;		
-		bmp->data = (ptr_u)be->info.user.data;								
-		break;	
+		case 24:	// user 24-bit bitmap
+			bmp->bpp = bpp;
+			bmp->flags = be->info.user.flags;
+			bmp->data = (ptr_u)be->info.user.data;
+			break;
+
+		case 16:			// user 16 bit bitmap
+			bmp->bpp = bpp;
+			bmp->flags = be->info.user.flags;		
+			bmp->data = (ptr_u)be->info.user.data;								
+			break;	
 	
-	case 8:			// Going from 8 bpp to something (probably only for aabitmaps)
-		/*
-		Assert(flags & BMP_AABITMAP);
-		bmp->bpp = 16;
-		bmp->data = (uint)vm_malloc(bmp->w * bmp->h * 2);
-		bmp->flags = be->info.user.flags;
-		bmp->palette = NULL;
+		case 8:			// Going from 8 bpp to something (probably only for aabitmaps)
+			/*
+			Assert(flags & BMP_AABITMAP);
+			bmp->bpp = 16;
+			bmp->data = (uint)vm_malloc(bmp->w * bmp->h * 2);
+			bmp->flags = be->info.user.flags;
+			bmp->palette = NULL;
 
-		// go through and map the pixels
-		for(idx=0; idx<bmp->w * bmp->h; idx++){			
-			bit_16 = (ushort)((ubyte*)be->info.user.data)[idx];			
-			Assert(bit_16 <= 255);
+			// go through and map the pixels
+			for(idx=0; idx<bmp->w * bmp->h; idx++){			
+				bit_16 = (ushort)((ubyte*)be->info.user.data)[idx];			
+				Assert(bit_16 <= 255);
 
-			// stuff the final result
-			memcpy((char*)bmp->data + (idx * 2), &bit_16, sizeof(ushort));
-		}
-		*/		
-		Assert(flags & BMP_AABITMAP);
-		bmp->bpp = bpp;
-		bmp->flags = be->info.user.flags;		
-		bmp->data = (ptr_u)be->info.user.data;								
-		break;
+				// stuff the final result
+				memcpy((char*)bmp->data + (idx * 2), &bit_16, sizeof(ushort));
+			}
+			*/		
+			Assert(flags & BMP_AABITMAP);
+			bmp->bpp = bpp;
+			bmp->flags = be->info.user.flags;		
+			bmp->data = (ptr_u)be->info.user.data;								
+			break;
 		
-	// default:
-		// Error( LOCATION, "Unhandled user bitmap conversion from %d to %d bpp", be->info.user.bpp, bmp->bpp );
+		 default:
+			Int3();
+			break;
+			// Error( LOCATION, "Unhandled user bitmap conversion from %d to %d bpp", be->info.user.bpp, bmp->bpp );
 	}
 
 	bm_convert_format( bitmapnum, bmp, bpp, flags );
