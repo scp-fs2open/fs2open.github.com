@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.149 $
- * $Date: 2005-12-22 19:15:20 $
+ * $Revision: 2.150 $
+ * $Date: 2005-12-28 22:24:48 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2005/12/22 19:15:20  taylor
+ * one more attempt to fix screenshots on Radeons.
+ *
  * Revision 2.148  2005/12/16 16:34:35  taylor
  * ehh, didn't ever fix that to my satisfaction, bastardize it until more work can be done (so people don't start filing bug reports)
  *
@@ -897,6 +900,7 @@
 #ifdef WIN32
 #include <windows.h>
 #include <windowsx.h>
+#include <direct.h>
 #endif
 
 
@@ -2812,20 +2816,31 @@ void gr_opengl_set_color_fast(color *dst)
 
 void gr_opengl_print_screen(char *filename)
 {
-	char tmp[MAX_FILENAME_LEN];
-	ubyte *buf = NULL;
+	char tmp[MAX_PATH_LEN];
+	ubyte *buf = NULL, bgr_tmp, tga_hdr[18];
+	int i;
+	ushort width, height;
 
-	strcpy( tmp, filename );
-	strcat( tmp, NOX(".tga"));
+	// save to a "screenshots" directory and tack on the filename
+#ifdef SCP_UNIX
+	snprintf( tmp, MAX_PATH_LEN-1, "%s/%s/screenshots/%s.tga", detect_home(), Osreg_user_dir, filename);
+	_mkdir( tmp );
+#else
+	_getcwd( tmp, MAX_PATH_LEN-1 );
+	strcat( tmp, "\\screenshots\\" );
+	_mkdir( tmp );
 
+	strcat( tmp, filename );
+	strcat( tmp, ".tga" );
+#endif
 
-	CFILE *cfout = cfopen(tmp, "wb", CFILE_NORMAL, CF_TYPE_ROOT);
+	FILE *fout = fopen(tmp, "wb");
 
 	buf = (ubyte*) vm_malloc_q(gr_screen.max_w * gr_screen.max_h * 3);
 
-	if ( (cfout == NULL) || (buf == NULL) ) {
-		if (cfout != NULL)
-			cfclose(cfout);
+	if ( (fout == NULL) || (buf == NULL) ) {
+		if (fout != NULL)
+			fclose(fout);
 
 		if (buf != NULL)
 			vm_free(buf);
@@ -2835,37 +2850,35 @@ void gr_opengl_print_screen(char *filename)
 
 	memset(buf, 0, gr_screen.max_w * gr_screen.max_h * 3);
 
-//	glReadBuffer(GL_FRONT);
+	glReadBuffer(GL_FRONT);
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGB, GL_UNSIGNED_BYTE, buf);
 
 	// convert from RGB to BGR
-	ubyte bgr_tmp;
-  	 
-	for (int i = 0; i < (gr_screen.max_w * gr_screen.max_h * 3); i += 3) {
+	for (i = 0; i < (gr_screen.max_w * gr_screen.max_h * 3); i += 3) {
 		bgr_tmp = buf[i];
 		buf[i] = buf[i+2];
 		buf[i+2] = bgr_tmp;
 	}
 
 	// Write the TGA header
-	cfwrite_ubyte( 0, cfout );		// IDLength;
-	cfwrite_ubyte( 0, cfout );		// ColorMapType;
-	cfwrite_ubyte( 2, cfout );		// ImageType;		// 2 = 24bpp, uncompressed, 10=24bpp rle compressed
-	cfwrite_ushort( 0, cfout );		// CMapStart;
-	cfwrite_ushort( 0, cfout );		// CMapLength;
-	cfwrite_ubyte( 0, cfout );		// CMapDepth;
-	cfwrite_ushort( 0, cfout );		// XOffset;
-	cfwrite_ushort( 0, cfout );		// YOffset;
-	cfwrite_ushort( (ushort)gr_screen.max_w, cfout );	// Width;
-	cfwrite_ushort( (ushort)gr_screen.max_h, cfout );	// Height;
-	cfwrite_ubyte( 24, cfout );		// PixelDepth;
-	cfwrite_ubyte( 0, cfout );		// ImageDesc;
+	width = INTEL_SHORT(gr_screen.max_w);
+	height = INTEL_SHORT(gr_screen.max_h);
+
+	memset( tga_hdr, 0, sizeof(tga_hdr) );
+
+	tga_hdr[2] = 2;		// ImageType    2 = 24bpp, uncompressed
+	memcpy( tga_hdr + 12, &width, sizeof(ushort) );		// Width
+	memcpy( tga_hdr + 14, &height, sizeof(ushort) );	// Height
+	tga_hdr[16] = 24;	// PixelDepth
+
+	fwrite( tga_hdr, sizeof(tga_hdr), 1, fout );
 
 	// write out the image data
-	cfwrite( buf, gr_screen.max_w * gr_screen.max_h * 3, 1, cfout );
+	fwrite( buf, (gr_screen.max_w * gr_screen.max_h * 3), 1, fout );
+
 
 	// done!
-	cfclose(cfout);
+	fclose(fout);
 	vm_free(buf);
 }
 
@@ -3178,11 +3191,13 @@ void opengl_save_mouse_area(int x, int y, int w, int h)
 	GLenum fmt;
 	int cursor_size;
 
-	if (gr_screen.bits_per_pixel == 32) {
+/*	if (gr_screen.bits_per_pixel == 32) {
 		fmt = GL_UNSIGNED_INT_8_8_8_8_REV;
 	} else {
 		fmt = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-	}
+	}*/
+
+	fmt = GL_UNSIGNED_BYTE;
 
 	// lazy - taylor
 	cursor_size = (GL_mouse_saved_size * GL_mouse_saved_size);
@@ -3209,14 +3224,14 @@ void opengl_save_mouse_area(int x, int y, int w, int h)
         
 	// this should really only have to be malloc'd once
 	if (GL_saved_mouse_data == NULL)
-		GL_saved_mouse_data = (ubyte*)vm_malloc(cursor_size * gr_screen.bytes_per_pixel);
+		GL_saved_mouse_data = (ubyte*)vm_malloc_q(cursor_size * 3);
 
 	if (GL_saved_mouse_data == NULL)
 		return;
 
 	glReadBuffer(GL_BACK);
-	glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_BGRA, fmt, GL_saved_mouse_data);
-        
+	glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_RGB, fmt, GL_saved_mouse_data);
+
 	GL_mouse_saved = 1;
 }
 
@@ -3231,31 +3246,34 @@ void opengl_free_mouse_area()
 int gr_opengl_save_screen()
 {
 	GLenum fmt = 0;
-	int rc = -1;
-	ubyte *sptr, *dptr;
+	int i, rc = -1;
+	ubyte *sptr, *dptr, bgr_tmp;
 	ubyte *opengl_screen_tmp = NULL;
+	int width_times_pixel, mouse_times_pixel;
 
 	gr_reset_clip();
 
-	if (gr_screen.bits_per_pixel == 32) {
+/*	if (gr_screen.bits_per_pixel == 32) {
 		fmt = GL_UNSIGNED_INT_8_8_8_8_REV;
+	//	fmt = GL_UNSIGNED_INT_8_8_8_8;
 	} else {
 		fmt = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-	}
+	//	fmt = GL_UNSIGNED_SHORT_5_5_5_1;
+	}*/
+
+	fmt = GL_UNSIGNED_BYTE;
 
 	if (!GL_saved_screen)
-		GL_saved_screen = (ubyte*)vm_malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
+		GL_saved_screen = (ubyte*)vm_malloc_q( gr_screen.max_w * gr_screen.max_h * 3 );
 
-	if (!GL_saved_screen) 
- 	{
+	if (!GL_saved_screen) {
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
  		return -1;
  	}
 
-	opengl_screen_tmp = (ubyte*)vm_malloc( gr_screen.max_w * gr_screen.max_h * gr_screen.bytes_per_pixel );
+	opengl_screen_tmp = (ubyte*)vm_malloc_q( gr_screen.max_w * gr_screen.max_h * 3 );
 
-	if (!opengl_screen_tmp) 
- 	{
+	if (!opengl_screen_tmp) {
 		mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
  		return -1;
  	}
@@ -3267,39 +3285,43 @@ int gr_opengl_save_screen()
 #else
 	glReadBuffer(GL_BACK);
 #endif
-	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, fmt, opengl_screen_tmp);
+	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGB, fmt, opengl_screen_tmp);
 
 	glEnable(GL_TEXTURE_2D);
 
-	sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w*gr_screen.max_h*gr_screen.bytes_per_pixel];
+	sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w * gr_screen.max_h * 3];
 	dptr = (ubyte *)GL_saved_screen;
 
-	int width_times_pixel = (gr_screen.max_w * gr_screen.bytes_per_pixel);
-	int mouse_times_pixel = (GL_mouse_saved_size * gr_screen.bytes_per_pixel);
+	width_times_pixel = (gr_screen.max_w * 3);
+	mouse_times_pixel = (GL_mouse_saved_size * 3);
 
-	for (int j = 0; j < gr_screen.max_h; j++)
-	{
+	for (i = 0; i < gr_screen.max_h; i++) {
 		sptr -= width_times_pixel;
 		memcpy(dptr, sptr, width_times_pixel);
 		dptr += width_times_pixel;
 	}
-        
+
 	vm_free(opengl_screen_tmp);
 
-	if (GL_mouse_saved && GL_saved_mouse_data)
-	{
+	if (GL_mouse_saved && GL_saved_mouse_data) {
 		sptr = (ubyte *)GL_saved_mouse_data;
-		dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * gr_screen.bytes_per_pixel];
+		dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 3];
 
-		for (int i = 0; i < GL_mouse_saved_size; i++)
-		{
+		for (i = 0; i < GL_mouse_saved_size; i++) {
 			memcpy(dptr, sptr, mouse_times_pixel);
 			sptr += mouse_times_pixel;
 			dptr -= width_times_pixel;
 		}
 	}
 
-	rc = bm_create(gr_screen.bits_per_pixel, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
+	// convert from RGB to BGR
+	for (i = 0; i < (gr_screen.max_w * gr_screen.max_h * 3); i += 3) {
+		bgr_tmp = GL_saved_screen[i];
+		GL_saved_screen[i] = GL_saved_screen[i+2];
+		GL_saved_screen[i+2] = bgr_tmp;
+	}
+
+	rc = bm_create(24, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 
 	return rc;
 }
@@ -4285,6 +4307,7 @@ void gr_opengl_init(int reinit)
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  Using %s texture filer.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
