@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.286 $
- * $Date: 2005-12-28 22:17:01 $
+ * $Revision: 2.287 $
+ * $Date: 2005-12-28 22:21:04 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.286  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.285  2005/12/21 08:27:37  taylor
  * add the name of the modular table about to be parsed to the debug log
  * a missing weapon_expl table should just be a note in the debug log rather than a popup warning
@@ -12184,9 +12190,6 @@ int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, ve
 		vec3d		gpath_point;
 		pm = model_get(sp->modelnum);
 		mp = &pm->paths[ss->system_info->path_num];
-		if (mp == NULL)
-			return 1;
-		//	Int3();
 		if ( mp->nverts >= 2 ) {
 //			path_point = &mp->verts[mp->nverts-1].pos;
 			path_point = &mp->verts[0].pos;
