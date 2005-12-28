@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-11-13 06:49:32 $
+ * $Revision: 2.18 $
+ * $Date: 2005-12-28 22:32:37 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/11/13 06:49:32  taylor
+ * small big-endian fix
+ *
  * Revision 2.16  2005/09/05 09:38:19  taylor
  * merge of OSX tree
  * a lot of byte swaps were still missing, will hopefully be fully network compatible now
@@ -144,9 +147,14 @@ extern int Cmdline_tga16;
 //
 // -----------------
 
-#define MAX_TARGA_RUN_LENGTH_PACKET 128
-#define TARGA_HEADER_LENGTH 18
-#define ULORIGIN		(header.image_descriptor & 0x20)
+const char *Xfile_ID = "TRUEVISION-XFILE.";
+
+#define TARGA_FOOTER_SIZE					26  	// using sizeof(targa_footer) doesn't work unless we
+												// pack the struct and I don't want to do that :)
+
+#define MAX_TARGA_RUN_LENGTH_PACKET 	128
+#define TARGA_HEADER_LENGTH 			18
+#define ULORIGIN						(header.image_descriptor & 0x20)
 
 // -----------------
 //
@@ -168,6 +176,13 @@ typedef struct targa_header {
 	ubyte pixel_depth;
 	ubyte image_descriptor;
 } targa_header;
+
+
+typedef struct targa_footer {
+	uint ext_offset;		// file offset to extension area (we ignore it)
+	uint dev_offset;		// file offset to developer area (we also ignore this)
+	char sig_string[18];	// check to see if this is new TGA format, string should be value of Xfile_ID
+} targa_footer;
 
 // -----------------
 //
@@ -635,9 +650,11 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 {
 	Assert(real_filename);
 	targa_header header;
+	targa_footer footer;
 	CFILE *targa_file;
 	char filename[MAX_FILENAME_LEN];
 	ubyte r, g, b;
+	int xfile_offset = 0;
 		
 	// open the file
 	strcpy( filename, real_filename );
@@ -649,6 +666,27 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	if ( !targa_file ){
 		return TARGA_ERROR_READING;
 	}		
+
+	// read the footer info first
+	cfseek( targa_file, cfilelength(targa_file) - TARGA_FOOTER_SIZE, CF_SEEK_SET );
+
+	memset( &footer, 0, sizeof(targa_footer) );
+
+	footer.ext_offset = cfread_uint(targa_file);
+	footer.dev_offset = cfread_uint(targa_file);
+
+	cfread_string(footer.sig_string, sizeof(footer.sig_string), targa_file);
+
+	if ( !strcmp(footer.sig_string, Xfile_ID) ) {
+		// it's an extended file to lets be sure to skip the extra crap which comes after the
+		// image data section, dev section comes first in the file and we only need one offset
+		if (footer.dev_offset || footer.ext_offset) {
+			xfile_offset = cfilelength(targa_file) - ((footer.dev_offset) ? footer.dev_offset : footer.ext_offset);
+		}
+	}
+
+	// done with the footer so jump back and do normal reading
+	cfseek( targa_file, 0, CF_SEEK_SET );
 
 	header.id_length = cfread_ubyte(targa_file);
 	// header.id_length=targa_file.read_char();
@@ -767,10 +805,10 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 			}
 		}
 	}
-	
-	int bytes_remaining = cfilelength(targa_file)-cftell(targa_file);
 
-	Assert(bytes_remaining>0);
+	int bytes_remaining = cfilelength(targa_file) - cftell(targa_file) - xfile_offset;
+
+	Assert(bytes_remaining > 0);
 
 	ubyte *fileptr = (ubyte*)vm_malloc(bytes_remaining);
 	Assert(fileptr);
