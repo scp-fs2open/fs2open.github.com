@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.20 $
- * $Date: 2005-11-23 00:49:51 $
+ * $Revision: 2.21 $
+ * $Date: 2005-12-29 00:54:08 $
  * $Author: phreak $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/11/23 00:49:51  phreak
+ * Player repair rearm completion timer display added.
+ *
  * Revision 2.19  2005/10/09 08:03:19  wmcoolmon
  * New SEXP stuff
  *
@@ -421,7 +424,7 @@ void hud_num_make_mono(char *num_str);
 // functions for handling hud animations
 void hud_anim_init(hud_anim *ha, int sx, int sy, char *filename);
 void hud_frames_init(hud_frames *hf);
-int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,bool resize=true);
+int	hud_anim_render(hud_anim *ha, float frametime, int draw_alpha=0, int loop=1, int hold_last=0, int reverse=0,bool resize=true, bool mirror = false);
 int	hud_anim_load(hud_anim *ha);
 
 // flash text at the given y
