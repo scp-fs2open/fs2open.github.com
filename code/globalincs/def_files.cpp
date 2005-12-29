@@ -20,7 +20,7 @@ extern char *Default_shiptypes_table;
 def_file Default_files[] = {
 	{"species_defs.tbl",		Default_species_table},
 	{"iff_defs.tbl",			Default_iff_table},
-	{"shiptypes.tbl",			Default_shiptypes_table},
+	{"objecttypes.tbl",			Default_shiptypes_table},
 };
 
 static int Num_default_files = sizeof(Default_files)/sizeof(def_file);
