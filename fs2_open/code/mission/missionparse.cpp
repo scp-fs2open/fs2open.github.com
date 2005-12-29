@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.131 $
- * $Date: 2005-12-28 22:31:03 $
- * $Author: taylor $
+ * $Revision: 2.132 $
+ * $Date: 2005-12-29 00:56:45 $
+ * $Author: phreak $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2005/12/28 22:31:03  taylor
+ * unused variable (to make GCC shut up)
+ *
  * Revision 2.130  2005/12/08 15:11:29  taylor
  * a few game_busy() changes
  *
@@ -1925,13 +1928,20 @@ void parse_briefing(mission *pm)
 						bi->id = Cur_brief_id++;
 				}
 
-				required_string("$hlight:");
+				bi->flags=0;
 				int val;
+				required_string("$hlight:");	
 				stuff_int(&val);
 				if ( val>0 ) {
-					bi->flags = BI_HIGHLIGHT;
-				} else {
-					bi->flags=0;
+					bi->flags |= BI_HIGHLIGHT;
+				}
+
+				if (optional_string("$mirror:"))
+				{
+					stuff_int(&val);
+					if ( val>0 ) {
+						bi->flags |= BI_MIRROR_ICON;
+					}	
 				}
 
 				required_string("$multi_text");
