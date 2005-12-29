@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.137 $
- * $Date: 2005-12-29 08:08:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.138 $
+ * $Date: 2005-12-29 20:12:51 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2005/12/29 08:08:37  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.136  2005/12/16 06:54:10  taylor
  * apply at least some lighting to ship insignias rather than them being full bright
  *
@@ -2825,7 +2828,7 @@ void model_render_insignias(polymodel *pm, int detail_level)
 				light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
 				light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
 				light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
-				tmap_flags |= TMAP_FLAG_RGB;
+				tmap_flags |= (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
 			}
 
 			// draw the polygon

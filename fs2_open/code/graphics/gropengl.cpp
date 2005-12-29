@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.153 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.154 $
+ * $Date: 2005-12-29 20:12:51 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.153  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.152  2005/12/29 04:33:15  taylor
  * put texture filter debug message back (was commented out for some reason in phreak's commit)
  *
@@ -2632,9 +2635,8 @@ void opengl_tmapper_internal3d( int nv, vertex **verts, uint flags )
 	for (i=0; i < nv; i++) {
 		va=verts[i];
 
-		if(flags & TMAP_FLAG_RGB)
+		if ( flags & (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD) )
 			glColor3ub(va->r, va->g, va->b);
-		//	glColor3ub((ubyte)Gr_gamma_lookup[va->r], (ubyte)Gr_gamma_lookup[va->g], (ubyte)Gr_gamma_lookup[va->b]);
 
 		glTexCoord2f(va->u, va->v);
 		glVertex3f(va->x,va->y,va->z);
