@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-11-23 04:05:23 $
+ * $Revision: 2.62 $
+ * $Date: 2005-12-29 00:54:08 $
  * $Author: phreak $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/11/23 04:05:23  phreak
+ * whoops i should test my code sometimes
+ *
  * Revision 2.60  2005/11/23 00:49:51  phreak
  * Player repair rearm completion timer display added.
  *
@@ -2350,7 +2353,9 @@ int hud_anim_load(hud_anim *ha)
 //				loop			=>	anim should loop (default 1)
 //				hold_last	=>	should last frame be held (default 0)
 //				reverse		=>	play animation in reverse (default 0)
-int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse,bool resize)
+//				resize		=>  resize for non-standard resolutions
+//				mirror		=>	mirror along y-axis so icon points left instead of right
+int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse,bool resize,bool mirror)
 {
 	int framenum;
 
@@ -2385,7 +2390,7 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 	if(emp_should_blit_gauge()){
 		gr_set_bitmap(ha->first_frame + framenum);
 		if ( draw_alpha ){
-			gr_aabitmap(ha->sx, ha->sy,resize);
+			gr_aabitmap(ha->sx, ha->sy,resize,mirror);
 		} else {
 			gr_bitmap(ha->sx, ha->sy,resize);
 		}
