@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.150 $
- * $Date: 2005-12-28 22:24:48 $
- * $Author: taylor $
+ * $Revision: 2.151 $
+ * $Date: 2005-12-29 00:52:57 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2005/12/28 22:24:48  taylor
+ * save screenshots into <gamedir>/screenshots/
+ * another attempt at fixing popups with single colors (saves memory too, hope it doesn't blow up)
+ * add a debug msg about mipmap filter in use
+ *
  * Revision 2.149  2005/12/22 19:15:20  taylor
  * one more attempt to fix screenshots on Radeons.
  *
@@ -1608,7 +1613,7 @@ void gr_opengl_shade(int x,int y,int w,int h)
 }
 */
 
-void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize)
+void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror)
 {
 //	mprintf(("gr_opengl_aabitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s\n", 
   //				x, y, w, h, 
@@ -1667,6 +1672,13 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 	ubyte s_color[3] = { gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue };
 	glSecondaryColor3ubvEXT(s_color);
 
+	if (mirror)
+	{
+		float temp = u0;
+		u0 = u1;
+		u1 = temp;
+	}
+
 	glBegin (GL_QUADS);
 	  glTexCoord2f (u0, v1);
 	  glVertex3f (x1, y2, -0.99f);
@@ -1686,7 +1698,7 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 
 }
 
-void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize)
+void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror)
 {
 	int reclip;
 	#ifndef NDEBUG
@@ -1774,10 +1786,10 @@ void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resi
 	#endif
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	opengl_aabitmap_ex_internal(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize);
+	opengl_aabitmap_ex_internal(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize, mirror);
 }
 
-void gr_opengl_aabitmap(int x, int y, bool resize)
+void gr_opengl_aabitmap(int x, int y, bool resize, bool mirror)
 {
 	int w, h, do_resize;
 
@@ -1811,7 +1823,7 @@ void gr_opengl_aabitmap(int x, int y, bool resize)
 	if ( sy >= h ) return;
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-	gr_aabitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize);
+	gr_aabitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize, mirror);
 }
 
 
@@ -1897,7 +1909,7 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 		int u = Current_font->bm_u[letter];
 		int v = Current_font->bm_v[letter];
 
-		opengl_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd, resize);
+		opengl_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd, resize, false);
 	}
 
 	TIMERBAR_POP();
@@ -4307,7 +4319,7 @@ void gr_opengl_init(int reinit)
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  Using %s texture filer.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
+//	mprintf(( "  Using %s texture filer.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;

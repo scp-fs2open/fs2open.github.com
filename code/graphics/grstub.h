@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.20 $
- * $Date: 2005-10-16 11:20:43 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2005-12-29 00:52:57 $
+ * $Author: phreak $
  *
  * $NoKeywords: $
  */
@@ -36,8 +36,8 @@ void gr_stub_rect_internal(int x, int y, int w, int h, int r, int g, int b, int 
 void gr_stub_rect(int x,int y,int w,int h,bool resize) {}
 //void gr_stub_shade(int x,int y,int w,int h) {}
 void gr_stub_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy) {}
-void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize) {}
-void gr_stub_aabitmap(int x, int y,bool resize) {}
+void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize,bool mirror) {}
+void gr_stub_aabitmap(int x, int y,bool resize, bool mirror) {}
 void gr_stub_string( int sx, int sy, char *s, bool resize = false) {}
 void gr_stub_line(int x1,int y1,int x2,int y2, bool resize = false) {}
 void gr_stub_aaline(vertex *v1, vertex *v2) {}

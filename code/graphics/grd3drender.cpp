@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.79 $
- * $Date: 2005-11-13 06:44:18 $
- * $Author: taylor $
+ * $Revision: 2.80 $
+ * $Date: 2005-12-29 00:52:57 $
+ * $Author: phreak $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 2.78  2005/10/26 20:54:18  taylor
  * D3D missed the non-standard resolution updates for aabitmaps, should fix briefing icon positioning
  *
@@ -2753,7 +2761,7 @@ void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, fl
  *
  * @return void
  */
-void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize)
+void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize, bool mirror)
 {
 	if ( w < 1 ) return;
 	if ( h < 1 ) return;
@@ -2838,6 +2846,13 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resi
 		color = D3DCOLOR_XRGB(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 	}
 
+	if (mirror)
+	{
+		float temp = u0;
+		u0 = u1;
+		u1 = temp;
+	}
+
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
 	src_v->color = color;	 
@@ -2889,7 +2904,7 @@ void gr_d3d_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resi
  *
  * @return void
  */
-void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
+void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize, bool mirror)
 {
 	int reclip;
 	#ifndef NDEBUG
@@ -2972,7 +2987,7 @@ void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
 	d3d_set_initial_render_state();
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	gr_d3d_aabitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
+	gr_d3d_aabitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize,mirror);
 }
 
 /**
@@ -2981,7 +2996,7 @@ void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize)
  *
  * @return void
  */
-void gr_d3d_aabitmap(int x, int y, bool resize)
+void gr_d3d_aabitmap(int x, int y, bool resize, bool mirror)
 {
 	int w, h;
 
@@ -3011,7 +3026,7 @@ void gr_d3d_aabitmap(int x, int y, bool resize)
 	d3d_set_initial_render_state();
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-	gr_aabitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
+	gr_aabitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize,mirror);
 }
 
 /**
