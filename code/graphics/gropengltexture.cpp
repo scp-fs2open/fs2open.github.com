@@ -10,13 +10,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.36 $
- * $Date: 2005-12-28 22:28:44 $
+ * $Revision: 1.37 $
+ * $Date: 2005-12-29 00:00:18 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2005/12/28 22:28:44  taylor
+ * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
+ * better support for mipmaps and mipmap filtering
+ * add reg option "TextureFilter" to set bilinear or trilinear filter
+ * clean up bitmap_id/bitmap_handle/texture_handle madness that made things difficult to understand
+ * small fix for using 24-bit images on 16-bit bpp visual (untested)
+ *
  * Revision 1.35  2005/12/16 06:48:28  taylor
  * "House Keeping!!"
  *   - minor cleanup of things that have bothered me at one time or another
@@ -486,6 +493,9 @@ void opengl_free_texture_with_handle(int handle)
 void opengl_tcache_flush ()
 {
 	int i;
+
+	if ( Textures == NULL )
+		return;
 
 	for( i=0; i<MAX_BITMAPS; i++ )  {
 		opengl_free_texture( &Textures[i] );
