@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.67 $
- * $Date: 2005-10-30 06:44:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.68 $
+ * $Date: 2005-12-29 00:52:57 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/10/30 06:44:57  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.66  2005/10/22 20:17:18  wmcoolmon
  * mission-set-nebula fixage; remainder of python code
  *
@@ -926,8 +929,8 @@ typedef struct screen {
 	// void (*gf_bitmap)(int x,int y);
 	// void (*gf_bitmap_ex)(int x,int y,int w,int h,int sx,int sy);
 
-	void (*gf_aabitmap)(int x, int y, bool resize);
-	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize);
+	void (*gf_aabitmap)(int x, int y, bool resize, bool mirror);
+	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror);
 
 //	void (*gf_rect)(int x, int y, int w, int h,bool resize);
 //	void (*gf_shade)(int x, int y, int w, int h);
@@ -1230,14 +1233,14 @@ __inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, 
 #define gr_set_shader		GR_CALL(gr_screen.gf_set_shader)
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
 //#define gr_aabitmap			GR_CALL(gr_screen.gf_aabitmap)
-__inline void gr_aabitmap(int x, int y, bool resize = true)
+__inline void gr_aabitmap(int x, int y, bool resize = true, bool mirror = false)
 {
-	(*gr_screen.gf_aabitmap)(x,y,resize);
+	(*gr_screen.gf_aabitmap)(x,y,resize,mirror);
 }
 //#define gr_aabitmap_ex		GR_CALL(gr_screen.gf_aabitmap_ex)
-__inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize = true)
+__inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize = true, bool mirror = false)
 {
-	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize);
+	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize,mirror);
 }
 
 void gr_rect(int x, int y, int w, int h, bool resize = true);
