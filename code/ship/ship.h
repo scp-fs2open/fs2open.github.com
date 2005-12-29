@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.125 $
- * $Date: 2005-12-13 22:32:30 $
+ * $Revision: 2.126 $
+ * $Date: 2005-12-29 08:08:42 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.125  2005/12/13 22:32:30  wmcoolmon
+ * Ability to disable damage particle spew on ships
+ *
  * Revision 2.124  2005/12/12 21:32:14  taylor
  * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
  *
@@ -515,7 +518,7 @@
  * I also (think) I squashed a bug in the warpmodel code
  *
  * Revision 2.6  2002/11/10 19:57:36  DTP
- * DTP bumped back MAX_SHIP_TYPES to 130
+ * DTP bumped back MAX_SHIP_CLASSES to 130
  *
  * Revision 2.5  2002/10/31 21:56:44  DTP
  * DTP Bumped Max_exited_ships from 200 to double that of MAX_SHIPS = 800 . make sense ehh. for logging effect.
@@ -1392,7 +1395,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_IN_TECH_DATABASE		(1 << 19)	// is ship type to be listed in the tech database?
 #define	SIF_IN_TECH_DATABASE_M	(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
 
-#define	SIF_SHIP_CLASS_STEALTH		(1 << 21)	// the ship is a stealth ship
+#define	SIF_STEALTH					(1 << 21)	// the ship has stealth capabilities
 #define	SIF_SUPERCAP				(1 << 22)	// the ship is a supercap
 #define	SIF_DRYDOCK					(1 << 23)	// the ship is a drydock
 #define	SIF_SHIP_CLASS_DONT_COLLIDE_INVIS	(1 << 24)	// Don't collide with this ship's invisible polygons
@@ -1430,10 +1433,27 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // for ships of this type, we make beam weapons miss a little bit otherwise they'd be way too powerful
 #define	SIF_BEAM_JITTER			(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_SENTRYGUN | SIF_NAVBUOY | SIF_ESCAPEPOD)
 
+#define REGULAR_WEAPON	(1<<0)
+#define DOGFIGHT_WEAPON (1<<1)
+
+#define	MAX_THRUSTER_PARTICLES 3
+typedef struct thruster_particles{
+	char		thruster_particle_bitmap01_name[NAME_LENGTH];
+	int			thruster_particle_bitmap01;
+	int			thruster_particle_bitmap01_nframes;
+	float		min_rad;
+	float		max_rad;
+	int			n_high;
+	int			n_low;
+	float		variance;
+	}thruster_particles;
+
 // defines for ship types.  These defines are distinct from the flag values in the ship_info struct.  These
 // values are used for array lookups, etc.
+/*
 #define MAX_SHIP_TYPE_COUNTS				20
-
+*/
+/*
 #define SHIP_TYPE_NONE						0
 #define SHIP_TYPE_CARGO						1
 #define SHIP_TYPE_FIGHTER_BOMBER			2
@@ -1454,27 +1474,69 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SHIP_TYPE_GAS_MINER				17
 #define SHIP_TYPE_CORVETTE					18
 #define SHIP_TYPE_KNOSSOS_DEVICE			19
+*/
 
-#define REGULAR_WEAPON	(1<<0)
-#define DOGFIGHT_WEAPON (1<<1)
+#define STI_MSG_COUNTS_FOR_ALONE		(1<<0)
+#define STI_MSG_PRAISE_DESTRUCTION		(1<<1)
 
-#define	MAX_THRUSTER_PARTICLES 3
-typedef struct thruster_particles{
-	char		thruster_particle_bitmap01_name[NAME_LENGTH];
-	int			thruster_particle_bitmap01;
-	int			thruster_particle_bitmap01_nframes;
-	float		min_rad;
-	float		max_rad;
-	int			n_high;
-	int			n_low;
-	float		variance;
-	}thruster_particles;
+#define STI_HUD_HOTKEY_ON_LIST			(1<<0)
+#define STI_HUD_TARGET_AS_THREAT		(1<<1)
+#define STI_HUD_SHOW_ATTACK_DIRECTION	(1<<2)
+
+#define STI_SHIP_SCANNABLE				(1<<0)
+#define STI_SHIP_WARP_PUSHES			(1<<1)
+#define STI_SHIP_WARP_PUSHABLE			(1<<2)
+
+#define STI_WEAP_BEAMS_EASILY_HIT		(1<<0)
+
+#define STI_AI_ACCEPT_PLAYER_ORDERS		(1<<0)
+#define STI_AI_AUTO_ATTACKS				(1<<1)
+#define STI_AI_ATTEMPT_BROADSIDE		(1<<2)
+#define STI_AI_GUARDS_ATTACK			(1<<3)
+#define STI_AI_TURRETS_ATTACK			(1<<4)
+#define STI_AI_CAN_FORM_WING			(1<<5)
+
+typedef struct ship_type_info {
+	char name[NAME_LENGTH];
+
+	//Messaging?
+	int message_bools;
+
+	//HUD
+	int hud_bools;
+
+	//Ship
+	int ship_bools;	//For lack of better term
+	float debris_max_speed;
+
+	//Weapons
+	int weapon_bools;
+	float ff_multiplier;
+	float emp_multiplier;
+
+	//Fog
+	float fog_start_dist;
+	float fog_complete_dist;
+
+	//AI
+	int	ai_valid_goals;
+	int ai_player_orders;
+	int ai_bools;
+	int ai_active_dock;
+	int ai_passive_dock;
+
+	ship_type_info(){memset(this, 0, sizeof(ship_type_info));}
+} ship_type_info;
+
+extern std::vector<ship_type_info> Ship_types;
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
-	int		species;								// which species this craft belongs to
+	int			species;								// which species this craft belongs to
+	int			class_type;						//For type table
+
 	char		*type_str;							// type string used by tooltips
 	char		*maneuverability_str;			// string used by tooltips
 	char		*armor_str;							// string used by tooltips
@@ -1742,8 +1804,8 @@ extern int ai_paused;
 extern int CLOAKMAP;
 
 extern int Num_reinforcements;
-extern int Num_ship_types;
-extern ship_info Ship_info[MAX_SHIP_TYPES];
+extern int Num_ship_classes;
+extern ship_info Ship_info[MAX_SHIP_CLASSES];
 extern reinforcements Reinforcements[MAX_REINFORCEMENTS];
 
 // structure definition for ship type counts.  Used to give a count of the number of ships
@@ -1753,12 +1815,14 @@ extern reinforcements Reinforcements[MAX_REINFORCEMENTS];
 typedef struct ship_counts {
 	int	total;
 	int	killed;
+	ship_counts(){total=0;killed=0;}
 } ship_counts;
 
-extern char *Ship_type_names[MAX_SHIP_TYPE_COUNTS];
-extern int Ship_type_flags[MAX_SHIP_TYPE_COUNTS];					// SIF_* flags for each ship type
-extern ship_counts	Ship_counts[MAX_SHIP_TYPE_COUNTS];
-extern int Ship_type_priorities[MAX_SHIP_TYPE_COUNTS];
+extern std::vector<ship_counts> Ship_type_counts;
+
+//extern int Ship_type_flags[MAX_SHIP_TYPE_COUNTS];					// SIF_* flags for each ship type
+//extern ship_counts	Ship_counts[MAX_SHIP_TYPE_COUNTS];
+//extern int Ship_type_priorities[MAX_SHIP_TYPE_COUNTS];
 
 
 // Use the below macros when you want to find the index of an array element in the
@@ -1895,8 +1959,8 @@ extern void ship_close();	// called in game_shutdown() to free malloced memory
 extern void ship_assign_sound_all();
 extern void ship_assign_sound(ship *sp);
 
-extern void ship_add_ship_type_count( int ship_info_flag, int num );
-extern void ship_add_ship_type_kill_count( int ship_info_flag );
+extern void ship_add_ship_type_count( int ship_info_index, int num );
+extern void ship_add_ship_type_kill_count( int ship_info_index );
 
 extern int ship_get_type(char* output, ship_info* sip);
 extern int ship_get_default_orders_accepted( ship_info *sip );

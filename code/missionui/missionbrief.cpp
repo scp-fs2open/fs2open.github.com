@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.38 $
- * $Date: 2005-10-10 17:21:06 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.37  2005/09/26 04:08:54  Goober5000
  * some more cleanup
  * --Goober5000
@@ -1959,7 +1962,7 @@ void brief_do_frame(float frametime)
 			}
 
 			case KEY_CTRLED | KEY_PAGEDOWN: {
-				if (Closeup_icon->ship_class < Num_ship_types - 1) {
+				if (Closeup_icon->ship_class < Num_ship_classes - 1) {
 					Closeup_icon->ship_class++;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];

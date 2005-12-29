@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.152 $
- * $Date: 2005-12-29 04:33:15 $
- * $Author: taylor $
+ * $Revision: 2.153 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.152  2005/12/29 04:33:15  taylor
+ * put texture filter debug message back (was commented out for some reason in phreak's commit)
+ *
  * Revision 2.151  2005/12/29 00:52:57  phreak
  * changed around aabitmap calls to accept a "mirror" parameter.  defaults to false, and is only true for mirrored briefing icons.
  * If the mirror param is true, then the picture is mirrored about the y-axis so left becomes right and vice versa.
@@ -4174,6 +4177,60 @@ void opengl_setup_function_pointers()
 	// *****************************************************************************
 }
 
+extern GLuint normalisationCubeMap;
+//Taken from http://www.paulsprojects.net/tutorials/simplebump/simplebump.html
+//modified by WMC
+bool GenerateNormalisationCubeMap()
+{
+	//some useful variables
+	int size=32;
+	float offset=0.5f;
+	float halfSize=16.0f;
+	vec3d tempVector;
+	unsigned char * bytePtr;
+
+	unsigned char * data=new unsigned char[32*32*3];
+	if(!data)
+	{
+		//Error("Unable to allocate memory for texture data for cube map\n");
+		return false;
+	}
+
+	//positive x
+	bytePtr=data;
+
+	//packvec
+	vec3d packVec = {0.5f, 0.5f, 0.5f};
+
+	for(int j=0; j<size; j++)
+	{
+		for(int i=0; i<size; i++)
+		{
+			tempVector.xyz.x = halfSize;
+			tempVector.xyz.y = -(j+offset-halfSize);
+			tempVector.xyz.z = -(i+offset-halfSize);
+
+			vm_vec_normalize(&tempVector);
+
+			//Packto1
+			vm_vec_normalize(&tempVector);
+			vm_vec_scale(&tempVector, 0.5f);
+			vm_vec_add2(&tempVector, &packVec);
+
+			bytePtr[0]=(unsigned char)(tempVector.xyz.x*255);
+			bytePtr[1]=(unsigned char)(tempVector.xyz.y*255);
+			bytePtr[2]=(unsigned char)(tempVector.xyz.z*255);
+
+			
+			bytePtr+=3;
+		}
+	}
+	glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, 0, GL_RGBA8, 32, 32, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+	delete [] data;
+	return true;
+}
+
 void gr_opengl_init(int reinit)
 {
 	char *ver;
@@ -4337,6 +4394,16 @@ void gr_opengl_init(int reinit)
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
 
 	atexit( gr_opengl_close );
+
+	//WMC - Generate normalization bump map
+	glGenTextures(1, &normalisationCubeMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, normalisationCubeMap);
+	GenerateNormalisationCubeMap();
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	mprintf(("... OpenGL init is complete!\n"));
 }

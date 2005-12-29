@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.66 $
- * $Date: 2005-12-04 19:07:48 $
+ * $Revision: 2.67 $
+ * $Date: 2005-12-29 08:08:36 $
  * $Author: wmcoolmon $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.65  2005/11/24 08:46:11  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only
@@ -75,7 +78,7 @@
  * --Goober5000
  *
  * Revision 2.51  2005/04/25 00:23:23  wmcoolmon
- * MAX_SHIP_TYPES > Num_ship_types
+ * MAX_SHIP_CLASSES > Num_ship_classes
  *
  * Revision 2.50  2005/04/20 04:34:01  phreak
  * get the cheat keys for "force weapon" working again
@@ -915,11 +918,11 @@ void debug_cycle_player_ship(int delta)
 	ship_info	*sip;
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index > Num_ship_types ){
+		if ( si_index > Num_ship_classes ){
 			si_index = 0;
 		}
 		if ( si_index < 0 ){
-			si_index = Num_ship_types - 1;
+			si_index = Num_ship_classes - 1;
 		}
 		sip = &Ship_info[si_index];
 		if ( sip->flags & SIF_PLAYER_SHIP ){
@@ -928,7 +931,7 @@ void debug_cycle_player_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity > Num_ship_types ){
+		if ( sanity > Num_ship_classes ){
 			break;
 		}
 	}
@@ -960,10 +963,10 @@ void debug_cycle_targeted_ship(int delta)
 
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index > Num_ship_types )
+		if ( si_index > Num_ship_classes )
 			si_index = 0;
 		if ( si_index < 0 )
-			si_index = Num_ship_types-1;
+			si_index = Num_ship_classes-1;
 
 	
 		sip = &Ship_info[si_index];
@@ -979,7 +982,7 @@ void debug_cycle_targeted_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity > Num_ship_types )
+		if ( sanity > Num_ship_classes )
 			break;
 	}
 
@@ -2080,7 +2083,7 @@ void game_process_cheats(int k)
 			add.xyz.y += frand_range(-700.0f, 700.0f);
 			add.xyz.z += frand_range(-700.0f, 700.0f);
 
-			int objnum = ship_create(&vmd_identity_matrix, &add, Num_ship_types - 1);
+			int objnum = ship_create(&vmd_identity_matrix, &add, Num_ship_classes - 1);
 
 			if(objnum >= 0){
 				int collided;
@@ -2153,7 +2156,7 @@ void game_process_cheats(int k)
 			add.xyz.y = frand_range(-1000.0f, 1000.0f);
 			add.xyz.z = frand_range(-1000.0f, 1000.0f);
 
-			int objnum = ship_create(&vmd_identity_matrix, &add, Num_ship_types - 1);			
+			int objnum = ship_create(&vmd_identity_matrix, &add, Num_ship_classes - 1);			
 
 			if(objnum >= 0){
 				shipfx_warpin_start(&Objects[objnum]);

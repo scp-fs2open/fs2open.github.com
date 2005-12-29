@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.27 $
- * $Date: 2005-10-30 20:20:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2005/10/30 20:20:43  Goober5000
+ * comment fixage
+ *
  * Revision 2.26  2005/10/29 22:09:30  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -32,7 +35,7 @@
  * ton of non-standard resolution fixes
  *
  * Revision 2.21  2005/04/25 00:28:17  wmcoolmon
- * MAX_SHIP_TYPES > Num_ship_types
+ * MAX_SHIP_CLASSES > Num_ship_classes
  *
  * Revision 2.20  2005/04/11 05:50:36  taylor
  * some limits.h fixes to make GCC happier
@@ -948,7 +951,7 @@ void multi_ingame_load_icons()
 	Multi_ingame_num_ship_icons = 0;
 
 	// traverse through all ship types
-	for(idx=0;idx<Num_ship_types;idx++){
+	for(idx=0;idx<Num_ship_classes;idx++){
 		// if there is a valid icon for this ship
 		if((strlen(Ship_info[idx].icon_filename) > 0) && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)){
 			// set the ship class

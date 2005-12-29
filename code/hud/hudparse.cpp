@@ -7,13 +7,19 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.40 $
- * $Date: 2005-12-28 22:17:01 $
- * $Author: taylor $
+ * $Revision: 2.41 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.39  2005/12/21 08:27:37  taylor
  * add the name of the modular table about to be parsed to the debug log
  * a missing weapon_expl table should just be a note in the debug log rather than a popup warning
@@ -169,11 +175,11 @@
 hud_info *current_hud = NULL;
 //Storage for the default and ship huds
 hud_info default_hud;
-hud_info ship_huds[MAX_SHIP_TYPES];
+hud_info ship_huds[MAX_SHIP_CLASSES];
 #else
 hud_info *current_hud = NULL; //If not set, it's NULL. This should always be null outside of a mission.
 hud_info default_hud;
-hud_info ship_huds[MAX_SHIP_TYPES];
+hud_info ship_huds[MAX_SHIP_CLASSES];
 #endif
 extern int ships_inited; //Need this
 
@@ -997,7 +1003,7 @@ void parse_hud_gauges_tbl(char* longname)
 			required_string("#End");
 		}
 
-		for(int i = 0; i < MAX_SHIP_TYPES; i++)
+		for(int i = 0; i < MAX_SHIP_CLASSES; i++)
 		{
 			if(ship_huds[i].loaded)
 			{
@@ -1065,7 +1071,7 @@ void set_current_hud(int player_ship_num)
 #else
 	static hud_info real_current_hud;
 
-	if(player_ship_num >= 0 && player_ship_num < MAX_SHIP_TYPES && ship_huds[player_ship_num].loaded)
+	if(player_ship_num >= 0 && player_ship_num < MAX_SHIP_CLASSES && ship_huds[player_ship_num].loaded)
 	{
 		memcpy(&real_current_hud, &ship_huds[player_ship_num], sizeof(hud_info));
 	}

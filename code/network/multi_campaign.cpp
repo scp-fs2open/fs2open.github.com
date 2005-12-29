@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.12  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -23,7 +26,7 @@
  *   fixes various problems and is past time to make the switch
  *
  * Revision 2.10  2005/04/25 00:28:17  wmcoolmon
- * MAX_SHIP_TYPES > Num_ship_types
+ * MAX_SHIP_CLASSES > Num_ship_classes
  *
  * Revision 2.9  2005/04/11 05:50:36  taylor
  * some limits.h fixes to make GCC happier
@@ -448,7 +451,7 @@ void multi_campaign_client_store_goals(int mission_num)
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN PACKET HANDLERS
 //
-extern int Num_ship_types;
+extern int Num_ship_classes;
 // process a campaign update packet
 void multi_campaign_process_update(ubyte *data, header *hinfo)
 {
@@ -475,17 +478,17 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 		// if we're not in campaign mode, bash all weapons and ships to be "allowed"
 		if(!val){
 			// all ships
-			for(idx=0;idx<Num_ship_types;idx++){
+			for(idx=0;idx<Num_ship_classes;idx++){
 				Campaign.ships_allowed[idx] = 1;
 			}
 
 			// all weapons
-			for(idx=0;idx<Num_ship_types;idx++){
+			for(idx=0;idx<Num_ship_classes;idx++){
 				Campaign.weapons_allowed[idx] = 1;
 			}
 		} else {
 			// clear the ships and weapons allowed arrays
-			memset(Campaign.ships_allowed,0,MAX_SHIP_TYPES);
+			memset(Campaign.ships_allowed,0,MAX_SHIP_CLASSES);
 			memset(Campaign.weapons_allowed,0,MAX_WEAPON_TYPES);
 
 			// get all ship classes
@@ -656,7 +659,7 @@ void multi_campaign_send_pool_status()
 
 		// determine how many ship types we're going to add
 		spool_size = 0;
-		for(idx=0;idx<Num_ship_types;idx++){
+		for(idx=0;idx<Num_ship_classes;idx++){
 			if(Campaign.ships_allowed[idx]){
 				spool_size++;
 			}
@@ -664,7 +667,7 @@ void multi_campaign_send_pool_status()
 		
 		// determine how many weapon types we're going to add
 		wpool_size = 0;
-		for(idx=0;idx<Num_ship_types;idx++){
+		for(idx=0;idx<Num_ship_classes;idx++){
 			if(Campaign.weapons_allowed[idx]){
 				wpool_size++;
 			}
@@ -676,7 +679,7 @@ void multi_campaign_send_pool_status()
 		// add all ship types
 		val = (ubyte)spool_size;
 		ADD_DATA(val);
-		for(idx=0;idx<Num_ship_types;idx++){
+		for(idx=0;idx<Num_ship_classes;idx++){
 			if(Campaign.ships_allowed[idx]){
 				val = (ubyte)idx;
 				ADD_DATA(val);
@@ -686,7 +689,7 @@ void multi_campaign_send_pool_status()
 		// add all weapon types
 		val = (ubyte)wpool_size;
 		ADD_DATA(val);
-		for(idx=0;idx<Num_ship_types;idx++){
+		for(idx=0;idx<Num_ship_classes;idx++){
 			if(Campaign.weapons_allowed[idx]){
 				val = (ubyte)idx;
 				ADD_DATA(val);

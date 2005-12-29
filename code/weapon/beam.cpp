@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.63 $
- * $Date: 2005-12-14 08:07:33 $
- * $Author: phreak $
+ * $Revision: 2.64 $
+ * $Date: 2005-12-29 08:08:42 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/12/14 08:07:33  phreak
+ * Handling of exit explosions for beams when a ship is about to get destroyed, or according to the code: "tooled".
+ * Bumped beam frame collisions to 10 to compensate.
+ *
  * Revision 2.62  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -942,7 +946,7 @@ int beam_fire(beam_fire_info *fire_info)
 			ship *target_ship = &Ships[fire_info->target->instance];
 			
 			// maybe force to be a type A
-			if(Ship_info[target_ship->ship_info_index].flags & (SIF_BIG_SHIP | SIF_CAPITAL | SIF_SUPERCAP | SIF_FREIGHTER | SIF_DRYDOCK | SIF_CARGO)){
+			if(Ship_info[target_ship->ship_info_index].class_type > -1 && (Ship_types[Ship_info[target_ship->ship_info_index].class_type].weapon_bools & STI_WEAP_BEAMS_EASILY_HIT)){
 				new_item->type = BEAM_TYPE_A;
 			}
 		}

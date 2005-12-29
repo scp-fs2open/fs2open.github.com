@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-11-16 05:46:27 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/11/16 05:46:27  taylor
+ * bunch of error checking and code cleanup for the team stuff in ship/weapon select
+ *
  * Revision 2.18  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -47,7 +50,7 @@
  * ton of non-standard resolution fixes
  *
  * Revision 2.11  2005/04/25 00:28:17  wmcoolmon
- * MAX_SHIP_TYPES > Num_ship_types
+ * MAX_SHIP_CLASSES > Num_ship_classes
  *
  * Revision 2.10  2005/04/03 08:48:31  Goober5000
  * brought weapon loadout banks into agreement with ship info banks
@@ -1023,7 +1026,7 @@ void multi_ts_sync_interface()
 	
 	// item 1 - determine how many ship types are available in the ship pool
 	Multi_ts_avail_count = 0;
-	for(idx=0;idx<Num_ship_types;idx++){
+	for(idx=0;idx<Num_ship_classes;idx++){
 		if(Ss_pool[idx] > 0){
 			Multi_ts_avail_count++;
 		}
@@ -1538,7 +1541,7 @@ void multi_ts_blit_avail_ships()
 	// blit the availability of all ship counts
 	display_count = 0;
 	ship_count = 0;
-	for(idx=0;idx<Num_ship_types;idx++){
+	for(idx=0;idx<Num_ship_classes;idx++){
 		if(Ss_pool[idx] > 0){
 			// if our starting display index is after this, then skip it
 			if(ship_count < Multi_ts_avail_start){
@@ -2628,7 +2631,7 @@ int multi_ts_get_avail_ship_class(int index)
 
 	ship_count = index + Multi_ts_avail_start;
 	class_index = 0;
-	while((ship_count >= 0) && (class_index < MAX_SHIP_TYPES)){
+	while((ship_count >= 0) && (class_index < MAX_SHIP_CLASSES)){
 		if(Ss_pool[class_index] > 0){
 			ship_count--;
 		}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-10-29 22:09:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/10/29 22:09:29  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.17  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -317,6 +321,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "gamesnd/gamesnd.h"
+#include "hud/hudsquadmsg.h"
 #include "hud/hudtargetbox.h"
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
@@ -480,29 +485,34 @@ char *type_select_str(int n)
 	return NULL;	
 }
 
-// data structure to hold character string of commands for comm menu
-typedef struct comm_order {
-	int	value;				// used to match which command to display on the menu
-} comm_order;
-
 // note: If you change this table at all, keep it in sync with version in IgnoreOrdersDlg.cpp
 // Also make sure you update comm_order_menu_text below this.
 // Also make sure you update MAX_SHIP_ORDERS in HUDsquadmsg.h
-comm_order Comm_orders[MAX_SHIP_ORDERS] = {
-	{ ATTACK_TARGET_ITEM },
-	{ DISABLE_TARGET_ITEM },
-	{ DISARM_TARGET_ITEM },
-	{ DISABLE_SUBSYSTEM_ITEM },
-	{ PROTECT_TARGET_ITEM },
-	{ IGNORE_TARGET_ITEM },
-	{ FORMATION_ITEM },
-	{ COVER_ME_ITEM },
-	{ ENGAGE_ENEMY_ITEM },
-	{ CAPTURE_TARGET_ITEM },
-	{ REARM_REPAIR_ME_ITEM },
-	{ ABORT_REARM_REPAIR_ITEM },
-	{ DEPART_ITEM }
+comm_order Comm_orders[] = {
+	{ "Attack ship",			ATTACK_TARGET_ITEM },
+	{ "Disable ship",			DISABLE_TARGET_ITEM },
+	{ "Disarm ship",			DISARM_TARGET_ITEM },
+	{ "Attack subsys",			DISABLE_SUBSYSTEM_ITEM },
+	{ "Guard ship",				PROTECT_TARGET_ITEM },
+	{ "Ignore ship",			IGNORE_TARGET_ITEM },
+	{ "Form on wing",			FORMATION_ITEM },
+	{ "Guard me",				COVER_ME_ITEM },
+	{ "Attack any",				ENGAGE_ENEMY_ITEM },
+	{ "Dock",					CAPTURE_TARGET_ITEM },
+	{ "Rearm me",				REARM_REPAIR_ME_ITEM },
+	{ "Abort rearm",			ABORT_REARM_REPAIR_ITEM },
+	{ "Depart",					DEPART_ITEM },
+	//WMC - These don't appear for some reason
+	//support-ship-only
+	{ "stay near me",			STAY_NEAR_ME_ITEM},
+	{ "stay near ship",			STAY_NEAR_TARGET_ITEM},
+	{ "keep safe dist",			KEEP_SAFE_DIST_ITEM},
+	//All ships
+	{ "Disable subsys",			DISABLE_SUBSYSTEM_ITEM},
 };
+
+int Num_valid_comm_orders = 13;	//WMC - Number of orders that acutally appear.
+int Num_comm_orders = sizeof(Comm_orders)/sizeof(comm_order);
 
 // Text to display on the menu
 // Given an index into the Comm_orders array, return the text associated with it.
@@ -537,17 +547,14 @@ char *comm_order_hotkey_text( int index )
 {
 	int i;
 
-	for (i = 0; i < MAX_SHIP_ORDERS; i++ ) {
-		if ( Comm_orders[i].value == index )
+	for (i = 0; i < Num_valid_comm_orders; i++ ) {
+		if ( Comm_orders[i].def == index )
 			return comm_order_menu_text(i);
 	}
 
 	Int3();
 	return NULL;
 }
-
-// a define of who can receive message
-#define CAN_MESSAGE	(SIF_FIGHTER | SIF_BOMBER | SIF_CRUISER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_CAPITAL | SIF_SUPPORT | SIF_SUPERCAP | SIF_DRYDOCK | SIF_GAS_MINER | SIF_AWACS | SIF_CORVETTE)
 
 int squadmsg_history_index = 0;
 squadmsg_history Squadmsg_history[SQUADMSG_HISTORY_MAX] = { 0 };
@@ -707,7 +714,7 @@ int hud_squadmsg_count_ships( int add_to_menu )
 		Assert ( shipp->objnum != -1 );
 
 		// ships must be able to receive a message
-		if ( !(Ship_info[shipp->ship_info_index].flags & CAN_MESSAGE) )
+		if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_ACCEPT_PLAYER_ORDERS) )
 			continue;
 
 		// must be on the same team
@@ -1271,16 +1278,16 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 
 	// find the comm_menu item for this command
 	if ( find_order ) {
-		for (i = 0; i < MAX_SHIP_ORDERS; i++ ) {
-			if ( Comm_orders[i].value == order )
+		for (i = 0; i < Num_valid_comm_orders; i++ ) {
+			if ( Comm_orders[i].def == order )
 				break;
 		}
-		Assert( i < MAX_SHIP_ORDERS );
+		Assert( i < Num_valid_comm_orders );
 		order = i;
 	}
 
 	// orders which don't operate on targets are always valid
-	if ( !(Comm_orders[order].value & TARGET_MESSAGES) )
+	if ( !(Comm_orders[order].def & TARGET_MESSAGES) )
 		return 1;
 
 	target_objnum = aip->target_objnum;
@@ -1306,7 +1313,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 			return 0;
 		}
 		
-		if ( (Comm_orders[order].value == ATTACK_TARGET_ITEM )
+		if ( (Comm_orders[order].def == ATTACK_TARGET_ITEM )
 			&& (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
 			&& (Weapons[objp->instance].team != ordering_shipp->team) )
 
@@ -1330,24 +1337,24 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	}
 
 	// if the order is a disable order or depart, and the ship is disabled, order isn't active
-	if ( (Comm_orders[order].value == DISABLE_TARGET_ITEM) && (shipp->flags & SF_DISABLED) ){
+	if ( (Comm_orders[order].def == DISABLE_TARGET_ITEM) && (shipp->flags & SF_DISABLED) ){
 		return 0;
 	}
 
 	// same as above except for disabled.
-	if ( (Comm_orders[order].value == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].num > 0) && (shipp->subsys_info[SUBSYSTEM_TURRET].current_hits == 0.0f)) ){
+	if ( (Comm_orders[order].def == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].num > 0) && (shipp->subsys_info[SUBSYSTEM_TURRET].current_hits == 0.0f)) ){
 		return 0;
 	}
 
 	// if order is disable subsystem, and no subsystem targeted or no hits, then order not valid
-	if ( (Comm_orders[order].value == DISABLE_SUBSYSTEM_ITEM) && ((aip->targeted_subsys == NULL) || (aip->targeted_subsys->current_hits <= 0.0f)) ){
+	if ( (Comm_orders[order].def == DISABLE_SUBSYSTEM_ITEM) && ((aip->targeted_subsys == NULL) || (aip->targeted_subsys->current_hits <= 0.0f)) ){
 		return 0;
 	}
 
 	// check based on target's and player's team
-	if ( (shipp->team == ordering_shipp->team) && (Comm_orders[order].value & FRIENDLY_TARGET_MESSAGES) ){
+	if ( (shipp->team == ordering_shipp->team) && (Comm_orders[order].def & FRIENDLY_TARGET_MESSAGES) ){
 		return 1;
-	} else if ( (shipp->team != ordering_shipp->team) && (Comm_orders[order].value & ENEMY_TARGET_MESSAGES) ){
+	} else if ( (shipp->team != ordering_shipp->team) && (Comm_orders[order].def & ENEMY_TARGET_MESSAGES) ){
 		return 1;
 	} else {
 		return 0;
@@ -2342,26 +2349,26 @@ void hud_squadmsg_ship_command()
 		default_orders = ship_get_default_orders_accepted( &Ship_info[Ships[Msg_instance].ship_info_index] );
 	} else {
 
-		default_orders = FIGHTER_MESSAGES;
+		default_orders = DEFAULT_MESSAGES;
 		orders = default_orders;
 	}
 
 	First_menu_item = 0;
 	Num_menu_items = 0;
-	for ( i = 0; i < MAX_SHIP_ORDERS; i++ ) {
+	for ( i = 0; i < Num_valid_comm_orders; i++ ) {
 		// check to see if the comm order should even be added to the menu -- if so, then add it
 		// the order will be activated if the bit is set for the ship.
-		if ( default_orders & Comm_orders[i].value ) {
+		if ( default_orders & Comm_orders[i].def ) {
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
 			strcpy( MsgItems[Num_menu_items].text, comm_order_menu_text(i) );
-			MsgItems[Num_menu_items].instance = Comm_orders[i].value;
+			MsgItems[Num_menu_items].instance = Comm_orders[i].def;
 			MsgItems[Num_menu_items].active = 0;
 			// check the bit to see if the command is active
-			if ( orders & Comm_orders[i].value )
+			if ( orders & Comm_orders[i].def )
 				MsgItems[Num_menu_items].active = 1;
 
 			// if the order cannot be carried out by the ship, then item should be inactive
-			if ( (Msg_instance != MESSAGE_ALL_FIGHTERS) && !hud_squadmsg_ship_order_valid( Msg_instance, Comm_orders[i].value ) )
+			if ( (Msg_instance != MESSAGE_ALL_FIGHTERS) && !hud_squadmsg_ship_order_valid( Msg_instance, Comm_orders[i].def ) )
 				MsgItems[Num_menu_items].active = 0;
 
 			// do some other checks to possibly gray out other items.
@@ -2376,7 +2383,7 @@ void hud_squadmsg_ship_command()
 				ship *shipp;
 				int partial_accept, all_accept;			// value which tells us what to do with menu item
 
-				all_accept = Comm_orders[i].value;
+				all_accept = Comm_orders[i].def;
 				partial_accept = 0;
 				for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 
@@ -2390,7 +2397,7 @@ void hud_squadmsg_ship_command()
 						continue;
 
 					all_accept &= shipp->orders_accepted;		// 'and'ing will either keep this bit set or zero it properly
-					partial_accept |= (shipp->orders_accepted & Comm_orders[i].value);	// 'or'ing will tell us if at least one accepts
+					partial_accept |= (shipp->orders_accepted & Comm_orders[i].def);	// 'or'ing will tell us if at least one accepts
 				}
 
 				if ( !all_accept ) {
@@ -2445,18 +2452,18 @@ void hud_squadmsg_wing_command()
 
 	Num_menu_items = 0;
 	orders = Ships[wingp->ship_index[0]].orders_accepted;		// get the orders that the first ship in the wing will accept
-	for ( i = 0; i < MAX_SHIP_ORDERS; i++ ) {
+	for ( i = 0; i < Num_valid_comm_orders; i++ ) {
 		// add the set of default orders to the comm menu.  We will currently allow all messages
 		// to be available in the wing.
-		if ( default_orders & Comm_orders[i].value ) {
+		if ( default_orders & Comm_orders[i].def ) {
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
 			strcpy( MsgItems[Num_menu_items].text, comm_order_menu_text(i) );
-			MsgItems[Num_menu_items].instance = Comm_orders[i].value;
+			MsgItems[Num_menu_items].instance = Comm_orders[i].def;
 			MsgItems[Num_menu_items].active = 0;
 
 			// possibly grey out the menu item depending on whether or not the "wing" will accept this order
 			// the "wing" won't accept the order if the first ship in the wing doesn't accept it.
-			if ( orders & Comm_orders[i].value )
+			if ( orders & Comm_orders[i].def )
 				MsgItems[Num_menu_items].active = 1;
 
 			// do some other checks to possibly gray out other items.
@@ -2817,9 +2824,9 @@ int hud_query_order_issued(char *name, char *order, char *target)
 	if (target)
 		t = get_parse_name_index(target);
 
-	for (i=0; i<MAX_SHIP_ORDERS; i++)
+	for (i=0; i<Num_valid_comm_orders; i++)
 		if (!stricmp(order, comm_order_menu_text(i)) )
-			o = Comm_orders[i].value;
+			o = Comm_orders[i].def;
 
 	// Goober5000 - if not found, check compatibility
 	if (o == -1)
@@ -2827,7 +2834,7 @@ int hud_query_order_issued(char *name, char *order, char *target)
 		if (!stricmp(order, "Attack my target"))
 		{
 			i = 0;	// it maps to option 0, "Destroy my target"
-			o = Comm_orders[i].value;
+			o = Comm_orders[i].def;
 		}
 	}
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.68 $
- * $Date: 2005-12-29 00:52:57 $
- * $Author: phreak $
+ * $Revision: 2.69 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2005/12/29 00:52:57  phreak
+ * changed around aabitmap calls to accept a "mirror" parameter.  defaults to false, and is only true for mirrored briefing icons.
+ * If the mirror param is true, then the picture is mirrored about the y-axis so left becomes right and vice versa.
+ *
  * Revision 2.67  2005/10/30 06:44:57  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -1429,6 +1433,8 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize=true);
 #define VERTEX_FLAG_UV2			 (1<<6)	
 #define VERTEX_FLAG_UV3			 (1<<7)	
 #define VERTEX_FLAG_UV4			 (1<<8)	
+
+void poly_tsb_calc(vertex *v0, vertex *v1, vertex *v2, vec3d *o_norm, vec3d *o_stan, vec3d *o_ttan);
 
 #endif
 

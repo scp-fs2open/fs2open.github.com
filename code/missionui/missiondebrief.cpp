@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-10-10 17:21:06 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.43  2005/09/27 02:36:57  Goober5000
  * clarification
  * --Goober5000
@@ -2264,7 +2267,7 @@ void debrief_setup_ship_kill_stats(int stage_num)
 
 	if(Debrief_stats_kills == NULL)
 	{
-		Debrief_stats_kills = new debrief_stats_kill_info[Num_ship_types];
+		Debrief_stats_kills = new debrief_stats_kill_info[Num_ship_classes];
 	}
 
 	Assert(Debrief_player != NULL);
@@ -2277,7 +2280,7 @@ void debrief_setup_ship_kill_stats(int stage_num)
 	}
 
 	Num_text_lines = 0;
-	for ( i=0; i<MAX_SHIP_TYPES; i++ ) {
+	for ( i=0; i<MAX_SHIP_CLASSES; i++ ) {
 
 		// code used to add in mission kills, but the new system assumes that the player will accept, so
 		// all time stats already have mission stats added in.

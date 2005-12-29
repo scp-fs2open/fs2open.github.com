@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.43 $
- * $Date: 2005-12-08 15:17:34 $
- * $Author: taylor $
+ * $Revision: 2.44 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2005/12/08 15:17:34  taylor
+ * fix several bad crash related problems from WMC's commits on the 4th
+ *
  * Revision 2.42  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -394,6 +397,7 @@ float Neb_ship_fog_vals_glide[MAX_SHIP_TYPE_COUNTS][2] = {
 	{10.0f, 1000.0f},			// SHIP_TYPE_KNOSSOS_DEVICE
 };
 */
+/*
 float Neb_ship_fog_vals_d3d[MAX_SHIP_TYPE_COUNTS][2] = {
 	{0.0f, 0.0f},				// SHIP_TYPE_NONE
 	{10.0f, 500.0f},			// SHIP_TYPE_CARGO
@@ -416,6 +420,10 @@ float Neb_ship_fog_vals_d3d[MAX_SHIP_TYPE_COUNTS][2] = {
 	{10.0f, 600.0f},			// SHIP_TYPE_CORVETTE
 	{10.0f, 1000.0f},			// SHIP_TYPE_KNOSSOS_DEVICE
 };
+*/
+//WMC - these were originally indexed to SHIP_TYPE_FIGHTER_BOMBER
+const static float Default_fog_near = 10.0f;
+const static float Default_fog_far = 500.0f;
 
 // fog near and far values for rendering the background nebula
 #define NEB_BACKG_FOG_NEAR_GLIDE				2.5f
@@ -571,6 +579,8 @@ void neb2_init()
 	}
 
 	//Distance
+	//WMC - Obsolete! Obsolete! Obsolete!
+	/*
 	if(optional_string("#Fog Distance"))
 	{
 		char buf[32];
@@ -588,7 +598,7 @@ void neb2_init()
 		}
 
 		required_string("#End");
-	}
+	}*/
 
 	// should always have 6 neb poofs
 	Assert(Neb2_poof_count == 6);
@@ -1488,8 +1498,7 @@ void neb2_eye_changed()
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 {
-
-	int nNfog_index = -1;	
+	int type_index = -1;
 
 	// default values in case something truly nasty happens
 	*fnear = 10.0f;
@@ -1498,19 +1507,26 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 	if (objp == NULL)
 		return;
 
+	//Otherwise, use defaults
+	*fnear = Default_fog_near;
+	*ffar = Default_fog_far;
+
 	// determine what fog index to use
-	if(objp->type == OBJ_SHIP){
+	if(objp->type == OBJ_SHIP)
+	{
 		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-		if((objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
-			nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
-		} else {
-			nNfog_index = ship_query_general_type(objp->instance);
-			Assert(nNfog_index >= 0);
-			if(nNfog_index < 0){
-				nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
+		if((objp->instance >= 0) && (objp->instance < MAX_SHIPS))
+		{
+			type_index = ship_query_general_type(objp->instance);
+			if(type_index > 0)
+			{
+				*fnear = Ship_types[type_index].fog_start_dist;
+				*ffar = Ship_types[type_index].fog_complete_dist;
 			}
 		}
-	}else if(objp->type == OBJ_FIREBALL){//mostly here for the warp effect
+	}
+	else if(objp->type == OBJ_FIREBALL)
+	{//mostly here for the warp effect
 		*fnear = objp->radius*2;
 		*ffar = (objp->radius*objp->radius*200)+objp->radius*200;
 		return;
@@ -1520,12 +1536,7 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 		*ffar = 10000.0f;
 		return;
 	// fog everything else like a fighter
-*/	}else {
-		nNfog_index = SHIP_TYPE_FIGHTER_BOMBER;
-	}
-
-	*fnear = Neb_ship_fog_vals_d3d[nNfog_index][0];
-	*ffar =  Neb_ship_fog_vals_d3d[nNfog_index][1];
+*/	}
 }
 
 float nNf_near, nNf_far;
@@ -1870,7 +1881,9 @@ DCF(neb2_jitter, "")
 	dc_get_arg(ARG_FLOAT);
 	Nd->hj = Nd->dj = Nd->wj = Dc_arg_float;
 }
-
+//WMC - unfortunately, this has to go bye-bye
+//I don't think anyone used it anyway so I'm not going to try to resurrect it
+/*
 DCF(neb2_fog, "")
 {
 	int index;
@@ -1891,7 +1904,7 @@ DCF(neb2_fog, "")
 			Neb_ship_fog_vals_d3d[index][1] = ffar;
 		}
 	}
-}
+}*/
 
 DCF(neb2_max_alpha, "")
 {
@@ -1995,7 +2008,8 @@ DCF(neb2_background, "")
 	Neb2_background_color[1] = g;
 	Neb2_background_color[2] = b;
 }
-
+//WMC - Going bye-bye for ship types too
+/*
 DCF(neb2_fog_vals, "")
 {
 	dc_printf("neb2_fog : \n");
@@ -2025,7 +2039,7 @@ DCF(neb2_fog_vals, "")
 	dc_printf("neb2_jitter		 : %f\n", Nd->wj);
 	dc_printf("neb2_ff			 : %f\n", neb2_flash_fade);
 	dc_printf("neb2_background	 : %d %d %d\n", Neb2_background_color[0], Neb2_background_color[1], Neb2_background_color[2]);
-}
+}*/
 
 /* Obsolete !?
 DCF(neb2_create, "create a basic nebula")

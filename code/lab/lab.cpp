@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.24 $
- * $Date: 2005-12-04 19:12:53 $
+ * $Revision: 1.25 $
+ * $Date: 2005-12-29 08:08:36 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2005/12/04 19:12:53  wmcoolmon
+ * Post-final commit
+ *
  * Revision 1.22  2005/10/30 06:44:57  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -90,7 +93,7 @@ void set_ship_flags_ship(ship_info *sip)
 	soc[i++]->SetFlag(&sip->flags, SIF_ESCAPEPOD);
 	soc[i++]->SetFlag(&sip->flags, SIF_GAS_MINER);
 	soc[i++]->SetFlag(&sip->flags, SIF_AWACS);
-	soc[i++]->SetFlag(&sip->flags, SIF_SHIP_CLASS_STEALTH);
+	soc[i++]->SetFlag(&sip->flags, SIF_STEALTH);
 	soc[i++]->SetFlag(&sip->flags, SIF_SUPERCAP);
 	soc[i++]->SetFlag(&sip->flags, SIF_KNOSSOS_DEVICE);
 	soc[i++]->SetFlag(&sip->flags, SIF_DRYDOCK);
@@ -214,6 +217,8 @@ void set_ship_variables_ship(ship_info *sip)
 	svt[i++]->SetText(sip->name);
 	svt[i]->SetText(sip->species);
 	svt[i++]->SetSaveLoc(&sip->species, T_ST_ONENTER, Num_species-1, 0);
+	svt[i]->SetText(sip->class_type);
+	svt[i++]->SetSaveLoc(&sip->class_type, T_ST_ONENTER, Ship_types.size()-1, 0);
 
 	SVW_SET_SI_VAR(density);
 	SVW_SET_SI_VAR(damp);
@@ -292,6 +297,7 @@ void ship_variables_window(Button *caller)
 	svt[i] = (Text*) cwp->AddChild(new Text("Ship name", "<None>", SVW_RIGHTX, y, SVW_RIGHTWIDTH, 12));
 	y += svt[i++]->GetHeight() + 5;
 	SVW_ADD_TEXT("Species");
+	SVW_ADD_TEXT("Type");
 
 	//Physics
 	SVW_ADD_TEXT_HEADER("Physics");
@@ -477,7 +483,7 @@ void ships_make_window(Button* caller)
 	//Now add the ships
 	std::string lod_name;
 	char buf[8];
-	for(i = 0; i < Num_ship_types; i++)
+	for(i = 0; i < Num_ship_classes; i++)
 	{
 		if(Ship_info[i].species >= 0 && Ship_info[i].species < Num_species)
 			stip = species_nodes[Ship_info[i].species];

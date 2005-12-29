@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.58 $
- * $Date: 2005-12-13 22:32:30 $
+ * $Revision: 2.59 $
+ * $Date: 2005-12-29 08:08:42 $
  * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2005/12/13 22:32:30  wmcoolmon
+ * Ability to disable damage particle spew on ships
+ *
  * Revision 2.57  2005/12/04 18:58:07  wmcoolmon
  * subsystem + shockwave armor support; countermeasures as weapons
  *
@@ -3461,6 +3464,6 @@ void shipfx_stop_cloak(ship *shipp, int warmdown)
 {
 	shipp->cloak_stage=3;
 	shipp->time_until_full_cloak=timestamp(warmdown);
-	if (!(Ship_info[shipp->ship_info_index].flags & SIF_SHIP_CLASS_STEALTH))
+	if (!(Ship_info[shipp->ship_info_index].flags & SIF_STEALTH))
 		shipp->flags2 &= ~(SF2_STEALTH);
 }

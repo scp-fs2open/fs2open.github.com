@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-11-16 05:46:27 $
- * $Author: taylor $
+ * $Revision: 2.29 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/11/16 05:46:27  taylor
+ * bunch of error checking and code cleanup for the team stuff in ship/weapon select
+ *
  * Revision 2.27  2005/10/29 22:09:29  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -445,12 +448,12 @@ loadout_data Player_loadout;	// what the ship and weapon loadout is... used sinc
 
 //wss_unit	Wss_slots[MAX_WSS_SLOTS];				// slot data struct
 //int		Wl_pool[MAX_WEAPON_TYPES];				// weapon pool 
-//int		Ss_pool[MAX_SHIP_TYPES];				// ship pool
+//int		Ss_pool[MAX_SHIP_CLASSES];				// ship pool
 //int		Wss_num_wings;								// number of player wings
 
 wss_unit	Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
 int		Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-int		Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
+int		Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
 int		Wss_num_wings_teams[MAX_TVT_TEAMS];
 
 wss_unit	*Wss_slots = NULL;
@@ -1400,7 +1403,7 @@ void wss_save_loadout()
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// save the ship pool
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		Player_loadout.ship_pool[i] = Ss_pool[i]; 
 	}
 
@@ -1434,7 +1437,7 @@ void wss_restore_loadout()
 	}
 
 	// restore the ship pool
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		Ss_pool[i] = Player_loadout.ship_pool[i]; 
 	}
 
@@ -1600,7 +1603,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 
 
 	// write the ship pool 
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		if ( Ss_pool[i] > 0 ) {	
 			block[offset++] = (ubyte)i;
 			Assert( Ss_pool[i] < UCHAR_MAX );
@@ -1697,9 +1700,9 @@ int restore_wss_data(ubyte *block)
 
 	// restore ship pool
 	sanity=0;
-	memset(Ss_pool, 0, MAX_SHIP_TYPES*sizeof(int));
+	memset(Ss_pool, 0, MAX_SHIP_CLASSES*sizeof(int));
 	for (;;) {
-		if ( sanity++ > MAX_SHIP_TYPES ) {
+		if ( sanity++ > MAX_SHIP_CLASSES ) {
 			Int3();
 			break;
 		}

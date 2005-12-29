@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.84 $
- * $Date: 2005-12-15 04:31:05 $
- * $Author: phreak $
+ * $Revision: 2.85 $
+ * $Date: 2005-12-29 08:08:37 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2005/12/15 04:31:05  phreak
+ * [V] can't spell 'turret'
+ *
  * Revision 2.83  2005/11/13 06:47:26  taylor
  * make sure that we don't get "-transport" in with the transparent filename check (TBP bug)
  *
@@ -1115,6 +1118,17 @@ texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
 static int Model_signature = 0;
 
 void generate_vertex_buffers(bsp_info*, polymodel*);
+
+//WMC - For general compatibility stuff.
+//Note that the order of the items in this list
+//determine the order that they are tried in ai_goal_fixup_dockpoints
+flag_def_list Dock_type_names[] = {
+	{"cargo",			DOCK_TYPE_CARGO},
+	{"rearm",			DOCK_TYPE_REARM},
+	{"generic",			DOCK_TYPE_GENERIC},
+};
+
+int Num_dock_type_names = sizeof(Dock_type_names)/sizeof(flag_def_list);
 
 // Free up a model, getting rid of all its memory
 // With the basic page in system this can be called from outside of modelread.cpp
@@ -2835,7 +2849,19 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		pm->specular_original_textures[i] = pm->specular_textures[i];
 	}
 
+	//WMC: BUMP mapping
+	if(1)
+	{
+		memset(tmp_name, 0, MAX_FILENAME_LEN);
+		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
+		strncat(tmp_name, "-bump", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
+		strlwr(tmp_name);
 
+		pm->bump_textures[i] = bm_load(tmp_name);
+		if (pm->bump_textures[i]<0)	{
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
+		}
+	}
 }
 
 
@@ -3888,17 +3914,26 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	pm = model_get(model_num);
 	bsp_info * sm = &pm->submodel[turret->turret_gun_sobj];
 	bsp_info * sm_parent = &pm->submodel[turret->subobj_num];
-
+	float offset_base_h = 0.0f;
+	float offset_barrel_h = 0.0f;
+#ifdef WMC_SIDE_TURRETS
+	offset_base_h = -PI/2.0f;
+	offset_barrel_h = -PI/2.0f;
+#endif
 
 	model_clear_instance(model_num);
+	sm_parent->angs.h = offset_base_h;
+	sm->angs.h = offset_barrel_h;
 	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 
-	sm_parent->angs.h = -PI/2.0f;
+	sm_parent->angs.h = -PI/2.0f + offset_base_h;
 	sm->angs.p = -PI/2.0f;
+	sm->angs.h = offset_barrel_h;
 	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 
-	sm_parent->angs.h = 0.0f;
+	sm_parent->angs.h = 0.0f + offset_base_h;
 	sm->angs.p = -PI/2.0f;
+	sm->angs.h = offset_barrel_h;
 	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 									
 	vm_vec_normalize(&fvec);
@@ -4491,12 +4526,20 @@ int model_find_dock_name_index( int modelnum, char *name )
 
 	// check the generic names and call previous function to find first dock point of
 	// the specified type
+	for(i = 0; i < Num_dock_type_names; i++)
+	{
+		if(!stricmp(name, Dock_type_names[i].name)) {
+			return model_find_dock_index(modelnum, Dock_type_names[i].def);
+		}
+	}
+	/*
 	if ( !stricmp(name, "cargo") )
 		return model_find_dock_index( modelnum, DOCK_TYPE_CARGO );
 	else if (!stricmp( name, "rearm") )
 		return model_find_dock_index( modelnum, DOCK_TYPE_REARM );
 	else if (!stricmp( name, "generic") )
 		return model_find_dock_index( modelnum, DOCK_TYPE_GENERIC );
+	*/
 
 	// look for a dockpoint with this name
 	for (i = 0; i < pm->n_docks; i++ )

@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.26 $
- * $Date: 2005-11-21 02:43:30 $
- * $Author: Goober5000 $
+ * $Revision: 1.27 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 1.25  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -392,7 +396,7 @@ bool valid_turret_enemy(object *eobjp, object *turret_parent, ship_subsys *turre
 			return false;
 
 		// Goober5000 - don't fire at cargo containers (let me know if you want to discuss this) ;)
-		if ( Ship_info[shipp->ship_info_index].flags & SIF_CARGO ) {
+		if ( sip->class_type > -1 && !(Ship_types[sip->class_type].ai_bools & STI_AI_TURRETS_ATTACK) ) {
 			return false;
 		}
 
@@ -1201,7 +1205,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
 						// pick a firing range so that it detonates properly			
-						flak_pick_range(objp, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
+						flak_pick_range(objp, turret_pos, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
 
 						// determine what that range was
 						flak_range = flak_get_range(objp);

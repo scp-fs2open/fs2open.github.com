@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.132 $
- * $Date: 2005-12-29 00:56:45 $
- * $Author: phreak $
+ * $Revision: 2.133 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2005/12/29 00:56:45  phreak
+ * loading code for flipped briefing icons.
+ *
  * Revision 2.131  2005/12/28 22:31:03  taylor
  * unused variable (to make GCC shut up)
  *
@@ -1056,7 +1059,7 @@ char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 char *Cargo_names[MAX_CARGO];
 char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
-char *Ship_class_names[MAX_SHIP_TYPES];		// to be filled in from Ship_info array
+char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
 
 char *Icon_names[MAX_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
@@ -1362,7 +1365,7 @@ void parse_mission_info(mission *pm)
 	// for each species, store whether support is available
 	for (int species = 0; species < Num_species; species++)
 	{
-		for (int ship_class = 0; ship_class < Num_ship_types; ship_class++)
+		for (int ship_class = 0; ship_class < Num_ship_classes; ship_class++)
 		{
 			if ((Ship_info[ship_class].flags & SIF_SUPPORT) && (Ship_info[ship_class].species == species))
 			{
@@ -1563,7 +1566,7 @@ void parse_player_info(mission *pm)
 void parse_player_info2(mission *pm)
 {
 	char str[NAME_LENGTH];
-	int nt, i, total, list[MAX_SHIP_TYPES * 2], list2[MAX_WEAPON_TYPES * 2], num_starting_wings;
+	int nt, i, total, list[MAX_SHIP_CLASSES * 2], list2[MAX_WEAPON_TYPES * 2], num_starting_wings;
 	team_data *ptr;
 	char starting_wings[MAX_STARTING_WINGS][NAME_LENGTH];
 
@@ -1578,7 +1581,7 @@ void parse_player_info2(mission *pm)
 			stuff_string( Player_start_shipname, F_NAME, NULL );
 
 		required_string("$Ship Choices:");
-		total = stuff_int_list(list, MAX_SHIP_TYPES * 2, SHIP_INFO_TYPE);
+		total = stuff_int_list(list, MAX_SHIP_CLASSES * 2, SHIP_INFO_TYPE);
 
 		Assert(!(total & 0x01));  // make sure we have an even count
 
@@ -1610,13 +1613,13 @@ void parse_player_info2(mission *pm)
 			// do we do?  choose the first allowable one?
 			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
-					for (i = 0; i < MAX_SHIP_TYPES; i++ ) {
+					for (i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 						if ( Campaign.ships_allowed[ptr->default_ship] ) {
 							ptr->default_ship = i;
 							break;
 						}
 					}
-					Assert( i < MAX_SHIP_TYPES );
+					Assert( i < MAX_SHIP_CLASSES );
 				}
 			}
 		}
@@ -1901,7 +1904,7 @@ void parse_briefing(mission *pm)
 				Assert((team_index >= 0) && (team_index < MAX_TEAM_NAMES));
 				bi->team = 1 << team_index;
 
-				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Num_ship_types, "ship class");
+				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 
 				required_string("$pos:");
 				stuff_vector(&bi->pos);
@@ -2797,7 +2800,7 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		error_display(0, NOX("Redundant ship name: %s\n"), objp->name);
 
 
-	find_and_stuff("$Class:", &objp->ship_class, F_NAME, Ship_class_names, Num_ship_types, "ship class");
+	find_and_stuff("$Class:", &objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 	if (objp->ship_class < 0) {
 		Warning(LOCATION, "Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0", objp->name);
 
@@ -2986,7 +2989,7 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	}
 
 	// set certain flags that used to be in ship_info - Goober5000
-	if (Ship_info[objp->ship_class].flags & SIF_SHIP_CLASS_STEALTH)
+	if (Ship_info[objp->ship_class].flags & SIF_STEALTH)
 		objp->flags |= P_SF2_STEALTH;
 	if (Ship_info[objp->ship_class].flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
 		objp->flags |= P_SF2_DONT_COLLIDE_INVIS;
@@ -4982,7 +4985,7 @@ void post_process_mission()
 //		else
 //			num = Wings[Ships[i].wingnum].num_waves;
 
-		ship_add_ship_type_count( siflags, num );
+		ship_add_ship_type_count( Ships[shipnum].ship_info_index, num );
 	}
 
 	// now go through the list of ships yet to arrive
@@ -5003,7 +5006,7 @@ void post_process_mission()
 		else
 			num = Wings[p_objp->wingnum].num_waves - 1;			// subtract one since we already counted the first wave
 		
-		ship_add_ship_type_count( siflags, num );
+		ship_add_ship_type_count( p_objp->ship_class, num );
 	}
 
 	// set player weapons that are selected by default
@@ -5136,9 +5139,9 @@ int parse_main(char *mission_name, int flags, int importFSM)
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;
 	Mission_all_attack = 0;	//	Might get set in mission load.
-	Assert(Num_ship_types <= MAX_SHIP_TYPES);	// Goober5000 - should be <=
+	Assert(Num_ship_classes <= MAX_SHIP_CLASSES);	// Goober5000 - should be <=
 
-	for (i = 0; i < Num_ship_types; i++)
+	for (i = 0; i < Num_ship_classes; i++)
 		Ship_class_names[i] = Ship_info[i].name;
 
 	if ((rval = setjmp(parse_abort)) != 0) {
@@ -6579,12 +6582,12 @@ void mission_bring_in_support_ship( object *requester_objp )
 		// the species of the caller ship.
 
 		// get index of correct species support ship
-		for (i=0; i < Num_ship_types; i++) {
+		for (i=0; i < Num_ship_classes; i++) {
 			if ( (Ship_info[i].species == requester_species) && (Ship_info[i].flags & SIF_SUPPORT) )
 				break;
 		}
 
-		if ( i < Num_ship_types )
+		if ( i < Num_ship_classes )
 			pobj->ship_class = i;
 		else
 			Int3();				// BOGUS!!!!  gotta figure something out here
@@ -6841,7 +6844,7 @@ void conv_replace_ship_classes()
 // Goober5000
 void conv_add_alt_names()
 {
-	int flag[MAX_SHIP_TYPES];
+	int flag[MAX_SHIP_CLASSES];
 	int i, idx, alt_tally;
 	char *ch;
 	char ship_class[NAME_LENGTH * 2];
@@ -6850,7 +6853,7 @@ void conv_add_alt_names()
 
 	// initialize stuff
 	ch = Mission_text;
-	memset(flag, 0, sizeof(int) * MAX_SHIP_TYPES);
+	memset(flag, 0, sizeof(int) * MAX_SHIP_CLASSES);
 	alt_tally = 0;
 
 	// get all ship classes (case sensitive, because lowercase
@@ -6901,7 +6904,7 @@ void conv_add_alt_names()
 		strcpy(alt_section, "#Alternate Types:\n");
 
 		// find which classes need to be added
-		for (i = 0; i < MAX_SHIP_TYPES; i++)
+		for (i = 0; i < MAX_SHIP_CLASSES; i++)
 		{
 			if (flag[i])
 			{

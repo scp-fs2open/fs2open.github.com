@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-10-30 06:44:56 $
+ * $Revision: 2.22 $
+ * $Date: 2005-12-29 08:08:33 $
  * $Author: wmcoolmon $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/10/30 06:44:56  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.20  2005/10/10 17:21:03  taylor
  * remove NO_NETWORK
  *
@@ -945,9 +948,19 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 #ifdef DEBRIS_SPEED_DEBUG
 	// check that debris is not created with too high a velocity
-	if (hull_flag) {
-		int ship_info_flag = Ship_info[Ships[source_obj->instance].ship_info_index].flags;
-		if (ship_info_flag & (SIF_SMALL_SHIP | SIF_NOT_FLYABLE | SIF_HARMLESS)) {
+	if (hull_flag)
+	{
+		int ship_type = Ship_info[Ships[source_obj->instance].ship_info_index].class_type;
+		if(ship_type > -1)
+		{
+			if(vm_vec_mag_squared(&obj->phys_info.vel) > Ship_types[ship_type].debris_max_speed) {
+				float scale = Ship_types[ship_type].debris_max_speed / vm_vec_mag(&obj->phys_info.vel);
+				vm_vec_scale(&obj->phys_info.vel, scale);
+			}
+		}
+		/*
+		if (ship_info_flag & (SIF_SMALL_SHIP | SIF_NOT_FLYABLE | SIF_HARMLESS))
+		{
 			if (vm_vec_mag_squared(&obj->phys_info.vel) > MAX_SPEED_SMALL_DEBRIS*MAX_SPEED_SMALL_DEBRIS) {
 				float scale = MAX_SPEED_SMALL_DEBRIS / vm_vec_mag(&obj->phys_info.vel);
 				vm_vec_scale(&obj->phys_info.vel, scale);
@@ -962,8 +975,11 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 				float scale = MAX_SPEED_CAPITAL_DEBRIS / vm_vec_mag(&obj->phys_info.vel);
 				vm_vec_scale(&obj->phys_info.vel, scale);
 			}
-		} else {
-			Warning(LOCATION, "Ship has info flag that is not among the following:  SMALL, NOT_FLYABLE, HARMLESS, BIG, CAPITAL, SUPERCAP");
+		*/
+		}
+		else
+		{
+			Warning(LOCATION, "Ship does not have a type!");
 		}
 	}
 #endif

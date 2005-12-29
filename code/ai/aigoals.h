@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.h $
- * $Revision: 1.2 $
- * $Date: 2005-07-13 02:50:48 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.1  2005/03/25 06:45:13  wmcoolmon
  * Initial AI code move commit - note that aigoals.cpp has some escape characters in it, I'm not sure if this is really a problem.
  *
@@ -168,6 +172,7 @@
 #define _AIGOALS_H
 
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 struct wing;
 struct ai_info;
@@ -213,6 +218,7 @@ struct ai_goal;
 // add it to ai_update_goal_references() or ai_query_goal_references().  I also didn't add it
 // to the list in Fred\Management.cpp, because it can't be specified as an initial order - it
 // can only be specified through a sexp.
+//WMC - Oh and add them to Ai_goal_names plz. TY! :)
 #define AI_GOAL_CHASE_ANY_EXCEPT		(1<<23)		// hey Hoffoss!  I added a new goal! :p
 
 #define AI_GOAL_FLY_TO_SHIP				(1<<24) // kazan
@@ -220,6 +226,8 @@ struct ai_goal;
 // now the masks for ship types
 
 // Goober5000: added AI_GOAL_STAY_NEAR_SHIP and AI_GOAL_KEEP_SAFE_DISTANCE as valid for fighters
+//WMC - Don't need these anymore. Whee!
+/*
 #define AI_GOAL_ACCEPT_FIGHTER		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_CHASE | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_DESTROY_SUBSYSTEM | AI_GOAL_CHASE_WING | AI_GOAL_GUARD | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE_ANY | AI_GOAL_IGNORE | AI_GOAL_GUARD_WING | AI_GOAL_EVADE_SHIP | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD | AI_GOAL_STAY_NEAR_SHIP | AI_GOAL_KEEP_SAFE_DISTANCE | AI_GOAL_CHASE_ANY_EXCEPT )
 #define AI_GOAL_ACCEPT_BOMBER			( AI_GOAL_FLY_TO_SHIP | AI_GOAL_ACCEPT_FIGHTER | AI_GOAL_STAY_NEAR_SHIP )
 #define AI_GOAL_ACCEPT_STEALTH		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_ACCEPT_FIGHTER | AI_GOAL_STAY_NEAR_SHIP )
@@ -233,8 +241,14 @@ struct ai_goal;
 #define AI_GOAL_ACCEPT_SUPERCAP		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_ACCEPT_CAPITAL | AI_GOAL_STAY_NEAR_SHIP )
 #define AI_GOAL_ACCEPT_SUPPORT		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_DOCK | AI_GOAL_UNDOCK | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_STAY_NEAR_SHIP | AI_GOAL_KEEP_SAFE_DISTANCE | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD)
 #define AI_GOAL_ACCEPT_ESCAPEPOD		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_ACCEPT_TRANSPORT| AI_GOAL_STAY_NEAR_SHIP  )
+*/
 
 #define MAX_AI_DOCK_NAMES				25
+
+typedef flag_def_list ai_goal_list;
+
+extern ai_goal_list Ai_goal_names[];
+extern int Num_ai_goals;
 
 extern int Num_ai_dock_names;
 extern char Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];

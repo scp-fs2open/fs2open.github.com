@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-11-13 06:50:57 $
- * $Author: taylor $
+ * $Revision: 2.60 $
+ * $Date: 2005-12-29 08:08:42 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/11/13 06:50:57  taylor
+ * don't fail if not a starfield pof to load, regular starfield bitmaps don't hard fail so this shouldn't either
+ *
  * Revision 2.58  2005/10/30 20:03:40  taylor
  * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
  * fix Mantis bug #381
@@ -815,88 +818,85 @@ void starfield_kill_bitmap_buffer()
 	}
 }
 
-// call on game startup
-void stars_init()
+int Num_starfields = 0;
+int Num_starfield_suns = 0;
+int Num_debris_normal = 0;
+int Num_debris_nebula = 0;
+
+void parse_startbl(char *longname)
 {
-	
-	starfield_bitmap *bm;	
-	int count, idx, j;
 	char filename[MAX_FILENAME_LEN+1] = "";
+	starfield_bitmap *bm;
 	char glow_filename[MAX_FILENAME_LEN+1] = "";
 	float r, g, b, i, spec_r, spec_g, spec_b;
 	int sun_glare;
 	int flarecount,flaretexcount, isflare;
 	flare_info flares[MAX_FLARE_COUNT];
 	char flare_filenames[MAX_FLARE_BMP][MAX_FILENAME_LEN+1];
+	int j;
+
 	char tempf[16];
 
 	flarecount = flaretexcount = isflare = 0; //get rid of warnings
-	// parse stars.tbl
-	read_file_text("stars.tbl");
+
+	read_file_text(longname);
 	reset_parse();
 
-	// make all bitmaps invalid
-	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){
-		Starfield_bitmaps[idx].bitmap = -1;
-		Starfield_bitmaps[idx].n_frames = 0;
-		Starfield_bitmaps[idx].fps = 0;
-		Starfield_bitmaps[idx].glow_bitmap = -1;		
-		Starfield_bitmaps[idx].glow_n_frames = 1;
-		Starfield_bitmaps[idx].glow_fps = 0;
-		strcpy(Starfield_bitmaps[idx].filename, "");
-		strcpy(Starfield_bitmaps[idx].glow_filename, "");
-
-		Sun_bitmaps[idx].bitmap = -1;		
-		Sun_bitmaps[idx].n_frames = 0;
-		Sun_bitmaps[idx].fps = 0;
-		Sun_bitmaps[idx].glow_bitmap = -1;		
-		Sun_bitmaps[idx].glow_n_frames = 1;
-		Sun_bitmaps[idx].glow_fps = 0;
-		strcpy(Sun_bitmaps[idx].filename, "");
-		strcpy(Sun_bitmaps[idx].glow_filename, "");
-	}
-
-	// starfield bitmaps
-	count = 0;
-	while(!optional_string("#end")){
+	while(!optional_string("#end"))
+	{
 		// intensity alpha bitmap
-		if(optional_string("$Bitmap:")){
+		if(optional_string("$Bitmap:"))
+		{
 			stuff_string(filename, F_NAME, NULL);
-			if(count < MAX_STARFIELD_BITMAPS){
-				bm = &Starfield_bitmaps[count++];
+			if(Num_starfields < MAX_STARFIELD_BITMAPS)
+			{
+				bm = &Starfield_bitmaps[Num_starfields++];
 				strcpy(bm->filename, filename);
 				bm->xparent = 0;
 				bm->bitmap = bm_load(bm->filename);				
-				if(bm->bitmap == -1){
+				if(bm->bitmap == -1)
+				{
 					bm->bitmap = bm_load_animation(bm->filename,  &bm->n_frames, &bm->fps, 1);
 					if(bm->bitmap == -1){
 						Warning(LOCATION, "cannot find bitmap %s", filename);
 					}
 				}
 			}
+			else
+			{
+				Warning(LOCATION, "Could not add starfield intensity bitmap %s; Maximum limit of %d reached", filename, MAX_STARFIELD_BITMAPS);
+			}
 		}
 		// green xparency bitmap
-		else if(optional_string("$BitmapX:")){
+		else if(optional_string("$BitmapX:"))
+		{
 			stuff_string(filename, F_NAME, NULL);
-			if(count < MAX_STARFIELD_BITMAPS){
-				bm = &Starfield_bitmaps[count++];
+			if(Num_starfields < MAX_STARFIELD_BITMAPS)
+			{
+				bm = &Starfield_bitmaps[Num_starfields++];
 				strcpy(bm->filename, filename);
 				bm->xparent = 1;
 				bm->bitmap = bm_load(bm->filename);
-				if(bm->bitmap == -1){
+				if(bm->bitmap == -1)
+				{
 					bm->bitmap = bm_load_animation(bm->filename,  &bm->n_frames, &bm->fps, 1);
 					if(bm->bitmap == -1){
 						Warning(LOCATION, "cannot find bitmap %s", filename);
 					}
 				}
+			}
+			else
+			{
+				Warning(LOCATION, "Could not add starfield transparency bitmap %s; Maximum limit of %d reached", filename, MAX_STARFIELD_BITMAPS);
 			}
 		}
 	}
 
 	// sun bitmaps
-	count = 0;
-	while(!optional_string("#end")){
-		if(optional_string("$Sun:")){
+	while(!optional_string("#end"))
+	{
+		if(optional_string("$Sun:"))
+		{
 			stuff_string(filename, F_NAME, NULL);
 
 			// associated glow
@@ -920,7 +920,8 @@ void stars_init()
 				spec_b = b;
 			}
 			//lens flare stuff
-			if(optional_string("$Flare:")) {
+			if(optional_string("$Flare:"))
+			{
 				isflare = 1;
 				required_string("+FlareCount:");
 				stuff_int(&flarecount);
@@ -971,8 +972,9 @@ void stars_init()
 
 			sun_glare=!optional_string("$NoGlare:");
 
-			if(count < MAX_STARFIELD_BITMAPS){
-				bm = &Sun_bitmaps[count++];
+			if(Num_starfield_suns < MAX_STARFIELD_BITMAPS)
+			{
+				bm = &Sun_bitmaps[Num_starfield_suns++];
 				strcpy(bm->filename, filename);
 				strcpy(bm->glow_filename, glow_filename);
 				bm->xparent = 1;
@@ -1014,6 +1016,10 @@ void stars_init()
 				bm->spec_b = spec_b;
 			}
 		}
+		else
+		{
+			Warning(LOCATION, "Too many suns in stars.tbl or modular tables. Maximum of %d exceeded.", MAX_STARFIELD_BITMAPS);
+		}
 	}	
 
 	//Don't parse motion debris if we don't have to.
@@ -1023,28 +1029,79 @@ void stars_init()
 	}
 
 	// normal debris pieces
-	count = 0;
-	while(!optional_string("#end")){
+	while(!optional_string("#end"))
+	{
 		required_string("$Debris:");
 		stuff_string(filename, F_NAME, NULL);
 
-		if(count < MAX_DEBRIS_VCLIPS){
-			strcpy(Debris_vclips_normal[count++].name, filename);
+		if(Num_debris_normal < MAX_DEBRIS_VCLIPS){
+			strcpy(Debris_vclips_normal[Num_debris_normal++].name, filename);
+		} else {
+			Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", MAX_DEBRIS_VCLIPS);
 		}
 	}
-	Assert(count == 4);
 
 	// nebula debris pieces
-	count = 0;
-	while(!optional_string("#end")){
+	while(!optional_string("#end"))
+	{
 		required_string("$DebrisNeb:");
 		stuff_string(filename, F_NAME, NULL);
 
-		if(count < MAX_DEBRIS_VCLIPS){
-			strcpy(Debris_vclips_nebula[count++].name, filename);
+		if(Num_debris_nebula < MAX_DEBRIS_VCLIPS){
+			strcpy(Debris_vclips_nebula[Num_debris_nebula++].name, filename);
+		} else {
+			Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", MAX_DEBRIS_VCLIPS);
 		}
 	}
-	Assert(count == 4);
+}
+
+// call on game startup
+void stars_init()
+{
+	int idx;
+	// parse stars.tbl
+
+	// make all bitmaps invalid
+	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){
+		Starfield_bitmaps[idx].bitmap = -1;
+		Starfield_bitmaps[idx].n_frames = 0;
+		Starfield_bitmaps[idx].fps = 0;
+		Starfield_bitmaps[idx].glow_bitmap = -1;		
+		Starfield_bitmaps[idx].glow_n_frames = 1;
+		Starfield_bitmaps[idx].glow_fps = 0;
+		strcpy(Starfield_bitmaps[idx].filename, "");
+		strcpy(Starfield_bitmaps[idx].glow_filename, "");
+
+		Sun_bitmaps[idx].bitmap = -1;		
+		Sun_bitmaps[idx].n_frames = 0;
+		Sun_bitmaps[idx].fps = 0;
+		Sun_bitmaps[idx].glow_bitmap = -1;		
+		Sun_bitmaps[idx].glow_n_frames = 1;
+		Sun_bitmaps[idx].glow_fps = 0;
+		strcpy(Sun_bitmaps[idx].filename, "");
+		strcpy(Sun_bitmaps[idx].glow_filename, "");
+	}
+
+	// starfield bitmaps
+	Num_starfields = 0;
+	Num_starfield_suns = 0;
+	Num_debris_normal = 0;
+	Num_debris_nebula = 0;
+
+	parse_startbl("stars.tbl");
+
+	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
+	char *tbl_file_names[MAX_TBL_PARTS];
+
+	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-str.tbm", CF_SORT_REVERSE);
+	for(idx = 0; idx < num_files; idx++)
+	{
+		//HACK HACK HACK
+		Modular_tables_loaded = true;
+		strcat(tbl_file_names[idx], ".tbm");
+		mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[idx]));
+		parse_startbl(tbl_file_names[idx]);
+	}
 }
 
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not

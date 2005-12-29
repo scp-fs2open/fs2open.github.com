@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.60 $
- * $Author: taylor $
- * $Date: 2005-12-28 22:17:01 $
+ * $Revision: 2.61 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-12-29 08:08:39 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.59  2005/12/13 21:48:39  wmcoolmon
  * Music TBL to proper XMT file (-mus)
  *
@@ -2039,6 +2045,16 @@ void stuff_boolean(int *i, bool a_to_eol)
 		*i = 0;
 }
 
+void stuff_boolean_flag(int *i, int flag, bool a_to_eol)
+{
+	bool temp;
+	stuff_boolean(&temp, a_to_eol);
+	if(temp)
+		*i |= flag;
+	else
+		*i &= ~(flag);
+}
+
 // Stuffs a boolean value pointed at by Mp.  
 // YES/NO (supporting 1/0 now as well)
 // Now supports localization :) -WMC
@@ -2163,6 +2179,30 @@ void stuff_ubyte(ubyte *i)
 		Mp++;
 
 	diag_printf("Stuffed byte: %i\n", *i);
+}
+
+int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size)
+{
+	Assert(dest!=NULL);	//wtf?
+
+	char (*slp)[NAME_LENGTH] = (char(*)[32])new char[defs_size*NAME_LENGTH];
+	int num_strings = stuff_string_list(slp, defs_size);
+	int i, j;
+
+	for(i = 0; i < num_strings; i++)
+	{
+		for(j = 0; j < defs_size; j++)
+		{
+			if(!stricmp(slp[i], defs[j].name)) {
+				(*dest) |= defs[j].def;
+			}
+		}
+	}
+
+	delete[] slp;	//>_>
+	//nobody saw that right
+
+	return num_strings;
 }
 
 // Stuffs a list of strings

@@ -7,11 +7,15 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.3 $
- * $Date: 2005-09-30 03:40:40 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/09/30 03:40:40  Goober5000
+ * hooray for more work on the iff code
+ * --Goober5000
+ *
  * Revision 1.2  2005/09/29 04:26:08  Goober5000
  * parse fixage
  * --Goober5000
@@ -22,7 +26,7 @@
  *
  */
 
-
+#include "globalincs/def_files.h"
 #include "iff_defs/iff_defs.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
@@ -36,73 +40,6 @@ iff_info Iff_info[MAX_IFFS];
 int Iff_traitor;
 
 color Iff_colors[MAX_IFF_COLORS][2];
-
-
-//=============================================================================
-
-// This is the default table
-// Please note that the {\n\}s should be removed from the end of each line and
-// the {\"}s  should be replaced with {"}s if you intend to use this to format
-// your own iff_defs.tbl.
-
-char *default_iff_table = "\
-																			\n\
-#IFFs																		\n\
-																			\n\
-;; Every iff_defs.tbl must contain a Traitor entry.  Traitors attack one	\n\
-;; another (required by the dogfighting code) but it is up to you to		\n\
-;; decide who attacks the traitor or whom else the traitor attacks.			\n\
-$Traitor IFF: Traitor														\n\
-																			\n\
-;------------------------													\n\
-; Friendly																	\n\
-;------------------------													\n\
-$IFF Name: Friendly															\n\
-$Color: ( 0, 255, 0 )														\n\
-$Attacks: ( \"Hostile\" \"Neutral\" \"Traitor\" )							\n\
-$Default Ship Flags: ( \"cargo-known\" )									\n\
-																			\n\
-;------------------------													\n\
-; Hostile																	\n\
-;------------------------													\n\
-$IFF Name: Hostile															\n\
-$Color: ( 255, 0, 0 )														\n\
-$Attacks: ( \"Friendly\" \"Neutral\" \"Traitor\" )							\n\
-+Sees Friendly As: ( 255, 0, 0 )											\n\
-+Sees Hostile As: ( 0, 255, 0 )												\n\
-																			\n\
-;------------------------													\n\
-; Neutral																	\n\
-;------------------------													\n\
-$IFF Name: Neutral															\n\
-$Color: ( 255, 0, 0 )														\n\
-$Attacks: ( \"Friendly\" \"Traitor\" )										\n\
-+Sees Friendly As: ( 255, 0, 0 )											\n\
-+Sees Hostile As: ( 0, 255, 0 )												\n\
-+Sees Neutral As: ( 0, 255, 0 )												\n\
-																			\n\
-;------------------------													\n\
-; Unknown																	\n\
-;------------------------													\n\
-$IFF Name: Unknown															\n\
-$Color: ( 255, 0, 255 )														\n\
-$Attacks: ( \"Hostile\" )													\n\
-+Sees Neutral As: ( 0, 255, 0 )												\n\
-+Sees Traitor As: ( 0, 255, 0 )												\n\
-$Flags: ( \"exempt from all teams at war\" )								\n\
-																			\n\
-;------------------------													\n\
-; Traitor																	\n\
-;------------------------													\n\
-$IFF Name: Traitor															\n\
-$Color: ( 255, 0, 0 )														\n\
-$Attacks: ( \"Friendly\" \"Hostile\" \"Neutral\" \"Traitor\" )				\n\
-+Sees Friendly As: ( 255, 0, 0 )											\n\
-																			\n\
-#End																		\n\
-";
-
-//=============================================================================
 
 
 // borrowed from ship.cpp, ship_iff_init_colors
@@ -192,7 +129,7 @@ void iff_init()
 	if (table_exists)
 		read_file_text("iff_defs.tbl");
 	else
-		read_file_text_from_array(default_iff_table);
+		read_file_text_from_array(defaults_get_file("iff_defs.tbl"));
 
 	reset_parse();	
 	

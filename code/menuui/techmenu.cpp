@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-12-21 08:24:51 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/12/21 08:24:51  taylor
+ * allow the show-all hotkey to work on all techroom tabs
+ * address a couple of possible memory leak issues that could have come up in the future
+ *
  * Revision 2.34  2005/12/06 03:17:48  taylor
  * cleanup some debug log messages:
  *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
@@ -902,31 +906,6 @@ void techroom_ships_render(float frametime)
 	gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD]);	
 
 	// render the ship
-#ifdef MULTIPLAYER_BETA_BUILD
-	if((sip->flags & SIF_SUPERCAP) || (sip->flags & SIF_DRYDOCK)) {
-		gr_set_color_fast(&Color_bright);
-		gr_string(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD] + 50, NOX("No soup for you!"));
-	} else {
-		g3_start_frame(1);
-
-		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
-
-		// lighting for techroom
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.y = 1.0f;	
-		light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
-		// light_filter_reset();
-		light_rotate_all();
-		// lighting for techroom
-
-		model_clear_instance(Techroom_ship_modelnum);
-		model_set_detail_level(0);
-		model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
-
-		g3_end_frame();
-	}
-#else
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
 
@@ -952,7 +931,6 @@ void techroom_ships_render(float frametime)
 	}
 
 	g3_end_frame();
-#endif
 
 	gr_reset_clip();
 }
@@ -1181,15 +1159,17 @@ void techroom_change_tab(int num)
 			// load ship info if necessary
 			if ( Ships_loaded == 0 ) {
 				if (Ship_list == NULL) {
-					Ship_list = new tech_list_entry[Num_ship_types];
+					Ship_list = new tech_list_entry[Num_ship_classes];
 
 					if (Ship_list == NULL)
 						Error(LOCATION, "Couldn't init ships list!");
 				}
 
 				Ship_list_size = 0;
-				for (i=0; i<Num_ship_types; i++) {
-					if (Techroom_show_all || (Ship_info[i].flags & mask)) {
+				for (i=0; i<Num_ship_classes; i++)
+				{
+					if (Techroom_show_all || (Ship_info[i].flags & mask))
+					{
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
 						Ship_list[Ship_list_size].index = i;
@@ -1633,7 +1613,7 @@ void techroom_init()
 	help_overlay_set_state(TECH_ROOM_OVERLAY, 0);
 
 	// setup slider
-	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Num_ship_types, Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
+	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Num_ship_classes, Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
 
 	Cur_anim_instance = NULL;
 
@@ -1948,7 +1928,7 @@ void tech_reset_to_default()
 	int i;
 
 	// ships
-	for (i=0; i<Num_ship_types; i++)
+	for (i=0; i<Num_ship_classes; i++)
 	{
 		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE)
 			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;

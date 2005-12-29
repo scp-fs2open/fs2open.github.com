@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.26 $
- * $Date: 2005-12-29 00:01:29 $
- * $Author: taylor $
+ * $Revision: 1.27 $
+ * $Date: 2005-12-29 08:08:42 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2005/12/29 00:01:29  taylor
+ * add support for a species_defs modular table with XMT support (*-sdf.tbm)
+ *
  * Revision 1.25  2005/11/21 23:57:26  taylor
  * some minor thruster cleanup, if you could actually use the term "clean"
  *
@@ -118,6 +121,7 @@
 
 #pragma warning(disable:4710)	// function not inlined
 
+#include "globalincs/def_files.h"
 #include "species_defs/species_defs.h"
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
@@ -128,72 +132,6 @@
 
 int Num_species;
 species_info Species_info[MAX_SPECIES];
-
-static int species_initted;
-
-//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-// This is the default table
-// Please note that the {\n\}s should be removed from the end of each line
-// if you intend to use this to format your own species_defs.tbl.
-
-char *default_species_table = "\
-												\n\
-#SPECIES DEFS									\n\
-												\n\
-;------------------------						\n\
-; Terran										\n\
-;------------------------						\n\
-$Species_Name: Terran							\n\
-$Default IFF: Friendly							\n\
-$FRED Color: ( 0, 0, 192 )						\n\
-$MiscAnims:										\n\
-	+Debris_Texture: debris01a					\n\
-	+Shield_Hit_ani: shieldhit01a				\n\
-$ThrustAnims:									\n\
-	+Normal:	thruster01						\n\
-	+Afterburn:	thruster01a						\n\
-$ThrustGlows:									\n\
-	+Normal:	thrusterglow01					\n\
-	+Afterburn:	thrusterglow01a					\n\
-$AwacsMultiplier: 1.00							\n\
-												\n\
-;------------------------						\n\
-; Vasudan										\n\
-;------------------------						\n\
-$Species_Name: Vasudan							\n\
-$Default IFF: Friendly							\n\
-$FRED Color: ( 0, 128, 0 )						\n\
-$MiscAnims:										\n\
-	+Debris_Texture: debris01b					\n\
-	+Shield_Hit_ani: shieldhit01a				\n\
-$ThrustAnims:									\n\
-	+Normal:	thruster02						\n\
-	+Afterburn:	thruster02a						\n\
-$ThrustGlows:									\n\
-	+Normal:	thrusterglow02					\n\
-	+Afterburn:	thrusterglow02a					\n\
-$AwacsMultiplier: 1.25							\n\
-												\n\
-;------------------------						\n\
-; Shivan										\n\
-;------------------------						\n\
-$Species_Name: Shivan							\n\
-$Default IFF: Hostile							\n\
-$FRED Color: ( 192, 0, 0 )						\n\
-$MiscAnims:										\n\
-	+Debris_Texture: debris01c					\n\
-	+Shield_Hit_ani: shieldhit01a				\n\
-$ThrustAnims:									\n\
-	+Normal:	thruster03						\n\
-	+Afterburn:	thruster03a						\n\
-$ThrustGlows:									\n\
-	+Normal:	thrusterglow03					\n\
-	+Afterburn:	thrusterglow03a					\n\
-$AwacsMultiplier: 1.50							\n\
-												\n\
-#END											\n\
-";
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
@@ -296,7 +234,7 @@ void parse_species_tbl(char *longname)
 		mprintf(("Unable to parse %s!  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
 	} else {
 		if (longname == NULL) {
-			read_file_text_from_array(default_species_table);
+			read_file_text_from_array(defaults_get_file("species_defs.tbl"));
 		} else {
 			read_file_text(longname);
 		}
@@ -482,10 +420,11 @@ void parse_species_tbl(char *longname)
 	lcl_ext_close();
 }
 
+int Species_initted = 0;
 
 void species_init()
 {
-	if (species_initted)
+	if (Species_initted)
 		return;
 
 	Num_species = 0;
@@ -500,5 +439,5 @@ void species_init()
 	parse_modular_table("*-sdf.tbm", parse_species_tbl);
 
 
-	species_initted = 1;
+	Species_initted = 1;
 }

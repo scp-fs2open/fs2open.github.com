@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.48 $
- * $Date: 2005-12-06 03:15:47 $
- * $Author: taylor $
+ * $Revision: 1.49 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48  2005/12/06 03:15:47  taylor
+ * add a couple of Assert()'s that it doesn't otherwise check for
+ *
  * Revision 1.47  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -156,7 +159,7 @@
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
  * Revision 1.8  2005/04/25 00:04:30  wmcoolmon
- * MAX_SHIP_TYPES -> Num_ship_types
+ * MAX_SHIP_CLASSES -> Num_ship_classes
  *
  * Revision 1.7  2005/04/16 04:16:57  wmcoolmon
  * More optional tag-making for ships.tbl
@@ -2107,7 +2110,7 @@ void init_ship_info()
 	if (Ship_info_inited)
 		return;
 
-	for (i=0; i<Num_ship_types; i++) {
+	for (i=0; i<Num_ship_classes; i++) {
 		Ship_info[i].min_speed = - Ship_info[i].max_rear_vel;
 		Ship_info[i].max_accel = Ship_info[i].max_vel.xyz.z;
 	}
@@ -5990,7 +5993,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 	ship_info *sip;
 
 	//Assert( other_objp != NULL );
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes);
 
 	sip = &Ship_info[shipp->ship_info_index];
 
@@ -6087,7 +6090,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes);
 	// Debugging //
 	
 	sip = &Ship_info[shipp->ship_info_index];
@@ -6386,7 +6389,7 @@ int ai_fire_primary_weapon(object *objp)
 	ai_info		*aip;
 	object		*enemy_objp;
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes);
 	sip = &Ship_info[shipp->ship_info_index];
 
 	aip = &Ai_info[shipp->ai_index];
@@ -6783,7 +6786,7 @@ int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
 	shipp = &Ships[objp->instance];
 	swp = &shipp->weapons;
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes);
 	sip = &Ship_info[shipp->ship_info_index];
 
 	//	Select secondary weapon.
@@ -8598,11 +8601,13 @@ void ai_cruiser_chase()
 	ship			*shipp = &Ships[Pl_objp->instance];	
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
+	//WMC - We don't need/want this anymore.
+	/*
 	if (!(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
 		Int3();	//	Hmm, not a very big ship, how did we get in this function?
 		aip->mode = AIM_NONE;
 		return;
-	}
+	}*/
 
 	if (En_objp->type != OBJ_SHIP) {
 		Int3();
@@ -8620,11 +8625,16 @@ void ai_cruiser_chase()
 	eshipp = &Ships[En_objp->instance];
 	esip = &Ship_info[eshipp->ship_info_index];
 
+	//WMC - Again, I don't think we need/want this anymore.
+	//However. It could conceivably break backwards compatibility.
+	//In that case, bug me. I would like to stay away from 'big' and 'small'
+	//designations for types if possible.
+	/*
 	if (!(esip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
 		// Int3();	//	Hmm, we're big and we're pursuing something other than a big ship?
 		aip->mode = AIM_NONE;
 		return;
-	}
+	}*/
 
 	vec3d	goal_pos;
 	float turn_time = Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time;
@@ -8789,17 +8799,18 @@ void ai_chase()
 		Int3();
 	}
 
-	if (sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+	if (sip->class_type > -1 && (Ship_types[sip->class_type].ai_bools & STI_AI_ATTEMPT_BROADSIDE)) {
 		ai_cruiser_chase();
 		return;
 	}
-
+	//WMC - go away.
+/*
 	if (!(sip->flags & (SIF_FIGHTER | SIF_BOMBER | SIF_ESCAPEPOD))) {
 		Warning(LOCATION, "Ship %s is not 'small', but is in chase mode.\nSwitching to AI=none.\n", shipp->ship_name);
 		aip->mode = AIM_NONE;
 		return;
 	}
-
+*/
 	//nprintf(("AI", "%7s ", Submode_text[aip->submode]));
 
 	Assert( En_objp != NULL );
@@ -10148,7 +10159,7 @@ void ai_guard_find_nearby_ship(object *guarding_objp, object *guarded_objp)
 		ship	*eshipp = &Ships[enemy_objp->instance];
 
 		//	Don't attack a cargo container or other harmless ships
-		if (!(Ship_info[eshipp->ship_info_index].flags & SIF_HARMLESS)) {
+		if (Ship_info[eshipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].ai_bools & STI_AI_GUARDS_ATTACK)) {
 			if (guarding_shipp->team != eshipp->team)	{
 				dist = vm_vec_dist_quick(&enemy_objp->pos, &guarded_objp->pos);
 				if (dist < (MAX_GUARD_DIST + guarded_objp->radius)*3) {
@@ -14372,7 +14383,7 @@ void ai_frame(int objnum)
 			aip->active_goal = AI_GOAL_NONE;
 		} else if (aip->resume_goal_time == -1) {
 			// AL 12-9-97: Don't allow cargo and navbuoys to set their aip->target_objnum
-			if ( !(Ship_info[shipp->ship_info_index].flags & SIF_HARMLESS) ) {
+			if ( Ship_info[shipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_AUTO_ATTACKS) ) {
 				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]);		//	Attack up to 25K units away.
 				if (target_objnum != -1) {
 					if (aip->target_objnum != target_objnum)
@@ -14418,7 +14429,7 @@ void ai_frame(int objnum)
 	}
 */
 	// AL 12-10-97: ensure that cargo and navbuoys aip->target_objnum is always -1.
-	if ( Ship_info[shipp->ship_info_index].flags & SIF_HARMLESS ) {
+	if ( Ship_info[shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_AUTO_ATTACKS)) {
 		aip->target_objnum = -1;
 	}
 
@@ -14512,7 +14523,7 @@ int find_ship_name(char *name)
 {
 	int	i;
 
-	for (i=0; i<Num_ship_types; i++)
+	for (i=0; i<Num_ship_classes; i++)
 		if (!strcmp(Ship_info[i].name, name))
 			return i;
 
@@ -14962,8 +14973,8 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 		}
 
 		//	Don't penalize much at all for hitting cargo
-		if (sip->flags & (SIF_CARGO | SIF_SENTRYGUN)) {
-			damage /= 10.0f;
+		if (sip->class_type > -1) {
+			damage *= Ship_types[sip->class_type].ff_multiplier;
 		}
 
 		//	Hit ship, but not targeting it, so it's not so heinous, maybe an accident.

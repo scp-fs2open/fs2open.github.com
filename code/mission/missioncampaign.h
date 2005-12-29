@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.8 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.7  2004/10/31 21:53:24  taylor
  * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
  *
@@ -407,7 +411,7 @@ typedef struct campaign {
 	int		loop_reentry;								// mission number to return to after loop is finished
 	int		realign_required;							// are any missions missing alignment info? (Fred)
 	int		num_players;								// valid in multiplayer campaigns -- number of players campaign supports.
-	ubyte		ships_allowed[MAX_SHIP_TYPES];		// which ships the player can use
+	ubyte		ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
 	ubyte		weapons_allowed[MAX_WEAPON_TYPES];	// which weapons the player can use
 	cmission	missions[MAX_CAMPAIGN_MISSIONS];		// decription of the missions
 } campaign;

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.287 $
- * $Date: 2005-12-28 22:21:04 $
- * $Author: taylor $
+ * $Revision: 2.288 $
+ * $Date: 2005-12-29 08:08:42 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.287  2005/12/28 22:21:04  taylor
+ * Oops, bit of debug stuff I didn't mean to commit (but something similar is needed so you'll it again)
+ *
  * Revision 2.286  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -1811,7 +1814,7 @@
 
 #include <setjmp.h>
 
-
+#include "globalincs/def_files.h"
 #include "ship/ship.h"
 #include "object/object.h"
 #include "weapon/weapon.h"
@@ -1927,7 +1930,7 @@ exited_ship Ships_exited[MAX_EXITED_SHIPS];
 int Num_exited_ships;
 
 int	Num_engine_wash_types;
-int	Num_ship_types;
+int	Num_ship_classes;
 int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
@@ -1937,10 +1940,12 @@ int	Player_ship_class;	// needs to be player specific, move to player structure
 ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
 ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
 
-ship_info		Ship_info[MAX_SHIP_TYPES];
+ship_info		Ship_info[MAX_SHIP_CLASSES];
 ship_subsys		Ship_subsystems[MAX_SHIP_SUBOBJECTS];
 ship_subsys		ship_subsys_free_list;
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
+
+std::vector<ship_type_info> Ship_types;
 
 std::vector<ArmorType> Armor_types;
 /*
@@ -1952,102 +1957,10 @@ static int Missile_out_snd_timer;	// timer so we play out of laser sound effect 
 
 // structure used to hold ship counts of particular types.  The order in which these appear is crucial
 // since the goal code relies on this placement to find the array index in the Ship_counts array
-char *Ship_type_names[MAX_SHIP_TYPE_COUNTS] = {
-//XSTR:OFF
-	"no type",
-	"cargo",
-	"fighter/bomber",
-	"cruiser",
-	"freighter",
-	"capital",
-	"transport",
-	"support",
-	"navbuoy",
-	"sentry gun",
-	"escape pod",
-	"super cap",
-	"stealth",
-	"fighter",
-	"bomber",
-	"drydock",
-	"awacs",
-	"gas miner",
-	"corvette",
-	"knossos device"
-//XSTR:ON
-};
+//WMC - This should be fixed with new system.
 
-int Ship_type_flags[MAX_SHIP_TYPE_COUNTS] = {
-	0,
-	SIF_CARGO,
-	SIF_FIGHTER | SIF_BOMBER,
-	SIF_CRUISER,
-	SIF_FREIGHTER,
-	SIF_CAPITAL,
-	SIF_TRANSPORT,
-	SIF_SUPPORT,
-	SIF_NAVBUOY,
-	SIF_SENTRYGUN,
-	SIF_ESCAPEPOD,
-	SIF_SUPERCAP,
-	SIF_SHIP_CLASS_STEALTH,
-	SIF_FIGHTER,
-	SIF_BOMBER,
-	SIF_DRYDOCK,
-	SIF_AWACS,
-	SIF_GAS_MINER,
-	SIF_CORVETTE,
-	SIF_KNOSSOS_DEVICE,
-};
-
-// Goober5000
-/*
-Priority order is:
-SHIP_TYPE_NONE
-SHIP_TYPE_NAVBUOY
-SHIP_TYPE_SENTRYGUN
-SHIP_TYPE_ESCAPEPOD
-SHIP_TYPE_CARGO
-SHIP_TYPE_REPAIR_REARM
-SHIP_TYPE_STEALTH
-SHIP_TYPE_FIGHTER
-SHIP_TYPE_BOMBER
-SHIP_TYPE_FIGHTER_BOMBER
-SHIP_TYPE_TRANSPORT
-SHIP_TYPE_FREIGHTER
-SHIP_TYPE_AWACS
-SHIP_TYPE_GAS_MINER
-SHIP_TYPE_CRUISER
-SHIP_TYPE_CORVETTE
-SHIP_TYPE_CAPITAL
-SHIP_TYPE_SUPERCAP
-SHIP_TYPE_DRYDOCK
-SHIP_TYPE_KNOSSOS_DEVICE
-*/
-int Ship_type_priorities[MAX_SHIP_TYPE_COUNTS] = {
-	0,	// SHIP_TYPE_NONE
-	4,	// SHIP_TYPE_CARGO
-	9,	// SHIP_TYPE_FIGHTER_BOMBER
-	14,	// SHIP_TYPE_CRUISER
-	11,	// SHIP_TYPE_FREIGHTER
-	16,	// SHIP_TYPE_CAPITAL
-	10,	// SHIP_TYPE_TRANSPORT
-	5,	// SHIP_TYPE_REPAIR_REARM
-	1,	// SHIP_TYPE_NAVBUOY
-	2,	// SHIP_TYPE_SENTRYGUN
-	3,	// SHIP_TYPE_ESCAPEPOD
-	17,	// SHIP_TYPE_SUPERCAP
-	6,	// SHIP_TYPE_STEALTH
-	7,	// SHIP_TYPE_FIGHTER
-	8,	// SHIP_TYPE_BOMBER
-	18,	// SHIP_TYPE_DRYDOCK
-	12,	// SHIP_TYPE_AWACS
-	13,	// SHIP_TYPE_GAS_MINER
-	15,	// SHIP_TYPE_CORVETTE
-	19,	// SHIP_TYPE_KNOSSOS_DEVICE
-};
-
-ship_counts Ship_counts[MAX_SHIP_TYPE_COUNTS];
+std::vector<ship_counts>	Ship_type_counts;
+//ship_counts Ship_counts[MAX_SHIP_TYPE_COUNTS];
 
 // I don't want to do an AI cargo check every frame, so I made a global timer to limit check to
 // every SHIP_CARGO_CHECK_INTERVAL ms.  Didn't want to make a timer in each ship struct.  Ensure
@@ -2308,13 +2221,14 @@ char current_ship_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
 //rather than simply replacing the previous entry
 void init_ship_entry(int ship_info_index)
 {
-	Assert(ship_info_index > -1 && ship_info_index < MAX_SHIP_TYPES);
+	Assert(ship_info_index > -1 && ship_info_index < MAX_SHIP_CLASSES);
 	ship_info *sip = &Ship_info[ship_info_index];
 	int i,j;
 	
 	sip->name[0] = '\0';
 	sprintf(sip->short_name, "ShipClass%d", ship_info_index);
 	sip->species = 0;
+	sip->class_type = -1;
 	
 	sip->type_str = sip->maneuverability_str = sip->armor_str = sip->manufacturer_str = NULL;
 	sip->desc = NULL;
@@ -2555,8 +2469,8 @@ int parse_ship(bool replace)
 		}
 		
 		//Check if there are too many ship classes
-		if(Num_ship_types >= MAX_SHIP_TYPES) {
-			Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first %d will be used", buf, MAX_SHIP_TYPES, Num_ship_types);
+		if(Num_ship_classes >= MAX_SHIP_CLASSES) {
+			Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first %d will be used", buf, MAX_SHIP_CLASSES, Num_ship_classes);
 			
 			//Skip the rest of the ships in non-modular tables, since we can't add them.
 			if(!replace) {
@@ -2566,12 +2480,12 @@ int parse_ship(bool replace)
 		}
 		
 		//Init vars
-		sip = &Ship_info[Num_ship_types];
+		sip = &Ship_info[Num_ship_classes];
 		first_time = true;
-		init_ship_entry(Num_ship_types);
+		init_ship_entry(Num_ship_classes);
 		
 		strcpy(sip->name, buf);
-		Num_ship_types++;
+		Num_ship_classes++;
 	}
 
 	if(optional_string("$Short name:"))
@@ -3159,8 +3073,20 @@ strcpy(parse_error_text, temp_error);
 	{
 		char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
 		int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
+		int new_type_idx = -1;
+		int last_recogged_type = -1;	//So we can keep track of types
 		for ( i=0; i<num_strings; i++ )
 		{
+			new_type_idx = ship_type_name_lookup(ship_strings[i]);
+			if(new_type_idx > -1) {
+				//WMC - only set if this particular entry doesn't have a preceding value
+				if(last_recogged_type < 0) {
+					sip->class_type = new_type_idx;
+				}
+				//K so we know this type
+				last_recogged_type = i;
+			}
+
 			if (!stricmp(NOX("no_collide"), ship_strings[i]))
 				sip->flags &= ~SIF_DO_COLLISION_CHECK;
 			else if (!stricmp(NOX("player_ship"), ship_strings[i]))
@@ -3194,7 +3120,7 @@ strcpy(parse_error_text, temp_error);
 			else if ( !stricmp( NOX("escapepod"), ship_strings[i]))
 				sip->flags |= SIF_ESCAPEPOD;
 			else if ( !stricmp( NOX("stealth"), ship_strings[i]))
-				sip->flags |= SIF_SHIP_CLASS_STEALTH;
+				sip->flags |= SIF_STEALTH;
 			else if ( !stricmp( NOX("no type"), ship_strings[i]))
 				sip->flags |= SIF_NO_SHIP_TYPE;
 			else if ( !stricmp( NOX("ship copy"), ship_strings[i]))
@@ -3229,7 +3155,7 @@ strcpy(parse_error_text, temp_error);
 				sip->flags2 |= SIF2_GENERATE_HUD_ICON;
 			else if( !stricmp( NOX("no weapon damage scaling"), ship_strings[i]))
 				sip->flags2 |= SIF2_DISABLE_WEAP_DAMAGE_SCALING;
-			else
+			else if(last_recogged_type != i)
 				Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 		}
 
@@ -3539,12 +3465,12 @@ strcpy(parse_error_text, temp_error);
 
 	// if the ship is a stealth ship
 	if ( optional_string("$Stealth:") ) {
-		sip->flags |= SIF_SHIP_CLASS_STEALTH;
+		sip->flags |= SIF_STEALTH;
 	}
 	
 	else if ( optional_string("$Stealth") ) {
 		Warning(LOCATION, "Ship %s is missing the colon after \"$Stealth\". Note that you may also use the ship flag \"stealth\".", sip->name);
-		sip->flags |= SIF_SHIP_CLASS_STEALTH;
+		sip->flags |= SIF_STEALTH;
 	}
 
 	// parse contrail info
@@ -3760,137 +3686,142 @@ strcpy(parse_error_text, temp_error);
 			if(optional_string("+carry-no-damage"))
 				sp->carry_no_damage = 1;
 
-			while(optional_string("$animation=triggered")){
-				queued_animation *current_trigger;
+			while(optional_string("$animation:"))
+			{
+				stuff_string(name_tmp, F_NAME);
+				if(!stricmp(name_tmp, "triggered"))
+				{
+					queued_animation *current_trigger;
 
-				sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
-				current_trigger = &sp->triggers[sp->n_triggers];
-				sp->n_triggers++;
-				//add a new trigger
+					sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
+					current_trigger = &sp->triggers[sp->n_triggers];
+					sp->n_triggers++;
+					//add a new trigger
 
-				required_string("$type=");
-				char atype[128];
-				stuff_string(atype, F_NAME, NULL);
-				current_trigger->type = match_type(atype);
+					required_string("$type:");
+					char atype[128];
+					stuff_string(atype, F_NAME, NULL);
+					current_trigger->type = match_type(atype);
 
-				if(optional_string("+sub_type:")){
-					stuff_int(&current_trigger->subtype);
-				}else{
-					current_trigger->subtype = ANIMATION_SUBTYPE_ALL;
-				}
-
-
-				if(current_trigger->type == TRIGGER_TYPE_INITAL){
-					//the only thing inital animation type needs is the angle, 
-					//so to save space lets just make everything optional in this case
-
-					if(optional_string("+delay:"))
-						stuff_int(&current_trigger->start); 
-					else
-						current_trigger->start = 0;
-	
-					if(optional_string("+absolute_angle:")){
-						current_trigger->absolute = true;
-						stuff_vector(&current_trigger->angle );
-	
-						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
-						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
-						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
+					if(optional_string("+sub_type:")){
+						stuff_int(&current_trigger->subtype);
 					}else{
-						current_trigger->absolute = false;
-						if(!optional_string("+relative_angle:"))
-							required_string("+relative_angle:");
-
-						stuff_vector(&current_trigger->angle );
-	
-						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
-						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
-						current_trigger->angle.xyz.z = fl_radian(current_trigger->angle.xyz.z);
+						current_trigger->subtype = ANIMATION_SUBTYPE_ALL;
 					}
-	
-					if(optional_string("+velocity:")){
+
+
+					if(current_trigger->type == TRIGGER_TYPE_INITAL){
+						//the only thing inital animation type needs is the angle, 
+						//so to save space lets just make everything optional in this case
+
+						if(optional_string("+delay:"))
+							stuff_int(&current_trigger->start); 
+						else
+							current_trigger->start = 0;
+		
+						if(optional_string("+absolute_angle:")){
+							current_trigger->absolute = true;
+							stuff_vector(&current_trigger->angle );
+		
+							current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
+							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
+							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
+						}else{
+							current_trigger->absolute = false;
+							if(!optional_string("+relative_angle:"))
+								required_string("+relative_angle:");
+
+							stuff_vector(&current_trigger->angle );
+		
+							current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
+							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
+							current_trigger->angle.xyz.z = fl_radian(current_trigger->angle.xyz.z);
+						}
+		
+						if(optional_string("+velocity:")){
+							stuff_vector(&current_trigger->vel );
+							current_trigger->vel.xyz.x = fl_radian(current_trigger->vel.xyz.x);
+							current_trigger->vel.xyz.y = fl_radian(current_trigger->vel.xyz.y);
+							current_trigger->vel.xyz.z = fl_radian(current_trigger->vel.xyz.z);
+						}
+		
+						if(optional_string("+acceleration:")){
+							stuff_vector(&current_trigger->accel );
+							current_trigger->accel.xyz.x = fl_radian(current_trigger->accel.xyz.x);
+							current_trigger->accel.xyz.y = fl_radian(current_trigger->accel.xyz.y);
+							current_trigger->accel.xyz.z = fl_radian(current_trigger->accel.xyz.z);
+						}
+
+						if(optional_string("+time:"))
+							stuff_int(&current_trigger->end );
+						else
+							current_trigger->end = 0;
+					}else{
+
+						required_string("+delay:");
+						stuff_int(&current_trigger->start); 
+
+						current_trigger->reverse_start = -1;	//have some code figure this out for us
+
+						if(optional_string("+reverse_delay:"))stuff_int(&current_trigger->reverse_start);
+		
+						if(optional_string("+absolute_angle:")){
+							current_trigger->absolute = true;
+							stuff_vector(&current_trigger->angle );
+		
+							current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
+							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
+							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
+						}else{
+							current_trigger->absolute = false;
+							required_string("+relative_angle:");
+							stuff_vector(&current_trigger->angle );
+		
+							current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
+							current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
+							current_trigger->angle.xyz.z = fl_radian(current_trigger->angle.xyz.z);
+						}
+		
+						required_string("+velocity:");
 						stuff_vector(&current_trigger->vel );
 						current_trigger->vel.xyz.x = fl_radian(current_trigger->vel.xyz.x);
 						current_trigger->vel.xyz.y = fl_radian(current_trigger->vel.xyz.y);
 						current_trigger->vel.xyz.z = fl_radian(current_trigger->vel.xyz.z);
-					}
-	
-					if(optional_string("+acceleration:")){
+		
+						required_string("+acceleration:");
 						stuff_vector(&current_trigger->accel );
 						current_trigger->accel.xyz.x = fl_radian(current_trigger->accel.xyz.x);
 						current_trigger->accel.xyz.y = fl_radian(current_trigger->accel.xyz.y);
 						current_trigger->accel.xyz.z = fl_radian(current_trigger->accel.xyz.z);
+
+						if(optional_string("+time:"))
+							stuff_int(&current_trigger->end );
+						else
+							current_trigger->end = 0;
+
+						if(optional_string("$Sound:")){
+							required_string("+Start:");
+							stuff_int(&current_trigger->start_sound );
+							required_string("+Loop:");
+							stuff_int(&current_trigger->loop_sound );
+							required_string("+End:");
+							stuff_int(&current_trigger->end_sound );
+							required_string("+Radius:");
+							stuff_float(&current_trigger->snd_rad );
+						}else{
+							current_trigger->start_sound = -1;
+							current_trigger->loop_sound = -1;
+							current_trigger->end_sound = -1;
+							current_trigger->snd_rad = 0;
+						}
 					}
 
-					if(optional_string("+time:"))
-						stuff_int(&current_trigger->end );
-					else
-						current_trigger->end = 0;
-				}else{
-
-					required_string("+delay:");
-					stuff_int(&current_trigger->start); 
-
-					current_trigger->reverse_start = -1;	//have some code figure this out for us
-
-					if(optional_string("+reverse_delay:"))stuff_int(&current_trigger->reverse_start);
-	
-					if(optional_string("+absolute_angle:")){
-						current_trigger->absolute = true;
-						stuff_vector(&current_trigger->angle );
-	
-						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
-						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
-						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.z);
-					}else{
-						current_trigger->absolute = false;
-						required_string("+relative_angle:");
-						stuff_vector(&current_trigger->angle );
-	
-						current_trigger->angle.xyz.x = fl_radian(current_trigger->angle.xyz.x);
-						current_trigger->angle.xyz.y = fl_radian(current_trigger->angle.xyz.y);
-						current_trigger->angle.xyz.z = fl_radian(current_trigger->angle.xyz.z);
-					}
-	
-					required_string("+velocity:");
-					stuff_vector(&current_trigger->vel );
-					current_trigger->vel.xyz.x = fl_radian(current_trigger->vel.xyz.x);
-					current_trigger->vel.xyz.y = fl_radian(current_trigger->vel.xyz.y);
-					current_trigger->vel.xyz.z = fl_radian(current_trigger->vel.xyz.z);
-	
-					required_string("+acceleration:");
-					stuff_vector(&current_trigger->accel );
-					current_trigger->accel.xyz.x = fl_radian(current_trigger->accel.xyz.x);
-					current_trigger->accel.xyz.y = fl_radian(current_trigger->accel.xyz.y);
-					current_trigger->accel.xyz.z = fl_radian(current_trigger->accel.xyz.z);
-
-					if(optional_string("+time:"))
-						stuff_int(&current_trigger->end );
-					else
-						current_trigger->end = 0;
-
-					if(optional_string("$Sound:")){
-						required_string("+Start:");
-						stuff_int(&current_trigger->start_sound );
-						required_string("+Loop:");
-						stuff_int(&current_trigger->loop_sound );
-						required_string("+End:");
-						stuff_int(&current_trigger->end_sound );
-						required_string("+Radius:");
-						stuff_float(&current_trigger->snd_rad );
-					}else{
-						current_trigger->start_sound = -1;
-						current_trigger->loop_sound = -1;
-						current_trigger->end_sound = -1;
-						current_trigger->snd_rad = 0;
-					}
+					current_trigger->corect();
+					//makes sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
 				}
-
-				current_trigger->corect();
-				//makes sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
-
-			}
-			if(optional_string("$animation=linked")){
+				else if(!stricmp(name_tmp, "linked"))
+				{
+				}
 			}
 		}
 		break;
@@ -3933,7 +3864,7 @@ strcpy(parse_error_text, temp_error);
 	if ( sip->flags & SIF_SHIP_COPY ) {
 		int index;
 
-		index = ship_info_base_lookup( Num_ship_types - 1 );		// Num_ship_types - 1 is our current entry into the array
+		index = ship_info_base_lookup( Num_ship_classes - 1 );		// Num_ship_classes - 1 is our current entry into the array
 		if ( index == -1 ) {
 			strcpy( name_tmp, sip->name );
 			end_string_at_first_hash_symbol(name_tmp);
@@ -3974,6 +3905,194 @@ engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
 
 	//Didn't find anything.
 	return NULL;
+}
+
+void parse_ship_type()
+{
+	char name_buf[NAME_LENGTH];
+	bool nocreate = false;
+	ship_type_info *stp = NULL;
+
+	required_string("$Name:");
+	stuff_string(name_buf, F_NAME);
+
+	if(optional_string("+nocreate")) {
+		nocreate = true;
+	}
+
+	int idx = ship_type_name_lookup(name_buf);
+	if(idx > -1)
+	{
+		stp = &Ship_types[idx];
+	}
+	else
+	{
+		if(!nocreate)
+		{
+			Ship_types.resize(Ship_types.size()+1);
+			stp = &Ship_types[Ship_types.size()-1];
+			strcpy(stp->name, name_buf);
+		}
+	}
+
+	//Okay, now we should have the values to parse
+	//But they aren't here!! :O
+	//Now they are!! Whee fogging!!
+
+	if(optional_string("$Counts for Alone:")) {
+		stuff_boolean_flag(&stp->message_bools, STI_MSG_COUNTS_FOR_ALONE);
+	}
+
+	if(optional_string("$Praise Destruction:")) {
+		stuff_boolean_flag(&stp->message_bools, STI_MSG_PRAISE_DESTRUCTION);
+	}
+
+	if(optional_string("$On Hotkey list:")) {
+		stuff_boolean_flag(&stp->hud_bools, STI_HUD_HOTKEY_ON_LIST);
+	}
+
+	if(optional_string("$Target as Threat:")) {
+		stuff_boolean_flag(&stp->hud_bools, STI_HUD_TARGET_AS_THREAT);
+	}
+
+	if(optional_string("$Show Attack Direction:")) {
+		stuff_boolean_flag(&stp->hud_bools, STI_HUD_SHOW_ATTACK_DIRECTION);
+	}
+
+	if(optional_string("$Scannable:")) {
+		stuff_boolean_flag(&stp->ship_bools, STI_SHIP_SCANNABLE);
+	}
+
+	if(optional_string("$Warp Pushes:")) {
+		stuff_boolean_flag(&stp->ship_bools, STI_SHIP_WARP_PUSHES);
+	}
+
+	if(optional_string("$Warp Pushable:")) {
+		stuff_boolean_flag(&stp->ship_bools, STI_SHIP_WARP_PUSHABLE);
+	}
+
+	if(optional_string("$Max Debris Speed:")) {
+		stuff_float(&stp->debris_max_speed);
+	}
+
+	if(optional_string("$FF Multiplier:")) {
+		stuff_float(&stp->ff_multiplier);
+	}
+
+	if(optional_string("$EMP Multiplier:")) {
+		stuff_float(&stp->emp_multiplier);
+	}
+
+	if(optional_string("$Beams Easily Hit:")) {
+			stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
+		}
+
+	if(optional_string("$Fog:"))
+	{
+		if(optional_string("+Start dist:")) {
+			stuff_float(&stp->fog_start_dist);
+		}
+
+		if(optional_string("+Compl dist:")) {
+			stuff_float(&stp->fog_complete_dist);
+		}
+	}
+
+	if(optional_string("$AI:"))
+	{
+		if(optional_string("+Valid goals:")) {
+			parse_string_flag_list(&stp->ai_valid_goals, Ai_goal_names, Num_ai_goals);
+		}
+
+		if(optional_string("+Accept Player Orders:")) {
+			stuff_boolean_flag(&stp->ai_bools, STI_AI_ACCEPT_PLAYER_ORDERS);
+		}
+
+		if(optional_string("+Player Orders:")) {
+			parse_string_flag_list(&stp->ai_player_orders, Comm_orders, Num_comm_orders);
+		}
+
+		if(optional_string("+Auto attacks:")) {
+			stuff_boolean_flag(&stp->ai_bools, STI_AI_AUTO_ATTACKS);
+		}
+
+		if(optional_string("+Attempt broadside:")) {
+			stuff_boolean_flag(&stp->ai_bools, STI_AI_ATTEMPT_BROADSIDE);
+		}
+
+		if(optional_string("+Guards attack this:")) {
+			stuff_boolean_flag(&stp->ai_bools, STI_AI_GUARDS_ATTACK);
+		}
+
+		if(optional_string("+Turrets attack this:")) {
+			stuff_boolean_flag(&stp->ai_bools, STI_AI_TURRETS_ATTACK);
+		}
+
+		if(optional_string("+Can form wing:")) {
+			stuff_boolean_flag(&stp->ai_bools, STI_AI_CAN_FORM_WING);
+		}
+
+		if(optional_string("+Active docks:")) {
+			parse_string_flag_list(&stp->ai_active_dock, Dock_type_names, Num_dock_type_names);
+		}
+
+		if(optional_string("+Passive docks:")) {
+			parse_string_flag_list(&stp->ai_passive_dock, Dock_type_names, Num_dock_type_names);
+		}
+	}
+}
+/*
+void init_shiptype_defs()
+{
+	Ship_types.resize(19);
+
+	int idx = 0;
+	ship_type_info *sti = NULL;
+
+	sti = &Ship_types[idx++];
+	strcpy(sti->name, "Navbuoy");
+	sti->debris_max_speed = 200.0f;
+	sti->ff_multiplier = 1.0f;
+	sti->emp_multiplier = 10.0f;
+	sti->fog_start_dist = 10.0f;
+	sti->fog_complete_dist = 500.0f;
+	sti->ai_bools |= STI_AI_TURRETS_ATTACK;
+
+	sti = &Ship_types[idx++];
+	strcpy(sti->name, "Sentry gun");
+	sti->message_bools |= STI_MSG_COUNTS_FOR_ALONE;
+	sti->hud_bools |= STI_HUD_HOTKEY_ON_LIST | STI_HUD_TARGET_AS_THREAT | STI_HUD_SHOW_ATTACK_DIRECTION;
+	sti->debris_max_speed = 200.0f;
+	sti->ff_multiplier = 0.10f;
+	sti->emp_multiplier = 10.0f;
+	sti->fog_start_dist = 10.0f;
+	sti->fog_complete_dist = 500.0f;
+	sti->ai_bools |= STI_AI_AUTO_ATTACKS | STI_AI_GUARDS_ATTACK | STI_AI_TURRETS_ATTACK;
+
+}*/
+
+void parse_shiptype_tbl(char *longname)
+{
+	lcl_ext_open();
+	if(longname != NULL) {
+		read_file_text(longname);
+	} else {
+		read_file_text_from_array(defaults_get_file("objecttypes.tbl"));
+		//init_shiptype_defs();
+	}
+	reset_parse();
+
+	if(optional_string("#Ship Types"))
+	{
+		while (required_string_either("#End", "$Name:"))
+		{
+			parse_ship_type();
+		}
+
+		required_string("#End");
+	}
+
+	lcl_ext_close();
 }
 
 void parse_shiptbl(char* longname)
@@ -4023,7 +4142,7 @@ void parse_shiptbl(char* longname)
 	int i = 0;
 	if(!strlen(default_player_ship))
 	{
-		for(i = 0; i < Num_ship_types; i++)
+		for(i = 0; i < Num_ship_classes; i++)
 		{
 			if(Ship_info[i].flags & SIF_DEFAULT_PLAYER_SHIP) {
 				strcpy(default_player_ship, Ship_info[i].name);
@@ -4032,9 +4151,9 @@ void parse_shiptbl(char* longname)
 		}
 	}
 
-	if(i == Num_ship_types)
+	if(i == Num_ship_classes)
 	{
-		for(i = 0; i < Num_ship_types; i++)
+		for(i = 0; i < Num_ship_classes; i++)
 		{
 			if(Ship_info[i].flags & SIF_PLAYER_SHIP) {
 				strcpy(default_player_ship, Ship_info[i].name);
@@ -4042,9 +4161,9 @@ void parse_shiptbl(char* longname)
 			}
 		}
 	}
-	if(i == Num_ship_types)
+	if(i == Num_ship_classes)
 	{
-		if(Num_ship_types > 0)
+		if(Num_ship_classes > 0)
 		{
 			strcpy(default_player_ship, Ship_info[0].name);
 		}
@@ -4081,29 +4200,50 @@ int ship_show_velocity_dot = 0;
 
 DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 
-
 // Called once at the beginning of the game to parse ships.tbl and stuff the Ship_info[]
 // structure
 void ship_init()
 {
 	int rval;
 
-	if ( !ships_inited ) {
-		
+	if ( !ships_inited )
+	{
+		int num_files;
+
+		CFILE *idt = cfopen("objecttypes.tbl", "rb");
+		int table_exists = (idt != NULL);
+		if (table_exists)
+			cfclose(idt);
+
+		// Goober5000 - if table doesn't exist, use the default table (see above)
+		if (table_exists)
+			parse_shiptype_tbl("objecttypes.tbl");
+		else
+			parse_shiptype_tbl(NULL);
+
+		//Then other ones
+		num_files = parse_modular_table( NOX("*-obt.tbm"), parse_shiptype_tbl );
+
+			if ( num_files > 0 ) {
+				Module_ship_weapons_loaded = true;
+			}
+
+
+		//ships.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {
 			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", current_ship_table, rval);
 		} 
 		else
 		{			
 			Num_engine_wash_types = 0;
-			Num_ship_types = 0;
+			Num_ship_classes = 0;
 			strcpy(default_player_ship, "");
 
 			//Parse main TBL first
 			parse_shiptbl("ships.tbl");
 
 			//Then other ones
-			int num_files = parse_modular_table( NOX("*-shp.tbm"), parse_shiptbl );
+			num_files = parse_modular_table( NOX("*-shp.tbm"), parse_shiptbl );
 
 			if ( num_files > 0 ) {
 				Module_ship_weapons_loaded = true;
@@ -4136,7 +4276,7 @@ void ship_level_init()
 
 	// Mark all the models as invalid, since all the models get paged out 
 	// between levels.
-	for (i=0; i<MAX_SHIP_TYPES; i++ )	{
+	for (i=0; i<MAX_SHIP_CLASSES; i++ )	{
 		Ship_info[i].modelnum = -1;
 		Ship_info[i].modelnum_hud = -1;
 	}
@@ -4203,11 +4343,6 @@ void ship_level_init()
 
 	Laser_energy_out_snd_timer = 1;
 	Missile_out_snd_timer		= 1;
-
-	for (i = 0; i < MAX_SHIP_TYPE_COUNTS; i++ ) {
-		Ship_counts[i].total = 0;
-		Ship_counts[i].killed = 0;
-	}
 
 	ship_obj_list_init();
 
@@ -4349,102 +4484,27 @@ void physics_ship_init(object *objp)
 }
 
 //Function to get the type of the given ship as a string
+//WMC - I created you, I can DESTROY you!
 int ship_get_type(char* output, ship_info *sip)
 {
-	switch(sip->flags & SIF_ALL_SHIP_TYPES)
-	{
-		case SIF_SUPPORT:
-			strcpy(output, "Support");
-			return 1;
-		case SIF_CARGO:
-			strcpy(output, "Cargo");
-			return 1;
-		case SIF_FIGHTER:
-			strcpy(output, "Fighter");
-			return 1;
-		case SIF_BOMBER:
-			strcpy(output, "Bomber");
-			return 1;
-		case SIF_CRUISER:
-			strcpy(output, "Cruiser");
-			return 1;
-		case SIF_FREIGHTER:
-			strcpy(output, "Freighter");
-			return 1;
-		case SIF_CAPITAL:
-			if(sip->max_speed == 0)
-				strcpy(output, "Installation");
-			else
-				strcpy(output, "Destroyer");
-			return 1;
-		case SIF_TRANSPORT:
-			strcpy(output, "Transport");
-			return 1;
-		case SIF_NAVBUOY:
-			strcpy(output, "Nav buoy");
-			return 1;
-		case SIF_SENTRYGUN:
-			strcpy(output, "Sentry gun");
-			return 1;
-		case SIF_ESCAPEPOD:
-			strcpy(output, "Escape pod");
-			return 1;
-		case SIF_NO_SHIP_TYPE:
-			strcpy(output, "None");
-			return 1;
-		case SIF_SHIP_CLASS_STEALTH:
-			strcpy(output, "Stealthed");
-			return 1;
-		case SIF_SUPERCAP:
-			strcpy(output, "Superdestroyer");
-			return 1;
-		case SIF_DRYDOCK:
-			strcpy(output, "Drydock");
-			return 1;
-		case SIF_CORVETTE:
-			strcpy(output, "Corvette");
-			return 1;
-		case SIF_GAS_MINER:
-			strcpy(output, "Gas miner");
-			return 1;
-		case SIF_AWACS:
-			strcpy(output, "AWACS");
-			return 1;
-		case SIF_KNOSSOS_DEVICE:
-			strcpy(output, "Subspace portal");
-			return 1;
-		default:
-			strcpy(output, "Unknown (or mixed type)");
-			return 0;
+	if(sip->class_type < 0) {
+		strcpy(output, "Unknown");
+		return 0;
 	}
+
+	strcpy(output, Ship_types[sip->class_type].name);
+	return 1;
 }
 
 // function to set the orders allowed for a ship -- based on ship type.  This value might get overridden
 // by a value in the mission file.
 int ship_get_default_orders_accepted( ship_info *sip )
 {
-	int ship_info_flag;
-
-	ship_info_flag = sip->flags;
-
-	if ( ship_info_flag & SIF_FIGHTER )
-		return FIGHTER_MESSAGES;
-	else if ( ship_info_flag & SIF_BOMBER )
-		return BOMBER_MESSAGES;
-	else if ( ship_info_flag & (SIF_CRUISER | SIF_GAS_MINER | SIF_AWACS | SIF_CORVETTE) )
-		return CRUISER_MESSAGES;
-	else if ( ship_info_flag & SIF_FREIGHTER )
-		return FREIGHTER_MESSAGES;
-	else if ( ship_info_flag & SIF_CAPITAL )
-		return CAPITAL_MESSAGES;
-	else if ( ship_info_flag & SIF_SUPERCAP )
-		return SUPERCAP_MESSAGES;
-	else if ( ship_info_flag & SIF_TRANSPORT )
-		return TRANSPORT_MESSAGES;
-	else if ( ship_info_flag & SIF_SUPPORT )
-		return SUPPORT_MESSAGES;
-	else
+	if(sip->class_type > -1) {
+		return Ship_types[sip->class_type].ai_player_orders;
+	} else {
 		return 0;
+	}
 }
 
 vec3d get_submodel_offset(int model, int submodel){
@@ -4875,7 +4935,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 	// if we need to get information for all our subsystems, we need to find another ship with the same model
 	// number as our own and that has the model information
 	// if ( subsystems_needed == sip->n_subsystems ) {
-		for ( i = 0; i < Num_ship_types; i++ ) {
+		for ( i = 0; i < Num_ship_classes; i++ ) {
 			model_subsystem *msp;
 
 			if ( (Ship_info[i].modelnum != model_num) || (&Ship_info[i] == sip) ){
@@ -5783,7 +5843,7 @@ void ship_destroyed( int num )
 	// look at the ignore flag for the ship (if not in a wing), or the ignore flag for the wing
 	// (if the ship is in a wing), and add to the kill count if the flags are not set
 	if ( !(shipp->flags & SF_IGNORE_COUNT) ||  ((shipp->wingnum != -1) && !(Wings[shipp->wingnum].flags & WF_IGNORE_COUNT)) )
-		ship_add_ship_type_kill_count( Ship_info[shipp->ship_info_index].flags );
+		ship_add_ship_type_kill_count( shipp->ship_info_index );
 
 	// if ship belongs to a wing -- increment the total number of ships in the wing destroyed
 	if ( shipp->wingnum != -1 ) {
@@ -7616,13 +7676,13 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		return -1;
 	}
 
-	Assert((ship_type >= 0) && (ship_type < Num_ship_types));
+	Assert((ship_type >= 0) && (ship_type < Num_ship_classes));
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[n];
 
 	//  check to be sure that this ship falls into a ship size category!!!
 	//  get Allender or Mike if you hit this Assert
-	Assert( sip->flags & (SIF_SMALL_SHIP | SIF_BIG_SHIP | SIF_CAPITAL | SIF_NO_SHIP_TYPE | SIF_NOT_FLYABLE | SIF_ESCAPEPOD | SIF_SUPERCAP | SIF_DRYDOCK | SIF_KNOSSOS_DEVICE) );
+	//WMC - I hope this isn't really needed anymore. Took it out.
 
 	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 	shipp->modelnum = sip->modelnum;
@@ -7665,7 +7725,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	if(strlen(sip->pof_file_hud)){
 		// check to see if a "real" ship uses this model. if so, load it up for him so that subsystems are setup properly
 		int idx;
-		for(idx=0; idx<Num_ship_types; idx++){
+		for(idx=0; idx<Num_ship_classes; idx++){
 			if(!stricmp(Ship_info[idx].pof_file, sip->pof_file_hud)){
 				Ship_info[idx].modelnum = model_load(Ship_info[idx].pof_file, Ship_info[idx].n_subsystems, &Ship_info[idx].subsystems[0]);
 			}
@@ -8629,7 +8689,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	//shipp->targeting_laser_objnum = -1; // erase old laser obj num if it has any -Bobboau
 
 	// bogus 
-	if((shipp->ship_info_index < 0) || (shipp->ship_info_index >= Num_ship_types)){
+	if((shipp->ship_info_index < 0) || (shipp->ship_info_index >= Num_ship_classes)){
 		return 0;
 	}
 	if((shipp->ai_index < 0) || (shipp->ai_index >= MAX_AI_INFO)){
@@ -9044,7 +9104,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							if ( (target != NULL) && (range_to_target < flak_range) )
 							{
 								//set flak range to range of ship
-								flak_pick_range(&Objects[weapon_objnum],&predicted_pos,wepstr);
+								flak_pick_range(&Objects[weapon_objnum], &firing_pos, &predicted_pos,wepstr);
 							}
 							else
 							{
@@ -10191,7 +10251,7 @@ int ship_info_lookup(char *name)
 		return -1;
 	}
 
-	for (i=0; i < Num_ship_types; i++)
+	for (i=0; i < Num_ship_classes; i++)
 		if (!stricmp(name, Ship_info[i].name))
 			return i;
 
@@ -10240,20 +10300,24 @@ int ship_name_lookup(char *name, int inc_players)
 
 int ship_type_name_lookup(char *name)
 {
-	int idx;
-
 	// bogus
-	if(name == NULL){
+	if(name == NULL || !strlen(name)){
 		return -1;
 	}
-
+/*
 	// look through the Ship_type_names array
 	for(idx=0; idx<MAX_SHIP_TYPE_COUNTS; idx++){
 		if(!stricmp(name, Ship_type_names[idx])){
 			return idx;
 		}
 	}
-
+*/
+	//Look through Ship_types array
+	for(int idx=0; idx < Ship_types.size(); idx++){
+		if(!stricmp(name, Ship_types[idx].name)){
+			return idx;
+		}
+	}
 	// couldn't find it
 	return -1;
 }
@@ -11273,7 +11337,7 @@ void ship_close()
 	}
 
 	// free memory alloced for subsystem storage
-	for ( i = 0; i < Num_ship_types; i++ ) {
+	for ( i = 0; i < Num_ship_classes; i++ ) {
 		if ( Ship_info[i].subsystems != NULL ) {
 			for(n = 0; n < Ship_info[i].n_subsystems; n++) {
 				if (Ship_info[i].subsystems[n].triggers != NULL) {
@@ -11336,7 +11400,7 @@ void ship_close()
 	}
 
 	// free info from parsed table data
-	for (i=0; i<MAX_SHIP_TYPES; i++) {
+	for (i=0; i<MAX_SHIP_CLASSES; i++) {
 		if(Ship_info[i].type_str != NULL){
 			vm_free(Ship_info[i].type_str);
 			Ship_info[i].type_str = NULL;
@@ -11623,83 +11687,44 @@ DCF_BOOL( auto_repair, Ship_auto_repair );
 // count of ships of that type (called from MissionParse.cpp).  The second function adds to the kill total
 // of ships of a particular type.  Note that we use the ship_info flags structure member to determine
 // what is happening.
-void ship_add_ship_type_count( int ship_info_flag, int num )
+//WMC - ALERT!!!!!!!!!!!
+//These two functions did something weird with fighters/bombers. I don't
+//think that not doing this will break anything, but it might.
+//If it does, get me. OR someone smart.
+void ship_add_ship_type_count( int ship_info_index, int num )
 {
-	if ( ship_info_flag & SIF_CARGO )
-		Ship_counts[SHIP_TYPE_CARGO].total += num;
-	else if ( (ship_info_flag & SIF_FIGHTER) || (ship_info_flag & SIF_BOMBER) )
-		Ship_counts[SHIP_TYPE_FIGHTER_BOMBER].total += num;
-	else if ( ship_info_flag & SIF_CRUISER )
-		Ship_counts[SHIP_TYPE_CRUISER].total += num;
-	else if ( ship_info_flag & SIF_CORVETTE )
-		Ship_counts[SHIP_TYPE_CORVETTE].total += num;
-	else if ( ship_info_flag & SIF_GAS_MINER )
-		Ship_counts[SHIP_TYPE_GAS_MINER].total += num;
-	else if ( ship_info_flag & SIF_AWACS )
-		Ship_counts[SHIP_TYPE_AWACS].total += num;
-	else if ( ship_info_flag & SIF_FREIGHTER )
-		Ship_counts[SHIP_TYPE_FREIGHTER].total += num;
-	else if ( ship_info_flag & SIF_CAPITAL )
-		Ship_counts[SHIP_TYPE_CAPITAL].total += num;
-	else if ( ship_info_flag & SIF_TRANSPORT )
-		Ship_counts[SHIP_TYPE_TRANSPORT].total += num;
-	else if ( ship_info_flag & SIF_SUPPORT )
-		Ship_counts[SHIP_TYPE_REPAIR_REARM].total += num;
-	else if ( ship_info_flag & SIF_NO_SHIP_TYPE )
-		Ship_counts[SHIP_TYPE_NONE].total += num;
-	else if ( ship_info_flag & SIF_NAVBUOY ) {
-		Ship_counts[SHIP_TYPE_NAVBUOY].total += num;
-	} else if ( ship_info_flag & SIF_SENTRYGUN ) {
-		Ship_counts[SHIP_TYPE_SENTRYGUN].total += num;
-	} else if ( ship_info_flag & SIF_ESCAPEPOD ) {
-		Ship_counts[SHIP_TYPE_ESCAPEPOD].total += num;
-	} else if ( ship_info_flag & SIF_SUPERCAP ) {
-		Ship_counts[SHIP_TYPE_SUPERCAP].total += num;
-	} else if ( ship_info_flag & SIF_DRYDOCK ) {
-		Ship_counts[SHIP_TYPE_DRYDOCK].total += num;
-	} else if ( ship_info_flag & SIF_KNOSSOS_DEVICE){
-		Ship_counts[SHIP_TYPE_KNOSSOS_DEVICE].total += num;
+	int type = ship_class_query_general_type(ship_info_index);
+
+	//Ship has no type or something
+	if(type < 0) {
+		return;
 	}
-	else
-		Int3();		//get allender -- unknown ship type
+
+	//Resize if we need to
+	if(type >= Ship_type_counts.size()) {
+		Ship_type_counts.resize(type+1);
+	}
+
+	//Add it
+	Ship_type_counts[type].total += num;
 }
 
-void ship_add_ship_type_kill_count( int ship_info_flag )
+void ship_add_ship_type_kill_count( int ship_info_index )
 {
-	if ( ship_info_flag & SIF_CARGO )
-		Ship_counts[SHIP_TYPE_CARGO].killed++;
-	else if ( (ship_info_flag & SIF_FIGHTER) || (ship_info_flag & SIF_BOMBER) )
-		Ship_counts[SHIP_TYPE_FIGHTER_BOMBER].killed++;
-	else if ( ship_info_flag & SIF_CRUISER )
-		Ship_counts[SHIP_TYPE_CRUISER].killed++;
-	else if ( ship_info_flag & SIF_CORVETTE )
-		Ship_counts[SHIP_TYPE_CORVETTE].killed++;
-	else if ( ship_info_flag & SIF_AWACS )
-		Ship_counts[SHIP_TYPE_AWACS].killed++;
-	else if ( ship_info_flag & SIF_GAS_MINER )
-		Ship_counts[SHIP_TYPE_GAS_MINER].killed++;
-	else if ( ship_info_flag & SIF_FREIGHTER )
-		Ship_counts[SHIP_TYPE_FREIGHTER].killed++;
-	else if ( ship_info_flag & SIF_CAPITAL )
-		Ship_counts[SHIP_TYPE_CAPITAL].killed++;
-	else if ( ship_info_flag & SIF_TRANSPORT )
-		Ship_counts[SHIP_TYPE_TRANSPORT].killed++;
-	else if ( ship_info_flag & SIF_SUPPORT )
-		Ship_counts[SHIP_TYPE_REPAIR_REARM].killed++;
-	else if ( ship_info_flag & SIF_SENTRYGUN )
-		Ship_counts[SHIP_TYPE_SENTRYGUN].killed++;
-	else if ( ship_info_flag & SIF_ESCAPEPOD )
-		Ship_counts[SHIP_TYPE_ESCAPEPOD].killed++;
-	else if ( ship_info_flag & SIF_NO_SHIP_TYPE )
-		Ship_counts[SHIP_TYPE_NONE].killed++;
-	else if ( ship_info_flag & SIF_SUPERCAP ) 
-		Ship_counts[SHIP_TYPE_SUPERCAP].killed++;
-	else if ( ship_info_flag & SIF_DRYDOCK ) 
-		Ship_counts[SHIP_TYPE_DRYDOCK].killed++;
-	else if ( ship_info_flag & SIF_KNOSSOS_DEVICE )
-		Ship_counts[SHIP_TYPE_KNOSSOS_DEVICE].killed++;
-	else
-		Int3();		//get allender -- unknown ship type
+	int type = ship_class_query_general_type(ship_info_index);
+
+	//Ship has no type or something
+	if(type < 0) {
+		return;
+	}
+
+	//Resize if we need to
+	if(type >= Ship_type_counts.size()) {
+		Ship_type_counts.resize(type+1);
+	}
+
+	//Add it
+	Ship_type_counts[type].killed++;
 }
 
 int ship_query_general_type(int ship)
@@ -11714,65 +11739,8 @@ int ship_query_general_type(ship *shipp)
 
 int ship_class_query_general_type(int ship_class)
 {
-	int flags;
-
-	flags = Ship_info[ship_class].flags;
-	switch (flags & SIF_ALL_SHIP_TYPES) {
-		case SIF_CARGO:
-			return SHIP_TYPE_CARGO;
-
-		case SIF_FIGHTER:
-		case SIF_BOMBER:
-			return SHIP_TYPE_FIGHTER_BOMBER;
-
-		case SIF_CRUISER:
-			return SHIP_TYPE_CRUISER;
-
-		case SIF_FREIGHTER:
-			return SHIP_TYPE_FREIGHTER;
-
-		case SIF_CAPITAL:
-			return SHIP_TYPE_CAPITAL;
-
-		case SIF_TRANSPORT:
-			return SHIP_TYPE_TRANSPORT;
-
-		case SIF_NO_SHIP_TYPE:
-			return SHIP_TYPE_NONE;
-
-		case SIF_SUPPORT:
-			return SHIP_TYPE_REPAIR_REARM;
-
-		case SIF_NAVBUOY:
-			return SHIP_TYPE_NAVBUOY;
-
-		case SIF_SENTRYGUN:
-			return SHIP_TYPE_SENTRYGUN;
-
-		case SIF_ESCAPEPOD:
-			return SHIP_TYPE_ESCAPEPOD;
-
-		case SIF_SUPERCAP:
-			return SHIP_TYPE_SUPERCAP;
-
-		case SIF_DRYDOCK:
-			return SHIP_TYPE_DRYDOCK;
-
-		case SIF_CORVETTE:
-			return SHIP_TYPE_CORVETTE;
-		
-		case SIF_AWACS:
-			return SHIP_TYPE_AWACS;
-
-		case SIF_GAS_MINER:
-			return SHIP_TYPE_GAS_MINER;
-
-		case SIF_KNOSSOS_DEVICE:
-			return SHIP_TYPE_KNOSSOS_DEVICE;
-	}
-
-	Error(LOCATION, "Ship type flag is unknown.  Flags value is 0x%x", flags);
-	return SHIP_TYPE_NONE;
+	//This is quick
+	return Ship_info[ship_class].class_type;
 }
 
 // returns true if the docker can (is allowed) to dock with dockee
@@ -12867,7 +12835,7 @@ void ship_maybe_praise_player(ship *deader_sp)
 	}
 
 	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
-	if ( Ship_info[deader_sp->ship_info_index].flags & SIF_NOT_FLYABLE ) {
+	if ( Ship_info[deader_sp->ship_info_index].class_type > 0 && (Ship_types[Ship_info[deader_sp->ship_info_index].class_type].message_bools & STI_MSG_PRAISE_DESTRUCTION) ) {
 		return;
 	}
 
@@ -13424,16 +13392,16 @@ void ship_page_in()
 
 	int *ship_class_used = NULL;
 
-	ship_class_used = new int[Num_ship_types];
+	ship_class_used = new int[Num_ship_classes];
 
 	Verify( ship_class_used != NULL );
 
 	// Mark all ship classes as not used
-	memset( ship_class_used, 0, Num_ship_types * sizeof(int) );
+	memset( ship_class_used, 0, Num_ship_classes * sizeof(int) );
 
 	// Mark any support ship types as used
 	// 
-	for (i=0; i<Num_ship_types; i++ )	{
+	for (i=0; i<Num_ship_classes; i++ )	{
 		if ( Ship_info[i].flags & SIF_SUPPORT )	{
 			nprintf(( "Paging", "Found support ship '%s'\n", Ship_info[i].name ));
 			ship_class_used[i]++;
@@ -13510,8 +13478,8 @@ void ship_page_in()
 	//
 	int num_ship_types_used = 0;
 
-	for (i=0; i<Num_ship_types; i++ )
-	{//Num_ship_types not MAX_SHIPTYPES ship_class_used is dynamicly allocated to Num_ship_types -Bobboau
+	for (i=0; i<Num_ship_classes; i++ )
+	{//Num_ship_classes not MAX_SHIPTYPES ship_class_used is dynamicly allocated to Num_ship_classes -Bobboau
 		if ( ship_class_used[i]  )
 		{
 			ship_info *sip = &Ship_info[i];
@@ -13524,7 +13492,7 @@ void ship_page_in()
 			// See if this model was previously loaded by another ship
 			int model_previously_loaded = -1;
 			int ship_previously_loaded = -1;
-			for (j=0; j<Num_ship_types; j++ )	{
+			for (j=0; j<Num_ship_classes; j++ )	{
 				if ( (Ship_info[j].modelnum > -1) && !stricmp(sip->pof_file, Ship_info[j].pof_file) )	{
 					// Model already loaded
 					model_previously_loaded = Ship_info[j].modelnum;
@@ -14231,7 +14199,7 @@ int ship_get_texture(int bitmap)
 	int idx;
 
 	// check all ship types
-	for(idx=0; idx<Num_ship_types; idx++){
+	for(idx=0; idx<Num_ship_classes; idx++){
 		if((Ship_info[idx].modelnum >= 0) && model_find_texture(Ship_info[idx].modelnum, bitmap) == 1){
 			return idx;
 		}
@@ -14437,7 +14405,7 @@ int ship_is_beginning_warpout_speedup(object *objp)
 int ship_get_species_by_type(int ship_info_index)
 {
 	// sanity
-	if((ship_info_index < 0) || (ship_info_index >= Num_ship_types)){
+	if((ship_info_index < 0) || (ship_info_index >= Num_ship_classes)){
 		return -1;
 	}
 
@@ -15052,8 +15020,13 @@ int ship_tvt_wing_lookup(char *wing_name)
 int ship_class_compare(int ship_class_1, int ship_class_2)
 {
 	// grab priorities
+	//WMC - just use table order
+	int priority1 = ship_class_query_general_type(ship_class_1);
+	int priority2 = ship_class_query_general_type(ship_class_2);
+	/*
 	int priority1 = Ship_type_priorities[ship_class_query_general_type(ship_class_1)];
 	int priority2 = Ship_type_priorities[ship_class_query_general_type(ship_class_2)];
+	*/
 
 	// standard compare
 	if (priority1 < priority2)

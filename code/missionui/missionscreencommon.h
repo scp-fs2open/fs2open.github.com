@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.11 $
- * $Date: 2005-11-16 05:46:27 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * $NoKeywords: $
  *
@@ -178,7 +178,7 @@ extern int *Wl_pool;
 //////////////////////////////////////////////
 // Ship pool
 //////////////////////////////////////////////
-extern int Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
+extern int Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
 extern int *Ss_pool;
 
 //////////////////////////////////////////////
@@ -190,7 +190,7 @@ typedef struct loadout_data
 	char				last_modified[DATE_TIME_LENGTH];	// when mission was last modified
 	wss_unit			unit_data[MAX_WSS_SLOTS];			// ship and weapon data
 	int				weapon_pool[MAX_WEAPON_TYPES];	// available weapons
-	int				ship_pool[MAX_SHIP_TYPES];			// available ships
+	int				ship_pool[MAX_SHIP_CLASSES];			// available ships
 } loadout_data;
 
 extern loadout_data Player_loadout;

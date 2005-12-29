@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-12-22 04:35:04 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/12/22 04:35:04  taylor
+ * more big-endian fixes
+ * fix the totally retarded check I made for multi fighter beams (they really don't work right yet anyway) since it broke normal beams for clients
+ *
  * Revision 2.40  2005/10/10 17:21:08  taylor
  * remove NO_NETWORK
  *
@@ -763,14 +767,14 @@ int multi_ship_class_lookup(char* ship_name)
 	// find the ship_info index for the ship_name
 
 	player_ship_class = -1;
-	for (i = 0; i < Num_ship_types; i++) {
+	for (i = 0; i < Num_ship_classes; i++) {
 		if ( !stricmp(Ship_info[i].name, ship_name) ) {
 			player_ship_class = i;
 			break;
 		}
 	} // end for 
 
-	if (i == Num_ship_types){
+	if (i == Num_ship_classes){
 		return -1;
 	}
 
@@ -1082,18 +1086,18 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 
 		// find the ship that matches the string stored in default_player_ship
 
-		for (i = 0; i < Num_ship_types; i++) {
+		for (i = 0; i < Num_ship_classes; i++) {
 			if ( !stricmp(Ship_info[i].name, default_player_ship) ) {
 				player_ship_class = i;
 				break;
 			}
 		}
 
-		if (i == Num_ship_types)
+		if (i == Num_ship_classes)
 			Assert(0);
 	}
 	
-	if ( player_ship_class >= Num_ship_types ) {
+	if ( player_ship_class >= Num_ship_classes ) {
 		player_ship_class = multi_ship_class_lookup(default_player_ship);
 		nprintf(("Network","Network ==> Ship class was %d Creating a default ship for multiplayer\n", player_ship_class));
 	}

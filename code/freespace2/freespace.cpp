@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.200 $
- * $Date: 2005-12-28 22:17:01 $
- * $Author: taylor $
+ * $Revision: 2.201 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.200  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.199  2005/12/06 03:13:49  taylor
  * fix quite a few CFILE issues:
  *   use #define's for path lengths when possible so it's easier to move between functions
@@ -2936,7 +2942,7 @@ int game_start_mission()
 		ship *shipp;
 		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != NULL)){
 			// bogus
-			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= Num_ship_types)){
+			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= Num_ship_classes)){
 				moveup = GET_NEXT(moveup);
 				continue;
 			}
@@ -4369,7 +4375,7 @@ void game_tst_mark(object *objp, ship *shipp)
 	}
 
 	// bogus
-	if((objp == NULL) || (shipp == NULL) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= Num_ship_types)){
+	if((objp == NULL) || (shipp == NULL) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= Num_ship_classes)){
 		return;
 	}
 	sip = &Ship_info[shipp->ship_info_index];
@@ -5375,7 +5381,7 @@ void game_simulation_frame()
 		ship_info *sip;
 		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != NULL)){
 			// bogus
-			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= Num_ship_types)){
+			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= Num_ship_classes)){
 				moveup = GET_NEXT(moveup);
 				continue;
 			}
@@ -8481,8 +8487,8 @@ int game_main(char *cmdline)
 	int state;		
 
 	// check if networking should be disabled, this could probably be done later but the sooner the better
-	// TODO: remove this when multi is fixed to handle more than MAX_SHIP_TYPES_MULTI
-	if ( MAX_SHIP_TYPES > MAX_SHIP_TYPES_MULTI ) {
+	// TODO: remove this when multi is fixed to handle more than MAX_SHIP_CLASSES_MULTI
+	if ( Num_ship_classes > MAX_SHIP_CLASSES_MULTI ) {
 		Networking_disabled = 1;
 	}
 
@@ -9395,7 +9401,7 @@ void Do_model_timings_test()
 	}
 	
 	// Load them all
-	for (i=0; i<Num_ship_types; i++ )	{
+	for (i=0; i<Num_ship_classes; i++ )	{
 		Ship_info[i].modelnum = model_load( Ship_info[i].pof_file, 0, NULL );
 
 		model_used[Ship_info[i].modelnum%MAX_POLYGON_MODELS]++;

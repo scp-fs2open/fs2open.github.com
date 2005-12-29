@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-12-28 22:17:01 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.28  2005/12/01 07:45:21  Goober5000
  * bypass annoying warnings when loading optional models
  * --Goober5000
@@ -505,7 +511,7 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 
 	sound_index = SND_WARP_IN;
 
-	if((ship_class >= 0) && (ship_class < Num_ship_types)){
+	if((ship_class >= 0) && (ship_class < Num_ship_classes)){
 		if ( Ship_info[ship_class].flags & SIF_HUGE_SHIP ) {
 			sound_index = SND_CAPITAL_WARP_IN;
 			fb->flags |= FBF_WARP_CAPITAL_SIZE;

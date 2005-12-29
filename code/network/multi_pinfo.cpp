@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.12  2005/07/18 03:45:08  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -818,7 +821,7 @@ void multi_pinfo_build_stats()
 	/*
 	fighter_kills = 0;
 	other_kills = 0;
-	for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+	for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
 		if(sc->kills[idx] > 0){
 			if(Ship_info[idx].flags & SIF_FIGHTER){
 				fighter_kills += sc->kills[idx];

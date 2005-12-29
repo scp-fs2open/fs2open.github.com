@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-05-24 20:55:21 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/05/24 20:55:21  taylor
+ * make sure batch rendering of lasers happens after fog is disabled in nebula missions
+ *
  * Revision 2.8  2005/04/05 05:53:22  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -380,7 +383,10 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		sorted_obj * os = &Sorted_objects[Object_sort_order[i]];
 		os->obj->flags |= OF_WAS_RENDERED;
 		//This is for ship cockpits. Bobb, feel free to optimize this any way you see fit
-		if(os->obj == Viewer_obj && os->obj->type == OBJ_SHIP && (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY)) && (Ship_info[Ships[os->obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL))
+		if(os->obj == Viewer_obj
+			&& os->obj->type == OBJ_SHIP
+			&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP))
+			&& (Ship_info[Ships[os->obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL))
 		{
 			(*draw_viewer_last) = true;
 			continue;

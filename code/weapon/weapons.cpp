@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.164  2005/12/28 22:17:02  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.163  2005/12/24 04:18:57  taylor
  * fix a couple of beam section issues when using modular tables
  *
@@ -1716,6 +1722,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->arm_time = 0;
 	wip->arm_dist = 0.0f;
 	wip->arm_radius = 0.0f;
+	wip->det_range = 0.0f;
 	
 	wip->armor_factor = 1.0f;
 	wip->shield_factor = 1.0f;
@@ -2215,6 +2222,10 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("$Arm radius:")) {
 		stuff_float(&wip->arm_radius);
+	}
+
+	if(optional_string("$Detonation Range:")) {
+		stuff_float(&wip->det_range);
 	}
 
 	parse_shockwave_info(&wip->shockwave, "$");
@@ -5541,8 +5552,8 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 		Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
 	}
 }
-
-const float weapon_electronics_scale[MAX_SHIP_TYPES]=
+/*
+const float weapon_electronics_scale[MAX_SHIP_TYPE_COUNTS]=
 {
 	0.0f,	//SHIP_TYPE_NONE
 	10.0f,	//SHIP_TYPE_CARGO
@@ -5564,7 +5575,7 @@ const float weapon_electronics_scale[MAX_SHIP_TYPES]=
 	1.0f,	//SHIP_TYPE_GAS_MINER
 	0.3333f,	//SHIP_TYPE_CORVETTE
 	0.10f,	//SHIP_TYPE_KNOSSOS_DEVICE
-};
+};*/
 
 extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
 
@@ -5586,7 +5597,10 @@ void weapon_do_electronics_affect(object *ship_objp, vec3d *blast_pos, int wi_in
 	wip = &Weapon_info[wi_index];
 
 	int ship_type=ship_query_general_type(shipp);
-	float base_time=((float)wip->elec_time*(weapon_electronics_scale[ship_type]*wip->elec_intensity));
+	float base_time = (float)wip->elec_time;
+	if(ship_type > -1) {
+		base_time *= (Ship_types[ship_type].emp_multiplier * wip->elec_intensity);
+	}
 	float sub_time;
 
 	for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) )

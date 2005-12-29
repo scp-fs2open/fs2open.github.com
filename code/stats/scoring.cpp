@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-10-10 17:21:10 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2005-12-29 08:08:42 $
+ * $Author: wmcoolmon $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/10/10 17:21:10  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.13  2005/07/22 10:18:40  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -353,7 +356,7 @@ void init_scoring_element(scoring_struct *s)
 		s->medals[i] = 0;
 	}
 
-	for (i=0; i<MAX_SHIP_TYPES; i++){
+	for (i=0; i<MAX_SHIP_CLASSES; i++){
 		s->kills[i] = 0;
 		s->m_kills[i] = 0;
 	}
@@ -430,7 +433,7 @@ void scoring_level_init( scoring_struct *scp )
 	scp->ms_bonehead_hits=0;
 	scp->m_bonehead_kills=0;
 
-   for (i=0; i<MAX_SHIP_TYPES; i++){
+   for (i=0; i<MAX_SHIP_CLASSES; i++){
 		scp->m_kills[i] = 0;
 		scp->m_okKills[i]=0;
 	}
@@ -490,7 +493,7 @@ void scoring_eval_badges(scoring_struct *sc)
 	// to determine badges, we count kills based on fighter/bomber types.  We must count kills in
 	// all time stats + current mission stats.  And, only for enemy fighters/bombers
 	total_kills = 0;
-	for (i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for (i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		if ( (Ship_info[i].flags & SIF_FIGHTER) || (Ship_info[i].flags & SIF_BOMBER) ) {
 			total_kills += sc->m_okKills[i];
 			total_kills += sc->kills[i];
@@ -556,7 +559,7 @@ void scoring_do_accept(scoring_struct *score)
 	score->s_bonehead_hits += score->ms_bonehead_hits;
 	score->bonehead_kills += score->m_bonehead_kills;
 
-	for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+	for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
 		score->kills[idx] = (int)(score->kills[idx] + score->m_okKills[idx]);
 	}
 
@@ -599,7 +602,7 @@ void scoring_backout_accept( scoring_struct *score )
 	score->s_bonehead_hits -= score->ms_bonehead_hits;
 	score->bonehead_kills -= score->m_bonehead_kills;
 
-	for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+	for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
 		score->kills[idx] = (unsigned short)(score->kills[idx] - score->m_okKills[idx]);
 	}
 

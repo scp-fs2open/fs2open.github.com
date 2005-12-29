@@ -9,15 +9,21 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.38 $
- * $Author: taylor $
- * $Date: 2005-12-28 22:17:01 $
+ * $Revision: 2.39 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-12-29 08:08:39 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.37  2005/12/13 21:48:39  wmcoolmon
  * Music TBL to proper XMT file (-mus)
  *
@@ -487,6 +493,7 @@ extern void stuff_int(int *i);
 extern void stuff_sound(int *dest);
 extern void stuff_ubyte(ubyte *i);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
+extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern int stuff_float_list(float* flp, int max_floats);
 extern int stuff_vector_list(vec3d *vlp, int max_vecs);
@@ -503,6 +510,7 @@ extern int get_string(char *str);
 extern void stuff_parenthesized_vector(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
+extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern int check_for_string(char *pstr);
 extern int check_for_string_raw(char *pstr);
 

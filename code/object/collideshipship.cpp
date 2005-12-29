@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-10-09 09:13:29 $
+ * $Revision: 2.17 $
+ * $Date: 2005-12-29 08:08:39 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/10/09 09:13:29  wmcoolmon
+ * Added warpin/warpout speed override values to ships.tbl
+ *
  * Revision 2.15  2005/09/25 08:25:14  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -1595,8 +1598,10 @@ void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_ob
 
 {
 	// Move player out of the way of a BIG|HUGE ship warping in or out
-	if (Ship_info[Ships[big_obj->instance].ship_info_index].flags & (SIF_CAPITAL|SIF_SUPERCAP)) {
-		if (Ship_info[Ships[small_obj->instance].ship_info_index].flags & (SIF_SMALL_SHIP)) {
+	int big_class = Ship_info[Ships[big_obj->instance].ship_info_index].class_type;
+	int small_class = Ship_info[Ships[small_obj->instance].ship_info_index].class_type;
+	if (big_class > -1 && Ship_types[big_class].ship_bools & STI_SHIP_WARP_PUSHES) {
+		if (small_class > -1 && Ship_types[small_class].ship_bools & STI_SHIP_WARP_PUSHABLE) {
 			float big_speed = vm_vec_mag_quick(&big_obj->phys_info.vel);
 			if (big_speed > 3*big_obj->phys_info.max_vel.xyz.z) {
 				// push player away in direction perp to forward of big ship
