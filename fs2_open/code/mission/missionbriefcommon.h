@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.12 $
- * $Date: 2005-11-21 23:55:57 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2005-12-29 00:49:43 $
+ * $Author: phreak $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/11/21 23:55:57  taylor
+ * move generic_* functions to their own file
+ *
  * Revision 2.11  2005/09/27 02:36:57  Goober5000
  * clarification
  * --Goober5000
@@ -277,6 +280,7 @@
 #define		BI_HIGHLIGHT		(1<<0)
 #define		BI_SHOWHIGHLIGHT	(1<<1)
 #define		BI_FADEIN			(1<<2)
+#define		BI_MIRROR_ICON		(1<<3)	//mirror the briefing icon so it points the other way - phreak
 
 typedef struct brief_icon
 {
