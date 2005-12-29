@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.151 $
- * $Date: 2005-12-29 00:52:57 $
- * $Author: phreak $
+ * $Revision: 2.152 $
+ * $Date: 2005-12-29 04:33:15 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2005/12/29 00:52:57  phreak
+ * changed around aabitmap calls to accept a "mirror" parameter.  defaults to false, and is only true for mirrored briefing icons.
+ * If the mirror param is true, then the picture is mirrored about the y-axis so left becomes right and vice versa.
+ *
  * Revision 2.150  2005/12/28 22:24:48  taylor
  * save screenshots into <gamedir>/screenshots/
  * another attempt at fixing popups with single colors (saves memory too, hope it doesn't blow up)
@@ -4319,7 +4323,7 @@ void gr_opengl_init(int reinit)
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
-//	mprintf(( "  Using %s texture filer.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
+	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
