@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.47 $
- * $Date: 2005-11-21 23:55:57 $
- * $Author: taylor $
+ * $Revision: 2.48 $
+ * $Date: 2005-12-29 00:49:43 $
+ * $Author: phreak $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2005/11/21 23:55:57  taylor
+ * move generic_* functions to their own file
+ *
  * Revision 2.46  2005/11/08 01:04:00  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -1179,10 +1182,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 	vec3d		*pos = NULL;
 	int			bx,by,bc,w,h,icon_w,icon_h,icon_bitmap=-1;
 	float			bxf, byf, dist=0.0f;
+	bool mirror_icon;
 
 	Assert( Briefing != NULL );
 	
 	bi = &Briefing->stages[stage_num].icons[icon_num];
+	mirror_icon = (bi->flags & BI_MIRROR_ICON)? true:false;
 
 	icon_move_info *mi, *next;
 	int interp_pos_found = 0;
@@ -1305,7 +1310,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, true);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, true, mirror_icon);
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
@@ -1324,7 +1329,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 //				hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, true) == 0 ) {
+				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, true, mirror_icon) == 0 ) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1334,7 +1339,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, true);
+			gr_aabitmap(bx, by, true,mirror_icon);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
