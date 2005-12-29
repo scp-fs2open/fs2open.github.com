@@ -9,16 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.38 $
- * $Date: 2005-12-28 22:17:01 $
- * $Author: taylor $
- * $Revision: 2.38 $
- * $Date: 2005-12-28 22:17:01 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
+ * $Revision: 2.39 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.37  2005/12/06 02:55:22  taylor
  * little consolidation:
  *   move path separator stuff here from cfile.h
@@ -533,6 +539,12 @@ inline void vec3d::operator= (vertex&vert){
 inline void vec3d::set_screen_vert(vertex&vert){
 	memcpy(this,&vert.sx,sizeof(vec3d));
 }
+
+//def_list
+typedef struct flag_def_list {
+	char *name;
+	int def;
+} def_list;
 
 extern int spec;
 

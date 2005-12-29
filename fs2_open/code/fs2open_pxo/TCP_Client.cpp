@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.32 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 1.33 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.31  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -233,7 +236,7 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 
 	fs2open_pilot_update *p_update = (fs2open_pilot_update *) PacketBuffer;
 	fs2open_ship_typekill *type_kills = (fs2open_ship_typekill *) (PacketBuffer + 204);
-	int *medals = (int*)(PacketBuffer + 204 + (sizeof(fs2open_ship_typekill) * MAX_SHIP_TYPES));
+	int *medals = (int*)(PacketBuffer + 204 + (sizeof(fs2open_ship_typekill) * MAX_SHIP_CLASSES));
 	
 
 	p_update->pid = PCKT_PILOT_UPDATE2;
@@ -255,12 +258,12 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 	p_update->SecShots =		pl->stats.s_shots_fired; 
 	p_update->SecHits =			pl->stats.s_shots_hit; 
 	p_update->SecFHits =		pl->stats.s_bonehead_hits;
-	p_update->ship_types =		MAX_SHIP_TYPES;
+	p_update->ship_types =		MAX_SHIP_CLASSES;
 	p_update->num_medals =		MAX_MEDALS;
 	p_update->rank	=			pl->stats.rank;
 
 	int i;
-	for (i = 0; i < MAX_SHIP_TYPES; i++)
+	for (i = 0; i < MAX_SHIP_CLASSES; i++)
 	{
 
 		strncpy(type_kills[i].name, Ship_info[i].name, 32);
@@ -274,7 +277,7 @@ int SendPlayerData(int SID, const char* player_name, const char* user, player *p
 	}
 
 	int packet_size = 204; // size of all the ints only
-	packet_size += sizeof(fs2open_ship_typekill) * MAX_SHIP_TYPES; // add the size of the ship_kills array
+	packet_size += sizeof(fs2open_ship_typekill) * MAX_SHIP_CLASSES; // add the size of the ship_kills array
 	packet_size += sizeof(int) * MAX_MEDALS; // add the size of the ship_kills array
 
 	// send Packet
@@ -400,11 +403,11 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 
          
 			if (p_reply->ship_types == 0)
-				memset(pl->stats.kills, 0, sizeof(int) * MAX_SHIP_TYPES);
+				memset(pl->stats.kills, 0, sizeof(int) * MAX_SHIP_CLASSES);
 			else
 			{
-				// i should really assert p_reply->ship_types == MAX_SHIP_TYPES
-				for (i = 0; i < MAX_SHIP_TYPES && p_reply->ship_types; i++)
+				// i should really assert p_reply->ship_types == MAX_SHIP_CLASSES
+				for (i = 0; i < MAX_SHIP_CLASSES && p_reply->ship_types; i++)
 				{
 					pl->stats.kills[i] = type_kills[i].kills;
 				}
@@ -414,7 +417,7 @@ int GetPlayerData(int SID, const char* player_name, player *pl, const char* mast
 				memset(pl->stats.medals, 0, sizeof(int) * MAX_MEDALS);
 			else
 			{
-				// i should really assert p_reply->ship_types == MAX_SHIP_TYPES
+				// i should really assert p_reply->ship_types == MAX_SHIP_CLASSES
 				for (i = 0; i < MAX_MEDALS && p_reply->num_medals; i++)
 				{
 					pl->stats.medals[i] = medals[i];

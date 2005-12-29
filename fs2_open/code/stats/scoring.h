@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:35:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-12-29 08:08:42 $
+ * $Author: wmcoolmon $
  *
  * Scoring system structures, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/05/08 20:20:46  wmcoolmon
  * Dynamically allocated medals
  *
@@ -258,8 +262,8 @@ typedef struct scoring_struct {
 	int rank;								// all time rank
 	int medals[MAX_MEDALS];				// all time medal counts
 
-	//ushort kills[MAX_SHIP_TYPES];		// only valid kills (i.e. not on friendlies).
-	int kills[MAX_SHIP_TYPES];		//DTP for bumped max_ships
+	//ushort kills[MAX_SHIP_CLASSES];		// only valid kills (i.e. not on friendlies).
+	int kills[MAX_SHIP_CLASSES];		//DTP for bumped max_ships
 	int assists;							// alltime assists
 	int kill_count;						// total alltime kills
 	int kill_count_ok;					// total valid alltime kills (no friendlies)
@@ -284,10 +288,10 @@ typedef struct scoring_struct {
 	int m_promotion_earned;				// was a promotion earned.  Calculated after mission is over
 
 	int m_score;
-	//ushort m_kills[MAX_SHIP_TYPES];     // this will represent all kills in the mission (bonehead or not)
-	int m_kills[MAX_SHIP_TYPES];		//DTP max
-	//ushort m_okKills[MAX_SHIP_TYPES];   // this will be only the "valid" kills the player made
-	int m_okKills[MAX_SHIP_TYPES];			//DTP max
+	//ushort m_kills[MAX_SHIP_CLASSES];     // this will represent all kills in the mission (bonehead or not)
+	int m_kills[MAX_SHIP_CLASSES];		//DTP max
+	//ushort m_okKills[MAX_SHIP_CLASSES];   // this will be only the "valid" kills the player made
+	int m_okKills[MAX_SHIP_CLASSES];			//DTP max
 	int m_kill_count;						// total kills for this mission
 	int m_kill_count_ok;             // total (non-friendly) kills for this mission
 	int m_assists;							// player assits for the mission

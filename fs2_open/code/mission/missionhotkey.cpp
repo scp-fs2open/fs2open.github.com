@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-10-29 22:09:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/10/29 22:09:29  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.10  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -800,12 +804,8 @@ int hotkey_build_team_listing(int team, int y)
 
 		shipnum = Objects[so->objnum].instance;
 
-		// filter out cargo containers, navbouys, etc
-		if ( (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_HARMLESS) && !(Ship_info[Ships[shipnum].ship_info_index].flags & SIF_ESCAPEPOD) )
-			continue;
-
-		// don't process non-ships (dunno what that would be, though).
-		if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_NO_SHIP_TYPE)
+		// filter out cargo containers, navbouys, etc, and non-ships
+		if ( Ship_info[Ships[shipnum].ship_info_index].class_type < 0 || !(Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].hud_bools & STI_HUD_HOTKEY_ON_LIST ))
 			continue;
 
 		// don't process ships invisible to sensors, dying or departing

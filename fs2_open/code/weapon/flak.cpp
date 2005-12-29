@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-10-30 06:44:59 $
+ * $Revision: 2.7 $
+ * $Date: 2005-12-29 08:08:42 $
  * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/10/30 06:44:59  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.5  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -164,7 +167,7 @@ void flak_delete(int flak_index)
 }
 
 // given a just fired flak shell, pick a detonating distance for it
-void flak_pick_range(object *objp, vec3d *predicted_target_pos, float weapon_subsys_strength)
+void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_pos, float weapon_subsys_strength)
 {
 	float final_range;
 	vec3d temp;
@@ -177,6 +180,13 @@ void flak_pick_range(object *objp, vec3d *predicted_target_pos, float weapon_sub
 	
 	// if the flak index is invalid, do nothing - if this fails the flak simply becomes a non-rendering bullet
 	if(Weapons[objp->instance].flak_index < 0){
+		return;
+	}
+
+	final_range = Weapon_info[Weapons[objp->instance].weapon_info_index].det_range;
+
+	if(final_range != 0.0f) {
+		flak_set_range(objp, firing_pos, final_range);
 		return;
 	}
 

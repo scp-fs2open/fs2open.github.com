@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.19 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 1.20 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.18  2005/09/27 05:25:18  Goober5000
  * initial commit of basic IFF code
  * --Goober5000
@@ -142,12 +145,12 @@
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST
 // ****************************************************************
-#define MAX_SHIP_TYPES_MULTI	130
+#define MAX_SHIP_CLASSES_MULTI	130
 
 #ifdef INF_BUILD
-#define MAX_SHIP_TYPES		250
+#define MAX_SHIP_CLASSES		250
 #else
-#define MAX_SHIP_TYPES		130
+#define MAX_SHIP_CLASSES		130
 #endif
 
 
@@ -230,7 +233,7 @@
 
 // from scoring.h
 // ARGH. IMPORTANT : do not change NUM_MEDALS without talking to DaveB first. It will affect the size of the scoring struct and hence, will break
-// a lot of PXO related stuff. SEE ALSO : MAX_SHIP_TYPES
+// a lot of PXO related stuff. SEE ALSO : MAX_SHIP_CLASSES
 #ifdef FS2_DEMO
 	//#define NUM_MEDALS			16
 #else 

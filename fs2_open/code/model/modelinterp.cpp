@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.136 $
- * $Date: 2005-12-16 06:54:10 $
- * $Author: taylor $
+ * $Revision: 2.137 $
+ * $Date: 2005-12-29 08:08:37 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2005/12/16 06:54:10  taylor
+ * apply at least some lighting to ship insignias rather than them being full bright
+ *
  * Revision 2.135  2005/12/15 16:31:03  taylor
  * fix limits checking messages to actually be useful and hit sooner (wireframe view of some hi-poly models was going out-of-bounds from normals)
  *
@@ -1769,6 +1772,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				if((Interp_flags & MR_EDGE_ALPHA))model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, false);
 				if((Interp_flags & MR_CENTER_ALPHA))model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, true);
 				SPECMAP = -1;
+				BUMPMAP = -1;
 			} else {
 
 				int vertnum = verts[i].vertnum;
@@ -1861,7 +1865,11 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 							texture = pm->textures[tmap_num];//here is were it picks the texture to render for normal-Bobboau
 						}
 
-						if((Detail.lighting > 2)  && (model_current_LOD < 1))SPECMAP = pm->specular_textures[tmap_num];
+						if((Detail.lighting > 2)  && (model_current_LOD < 1))
+						{
+							BUMPMAP = pm->bump_textures[tmap_num];
+							SPECMAP = pm->specular_textures[tmap_num];
+						}
 
 						if(glow_maps_active)
 						{
@@ -1915,6 +1923,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	cell_enabled = false;
 	GLOWMAP = -1;
 	SPECMAP = -1;
+	BUMPMAP = -1;
 
 	if (Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET) )	{
 	
@@ -5073,7 +5082,7 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 		return;
 	}
 
-	if ((ship_info_index >= 0) && (ship_info_index < Num_ship_types)) {
+	if ((ship_info_index >= 0) && (ship_info_index < Num_ship_classes)) {
 		sip = &Ship_info[ship_info_index];
 
 		// set nondarkening pixels	
@@ -5944,7 +5953,11 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 				texture = pm->textures[model->buffer[i].texture];//here is were it picks the texture to render for normal-Bobboau
 			}
 
-			if((Detail.lighting > 2)  && (model_current_LOD < 2))SPECMAP = pm->specular_textures[model->buffer[i].texture];
+			if((Detail.lighting > 2)  && (model_current_LOD < 2))
+			{
+				SPECMAP = pm->specular_textures[model->buffer[i].texture];
+				BUMPMAP = pm->bump_textures[model->buffer[i].texture];
+			}
 
 			if(glow_maps_active)
 			{
@@ -6005,6 +6018,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 	}
 	GLOWMAP = -1;
 	SPECMAP = -1;
+	BUMPMAP = -1;
 
 //	if(model->flat_buffer != -1)gr_render_buffer(model->flat_buffer);
 	//we don't need this
@@ -6343,7 +6357,8 @@ char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] = {
 "\"docked\"",
 "\"primary_bank\"",
 "\"secondary_bank\"",
-"\"door\""
+"\"door\"",
+"\"afterburner\"",
 };
 
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2005-12-29 08:08:34 $
+ * $Author: wmcoolmon $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -182,13 +186,21 @@ struct object;
 #define DEPART_ITEM					(1<<14)
 #define DISABLE_SUBSYSTEM_ITEM	(1<<15)
 
+//WMC - Just change Comm_orders.
+//I hate to leave this MAX_ here, but it's easier for checking flags.
 #define MAX_SHIP_ORDERS				13			// Must sync correctly with Comm_orders array in HUDsquadmsg.cpp
+// data structure to hold character string of commands for comm menu
+typedef flag_def_list comm_order;
+
+extern comm_order Comm_orders[];
+extern int Num_comm_orders;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages
 
-#define FIGHTER_MESSAGES	(ATTACK_TARGET_ITEM | DISABLE_TARGET_ITEM | DISARM_TARGET_ITEM | PROTECT_TARGET_ITEM | IGNORE_TARGET_ITEM | FORMATION_ITEM | COVER_ME_ITEM | ENGAGE_ENEMY_ITEM | DEPART_ITEM | DISABLE_SUBSYSTEM_ITEM)
-
+//WMC - Formerly FIGHTER_MESSAGES
+#define DEFAULT_MESSAGES	(ATTACK_TARGET_ITEM | DISABLE_TARGET_ITEM | DISARM_TARGET_ITEM | PROTECT_TARGET_ITEM | IGNORE_TARGET_ITEM | FORMATION_ITEM | COVER_ME_ITEM | ENGAGE_ENEMY_ITEM | DEPART_ITEM | DISABLE_SUBSYSTEM_ITEM)
+/*
 #define BOMBER_MESSAGES		FIGHTER_MESSAGES			// bombers can do the same things as fighters
 
 #define TRANSPORT_MESSAGES	(ATTACK_TARGET_ITEM | CAPTURE_TARGET_ITEM | DEPART_ITEM )
@@ -201,7 +213,7 @@ struct object;
 #define SUPERCAP_MESSAGES	(0)							// supercaps ignore you :p
 
 #define SUPPORT_MESSAGES	(REARM_REPAIR_ME_ITEM | ABORT_REARM_REPAIR_ITEM | STAY_NEAR_ME_ITEM | STAY_NEAR_TARGET_ITEM | KEEP_SAFE_DIST_ITEM | DEPART_ITEM )
-
+*/
 // these messages require an active target.  They are also the set of messages
 // which cannot be given to a ship when the target is on the same team, or the target
 // is not a ship.

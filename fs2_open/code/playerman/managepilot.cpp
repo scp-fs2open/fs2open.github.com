@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-10-10 17:21:09 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2005-12-29 08:08:42 $
+ * $Author: wmcoolmon $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/10/10 17:21:09  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.22  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -595,12 +598,12 @@ void pilot_write_techroom_data(CFILE *file, int multi)
 		return;
 
 	// write the ship and weapon count
-	cfwrite_int(Num_ship_types, file);
+	cfwrite_int(Num_ship_classes, file);
 	cfwrite_int(Num_weapon_types, file);
 	cfwrite_int(Intel_info_size, file);
 
 	// write all ship flags out
-	for (idx=0; idx<Num_ship_types; idx++) {
+	for (idx=0; idx<Num_ship_classes; idx++) {
 		out = (Ship_info[idx].flags & SIF_IN_TECH_DATABASE) ? (ubyte)1 : (ubyte)0;		
 		cfwrite_ubyte(out, file);				
 	}
@@ -629,7 +632,7 @@ void pilot_read_techroom_data(CFILE *file, int pfile_version)
 		// read in ship and weapon counts
 		ship_count = cfread_int(file);
 		weapon_count = cfread_int(file);
-		Assert(ship_count <= MAX_SHIP_TYPES);
+		Assert(ship_count <= MAX_SHIP_CLASSES);
 		Assert(weapon_count <= MAX_WEAPON_TYPES);
 
 		// maintain compatibility w/ demo version
@@ -693,11 +696,11 @@ void pilot_write_loadout(CFILE *file, int multi)
 	cfwrite_string_len(Player_loadout.last_modified, file);
 
 	// write ship and weapon counts
-	cfwrite_int(Num_ship_types, file);
+	cfwrite_int(Num_ship_classes, file);
 	cfwrite_int(Num_weapon_types, file);
 
 	// write ship pool
-	for ( i = 0; i < Num_ship_types; i++ ) {
+	for ( i = 0; i < Num_ship_classes; i++ ) {
 		cfwrite_int(Player_loadout.ship_pool[i], file);
 		cfwrite_string_len(Ship_info[i].name, file);
 	}
@@ -741,7 +744,7 @@ void pilot_read_loadout(CFILE *file, int pfile_version)
 		// read in ship and weapon counts
 		ship_count = cfread_int(file);
 		weapon_count = cfread_int(file);
-		Assert(ship_count <= MAX_SHIP_TYPES);
+		Assert(ship_count <= MAX_SHIP_CLASSES);
 		Assert(weapon_count <= MAX_WEAPON_TYPES);
 
 		// read in ship pool
@@ -1159,11 +1162,11 @@ void read_stats_block(CFILE *file, int pfile_version, scoring_struct *stats)
 		}
 
 		total = cfread_int(file);
-		if (total > MAX_SHIP_TYPES){
-			Warning(LOCATION, "Some ship kill information will be lost due to MAX_SHIP_TYPES decrease");
+		if (total > MAX_SHIP_CLASSES){
+			Warning(LOCATION, "Some ship kill information will be lost due to MAX_SHIP_CLASSES decrease");
 		}
 
-		for (i=0; i<total && i<MAX_SHIP_TYPES; i++){
+		for (i=0; i<total && i<MAX_SHIP_CLASSES; i++){
 			if (pfile_version >= 142) {
 				k_count = cfread_ushort(file);
 				cfread_string_len(kname, NAME_LENGTH, file);
@@ -1283,7 +1286,7 @@ int write_pilot_file_core(player *p)
 
 	// write the ship name for last ship flown by the player
 	si_index = p->last_ship_flown_si_index;
-	if((si_index < 0) || (si_index >= Num_ship_types)){
+	if((si_index < 0) || (si_index >= Num_ship_classes)){
 		si_index = 0;
 	}
 
@@ -1468,7 +1471,7 @@ void write_stats_block(CFILE *file,scoring_struct *stats, int multi)
 		cfwrite_int(0, file);
 	}
 
-	total = MAX_SHIP_TYPES;
+	total = MAX_SHIP_CLASSES;
 	while (total && !stats->kills[total - 1]){  // find last used element
 		total--;
 	}

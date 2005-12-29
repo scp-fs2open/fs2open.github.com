@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.68 $
- * $Date: 2005-12-15 04:31:05 $
- * $Author: phreak $
+ * $Revision: 2.69 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2005/12/15 04:31:05  phreak
+ * [V] can't spell 'turret'
+ *
  * Revision 2.67  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -279,7 +282,7 @@
  * I also (think) I squashed a bug in the warpmodel code
  *
  * Revision 2.9  2002/12/04 09:44:34  DTP
- * lowered MAX_POLYGON_MODELS FROM 198 to 128 for safety reasons since we bumped back MAX_SHIP_TYPES to 130
+ * lowered MAX_POLYGON_MODELS FROM 198 to 128 for safety reasons since we bumped back MAX_SHIP_CLASSES to 130
  *
  * Revision 2.8  2002/12/02 23:55:31  Goober5000
  * fixed misspelling
@@ -302,7 +305,7 @@
  * Forgot to Bump MAX_MODEL_SUBSYSTEMS from 128 to 200
  *
  * Revision 2.2  2002/07/29 08:28:00  DTP
- * BUMPED MAX_POLYGON_MODELS TO 198 , MAX_SHIP_TYPES - 2 = 198
+ * BUMPED MAX_POLYGON_MODELS TO 198 , MAX_SHIP_CLASSES - 2 = 198
  *
  * Revision 2.1  2002/07/10 18:42:14  wmcoolmon
  * Added  Bobboau's glow code; all comments include "-Bobboau"
@@ -674,8 +677,9 @@ typedef struct stepped_rotation {
 #define TRIGGER_TYPE_PRIMARY_BANK			3		//primary banks
 #define TRIGGER_TYPE_SECONDARY_BANK			4		//secondary banks
 #define TRIGGER_TYPE_DOCK_BAY_DOOR			5		//fighter bays
+#define TRIGGER_TYPE_AFTERBURNER			6		//Afterburner -C
 
-#define MAX_TRIGGER_ANIMATION_TYPES			6
+#define MAX_TRIGGER_ANIMATION_TYPES			7
 
 
 extern char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
@@ -989,6 +993,9 @@ typedef struct glow_bank {  // glow bank struckture -Bobboau
 
 // defines for docking bay things.  The types are essentially flags since docking bays can probably
 // be used for multiple things in some cases (i.e. rearming and general docking)
+//WMC - IMPORTANT, update Dock_type_names array if you add a new one of these
+extern flag_def_list Dock_type_names[];
+extern int Num_dock_type_names;
 
 #define DOCK_TYPE_CARGO				(1<<0)
 #define DOCK_TYPE_REARM				(1<<1)
@@ -1137,6 +1144,8 @@ typedef struct polymodel {
 
 	int			specular_original_textures[MAX_MODEL_TEXTURES];	//map modulated with the specular -Bobboau
 	int			specular_textures[MAX_MODEL_TEXTURES];
+
+	int			bump_textures[MAX_MODEL_TEXTURES];
 
 	int			ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
 	int			transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau

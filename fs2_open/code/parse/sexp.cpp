@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.192 $
- * $Date: 2005-12-06 03:01:25 $
- * $Author: taylor $
+ * $Revision: 2.193 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.192  2005/12/06 03:01:25  taylor
+ * add a nomusic check to not get an error when eval on the change soundtrack sexp
+ *
  * Revision 2.191  2005/11/23 06:55:47  taylor
  * make sure all weapons that will get used later in a mission get preloaded
  *
@@ -2726,7 +2729,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (!stricmp(CTEXT(node), "<any support ship class>"))
 					break;
 
-				for (i = 0; i < Num_ship_types; i++ ) {
+				for (i = 0; i < Num_ship_classes; i++ ) {
 					if ( !stricmp(CTEXT(node), Ship_info[i].name) )
 					{
 						if (Ship_info[i].flags & SIF_SUPPORT)
@@ -2736,7 +2739,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 				}
 
-				if ( i == Num_ship_types )
+				if ( i == Num_ship_classes )
 					return SEXP_CHECK_INVALID_SUPPORT_SHIP_CLASS;
 
 				break;
@@ -2831,13 +2834,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				for (i=0; i<MAX_SHIP_TYPE_COUNTS; i++){
-					if (!stricmp( Ship_type_names[i], CTEXT(node))){
-						break;
-					}
-				}
+				i = ship_type_name_lookup(CTEXT(node));
 
-				if (i == MAX_SHIP_TYPE_COUNTS){
+				if (i < 0){
 					return SEXP_CHECK_INVALID_SHIP_TYPE;
 				}
 
@@ -3156,12 +3155,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				for (i = 0; i < Num_ship_types; i++ ) {
+				for (i = 0; i < Num_ship_classes; i++ ) {
 					if ( !stricmp(CTEXT(node), Ship_info[i].name) )
 						break;
 				}
 
-				if ( i == Num_ship_types )
+				if ( i == Num_ship_classes )
 					return SEXP_CHECK_INVALID_SHIP_CLASS_NAME;
 
 				break;
@@ -4844,22 +4843,20 @@ int sexp_ship_type_destroyed( int n )
 	percent = eval_num(n);
 	shiptype = CTEXT(CDR(n));
 
-	for ( type = 0; type < MAX_SHIP_TYPE_COUNTS; type++ ) {
-		if ( !stricmp( Ship_type_names[type], shiptype) )
-			break;
-	}
+	type = ship_type_name_lookup(shiptype);
 
 	// bogus if we reach the end of this array!!!!
-	if ( type == MAX_SHIP_TYPE_COUNTS ) {
+	if ( type < 0 ) {
 		Warning(LOCATION, "Invalid shiptype passed to sexp_ship_type_destroyed");
 		return 0;
 	}
 
-	if ( Ship_counts[type].total == 0 )
+	if ( type <= Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
 		return 0;
 
+	//We are safe from array indexing probs b/c of previous if.
 	// determine if the percentage of killed/total is >= percentage given in the expression
-	if ( (Ship_counts[type].killed * 100 / Ship_counts[type].total) >= percent)
+	if ( (Ship_type_counts[type].killed * 100 / Ship_type_counts[type].total) >= percent)
 		return SEXP_KNOWN_TRUE;
 	
 	return 0;
@@ -7490,7 +7487,7 @@ int sexp_is_ship_type( int n )
 			return SEXP_CANT_EVAL;
 
 		// if it doesn't match, return false
-		if (!(Ship_info[Ships[ship_num].ship_info_index].flags & Ship_type_flags[ship_type_num]))
+		if(ship_class_query_general_type(Ships[ship_num].ship_info_index) != ship_type_num)
 			return SEXP_FALSE;
 
 		// increment
@@ -11010,7 +11007,7 @@ int sexp_shield_quad_low(int node)
 	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
 		return 0;
 	}
-	if((Ships[sindex].ship_info_index < 0) || (Ships[sindex].ship_info_index >= Num_ship_types)){
+	if((Ships[sindex].ship_info_index < 0) || (Ships[sindex].ship_info_index >= Num_ship_classes)){
 		return 0;
 	}
 	objp = &Objects[Ships[sindex].objnum];
@@ -12605,8 +12602,8 @@ int sexp_num_type_kills(int node)
 
 	// look stuff up	
 	total = 0;
-	for(idx=0; idx<Num_ship_types; idx++){
-		if((p->stats.m_okKills[idx] > 0) && (Ship_info[idx].flags & Ship_type_flags[st_index])){
+	for(idx=0; idx<Num_ship_classes; idx++){
+		if((p->stats.m_okKills[idx] > 0) && ship_class_query_general_type(idx)==st_index){
 			total += p->stats.m_okKills[idx];
 		}
 	}
@@ -12654,7 +12651,7 @@ int sexp_num_class_kills(int node)
 
 	// get the ship type we're looking for
 	si_index = ship_info_lookup(CTEXT(CDR(node)));
-	if((si_index < 0) || (si_index > Num_ship_types)){
+	if((si_index < 0) || (si_index > Num_ship_classes)){
 		return 0;
 	}
 

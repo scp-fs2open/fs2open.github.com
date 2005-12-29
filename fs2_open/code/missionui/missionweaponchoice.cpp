@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.64 $
- * $Date: 2005-12-16 06:51:31 $
- * $Author: taylor $
+ * $Revision: 2.65 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/12/16 06:51:31  taylor
+ * fix a NULL pointer crash from shipselect screen
+ * make sure to reset "display_type" for weapon select since it would only render one ship correctly
+ *   (still something wrong here WMC, try using models without -ship_choice_3d, everything is positioned too high on screen)
+ *
  * Revision 2.63  2005/12/04 18:55:42  wmcoolmon
  * Better overhead-view handling
  *
@@ -60,7 +65,7 @@
  * ton of non-standard resolution fixes
  *
  * Revision 2.51  2005/04/25 00:25:46  wmcoolmon
- * MAX_SHIP_TYPES > Num_ship_types
+ * MAX_SHIP_CLASSES > Num_ship_classes
  *
  * Revision 2.50  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
@@ -1004,7 +1009,7 @@ typedef struct wl_ship_class_info
 	anim_instance	*wl_anim_instance;
 } wl_ship_class_info;
 
-wl_ship_class_info	Wl_ships[MAX_SHIP_TYPES];
+wl_ship_class_info	Wl_ships[MAX_SHIP_CLASSES];
 
 typedef struct wl_icon_info
 {
@@ -1442,7 +1447,7 @@ void wl_render_overhead_view(float frametime)
 	Assert( Wss_slots != NULL );
 
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
-	if (ship_class < 0 || ship_class > Num_ship_types)
+	if (ship_class < 0 || ship_class > Num_ship_classes)
 	{
 		Warning(LOCATION, "ivalid ship class (%d) passed for render_overhead_view", ship_class);
 		return;
@@ -1770,7 +1775,7 @@ void wl_set_disabled_weapons(int ship_class)
 	if ( ship_class == - 1 )
 		return;
 
-	Assert(ship_class >= 0 && ship_class < MAX_SHIP_TYPES);
+	Assert(ship_class >= 0 && ship_class < MAX_SHIP_CLASSES);
 	Assert( Wl_icons != NULL );
 
 	sip = &Ship_info[ship_class];
@@ -2027,7 +2032,7 @@ void wl_load_all_anims()
 	}
 
 	// init anim member for overhead ship animations
-	for ( i = 0; i < Num_ship_types; i++ ) {
+	for ( i = 0; i < Num_ship_classes; i++ ) {
 		Wl_ships[i].wl_anim = NULL;
 		Wl_ships[i].wl_anim_instance = NULL;
 	}
@@ -2058,7 +2063,7 @@ void wl_unload_all_anim_instances()
 	}
 
 	// stop any overhead anim instances
-	for ( i = 0; i < Num_ship_types; i++ ) {
+	for ( i = 0; i < Num_ship_classes; i++ ) {
 		if ( Wl_ships[i].wl_anim_instance != NULL) {
 			anim_release_render_instance(Wl_ships[i].wl_anim_instance);
 			Wl_ships[i].wl_anim_instance = NULL;
@@ -2074,7 +2079,7 @@ void wl_unload_all_anims()
 	Assert( Wl_icons != NULL );
 
 	// unload overhead anim instances
-	for ( i = 0; i < Num_ship_types; i++ ) {
+	for ( i = 0; i < Num_ship_classes; i++ ) {
 		if ( Wl_ships[i].wl_anim ) {
 			anim_free(Wl_ships[i].wl_anim);
 			Wl_ships[i].wl_anim = NULL;
@@ -2151,7 +2156,7 @@ void wl_init_ship_class_data()
 	int i;
 	wl_ship_class_info	*wl_ship;
 
-	for ( i=0; i<MAX_SHIP_TYPES; i++ ) {
+	for ( i=0; i<MAX_SHIP_CLASSES; i++ ) {
 		wl_ship = &Wl_ships[i];
 		wl_ship->overhead_bitmap = -1;
 		wl_ship->model_num = -1;
@@ -2166,7 +2171,7 @@ void wl_free_ship_class_data()
 	int i;
 	wl_ship_class_info	*wl_ship;
 
-	for ( i=0; i<Num_ship_types; i++ ) {
+	for ( i=0; i<Num_ship_classes; i++ ) {
 		wl_ship = &Wl_ships[i];
 
 		if ( wl_ship->overhead_bitmap != -1 ) {
@@ -2387,7 +2392,7 @@ void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count)
 	ship_info	*sip;
 	int i;
 
-	Assert(ship_class >= 0 && ship_class < Num_ship_types);
+	Assert(ship_class >= 0 && ship_class < Num_ship_classes);
 	sip = &Ship_info[ship_class];
 
 	// reset weapons arrays
@@ -3009,7 +3014,7 @@ void wl_check_for_stopped_ship_anims()
 {
 	int i;
 	anim_instance *ai;
-	for ( i = 0; i < Num_ship_types; i++ ) {
+	for ( i = 0; i < Num_ship_classes; i++ ) {
 		ai = Wl_ships[i].wl_anim_instance;
 		if ( ai != NULL ) {
 			if ( !anim_playing(ai) ) {

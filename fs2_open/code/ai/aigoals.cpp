@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.14 $
- * $Date: 2005-10-29 22:09:28 $
- * $Author: Goober5000 $
+ * $Revision: 1.15 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/10/29 22:09:28  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 1.13  2005/10/10 17:21:03  taylor
  * remove NO_NETWORK
  *
@@ -666,6 +670,35 @@ int	Ai_goal_signature;
 int	Num_ai_dock_names = 0;
 char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 
+ai_goal_list Ai_goal_names[] = {
+	{"Attack ship",			AI_GOAL_CHASE},
+	{"Dock",					AI_GOAL_DOCK},
+	{"Waypoints",				AI_GOAL_WAYPOINTS},
+	{"Waypoints once",			AI_GOAL_WAYPOINTS_ONCE},
+	{"Depart",					AI_GOAL_WARP},
+	{"Attack subsys",			AI_GOAL_DESTROY_SUBSYSTEM},
+	{"Form on wing",			AI_GOAL_FORM_ON_WING},
+	{"Undock",					AI_GOAL_UNDOCK},
+	{"Attack wing",				AI_GOAL_CHASE_WING},
+	{"Guard ship",					AI_GOAL_GUARD},
+	{"Disable ship",			AI_GOAL_DISABLE_SHIP},
+	{"Disarm ship",				AI_GOAL_DISARM_SHIP},
+	{"Attack any",				AI_GOAL_CHASE_ANY},
+	{"Ignore ship",			AI_GOAL_IGNORE},
+	{"Guard wing",				AI_GOAL_GUARD_WING},
+	{"Evade ship",				AI_GOAL_EVADE_SHIP},
+	{"Stay near ship",			AI_GOAL_STAY_NEAR_SHIP},
+	{"keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE},
+	{"Rearm ship",				AI_GOAL_REARM_REPAIR},
+	{"Stay still",				AI_GOAL_STAY_STILL},
+	{"Play dead",				AI_GOAL_PLAY_DEAD},
+	{"Attack weapon",			AI_GOAL_CHASE_WEAPON},
+	{"Attack besides",			AI_GOAL_CHASE_ANY_EXCEPT},
+	{"Fly to ship",				AI_GOAL_FLY_TO_SHIP},
+};
+
+int Num_ai_goals = sizeof(Ai_goal_names)/sizeof(ai_goal_list);
+
 // AL 11-17-97: A text description of the AI goals.  This is used for printing out on the
 // HUD what a ship's current orders are.  If the AI goal doesn't correspond to something that
 // ought to be printable, then NULL is used.
@@ -802,87 +835,15 @@ int ai_query_goal_valid( int ship, int ai_goal )
 		return 1;  // anything can have no orders.
 
 	accepted = 0;
-	switch (Ship_info[Ships[ship].ship_info_index].flags & SIF_ALL_SHIP_TYPES) {
-	case SIF_CARGO:
-		if (!Fred_running)
-			Int3();			// get Hoffoss or Allender -- cargo containers shouldn't have a goal!!!
-		break;
 
-	case SIF_FIGHTER:
-		if ( ai_goal & AI_GOAL_ACCEPT_FIGHTER ){
+	//WMC - This is much simpler with shiptypes.tbl
+	//Except you have to add the orders into it by hand.
+	int ship_type = Ship_info[Ships[ship].ship_info_index].class_type;
+	if(ship_type > -1)
+	{
+		if(ai_goal & Ship_types[ship_type].ai_valid_goals) {
 			accepted = 1;
 		}
-		break;
-	case SIF_BOMBER:
-		if ( ai_goal & AI_GOAL_ACCEPT_BOMBER ){
-			accepted = 1;
-		}
-		break;
-	case SIF_CRUISER:
-		if ( ai_goal & AI_GOAL_ACCEPT_CRUISER ){
-			accepted = 1;
-		}
-		break;
-	case SIF_FREIGHTER:
-		if ( ai_goal & AI_GOAL_ACCEPT_FREIGHTER ){
-			accepted = 1;
-		}
-		break;
-	case SIF_CAPITAL:
-		if ( ai_goal & AI_GOAL_ACCEPT_CAPITAL ){
-			accepted = 1;
-		}
-		break;
-	case SIF_TRANSPORT:
-		if ( ai_goal & AI_GOAL_ACCEPT_TRANSPORT ){
-			accepted = 1;
-		}
-		break;
-	case SIF_SUPPORT:
-		if ( ai_goal & AI_GOAL_ACCEPT_SUPPORT ){
-			accepted = 1;
-		}
-		break;
-	case SIF_ESCAPEPOD:
-		if ( ai_goal & AI_GOAL_ACCEPT_ESCAPEPOD ){
-			accepted = 1;
-		}
-		break;
-	case SIF_SUPERCAP:
-		if ( ai_goal & AI_GOAL_ACCEPT_SUPERCAP ){
-			accepted = 1;
-		}
-		break;
-	case SIF_SHIP_CLASS_STEALTH:
-		if ( ai_goal & AI_GOAL_ACCEPT_STEALTH ){
-			accepted = 1;
-		}
-		break;		
-	case SIF_CORVETTE:
-		if ( ai_goal & AI_GOAL_ACCEPT_CORVETTE ){
-			accepted = 1;
-		}
-		break;
-	case SIF_GAS_MINER:
-		if ( ai_goal & AI_GOAL_ACCEPT_GAS_MINER ){
-			accepted = 1;
-		}
-		break;
-	case SIF_AWACS:
-		if ( ai_goal & AI_GOAL_ACCEPT_AWACS ){
-			accepted = 1;
-		}
-		break;
-	case SIF_NO_SHIP_TYPE:
-		if (!Fred_running){
-			Int3();			// HUH?  doesn't make sense
-		}
-		break;
-	default:
-		if (!Fred_running){
-			Int3();			// get allender or hoffos -- unknown ship type
-		}
-		break;
 	}
 
 	return accepted;
@@ -1214,7 +1175,44 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 	docker_index = -1;
 	dockee_index = -1;
 
+	//WMC - This gets a bit complex with shiptypes.tbl
+	//Basically this finds the common dockpoint.
+	//For this, the common flags for aip's active point (ie point it wants to dock with)
+	//and aigp's passive point (point it wants to be docked with) are combined
+	//and the common ones are used, in order of precedence.
+	//Yes, it does sound vaguely like a double-entree.
+
+	int aip_type_dock = Ship_info[Ships[aip->shipnum].ship_info_index].class_type;
+	int aigp_type_dock = Ship_info[Ships[shipnum].ship_info_index].class_type;
+
+	int common_docks = 0;
+
+	if(aip_type_dock > -1) {
+		aip_type_dock = Ship_types[aip_type_dock].ai_active_dock;
+	} else {
+		aip_type_dock = 0;
+	}
+
+	if(aigp_type_dock > -1) {
+		aigp_type_dock = Ship_types[aigp_type_dock].ai_passive_dock;
+	} else {
+		aigp_type_dock = 0;
+	}
+
+	common_docks = aip_type_dock & aigp_type_dock;
+
+	//Now iterate through types.
+	for(int i = 0; i < Num_dock_type_names; i++)
+	{
+		if(common_docks & Dock_type_names[i].def) {
+			docker_index = ai_goal_find_dockpoint(aip->shipnum, Dock_type_names[i].def);
+			dockee_index = ai_goal_find_dockpoint(shipnum, Dock_type_names[i].def);
+			break;
+		}
+	}
+
 	// look for docking points of the appriopriate type.  Use cargo docks for cargo ships.
+	/*
 	if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_CARGO) {
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_CARGO);
 		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_CARGO);
@@ -1222,6 +1220,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_REARM);
 		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_REARM);
 	}
+	*/
 
 	// if we didn't find dockpoints above, then we should just look for generic docking points
 	if ( docker_index == -1 )

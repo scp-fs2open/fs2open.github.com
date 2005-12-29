@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-10-10 17:21:05 $
- * $Author: taylor $
+ * $Revision: 2.29 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.27  2005/09/22 19:16:48  taylor
  * fix screen update of pilot list when you delete one of them
  *
@@ -227,7 +230,7 @@
 int delete_pilot_file( char *pilot_name, int single );		// manage_pilot.cpp
 
 // stats defines
-//#define NUM_STAT_LINES (21 + MAX_SHIP_TYPES)	// Goober5000
+//#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
 #define STAT_COLUMN1_W 40
 #define STAT_COLUMN2_W 10
 
@@ -492,7 +495,7 @@ void barracks_squad_change_popup();
 
 void barracks_init_stats(scoring_struct *stats)
 {
-	int Max_stat_lines = Num_ship_types + 21;
+	int Max_stat_lines = Num_ship_classes + 21;
 	int i;
 	float f;
 
@@ -631,9 +634,9 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	// Goober5000 - make sure we have room for all ships
-	Assert((Num_stat_lines + Num_ship_types) < Max_stat_lines);
+	Assert((Num_stat_lines + Num_ship_classes) < Max_stat_lines);
 
-	for (i=0; i<Num_ship_types; i++) {
+	for (i=0; i<Num_ship_classes; i++) {
 		if (stats->kills[i]) {
 			Assert(Num_stat_lines < Max_stat_lines);
 

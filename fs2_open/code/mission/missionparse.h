@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.73 $
- * $Author: Goober5000 $
- * $Date: 2005-11-21 02:43:37 $
+ * $Revision: 2.74 $
+ * $Author: wmcoolmon $
+ * $Date: 2005-12-29 08:08:36 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2005/11/21 02:43:37  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.72  2005/11/21 00:46:12  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -630,7 +634,7 @@ extern int Mission_alt_type_count;
 #define MAX_SPECIAL_ARRIVAL_ANCHORS	6
 extern char *Special_arrival_anchor_names[MAX_SPECIAL_ARRIVAL_ANCHORS];
 
-extern char *Ship_class_names[MAX_SHIP_TYPES];
+extern char *Ship_class_names[MAX_SHIP_CLASSES];
 extern char *Iff_names[MAX_IFF];
 extern char *Ai_behavior_names[MAX_AI_BEHAVIORS];
 extern char *Formation_names[MAX_FORMATION_NAMES];
@@ -834,8 +838,8 @@ extern p_object Ship_arrival_list;
 typedef struct {
 	int		default_ship;  // default ship type for player start point (recommended choice)
 	int		number_choices; // number of ship choices inside ship_list
-	int		ship_list[MAX_SHIP_TYPES];
-	int		ship_count[MAX_SHIP_TYPES];
+	int		ship_list[MAX_SHIP_CLASSES];
+	int		ship_count[MAX_SHIP_CLASSES];
 	int		weaponry_pool[MAX_WEAPON_TYPES];
 } team_data;
 

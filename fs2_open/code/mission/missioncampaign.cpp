@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.35 $
- * $Date: 2005-10-30 20:03:39 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2005/10/30 20:03:39  taylor
+ * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
+ * fix Mantis bug #381
+ * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
+ *
  * Revision 2.34  2005/10/30 19:21:45  wmcoolmon
  * Return an error if mission_campaign_next_mission() is called when the campaign has no missions
  *
@@ -54,7 +59,7 @@
  * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
  *
  * Revision 2.23  2005/04/25 00:25:15  wmcoolmon
- * MAX_SHIP_TYPES > Num_ship_types
+ * MAX_SHIP_CLASSES > Num_ship_classes
  *
  * Revision 2.22  2005/04/12 05:26:36  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
@@ -390,7 +395,7 @@ char *campaign_types[MAX_CAMPAIGN_TYPES] =
 
 // modules local variables to deal with getting new ships/weapons available to the player
 int Num_granted_ships, Num_granted_weapons;		// per mission counts of new ships and weapons
-int Granted_ships[MAX_SHIP_TYPES];
+int Granted_ships[MAX_SHIP_CLASSES];
 int Granted_weapons[MAX_WEAPON_TYPES];
 
 // variables to control the UI stuff for loading campaigns
@@ -613,11 +618,11 @@ void mission_campaign_build_list( int multiplayer )
 // gets optional ship/weapon information
 void mission_campaign_get_sw_info()
 {
-	int i, count, ship_list[MAX_SHIP_TYPES], weapon_list[MAX_WEAPON_TYPES];
+	int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
 
 	// set allowable ships to the SIF_PLAYER_SHIPs
 	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
-	for (i = 0; i < Num_ship_types; i++ ) {
+	for (i = 0; i < Num_ship_classes; i++ ) {
 		if ( Ship_info[i].flags & SIF_PLAYER_SHIP )
 			Campaign.ships_allowed[i] = 1;
 	}
@@ -626,10 +631,10 @@ void mission_campaign_get_sw_info()
 		Campaign.weapons_allowed[i] = 1;
 
 	if ( optional_string("+Starting Ships:") ) {
-		for (i = 0; i < Num_ship_types; i++ )
+		for (i = 0; i < Num_ship_classes; i++ )
 			Campaign.ships_allowed[i] = 0;
 
-		count = stuff_int_list(ship_list, MAX_SHIP_TYPES, SHIP_INFO_TYPE);
+		count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
 
 		// now set the array elements stating which ships we are allowed
 		for (i = 0; i < count; i++ ) {
@@ -1032,10 +1037,10 @@ int mission_campaign_savefile_save()
 	cfwrite_int( Campaign.loop_enabled, fp );
 
 	// write out the information for ships/weapons which this player is allowed to use
-	cfwrite_int(Num_ship_types, fp);
+	cfwrite_int(Num_ship_classes, fp);
 	cfwrite_int(Num_weapon_types, fp);
 
-	for ( i = 0; i < Num_ship_types; i++ ){
+	for ( i = 0; i < Num_ship_classes; i++ ){
 		cfwrite_char( Campaign.ships_allowed[i], fp );
 		cfwrite_string_len( Ship_info[i].name, fp );
 	}
@@ -1077,7 +1082,7 @@ int mission_campaign_savefile_save()
 			memcpy( &stats_tmp, &Campaign.missions[i].stats, sizeof(scoring_struct) );
 
 			// swap values if needed
-			for ( j = 0; j < Num_ship_types; j++ )
+			for ( j = 0; j < Num_ship_classes; j++ )
 				stats_tmp.kills[j] = INTEL_INT(Campaign.missions[i].stats.kills[j]);
 
 			stats_tmp.score = INTEL_INT(Campaign.missions[i].stats.score);
@@ -1117,7 +1122,7 @@ int mission_campaign_savefile_save()
 	cfwrite_int(Intel_info_size, fp);
 
 	// write all ship flags out
-	for (i=0; i<Num_ship_types; i++) {
+	for (i=0; i<Num_ship_classes; i++) {
 		out = (Ship_info[i].flags & SIF_IN_TECH_DATABASE) ? (ubyte)1 : (ubyte)0;		
 		cfwrite_ubyte(out, fp);				
 	}
@@ -1142,7 +1147,7 @@ int mission_campaign_savefile_save()
 	cfwrite_string_len(Player_loadout.last_modified, fp);
 
 	// write ship pool
-	for ( i = 0; i < Num_ship_types; i++ ) {
+	for ( i = 0; i < Num_ship_classes; i++ ) {
 		cfwrite_int(Player_loadout.ship_pool[i], fp);
 	}
 
@@ -1178,7 +1183,7 @@ int mission_campaign_savefile_save()
 		cfwrite_int(0, fp);
 	}
 
-	int total = MAX_SHIP_TYPES;
+	int total = MAX_SHIP_CLASSES;
 	while (total && !pl->stats.kills[total - 1]){  // find last used element
 		total--;
 	}
@@ -1312,12 +1317,12 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 	int id, version, i, num, j, num_stats_blocks, idx;
 	int type_sig;
 	ubyte sw;
-	char s_name[MAX_SHIP_TYPES][NAME_LENGTH];
+	char s_name[MAX_SHIP_CLASSES][NAME_LENGTH];
 	char w_name[MAX_WEAPON_TYPES][NAME_LENGTH];
 	int n_ships;
 	CFILE *fp;
 	int force_update = 0;
-	int kill_count[MAX_SHIP_TYPES];
+	int kill_count[MAX_SHIP_CLASSES];
 	int k_count;
 	int sid = -1, wid = -1;
 	int set_defaults = 1; // should we zero out tech values or not (yes by default)
@@ -1420,7 +1425,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 	//  load information about ships/weapons allowed	
 	int ship_count, weapon_count;
 
-	// if earlier than mission disk version, use old MAX_SHIP_TYPES, otherwise read from the file		
+	// if earlier than mission disk version, use old MAX_SHIP_CLASSES, otherwise read from the file		
 	if(version <= CAMPAIGN_INITIAL_RELEASE_FILE_VERSION){
 		ship_count = CAMPAIGN_SAVEFILE_MAX_SHIPS_OLD;
 		weapon_count = CAMPAIGN_SAVEFILE_MAX_WEAPONS_OLD;
@@ -1429,7 +1434,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		weapon_count = cfread_int(fp);
 	}
 
-	Assert(ship_count <= MAX_SHIP_TYPES);
+	Assert(ship_count <= MAX_SHIP_CLASSES);
 	Assert(weapon_count <= MAX_WEAPON_TYPES);
 
 	for ( i = 0; i < ship_count; i++ ){
@@ -1587,7 +1592,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 
 		// zero out all data so that we can start anew
 		if (set_defaults) {
-			for (idx=0; idx<MAX_SHIP_TYPES; idx++) {
+			for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
 				Ship_info[idx].flags &= ~SIF_IN_TECH_DATABASE;
 			}
 		
@@ -1791,7 +1796,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			// read in number of ships that were written to the file
 			n_ships = cfread_int( fp );
 
-			Assert( n_ships <= MAX_SHIP_TYPES );
+			Assert( n_ships <= MAX_SHIP_CLASSES );
 
 			// read in ship names
 			for ( i = 0; i < n_ships; i++ ) {
@@ -1799,7 +1804,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			}
 		}
 
-		const int ORIG_MAX_SHIP_TYPES = 130;
+		const int ORIG_MAX_SHIP_CLASSES = 130;
 		int read_size = 0;
 
 		// figure out the size of data we need to read each pass
@@ -1807,23 +1812,23 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			// basic size, start with current and subtract what we don't want
 			read_size = sizeof(scoring_struct);
 
-			// if MAX_SHIP_TYPES has changed from what we expect then come up with a modified size:
-			// new_max_ship_types - old_max_ship_types * sizeof(int) * 3-times-MAX_SHIP_TYPES-is-used
-			if (MAX_SHIP_TYPES > ORIG_MAX_SHIP_TYPES)
-				read_size -= (MAX_SHIP_TYPES - ORIG_MAX_SHIP_TYPES) * sizeof(int) * 3;
+			// if MAX_SHIP_CLASSES has changed from what we expect then come up with a modified size:
+			// new_max_ship_types - old_max_ship_types * sizeof(int) * 3-times-MAX_SHIP_CLASSES-is-used
+			if (MAX_SHIP_CLASSES > ORIG_MAX_SHIP_CLASSES)
+				read_size -= (MAX_SHIP_CLASSES - ORIG_MAX_SHIP_CLASSES) * sizeof(int) * 3;
 		} else {
 			// basic size, start with current and subtract what we don't want
 			read_size = sizeof(scoring_struct);
-			// we moved to int from ushort for kills[MAX_SHIP_TYPES], m_kills[MAX_SHIP_TYPES] & m_okKills[MAX_SHIP_TYPES]
-			read_size -= (sizeof(int) - sizeof(ushort)) * 3 * ORIG_MAX_SHIP_TYPES;
+			// we moved to int from ushort for kills[MAX_SHIP_CLASSES], m_kills[MAX_SHIP_CLASSES] & m_okKills[MAX_SHIP_CLASSES]
+			read_size -= (sizeof(int) - sizeof(ushort)) * 3 * ORIG_MAX_SHIP_CLASSES;
 			// we moved to int from ushort for m_dogfight_kills[MAX_PLAYERS]
 			read_size -= (sizeof(int) - sizeof(ushort)) * MAX_PLAYERS;
 
-			// if MAX_SHIP_TYPES has changed from what we expect then come up with a modified size:
-			// new_max_ship_types - old_max_ship_types * sizeof(ushort) * 3-times-MAX_SHIP_TYPES-is-used
+			// if MAX_SHIP_CLASSES has changed from what we expect then come up with a modified size:
+			// new_max_ship_types - old_max_ship_types * sizeof(ushort) * 3-times-MAX_SHIP_CLASSES-is-used
 			// we moved from ushort to int for these 3 so take that into account
-			if (MAX_SHIP_TYPES > ORIG_MAX_SHIP_TYPES)
-				read_size -= (MAX_SHIP_TYPES - ORIG_MAX_SHIP_TYPES) * (sizeof(int) - sizeof(ushort)) * 3;
+			if (MAX_SHIP_CLASSES > ORIG_MAX_SHIP_CLASSES)
+				read_size -= (MAX_SHIP_CLASSES - ORIG_MAX_SHIP_CLASSES) * (sizeof(int) - sizeof(ushort)) * 3;
 		}
 
 		Assert( read_size );
@@ -1835,11 +1840,11 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 
 			if (version >= 2) {
 				// copy current values to temp and swap if needed
-				for ( j = 0; j < MAX_SHIP_TYPES; j++ )
+				for ( j = 0; j < MAX_SHIP_CLASSES; j++ )
 					kill_count[j] = INTEL_INT(Campaign.missions[num].stats.kills[j]);
 
 				// translate to new tables
-				for ( j = 0; j < MAX_SHIP_TYPES; j++ ) {
+				for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
 					idx = ship_info_lookup(s_name[j]);
 					Campaign.missions[num].stats.kills[idx] = kill_count[j];
 				}
@@ -2636,7 +2641,7 @@ void mission_campaign_save_persistent( int type, int sindex )
 	// based on the type of information, save it off for possible saving into the campsign
 	// savefile when the mission is over
 	if ( type == CAMPAIGN_PERSISTENT_SHIP ) {
-		Assert( Num_granted_ships < MAX_SHIP_TYPES );
+		Assert( Num_granted_ships < MAX_SHIP_CLASSES );
 		Granted_ships[Num_granted_ships] = sindex;
 		Num_granted_ships++;
 	} else if ( type == CAMPAIGN_PERSISTENT_WEAPON ) {

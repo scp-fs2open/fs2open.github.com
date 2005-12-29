@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-10-24 02:15:41 $
+ * $Revision: 2.37 $
+ * $Date: 2005-12-29 08:08:42 $
  * $Author: wmcoolmon $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/10/24 02:15:41  wmcoolmon
+ * Removed max_overclock restriction related to warpout
+ *
  * Revision 2.35  2005/10/20 17:50:00  taylor
  * fix player warpout
  * basic code cleanup (that previous braces change did nothing for readability)
@@ -1528,7 +1531,8 @@ void player_init_all_alone_msg()
 		}
 
 		if ( Ships[objp->instance].team == Player_ship->team ) {
-			if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HARMLESS) ) {
+			int ship_type = Ship_info[Ships[objp->instance].ship_info_index].class_type;
+			if ( ship_type != -1 && (Ship_types[ship_type].message_bools & STI_MSG_COUNTS_FOR_ALONE) ) {
 				return;
 			}
 		}
@@ -2239,7 +2243,8 @@ void player_maybe_play_all_alone_msg()
 		}
 
 		if ( Ships[objp->instance].team == Player_ship->team ) {
-			if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HARMLESS) ) {
+			int ship_type = Ship_info[Ships[objp->instance].ship_info_index].class_type;
+			if ( ship_type != -1 && (Ship_types[ship_type].message_bools & STI_MSG_COUNTS_FOR_ALONE) ) {
 				return;
 			}
 		}

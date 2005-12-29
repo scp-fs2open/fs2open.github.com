@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.34 $
- * $Date: 2005-12-16 06:48:28 $
- * $Author: taylor $
+ * $Revision: 1.35 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2005/12/16 06:48:28  taylor
+ * "House Keeping!!"
+ *   - minor cleanup of things that have bothered me at one time or another
+ *   - slight speedup from state switching
+ *   - slightly better specmap handling, fixes a couple of (not frequent) strange and sorta random issues
+ *   - make sure to only disable HTL arb stuff when in HTL mode
+ *   - handle any extra lighting pass before spec pass so the light can be applied properly
+ *
  * Revision 1.33  2005/12/08 15:07:57  taylor
  * remove GL_NO_HTL define since it's basically useless at this point and can produced non-functioning builds
  * minor cleanup and readability changes
@@ -185,6 +193,7 @@
 #include "globalincs/pstypes.h"
 
 #include "graphics/2d.h"
+#include "lighting/lighting.h"
 #include "graphics/grinternal.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropenglextension.h"
@@ -203,6 +212,7 @@ extern int VBO_ENABLED;
 extern int GLOWMAP;
 extern int CLOAKMAP;
 extern int SPECMAP;
+extern int BUMPMAP;
 extern vec3d G3_user_clip_normal;
 extern vec3d G3_user_clip_point;
 extern int Interp_multitex_cloakmap;
@@ -231,6 +241,13 @@ struct opengl_vertex_buffer
 	GLuint vbo;			// buffer for VBO
 	uint flags;			// FVF
 	int vbo_size;
+#ifdef BUMPMAPPING
+	//Bumping
+	float *b_array_list;
+	GLuint b_vbo;
+	int b_vbo_size;
+	int b_stride;
+#endif
 };
 
 
@@ -327,7 +344,11 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 		// defaults
 		vbp->format = 0;
 		vbp->vbo = 0;
-
+#ifdef BUMPMAPPING
+		//Bumping
+		vbp->b_vbo = 0;
+		vbp->b_array_list = NULL;
+#endif
 		// don't create vbo for small stuff, performance gain
 		// FIXME: This little speed increase appears to cause problems with some cards/drivers.
 		//        Disabling it until I can find a solution that works better.
@@ -409,6 +430,65 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 				vbp->array_list = NULL;
 			}
 		}
+#ifdef BUMPMAPPING
+		if(flags & VERTEX_FLAG_POSITION)
+		{
+			//WMC - since we should know the format, don't bother with setting flags and such.
+			vbp->b_stride = 3 * sizeof(float);
+
+			arsize = 0;
+			list_size = list_size = vbp->b_stride * list->n_verts;
+
+			// allocate the storage list
+			vbp->b_array_list = (float*)vm_malloc(list_size);
+
+			//OH NOES!!!
+			if (vbp->b_array_list == NULL)
+				return -1;
+
+			vec3d norm, stan, ttan;
+
+			//WMC - calc light vector in localspace
+			//Only know how to do this for one light right now...
+			float rot_matrix[16];
+			vec3d lightvec, g_lightvec;
+			light_get_global_dir(&g_lightvec, 0);
+			glGetFloatv(GL_MODELVIEW_MATRIX, rot_matrix);
+
+			lightvec.xyz.x = g_lightvec.xyz.x * rot_matrix[0]
+							+g_lightvec.xyz.y * rot_matrix[4]
+							+g_lightvec.xyz.z * rot_matrix[8];
+			lightvec.xyz.y = g_lightvec.xyz.x * rot_matrix[1]
+							+g_lightvec.xyz.y * rot_matrix[5]
+							+g_lightvec.xyz.z * rot_matrix[9];
+			lightvec.xyz.z = g_lightvec.xyz.x * rot_matrix[2]
+							+g_lightvec.xyz.y * rot_matrix[6]
+							+g_lightvec.xyz.z * rot_matrix[10];
+
+			//WMC - I assume all the stuff is in tris
+			//WMC - Hmm...maybe not.
+			//Assert(list->n_verts % 3 == 0);
+			for (i=0; (list->n_verts - i) > 2; i++)
+			{
+				poly_tsb_calc(&list->vert[i], &list->vert[i+1], &list->vert[i+2], &norm, &stan, &ttan);
+
+				vbp->b_array_list[arsize++] = vm_vec_dotprod(&stan, &lightvec);
+				vbp->b_array_list[arsize++] = vm_vec_dotprod(&ttan, &lightvec);
+				vbp->b_array_list[arsize++] = vm_vec_dotprod(&norm, &lightvec);
+			}
+
+			if(make_vbo) {
+				vbp->b_vbo = opengl_create_vbo(list_size, vbp->b_array_list);
+
+				if(vbp->b_vbo) {
+					vbp->b_vbo_size = list_size;
+					GL_vertex_data_in += list_size;
+					vm_free(vbp->b_array_list);
+					vbp->b_array_list = NULL;
+				}
+			}
+		}
+#endif
 	}
 
 	return buffer_num;
@@ -438,6 +518,8 @@ void gr_opengl_destroy_buffer(int idx)
 //#define DRAW_DEBUG_LINES
 extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
+
+GLuint normalisationCubeMap = -1;
 
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
 void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
@@ -481,6 +563,97 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 
 	opengl_setup_render_states(r, g, b, a, tmap_type, TMAP_FLAG_TEXTURED);
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+// -------- BUMPMAP ------------------------------------------------------- //
+//bumpmap?
+#ifdef BUMPMAPPING
+	if(BUMPMAP > -1 && (vbp->flags & VERTEX_FLAG_POSITION))
+	{
+		//Bind normal map to texture unit 0
+		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
+		gr_opengl_tcache_set(BUMPMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+		glEnable(GL_TEXTURE_2D);
+
+		//Bind normalisation cube map to texture unit 1
+		glClientActiveTextureARB(GL_TEXTURE1_ARB+pass_one);
+		glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, normalisationCubeMap);
+		glEnable(GL_TEXTURE_CUBE_MAP_ARB);
+		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
+
+		//Set vertex arrays for torus bumpmap
+		if (vbp->vbo) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+			glVertexPointer(3, GL_FLOAT, vbp->stride, (void*)(vbp->stride - (3 * sizeof(float))));
+		} else {
+			glVertexPointer(3, GL_FLOAT, vbp->stride, vbp->array_list);
+		}
+		glEnableClientState(GL_VERTEX_ARRAY);
+
+		//Send texture coords for normal map to unit 0
+		if (vbp->vbo) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
+		} else {
+			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
+		}
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		//Send tangent space light vectors for normalisation to unit 1
+		glClientActiveTextureARB(GL_TEXTURE1_ARB+pass_one);
+		if (vbp->b_vbo) {
+			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->b_vbo);
+			glTexCoordPointer( 3, GL_FLOAT, 0, (void*)NULL );
+		} else {
+			glTexCoordPointer( 3, GL_FLOAT, 0, vbp->b_array_list );
+		}
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
+
+		//Set up texture environment to do (tex0 dot tex1)*color
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE);
+
+		glActiveTextureARB(GL_TEXTURE1_ARB+pass_one);
+
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_DOT3_RGB_ARB);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
+
+		glActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
+
+		//WMC - Am I supposed to draw this?
+		//glDrawElements(GL_TRIANGLES, torus.numIndices, GL_UNSIGNED_INT, torus.indices);
+
+		//Disable textures
+		//glDisable(GL_TEXTURE_2D);
+
+		glActiveTextureARB(GL_TEXTURE1_ARB+pass_one);
+		glDisable(GL_TEXTURE_CUBE_MAP_ARB);
+		glActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
+
+		//disable vertex arrays
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		glClientActiveTextureARB(GL_TEXTURE1_ARB+pass_one);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
+
+		//Return to standard modulate texenv
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+		//Enable multiplicative blending
+		glBlendFunc(GL_DST_COLOR, GL_ZERO);
+		glEnable(GL_BLEND);
+
+		pass_one++; // bump!
+
+		opengl_switch_arb(-1,0);
+	}
+#endif
+// -------- BUMPMAP ------------------------------------------------------- //
 
 	// basic setup of all data and first texture
 	glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
@@ -573,7 +746,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 
 	glUnlockArraysEXT();
 // -------- End 1st PASS --------------------------------------------------------- //
-
 // -------- Begin lighting pass (conditional but should happen before spec pass) - //
 	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/GL_max_lights > 0) ) {
 		opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
@@ -613,7 +785,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 		glUnlockArraysEXT();
 	}
 // -------- End lighting PASS ---------------------------------------------------- //
-
 // -------- Begin 2nd (specular) PASS -------------------------------------------- //
 	if ( use_spec ) {
 		// turn all previously used arbs off before the specular pass

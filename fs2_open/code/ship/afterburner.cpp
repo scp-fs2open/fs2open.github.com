@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-11-21 02:43:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2005-12-29 08:08:42 $
+ * $Author: wmcoolmon $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.18  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -298,7 +302,7 @@ void afterburners_start(object *objp)
 		return;
 
 	shipp = &Ships[objp->instance];
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
 	sip = &Ship_info[shipp->ship_info_index];
 	
 	if ( !(sip->flags & SIF_AFTERBURNER) )	{
@@ -318,6 +322,9 @@ void afterburners_start(object *objp)
 	objp->phys_info.afterburner_decay = timestamp(ABURN_DECAY_TIME);
 
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+
+	//Do anim
+	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCK_BAY_DOOR, 0, 1);
 
 	if ( objp == Player_obj ) {
 		Player_afterburner_start_time = timer_get_milliseconds();
@@ -364,7 +371,7 @@ void afterburners_update(object *objp, float fl_frametime)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags & OF_PLAYER_SHIP ) && (Game_mode & GM_DEAD) ) {
@@ -476,7 +483,7 @@ void afterburners_stop(object *objp, int key_released)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_types );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags & OF_PLAYER_SHIP) && key_released ) {
@@ -495,6 +502,9 @@ void afterburners_stop(object *objp, int key_released)
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
 	float percent_left;
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
+
+	//Do anim
+	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCK_BAY_DOOR, 0, -1);
 
 	if ( objp == Player_obj ) {
 

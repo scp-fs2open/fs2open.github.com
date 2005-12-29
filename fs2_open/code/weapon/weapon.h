@@ -12,6 +12,18 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/12/15 06:03:50  phreak
+ * Countermeasres parameters.  Lets users specify how easily missiles are spoofed by countermeasures
+ *
+ * A missile is given a seeker strength.  Aspect default of 2.  Heat default of 3.  This is a missile's resistance to spoofage
+ * A countermesaure is given an effectiveness for each type.  The defaults for countermeasure heat and aspect effectiveness are both 1.
+ * Also gave the countermeasure an effective range.  Default is 300 meters.
+ *
+ * A missiles chance of being spoofed is calculated by <cm type effectiveness>/<seeker strength>
+ * So by default, 1/2 of aspect seekers will be fooled by a countermeasures, while 1/3 of heat seekers would be spoofed by default.
+ *
+ * Also i gave the option of aspect missiles having a view cone different from 180 degrees.  This parameter is optional and doesn't effect anything already there.
+ *
  * Revision 2.63  2005/12/12 21:32:14  taylor
  * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
  *
@@ -755,6 +767,7 @@ typedef struct weapon_info {
 	fix arm_time;
 	float arm_dist;
 	float arm_radius;
+	float det_range;
 	/*float	blast_force;						// force this weapon exhibits when hitting an object
 	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
 	float	shockwave_speed;					// speed of shockwave ( 0 means none )*/

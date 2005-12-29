@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.62 $
- * $Date: 2005-12-06 02:53:02 $
- * $Author: taylor $
+ * $Revision: 2.63 $
+ * $Date: 2005-12-29 08:08:33 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/12/06 02:53:02  taylor
+ * clean up some D3D debug messages to better match new OGL messages (for easier debugging)
+ * remove D3D_32bit variable since it's basically useless and the same thing can be done another way
+ *
  * Revision 2.61  2005/12/04 18:59:18  wmcoolmon
  * Attempt to fix OpenGL crash-on-debug-exit
  *
@@ -2073,4 +2077,48 @@ void gr_flip()
 		Script_system.RunBytecode(Script_globalhooks[i]);
 	}
 	gr_screen.gf_flip();
+}
+
+//WMC - bump mapping thing
+void poly_tsb_calc(vertex *v0, vertex *v1, vertex *v2, vec3d *o_norm, vec3d *o_stan, vec3d *o_ttan)
+{
+	vec3d side0, side1;
+	vec3d vt0, vt1;	//temp vecs
+	float ft0, ft1;	//temp floats
+
+	side0.xyz.x = v0->x - v1->x;
+	side0.xyz.y = v0->y - v1->y;
+	side0.xyz.z = v0->z - v1->z;
+
+	side1.xyz.x = v2->x - v1->x;
+	side1.xyz.y = v2->y - v1->y;
+	side1.xyz.z = v2->z - v1->z;
+
+	//Normal
+	vm_vec_crossprod(o_norm, &side1, &side0);
+	vm_vec_normalize(o_norm);
+
+	//sTangent
+	ft0 = v0->v - v1->v;
+	ft1 = v2->v - v1->v;
+	vm_vec_copy_scale(&vt0, &side0, ft1);
+	vm_vec_copy_scale(&vt1, &side1, ft0);
+	vm_vec_sub(o_stan, &vt0, &vt1);
+	vm_vec_normalize(o_stan);
+
+	//tTangent
+	ft0 = v0->u - v1->u;
+	ft1 = v2->u - v1->u;
+	vm_vec_copy_scale(&vt0, &side0, ft1);
+	vm_vec_copy_scale(&vt1, &side1, ft0);
+	vm_vec_sub(o_ttan, &vt0, &vt1);
+	vm_vec_normalize(o_ttan);
+	
+	//Maybe reverse
+	vm_vec_crossprod(&vt0, o_stan, o_ttan);
+	if(vm_vec_dotprod(&vt0, o_norm) < 0.0f)
+	{
+		vm_vec_scale(o_stan, -1.0f);
+		vm_vec_scale(o_ttan, -1.0f);
+	}
 }

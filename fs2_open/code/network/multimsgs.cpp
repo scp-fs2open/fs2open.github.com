@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.52 $
- * $Date: 2005-12-22 04:35:04 $
- * $Author: taylor $
+ * $Revision: 2.53 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2005/12/22 04:35:04  taylor
+ * more big-endian fixes
+ * fix the totally retarded check I made for multi fighter beams (they really don't work right yet anyway) since it broke normal beams for clients
+ *
  * Revision 2.51  2005/12/04 19:07:49  wmcoolmon
  * Final commit of codebase
  *
@@ -6870,7 +6874,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	switch(stats_code){
 	case STATS_ALLTIME:	
 		// alltime kills
-		for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+		for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
 			u_tmp = (ushort)sc->kills[idx];
 			ADD_USHORT(u_tmp);
 		}
@@ -6901,7 +6905,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 
 	case STATS_MISSION:	
 		// mission OKkills		
-		for(idx=0;idx<MAX_SHIP_TYPES;idx++){
+		for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
 			u_tmp = (ushort)sc->m_okKills[idx];
 			ADD_USHORT(u_tmp);			
 		}
@@ -6989,7 +6993,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		ml_string("Received STATS_ALLTIME\n");
 
 		// kills - alltime
-		for (idx=0; idx<MAX_SHIP_TYPES; idx++) {
+		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
 			GET_USHORT(u_tmp);
 			sc->kills[idx] = u_tmp;
 		}
@@ -7023,7 +7027,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		ml_string("Received STATS_MISSION\n");
 
 		// kills - mission OK			
-		for (idx=0; idx<MAX_SHIP_TYPES; idx++) {
+		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
 			GET_USHORT(u_tmp);
 			sc->m_okKills[idx] = u_tmp;			
 		}

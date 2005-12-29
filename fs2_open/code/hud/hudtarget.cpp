@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.76 $
- * $Date: 2005-12-04 19:07:48 $
+ * $Revision: 2.77 $
+ * $Date: 2005-12-29 08:08:34 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.75  2005/10/28 14:52:26  taylor
  * hmm, didn't even notice that earlier
  *
@@ -2064,7 +2067,7 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 	}
 
 	// ignore ships that don't carry cargo
-	if ( !(sip->flags & (SIF_CARGO|SIF_FREIGHTER)) ) {
+	if ( sip->class_type < 0 || !Ship_types[sip->class_type].ship_bools & STI_SHIP_SCANNABLE ) {
 		return 0;
 	}
 
@@ -2629,7 +2632,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	}
 
 	// bail if harmless
-	if ( Ship_info[esct->shipp->ship_info_index].flags & SIF_HARMLESS ) {
+	if ( Ship_info[esct->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct->shipp->ship_info_index].class_type].hud_bools & STI_HUD_TARGET_AS_THREAT)) {
 		return;
 	}
 
@@ -4228,7 +4231,7 @@ void hud_show_hostile_triangle()
 		}
 
 		// always ignore cargo containers and navbuoys
-		if ( Ship_info[sp->ship_info_index].flags & SIF_HARMLESS ) {
+		if ( Ship_info[sp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[sp->ship_info_index].class_type].hud_bools & STI_HUD_SHOW_ATTACK_DIRECTION) ) {
 			continue;
 		}
 
@@ -5533,6 +5536,10 @@ void hud_show_weapons()
 
 	weapon_info	*wip;
 	char	weapon_name[NAME_LENGTH + 10];
+
+	if ( hud_gauge_maybe_flash(HUD_WEAPONS_GAUGE) == i ) {
+		hud_set_gauge_color(HUD_WEAPONS_GAUGE, HUD_C_BRIGHT);
+	}
 
 	GR_AABITMAP(Weapon_gauges[ballistic_hud_index][2].first_frame, Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0], y);
 	y+=3;	//Unfortunately, the top gauge is a different size than the others

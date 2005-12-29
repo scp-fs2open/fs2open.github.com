@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.55 $
- * $Date: 2005-12-16 06:51:31 $
- * $Author: taylor $
+ * $Revision: 2.56 $
+ * $Date: 2005-12-29 08:08:36 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2005/12/16 06:51:31  taylor
+ * fix a NULL pointer crash from shipselect screen
+ * make sure to reset "display_type" for weapon select since it would only render one ship correctly
+ *   (still something wrong here WMC, try using models without -ship_choice_3d, everything is positioned too high on screen)
+ *
  * Revision 2.54  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -667,13 +672,13 @@ typedef struct ss_wing_info
 	ss_slot_info ss_slots[MAX_WING_SLOTS];
 } ss_wing_info;
 
-//ss_icon_info	Ss_icons[MAX_SHIP_TYPES];		// holds ui info on different ship icons
+//ss_icon_info	Ss_icons[MAX_SHIP_CLASSES];		// holds ui info on different ship icons
 //ss_wing_info	Ss_wings[MAX_WING_BLOCKS];		// holds ui info for wings and wing slots
 
 ss_wing_info	Ss_wings_teams[MAX_TVT_TEAMS][MAX_WING_BLOCKS];
 ss_wing_info	*Ss_wings = NULL;
 
-ss_icon_info	Ss_icons_teams[MAX_TVT_TEAMS][MAX_SHIP_TYPES];
+ss_icon_info	Ss_icons_teams[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
 ss_icon_info	*Ss_icons = NULL;
 
 int Ss_mouse_down_on_region = -1;
@@ -786,7 +791,7 @@ typedef struct ss_active_item
 
 static ss_active_item	SS_active_head;
 //static ss_active_item	SS_active_items[MAX_WSS_SLOTS];//DTP commented out or else singleplayer will only have a max of MAX_WSS_SLOTS ships
-static ss_active_item	SS_active_items[MAX_SHIP_TYPES];//DTP, now we have all ships in the TBL, as they can all be playerships
+static ss_active_item	SS_active_items[MAX_SHIP_CLASSES];//DTP, now we have all ships in the TBL, as they can all be playerships
 
 static int SS_active_list_start;
 static int SS_active_list_size;
@@ -1004,7 +1009,7 @@ void ss_set_carried_icon(int from_slot, int ship_class)
 void clear_active_list()
 {
 	int i;
-	for ( i = 0; i < Num_ship_types; i++ ) { //DTP singleplayer ship choice fix 
+	for ( i = 0; i < Num_ship_classes; i++ ) { //DTP singleplayer ship choice fix 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { 
 		SS_active_items[i].flags = 0;
 		SS_active_items[i].ship_class = -1;
@@ -1020,7 +1025,7 @@ void clear_active_list()
 ss_active_item *get_free_active_list_node()
 {
 	int i;
-	for ( i = 0; i < Num_ship_types; i++ ) { 
+	for ( i = 0; i < Num_ship_classes; i++ ) { 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY MAX_WSS_SLOTS SHIPS ???
 	if ( SS_active_items[i].flags == 0 ) {
 			SS_active_items[i].flags |= SS_ACTIVE_ITEM_USED;
@@ -1072,7 +1077,7 @@ void init_active_list()
 	clear_active_list();
 
 	// build the active list
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		if ( Ss_pool[i] > 0 ) {
 			sai = get_free_active_list_node();
 			if ( sai != NULL ) {
@@ -1214,7 +1219,7 @@ void ship_select_button_do(int i)
 //
 void ship_select_init()
 {
-//	SS_active_items = new ss_active_item[Num_ship_types];
+//	SS_active_items = new ss_active_item[Num_ship_classes];
 
 	common_set_interface_palette("ShipPalette");
 	common_flash_button_init();
@@ -2262,7 +2267,7 @@ void ss_unload_icons()
 
 	Assert( Ss_icons != NULL );
 
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		icon = &Ss_icons[i];
 
 		for ( j = 0; j < NUM_ICON_FRAMES; j++ ) {
@@ -2536,7 +2541,7 @@ void unload_ship_anims()
 {
 	Assert( Ss_icons != NULL );
 
-	for ( int i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( int i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		if ( Ss_icons[i].ss_anim ) {
 			anim_free(Ss_icons[i].ss_anim);
 			Ss_icons[i].ss_anim = NULL;
@@ -2552,7 +2557,7 @@ void unload_ship_anim_instances()
 {
 	Assert( Ss_icons != NULL );
 
-	for ( int i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( int i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		if ( Ss_icons[i].ss_anim_instance ) {
 			anim_release_render_instance(Ss_icons[i].ss_anim_instance);
 			Ss_icons[i].ss_anim_instance = NULL;
@@ -3195,7 +3200,7 @@ int create_default_player_ship(int use_last_flown)
 		player_ship_class = Players[Player_num].last_ship_flown_si_index;
 	}
 	else {
-		for (i = 0; i < Num_ship_types; i++) {
+		for (i = 0; i < Num_ship_classes; i++) {
 			if ( !stricmp(Ship_info[i].name, default_player_ship) ) {
 				player_ship_class = i;
 				Players[Player_num].last_ship_flown_si_index = player_ship_class;
@@ -3203,7 +3208,7 @@ int create_default_player_ship(int use_last_flown)
 			}
 		}
 
-		if (i == Num_ship_types)
+		if (i == Num_ship_classes)
 			return 1;
 	}
 
@@ -3368,7 +3373,7 @@ void ss_reset_selected_ship()
 
 	if ( Selected_ss_class == -1 ) {
 		Int3();
-		for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+		for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 			if ( Ss_pool[i] > 0 ) {
 				Selected_ss_class = i;
 			}
@@ -3474,7 +3479,7 @@ void ss_init_pool(team_data *pteam)
 
 	Assert( Ss_pool != NULL );
 
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		Ss_pool[i] = -1;
 	}
 
@@ -3526,7 +3531,7 @@ void ss_load_all_icons()
 
 	Assert( (Ss_pool != NULL) && (Ss_icons != NULL) );
 
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		// clear out data
 		Ss_icons[i].current_icon_bitmap = -1;
 		Ss_icons[i].ss_anim = NULL;
@@ -3573,7 +3578,7 @@ void ss_load_all_anims()
 
 	Assert( Ss_pool != NULL );
 
-	for ( i = 0; i < MAX_SHIP_TYPES; i++ ) {
+	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
 		if ( Ss_pool[i] > 0 ) {
 			ss_load_anim(i);
 		}

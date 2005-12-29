@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.h $
- * $Revision: 2.5 $
- * $Date: 2005-10-30 06:44:59 $
+ * $Revision: 2.6 $
+ * $Date: 2005-12-29 08:08:42 $
  * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/10/30 06:44:59  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.4  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -77,7 +80,7 @@ void flak_create(weapon *wp);
 void flak_delete(int flak_index);
 
 // given a just fired flak shell, pick a detonating distance for it
-void flak_pick_range(object *objp, vec3d *predicted_target_pos, float weapon_subsys_strength);
+void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_pos, float weapon_subsys_strength);
 
 // add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
 // assumes dir is normalized
