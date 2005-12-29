@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.80 $
- * $Date: 2005-12-29 00:52:57 $
- * $Author: phreak $
+ * $Revision: 2.81 $
+ * $Date: 2005-12-29 07:58:02 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2005/12/29 00:52:57  phreak
+ * changed around aabitmap calls to accept a "mirror" parameter.  defaults to false, and is only true for mirrored briefing icons.
+ * If the mirror param is true, then the picture is mirrored about the y-axis so left becomes right and vice versa.
+ *
  * Revision 2.79  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -826,6 +830,8 @@
  *
  * $NoKeywords: $
  */
+
+#include <direct.h>
 
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
@@ -3762,80 +3768,60 @@ int tga_compress(char *out, char *in, int bytecount, int pixsize )
 
 void gr_d3d_print_screen(char *filename)
 {
+	D3DDISPLAYMODE mode;
 	IDirect3DSurface8 *pDestSurface = NULL;
+	ubyte *buf = NULL, tga_hdr[18];
+	char pic_name[MAX_PATH];
+	D3DLOCKED_RECT LockedRect;
+	RECT rct;
+	int i, j;
+	ushort width, height;
+	ubyte *src_buf = NULL, *dst_buf = NULL;
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Original code for this was borrowed from Michael Fötsch, though it has been
+	// modified quite a bit at this point. Still giving credit for the original of crouse.
+	// http://www.geocities.com/foetsch/d3d8screenshot/Screenshot.cpp.html
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	if (GlobalD3DVars::lpD3D == NULL)
 		return;
 
 
-	D3DDISPLAYMODE mode;
+	_getcwd( pic_name, MAX_PATH_LEN-1 );
+	strcat( pic_name, "\\screenshots\\" );
+	_mkdir( pic_name );
+
+	strcat( pic_name, filename );
+	strcat( pic_name, ".tga" );
+
+	FILE *fout = fopen(pic_name, "wb");
+
+	buf = (ubyte*) vm_malloc_q(gr_screen.max_w * gr_screen.max_h * 3);
+
+	if ((fout == NULL) || (buf == NULL))
+		goto Done;
+
+
 	mode.Width = mode.Height = 0;
 
 	// although this doesn't really matter in fullscreen mode it doesn't hurt either
-	if (FAILED(GlobalD3DVars::lpD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode)))
-	{
+	if ( FAILED(GlobalD3DVars::lpD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode)) ) {
 		mprintf(("Could not get adapter display mode"));
-		return;
+		goto Done;
 	}
 
 	// we get the full mode size which for windowed mode is the entire screen and not just the window
-	if(FAILED(GlobalD3DVars::lpD3DDevice->CreateImageSurface(
-		mode.Width, mode.Height, D3DFMT_A8R8G8B8, &pDestSurface)))
-	{
+	if ( FAILED(GlobalD3DVars::lpD3DDevice->CreateImageSurface(mode.Width, mode.Height, D3DFMT_A8R8G8B8, &pDestSurface)) ) {
 		mprintf(("Failed to create image surface"));
-		return;
+		goto Done;
 	}
 
 
-	if(FAILED(GlobalD3DVars::lpD3DDevice->GetFrontBuffer(pDestSurface)))
-	{
-		pDestSurface->Release();
+	if ( FAILED(GlobalD3DVars::lpD3DDevice->GetFrontBuffer(pDestSurface)) ) {
 		mprintf(("Failed to get front buffer"));
-		return;
+		goto Done;
 	}
-
-
-
-	char pic_name[MAX_PATH];
-	strcpy(pic_name, filename);
-	strcat(pic_name, ".bmp");
-	
-	/* --- We need the Direct X 8.1 headers for this function !
-
-	if(FAILED(D3DXSaveSurfaceToFile(pic_name, D3DXIFF_BMP, pDestSurface, NULL, NULL)))
-	{
-		mprintf(("Failed to save file %s", pic_name));
-	}*/
-
-
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// The Following code was borrowed from Michael Fötsch.
-	// With slight modification of course
-	// http://www.geocities.com/foetsch/d3d8screenshot/Screenshot.cpp.html
-	// we can use this until we get the Dx 8.1 headers
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-	BITMAPINFOHEADER bmih;
-	bmih.biSize = sizeof(bmih);
-	bmih.biWidth = gr_screen.max_w;
-	bmih.biHeight = gr_screen.max_h;
-	bmih.biPlanes = 1;
-	bmih.biBitCount = 24;
-	bmih.biCompression = BI_RGB;
-	bmih.biSizeImage = gr_screen.max_w * gr_screen.max_h * 3;
-	bmih.biXPelsPerMeter = 0;
-	bmih.biYPelsPerMeter = 0;
-	bmih.biClrUsed = 0;
-	bmih.biClrImportant = 0;
-
-	// reserve memory for the DIB's bitmap bits
-	unsigned char *Bits = new unsigned char[bmih.biSizeImage];
-	if (!Bits)
-	{
-		return;
-	}
-
-	RECT rct;
 
 	if (GlobalD3DVars::D3D_window) {
 		POINT pnt;
@@ -3856,34 +3842,21 @@ void gr_d3d_print_screen(char *filename)
 
 	// lock the surface for reading
 	// if a window then only lock the portion of the surface that we want to access
-    D3DLOCKED_RECT LockedRect;
-	if (FAILED(pDestSurface->LockRect(&LockedRect, &rct, D3DLOCK_READONLY)))
-	{
-		if (Bits)
-			delete[] Bits;
-
-		return;
+	if ( FAILED(pDestSurface->LockRect(&LockedRect, &rct, D3DLOCK_READONLY)) ) {
+		goto Done;
 	}
 
-	// flip the bitmap vertically (because that's how DIBs are stored)
-	// and convert it from 32-bits to 24-bits (some bitmap viewers can't
-	// handle 32-bit bitmaps, although it's a valid format)
+	dst_buf = buf;
 
-	LPBYTE lpDest = Bits;
-	LPBYTE lpSrc;
+	// convert from 32-bit to 24-bit
+	for (i = 0; i < gr_screen.max_h; i++) {
+		// determine current source location, have to use pitch and not width here or it messes up
+		src_buf = (ubyte*)LockedRect.pBits + i * LockedRect.Pitch;
 
-	// read pixels beginning with the bottom scan line
-	for (int y = (gr_screen.max_h - 1); y >= 0; y--)
-	{
-		// calculate address of the current source scan line (can't use width here, must use pitch)
-		lpSrc = (LPBYTE)LockedRect.pBits + y * LockedRect.Pitch;
-
-		for (int x = 0; x < gr_screen.max_w; x++)
-		{
-			// store the source pixels in the bitmap bits array, ignores the alpha bit on copy
-			memcpy(lpDest, lpSrc, 3);
-			lpSrc += 4; // have to move past the alpha bit too
-			lpDest += 3;
+		for (j = 0; j < gr_screen.max_w; j++) {
+			memcpy( dst_buf, src_buf, 3 );
+			src_buf += 4;	// have to skip over the alpha bit too
+			dst_buf += 3;
 		}
 	}
 
@@ -3891,38 +3864,35 @@ void gr_d3d_print_screen(char *filename)
 	pDestSurface->UnlockRect();
 
 
-	// prepare the bitmap file header
-	BITMAPFILEHEADER bmfh;
-	bmfh.bfType = BITMAP_FILE_SIGNATURE;
-	bmfh.bfSize = sizeof(bmfh) + sizeof(bmih) + bmih.biSizeImage;
-	bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
-	bmfh.bfOffBits = sizeof(bmfh) + sizeof(bmih);
+	// Write the TGA header
+	width = INTEL_SHORT(gr_screen.max_w);
+	height = INTEL_SHORT(gr_screen.max_h);
 
-	// create the BMP file
-	FILE *f = fopen(pic_name, "wb");
-	if (f)
-	{
-		// dump the file header
-		fwrite(reinterpret_cast<void*>(&bmfh), sizeof(bmfh), 1, f);
-		// dump the info header
-		fwrite(reinterpret_cast<void*>(&bmih), sizeof(bmih), 1, f);
-		// dump the bitmap bits
-		fwrite(reinterpret_cast<void*>(Bits), sizeof(char), bmih.biSizeImage, f);
+	memset( tga_hdr, 0, sizeof(tga_hdr) );
 
-		// close the file
-		fclose(f);
+	tga_hdr[2] = 2;		// ImageType    2 = 24bpp, uncompressed
+	memcpy( tga_hdr + 12, &width, sizeof(ushort) );		// Width
+	memcpy( tga_hdr + 14, &height, sizeof(ushort) );	// Height
+	tga_hdr[16] = 24;	// PixelDepth
+	tga_hdr[17] = (1 << 5);	// first pixel at top-left (so we don't have to flip it ourselves)
+
+	fwrite( tga_hdr, sizeof(tga_hdr), 1, fout );
+
+	// write out the image data
+	fwrite( buf, (gr_screen.max_w * gr_screen.max_h * 3), 1, fout );
+
+
+Done:
+	if (fout != NULL)
+		fclose(fout);
+
+	if (buf != NULL)
+		vm_free(buf);
+
+	if (pDestSurface != NULL) {
+		if ( pDestSurface->Release() )
+			pDestSurface->Release();
 	}
-
-
-	// free the memory for the bitmap bits
-	delete[] Bits;
-
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// End of code borrowed from Michael Fötsch.
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-	pDestSurface->Release();
 }
 
 
