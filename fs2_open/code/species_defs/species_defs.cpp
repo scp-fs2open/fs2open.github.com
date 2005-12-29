@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.25 $
- * $Date: 2005-11-21 23:57:26 $
+ * $Revision: 1.26 $
+ * $Date: 2005-12-29 00:01:29 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2005/11/21 23:57:26  taylor
+ * some minor thruster cleanup, if you could actually use the term "clean"
+ *
  * Revision 1.24  2005/10/24 12:42:14  taylor
  * init thruster stuff properly so that bmpman doesn't have a fit
  *
@@ -120,11 +123,13 @@
 #include "parse/parselo.h"
 #include "iff_defs/iff_defs.h"
 #include "graphics/generic.h"
+#include "localization/localize.h"
 
 
 int Num_species;
 species_info Species_info[MAX_SPECIES];
 
+static int species_initted;
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
@@ -195,21 +200,109 @@ $AwacsMultiplier: 1.50							\n\
 // This function parses the data from the species_defs.tbl
 // Names only - actual loading is done elsewhere
 
-void species_init()
+void parse_thrust_anims(species_info *species, bool no_create)
 {
-	// Goober5000 - condensed check for table file
-	CFILE *sdt = cfopen("species_defs.tbl", "rb");
-	int table_exists = (sdt != NULL);
-	if (table_exists)
-		cfclose(sdt);
+	if ( !no_create ) {
+		required_string("$ThrustAnims:");
 
-	// Goober5000 - if table doesn't exist, use the default table (see above)
-	if (table_exists)
-		read_file_text("species_defs.tbl");
-	else
-		read_file_text_from_array(default_species_table);
+		generic_anim_init(&species->thruster_info.flames.normal, NULL);
+		generic_anim_init(&species->thruster_info.flames.afterburn, NULL);
+		generic_bitmap_init(&species->thruster_secondary_glow_info.normal, NULL);
+		generic_bitmap_init(&species->thruster_secondary_glow_info.afterburn, NULL);
+		generic_bitmap_init(&species->thruster_tertiary_glow_info.normal, NULL);
+		generic_bitmap_init(&species->thruster_tertiary_glow_info.afterburn, NULL);
+	} else if ( !optional_string("$ThrustAnims:") ) {
+		return;
+	}
 
-	reset_parse();	
+	// favor new style
+	if ( no_create ) {
+		if ( optional_string("+Pri_Normal:") )
+			stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+	} else {
+		if (!optional_string("+Pri_Normal:"))
+			required_string("+Normal:");
+
+		stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+	}
+
+		// and again
+	if ( no_create ) {
+		if ( optional_string("+Pri_Afterburn:") )
+			stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+	} else {
+		if (!optional_string("+Pri_Afterburn:"))
+			required_string("+Afterburn:");
+
+		stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+	}
+
+	// extra thruster stuff, bah
+	if (optional_string("+Sec_Normal:"))
+		stuff_string(species->thruster_secondary_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+
+	// etc.
+	if (optional_string("+Sec_Afterburn:"))
+		stuff_string(species->thruster_secondary_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+
+	// etc.
+	if (optional_string("+Ter_Normal:"))
+		stuff_string(species->thruster_tertiary_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+
+	// etc.
+	if (optional_string("+Ter_Afterburn:"))
+		stuff_string(species->thruster_tertiary_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+}
+
+void parse_thrust_glows(species_info *species, bool no_create)
+{
+	if ( !no_create ) {
+		required_string("$ThrustGlows:");
+
+		generic_anim_init(&species->thruster_info.glow.normal, NULL);
+		generic_anim_init(&species->thruster_info.glow.afterburn, NULL);
+	} else if ( !optional_string("$ThrustGlows:") ) {
+		return;
+	}
+
+	if ( no_create ) {
+		if ( optional_string("+Normal:") )
+			stuff_string(species->thruster_info.glow.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+	} else {
+		required_string("+Normal:");
+		stuff_string(species->thruster_info.glow.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+	}
+
+	if ( no_create ) {
+		if ( optional_string("+Afterburn:") )
+			stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+	} else {
+		required_string("+Afterburn:");
+		stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+	}
+}
+
+void parse_species_tbl(char *longname)
+{
+	bool no_create = false;
+	int i, rval;
+	species_info dummy_info;
+	char species_name[NAME_LENGTH];
+
+	// open localization
+	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("Unable to parse %s!  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
+	} else {
+		if (longname == NULL) {
+			read_file_text_from_array(default_species_table);
+		} else {
+			read_file_text(longname);
+		}
+
+		reset_parse();		
+	}
 
 	required_string("#SPECIES DEFS");
 
@@ -221,10 +314,9 @@ void species_init()
 	}
 
 	// begin reading data
-	Num_species = 0;
 	while (required_string_either("#END","$Species_Name:"))
 	{
-		species_info *species;
+		species_info *species = NULL;
 		
 		// make sure we're under the limit
 		if (Num_species >= MAX_SPECIES)
@@ -234,12 +326,34 @@ void species_init()
 			break;
 		}
 
-		species = &Species_info[Num_species];
-		Num_species++;
-
 		// Start Species - Get its name
 		required_string("$Species_Name:");
-		stuff_string(species->species_name, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(species_name, F_NAME, NULL, NAME_LENGTH);
+
+		if (optional_string("+nocreate"))
+		{
+			no_create = true;
+
+			for (i = 0; i < Num_species; i++)
+			{
+				if ( !stricmp(Species_info[i].species_name, species_name) )
+				{
+					species = &Species_info[i];
+					break;
+				}
+			}
+		}
+		else
+		{
+			species = &Species_info[Num_species];
+			strcpy( species->species_name, species_name );
+			Num_species++;
+		}
+
+		if (species == NULL)
+		{
+			species = &dummy_info;
+		}
 
 		// Goober5000 - IFF
 		if (optional_string("$Default IFF:"))
@@ -264,7 +378,7 @@ void species_init()
 				Warning(LOCATION, "Species %s default IFF %s not found in iff_defs.tbl!  Defaulting to %s.\n", species->species_name, temp_name, Iff_info[species->default_iff].iff_name);
 			}
 		}
-		else
+		else if (!no_create)
 		{
 			// we have no idea which it could be, so default to 0
 			species->default_iff = 0;
@@ -278,7 +392,7 @@ void species_init()
 		{
 			stuff_int_list(species->fred_color.a1d, 3, RAW_INTEGER_TYPE);
 		}
-		else
+		else if (!no_create)
 		{
 			// set defaults to Volition's originals
 			if (!stricmp(species->species_name, "Terran"))
@@ -320,63 +434,26 @@ void species_init()
 		optional_string("$MiscAnims:");
 
 		// Get its Debris Texture
-		generic_bitmap_init(&species->debris_texture, NULL);
-		required_string("+Debris_Texture:");
-		stuff_string(species->debris_texture.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		if ( (!no_create && required_string("+Debris_Texture:")) || optional_string("+Debris_Texture:") )
+		{
+			generic_bitmap_init(&species->debris_texture, NULL);
+			stuff_string(species->debris_texture.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		}
+
 
 		// Shield Hit Animation
-		generic_anim_init(&species->shield_anim, NULL);
-		required_string("+Shield_Hit_ani:");
-		stuff_string(species->shield_anim.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		if ( (!no_create && required_string("+Shield_Hit_ani:")) || optional_string("+Shield_Hit_ani:") )
+		{
+			generic_anim_init(&species->shield_anim, NULL);
+			stuff_string(species->shield_anim.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		}
 
 
 		// Thruster Anims
-		required_string("$ThrustAnims:");
-
-		// favor new style
-		generic_anim_init(&species->thruster_info.flames.normal, NULL);
-		if (!optional_string("+Pri_Normal:"))
-			required_string("+Normal:");
-		stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
-
-		// and again
-		generic_anim_init(&species->thruster_info.flames.afterburn, NULL);
-		if (!optional_string("+Pri_Afterburn:"))
-			required_string("+Afterburn:");
-		stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
-
-
-		// extra thruster stuff, bah
-		generic_bitmap_init(&species->thruster_secondary_glow_info.normal, NULL);
-		if (optional_string("+Sec_Normal:"))
-			stuff_string(species->thruster_secondary_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
-
-		// etc.
-		generic_bitmap_init(&species->thruster_secondary_glow_info.afterburn, NULL);
-		if (optional_string("+Sec_Afterburn:"))
-			stuff_string(species->thruster_secondary_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
-
-		// etc.
-		generic_bitmap_init(&species->thruster_tertiary_glow_info.normal, NULL);
-		if (optional_string("+Ter_Normal:"))
-			stuff_string(species->thruster_tertiary_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
-
-		// etc.
-		generic_bitmap_init(&species->thruster_tertiary_glow_info.afterburn, NULL);
-		if (optional_string("+Ter_Afterburn:"))
-			stuff_string(species->thruster_tertiary_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
-
+		parse_thrust_anims(species, no_create);
 
 		// Thruster Glow Anims
-		required_string("$ThrustGlows:");
-
-		generic_anim_init(&species->thruster_info.glow.normal, NULL);
-		required_string("+Normal:");
-		stuff_string(species->thruster_info.glow.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
-
-		generic_anim_init(&species->thruster_info.glow.afterburn, NULL);
-		required_string("+Afterburn:");
-		stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		parse_thrust_glows(species, no_create);
 
 
 		// Goober5000 - AWACS multiplier
@@ -384,7 +461,7 @@ void species_init()
 		{
 			stuff_float(&species->awacs_multiplier);
 		}
-		else
+		else if (!no_create)
 		{
 			// set defaults to Volition's originals
 			if (!stricmp(species->species_name, "Vasudan"))
@@ -400,4 +477,28 @@ void species_init()
 	}
 	
 	required_string("#END");
+
+	// close localization
+	lcl_ext_close();
+}
+
+
+void species_init()
+{
+	if (species_initted)
+		return;
+
+	Num_species = 0;
+
+
+	if ( cf_find_file_location("species_defs.tbl", CF_TYPE_TABLES, 0, NULL, NULL, NULL) ) {
+		parse_species_tbl("species_defs.tbl");
+	} else {
+		parse_species_tbl(NULL);
+	}
+
+	parse_modular_table("*-sdf.tbm", parse_species_tbl);
+
+
+	species_initted = 1;
 }
