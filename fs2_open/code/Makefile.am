@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.25 2005-11-21 23:55:00 taylor Exp $
+## $Id: Makefile.am,v 1.26 2005-12-30 09:57:53 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -110,6 +110,8 @@ FS2_SOURCES =	\
 	globalincs/alphacolors.h	\
 	globalincs/crypt.cpp	\
 	globalincs/crypt.h	\
+	globalincs/def_files.cpp	\
+	globalincs/def_files.h	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
 	globalincs/pstypes.h	\
