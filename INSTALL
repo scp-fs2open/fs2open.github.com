@@ -12,16 +12,15 @@ Win32-MinGW:
 
 
 Linux and other unix variants (NOT YET COMPLETE)
-  ./configure [options]    (options tbd)
-  make -f makefile.linux
+  ./configure [options]
+  make
 
 
 
 === for the project maintainers (people who need to 
-=== keep the makefiles up to date):
+=== keep the makefiles up to date) and those building
+=== from CVS:
 
-aclocal
-autoconf
-automake
-./configure
+./autogen.sh (should only has to be done once)
+./configure [options]
 make
