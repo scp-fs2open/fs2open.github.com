@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.61 $
+ * $Revision: 2.62 $
  * $Author: wmcoolmon $
- * $Date: 2005-12-29 08:08:39 $
+ * $Date: 2005-12-30 05:40:19 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.60  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -2222,7 +2225,10 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 
 	while (*Mp != ')') {
 		assert ( count < max_strings );
-		Assert ( *Mp == '\"' );					// should always be enclosed in quotes
+		if(*Mp != '\"') {
+			error_display(0, "Missing quotation marks in string list.");
+		}
+		//Assert ( *Mp == '\"' );					// should always be enclosed in quotes
 
 		get_string( slp[count++] );
 		ignore_white_space();
