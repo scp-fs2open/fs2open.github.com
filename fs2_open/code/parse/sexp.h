@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.99 $
+ * $Revision: 2.100 $
  * $Author: wmcoolmon $
- * $Date: 2005-11-05 05:06:13 $
+ * $Date: 2005-12-31 01:47:35 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2005/11/05 05:06:13  wmcoolmon
+ * turret-change-weapon
+ *
  * Revision 2.98  2005/10/23 04:18:23  phreak
  * various background and nebula sexps
  *
@@ -986,6 +989,7 @@ struct ship_subsys;
 #define OP_NAV_DISTANCE						(0x002a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Kazan (distance-to-nav)
 #define OP_CURRENT_SPEED					(0x002b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 #define	OP_IS_IFF							(0x002c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
+#define OP_NUM_WITHIN_BOX					(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// WMCoolmon
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
