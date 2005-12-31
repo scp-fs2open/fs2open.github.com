@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.194 $
- * $Date: 2005-12-31 01:47:35 $
+ * $Revision: 2.195 $
+ * $Date: 2005-12-31 01:49:53 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.194  2005/12/31 01:47:35  wmcoolmon
+ * num-within-box
+ *
  * Revision 2.193  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -5645,11 +5648,18 @@ int sexp_num_within_box(int n)
 			idx = wing_name_lookup(ship_wing);
 			if(idx > -1)
 			{
+				bool wing_check = true;
 				for(i = 0; i < Wings[idx].current_count; i++)
 				{
-					if(sexp_helper_is_within_box(box_vals, &Objects[Ships[Wings[idx].ship_index[i]].objnum].pos))
-						retval++;
+					if(!sexp_helper_is_within_box(box_vals, &Objects[Ships[Wings[idx].ship_index[i]].objnum].pos))
+					{
+						wing_check = false;
+						break;
+					}
 				}
+
+				if(wing_check)
+					retval++;
 			}
 		}
 	}
