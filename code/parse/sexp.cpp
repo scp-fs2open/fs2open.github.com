@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.193 $
- * $Date: 2005-12-29 08:08:39 $
+ * $Revision: 2.194 $
+ * $Date: 2005-12-31 01:47:35 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.193  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.192  2005/12/06 03:01:25  taylor
  * add a nomusic check to not get an error when eval on the change soundtrack sexp
  *
@@ -1258,6 +1261,7 @@ sexp_oper Operators[] = {
 	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 2, },
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
+	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
 	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,				2,	2	},	// WMC
 	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,				2,	2	},	// WMC
@@ -5595,6 +5599,62 @@ int sexp_distance_subsystem(int n)	// Goober5000
 	}
 
 	return dist_min;
+}
+
+bool sexp_helper_is_within_box(float *box_vals, vec3d *pos)
+{
+	int i;
+	for(i = 0; i < 3; i++)
+	{
+		if(pos->a1d[i] < (box_vals[i] - box_vals[i+3])
+			|| pos->a1d[i] > (box_vals[i] + box_vals[i+3]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+int sexp_num_within_box(int n)
+{
+	float box_vals[6];//x,y,z,width,height,depth
+	char *ship_wing;
+	int idx;
+	int retval = 0;
+
+	for(int i = 0; i < 6; i++)
+	{
+		box_vals[i] = i2fl(eval_num(n));
+		n = CDR(n);
+	}
+
+	
+	for(;n != -1; n = CDR(n))
+	{
+		ship_wing = CTEXT(n);
+
+		idx = ship_name_lookup(ship_wing);
+		if(idx > -1)
+		{
+			if(sexp_helper_is_within_box(box_vals, &Objects[Ships[idx].objnum].pos))
+				retval++;
+		}
+		else
+		{
+			idx = wing_name_lookup(ship_wing);
+			if(idx > -1)
+			{
+				for(i = 0; i < Wings[idx].current_count; i++)
+				{
+					if(sexp_helper_is_within_box(box_vals, &Objects[Ships[Wings[idx].ship_index[i]].objnum].pos))
+						retval++;
+				}
+			}
+		}
+	}
+
+	return retval;
 }
 
 void sos_helper(object *objp, int speed, int axis)
@@ -13787,6 +13847,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_distance_subsystem( node );
 				break;
 
+			case OP_NUM_WITHIN_BOX:
+				sexp_val = sexp_num_within_box( node );
+				break;
+
 			case OP_IS_SHIP_VISIBLE:
 				sexp_val = sexp_is_ship_visible( node );
 				break;
@@ -15124,6 +15188,7 @@ int query_operator_return_type(int op)
 		case OP_HITS_LEFT_SUBSYSTEM:
 		case OP_DISTANCE:
 		case OP_DISTANCE_SUBSYSTEM:
+		case OP_NUM_WITHIN_BOX:
 		case OP_NUM_PLAYERS:
 		case OP_NUM_KILLS:
 		case OP_NUM_TYPE_KILLS:
@@ -15680,6 +15745,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUBSYSTEM;
 			else
 				Int3();		// shouldn't happen
+
+		case OP_NUM_WITHIN_BOX:
+			if(argnum < 3)
+				return OPF_NUMBER;
+			else if(argnum < 6)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP_WING;
 
 		// Sesquipedalian
 		case OP_MISSILE_LOCKED:
@@ -18136,6 +18209,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tThe name of the object.\r\n"
 		"\t2:\tThe name of the ship which houses the subsystem.\r\n"
 		"\t3:\tThe name of the subsystem." },
+
+	{ OP_NUM_WITHIN_BOX, "Number of specified objects in the box specified\r\n"
+		"\t1: Box center (X)\r\n"
+		"\t2: Box center (Y)\r\n"
+		"\t3: Box center (Z)\r\n"
+		"\t4: Box width\r\n"
+		"\t5: Box height\r\n"
+		"\t6: Box depth\r\n"
+		"\tRest:\tShips or wings to check" },
 
 	{ OP_LAST_ORDER_TIME, "Last order time (Status operator)\r\n"
 		"\tReturns true if <count> seconds have elapsed since one or more ships have received "
