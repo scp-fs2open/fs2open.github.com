@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.60 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.61 $
+ * $Date: 2006-01-02 07:13:38 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.59  2005/11/13 06:50:57  taylor
  * don't fail if not a starfield pof to load, regular starfield bitmaps don't hard fail so this shouldn't either
  *
@@ -1090,18 +1093,7 @@ void stars_init()
 
 	parse_startbl("stars.tbl");
 
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
-
-	int num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, "*-str.tbm", CF_SORT_REVERSE);
-	for(idx = 0; idx < num_files; idx++)
-	{
-		//HACK HACK HACK
-		Modular_tables_loaded = true;
-		strcat(tbl_file_names[idx], ".tbm");
-		mprintf(("TBM  =>  Starting parse of '%s'...\n", tbl_file_names[idx]));
-		parse_startbl(tbl_file_names[idx]);
-	}
+	parse_modular_table( "*-str.tbm", parse_startbl );
 }
 
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not
@@ -1375,6 +1367,8 @@ void stars_draw_sun( int show_sun, int env )
 			continue;
 		}
 
+		memset( &sun_vex, 0, sizeof(vertex) );
+
 		// get sun pos
 		sun_pos = vmd_zero_vector;
 		sun_pos.xyz.y = 1.0f;
@@ -1457,6 +1451,8 @@ void stars_draw_sun_glow(int sun_n)
 	if (bm->glow_bitmap < 0) {
 		return;
 	}
+
+	memset( &sun_vex, 0, sizeof(vertex) );
 
 	// get sun pos
 	sun_pos = vmd_zero_vector;
