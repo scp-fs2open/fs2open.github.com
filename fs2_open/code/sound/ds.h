@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.15 $
- * $Date: 2005-07-13 03:35:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2006-01-02 07:26:43 $
+ * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/13 03:35:29  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.14  2005/04/05 11:48:23  taylor
  * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
  * better error handling for OpenAL functions
@@ -169,11 +173,9 @@
 #if !(defined(__APPLE__) || defined(_WIN32))
 	#include <AL/al.h>
 	#include <AL/alc.h>
-	#include <AL/alut.h>
 #else
 	#include "al.h"
 	#include "alc.h"
-	#include "alut.h"
 #endif // !__APPLE__ && !_WIN32
 #endif // USE_OPENAL
 
