@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.154 $
- * $Date: 2005-12-29 20:12:51 $
+ * $Revision: 2.155 $
+ * $Date: 2006-01-02 07:25:11 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.154  2005/12/29 20:12:51  taylor
+ * we are using gouraud lighting here so be sure to set the proper tmap flag (fixes D3D, corrects OGL)
+ *
  * Revision 2.153  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -2871,7 +2874,7 @@ void gr_opengl_print_screen(char *filename)
 
 	memset(buf, 0, gr_screen.max_w * gr_screen.max_h * 3);
 
-	glReadBuffer(GL_FRONT);
+//	glReadBuffer(GL_FRONT);
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGB, GL_UNSIGNED_BYTE, buf);
 
 	// convert from RGB to BGR
@@ -3299,16 +3302,16 @@ int gr_opengl_save_screen()
  		return -1;
  	}
 
-	glDisable(GL_TEXTURE_2D);
-
-#ifdef _WIN32
+// REMOVEME ----
+GLint blahblah;
+glGetIntegerv(GL_READ_BUFFER, &blahblah);
+mprintf(("OGL-READBUFFER: 0x%x\n", blahblah));
+/*#ifdef _WIN32
 	glReadBuffer(GL_FRONT);
 #else
 	glReadBuffer(GL_BACK);
-#endif
+#endif*/
 	glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGB, fmt, opengl_screen_tmp);
-
-	glEnable(GL_TEXTURE_2D);
 
 	sptr = (ubyte *)&opengl_screen_tmp[gr_screen.max_w * gr_screen.max_h * 3];
 	dptr = (ubyte *)GL_saved_screen;
@@ -4397,6 +4400,7 @@ void gr_opengl_init(int reinit)
 
 	atexit( gr_opengl_close );
 
+#ifdef BUMPMAPING
 	//WMC - Generate normalization bump map
 	glGenTextures(1, &normalisationCubeMap);
 	glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, normalisationCubeMap);
@@ -4406,6 +4410,7 @@ void gr_opengl_init(int reinit)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+#endif
 
 	mprintf(("... OpenGL init is complete!\n"));
 }
