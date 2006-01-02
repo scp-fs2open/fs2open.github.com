@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.288 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.289 $
+ * $Date: 2006-01-02 07:16:43 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.288  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.287  2005/12/28 22:21:04  taylor
  * Oops, bit of debug stuff I didn't mean to commit (but something similar is needed so you'll it again)
  *
@@ -4210,13 +4213,8 @@ void ship_init()
 	{
 		int num_files;
 
-		CFILE *idt = cfopen("objecttypes.tbl", "rb");
-		int table_exists = (idt != NULL);
-		if (table_exists)
-			cfclose(idt);
-
 		// Goober5000 - if table doesn't exist, use the default table (see above)
-		if (table_exists)
+		if ( cf_find_file_location("objecttypes.tbl", CF_TYPE_TABLES, 0, NULL, NULL, NULL) )
 			parse_shiptype_tbl("objecttypes.tbl");
 		else
 			parse_shiptype_tbl(NULL);
@@ -4224,9 +4222,9 @@ void ship_init()
 		//Then other ones
 		num_files = parse_modular_table( NOX("*-obt.tbm"), parse_shiptype_tbl );
 
-			if ( num_files > 0 ) {
-				Module_ship_weapons_loaded = true;
-			}
+		if ( num_files > 0 ) {
+			Module_ship_weapons_loaded = true;
+		}
 
 
 		//ships.tbl
@@ -10313,7 +10311,7 @@ int ship_type_name_lookup(char *name)
 	}
 */
 	//Look through Ship_types array
-	for(int idx=0; idx < Ship_types.size(); idx++){
+	for(uint idx=0; idx < Ship_types.size(); idx++){
 		if(!stricmp(name, Ship_types[idx].name)){
 			return idx;
 		}
@@ -11701,7 +11699,7 @@ void ship_add_ship_type_count( int ship_info_index, int num )
 	}
 
 	//Resize if we need to
-	if(type >= Ship_type_counts.size()) {
+	if(type >= (int)Ship_type_counts.size()) {
 		Ship_type_counts.resize(type+1);
 	}
 
@@ -11719,7 +11717,7 @@ void ship_add_ship_type_kill_count( int ship_info_index )
 	}
 
 	//Resize if we need to
-	if(type >= Ship_type_counts.size()) {
+	if(type >= (int)Ship_type_counts.size()) {
 		Ship_type_counts.resize(type+1);
 	}
 
