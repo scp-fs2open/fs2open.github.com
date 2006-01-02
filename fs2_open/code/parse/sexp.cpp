@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.195 $
- * $Date: 2005-12-31 01:49:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.196 $
+ * $Date: 2006-01-02 07:12:24 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.195  2005/12/31 01:49:53  wmcoolmon
+ * Changed num-within-box wing function
+ *
  * Revision 2.194  2005/12/31 01:47:35  wmcoolmon
  * num-within-box
  *
@@ -5623,10 +5626,10 @@ int sexp_num_within_box(int n)
 {
 	float box_vals[6];//x,y,z,width,height,depth
 	char *ship_wing;
-	int idx;
+	int i, idx;
 	int retval = 0;
 
-	for(int i = 0; i < 6; i++)
+	for(i = 0; i < 6; i++)
 	{
 		box_vals[i] = i2fl(eval_num(n));
 		n = CDR(n);
