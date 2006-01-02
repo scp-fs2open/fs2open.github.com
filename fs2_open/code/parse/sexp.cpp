@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.196 $
- * $Date: 2006-01-02 07:12:24 $
+ * $Revision: 2.197 $
+ * $Date: 2006-01-02 21:28:52 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.196  2006/01/02 07:12:24  taylor
+ * those blasted Windows programmers!  ;)
+ *
  * Revision 2.195  2005/12/31 01:49:53  wmcoolmon
  * Changed num-within-box wing function
  *
@@ -11399,7 +11402,7 @@ void sexp_set_skybox_model_preload(char *name)
 
 void sexp_beam_fire(int node)
 {
-	int sindex;
+	int sindex, n;
 	beam_fire_info fire_info;		
 	int idx;	
 
@@ -11435,10 +11438,9 @@ void sexp_beam_fire(int node)
 
 	// see if the optional subsystem can be found	
 	fire_info.target_subsys = NULL;
-	node = CDR(CDR(CDR(node)));
-	if(node != -1)
-	{
-		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(node));	
+	n = CDDDR(node);
+	if (n != -1) {
+		fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));	
 	}
 
 	// if it has no primary weapons
