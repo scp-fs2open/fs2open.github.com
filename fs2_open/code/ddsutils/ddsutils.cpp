@@ -87,6 +87,9 @@ int dds_read_header(char *filename, CFILE *img_cfp, int *width, int *height, int
 	dds_header.ddpfPixelFormat.dwBBitMask			= cfread_uint(ddsfile);
 	dds_header.ddpfPixelFormat.dwRGBAlphaBitMask	= cfread_uint(ddsfile);
 
+	dds_header.ddsCaps.dwCaps1		= cfread_uint(ddsfile);
+	dds_header.ddsCaps.dwCaps2		= cfread_uint(ddsfile);
+
 	// calculate the type and size of the data
 	if (dds_header.ddpfPixelFormat.dwFlags & DDPF_FOURCC) {
 		// did I mention lately that I hate Microsoft?
