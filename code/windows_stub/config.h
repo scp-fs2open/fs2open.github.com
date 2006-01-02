@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.12 $
- * $Date: 2005-12-28 22:34:01 $
+ * $Revision: 2.13 $
+ * $Date: 2006-01-02 07:11:41 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/12/28 22:34:01  taylor
+ * getting tired of having to ifdef the snprintf/_snprintf thing that Microsoft can't do right
+ *
  * Revision 2.11  2005/12/06 03:02:28  taylor
  * move the pragma warnings here from pstypes.h for Windows
  * add indexed palette support for DDS images
@@ -171,6 +174,9 @@ typedef struct _LARGE_INTEGER {
 #define DDPF_PALETTEINDEXEDTO8	0x00000010
 #define DDPF_PALETTEINDEXED8	0x00000020
 #define DDPF_RGB				0x00000040
+
+#define DDSCAPS_COMPLEX			0x00000008
+#define DDSCAPS_PRIMARYSURFACE	0x00000200
 
 typedef struct _DDCOLORKEY {
 	DWORD dwColorSpaceLowValue;
