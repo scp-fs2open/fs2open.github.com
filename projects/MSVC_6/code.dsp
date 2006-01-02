@@ -509,6 +509,14 @@ SOURCE=..\..\code\GlobalIncs\crypt.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\globalincs\def_files.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\globalincs\def_files.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\globalincs\globals.h
 # End Source File
 # Begin Source File
