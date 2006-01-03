@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.16 $
- * $Date: 2005-12-28 22:28:44 $
+ * $Revision: 1.17 $
+ * $Date: 2006-01-03 02:59:14 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/12/28 22:28:44  taylor
+ * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
+ * better support for mipmaps and mipmap filtering
+ * add reg option "TextureFilter" to set bilinear or trilinear filter
+ * clean up bitmap_id/bitmap_handle/texture_handle madness that made things difficult to understand
+ * small fix for using 24-bit images on 16-bit bpp visual (untested)
+ *
  * Revision 1.15  2005/12/16 06:48:28  taylor
  * "House Keeping!!"
  *   - minor cleanup of things that have bothered me at one time or another
@@ -131,6 +138,7 @@ typedef struct tcache_slot_opengl {
 	int	time_created;
 	ushort	w,h;
 	ubyte bpp;
+	ubyte mipmap_levels;
 } tcache_slot_opengl;
 
 extern int GL_texture_sections;
