@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.65 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.66 $
+ * $Date: 2006-01-03 06:02:00 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.64  2005/12/16 06:51:31  taylor
  * fix a NULL pointer crash from shipselect screen
  * make sure to reset "display_type" for weapon select since it would only render one ship correctly
@@ -1434,7 +1437,7 @@ void wl_render_overhead_view(float frametime)
 {
 	//For 3d ships
 	static float WeapSelectScreenShipRot = 0.0f;
-	static int last_ship_class = -1;
+	int new_ship = 0;
 	static int display_type = -1;
 
 	if ( Selected_wl_slot == -1 ) {
@@ -1460,12 +1463,13 @@ void wl_render_overhead_view(float frametime)
 			gamesnd_play_iface(SND_ICON_DROP);
 		}
 		Last_wl_ship_class = ship_class;
+		new_ship = 1;
 	}
 
 	wl_ship = &Wl_ships[ship_class];
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
 
-	if(last_ship_class != ship_class)
+	if (new_ship)
 	{
 		display_type = -1;
 
@@ -1522,10 +1526,7 @@ void wl_render_overhead_view(float frametime)
 			//Did we load anything?
 			if ( wl_ship->overhead_bitmap < 0 )
 			{
-				if(last_ship_class != ship_class)
-				{
-					Warning(LOCATION, "Unable to load overhead image for ship '%s', generating one instead", sip->name);
-				}
+				Warning(LOCATION, "Unable to load overhead image for ship '%s', generating one instead", sip->name);
 				display_type = 1;
 			} else {
 				display_type = 0;
@@ -1729,8 +1730,6 @@ void wl_render_overhead_view(float frametime)
 	ss_return_name(Selected_wl_slot/MAX_WING_SLOTS, Selected_wl_slot%MAX_WING_SLOTS, name);
 	gr_set_color_fast(&Color_normal);
 	gr_string(Wl_ship_name_coords[gr_screen.res][0], Wl_ship_name_coords[gr_screen.res][1], name);
-
-	last_ship_class = ship_class;
 }
 
 // ---------------------------------------------------------------------------------
