@@ -159,6 +159,10 @@ SOURCE=..\..\code\FREESPACE2\LevelPaging.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\freespace2\phrases.cfg
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\sound\phrases.cfg
 # End Source File
 # End Target
