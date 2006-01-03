@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-07-31 01:30:48 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2006-01-03 17:07:11 $
+ * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/07/31 01:30:48  taylor
+ * print file and line info for Int3() calls to the logfile so that they are easier to debug with basic error reports
+ *
  * Revision 2.29  2005/06/03 06:39:27  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -234,6 +237,7 @@
 #include "freespace2/freespace.h"
 #include "osapi/osregistry.h"
 #include "cmdline/cmdline.h"
+#include "sound/voicerec.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -743,6 +747,14 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 		rtvoice_stream_data((uint)hwnd, (uint)wParam, (uint)lParam);
 		break;
 */
+#ifdef FS2_VOICER
+    case WM_RECOEVENT:
+		if ( Game_mode & GM_IN_MISSION )
+		{
+			VOICEREC_process_event( hwnd );
+		}
+        break;
+#endif
 
 	default:
 		return DefWindowProc(hwnd, msg, wParam, lParam);

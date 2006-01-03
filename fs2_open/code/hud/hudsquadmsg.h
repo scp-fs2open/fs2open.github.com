@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.8 $
- * $Date: 2005-12-29 08:08:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2006-01-03 17:07:10 $
+ * $Author: randomtiger $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/12/29 08:08:34  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.7  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -161,6 +164,16 @@
 
 #include "network/multi.h"
 
+#define SM_MODE_TYPE_SELECT			1		//am I going to message a ship or a wing
+#define SM_MODE_SHIP_SELECT			2		//choosing actual ship
+#define SM_MODE_WING_SELECT			3		//choosing actual wing
+#define SM_MODE_SHIP_COMMAND			4		//which command to send to a ship
+#define SM_MODE_WING_COMMAND			5		//which command to send to a wing
+#define SM_MODE_REINFORCEMENTS		6		//call for reinforcements
+#define SM_MODE_REPAIR_REARM			7		//repair/rearm player ship
+#define SM_MODE_REPAIR_REARM_ABORT	8		//abort repair/rearm of player ship
+#define SM_MODE_ALL_FIGHTERS			9		//message all fighters/bombers
+
 struct object;
 
 // defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
@@ -260,5 +273,8 @@ extern int hud_squadmsg_reinforcements_available(int team);
 //#ifndef NDEBUG
 void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
 //#endif
+
+// Added for voicer implementation
+void hud_squadmsg_do_mode( int mode );
 
 #endif

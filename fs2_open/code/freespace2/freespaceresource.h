@@ -19,6 +19,7 @@
 #define IDD_GEN                         127
 #define IDD_RT_VSELECT                  128
 #define IDD_DIALOG1                     129
+#define IDR_CMD_CFG                     132
 #define IDC_LIST_DEBUG                  1000
 #define IDC_DEBUG_TEXT1                 1001
 #define IDC_DEBUG_TEXT2                 1002
@@ -92,7 +93,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        130
+#define _APS_NEXT_RESOURCE_VALUE        133
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1074
 #define _APS_NEXT_SYMED_VALUE           101

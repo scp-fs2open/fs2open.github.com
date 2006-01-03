@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "..\..\code" /I "..\..\oggvorbis\include" /I "..\..\dx8sdk\include" /I "c:\dxsdk\include\\" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "..\..\code" /I "..\..\oggvorbis\include" /I "..\..\dx8sdk\include" /I "c:\dxsdk\include\\" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "FS2_VOICER" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -2003,6 +2003,34 @@ SOURCE=..\..\code\Sound\midiseq.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\sound\phrases.xml
+
+!IF  "$(CFG)" == "code - Win32 Release"
+
+# Begin Custom Build
+InputDir=\DEV\PROJECTS\Freespace\fs2o\fs2_open\fs2_open\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	$(InputDir)\gc $(InputDir)\$(InputName) \
+	$(InputDir)\gc /h $(InputDir)\grammar.h $(InputDir)\$(InputName) \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "code - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Sound\RBAudio.cpp
 # End Source File
 # Begin Source File
@@ -2032,6 +2060,10 @@ SOURCE=..\..\code\sound\speech.cpp
 # Begin Source File
 
 SOURCE=..\..\code\sound\speech.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\voicerec.cpp
 # End Source File
 # Begin Source File
 
