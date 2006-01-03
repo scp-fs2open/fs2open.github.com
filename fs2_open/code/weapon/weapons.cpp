@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.165  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.164  2005/12/28 22:17:02  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -3514,11 +3517,7 @@ void parse_weaponstbl(char* longname)
 	// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 	// This list is used to select an alternate weapon when a particular weapon is not available
 	// during weapon selection.
-	if(!Parsing_modular_table)
-	{
-		required_string("$Player Weapon Precedence:");
-	}
-	else if(optional_string("$Player Weapon Precedence:"))
+	if ( (!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:") )
 	{
 		strcpy(parse_error_text, "in the player weapon precedence list");
 		Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
