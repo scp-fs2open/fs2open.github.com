@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.38 $
- * $Date: 2006-01-03 02:59:14 $
+ * $Revision: 1.39 $
+ * $Date: 2006-01-03 22:46:52 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2006/01/03 02:59:14  taylor
+ * fix a couple of minor mipmap problems
+ * add resizing with mipmaps rather than a physical change in memory when detail levels dictate scaling (maybe this won't blow up)
+ *
  * Revision 1.37  2005/12/29 00:00:18  taylor
  * handle case where we make an atexit (on failure) flush call before the texture system is initted
  *
@@ -1188,7 +1192,8 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 
 		// OGL expects mipmap levels all the way down to 1x1 but I think this will avoid white texture
 		// issues when we have fewer levels than that, it caps the total number of levels available with 0 as min value
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
+		if ( t->mipmap_levels > 1 )
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
 
 		GL_last_bitmap_id = t->bitmap_handle;
 		GL_last_bitmap_type = bitmap_type;
