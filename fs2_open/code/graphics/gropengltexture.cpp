@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.37 $
- * $Date: 2005-12-29 00:00:18 $
+ * $Revision: 1.38 $
+ * $Date: 2006-01-03 02:59:14 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2005/12/29 00:00:18  taylor
+ * handle case where we make an atexit (on failure) flush call before the texture system is initted
+ *
  * Revision 1.36  2005/12/28 22:28:44  taylor
  * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
  * better support for mipmaps and mipmap filtering
@@ -253,7 +256,7 @@ static int GL_texture_units_enabled[32]={0};
 int opengl_free_texture(tcache_slot_opengl *t);
 void opengl_free_texture_with_handle(int handle);
 void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
-int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int sx, int sy, int src_w, int src_h, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data = NULL, tcache_slot_opengl *t = NULL, int resize = 0, int reload = 0, int fail_on_full = 0);
+int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data = NULL, tcache_slot_opengl *t = NULL, int base_level = 0, int resize = 0, int reload = 0, int fail_on_full = 0);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL, int fail_on_full = 0);
 
 void opengl_set_additive_tex_env()
@@ -637,7 +640,7 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 // bmap_h == height of source bitmap
 // tex_w == width of final texture
 // tex_h == height of final texture
-int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data, tcache_slot_opengl *t, int resize, int reload, int fail_on_full)
+int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data, tcache_slot_opengl *t, int base_level, int resize, int reload, int fail_on_full)
 {
 	int ret_val = 1;
 	int byte_mult = 0;
@@ -762,7 +765,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 	mipmap_levels = bm_get_num_mipmaps(bitmap_handle);
 
-	if ( !reload && (mipmap_levels > 1) ) {
+	if ( (mipmap_levels > 1) && (base_level+1 < mipmap_levels) ) {
 		// bifilter  = GL_LINEAR_MIPMAP_NEAREST
 		// trifilter = GL_LINEAR_MIPMAP_LINEAR
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GL_mipmap_filter) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
@@ -777,13 +780,29 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				// size of data block (4x4)
 				dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
 
+				// if we are skipping mipmap levels in order to resize then we have to calc the new offset
+				for (i = 0; i < base_level; i++) {
+					doffset += dsize;
+
+					mipmap_w /= 2;
+					mipmap_h /= 2;
+
+					if (mipmap_w <= 0)
+						mipmap_w = 1;
+
+					if (mipmap_h <= 0)
+						mipmap_h = 1;
+
+					dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+				}
+
 				if (!reload)
-					glCompressedTexImage2D(GL_TEXTURE_2D, 0, intFormat, mipmap_w, mipmap_h, 0, dsize, bmp_data);
+					glCompressedTexImage2D(GL_TEXTURE_2D, 0, intFormat, mipmap_w, mipmap_h, 0, dsize, bmp_data + doffset);
 				else
-					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, mipmap_w, mipmap_h, intFormat, dsize, bmp_data);
+					glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, mipmap_w, mipmap_h, intFormat, dsize, bmp_data + doffset);
 
 				// now that the base image is done handle any mipmap levels
-				for (i = 1; i < mipmap_levels; i++) {
+				for (i = 1; i < (mipmap_levels - base_level); i++) {
 					// adjust the data offset for the next block
 					doffset += dsize;
 
@@ -910,21 +929,36 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				}
 			}
 
+			// should never have mipmap levels if we also have to manually resize
+			if ( (mipmap_levels > 1) && resize )
+				Assert( texmem == NULL );
+
 			dsize = mipmap_h * mipmap_w * byte_mult;
 
-			if (!reload)
-				glTexImage2D (GL_TEXTURE_2D, 0, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, (resize) ? texmem : bmp_data);
-			else // faster anis
-				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, (resize) ? texmem : bmp_data);
+			// if we are skipping mipmap levels in order to resize then we have to calc the new offset
+			for (i = 0; i < base_level; i++) {
+				doffset += dsize;
 
-			if ( (mipmap_levels > 1) && resize ) {
-				// should never have mipmap levels if we also have to manually resize
-				Int3();
-				break;
+				mipmap_w /= 2;
+				mipmap_h /= 2;
+
+				if (mipmap_w <= 0)
+					mipmap_w = 1;
+
+				if (mipmap_h <= 0)
+					mipmap_h = 1;
+
+				dsize = mipmap_h * mipmap_w * byte_mult;
 			}
 
+			if (!reload)
+				glTexImage2D (GL_TEXTURE_2D, 0, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, (texmem != NULL) ? texmem : bmp_data + doffset);
+			else // faster anis
+				glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, (texmem != NULL) ? texmem : bmp_data + doffset);
+
+
 			// base image is done so now take care of any mipmap levels
-			for (i = 1; i < mipmap_levels; i++) {
+			for (i = 1; i < (mipmap_levels - base_level); i++) {
 				doffset += dsize;
 				mipmap_w /= 2;
 				mipmap_h /= 2;
@@ -980,7 +1014,8 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	bitmap *bmp;
 	int final_w, final_h;
 	ubyte bpp = 16;
-	int reload = 0, resize = 0;
+	int reload = 0, resize = 0, base_level = 0;
+	int max_levels = 0;
 
 	if (tslot == NULL) {
 		return 0;
@@ -1035,8 +1070,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	int max_w = bmp->w;
 	int max_h = bmp->h;
 
-	// set the bits per pixel
-	tslot->bpp = bmp->bpp;
+	max_levels = bm_get_num_mipmaps(bitmap_handle);
 
 	// if we ended up locking a texture that wasn't originally compressed then this should catch it
 	if ( bm_is_compressed(bitmap_handle) ) {
@@ -1044,26 +1078,37 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	}
 
 	// DDOI - TODO
-	if ( (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE) && (bitmap_type != TCACHE_TYPE_COMPRESSED) )      {
-		// max_w /= D3D_texture_divider;
-		// max_h /= D3D_texture_divider;
+	if ( (Detail.hardware_textures < 4) && (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
+			&& ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1)) )
+	{
+		if (max_levels == 1) {
+			// if we are going to cull the size then we need to force a resize
+			// Detail.debris_culling goes from 0 to 4.
+			max_w /= (16 >> Detail.hardware_textures);
+			max_h /= (16 >> Detail.hardware_textures);
 
-		// if we are going to cull the size then we need to force a resize
-		if (Detail.hardware_textures < 4) {
 			resize = 1;
-		}
+		} else {
+			// we have mipmap levels so use those as a resize point (image should already be power-of-2)
+			base_level = -(Detail.hardware_textures - 4);
+			Assert(base_level >= 0);
 
-		// Detail.debris_culling goes from 0 to 4.
-		max_w /= (16 >> Detail.hardware_textures);
-		max_h /= (16 >> Detail.hardware_textures);
+			if ( base_level >= max_levels ) {
+				base_level = max_levels - 1;
+			}
+
+			Assert( (max_levels - base_level) >= 1 );
+		}
 	}
-	
+
 	// get final texture size
 	opengl_tcache_get_adjusted_texture_size(max_w, max_h, &final_w, &final_h);
 
 	// only resize if we actually need a new size, better data use and speed out of opengl_create_texture_sub()
 	if ( (max_w != final_w) || (max_h != final_h) ) {
 		resize = 1;
+		// little safety check for later, we can't manually resize AND use mipmap resizing
+		Assert( !base_level );
 	}
 
 	if ( (final_h < 1) || (final_w < 1) )       {
@@ -1085,8 +1130,14 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 		}
 	}
 
+	// set the bits per pixel
+	tslot->bpp = bmp->bpp;
+
+	// max number of mipmap levels (NOTE: this is the max number used by the API, not how many true mipmap levels there are in the image!!)
+	tslot->mipmap_levels = (ubyte)(max_levels - base_level);
+
 	// call the helper
-	int ret_val = opengl_create_texture_sub(bitmap_handle, bitmap_type, bmp->w, bmp->h, final_w, final_h, (ushort*)bmp->data, tslot, resize, reload, fail_on_full);
+	int ret_val = opengl_create_texture_sub(bitmap_handle, bitmap_type, bmp->w, bmp->h, final_w, final_h, (ushort*)bmp->data, tslot, base_level, resize, reload, fail_on_full);
 
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
@@ -1137,7 +1188,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 
 		// OGL expects mipmap levels all the way down to 1x1 but I think this will avoid white texture
 		// issues when we have fewer levels than that, it caps the total number of levels available with 0 as min value
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, bm_get_num_mipmaps(bitmap_handle) - 1);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
 
 		GL_last_bitmap_id = t->bitmap_handle;
 		GL_last_bitmap_type = bitmap_type;
