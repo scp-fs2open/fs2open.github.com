@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2006-01-03 17:07:10 $
+ * $Author: randomtiger $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.18  2005/10/29 22:09:29  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -332,16 +335,6 @@
 
 
 // defines for different modes in the squad messaging system
-
-#define SM_MODE_TYPE_SELECT			1		//am I going to message a ship or a wing
-#define SM_MODE_SHIP_SELECT			2		//choosing actual ship
-#define SM_MODE_WING_SELECT			3		//choosing actual wing
-#define SM_MODE_SHIP_COMMAND			4		//which command to send to a ship
-#define SM_MODE_WING_COMMAND			5		//which command to send to a wing
-#define SM_MODE_REINFORCEMENTS		6		//call for reinforcements
-#define SM_MODE_REPAIR_REARM			7		//repair/rearm player ship
-#define SM_MODE_REPAIR_REARM_ABORT	8		//abort repair/rearm of player ship
-#define SM_MODE_ALL_FIGHTERS			9		//message all fighters/bombers
 
 #define DEFAULT_MSG_TIMEOUT		(8 * 1000)		// number of seconds * 1000 to get milliseconds
 #define MSG_KEY_EAT_TIME			(300)
@@ -2161,7 +2154,7 @@ void hud_squadmsg_ship_select()
 
 }
 
-// function to display a list of ships to send a command to
+// function to display a list of wings to send a command to
 void hud_squadmsg_wing_select()
 {
 	int k;

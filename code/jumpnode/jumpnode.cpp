@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-11-05 05:08:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2006-01-03 17:07:11 $
+ * $Author: randomtiger $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/11/05 05:08:58  wmcoolmon
+ * Removed unneccessary casts
+ *
  * Revision 2.16  2005/06/29 18:53:07  taylor
  * FRED2 does special stuff for jumpnode handling so don't try and delete the obj ourselves when FRED is running
  *

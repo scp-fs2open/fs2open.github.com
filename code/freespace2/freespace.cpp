@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.201 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.202 $
+ * $Date: 2006-01-03 17:07:10 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.201  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.200  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -1502,6 +1505,8 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "parse/scripting.h"
 
 
+#include "freespace2/freespaceresource.h"
+#include "sound/voicerec.h"
 
 
 #ifdef NDEBUG
@@ -3326,6 +3331,16 @@ void game_init()
 		fsspeech_play(-1,"Welcome to FS2 open");
 		MessageBox((HWND)os_get_window(), "Speech is compiled and initialised and should be working", "FS2_Open Info", MB_OK);
 	}
+
+#ifdef FS2_VOICER
+	bool voiceRectOn = VOICEREC_init((HWND)os_get_window(), WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
+	
+	if(voiceRectOn == false)
+	{
+		MessageBox((HWND)os_get_window(), "Failed to init voice rec", "Error", MB_OK);
+	}
+
+#endif
  
 
 /////////////////////////////
@@ -8805,6 +8820,9 @@ void game_shutdown(void)
 
 
 	fsspeech_deinit();
+#ifdef FS2_VOICER
+	VOICEREC_deinit();
+#endif
 
 	// don't ever flip a page on the standalone!
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
