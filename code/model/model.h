@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.69 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.70 $
+ * $Date: 2006-01-04 08:19:22 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.68  2005/12/15 04:31:05  phreak
  * [V] can't spell 'turret'
  *
@@ -1656,8 +1659,6 @@ void model_page_out_textures( int model_num, bool release = false );
 int model_is_pirate_ship(int modelnum);
 
 void set_warp_globals(float, float, float, int, float);
-
-void model_set_replacement_bitmap(int bmap);
 
 void model_set_replacement_textures(int *replacement_textures);
 
