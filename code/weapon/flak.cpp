@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-12-29 08:08:42 $
+ * $Revision: 2.8 $
+ * $Date: 2006-01-04 21:48:36 $
  * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.6  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -170,6 +173,7 @@ void flak_delete(int flak_index)
 void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_pos, float weapon_subsys_strength)
 {
 	float final_range;
+	float det_range;
 	vec3d temp;
 	
 	// make sure this flak object is valid
@@ -183,16 +187,17 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 		return;
 	}
 
-	final_range = Weapon_info[Weapons[objp->instance].weapon_info_index].det_range;
-
-	if(final_range != 0.0f) {
-		flak_set_range(objp, firing_pos, final_range);
-		return;
-	}
-
 	// get the range to the target
 	vm_vec_sub(&temp, &objp->pos, predicted_target_pos);
 	final_range = vm_vec_mag(&temp);
+
+	//Is it larger than det_range?
+	det_range = Weapon_info[Weapons[objp->instance].weapon_info_index].det_range;
+	if(det_range != 0.0f && final_range > det_range)
+	{
+		flak_set_range(objp, firing_pos, det_range);
+		return;
+	}
 
 	// add in some randomness
 	final_range += (Flak_range + (Flak_range * 0.65f * (1.0f - weapon_subsys_strength))) * frand_range(-1.0f, 1.0f);	
