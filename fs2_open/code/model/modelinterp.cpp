@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.138 $
- * $Date: 2005-12-29 20:12:51 $
+ * $Revision: 2.139 $
+ * $Date: 2006-01-04 08:19:22 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2005/12/29 20:12:51  taylor
+ * we are using gouraud lighting here so be sure to set the proper tmap flag (fixes D3D, corrects OGL)
+ *
  * Revision 2.137  2005/12/29 08:08:37  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -977,7 +980,6 @@ static int Interp_objnum = -1;
 static int Interp_insignia_bitmap = -1;
 
 // replacement - Goober5000
-static int Interp_replacement_bitmap = -1;
 static int *Interp_replacement_textures = NULL;
 
 // if != -1, use this bitmap when rendering with a forced texture
@@ -1859,8 +1861,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					// if we're rendering a nebula background pof, maybe select a custom texture
 					if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)){
 						texture = Interp_forced_bitmap;
-					}else if(Interp_replacement_bitmap >= 0){
-						texture = Interp_replacement_bitmap;
+					}else if((Interp_replacement_textures != NULL) && (Interp_replacement_textures[tmap_num] >= 0)){
+						texture = Interp_replacement_textures[tmap_num];
 					} else {
 						if (pm->is_ani[tmap_num]){
 							texture = pm->textures[tmap_num] + ((timestamp() / (int)(pm->fps[tmap_num])) % pm->num_frames[tmap_num]);//here is were it picks the texture to render for ani-Bobboau
@@ -2633,10 +2635,6 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 	chunk_type = w(p);
 	chunk_size = w(p+4);
 
-	// Goober5000
-	int tmap_num = w(p+40);
-	//mprintf(("model_interp_sub tmap_num: %d\n", tmap_num));
-	//Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 	
 	while ( chunk_type != OP_EOF )	{
 
@@ -2646,22 +2644,7 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 		case OP_EOF: return 1;
 		case OP_DEFPOINTS:		model_interp_defpoints(p,pm,sm); break;
 		case OP_FLATPOLY:		model_interp_flatpoly(p,pm); break;
-		case OP_TMAPPOLY:
-#ifndef FRED
-
-			// possible texture replacements - Goober5000
-			if (Interp_replacement_textures)
-			{
-				model_set_replacement_bitmap(Interp_replacement_textures[tmap_num]);
-			}
-			else
-			{
-				model_set_replacement_bitmap(-1);
-			}
-#endif
-			
-			model_interp_tmappoly(p,pm);
-			break;
+		case OP_TMAPPOLY:		model_interp_tmappoly(p,pm); break;
 		case OP_SORTNORM:		model_interp_sortnorm(p,pm,sm,do_box_check); break;
 	
 		case OP_BOUNDBOX:		
@@ -4941,11 +4924,6 @@ void model_set_insignia_bitmap(int bmap)
 	Interp_insignia_bitmap = bmap;
 }
 
-void model_set_replacement_bitmap(int bmap)
-{
-	Interp_replacement_bitmap = bmap;
-}
-
 void model_set_replacement_textures(int *replacement_textures)
 {
 	Interp_replacement_textures = replacement_textures;	//replacement_textures;
@@ -5945,8 +5923,8 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 			texture = Interp_forced_bitmap;
 		}else if(Warp_Map > -1){
 			texture = Warp_Map;
-		}else if(Interp_replacement_bitmap >= 0){
-			texture = Interp_replacement_bitmap;
+		}else if((Interp_replacement_textures != NULL) && (Interp_replacement_textures[model->buffer[i].texture] >= 0)){
+			texture = Interp_replacement_textures[model->buffer[i].texture];
 		}else if(Interp_thrust_scale_subobj){
 			texture = Interp_thrust_bitmap;
 		} else {
@@ -5982,9 +5960,6 @@ void model_render_buffers(bsp_info* model, polymodel * pm){
 //		extern int big_ole_honkin_hack_test;
 //		texture = big_ole_honkin_hack_test;
 
-// Goober5000 - this should fix replacement textures under HTL, but it doesn't... more work needed :(
-//		if (Interp_replacement_textures != NULL)
-//			texture = Interp_replacement_textures[texture];
 
 		if(Interp_thrust_scale_subobj) {
 

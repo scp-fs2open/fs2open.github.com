@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.133 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.134 $
+ * $Date: 2006-01-04 08:19:21 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.132  2005/12/29 00:56:45  phreak
  * loading code for flipped briefing icons.
  *
@@ -2362,6 +2365,7 @@ int parse_create_object_sub(p_object *objp)
 			{
 				// replace it
 				Ships[shipnum].replacement_textures[j] = objp->replacement_textures[i].new_texture_id;
+				break;
 			}
 		}
 	}
