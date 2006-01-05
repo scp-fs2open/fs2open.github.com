@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.27 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 1.28 $
+ * $Date: 2006-01-05 05:12:11 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.26  2005/12/29 00:01:29  taylor
  * add support for a species_defs modular table with XMT support (*-sdf.tbm)
  *
@@ -155,7 +158,7 @@ void parse_thrust_anims(species_info *species, bool no_create)
 
 	// favor new style
 	if ( no_create ) {
-		if ( optional_string("+Pri_Normal:") )
+		if ( optional_string("+Pri_Normal:") || optional_string("+Normal:") )
 			stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 	} else {
 		if (!optional_string("+Pri_Normal:"))
@@ -164,9 +167,13 @@ void parse_thrust_anims(species_info *species, bool no_create)
 		stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 	}
 
-		// and again
+	// if no primary thruster anim is wanted then clear it
+	if ( !stricmp(NOX("<none>"), species->thruster_info.flames.normal.filename) )
+		species->thruster_info.flames.normal.filename[0] = '\0';
+
+	// and again
 	if ( no_create ) {
-		if ( optional_string("+Pri_Afterburn:") )
+		if ( optional_string("+Pri_Afterburn:") || optional_string("+Afterburn:") )
 			stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 	} else {
 		if (!optional_string("+Pri_Afterburn:"))
@@ -174,6 +181,10 @@ void parse_thrust_anims(species_info *species, bool no_create)
 
 		stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 	}
+
+	// if no primary thruster anim is wanted then clear it
+	if ( !stricmp(NOX("<none>"), species->thruster_info.flames.afterburn.filename) )
+		species->thruster_info.flames.afterburn.filename[0] = '\0';
 
 	// extra thruster stuff, bah
 	if (optional_string("+Sec_Normal:"))
@@ -211,6 +222,10 @@ void parse_thrust_glows(species_info *species, bool no_create)
 		stuff_string(species->thruster_info.glow.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 	}
 
+	// if no glow is wanted then clear it
+	if ( !stricmp(NOX("<none>"), species->thruster_info.glow.normal.filename) )
+		species->thruster_info.glow.normal.filename[0] = '\0';
+
 	if ( no_create ) {
 		if ( optional_string("+Afterburn:") )
 			stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
@@ -218,6 +233,10 @@ void parse_thrust_glows(species_info *species, bool no_create)
 		required_string("+Afterburn:");
 		stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
 	}
+
+	// if no glow is wanted then clear it
+	if ( !stricmp(NOX("<none>"), species->thruster_info.glow.afterburn.filename) )
+		species->thruster_info.glow.afterburn.filename[0] = '\0';
 }
 
 void parse_species_tbl(char *longname)

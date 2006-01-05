@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.289 $
- * $Date: 2006-01-02 07:16:43 $
+ * $Revision: 2.290 $
+ * $Date: 2006-01-05 05:12:11 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.289  2006/01/02 07:16:43  taylor
+ * use cf_find_file_location() for objecttypes.tbl rather than a cfopen()
+ * fix a few compiler warning messages
+ *
  * Revision 2.288  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -5331,7 +5335,7 @@ void ship_render(object * obj)
 
 		//	ship_get_subsystem_strength( shipp, SUBSYSTEM_ENGINE)>ENGINE_MIN_STR
 
-		if ( (shipp->thruster_bitmap > -1) && (!(shipp->flags & SF_DISABLED)) && (!ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) )
+		if ( ((shipp->thruster_bitmap > -1) || (shipp->thruster_glow_bitmap > -1)) && (!(shipp->flags & SF_DISABLED)) && (!ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) )
 		{
 			vec3d ft;
 
@@ -6629,49 +6633,60 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 //	rate = 0.1f;
 
 	Assert( frametime > 0.0f );
-	shipp->thruster_frame += frametime * rate;
 
-	// Sanity checks
-	if ( shipp->thruster_frame < 0.0f )	shipp->thruster_frame = 0.0f;
-	if ( shipp->thruster_frame > 100.0f ) shipp->thruster_frame = 0.0f;
+	if (flame_anim->first_frame >= 0) {
+		shipp->thruster_frame += frametime * rate;
 
-	while ( shipp->thruster_frame > flame_anim->total_time )	{
-		shipp->thruster_frame -= flame_anim->total_time;
-	}
-	framenum = fl2i( (shipp->thruster_frame*flame_anim->num_frames) / flame_anim->total_time );
-	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
+		// Sanity checks
+		if ( shipp->thruster_frame < 0.0f )	shipp->thruster_frame = 0.0f;
+		if ( shipp->thruster_frame > 100.0f ) shipp->thruster_frame = 0.0f;
 
-//	if ( anim_index == 0 )
-//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  flame_anim->num_frames, anim_index ));
+		while ( shipp->thruster_frame > flame_anim->total_time )	{
+			shipp->thruster_frame -= flame_anim->total_time;
+		}
+		framenum = fl2i( (shipp->thruster_frame*flame_anim->num_frames) / flame_anim->total_time );
+		if ( framenum < 0 ) framenum = 0;
+		if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
+
+//		if ( anim_index == 0 )
+//			mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  flame_anim->num_frames, anim_index ));
 	
-	// Get the bitmap for this frame
-	shipp->thruster_bitmap = flame_anim->first_frame + framenum;
+		// Get the bitmap for this frame
+		shipp->thruster_bitmap = flame_anim->first_frame + framenum;
 
-//	mprintf(( "TF: %.2f\n", shipp->thruster_frame ));
+//		mprintf(( "TF: %.2f\n", shipp->thruster_frame ));
+	} else {
+		shipp->thruster_frame = 0.0f;
+		shipp->thruster_bitmap = -1;
+	}
 
 	// Do it for glow bitmaps
 
-	Assert( frametime > 0.0f );
-	shipp->thruster_glow_frame += frametime * rate;
+	if (glow_anim->first_frame >= 0) {
+		shipp->thruster_glow_frame += frametime * rate;
 
-	// Sanity checks
-	if ( shipp->thruster_glow_frame < 0.0f )	shipp->thruster_glow_frame = 0.0f;
-	if ( shipp->thruster_glow_frame > 100.0f ) shipp->thruster_glow_frame = 0.0f;
+		// Sanity checks
+		if ( shipp->thruster_glow_frame < 0.0f )	shipp->thruster_glow_frame = 0.0f;
+		if ( shipp->thruster_glow_frame > 100.0f ) shipp->thruster_glow_frame = 0.0f;
 
-	while ( shipp->thruster_glow_frame > glow_anim->total_time )	{
-		shipp->thruster_glow_frame -= glow_anim->total_time;
-	}
-	framenum = fl2i( (shipp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
-	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
+		while ( shipp->thruster_glow_frame > glow_anim->total_time )	{
+			shipp->thruster_glow_frame -= glow_anim->total_time;
+		}
+		framenum = fl2i( (shipp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
+		if ( framenum < 0 ) framenum = 0;
+		if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
 
-//	if ( anim_index == 0 )
-//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  glow_anim->num_frames, anim_index ));
+//		if ( anim_index == 0 )
+//			mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  glow_anim->num_frames, anim_index ));
 	
-	// Get the bitmap for this frame
-	shipp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
-	shipp->thruster_glow_noise = Noise[framenum];
+		// Get the bitmap for this frame
+		shipp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
+		shipp->thruster_glow_noise = Noise[framenum];
+	} else {
+		shipp->thruster_glow_frame = 0.0f;
+		shipp->thruster_glow_bitmap = -1;
+		shipp->thruster_glow_noise = 1.0f;
+	}
 
 	// HACK add Bobboau's thruster stuff
 	shipp->thruster_secondary_glow_bitmap = secondary_glow_bitmap;
@@ -6706,49 +6721,60 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 	glow_anim = &species->thruster_info.glow.normal;
 
 	Assert( frametime > 0.0f );
-	weaponp->thruster_frame += frametime * rate;
 
-	// Sanity checks
-	if ( weaponp->thruster_frame < 0.0f )	weaponp->thruster_frame = 0.0f;
-	if ( weaponp->thruster_frame > 100.0f ) weaponp->thruster_frame = 0.0f;
+	if (flame_anim->first_frame >= 0) {
+		weaponp->thruster_frame += frametime * rate;
 
-	while ( weaponp->thruster_frame > flame_anim->total_time )	{
-		weaponp->thruster_frame -= flame_anim->total_time;
-	}
-	framenum = fl2i( (weaponp->thruster_frame*flame_anim->num_frames) / flame_anim->total_time );
-	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
+		// Sanity checks
+		if ( weaponp->thruster_frame < 0.0f )	weaponp->thruster_frame = 0.0f;
+		if ( weaponp->thruster_frame > 100.0f ) weaponp->thruster_frame = 0.0f;
 
-//	if ( anim_index == 0 )
-//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  flame_anim->num_frames, anim_index ));
+		while ( weaponp->thruster_frame > flame_anim->total_time )	{
+			weaponp->thruster_frame -= flame_anim->total_time;
+		}
+		framenum = fl2i( (weaponp->thruster_frame*flame_anim->num_frames) / flame_anim->total_time );
+		if ( framenum < 0 ) framenum = 0;
+		if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
+
+//		if ( anim_index == 0 )
+//			mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  flame_anim->num_frames, anim_index ));
 	
-	// Get the bitmap for this frame
-	weaponp->thruster_bitmap = flame_anim->first_frame + framenum;
+		// Get the bitmap for this frame
+		weaponp->thruster_bitmap = flame_anim->first_frame + framenum;
 
-//	mprintf(( "TF: %.2f\n", weaponp->thruster_frame ));
+//		mprintf(( "TF: %.2f\n", weaponp->thruster_frame ));
+	} else {
+		weaponp->thruster_frame = 0.0f;
+		weaponp->thruster_bitmap = -1;
+	}
 
 	// Do it for glow bitmaps
 
-	Assert( frametime > 0.0f );
-	weaponp->thruster_glow_frame += frametime * rate;
+	if (glow_anim->first_frame >= 0) {
+		weaponp->thruster_glow_frame += frametime * rate;
 
-	// Sanity checks
-	if ( weaponp->thruster_glow_frame < 0.0f )	weaponp->thruster_glow_frame = 0.0f;
-	if ( weaponp->thruster_glow_frame > 100.0f ) weaponp->thruster_glow_frame = 0.0f;
+		// Sanity checks
+		if ( weaponp->thruster_glow_frame < 0.0f )	weaponp->thruster_glow_frame = 0.0f;
+		if ( weaponp->thruster_glow_frame > 100.0f ) weaponp->thruster_glow_frame = 0.0f;
 
-	while ( weaponp->thruster_glow_frame > glow_anim->total_time )	{
-		weaponp->thruster_glow_frame -= glow_anim->total_time;
-	}
-	framenum = fl2i( (weaponp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
-	if ( framenum < 0 ) framenum = 0;
-	if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
+		while ( weaponp->thruster_glow_frame > glow_anim->total_time )	{
+			weaponp->thruster_glow_frame -= glow_anim->total_time;
+		}
+		framenum = fl2i( (weaponp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
+		if ( framenum < 0 ) framenum = 0;
+		if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
 
-//	if ( anim_index == 0 )
-//		mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  glow_anim->num_frames, anim_index ));
+//		if ( anim_index == 0 )
+//			mprintf(( "Frame = %d/%d, anim=%d\n", framenum+1,  glow_anim->num_frames, anim_index ));
 	
-	// Get the bitmap for this frame
-	weaponp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
-	weaponp->thruster_glow_noise = Noise[framenum];
+		// Get the bitmap for this frame
+		weaponp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
+		weaponp->thruster_glow_noise = Noise[framenum];
+	} else {
+		weaponp->thruster_glow_frame = 0.0f;
+		weaponp->thruster_glow_bitmap = -1;
+		weaponp->thruster_glow_noise = 1.0f;
+	}
 }
 
 
