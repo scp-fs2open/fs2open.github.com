@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.60 $
+ * $Date: 2006-01-05 11:34:44 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.58  2005/12/13 22:32:30  wmcoolmon
  * Ability to disable damage particle spew on ships
  *
@@ -2106,7 +2109,6 @@ DCF(bs_exp_fire_time_mult, "Multiplier time between fireball in big ship explosi
 	}
 }
 
-#define MAX_SPLIT_SHIPS		3		// How many can explode at once.  Each one is about 1K.
 
 #define DEBRIS_NONE			0
 #define DEBRIS_DRAW			1
@@ -2136,16 +2138,25 @@ typedef struct split_ship {
 } split_ship;
 
 
-static split_ship Split_ships[MAX_SPLIT_SHIPS];
-static int Split_ships_inited = 0;
+static std::vector<split_ship> Split_ships;
 
-static void split_ship_init_system()
+static int get_split_ship()
 {
 	int i;
-	for (i=0; i<MAX_SPLIT_SHIPS; i++ )	{
-		Split_ships[i].used = 0;
+	split_ship addition;
+
+	// check for an existing free slot
+	for (i = 0; i < (int)Split_ships.size(); i++) {
+		if (!Split_ships[i].used)
+			return i;
 	}
-	Split_ships_inited = 1;
+
+	// nope.  we'll have to add a new one
+	memset( &addition, 0, sizeof(split_ship) );
+
+	Split_ships.push_back(addition);
+
+	return (Split_ships.size() - 1);
 }
 
 static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle);
@@ -2286,8 +2297,6 @@ static void split_ship_init( ship* shipp, split_ship* split_ship )
 
 static void half_ship_render_ship_and_debris(clip_ship* half_ship,ship *shipp)
 {
-	Assert( Split_ships_inited );
-
 	polymodel *pm = model_get(shipp->modelnum);
 
 	// get rotated clip plane normal and world coord of original ship center
@@ -2393,7 +2402,7 @@ static void half_ship_render_ship_and_debris(clip_ship* half_ship,ship *shipp)
 
 void shipfx_large_blowup_level_init()
 {
-	split_ship_init_system();
+	Split_ships.clear();
 
 	if(Ship_cannon_bitmap != -1){
 		bm_release(Ship_cannon_bitmap);
@@ -2404,23 +2413,9 @@ void shipfx_large_blowup_level_init()
 // Returns 0 if couldn't init
 int shipfx_large_blowup_init(ship *shipp)
 {
-
-	if ( !Split_ships_inited )	{
-		split_ship_init_system();
-	}
-
 	int i;
-	for (i=0; i<MAX_SPLIT_SHIPS; i++ )	{
-		if ( Split_ships[i].used == 0 )	{
-			break;
-		}
-	}
 
-	if ( i >= MAX_SPLIT_SHIPS )	{
-		mprintf(( "Not enough split ship slots!! See John!\n" ));
-		Int3();
-		return 0;
-	}
+	i = get_split_ship();
 
 	Split_ships[i].used = 1;
 	shipp->large_ship_blowup_index = i;
@@ -2602,8 +2597,8 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 	// DAVE:  I made this not do any movement just to try to get things working...
 	// return 0;
 
-	Assert( Split_ships_inited );
 	Assert( shipp->large_ship_blowup_index > -1 );
+	Assert( shipp->large_ship_blowup_index < (int)Split_ships.size() );
 
 	split_ship *the_split_ship = &Split_ships[shipp->large_ship_blowup_index];
 	Assert( the_split_ship->used );		// Get John
@@ -2658,8 +2653,8 @@ void shipfx_large_blowup_render(ship* shipp)
 //	model_render( shipp->modelnum, &objp->orient, &objp->pos, MR_NORMAL, -1, -1, shipp->replacement_textures );
 //	return;
 
-	Assert( Split_ships_inited );
 	Assert( shipp->large_ship_blowup_index > -1 );
+	Assert( shipp->large_ship_blowup_index < (int)Split_ships.size() );
 
 	split_ship *the_split_ship = &Split_ships[shipp->large_ship_blowup_index];
 	Assert( the_split_ship->used );		// Get John
