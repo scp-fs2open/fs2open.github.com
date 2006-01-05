@@ -516,7 +516,7 @@ $AI:\n\
 	+Can Form Wing:			YES\n\
 	+Passive docks:			(\"support\")\n\
 \n\
-""$Name:					Super cap\n\
+""$Name:					Supercap\n\
 $Counts for Alone:		YES\n\
 $Praise Destruction:	YES\n\
 $On Hotkey List:		YES\n\
