@@ -1,12 +1,18 @@
 /*
  * $Logfile: $
- * $Revision: 1.16 $
- * $Date: 2005-12-28 22:17:02 $
+ * $Revision: 1.17 $
+ * $Date: 2006-01-06 11:25:29 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/12/28 22:17:02  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 1.15  2005/10/17 00:02:09  wmcoolmon
  * CFile stuff
  *
@@ -256,10 +262,10 @@ public:
 	void	Set_Volume(long vol);
 	long	Get_Volume();
 	void	Init_Data();
-	void	Set_Byte_Cutoff(unsigned int num_bytes_cutoff);
+	void	Set_Sample_Cutoff(unsigned int num_bytes_cutoff);
 	void  Set_Default_Volume(long converted_volume) { m_lDefaultVolume = converted_volume; }
 	long	Get_Default_Volume() { return m_lDefaultVolume; }
-	uint Get_Bytes_Committed(void);
+	uint Get_Samples_Committed(void);
 	int	Is_looping() { return m_bLooping; }
 	int	status;
 	int	type;
@@ -1371,7 +1377,7 @@ BOOL AudioStream::TimerCallback (ptr_u dwUser)
     return (pas->ServiceBuffer ());
 }
 
-void AudioStream::Set_Byte_Cutoff(unsigned int byte_cutoff)
+void AudioStream::Set_Sample_Cutoff(unsigned int byte_cutoff)
 {
 	if ( m_pwavefile == NULL )
 		return;
@@ -1379,7 +1385,7 @@ void AudioStream::Set_Byte_Cutoff(unsigned int byte_cutoff)
 	m_pwavefile->m_max_uncompressed_bytes_to_read = byte_cutoff;
 }
 
-unsigned int AudioStream::Get_Bytes_Committed(void)
+unsigned int AudioStream::Get_Samples_Committed(void)
 {
 	if ( m_pwavefile == NULL )
 		return 0;
@@ -1751,7 +1757,7 @@ int audiostream_is_paused(int i)
 	return is_paused;
 }
 
-void audiostream_set_byte_cutoff(int i, unsigned int cutoff)
+void audiostream_set_sample_cutoff(int i, uint cutoff)
 {
 	if ( i == -1 )
 		return;
@@ -1762,10 +1768,10 @@ void audiostream_set_byte_cutoff(int i, unsigned int cutoff)
 	if ( Audio_streams[i].status == ASF_FREE )
 		return;
 
-	Audio_streams[i].Set_Byte_Cutoff(cutoff);
+	Audio_streams[i].Set_Sample_Cutoff(cutoff);
 }
 
-uint audiostream_get_bytes_committed(int i)
+uint audiostream_get_samples_committed(int i)
 {
 	if ( i == -1 )
 		return 0;
@@ -1776,7 +1782,7 @@ uint audiostream_get_bytes_committed(int i)
 		return 0;
 
 	uint num_bytes_committed;
-	num_bytes_committed = Audio_streams[i].Get_Bytes_Committed();
+	num_bytes_committed = Audio_streams[i].Get_Samples_Committed();
 	
 	return num_bytes_committed;
 }
@@ -1855,18 +1861,6 @@ void audiostream_unpause_all()
 
 		audiostream_unpause(i);
 	}
-}
-
-void audiostream_set_sample_cutoff(int i, uint cutoff)
-{
-//	STUB_FUNCTION;
-}
-
-uint audiostream_get_samples_committed(int i)
-{
-//	STUB_FUNCTION;
-
-	return 0;
 }
 
 #endif	// USE_OPENAL
