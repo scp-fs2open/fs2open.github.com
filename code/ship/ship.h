@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.126 $
- * $Date: 2005-12-29 08:08:42 $
+ * $Revision: 2.127 $
+ * $Date: 2006-01-06 04:18:55 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.125  2005/12/13 22:32:30  wmcoolmon
  * Ability to disable damage particle spew on ships
  *
@@ -914,6 +917,9 @@ public:
 
 extern std::vector<ArmorType> Armor_types;
 
+#define NUM_TURRET_ORDER_TYPES		3
+extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
+
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
@@ -942,6 +948,7 @@ typedef	struct ship_subsys {
 	int		turret_enemy_sig;						//	signature of object ship this turret is firing upon
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
 	float	turret_time_enemy_in_range;		//	Number of seconds enemy in view cone, accuracy improves over time.
+	int		turret_targeting_order[NUM_TURRET_ORDER_TYPES];	//Order that turrets target different types of things.
 	ship_subsys	*targeted_subsys;					//	subsystem this turret is attacking
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
@@ -1530,6 +1537,28 @@ typedef struct ship_type_info {
 
 extern std::vector<ship_type_info> Ship_types;
 
+#define MT_BANK_RIGHT		(1<<0)
+#define MT_BANK_LEFT		(1<<1)
+#define MT_PITCH_UP			(1<<2)
+#define MT_PITCH_DOWN		(1<<3)
+#define MT_ROLL_RIGHT		(1<<4)
+#define MT_ROLL_LEFT		(1<<5)
+#define MT_SLIDE_RIGHT		(1<<6)
+#define MT_SLIDE_LEFT		(1<<7)
+#define MT_SLIDE_UP			(1<<8)
+#define MT_SLIDE_DOWN		(1<<9)
+#define MT_FORWARD			(1<<10)
+#define MT_REVERSE			(1<<11)
+
+#define MAX_MAN_THRUSTERS	32
+typedef struct man_thruster {
+	int bmap_id;
+	float radius;
+	int use_flags;
+	vec3d pos, norm;
+	man_thruster(){memset(this, 0, sizeof(man_thruster));bmap_id=-1;}
+}man_thruster;
+
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
@@ -1697,6 +1726,9 @@ typedef struct ship_info {
 	
 	bool topdown_offset_def;
 	vec3d topdown_offset;
+
+	int num_maneuvering;
+	man_thruster maneuvering[MAX_MAN_THRUSTERS];
 } ship_info;
 
 extern int Num_wings;

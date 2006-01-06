@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.197 $
- * $Date: 2006-01-02 21:28:52 $
- * $Author: taylor $
+ * $Revision: 2.198 $
+ * $Date: 2006-01-06 04:18:55 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.197  2006/01/02 21:28:52  taylor
+ * can't overwrite node var here, it's original value is needed later and was throwing out NULL chars in the Warning()s
+ *
  * Revision 2.196  2006/01/02 07:12:24  taylor
  * those blasted Windows programmers!  ;)
  *
@@ -1395,6 +1398,8 @@ sexp_oper Operators[] = {
 	{ "turret-tagged-specific",			OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
 	{ "turret-tagged-clear-specific",	OP_TURRET_TAGGED_CLEAR_SPECIFIC, 2, INT_MAX}, //phreak
 	{ "turret-change-weapon",			OP_TURRET_CHANGE_WEAPON,		5, 5},	//WMC
+	{ "turret-set-target-order",			OP_TURRET_SET_TARGET_ORDER,			2, 2+NUM_TURRET_ORDER_TYPES},	//WMC
+	{ "ship-turret-target-order",			OP_SHIP_TURRET_TARGET_ORDER,		1, 1+NUM_TURRET_ORDER_TYPES},	//WMC
 
 	{ "red-alert",						OP_RED_ALERT,					0, 0 },
 	{ "end-mission",					OP_END_MISSION,					0, 0 }, //-Sesquipedalian
@@ -3160,6 +3165,20 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if ( i == Intel_info_size )
+					return SEXP_CHECK_INVALID_INTEL_NAME;
+				
+				break;
+
+			case OPF_TURRET_TARGET_ORDER:
+				if ( type2 != SEXP_ATOM_STRING )
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				for (i = 0; i < NUM_TURRET_ORDER_TYPES; i++ ) {
+					if ( !stricmp(CTEXT(node), Turret_target_order_names[i]) )
+						break;
+				}
+
+				if ( i == NUM_TURRET_ORDER_TYPES )
 					return SEXP_CHECK_INVALID_INTEL_NAME;
 				
 				break;
@@ -11847,6 +11866,102 @@ void sexp_turret_change_weapon(int node)
 	}
 }
 
+void sexp_turret_set_target_order(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+	int oindex;
+	int i;
+
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+
+	//Get turret subsys
+	node = CDR(node);
+	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	if(turret == NULL){
+		return;
+	}
+
+	//Reset order
+	for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
+		turret->turret_targeting_order[i] = -1;
+	}
+	
+	oindex = 0;
+	node = CDR(node);
+	while(node != -1)
+	{
+		if(oindex >= NUM_TURRET_ORDER_TYPES) {
+			break;
+		}
+
+		for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
+			if(!stricmp(Turret_target_order_names[i], CTEXT(node))) {
+				turret->turret_targeting_order[oindex] = i;
+			}
+		}
+
+		oindex++;
+	}
+}
+
+void sexp_ship_turret_target_order(int node)
+{	
+	int sindex;
+	ship_subsys *turret = NULL;	
+	int oindex;
+	int i;
+	int new_target_order[NUM_TURRET_ORDER_TYPES];
+
+	// get ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0){
+		return;
+	}
+	if(Ships[sindex].objnum < 0){
+		return;
+	}
+	
+	oindex = 0;
+	node = CDR(node);
+	while(node != -1)
+	{
+		if(oindex >= NUM_TURRET_ORDER_TYPES) {
+			break;
+		}
+
+		for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
+			if(!stricmp(Turret_target_order_names[i], CTEXT(node))) {
+				new_target_order[oindex] = i;
+			}
+		}
+
+		oindex++;
+	}
+
+	turret = GET_FIRST(&Ships[sindex].subsys_list);
+	while(turret != END_OF_LIST(&Ships[sindex].subsys_list))
+	{
+		//Reset order
+		for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
+			turret->turret_targeting_order[i] = -1;
+		}
+
+		memcpy(turret->turret_targeting_order, new_target_order, NUM_TURRET_ORDER_TYPES*sizeof(int));
+
+		// next item
+		turret = GET_NEXT(turret);
+	}
+}
+
+
 // Goober5000
 void sexp_set_subsys_rotation_lock(int node, int locked)
 {
@@ -14629,6 +14744,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_turret_change_weapon(node);
 				break;
 
+			case OP_TURRET_SET_TARGET_ORDER:
+				sexp_val = 1;
+				sexp_turret_set_target_order(node);
+				break;
+
+			case OP_SHIP_TURRET_TARGET_ORDER:
+				sexp_val = 1;
+				sexp_ship_turret_target_order(node);
+				break;
+
 			case OP_ADD_REMOVE_ESCORT:
 				sexp_val = 1;
 				sexp_add_remove_escort(node);
@@ -15310,6 +15435,8 @@ int query_operator_return_type(int op)
 		case OP_TURRET_LOCK:
 		case OP_TURRET_LOCK_ALL:
 		case OP_TURRET_CHANGE_WEAPON:
+		case OP_TURRET_SET_TARGET_ORDER:
+		case OP_SHIP_TURRET_TARGET_ORDER:
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
@@ -16308,6 +16435,22 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_WEAPON_NAME;
 			} else if(argnum > 2) {
 				return OPF_POSITIVE;
+			}
+
+		case OP_TURRET_SET_TARGET_ORDER:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else if(argnum == 1) {
+				return OPF_SUBSYSTEM;
+			} else {
+				return OPF_TURRET_TARGET_ORDER;
+			}
+
+		case OP_SHIP_TURRET_TARGET_ORDER:
+			if(argnum == 0) {
+				return OPF_SHIP;
+			} else {
+				return OPF_TURRET_TARGET_ORDER;
 			}
 
 		case OP_LOCK_ROTATING_SUBSYSTEM:
@@ -17593,6 +17736,8 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_TAGGED_SPECIFIC:
 		case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 		case OP_TURRET_CHANGE_WEAPON:
+		case OP_TURRET_SET_TARGET_ORDER:
+		case OP_SHIP_TURRET_TARGET_ORDER:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
 		case OP_RED_ALERT:
@@ -19240,6 +19385,17 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Weapon to set slot to\r\n"
 		"\t4: Primary slot (or 0 to use secondary)\r\n"
 		"\t5: Secondary slot (or 0 to use primary)"},
+
+	{ OP_TURRET_SET_TARGET_ORDER, "turret-set-target-order\r\n"
+		"\tSets targeting order of a given turret\r\n"
+		"\t1: Ship turret is on\r\n"
+		"\t2: Turret\r\n"
+		"\trest: Target order type (Bombs,ships,asteroids)"},
+
+	{ OP_SHIP_TURRET_TARGET_ORDER, "ship-turret-target-order\r\n"
+		"\tSets targeting order of all turrets on a given ship\r\n"
+		"\t1: Ship turrets are on\r\n"
+		"\trest: Target order type (Bombs,ships,asteroids)"},
 
 	{ OP_ADD_REMOVE_ESCORT, "add-remove-escort\r\n"
 		"\tAdds or removes a ship from an escort list.\r\n"
