@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.100 $
+ * $Revision: 2.101 $
  * $Author: wmcoolmon $
- * $Date: 2005-12-31 01:47:35 $
+ * $Date: 2006-01-06 04:18:55 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2005/12/31 01:47:35  wmcoolmon
+ * num-within-box
+ *
  * Revision 2.99  2005/11/05 05:06:13  wmcoolmon
  * turret-change-weapon
  *
@@ -799,6 +802,7 @@ struct ship_subsys;
 #define OPF_SUN_BITMAP			56		// phreak - name of a background bitmap
 #define OPF_NEBULA_STORM_TYPE	57		// phreak - name a nebula storm
 #define OPF_NEBULA_POOF			58		// phreak - name of a nebula poof
+#define OPF_TURRET_TARGET_ORDER	59		// WMC - name of a turret target type (see aiturret.cpp)
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -1178,6 +1182,8 @@ struct ship_subsys;
 #define OP_NEBULA_TOGGLE_POOF				(0x00c0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 
 #define OP_TURRET_CHANGE_WEAPON				(0x00c1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_TURRET_SET_TARGET_ORDER			(0x00c2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SHIP_TURRET_TARGET_ORDER			(0x00c3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 
 
 

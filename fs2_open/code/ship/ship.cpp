@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.290 $
- * $Date: 2006-01-05 05:12:11 $
- * $Author: taylor $
+ * $Revision: 2.291 $
+ * $Date: 2006-01-06 04:18:55 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.290  2006/01/05 05:12:11  taylor
+ * allow both +Pri style and original style (+Normal, etc) for species_defs TBMs
+ * allow for "<none>" as a bitmap/anim name, to have no effect
+ * fix ship/weapon thruster rendering to handle missing primary animation and/or glow graphics
+ *
  * Revision 2.289  2006/01/02 07:16:43  taylor
  * use cf_find_file_location() for objecttypes.tbl rather than a cfopen()
  * fix a few compiler warning messages
@@ -1955,6 +1960,24 @@ reinforcements	Reinforcements[MAX_REINFORCEMENTS];
 std::vector<ship_type_info> Ship_types;
 
 std::vector<ArmorType> Armor_types;
+
+flag_def_list Man_types[] = {
+	{"Bank right",			MT_BANK_RIGHT},
+	{"Bank left",			MT_BANK_LEFT},
+	{"Pitch up",			MT_PITCH_UP},
+	{"Pich down",			MT_PITCH_DOWN},
+	{"Roll right",			MT_ROLL_RIGHT},
+	{"Roll left",			MT_ROLL_LEFT},
+	{"Slide right",			MT_SLIDE_RIGHT},
+	{"Slide left",			MT_SLIDE_LEFT},
+	{"Slide up",			MT_SLIDE_UP},
+	{"Slide down",			MT_SLIDE_DOWN},
+	{"Forward",				MT_FORWARD},
+	{"Reverse",				MT_REVERSE},
+};
+
+int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
+
 /*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
 int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship types, precedence list for player ship/wing selection
@@ -2411,7 +2434,7 @@ int parse_ship(bool replace)
 	ship_info *sip;
 	int i, j, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
-	int pbank_capacity_specified, pbank_capacity_count, sbank_capacity_count;
+	int pbank_capacity_specified=0, pbank_capacity_count, sbank_capacity_count;
 	bool create_if_not_found  = true;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH] = "";
@@ -3534,6 +3557,59 @@ strcpy(parse_error_text, temp_error);
 		required_string("+Bitmap:");
 		stuff_string(trail_name, F_NAME, NULL);
 		ci->bitmap = bm_load(trail_name);
+	}
+
+	man_thruster *mtp;
+	man_thruster manwich;
+	while(optional_string("$Maneuvering:"))
+	{
+		int idx = -1;
+		if(optional_string("+index:")) {
+			stuff_int(&idx);
+		}
+
+		if(idx > -1 && idx < sip->num_maneuvering) {
+			mtp = &sip->maneuvering[idx];
+		} else if(idx < 0) {
+			if(sip->num_maneuvering < MAX_MAN_THRUSTERS) {
+				mtp = &sip->maneuvering[sip->num_maneuvering++];
+			} else {
+				Warning(LOCATION, "Too many maneuvering thrusters on ship '%s'; maximum is %d", sip->name, MAX_MAN_THRUSTERS);
+			}
+		} else {
+			mtp = &manwich;
+			Warning(LOCATION, "Invalid index (%d) specified for maneuvering thruster on ship %s", idx, sip->name);
+		}
+
+		if(optional_string("+Texture:"))
+		{
+			stuff_string(name_tmp, F_NAME);
+			int bmap_id = bm_load(name_tmp);
+			if(bmap_id > -1)
+			{
+				if(mtp->bmap_id > -1) {
+					bm_unload(mtp->bmap_id);
+				}
+
+				mtp->bmap_id = bmap_id;
+			}
+		}
+
+		if(optional_string("+Radius:")) {
+			stuff_float(&mtp->radius);
+		}
+
+		if(optional_string("+Used for:")) {
+			parse_string_flag_list(&mtp->use_flags, Man_types, Num_man_types);
+		}
+
+		if(optional_string("+Normal:")) {
+			stuff_float_list(mtp->norm.a1d, 3);
+		}
+
+		if(optional_string("+Position:")) {
+			stuff_float_list(mtp->pos.a1d, 3);
+		}
 	}
 	
 	int n_subsystems = 0;
@@ -5022,6 +5098,11 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->disruption_timestamp=timestamp(0);
 		ship_system->turret_pick_big_attack_point_timestamp = timestamp(0);
 		vm_vec_zero(&ship_system->turret_big_attack_point);
+		for(j = 0; j < NUM_TURRET_ORDER_TYPES; j++)
+		{
+			//WMC - Set targeting order to default.
+			ship_system->turret_targeting_order[j] = j;
+		}
 
 		ship_system->subsys_cargo_name = -1;
 		ship_system->subsys_cargo_revealed = 0;
@@ -5334,6 +5415,63 @@ void ship_render(object * obj)
 	} else {
 
 		//	ship_get_subsystem_strength( shipp, SUBSYSTEM_ENGINE)>ENGINE_MIN_STR
+		//WMC - I suppose this is a bit hackish.
+		physics_info *pi = &Objects[shipp->objnum].phys_info;
+		man_thruster *mtp;
+		bool render_it;
+
+		for(int i = 0; i < si->num_maneuvering; i++)
+		{
+			mtp = &si->maneuvering[i];
+
+			//Skip invalid ones
+			if(mtp->bmap_id < 0)
+				continue;
+
+			render_it = false;
+
+			if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags & MT_PITCH_UP)) {
+				render_it = true;
+			} else if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags & MT_PITCH_DOWN)) {
+				render_it = true;
+			} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags & MT_ROLL_RIGHT)) {
+				render_it = true;
+			} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags & MT_ROLL_LEFT)) {
+				render_it = true;
+			} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_RIGHT)) {
+				render_it = true;
+			} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags & MT_BANK_LEFT)) {
+				render_it = true;
+			} else if(pi->desired_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+				render_it = true;
+			} else if(pi->desired_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+				render_it = true;
+			} else if(pi->desired_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+				render_it = true;
+			} else if(pi->desired_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+				render_it = true;
+			} else if(pi->desired_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
+				render_it = true;
+			} else if(pi->desired_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
+				render_it = true;
+			}
+
+			if(render_it) {
+				vec3d pos;
+				//NOT WORKING
+				//Rotate so that we have world position
+				vm_vec_rotate(&pos, &mtp->pos, &Objects[shipp->objnum].orient);
+				vertex pnt;
+				pnt.x = Objects[shipp->objnum].pos.xyz.x + pos.xyz.x;
+				pnt.y = Objects[shipp->objnum].pos.xyz.y + pos.xyz.y;
+				pnt.z = Objects[shipp->objnum].pos.xyz.z + pos.xyz.z;
+
+				gr_set_bitmap(mtp->bmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
+
+				if(Cmdline_nohtl)g3_draw_rotated_bitmap(&pnt, 0, mtp->radius, TMAP_FLAG_TEXTURED);	
+				else g3_draw_rotated_bitmap(&pnt, 0, mtp->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+			}
+		}
 
 		if ( ((shipp->thruster_bitmap > -1) || (shipp->thruster_glow_bitmap > -1)) && (!(shipp->flags & SF_DISABLED)) && (!ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) )
 		{
