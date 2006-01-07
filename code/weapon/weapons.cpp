@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.166  2006/01/03 06:02:59  taylor
+ * weapon precedence wasn't getting read in on normal weapon.tbl parse, should fix the missing primary weapons in early retail missions
+ *
  * Revision 2.165  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -3902,7 +3905,7 @@ void weapon_render(object *obj)
 
 				model_clear_instance(wip->model_num);
 
-				if ( (wip->wi_flags & WIF_THRUSTER) && (wp->thruster_bitmap > -1) ) {
+				if ( (wip->wi_flags & WIF_THRUSTER) && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
 					float	ft;
 
 					//	Add noise to thruster geometry.
