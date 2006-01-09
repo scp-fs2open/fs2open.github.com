@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.60 $
- * $Date: 2006-01-05 11:34:44 $
- * $Author: taylor $
+ * $Revision: 2.61 $
+ * $Date: 2006-01-09 04:54:14 $
+ * $Author: phreak $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2006/01/05 11:34:44  taylor
+ * make Split_ships[] dynamic (wouldn't have been a big deal to just bump the limit, but what the hell)
+ *
  * Revision 2.59  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -3356,7 +3359,6 @@ void shipfx_start_cloak(ship *shipp, int warmup, int recalc_matrix, int device)
 	//this will be true if we aren't cheating ;)
 	if (device)
 	{
-//		shipp->time_until_uncloak=timestamp(Tertiary_weapon_info[shipp->tertiary_weapon_info_idx].cloak_lifetime);
 	}
 	else
 	{
@@ -3416,7 +3418,6 @@ void shipfx_cloak_frame(ship *shipp, float frametime)
 
 			if (timestamp_elapsed(shipp->time_until_uncloak) && (shipp->time_until_uncloak != 0))
 			{
-		//		shipfx_stop_cloak(shipp,Tertiary_weapon_info[shipp->tertiary_weapon_info_idx].cloak_cooldown);
 				break;
 			}
 			//uncloak if departing or arriving

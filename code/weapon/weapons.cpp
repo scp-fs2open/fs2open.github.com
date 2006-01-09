@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.167  2006/01/07 12:48:04  taylor
+ * make sure that thrusters will still render with a missing primary bitmap if they have a primary glow
+ *
  * Revision 2.166  2006/01/03 06:02:59  taylor
  * weapon precedence wasn't getting read in on normal weapon.tbl parse, should fix the missing primary weapons in early retail missions
  *
@@ -987,8 +990,6 @@ extern bool Module_ship_weapons_loaded;
 
 weapon Weapons[MAX_WEAPONS];
 weapon_info Weapon_info[MAX_WEAPON_TYPES];
-tertiary_weapon_info Tertiary_weapon_info[MAX_TERTIARY_WEAPON_TYPES];
-int Num_tertiary_weapon_types=0;
 
 #define		MISSILE_OBJ_USED	(1<<0)			// flag used in missile_obj struct
 #define		MAX_MISSILE_OBJS	MAX_WEAPONS		// max number of missiles tracked in missile list
@@ -3337,100 +3338,6 @@ void translate_spawn_types()
 	}
 }
 
-void parse_tertiary_cloak(tertiary_weapon_info* twip)
-{
-	required_string("+Warmup Time:");
-	stuff_int(&twip->cloak_warmup);
-
-	required_string("+Cooldown Time:");
-	stuff_int(&twip->cloak_cooldown);
-
-	required_string("+Lifetime:");
-	stuff_int(&twip->cloak_lifetime);
-
-}
-
-void parse_tertiary_ammo(tertiary_weapon_info* twip)
-{
-	required_string("+Capacity:");
-	stuff_int(&twip->ammopod_capacity);
-}
-
-void parse_tertiary_boost(tertiary_weapon_info* twip)
-{
-	required_string("+Num Shots:");
-	stuff_int(&twip->boost_num_shots);
-
-	required_string("+Lifetime:");
-	stuff_int(&twip->boost_lifetime);
-
-	required_string("+Max Speed:");
-	stuff_float(&twip->boost_speed);
-
-	required_string("+Acceleration:");
-	stuff_float(&twip->boost_acceleration);
-}
-
-void parse_tertiary_jammer(tertiary_weapon_info* twip)
-{
-}
-
-void parse_tertiary_turbo(tertiary_weapon_info* twip)
-{
-}
-
-void parse_tertiary_reactor(tertiary_weapon_info* twip)
-{
-	required_string("+Additional Weapon Power:");
-	stuff_float(&twip->reactor_add_weap_pwr);
-
-	required_string("+Additional Shield Power:");
-	stuff_float(&twip->reactor_add_shield_pwr);
-}
-
-void parse_tertiary()
-{
-	tertiary_weapon_info* twip=&Tertiary_weapon_info[Num_tertiary_weapon_types];
-	
-	required_string("$Name:");
-	stuff_string(twip->name,F_NAME,NULL);
-
-	required_string("$Type:");
-	stuff_int(&twip->type);
-
-	switch (twip->type)
-	{
-		case TWT_CLOAK_DEVICE:
-			parse_tertiary_cloak(twip);
-			break;
-
-		case TWT_AMMO_POD:
-			parse_tertiary_ammo(twip);
-			break;
-
-		case TWT_BOOST_POD:
-			parse_tertiary_boost(twip);
-			break;
-
-		case TWT_RADAR_JAMMER:
-		case TWT_SUPER_JAMMER:
-			parse_tertiary_jammer(twip);
-			break;
-
-		case TWT_TURBOCHARGER:
-			parse_tertiary_turbo(twip);
-			break;
-
-		case TWT_EXTRA_REACTOR:
-			parse_tertiary_reactor(twip);
-			break;
-
-		default:
-		Int3();
-	}
-
-}
-
 static char Default_cmeasure_name[NAME_LENGTH] = "";
 
 char current_weapon_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
@@ -3503,19 +3410,6 @@ void parse_weaponstbl(char* longname)
 	}
 
 	strcpy(parse_error_text, "");
-
-	//maybe do some tertiary parsing
-	if (optional_string("#Tertiary Weapons"))
-	{
-		while (required_string_either("#End", "$Name:")) {
-			Assert( Num_tertiary_weapon_types < MAX_TERTIARY_WEAPON_TYPES );
-			parse_tertiary();
-			Num_tertiary_weapon_types++;
-		}
-
-		strcpy(parse_error_text, "");
-		required_string("#End");
-	}
 
 	// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 	// This list is used to select an alternate weapon when a particular weapon is not available

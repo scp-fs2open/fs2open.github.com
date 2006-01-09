@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.291 $
- * $Date: 2006-01-06 04:18:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.292 $
+ * $Date: 2006-01-09 04:54:14 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.291  2006/01/06 04:18:55  wmcoolmon
+ * turret-target-order SEXPs, ship thrusters
+ *
  * Revision 2.290  2006/01/05 05:12:11  taylor
  * allow both +Pri style and original style (+Normal, etc) for species_defs TBMs
  * allow for "<none>" as a bitmap/anim name, to have no effect
@@ -9917,18 +9920,6 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			// subtract the number of missiles fired
 			if ( Weapon_energy_cheat == 0 ){
-				/*if (shipp->tertiary_weapon_info_idx >= 0)
-				{
-					tertiary_weapon_info *twip=&Tertiary_weapon_info[shipp->tertiary_weapon_info_idx];
-					if ((twip->type == TWT_AMMO_POD) && (shipp->ammopod_current_secondary==bank) && (shipp->ammopod_current_ammo > 0))
-					{
-						shipp->ammopod_current_ammo--;
-					}
-					else
-					{
-						swp->secondary_bank_ammo[bank]--;
-					}
-				}*/
 			//	else
 			//	{
 					swp->secondary_bank_ammo[bank]--;
@@ -14763,68 +14754,6 @@ int ship_subsys_takes_damage(ship_subsys *ss)
 	Assert(ss);
 
 	return (ss->max_hits > SUBSYS_MAX_HITS_THRESHOLD);
-}
-
-//phreak
-int ship_fire_tertiary(object *objp)
-{
-	return 1;
-	Assert(objp->type == OBJ_SHIP);
-	ship *shipp=&Ships[objp->instance];
-	ship_weapon *sw=&shipp->weapons;
-	tertiary_weapon_info* twip;
-	
-	
-
-	Assert(shipp);
-	Assert(twip);
-	Assert(sw);
-
-	if (sw->tertiary_bank_weapon < 0)
-		return 0;
-
-	twip=&Tertiary_weapon_info[sw->tertiary_bank_weapon];
-
-	switch (twip->type)
-	{
-		case TWT_CLOAK_DEVICE:
-		{
-			if (shipp->cloak_stage==0)
-				shipfx_start_cloak(shipp,twip->cloak_warmup,1,1);
-
-			if (shipp->cloak_stage==2)
-				shipfx_stop_cloak(shipp,twip->cloak_cooldown);
-		}
-	
-		case TWT_BOOST_POD:
-		{
-		//	if (shipp->boost_pod_engaged)
-		//	{
-		//		return 1;
-		//	}
-
-			if (sw->tertiary_bank_ammo==0)
-			{
-				HUD_printf("No booster shots remaining");
-				return 1;
-			}	
-
-		//	shipp->boost_pod_engaged=1;
-			sw->tertiary_bank_ammo--;
-		//	shipp->boost_finish_stamp=timestamp(twip->boost_lifetime);
-
-			objp->phys_info.booster_max_vel.xyz.z=twip->boost_speed;
-			objp->phys_info.booster_forward_accel_time_const=twip->boost_acceleration;
-			
-			objp->phys_info.flags &= ~(PF_AFTERBURNER_ON);
-			objp->phys_info.flags |= PF_BOOSTER_ON;
-
-			HUD_printf("Booster engaged.");
-		}
-	}
-
-
-	return 1;
 }
 
 void ship_start_animation_type(ship *shipp, int animation_type, int subtype, int direction){
