@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.202 $
- * $Date: 2006-01-03 17:07:10 $
- * $Author: randomtiger $
+ * $Revision: 2.203 $
+ * $Date: 2006-01-09 04:51:04 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.202  2006/01/03 17:07:10  randomtiger
+ * Added voice recognition functionality for Visual C6 project only.
+ * Currently still a work in progress.
+ *
  * Revision 2.201  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -5898,7 +5902,7 @@ void game_frame(int paused)
 
 			// hack - sometimes this seems to slip by in multiplayer. this should guarantee that we catch it
 			if((Game_mode & GM_MULTIPLAYER) && (Player_multi_died_check != -1) && (Game_mode & GM_DEAD_BLEW_UP) ){
-				if(fl_abs(time(NULL) - Player_multi_died_check) > 4.0f){
+				if(fl_abs((float)time(NULL) - (float)Player_multi_died_check) > 4.0f){
 					if(!popupdead_is_active()){
 						popupdead_start();
 					}

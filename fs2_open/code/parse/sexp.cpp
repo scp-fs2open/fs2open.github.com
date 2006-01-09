@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.198 $
- * $Date: 2006-01-06 04:18:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.199 $
+ * $Date: 2006-01-09 04:52:34 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.198  2006/01/06 04:18:55  wmcoolmon
+ * turret-target-order SEXPs, ship thrusters
+ *
  * Revision 2.197  2006/01/02 21:28:52  taylor
  * can't overwrite node var here, it's original value is needed later and was throwing out NULL chars in the Warning()s
  *
@@ -4869,7 +4872,8 @@ int sexp_are_waypoints_done_delay( int n )
 // function to determine is all of a given ship type are destroyed
 int sexp_ship_type_destroyed( int n )
 {
-	int percent, type;
+	int percent;
+	unsigned int type;
 	char *shiptype;
 
 	percent = eval_num(n);
