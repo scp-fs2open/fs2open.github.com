@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.127 $
- * $Date: 2006-01-06 04:18:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.128 $
+ * $Date: 2006-01-09 04:54:14 $
+ * $Author: phreak $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2006/01/06 04:18:55  wmcoolmon
+ * turret-target-order SEXPs, ship thrusters
+ *
  * Revision 2.126  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -835,7 +838,6 @@ typedef struct ship_weapon {
 
 	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
 	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];	// Weapon_info[] index for the weapon in the bank
-	int tertiary_bank_weapon;							// Tertiary_Weapon_info[] index for the weapon in the bank
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank

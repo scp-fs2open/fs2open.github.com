@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-11-21 02:43:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2006-01-09 04:54:51 $
+ * $Author: phreak $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.17  2005/11/21 00:46:12  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -301,8 +305,6 @@ hud_frames Ets_gauge;
 
 static int Hud_ets_inited = 0;
 
-extern tertiary_weapon_info Tertiary_weapon_info[MAX_TERTIARY_WEAPON_TYPES];
-
 void hud_init_ets()
 {
 	if ( Hud_ets_inited )
@@ -374,15 +376,6 @@ void update_ets(object* objp, float fl_frametime)
 	if ( sinfo_p->power_output == 0 ){
 		return;
 	}
-
-	/*if (ship_p->tertiary_weapon_info_idx >=0)
-	{
-		if (Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].type == TWT_EXTRA_REACTOR)
-		{
-			max_g+=Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].reactor_add_weap_pwr;
-			max_s+=Tertiary_weapon_info[ship_p->tertiary_weapon_info_idx].reactor_add_shield_pwr;
-		}
-	}*/
 
 //	new_energy = fl_frametime * sinfo_p->power_output;
 
