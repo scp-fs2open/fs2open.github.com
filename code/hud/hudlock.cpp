@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2006-01-09 04:51:33 $
+ * $Author: phreak $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.17  2005/09/01 04:14:04  taylor
  * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
  *
@@ -1032,23 +1035,23 @@ void hud_calculate_lock_position(float frametime)
 			accumulated_y_pixels += pixels_moved_while_locking * delta_y/hypotenuse; 
 		}
 
-		if (fl_abs(accumulated_x_pixels) > 1.0f) {
+		if (fl_abs((float)accumulated_x_pixels) > 1.0f) {
 			modf(accumulated_x_pixels, &int_portion);
 
 			Players[Player_num].lock_indicator_x -= (int)int_portion;
 
-			if ( fl_abs(Players[Player_num].lock_indicator_x - Player->current_target_sx) < fl_abs(int_portion) )
+			if ( fl_abs((float)Players[Player_num].lock_indicator_x - (float)Player->current_target_sx) < fl_abs((float)int_portion) )
 				Players[Player_num].lock_indicator_x = Player->current_target_sx;
 
 			accumulated_x_pixels -= int_portion;
 		}
 
-		if (fl_abs(accumulated_y_pixels) > 1.0f) {
+		if (fl_abs((float)accumulated_y_pixels) > 1.0f) {
 			modf(accumulated_y_pixels, &int_portion);
 
 			Players[Player_num].lock_indicator_y -= (int)int_portion;
 
-			if ( fl_abs(Players[Player_num].lock_indicator_y - Player->current_target_sy) < fl_abs(int_portion) )
+			if ( fl_abs((float)Players[Player_num].lock_indicator_y - (float)Player->current_target_sy) < fl_abs((float)int_portion) )
 				Players[Player_num].lock_indicator_y = Player->current_target_sy;
 
 			accumulated_y_pixels -= int_portion;
@@ -1114,23 +1117,23 @@ void hud_calculate_lock_position(float frametime)
 		if ((delta_y != 0) && (hypotenuse != 0))
 			accumulated_y_pixels += pixels_moved_while_degrading * delta_y/hypotenuse; 
 
-		if (fl_abs(accumulated_x_pixels) > 1.0f) {
+		if (fl_abs((float)accumulated_x_pixels) > 1.0f) {
 			modf(accumulated_x_pixels, &int_portion);
 
 			Players[Player_num].lock_indicator_x -= (int)int_portion;
 
-			if ( fl_abs(Players[Player_num].lock_indicator_x - Players[Player_num].lock_indicator_start_x) < fl_abs(int_portion) )
+			if ( fl_abs((float)Players[Player_num].lock_indicator_x - (float)Players[Player_num].lock_indicator_start_x) < fl_abs((float)int_portion) )
 				Players[Player_num].lock_indicator_x = Players[Player_num].lock_indicator_start_x;
 
 			accumulated_x_pixels -= int_portion;
 		}
 
-		if (fl_abs(accumulated_y_pixels) > 1.0f) {
+		if (fl_abs((float)accumulated_y_pixels) > 1.0f) {
 			modf(accumulated_y_pixels, &int_portion);
 
 			Players[Player_num].lock_indicator_y -= (int)int_portion;
 
-			if ( fl_abs(Players[Player_num].lock_indicator_y - Players[Player_num].lock_indicator_start_y) < fl_abs(int_portion) )
+			if ( fl_abs((float)Players[Player_num].lock_indicator_y - (float)Players[Player_num].lock_indicator_start_y) < fl_abs((float)int_portion) )
 				Players[Player_num].lock_indicator_y = Players[Player_num].lock_indicator_start_y;
 
 			accumulated_y_pixels -= int_portion;

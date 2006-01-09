@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.28 $
- * $Date: 2006-01-06 04:18:54 $
- * $Author: wmcoolmon $
+ * $Revision: 1.29 $
+ * $Date: 2006-01-09 04:50:18 $
+ * $Author: phreak $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/01/06 04:18:54  wmcoolmon
+ * turret-target-order SEXPs, ship thrusters
+ *
  * Revision 1.27  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -716,6 +719,9 @@ int get_nearest_enemy_objnum(int turret_parent_objnum, ship_subsys *turret_subsy
 				Int3(); //Means invalid number passed.
 		}
 	}
+
+	//prevent warning of all control paths not returning a value
+	return -1;
 }
 
 int Use_parent_target = 0;
