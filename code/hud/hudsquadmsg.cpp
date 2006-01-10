@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-01-03 17:07:10 $
+ * $Revision: 2.21 $
+ * $Date: 2006-01-10 18:37:46 $
  * $Author: randomtiger $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/01/03 17:07:10  randomtiger
+ * Added voice recognition functionality for Visual C6 project only.
+ * Currently still a work in progress.
+ *
  * Revision 2.19  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -339,13 +343,13 @@
 #define DEFAULT_MSG_TIMEOUT		(8 * 1000)		// number of seconds * 1000 to get milliseconds
 #define MSG_KEY_EAT_TIME			(300)
 
-LOCAL int Squad_msg_mode;							// current mode that the messaging system is in
+int Squad_msg_mode;							// current mode that the messaging system is in
 LOCAL int Msg_key_used;								// local variable which tells if the key being processed
 															// with the messaging system was actually used
 LOCAL int Msg_key;									// global which indicates which key was currently pressed
 LOCAL int Msg_mode_timestamp;
-LOCAL int Msg_instance;						// variable which holds ship/wing instance to send the message to
-LOCAL int Msg_shortcut_command;			// holds command when using a shortcut key
+int Msg_instance;						// variable which holds ship/wing instance to send the message to
+int Msg_shortcut_command;			// holds command when using a shortcut key
 LOCAL int Msg_target_objnum;				// id of the current target of the player
 LOCAL ship_subsys *Msg_targeted_subsys;// pointer to current subsystem which is targeted
 //#ifndef NDEBUG
@@ -589,9 +593,6 @@ static int Mbox_item_coord[GR_NUM_RESOLUTIONS][2] = {
 		831, 18
 	}
 };
-
-// define for trapping messages send to "all fighters"
-#define MESSAGE_ALL_FIGHTERS		-999
 
 // forward declarations
 void hud_add_issued_order(char *name, int order, char *target);
@@ -2327,6 +2328,7 @@ void hud_squadmsg_reinforcement_select()
 }
 
 // function to display list of commands for a ship
+
 void hud_squadmsg_ship_command()
 {
 	int k;

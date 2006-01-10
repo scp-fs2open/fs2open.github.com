@@ -28,9 +28,10 @@
 #include "grammar.h"
 
 // Freespace includes
-#include "hud\hudsquadmsg.h"
-#include "io\keycontrol.h"
+#include "hud/hudsquadmsg.h"
+#include "io/keycontrol.h"
 #include "playerman/player.h"
+#include "ship/ship.h"
 
 CComPtr<ISpRecoGrammar>         p_grammarObject; // Pointer to our grammar object
 CComPtr<ISpRecoContext>         p_recogContext;  // Pointer to our recognition context
@@ -158,6 +159,35 @@ void VOICEREC_process_event(HWND hWnd)
     }
 }
 
+// Its not enough to update this, phrases.xml must have this info as well
+char *wing_names[] = 
+{
+		"Alpha",
+		"Beta",	
+		"Gamma",	
+		"Delta",
+		"Epsilon",
+		"Zeta",
+		"Eta",
+		"Theta",
+		"Iota",
+		"Kappa",
+		"Lambda",
+		"Mu",
+		"Nu",
+		"Xi",
+		"Omicron",
+		"Pi",
+		"Rho",
+		"Sigma",
+		"Tau",
+		"Upsilon",
+		"Phi",
+		"Chi",
+		"Psi",
+		"Omega",
+};
+
 /******************************************************************************
 * ExecuteCommand *
 *----------------*
@@ -166,6 +196,15 @@ void VOICEREC_process_event(HWND hWnd)
 *
 ******************************************************************************/
 extern int button_function(int n);
+extern void hud_squadmsg_msg_all_fighters();
+extern void hud_squadmsg_shortcut( int command );
+
+//extern void hud_squadmsg_ship_command();
+extern int Msg_instance;;
+extern int Msg_shortcut_command;
+extern int Squad_msg_mode;
+
+char VOICEREC_lastCommand[30];
 
 void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 {
@@ -181,8 +220,6 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 			pPhrase->GetText(SP_GETWHOLEPHRASE, SP_GETWHOLEPHRASE, TRUE, &pwszText, NULL);
 			MessageBoxW(NULL,pwszText,NULL,MB_OK);	
 		}
-
-
 		
         switch ( pElements->Rule.ulId )
         {
@@ -191,75 +228,111 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 				int wingType = pElements->pProperties->vValue.ulVal;
 				int shipNum = pElements->pProperties->pNextSibling->vValue.ulVal;
 
-				// Goto Action menu
-			//	hud_squadmsg_do_mode( SM_MODE_SHIP_COMMAND );
+				// Cant issue commands to yourself
+				if(wingType == 0 && shipNum == 1)
+				{
+					break;
+				}
+
+				char shipName[20];
+				sprintf(shipName,"%s %d", wing_names[wingType], shipNum);
+
+				Msg_instance = ship_name_lookup(shipName);
+
+				if(!(Player->flags & PLAYER_FLAGS_MSG_MODE))
+				{
+					hud_squadmsg_toggle();
+				}
+
+				hud_squadmsg_do_mode(SM_MODE_SHIP_COMMAND);
 				break;
 			}
 			case VID_WingName: 
 			{
-				int WingType = pElements->pProperties->vValue.ulVal;
+				int wingType  = pElements->pProperties->vValue.ulVal;
+				Msg_instance  = wing_lookup(wing_names[wingType]);
 
-		//		hud_squadmsg_do_mode( SM_MODE_SHIP_COMMAND );
+				if(!(Player->flags & PLAYER_FLAGS_MSG_MODE))
+				{
+					hud_squadmsg_toggle();
+				}
 
+				hud_squadmsg_do_mode(SM_MODE_WING_COMMAND);
 				break;
 			}
 
 			case VID_Action:
 			{
-				int action = pElements->pProperties->vValue.ulVal;
+				int action = pElements->pProperties->vValue.ulVal;					
 
-				switch(action)
+				// If menu is up
+				if(Player->flags & PLAYER_FLAGS_MSG_MODE)
 				{
-					
-					case VID_DestoryTarget: 				
-						button_function(ATTACK_MESSAGE); 
-						break;
-					case VID_DisableTarget:
-						button_function(DISABLE_MESSAGE); 
-						break;
-					case VID_DisarmTarget:
-						button_function(DISARM_MESSAGE); 
-						break;
+					switch(action)
+					{					
+					case VID_DestoryTarget: Msg_shortcut_command = ATTACK_TARGET_ITEM;			break;
+					case VID_DisableTarget:	Msg_shortcut_command = DISABLE_TARGET_ITEM;			break;
+					case VID_DisarmTarget:	Msg_shortcut_command = DISARM_TARGET_ITEM;			break;
+					case VID_DestroySubsys:	Msg_shortcut_command = DISABLE_SUBSYSTEM_ITEM;		break;
+					case VID_ProtectTarget:	Msg_shortcut_command = PROTECT_TARGET_ITEM;			break;
+					case VID_IgnoreTarget:	Msg_shortcut_command = IGNORE_TARGET_ITEM;			break;
+					case VID_FormWing:		Msg_shortcut_command = FORMATION_ITEM;				break;
+					case VID_CoverMe:		Msg_shortcut_command = COVER_ME_ITEM;				break;
+					case VID_EngageEnemy:	Msg_shortcut_command = ENGAGE_ENEMY_ITEM;			break;
+					case VID_Depart:		Msg_shortcut_command = DEPART_ITEM;					break;
+					default:				Msg_shortcut_command = -1;							break;
 
-					case VID_DestroySubsys:
-						button_function(ATTACK_SUBSYSTEM_MESSAGE); 
-						break;
+					}
 
-					case VID_ProtectTarget:
-						button_function(PROTECT_MESSAGE); 
-						break;
+					if(Msg_instance == MESSAGE_ALL_FIGHTERS || Squad_msg_mode == SM_MODE_ALL_FIGHTERS )
+					{
+					//	nprintf(("warning", "VOICER hud_squadmsg_send_to_all_fighters\n"));
+						hud_squadmsg_send_to_all_fighters(Msg_shortcut_command);
+					}
+					else if(Squad_msg_mode == SM_MODE_SHIP_COMMAND)
+					{
+					//	nprintf(("warning", "VOICER msg ship %d\n", Msg_instance));
+						hud_squadmsg_send_ship_command( Msg_instance, Msg_shortcut_command, 1 );
+					}
+					else if(Squad_msg_mode == SM_MODE_WING_COMMAND)
+					{
+					//	nprintf(("warning", "VOICER msg wing %d\n", Msg_instance));
+						hud_squadmsg_send_wing_command( Msg_instance, Msg_shortcut_command, 1 );
+					}
+					else if(Squad_msg_mode == SM_MODE_REINFORCEMENTS )
+					{
+					}
 
-					case VID_IgnoreTarget:
-						button_function(IGNORE_MESSAGE); 
-						break;
-
-					case VID_FormWing:
-						button_function(FORM_MESSAGE); 
-						break;
-
-					case VID_CoverMe:
-						button_function(COVER_MESSAGE); 
-						break;
-
-					case VID_EngageEnemy:
-						button_function(ENGAGE_MESSAGE); 
-						break;
-
-					case VID_Depart:
-						button_function(WARP_MESSAGE); 
-						break;
-					break;
+					hud_squadmsg_toggle();
 				}
+				else
+				{
+					switch(action)
+					{					
+					case VID_DestoryTarget: button_function(ATTACK_MESSAGE);				break;
+					case VID_DisableTarget:	button_function(DISABLE_MESSAGE);				break;
+					case VID_DisarmTarget:	button_function(DISARM_MESSAGE);				break;
+					case VID_DestroySubsys:	button_function(ATTACK_SUBSYSTEM_MESSAGE);		break;
+					case VID_ProtectTarget:	button_function(PROTECT_MESSAGE);				break;
+					case VID_IgnoreTarget:	button_function(IGNORE_MESSAGE);				break;
+					case VID_FormWing:		button_function(FORM_MESSAGE);					break;
+					case VID_CoverMe:		button_function(COVER_MESSAGE);					break;
+					case VID_EngageEnemy:	button_function(ENGAGE_MESSAGE);				break;
+					case VID_Depart:		button_function(WARP_MESSAGE);					break;
+					}
+				}
+		
 				break;
 			}
 
+			// These commands run no matter what, and will even bring up the menu
 			case VID_TopMenu:
 			{
 				int action = pElements->pProperties->vValue.ulVal;
+				bool msgWindow = Player->flags & PLAYER_FLAGS_MSG_MODE;
 
 				// If the command window is not up, or it is and its a cancel request toggle
-				if((Player->flags & PLAYER_FLAGS_MSG_MODE && action == VID_Cancel) ||
-					(!(Player->flags & PLAYER_FLAGS_MSG_MODE) && action != VID_Cancel))
+				if((msgWindow && action == VID_Cancel) || (!msgWindow && action != VID_Cancel))
 				{
 					hud_squadmsg_toggle();
 				}
@@ -276,7 +349,14 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 
 					case VID_AllFighters: 
 					case VID_AllWings:
-						hud_squadmsg_do_mode( SM_MODE_ALL_FIGHTERS ); 
+					//	Msg_instance = MESSAGE_ALL_FIGHTERS;
+					//	Squad_msg_mode == SM_MODE_ALL_FIGHTERS
+						hud_squadmsg_msg_all_fighters();
+
+					//	if(Msg_shortcut_command == -1)
+					//	{
+					//		hud_squadmsg_do_mode( SM_MODE_ALL_FIGHTERS ); 
+					//	}
 						break;
 
 					case VID_Reinforcements: 
@@ -294,6 +374,7 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 					case VID_More:
 						break;
 				}
+
 				break;
 			}
 

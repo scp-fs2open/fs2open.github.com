@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.203 $
- * $Date: 2006-01-09 04:51:04 $
- * $Author: phreak $
+ * $Revision: 2.204 $
+ * $Date: 2006-01-10 18:37:46 $
+ * $Author: randomtiger $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.203  2006/01/09 04:51:04  phreak
+ * fix compile warnings.
+ *
  * Revision 2.202  2006/01/03 17:07:10  randomtiger
  * Added voice recognition functionality for Visual C6 project only.
  * Currently still a work in progress.
@@ -3337,11 +3340,14 @@ void game_init()
 	}
 
 #ifdef FS2_VOICER
-	bool voiceRectOn = VOICEREC_init((HWND)os_get_window(), WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
-	
-	if(voiceRectOn == false)
+	if(Cmdline_voice_recognition)
 	{
-		MessageBox((HWND)os_get_window(), "Failed to init voice rec", "Error", MB_OK);
+		bool voiceRectOn = VOICEREC_init((HWND)os_get_window(), WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
+	
+		if(voiceRectOn == false)
+		{
+			MessageBox((HWND)os_get_window(), "Failed to init voice rec", "Error", MB_OK);
+		}
 	}
 
 #endif
@@ -8825,7 +8831,10 @@ void game_shutdown(void)
 
 	fsspeech_deinit();
 #ifdef FS2_VOICER
-	VOICEREC_deinit();
+	if(Cmdline_voice_recognition)
+	{
+		VOICEREC_deinit();
+	}
 #endif
 
 	// don't ever flip a page on the standalone!
