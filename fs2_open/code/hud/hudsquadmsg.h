@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.9 $
- * $Date: 2006-01-03 17:07:10 $
+ * $Revision: 2.10 $
+ * $Date: 2006-01-10 18:37:46 $
  * $Author: randomtiger $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/01/03 17:07:10  randomtiger
+ * Added voice recognition functionality for Visual C6 project only.
+ * Currently still a work in progress.
+ *
  * Revision 2.8  2005/12/29 08:08:34  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -173,6 +177,9 @@
 #define SM_MODE_REPAIR_REARM			7		//repair/rearm player ship
 #define SM_MODE_REPAIR_REARM_ABORT	8		//abort repair/rearm of player ship
 #define SM_MODE_ALL_FIGHTERS			9		//message all fighters/bombers
+
+// define for trapping messages send to "all fighters"
+#define MESSAGE_ALL_FIGHTERS		-999
 
 struct object;
 

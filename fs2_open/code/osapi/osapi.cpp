@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-01-03 17:07:11 $
+ * $Revision: 2.32 $
+ * $Date: 2006-01-10 18:37:46 $
  * $Author: randomtiger $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/01/03 17:07:11  randomtiger
+ * Added voice recognition functionality for Visual C6 project only.
+ * Currently still a work in progress.
+ *
  * Revision 2.30  2005/07/31 01:30:48  taylor
  * print file and line info for Int3() calls to the logfile so that they are easier to debug with basic error reports
  *
@@ -749,7 +753,7 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 */
 #ifdef FS2_VOICER
     case WM_RECOEVENT:
-		if ( Game_mode & GM_IN_MISSION )
+		if ( Game_mode & GM_IN_MISSION && Cmdline_voice_recognition)
 		{
 			VOICEREC_process_event( hwnd );
 		}

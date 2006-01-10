@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.83 $
- * $Date: 2005-11-24 06:37:47 $
- * $Author: phreak $
+ * $Revision: 2.84 $
+ * $Date: 2006-01-10 18:37:45 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2005/11/24 06:37:47  phreak
+ * Added -missile_lighting command line
+ *
  * Revision 2.82  2005/11/23 00:43:20  phreak
  * Command lines for rearm countdown timer.
  *
@@ -641,6 +644,8 @@ extern int Cmdline_tga16;
 
 extern int Cmdline_wcsaga;
 extern int Cmdline_tbp;
+
+extern int Cmdline_voice_recognition;
 
 extern int Cmdline_rearm_timer;
 extern int Cmdline_missile_lighting;

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.130 $
- * $Date: 2005-12-14 17:58:26 $
- * $Author: taylor $
+ * $Revision: 2.131 $
+ * $Date: 2006-01-10 18:37:45 $
+ * $Author: randomtiger $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2005/12/14 17:58:26  taylor
+ * should have tested that better, it was still finding or ignoring options that it shouldn't if they were in the wrong order on
+ *  the same source (source being the two possible cmdline_fso.cfg files and the actual args passed on the cmdline)
+ *
  * Revision 2.129  2005/12/07 05:38:32  taylor
  * make sure with cmdline option check that it's the actual option (-spec was getting picked out of the -spec_* options by mistake)
  *
@@ -905,6 +909,7 @@ Flag exe_params[] =
 	{ "-decals",			"impact decals",							true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-decals", },
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-tga16",				"Convert 32-bit TGAs to 16-bit",			true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-tga16", },
+	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
@@ -1018,6 +1023,7 @@ cmdline_parm disable_crashing("-nocrash", NULL);
 //Experimental
 cmdline_parm tga16_arg("-tga16", NULL); // 32-bit TGA to 16-bit conversion
 
+cmdline_parm voice_recognition_arg("-voicer", NULL);
 cmdline_parm poof_2d_arg("-2d_poof", NULL);
 cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
 
@@ -1095,6 +1101,7 @@ int Cmdline_ingamejoin = 0;
 char *Cmdline_start_mission = NULL;
 int Cmdline_ambient_factor  = 128;
 int Cmdline_2d_poof			= 0;
+int Cmdline_voice_recognition = 0;
 
 #ifdef SCP_UNIX
 	int Cmdline_no_grab = 0;
@@ -1559,6 +1566,11 @@ bool SetCmdlineParams()
 	if(poof_2d_arg.found())
 	{
 		Cmdline_2d_poof = 1;
+	}
+
+	if(voice_recognition_arg.found())
+	{
+		Cmdline_voice_recognition = 1;
 	}
 
 	if (Radar_Range_Clamp.found())
