@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.199 $
- * $Date: 2006-01-09 04:52:34 $
+ * $Revision: 2.200 $
+ * $Date: 2006-01-10 00:12:08 $
  * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.199  2006/01/09 04:52:34  phreak
+ * fix compile warnings.
+ *
  * Revision 2.198  2006/01/06 04:18:55  wmcoolmon
  * turret-target-order SEXPs, ship thrusters
  *
@@ -1558,7 +1561,7 @@ sexp_oper Operators[] = {
 	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
 	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
 
-	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		4, 4, },
+	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
 	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
 	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, 1, },
 	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, 1, },
