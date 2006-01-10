@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.77 $
- * $Date: 2005-12-29 08:08:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.78 $
+ * $Date: 2006-01-10 01:23:09 $
+ * $Author: phreak $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2005/12/29 08:08:34  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.76  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -2652,7 +2655,8 @@ void evaluate_ship_as_closest_target(esct *esct)
 	if (Ship_info[esct->shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
 		for (ss=GET_FIRST(&esct->shipp->subsys_list); ss!=END_OF_LIST(&esct->shipp->subsys_list); ss=GET_NEXT(ss)) {
 
-			if(!(ss->system_info->targetable == 0))continue;
+			if (!ss->system_info->targetable)
+				continue;
 
 			if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
 
@@ -4245,7 +4249,9 @@ void hud_show_hostile_triangle()
 		// check if any turrets on ship are firing at the player (only on non fighter-bombers)
 		if ( !(Ship_info[sp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
 			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
-				if(!(ss->system_info->targetable == 0))continue;
+				if (!ss->system_info->targetable)
+					continue;
+
 				if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
 
 					if ( ss->turret_enemy_objnum == player_obj_index ) {
