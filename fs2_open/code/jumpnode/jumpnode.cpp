@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-01-03 17:07:11 $
- * $Author: randomtiger $
+ * $Revision: 2.19 $
+ * $Date: 2006-01-10 00:11:03 $
+ * $Author: phreak $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/01/03 17:07:11  randomtiger
+ * Added voice recognition functionality for Visual C6 project only.
+ * Currently still a work in progress.
+ *
  * Revision 2.17  2005/11/05 05:08:58  wmcoolmon
  * Removed unneccessary casts
  *
@@ -223,6 +227,16 @@ void jump_node::set_model(char *model_name, bool show_polys)
 
 void jump_node::set_alphacolor(int r, int g, int b, int alpha)
 {
+	if (r < 0) r = 0;
+	if (g < 0) g = 0;
+	if (b < 0) b = 0;
+	if (alpha < 0) alpha = 0;
+
+	if (r > 255) r = 255;
+	if (g > 255) g = 255;
+	if (b > 255) b = 255;
+	if (alpha > 255) alpha = 255;
+
 	m_flags |= JN_USE_DISPLAY_COLOR;
 	gr_init_alphacolor(&m_display_color, r, g, b, alpha);
 }
