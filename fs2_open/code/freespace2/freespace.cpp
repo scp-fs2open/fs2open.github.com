@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.205 $
- * $Date: 2006-01-11 01:35:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.206 $
+ * $Date: 2006-01-11 05:40:59 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.205  2006/01/11 01:35:53  wmcoolmon
+ * Complete the HUD scripting hook. (Eight lines of code, and I still miss three of them. :P
+ *
  * Revision 2.204  2006/01/10 18:37:46  randomtiger
  * Improvements to voice recognition system.
  * Also function put on -voicer launcher option.
@@ -3404,12 +3407,9 @@ void game_init()
 	// check for hi res pack file 
 	int has_sparky_hi = 0;
 
-	CFILE *the_mask = cfopen("2_ChoosePilot-m.pcx", "r");
-	if(the_mask != NULL)
-	{
-		cfclose(the_mask);
+	if ( cf_find_file_location("2_ChoosePilot-m.pcx", CF_TYPE_ANY, 0, NULL, NULL, NULL) )
 		has_sparky_hi = 1;
-	}
+
 
 	if(!Is_standalone)
 	{
