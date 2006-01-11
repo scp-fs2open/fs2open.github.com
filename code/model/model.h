@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.70 $
- * $Date: 2006-01-04 08:19:22 $
- * $Author: taylor $
+ * $Revision: 2.71 $
+ * $Date: 2006-01-11 21:23:43 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2006/01/04 08:19:22  taylor
+ * fixes for regular texture replacement
+ *
  * Revision 2.69  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -1352,7 +1355,7 @@ extern int modelstats_num_sortnorms;
 
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(int model_num, model_subsystem * turret, matrix *orient, angles * turret1, angles *turret2, vec3d * pos, vec3d * dst);
+extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
