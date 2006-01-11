@@ -9,8 +9,12 @@
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
 
+//*************************Scripting hook globals*************************
+script_hook Script_splashhook;
+script_hook Script_hudhook;
+script_hook Script_globalhook;
+
 //*************************Scripting init and handling*************************
-std::vector<script_hook> Script_globalhooks;
 
 int script_test(script_state *st)
 {
@@ -26,9 +30,16 @@ int script_test(script_state *st)
 		reset_parse();
 	}
 
-	while(optional_string("$Global:"))
-	{
-		Script_globalhooks.push_back(st->ParseChunk());
+	if(optional_string("$Splash:")) {
+		Script_splashhook = st->ParseChunk("Splash");
+	}
+
+	if(optional_string("$HUD:")) {
+		Script_hudhook = st->ParseChunk("HUD");
+	}
+
+	while(optional_string("$Global:")) {
+		Script_globalhook = st->ParseChunk("Global");
 	}
 
 	return 1;
@@ -39,7 +50,7 @@ int script_test(script_state *st)
 void script_init (void)
 {
 #ifdef USE_LUA
-	Script_system.CreateLuaState(Lua_libraries);
+	Script_system.CreateLuaState();
 #endif
 	if(Output_scripting_meta)
 	{
@@ -136,7 +147,7 @@ script_state::~script_state()
 	Clear();
 }
 
-void script_state::SetLuaSession(lua_State *L, const struct script_lua_lib_list *libraries)
+void script_state::SetLuaSession(lua_State *L)
 {
 #ifdef USE_LUA
 	if(LuaState != NULL)
@@ -144,7 +155,6 @@ void script_state::SetLuaSession(lua_State *L, const struct script_lua_lib_list 
 		lua_close(LuaState);
 	}
 	LuaState = L;
-	LuaLibs = libraries;
 	if(LuaState != NULL) {
 		Langs |= SC_LUA;
 	}
