@@ -36,7 +36,7 @@ private:
 	PyObject *GetPyLocals(){return PyLoc;}
 	PyObject *GetPyGlobals(){return PyGlb;}
 
-	void SetLuaSession(struct lua_State *L, const struct script_lua_lib_list *libraries);
+	void SetLuaSession(struct lua_State *L);
 	void SetPySession(struct PyObject *loc, struct PyObject *glb);
 
 	void OutputLuaMeta(FILE *fp);
@@ -49,7 +49,7 @@ public:
 	~script_state();
 
 	//Init functions for langs
-	int CreateLuaState(const struct script_lua_lib_list *libraries);
+	int CreateLuaState();
 	//int CreatePyState(const script_py_lib_list *libraries);
 
 	//Get data
@@ -72,6 +72,8 @@ extern class script_state Script_system;
 extern bool Output_scripting_meta;
 
 //**********Script hook stuff (scripting.tbl)
-extern std::vector<script_hook> Script_globalhooks;
+extern script_hook Script_globalhook;
+extern script_hook Script_hudhook;
+extern script_hook Script_splashhook;
 
 #endif //_SCRIPTING_H
