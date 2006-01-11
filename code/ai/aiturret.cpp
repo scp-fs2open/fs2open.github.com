@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.29 $
- * $Date: 2006-01-09 04:50:18 $
- * $Author: phreak $
+ * $Revision: 1.30 $
+ * $Date: 2006-01-11 21:15:15 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/01/09 04:50:18  phreak
+ * fix compile warnings.
+ *
  * Revision 1.28  2006/01/06 04:18:54  wmcoolmon
  * turret-target-order SEXPs, ship thrusters
  *
@@ -866,7 +869,8 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 //	If the turret (*ss) has a subsystem targeted, the subsystem is used as the predicted point.
 void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vec3d *predicted_enemy_pos, vec3d *gvec)
 {
-	if (ss->turret_enemy_objnum != -1)	{
+	if (ss->turret_enemy_objnum != -1)
+	{
 		model_subsystem *tp = ss->system_info;
 		vec3d	gun_pos, gun_vec;
 		//float		weapon_speed;
@@ -887,6 +891,8 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 
 		ship_get_global_turret_info(&Objects[parent_objnum], tp, &gun_pos, &gun_vec);
 
+		//Figure out what point on the ship we want to point the gun at, and store the global location
+		//in enemy_point.
 		vec3d	enemy_point;
 		if (ss->targeted_subsys != NULL) {
 			if (ss->turret_enemy_objnum != -1) {
@@ -901,8 +907,10 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 			}
 		}
 
+		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
 		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &lep->phys_info.vel, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
 
+		//Mess with the turret's accuracy if the weapon system is damaged.
 		if (weapon_system_strength < 0.7f) {
 			vec3d	rand_vec;
 
@@ -911,6 +919,8 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 			vm_vec_scale_add2(predicted_enemy_pos, &rand_vec, (1.0f - weapon_system_strength)*1.5f * lep->radius);
 		}
 
+		//Get the normalized dir between the turret and the predicted enemy position.
+		//If the dot product is smaller than or equal to the turret's FOV, try and point the gun at it.
 		vec3d	v2e;
 		vm_vec_normalized_dir(&v2e, predicted_enemy_pos, &gun_pos);
 		if (vm_vec_dot(&v2e, gvec) > tp->turret_fov) {
