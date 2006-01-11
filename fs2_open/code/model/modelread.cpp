@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.85 $
- * $Date: 2005-12-29 08:08:37 $
+ * $Revision: 2.86 $
+ * $Date: 2006-01-11 21:23:43 $
  * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2005/12/29 08:08:37  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.84  2005/12/15 04:31:05  phreak
  * [V] can't spell 'turret'
  *
@@ -3912,8 +3915,8 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	vec3d fvec, uvec, rvec;
 
 	pm = model_get(model_num);
-	bsp_info * sm = &pm->submodel[turret->turret_gun_sobj];
-	bsp_info * sm_parent = &pm->submodel[turret->subobj_num];
+	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
+	bsp_info * base = &pm->submodel[turret->subobj_num];
 	float offset_base_h = 0.0f;
 	float offset_barrel_h = 0.0f;
 #ifdef WMC_SIDE_TURRETS
@@ -3922,18 +3925,18 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 #endif
 
 	model_clear_instance(model_num);
-	sm_parent->angs.h = offset_base_h;
-	sm->angs.h = offset_barrel_h;
+	base->angs.h = offset_base_h;
+	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 
-	sm_parent->angs.h = -PI/2.0f + offset_base_h;
-	sm->angs.p = -PI/2.0f;
-	sm->angs.h = offset_barrel_h;
+	base->angs.h = -PI/2.0f + offset_base_h;
+	gun->angs.p = -PI/2.0f;
+	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 
-	sm_parent->angs.h = 0.0f + offset_base_h;
-	sm->angs.p = -PI/2.0f;
-	sm->angs.h = offset_barrel_h;
+	base->angs.h = 0.0f + offset_base_h;
+	gun->angs.p = -PI/2.0f;
+	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 									
 	vm_vec_normalize(&fvec);
@@ -3961,19 +3964,19 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
 //	Returns 1 if rotated gun, 0 if no gun to rotate (rotation handled by AI)
-int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *turret1, angles *turret2, vec3d *pos, vec3d *dst)
+int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst)
 {
 	polymodel * pm;
 
 	pm = model_get(model_num);
-	bsp_info * sm = &pm->submodel[turret->turret_gun_sobj];
-	bsp_info * sm_parent = &pm->submodel[turret->subobj_num];
+	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
+	bsp_info * base = &pm->submodel[turret->subobj_num];
 
 	// Check for a valid turret
 	Assert( turret->turret_num_firing_points > 0 );
 
-
-	if ( sm_parent == sm ) {
+	//This should not happen
+	if ( base == gun ) {
 		return 0;
 	}
 
@@ -3982,53 +3985,8 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 		model_make_turret_matrix(model_num, turret );
 
 	Assert( turret->flags & MSS_FLAG_TURRET_MATRIX);
-//	Assert( sm->movement_axis == MOVEMENT_AXIS_X );				// Gun must be able to change pitch
-//	Assert( sm_parent->movement_axis == MOVEMENT_AXIS_Z );	// Parent must be able to change heading
-
-//======================================================
-// DEBUG code to draw the normal out of this gun and a circle
-// at the gun point.
-#if 0
-	{
-		vec3d tmp;
-		vec3d tmp1;
-		vertex dpnt1, dpnt2;
-
-		model_clear_instance(model_num);
-		sm->angs.p = turret2->p;
-		sm_parent->angs.h = turret1->h;
-
-		model_find_world_point(&tmp, &vmd_zero_vector, model_num, turret->turret_gun_sobj, orient, pos );
-		gr_set_color(255,0,0);
-		g3_rotate_vertex( &dpnt1, &tmp );
-
-		gr_set_color(255,0,0);
-		g3_draw_sphere(&dpnt1,1.0f);
-
-		vm_vec_copy_scale( &tmp1, &turret->turret_matrix.vec.fvec, 10.0f );
-		model_find_world_point(&tmp, &tmp1, model_num, turret->turret_gun_sobj, orient, pos );
-		g3_rotate_vertex( &dpnt2, &tmp );
-
-		gr_set_color(0,255,0);
-		g3_draw_line(&dpnt1,&dpnt2);
-		gr_set_color(0,128,0);
-		g3_draw_sphere(&dpnt2,0.2f);
-
-		vm_vec_copy_scale( &tmp1, &turret->turret_matrix.vec.rvec, 10.0f );
-		model_find_world_point(&tmp, &tmp1, model_num, turret->turret_gun_sobj, orient, pos );
-		g3_rotate_vertex( &dpnt2, &tmp );
-
-		gr_set_color(0,0,255);
-		g3_draw_line(&dpnt1,&dpnt2);
-
-		vm_vec_copy_scale( &tmp1, &turret->turret_matrix.vec.uvec, 10.0f );
-		model_find_world_point(&tmp, &tmp1, model_num, turret->turret_gun_sobj, orient, pos );
-		g3_rotate_vertex( &dpnt2, &tmp );
-
-		gr_set_color(255,0,0);
-		g3_draw_line(&dpnt1,&dpnt2);
-	}
-#endif
+//	Assert( gun->movement_axis == MOVEMENT_AXIS_X );				// Gun must be able to change pitch
+//	Assert( base->movement_axis == MOVEMENT_AXIS_Z );	// Parent must be able to change heading
 
 	//------------	
 	// rotate the dest point into the turret gun normal's frame of
@@ -4039,7 +3997,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	vec3d world_to_turret_translate;	// converts world coordinates to turret's FOR
 	vec3d tempv;
 
-	vm_vec_unrotate( &tempv, &sm_parent->offset, orient);
+	vm_vec_unrotate( &tempv, &base->offset, orient);
 	vm_vec_add( &world_to_turret_translate, pos, &tempv );
 
 	vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
@@ -4047,29 +4005,30 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	vm_vec_sub( &tempv, dst, &world_to_turret_translate );
 	vm_vec_rotate( &of_dst, &tempv, &world_to_turret_matrix );
 
-	vm_vec_normalize(&of_dst);	
+	vm_vec_normalize(&of_dst);
 
 	//------------	
 	// Find the heading and pitch that the gun needs to turn to
 	// by extracting them from the of_dst vector.
 	// Call this the desired_angles
 	angles desired_angles;
-
+	vm_extract_angles_vector(&desired_angles, &of_dst);
+/*
 	desired_angles.p = (float)acos(of_dst.xyz.z);
 	desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
 	desired_angles.b = 0.0f;
-
+*/
 	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
 
 	//------------	
 	// Gradually turn the turret towards the desired angles
 	float step_size = turret->turret_turning_rate * flFrametime;
 
-	vm_interp_angle(&turret1->h,desired_angles.h,step_size);
-	vm_interp_angle(&turret2->p,desired_angles.p,step_size);
+	vm_interp_angle(&base_angles->h,desired_angles.h,step_size);
+	vm_interp_angle(&gun_angles->p,desired_angles.p,step_size);
 
-//	turret1->h -= step_size*(key_down_timef(KEY_1)-key_down_timef(KEY_2) );
-//	turret2->p += step_size*(key_down_timef(KEY_3)-key_down_timef(KEY_4) );
+//	base_angles->h -= step_size*(key_down_timef(KEY_1)-key_down_timef(KEY_2) );
+//	gun_angles->p += step_size*(key_down_timef(KEY_3)-key_down_timef(KEY_4) );
 
 	return 1;
 
