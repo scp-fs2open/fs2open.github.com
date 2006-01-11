@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.204 $
- * $Date: 2006-01-10 18:37:46 $
- * $Author: randomtiger $
+ * $Revision: 2.205 $
+ * $Date: 2006-01-11 01:35:53 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.204  2006/01/10 18:37:46  randomtiger
+ * Improvements to voice recognition system.
+ * Also function put on -voicer launcher option.
+ *
  * Revision 2.203  2006/01/09 04:51:04  phreak
  * fix compile warnings.
  *
@@ -2994,6 +2998,46 @@ DCF_BOOL( training_msg_method, Training_message_method )
 DCF_BOOL( show_player_pos, Show_player_pos )
 DCF_BOOL(i_framerate, Interface_framerate )
 
+DCF(warp, "Tests warpin effect")
+{
+	if ( Dc_command )	{
+		bool warpin = true;
+		int idx = -1;
+
+		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);
+		if( Dc_arg_type & ARG_TRUE) warpin = true;
+		else if(Dc_arg_type & ARG_FALSE) warpin = false;
+
+		if(!(Dc_arg_type & ARG_NONE))
+		{
+			dc_get_arg(ARG_STRING|ARG_NONE);
+			if(Dc_arg_type & ARG_STRING)
+			{
+				idx = ship_name_lookup(Dc_arg);
+				if(idx > -1)
+				{
+					if(warpin)
+						shipfx_warpin_start(&Objects[Ships[idx].objnum]);
+					else
+						shipfx_warpout_start(&Objects[Ships[idx].objnum]);
+				}
+			}
+		}
+		
+		if(idx < 0)
+		{
+			if(Player_ai->target_objnum > -1)
+			{
+				if(warpin)
+					shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
+				else
+					shipfx_warpout_start(&Objects[Player_ai->target_objnum]);
+			}
+		}
+	}	
+	if ( Dc_help )	dc_printf( "Usage: Show_mem\nWarps in if true, out if false, player target unless specific ship is specified\n" );	
+}
+
 DCF(show_mem,"Toggles showing mem usage")
 {
 	if ( Dc_command )	{	
@@ -5941,12 +5985,15 @@ void game_frame(int paused)
 			// Draw the 2D HUD gauges
 			if(!(Viewer_mode & VM_FREECAMERA))
 			{
-				if(supernova_active() <	3){
-					game_render_hud_2d();
-				}
+				if(!Script_system.RunBytecode(Script_hudhook))
+				{
+					if(supernova_active() <	3){
+						game_render_hud_2d();
+					}
 
-				// Draw 3D HUD gauges			
-				game_render_hud_3d(&eye_pos, &eye_orient);
+					// Draw 3D HUD gauges			
+					game_render_hud_3d(&eye_pos, &eye_orient);
+				}
 			}
 
 			gr_reset_clip();
