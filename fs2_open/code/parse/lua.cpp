@@ -468,7 +468,7 @@ int lua_return_args(lua_State *L, char *fmt, ...)
 				lua_pushnumber(L, va_arg(vl, double));
 				break;
 			case 'f':
-				lua_pushnumber(L, va_arg(vl, float));
+				lua_pushnumber(L, va_arg(vl, double));
 				break;
 			case 'i':
 				lua_pushnumber(L, va_arg(vl, int));
@@ -536,7 +536,7 @@ LUA_FUNC(getShortName, l_Shipclass, "Gets ship class short name", NULL, "Short n
 	return lua_return_args(L, "s", Ship_info[idx].short_name);
 }
 
-LUA_FUNC(getHitPoints, l_Shipclass, "Gets ship class hitpoints", NULL, "Hitpoints (number)")
+LUA_FUNC(getHitpoints, l_Shipclass, "Gets ship class hitpoints", NULL, "Hitpoints (number)")
 {
 	int idx;
 	if(!lua_parse_args(L, "o", l_Shipclass.Parse(&idx)))
@@ -575,7 +575,16 @@ LUA_FUNC(getName, l_Ship, "Gets ship name", NULL, "ship name (string)")
 	return lua_return_args(L, "s", Ships[idx].ship_name);
 }
 
-LUA_FUNC(getHullStrength, l_Ship, "Gets ship hull", NULL, "Current hull hitpoints (number)")
+LUA_FUNC(getHitpoints, l_Ship, "Gets ship hull max", NULL, "max hull hitpoints (number)")
+{
+	int idx;
+	if(!lua_ship_get_idx(L, &idx))
+		return LUA_RETURN_NOTHING;
+
+	return lua_return_args(L, "f", Ship_info[Ships[idx].ship_info_index].max_hull_strength);
+}
+
+LUA_FUNC(getHitpointsLeft, l_Ship, "Gets ship hull", NULL, "Current hull hitpoints (number)")
 {
 	int idx;
 	if(!lua_ship_get_idx(L, &idx))
@@ -591,15 +600,6 @@ LUA_FUNC(getClass, l_Ship, "Gets ship class handle", NULL, "Ship class handle (s
 		return LUA_RETURN_NOTHING;
 
 	return lua_return_args(L, "o", l_Shipclass.Return(&Objects[Ships[idx].objnum].signature));
-}
-
-LUA_FUNC(getHullMax, l_Ship, "Gets ship hull max", NULL, "max hull hitpoints (number)")
-{
-	int idx;
-	if(!lua_ship_get_idx(L, &idx))
-		return LUA_RETURN_NOTHING;
-
-	return lua_return_args(L, "f", Ship_info[Ships[idx].ship_info_index].max_hull_strength);
 }
 
 LUA_FUNC(warpIn, l_Ship, "Warps ship in", NULL, NULL)
@@ -1736,7 +1736,7 @@ void output_lib_meta(FILE *fp, lua_lib_h *lib)
 			fputs("<dd><b>Return values:</b> None</dd>", fp);
 		}
 	}
-	fputs("</dl></dd>", fp);
+	fputs("<br></dl></dd>", fp);
 }
 #endif
 
