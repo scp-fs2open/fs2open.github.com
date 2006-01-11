@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.49 $
- * $Date: 2005-12-29 08:08:33 $
+ * $Revision: 1.50 $
+ * $Date: 2006-01-11 21:15:15 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.49  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.48  2005/12/06 03:15:47  taylor
  * add a couple of Assert()'s that it doesn't otherwise check for
  *
@@ -11429,6 +11432,66 @@ void ai_dock()
 }
 
 #ifndef NDEBUG
+
+//void model_debug_draw_turret(int model_num, vec3d *pos, matrix *orient, model_subsystem *turret, bsp_info *gun, angles *gun_angles, bsp_info *base, angles *base_angles)
+/*void ship_debug_draw_turret(ship *shipp, ship_subsys *ss)
+{
+	model_subsystem *turret = ss->system_info;
+	object *objp = &Objects[shipp->objnum];
+	polymodel * pm;
+
+	pm = model_get(shipp->modelnum);
+	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
+	bsp_info * base = &pm->submodel[turret->subobj_num];
+	angles *gun_angles = &ss->submodel_info_2.angs;
+	angles *base_angles = &ss->submodel_info_1.angs;
+
+	//======================================================
+	// DEBUG code to draw the normal out of this gun and a circle
+	// at the gun point.
+	vec3d tmp;
+	vec3d tmp1;
+	vertex dpnt1, dpnt2;
+
+	model_clear_instance(shipp->modelnum);
+	gun->angs.p = gun_angles->p;
+	base->angs.h = base_angles->h;
+
+	g3_start_frame(1);
+
+	model_find_world_point(&tmp, &vmd_zero_vector, shipp->modelnum, turret->turret_gun_sobj, &objp->orient, &objp->pos );
+	gr_set_color(255,0,0);
+	g3_rotate_vertex( &dpnt1, &tmp );
+
+	gr_set_color(255,0,0);
+	g3_draw_sphere(&dpnt1,1.0f);
+
+	vm_vec_copy_scale( &tmp1, &turret->turret_matrix.vec.fvec, 10.0f );
+	model_find_world_point(&tmp, &tmp1, shipp->modelnum, turret->turret_gun_sobj, &objp->orient, &objp->pos );
+	g3_rotate_vertex( &dpnt2, &tmp );
+
+	gr_set_color(0,255,0);
+	g3_draw_line(&dpnt1,&dpnt2);
+	gr_set_color(0,128,0);
+	g3_draw_sphere(&dpnt2,0.2f);
+
+	vm_vec_copy_scale( &tmp1, &turret->turret_matrix.vec.rvec, 10.0f );
+	model_find_world_point(&tmp, &tmp1, shipp->modelnum, turret->turret_gun_sobj, &objp->orient, &objp->pos );
+	g3_rotate_vertex( &dpnt2, &tmp );
+
+	gr_set_color(0,0,255);
+	g3_draw_line(&dpnt1,&dpnt2);
+
+	vm_vec_copy_scale( &tmp1, &turret->turret_matrix.vec.uvec, 10.0f );
+	model_find_world_point(&tmp, &tmp1, shipp->modelnum, turret->turret_gun_sobj, &objp->orient, &objp->pos );
+	g3_rotate_vertex( &dpnt2, &tmp );
+
+	gr_set_color(255,0,0);
+	g3_draw_line(&dpnt1,&dpnt2);
+
+	g3_end_frame();
+}*/
+
 #define	MAX_AI_DEBUG_RENDER_STUFF	100
 typedef struct ai_render_stuff {
 	ship_subsys	*ss;
@@ -11441,10 +11504,26 @@ int	Num_AI_debug_render_stuff = 0;
 
 void ai_debug_render_stuff()
 {
+
 	vertex	vert1, vert2;
 	vec3d	gpos2;
 	int		i;
+/*
+	//WMC - something's buggy with this code
+	ship *shipp;
+	for (i=0; i<MAX_SHIPS; i++)
+	{
+		if (Ships[i].objnum > -1)
+		{
+			shipp = &Ships[i];
 
+			ship_subsys *pss;
+			for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+				ship_debug_draw_turret(shipp, pss);
+			}
+		}
+	}
+*/
 	for (i=0; i<Num_AI_debug_render_stuff; i++) {
 		ship_subsys	*ss;
 		int	parent_objnum;
@@ -11485,6 +11564,8 @@ void ai_debug_render_stuff()
 #ifndef NDEBUG
 int	Msg_count_4996 = 0;
 #endif
+
+
 
 //	--------------------------------------------------------------------------
 // Process subobjects of object objnum.
