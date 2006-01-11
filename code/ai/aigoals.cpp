@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.15 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.16 $
+ * $Date: 2006-01-11 05:42:17 $
+ * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.14  2005/10/29 22:09:28  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -2212,12 +2215,19 @@ int ai_goal_priority_compare(const void *a, const void *b)
 		return -1;
 	else if ( ga->priority < gb->priority )
 		return 1;
-	else {
-		if ( ga->time > gb->time )
-			return -1;
-		else // if ( ga->time < gb->time )			// this way prevents element swapping if times happen to be equal (which they should not)
-			return 1;
-	}
+
+	// check based on time goal was issued
+
+	if ( ga->time > gb->time )
+		return -1;
+	// V had this check commented out and would always return 1 here, that messes up where multiple goals 
+	// get assigned at the same time though, when the priorities are also the same (Enif station bug) - taylor
+	else if ( ga->time < gb->time )
+		return 1;
+
+
+	// the two are equal
+	return 0;
 }
 
 //	Prioritize goal list.
