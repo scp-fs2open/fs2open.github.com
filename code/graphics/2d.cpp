@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.63 $
- * $Date: 2005-12-29 08:08:33 $
+ * $Revision: 2.64 $
+ * $Date: 2006-01-12 04:16:27 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.62  2005/12/06 02:53:02  taylor
  * clean up some D3D debug messages to better match new OGL messages (for easier debugging)
  * remove D3D_32bit variable since it's basically useless and the same thing can be done another way
@@ -2071,11 +2074,7 @@ void gr_flip()
 #ifdef USE_PYTHON
 	python_do_frame();
 #endif
-	uint max = Script_globalhooks.size();
-	for(uint i = 0; i < max; i++)
-	{
-		Script_system.RunBytecode(Script_globalhooks[i]);
-	}
+	Script_system.RunBytecode(Script_globalhook);
 	gr_screen.gf_flip();
 }
 
