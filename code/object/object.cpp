@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-12-04 19:07:49 $
+ * $Revision: 2.54 $
+ * $Date: 2006-01-12 17:42:56 $
  * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/12/04 19:07:49  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.52  2005/11/21 02:43:37  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -2570,4 +2573,18 @@ bool object_get_gliding(object *objp)
 	Assert(objp != NULL);
 
 	return ((objp->phys_info.flags & PF_GLIDING) != 0);
+}
+
+//Quickly finds an object by its signature
+int obj_get_by_signature(int sig)
+{
+	object *objp = GET_FIRST(&obj_used_list);
+	while( objp !=END_OF_LIST(&obj_used_list) )
+	{
+		if(objp->signature == sig)
+			return OBJ_INDEX(objp);
+
+		objp = GET_NEXT(objp);
+	}
+	return -1;
 }

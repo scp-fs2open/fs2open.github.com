@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.207 $
- * $Date: 2006-01-12 04:18:10 $
+ * $Revision: 2.208 $
+ * $Date: 2006-01-12 17:42:55 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.207  2006/01/12 04:18:10  wmcoolmon
+ * Finished committing codebase
+ *
  * Revision 2.206  2006/01/11 05:40:59  taylor
  * use cf_find_file_location() check instead of cfopen() for is_spary_hi check
  *
@@ -8080,6 +8083,14 @@ void game_do_state(int state)
 	game_do_state_common(state);	// do stuff that may need to be done regardless of state
 
 	if(Game_do_state_should_skip){
+		return;
+	}
+
+	if(GS_state_hooks[state].IsValid())
+	{
+		gr_clear();
+		Script_system.RunBytecode(GS_state_hooks[state]);
+		gr_flip();
 		return;
 	}
 	

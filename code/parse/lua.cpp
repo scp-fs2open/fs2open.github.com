@@ -8,6 +8,11 @@
 #include "io/mouse.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
+#include "freespace2/freespace.h"
+#include "lighting/lighting.h"
+#include "render/3dinternal.h"
+#include "cmdline/cmdline.h"
+#include "playerman/player.h"
 
 //*************************Lua funcs*************************
 int lua_parse_args(lua_State *L, char *fmt, ...);
@@ -17,6 +22,24 @@ int script_remove_lib(lua_State *L, char *name);
 void lua_stackdump(lua_State *L);
 
 //*************************Lua helpers*************************
+//Used for internal object->lua_return and lua_parse->object communication
+struct script_lua_odata
+{
+	char *meta;
+	void *buf;
+	int size;
+
+	script_lua_odata(char *in_meta, void *in_buf, int in_size){meta=in_meta;buf=in_buf;size=in_size;}
+};
+
+//Used like _odata, except for object pointers
+struct script_lua_opdata
+{
+	char *meta;
+	void **buf;
+
+	script_lua_opdata(char* in_meta, void** in_buf){meta=in_meta; buf=in_buf;}
+};
 
 //Function helper helper
 //Stores data about functions
@@ -24,9 +47,9 @@ struct lua_func_hh
 {
 	char *Name;
 	lua_CFunction Function;
-	char *Description;
 	char *Arguments;
 	char *ReturnValues;
+	char *Description;
 };
 
 class lua_lib_h
@@ -43,9 +66,10 @@ public:
 	char *Name;
 	char *Description;
 	std::vector<lua_func_hh> Functions;
+	int Derivator;
 
 public:
-	lua_lib_h(char *in_name, char *in_desc){Name = in_name; Description = in_desc;}
+	lua_lib_h(char *in_name, char *in_desc, int in_deriv=-1){Name = in_name; Description = in_desc; Derivator = in_deriv;}
 };
 
 std::vector<lua_lib_h> lua_Libraries;
@@ -65,25 +89,6 @@ public:
 	void AddFunc(lua_func_hh *f){lua_Libraries[lib_idx].Functions.push_back(*f);}
 };
 
-//Used with the args functions to check a function type
-//You should really use LUA_CVAR though
-struct script_lua_opdata
-{
-	char *meta;
-	void **buf;
-
-	script_lua_opdata(char* in_meta, void** in_buf){meta=in_meta; buf=in_buf;}
-};
-
-struct script_lua_odata
-{
-	char *meta;
-	void *buf;
-	int size;
-
-	script_lua_odata(char *in_meta, void *in_buf, int in_size){meta=in_meta;buf=in_buf;size=in_size;}
-};
-
 //Lua_obj helper class
 //Because of some STUPID limitation with templates, I couldn't pass
 //a lua_obj object as a reference and then execute AddFunc()
@@ -93,8 +98,8 @@ class lua_obj_h
 public:
 	int obj_idx;
 public:
-	lua_obj_h(char *in_name, char *in_desc) {
-		lua_Objects.push_back(lua_lib_h(in_name, in_desc));
+	lua_obj_h(char *in_name, char *in_desc, lua_obj_h *in_deriv = NULL) {
+		lua_Objects.push_back(lua_lib_h(in_name, in_desc, in_deriv == NULL ? -1 : in_deriv->obj_idx));	//WMC - Handle NULL case
 		obj_idx = lua_Objects.size()-1;
 	}
 
@@ -105,7 +110,7 @@ public:
 //Lets us add functions via its constructor
 class lua_func_h {
 public:
-	lua_func_h(char *name, lua_CFunction func, lua_lib &lib, char *desc, char *args, char *retvals) {
+	lua_func_h(char *name, lua_CFunction func, lua_lib &lib, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
 		lua_func_hh f;
 
 		f.Name = name;
@@ -117,7 +122,7 @@ public:
 		lib.AddFunc(&f);
 	}
 
-	lua_func_h(char *name, lua_CFunction func, lua_obj_h &obj, char *desc, char *args, char *retvals) {
+	lua_func_h(char *name, lua_CFunction func, lua_obj_h &obj, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
 		lua_func_hh f;
 
 		f.Name = name;
@@ -135,7 +140,7 @@ public:
 template <class StoreType> class lua_obj : public lua_obj_h
 {
 public:
-	lua_obj(char*in_name, char*in_desc):lua_obj_h(in_name, in_desc){};
+	lua_obj(char*in_name, char*in_desc, lua_obj* in_deriv=NULL):lua_obj_h(in_name, in_desc, in_deriv){};
 
 	//StoreType *Create(lua_State *L){StoreType *ptr = (StoreType*)LUA_NEW_OBJ(L, meta, StoreType); return ptr;}
 	script_lua_odata Return(StoreType *obj){return script_lua_odata(lua_Objects[obj_idx].Name, obj, sizeof(StoreType));}
@@ -145,9 +150,9 @@ public:
 
 //Function macro
 //This is what you call to make new functions
-#define LUA_FUNC(name, objlib, desc, args, retvals)	\
+#define LUA_FUNC(name, objlib, args, retvals, desc)	\
 	static int lua_##objlib##_##name(lua_State *L);	\
-	lua_func_h lua_##objlib##_##name##_h(#name, lua_##objlib##_##name, objlib, desc, args, retvals);	\
+	lua_func_h lua_##objlib##_##name##_h(#name, lua_##objlib##_##name, objlib, args, retvals, desc);	\
 	static int lua_##objlib##_##name(lua_State *L)
 /*
 //Callback typedef
@@ -223,7 +228,7 @@ public:
 
 //#define LUA_PTR(n, p) script_lua_pdata(n, (void*)p)
 //*************************Lua return values*************************
-#define LUA_RETURN_NOTHING		0
+#define LUA_RETURN_NIL		0
 #define LUA_RETURN_OBJECT		1
 
 //*************************Lua defines*************************
@@ -260,6 +265,8 @@ int script_remove_lib(lua_State *L, char *name)
 	return 0;
 }
 
+//WMC - Spits out the current Lua stack to "stackdump"
+//This includes variable values, but not names
 void lua_stackdump(lua_State *L, char *stackdump)
 {
 	char buf[512];
@@ -508,50 +515,186 @@ static lua_cvar<ship_info*>		l_ship_info("ship_info");
 static lua_cvar<ship*>			l_ship("ship");
 */
 
+//**********CLASS: Species
+lua_obj<int> l_Species("species", "Species");
+
 //**********CLASS: Shipclass
 lua_obj<int> l_Shipclass("shipclass", "Ship class object");
 extern int ships_inited;
 
-LUA_FUNC(getName, l_Shipclass, "Gets ship class name", NULL, "Name (string)")
+LUA_FUNC(getName, l_Shipclass, NULL, "Name (string)", "Gets ship class name")
 {
 	int idx;
 	if(!lua_parse_args(L, "o", l_Shipclass.Parse(&idx)))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "s", Ship_info[idx].name);
 }
 
-LUA_FUNC(getShortName, l_Shipclass, "Gets ship class short name", NULL, "Short name (string)")
+LUA_FUNC(getSpecies, l_Shipclass, NULL, "Species name (string)", "Gets ship species")
 {
 	int idx;
 	if(!lua_parse_args(L, "o", l_Shipclass.Parse(&idx)))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
+
+	return lua_return_args(L, "s", Species_info[Ship_info[idx].species].species_name);
+}
+
+LUA_FUNC(getShortName, l_Shipclass, NULL, "Short name (string)", "Gets ship class short name")
+{
+	int idx;
+	if(!lua_parse_args(L, "o", l_Shipclass.Parse(&idx)))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "s", Ship_info[idx].short_name);
 }
 
-LUA_FUNC(getHitpoints, l_Shipclass, "Gets ship class hitpoints", NULL, "Hitpoints (number)")
+LUA_FUNC(getHitpoints, l_Shipclass, NULL, "Hitpoints (number)", "Gets ship class hitpoints")
 {
 	int idx;
 	if(!lua_parse_args(L, "o", l_Shipclass.Parse(&idx)))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "f", Ship_info[idx].max_hull_strength);
 }
 
+LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the techroom", "Gets whether or not the ship class is available in the techroom")
+{
+	int idx;
+	if(!lua_parse_args(L, "o", l_Shipclass.Parse(&idx)))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	bool b = false;
+	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags & SIF_IN_TECH_DATABASE_M)) {
+		b = true;
+	} else if(Ship_info[idx].flags & SIF_IN_TECH_DATABASE) {
+		b = true;
+	}
+
+	return lua_return_args(L, "b", b);
+}
+
+
+LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], [Pitch radians], [Bank radians]", "Whether ship was rendered", "Draws ship model as if in techroom")
+{
+	int x1,y1,x2,y2;
+	float rot_pct = 40.0f;
+	angles rot_angles = {0.0f, 0.0f, 0.0f};
+	bool r;
+	int idx;
+	if(!lua_parse_args(L, "oiiii|bffff", l_Shipclass.Parse(&idx), &x1, &y1, &x2, &y2, &r, &rot_pct, &rot_angles.b, &rot_angles.b))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return lua_return_args(L, "b", false);
+
+	if(x2 < x1 || y2 < y1)
+		return lua_return_args(L, "b", false);
+
+	if(rot_pct < 0.0f)
+		rot_pct = 0.0f;
+	if(rot_pct > 100.0f)
+		rot_pct = 100.0f;
+
+	ship_info *sip = &Ship_info[idx];
+
+	//Make sure model is loaded
+	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+
+	if(sip->modelnum < 0)
+		return lua_return_args(L, "b", false);
+
+	//Handle angles
+	matrix orient = vmd_identity_matrix;
+	angles view_angles = {-0.6f, 0.0f, 0.0f};
+	vm_angles_2_matrix(&orient, &view_angles);
+
+	rot_angles.h = (rot_pct*0.01f) * PI2;
+	vm_rotate_matrix_by_angles(&orient, &rot_angles);
+
+	//Clip
+	gr_set_clip(x1,y1,x2-x1,y2-y1,r);
+
+	//Handle 3D init stuff
+	g3_start_frame(1);
+	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	//Handle light
+	light_reset();
+	vec3d light_dir = vmd_zero_vector;
+	light_dir.xyz.y = 1.0f;	
+	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+	light_rotate_all();
+
+	//Draw the ship!!
+	model_clear_instance(sip->modelnum);
+	model_set_detail_level(0);
+	model_render(sip->modelnum, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+	//OK we're done
+	if (!Cmdline_nohtl) 
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+
+	//Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	return lua_return_args(L, "b", true);
+}
+
+//**********CLASS: Object
+lua_obj<int> l_Object("object", "Object");
+//Helper function
+//Returns 1 if object sig stored in idx exists, and stores Objects[] index in idx
+//Returns 0 if object sig does not exist, and does not change idx
+int lua_obj_get_idx(lua_State *L, int *idx)
+{
+	if(!lua_parse_args(L, "o", idx))
+		return 0;
+
+	*idx = obj_get_by_signature(*idx);
+
+	if(*idx < 0)
+		return 0;
+
+	return 1;
+}
+
+LUA_FUNC(getHitpointsLeft, l_Object, NULL, "Current hull hitpoints (number)", "Gets ship hull")
+{
+	int idx;
+	if(!lua_obj_get_idx(L, &idx))
+		return LUA_RETURN_NIL;
+
+	return lua_return_args(L, "f", Objects[idx].hull_strength);
+}
+
 //**********CLASS: Ship
-lua_obj<int> l_Ship("ship", "Ship object");
+lua_obj<int> l_Ship("ship", "Ship object", &l_Object);
 
 //Helper function
+//Returns 1 if object sig stored in idx exists, and stores Ships[] index in idx
+//Returns 0 if object sig does not exist, and does not change idx
 int lua_ship_get_idx(lua_State *L, int *idx)
 {
 	if(!lua_parse_args(L, "o", l_Ship.Parse(idx)))
@@ -566,68 +709,245 @@ int lua_ship_get_idx(lua_State *L, int *idx)
 }
 
 
-LUA_FUNC(getName, l_Ship, "Gets ship name", NULL, "ship name (string)")
+LUA_FUNC(getName, l_Ship, NULL, "ship name (string)", "Gets ship name")
 {
 	int idx;
 	if(!lua_ship_get_idx(L, &idx))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "s", Ships[idx].ship_name);
 }
 
-LUA_FUNC(getHitpoints, l_Ship, "Gets ship hull max", NULL, "max hull hitpoints (number)")
+LUA_FUNC(getHitpoints, l_Ship, NULL, "max hull hitpoints (number)", "Gets ship hull max")
 {
 	int idx;
 	if(!lua_ship_get_idx(L, &idx))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "f", Ship_info[Ships[idx].ship_info_index].max_hull_strength);
 }
 
-LUA_FUNC(getHitpointsLeft, l_Ship, "Gets ship hull", NULL, "Current hull hitpoints (number)")
+LUA_FUNC(getClass, l_Ship, NULL, "Ship class handle (shipclass)", "Gets ship class handle")
 {
 	int idx;
 	if(!lua_ship_get_idx(L, &idx))
-		return LUA_RETURN_NOTHING;
-
-	return lua_return_args(L, "f", Objects[Ships[idx].objnum].hull_strength);
-}
-
-LUA_FUNC(getClass, l_Ship, "Gets ship class handle", NULL, "Ship class handle (shipclass)")
-{
-	int idx;
-	if(!lua_ship_get_idx(L, &idx))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "o", l_Shipclass.Return(&Objects[Ships[idx].objnum].signature));
 }
 
-LUA_FUNC(warpIn, l_Ship, "Warps ship in", NULL, NULL)
+LUA_FUNC(warpIn, l_Ship, NULL, NULL, "Warps ship in")
 {
 	int idx;
 	if(!lua_ship_get_idx(L, &idx))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	shipfx_warpin_start(&Objects[Ships[idx].objnum]);
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(warpOut, l_Ship, "Warps ship out", NULL, NULL)
+LUA_FUNC(warpOut, l_Ship, NULL, NULL, "Warps ship out")
 {
 	int idx;
 	if(!lua_ship_get_idx(L, &idx))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	shipfx_warpout_start(&Objects[Ships[idx].objnum]);
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
+}
+
+//**********OBJECT: Player
+lua_obj<int> l_Player("player", "Player object");
+
+int player_helper(lua_State *L, int *idx)
+{
+	if(!lua_parse_args(L, "o", l_Player.Parse(idx)))
+		return 0;
+
+	if(*idx < 0 || *idx > Player_num)
+		return 0;
+
+	return 1;
+}
+
+LUA_FUNC(getName, l_Player, NULL, "Player name (string)", "Gets current player name")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_return_args(L, "s", Players[idx].callsign);
+}
+
+LUA_FUNC(getImage, l_Player, NULL, "Player image (string)", "Gets current player image")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_return_args(L, "s", Players[idx].image_filename);
+}
+
+LUA_FUNC(getSquadronName, l_Player, NULL, "Squad name (string)", "Gets current player squad name")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_return_args(L, "s", Players[idx].squad_name);
+}
+//WMC - This isn't working
+/*
+LUA_FUNC(getSquadronImage, l_Player, NULL, "Squad image (string)", "Gets current player squad image")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_return_args(L, "s", Players[idx].squad_filename);
+}*/
+
+LUA_FUNC(getCampaign, l_Player, NULL, "Campaign name (string)", "Gets current player campaign")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_return_args(L, "s", Players[idx].current_campaign);
+}
+
+LUA_FUNC(getMainHall, l_Player, NULL, "Main hall number", "Gets player's main hall number")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_return_args(L, "i", (int)Players[idx].main_hall);
+}
+
+//**********LIBRARY: Base
+lua_lib l_Base("bs", "Base library");
+
+LUA_FUNC(print, l_Base, "String", NULL, "Prints a string")
+{
+	Error(LOCATION, "LUA: %s", lua_tostring(L, -1));
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(warning, l_Base, "String", NULL, "Displays a Freespace warning (debug build-only) message with the string provided")
+{
+	Warning(LOCATION, "LUA ERROR: %s", lua_tostring(L, -1));
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(error, l_Base, "String", NULL, "Displays a Freespace error message with the string provided")
+{
+	Error(LOCATION, "LUA ERROR: %s", lua_tostring(L, -1));
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]", "Frame time in seconds", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.")
+{
+	bool b=false;
+	lua_parse_args(L, "|b", &b);
+
+	return lua_return_args(L, "f", b ? flRealframetime : flFrametime);
+}
+
+LUA_FUNC(getState, l_Base, "[Depth (number)]", "State (string)", "Gets current Freespace state; if a depth is specified, the state at that depth is returned. (IE at the in-game options game, a depth of 1 would give you the game state, while the function defaults to 0, which would be the options screen.")
+{
+	int depth = 0;
+	lua_parse_args(L, "|i", &depth);
+
+	return lua_return_args(L, "s", GS_state_text[gameseq_get_state(depth)]);
+}
+
+LUA_FUNC(setEvent, l_Base, "Event", "Whether a valid event name was given (boolean)", "Sets current game event. Note that you can crash Freespace 2 by setting a state at an improper time, so test extensively if you use it.")
+{
+	char *s;
+	if(!lua_parse_args(L, "s", &s))
+		return LUA_RETURN_NIL;
+
+	//WMC - I know it's not the best idea to check for state text
+	//and then post using the event define, however, I figure
+	//it's more modder-friendly than having them deal with 
+	//two separate lists.
+	for(int i = 0; i < Num_gs_event_text; i++)
+	{
+		if(!stricmp(s, GS_event_text[i])) {
+			gameseq_post_event(i);
+			lua_return_args(L, "b", true);
+		}
+	}
+
+	lua_return_args(L, "b", false);
+}
+
+LUA_FUNC(getEventTypeName, l_Base, "Index of evnt type (number)", "Event name (string)", "Gets the name of a event type, given an index; this function may be used to list all event dealt with by setEvent()")
+{
+	int i;
+	if(!lua_parse_args(L, "i", &i))
+		return LUA_RETURN_NIL;
+
+	if(i < 0 || i > Num_gs_state_text)
+		return LUA_RETURN_NIL;
+
+	return lua_return_args(L, "s", GS_event_text[i]);
+}
+
+LUA_FUNC(getNumEventTypes, l_Base, NULL, "Number of event types", "Gets the number of different event types currently implemented in FS2")
+{
+	return lua_return_args(L, "i", Num_gs_event_text);
+}
+
+LUA_FUNC(getCurrentPlayer, l_Base, NULL, "Current player", "Gets the current player")
+{
+	if(Player == NULL)
+		return LUA_RETURN_NIL;
+
+	int idx = Player - Players;
+	return lua_return_args(L, "o", l_Player.Return(&idx));
+}
+
+LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the named player")
+{
+	if(Player == NULL)
+		return LUA_RETURN_NIL;
+
+	int idx;
+	if(!lua_parse_args(L, "i", &idx))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Player_num)
+		return LUA_RETURN_NIL;
+
+	return lua_return_args(L, "o", l_Player.Return(&idx));
+}
+
+LUA_FUNC(getNumPlayers, l_Base, NULL, "Number of players", "Gets the number of currently loaded players")
+{
+	return lua_return_args(L, "i", Player_num);
+}
+
+
+//**********LIBRARY: Math
+lua_lib l_Math("ma", "Math library");
+
+LUA_FUNC(getRandomNumber, l_Math, "[Smallest number], [Largest number]", "Random number", "Returns a random number; default is 0 to 1")
+{
+	float min = 0.0f;
+	float max = 1.0f;
+	lua_parse_args(L, "ff", &min, &max);
+
+	if(max < min)
+		return LUA_RETURN_NIL;
+
+	return lua_return_args(L, "f", frand_range(min, max));
 }
 
 //**********LIBRARY: Mission
 lua_lib l_Mission("mn", "Mission library");
 
-LUA_FUNC(getShip, l_Mission, "Gets ship object", "Ship name", "Ship object")
+LUA_FUNC(getShip, l_Mission, "Ship name", "Ship object", "Gets ship object")
 {
 	char *name;
 	if(!lua_parse_args(L, "s", &name))
@@ -636,30 +956,30 @@ LUA_FUNC(getShip, l_Mission, "Gets ship object", "Ship name", "Ship object")
 	int idx = ship_name_lookup(name);
 	
 	if(idx < 0) {
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 	}
 
 	return lua_return_args(L, "o", l_Shipclass.Return(&Objects[Ships[idx].objnum].signature));
 }
 
-LUA_FUNC(getNumEscortShips, l_Mission, "Gets escort ship", NULL, "Ship object")
+LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Ship object", "Gets escort ship")
 {
 	return lua_return_args(L, "i", hud_escort_num_ships_on_list());
 }
 
-LUA_FUNC(getEscortShip, l_Mission, "Gets escort ship", "Escort index", "Ship object")
+LUA_FUNC(getEscortShip, l_Mission, "Escort index", "Ship object", "Gets escort ship")
 {
 	int idx;
 	if(!lua_parse_args(L, "i", &idx))
 		return 0;
 
 	if(idx < 0)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	idx = hud_escort_return_objnum(idx);
 	
 	if(idx < 0)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "o", l_Ship.Return(&Objects[idx].signature));
 }
@@ -667,7 +987,7 @@ LUA_FUNC(getEscortShip, l_Mission, "Gets escort ship", "Escort index", "Ship obj
 //**********LIBRARY: Tables
 lua_lib l_Tables("tb", "Tables library");
 
-LUA_FUNC(getNumShipClasses, l_Tables, "Gets number of ship classes", NULL, "Number")
+LUA_FUNC(getNumShipClasses, l_Tables, NULL, "Number", "Gets number of ship classes")
 {
 	if(!ships_inited)
 		return lua_return_args(L, "i", 0);	//No ships loaded...should be 0
@@ -675,26 +995,26 @@ LUA_FUNC(getNumShipClasses, l_Tables, "Gets number of ship classes", NULL, "Numb
 	return lua_return_args(L, "i", Num_ship_classes);
 }
 
-LUA_FUNC(getShipClassByIndex, l_Tables, "Gets ship class by index", "Class index", "Shipclass object")
+LUA_FUNC(getShipClassByIndex, l_Tables, "Class index", "Shipclass object", "Gets ship class by index")
 {
 	if(!ships_inited)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	int idx;
 	if(!lua_parse_args(L, "i", &idx))
 		return 0;
 	
 	if(idx < 0 || idx > Num_ship_classes) {
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 	}
 
 	return lua_return_args(L, "o", l_Shipclass.Return(&idx));
 }
 
-LUA_FUNC(getShipClass, l_Tables, "Gets ship class", "Class name", "Shipclass object")
+LUA_FUNC(getShipClass, l_Tables, "Class name", "Shipclass object", "Gets ship class")
 {
 	if(!ships_inited)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	char *name;
 	if(!lua_parse_args(L, "s", &name))
@@ -703,7 +1023,7 @@ LUA_FUNC(getShipClass, l_Tables, "Gets ship class", "Class name", "Shipclass obj
 	int idx = ship_info_lookup(name);
 	
 	if(idx < 0) {
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 	}
 
 	return lua_return_args(L, "o", l_Shipclass.Return(&idx));
@@ -714,14 +1034,14 @@ lua_lib l_Mouse("ms", "Mouse library");
 
 extern int mouse_inited;
 
-LUA_FUNC(getX, l_Mouse, "Gets Mouse X pos", "[Unscale]", "X pos (Number)")
+LUA_FUNC(getX, l_Mouse, "[Unscale]", "X pos (Number)", "Gets Mouse X pos")
 {
 	if(!mouse_inited)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	int x;
 	bool u = false;
-	lua_parse_args(L, "b", &u);
+	lua_parse_args(L, "|b", &u);
 
 	if(u)
 		mouse_get_pos_unscaled(&x, NULL);
@@ -731,14 +1051,14 @@ LUA_FUNC(getX, l_Mouse, "Gets Mouse X pos", "[Unscale]", "X pos (Number)")
 	return lua_return_args(L, "i", x);
 }
 
-LUA_FUNC(getY, l_Mouse, "Gets Mouse Y pos", "[Unscale]", "Y pos (Number)")
+LUA_FUNC(getY, l_Mouse, "[Unscale]", "Y pos (Number)", "Gets Mouse Y pos")
 {
 	if(!mouse_inited)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	int y;
 	bool u = false;
-	lua_parse_args(L, "b", &u);
+	lua_parse_args(L, "|b", &u);
 
 	if(u)
 		mouse_get_pos_unscaled(NULL, &y);
@@ -748,10 +1068,10 @@ LUA_FUNC(getY, l_Mouse, "Gets Mouse Y pos", "[Unscale]", "Y pos (Number)")
 	return lua_return_args(L, "i", y);
 }
 
-LUA_FUNC(isButtonDown, l_Mouse, "Returns whether the specified mouse buttons are up or down", "{Left, Right, or Middle}, [...], [...]", "Whether specified buttons are pressed (Boolean)")
+LUA_FUNC(isButtonDown, l_Mouse, "{Left, Right, or Middle}, [...], [...]", "Whether specified buttons are pressed (Boolean)", "Returns whether the specified mouse buttons are up or down")
 {
 	if(!mouse_inited)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	char *sa[3] = {NULL, NULL, NULL};
 	lua_parse_args(L, "s|ss", &sa[0], &sa[1], &sa[2]);	//Like a snake!
@@ -778,15 +1098,15 @@ LUA_FUNC(isButtonDown, l_Mouse, "Returns whether the specified mouse buttons are
 	return lua_return_args(L, "b", rtn);
 }
 
-LUA_FUNC(setCursorImage, l_Mouse, "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "Image filename w/o extension, [Lock,Unlock]", "Y pos (Number)")
+LUA_FUNC(setCursorImage, l_Mouse, "Image filename w/o extension, [Lock,Unlock]", "Y pos (Number)", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)")
 {
 	if(!mouse_inited || !Gr_inited)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	char *s = NULL;
 	char *u = NULL;
 	if(!lua_parse_args(L, "s|s", &s, &u))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	int ul = 0;
 	if(u != NULL)
@@ -799,13 +1119,13 @@ LUA_FUNC(setCursorImage, l_Mouse, "Sets mouse cursor image, and allows you to lo
 
 	gr_set_cursor_bitmap(bm_load(s), ul);
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(setMouseHidden, l_Mouse, "Shows or hides mouse cursor", "True to hide mouse, false to show it", NULL)
+LUA_FUNC(setMouseHidden, l_Mouse, "True to hide mouse, false to show it", NULL, "Shows or hides mouse cursor")
 {
 	if(!mouse_inited)
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	bool b = false;
 	lua_parse_args(L, "b", &b);
@@ -815,54 +1135,78 @@ LUA_FUNC(setMouseHidden, l_Mouse, "Shows or hides mouse cursor", "True to hide m
 	else
 		Mouse_hidden = 0;
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
 //**********LIBRARY: Graphics
 lua_lib l_Graphics("gr", "Graphics Library");
 
-LUA_FUNC(getScreenWidth, l_Graphics, "Gets screen width", NULL, "Width in pixels (Number)")
+LUA_FUNC(getScreenWidth, l_Graphics, NULL, "Width in pixels (Number)", "Gets screen width")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "i", gr_screen.max_w);
 }
 
-LUA_FUNC(getScreenHeight, l_Graphics, "Gets screen height", NULL, "Height in pixels (Number)")
+LUA_FUNC(getScreenHeight, l_Graphics, NULL, "Height in pixels (Number)", "Gets screen height")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "i", gr_screen.max_h);
 }
 
-LUA_FUNC(drawText, l_Graphics, "Draws a string", "x, y, String, [Resize]", NULL)
+LUA_FUNC(drawText, l_Graphics, "String, x, y, [Resize]", NULL, "Draws a string")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int x,y;
 	char *s;
 	bool r=true;
 
-	if(!lua_parse_args(L, "iis|b", &x, &y, &s, &r))
-		return LUA_RETURN_NOTHING;
+	if(!lua_parse_args(L, "sii|b", &s, &x, &y, &r))
+		return LUA_RETURN_NIL;
 
 	gr_string(x,y,s,r);
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(setColor, l_Graphics, "Sets 2D drawing color", "Red, Green, Blue, [alpha]", NULL)
+LUA_FUNC(getTextWidth, l_Graphics, "Text to get width of", "Text width", "Gets text width")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
+
+	char *s;
+	if(!lua_parse_args(L, "s", &s))
+		return LUA_RETURN_NIL;
+
+	int w;
+
+	gr_get_string_size(&w, NULL, s);
+	
+	return lua_return_args(L, "i", w);
+}
+
+LUA_FUNC(getTextHeight, l_Graphics, NULL, "Text height", "Gets current font's height")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+	
+	return lua_return_args(L, "i", gr_get_font_height());
+}
+
+LUA_FUNC(setColor, l_Graphics, "Red, Green, Blue, [alpha]", NULL, "Sets 2D drawing color")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
 
 	int r,g,b,a=255;
 
 	if(!lua_parse_args(L, "iii|i", &r, &g, &b, &a))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	color ac;
 	gr_init_alphacolor(&ac,r,g,b,a);
@@ -871,54 +1215,81 @@ LUA_FUNC(setColor, l_Graphics, "Sets 2D drawing color", "Red, Green, Blue, [alph
 	return 0;
 }
 
-LUA_FUNC(setFont, l_Graphics, "Sets current font", "Font index", NULL)
+LUA_FUNC(setFont, l_Graphics, "Font index", NULL, "Sets current font")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int fn;
 
 	if(!lua_parse_args(L, "i", &fn))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	gr_set_font(fn);
 
 	return 0;
 }
 
-LUA_FUNC(drawPixel, l_Graphics, "Sets pixel to current color", "x, y, [Resize]", NULL)
+LUA_FUNC(drawPixel, l_Graphics, "x, y, [Resize]", NULL, "Sets pixel to current color")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int x,y;
 	bool r=true;
 
 	if(!lua_parse_args(L, "ii|b", &x, &y, &r))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	gr_pixel(x,y,r);
 
-	return 0;
+	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawLine, l_Graphics, "Draws a line with the current color", "x1, y1, x2, y2, [Resize]", NULL)
+LUA_FUNC(drawLine, l_Graphics, "x1, y1, x2, y2, [Resize]", NULL, "Draws a line with the current color")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int x1,y1,x2,y2;
 	bool r=true;
 
 	if(!lua_parse_args(L, "iiii|b", &x1, &y1, &x2, &y2, &r))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	gr_line(x1,y1,x2,y2,r);
 
-	return 0;
+	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawGradientLine, l_Graphics, "Draws a line that steadily fades out", "x1, y1, x2, y2, [Resize]", NULL)
+LUA_FUNC(drawRectangle, l_Graphics, "x1, y1, x2, y2, [Filled], [Resize]", NULL, "Draws a rectangle with the current color; default is filled")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int x1,y1,x2,y2;
+	bool f=true;
+	bool r=true;
+
+	if(!lua_parse_args(L, "iiii|bb", &x1, &y1, &x2, &y2, &f, &r))
+		return LUA_RETURN_NIL;
+
+	if(f)
+	{
+		gr_rect(x1, y1, x2-x1, y2-y1, r);
+	}
+	else
+	{
+		gr_line(x1,y1,x2,y1,r);	//Top
+		gr_line(x1,y2,x2,y2,r); //Bottom
+		gr_line(x1,y1,x1,y2,r);	//Left
+		gr_line(x2,y1,x2,y2,r);	//Right
+	}
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(drawGradientLine, l_Graphics, "x1, y1, x2, y2, [Resize]", NULL, "Draws a line that steadily fades out")
 {
 	if(!Gr_inited)
 		return 0;
@@ -927,76 +1298,158 @@ LUA_FUNC(drawGradientLine, l_Graphics, "Draws a line that steadily fades out", "
 	bool r=true;
 
 	if(!lua_parse_args(L, "iiii|b", &x1, &y1, &x2, &y2, &r))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	gr_gradient(x1,y1,x2,y2,r);
 
-	return 0;
+	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawCircle, l_Graphics, "Draws a circle", "x, y, Radius, [Resize]", NULL)
+LUA_FUNC(drawCircle, l_Graphics, "x, y, Radius, [Resize]", NULL, "Draws a circle")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int x,y,ra;
 	bool r=true;
 
 	if(!lua_parse_args(L, "iii|b", &x,&y,&ra,&r))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	gr_circle(x,y, ra, r);
 
-	return 0;
+	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawCurve, l_Graphics, "Draws a curve", "x, y, Radius, Direction", NULL)
+LUA_FUNC(drawCurve, l_Graphics, "x, y, Radius, Direction", NULL, "Draws a curve")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int x,y,ra,d;
 
 	if(!lua_parse_args(L, "iiii|b", &x,&y,&ra,&d))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	gr_curve(x,y,ra,d);
 
-	return 0;
+	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawImage, l_Graphics, "Draws an image", "x, y, Image name, [Resize]", NULL)
+LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show], [Height to show], [X start], [Y start], [Resize], [Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int x,y;
+	int rw,rh;
 	char *s;
+	int w=0;
+	int h=0;
+	int sx=0;
+	int sy=0;
 	bool r = true;
+	bool m = false;
 
-	if(!lua_parse_args(L, "iis|b", &x,&y,&s,&r))
-		return 0;
+	if(!lua_parse_args(L, "sii|iiiibb", &s,&x,&y,&w,&h,&sx,&sy,&r,&m))
+		return LUA_RETURN_NIL;
 
 	int idx = bm_load(s);
+
+	if(idx < 0)
+		return lua_return_args(L, "b", false);
+
+	bm_get_info(idx, &rw, &rh);
+
+	if(w==0)
+		w = rw;
+	if(h==0)
+		h = rw;
+
+	if(sx < 0)
+		sx = rw + sx;
+
+	if(sy < 0)
+		sy = rh + sy;
+
+	gr_set_bitmap(idx);
+	gr_aabitmap_ex(x, y, w, h, sx, sy, r, m);
+
+	return lua_return_args(L, "b", true);
+}
+
+LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Resize]", "Whether image was drawn", "Draws an image")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	char *s;
+	int x,y;
+	bool r = true;
+
+	if(!lua_parse_args(L, "sii|b", &s,&x,&y,&r))
+		return LUA_RETURN_NIL;
+
+	int idx = bm_load(s);
+
+	if(idx < 0)
+		return lua_return_args(L, "b", false);
+
 	gr_set_bitmap(idx);
 	gr_bitmap(x, y, r);
 
-	return 0;
+	return lua_return_args(L, "b", true);
 }
 
-LUA_FUNC(flashScreen, l_Graphics, "Flashes the screen", "Red, Green, Blue", NULL)
+LUA_FUNC(getImageWidth, l_Graphics, "Image name, [Resize]", "Image width", "Gets image width")
+{
+	char *s;
+	bool b = true;
+	if(!lua_parse_args(L, "s|b", &s, &b))
+		return LUA_RETURN_NIL;
+
+	int w;
+	
+	int idx = bm_load(s);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	bm_get_info(idx, &w);
+	return lua_return_args(L, "i", w);
+}
+
+LUA_FUNC(getImageHeight, l_Graphics, "Image name, [Resize]", "Image height", "Gets image height")
+{
+	char *s;
+	bool b = true;
+	if(!lua_parse_args(L, "s|b", &s, &b))
+		return LUA_RETURN_NIL;
+
+	int h;
+	
+	int idx = bm_load(s);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	bm_get_info(idx, NULL, &h);
+	return lua_return_args(L, "i", h);
+}
+
+LUA_FUNC(flashScreen, l_Graphics, "Red, Green, Blue", NULL, "Flashes the screen")
 {
 	if(!Gr_inited)
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int r,g,b;
 
 	if(!lua_parse_args(L, "iii", &r, &g, &b))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	gr_flash(r,g,b);
 
-	return 0;
+	return LUA_RETURN_NIL;
 }
 
 //*************************Libraries*************************
@@ -1054,7 +1507,7 @@ SCRIPT_LUA_CALLBACK lua_fs2_vec__multiplication(lua_State *L)
 
 	//Neither is valid...
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
 
@@ -1223,7 +1676,7 @@ SCRIPT_LUA_CALLBACK lua_msn_newShip(lua_State *L)
 	if(si_idx < 0)
 	{
 		//couldn't find it
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 	}
 
 	//Create the ship
@@ -1237,7 +1690,7 @@ SCRIPT_LUA_CALLBACK lua_msn_newShip(lua_State *L)
 		return lua_return_args(L, "o", l_ship.Return(&shipp));
 	}
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
 SCRIPT_LUA_CALLBACK lua_msn_ship_setSpeed(lua_State *L)
@@ -1246,13 +1699,13 @@ SCRIPT_LUA_CALLBACK lua_msn_ship_setSpeed(lua_State *L)
 	vec3d vel;
 
 	if(!lua_parse_args(L, "offf", l_ship.Parse(&shipp), &vel.xyz.x, &vel.xyz.y, &vel.xyz.z))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	//Set the speed
 	Objects[shipp->objnum].phys_info.vel = vel;
 
 	//We're done!
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
 SCRIPT_LUA_CALLBACK lua_msn_ship_setName(lua_State *L)
@@ -1261,7 +1714,7 @@ SCRIPT_LUA_CALLBACK lua_msn_ship_setName(lua_State *L)
 	char *name = NULL;
 
 	if(!lua_parse_args(L, "os", l_ship.Parse(&shipp), &name))
-		return LUA_RETURN_NOTHING;
+		return LUA_RETURN_NIL;
 
 	//Set the name
 	if(strlen(name)) {
@@ -1271,7 +1724,7 @@ SCRIPT_LUA_CALLBACK lua_msn_ship_setName(lua_State *L)
 	}
 
 	//We're done!
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
 SCRIPT_LUA_CALLBACK lua_msn_ship_getTarget(lua_State *L)
@@ -1351,7 +1804,7 @@ SCRIPT_LUA_CALLBACK lua_grpc_model_getEyepointPos(lua_State *L)
 		return lua_return_args(L, "o", l_lvec.Return(&pm->view_positions[idx].pnt));
 	}
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 
 static const script_lua_obj_func_list lua_grpc_model_funcs[] = {
@@ -1380,7 +1833,7 @@ SCRIPT_LUA_CALLBACK lua_grpc_loadModel(lua_State *L)
 		}
 	}
 
-	return LUA_RETURN_NOTHING;
+	return LUA_RETURN_NIL;
 }
 SCRIPT_LUA_CALLBACK lua_grpc_setColor(lua_State *L)
 {
@@ -1581,13 +2034,78 @@ int script_state::CreateLuaState()
 		return 0;
 	}
 
-	//INITIALIZE ALL LIBRARY FUNCTIONS
 	lua_lib_h *lib = &lua_Libraries[0];
 	lua_lib_h *lib_end = &lua_Libraries[lua_Libraries.size()];
+	lua_lib_h *obj = &lua_Objects[0];
+	lua_lib_h *obj_end = &lua_Objects[lua_Objects.size()];
+	lua_lib_h *libobj = NULL;
 	lua_func_hh *func;
+	lua_func_hh *ofunc;
 	lua_func_hh *func_end;
+	int i;	//used later
 
-	for(lib = &lua_Libraries[0]; lib < lib_end; lib++)
+	//CHECK FOR BAD THINGS
+#ifndef NDEBUG
+	//Like libraries/objects with identical names
+	mprintf(("LUA: Performing object/library name validity check"));
+	for(; lib < lib_end; lib++)
+	{
+		for(; obj < obj_end; obj++)
+		{
+			if(!stricmp(lib->Name, obj->Name))
+				Error(LOCATION, "Lua library '%s' and object '%s' have the same name. Get a coder.", lib->Name, obj->Name);
+		}
+	}
+
+	//Do double-object check
+	for(; obj < obj_end; obj++)
+	{
+		libobj = obj;
+		for(; libobj < obj_end; libobj++) {
+			if(!stricmp(obj->Name, libobj->Name))
+				Error(LOCATION, "Lua object '%s' and object '%s' have the same name. Get a coder.", obj->Name, libobj->Name);
+		}
+
+		//Check for duplicate functions within objects
+		func = &obj->Functions[0];
+		func_end = &obj->Functions[obj->Functions.size()];
+		for(; func < func_end; func++) {
+			ofunc = func;
+			for(; ofunc < func_end; ofunc++) {
+				if(!stricmp(func->Name, ofunc->Name))
+					Error(LOCATION, "Function '%s' and function '%s' have the same name within object '%s'. Get a coder.", func->Name, ofunc->Name, obj->Name);
+			}
+		}
+	}
+
+	//Do lib-on-lib check
+	for(; lib < lib_end; lib++)
+	{
+		libobj = lib;
+		for(; libobj < lib_end; libobj++) {
+			if(!stricmp(lib->Name, libobj->Name))
+				Error(LOCATION, "Lua library '%s' and library '%s' have the same name. Get a coder.", lib->Name, libobj->Name);
+		}
+
+		//Check for duplicate functions within libs
+		func = &lib->Functions[0];
+		func_end = &lib->Functions[lib->Functions.size()];
+		for(; func < func_end; func++)
+		{
+			ofunc = func;
+			for(; ofunc < func_end; ofunc++) {
+				if(!stricmp(func->Name, ofunc->Name))
+					Error(LOCATION, "Function '%s' and function '%s' have the same name within library '%s'. Get a coder.", func->Name, ofunc->Name, lib->Name);
+			}
+		}
+	}
+#endif
+
+	//INITIALIZE ALL LIBRARY FUNCTIONS
+	mprintf(("LUA: Initializing library functions"));
+	lib = &lua_Libraries[0];
+	lib_end = &lua_Libraries[lua_Libraries.size()];
+	for(; lib < lib_end; lib++)
 	{
 		//If a library name is given, register functions as library items
 		//If not, register functions as globals
@@ -1663,41 +2181,60 @@ int script_state::CreateLuaState()
 		//to be safe
 		bool index_oper_already = false;
 		bool index_meth_already = false;
+
 		func = &lib->Functions[0];
 		func_end = &lib->Functions[lib->Functions.size()];
-		for(; func < func_end; func++)
+
+		//WMC - This is a bit odd. Basically, to handle derivatives, I have a double-loop set up.
+		for(i = 0; i < 2; i++)
 		{
-			if(!strnicmp(func->Name, "__", 2))
+			for(; func < func_end; func++)
 			{
-				if(!stricmp(func->Name, "__index"))
+				//WMC - First, do normal functions
+				if(!strnicmp(func->Name, "__", 2))
 				{
-					if(!index_meth_already){
-						index_oper_already = true;
-					} else {
+					if(!stricmp(func->Name, "__index"))
+					{
+						if(!index_meth_already){
+							index_oper_already = true;
+						} else {
+							Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", lib->Name);
+						}
+					}
+					lua_pushstring(L, func->Name);
+					lua_pushcclosure(L, func->Function, 0);
+					lua_settable(L, table_loc);
+				}
+				else	//This is an object method
+				{
+					if(index_oper_already) {
 						Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", lib->Name);
 					}
-				}
-				lua_pushstring(L, func->Name);
-				lua_pushcclosure(L, func->Function, 0);
-				lua_settable(L, table_loc);
-			}
-			else	//This is an object method
-			{
-				if(index_oper_already) {
-					Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", lib->Name);
-				}
 
-				if(!index_meth_already)
-				{
-					//Create the metatable
-					lua_pushstring(L, "__index");
-					lua_pushvalue(L, table_loc);  // pushes the metatable
-					lua_settable(L, table_loc);  // metatable.__index = metatable
-					index_meth_already = true;
+					if(!index_meth_already)
+					{
+						//Create the metatable
+						lua_pushstring(L, "__index");
+						lua_pushvalue(L, table_loc);  // pushes the metatable
+						lua_settable(L, table_loc);  // metatable.__index = metatable
+						index_meth_already = true;
+					}
+					lua_pushstring(L, func->Name);
+					lua_pushcclosure(L, func->Function, 0);
+					lua_settable(L, -3);
 				}
-				lua_pushstring(L, func->Name);
-				lua_pushcclosure(L, func->Function, 0);
-				lua_settable(L, -3);
+			}
+
+			//WMC - Now set function pointers to the derivator (source class). And loop!
+			//If there is no derivator, set them both to NULL to kill the loop like they did with Old Yeller
+			if(lib->Derivator > -1) {
+				func = &lua_Objects[lib->Derivator].Functions[0];
+				func_end = &lua_Objects[lib->Derivator].Functions[lua_Objects[lib->Derivator].Functions.size()];
+			} else {
+				//Die Old Yeller, die!
+				//func = func_end = NULL;
+				//Damn, I can just do it this way.
+				break;
 			}
 		}
 	}
@@ -1710,31 +2247,39 @@ int script_state::CreateLuaState()
 }
 
 #ifdef USE_LUA
-void output_lib_meta(FILE *fp, lua_lib_h *lib)
+void output_lib_meta(FILE *fp, lua_lib_h *lib, lua_lib_h *lib_deriv)
 {
-	lua_func_hh *func = &lib->Functions[0];
-	lua_func_hh *func_end = &lib->Functions[lib->Functions.size()];
-
+	lua_func_hh *func, *func_end;
 	fputs("<dd><dl>", fp);
-	for(; func < func_end; func++)
+	for(int i = 0; i < 2; i++)
 	{
-		if(func->Arguments != NULL) {
-			fprintf(fp, "<dt><b>%s(</b><i>%s</i><b>)</b></dt>", func->Name, func->Arguments);
-		} else {
-			fprintf(fp, "<dt><b>%sNone</b></dt>", func->Name);
+		func = &lib->Functions[0];
+		func_end = &lib->Functions[lib->Functions.size()];
+		for(; func < func_end; func++)
+		{
+			if(func->Arguments != NULL) {
+				fprintf(fp, "<dt><b>%s(</b><i>%s</i><b>)</b></dt>", func->Name, func->Arguments);
+			} else {
+				fprintf(fp, "<dt><b>%s()</b></dt>", func->Name);
+			}
+
+			if(func->Description != NULL) {
+				fprintf(fp, "<dd>%s</dd>", func->Description);
+			} else {
+				fputs("<dd>No description</dd>", fp);
+			}
+
+			if(func->ReturnValues != NULL) {
+				fprintf(fp, "<dd><b>Return values:</b> %s</dd>", func->ReturnValues);
+			} else {
+				fputs("<dd><b>Return values:</b> None</dd>", fp);
+			}
 		}
 
-		if(func->Description != NULL) {
-			fprintf(fp, "<dd>%s</dd>", func->Description);
-		} else {
-			fputs("<dd>No description</dd>", fp);
-		}
+		if(lib_deriv == NULL)
+			break;
 
-		if(func->ReturnValues != NULL) {
-			fprintf(fp, "<dd><b>Return values:</b> %s</dd>", func->ReturnValues);
-		} else {
-			fputs("<dd><b>Return values:</b> None</dd>", fp);
-		}
+		lib = lib_deriv;
 	}
 	fputs("<br></dl></dd>", fp);
 }
@@ -1773,7 +2318,8 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		fprintf(fp, "<dt id=\"%s\"><h2>%s - %s</h2></dt>", lib->Name, lib->Name, lib->Description);
 
-		output_lib_meta(fp, lib);
+		//Last param is something of a hack to handle lib derivs
+		output_lib_meta(fp, lib, lib->Derivator > -1 ? &lua_Libraries[lib->Derivator] : NULL);
 	}
 	//***Output objects
 	lib = &lua_Objects[0];
@@ -1782,7 +2328,8 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		fprintf(fp, "<dt id=\"%s\"><h2>%s - %s</h2></dt>", lib->Name, lib->Name, lib->Description);
 
-		output_lib_meta(fp, lib);
+		//Last param is something of a hack to handle lib derivs
+		output_lib_meta(fp, lib, lib->Derivator > -1 ? &lua_Objects[lib->Derivator] : NULL);
 	}
 	fputs("</dl>", fp);
 #endif

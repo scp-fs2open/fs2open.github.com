@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.69 $
- * $Date: 2005-12-29 08:08:33 $
+ * $Revision: 2.70 $
+ * $Date: 2006-01-12 17:42:56 $
  * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.68  2005/12/29 00:52:57  phreak
  * changed around aabitmap calls to accept a "mirror" parameter.  defaults to false, and is only true for mirrored briefing icons.
  * If the mirror param is true, then the picture is mirrored about the y-axis so left becomes right and vice versa.
@@ -931,7 +934,7 @@ typedef struct screen {
 	void (*gf_clear)();
 
 	// void (*gf_bitmap)(int x,int y);
-	// void (*gf_bitmap_ex)(int x,int y,int w,int h,int sx,int sy);
+	//void (*gf_bitmap_ex)(int x,int y,int w,int h,int sx,int sy);
 
 	void (*gf_aabitmap)(int x, int y, bool resize, bool mirror);
 	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror);

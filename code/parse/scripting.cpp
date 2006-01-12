@@ -4,6 +4,7 @@
 #include "parse/lua.h"
 #include "parse/parselo.h"
 #include "globalincs/version.h"
+#include "gamesequence/gamesequence.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -38,8 +39,27 @@ int script_test(script_state *st)
 		Script_hudhook = st->ParseChunk("HUD");
 	}
 
-	while(optional_string("$Global:")) {
+	if(optional_string("$Global:")) {
 		Script_globalhook = st->ParseChunk("Global");
+	}
+
+	if(optional_string("#State Hooks"))
+	{
+		while(optional_string("$State:")) {
+			char buf[NAME_LENGTH];
+			int idx;
+			stuff_string(buf, F_NAME);
+
+			idx = gameseq_get_state_idx(buf);
+
+			if(optional_string("$Hook:"))
+			{
+				if(idx > -1) {
+					GS_state_hooks[idx] = st->ParseChunk(buf);
+				}
+			}
+		}
+		required_string("#End");
 	}
 
 	return 1;

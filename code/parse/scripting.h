@@ -15,6 +15,7 @@ typedef struct script_hook
 	int index;
 
 	script_hook(){language=0;index=-1;}
+	bool IsValid(){return (index > -1);}
 }script_hook;
 
 #define SCRIPT_END_LIST		NULL

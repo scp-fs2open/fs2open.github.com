@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.h $
- * $Revision: 2.8 $
- * $Date: 2005-07-13 02:50:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2006-01-12 17:42:56 $
+ * $Author: wmcoolmon $
  *
  * Header file for Game Sequencing items
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/13 02:50:53  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.7  2005/03/25 06:57:33  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -490,10 +494,15 @@ extern char *GS_event_text[];		// text description for the GS_EVENT_* #defines a
 #define GS_STATE_LAB							51
 #define GS_STATE_STORYBOOK						52
 
+#define GS_NUM_STATES							53			//Last one++
+
 // IMPORTANT:  When you add a new state, update the initialization for GS_state_text[]
 //             which is done in GameSequence.cpp
 //
+extern struct script_hook GS_state_hooks[];	//WMC-for scripting
 extern char *GS_state_text[];		// text description for the GS_STATE_* #defines above
+extern int Num_gs_event_text;
+extern int Num_gs_state_text;		//WMC - for scripting
 
 
 // function prototypes
@@ -520,5 +529,8 @@ void game_do_state(int current_state);
 
 // Kazan
 bool GameState_Stack_Valid();
+
+//WMC
+int gameseq_get_state_idx(char *s);
 
 #endif /* __GAMESEQUENCE_H__ */
