@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-11-13 05:25:59 $
- * $Author: phreak $
+ * $Revision: 2.32 $
+ * $Date: 2006-01-12 04:18:10 $
+ * $Author: wmcoolmon $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/11/13 05:25:59  phreak
+ * LuaError() body should not be compiled into the code unless USE_LUA was defined in the project file.
+ *
  * Revision 2.30  2005/11/08 01:03:59  wmcoolmon
  * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
  *
@@ -1033,7 +1036,7 @@ void _cdecl LuaError(char * filename, int line, struct lua_State *L)
 
 	AssertText2[0] = '\0';
 	dumpBuffer.Printf("\r\nLUA Stack:");
-	lua_stackdump(L, AssertText2);
+	//lua_stackdump(L, AssertText2);
 	dumpBuffer.Printf( AssertText2 );
 
 	dumpBuffer.Printf( "\r\n" );

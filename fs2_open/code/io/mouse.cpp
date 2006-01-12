@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-07-18 03:45:07 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2006-01-12 04:18:10 $
+ * $Author: wmcoolmon $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/18 03:45:07  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.12  2005/06/19 02:48:13  taylor
  * remove xmouse.cpp since it's pretty much useless
  *
@@ -205,7 +212,7 @@ LOCAL int Mouse_mode = MOUSE_MODE_WIN;
 LOCAL int Mouse_mode = MOUSE_MODE_WIN;
 #endif // ifdef USE_DIRECTINPUT
 
-LOCAL int mouse_inited = 0;
+int mouse_inited = 0;
 #ifdef USE_DIRECTINPUT
 LOCAL int Di_mouse_inited = 0;
 #endif

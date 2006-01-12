@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.206 $
- * $Date: 2006-01-11 05:40:59 $
- * $Author: taylor $
+ * $Revision: 2.207 $
+ * $Date: 2006-01-12 04:18:10 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.206  2006/01/11 05:40:59  taylor
+ * use cf_find_file_location() check instead of cfopen() for is_spary_hi check
+ *
  * Revision 2.205  2006/01/11 01:35:53  wmcoolmon
  * Complete the HUD scripting hook. (Eight lines of code, and I still miss three of them. :P
  *
@@ -3540,7 +3543,7 @@ void game_init()
 		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
 	}
 
-	
+	script_init();			//WMC
 
 //#if defined(FS2_DEMO) || defined(OEM_BUILD)
 	// add title screen
@@ -3642,8 +3645,6 @@ void game_init()
 	if(!Is_standalone){
 		joy_init();
 	}
-
-	script_init();			//WMc
 
 	player_controls_init();
 	model_init();	
@@ -4841,6 +4842,8 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient){
 //	}
 }
 
+int Scripting_didnt_draw_hud = 1;
+
 //	Set eye_pos and eye_orient based on view mode.
 void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 {
@@ -5252,7 +5255,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	}
 	//================ END OF 3D RENDERING STUFF ====================
 
-	if(!(Viewer_mode & VM_FREECAMERA))
+	if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
 	{
 		hud_show_radar();
 	}
@@ -5918,6 +5921,9 @@ void game_frame(int paused)
 			clear_time2 = timer_get_fixed_seconds();
 			render3_time1 = timer_get_fixed_seconds();
 			game_render_frame_setup(&eye_pos, &eye_orient);
+
+			Scripting_didnt_draw_hud = Script_system.RunBytecode(Script_hudhook) ? 0 : 1;
+
 			game_render_frame( &eye_pos, &eye_orient );
 
 			// save the eye position and orientation
@@ -5926,7 +5932,7 @@ void game_frame(int paused)
 				Net_player->s_info.eye_orient = eye_orient;
 			}
 
-			if(!(Viewer_mode & VM_FREECAMERA))
+			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
 			{
 				hud_show_target_model();
 			}
@@ -5983,17 +5989,14 @@ void game_frame(int paused)
 #endif
 
 			// Draw the 2D HUD gauges
-			if(!(Viewer_mode & VM_FREECAMERA))
+			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
 			{
-				if(!Script_system.RunBytecode(Script_hudhook))
-				{
-					if(supernova_active() <	3){
-						game_render_hud_2d();
-					}
-
-					// Draw 3D HUD gauges			
-					game_render_hud_3d(&eye_pos, &eye_orient);
+				if(supernova_active() <	3){
+					game_render_hud_2d();
 				}
+
+				// Draw 3D HUD gauges			
+				game_render_hud_3d(&eye_pos, &eye_orient);
 			}
 
 			gr_reset_clip();
@@ -10838,28 +10841,31 @@ void display_title_screen()
 	}
 #endif
 
-	title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
-	title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
-
-	if(title_bitmap != -1)
+	if(!Script_system.RunBytecode(Script_splashhook))
 	{
-		// set
-		gr_set_bitmap(title_bitmap);
+		title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+		title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
 
-		//Get bitmap's width and height
-		int width, height;
-		bm_get_info(title_bitmap, &width, &height);
+		if(title_bitmap != -1)
+		{
+			// set
+			gr_set_bitmap(title_bitmap);
 
-		//Draw it in the center of the screen
-		gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2);
-	}
+			//Get bitmap's width and height
+			int width, height;
+			bm_get_info(title_bitmap, &width, &height);
 
-	if(title_logo != -1)
-	{
-		gr_set_bitmap(title_logo);
+			//Draw it in the center of the screen
+			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2);
+		}
 
-		gr_bitmap(0,0);
+		if(title_logo != -1)
+		{
+			gr_set_bitmap(title_logo);
 
+			gr_bitmap(0,0);
+
+		}
 	}
 
 #ifndef NO_DIRECT3D
