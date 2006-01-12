@@ -2598,6 +2598,12 @@
 				RelativePath="..\..\code\sound\speech.h">
 			</File>
 			<File
+				RelativePath="..\..\code\sound\voicerec.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\sound\voicerec.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Sound\WinMIDI.cpp">
 			</File>
 			<File

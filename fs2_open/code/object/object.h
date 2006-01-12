@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.17 $
- * $Date: 2005-12-04 19:07:49 $
+ * $Revision: 2.18 $
+ * $Date: 2006-01-12 17:42:56 $
  * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/12/04 19:07:49  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 2.16  2005/10/11 05:24:34  wmcoolmon
  * Gliding
  *
@@ -664,6 +667,7 @@ void obj_move_one_docked_object(object *objp, object *parent_objp);
 //WMC
 void object_set_gliding(object *objp, bool enable=true);
 bool object_get_gliding(object *objp);
+int obj_get_by_signature(int sig);
 
 
 #endif

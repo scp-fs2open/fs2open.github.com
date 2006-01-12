@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-12-28 22:22:34 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2006-01-12 17:42:56 $
+ * $Author: wmcoolmon $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/12/28 22:22:34  taylor
+ * clean up the EVENT and STATE names so we don't have to manually backtrack the number during debugging
+ *
  * Revision 2.7  2005/03/25 06:57:33  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -269,6 +272,7 @@
 
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
+#include "parse/scripting.h"
 
 
 
@@ -290,6 +294,8 @@ LOCAL int gs_current_stack = -1;						// index of top state on stack.
 static int state_reentry = 0;  // set if we are already in state processing
 static int state_processing_event_post = 0;  // set if we are already processing an event to switch states
 static int state_in_event_processer = 0;
+
+script_hook GS_state_hooks[GS_NUM_STATES];
 
 // Text of state, corresponding to #define values for GS_STATE_*
 //XSTR:OFF
@@ -364,6 +370,8 @@ char *GS_event_text[] =
 };
 //XSTR:ON
 
+int Num_gs_event_text = sizeof(GS_event_text)/sizeof(char*);
+
 // Text of state, corresponding to #define values for GS_STATE_*
 //XSTR:OFF
 char *GS_state_text[] =
@@ -422,6 +430,8 @@ char *GS_state_text[] =
 	"GS_STATE_STORYBOOK"
 };
 //XSTR:ON
+
+int Num_gs_state_text = sizeof(GS_state_text)/sizeof(char*);
 
 void gameseq_init()
 {
@@ -641,3 +651,14 @@ int gameseq_process_events()
 	return gs[gs_current_stack].current_state;
 } 
 
+int gameseq_get_state_idx(char *s)
+{
+	for(int i = 0; i < Num_gs_state_text; i++)
+	{
+		if(!stricmp(s, GS_state_text[i])) {
+			return i;
+		}
+	}
+
+	return -1;
+}

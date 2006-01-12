@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.39 $
- * $Date: 2006-01-03 22:46:52 $
- * $Author: taylor $
+ * $Revision: 1.40 $
+ * $Date: 2006-01-12 17:42:56 $
+ * $Author: wmcoolmon $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2006/01/03 22:46:52  taylor
+ * oops, should have been checking my logs on that one, fixes minor GL error
+ *
  * Revision 1.38  2006/01/03 02:59:14  taylor
  * fix a couple of minor mipmap problems
  * add resizing with mipmaps rather than a physical change in memory when detail levels dictate scaling (maybe this won't blow up)
@@ -1202,6 +1205,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	// gah
 	else {
 		glBindTexture (GL_TEXTURE_2D, 0);	// test - DDOI
+
 		return 0;
 	}
 
