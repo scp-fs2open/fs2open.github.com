@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2006-01-13 11:09:45 $
+ * $Author: taylor $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.21  2006/01/10 18:37:46  randomtiger
  * Improvements to voice recognition system.
  * Also function put on -voicer launcher option.
@@ -489,32 +492,27 @@ char *type_select_str(int n)
 
 // note: If you change this table at all, keep it in sync with version in IgnoreOrdersDlg.cpp
 // Also make sure you update comm_order_menu_text below this.
-// Also make sure you update MAX_SHIP_ORDERS in HUDsquadmsg.h
 comm_order Comm_orders[] = {
 	{ "Attack ship",			ATTACK_TARGET_ITEM },
 	{ "Disable ship",			DISABLE_TARGET_ITEM },
 	{ "Disarm ship",			DISARM_TARGET_ITEM },
-	{ "Attack subsys",			DISABLE_SUBSYSTEM_ITEM },
+	{ "Disable subsys",			DISABLE_SUBSYSTEM_ITEM },
 	{ "Guard ship",				PROTECT_TARGET_ITEM },
 	{ "Ignore ship",			IGNORE_TARGET_ITEM },
 	{ "Form on wing",			FORMATION_ITEM },
-	{ "Guard me",				COVER_ME_ITEM },
+	{ "Cover me",				COVER_ME_ITEM },
 	{ "Attack any",				ENGAGE_ENEMY_ITEM },
 	{ "Dock",					CAPTURE_TARGET_ITEM },
 	{ "Rearm me",				REARM_REPAIR_ME_ITEM },
 	{ "Abort rearm",			ABORT_REARM_REPAIR_ITEM },
-	{ "Depart",					DEPART_ITEM },
-	//WMC - These don't appear for some reason
-	//support-ship-only
 	{ "stay near me",			STAY_NEAR_ME_ITEM},
 	{ "stay near ship",			STAY_NEAR_TARGET_ITEM},
 	{ "keep safe dist",			KEEP_SAFE_DIST_ITEM},
-	//All ships
-	{ "Disable subsys",			DISABLE_SUBSYSTEM_ITEM},
+	// all ships
+	{ "Depart",					DEPART_ITEM },
 };
 
-int Num_valid_comm_orders = 13;	//WMC - Number of orders that acutally appear.
-int Num_comm_orders = sizeof(Comm_orders)/sizeof(comm_order);
+const int Num_comm_orders = sizeof(Comm_orders)/sizeof(comm_order);
 
 // Text to display on the menu
 // Given an index into the Comm_orders array, return the text associated with it.
@@ -537,7 +535,10 @@ char	*comm_order_menu_text(int index)
 	case 9: return XSTR( "Capture my target", 308); break;
 	case 10: return XSTR( "Rearm me", 309); break;
 	case 11: return XSTR( "Abort rearm", 310); break;
-	case 12: return XSTR( "Depart", 311); break;
+	case 12: return XSTR( "Stay near me", -1); break;
+	case 13: return XSTR( "Stay near target", -1); break;
+	case 14: return XSTR( "Keep safe distance", -1); break;
+	case 15: return XSTR( "Depart", 311); break;
 	default:
 		Assert(0);
 	}
@@ -549,7 +550,7 @@ char *comm_order_hotkey_text( int index )
 {
 	int i;
 
-	for (i = 0; i < Num_valid_comm_orders; i++ ) {
+	for (i = 0; i < Num_comm_orders; i++ ) {
 		if ( Comm_orders[i].def == index )
 			return comm_order_menu_text(i);
 	}
@@ -1282,11 +1283,11 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 
 	// find the comm_menu item for this command
 	if ( find_order ) {
-		for (i = 0; i < Num_valid_comm_orders; i++ ) {
+		for (i = 0; i < Num_comm_orders; i++ ) {
 			if ( Comm_orders[i].def == order )
 				break;
 		}
-		Assert( i < Num_valid_comm_orders );
+		Assert( i < Num_comm_orders );
 		order = i;
 	}
 
@@ -2360,7 +2361,7 @@ void hud_squadmsg_ship_command()
 
 	First_menu_item = 0;
 	Num_menu_items = 0;
-	for ( i = 0; i < Num_valid_comm_orders; i++ ) {
+	for ( i = 0; i < Num_comm_orders; i++ ) {
 		// check to see if the comm order should even be added to the menu -- if so, then add it
 		// the order will be activated if the bit is set for the ship.
 		if ( default_orders & Comm_orders[i].def ) {
@@ -2457,7 +2458,7 @@ void hud_squadmsg_wing_command()
 
 	Num_menu_items = 0;
 	orders = Ships[wingp->ship_index[0]].orders_accepted;		// get the orders that the first ship in the wing will accept
-	for ( i = 0; i < Num_valid_comm_orders; i++ ) {
+	for ( i = 0; i < Num_comm_orders; i++ ) {
 		// add the set of default orders to the comm menu.  We will currently allow all messages
 		// to be available in the wing.
 		if ( default_orders & Comm_orders[i].def ) {
@@ -2829,7 +2830,7 @@ int hud_query_order_issued(char *name, char *order, char *target)
 	if (target)
 		t = get_parse_name_index(target);
 
-	for (i=0; i<Num_valid_comm_orders; i++)
+	for (i=0; i<Num_comm_orders; i++)
 		if (!stricmp(order, comm_order_menu_text(i)) )
 			o = Comm_orders[i].def;
 

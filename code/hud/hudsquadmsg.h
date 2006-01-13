@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.10 $
- * $Date: 2006-01-10 18:37:46 $
- * $Author: randomtiger $
+ * $Revision: 2.11 $
+ * $Date: 2006-01-13 11:09:45 $
+ * $Author: taylor $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/01/10 18:37:46  randomtiger
+ * Improvements to voice recognition system.
+ * Also function put on -voicer launcher option.
+ *
  * Revision 2.9  2006/01/03 17:07:10  randomtiger
  * Added voice recognition functionality for Visual C6 project only.
  * Currently still a work in progress.
@@ -185,35 +189,33 @@ struct object;
 
 // defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
 // and disable messages on a message by message basis
-#define ATTACK_TARGET_ITEM		(1<<0)
-#define DISABLE_TARGET_ITEM	(1<<1)
-#define DISARM_TARGET_ITEM		(1<<2)
-#define PROTECT_TARGET_ITEM	(1<<3)
-#define IGNORE_TARGET_ITEM		(1<<4)
-#define FORMATION_ITEM			(1<<5)
-#define COVER_ME_ITEM			(1<<6)
-#define ENGAGE_ENEMY_ITEM		(1<<7)
-#define CAPTURE_TARGET_ITEM	(1<<8)
+#define ATTACK_TARGET_ITEM			(1<<0)
+#define DISABLE_TARGET_ITEM			(1<<1)
+#define DISARM_TARGET_ITEM			(1<<2)
+#define DISABLE_SUBSYSTEM_ITEM		(1<<3)
+#define PROTECT_TARGET_ITEM			(1<<4)
+#define IGNORE_TARGET_ITEM			(1<<5)
+#define FORMATION_ITEM				(1<<6)
+#define COVER_ME_ITEM				(1<<7)
+#define ENGAGE_ENEMY_ITEM			(1<<8)
+#define CAPTURE_TARGET_ITEM			(1<<9)
 
 // the next are for the support ship only
-#define REARM_REPAIR_ME_ITEM		(1<<9)
-#define ABORT_REARM_REPAIR_ITEM	(1<<10)
-#define STAY_NEAR_ME_ITEM			(1<<11)
-#define STAY_NEAR_TARGET_ITEM		(1<<12)
-#define KEEP_SAFE_DIST_ITEM		(1<<13)
+#define REARM_REPAIR_ME_ITEM		(1<<10)
+#define ABORT_REARM_REPAIR_ITEM		(1<<11)
+#define STAY_NEAR_ME_ITEM			(1<<12)
+#define STAY_NEAR_TARGET_ITEM		(1<<13)
+#define KEEP_SAFE_DIST_ITEM			(1<<14)
 
 // next item for all ships again -- to try to preserve relative order within the message menu
-#define DEPART_ITEM					(1<<14)
-#define DISABLE_SUBSYSTEM_ITEM	(1<<15)
+#define DEPART_ITEM					(1<<15)
 
-//WMC - Just change Comm_orders.
-//I hate to leave this MAX_ here, but it's easier for checking flags.
-#define MAX_SHIP_ORDERS				13			// Must sync correctly with Comm_orders array in HUDsquadmsg.cpp
+
 // data structure to hold character string of commands for comm menu
 typedef flag_def_list comm_order;
 
 extern comm_order Comm_orders[];
-extern int Num_comm_orders;
+extern const int Num_comm_orders;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages
