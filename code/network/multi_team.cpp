@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_team.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-01-13 03:31:09 $
+ * $Revision: 2.11 $
+ * $Date: 2006-01-13 04:12:23 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.9  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -238,7 +241,7 @@ void multi_team_level_init()
 // call to determine who won the sw match, -1 == tie, 0 == team 0, 1 == team 1
 int multi_team_winner()
 {
-	int i, num_equal, winner, highest = -1;
+	int i, num_equal = 0, winner, highest = -1;
 
 	// determine highest score
 	for (i = 0; i < Num_teams; i++)
