@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.25 2005-12-08 15:07:57 taylor Exp $
+dnl $Id: configure.ac,v 1.26 2006-01-13 14:19:34 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -121,6 +121,13 @@ AC_ARG_WITH(static-jpeg,
 		[fs2_static_jpeg=""],
 )
 
+AC_ARG_ENABLE(lua,
+	AC_HELP_STRING([--disable-lua],
+		[Disable Lua scripting support]),
+		[fs2_lua=$enableval],
+		[fs2_lua=yes],
+)
+
 
 dnl check OS type -- right now, we support
 dnl windows OS (via mingw) and unix (linux, etc.)
@@ -238,6 +245,10 @@ if test "$fs2_gprof" = "yes" ; then
 	FS2_CXXFLAGS="$FS2_CXXFLAGS -pg"
 fi
 
+if test "$fs2_lua" = "yes" ; then
+	AC_DEFINE([USE_LUA])
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -I../lua"
+fi
 
 dnl generate appropriate conditionals for Makefile.am
 AM_CONDITIONAL(FS2_OS_WIN32,   test "$fs2_os_win32" = "yes")
@@ -303,6 +314,28 @@ AC_CXX_IOS_BASE
 
 dnl Setup paths for lib and include dirs
 
+dnl SDL check
+if test "$fs2_os_unix" = "yes" ; then
+	dnl Check for SDL 1.2.6+
+	SDL_VERSION=1.2.6
+	AM_PATH_SDL($SDL_VERSION,:,AC_MSG_ERROR([*** SDL >= $SDL_VERSION not found!]))
+elif test "$fs2_os_osx" = "yes" ; then
+	SDL_LIBS="-framework SDL"
+	dnl Check for SDL 1.2.6+
+	SDL_VERSION=1.2.6
+	AM_PATH_SDL($SDL_VERSION,:,[AC_CHECK_HEADER(/Library/Frameworks/SDL.framework/Headers/SDL.h,
+		SDL_CFLAGS="-I/Library/Frameworks/SDL.framework/Headers",
+		[AC_CHECK_HEADER($HOME/Library/Frameworks/SDL.framework/Headers/SDL.h,
+			SDL_CFLAGS="-I$HOME/Library/Frameworks/SDL.framework/Headers",
+		[AC_CHECK_HEADER(/System/Library/Frameworks/SDL.framework/Headers/SDL.h,
+			SDL_CFLAGS="-I/System/Library/Frameworks/SDL.framework/Headers",
+			AC_MSG_ERROR([*** Cannot find SDL which is required! ***]))])])])
+fi
+
+dnl add SDL settings to our flags, only CFLAGS are default, libs are game specific
+D_CFLAGS=$D_CFLAGS" $SDL_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $SDL_LIBS"
+
 dnl DirectX - Win32 only
 if test "$fs2_os_win32" = "yes" ; then
 	FS2_CXXFLAGS=$FS2_CXXFLAGS" -I/c:/dxsdk/include"
@@ -353,28 +386,6 @@ elif test "$fs2_os_osx" = "yes" ; then
 			FS2_CXXFLAGS="$FS2_CXXFLAGS -I/System/Library/Frameworks/OpenAL.framework/Headers",
 			AC_MSG_ERROR([*** Cannot find OpenAL which is required! ***]))])])
 fi
-
-dnl SDL check
-if test "$fs2_os_unix" = "yes" ; then
-	dnl Check for SDL 1.2.6+
-	SDL_VERSION=1.2.6
-	AM_PATH_SDL($SDL_VERSION,:,AC_MSG_ERROR([*** SDL >= $SDL_VERSION not found!]))
-elif test "$fs2_os_osx" = "yes" ; then
-	SDL_LIBS="-framework SDL"
-	dnl Check for SDL 1.2.6+
-	SDL_VERSION=1.2.6
-	AM_PATH_SDL($SDL_VERSION,:,[AC_CHECK_HEADER(/Library/Frameworks/SDL.framework/Headers/SDL.h,
-		SDL_CFLAGS="-I/Library/Frameworks/SDL.framework/Headers",
-		[AC_CHECK_HEADER($HOME/Library/Frameworks/SDL.framework/Headers/SDL.h,
-			SDL_CFLAGS="-I$HOME/Library/Frameworks/SDL.framework/Headers",
-		[AC_CHECK_HEADER(/System/Library/Frameworks/SDL.framework/Headers/SDL.h,
-			SDL_CFLAGS="-I/System/Library/Frameworks/SDL.framework/Headers",
-			AC_MSG_ERROR([*** Cannot find SDL which is required! ***]))])])])
-fi
-
-dnl add SDL settings to our flags, only CFLAGS are default, libs are game specific
-D_CFLAGS=$D_CFLAGS" $SDL_CFLAGS"
-FS2_LDFLAGS=$FS2_LDFLAGS" $SDL_LIBS"
 
 dnl OGG Vorbis
 if test "$fs2_os_unix" = "yes" ; then
@@ -446,6 +457,7 @@ if test "x$fs2_static_ogg" != "x" ; then
 fi
 echo
 echo Sound enabled .......... : $fs2_sound
+echo Lua scripting enabled .. : $fs2_lua
 echo Text-to-speech enabled . : $fs2_speech
 echo
 echo Debug build ............ : $fs2_debug

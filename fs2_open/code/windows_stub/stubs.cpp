@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.25 $
- * $Date: 2005-10-27 16:23:03 $
+ * $Revision: 2.26 $
+ * $Date: 2006-01-13 14:19:34 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/10/27 16:23:03  taylor
+ * go back to using abort() over exit() for Assert's and Int3's but close out SDL first this time, makes debugging much easier
+ *
  * Revision 2.24  2005/10/17 05:48:18  taylor
  * dynamically allocate object collision pairs
  *
@@ -101,9 +104,13 @@
 #endif
 
 #include "globalincs/pstypes.h"
+#include "parse/lua.h"
 
 bool env_enabled = false;
 bool cell_enabled = false;
+
+static char buffer[200], buffer_tmp[200];
+
 
 char *strnset( char* string, int fill, size_t count)
 {
@@ -164,13 +171,14 @@ void Warning( char * filename, int line, char * format, ... )
 {
 #ifndef NDEBUG
 	va_list args;
-	char buffer[200];
-	char buffer_tmp[200];
 	int i;
 	int slen = 0;
 
+	memset( &buffer, 0, sizeof(buffer) );
+	memset( &buffer_tmp, 0, sizeof(buffer_tmp) );
+
 	va_start(args, format);
-	vsnprintf(buffer_tmp, 199, format, args);
+	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
 	va_end(args);
 
 	slen = strlen(buffer_tmp);
@@ -201,13 +209,14 @@ void Warning( char * filename, int line, char * format, ... )
 void Error( char * filename, int line, char * format, ... )
 {
 	va_list args;
-	char buffer[200];
-	char buffer_tmp[200];
 	int i;
 	int slen = 0;
 
+	memset( &buffer, 0, sizeof(buffer) );
+	memset( &buffer_tmp, 0, sizeof(buffer_tmp) );
+
 	va_start(args, format);
-	vsnprintf(buffer_tmp, 199, format, args);
+	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
 	va_end(args);
 
 #if defined(APPLE_APP)
@@ -244,6 +253,20 @@ void Error( char * filename, int line, char * format, ... )
 #endif
 
 	exit(EXIT_FAILURE);
+}
+
+void LuaError(char * filename, int line, struct lua_State *L)
+{
+#ifdef USE_LUA
+	memset( &buffer, 0, sizeof(buffer) );
+
+	// make sure to cap to a sane string size
+	snprintf( buffer, sizeof(buffer) - 1, "%s", lua_tostring(L, -1) );
+	lua_pop(L, -1);
+
+	// Order UP!!
+	fprintf(stderr, "LUA ERROR: \"%s\" at %s:%d\n", buffer, filename, line);
+#endif
 }
 
 

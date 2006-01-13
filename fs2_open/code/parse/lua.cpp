@@ -4,7 +4,7 @@
 #include "parse/lua.h"
 #include "graphics/2d.h"
 #include "ship/ship.h"
-#include "Ship/shipfx.h"
+#include "ship/shipfx.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "gamesequence/gamesequence.h"
@@ -1542,8 +1542,8 @@ LUA_FUNC(playInterfaceSound, l_SoundLib, "Sound filename", "True if sound was pl
 
 //*************************Libraries*************************
 /*
-//**********LIBRARY: Base
-//*****CLASS: (l)vec
+// **********LIBRARY: Base
+// *****CLASS: (l)vec
 SCRIPT_LUA_CALLBACK lua_fs2_lvec(lua_State *L)
 {
 	vec3d v3 = vmd_zero_vector;
@@ -1651,7 +1651,7 @@ static const script_lua_obj_func_list lua_fs2_lvec_funcs[] = {
 	{SCRIPT_END_LIST},
 };
 
-//*****CLASS: wvec
+// *****CLASS: wvec
 SCRIPT_LUA_CALLBACK lua_fs2_wvec(lua_State *L)
 {
 	vec3d v3 = vmd_zero_vector;
@@ -1674,7 +1674,7 @@ static const script_lua_obj_func_list lua_fs2_wvec_funcs[] = {
 	{SCRIPT_END_LIST},
 };
 
-//*****LIBRARY CLASSES
+// *****LIBRARY CLASSES
 
 static const script_lua_obj_list lua_base_lib_obj[] = {
 	{l_lvec.GetName(), lua_fs2_lvec_funcs, "Local vector"},
@@ -1682,7 +1682,7 @@ static const script_lua_obj_list lua_base_lib_obj[] = {
 	{SCRIPT_END_LIST},
 };
 
-//*****LIBRARY FUNCTIONS
+// *****LIBRARY FUNCTIONS
 
 SCRIPT_LUA_CALLBACK lua_fs2_print(lua_State *L)
 {
@@ -1715,7 +1715,7 @@ static const script_lua_func_list lua_base_lib[] = {
 	{SCRIPT_END_LIST},
 };
 
-//**********LIBRARY: Mission (msn)
+// **********LIBRARY: Mission (msn)
 
 SCRIPT_LUA_CALLBACK lua_msn_getShipInfo(lua_State *L)
 {
@@ -1860,8 +1860,8 @@ static const script_lua_func_list lua_msn_lib[] = {
 	{SCRIPT_END_LIST},
 };
 
-//**********LIBRARY: Graphics (grl)
-//*****Class: model
+// **********LIBRARY: Graphics (grl)
+// *****Class: model
 SCRIPT_LUA_CALLBACK lua_grpc_model_getFilename(lua_State *L)
 {
 	polymodel *pm;
@@ -1905,7 +1905,7 @@ static const script_lua_obj_func_list lua_grpc_model_funcs[] = {
 	{SCRIPT_END_LIST},
 };
 
-//*****Functions: Graphics library
+// *****Functions: Graphics library
 SCRIPT_LUA_CALLBACK lua_grpc_loadModel(lua_State *L)
 {
 	char *model_name;
@@ -2087,7 +2087,7 @@ static const script_lua_obj_list lua_grpc_lib_obj[] = {
 	{SCRIPT_END_LIST},
 };
 
-//**********LIBRARY Array
+// **********LIBRARY Array
 //Add an item in here to add an item to scripting.
 //Elements: {library name, library function list, library object list}
 const script_lua_lib_list Lua_libraries[] = {
@@ -2098,7 +2098,7 @@ const script_lua_lib_list Lua_libraries[] = {
 };
 */
 #endif //USE_LUA
-//*************************Housekeeping*************************
+// *************************Housekeeping*************************
 
 //Inits LUA
 //Note that "libraries" must end with a {NULL, NULL}
