@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.78 $
- * $Date: 2006-01-10 01:23:09 $
- * $Author: phreak $
+ * $Revision: 2.79 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/01/10 01:23:09  phreak
+ * Fixed a logic error when dealing with non-targetable subsystems
+ *
  * Revision 2.77  2005/12/29 08:08:34  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -526,6 +529,7 @@
 #include "ship/awacs.h"
 #include "parse/parselo.h"
 #include "cmdline/cmdline.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 
 
@@ -1812,10 +1816,10 @@ void hud_target_next_subobject()
 // hud_target_next() will set the Players[Player_num].current_target to the next target in the object
 // used list whose team matches the team parameter.  The player is NOT included in the target list.
 //
-//	parameters:		team	=> team of ship to target next.  Default value is -1, if team doesn't matter.
+//	parameters:		team_mask => team(s) of ship to target next
 //
 
-void hud_target_common(int team, int next_flag)
+void hud_target_common(int team_mask, int next_flag)
 {
 	object	*A, *start, *start2;
 	ship		*shipp;
@@ -1867,7 +1871,7 @@ void hud_target_common(int team, int next_flag)
 		if ( is_ship ) {
 			shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-			if ( !hud_team_matches_filter(team, shipp->team) ) {
+			if (!iff_matches_mask(shipp->team, team_mask)) {
 				// if we're in multiplayer dogfight, ignore this
 				if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 					continue;
@@ -1899,14 +1903,14 @@ void hud_target_common(int team, int next_flag)
 	}
 }
 
-void hud_target_next(int team)
+void hud_target_next(int team_mask)
 {
-	hud_target_common(team, 1);
+	hud_target_common(team_mask, 1);
 }
 
-void hud_target_prev(int team)
+void hud_target_prev(int team_mask)
 {
-	hud_target_common(team, 0);
+	hud_target_common(team_mask, 0);
 }
 
 // -------------------------------------------------------------------
@@ -1988,7 +1992,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 		}
 
 		// only allow targeting of hostile bombs
-		if ( (obj_team(A) == Player_ship->team) && (Player_ship->team != TEAM_TRAITOR) ) {
+		if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
 			continue;
 		}
 
@@ -2022,7 +2026,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// only allow targeting of hostile bombs
-			if ( (obj_team(ship_obj) == Player_ship->team) && (Player_ship->team != TEAM_TRAITOR) ) {
+			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
 				continue;
 			}
 
@@ -2474,12 +2478,6 @@ void hud_target_closest_locked_missile(object *locked_obj)
 	}
 }
 
-//	Return bitmask of all opponents.
-int opposing_team_mask(int team_mask)
-{
-	return ((TEAM_FRIENDLY | TEAM_NEUTRAL | TEAM_HOSTILE) & ~team_mask) | TEAM_TRAITOR;
-}
-
 // select a new target, by auto-targeting
 void hud_target_auto_target_next()
 {
@@ -2491,21 +2489,19 @@ void hud_target_auto_target_next()
 	if (Game_mode & (GM_DEAD | GM_DEAD_BLEW_UP))
 		return;
 
-	int	valid_team;
-
-	valid_team = opposing_team_mask(Player_ship->team);
+	int	valid_team_mask = iff_get_attackee_mask(Player_ship->team);
 
 	// try target closest ship attacking player
-	hud_target_closest(valid_team, OBJ_INDEX(Player_obj), FALSE, TRUE );
+	hud_target_closest(valid_team_mask, OBJ_INDEX(Player_obj), FALSE, TRUE );
 
 	// if none, try targeting closest hostile fighter/bomber
 	if ( Player_ai->target_objnum == -1 ){
-		hud_target_closest(valid_team, -1, FALSE, TRUE);
+		hud_target_closest(valid_team_mask, -1, FALSE, TRUE);
 	}
 
 	// No fighter/bombers exists, so go ahead an target the closest hostile
 	if ( Player_ai->target_objnum == -1 ){
-		hud_target_closest(valid_team, -1, FALSE);
+		hud_target_closest(valid_team_mask, -1, FALSE);
 	}
 
 	// um, ok.  Try targeting asteroids that are on a collision course for an escort ship
@@ -2587,7 +2583,7 @@ float hud_find_target_distance( object *targetee, object *targeter )
 // eval target as closest struct
 typedef struct esct
 {
-	int				team;
+	int				team_mask;
 	int				filter;
 	ship*				shipp;
 	float				min_distance;
@@ -2622,7 +2618,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	targeting_player = (esct->attacked_objnum == OBJ_INDEX(Player_obj));
 
 	// filter on team, except in multiplayer
-	if ( !hud_team_matches_filter(esct->team, esct->shipp->team) ) {
+	if ( !iff_matches_mask(esct->shipp->team, esct->team_mask) ) {
 		// if we're in multiplayer dogfight, ignore this
 		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 			return;
@@ -2716,7 +2712,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	}
 }
 
-int hud_target_closest(int team, int attacked_objnum, int play_fail_snd, int filter, int get_closest_turret_attacking_player)
+int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, int filter, int get_closest_turret_attacking_player)
 {
 	object	*A;
 	object	*nearest_obj = &obj_used_list;
@@ -2756,7 +2752,7 @@ int hud_target_closest(int team, int attacked_objnum, int play_fail_snd, int fil
 	// check all turrets if for player.
 	esct.check_all_turrets = (attacked_objnum == player_obj_index);
 	esct.filter = filter;
-	esct.team = team;
+	esct.team_mask = team_mask;
 	esct.attacked_objnum = attacked_objnum;
 	esct.turret_attacking_target = get_closest_turret_attacking_player;
 
@@ -3690,9 +3686,7 @@ void hud_show_remote_detonate_missile()
 
 					if ( bound_rval == 0 ) {
 						// draw brackets and distance
-						int color;
-						color = hud_brackets_get_iff_color(MESSAGE_SENDER);
-						gr_set_color_fast(&IFF_colors[color][1]);
+						gr_set_color_fast(iff_get_color(IFF_COLOR_MESSAGE, 1));
 						draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,0,0, distance, OBJ_INDEX(mobjp));
 					}
 
@@ -3764,9 +3758,7 @@ void hud_show_message_sender()
 		}
 
 		if ( bound_rval == 0 ) {
-			int color;
-			color = hud_brackets_get_iff_color(MESSAGE_SENDER);
-			gr_set_color_fast(&IFF_colors[color][1]);
+			gr_set_color_fast(iff_get_color(IFF_COLOR_MESSAGE, 1));
 			draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,10,10);
 		}
 	}
@@ -3778,7 +3770,7 @@ void hud_show_message_sender()
 			if ( (OBJ_INDEX(targetp) != Player_ai->target_objnum) || (Message_shipnum == Objects[Player_ai->target_objnum].instance) ) {
 				if ( hud_sensors_ok(Player_ship, 0) ) {
 					float dist;
-					gr_set_color_fast(&IFF_colors[IFF_COLOR_MESSAGE][1]);
+					gr_set_color_fast(iff_get_color(IFF_COLOR_MESSAGE, 1));
 					//dist = vm_vec_dist_quick(&Player_obj->pos, &targetp->pos);
 					dist = hud_find_target_distance( targetp, Player_obj );
 					hud_draw_offscreen_indicator(&target_point, &targetp->pos, dist);
@@ -3916,7 +3908,7 @@ void hud_show_selection_set()
 			}
 
 			if ( bound_rval == 0 ) {
-				gr_set_color_fast(&IFF_colors[IFF_COLOR_SELECTION][1]);
+				gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
 				draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5);
 				if ( OBJ_INDEX(targetp) == Player_ai->target_objnum ) {
 					HUD_drew_selection_bracket_on_target = 1;
@@ -3932,7 +3924,7 @@ void hud_show_selection_set()
 				if ( OBJ_INDEX(targetp) != Player_ai->target_objnum ) {
 					if ( hud_sensors_ok(Player_ship, 0) ) {
 						float dist;
-						gr_set_color_fast(&IFF_colors[IFF_COLOR_SELECTION][1]);
+						gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
 						//dist = vm_vec_dist_quick(&Player_obj->pos, &targetp->pos);
 						dist = hud_find_target_distance( targetp, Player_obj );
 						hud_draw_offscreen_indicator(&target_point, &targetp->pos, dist);
@@ -3947,7 +3939,7 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 {
 	int x1,x2,y1,y2;
 	int draw_box = TRUE;
-	int team, bound_rc;
+	int bound_rc;
 
 	if ( Player->target_is_dying <= 0 ) {
 		int modelnum;
@@ -4004,26 +3996,9 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 			Hud_target_h = gr_screen.clip_height;
 		}
 
-		if ( targetp->type == OBJ_ASTEROID ) {
-			if ( OBJ_INDEX(targetp) == Player_ai->target_objnum ) {
-				team = TEAM_TRAITOR;
-			} else {
-				team = SELECTION_SET;	
-			}
-		} else {
-			team = obj_team(targetp);
-		}
-
 		if ( draw_box == TRUE ) {
-			float distance;
-			int color;
-			color = hud_brackets_get_iff_color(team);
-			// maybe color as tagged
-			if ( ship_is_tagged(targetp) ) {
-				color = IFF_COLOR_TAGGED;
-			}
-			distance = hud_find_target_distance( targetp, Player_obj );
-			gr_set_color_fast(&IFF_colors[color][1]);
+			float distance = hud_find_target_distance(targetp, Player_obj);
+			hud_set_iff_color(targetp, 1);
 			draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,0,0,distance, OBJ_INDEX(targetp));
 		}
 
@@ -4179,7 +4154,7 @@ void hud_show_targeting_gauges(float frametime, int in_cockpit)
 	if ( hud_gauge_active(HUD_OFFSCREEN_INDICATOR) ) {
 		if (target_point.codes != 0) { // target center is not on screen
 			// draw the offscreen indicator at the edge of the screen where the target is closest to
-			Assert(Player_ai->target_objnum != -1);
+			Assert(Player_ai->target_objnum >= 0);
 
 			// AL 11-11-97:	don't draw the indicator if the ship is messaging, the indicator is drawn
 			//						in the message sending color in hud_show_message_sender()
@@ -4222,8 +4197,8 @@ void hud_show_hostile_triangle()
 		A = &Objects[so->objnum];
 		sp = &Ships[A->instance];
 
-		// only look at ships on other team
-		if ( (A == Player_obj) || (Ships[A->instance].team & Player_ship->team) ) {
+		// only look at ships who attack us
+		if ( (A == Player_obj) || iff_x_attacks_y(Ships[A->instance].team, Player_ship->team) ) {
 			continue;
 		}
 
@@ -5849,21 +5824,21 @@ void hud_target_next_list(int hostile, int next_flag)
 	ship_obj	*so;
 //	vec3d	target_vec;
 	float		cur_dist, min_dist, max_dist, new_dist, nearest_dist, diff;	
-	int		timestamp_val, valid_team;
+	int		timestamp_val, valid_team_mask;
 
 	if ( hostile ) {
 		timestamp_val = Tl_hostile_reset_timestamp;
 		Tl_hostile_reset_timestamp = timestamp(TL_RESET);
-		valid_team = opposing_team_mask(Player_ship->team);
+		valid_team_mask = iff_get_attackee_mask(Player_ship->team);
 	} else {
 		timestamp_val = Tl_friendly_reset_timestamp;
 		Tl_friendly_reset_timestamp = timestamp(TL_RESET);
-		valid_team = Player_ship->team;
+		valid_team_mask = iff_get_mask(Player_ship->team);
 	}
 
 	// If no target is selected, then simply target the closest ship
 	if ( Player_ai->target_objnum == -1 || timestamp_elapsed(timestamp_val) ) {
-		hud_target_closest(valid_team);
+		hud_target_closest(valid_team_mask);
 		return;
 	}
 
@@ -5886,7 +5861,7 @@ void hud_target_next_list(int hostile, int next_flag)
 			continue;
 
 		// choose from the correct team
-		if ( !hud_team_matches_filter(valid_team, shipp->team) ) {
+		if ( !iff_matches_mask(shipp->team, valid_team_mask) ) {
 			// if we're in multiplayer dogfight, ignore this
 			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 				continue;
@@ -6084,7 +6059,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 			continue;
 
 		// only consider friendly ships
-		if ( !hud_team_matches_filter(Player_ship->team, shipp->team)) {
+		if ( !(Player_ship->team == shipp->team)) {
 			// if we're in multiplayer dogfight, ignore this
 			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 				continue;

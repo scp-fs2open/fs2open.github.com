@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.20  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -340,7 +343,7 @@
 #include "ship/ship.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
-
+#include "iff_defs/iff_defs.h"
 
 
 #pragma warning(disable:4710)	// function not inlined
@@ -1142,9 +1145,9 @@ void hud_config_render_gauges()
 				use_color = &HUD_config.clr[i];			
 			} else {
 				if(HC_gauge_regions[gr_screen.res][i].color == 1){
-					use_color = &IFF_colors[IFF_COLOR_TAGGED][0];
+					use_color = iff_get_color(IFF_COLOR_TAGGED, 0);
 				} else {
-					use_color = &IFF_colors[IFF_COLOR_HOSTILE][0];
+					use_color = &Color_bright_red;
 				}
 			}
 

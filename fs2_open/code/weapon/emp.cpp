@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-10-10 17:21:11 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/10/10 17:21:11  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.14  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -131,6 +134,7 @@
 #include "weapon/weapon.h"
 #include "ship/ship.h"
 #include "parse/parselo.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
 
@@ -449,24 +453,10 @@ void emp_process_ship(ship *shipp)
 	
 	// pick targets randomly and wackily so that the ship flies crazily :)	
 	if(((int)f2fl(Missiontime) + (int)(EMP_INTENSITY_MAX * shipp->emp_intensity)) % mod_val == 0){
-		int team_lookup = TEAM_FRIENDLY;
-		int ship_lookup;
-		switch(shipp->team){
-		case TEAM_HOSTILE:
-			team_lookup = TEAM_FRIENDLY;
-			break;
-		case TEAM_NEUTRAL: case TEAM_FRIENDLY:
-			team_lookup = TEAM_HOSTILE;
-			break;
-		}
-		ship_lookup = ship_get_random_team_ship(team_lookup);
+		int ship_lookup = ship_get_random_team_ship(iff_get_attackee_mask(shipp->team));
 
 		// if we got a valid ship object to target
 		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0)){
-			if(shipp->team == TEAM_HOSTILE){
-				mprintf(("EMP random target select\n"));
-			}
-
 			// attack the object
 			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], 89, NULL);
 		}

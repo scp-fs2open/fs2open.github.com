@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.24  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -468,7 +471,7 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			// don't process most stealth ships
 			if ( (Ships[objp->instance].flags2 & SF2_STEALTH) )
 			{
-				if ( Ships[objp->instance].team == TEAM_FRIENDLY )
+				if ( Ships[objp->instance].team == Player_ship->team )
 				{
 					// friendly stealths are only not seen when explicitly specified
 					if ( Ships[objp->instance].flags2 & SF2_FRIENDLY_STEALTH_INVIS )

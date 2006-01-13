@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.32 $
- * $Date: 2005-11-21 02:43:30 $
+ * $Revision: 2.33 $
+ * $Date: 2006-01-13 03:30:59 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 2.31  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -399,6 +403,7 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "species_defs/species_defs.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
@@ -1922,7 +1927,8 @@ int asteroid_valid_ship_to_warn_collide(ship *shipp)
 		return 0;
 	}
 
-	if ( (shipp->team != Player_ship->team) || (Player_ship->team == TEAM_TRAITOR) ) {
+	// Goober5000 used to be if teams were unequal and player was not traitor, but this works for allies not on your team
+	if ( iff_x_attacks_y(Player_ship->team, shipp->team) ) {
 		return 0;
 	}
 
@@ -2289,7 +2295,7 @@ void asteroid_show_brackets()
 		g3_project_vertex(&asteroid_vertex);
 
 		if (!(asteroid_vertex.flags & PF_OVERFLOW)) {
-			gr_set_color_fast(&IFF_colors[IFF_COLOR_SELECTION][1]);
+			gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
 			hud_show_brackets(asteroid_objp, &asteroid_vertex);
 		}
 
@@ -2299,7 +2305,7 @@ void asteroid_show_brackets()
 				float dist;
 //				dist = vm_vec_dist_quick(&Player_obj->pos, &asteroid_objp->pos);
 				dist = hud_find_target_distance( asteroid_objp, Player_obj );
-				gr_set_color_fast(&IFF_colors[IFF_COLOR_SELECTION][1]);
+				gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
 				hud_draw_offscreen_indicator(&asteroid_vertex, &asteroid_objp->pos, dist);
 			}
 		}

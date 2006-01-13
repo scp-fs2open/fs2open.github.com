@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.50 $
- * $Date: 2006-01-11 21:15:15 $
- * $Author: wmcoolmon $
+ * $Revision: 1.51 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.50  2006/01/11 21:15:15  wmcoolmon
+ * Somewhat better turret comments
+ *
  * Revision 1.49  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -982,7 +985,7 @@
  */
 
 // This module contains the actual AI code that does interesting stuff
-// to objects.   The code in Ai.cpp is just for bookeeping, allocating
+// to objects.   The code in Ai.cpp is just for bookkeeping, allocating
 // ai slots and linking them to ships.
 
 
@@ -1024,6 +1027,7 @@
 #include "parse/parselo.h"
 #include "object/objectdock.h"
 #include "ai/aiinternal.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 //#include "network/multi_team.h"
@@ -1231,9 +1235,6 @@ float	AI_frametime;
 
 char** Ai_class_names = NULL;
 
-// global for rearm status for teams
-int Ai_friendly_rearm_timestamp, Ai_hostile_rearm_timestamp, Ai_neutral_rearm_timestamp, Ai_traitor_rearm_timestamp, Ai_unknown_rearm_timestamp;
-
 // globals for dealing with when to fire huge secondary weapons
 #define MAX_HUGE_SECONDARY_INFO	10
 
@@ -1276,66 +1277,25 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 // sets the timestamp used to tell is it is a good time for this team to rearm.  Once the timestamp
 // is no longer valid, then rearming is not a "good time"
 // not safe.  Called from sexpression code.
-void ai_set_rearm_status( int team, int time )
+void ai_set_rearm_status(int team, int time)
 {
 	Assert( time >= 0 );
 
-	switch (team) {
-	case TEAM_FRIENDLY:
-		Ai_friendly_rearm_timestamp = timestamp( time * 1000 );
-		break;
-	case TEAM_HOSTILE:
-		Ai_hostile_rearm_timestamp = timestamp( time * 1000 );
-		break;
-	case TEAM_NEUTRAL:
-		Ai_neutral_rearm_timestamp = timestamp( time * 1000 );
-		break;
-	case TEAM_TRAITOR:
-		Ai_traitor_rearm_timestamp = timestamp( time * 1000 );
-		break;
-	case TEAM_UNKNOWN:
-		Ai_traitor_rearm_timestamp = timestamp( time * 1000 );
-		break;
-	default:
-		Int3();
-		break;
-	}
+	Iff_info[team].ai_rearm_timestamp = timestamp(time * 1000);
 }
 
 // int ai_good_time_to_rearm returns true(1) or false(0) if it is "safe" for the given
 // object to rearm.  "safe" is currently defined by the mission designer using the good/bad
 // time to rearm sexpressions.  This status is currently team based.  This function could
 // be easily expended to further the definition of "safe"
-int ai_good_time_to_rearm( object *objp )
+int ai_good_time_to_rearm(object *objp)
 {
-	int team, status;
+	int team;
 
 	Assert(objp->type == OBJ_SHIP);
 	team = Ships[objp->instance].team;
-	status = 0;
-
-	switch(team) {
-	case TEAM_FRIENDLY:
-		status = timestamp_valid(Ai_friendly_rearm_timestamp);
-		break;
-	case TEAM_HOSTILE:
-		status = timestamp_valid(Ai_hostile_rearm_timestamp);
-		break;
-	case TEAM_NEUTRAL:
-		status = timestamp_valid(Ai_neutral_rearm_timestamp);
-		break;
-	case TEAM_TRAITOR:
-		status = timestamp_valid(Ai_traitor_rearm_timestamp);
-		break;
-	case TEAM_UNKNOWN:
-		status = timestamp_valid(Ai_unknown_rearm_timestamp);
-		break;
-	default:
-		Int3();
-		break;
-	}
-
-	return status;
+	
+	return timestamp_valid(Iff_info[team].ai_rearm_timestamp);
 }
 
 // functions to deal with letting the ai know about good times to fire powerful secondary
@@ -1658,11 +1618,11 @@ void ai_level_init()
 	for (i=0; i<MAX_AI_INFO ; i++) {
 		Ai_info[i].shipnum = -1;
 	}
+
 	Ai_goal_signature = 0;
-	Ai_friendly_rearm_timestamp = timestamp(-1);
-	Ai_hostile_rearm_timestamp = timestamp(-1);
-	Ai_neutral_rearm_timestamp = timestamp(-1);
-	Ai_traitor_rearm_timestamp = timestamp(-1);
+
+	for (i = 0; i < Num_iffs; i++)
+		Iff_info[i].ai_rearm_timestamp = timestamp(-1);
 
 	// clear out the stuff needed for AI firing powerful secondary weapons
 	ai_init_secondary_info();
@@ -2014,7 +1974,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 		//	Scale turn_time based on skill level and team.
 		if (!(flags & AITTV_FAST) && !(sexp_flags & AITTV_VIA_SEXP) ){
 			if (objp->type == OBJ_SHIP){
-				if (Ships[objp->instance].team != Ships[Player_obj->instance].team){
+				if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team)) {
 					turn_time *= The_mission.ai_profile->turn_time_scale[Game_skill_level];
 				}
 			}
@@ -2059,7 +2019,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 	// Goober5000 - also don't bank if ship doesn't bank
 	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) || (Ships[objp->instance].flags2 & SF2_NO_BANK) )
 		delta_bank = 0.0f;
-	else if ((bank_override) && (Ships[objp->instance].team & opposing_team_mask(Player_ship->team))) {	//	Theoretically, this will only happen for Shivans.
+	else if ((bank_override) && (iff_x_attacks_y(Ships[objp->instance].team, Player_ship->team))) {	//	Theoretically, this will only happen for Shivans.
 		delta_bank = bank_override;
 		//nprintf(("AI", "%i: %7.3f\n", Framecount, bank_override));
 	} else {
@@ -2592,63 +2552,6 @@ int num_enemies_attacking(int objnum)
 	return count;
 }
 
-//	Get the team to fire on given an object.
-int get_enemy_team_mask(int objnum)
-{
-	int	my_team, enemy_team_mask;
-
-	my_team = Ships[Objects[objnum].instance].team;
-
-	if (Mission_all_attack) {
-		//	All teams attack all teams.
-		switch (my_team) {
-		case TEAM_FRIENDLY:
-			enemy_team_mask = TEAM_HOSTILE | TEAM_NEUTRAL | TEAM_TRAITOR;
-			break;
-		case TEAM_HOSTILE:
-			enemy_team_mask = TEAM_FRIENDLY | TEAM_NEUTRAL | TEAM_TRAITOR;
-			break;
-		case TEAM_NEUTRAL:
-			enemy_team_mask = TEAM_FRIENDLY | TEAM_HOSTILE | TEAM_TRAITOR;
-			break;
-		case TEAM_UNKNOWN:
-			enemy_team_mask = TEAM_HOSTILE;
-			break;
-		case TEAM_TRAITOR:
-			enemy_team_mask = TEAM_FRIENDLY | TEAM_NEUTRAL | TEAM_HOSTILE | TEAM_TRAITOR;
-			break;
-		default:
-			enemy_team_mask = TEAM_HOSTILE;
-			Int3();			//	Illegal value for team!
-			break;
-		}
-	} else {
-		switch (my_team) {
-		case TEAM_FRIENDLY:
-			enemy_team_mask = TEAM_HOSTILE | TEAM_NEUTRAL | TEAM_TRAITOR;
-			break;
-		case TEAM_HOSTILE:
-			enemy_team_mask = TEAM_FRIENDLY | TEAM_NEUTRAL | TEAM_TRAITOR;
-			break;
-		case TEAM_NEUTRAL:
-			enemy_team_mask = TEAM_FRIENDLY | TEAM_TRAITOR;
-			break;
-		case TEAM_UNKNOWN:
-			enemy_team_mask = TEAM_HOSTILE;
-			break;
-		case TEAM_TRAITOR:
-			enemy_team_mask = TEAM_FRIENDLY | TEAM_NEUTRAL | TEAM_HOSTILE | TEAM_TRAITOR;
-			break;
-		default:
-			enemy_team_mask = TEAM_HOSTILE;
-			Int3();			//	Illegal value for team!
-			break;
-		}
-	}
-
-	return enemy_team_mask;
-}
-
 //	Scan all the ships in *objp's wing.
 //	Return the lowest maximum speed of a ship in the wing.
 //	Current maximum speed (based on energy settings) is shipp->current_max_speed
@@ -2889,7 +2792,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				}
 			}
 
-			if (shipp->team & eno->enemy_team_mask) {
+			if (iff_matches_mask(shipp->team, eno->enemy_team_mask)) {
 				float	dist;
 				int	num_attacking;
 
@@ -2933,7 +2836,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 
 					if (eno->trial_objp->flags & OF_PLAYER_SHIP){
 						// Goober5000: oh dear, it looks like this was originally meant to scale
-						// the distance according to skill, but as it is, the effect is negligible.
+						// the distance according to skill, but as it is, the effect appears negligible.
 						// I could fix it with parentheses, but we all know how quickly AI pilots
 						// die usually, so the overall effect would probably be worse.  So I left
 						// this unchanged.
@@ -3019,7 +2922,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 //	Unlike find_enemy or find_nearest_objnum, this doesn't care about things like the protected flag or number
 //	of enemies attacking.
 //	It is used to find the nearest enemy to determine things like whether to rearm.
-int find_nearby_hostile(int objnum, int enemy_team_mask, float range, int *count)
+int find_nearby_threat(int objnum, int enemy_team_mask, float range, int *count)
 {
 	int		nearest_objnum;
 	float		nearest_dist;
@@ -3044,7 +2947,7 @@ int find_nearby_hostile(int objnum, int enemy_team_mask, float range, int *count
 			if (Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_NO_SHIP_TYPE | SIF_NAVBUOY))
 				continue;
 
-			if (Ships[objp->instance].team & enemy_team_mask) {
+			if (iff_matches_mask(Ships[objp->instance].team, enemy_team_mask)) {
 				float	dist;
 
 				dist = vm_vec_dist_quick(&Objects[objnum].pos, &objp->pos) - objp->radius*0.75f;
@@ -3114,7 +3017,7 @@ int find_enemy(int objnum, float range, int max_attackers, int except)
 {
 	int	enemy_team_mask;
 
-	enemy_team_mask = get_enemy_team_mask(objnum);
+	enemy_team_mask = iff_get_attackee_mask(obj_team(&Objects[objnum]));
 
 	//	if target_objnum != -1, use that as goal.
 	ai_info	*aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
@@ -3126,7 +3029,7 @@ int find_enemy(int objnum, float range, int max_attackers, int except)
 			// DKA don't undo object as target in nebula missions.
 			// This could cause attack on ship on fringe on nebula to stop if attackee moves our of nebula range.  (BAD)
 			if ( (Objects[target_objnum].signature == aip->target_signature) ) {
-				if (Ships[Objects[target_objnum].instance].team & enemy_team_mask) {
+				if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
 					if (!(Objects[target_objnum].flags & OF_PROTECTED)) {
 						// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
 						return target_objnum;
@@ -4786,7 +4689,7 @@ int get_enemy_team_range(object *my_objp, float range, int enemy_team_mask, vec3
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
-		if (Ships[objp->instance].team & enemy_team_mask) {
+		if (iff_matches_mask(Ships[objp->instance].team, enemy_team_mask)) {
 			if (Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER | SIF_CRUISER | SIF_CAPITAL | SIF_SUPERCAP | SIF_DRYDOCK | SIF_CORVETTE | SIF_AWACS | SIF_GAS_MINER))
 				if (vm_vec_dist_quick(&my_objp->pos, &objp->pos) < range) {
 					if (count == 0) {
@@ -4820,7 +4723,7 @@ void ai_safety_pick_spot(object *objp)
 
 	objnum = OBJ_INDEX(objp);
 
-	enemy_team_mask = get_enemy_team_mask(objnum);
+	enemy_team_mask = iff_get_attacker_mask(obj_team(&Objects[objnum]));
 
 	if (get_enemy_team_range(objp, 1000.0f, enemy_team_mask, &min_vec, &max_vec)) {
 		vm_vec_avg(&center, &min_vec, &max_vec);
@@ -6524,7 +6427,7 @@ int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
 
 		ship_objp = &Objects[so->objnum];
 
-		if (Ships[ship_objp->instance].team & enemy_team_mask) {
+		if (iff_matches_mask(Ships[ship_objp->instance].team, enemy_team_mask)) {
 			if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) {
 				if (vm_vec_dist_quick(pos, &ship_objp->pos) < threshold)
 					count++;
@@ -7094,7 +6997,7 @@ void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, 
 	range_time = 2.0f;
 
 	//	Make it take longer for enemies to get player's allies in range based on skill level.
-	if (Ships[pobjp->instance].team != Ships[Player_obj->instance].team)
+	if (iff_x_attacks_y(Ships[pobjp->instance].team, Player_ship->team))
 		range_time += The_mission.ai_profile->in_range_time[Game_skill_level];
 
 	//nprintf(("AI", "time enemy in range = %7.3f\n", aip->time_enemy_in_range));
@@ -7151,10 +7054,10 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 
 	//	Make it take longer for enemies to get player's allies in range based on skill level.
 	// but don't bias team v. team missions
-	if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ) {
-		if (Ships[pobjp->instance].team != Ships[Player_obj->instance].team) {
+	if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) )
+	{
+		if (iff_x_attacks_y(Ships[pobjp->instance].team, Player_ship->team))
 			range_time += The_mission.ai_profile->in_range_time[Game_skill_level];
-		}
 	}
 	//nprintf(("AI", "time enemy in range = %7.3f\n", aip->time_enemy_in_range));
 
@@ -9317,7 +9220,7 @@ void ai_chase()
 									if (swip->wi_flags & WIF_SPAWN) {
 										int	count;
 
-										count = num_nearby_fighters(get_enemy_team_mask(OBJ_INDEX(Pl_objp)), &Pl_objp->pos, 1000.0f);
+										count = num_nearby_fighters(iff_get_attackee_mask(obj_team(Pl_objp)), &Pl_objp->pos, 1000.0f);
 
 										if (count > 3)
 											spawn_fire = 1;
@@ -9841,21 +9744,37 @@ void debug_find_guard_object()
 }
 
 //	Given an object number, return the number of ships attacking it.
-int num_ships_attacking(int objnum)
+int num_ships_attacking(int target_objnum)
 {
-	object	*objp;
+	object	*attacking_objp;
+	ai_info	*attacking_aip;
 	ship_obj	*so;
 	int		count = 0;
+	int target_team = Ships[Objects[target_objnum].instance].team;
 
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		objp = &Objects[so->objnum];
-		if (objp->instance != -1) {
-			ai_info	*aip;
-			aip = &Ai_info[Ships[objp->instance].ai_index];
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
+	{
+		attacking_objp = &Objects[so->objnum];
+		if (attacking_objp->instance < 0)
+			continue;
 
-			if ((aip->mode == AIM_CHASE) && (aip->target_objnum == objnum))
-				if (Ships[objp->instance].team != Ships[Objects[objnum].instance].team)
+		attacking_aip = &Ai_info[Ships[attacking_objp->instance].ai_index];
+
+		// don't count instructor
+		int is_training_mission();
+		if (is_training_mission() && is_instructor(attacking_objp))
+			continue;	// Goober5000 10/06/2005 changed from break
+
+		if (iff_x_attacks_y(Ships[attacking_objp->instance].team, target_team))
+		{
+			if (attacking_aip->target_objnum == target_objnum)
+			{
+				if ( ((Game_mode & GM_MULTIPLAYER) && (attacking_objp->flags & OF_PLAYER_SHIP))
+					|| (attacking_aip->mode == AIM_CHASE) )
+				{
 					count++;
+				}
+			}
 		}
 	}
 
@@ -9884,7 +9803,7 @@ void remove_farthest_attacker(int objnum)
 				aip2 = &Ai_info[Ships[objp->instance].ai_index];
 
 				if ((aip2->mode == AIM_CHASE) && (aip2->target_objnum == objnum)) {
-					if (Ships[objp->instance].team != Ships[Objects[objnum].instance].team) {
+					if (iff_x_attacks_y(Ships[objp->instance].team, Ships[objp2->instance].team)) {
 						float	dist;
 
 						dist = vm_vec_dist_quick(&objp->pos, &objp2->pos);
@@ -10146,28 +10065,35 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 //	Scan enemy ships and see if one is near enough to guard object to be pursued.
 void ai_guard_find_nearby_ship(object *guarding_objp, object *guarded_objp)
 {
-	ship		*guarding_shipp = &Ships[guarding_objp->instance];
+	ship *guarding_shipp = &Ships[guarding_objp->instance];
 	ai_info	*guarding_aip = &Ai_info[guarding_shipp->ai_index];
-	ship_obj	*so;
-	object	*enemy_objp;
-	float		dist;
+	ship_obj *so;
+	object *enemy_objp;
+	float dist;
 
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+	{
 		enemy_objp = &Objects[so->objnum];
 
-		if (enemy_objp->instance < 0) {
+		if (enemy_objp->instance < 0)
+		{
 			continue;
 		}
 
-		ship	*eshipp = &Ships[enemy_objp->instance];
+		ship *eshipp = &Ships[enemy_objp->instance];
 
-		//	Don't attack a cargo container or other harmless ships
-		if (Ship_info[eshipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].ai_bools & STI_AI_GUARDS_ATTACK)) {
-			if (guarding_shipp->team != eshipp->team)	{
+		if (iff_x_attacks_y(guarding_shipp->team, eshipp->team))
+		{
+			//	Don't attack a cargo container or other harmless ships
+			if (Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].ai_bools & STI_AI_GUARDS_ATTACK))
+			{
 				dist = vm_vec_dist_quick(&enemy_objp->pos, &guarded_objp->pos);
-				if (dist < (MAX_GUARD_DIST + guarded_objp->radius)*3) {
+				if (dist < (MAX_GUARD_DIST + guarded_objp->radius)*3)
+				{
 					guard_object_was_hit(guarding_objp, enemy_objp);
-				} else if ((dist < 3000.0f) && (Ai_info[eshipp->ai_index].target_objnum == guarding_aip->guard_objnum)) {
+				}
+				else if ((dist < 3000.0f) && (Ai_info[eshipp->ai_index].target_objnum == guarding_aip->guard_objnum))
+				{
 					//nprintf(("AI", "%i: Enemy %s targeting guard object (%s), %s will attack!!\n", Framecount, eshipp->ship_name, Ships[Objects[guarding_aip->guard_objnum].instance].ship_name, guarding_shipp->ship_name));
 					guard_object_was_hit(guarding_objp, enemy_objp);
 				}
@@ -12352,7 +12278,7 @@ int find_repairing_objnum(int objnum)
 //	If object *objp is being repaired, deal with it!
 void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 {
-	if (Ships[objp->instance].team == TEAM_TRAITOR) {
+	if (Ships[objp->instance].team == Iff_traitor) {
 		ai_abort_rearm_request(objp);
 		return;
 	}
@@ -12454,7 +12380,7 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 		return;
 
 	//	If not on player's team and Skill_level + ai_class is low, never fire a countermeasure.  The ship is too dumb.
-	if (shipp->team != Player_ship->team) {
+	if (iff_x_attacks_y(Player_ship->team, shipp->team)) {
 		if (Game_skill_level + aip->ai_class < 4){
 			return;
 		}
@@ -12673,7 +12599,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 
 		//	Scale time until next manage shield based on Skill_level.
 		//	Ships on player's team are treated as if Skill_level is average.
-		if (Ships[objp->instance].team != Player_ship->team)
+		if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team))
 		{
 			delay = The_mission.ai_profile->shield_manage_delay[Game_skill_level];
 		} 
@@ -13643,7 +13569,7 @@ int maybe_request_support(object *objp)
 			ai_issue_rearm_request(objp);
 		} else if (desire >= 3) {		//	>= 3 means having a single subsystem fully blown will cause repair.
 			int	count;
-			int objnum = find_nearby_hostile(OBJ_INDEX(objp), get_enemy_team_mask(OBJ_INDEX(objp)), 2000.0f, &count);
+			int objnum = find_nearby_threat(OBJ_INDEX(objp), iff_get_attacker_mask(obj_team(objp)), 2000.0f, &count);
 
 			if ((objnum == -1) || (count < 2) || (vm_vec_dist_quick(&objp->pos, &Objects[objnum].pos) > 3000.0f*count/desire)) {
 				ai_issue_rearm_request(objp);
@@ -13700,8 +13626,8 @@ void ai_maybe_depart(object *objp)
 		}
 	}
 
-	//	Friendly don't warp out, they'll eventually request support.
-	if (shipp->team == TEAM_FRIENDLY)
+	// some iffs don't warp out, they'll eventually request support.
+	if (Iff_info[shipp->team].flags & IFFF_SUPPORT_ALLOWED)
 		return;
 
 	if (!(shipp->flags & SF_DEPARTING)) {
@@ -14196,7 +14122,7 @@ int ai_await_repair_frame(object *objp, ai_info *aip)
 
 	repair_objp = &Objects[aip->support_ship_objnum];
 
-	if (Ships[repair_objp->instance].team == TEAM_TRAITOR) {
+	if (Ships[repair_objp->instance].team == Iff_traitor) {
 		ai_abort_rearm_request(repair_objp);
 		return 0;
 	}
@@ -14224,9 +14150,9 @@ int ai_await_repair_frame(object *objp, ai_info *aip)
 //	Maybe should only do this if they are preventing their wing from re-entering.
 void ai_maybe_self_destruct(object *objp, ai_info *aip)
 {
-	//	Friendly ships can be repaired, so no self-destruct.
+	//	Some IFFs can be repaired, so no self-destruct.
 	//	In multiplayer, just don't self-destruct.  I figured there would be a problem. -- MK, 3/19/98.
-	if ((Ships[objp->instance].team == TEAM_FRIENDLY) || (Game_mode & GM_MULTIPLAYER))
+	if ((Iff_info[Ships[objp->instance].team].flags & IFFF_SUPPORT_ALLOWED) || (Game_mode & GM_MULTIPLAYER))
 		return;
 
 	//	Small ships in a wing blow themselves up after awhile if engine or weapons system has been destroyed.
@@ -14998,7 +14924,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 		return;
 	}
 
-	if ((objp_hitter == Player_obj) && (Player_ship->team == TEAM_FRIENDLY)) {
+	if ((obj_team(objp_hitter) == obj_team(objp_hit)) && (objp_hitter == Player_obj)) {
 
 		// AL 12-4-97: It is possible the Player is a OBJ_GHOST at this point.  If so, bail out.
 		if ( objp_hitter->type != OBJ_SHIP ) {
@@ -15102,7 +15028,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 			mission_goal_fail_all();
 			ai_abort_rearm_request( Player_obj );
 
-			Player_ship->team = TEAM_TRAITOR;
+			Player_ship->team = Iff_traitor;
 
 		} else if ((damage > frand()) && (Missiontime - pp->last_warning_message_time > F1_0*4) && (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD)) {
 			// no closer than 4 sec intervals
@@ -15248,7 +15174,7 @@ void ai_update_lethality(object *ship_obj, object *other_obj, float damage)
 		if (Objects[parent].signature == other_obj->parent_sig) {
 
 			// check damage done to enemy team
-			if (Ships[ship_obj->instance].team != Ships[Objects[parent].instance].team) {
+			if (iff_x_attacks_y(Ships[ship_obj->instance].team, Ships[Objects[parent].instance].team)) {
 
 				// other is weapon
 				if (other_obj->type == OBJ_WEAPON) {
@@ -15355,9 +15281,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		objp_hitter = &Objects[hitter_objnum];
 		maybe_process_friendly_hit(objp_hitter, objp_ship, hit_objp);		//	Deal with player's friendly fire.
 
-		if ( (shipp->team & TEAM_FRIENDLY) && !(Game_mode & GM_MULTIPLAYER) ) {
-			ship_maybe_ask_for_help(shipp);
-		}
+		ship_maybe_ask_for_help(shipp);
 	} else if (hit_objp->type == OBJ_SHIP) {
 		if (shipp->team == Ships[hit_objp->instance].team)		//	Don't have AI react to collisions between teammates.
 			return;
@@ -15504,7 +15428,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 	aip->hitter_signature = Objects[hitter_objnum].signature;
 
 	//	If the hitter is not on the same team as the hittee, do some stuff.
-	if (shipp->team != Ships[objp_hitter->instance].team) {
+	if (iff_x_attacks_y(shipp->team, Ships[objp_hitter->instance].team)) {
 		//nprintf(("AI", "Object %i attacking %i, who just hit him!\n", objp_ship-Objects, hitter_objnum));
 
 		if ((hitter_objnum != aip->target_objnum) && (sip->flags & (SIF_FIGHTER | SIF_BOMBER))) {
@@ -15965,7 +15889,7 @@ void maybe_cheat_fire_synaptic(object *objp, ai_info *aip)
 					int modulus = 17 + num*3;
 
 					if ((time % modulus) < 2) {
-						int count = num_nearby_fighters(get_enemy_team_mask(OBJ_INDEX(objp)), &objp->pos, 1500.0f);
+						int count = num_nearby_fighters(iff_get_attackee_mask(obj_team(objp)), &objp->pos, 1500.0f);
 
 						if (count > 0) {
 							cheat_fire_synaptic(objp, shipp, aip);

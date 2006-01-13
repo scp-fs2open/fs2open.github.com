@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_team.h $
- * $Revision: 2.2 $
- * $Date: 2005-07-13 03:35:33 $
+ * $Revision: 2.3 $
+ * $Date: 2006-01-13 03:31:09 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.1  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -76,6 +80,8 @@
 #ifndef _MULTI_TEAMPLAY_HEADER_FILE
 #define _MULTI_TEAMPLAY_HEADER_FILE
 
+#include <globalincs/globals.h>
+
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER TEAMPLAY DEFINES/VARS
 //
@@ -85,9 +91,8 @@ struct header;
 struct net_player;
 struct ship;
 
-// score for teams 0 and 1 for this mission
-extern int Multi_team0_score;
-extern int Multi_team1_score;
+// score for teams for this mission
+extern int Multi_team_score[MAX_TVT_TEAMS];
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER TEAMPLAY FUNCTIONS

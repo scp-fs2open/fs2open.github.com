@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-01-10 18:37:46 $
- * $Author: randomtiger $
+ * $Revision: 2.22 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/01/10 18:37:46  randomtiger
+ * Improvements to voice recognition system.
+ * Also function put on -voicer launcher option.
+ *
  * Revision 2.20  2006/01/03 17:07:10  randomtiger
  * Added voice recognition functionality for Visual C6 project only.
  * Currently still a work in progress.
@@ -333,6 +337,7 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
@@ -646,39 +651,46 @@ void hud_squadmsg_end()
 		snd_play( &Snds[SND_SQUADMSGING_OFF] );
 }
 
-// function which returns true if there are fighters/bombers on the players team
-// in the mission
-int hud_squadmsg_count_fighters( )
+// function which returns true if there are fighters/bombers on the players team in the mission
+// In debug versions, we will allow messaging to enemies
+bool hud_squadmsg_exist_fighters( )
 {
-	int count;
-	int team;
+	ship_obj *so;
 	object *objp;
 	ship *shipp;
 
-	// set up the team to compare for messaging.  In debug versions, we will allow messaging to enemies
-	//team = TEAM_FRIENDLY;
-	team = Player_ship->team;
-#ifndef NDEBUG
-	if ( Msg_enemies )
-		team = opposing_team_mask(Player_ship->team);
+	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+	{	
+		objp = &Objects[so->objnum];
+		shipp = &Ships[objp->instance];
+		Assert ( shipp->objnum != -1 );
+
+		// check fighter is accepting orders
+		if (shipp->orders_accepted == 0)
+			continue;
+
+		// be sure ship is on correct team
+#ifdef NDEBUG
+		if (shipp->team != Player_ship->team)
+			continue;
+#else
+		if (!Msg_enemies && (shipp->team != Player_ship->team))
+			continue;
 #endif
 
-	count = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type != OBJ_SHIP )
+		// cannot be my ship or an instructor
+		if ((objp == Player_obj) || is_instructor(objp))
 			continue;
-		
-		shipp = &Ships[objp->instance];
-		// check fighter is accepting orders
-		if (shipp->orders_accepted != 0) {
-			// be sure ship is on correct team, not the player, and is a fighter/bomber
-			if ( (shipp->team == team) && (objp != Player_obj) && (Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
-				return 1;
-			}
-		}
+			
+		// ship must be a fighter/bomber
+		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+			continue;
+
+		// this ship satisfies everything
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 
@@ -686,43 +698,39 @@ int hud_squadmsg_count_fighters( )
 // we should grey out a menu or allow a shortcut command to apply.  parameter "flag" is used
 // to tell us whether or not we should add the ship to a menu item or not.  We include the
 // flag so that we don't have to have conditions for messaging ships/wings in two places.
-int hud_squadmsg_count_ships( int add_to_menu )
+int hud_squadmsg_count_ships(int add_to_menu)
 {
 	int count;
-	int team;
-	ship *shipp;
 	ship_obj *so;
-
-	// set up the team to compare for messaging.  In debug versions, we will allow messaging to enemies
-	//team = TEAM_FRIENDLY;
-	team = Player_ship->team;
-#ifndef NDEBUG
-	if ( Msg_enemies )
-		team = opposing_team_mask(Player_ship->team);
-#endif
+	object *objp;
+	ship *shipp;
 
 	count = 0;
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		
-		shipp = &Ships[Objects[so->objnum].instance];
+	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+	{	
+		objp = &Objects[so->objnum];
+		shipp = &Ships[objp->instance];
 		Assert ( shipp->objnum != -1 );
 
 		// ships must be able to receive a message
 		if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_ACCEPT_PLAYER_ORDERS) )
 			continue;
 
-		// must be on the same team
-		if ( shipp->team != team )
+		// be sure ship is on correct team
+#ifdef NDEBUG
+		if (shipp->team != Player_ship->team)
 			continue;
+#else
+		if (!Msg_enemies && (shipp->team != Player_ship->team))
+			continue;
+#endif
 
 		// departing or dying ships cannot be on list
 		if ( shipp->flags & (SF_DEPARTING|SF_DYING) )
 			continue;
 
-		// MULTI - changed to allow messaging of netplayers
-
 		// cannot be my ship or an instructor
-		if ( (&Objects[so->objnum] == Player_obj) || is_instructor(&Objects[so->objnum]) )
+		if ((objp == Player_obj) || is_instructor(objp))
 			continue;
 
 		// ship must be accepting ship type orders
@@ -730,38 +738,41 @@ int hud_squadmsg_count_ships( int add_to_menu )
 			continue;
 
 		// if it is a player ship, we must be in multiplayer
-		if ( (Objects[so->objnum].flags & OF_PLAYER_SHIP) && !(Game_mode & GM_MULTIPLAYER) )
+		if ( (objp->flags & OF_PLAYER_SHIP) && !(Game_mode & GM_MULTIPLAYER) )
 			continue;
 
 		// if a messaging shortcut, be sure this ship can process the order
 		if ( Msg_shortcut_command != -1 ) {
 			if ( !(shipp->orders_accepted & Msg_shortcut_command) )
 				continue;
-			else if ( !hud_squadmsg_ship_order_valid(Objects[so->objnum].instance, Msg_shortcut_command) )
+			else if ( !hud_squadmsg_ship_order_valid(objp->instance, Msg_shortcut_command) )
 				continue;
 		}
 
+		// this ship satisfies everything
 		count++;
-		if ( add_to_menu ) {
+		if (add_to_menu)
+		{
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
 			strcpy( MsgItems[Num_menu_items].text, shipp->ship_name );
 			MsgItems[Num_menu_items].instance = SHIP_INDEX(shipp);
 			MsgItems[Num_menu_items].active = 1;
 			Num_menu_items++;
-
 		}
 	}
 
 	// if adding to the menu and we have > 10 items, then don't allow page up and page down to be used.
 	if ( add_to_menu && (Num_menu_items > MAX_MENU_DISPLAY) )
 		hud_squadmsg_save_keys(1);
+
 	return count;
 }
 
 // routine to return true if a wing should be put onto the messaging menu
-int hud_squadmsg_wing_valid( wing *wingp, int team )
+int hud_squadmsg_wing_valid(wing *wingp)
 {
 	// int player_count, j;
+	int special_ship_index;
 
 	// a couple of special cases to account for before adding to count (or to menu).  The wing gone
 	// flags is firm indication to skip this particular wing.  Also, skip if enemy wing
@@ -773,22 +784,30 @@ int hud_squadmsg_wing_valid( wing *wingp, int team )
 		return 0;
 
 	// sanity check on ship_index field -- if check is successful, then check the team.
-	Assert (wingp->ship_index[0] != -1 );
-	if ( Ships[wingp->ship_index[0]].team != team )
+	special_ship_index = wingp->ship_index[wingp->special_ship];
+	Assert (special_ship_index >= 0);
+
+	// be sure ship is on same team
+#ifdef NDEBUG
+	if (Ships[special_ship_index].team != Player_ship->team)
 		return 0;
+#else
+	if (!Msg_enemies && (Ships[special_ship_index].team != Player_ship->team))
+		return 0;
+#endif
 
 	// if this wing is the players wing, and there is only one ship in the wing, then skip past it
 	if ( (Ships[Player_obj->instance].wingnum == WING_INDEX(wingp)) && (wingp->current_count == 1) )
 		return 0;
 
 	// check if wing commander is accepting orders
-	if ( Ships[wingp->ship_index[0]].orders_accepted == 0)
+	if ( Ships[special_ship_index].orders_accepted == 0)
 		return 0;
 
 	// if doing a message shortcut is being used, be sure the wing can "accept" the command.  Only need
-	// to look at the first ship in the wing.
+	// to look at the wing commander
 	if ( Msg_shortcut_command != -1 ) {
-		if ( !(Ships[wingp->ship_index[0]].orders_accepted & Msg_shortcut_command) )
+		if ( !(Ships[special_ship_index].orders_accepted & Msg_shortcut_command) )
 			return 0;
 	}
 	// MULTI - changed to allow messaging of netplayers
@@ -810,15 +829,6 @@ int hud_squadmsg_wing_valid( wing *wingp, int team )
 int hud_squadmsg_count_wings( int add_to_menu )
 {
 	int count, i, j;
-	int team;
-
-	// set up the team to compare for messaging.  In debug versions, we will allow messaging to enemies
-	//team = TEAM_FRIENDLY;
-	team = Player_ship->team;
-#ifndef NDEBUG
-	if ( Msg_enemies )
-		team = opposing_team_mask(Player_ship->team);
-#endif
 
 	count = 0;
 
@@ -830,7 +840,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		if ( wingnum == -1 )
 			continue;
 
-		if ( hud_squadmsg_wing_valid(&Wings[wingnum], team) ) {
+		if ( hud_squadmsg_wing_valid(&Wings[wingnum]) ) {
 			count++;
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
@@ -851,7 +861,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		if ( j < MAX_STARTING_WINGS )
 			continue;
 
-		if ( hud_squadmsg_wing_valid(&Wings[i], team) ) {
+		if ( hud_squadmsg_wing_valid(&Wings[i]) ) {
 			count++;
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
@@ -1130,7 +1140,7 @@ void hud_squadmsg_display_menu( char *title )
 int hud_squadmsg_can_rearm( ship *shipp )
 {
 	// player ships which turns traitor cannot rearm
-	if ( (shipp == Player_ship) && (Player_ship->team == TEAM_TRAITOR) )
+	if ( (shipp == Player_ship) && (Player_ship->team == Iff_traitor) )
 		return 0;
 
 	// 5/6/98 -- MWA  Decided to always be able to call in support.
@@ -2028,9 +2038,9 @@ void hud_squadmsg_type_select( )
 	Num_menu_items = NUM_TYPE_SELECT;
 
 
-	// check to see if the players team is TEAM_TRAITOR.  If so, then he is a "traitor", and will not
+	// check to see if the player is a traitor.  If so, then he will not
 	// be able to do anything from this menu
-	if ( Player_ship->team == TEAM_TRAITOR ) {
+	if ( Player_ship->team == Iff_traitor ) {
 		for (i = 0; i < MAX_MENU_ITEMS; i++ )
 			MsgItems[i].active = 0;
 		goto do_main_menu;
@@ -2045,7 +2055,7 @@ void hud_squadmsg_type_select( )
 
 	// check to be sure that we have some fighters/bombers on the players team that we
 	// can message
-	if ( !hud_squadmsg_count_fighters() ){
+	if ( !hud_squadmsg_exist_fighters() ){
 		MsgItems[TYPE_ALL_FIGHTERS_ITEM].active = 0;
 	}
 
@@ -2603,8 +2613,8 @@ void hud_squadmsg_shortcut( int command )
 	if ( (Game_mode & GM_MULTIPLAYER) && !multi_can_message(Net_player) && (command != REARM_REPAIR_ME_ITEM) )
 		gamesnd_play_error_beep();
 
-	// player ships which turns traitor cannot rearm
-	if ( Player_ship->team == TEAM_TRAITOR )
+	// player ships which turn traitor cannot rearm
+	if ( Player_ship->team == Iff_traitor )
 		return;
 
 	if ( Player->flags & PLAYER_FLAGS_MSG_MODE )		// we are already in messaging mode -- maybe do sometime more interesting?
@@ -2648,7 +2658,7 @@ int hud_squadmsg_hotkey_select( int k )
 	for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
 		objp = hitem->objp;
 		Assert ( objp->type == OBJ_SHIP );
-		if ( Ships[objp->instance].team != TEAM_FRIENDLY )
+		if ( Ships[objp->instance].team != Player_ship->team )
 			continue;
 
 		// be sure that this ship can accept this command

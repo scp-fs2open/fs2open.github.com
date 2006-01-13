@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/radarsetup.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-19 07:52:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to manage different radar modes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/19 07:52:56  wmcoolmon
+ * linklist isn't needed for this
+ *
  * Revision 2.5  2005/02/04 20:06:07  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -46,7 +49,7 @@
 #include "radar/radarsetup.h"
 
 //function pointers for assorted radar functions
-int  (*radar_blip_color)(object *objp)				= NULL;
+void (*radar_stuff_blip_info)(object *objp, int is_bright, color **blip_color, int *blip_type) = NULL;
 void (*radar_blip_draw_distorted)(blip *b)			= NULL;
 void (*radar_blip_draw_flicker)(blip *b)			= NULL;
 void (*radar_blit_gauge)()							= NULL;
@@ -66,33 +69,44 @@ int Radar_static_looping = -1;
 radar_globals Radar_globals[MAX_RADAR_MODES];
 radar_globals *Current_radar_global;
 
-rcol Radar_color_rgb[MAX_RADAR_LEVELS][MAX_RADAR_COLORS] = {
-	{{ 0xff, 0x00, 0x00},		// hostile			(red)
-	{ 0x00, 0xff, 0x00},			// friendly			(green)
-	{ 0xff, 0x00, 0xff},			// unknown			(purple)
-	{ 0xff, 0x00, 0x00},			//	neutral			(red)
-	{ 0x7f, 0x7f, 0x00},			// homing missile (yellow)
-	{ 0x7f, 0x7f, 0x7f},			// navbuoy or cargo	(gray)
-	{ 0x00, 0x00, 0xff},			// warp ship		(blue)
-	{ 0x7f, 0x7f, 0x7f},			// jump node		(gray)
-	{ 0xff, 0xff, 0x00}},		// tagged	 		(yellow)
+rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS] =
+{
+	// homing missile (yellow)
+	{	
+		{ 0x7f, 0x7f, 0x00 },		// bright
+		{ 0x40, 0x40, 0x00 },		// dim
+	},
 
-	// 1/3 intensity of above colors
-	{{ 0x7f, 0x00, 0x00},		// hostile			(red)
-	{ 0x00, 0x7f, 0x00},			// friendly			(green)
-	{ 0x7f, 0x00, 0x7f},			// unknown			(purple)
-	{ 0x7f, 0x00, 0x00},			//	neutral			(red)
-	{ 0x40, 0x40, 0x00},			// homing missile (yellow)
-	{ 0x40, 0x40, 0x40},			// navbuoy or cargo	(gray)
-	{ 0x00, 0x00, 0x7f},			// warp ship		(blue)
-	{ 0x40, 0x40, 0x40},			// jump node		(gray)
-	{ 0x7f, 0x7f, 0x00}},		// tagged			(yellow)
+	// navbuoy or cargo (gray)
+	{
+		{ 0x7f, 0x7f, 0x7f },		// bright		
+		{ 0x40, 0x40, 0x40 },		// dim
+	},
+
+	// warping ship (blue)
+	{
+		{ 0x00, 0x00, 0xff },		// bright
+		{ 0x00, 0x00, 0x7f },		// dim
+	},
+
+	// jump node (gray)
+	{
+		{ 0x7f, 0x7f, 0x7f },		// bright
+		{ 0x40, 0x40, 0x40 },		// dim
+	},
+
+	// tagged (yellow)
+	{
+		{ 0xff, 0xff, 0x00 },		// bright
+		{ 0x7f, 0x7f, 0x00 },		// dim
+	},
 };
 
-color Radar_colors[MAX_RADAR_LEVELS][MAX_RADAR_COLORS];
+color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
 
-blip	Blip_bright_list[MAX_RADAR_COLORS];		// linked list of bright blips
-blip	Blip_dim_list[MAX_RADAR_COLORS];			// linked list of dim blips
+blip	Blip_bright_list[MAX_BLIP_TYPES];		// linked list of bright blips
+blip	Blip_dim_list[MAX_BLIP_TYPES];			// linked list of dim blips
+
 blip	Blips[MAX_BLIPS];								// blips pool
 int	N_blips;											// next blip index to take from pool
 
@@ -107,8 +121,8 @@ int Radar_death_timer;				// timestamp used to play static on radar
 hud_frames Radar_gauge;
 
 float	radx, rady;
-float	Radar_dim_range;					// range at which we start dimming the radar blips
-int		Radar_calc_dim_dist_timer;		// timestamp at which we recalc Radar_dim_range
+float	Radar_bright_range;					// range at which we start dimming the radar blips
+int		Radar_calc_bright_dist_timer;		// timestamp at which we recalc Radar_bright_range
 int		Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
 int		Radar_flicker_on[NUM_FLICKER_TIMERS];		
 
@@ -116,7 +130,7 @@ int See_all = 0;
 
 DCF_BOOL(see_all, See_all)
 
-static const char radar_deafult_filenames[2][16]=
+static const char radar_default_filenames[2][16]=
 {
 	"radar1","2_radar1"
 };
@@ -142,8 +156,8 @@ void create_radar_global_vars()
 		Radar_globals[i].Radar_coords[1][0]=411;
 		Radar_globals[i].Radar_coords[1][1]=590;
 
-		strcpy(Radar_globals[i].Radar_fname[0],radar_deafult_filenames[0]);
-		strcpy(Radar_globals[i].Radar_fname[1],radar_deafult_filenames[1]);
+		strcpy(Radar_globals[i].Radar_fname[0],radar_default_filenames[0]);
+		strcpy(Radar_globals[i].Radar_fname[1],radar_default_filenames[1]);
 
 		Radar_globals[i].Radar_blip_radius_normal[0]=2;
 		Radar_globals[i].Radar_blip_radius_normal[1]=4;
@@ -185,7 +199,7 @@ void select_radar_mode(int radar_mode)
 		//selected normal radar mode.  thats the only one implemented now
 		case RADAR_MODE_STANDARD:
 		{
-			radar_blip_color = radar_blip_color_std;
+			radar_stuff_blip_info = radar_stuff_blip_info_std;
 			radar_blip_draw_distorted = radar_blip_draw_distorted_std;
 			radar_blip_draw_flicker = radar_blip_draw_flicker_std;
 			radar_blit_gauge = radar_blit_gauge_std;
@@ -206,7 +220,7 @@ void select_radar_mode(int radar_mode)
 
 		case RADAR_MODE_ORB:
 		{
-			radar_blip_color = radar_blip_color_orb;
+			radar_stuff_blip_info = radar_stuff_blip_info_orb;
 			radar_blip_draw_distorted = radar_blip_draw_distorted_orb;
 			radar_blip_draw_flicker = radar_blip_draw_flicker_orb;
 			radar_blit_gauge = radar_blit_gauge_orb;

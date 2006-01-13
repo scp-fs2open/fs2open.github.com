@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-10-30 20:03:39 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/10/30 20:03:39  taylor
+ * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
+ * fix Mantis bug #381
+ * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
+ *
  * Revision 2.11  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
  *
@@ -238,6 +243,7 @@
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -265,9 +271,8 @@
 
 #define LOG_COLOR_NORMAL	0
 #define LOG_COLOR_BRIGHT	1
-#define LOG_COLOR_FRIENDLY	2
-#define LOG_COLOR_HOSTILE	3
-#define LOG_COLOR_OTHER		4
+#define LOG_COLOR_OTHER		2
+#define NUM_LOG_COLORS		3
 
 // defines for log flags
 #define LOG_FLAG_GOAL_FAILED	(1<<0)
@@ -404,16 +409,10 @@ void mission_log_obsolete_entries(int type, char *pname)
 void mission_log_flag_team( log_entry *entry, int which_entry, int team )
 {
 	if ( which_entry == ML_FLAG_PRIMARY ) {
-		if ( team == TEAM_FRIENDLY )
-			entry->flags |= MLF_PRIMARY_FRIENDLY;
-		else
-			entry->flags |= MLF_PRIMARY_HOSTILE;
+		entry->primary_team = team;
 
 	} else if ( which_entry == ML_FLAG_SECONDARY ) {
-		if ( team == TEAM_FRIENDLY )
-			entry->flags |= MLF_SECONDARY_FRIENDLY;
-		else
-			entry->flags |= MLF_SECONDARY_HOSTILE;
+		entry->secondary_team = team;
 
 	} else
 		Int3();		// get allender -- impossible type
@@ -485,7 +484,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 
 		Assert ( index != -1 );
 		if(index < 0){
-			mission_log_flag_team( entry, ML_FLAG_PRIMARY, TEAM_FRIENDLY );		
+			mission_log_flag_team( entry, ML_FLAG_PRIMARY, Player_ship->team );		
 		} else {
 			mission_log_flag_team( entry, ML_FLAG_PRIMARY, Ships[index].team );		
 		}
@@ -502,19 +501,24 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 				int team;
 
 				// multiplayer, player name will possibly be sent in
-				if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_callsign(sname) >= 0)){
+				if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_callsign(sname) >= 0)) {
 					// get the player's ship
 					int np_index = multi_find_player_by_callsign(sname);
 					int np_ship = multi_get_player_ship(np_index);
 
-					if(np_ship != -1){
+					if(np_ship < 0)
+					{
+						// argh. badness
+						Int3();
+						team = Player_ship->team;
+					}
+					else
+					{
 						team = Ships[Objects[Net_players[np_index].m_player->objnum].instance].team;
 					}
-					// argh. badness
-					else {
-						team = TEAM_FRIENDLY;
-					}
-				} else {
+				}
+				else 
+				{
 					index = ship_name_lookup( sname );
 					// no ship, then it probably exited -- check the exited 
 					if ( index == -1 ) {
@@ -785,6 +789,16 @@ void message_log_remove_segs(int n)
 	Log_lines[n] = NULL;
 }
 
+int message_log_color_get_team(int color)
+{
+	return color - NUM_LOG_COLORS;
+}
+
+int message_log_team_get_color(int team)
+{
+	return NUM_LOG_COLORS + team;
+}
+
 // pw = total pixel width
 void message_log_init_scrollback(int pw)
 {
@@ -812,14 +826,10 @@ void message_log_init_scrollback(int pw)
 		Log_line_timestamps[Num_log_lines] = (int) ( f2fl(entry->timestamp) * 1000.0f );
 
 		// Generate subject ship text for entry
-		if ( entry->flags & MLF_PRIMARY_FRIENDLY ){
-			c = LOG_COLOR_FRIENDLY;
-		} else if ( entry->flags & MLF_PRIMARY_HOSTILE ){
-			c = LOG_COLOR_HOSTILE;
-		} else if ( (entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED) ){
+		if ( (entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED) ){
 			c = LOG_COLOR_BRIGHT;
 		} else {
-			c = LOG_COLOR_OTHER;
+			c = message_log_team_get_color(entry->primary_team);
 		}
 
 		if ( (Lcl_gr) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
@@ -833,13 +843,9 @@ void message_log_init_scrollback(int pw)
 		// now on to the actual message itself
 		X = ACTION_X;
 		kill = 0;
-		if ( entry->flags & MLF_SECONDARY_FRIENDLY ){
-			c = LOG_COLOR_FRIENDLY;
-		} else if ( entry->flags & MLF_SECONDARY_HOSTILE ){
-			c = LOG_COLOR_HOSTILE;
-		} else {
-			c = LOG_COLOR_NORMAL;
-		}
+
+		// Goober5000
+		c = message_log_team_get_color(entry->secondary_team);
 
 		switch (entry->type) {
 			case LOG_SHIP_DESTROYED:
@@ -1011,21 +1017,20 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 					gr_set_color_fast(&Color_bright);
 					break;
 
-				case LOG_COLOR_FRIENDLY:
-					gr_set_color_fast(&Color_bright_green);
-					break;
-
-				case LOG_COLOR_HOSTILE:
-					gr_set_color_fast(&Color_bright_red);
-					break;
-
 				case LOG_COLOR_OTHER:
 					gr_set_color_fast(&Color_normal);
 					break;
 
 				default:
-					gr_set_color_fast(&Color_text_normal);
+				{
+					int team = message_log_color_get_team(seg->color);
+					if (team < 0)
+						gr_set_color_fast(&Color_text_normal);
+					else
+						gr_set_color_fast(iff_get_color_by_team(team, -1, 1));
+
 					break;
+				}
 			}
 
 			strcpy(buf, seg->text);

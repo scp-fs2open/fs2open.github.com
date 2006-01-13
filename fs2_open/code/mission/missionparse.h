@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.74 $
- * $Author: wmcoolmon $
- * $Date: 2005-12-29 08:08:36 $
+ * $Revision: 2.75 $
+ * $Author: Goober5000 $
+ * $Date: 2006-01-13 03:31:09 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.73  2005/11/21 02:43:37  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -493,13 +496,9 @@ struct p_dock_instance;
 #define NUM_NEBULA_COLORS	9
 
 // arrival anchor types
-#define SPECIAL_ARRIVAL_ANCHORS_OFFSET	90000  // offset used to avoid conflicting with ship anchors
-#define ANY_FRIENDLY					(SPECIAL_ARRIVAL_ANCHORS_OFFSET + 0)
-#define ANY_HOSTILE					(SPECIAL_ARRIVAL_ANCHORS_OFFSET + 1)
-#define ANY_NEUTRAL					(SPECIAL_ARRIVAL_ANCHORS_OFFSET + 2)
-#define ANY_FRIENDLY_PLAYER		(SPECIAL_ARRIVAL_ANCHORS_OFFSET + 3)
-#define ANY_HOSTILE_PLAYER			(SPECIAL_ARRIVAL_ANCHORS_OFFSET + 4)
-#define ANY_NEUTRAL_PLAYER			(SPECIAL_ARRIVAL_ANCHORS_OFFSET + 5)
+// mask should be high enough to avoid conflicting with ship anchors
+#define SPECIAL_ARRIVAL_ANCHOR_FLAG				0x1000
+#define SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG		0x0100
 
 // update version when mission file format changes, and add approprate code
 // to check loaded mission version numbers in the parse code.  Also, be sure
@@ -605,7 +604,6 @@ typedef struct mission {
 extern mission The_mission;
 extern char Mission_filename[80];  // filename of mission in The_mission (Fred only)
 
-#define	MAX_IFF					3
 #define	MAX_FORMATION_NAMES	3
 #define	MAX_STATUS_NAMES		3
 #define	MAX_TEAM_NAMES			4
@@ -631,15 +629,9 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
-#define MAX_SPECIAL_ARRIVAL_ANCHORS	6
-extern char *Special_arrival_anchor_names[MAX_SPECIAL_ARRIVAL_ANCHORS];
-
 extern char *Ship_class_names[MAX_SHIP_CLASSES];
-extern char *Iff_names[MAX_IFF];
 extern char *Ai_behavior_names[MAX_AI_BEHAVIORS];
 extern char *Formation_names[MAX_FORMATION_NAMES];
-extern char *Team_names[MAX_TEAM_NAMES];
-extern int	Team_names_index_xlate[MAX_TEAM_NAMES_INDEX+1];
 extern char *Status_desc_names[MAX_STATUS_NAMES];
 extern char *Status_type_names[MAX_STATUS_NAMES];
 extern char *Status_target_names[MAX_STATUS_NAMES];
@@ -701,7 +693,6 @@ typedef struct p_object {
 	vec3d	pos;
 	matrix	orient;
 	int	ship_class;
-	int	iff;
 	int	team;
 	int	behavior;							// ai_class;
 	int	ai_goals;							// sexp of lists of goals that this ship should try and do

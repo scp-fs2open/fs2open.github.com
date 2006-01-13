@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_team.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.8  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -180,6 +183,7 @@
 #include "network/multi.h"
 #include "object/object.h"
 #include "ship/ship.h"
+#include "iff_defs/iff_defs.h"
 
 #ifndef NDEBUG
 #include "playerman/player.h"
@@ -196,10 +200,8 @@
 
 //XSTR:OFF
 
-// score for teams 0 and 1 for this mission
-int Multi_team0_score = 0;
-int Multi_team1_score = 0;
-
+// score for teams for this mission
+int Multi_team_score[MAX_TVT_TEAMS];
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER TEAMPLAY FORWARD DECLARATIONS
@@ -229,27 +231,37 @@ int multi_team_process_team_update(ubyte *data);
 void multi_team_level_init()
 {
 	// score for teams 0 and 1 for this mission
-	Multi_team0_score = 0;
-	Multi_team1_score = 0;
+	for (int i = 0; i < MAX_TVT_TEAMS; i++)
+		Multi_team_score[i] = 0;
 }
 
 // call to determine who won the sw match, -1 == tie, 0 == team 0, 1 == team 1
 int multi_team_winner()
 {
-	// determine who won
+	int i, num_equal, winner, highest = -1;
 
-	// tie situation
-	if(Multi_team0_score == Multi_team1_score){
+	// determine highest score
+	for (i = 0; i < Num_teams; i++)
+	{
+		if (Multi_team_score[i] > highest)
+		{
+			highest = Multi_team_score[i];
+			winner = i;
+		}
+	}
+
+	// see if there are any ties
+	for (i = 0; i < Num_teams; i++)
+	{
+		if (Multi_team_score[i] == highest)
+			num_equal++;
+	}
+
+	// tie situation?
+	if (num_equal > 1)
 		return -1;
-	}
 
-	// team 0 won
-	if(Multi_team0_score > Multi_team1_score){
-		return 0;
-	}
-
-	// team 1 must have won
-	return 1;
+	return winner;
 }
 
 // call to add score to a team
@@ -271,17 +283,8 @@ void multi_team_maybe_add_score(int points, int team)
 	}
 
 	// add team score
-	switch(team){
-	case 0:
-		nprintf(("Network", "TVT : adding %d points to team 0 (total == %d)\n", points, points + Multi_team0_score));
-		Multi_team0_score += points;
-		break;
-
-	case 1:
-		nprintf(("Network", "TVT : adding %d points to team 1 (total == %d)\n", points, points + Multi_team1_score));
-		Multi_team1_score += points;
-		break;
-	}
+	Multi_team_score[team] += points;
+	nprintf(("Network", "TVT : adding %d points to team %d (total == %d)\n", points, team, Multi_team_score[team]));
 }
 
 // reset all players and assign them to default teams
@@ -673,27 +676,16 @@ void multi_team_mark_all_ships()
 // set the proper team for the passed in ship
 void multi_team_mark_ship(ship *sp)
 {	
-	int team_num;
+	int i, team_num;
 
 	// no team found yet
 	team_num = -1;
-		
-	// look through team 0
-	if (sp->wingnum == TVT_wings[0])
-		team_num = 0;
-
-	// look through team 1 if necessary
-	if (sp->wingnum == TVT_wings[1])
-		team_num = 1;
-
-	// if we found a team
-	switch(team_num){
-	case 0 :
-		sp->team = TEAM_FRIENDLY;
-		break;
-	case 1 :
-		sp->team = TEAM_HOSTILE;
-		break;
+	
+	// look through TVT wings... each wing corresponds to a team
+	for (i = 0; i < MAX_TVT_WINGS; i++)
+	{
+		if (sp->wingnum == TVT_wings[i])
+			sp->team = i;
 	}
 
 	// verify that we have valid team stuff
@@ -745,31 +737,40 @@ void multi_team_get_player_counts(int *team0, int *team1)
 #define SEND_AND_DISPLAY(mesg)		do { send_game_chat_packet(Net_player, mesg, MULTI_MSG_ALL, NULL, NULL, 1); multi_display_chat_msg(mesg, 0, 0); } while(0);
 void multi_team_report()
 {
+	int i;
 	char report[400] = "";	
 
 	// a little header
 	SEND_AND_DISPLAY("----****");	
 
 	// display scores
-	sprintf(report, XSTR("<Team 1 had %d points>", 1275), Multi_team0_score);
-	SEND_AND_DISPLAY(report);
-	sprintf(report, XSTR("<Team 2 had %d points>", 1276), Multi_team1_score);
-	SEND_AND_DISPLAY(report);
+	for (i = 0; i < Num_teams; i++)
+	{
+		sprintf(report, XSTR("<Team %d had %d points>", 1275), i, Multi_team_score[i]);
+		SEND_AND_DISPLAY(report);
+	}
 
 	// display winner
-	switch(multi_team_winner()){
-	case -1:
-		SEND_AND_DISPLAY(XSTR("<Match was a tie>", 1277));
-		break;
+	switch(multi_team_winner())
+	{
+		case -1:
+			SEND_AND_DISPLAY(XSTR("<Match was a tie>", 1277));
+			break;
 
-	case 0:		
-		SEND_AND_DISPLAY(XSTR("<Team 1 (green) is the winner>", 1278));
-		break;
+		case 0:		
+			SEND_AND_DISPLAY(XSTR("<Team 1 (green) is the winner>", 1278));
+			break;
 
-	case 1:				
-		SEND_AND_DISPLAY(XSTR("<Team 2 (red) is the winner>", 1279));
-		break;
+		case 1:				
+			SEND_AND_DISPLAY(XSTR("<Team 2 (red) is the winner>", 1279));
+			break;
+
+		default:
+			// need to come up with a new message here
+			Int3();
+			break;
 	}
+
 	// a little header
 	SEND_AND_DISPLAY("----****");	
 }

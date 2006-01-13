@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.9  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -159,6 +162,7 @@
 #include "missionui/missionscreencommon.h"
 #include "network/multiteamselect.h"
 #include "io/timer.h"
+#include "iff_defs/iff_defs.h"
 
 
 // ---------------------------------------------------------------------------------------
@@ -569,7 +573,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 
 	// if this is a dogfight mission, make him TEAM_TRAITOR
 	if(Netgame.type_flags & NG_TYPE_DOGFIGHT){
-		shipp->team = TEAM_TRAITOR;
+		shipp->team = Iff_traitor;
 	}
 
 	// maybe bash ship position
@@ -1009,7 +1013,7 @@ void multi_respawn_place(object *new_obj, int team)
 		lookup = 0;		
 		int count = 0;
 		while(!lookup && (count < 13)){
-			if((team == TEAM_TRAITOR) || (team == Multi_respawn_points[Multi_next_respawn_point].team)){
+			if((team == Iff_traitor) || (team == Multi_respawn_points[Multi_next_respawn_point].team)){
 				lookup = 1;
 			}			
 

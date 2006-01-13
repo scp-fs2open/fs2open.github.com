@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.h $
- * $Revision: 2.8 $
- * $Date: 2005-10-25 01:21:52 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * Header file for HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/10/25 01:21:52  wmcoolmon
+ * Bumped MAX_HOTKEY_TARGET_ITEMS
+ *
  * Revision 2.7  2005/10/09 08:03:20  wmcoolmon
  * New SEXP stuff
  *
@@ -371,9 +374,9 @@ extern char *Strafe_submode_text[];
 extern void hud_init_targeting_colors();
 
 void	hud_init_targeting();
-void	hud_target_next(int team = -1);
-void	hud_target_prev(int team = -1);
-int	hud_target_closest(int team = -1, int attacked_objnum = -1, int play_fail_sound = TRUE, int filter = 0, int turret_attacking_target = 0);
+void	hud_target_next(int team_mask = -1);
+void	hud_target_prev(int team_mask = -1);
+int	hud_target_closest(int team_mask = -1, int attacked_objnum = -1, int play_fail_sound = TRUE, int filter = 0, int turret_attacking_target = 0);
 void	hud_target_in_reticle_old();
 void	hud_target_in_reticle_new();
 void	hud_target_subsystem_in_reticle();

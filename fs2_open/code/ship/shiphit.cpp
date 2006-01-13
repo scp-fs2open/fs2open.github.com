@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.59 $
- * $Date: 2005-12-08 15:17:35 $
- * $Author: taylor $
+ * $Revision: 2.60 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2005/12/08 15:17:35  taylor
+ * fix several bad crash related problems from WMC's commits on the 4th
+ *
  * Revision 2.58  2005/12/04 18:58:07  wmcoolmon
  * subsystem + shockwave armor support; countermeasures as weapons
  *
@@ -680,6 +683,7 @@
 #include "weapon/beam.h"
 #include "demo/demo.h"
 #include "object/objectdock.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
@@ -1471,31 +1475,38 @@ void ship_hit_music(object *ship_obj, object *other_obj)
 	//
 	// If the ship hit has an AI class of none, it is a Cargo, NavBuoy or other non-aggressive
 	// ship, so don't start the battle music	
-	if (stricmp(Ai_class_names[Ai_info[ship_p->ai_index].ai_class], NOX("none"))) {
-		int team_1, team_2;
-		// Only start if ship hit and firing ship are from different teams
-		team_1 = Ships[ship_obj->instance].team;
-		switch ( other_obj->type ) {
-			case OBJ_SHIP:
-				team_2 = Ships[other_obj->instance].team;
-				if ( !stricmp(Ai_class_names[Ai_info[Ships[other_obj->instance].ai_index].ai_class], NOX("none")) ) {
-					team_1 = team_2;
-				}
-				break;
+	if (!stricmp(Ai_class_names[Ai_info[ship_p->ai_index].ai_class], NOX("none")))
+		return;
 
-			case OBJ_WEAPON:
-				// parent of weapon is object num of ship that fired it
-				team_2 = Ships[Objects[other_obj->parent].instance].team;	
-				break;
+	// Only start if ship hit and firing ship are from different teams
+	int attackee_team, attacker_team;
 
-			default:
-				team_2 = team_1;
-				break;	// Unexpected object type collided with ship, no big deal.
-		} // end switch
+	attackee_team = Ships[ship_obj->instance].team;
 
-		if ( team_1 != team_2 )
-			event_music_battle_start();
+	switch ( other_obj->type )
+	{
+		case OBJ_SHIP:
+			attacker_team = Ships[other_obj->instance].team;
+
+			// Nonthreatening ship collided with ship, no big deal
+			if ( !stricmp(Ai_class_names[Ai_info[Ships[other_obj->instance].ai_index].ai_class], NOX("none")) )
+				return;
+
+			break;
+
+		case OBJ_WEAPON:
+			// parent of weapon is object num of ship that fired it
+			attacker_team = Ships[Objects[other_obj->parent].instance].team;	
+			break;
+
+		default:
+			// Unexpected object type collided with ship, no big deal.
+			return;
 	}
+
+	// start the music if it was an attacking ship
+	if (iff_x_attacks_y(attacker_team, attackee_team))
+		event_music_battle_start();
 }
 
 //	Make sparks fly off a ship.
@@ -2021,6 +2032,7 @@ void ship_vaporize(ship *shipp)
 }
 
 //	*ship_obj was hit and we've determined he's been killed!  By *other_obj!
+extern int Cmdline_wcsaga;
 void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, int self_destruct)
 {
 	Assert(ship_obj);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
@@ -2142,7 +2154,8 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	}
 
 	// If ship from a player wing ship has died, then maybe play a scream
-	if ( !(ship_obj->flags & OF_PLAYER_SHIP) && (sp->flags & SF_FROM_PLAYER_WING) ) {
+	// (WCSaga wants this for all ships)
+	if ( !(ship_obj->flags & OF_PLAYER_SHIP) && (Cmdline_wcsaga || (sp->flags & SF_FROM_PLAYER_WING)) ) {
 		ship_maybe_scream(sp);
 	}
 

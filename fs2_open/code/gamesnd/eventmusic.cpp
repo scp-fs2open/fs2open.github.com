@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-01-11 05:39:49 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/01/11 05:39:49  taylor
+ * skip ourselves in hostile check, this isn't really needed since it's handled by the next check but for clarity sake it's here now
+ *
  * Revision 2.29  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -240,6 +243,7 @@
 #include "mission/missiongoals.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
+#include "iff_defs/iff_defs.h"
 
 
 
@@ -1132,11 +1136,11 @@ void event_music_arrival(int team)
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING )
 		return;
 
-	if ( Player_ship->team == team ) {
-		event_music_friendly_arrival();
-	} else {
+	// check if ship is enemy ship (we attack it)
+	if (iff_x_attacks_y(Player_ship->team, team))
 		event_music_enemy_arrival();
-	}
+	else
+		event_music_friendly_arrival();
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1744,15 +1748,16 @@ int hostile_ships_present()
 	ship		*shipp;
 	ship_obj *so;
 
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
+	{
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// skip ourselves
 		if ( shipp == Player_ship )
 			continue;
 
-		// check if ship if enemy ship
-		if ( (shipp->team == Player_ship->team) && (Player_ship->team != TEAM_TRAITOR)  )
+		// check if ship is enemy ship (we attack it)
+		if (!(iff_x_attacks_y(Player_ship->team, shipp->team)))
 			continue;
 
 		// check if ship is threatening
@@ -1785,12 +1790,17 @@ int hostile_ships_to_arrive()
 {
 	p_object *p_objp;
 
-	p_objp = GET_FIRST(&Ship_arrival_list);
-	while( p_objp != END_OF_LIST(&Ship_arrival_list) )	{
-		if ( (p_objp->team != Player_ship->team) && !(p_objp->flags & P_SF_CANNOT_ARRIVE) ) {
-			return 1;
-		}
-		p_objp = GET_NEXT(p_objp);
+	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+	{
+		// check if ship can arrive
+		if (p_objp->flags & P_SF_CANNOT_ARRIVE)
+			continue;
+
+		// check if ship is enemy ship (we attack it)
+		if (!(iff_x_attacks_y(Player_ship->team, p_objp->team)))
+			continue;
+
+		return 1;
 	}
 	return 0;
 }

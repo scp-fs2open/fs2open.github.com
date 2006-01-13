@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-10-10 17:21:05 $
- * $Author: taylor $
+ * $Revision: 2.47 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.45  2005/09/25 05:13:07  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -582,6 +585,7 @@
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "parse/sexp.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -1915,7 +1919,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	}
 
 	// if player is a traitor, no messages for him!!!
-	if ( Player_ship->team == TEAM_TRAITOR ) {
+	if ( Player_ship->team == Iff_traitor ) {
 		return;
 	}
 
@@ -2141,7 +2145,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 					source = HUD_SOURCE_TERRAN_CMD;
 				} else {
 					who_from = Ships[ship_index].ship_name;
-					source = HUD_get_team_source(Ships[ship_index].team);
+					source = HUD_team_get_source(Ships[ship_index].team);
 				}
 
 			} else if ( m_source == MESSAGE_SOURCE_SHIP ) {
@@ -2149,7 +2153,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 
 				shipp = (ship *)data;
 				who_from = shipp->ship_name;
-				source = HUD_get_team_source(shipp->team);
+				source = HUD_team_get_source(shipp->team);
 
 				// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
 				Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
@@ -2181,7 +2185,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 }
 
 // send builtin_to_player sends a message (from messages.tbl) to the player.  These messages are
-// the generic infomrational type messages.  The have priorities like misison specific messages,
+// the generic informational type messages.  The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
 void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
 {
@@ -2233,7 +2237,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			// get who this message is from -- kind of a hack since we assume Terran Command in the
 			// absense of a ship.  This will be fixed later
 			if ( shipp ) {
-				source = HUD_get_team_source( shipp->team );
+				source = HUD_team_get_source( shipp->team );
 				who_from = shipp->ship_name;
 			} else {
 				source = HUD_SOURCE_TERRAN_CMD;

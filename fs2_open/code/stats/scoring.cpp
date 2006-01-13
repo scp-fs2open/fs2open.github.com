@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.16 $
+ * $Date: 2006-01-13 03:31:20 $
+ * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.14  2005/10/10 17:21:10  taylor
  * remove NO_NETWORK
  *
@@ -255,6 +258,7 @@
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
 #include "weapon/weapon.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
@@ -1027,7 +1031,7 @@ void scoring_eval_kill(object *ship_obj)
 }
 
 // kill_id is the object signature of the guy who got the credit for the kill (may be -1, if no one got it)
-// this is to insure that you don't also get an assist if you get the kill.
+// this is to ensure that you don't also get an assist if you get the kill.
 void scoring_eval_assists(ship *sp,int killer_sig)
 {
 	int idx;
@@ -1059,8 +1063,9 @@ void scoring_eval_assists(ship *sp,int killer_sig)
 				}
 			}
 
-			// if we found a player, give him the assist if it wasn't on his own team
-			if((plr != NULL) && (sp->team != Ships[Objects[plr->objnum].instance].team) && (killer_sig != Objects[plr->objnum].signature)){
+			// if we found a player, give him the assist if he attacks it
+			if ((plr != NULL) && (iff_x_attacks_y(Ships[Objects[plr->objnum].instance].team, sp->team)) && (killer_sig != Objects[plr->objnum].signature))
+			{
 				plr->stats.m_assists++;
 
 				nprintf(("Network","-==============GAVE PLAYER %s AN ASSIST=====================-\n",plr->callsign));

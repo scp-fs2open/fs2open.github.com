@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/radarsetup.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:35:35 $
+ * $Revision: 2.7 $
+ * $Date: 2006-01-13 03:31:09 $
  * $Author: Goober5000 $
  *
  * C module containg functions switch between radar modes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:35:35  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/04/05 05:53:23  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -57,42 +61,50 @@ typedef struct rcol {
 	ubyte	r, g, b;
 } rcol;
 
-
-#define MAX_RADAR_LEVELS	2		// bright and dim radar dots are allowed
-
-#define MAX_BLIPS 150
-
-#define	MAX_RADAR_COLORS		9
-
-#define	RCOL_HOSTILE			0
-#define	RCOL_FRIENDLY			1
-#define	RCOL_UNKNOWN			2
-#define	RCOL_NEUTRAL			3
-#define	RCOL_BOMB				4
-#define	RCOL_NAVBUOYS			5
-#define  RCOL_WARPING_SHIP		6
-#define	RCOL_JUMP_NODE			7
-#define	RCOL_TAGGED				8
-extern rcol Radar_color_rgb[MAX_RADAR_LEVELS][MAX_RADAR_COLORS];
-extern color Radar_colors[MAX_RADAR_LEVELS][MAX_RADAR_COLORS];
-
 typedef struct blip	{
 	blip	*prev, *next;
 	int	x, y, rad;
 	int	flags;	// BLIP_ flags defined above
+	color *blip_color;
 	vec3d position;
 } blip;
 
-extern blip	Blip_bright_list[MAX_RADAR_COLORS];		// linked list of bright blips
-extern blip	Blip_dim_list[MAX_RADAR_COLORS];			// linked list of dim blips
+
+#define MAX_BLIPS 150
+
+#define	MAX_RADAR_COLORS		5
+#define MAX_RADAR_LEVELS		2		// bright and dim radar dots are allowed
+
+#define RCOL_BOMB				0
+#define RCOL_NAVBUOY_CARGO		1
+#define RCOL_WARPING_SHIP		2
+#define RCOL_JUMP_NODE			3
+#define RCOL_TAGGED				4
+
+extern rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
+extern color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
+
+
+#define BLIP_TYPE_JUMP_NODE			0
+#define BLIP_TYPE_NAVBUOY_CARGO		1
+#define BLIP_TYPE_BOMB				2
+#define BLIP_TYPE_WARPING_SHIP		3
+#define BLIP_TYPE_TAGGED_SHIP		4
+#define BLIP_TYPE_NORMAL_SHIP		5
+
+#define MAX_BLIP_TYPES	6
+
+extern blip	Blip_bright_list[MAX_BLIP_TYPES];		// linked list of bright blips
+extern blip	Blip_dim_list[MAX_BLIP_TYPES];			// linked list of dim blips
+
 extern blip	Blips[MAX_BLIPS];								// blips pool
-extern int	N_blips;											// next blip index to take from pool
+extern int	N_blips;										// next blip index to take from pool
 
 #define BLIP_MUTATE_TIME	100
-#define	RADAR_BLIP_BRIGHT		0				
-#define	RADAR_BLIP_DIM			1
+
+// blip flags
 #define BLIP_CURRENT_TARGET	(1<<0)
-#define BLIP_DRAW_DIM		(1<<1)	// object is farther than Radar_dim_range units away
+#define BLIP_DRAW_DIM		(1<<1)	// object is farther than Radar_bright_range units away
 #define BLIP_DRAW_DISTORTED	(1<<2)	// object is resistant to sensors, so draw distorted
 
 struct radar_globals
@@ -120,8 +132,8 @@ extern int Radar_death_timer;				// timestamp used to play static on radar
 extern hud_frames Radar_gauge;
 
 extern float	radx, rady;
-extern float	Radar_dim_range;					// range at which we start dimming the radar blips
-extern int		Radar_calc_dim_dist_timer;		// timestamp at which we recalc Radar_dim_range
+extern float	Radar_bright_range;					// range at which we start dimming the radar blips
+extern int		Radar_calc_bright_dist_timer;		// timestamp at which we recalc Radar_bright_range
 extern int		Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
 extern int		Radar_flicker_on[NUM_FLICKER_TIMERS];		
 
@@ -129,7 +141,7 @@ extern int See_all;
 
 //function pointers to radar functions.
 //i'll explain everything that needs to be done if you want to add another radar type
-extern int  (*radar_blip_color)(object *objp);
+extern void (*radar_stuff_blip_info)(object *objp, int is_bright, color **blip_color, int *blip_type);
 extern void (*radar_blip_draw_distorted)(blip *b);
 extern void (*radar_blip_draw_flicker)(blip *b);
 extern void (*radar_blit_gauge)();

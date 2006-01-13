@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.168  2006/01/09 04:53:41  phreak
+ * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
+ *
  * Revision 2.167  2006/01/07 12:48:04  taylor
  * make sure that thrusters will still render with a missing primary bitmap if they have a primary glow
  *
@@ -975,6 +978,7 @@
 #include "parse/parselo.h"
 #include "radar/radarsetup.h"
 #include "weapon/beam.h"	// for BEAM_TYPE_? definitions
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -3948,7 +3952,7 @@ void detonate_nearby_missiles(object *killer_objp)
 		objp = &Objects[mop->objnum];
 		wp = &Weapons[objp->instance];
 
-		if (wp->team != Weapons[killer_objp->instance].team) {
+		if (iff_x_attacks_y(Weapons[killer_objp->instance].team, wp->team)) {
 			if ( Missiontime - wp->creation_time > F1_0/2) {
 				if (vm_vec_dist_quick(&killer_objp->pos, &objp->pos) < CMEASURE_DETONATE_DISTANCE) {
 					if (wp->lifeleft > 0.2f) { 
@@ -4001,7 +4005,8 @@ void find_homing_object(object *weapon_objp, int num)
 				continue;
 
 			int homing_object_team = obj_team(objp);
-			if ( (homing_object_team != wp->team) || (homing_object_team == TEAM_TRAITOR) ) {
+			if (iff_x_attacks_y(wp->team, homing_object_team))
+			{
 				float		dist;
 				float		dot;
 				vec3d	vec_to_object;
@@ -4090,10 +4095,12 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 			if (cm_wip->wi_flags & WIF_CMEASURE)
 			{
 				//don't have a weapon try to home in on itself
-				if (objp==weapon_objp) continue;
+				if (objp==weapon_objp)
+					continue;
 
 				//don't have a weapon try to home in on missiles fired by the same team, unless its the traitor team.
-				if ((wp->team == cm_wp->team) && (wp->team != TEAM_TRAITOR)) continue;
+				if ((wp->team == cm_wp->team) && (wp->team != Iff_traitor))
+					continue;
 
 				vec3d	vec_to_object;
 				dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
@@ -4348,7 +4355,7 @@ void weapon_home(object *obj, int num, float frame_time)
 				if (dist < CMEASURE_DETONATE_DISTANCE)
 				{
 					//	Make this missile detonate soon.  Not right away, not sure why.  Seems better.
-					if (Weapons[hobjp->instance].team != wp->team) {
+					if (iff_x_attacks_y(Weapons[hobjp->instance].team, wp->team)) {
 						detonate_nearby_missiles(hobjp);
 						//nprintf(("AI", "Frame %i: Weapon %i hit cmeasure, will die!\n", Framecount, wp-Weapons));
 						return;
@@ -4909,7 +4916,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			targeting_same = 0;
 		}
 
-		if ((target_objnum != -1) && (!targeting_same || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (target_team == TEAM_TRAITOR))) ) {
+		if ((target_objnum != -1) && (!targeting_same || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (target_team == Iff_traitor))) ) {
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
 			wp->nearest_dist = 99999.0f;
@@ -5053,8 +5060,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wp->team = Ships[parent_objp->instance].team;
 		wp->species = Ship_info[Ships[parent_objp->instance].ship_info_index].species;
 	} else {
-		wp->team = 0;
-		wp->species = 0;
+		wp->team = -1;
+		wp->species = -1;
 	}
 	wp->turret_subsys = NULL;
 	vm_vec_zero(&wp->homing_pos);

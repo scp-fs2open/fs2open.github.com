@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.20 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.21 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.19  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -164,6 +167,8 @@
 #define MAX_SQUADRON_WINGS			5	// number of wings in squadron (displayed on HUD)
 #define MAX_TVT_WINGS				2	// number of wings in a TVT game
 
+#define MAX_TVT_TEAMS		MAX_TVT_WINGS
+
 // from ship.h
 #define MAX_PLAYER_PRIMARY_BANKS	2
 #define MAX_PLAYER_SECONDARY_BANKS	3
@@ -214,21 +219,6 @@
 	#define MAX_POLYGON_MODELS  128 //DTP reset from 198 to original value of 128
 	#define MAX_BUFFERS_PER_SUBMODEL 16
 #endif
-
-
-// from object.h; probably will be redone eventually
-//	Team bitmasks.
-#define TEAM_HOSTILE		(1 << 0)
-#define TEAM_FRIENDLY		(1 << 1)
-#define TEAM_NEUTRAL		(1 << 2)
-#define TEAM_UNKNOWN		(1 << 3)
-#define TEAM_TRAITOR		(1	<< 4)
-#define TEAM_ANY			(TEAM_HOSTILE|TEAM_FRIENDLY|TEAM_NEUTRAL|TEAM_UNKNOWN|TEAM_TRAITOR)
-#define MAX_TEAM_NAMES_INDEX	TEAM_TRAITOR
-
-
-// from pstypes.h - don't ask me why it was there
-#define MAX_TVT_TEAMS		3
 
 
 // from scoring.h

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-10-10 17:21:10 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/10/10 17:21:10  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.19  2005/10/09 08:03:21  wmcoolmon
  * New SEXP stuff
  *
@@ -173,7 +176,7 @@
 #include "mission/missionparse.h"
 #include "network/multi.h"
 #include "species_defs/species_defs.h"
-
+#include "iff_defs/iff_defs.h"
 
 
 // ----------------------------------------------------------------------------------------------------
@@ -186,7 +189,7 @@ int Awacs_stamp = -1;
 
 // total awacs levels for all teams
 float Awacs_team[MAX_TVT_TEAMS];	// total AWACS capabilities for each team
-float Awacs_level;				// Awacs_friendly - Awacs_hostile
+float Awacs_level;					// Awacs_friendly - Awacs_hostile
 
 // list of all AWACS sources
 #define MAX_AWACS					30
@@ -201,10 +204,7 @@ int Awacs_count = 0;
 // TEAM SHIP VISIBILITY
 // team-wide shared visibility info
 // at start of each frame (maybe timestamp), compute visibility 
-ubyte Team_friendly_visibility[MAX_SHIPS];
-ubyte Team_neutral_visibility[MAX_SHIPS];
-ubyte Team_hostile_visibility[MAX_SHIPS];
-// no shared team visibility info for TEAM_UNKNOWN or TEAM_TRAITOR
+ubyte Team_visibility[MAX_IFFS][MAX_SHIPS];
 
 // ----------------------------------------------------------------------------------------------------
 // AWACS FORWARD DECLARATIONS
@@ -303,8 +303,9 @@ void awacs_update_all_levels()
 		}
 	}
 
+	// Goober5000 - Awacs_level isn't used anywhere that I can see
 	// awacs level
-	Awacs_level = Awacs_team[TEAM_FRIENDLY] - Awacs_team[TEAM_HOSTILE];
+	//Awacs_level = Awacs_team[TEAM_FRIENDLY] - Awacs_team[TEAM_HOSTILE];
 
 	// spew all the info
 #ifndef NDEBUG 
@@ -369,7 +370,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	}
 
 	// only check for Awacs if stealth ship or Nebula mission
-	// determine the closest friendly awacs
+	// determine the closest awacs on our team
 	if ((stealth_ship || nebula_enabled) && use_awacs) {
 		for (idx=0; idx<Awacs_count; idx++) {
 			// if not on the same team as the viewer
@@ -491,34 +492,33 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 
 
 // update team visibility
-#define NUM_TEAMS	5
 void team_visibility_update()
 {
-	int friendly_count, hostile_count, neutral_count, unknown_count, traitor_count, num_stealth;
-	int friendly_ships[MAX_SHIPS];
-	int hostile_ships[MAX_SHIPS];
-	int neutral_ships[MAX_SHIPS];
-	int unknown_ships[MAX_SHIPS];
-	int traitor_ships[MAX_SHIPS];
+	int team_count[MAX_IFFS];
+	int team_ships[MAX_IFFS][MAX_SHIPS];
+	int i;
+
 	ship_obj *moveup;
 	ship *shipp;
 
-	friendly_count = hostile_count = neutral_count = unknown_count = traitor_count = num_stealth = 0;
-
-	// zero out visibility for each team
-	memset(Team_friendly_visibility, 0, sizeof(Team_friendly_visibility));
-	memset(Team_hostile_visibility,  0, sizeof(Team_hostile_visibility));
-	memset(Team_neutral_visibility,  0, sizeof(Team_neutral_visibility));
+	// zero out stuff for each team
+	for (i = 0; i < MAX_IFFS; i++)
+	{
+		team_count[i] = 0;
+		memset(Team_visibility[i], 0, sizeof(ubyte));
+	}
 
 	// Go through list of ships and mark those visible for given team
-	for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup)) {
+	for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
+	{
 		// make sure its a valid ship
 		if ((Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0)) {
 			continue;
 		}	
 		
 		// get a handle to the ship
-		shipp = &Ships[Objects[moveup->objnum].instance];
+		int ship_num = Objects[moveup->objnum].instance;
+		shipp = &Ships[ship_num];
 
 		// ignore dying, departing, or arriving ships
 		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING)) {
@@ -530,97 +530,50 @@ void team_visibility_update()
 			continue;
 		}
 
-		int ship_num = shipp - Ships;
-		Assert((ship_num >= 0) && (ship_num < MAX_SHIPS));
-
-		switch (shipp->team) {
-		case TEAM_FRIENDLY:	
-			Team_friendly_visibility[ship_num] = 1;
-			friendly_ships[friendly_count++] = ship_num;
-			break;
-
-		case TEAM_HOSTILE:	
-			Team_hostile_visibility[ship_num] = 1;
-			hostile_ships[hostile_count++] = ship_num;
-			break;
-
-		case TEAM_NEUTRAL:	
-			Team_neutral_visibility[ship_num] = 1;
-			neutral_ships[neutral_count++] = ship_num;
-			break;
-
-		case TEAM_UNKNOWN:
-			unknown_ships[unknown_count++] = ship_num;
-			break;
-
-		case TEAM_TRAITOR:
-			traitor_ships[traitor_count++] = ship_num;
-			break;
-
-		default:
-			Int3();
-		}
+		Team_visibility[shipp->team][ship_num] = 1;
+		team_ships[shipp->team][team_count[shipp->team]] = ship_num;
+		team_count[shipp->team]++;
 	}
 
-	int team_count[NUM_TEAMS];
-	int *team_ships[NUM_TEAMS];
-	ubyte *team_visibility[NUM_TEAMS];
+	int idx, en_idx, cur_count, en_count, en_team;
 	int *cur_team_ships, *en_team_ships;
 
-	// set up variable for loop
-	// team count is number of ship of each team type
-	team_count[0] = friendly_count;
-	team_count[1] = hostile_count;
-	team_count[2] = neutral_count;
-	team_count[3] = unknown_count;
-	team_count[4] = traitor_count;
-
-	// team ships is array of ship_nums of ships from each team
-	team_ships[0] = friendly_ships;
-	team_ships[1] = hostile_ships;
-	team_ships[2] = neutral_ships;
-	team_ships[3] = unknown_ships;
-	team_ships[4] = traitor_ships;
-
-	// this is the result, visiblity for each team indexed by ship_num
-	team_visibility[0] = Team_friendly_visibility;
-	team_visibility[1] = Team_hostile_visibility;
-	team_visibility[2] = Team_neutral_visibility;
-	team_visibility[3] = NULL;
-	team_visibility[4] = NULL;
-
-	int idx, en_idx, cur_count, en_count, en_team;
-
-	// Do for friendly, neutral and hostile (only teams that cooperate with visibility)
-	for (int cur_team=0; cur_team<3; cur_team++) {
+	// Do for all teams that cooperate with visibility
+	for (int cur_team = 0; cur_team < MAX_IFFS; cur_team++)
+	{
 		// set up current team
 		cur_count = team_count[cur_team];
 		cur_team_ships = team_ships[cur_team];
 
 		// short circuit if team has no presence
-		if (cur_count == 0) {
-			break;
-		}
+		if (cur_count == 0)
+			continue;	// Goober5000 10/06/2005 changed from break; probably a bug
 
-		// check agains both enemy teams
-		for (int en_team_inc=1; en_team_inc<NUM_TEAMS; en_team_inc++) {
+
+		// check agains all enemy teams
+		for (int en_team_inc = 1; en_team_inc < MAX_IFFS; en_team_inc++)
+		{
 			// set up enemy team
-			en_team = (cur_team + en_team_inc) % NUM_TEAMS;		// enemy_team (index) is cur_team + (1-4), wrapped back to range 0-4
+			en_team = (cur_team + en_team_inc) % MAX_IFFS;		// enemy_team (index) is cur_team + (1-MAX_IFFS), wrapped back to range [0,MAX_IFFS)
 			en_count = team_count[en_team];
 			en_team_ships = team_ships[en_team];
 
 			// check if current team can see enemy team's ships
-			for (en_idx=0; en_idx<en_count; en_idx++) {
+			for (en_idx = 0; en_idx < en_count; en_idx++)
+			{
 				// for each ship on other team
-				for (idx=0; idx<cur_count; idx++) {
+				for (idx = 0; idx < cur_count; idx++)
+				{
 					// ignore nav buoys and cargo containers
-					if(Ship_info[Ships[cur_team_ships[idx]].ship_info_index].flags & (SIF_CARGO | SIF_NAVBUOY)){
+					if(Ship_info[Ships[cur_team_ships[idx]].ship_info_index].flags & (SIF_CARGO | SIF_NAVBUOY))
+					{
 						continue;
 					}
 
 					// check against each ship on my team(and AWACS only once)
-					if ( awacs_get_level(&Objects[Ships[en_team_ships[en_idx]].objnum], &Ships[cur_team_ships[idx]], idx==0) > 1) {
-						team_visibility[cur_team][en_team_ships[en_idx]] = 1;
+					if (awacs_get_level(&Objects[Ships[en_team_ships[en_idx]].objnum], &Ships[cur_team_ships[idx]], (idx == 0)) > 1.0f)
+					{
+						Team_visibility[cur_team][en_team_ships[en_idx]] = 1;
 						break;
 					}
 				} //end cur_count (ship on current team looking at en_team)
@@ -663,30 +616,5 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	int ship_num = target->instance;
 	int team = viewer->team;
 
-	switch (team)
-	{
-		case TEAM_FRIENDLY:
-			return Team_friendly_visibility[ship_num];
-			break;
-
-		case TEAM_HOSTILE:
-			return Team_hostile_visibility[ship_num];
-			break;
-
-		case TEAM_NEUTRAL:
-			return Team_neutral_visibility[ship_num];
-			break;
-
-		case TEAM_UNKNOWN:
-			return 0;
-			break;
-
-		case TEAM_TRAITOR:
-			return 0;
-			break;
-
-		default:
-			Int3();
-			return 0;
-	}
+	return Team_visibility[team][ship_num];
 }

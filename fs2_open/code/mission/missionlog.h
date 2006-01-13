@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.h $
- * $Revision: 2.4 $
- * $Date: 2005-10-10 17:21:05 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * Header file to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.3  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -156,12 +159,8 @@
 // structure definition for log entries
 
 #define MLF_ESSENTIAL				(1<<0)		// this entry is essential for goal checking code
-#define MLF_OBSOLETE					(1<<1)		// this entry is obsolete and will be removed
-#define MLF_PRIMARY_FRIENDLY		(1<<2)		// primary object in this entry is friendly
-#define MLF_PRIMARY_HOSTILE		(1<<3)		// primary object in this entry is hostile
-#define MLF_SECONDARY_FRIENDLY	(1<<4)		// secondary object is friendly
-#define MLF_SECONDARY_HOSTILE		(1<<5)		// secondary object is hostile
-#define MLF_HIDDEN					(1<<6)		// entry doesn't show up in displayed log.
+#define MLF_OBSOLETE				(1<<1)		// this entry is obsolete and will be removed
+#define MLF_HIDDEN					(1<<2)		// entry doesn't show up in displayed log.
 
 typedef struct {
 	int		type;									// one of the log #defines in MissionLog.h
@@ -170,6 +169,10 @@ typedef struct {
 	char		pname[NAME_LENGTH];				// name of primary object of this action
 	char		sname[NAME_LENGTH];				// name of secondary object of this action
 	int		index;								// a generic entry which can contain things like wave # (for wing arrivals), goal #, etc
+
+	// Goober5000
+	int primary_team;
+	int secondary_team;
 } log_entry;
 
 extern log_entry log_entries[];

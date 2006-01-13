@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.10 $
- * $Date: 2005-11-21 02:43:30 $
+ * $Revision: 1.11 $
+ * $Date: 2006-01-13 03:30:59 $
  * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/11/21 02:43:30  Goober5000
+ * change from "setting" to "profile"; this way makes more sense
+ * --Goober5000
+ *
  * Revision 1.9  2005/11/21 00:46:05  Goober5000
  * add ai_settings.tbl
  * --Goober5000
@@ -426,6 +430,7 @@
 #include "weapon/weapon.h"
 #include "io/timer.h"
 #include "mission/missionparse.h"
+#include "iff_defs/iff_defs.h"
 
 
 
@@ -902,7 +907,7 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 				test_objp = &Objects[so->objnum];
 				test_sp = &Ships[test_objp->instance];
 
-				if ( test_sp->team != Ships[Pl_objp->instance].team ) {
+				if ( iff_x_attacks_y(Ships[Pl_objp->instance].team, test_sp->team) ) {
 					if ( Ship_info[test_sp->ship_info_index].flags & SIF_SMALL_SHIP ) {
 						dist_squared = vm_vec_dist_squared(&Pl_objp->pos, &test_objp->pos);
 						if ( dist_squared < ENTER_STRAFE_THREAT_DIST_SQUARED ) {
@@ -935,7 +940,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		if (Pl_objp->phys_info.speed < 3.0f) {
 			object *objp;
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-				if ((objp->type == OBJ_WEAPON) && (Weapons[objp->instance].team != Ships[Pl_objp->instance].team))
+				if ((objp->type == OBJ_WEAPON) && (iff_x_attacks_y(Ships[Pl_objp->instance].team, Weapons[objp->instance].team)))
 					if (Weapon_info[objp->instance].subtype == WP_LASER) {
 						vec3d	in_vec;
 						float		dist;

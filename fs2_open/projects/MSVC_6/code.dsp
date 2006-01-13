@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "..\..\code" /I "..\..\oggvorbis\include" /I "..\..\dx8sdk\include" /I "c:\dxsdk\include\\" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "..\..\code" /I "..\..\oggvorbis\include" /I "..\..\dx8sdk\include" /I "c:\dxsdk\include\\" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -2008,7 +2008,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=\DEV\PROJECTS\Freespace\fs2o\fs2_open\fs2_open\code\sound
+InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open_iff\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 

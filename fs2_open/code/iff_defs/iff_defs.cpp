@@ -2,16 +2,18 @@
  * Created by Ian "Goober5000" Warfield for the Freespace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
- *
  */
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.4 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 1.5 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.3  2005/09/30 03:40:40  Goober5000
  * hooray for more work on the iff code
  * --Goober5000
@@ -32,6 +34,7 @@
 #include "cfile/cfile.h"
 #include "hud/hud.h"
 #include "mission/missionparse.h"
+#include "ship/ship.h"
 
 
 int Num_iffs;
@@ -39,20 +42,24 @@ iff_info Iff_info[MAX_IFFS];
 
 int Iff_traitor;
 
-color Iff_colors[MAX_IFF_COLORS][2];
+// global only to file
+color Iff_colors[MAX_IFF_COLORS][2];		// AL 1-2-97: Create two IFF colors, regular and bright
+int Iff_all_teams_at_war_attackee_bitmask = 0;
+
 
 
 // borrowed from ship.cpp, ship_iff_init_colors
-int iff_get_alpha_value(bool alpha_on)
+int iff_get_alpha_value(bool is_bright)
 {
 	int iff_bright_delta = 4;
 
-	if (!alpha_on)
+	if (is_bright == false)
 		return (HUD_COLOR_ALPHA_MAX - iff_bright_delta) * 16;
 	else 
 		return HUD_COLOR_ALPHA_MAX * 16;
 }
 
+// init a color and add it to the Iff_colors array
 int iff_init_color(int r, int g, int b)
 {
 	typedef struct temp_color_t {
@@ -66,6 +73,11 @@ int iff_init_color(int r, int g, int b)
 
 	static int num_iff_colors = 0;
 	static temp_color_t temp_colors[MAX_IFF_COLORS];
+
+
+	Assert(r >= 0 && r <= 255);
+	Assert(g >= 0 && g <= 255);
+	Assert(b >= 0 && b <= 255);
 
 
 	// make sure we're under the limit
@@ -105,11 +117,11 @@ int iff_init_color(int r, int g, int b)
 	return idx;
 }
 
+// parse the table
 void iff_init()
 {
 	char traitor_name[NAME_LENGTH];
 	char attack_names[MAX_IFFS][MAX_IFFS][NAME_LENGTH];
-
 	struct {
 		char iff_name[NAME_LENGTH];
 		int color_index;
@@ -118,14 +130,13 @@ void iff_init()
 	int num_attack_names[MAX_IFFS];
 	int num_observed_colors[MAX_IFFS];
 
-
 	// Goober5000 - condensed check for table file
 	CFILE *idt = cfopen("iff_defs.tbl", "rb");
 	int table_exists = (idt != NULL);
 	if (table_exists)
 		cfclose(idt);
 
-	// Goober5000 - if table doesn't exist, use the default table (see above)
+	// Goober5000 - if table doesn't exist, use the default table
 	if (table_exists)
 		read_file_text("iff_defs.tbl");
 	else
@@ -210,6 +221,9 @@ void iff_init()
 			num_observed_colors[cur_iff]++;
 		}
 
+		// also assume this guy is attacked in all teams at war
+		Iff_all_teams_at_war_attackee_bitmask |= iff_get_mask(cur_iff);
+
 
 		// get flags ----------------------------------------------------------
 
@@ -218,12 +232,15 @@ void iff_init()
 		if (optional_string("$Flags:"))
 		{
 			int i;
-			char flag_strings[MAX_IFF_FLAGS][NAME_LENGTH];
-			int num_strings = stuff_string_list(flag_strings, MAX_IFF_FLAGS);
+			// the extra 1 is for EFATAW which is a flag but not in the flags array
+			char flag_strings[MAX_IFF_FLAGS+1][NAME_LENGTH];
+			int num_strings = stuff_string_list(flag_strings, MAX_IFF_FLAGS+1);
 			for (i = 0; i < num_strings; i++)
 			{
 				if (!stricmp(NOX("exempt from all teams at war"), flag_strings[i]))
-					iff->flags |= IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR;
+					Iff_all_teams_at_war_attackee_bitmask &= ~iff_get_mask(cur_iff);
+				else if (!stricmp(NOX("support allowed"), flag_strings[i]))
+					iff->flags |= IFFF_SUPPORT_ALLOWED;
 				else
 					Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_strings[i]);
 			}
@@ -257,4 +274,157 @@ void iff_init()
 
 
 	// now resolve the relationships ------------------------------------------
+
+	// first get the traitor
+	Iff_traitor = iff_lookup(traitor_name);
+	if (Iff_traitor < 0)
+	{
+		Iff_traitor = 0;
+		Warning(LOCATION, "Traitor IFF %s not found in iff_defs.tbl!  Defaulting to %s.\n", traitor_name, Iff_info[Iff_traitor].iff_name);
+	}
+
+	// next get the attackers and colors
+	for (int cur_iff = 0; cur_iff < Num_iffs; cur_iff++)
+	{
+		iff_info *iff = &Iff_info[cur_iff];
+
+		// clear the iffs to be attacked
+		iff->attackee_bitmask = 0;
+
+		// clear the observed colors
+		for (int j = 0; j < MAX_IFFS; j++)
+			iff->observed_color_index[j] = -1;
+
+		// resolve the list names
+		for (int list_index = 0; list_index < MAX_IFFS; list_index++)
+		{
+			// are we within the number of attackees listed?
+			if (list_index < num_attack_names[cur_iff])
+			{
+				// find out who
+				int target_iff = iff_lookup(attack_names[cur_iff][list_index]);
+
+				// valid?
+				if (target_iff >= 0)
+					iff->attackee_bitmask |= iff_get_mask(target_iff);
+				else
+					Warning(LOCATION, "Attack target IFF %s not found for IFF %s in iff_defs.tbl!\n", attack_names[cur_iff][list_index], iff->iff_name);
+			}
+
+			// are we within the number of colors listed?
+			if (list_index < num_observed_colors[cur_iff])
+			{
+				// find out who
+				int target_iff = iff_lookup(observed_color_table[cur_iff][list_index].iff_name);
+
+				// valid?
+				if (target_iff >= 0)
+					iff->observed_color_index[target_iff] = observed_color_table[cur_iff][list_index].color_index;
+				else
+					Warning(LOCATION, "Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n", observed_color_table[cur_iff][list_index].iff_name, iff->iff_name);
+			}
+		}
+	}
+}
+
+// find the iff name
+int iff_lookup(char *iff_name)
+{
+	// bogus
+	Assert(iff_name);
+	if(iff_name == NULL)
+		return -1;
+
+	for (int i = 0; i < Num_iffs; i++)
+		if (!stricmp(iff_name, Iff_info[i].iff_name))
+			return i;
+
+	return -1;
+}
+
+// get the mask, taking All Teams At War into account
+int iff_get_attackee_mask(int attacker_team)
+{
+	Assert(attacker_team >= 0 && attacker_team < Num_iffs);
+
+	//	All teams attack all teams.
+	if (Mission_all_attack)
+	{
+		return Iff_all_teams_at_war_attackee_bitmask;
+	}
+	// normal
+	else
+	{
+		return Iff_info[attacker_team].attackee_bitmask;
+	}
+}
+
+// rather slower, since it has to construct a mask
+int iff_get_attacker_mask(int attackee_team)
+{
+	Assert(attackee_team >= 0 && attackee_team < Num_iffs);
+
+	int i, attacker_bitmask = 0;
+	for (i = 0; i < Num_iffs; i++)
+	{
+		if (iff_x_attacks_y(i, attackee_team))
+			attacker_bitmask |= iff_get_mask(i);
+	}
+
+	return attacker_bitmask;
+}
+
+// similar to above; >0 if true, 0 if false
+int iff_x_attacks_y(int team_x, int team_y)
+{
+	return iff_matches_mask(team_y, iff_get_attackee_mask(team_x));
+}
+
+// generate a mask for a team
+int iff_get_mask(int team)
+{
+	return (1 << team);
+}
+
+// see if the mask contains the team
+int iff_matches_mask(int team, int mask)
+{
+	return (iff_get_mask(team) & mask) ? 1 : 0;
+}
+
+// get the color from the color index
+color *iff_get_color(int color_index, int is_bright)
+{
+	return &Iff_colors[color_index][is_bright];
+}
+
+// get the color index, taking objective vs. subjective into account
+color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
+{
+	Assert(team >= 0 && team < Num_iffs);
+	Assert(seen_from_team < Num_iffs);
+	Assert(is_bright == 0 || is_bright == 1);
+
+
+	// is this guy being seen by anyone?
+	if (seen_from_team < 0)
+		return &Iff_colors[Iff_info[team].color_index][is_bright];
+
+
+	// Goober5000 - base the following on "sees X as" from iff code
+	// c.f. AL's comment:
+
+	// AL 12-26-97:	it seems IFF color needs to be set relative to the player team.  If
+	//						the team in question is the same as the player, then it should be 
+	//						drawn friendly.  If the team is different than the player's, then draw the
+	//						appropriate IFF.
+
+
+	// assume an observed color is defined; if not, use normal color
+	int color_index = Iff_info[seen_from_team].observed_color_index[team];
+	if (color_index < 0)
+		color_index = Iff_info[team].color_index;
+
+
+	return &Iff_colors[color_index][is_bright];
 }
