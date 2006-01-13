@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.11  2005/08/27 00:21:27  Kazan
  * potential fix for mantis bug 237
  *
@@ -120,6 +123,7 @@
 #include "playerman/player.h"
 #include "stats/scoring.h"
 #include "mission/missionparse.h"
+#include "iff_defs/iff_defs.h"
 
 #include "fs2open_pxo/Client.h"
 #include "cfile/cfile.h"
@@ -241,7 +245,7 @@ void multi_df_level_pre_enter()
 	// go through all player ships and make them hostile
 	for(idx=0; idx<MAX_PLAYERS; idx++){
 		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP)){
-			Ships[Objects[Net_players[idx].m_player->objnum].instance].team = TEAM_TRAITOR;
+			Ships[Objects[Net_players[idx].m_player->objnum].instance].team = Iff_traitor;
 		}
 	}
 

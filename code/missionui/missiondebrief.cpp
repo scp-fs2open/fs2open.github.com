@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.45 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.46 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.44  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -518,6 +521,7 @@
 #include "globalincs/globals.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -1276,7 +1280,7 @@ int debrief_set_stages_and_multi_stuff()
 	// traitor debriefing.  Only done in single player
 	debriefp = Debriefing;
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
-		if (Player_ship->team == TEAM_TRAITOR)
+		if (Player_ship->team == Iff_traitor)
 			debriefp = &Traitor_debriefing;
 	}
 
@@ -1594,7 +1598,7 @@ void debrief_traitor_init()
 	Debrief_accepted = 0;
 	Turned_traitor = Must_replay_mission = 0;
 	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {
-		if (Player_ship->team == TEAM_TRAITOR){
+		if (Player_ship->team == Iff_traitor){
 			Turned_traitor = 1;
 		}
 
@@ -1800,7 +1804,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 			return;
 		}
 
-		if (Player_ship->team == TEAM_TRAITOR){
+		if (Player_ship->team == Iff_traitor){
 			str = XSTR( "Your career is over, Traitor!  You can't accept new missions!", 439);
 		}/* else if (Cheats_enabled) {
 			str = XSTR( "You are a cheater.  You cannot accept this mission!", 440);

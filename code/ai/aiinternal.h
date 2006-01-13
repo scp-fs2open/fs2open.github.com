@@ -10,9 +10,6 @@
 #ifndef _AIINTERNAL_H
 #define _AIINTERNAL_H
 
-//Returns the enemy team mask for the specified subobject
-int get_enemy_team_mask(int objnum);
-
 //Returns true if the specified object is a stealth ship, false if not
 bool is_object_stealth_ship(object* objp);
 

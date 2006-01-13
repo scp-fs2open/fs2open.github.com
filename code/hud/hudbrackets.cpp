@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-09-25 08:25:15 $
+ * $Revision: 2.27 $
+ * $Date: 2006-01-13 03:30:59 $
  * $Author: Goober5000 $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/09/25 08:25:15  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.25  2005/09/25 05:13:06  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -318,6 +322,7 @@
 #include "ship/ship.h"
 #include "object/object.h"
 #include "mission/missionparse.h"
+#include "iff_defs/iff_defs.h"
 
 //For target info ONLY
 #include "asteroid/asteroid.h"
@@ -349,52 +354,6 @@ int Min_subtarget_box_height[GR_NUM_RESOLUTIONS] = { 12, 24 };
 void hud_init_brackets()
 {
 }
-
-// find IFF color index for brackets based on team
-int hud_brackets_get_iff_color(int team)
-{
-	int color=IFF_COLOR_FRIENDLY;
-
-	switch ( team ) {
-	case TEAM_FRIENDLY:
-	case TEAM_HOSTILE:
-	case TEAM_NEUTRAL:
-	case TEAM_TRAITOR:
-	case TEAM_UNKNOWN:
-		if ( (team == Player_ship->team) && (team != TEAM_TRAITOR) ) {
-			color = IFF_COLOR_FRIENDLY;
-		} else {
-			switch (team) {
-			case TEAM_NEUTRAL:
-				color = IFF_COLOR_NEUTRAL;
-				break;
-			case TEAM_UNKNOWN:
-				color = IFF_COLOR_UNKNOWN;
-				break;
-			case TEAM_HOSTILE:
-			case TEAM_FRIENDLY:
-			case TEAM_TRAITOR:
-				color = IFF_COLOR_HOSTILE;
-				break;
-			}
-		}
-		break;
-	case SELECTION_SET:
-		color = IFF_COLOR_SELECTION;
-		break;
-		
-	case MESSAGE_SENDER:
-		color = IFF_COLOR_MESSAGE;
-		break;
-
-	default:
-		color = IFF_COLOR_UNKNOWN;
-		Int3();
-	} // end switch
-
-	return color;
-}
-
 
 //	Called by draw_bounding_brackets.  
 void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize)
@@ -720,7 +679,7 @@ void draw_bounding_brackets_subobject()
 			// execute for any subsys that doesn't take damage
 			if ( (Player_ai->targeted_subsys->current_hits <= 0) && ( ship_subsys_takes_damage(Player_ai->targeted_subsys) ) )
 			{
-				gr_set_color_fast(&IFF_colors[IFF_COLOR_MESSAGE][1]);
+				gr_set_color_fast(iff_get_color(IFF_COLOR_MESSAGE, 1));
 			} else {
 				hud_set_iff_color( targetp, 1 );
 			}
@@ -765,39 +724,9 @@ void hud_target_show_dist_on_bracket(int x, int y, float distance)
 }
 
 
-// !!!!!!!!!!!!!!!
-//	Given an object number, return the number of ships attacking it.
-// MWA 5/26/98 -- copied from aicode num_attacking_ships()!!!
-// !!!!!!!!!!!!!!!
-int hud_bracket_num_ships_attacking(int objnum)
-{
-	object	*objp;
-	ship_obj	*so;
-	int		count = 0;
-
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		objp = &Objects[so->objnum];
-		if (objp->instance != -1) {
-			ai_info	*aip;
-			aip = &Ai_info[Ships[objp->instance].ai_index];
-
-			// don't count instructor
-			int is_training_mission();
-			if ( is_training_mission() && stricmp(Ships[objp->instance].ship_name, "Instructor") == 0) {
-				break;
-			}
-
-			if ( ((Game_mode & GM_MULTIPLAYER) || (aip->mode == AIM_CHASE)) && (aip->target_objnum == objnum))
-				if (Ships[objp->instance].team != Ships[Objects[objnum].instance].team)
-					count++;
-		}
-	}
-
-	return count;
-}
-
-
 int	Ships_attacking_bitmap = -1;
+
+int num_ships_attacking(int target_objnum);
 
 // draw_bounding_brackets() will draw the faded brackets that surround the current target
 // NOTE: x1, y1, x2 & y2 are assumed to be scaled sizes, w_correction & h_correction are assumed to be unscaled!!
@@ -845,7 +774,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 
 	//	Maybe show + for each additional fighter or bomber attacking target.
 	if ( (target_objnum != -1) && hud_gauge_active(HUD_ATTACKING_TARGET_COUNT) ) {
-		int num_attacking = hud_bracket_num_ships_attacking(target_objnum);
+		int num_attacking = num_ships_attacking(target_objnum);
 
 		if (Ships_attacking_bitmap == -1){
 			Ships_attacking_bitmap = bm_load(Ships_attack_fname[gr_screen.res]);
@@ -856,10 +785,10 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 			return;
 		}
 
-		//	If a ship not on player's team, show one fewer plus since it is targeted and attacked by player.
+		//	If a ship is attacked by player, show one fewer plus
 		int	k=0;
 		if (Objects[target_objnum].type == OBJ_SHIP) {
-			if (Ships[Objects[target_objnum].instance].team != Player_ship->team){
+			if (iff_x_attacks_y(Player_ship->team, Ships[Objects[target_objnum].instance].team)) {
 				k = 1;
 			}
 		} else {
@@ -876,7 +805,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 
 			//int	bitmap = get_blip_bitmap();
 
-			if (Ships_attacking_bitmap > -1) {
+			if (Ships_attacking_bitmap >= 0) {
 				if (num_blips > 3)
 					y1 -= 3;
 
@@ -902,9 +831,9 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		switch(t_objp->type)
 		{
 			case OBJ_SHIP:
-				if (Cmdline_wcsaga &&
-					(Ships[t_objp->instance].wingnum != -1) && 
-					(Ships[t_objp->instance].team != Player_ship->team)) 
+				if ( Cmdline_wcsaga &&
+					(Ships[t_objp->instance].wingnum >= 0) && 
+					(iff_x_attacks_y(Player_ship->team, Ships[t_objp->instance].team)) )
 				{
 					tinfo_name = &empty;
 				}

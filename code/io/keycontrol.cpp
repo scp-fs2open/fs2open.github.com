@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.67 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.68 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.66  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -587,6 +590,7 @@
 #include "freespace2/freespace.h"	//For time compression stuff
 #include "species_defs/species_defs.h"
 #include "asteroid/asteroid.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
@@ -2888,7 +2892,7 @@ int button_function(int n)
 			Players[Player_num].flags ^= PLAYER_FLAGS_AUTO_TARGETING;
 			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING ) {
 				if (hud_sensors_ok(Player_ship)) {
-					hud_target_closest(opposing_team_mask(Player_ship->team), -1, FALSE, TRUE );
+					hud_target_closest(iff_get_attackee_mask(Player_ship->team), -1, FALSE, TRUE );
 					snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
 //					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto targeting activated", -1));
 				} else {
@@ -2947,7 +2951,8 @@ int button_function(int n)
 		case TARGET_CLOSEST_SHIP_ATTACKING_TARGET:
 			control_used(TARGET_CLOSEST_SHIP_ATTACKING_TARGET);
 			if (hud_sensors_ok(Player_ship)){
-				hud_target_closest(opposing_team_mask(Player_ship->team), Player_ai->target_objnum);
+				Assert(Player_ai->target_objnum >= 0);
+				hud_target_closest(iff_get_attacker_mask(obj_team(&Objects[Player_ai->target_objnum])), Player_ai->target_objnum);
 			}
 			break;
 
@@ -2961,7 +2966,7 @@ int button_function(int n)
 		case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
 			control_used(TARGET_CLOSEST_SHIP_ATTACKING_SELF);
 			if (hud_sensors_ok(Player_ship)){
-				hud_target_closest(opposing_team_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
+				hud_target_closest(iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
 			}
 			break;
 

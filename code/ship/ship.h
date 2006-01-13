@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.128 $
- * $Date: 2006-01-09 04:54:14 $
- * $Author: phreak $
+ * $Revision: 2.129 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2006/01/09 04:54:14  phreak
+ * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
+ *
  * Revision 2.127  2006/01/06 04:18:55  wmcoolmon
  * turret-target-order SEXPs, ship thrusters
  *
@@ -988,25 +991,6 @@ typedef struct ship_subsys_info {
 	float current_hits;		// current count of hits for all subsystems of this type.	
 } ship_subsys_info;
 
-
-#define	MAX_IFF_COLORS	7
-
-#define	IFF_COLOR_HOSTILE		0
-#define	IFF_COLOR_FRIENDLY	1
-#define	IFF_COLOR_NEUTRAL		2
-#define	IFF_COLOR_UNKNOWN		3
-#define	IFF_COLOR_SELECTION	4
-#define	IFF_COLOR_MESSAGE		5
-#define	IFF_COLOR_TAGGED		6
-
-#define SET_COLOR_HOSTILE	gr_set_color_fast(&IFF_colors[IFF_COLOR_HOSTILE][0])
-#define SET_COLOR_FRIENDLY	gr_set_color_fast(&IFF_colors[IFF_COLOR_FRIENDLY][0])
-#define SET_COLOR_NEUTRAL	gr_set_color_fast(&IFF_colors[IFF_COLOR_NEUTRAL][0])
-#define SET_COLOR_UNKNOWN	gr_set_color_fast(&IFF_colors[IFF_COLOR_UNKNOWN][0])
-#define SET_COLOR_TAGGED	gr_set_color_fast(&IFF_colors[IFF_COLOR_TAGGED][0])
-
-// reference an array to store the different IFF colors
-extern color IFF_colors[MAX_IFF_COLORS][2];
 	
 //#define	MAX_SHIP_SUBOBJECTS		50
 

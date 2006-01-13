@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDWingmanStatus.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-10-29 22:09:29 $
+ * $Revision: 2.16 $
+ * $Date: 2006-01-13 03:30:59 $
  * $Author: Goober5000 $
  *
  * Module for the wingman status gauge
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/10/29 22:09:29  Goober5000
+ * multiple ship docking implemented for initially docked ships
+ * --Goober5000
+ *
  * Revision 2.14  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -167,6 +171,8 @@
 #include "weapon/emp.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
+#include "iff_defs/iff_defs.h"
+#include "globalincs/alphacolors.h"
 #include "network/multi.h"
 
 
@@ -652,21 +658,19 @@ void hud_wingman_status_blit_dots(int wing_index, int screen_index, int num_wing
 		case HUD_WINGMAN_STATUS_ALIVE:
 			bitmap = Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame;
 			if ( HUD_wingman_status[wing_index].hull[i] > 0.5f ) {
-				// gr_set_color_fast(&IFF_colors[IFF_COLOR_FRIENDLY][is_bright]);
 				// use gauge color
 				hud_set_gauge_color(HUD_WINGMEN_STATUS, is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
 			} else {
-				gr_set_color_fast(&IFF_colors[IFF_COLOR_HOSTILE][is_bright]);
+				gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
 			}
 			break;
 
 		case HUD_WINGMAN_STATUS_DEAD:
-			gr_set_color_fast(&IFF_colors[IFF_COLOR_HOSTILE][0]);
+			gr_set_color_fast(&Color_red);
 			bitmap = Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame+1;
 			break;
 
 		case HUD_WINGMAN_STATUS_NOT_HERE:
-			// gr_set_color_fast(&IFF_colors[IFF_COLOR_FRIENDLY][0]);
 			hud_set_gauge_color(HUD_WINGMEN_STATUS, is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
 			bitmap = Wingman_status_frames[WINGMAN_STATUS_DOTS].first_frame+1;
 			break;

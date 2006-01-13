@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.30 $
- * $Date: 2006-01-11 21:15:15 $
- * $Author: wmcoolmon $
+ * $Revision: 1.31 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2006/01/11 21:15:15  wmcoolmon
+ * Somewhat better turret comments
+ *
  * Revision 1.29  2006/01/09 04:50:18  phreak
  * fix compile warnings.
  *
@@ -112,6 +115,7 @@
 #include "ai/aibig.h"
 #include "object/objectdock.h"
 #include "ai/aiinternal.h"	//Included last, so less includes are needed
+#include "iff_defs/iff_defs.h"
 
 // How close a turret has to be point at its target before it
 // can fire.  If the dot of the gun normal and the vector from gun
@@ -391,7 +395,7 @@ bool valid_turret_enemy(object *eobjp, object *turret_parent, ship_subsys *turre
 		return true;
 	}
 
-	int enemy_mask = get_enemy_team_mask(OBJ_INDEX(turret_parent));
+	int enemy_team_mask = iff_get_attackee_mask(obj_team(turret_parent));
 
 	if ( (eobjp->type == OBJ_SHIP) ) {
 		ship *shipp			= &Ships[eobjp->instance];
@@ -403,7 +407,7 @@ bool valid_turret_enemy(object *eobjp, object *turret_parent, ship_subsys *turre
 		}
 
 		//Are they even an enemy?
-		if(!(shipp->team & enemy_mask))
+		if(!iff_matches_mask(shipp->team, enemy_team_mask))
 			return false;
 
 		//We can't shoot at them
@@ -746,7 +750,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 	ship_info			*sip;
 
 	tp = turret_subsys->system_info;
-	enemy_team_mask = get_enemy_team_mask(objnum);
+	enemy_team_mask = iff_get_attackee_mask(obj_team(&Objects[objnum]));
 	bool beam_flag = all_turret_weapons_have_flags(&turret_subsys->weapons, WIF_BEAM);
 	bool big_flag = all_turret_weapons_have_flags(&turret_subsys->weapons, WIF_HUGE);
 
@@ -758,7 +762,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 		int target_objnum = aip->target_objnum;
 
 		if (Objects[target_objnum].signature == aip->target_signature) {
-			if (Ships[Objects[target_objnum].instance].team & enemy_team_mask) {
+			if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
 				if ( !(Objects[target_objnum].flags & OF_PROTECTED) ) {		// check this flag as well.
 					// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
 					return target_objnum;
@@ -1112,7 +1116,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		} else {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags & WIF_FLAK) {
-				if (Ships[aip->shipnum].team == TEAM_FRIENDLY) {
+				if (Ships[aip->shipnum].team == Player_ship->team) {
 					wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level] * 0.5f;
 				} else {
 					wait *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level] * 0.5f;
@@ -1125,7 +1129,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 				wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
 			} else {
 				// give team friendly an advantage
-				if (Ships[aip->shipnum].team == TEAM_FRIENDLY) {
+				if (Ships[aip->shipnum].team == Player_ship->team) {
 					wait *= The_mission.ai_profile->ship_fire_delay_scale_friendly[Game_skill_level];
 				} else {
 					wait *= The_mission.ai_profile->ship_fire_delay_scale_hostile[Game_skill_level];
@@ -1431,7 +1435,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	int num_valid = 0;
 
 	weapon_info *wip;
-	int num_ships_nearby = num_nearby_fighters(get_enemy_team_mask(parent_objnum), &gpos, 1500.0f);
+	int num_ships_nearby = num_nearby_fighters(iff_get_attackee_mask(obj_team(&Objects[parent_objnum])), &gpos, 1500.0f);
 	int i;
 	int secnum = 0;
 	for(i = 0; i < (MAX_SHIP_WEAPONS); i++)

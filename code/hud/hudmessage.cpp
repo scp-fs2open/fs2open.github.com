@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.17  2005/07/25 08:21:59  Goober5000
  * more bugs and tweaks
  * --Goober5000
@@ -488,6 +491,7 @@
 #include "ship/ship.h"
 #include "parse/parselo.h"
 #include "mission/missionmessage.h"		// for MAX_MISSION_MESSAGES
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 
 
@@ -951,28 +955,17 @@ void HUD_printf_line(char *text, int source, int time = 0, int x = 0)
 }
 
 // converts a TEAM_* define to a HUD_SOURCE_* define
-int HUD_get_team_source(int team)
+int HUD_team_get_source(int team)
 {
-	switch (team) {
-		case TEAM_FRIENDLY:
-			return HUD_SOURCE_FRIENDLY;
-
-		case TEAM_HOSTILE:
-			return HUD_SOURCE_HOSTILE;
-
-		case TEAM_NEUTRAL:
-			return HUD_SOURCE_NEUTRAL;
-
-		case TEAM_UNKNOWN:
-			return HUD_SOURCE_UNKNOWN;
-
-		case TEAM_TRAITOR:
-			return HUD_SOURCE_TRAITOR;
-	}
-
-	nprintf(("warning", "Unknown TEAM_* define used! (%d)", team));
-	return 0;
+	return team + HUD_SOURCE_TEAM_OFFSET;
 }
+
+// converts a HUD_SOURCE_* define to a TEAM_* define
+int HUD_source_get_team(int source)
+{
+	return source - HUD_SOURCE_TEAM_OFFSET;
+}
+
 
 void HUD_printf(char *format, ...)
 {
@@ -1011,7 +1004,7 @@ void HUD_ship_sent_printf(int sh, char *format, ...)
 
 	len = strlen(tmp);
 	Assert(len < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
-	hud_sourced_print(HUD_get_team_source(Ships[sh].team), tmp);
+	hud_sourced_print(HUD_team_get_source(Ships[sh].team), tmp);
 }
 
 // --------------------------------------------------------------------------------------
@@ -1573,40 +1566,34 @@ void hud_scrollback_do_frame(float frametime)
 					node_ptr = GET_NEXT(node_ptr);
 
 				} else {
-					switch (node_ptr->source) {
-						case HUD_SOURCE_FRIENDLY:
-							SET_COLOR_FRIENDLY;
-							break;
+					int team = HUD_source_get_team(node_ptr->source);
 
-						case HUD_SOURCE_HOSTILE:
-							SET_COLOR_HOSTILE;
-							break;
-
-						case HUD_SOURCE_NEUTRAL:
-							SET_COLOR_NEUTRAL;
-							break;
-
-						case HUD_SOURCE_UNKNOWN:
-							SET_COLOR_UNKNOWN;
-							break;
-
-						case HUD_SOURCE_TRAINING:
-							gr_set_color_fast(&Color_bright_blue);
-							break;
-
-						case HUD_SOURCE_TERRAN_CMD:
-							gr_set_color_fast(&Color_bright_white);
-							break;
-
-						case HUD_SOURCE_IMPORTANT:
-						case HUD_SOURCE_FAILED:
-						case HUD_SOURCE_SATISFIED:
-							gr_set_color_fast(&Color_bright_white);
-							break;
-
-						default:
-							gr_set_color_fast(&Color_text_normal);
-							break;
+					if (team >= 0)
+					{
+						gr_set_color_fast(iff_get_color_by_team(team, Player_ship->team, 0));
+					}
+					else
+					{
+						switch (node_ptr->source)
+						{
+							case HUD_SOURCE_TRAINING:
+								gr_set_color_fast(&Color_bright_blue);
+								break;
+	
+							case HUD_SOURCE_TERRAN_CMD:
+								gr_set_color_fast(&Color_bright_white);
+								break;
+	
+							case HUD_SOURCE_IMPORTANT:
+							case HUD_SOURCE_FAILED:
+							case HUD_SOURCE_SATISFIED:
+								gr_set_color_fast(&Color_bright_white);
+								break;
+	
+							default:
+								gr_set_color_fast(&Color_text_normal);
+								break;
+						}
 					}
 
 					if (node_ptr->time)

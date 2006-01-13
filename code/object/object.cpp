@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.54 $
- * $Date: 2006-01-12 17:42:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.55 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2006/01/12 17:42:56  wmcoolmon
+ * Even more scripting stuff.
+ *
  * Revision 2.53  2005/12/04 19:07:49  wmcoolmon
  * Final commit of codebase
  *
@@ -642,6 +645,7 @@
 #include "radar/radarsetup.h"
 #include "object/objectdock.h"
 #include "mission/missionparse.h" //For 2D Mode
+#include "iff_defs/iff_defs.h"
 
 
 
@@ -2376,7 +2380,7 @@ int obj_get_SIF(int obj)
 //
 //	input:		objp => pointer to object that you want team for
 //
-// exit:			success => enumerated team ( TEAM_HOSTILE, TEAM_FRIENDLY, TEAM_NEUTRAL, etc )
+// exit:			success => enumerated team
 //					failure => -1 (for objects that don't have teams)
 int obj_team(object *objp)
 {
@@ -2420,7 +2424,7 @@ int obj_team(object *objp)
 			break;
 
 		case OBJ_ASTEROID:
-			team = TEAM_TRAITOR;
+			team = Iff_traitor;
 			break;
 
 		default:

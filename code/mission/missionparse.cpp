@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.134 $
- * $Date: 2006-01-04 08:19:21 $
- * $Author: taylor $
+ * $Revision: 2.135 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2006/01/04 08:19:21  taylor
+ * fixes for regular texture replacement
+ *
  * Revision 2.133  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -925,6 +928,7 @@
 #include "math/fvi.h"
 #include "weapon/weapon.h"
 #include "cfile/cfile.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
@@ -948,7 +952,6 @@ char Mission_filename[80];
 
 int Mission_palette;  // index into Nebula_palette_filenames[] of palette file to use for mission
 int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
-int Num_iff = MAX_IFF;
 int Num_ai_behaviors = MAX_AI_BEHAVIORS;
 int Num_cargo = 0;
 int Num_status_names = MAX_STATUS_NAMES;
@@ -1032,9 +1035,6 @@ char *Nebula_colors[NUM_NEBULA_COLORS] = {
 	"Grey Green",
 };
 
-char *Iff_names[MAX_IFF] = { "IFF 1", "IFF 2", "IFF 3",
-};
-
 char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Chase",
 	"Evade",
@@ -1074,14 +1074,6 @@ char *Icon_names[MAX_BRIEF_ICONS] = {
 	"Knossos Device", "Transport Wing", "Corvette", "Gas Miner", "Awacs", "Supercap", "Sentry Gun", "Jump Node", "Transport"
 };
 
-//	Translate team mask values like TEAM_FRIENDLY to indices in Team_names array.
-//	-1 means an illegal value.
-int	Team_names_index_xlate[MAX_TEAM_NAMES_INDEX+1] = {-1, 0, 1, -1, 2, -1, -1, -1, 3};
-
-char *Team_names[MAX_TEAM_NAMES] = {
-	"Hostile", "Friendly", "Neutral", "Unknown",
-};
-
 char *Status_desc_names[MAX_STATUS_NAMES] = {
 	"Shields Critical", "Engines Damaged", "Fully Operational",
 };
@@ -1097,16 +1089,6 @@ char *Status_target_names[MAX_STATUS_NAMES] = {
 // definitions for arrival locations for ships/wings
 char *Arrival_location_names[MAX_ARRIVAL_NAMES] = {
 	"Hyperspace", "Near Ship", "In front of ship", "Docking Bay",
-};
-
-char *Special_arrival_anchor_names[MAX_SPECIAL_ARRIVAL_ANCHORS] =
-{
-	"<any friendly>",
-	"<any enemy>",
-	"<any neutral>",
-	"<any friendly player>",
-	"<any hostile player>",
-	"<any neutral player>",
 };
 
 char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
@@ -1807,7 +1789,7 @@ void parse_cmd_briefs(mission *pm)
 //
 void parse_briefing(mission *pm)
 {
-	int nt, i, j, stage_num = 0, icon_num = 0, team_index;
+	int nt, i, j, stage_num = 0, icon_num = 0;
 	brief_stage *bs;
 	brief_icon *bi;
 	briefing *bp;
@@ -1895,7 +1877,13 @@ void parse_briefing(mission *pm)
 
 			Assert(bs->num_icons <= MAX_STAGE_ICONS );
 
-			while (required_string_either("$end_stage", "$start_icon")) {
+			// static alias stuff - stupid, but it seems to be necessary
+			static char *temp_team_names[MAX_IFFS];
+			for (i = 0; i < Num_iffs; i++)
+				temp_team_names[i] = Iff_info[i].iff_name;
+
+			while (required_string_either("$end_stage", "$start_icon"))
+			{
 				required_string("$start_icon");
 				Assert(icon_num < MAX_STAGE_ICONS);
 				bi = &bs->icons[icon_num++];
@@ -1903,9 +1891,7 @@ void parse_briefing(mission *pm)
 				required_string("$type:");
 				stuff_int(&bi->type);
 
-				find_and_stuff("$team:", &team_index, F_NAME, Team_names, Num_team_names, "team name");
-				Assert((team_index >= 0) && (team_index < MAX_TEAM_NAMES));
-				bi->team = 1 << team_index;
+				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 
@@ -2291,7 +2277,7 @@ int parse_create_object_sub(p_object *objp)
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (objp->wingnum >= 0)){
 		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
 			if ( !stricmp(Starting_wing_names[i], Wings[objp->wingnum].name) ) {
-				Ships[shipnum].team = TEAM_TRAITOR;
+				Ships[shipnum].team = Iff_traitor;
 			} 
 		}
 	}
@@ -2837,10 +2823,12 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		}
 	}
 
-	int	team_index;
-	find_and_stuff("$Team:", &team_index, F_NAME, Team_names, Num_team_names, "team name");
-	Assert((team_index >= 0) && (team_index < MAX_TEAM_NAMES));
-	objp->team = 1 << team_index;
+	// static alias stuff - stupid, but it seems to be necessary
+	static char *temp_team_names[MAX_IFFS];
+	for (i = 0; i < Num_iffs; i++)
+		temp_team_names[i] = Iff_info[i].iff_name;
+
+	find_and_stuff("$Team:", &objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 	required_string("$Location:");
 	stuff_vector(&objp->pos);
@@ -2848,7 +2836,13 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	required_string("$Orientation:");
 	stuff_matrix(&objp->orient);
 
-	find_and_stuff("$IFF:", 		&objp->iff, F_NAME, Iff_names, Num_iff, "IFF");
+	// legacy code, not even used in FS1
+	if (optional_string("$IFF:"))
+	{
+		char blah[NAME_LENGTH];
+		stuff_string(blah, F_NAME, NULL);
+	}
+
 	find_and_stuff("$AI Behavior:",	&objp->behavior, F_NAME, Ai_behavior_names, Num_ai_behaviors, "AI behavior");
 	objp->ai_goals = -1;
 
@@ -4918,7 +4912,7 @@ void post_process_mission()
 		}
 
 		for (i=0; i<MAX_SHIPS; i++) {
-			if ((Ships[i].objnum >= 0) && (Ships[i].arrival_anchor >= 0) && (Ships[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHORS_OFFSET))
+			if ((Ships[i].objnum >= 0) && (Ships[i].arrival_anchor >= 0) && (Ships[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHOR_FLAG))
 				Ships[i].arrival_anchor = indices[Ships[i].arrival_anchor];
 
 			if ( (Ships[i].objnum >= 0) && (Ships[i].departure_anchor >= 0) )
@@ -4926,7 +4920,7 @@ void post_process_mission()
 		}
 
 		for (i=0; i<MAX_WINGS; i++) {
-			if (Wings[i].wave_count  && (Wings[i].arrival_anchor >= 0) && (Wings[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHORS_OFFSET))
+			if (Wings[i].wave_count  && (Wings[i].arrival_anchor >= 0) && (Wings[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHOR_FLAG))
 				Wings[i].arrival_anchor = indices[Wings[i].arrival_anchor];
 
 			if (Wings[i].wave_count  && (Wings[i].departure_anchor >= 0) )
@@ -5587,39 +5581,34 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 	// this ship might possibly arrive at another location.  The location is based on the
 	// proximity of some ship (and some other special tokens)
+	if (anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+	{
+		bool get_players = (anchor & SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG) > 0;
 
+		// filter out iff
+		int iff_index = anchor;
+		iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_FLAG;
+		iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG;
+
+		// get ship
+		shipnum = ship_get_random_team_ship(iff_index, get_players ? SHIP_GET_ONLY_PLAYERS : SHIP_GET_ANY_SHIP);
+	}
 	// if we didn't find the arrival anchor in the list of special nodes, then do a
 	// ship name lookup on the anchor
-	if (anchor < SPECIAL_ARRIVAL_ANCHORS_OFFSET) {
+	else
+	{
 		shipnum = ship_name_lookup(Parse_names[anchor]);
-		if ( shipnum == -1 ) {
-			Assert ( location != ARRIVE_FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
-			nprintf (("allender", "couldn't find ship for arrival anchor -- using location ship created at"));
-			return 0;
-		}
-
-	} else {
-		// come up with a position based on the special token names
-		shipnum = -1;
-
-		if (anchor == ANY_FRIENDLY) {
-			shipnum = ship_get_random_team_ship( TEAM_FRIENDLY, SHIP_GET_ANY_SHIP );
-		} else if (anchor == ANY_HOSTILE) {
-			shipnum = ship_get_random_team_ship( opposing_team_mask(Player_ship->team), SHIP_GET_ANY_SHIP );
-		} else if (anchor == ANY_FRIENDLY_PLAYER) {
-			shipnum = ship_get_random_team_ship( TEAM_FRIENDLY, SHIP_GET_ONLY_PLAYERS );
-		} else if (anchor == ANY_HOSTILE_PLAYER) {
-			shipnum = ship_get_random_team_ship( opposing_team_mask(Player_ship->team), SHIP_GET_ONLY_PLAYERS );
-		} else
-			Int3();		// get allender -- unknown special arrival instructions
-
-		// if we didn't get an object from one of the above functions, then make the object
-		// arrive at it's placed location
-		if ( shipnum == -1 ) {
-			nprintf (("Allender", "Couldn't find random ship for arrival anchor -- using default location\n"));
-			return 0;
-		}
 	}
+
+	// if we didn't get an object from one of the above functions, then make the object
+	// arrive at its placed location
+	if (shipnum < 0)
+	{
+		Assert ( location != ARRIVE_FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
+		nprintf (("allender", "couldn't find ship for arrival anchor -- using location ship created at"));
+		return 0;
+	}
+
 
 	// take the shipnum and get the position.  once we have positions, we can determine where
 	// to make this ship appear
@@ -6062,7 +6051,7 @@ void mission_eval_arrivals()
 				// send a hostile wing arrived message
 				rship = wingp->ship_index[wingp->special_ship];
 
-				int multi_team_filter = Ships[rship].team == TEAM_FRIENDLY ? 1 : 0;
+				int multi_team_filter = Ships[rship].team;
 
 				// there are two timestamps at work here.  One to control how often the player receives
 				// messages about incoming hostile waves, and the other to control how long after
@@ -6112,9 +6101,8 @@ void mission_eval_arrivals()
 				}
 				else
 				{
-					// see if we have a hostile wing that arrived
-					rship = wingp->ship_index[wingp->special_ship];
-					if (Ships[rship].team != TEAM_FRIENDLY)
+
+					if (iff_x_attacks_y(Player_ship->team, Ships[rship].team))
 					{
 						// there are two timestamps at work here.  One to control how often the player receives
 						// messages about incoming hostile waves, and the other to control how long after
@@ -6407,13 +6395,40 @@ int get_parse_name_index(char *name)
 	return Num_parse_names++;
 }
 
+// Goober5000 - look for <any friendly>, <any hostile player>, etc.
+int get_special_anchor(char *name)
+{
+	char tmp[NAME_LENGTH];
+	char *iff_name;
+	int iff_index;
+	
+	if (strnicmp(name, "<any ", 5))
+		return -1;
+
+	strcpy(tmp, name+5);
+	iff_name = strtok(tmp, " >");
+
+	// hack substitute "hostile" for "enemy"
+	if (!stricmp(iff_name, "enemy"))
+		iff_name = "hostile";
+
+	iff_index = iff_lookup(iff_name);
+	if (iff_index < 0)
+		return -1;
+
+	// restrict to players?
+	if (stristr(name+5, "player") != NULL)
+		return (iff_index | SPECIAL_ARRIVAL_ANCHOR_FLAG | SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG);
+	else
+		return (iff_index | SPECIAL_ARRIVAL_ANCHOR_FLAG);
+}
+
 int get_anchor(char *name)
 {
-	int i;
+	int special_anchor = get_special_anchor(name);
 
-	for (i=0; i<MAX_SPECIAL_ARRIVAL_ANCHORS; i++)
-		if (!stricmp(name, Special_arrival_anchor_names[i]))
-			return SPECIAL_ARRIVAL_ANCHORS_OFFSET + i;
+	if (special_anchor >= 0)
+		return special_anchor;
 
 	return get_parse_name_index(name);
 }

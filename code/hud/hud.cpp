@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.62 $
- * $Date: 2005-12-29 00:54:08 $
- * $Author: phreak $
+ * $Revision: 2.63 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/12/29 00:54:08  phreak
+ * mirror parameter in hud_anim_render().  only used when briefing icons are fading in.
+ *
  * Revision 2.61  2005/11/23 04:05:23  phreak
  * whoops i should test my code sometimes
  *
@@ -594,6 +597,7 @@
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
 #include "radar/radarsetup.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multiutil.h"
 #include "network/multi_voice.h"
 #include "network/multi_pmsg.h"
@@ -1401,11 +1405,13 @@ void hud_update_frame()
 	}
 
 	#ifndef NO_SOUND
-	// Switch to battle track when a targeted ship is hostile and within BATTLE_START_MIN_TARGET_DIST
+	// Switch to battle track when a targeted ship is hostile (it attacks you) and within BATTLE_START_MIN_TARGET_DIST
 	if (targetp->type == OBJ_SHIP && Event_Music_battle_started == 0 ) {
 		Assert( target_shipp != NULL );
 
-		if (opposing_team_mask(Player_ship->team)) {
+		// Goober5000
+		if (iff_x_attacks_y(target_shipp->team, Player_ship->team))
+		{
 			float	dist_to_target;
 
 			dist_to_target = vm_vec_dist_quick(&targetp->pos, &Player_obj->pos);
@@ -2924,53 +2930,38 @@ void hud_set_dim_color()
 
 // hud_set_iff_color() will set the color to the IFF color based on the team
 //
-// input:	team			=>		team to base color on
+// input:		team		=>		team to base color on
 //				is_bright	=>		default parameter (value 0) which uses bright version of IFF color
 void hud_set_iff_color(object *objp, int is_bright)
 {
-	// AL 12-26-97:	it seems IFF color needs to be set relative to the player team.  If
-	//						the team in question is the same as the player, then it should be 
-	//						drawn friendly.  If the team is different than the players, then draw the
-	//						appropriate IFF.          
-	int team;
-	team = obj_team(objp);
+	color *use_color;
 
-	if ( ship_is_tagged(objp) ) {
-		gr_set_color_fast(&IFF_colors[IFF_COLOR_TAGGED][is_bright]);
-	} else if ( (team == Player_ship->team) && (Player_ship->team != TEAM_TRAITOR) ) {
-		gr_set_color_fast(&IFF_colors[IFF_COLOR_FRIENDLY][is_bright]);
-	} else {
-		switch (team) {
-		case TEAM_NEUTRAL:
-			gr_set_color_fast(&IFF_colors[IFF_COLOR_NEUTRAL][is_bright]);
-			break;
-		case TEAM_UNKNOWN:
-			gr_set_color_fast(&IFF_colors[IFF_COLOR_UNKNOWN][is_bright]);
-			break;
-		case TEAM_HOSTILE:
-		case TEAM_FRIENDLY:
-		case TEAM_TRAITOR:
-			gr_set_color_fast(&IFF_colors[IFF_COLOR_HOSTILE][is_bright]);
-			break;
-		default:
-			Int3();
-			gr_set_color_fast(&IFF_colors[IFF_COLOR_UNKNOWN][is_bright]);
-			break;
+	if (ship_is_tagged(objp))
+	{
+		use_color = iff_get_color(IFF_COLOR_TAGGED, is_bright);
+	}
+	else
+	{
+		// figure out how we get the team
+		if (objp->type == OBJ_ASTEROID)
+		{
+			if (OBJ_INDEX(objp) == Player_ai->target_objnum)
+			{
+				use_color = iff_get_color_by_team(Iff_traitor, Player_ship->team, is_bright);
+			}
+			else
+			{
+				use_color = iff_get_color(IFF_COLOR_SELECTION, is_bright);
+			}
+		}
+		else
+		{
+			use_color = iff_get_color_by_team(obj_team(objp), Player_ship->team, is_bright);
 		}
 	}
-}
 
-// Determine if ship team should be ignored, based on
-// team filter
-// input:	team_filter	=>	team mask used to select friendly or hostile ships
-//				ship_team	=>	team of the ship in question
-// exit:		1				=>	ship_team matches filter from player perspective
-//				0				=>	ship_team does match team filter
-int hud_team_matches_filter(int team_filter, int ship_team)
-{
-	return team_filter & ship_team;
+	gr_set_color_fast(use_color);
 }
-
 
 // reset gauge flashing data
 void hud_gauge_flash_init()

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-01-09 04:51:33 $
- * $Author: phreak $
+ * $Revision: 2.20 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/01/09 04:51:33  phreak
+ * fix compile warnings.
+ *
  * Revision 2.18  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -352,6 +355,7 @@
 #include "graphics/2d.h"
 #include "object/object.h"
 #include "mission/missionparse.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 
 
@@ -657,8 +661,9 @@ int hud_abort_lock()
 		return 1;
 	}
 
-	// if the target is friendly, don't lock!
-	if ( hud_team_matches_filter(Player_ship->team, target_team)) {
+	// if we're on the same team and the team doesn't attack itself, then don't lock!
+	if ((Player_ship->team == target_team) && (!iff_x_attacks_y(Player_ship->team, target_team)))
+	{
 		// if we're in multiplayer dogfight, ignore this
 		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
 			return 1;
@@ -763,7 +768,7 @@ void hud_update_lock_indicator(float frametime)
 		return;
 	}
 
-	Assert(Player_ai->target_objnum != -1);
+	Assert(Player_ai->target_objnum >= 0);
 
 	// be sure to unset this flag, then possibly set later in this function so that
 	// threat indicators work properly.

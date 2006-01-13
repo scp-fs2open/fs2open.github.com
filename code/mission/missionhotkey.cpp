@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.11  2005/10/29 22:09:29  Goober5000
  * multiple ship docking implemented for initially docked ships
  * --Goober5000
@@ -218,6 +221,7 @@
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"
+#include "iff_defs/iff_defs.h"
 
 
 static int Key_sets[MAX_KEYED_TARGETS] = {
@@ -754,33 +758,30 @@ int hotkey_line_add_sorted(char *text, int type, int index, int start)
 	return hotkey_line_insert(z, text, type, index);
 }
 
-int hotkey_get_team(int i)
-{
-	if (Ships[i].team == Player_ship->team)
-		return TEAM_FRIENDLY;
-
-	return TEAM_HOSTILE;
-}
-
-int hotkey_build_team_listing(int team, int y)
+int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 {
 	ship_obj *so;
 	char *str = NULL;
-	int i, j, s, z, start;
+	int i, j, s, z, start, team_mask;
 	int font_height = gr_get_font_height();
 
+	if (list_enemies)
+	{
+		str = XSTR( "Enemy ships", 403);
+		team_mask = enemy_team_mask;
+	}
+	else
+	{
+		str = XSTR( "Friendly ships", 402);
+		team_mask = ~enemy_team_mask;
+	}
+
 	for (i=0; i<MAX_SHIPS; i++)
-		if (hotkey_get_team(i) == team)
+		if (iff_matches_mask(Ships[i].team, team_mask))
 			break;
 
 	if (i >= MAX_SHIPS)
 		return y;
-
-	if (team == Player_ship->team)
-		str = XSTR( "Friendly ships", 402);
-	else {
-		str = XSTR( "Enemy ships", 403);
-	}
 
 	hotkey_line_add(str, HOTKEY_LINE_HEADING, 0, y);
 	y += 2;
@@ -821,14 +822,13 @@ int hotkey_build_team_listing(int team, int y)
 		}
 
 		// be sure this ship isn't in a wing, and that the teams match
-		if ( (hotkey_get_team(shipnum) == team) && (Ships[shipnum].wingnum < 0) ) {
+		if ( iff_matches_mask(Ships[shipnum].team, team_mask) && (Ships[shipnum].wingnum < 0) ) {
 			hotkey_line_add_sorted(Ships[shipnum].ship_name, HOTKEY_LINE_SHIP, shipnum, start);
 		}
 	}
 
 	for (i=0; i<Num_wings; i++) {
-		if (Wings[i].current_count && (hotkey_get_team( Wings[i].ship_index[Wings[i].special_ship] ) == team)) {
-
+		if (Wings[i].current_count && iff_matches_mask(Ships[Wings[i].ship_index[Wings[i].special_ship]].team, team_mask)) {
 			// special check for the player's wing.  If he's in a wing, and the only guy left, don't
 			// do anything
 			if ( (Player_ship->wingnum == i) && (Wings[i].current_count == 1) )
@@ -877,12 +877,14 @@ int hotkey_build_team_listing(int team, int y)
 
 void hotkey_build_listing()
 {
-	int y;
+	int y, enemy_team_mask;
 
 	Num_lines = y = 0;
 
-	y = hotkey_build_team_listing(TEAM_FRIENDLY, y);
-	y = hotkey_build_team_listing(TEAM_HOSTILE, y);
+	enemy_team_mask = iff_get_attackee_mask(Player_ship->team);
+
+	y = hotkey_build_team_listing(enemy_team_mask, y, false);
+	y = hotkey_build_team_listing(enemy_team_mask, y, true);
 }
 
 int hotkey_line_query_visible(int n)

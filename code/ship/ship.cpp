@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.292 $
- * $Date: 2006-01-09 04:54:14 $
- * $Author: phreak $
+ * $Revision: 2.293 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.292  2006/01/09 04:54:14  phreak
+ * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
+ *
  * Revision 2.291  2006/01/06 04:18:55  wmcoolmon
  * turret-target-order SEXPs, ship thrusters
  *
@@ -1883,6 +1886,7 @@
 #include "mission/missioncampaign.h"
 #include "radar/radarsetup.h"
 #include "object/objectdock.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 
@@ -2002,33 +2006,7 @@ static int Ship_cargo_check_timer;
 
 static int Thrust_anim_inited = 0;
 
-// a global definition of the IFF colors
-color IFF_colors[MAX_IFF_COLORS][2];	// AL 1-2-97: Create two IFF colors, regular and bright
-
 void ship_fix_reverse_times(ship_info *sip);
-
-void ship_iff_init_colors()
-{
-	int i, alpha;
-	int iff_bright_delta=4;
-
-	// init IFF colors
-	for ( i=0; i<2; i++ ) {
-
-		if ( i == 0 )
-			alpha = (HUD_COLOR_ALPHA_MAX - iff_bright_delta) * 16;
-		else 
-			alpha = HUD_COLOR_ALPHA_MAX * 16;
-
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_HOSTILE][i],	0xff, 0x00, 0x00, alpha );
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_FRIENDLY][i],	0x00, 0xff, 0x00, alpha );
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_NEUTRAL][i],	0xff, 0x00, 0x00, alpha );
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_UNKNOWN][i],	0xff, 0x00, 0xff, alpha );
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_SELECTION][i], 0xff, 0xff, 0xff, alpha );
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_MESSAGE][i],	0x7f, 0x7f, 0x7f, alpha );
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_TAGGED][i],		0xff, 0xff, 0x00, alpha );
-	}
-}
 
 // set the ship_obj struct fields to default values
 void ship_obj_list_reset_slot(int index)
@@ -4332,8 +4310,6 @@ void ship_init()
 
 			ships_inited = 1;
 		}
-
-		ship_iff_init_colors();
 	}
 
 	//loadup the cloaking map
@@ -4659,7 +4635,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		}
 		shipp->arc_next_time = -1;
 	}
-	shipp->team = TEAM_FRIENDLY;					//	Default friendly, probably get overridden.
+	shipp->team = 0;					//	Default, probably get overridden.
 	shipp->arrival_location = 0;
 	shipp->arrival_distance = 0;
 	shipp->arrival_anchor = -1;
@@ -6010,12 +5986,13 @@ void ship_destroyed( int num )
 		hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
 	}
 
-	// let the event music system know a hostile was destoyed (important for deciding when to transition from battle to normal music)
+	// let the event music system know an enemy was destoyed (important for deciding when to transition from battle to normal music)
 	if (Player_ship != NULL) {
-		if (shipp->team != Player_ship->team) {
+		if (iff_x_attacks_y(Player_ship->team, shipp->team)) {
 			event_music_hostile_ship_destroyed();
 		}
 	}
+
 	ship_clear_decals(shipp);
 }
 
@@ -12160,7 +12137,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 // because now it is only used for getting a random ship for a message and cargo containers
 // can't send mesages.  This function is an example of kind of bad coding :-(
 // input:	max_dist	=>	OPTIONAL PARAMETER (default value 0.0f) max range ship can be from player
-int ship_get_random_team_ship( int team, int flags, float max_dist )
+int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 {
 	int num, which_one;
 	object *objp, *obj_list[MAX_SHIPS];
@@ -12175,7 +12152,7 @@ int ship_get_random_team_ship( int team, int flags, float max_dist )
 		// don't process ships on wrong team
 		// don't process cargo's or navbuoys
 		// don't process player ships if flags are set
-		if ( Ships[objp->instance].team != team )
+		if (!iff_matches_mask(Ships[objp->instance].team, team_mask))
 			continue;
 		else if ( Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_NOT_FLYABLE )
 			continue;
@@ -12792,7 +12769,7 @@ void ship_check_cargo_all()
 	cargo_so = GET_FIRST(&Ship_obj_list);
 	while(cargo_so != END_OF_LIST(&Ship_obj_list)){
 		cargo_sp = &Ships[Objects[cargo_so->objnum].instance];
-		if ( (Ship_info[cargo_sp->ship_info_index].flags & SIF_CARGO) && !(cargo_sp->team & TEAM_FRIENDLY) ) {
+		if ( (Ship_info[cargo_sp->ship_info_index].flags & SIF_CARGO) && (cargo_sp->team != Player_ship->team) ) {
 			
 			// If the cargo is revealed, continue on to next hostile cargo
 			if ( cargo_sp->flags & SF_CARGO_REVEALED ) {
@@ -12801,10 +12778,11 @@ void ship_check_cargo_all()
 
 			// check against friendly fighter/bombers + cruiser/freighter/transport
 			// IDEA: could cull down to fighter/bomber if we want this to run a bit quicker
-			for ( ship_so=GET_FIRST(&Ship_obj_list); ship_so != END_OF_LIST(&Ship_obj_list); ship_so=GET_NEXT(ship_so) ) {
+			for ( ship_so=GET_FIRST(&Ship_obj_list); ship_so != END_OF_LIST(&Ship_obj_list); ship_so=GET_NEXT(ship_so) )
+			{
 				ship_sp = &Ships[Objects[ship_so->objnum].instance];
 				// only consider friendly ships
-				if ( !(ship_sp->team & TEAM_FRIENDLY) ) {
+				if (ship_sp->team != Player_ship->team) {
 					continue;
 				}
 
@@ -12979,11 +12957,13 @@ void ship_maybe_praise_player(ship *deader_sp)
 		return;
 	}
 
-	if ( !(Player_ship->team & TEAM_FRIENDLY) ) {
+	// make sure player is not a traitor
+	if (Player_ship->team == Iff_traitor) {
 		return;
 	}
 
-	if ( deader_sp->team == Player_ship->team ) {	// only praise if killing an enemy!
+	// only praise if killing an enemy!
+	if ( deader_sp->team == Player_ship->team ) {
 		return;
 	}
 
@@ -13049,59 +13029,48 @@ void ship_maybe_ask_for_help(ship *sp)
 	int multi_team_filter = -1;
 
 	// First check if the player has reached the maximum number of ask_help's for a mission
-	if ( Player->ask_help_count >= PLAYER_MAX_ASK_HELP ) {
+	if (Player->ask_help_count >= PLAYER_MAX_ASK_HELP)
 		return;
-	}
 
 	// Check if enough time has elapsed since last help request, if not - leave
-	if ( !timestamp_elapsed(Player->allow_ask_help_timestamp) ) {
+	if (!timestamp_elapsed(Player->allow_ask_help_timestamp))
 		return;
-	}
 
-	if ( !(Player_ship->team & TEAM_FRIENDLY) ) {
+	// make sure player is on their team and not a traitor
+	if ((Player_ship->team != sp->team) || (Player_ship->team == Iff_traitor))
 		return;
-	}
 
-	Assert(sp->team & TEAM_FRIENDLY );
 	objp = &Objects[sp->objnum];
 
-	if ( objp->flags & OF_PLAYER_SHIP )	{// don't let the player ask for help!
+	// don't let the player ask for help!
+	if (objp->flags & OF_PLAYER_SHIP)
 		return;
-	}
 
 	// determine team filter if TvT
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
-		if(sp->team == TEAM_FRIENDLY){
-			multi_team_filter = 0;
-		} else if(sp->team == TEAM_HOSTILE){
-			multi_team_filter = 1;
-		}
-	}
+	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+		multi_team_filter = sp->team;
 
 	// handle awacs ship as a special case
-	if (Ship_info[sp->ship_info_index].flags & SIF_HAS_AWACS) {
+	if (Ship_info[sp->ship_info_index].flags & SIF_HAS_AWACS)
+	{
 		awacs_maybe_ask_for_help(sp, multi_team_filter);
 		return;
 	}
 
 	// for now, only have wingman ships request help
-	if ( !(sp->flags & SF_FROM_PLAYER_WING) ) {
+	if (!(sp->flags & SF_FROM_PLAYER_WING))
 		return;
-	}
 
 	// first check if hull is at a critical level
-	if ( objp->hull_strength < ASK_HELP_HULL_PERCENT * sp->ship_max_hull_strength ) {
+	if (objp->hull_strength < ASK_HELP_HULL_PERCENT * sp->ship_max_hull_strength)
 		goto play_ask_help;
-	}
 
 	// check if shields are near critical level
-	if ( objp->flags & OF_NO_SHIELDS ) {
+	if (objp->flags & OF_NO_SHIELDS)
 		return;	// no shields on ship, no don't check shield levels
-	}
 
-	if ( get_shield_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_max_shield_strength) ) {
+	if (get_shield_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_max_shield_strength))
 		return;
-	}
 
 play_ask_help:
 
@@ -13109,9 +13078,9 @@ play_ask_help:
 	message_send_builtin_to_player(MESSAGE_HELP, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_ask_help_timestamp = timestamp(PLAYER_ASK_HELP_INTERVAL);
 
-	if ( timestamp_until(Player->allow_scream_timestamp) < 15000 ) {
-		Player->allow_scream_timestamp = timestamp(15000);	// prevent overlap with death message
-	}
+	// prevent overlap with death message
+	if (timestamp_until(Player->allow_scream_timestamp) < 15000)
+		Player->allow_scream_timestamp = timestamp(15000);
 
 	Player->ask_help_count++;
 }
@@ -13122,15 +13091,14 @@ void ship_maybe_lament()
 	int ship_index;
 
 	// no. because in multiplayer, its funny
-	if(Game_mode & GM_MULTIPLAYER){
+	if(Game_mode & GM_MULTIPLAYER)
 		return;
-	}
 
-	if ( rand()%4 == 0 ) {
-		ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS );
-		if ( ship_index >= 0 ) {
+	if (rand() % 4 == 0)
+	{
+		ship_index = ship_get_random_player_wing_ship(SHIP_GET_NO_PLAYERS);
+		if (ship_index >= 0)
 			message_send_builtin_to_player(MESSAGE_PLAYED_DIED, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
-		}
 	}
 }
 
@@ -13143,18 +13111,12 @@ void ship_scream(ship *sp)
 	int multi_team_filter = -1;
 
 	// bogus
-	if(sp == NULL){
+	if (sp == NULL)
 		return;
-	}
 
 	// multiplayer tvt
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
-		if(sp->team == TEAM_FRIENDLY){
-			multi_team_filter = 0;
-		} else if(sp->team == TEAM_HOSTILE){
-			multi_team_filter = 1;
-		}
-	}
+	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+		multi_team_filter = sp->team;
 
 	message_send_builtin_to_player(MESSAGE_WINGMAN_SCREAM, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_scream_timestamp = timestamp(PLAYER_SCREAM_INTERVAL);
@@ -13162,14 +13124,14 @@ void ship_scream(ship *sp)
 	sp->flags |= SF_SHIP_HAS_SCREAMED;
 
 	// prevent overlap with help messages
-	if ( timestamp_until(Player->allow_ask_help_timestamp) < 15000 ) {
-		Player->allow_ask_help_timestamp = timestamp(15000);	// prevent overlap with death message
-	}
+	if (timestamp_until(Player->allow_ask_help_timestamp) < 15000)
+		Player->allow_ask_help_timestamp = timestamp(15000);
 }
 
 // ship has just died, maybe play a scream.
 //
 // NOTE: this is only called for ships that are in a player wing (and not player ship)
+extern int Cmdline_wcsaga;
 void ship_maybe_scream(ship *sp)
 {
 	if ( rand()&1 )
@@ -13181,7 +13143,8 @@ void ship_maybe_scream(ship *sp)
 	}
 
 	// if on different teams (i.e. team v. team games in multiplayer), no scream
-	if ( sp->team != Player_ship->team ) {
+	// (WCSaga wants everybody to scream)
+	if ( !Cmdline_wcsaga && (sp->team != Player_ship->team) ) {
 		return;
 	}
 
@@ -13199,35 +13162,33 @@ void ship_maybe_tell_about_rearm(ship *sp)
 {
 	weapon_info *wip;
 
-	if ( !timestamp_elapsed(Player->request_repair_timestamp) ) {
+	if (!timestamp_elapsed(Player->request_repair_timestamp))
 		return;
-	}
 
-	if ( !(Player_ship->team & TEAM_FRIENDLY) ) {
+	if (Player_ship->team == Iff_traitor)
 		return;
-	}
 
 	// AL 1-4-98:	If ship integrity is low, tell player you want to get repaired.  Otherwise, tell
 	// the player you want to get re-armed.
 
 	int message_type = -1;
-	int heavily_damaged = 0;
-	if ( get_hull_pct(&Objects[sp->objnum]) < 0.4 ) {
-		heavily_damaged = 1;
-	}
+	int heavily_damaged = (get_hull_pct(&Objects[sp->objnum]) < 0.4);
 
-	if ( heavily_damaged || (sp->flags & SF_DISABLED) ) {
+	if (heavily_damaged || (sp->flags & SF_DISABLED))
+	{
 		message_type = MESSAGE_REPAIR_REQUEST;
-	} else {
+	}
+	else
+	{
 		int i;
 		ship_weapon *swp;
 
 		swp = &sp->weapons;
-		for ( i = 0; i < swp->num_secondary_banks; i++ )
+		for (i = 0; i < swp->num_secondary_banks; i++)
 		{
 			if (swp->secondary_bank_start_ammo[i] > 0)
 			{
-				if ( swp->secondary_bank_ammo[i]/swp->secondary_bank_start_ammo[i] < 0.5f )
+				if (swp->secondary_bank_ammo[i] / swp->secondary_bank_start_ammo[i] < 0.5f)
 				{
 					message_type = MESSAGE_REARM_REQUEST;
 					break;
@@ -13238,7 +13199,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		// also check ballistic primaries - Goober5000
 		if (sp->flags & SIF_BALLISTIC_PRIMARIES)
 		{
-			for ( i = 0; i < swp->num_primary_banks; i++ )
+			for (i = 0; i < swp->num_primary_banks; i++)
 			{
 				wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
@@ -13246,7 +13207,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 				{
 					if (swp->primary_bank_start_ammo[i] > 0)
 					{
-						if ( swp->primary_bank_ammo[i]/swp->primary_bank_start_ammo[i] < 0.3f )
+						if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
 						{
 							message_type = MESSAGE_REARM_REQUEST;
 							break;
@@ -13260,18 +13221,15 @@ void ship_maybe_tell_about_rearm(ship *sp)
 	int multi_team_filter = -1;
 
 	// multiplayer tvt
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
-		if(sp->team == TEAM_FRIENDLY){
-			multi_team_filter = 0;
-		} else if(sp->team == TEAM_HOSTILE){
-			multi_team_filter = 1;
-		}
-	}
+	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+		multi_team_filter = sp->team;
 
-	if ( message_type >= 0 ) {
-		if ( rand() & 1 ) {
+
+	if (message_type >= 0)
+	{
+		if (rand() & 1)
 			message_send_builtin_to_player(message_type, sp, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
-		}
+
 		Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
 	}
 }
@@ -14088,7 +14046,7 @@ int is_support_allowed(object *objp)
 
 	if (Game_mode & GM_NORMAL)
 	{
-		if (Ships[objp->instance].team != TEAM_FRIENDLY)
+		if ( !(Iff_info[Ships[objp->instance].team].flags & IFFF_SUPPORT_ALLOWED) )
 		{
 			return 0;
 		}
@@ -14107,7 +14065,7 @@ int is_support_allowed(object *objp)
 
 		if (IS_MISSION_MULTI_COOP)
 		{
-			if (Ships[objp->instance].team != TEAM_FRIENDLY)
+			if ( !(Iff_info[Ships[objp->instance].team].flags & IFFF_SUPPORT_ALLOWED) )
 			{
 				return 0;
 			}

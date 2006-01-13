@@ -78,7 +78,7 @@ SOURCE="$(InputPath)"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "..\..\code" /I "..\..\oggvorbis\include" /I "c:\dxsdk\include\\" /I "..\..\dx8sdk\include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "FS2_VOICER" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W4 /Gm /Gi /GX /ZI /Od /I "..\..\code" /I "..\..\oggvorbis\include" /I "c:\dxsdk\include\\" /I "..\..\dx8sdk\include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -91,12 +91,19 @@ LINK32=link.exe
 # ADD LINK32 Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libjpeg_d.lib code.lib /nologo /subsystem:windows /map /debug /debugtype:both /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmt.lib" /out:"C:\Games\FreeSpace2Demo\fs2_open_d.exe" /libpath:"Debug" /libpath:"..\..\oggvorbis\lib" /libpath:"..\..\dx8sdk\lib" /libpath:"c:\dxsdk\lib\\"
 # SUBTRACT LINK32 /pdb:none /incremental:no
 # Begin Custom Build - Copying build...
-InputPath=\Games\FreeSpace2Demo\fs2_open_d.exe
+InputPath=C:\Games\FreeSpace2Demo\fs2_open_d.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fs2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) "$(FS2PATH)/fs2_open_d.exe"
+BuildCmds= \
+	copy $(InputPath) "$(FS2PATH)/fs2_open_d.exe" \
+	copy $(InputPath) "C:/Program Files/The Babylon Project/fs2_open_d.exe" \
+	
 
+"$(FS2PATH)/fs2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"C:/Program Files/The Babylon Project/fs2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
 # End Custom Build
 
 !ENDIF 

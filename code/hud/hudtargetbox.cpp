@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.61 $
- * $Date: 2005-12-12 21:32:14 $
- * $Author: taylor $
+ * $Revision: 2.62 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2005/12/12 21:32:14  taylor
+ * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
+ *
  * Revision 2.60  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -478,6 +481,7 @@
 #include "parse/parselo.h"
 #include "object/objectdock.h"
 #include "species_defs/species_defs.h"
+#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
 
 #ifndef NDEBUG
@@ -1551,30 +1555,15 @@ void hud_render_target_ship(object *target_objp)
 
 		if (Targetbox_wire!=0)
 		{
-			//set team colors
-			if (target_shipp->team==Player_ship->team)
-			{
-				model_set_outline_color(0,255,0);
-			}
-			else if (((Player_ship->team==TEAM_TRAITOR) && (target_shipp->team==TEAM_FRIENDLY)) ||
-					(target_shipp->team==TEAM_HOSTILE) || (target_shipp->team==TEAM_NEUTRAL))
-			{
-				model_set_outline_color(255,0,0);
-			}
-			else if (target_shipp->team==TEAM_UNKNOWN)
-			{
-				model_set_outline_color(255,0,255);
-			}
+			int is_bright = 1;
+
+			if (ship_is_tagged(target_objp))
+				model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, is_bright));
 			else
 			{
-				model_set_outline_color(255,255,255);
+				model_set_outline_color_fast(iff_get_color_by_team(target_shipp->team, Player_ship->team, is_bright));
 			}
 
-			//if a ship is tagged, it overrides team colors
-			if (ship_is_tagged(target_objp))
-			{	
-				model_set_outline_color(255,255,0);
-			}
 			flags = MR_SHOW_OUTLINE;
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;
@@ -1607,7 +1596,7 @@ void hud_render_target_ship(object *target_objp)
 				// AL 29-3-98: If subsystem is destroyed, draw gray brackets
 				// Goober5000 - hm, caught a tricky bug for destroyable fighterbays
 				if ( (Player_ai->targeted_subsys->current_hits <= 0) && ship_subsys_takes_damage(Player_ai->targeted_subsys) ) {
-					gr_set_color_fast(&IFF_colors[IFF_COLOR_MESSAGE][1]);
+					gr_set_color_fast(iff_get_color(IFF_COLOR_MESSAGE, 1));
 				} else {
 					hud_set_iff_color( target_objp, 1 );
 				}
@@ -1753,23 +1742,10 @@ void hud_render_target_weapon(object *target_objp)
 
 		if (Targetbox_wire!=0)
 		{
-			if (target_team==Player_ship->team)
-			{
-				model_set_outline_color(0,255,0);
-			}
-			else if (((Player_ship->team==TEAM_TRAITOR) && (target_team==TEAM_FRIENDLY)) ||
-					(target_team==TEAM_HOSTILE) || (target_team==TEAM_NEUTRAL))
-			{
-				model_set_outline_color(128,128,0);
-			}
-			else if (target_team==TEAM_UNKNOWN)
-			{
-				model_set_outline_color(255,0,255);
-			}
-			else
-			{
-				model_set_outline_color(255,255,255);
-			}
+			int is_bright = 0;
+
+			model_set_outline_color_fast(iff_get_color_by_team(target_team, Player_ship->team, is_bright));
+
 			flags = MR_SHOW_OUTLINE;
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.19 $
- * $Date: 2005-10-10 17:21:09 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2005/10/10 17:21:09  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.18  2005/07/25 03:13:25  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -240,22 +243,24 @@
 #include "localization/localize.h"
 #include "ship/awacs.h"
 #include "radar/radarsetup.h"
+#include "iff_defs/iff_defs.h"
 
 extern float radx, rady;
 
-extern float	Radar_dim_range;					// range at which we start dimming the radar blips
-extern int		Radar_calc_dim_dist_timer;		// timestamp at which we recalc Radar_dim_range
+extern float	Radar_bright_range;				// range within which the radar blips are bright
+extern int		Radar_calc_bright_dist_timer;	// timestamp at which we recalc Radar_bright_range
 
 extern int Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
 extern int Radar_flicker_on[NUM_FLICKER_TIMERS];						// status of flickering
 
-extern rcol Radar_color_rgb[MAX_RADAR_LEVELS][MAX_RADAR_COLORS];
-extern color Radar_colors[MAX_RADAR_LEVELS][MAX_RADAR_COLORS];
+extern rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
+extern color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
 
-extern blip	Blip_bright_list[MAX_RADAR_COLORS];		// linked list of bright blips
-extern blip	Blip_dim_list[MAX_RADAR_COLORS];			// linked list of dim blips
+extern blip	Blip_bright_list[MAX_BLIP_TYPES];		// linked list of bright blips
+extern blip	Blip_dim_list[MAX_BLIP_TYPES];			// linked list of dim blips
+
 extern blip	Blips[MAX_BLIPS];								// blips pool
-extern int	N_blips;											// next blip index to take from pool
+extern int	N_blips;										// next blip index to take from pool
 
 extern float Radar_farthest_dist;
 extern int Blip_mutate_id;
@@ -269,7 +274,7 @@ extern int Radar_static_looping;					// id for looping radar static sound
 extern hud_frames Radar_gauge;
 
 // forward declarations
-void draw_radar_blips(int desired_color, int is_dim, int distort=0);
+void draw_radar_blips_std(int blip_type, int bright, int distort = 0);
 
 void radar_init_std()
 {
@@ -280,8 +285,8 @@ void radar_init_std()
 		Warning(LOCATION,"Cannot load hud ani: %s\n", Current_radar_global->Radar_fname[gr_screen.res]);
 	}
 
-	for (i=0; i<MAX_RADAR_LEVELS; i++ )	{
-		for (j=0; j<MAX_RADAR_COLORS; j++ )	{
+	for (i=0; i<MAX_RADAR_COLORS; i++ )	{
+		for (j=0; j<MAX_RADAR_LEVELS; j++ )	{
 			gr_init_alphacolor( &Radar_colors[i][j], Radar_color_rgb[i][j].r, Radar_color_rgb[i][j].g, Radar_color_rgb[i][j].b, 255 );
 		}
 	}
@@ -289,60 +294,64 @@ void radar_init_std()
 	Blip_mutate_id	= 1;
 }
 
-// determine what color the object blip should be drawn as
-int radar_blip_color_std(object *objp)
+// determine how the object blip should be drawn
+void radar_stuff_blip_info_std(object *objp, int is_bright, color **blip_color, int *blip_type)
 {
-	int	color = 0;
-	ship	*shipp = NULL;
+	int color = 0;
+	ship *shipp = NULL;
 
-	switch(objp->type) {
-	case OBJ_SHIP:
-		shipp = &Ships[objp->instance];
-		if ( shipp->flags & SF_ARRIVING_STAGE_1 )	{
-			color = RCOL_WARPING_SHIP;
-		} else if ( ship_is_tagged(objp) ) {
-			color = RCOL_TAGGED;
-		} else if ( Ship_info[shipp->ship_info_index].flags & (SIF_NAVBUOY|SIF_CARGO) ) {
-			color = RCOL_NAVBUOYS;
-		} else {
-			if ( (Player_ship->team == shipp->team) && (Player_ship->team != TEAM_TRAITOR) ) {
-				color = RCOL_FRIENDLY;
-			} else {
-				switch (shipp->team) {
-				case TEAM_FRIENDLY:
-				case TEAM_HOSTILE:
-				case TEAM_TRAITOR:
-					color = RCOL_HOSTILE;
-					break;
-				case TEAM_NEUTRAL:
-					color = RCOL_NEUTRAL;
-					break;
-				case TEAM_UNKNOWN:
-					color = RCOL_UNKNOWN;
-					break;
-				default:
-					color = RCOL_HOSTILE;
-					Int3();	//	Bogus team id in shipp->team
-					break;
-				}
+	switch(objp->type)
+	{
+		case OBJ_SHIP:
+			shipp = &Ships[objp->instance];
+
+			if (shipp->flags & SF_ARRIVING_STAGE_1)
+			{
+				*blip_color = &Radar_colors[RCOL_WARPING_SHIP][is_bright];
+				*blip_type = BLIP_TYPE_WARPING_SHIP;
 			}
-		}
-		break;
-	case OBJ_WEAPON:
-		if ((Weapons[objp->instance].lssm_stage==2) || (Weapons[objp->instance].lssm_stage==4))
-			color=RCOL_WARPING_SHIP;
-		else
-			color = RCOL_BOMB;
-		break;
-	case OBJ_JUMP_NODE:
-		color = RCOL_JUMP_NODE;
-		break;
-	default:
-		Error(LOCATION, "Illegal ship type in radar.");
-		break;
-	}
+			else if (ship_is_tagged(objp))
+			{
+				*blip_color = &Radar_colors[RCOL_TAGGED][is_bright];
+				*blip_type = BLIP_TYPE_TAGGED_SHIP;
+			}
+			else if (Ship_info[shipp->ship_info_index].flags & (SIF_NAVBUOY|SIF_CARGO))
+			{
+				*blip_color = &Radar_colors[RCOL_NAVBUOY_CARGO][is_bright];
+				*blip_type = BLIP_TYPE_NAVBUOY_CARGO;
+			}
+			else
+			{
+				*blip_color = iff_get_color_by_team(shipp->team, Player_ship->team, is_bright);
+				*blip_type = BLIP_TYPE_NORMAL_SHIP;
+			}
 
-	return color;
+			break;
+
+		case OBJ_WEAPON:
+			if ((Weapons[objp->instance].lssm_stage == 2) || (Weapons[objp->instance].lssm_stage == 4))
+			{
+				*blip_color = &Radar_colors[RCOL_WARPING_SHIP][is_bright];
+				*blip_type = BLIP_TYPE_WARPING_SHIP;
+			}
+			else
+			{
+				*blip_color = &Radar_colors[RCOL_BOMB][is_bright];
+				*blip_type = BLIP_TYPE_BOMB;
+			}
+
+			break;
+
+		case OBJ_JUMP_NODE:
+			*blip_color = &Radar_colors[RCOL_JUMP_NODE][is_bright];
+			*blip_type = BLIP_TYPE_JUMP_NODE;
+
+			break;
+
+		default:
+			Error(LOCATION, "Illegal blip type in radar.");
+			break;
+	}
 }
 
 void radar_plot_object_std( object *objp )	
@@ -401,8 +410,8 @@ void radar_plot_object_std( object *objp )
 			return;
 		}
 
-		// if bomb is on same team as player, return
-		if ( (obj_team(objp) == Player_ship->team) && (Player_ship->team != TEAM_TRAITOR) ) {
+		// if we don't attack the bomb, return
+		if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) ) {
 			return;
 		}
 
@@ -420,44 +429,47 @@ void radar_plot_object_std( object *objp )
 	
 	// JAS -- new way of getting the rotated point that doesn't require this to be
 	// in a g3_start_frame/end_frame block.
-	vm_vec_sub(&tempv,world_pos,&Player_obj->pos);
-	vm_vec_rotate( &pos, &tempv, &Player_obj->orient );
+	vm_vec_sub(&tempv, world_pos, &Player_obj->pos);
+	vm_vec_rotate(&pos, &tempv, &Player_obj->orient);
 
 	// Apply range filter
 	dist = vm_vec_dist(world_pos, &Player_obj->pos);
 	max_radar_dist = Radar_ranges[HUD_config.rp_dist];
-	if ( dist > max_radar_dist ){
+	if (dist > max_radar_dist) {
 		return;
 	}
 
-	if ( dist < pos.xyz.z ) {
+	if (dist < pos.xyz.z) {
 		rscale = 0.0f;
 	} else {
-		rscale = (float) acos( pos.xyz.z/dist ) / 3.14159f;		//2.0f;	 
+		rscale = (float) acos(pos.xyz.z / dist) / 3.14159f;		//2.0f;	 
 	}
 
-	zdist = fl_sqrt( (pos.xyz.x*pos.xyz.x)+(pos.xyz.y*pos.xyz.y) );
+	zdist = fl_sqrt((pos.xyz.x * pos.xyz.x) + (pos.xyz.y * pos.xyz.y));
 
 	float new_x_dist, clipped_x_dist;
 	float new_y_dist, clipped_y_dist;
 
-	if (zdist < 0.01f ) {
+	if (zdist < 0.01f)
+	{
 		new_x_dist = 0.0f;
 		new_y_dist = 0.0f;
 	}
-	else {
-		new_x_dist = (pos.xyz.x/zdist) * rscale * radx;
-		new_y_dist = (pos.xyz.y/zdist) * rscale * rady;
+	else
+	{
+		new_x_dist = (pos.xyz.x / zdist) * rscale * radx;
+		new_y_dist = (pos.xyz.y / zdist) * rscale * rady;
 
 		// force new_x_dist and new_y_dist to be inside the radar
 
 		float hypotenuse;
 		float max_radius;
 
-		hypotenuse = (float)_hypot(new_x_dist, new_y_dist);
+		hypotenuse = (float) _hypot(new_x_dist, new_y_dist);
 		max_radius = i2fl(Current_radar_global->Radar_radius[gr_screen.res][0] - 5);
 
-		if (hypotenuse >= (max_radius) ) {
+		if (hypotenuse >= max_radius)
+		{
 			clipped_x_dist = max_radius * (new_x_dist / hypotenuse);
 			clipped_y_dist = max_radius * (new_y_dist / hypotenuse);
 			new_x_dist = clipped_x_dist;
@@ -465,47 +477,50 @@ void radar_plot_object_std( object *objp )
 		}
 	}
 
-	xpos = fl2i( Current_radar_global->Radar_center[gr_screen.res][0] + new_x_dist );
-	ypos = fl2i( Current_radar_global->Radar_center[gr_screen.res][1] - new_y_dist );
+	xpos = fl2i(Current_radar_global->Radar_center[gr_screen.res][0] + new_x_dist);
+	ypos = fl2i(Current_radar_global->Radar_center[gr_screen.res][1] - new_y_dist);
 
-	color = radar_blip_color(objp);
 
-	// Determine the distance at which we will dim the radar blip
-	if ( timestamp_elapsed(Radar_calc_dim_dist_timer) ) {
-		Radar_calc_dim_dist_timer=timestamp(1000);
-		Radar_dim_range = player_farthest_weapon_range();
-		if ( Radar_dim_range <= 0 ) {
-			Radar_dim_range=1500.0f;
-		}
+	// determine the range within which the radar blip is bright
+	if (timestamp_elapsed(Radar_calc_bright_dist_timer))
+	{
+		Radar_calc_bright_dist_timer = timestamp(1000);
+		Radar_bright_range = player_farthest_weapon_range();
+		if (Radar_bright_range <= 0)
+			Radar_bright_range = 1500.0f;
 	}
 
-	blip	*b;
-	int blip_dim=0;
+	blip *b;
+	int blip_bright = 0;
+	int blip_type = 0;
 
-	if ( dist > Radar_dim_range ) {
-		blip_dim=1;
-	}
-
-	if ( N_blips >= MAX_BLIPS ) {
+	if (N_blips >= MAX_BLIPS)
+	{
 		// out of blips, don't plot
-		Int3();
+		//Gahhh, this is bloody annoying -WMC
+		//Int3();
 		return;
 	}
 
 	b = &Blips[N_blips];
-	b->flags=0;
+	b->flags = 0;
+
+	// bright if within range
+	blip_bright = (dist <= Radar_bright_range);
 
 	// flag the blip as a current target if it is
-	if (OBJ_INDEX(objp) == Player_ai->target_objnum)	{
+	if (OBJ_INDEX(objp) == Player_ai->target_objnum)
+	{
 		b->flags |= BLIP_CURRENT_TARGET;
-		blip_dim = 0;
+		blip_bright = 1;
 	}
 
-	if ( blip_dim ) {
-		list_append( &Blip_dim_list[color], b );
-	} else {
-		list_append( &Blip_bright_list[color], b );
-	}
+	radar_stuff_blip_info(objp, blip_bright, &b->blip_color, &blip_type);
+
+	if (blip_bright)
+		list_append(&Blip_bright_list[blip_type], b);
+	else
+		list_append(&Blip_dim_list[blip_type], b);
 
 	b->x = xpos;
 	b->y = ypos;
@@ -514,16 +529,12 @@ void radar_plot_object_std( object *objp )
 	if (objp->type == OBJ_SHIP)
 	{
 		// ships specifically hidden from sensors
-		if ( Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS ) {
+		if (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS)
 			b->flags |= BLIP_DRAW_DISTORTED;
-		}
 
 		// determine if its AWACS distorted
-		if ( awacs_level < 1.0f )
-		{
-			// check if it's 
+		if (awacs_level < 1.0f)
 			b->flags |= BLIP_DRAW_DISTORTED;
-		}
 	}				
 
 	// don't distort the sensor blips if the player has primitive sensors and the nebula effect
@@ -531,9 +542,7 @@ void radar_plot_object_std( object *objp )
 	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
 	{
 		if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
-		{
 			b->flags &= ~BLIP_DRAW_DISTORTED;
-		}
 	}
 
 	N_blips++;
@@ -546,7 +555,7 @@ void radar_null_nblips_std()
 
 	N_blips=0;
 
-	for (i=0; i<MAX_RADAR_COLORS; i++) {
+	for (i=0; i<MAX_BLIP_TYPES; i++) {
 		list_init(&Blip_bright_list[i]);
 		list_init(&Blip_dim_list[i]);
 	}
@@ -562,7 +571,7 @@ void radar_mission_init_std()
 	Radar_static_playing		= 0;
 	Radar_static_next			= 0;
 	Radar_avail_prev_frame	= 1;
-	Radar_calc_dim_dist_timer = timestamp(0);
+	Radar_calc_bright_dist_timer = timestamp(0);
 
 	for ( i=0; i<NUM_FLICKER_TIMERS; i++ ) {
 		Radar_flicker_timer[i]=timestamp(0);
@@ -661,43 +670,52 @@ void radar_blip_draw_flicker_std(blip *b)
 }
 
 // Draw all the active radar blips
-void draw_radar_blips(int rcol, int is_dim, int distort)
+void draw_radar_blips_std(int blip_type, int bright, int distort)
 {
-	blip	*b=NULL;
-	blip	*blip_head=NULL;
+	blip *b = NULL;
+	blip *blip_head = NULL;
+
+	Assert((blip_type >= 0) && (blip_type < MAX_BLIP_TYPES));
+
 
 	// Need to set font.
 	gr_set_font(FONT1);
 
-	if ( is_dim ) {
-		blip_head = &Blip_dim_list[rcol];
-	} else {
-		blip_head = &Blip_bright_list[rcol];
-	}
 
-	for ( b = GET_FIRST(blip_head); b !=END_OF_LIST(blip_head); b = GET_NEXT(b) )	{
+	// get the appropriate blip list
+	if (bright)
+		blip_head = &Blip_bright_list[blip_type];
+	else
+		blip_head = &Blip_dim_list[blip_type];
 
-		Assert((rcol >= 0) && (rcol < MAX_RADAR_COLORS));
 
-		if ( is_dim ) {
-			gr_set_color_fast( &Radar_colors[RADAR_BLIP_DIM][rcol] );
-		} else {
-			gr_set_color_fast( &Radar_colors[RADAR_BLIP_BRIGHT][rcol] );
-		}
+	// draw all blips of this type
+	for (b = GET_FIRST(blip_head); b != END_OF_LIST(blip_head); b = GET_NEXT(b))
+	{
+		gr_set_color_fast(b->blip_color);
 
-		if (b->flags & BLIP_CURRENT_TARGET) {
-			// draw cool blip to indicate current target
+		// maybe draw cool blip to indicate current target
+		if (b->flags & BLIP_CURRENT_TARGET)
+		{
 			b->rad = Current_radar_global->Radar_blip_radius_target[gr_screen.res];				
-		} else {
+		}
+		else
+		{
 			b->rad = Current_radar_global->Radar_blip_radius_normal[gr_screen.res];
 		}
 
-		if ( distort ) { 
+		// maybe distort blip
+		if (distort)
+		{
 			radar_blip_draw_distorted(b);
-		} else if ( b->flags & BLIP_DRAW_DISTORTED ) {
+		}
+		else if (b->flags & BLIP_DRAW_DISTORTED)
+		{
 			radar_blip_draw_flicker(b);
-		} else{
-			radar_draw_circle( b->x, b->y, b->rad );
+		}
+		else
+		{
+			radar_draw_circle(b->x, b->y, b->rad);
 		}
 	}
 }
@@ -706,27 +724,16 @@ void draw_radar_blips(int rcol, int is_dim, int distort)
 // input:	distorted	=>		0 (default) to draw normal, 1 to draw distorted 
 void radar_draw_blips_sorted_std(int distort)
 {
-	// draw dim blips first
-	draw_radar_blips(RCOL_JUMP_NODE, 1, distort);
-	draw_radar_blips(RCOL_WARPING_SHIP, 1, distort);
-	draw_radar_blips(RCOL_NAVBUOYS, 1, distort);
-	draw_radar_blips(RCOL_FRIENDLY, 1, distort);
-	draw_radar_blips(RCOL_UNKNOWN, 1, distort);
-	draw_radar_blips(RCOL_BOMB, 1, distort);
-	draw_radar_blips(RCOL_NEUTRAL, 1, distort);
-	draw_radar_blips(RCOL_HOSTILE, 1, distort);
-	draw_radar_blips(RCOL_TAGGED, 1, distort);
-
-	// draw bright blips
-	draw_radar_blips(RCOL_JUMP_NODE, 0, distort);
-	draw_radar_blips(RCOL_WARPING_SHIP, 0, distort);
-	draw_radar_blips(RCOL_NAVBUOYS, 0, distort);
-	draw_radar_blips(RCOL_FRIENDLY, 0, distort);
-	draw_radar_blips(RCOL_UNKNOWN, 0, distort);
-	draw_radar_blips(RCOL_BOMB, 0, distort);
-	draw_radar_blips(RCOL_NEUTRAL, 0, distort);
-	draw_radar_blips(RCOL_HOSTILE, 0, distort);
-	draw_radar_blips(RCOL_TAGGED, 0, distort);
+	// draw dim blips first, then bright blips
+	for (int is_bright = 0; is_bright < 2; is_bright++)
+	{
+		draw_radar_blips_std(BLIP_TYPE_JUMP_NODE, is_bright, distort);
+		draw_radar_blips_std(BLIP_TYPE_WARPING_SHIP, is_bright, distort);
+		draw_radar_blips_std(BLIP_TYPE_NAVBUOY_CARGO, is_bright, distort);
+		draw_radar_blips_std(BLIP_TYPE_NORMAL_SHIP, is_bright, distort);
+		draw_radar_blips_std(BLIP_TYPE_BOMB, is_bright, distort);
+		draw_radar_blips_std(BLIP_TYPE_TAGGED_SHIP, is_bright, distort);
+	}
 }
 
 void radar_draw_range_std()

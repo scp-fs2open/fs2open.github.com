@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.201 $
- * $Date: 2006-01-13 02:56:01 $
+ * $Revision: 2.202 $
+ * $Date: 2006-01-13 03:31:20 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.201  2006/01/13 02:56:01  Goober5000
+ * formatting, meh
+ * --Goober5000
+ *
  * Revision 2.200  2006/01/10 00:12:08  phreak
  * Add the argument for alpha color when using set-jumpnode-color.  This was defaulting to some junk value and making the jumpnode disappear.
  *
@@ -1168,6 +1172,7 @@
 #include "object/objectdock.h"
 #include "globalincs/systemvars.h"
 #include "camera/camera.h"
+#include "iff_defs/iff_defs.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "network/multi.h"
@@ -2454,7 +2459,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 						if (waypoint_lookup(CTEXT(node)) < 0){
 							if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
-								if (!sexp_determine_team(CTEXT(node))){
+								if (sexp_determine_team(CTEXT(node)) < 0){
 									return SEXP_CHECK_INVALID_POINT;
 								}
 							}
@@ -2584,15 +2589,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				for (i=0; i<Num_team_names; i++)
-				{
-					if (!stricmp(Team_names[i], CTEXT(node)))
-					{
-						break;
-					}
-				}
-
-				if (i == Num_team_names)
+				if (iff_lookup(CTEXT(node)) < 0)
 				{
 					return SEXP_CHECK_INVALID_IFF;
 				}
@@ -2669,15 +2666,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				else
 				{
+					int get_special_anchor(char *name);
 					int valid = 0;
 
-					for (i=0; i<MAX_SPECIAL_ARRIVAL_ANCHORS; i++)
+					// <any friendly>, etc.
+					if (get_special_anchor(CTEXT(node)) >= 0)
 					{
-						if (!stricmp(Special_arrival_anchor_names[i], CTEXT(node)))
-						{
-							valid = 1;
-							break;
-						}
+						valid = 1;
 					}
 
 					if (ship_name_lookup(CTEXT(node), 1) >= 0)
@@ -4234,7 +4229,6 @@ int sexp_string_compare(int n, int op)
 //return the number of ships of a given team in the area battle
 int sexp_num_ships_in_battle(int n)
 {
-	char* c_team;
 	int team=-1;
 	int count=0;
 	ship_obj	*so;
@@ -4242,18 +4236,7 @@ int sexp_num_ships_in_battle(int n)
 
 	if (n != -1)
 	{
-		c_team = CTEXT(n);
-
-		if ( !stricmp(c_team, "friendly") )
-			team = TEAM_FRIENDLY;
-		else if ( !stricmp(c_team, "hostile") )
-			team = TEAM_HOSTILE;
-		else if ( !stricmp(c_team, "neutral") )
-			team = TEAM_NEUTRAL;
-		else if ( !stricmp(c_team, "unknown") )
-			team = TEAM_UNKNOWN;
-		else
-			team = TEAM_FRIENDLY;
+		team = iff_lookup(CTEXT(n));
 	}
 
 	// iterate through all ships
@@ -4264,8 +4247,7 @@ int sexp_num_ships_in_battle(int n)
 		// merging of team and non-team sexps
 		if (team != -1)
 		{
-			// oddly enough, ships can be on multiple teams
-			if (shipp->team & team)
+			if (shipp->team == team)
 			{
 				count++;
 			}
@@ -4300,7 +4282,7 @@ int sexp_current_speed(int n)
 		return SEXP_NAN;
 
 /*	int team = sexp_determine_team(object_name);
-	if (team)	// we have a team type, so pick the first ship of that type
+	if (team >= 0)	// we have a team type, so pick the first ship of that type
 	{
 		ship_obj *so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list))
@@ -5248,15 +5230,14 @@ int sexp_team_score(int node)
 
 			int team = eval_num(node);
 
-			if (team == 1) {
-				return Multi_team0_score;
-			} else if (team == 2) {
-				return Multi_team1_score;
-			} else {
+			if (team < 0 || team >= Num_teams)
+			{
 				// invalid team index
 				Warning(LOCATION, "sexp-team-score: team %d is not a valid team #", team);
 				return 0;
 			}
+
+			return Multi_team_score[team - 1];
 		}
 	}
 
@@ -5314,24 +5295,20 @@ int sexp_hits_left_subsystem(int n)
 
 int sexp_determine_team(char *subj)
 {
-	int team = 0;
+	int len;
+	char team_name[NAME_LENGTH];
 
-	if (subj == NULL)
-		return 0;
+	// quick check
+	if (strnicmp(subj, "<any ", 5))
+		return -1;
 
-	if (!stricmp(subj, "<any friendly>")){
-		team = TEAM_FRIENDLY;
-	} else if (!stricmp(subj, "<any hostile>")){
-		team = TEAM_HOSTILE;
-	} else if (!stricmp(subj, "<any neutral>")){
-		team = TEAM_NEUTRAL;
-	} else if (!stricmp(subj, "<any unknown>")){
-		team = TEAM_UNKNOWN;
-	} else if (!stricmp(subj, "<any traitor>")){
-		team = TEAM_TRAITOR;
-	}
+	// grab IFF (rest of string except for closing angle bracket)
+	len = strlen(subj + 5) - 1;
+	strncpy(team_name, subj + 5, len);
+	team_name[len] = '\0';
 
-	return team;
+	// find it
+	return iff_lookup(team_name);
 }
 
 // returns the distance between two objects.  If a wing is specified as one (or both) of the arguments
@@ -5360,7 +5337,7 @@ int sexp_distance(int n)
 		return SEXP_NAN_FOREVER;
 
 	team = sexp_determine_team(sname1);
-	if (team) {  // we have a team type, so check all ships of that type
+	if (team >= 0) {  // we have a team type, so check all ships of that type
 		so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list)) {
 			if (Ships[Objects[so->objnum].instance].team == team) {
@@ -5424,7 +5401,7 @@ int sexp_distance2(int obj1, char *subj)
 	ship_obj	*so;
 	
 	team = sexp_determine_team(subj);
-	if (team) {  // we have a team type, so check all ships of that type
+	if (team >= 0) {  // we have a team type, so check all ships of that type
 		so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list)) {
 			if (Ships[Objects[so->objnum].instance].team == team) {
@@ -5567,7 +5544,7 @@ int sexp_distance_subsystem(int n)	// Goober5000
 
 	// check if the first object is on a team
 	team = sexp_determine_team(obj_name);
-	if (team)	// we have a team type, so check all ships of that type
+	if (team >= 0)	// we have a team type, so check all ships of that type
 	{
 		so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list))
@@ -5836,7 +5813,7 @@ int sexp_get_object_relative_coordinates(int n, int index)
 		return SEXP_NAN;
 
 	team = sexp_determine_team(object_name);
-	if (team)	// we have a team type, so pick the first ship of that type
+	if (team >= 0)	// we have a team type, so pick the first ship of that type
 	{
 		so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list))
@@ -5908,7 +5885,7 @@ int sexp_get_object_coordinates(int n, int index)
 		return SEXP_NAN;
 
 	team = sexp_determine_team(object_name);
-	if (team)	// we have a team type, so pick the first ship of that type
+	if (team >= 0)	// we have a team type, so pick the first ship of that type
 	{
 		so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list))
@@ -5989,7 +5966,7 @@ void sexp_set_object_position(int n)
 
 	i = 0;
 	team = sexp_determine_team(object_name);
-	if (team)	// we have a team type, so pick the first ship of that type
+	if (team >= 0)	// we have a team type, so pick the first ship of that type
 	{
 		so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list))
@@ -6224,7 +6201,7 @@ void sexp_set_ship_facing_object(int n)
 		return;
 
 	team = sexp_determine_team(target_name);
-	if (team)	// we have a team type, so pick the first ship of that type
+	if (team >= 0)	// we have a team type, so pick the first ship of that type
 	{
 		so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list))
@@ -7369,7 +7346,7 @@ int sexp_ingame_ship_is_iff(int ship_num, int check_team)
 // Goober5000 - added wing capability
 int sexp_is_iff( int n )
 {
-	char *ship_or_wing_name, *iff;
+	char *ship_or_wing_name;
 	int i, ship_num, wing_num, team;
 	wing *wingp;
 
@@ -7377,22 +7354,7 @@ int sexp_is_iff( int n )
 
 	// iff value is the first parameter, second is a list of one or more ships to check to see if the
 	// iff value matches
-	iff = CTEXT(n);
-	if ( !stricmp(iff, "friendly") )
-		team = TEAM_FRIENDLY;
-	else if ( !stricmp(iff, "hostile") )
-		team = TEAM_HOSTILE;
-	else if ( !stricmp(iff, "neutral") )
-		team = TEAM_NEUTRAL;
-	else if ( !stricmp(iff, "unknown") )
-		team = TEAM_UNKNOWN;
-	else if ( !stricmp(iff, "traitor") )
-		team = TEAM_TRAITOR;
-	else {
-		Int3();
-		mprintf(("Warning: Team %s no longer supported.  Just Friendly and Hostile.\n", iff));
-		team = TEAM_HOSTILE;
-	}
+	team = iff_lookup(CTEXT(n));
 
 	n = CDR(n);
 	for ( ; n != -1; n = CDR(n) )
@@ -7463,30 +7425,14 @@ void sexp_parse_ship_change_iff(p_object *parse_obj, int new_team)
 // Goober5000 - added wing capability
 void sexp_change_iff( int n )
 {
-	char *ship_or_wing_name, *new_iff;
+	char *ship_or_wing_name;
 	int i, ship_num, wing_num, new_team;
 	wing *wingp;
 	p_object *p_objp;
 
 	Assert ( n >= 0 );
-	new_iff = CTEXT(n);
+	new_team = iff_lookup(CTEXT(n));
 	n = CDR(n);
-
-	if ( !stricmp(new_iff, "friendly") )
-		new_team = TEAM_FRIENDLY;
-	else if ( !stricmp(new_iff, "hostile") )
-		new_team = TEAM_HOSTILE;
-	else if ( !stricmp(new_iff, "neutral") )
-		new_team = TEAM_NEUTRAL;
-	else if ( !stricmp(new_iff, "unknown") )
-		new_team = TEAM_UNKNOWN;
-	else if ( !stricmp(new_iff, "traitor") )
-		new_team = TEAM_TRAITOR;
-	else {
-		mprintf(("Warning: Team %s no longer supported.  Just Friendly and Hostile.\n", new_iff));
-		new_team = TEAM_HOSTILE;
-		Int3();
-	}
 
 	for ( ; n != -1; n = CDR(n) )
 	{
@@ -9436,23 +9382,12 @@ void sexp_end_mission( int n )
 // designers must implement this.
 void sexp_good_time_to_rearm( int n )
 {
-	int i, time;
-	char *team_name;
+	int team, time;
 
-	team_name = CTEXT(n);
+	team = iff_lookup(CTEXT(n));
 	time = eval_num(CDR(n));						// this is the time for how long a good rearm is active -- in seconds
 
-	if (team_name == NULL)
-		return;
-
-	for ( i = 0; i < Num_team_names; i++ ) {
-		if ( !stricmp(team_name, Team_names[i]) ) {
-			int team;
-
-			team = 1 << i;
-			ai_set_rearm_status( team, time );
-		}
-	}
+	ai_set_rearm_status(team, time);
 }
 
 // function which grants promotion to the player
@@ -9747,7 +9682,7 @@ void sexp_deal_with_warp( int n, int repairable, int damage_it )
 void sexp_good_secondary_time( int n )
 {
 	char *team_name, *weapon_name, *ship_name;
-	int num_weapons, weapon_index, team, i;
+	int num_weapons, weapon_index, team;
 
 	team_name = CTEXT(n);
 	num_weapons = eval_num(CDR(n));
@@ -9761,15 +9696,7 @@ void sexp_good_secondary_time( int n )
 	}
 
 	// get the team type from the team_name
-	for ( i = 0; i < Num_team_names; i++ ) {
-		if ( !stricmp(Team_names[i], team_name) )
-			break;
-	}
-	if ( i == Num_team_names ) {
-		nprintf(("Warning", "couldn't find team %s for good-secondary-time\n", team_name ));
-		return;
-	}
-	team = (1<<i);			// this is the magic formula to get to a team type.
+	team = iff_lookup(team_name);
 
 	// see if the ship has departed or has been destroyed.  If so, then we don't need to set up the
 	// AI stuff
@@ -13421,7 +13348,7 @@ void sexp_set_camera_facing_object(int n)
 	int index;
 
 	index = sexp_determine_team(object_name);
-	if(index)
+	if(index >= 0)
 	{
 		so = GET_FIRST(&Ship_obj_list);
 		while (so != END_OF_LIST(&Ship_obj_list))

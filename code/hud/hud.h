@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.21 $
- * $Date: 2005-12-29 00:54:08 $
- * $Author: phreak $
+ * $Revision: 2.22 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/12/29 00:54:08  phreak
+ * mirror parameter in hud_anim_render().  only used when briefing icons are fading in.
+ *
  * Revision 2.20  2005/11/23 00:49:51  phreak
  * Player repair rearm completion timer display added.
  *
@@ -463,7 +466,6 @@ int	hud_gauge_popup_active(int gauge_index);
 // objective status gauge
 void hud_add_objective_messsage(int type, int status);
 
-int	hud_team_matches_filter(int team_filter, int ship_team);
 void	hud_maybe_clear_head_area();
 
 int	hud_get_dock_time( object *docker_objp );
@@ -488,10 +490,6 @@ int hud_disabled_except_messages();
 // contrast stuff
 void hud_toggle_contrast();
 void hud_set_contrast(int high);
-
-//	Return mask of enemies.
-//	Works in team vs. team multiplayer.
-int opposing_team_mask(int team_mask);
 
 #endif	/* __HUD_H__ */
 

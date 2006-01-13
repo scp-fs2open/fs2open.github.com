@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-18 03:44:01 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2006-01-13 03:30:59 $
+ * $Author: Goober5000 $
  *
  * Header file for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/18 03:44:01  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.5  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -104,6 +112,5 @@ void draw_brackets_diamond(int x1, int y1, int x2, int y2);
 void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick=0);
 void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2, int thick=0);
 void draw_brackets_dashed_square_quick(int x1, int y1, int x2, int y2);
-int hud_brackets_get_iff_color(int team);
 
 #endif

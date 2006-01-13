@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.h $
- * $Revision: 2.2 $
- * $Date: 2005-07-13 03:15:52 $
+ * $Revision: 2.3 $
+ * $Date: 2006-01-13 03:30:59 $
  * $Author: Goober5000 $
  *
  * Header file for functions that control and manage the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/07/13 03:15:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.1  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -131,19 +135,17 @@
 #define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
 #define MAX_ACTIVE_BUFFER_LINES	10
 
-#define HUD_SOURCE_COMPUTER	0
-#define HUD_SOURCE_FRIENDLY	1
-#define HUD_SOURCE_HOSTILE		2
-#define HUD_SOURCE_NEUTRAL		3
-#define HUD_SOURCE_UNKNOWN		4
-#define HUD_SOURCE_TRAITOR		5
-#define HUD_SOURCE_TRAINING	6
-#define HUD_SOURCE_HIDDEN		7
-#define HUD_SOURCE_IMPORTANT	8
-#define HUD_SOURCE_FAILED		9
-#define HUD_SOURCE_SATISFIED	10
-#define HUD_SOURCE_TERRAN_CMD	11
-#define HUD_SOURCE_NETPLAYER	12
+#define HUD_SOURCE_COMPUTER		0
+#define HUD_SOURCE_TRAINING		1
+#define HUD_SOURCE_HIDDEN		2
+#define HUD_SOURCE_IMPORTANT	3
+#define HUD_SOURCE_FAILED		4
+#define HUD_SOURCE_SATISFIED	5
+#define HUD_SOURCE_TERRAN_CMD	6
+#define HUD_SOURCE_NETPLAYER	7
+
+#define HUD_SOURCE_TEAM_OFFSET	8	// must be higher than any previous hud source
+
 
 extern int ACTIVE_BUFFER_LINES;					// user-preferred number of message buffer lines
 
@@ -194,7 +196,8 @@ void hud_scrollback_exit();
 void hud_init_msg_window();
 void hud_show_msg_window();
 void hud_show_fixed_text();
-int HUD_get_team_source(int team);
+int HUD_team_get_source(int team);
+int HUD_source_get_team(int team);
 void HUD_printf(char *format, ...);
 void hud_sourced_print(int source, char *msg);
 void HUD_sourced_printf(int source, char *format, ...);  // send hud message from specified source

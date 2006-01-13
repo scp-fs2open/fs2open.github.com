@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.48 $
- * $Date: 2005-12-29 00:49:43 $
- * $Author: phreak $
+ * $Revision: 2.49 $
+ * $Date: 2006-01-13 03:31:09 $
+ * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2005/12/29 00:49:43  phreak
+ * Briefing icons can now be mirrored so one can point them in the opposite direction.
+ *
  * Revision 2.47  2005/11/21 23:55:57  taylor
  * move generic_* functions to their own file
  *
@@ -362,6 +365,7 @@
 #include "localization/localize.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
+#include "iff_defs/iff_defs.h"
 
 
 // --------------------------------------------------------------------------------------
@@ -523,11 +527,11 @@ static int Colored_text_len[MAX_TEXT_STREAMS][MAX_BRIEF_LINES];
 #define BRIEF_TEXT_GREEN				3
 #define BRIEF_TEXT_YELLOW				4
 #define BRIEF_TEXT_BLUE					5
-#define BRIEF_IFF_FRIENDLY				6
-#define BRIEF_IFF_HOSTILE				7
-#define BRIEF_IFF_NEUTRAL				8
+#define BRIEF_TEXT_FRIENDLY				6
+#define BRIEF_TEXT_HOSTILE				7
+#define BRIEF_TEXT_NEUTRAL				8
 
-color Brief_color_red, Brief_color_green;
+color Brief_color_red, Brief_color_green, Brief_color_legacy_neutral;
 
 color *Brief_text_colors[MAX_BRIEF_TEXT_COLORS] = 
 {
@@ -539,7 +543,7 @@ color *Brief_text_colors[MAX_BRIEF_TEXT_COLORS] =
 	&Color_blue,
 	&Brief_color_green,
 	&Brief_color_red,
-	&IFF_colors[IFF_COLOR_NEUTRAL][0],
+	&Brief_color_legacy_neutral,
 };
 
 #define BRIGHTEN_LEAD	2
@@ -715,14 +719,7 @@ void brief_parse_icon_tbl()
 
 void brief_set_icon_color(int team)
 {
-	switch (team) { 
-	case TEAM_FRIENDLY:	SET_COLOR_FRIENDLY;	break;
-	case TEAM_HOSTILE:	SET_COLOR_HOSTILE;	break;
-	case TEAM_NEUTRAL:	SET_COLOR_NEUTRAL;	break;
-	case TEAM_TRAITOR:	SET_COLOR_HOSTILE;	break;
-	default:
-		SET_COLOR_HOSTILE;	break;
-	} // end switch
+	gr_set_color_fast(iff_get_color_by_team(team, -1, 0));
 }
 
 // --------------------------------------------------------------------------------------
@@ -749,6 +746,7 @@ void mission_brief_common_init()
 	// setup brief text colors
 	gr_init_alphacolor( &Brief_color_green, 50, 100, 50, 255 );
 	gr_init_alphacolor( &Brief_color_red, 140, 20, 20, 255 );
+	gr_init_alphacolor( &Brief_color_legacy_neutral, 255, 0, 0, iff_get_alpha_value(false));
 
 	// extra catch to reset everything that's already loaded - taylor
 	mission_brief_common_reset();
@@ -929,10 +927,6 @@ void brief_init_screen(int multiplayer_flag)
 //
 void brief_init_colors()
 {
-	if ( Fred_running ) {
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_HOSTILE][0],  0xff, 0x00, 0x00, 15*16 );
-		gr_init_alphacolor( &IFF_colors[IFF_COLOR_FRIENDLY][0], 0x00, 0xff, 0x00, 15*16 );
-	}
 }
 
 void brief_preload_icon_anim(brief_icon *bi)
@@ -1486,36 +1480,6 @@ void brief_render_map(int stage_num, float frametime)
 	g3_end_frame();
 }
 
-
-// -------------------------------------------------------------------------------------
-// brief_text_set_color()
-//
-void brief_text_set_color(char c) {
-	switch ( c ) {
-		case 'f':
-			SET_COLOR_FRIENDLY;
-			break;
-		case 'h':
-			SET_COLOR_HOSTILE;
-			break;
-		case 'n':
-			SET_COLOR_NEUTRAL;
-			break;
-		case 'r':
-			gr_set_color_fast(&Color_red);
-			break;
-		case 'g':
-			gr_set_color_fast(&Color_green);
-			break;
-		case 'b':
-			gr_set_color_fast(&Color_blue);
-			break;
-		default:	
-			Int3();	// unsupported meta-code
-			break;
-	} // end switch
-}
-
 // Display what stage of the briefing is active
 void brief_blit_stage_num(int stage_num, int stage_max)
 {
@@ -1843,13 +1807,13 @@ ubyte brief_return_color_index(char c)
 {
 	switch (c) {
 		case 'f':
-			return BRIEF_IFF_FRIENDLY;
+			return BRIEF_TEXT_FRIENDLY;
 
 		case 'h':
-			return BRIEF_IFF_HOSTILE;
+			return BRIEF_TEXT_HOSTILE;
 
 		case 'n':
-			return BRIEF_IFF_NEUTRAL;
+			return BRIEF_TEXT_NEUTRAL;
 
 		case 'r':
 			return BRIEF_TEXT_RED;
