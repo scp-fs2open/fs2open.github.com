@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.294 $
- * $Date: 2006-01-13 11:09:45 $
+ * $Revision: 2.295 $
+ * $Date: 2006-01-13 13:06:15 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.294  2006/01/13 11:09:45  taylor
+ * fix hud comm message screwups (missing support ship, no coverme, etc) that was part :V: bug and (bigger) part Ship_types related bug
+ *
  * Revision 2.293  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -3087,10 +3090,13 @@ strcpy(parse_error_text, temp_error);
 	{
 		char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
 		int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
+		int ship_type_index = -1;
 		for ( i=0; i<num_strings; i++ )
 		{
-			if (sip->class_type < 0) {
-				sip->class_type = ship_type_name_lookup(ship_strings[i]);
+			ship_type_index = ship_type_name_lookup(ship_strings[i]);
+
+			if ( (ship_type_index >= 0) && (sip->class_type < 0) ) {
+				sip->class_type = ship_type_index;
 			}
 
 			if (!stricmp(NOX("no_collide"), ship_strings[i]))
@@ -3161,7 +3167,7 @@ strcpy(parse_error_text, temp_error);
 				sip->flags2 |= SIF2_GENERATE_HUD_ICON;
 			else if( !stricmp( NOX("no weapon damage scaling"), ship_strings[i]))
 				sip->flags2 |= SIF2_DISABLE_WEAP_DAMAGE_SCALING;
-			else
+			else if (ship_type_index < 0)
 				Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 		}
 
