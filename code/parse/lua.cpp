@@ -5,6 +5,7 @@
 #include "graphics/2d.h"
 #include "ship/ship.h"
 #include "Ship/shipfx.h"
+#include "io/key.h"
 #include "io/mouse.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
@@ -230,6 +231,8 @@ public:
 //*************************Lua return values*************************
 #define LUA_RETURN_NIL		0
 #define LUA_RETURN_OBJECT		1
+#define LUA_RETURN_TRUE		lua_return_args(L, "b", true)
+#define LUA_RETURN_FALSE	lua_return_args(L, "b", true)
 
 //*************************Lua defines*************************
 //These are the various types of operators you can
@@ -532,6 +535,18 @@ LUA_FUNC(getName, l_Shipclass, NULL, "Name (string)", "Gets ship class name")
 		return LUA_RETURN_NIL;
 
 	return lua_return_args(L, "s", Ship_info[idx].name);
+}
+
+LUA_FUNC(getType, l_Shipclass, NULL, "Ship type (string)", "Gets ship type name")
+{
+	int idx;
+	if(!lua_parse_args(L, "o", l_Shipclass.Parse(&idx)))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	return lua_return_args(L, "s", Ship_types[Ship_info[idx].class_type].name);
 }
 
 LUA_FUNC(getSpecies, l_Shipclass, NULL, "Species name (string)", "Gets ship species")
@@ -882,7 +897,7 @@ LUA_FUNC(setEvent, l_Base, "Event", "Whether a valid event name was given (boole
 	lua_return_args(L, "b", false);
 }
 
-LUA_FUNC(getEventTypeName, l_Base, "Index of evnt type (number)", "Event name (string)", "Gets the name of a event type, given an index; this function may be used to list all event dealt with by setEvent()")
+LUA_FUNC(getEventTypeName, l_Base, "Index of event type (number)", "Event name (string)", "Gets the name of a event type, given an index; this function may be used to list all event dealt with by setEvent()")
 {
 	int i;
 	if(!lua_parse_args(L, "i", &i))
@@ -1028,6 +1043,23 @@ LUA_FUNC(getShipClass, l_Tables, "Class name", "Shipclass object", "Gets ship cl
 
 	return lua_return_args(L, "o", l_Shipclass.Return(&idx));
 }
+
+//**********LIBRARY: Keyboard
+/*lua_lib l_Keyboard("kb", "Keyboard library");
+//WMC - For some reason, this always returns true
+LUA_FUNC(isKeyPressed, l_Keyboard, "Letter", "True if key is pressed, false if not", "Determines whether the given ASCII key is pressed. (If a string is given, only the first character is used)")
+{
+	char *s;
+	if(!lua_parse_args(L, "s", &s))
+		return LUA_RETURN_NIL;
+
+	char c = s[0];
+
+	if(c == key_to_ascii(key_inkey()))
+		return LUA_RETURN_TRUE;
+	else
+		return LUA_RETURN_FALSE;
+}*/
 
 //**********LIBRARY: Mouse
 lua_lib l_Mouse("ms", "Mouse library");
@@ -1450,6 +1482,62 @@ LUA_FUNC(flashScreen, l_Graphics, "Red, Green, Blue", NULL, "Flashes the screen"
 	gr_flash(r,g,b);
 
 	return LUA_RETURN_NIL;
+}
+
+//**********LIBRARY: Sound
+lua_lib l_SoundLib("sd", "Sound Library");
+
+LUA_FUNC(playGameSound, l_SoundLib, "Sound filename, [Panning (-1.0 left to 1.0 right)], [Volume %], [Priority 0-3] [Voice Message?]", "True if sound was played, false if not (Replaced with a sound instance object in the future)", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played")
+{
+	char *s;
+	float pan=0.0f;
+	float vol=100.0f;
+	int pri=0;
+	bool voice_msg = false;
+	if(!lua_parse_args(L, "s|ffib", &s, &pan, &vol, &pri, &voice_msg))
+		return LUA_RETURN_NIL;
+
+	int idx = gamesnd_get_by_name(s);
+	
+	if(idx < 0)
+		return LUA_RETURN_FALSE;
+
+	if(pri < 0 || pri > 3)
+		pri = 0;
+
+	if(pan < -1.0f)
+		pan = -1.0f;
+	if(pan > 1.0f)
+		pan = 1.0f;
+	if(vol < 0.0f)
+		vol = 0.0f;
+	if(vol > 100.0f)
+		vol = 100.0f;
+
+	idx = snd_play(&Snds[idx], pan, vol*0.01f, pri, voice_msg);
+
+	return lua_return_args(L, "b", idx > -1);
+}
+
+LUA_FUNC(playInterfaceSound, l_SoundLib, "Sound filename", "True if sound was played, false if not", "Plays a sound from #Interface Sounds in sounds.tbl")
+{
+	char *s;
+	if(!lua_parse_args(L, "s", &s))
+		return LUA_RETURN_NIL;
+
+	int idx;
+	for(idx = 0; idx < Num_iface_sounds; idx++)
+	{
+		if(!stricmp(Snds_iface[idx].filename, s))
+			break;
+	}
+	
+	if(idx == Num_iface_sounds)
+		return LUA_RETURN_FALSE;
+
+	gamesnd_play_iface(idx);
+
+	return lua_return_args(L, "b", idx > -1);
 }
 
 //*************************Libraries*************************
@@ -2040,12 +2128,12 @@ int script_state::CreateLuaState()
 	lua_lib_h *obj_end = &lua_Objects[lua_Objects.size()];
 	lua_lib_h *libobj = NULL;
 	lua_func_hh *func;
-	lua_func_hh *ofunc;
 	lua_func_hh *func_end;
 	int i;	//used later
 
 	//CHECK FOR BAD THINGS
 #ifndef NDEBUG
+	lua_func_hh *ofunc;
 	//Like libraries/objects with identical names
 	mprintf(("LUA: Performing object/library name validity check"));
 	for(; lib < lib_end; lib++)
