@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-10-30 19:22:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.22 $
+ * $Date: 2006-01-13 08:27:43 $
+ * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/10/30 19:22:31  wmcoolmon
+ * Display a special dialog if the player tries to continue a campaign with no missions
+ *
  * Revision 2.20  2005/09/16 02:51:54  taylor
  * when changing a campaign in the campaign room make sure that the mainhall is properly set without having to play a mission first
  *
@@ -1731,8 +1734,6 @@ void campaign_room_commit()
 
 		mission_campaign_savefile_delete(Campaign_file_names[Selected_campaign_index]);
 		*/
-		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
-		strcpy(Player->current_campaign, Campaign.filename);  // track new campaign for player
 
 		// Goober5000 - reinitialize tech database if needed
 		if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
@@ -1740,6 +1741,9 @@ void campaign_room_commit()
 			// reset tech database to what's in the tables
 			tech_reset_to_default();
 		}
+
+		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
+		strcpy(Player->current_campaign, Campaign.filename);  // track new campaign for player
 
 		// Goober5000 - reset player-persistent variables
 		Player->num_variables = 0;
