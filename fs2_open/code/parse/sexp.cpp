@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.200 $
- * $Date: 2006-01-10 00:12:08 $
- * $Author: phreak $
+ * $Revision: 2.201 $
+ * $Date: 2006-01-13 02:56:01 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.200  2006/01/10 00:12:08  phreak
+ * Add the argument for alpha color when using set-jumpnode-color.  This was defaulting to some junk value and making the jumpnode disappear.
+ *
  * Revision 2.199  2006/01/09 04:52:34  phreak
  * fix compile warnings.
  *
@@ -17295,11 +17298,15 @@ char *CTEXT(int n)
 	}
 
 	// Goober5000 - if not special argument, proceed as normal
-	if (Sexp_nodes[n].type & SEXP_FLAG_VARIABLE) {
-		if (Fred_running) {
+	if (Sexp_nodes[n].type & SEXP_FLAG_VARIABLE)
+	{
+		if (Fred_running)
+		{
 			sexp_variable_index = get_index_sexp_variable_name(Sexp_nodes[n].text);
 			Assert(sexp_variable_index != -1);
-		} else {
+		}
+		else
+		{
 //			sexp_variable_index = extract_sexp_variable_index(n);
 			sexp_variable_index = atoi(Sexp_nodes[n].text);
 		}
@@ -17310,7 +17317,9 @@ char *CTEXT(int n)
 		Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
 
 		return Sexp_variables[sexp_variable_index].text;
-	} else {
+	}
+	else
+	{
 		return Sexp_nodes[n].text;
 	}
 }
