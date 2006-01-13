@@ -394,7 +394,11 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 // SRGRAMMAR
 //
 
+#ifdef FS2_VOICER
 IDR_CMD_CFG             SRGRAMMAR DISCARDABLE   "..\..\code\sound\phrases.cfg"
+#endif
+
+
 #endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
 
