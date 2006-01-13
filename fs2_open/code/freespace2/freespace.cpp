@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.208 $
- * $Date: 2006-01-12 17:42:55 $
+ * $Revision: 2.209 $
+ * $Date: 2006-01-13 04:46:17 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.208  2006/01/12 17:42:55  wmcoolmon
+ * Even more scripting stuff.
+ *
  * Revision 2.207  2006/01/12 04:18:10  wmcoolmon
  * Finished committing codebase
  *
@@ -8088,6 +8091,7 @@ void game_do_state(int state)
 
 	if(GS_state_hooks[state].IsValid())
 	{
+		game_set_frametime(state);
 		gr_clear();
 		Script_system.RunBytecode(GS_state_hooks[state]);
 		gr_flip();
