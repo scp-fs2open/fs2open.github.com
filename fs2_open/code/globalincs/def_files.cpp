@@ -254,6 +254,29 @@ $AI:\n\
 	+Turrets attack this:	YES\n\
 	+Active docks:			(\"support\")\n\
 \n\
+;; taylor - same as support ship above but this works with retail tables\n\
+""$Name:					repair_rearm\n\
+$Counts for Alone:		YES\n\
+$Praise Destruction:	YES\n\
+$On Hotkey List:		YES\n\
+$Target as Threat:		YES\n\
+$Show Attack Direction:	YES\n\
+$Warp Pushable:			YES\n\
+$Max Debris Speed:		200\n\
+$FF Multiplier:			1.0\n\
+$EMP Multiplier:		3.5\n\
+$Fog:\n\
+	+Start dist:			10.0\n\
+	+Compl dist:			500.0\n\
+$AI:\n\
+	+Valid goals:			(\"fly to ship\" \"dock\" \"undock\" \"waypoints\" \"waypoints once\" \"stay near ship\" \"keep safe dist\" \"stay still\" \"play dead\")\n\
+	+Accept Player Orders:	YES\n\
+	+Player orders:			(\"rearm me\" \"abort rearm\" \"stay near me\" \"stay near ship\" \"keep safe dist\" \"depart\")\n\
+	+Auto attacks:			YES\n\
+	+Guards attack this:	YES\n\
+	+Turrets attack this:	YES\n\
+	+Active docks:			(\"support\")\n\
+\n\
 ;;WMC - Stealth ships always have another type, so this isn't used\n\
 ""$Name:					Stealth\n\
 $Counts for Alone:		YES\n\
