@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.40 $
- * $Date: 2006-01-12 17:42:56 $
- * $Author: wmcoolmon $
+ * $Revision: 1.41 $
+ * $Date: 2006-01-14 06:23:39 $
+ * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2006/01/12 17:42:56  wmcoolmon
+ * Even more scripting stuff.
+ *
  * Revision 1.39  2006/01/03 22:46:52  taylor
  * oops, should have been checking my logs on that one, fixes minor GL error
  *
@@ -660,7 +663,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	int i,j,k;
 	ubyte *bmp_data = ((ubyte*)data);
 	ubyte *texmem = NULL, *texmemp;
-	int mipmap_levels = 0;
+	int skip_size = 0, mipmap_levels = 0;
 
 
 	// bogus
@@ -802,6 +805,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 					dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
 				}
+
+				skip_size = doffset;
 
 				if (!reload)
 					glCompressedTexImage2D(GL_TEXTURE_2D, 0, intFormat, mipmap_w, mipmap_h, 0, dsize, bmp_data + doffset);
@@ -958,6 +963,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				dsize = mipmap_h * mipmap_w * byte_mult;
 			}
 
+			skip_size = doffset;
+
 			if (!reload)
 				glTexImage2D (GL_TEXTURE_2D, 0, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, (texmem != NULL) ? texmem : bmp_data + doffset);
 			else // faster anis
@@ -994,11 +1001,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	t->bitmap_handle = bitmap_handle;
 	t->time_created = GL_frame_count;
 	Tex_used_this_frame[idx] = 0;
-	if (bitmap_type == TCACHE_TYPE_COMPRESSED) {
-		t->size = bm_get_size(bitmap_handle);
-	} else {
-		t->size = tex_w * tex_h * byte_mult;
-	}
+	t->size = (dsize) ? ((doffset + dsize) - skip_size) : (tex_w * tex_h * byte_mult);
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
 	GL_textures_in_frame += t->size;
