@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.18 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
+ * $Revision: 1.19 $
+ * $Date: 2006-01-14 03:28:29 $
+ * $Author: phreak $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 1.17  2005/10/10 17:21:09  taylor
  * remove NO_NETWORK
  *
@@ -155,7 +158,8 @@ vec3d vec_extents[]=
 	{0,0,-1}
 };
 
-static matrix fudge = { { { {1.0f, 0.0f, 0.0f }, {0.0f,1.0f,0.0f}, {0.0f,0.0f,-1.0f} } } };
+//special view matrix to get the orb rotating the correct war
+static matrix view_perturb = { { { {1.0f, 0.0f, 0.0f }, {0.0f,1.0f,0.0f}, {0.0f,0.0f,-1.0f} } } };
 
 
 // forward declarations
@@ -511,12 +515,7 @@ void radar_orb_draw_contact(vec3d *pnt, int rad)
 void radar_draw_circle_orb( int x, int y, int rad )
 {
 	Int3();
-	if ( rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res] )	{
-		gr_string( Large_blip_offset_x+x, Large_blip_offset_y+y, Large_blip_string );
-	} else {
-		// rad = RADAR_BLIP_RADIUS_NORMAL;
-		gr_string( Small_blip_offset_x+x, Small_blip_offset_y+y, Small_blip_string );
-	}
+	//This shouldn't be called in orb mode since we need the 3d position of the contact to draw
 }
 
 // radar is damaged, so make blips dance around
@@ -628,7 +627,7 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 		}
 		else
 		{
-			radar_draw_circle(b->x, b->y, b->rad);
+			radar_orb_draw_contact(&b->position,b->rad);
 		}
 	}
 }
@@ -637,11 +636,7 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 // input:	distorted	=>		0 (default) to draw normal, 1 to draw distorted 
 void radar_draw_blips_sorted_orb(int distort)
 {
-	matrix m;
-	
-	vm_vector_2_matrix(&m,&Player_obj->orient.vec.fvec,NULL,NULL);
-//	g3_start_instance_matrix(&vmd_zero_vector, &m, false);
-	g3_start_instance_matrix(&vmd_zero_vector, &fudge, false);
+	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, false);
 
 	// draw dim blips first, then bright blips
 	for (int is_bright = 0; is_bright < 2; is_bright++)
@@ -654,7 +649,6 @@ void radar_draw_blips_sorted_orb(int distort)
 		draw_radar_blips_orb(BLIP_TYPE_TAGGED_SHIP, is_bright, distort);
 	}
 
-	//g3_done_instance(false);
 	g3_done_instance(false);
 }
 
@@ -731,7 +725,7 @@ void radar_orb_draw_outlines()
 	vertex proj_orb_lines_xz[25];
 	vertex proj_orb_lines_yz[25];
 
-	g3_start_instance_matrix(&vmd_zero_vector, &fudge, false);
+	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, false);
 
 	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, false);
 
