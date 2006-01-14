@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.21 $
- * $Date: 2005-12-06 02:50:41 $
+ * $Revision: 1.22 $
+ * $Date: 2006-01-14 19:25:55 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2005/12/06 02:50:41  taylor
+ * clean up some init stuff and fix a minor SDL annoyance
+ * make debug messages a bit more readable
+ * clean up the debug console commands for minimize and anisotropic filter setting
+ * make anisotropic filter actually work correctly and have it settable with a reg option
+ * give opengl_set_arb() the ability to disable all features on all arbs at once so I don't have to everywhere
+ *
  * Revision 1.20  2005/10/23 11:45:06  taylor
  * add -ogl_shine to adjust the OGL shininess value so that people can play around and find the best value to use
  *
@@ -187,6 +194,11 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 		GLLight->Specular.r *= static_light_factor;
 		GLLight->Specular.g *= static_light_factor;
 		GLLight->Specular.b *= static_light_factor;
+
+		// default values
+		GLLight->ConstantAtten = 1.0f;
+		GLLight->LinearAtten = 0.0f;
+		GLLight->QuadraticAtten = 0.0f;
 	}
 
 	//If the light is a point or tube type
@@ -209,8 +221,8 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 
 		//They also have almost no radius...
 //		GLLight->Range = FSLight->radb +FSLight->rada; //No range function in OpenGL that I'm aware of
-		GLLight->ConstantAtten = 0.0f;
-		GLLight->LinearAtten = 0.1f;
+		GLLight->ConstantAtten = 3.0f;
+		GLLight->LinearAtten = 0.0f;
 		GLLight->QuadraticAtten = 0.0f; 
 	}
 
