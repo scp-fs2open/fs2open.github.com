@@ -1249,6 +1249,36 @@ LUA_FUNC(getNextMissionName, l_Campaign, NULL, "Mission name, or false if there 
 	return lua_ret_args(L, "s", Campaign.missions[Campaign.next_mission].name);
 }
 
+LUA_FUNC(getMissionByName, l_Campaign, "Mission name", "Cmission object, or false if mission does not exist", "Gets the specified mission from the campaign by its name")
+{
+	char *s;
+
+	if(!lua_parse_args(L, "s", &s))
+		return LUA_RETURN_NIL;
+
+	for(int idx = 0; idx < Campaign.num_missions; idx++)
+	{
+		if(!stricmp(Campaign.missions[idx].name, s))
+			return lua_ret_args(L, "o", l_Cmission.Return(&idx));
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+
+LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cmission object", "Gets the specified mission by its index in the campaign")
+{
+	int idx;
+
+	if(!lua_parse_args(L, "i", &idx))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Campaign.num_missions)
+		return LUA_RETURN_NIL;
+
+	return lua_ret_args(L, "o", l_Cmission.Return(&idx));
+}
+
 LUA_FUNC(getNextMission, l_Campaign, NULL, "Cmission object, or false if there is no next mission", "Gets the next mission in the campaign")
 {
 	if(Campaign.next_mission < 0)
