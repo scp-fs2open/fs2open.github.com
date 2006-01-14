@@ -7,7 +7,10 @@ extern "C" {
 	#include "lualib.h"
 }
 
-//extern const struct script_lua_lib_list Lua_libraries[];
+//Used to parse arguments on the stack to C values
+int lua_get_args(lua_State *L, char *fmt, ...);
+int lua_set_args(lua_State *L, char* fmt, ...);
+
 extern void lua_stackdump(lua_State *L, char *stackdump);
 
 #endif //USE_LUA

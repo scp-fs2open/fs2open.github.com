@@ -59,9 +59,14 @@ public:
 	//Moves data
 	//void MoveData(script_state &in);
 
+	//Variable handling functions
+	void SetGlobal(char *name, char format, ...);
+	bool GetGlobal(char *name, char format='\0', void *data=NULL);
+	void RemGlobal(char *name);
+
 	//Hook handling functions
 	script_hook ParseChunk(char* debug_str=NULL);
-	int RunBytecode(script_hook &hd);
+	int RunBytecode(script_hook &hd, char *format=NULL, ...);
 };
 
 

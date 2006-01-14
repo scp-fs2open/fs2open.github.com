@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.129 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.130 $
+ * $Date: 2006-01-14 09:21:27 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.128  2006/01/09 04:54:14  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
  *
@@ -768,6 +771,7 @@
 #include "render/3d.h"
 #include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
+#include "parse/scripting.h"
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>
@@ -1585,7 +1589,9 @@ typedef struct ship_info {
 	float		slide_accel;
 	float		slide_decel;
 	float		warpin_speed;
+	script_hook warpin_hook;
 	float		warpout_speed;
+	script_hook warpout_hook;
 	float		warpout_player_speed;
 
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000

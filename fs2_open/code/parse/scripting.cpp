@@ -88,8 +88,63 @@ void script_init (void)
 #pragma message("WARNING: Python is not compiled in")
 #endif
 
-//returns 0 on failure, 1 on success
-int script_state::RunBytecode(script_hook &hd)
+void script_state::SetGlobal(char *name, char format, ...)
+{
+#ifdef USE_LUA
+	if(LuaState != NULL)
+	{
+		char fmt[2] = {format, '\0'};
+
+		va_list vl;
+		va_start(vl, format);
+		//WMC - Why I had to * this, I don't know. I just did.
+		lua_set_args(LuaState, fmt, *vl);
+		va_end(vl);
+
+		lua_setglobal(LuaState, name);
+	}
+#endif
+}
+
+//WMC - data can be NULL, if we just want to know if it exists
+bool script_state::GetGlobal(char *name, char format, void *data)
+{
+	bool got_global = false;
+#ifdef USE_LUA
+	if(LuaState != NULL)
+	{
+		//Construct format string
+		char fmt[3] = {'|', format, '\0'};
+
+		lua_getglobal(LuaState, name);
+		//Does global exist?
+		if(!lua_isnil(LuaState, -1))
+		{
+			if(data != NULL) {
+				lua_get_args(LuaState, fmt, data);
+			}
+			got_global = true;
+		}
+	}
+#endif
+
+	return got_global;
+}
+
+void script_state::RemGlobal(char *name)
+{
+#ifdef USE_LUA
+	if(LuaState != NULL)
+	{
+		//WMC - Quick and clean. :)
+		lua_pushnil(LuaState);
+		lua_setglobal(LuaState, name);
+	}
+#endif
+}
+
+//returns 0 on failure (Parse error), 1 on success
+int script_state::RunBytecode(script_hook &hd, char *format, ...)
 {
 	if(hd.index >= 0)
 	{
@@ -100,7 +155,13 @@ int script_state::RunBytecode(script_hook &hd)
 			if(lua_pcall(GetLuaSession(), 0, 1, 0) != 0)
 			{
 				LuaError(LOCATION, GetLuaSession());
+				return 0;
 			}
+
+			va_list args;
+			va_start(args, format);
+			lua_get_args(LuaState, format, args);
+			va_end(args);
 			return 1;
 #endif
 		}

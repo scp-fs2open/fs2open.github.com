@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.209 $
- * $Date: 2006-01-13 04:46:17 $
+ * $Revision: 2.210 $
+ * $Date: 2006-01-14 09:21:27 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.209  2006/01/13 04:46:17  wmcoolmon
+ * More scripting stuff
+ *
  * Revision 2.208  2006/01/12 17:42:55  wmcoolmon
  * Even more scripting stuff.
  *
@@ -8093,7 +8096,9 @@ void game_do_state(int state)
 	{
 		game_set_frametime(state);
 		gr_clear();
-		Script_system.RunBytecode(GS_state_hooks[state]);
+		int idx=-1;
+		Script_system.RunBytecode(GS_state_hooks[state], "i", &idx);
+		Error(LOCATION, "%d", idx);
 		gr_flip();
 		return;
 	}
