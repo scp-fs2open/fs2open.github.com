@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.86 $
- * $Date: 2006-01-11 21:23:43 $
+ * $Revision: 2.87 $
+ * $Date: 2006-01-14 19:54:55 $
  * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2006/01/11 21:23:43  wmcoolmon
+ * Made turret handling code more descriptive
+ *
  * Revision 2.85  2005/12/29 08:08:37  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -3929,7 +3932,6 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 
-	base->angs.h = -PI/2.0f + offset_base_h;
 	gun->angs.p = -PI/2.0f;
 	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );

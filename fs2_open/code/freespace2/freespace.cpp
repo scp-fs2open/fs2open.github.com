@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.211 $
- * $Date: 2006-01-14 10:35:41 $
+ * $Revision: 2.212 $
+ * $Date: 2006-01-14 19:54:55 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.211  2006/01/14 10:35:41  wmcoolmon
+ * Allow RunByteCode to return an argument
+ *
  * Revision 2.210  2006/01/14 09:21:27  wmcoolmon
  * New Lua feature - globals control.
  *
@@ -2392,11 +2395,19 @@ void game_level_close()
 	Game_paused = 0;
 }
 
+uint load_gl_init;
+uint load_mission_load;
+uint load_post_level_init;
+//uint load_mission_stuff;
+
 void init_decals();
 // intializes game stuff and loads the mission.  Returns 0 on failure, 1 on success
 // input: seed =>	DEFAULT PARAMETER (value -1).  Only set by demo playback code.
+//WMC - I see no mission loading.
 void game_level_init(int seed)
 {
+	game_busy( NOX("** starting game_level_init() **") );
+	load_gl_init = time(NULL);
 #ifdef USE_PYTHON
 	//Clear python images
 	py_clear_images();
@@ -2458,7 +2469,7 @@ void game_level_init(int seed)
 
 	ai_level_init();				//	Call this before ship_init() because it reads ai.tbl.
 	ship_level_init();
-	player_level_init();	
+	player_level_init();
 	shipfx_flash_init();			// Init the ship gun flash system.
 	game_flash_reset();			// Reset the flash effect
 	particle_init();				// Reset the particle system
@@ -2516,7 +2527,15 @@ void game_level_init(int seed)
 
 	cube_map_drawen = false;
 
+	load_gl_init = time(NULL) - load_gl_init;
 
+	//WMC - Init multi players for level
+	if (Game_mode & GM_MULTIPLAYER && Player != NULL) {
+		Player->flags |= PLAYER_FLAGS_IS_MULTI;
+
+		// clear multiplayer stats
+		init_multiplayer_stats();
+	}
 }
 
 // called when a mission is over -- does server specific stuff.
@@ -2572,35 +2591,6 @@ void game_load_palette()
 
 	// palette_load_table(palette_filename);
 }
-
-void game_post_level_init()
-{
-	// Stuff which gets called after mission is loaded.  Because player isn't created until
-	// after mission loads, some things must get initted after the level loads
-
-	model_level_post_init();
-
- 	HUD_init();
-	hud_setup_escort_list();
-	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
-
-	stars_level_init();	
-
-	// While trying to track down the nebula bug I encountered a cool effect -
-	// comment this out to fly a mission in a void. Maybe we should develop this
-	// into a full effect or something, because it is seriously cool.
-	neb2_post_level_init();		
-
-#ifndef NDEBUG
-	game_event_debug_init();
-#endif
-
-	training_mission_init();
-	asteroid_create_all();
-	
-	game_framerate_check_init();
-}
-
 
 // An estimate as to how high the count passed to game_loading_callback will go.
 // This is just a guess, it seems to always be about the same.   The count is
@@ -2848,6 +2838,7 @@ void game_assign_sound_environment()
 // function which gets called before actually entering the mission.  It is broken down into a funciton
 // since it will get called in one place from a single player game and from another place for
 // a multiplayer game
+//WMC - Actually, it isn't. So I moved it into post_level_init
 void freespace_mission_load_stuff()
 {
 	// called if we're not on a freespace dedicated (non rendering, no pilot) server
@@ -2885,7 +2876,9 @@ void freespace_mission_load_stuff()
 
 		game_busy( NOX("** finished with level_page_in() **") );
 
-		game_loading_callback_close();	
+		if(Game_loading_callback_inited) {
+			game_loading_callback_close();
+		}
 	} 
 	// the only thing we need to call on the standalone for now.
 	else {
@@ -2897,30 +2890,53 @@ void freespace_mission_load_stuff()
 	}
 }
 
-uint load_gl_init;
-uint load_mission_load;
-uint load_post_level_init;
-uint load_mission_stuff;
+void game_post_level_init()
+{
+	// Stuff which gets called after mission is loaded.  Because player isn't created until
+	// after mission loads, some things must get initted after the level loads
+
+	model_level_post_init();
+
+ 	HUD_init();
+	hud_setup_escort_list();
+	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
+
+	stars_level_init();	
+
+	// While trying to track down the nebula bug I encountered a cool effect -
+	// comment this out to fly a mission in a void. Maybe we should develop this
+	// into a full effect or something, because it is seriously cool.
+	neb2_post_level_init();		
+
+#ifndef NDEBUG
+	game_event_debug_init();
+#endif
+
+	training_mission_init();
+	asteroid_create_all();
+	
+	game_framerate_check_init();
+
+	// If this is a red alert mission in campaign mode, bash wingman status
+	if ( (Game_mode & GM_CAMPAIGN_MODE) && red_alert_mission() ) {
+		red_alert_bash_wingman_status();
+	}
+
+	//load_mission_stuff = time(NULL);
+	freespace_mission_load_stuff();
+	//load_mission_stuff = time(NULL) - load_mission_stuff;
+}
 
 // tells the server to load the mission and initialize structures
 int game_start_mission()
 {	
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
-
-	char temp_fname[MAX_FILENAME_LEN];
-	strcpy(temp_fname, Game_current_mission_filename);
-	char *p = strchr(temp_fname, '.');
-	if (p) *p = 0; // remove any extension
-	strcat(temp_fname, FS_MISSION_FILE_EXT);  // append mission extension
-	get_mission_info(temp_fname, &The_mission);
+	get_mission_info(Game_current_mission_filename, &The_mission);
 
 	game_loading_callback_init();
 
-	game_busy( NOX("** starting game_level_init() **") );
-	load_gl_init = time(NULL);
 	game_level_init();
-	load_gl_init = time(NULL) - load_gl_init;
 	
 	if (Game_mode & GM_MULTIPLAYER) {
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;
@@ -2931,7 +2947,7 @@ int game_start_mission()
 
 	game_busy( NOX("** starting mission_load() **") );
 	load_mission_load = time(NULL);
-	if (mission_load()) {
+	if (mission_load(Game_current_mission_filename)) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			popup(PF_BODY_BIG, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
@@ -2943,16 +2959,13 @@ int game_start_mission()
 	}
 	load_mission_load = time(NULL) - load_mission_load;
 
-	// If this is a red alert mission in campaign mode, bash wingman status
-	if ( (Game_mode & GM_CAMPAIGN_MODE) && red_alert_mission() ) {
-		red_alert_bash_wingman_status();
-	}
-
+	//WMC - *sigh* more mprintf clutter. It was commented out when I got here
+	/*
 	// the standalone server in multiplayer doesn't do any rendering, so we will not even bother loading the palette
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 		mprintf(( "=================== LOADING GAME PALETTE ================\n" ));
 		// game_load_palette();
-	}
+	}*/
 
 	game_busy( NOX("** starting game_post_level_init() **") );
 	load_post_level_init = time(NULL);
@@ -2965,11 +2978,6 @@ int game_start_mission()
 		Do_model_timings_test();	
 	}
 #endif
-
-	load_mission_stuff = time(NULL);
-	freespace_mission_load_stuff();
-	load_mission_stuff = time(NULL) - load_mission_stuff;
-
 	//set the inital animation positions
 /*
 		ship_obj *moveup = GET_FIRST(&Ship_obj_list);
@@ -5267,17 +5275,6 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	}
 	//================ END OF 3D RENDERING STUFF ====================
 
-	if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
-	{
-		hud_show_radar();
-	}
-
-	if( (Game_detail_flags & DETAIL_FLAG_HUD) && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) ) ) {
-		hud_maybe_clear_head_area();
-		anim_render_all(0, flFrametime);
-	}
-		
-
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
 		extern void multi_display_netinfo();
@@ -5457,6 +5454,21 @@ void game_flip_page_and_time_it()
 
 void game_simulation_frame()
 {
+	//Do camera stuff
+	//This is for the warpout cam
+	if ( Player->control_mode != PCM_NORMAL )
+		camera_move();
+
+	//Do ingame cutscenes stuff
+	if(!Time_compression_locked)
+	{
+		cameras_do_frame(flFrametime);
+	}
+	else
+	{
+		cameras_do_frame(flRealframetime);
+	}
+
 	// blow ships up in multiplayer dogfight
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
@@ -5803,6 +5815,31 @@ void game_shade_frame(float frametime)
 	gr_shade(gr_screen.clip_left, gr_screen.clip_top, gr_screen.clip_width, gr_screen.clip_height, false);
 }
 
+//WMC - This does stuff like fading in and out and subtitles. Special FX?
+//Basically stuff you need rendered after everything else (including HUD)
+void game_render_post_frame()
+{
+	if(!Time_compression_locked)
+	{
+		subtitles_do_frame(flFrametime);
+	}
+	else
+	{
+		subtitles_do_frame(flRealframetime);
+	}
+	
+	if(!Time_compression_locked)
+	{
+		game_set_view_clip(flFrametime);
+		game_shade_frame(flFrametime);
+	}
+	else
+	{
+		game_set_view_clip(flRealframetime);
+		game_shade_frame(flRealframetime);
+	}
+}
+
 void game_frame(int paused)
 {
 	int actually_playing;
@@ -5864,21 +5901,6 @@ void game_frame(int paused)
 		}
 	
 		shield_frame_init();
-	
-		//Do camera stuff
-		//This is for the warpout cam
-		if ( Player->control_mode != PCM_NORMAL )
-			camera_move();
-
-		//Do ingame cutscenes stuff
-		if(!Time_compression_locked)
-		{
-			cameras_do_frame(flFrametime);
-		}
-		else
-		{
-			cameras_do_frame(flRealframetime);
-		}
 	
 		if ( !Pre_player_entry && actually_playing ) {		   		
 			if (! (Game_mode & GM_STANDALONE_SERVER) ) {
@@ -5948,6 +5970,16 @@ void game_frame(int paused)
 			{
 				hud_show_target_model();
 			}
+
+			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
+			{
+				hud_show_radar();
+			}
+
+			if( (Game_detail_flags & DETAIL_FLAG_HUD) && !(Game_mode & GM_MULTIPLAYER) || ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER) ) ) {
+				hud_maybe_clear_head_area();
+				anim_render_all(0, flFrametime);
+			}
 			
 
 			// check to see if we should display the death died popup
@@ -6012,25 +6044,7 @@ void game_frame(int paused)
 			}
 
 			gr_reset_clip();
-			if(!Time_compression_locked)
-			{
-				subtitles_do_frame(flFrametime);
-			}
-			else
-			{
-				subtitles_do_frame(flRealframetime);
-			}
-			
-			if(!Time_compression_locked)
-			{
-				game_set_view_clip(flFrametime);
-				game_shade_frame(flFrametime);
-			}
-			else
-			{
-				game_set_view_clip(flRealframetime);
-				game_shade_frame(flRealframetime);
-			}
+			game_render_post_frame();
 
 			game_tst_frame();
 
@@ -8099,7 +8113,8 @@ void game_do_state(int state)
 	{
 		game_set_frametime(state);
 		gr_clear();
-		Script_system.RunBytecode(GS_state_hooks[state]);
+		char *s;
+		Script_system.RunBytecode(GS_state_hooks[state], 's', &s);
 		gr_flip();
 		return;
 	}

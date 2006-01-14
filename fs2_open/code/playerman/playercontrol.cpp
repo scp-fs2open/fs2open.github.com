@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-12-29 08:08:42 $
+ * $Revision: 2.38 $
+ * $Date: 2006-01-14 19:54:55 $
  * $Author: wmcoolmon $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.36  2005/10/24 02:15:41  wmcoolmon
  * Removed max_overclock restriction related to warpout
  *
@@ -1605,10 +1608,7 @@ void player_restore_target_and_weapon_link_prefs()
 
 // initialize player statistics on a per mission basis
 void player_level_init()
-{	
-	Player->flags = PLAYER_FLAGS_STRUCTURE_IN_USE;			// reset the player flags
-	Player->flags |= Player->save_flags;
-
+{
 	memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
 
 	Viewer_slew_angles.p = 0.0f;	Viewer_slew_angles.b = 0.0f;	Viewer_slew_angles.h = 0.0f;
@@ -1624,6 +1624,14 @@ void player_level_init()
 	Player_ai = NULL;
 
 	Player_use_ai = 0;	// Goober5000
+
+	Joystick_last_reading = -1;				// Make the joystick read right away.
+
+	if(Player == NULL)
+		return;
+
+	Player->flags = PLAYER_FLAGS_STRUCTURE_IN_USE;			// reset the player flags
+	Player->flags |= Player->save_flags;
 	
 	//	Init variables for friendly fire monitoring.
 	Player->friendly_last_hit_time = 0;
@@ -1672,8 +1680,6 @@ void player_level_init()
 	Player->flags &= ~PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 
 	// Player->insignia_bitmap = -1;
-
-	Joystick_last_reading = -1;				// Make the joystick read right away.
 }
 
 // player_init() initializes global veriables once a game -- needed because of mallocing that

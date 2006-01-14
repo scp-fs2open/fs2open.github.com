@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.20 $
- * $Date: 2006-01-14 04:44:29 $
- * $Author: phreak $
+ * $Revision: 1.21 $
+ * $Date: 2006-01-14 19:54:55 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/01/14 04:44:29  phreak
+ * Tried to make the sphere size more uniform on opposite ends of the orb
+ * Modified the radar disruption angle scale a bit.  Went from 200 degree to 20 degree disruption.  Otherwise, it was very confusing to find hidden objects.
+ *
  * Revision 1.19  2006/01/14 03:28:29  phreak
  * Make orb radar mode drawing again.
  * Clarify "fudge" variable used for viewing transformations
@@ -199,6 +203,9 @@ void radar_init_orb()
 	}
 
 	Blip_mutate_id	= 1;
+
+	//WMC - Try and get rid of stupid radar list errors.
+	radar_null_nblips_orb();
 }
 
 // determine how the object blip should be drawn

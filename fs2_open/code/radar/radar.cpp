@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2006-01-14 19:54:55 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.19  2005/10/10 17:21:09  taylor
  * remove NO_NETWORK
  *
@@ -292,6 +295,9 @@ void radar_init_std()
 	}
 
 	Blip_mutate_id	= 1;
+
+	//WMC - Try and get rid of stupid radar list errors.
+	radar_null_nblips_std();
 }
 
 // determine how the object blip should be drawn

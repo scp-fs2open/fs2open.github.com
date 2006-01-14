@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2006-01-14 19:54:55 $
+ * $Author: wmcoolmon $
  *
  * Mission load header file
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -67,11 +71,10 @@ extern	char	Recent_missions[MAX_RECENT_MISSIONS][MAX_FILENAME_LEN];
 extern	int	Num_recent_missions;
 
 // Mission_load takes no parameters.
-// It expects the following variables to be set correctly:
+// It sets the following global variables:
 // Game_current_mission_filename
 
-int mission_load();
-void mission_init();
+int mission_load(char *filename_ext);
 
 // Functions for mission load menu
 void mission_load_menu_init();

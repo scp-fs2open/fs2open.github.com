@@ -16,6 +16,8 @@
 #include "playerman/player.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
+#include "mission/missionload.h"
+#include "freespace2/freespace.h"
 
 //*************************Lua funcs*************************
 int script_remove_lib(lua_State *L, char *name);
@@ -144,9 +146,9 @@ public:
 	lua_obj(char*in_name, char*in_desc, lua_obj* in_deriv=NULL):lua_obj_h(in_name, in_desc, in_deriv){};
 
 	//StoreType *Create(lua_State *L){StoreType *ptr = (StoreType*)LUA_NEW_OBJ(L, meta, StoreType); return ptr;}
-	script_lua_odata Return(StoreType *obj){return script_lua_odata(lua_Objects[obj_idx].Name, obj, sizeof(StoreType));}
-	script_lua_odata Parse(StoreType *ptr){return script_lua_odata(lua_Objects[obj_idx].Name, ptr, sizeof(StoreType));}
-	script_lua_opdata ParsePtr(StoreType **ptr){return script_lua_opdata(lua_Objects[obj_idx].Name, ptr);}
+	script_lua_odata SetToLua(StoreType *obj){return script_lua_odata(lua_Objects[obj_idx].Name, obj, sizeof(StoreType));}
+	script_lua_odata GetFromLua(StoreType *ptr){return script_lua_odata(lua_Objects[obj_idx].Name, ptr, sizeof(StoreType));}
+	script_lua_opdata GetPtrFromLua(StoreType **ptr){return script_lua_opdata(lua_Objects[obj_idx].Name, ptr);}
 };
 
 //Function macro
@@ -208,7 +210,7 @@ public:
 	char *GetName(){return meta;}
 	//StoreType *Create(lua_State *L){StoreType *ptr = (StoreType*)LUA_NEW_OBJ(L, meta, StoreType); return ptr;}
 	script_lua_odata Return(StoreType *obj){return script_lua_odata(meta, obj, sizeof(StoreType));}
-	script_lua_odata Parse(StoreType *ptr){return script_lua_odata(meta, ptr, sizeof(StoreType));}
+	script_lua_odata GetFromLua(StoreType *ptr){return script_lua_odata(meta, ptr, sizeof(StoreType));}
 	script_lua_opdata ParsePtr(StoreType **ptr){return script_lua_opdata(meta, ptr);}
 };
 */
@@ -801,7 +803,7 @@ extern int ships_inited;
 LUA_FUNC(getName, l_Shipclass, NULL, "Name (string)", "Gets ship class name")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.Parse(&idx)))
+	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -813,7 +815,7 @@ LUA_FUNC(getName, l_Shipclass, NULL, "Name (string)", "Gets ship class name")
 LUA_FUNC(getType, l_Shipclass, NULL, "Ship type (string)", "Gets ship type name")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.Parse(&idx)))
+	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -825,7 +827,7 @@ LUA_FUNC(getType, l_Shipclass, NULL, "Ship type (string)", "Gets ship type name"
 LUA_FUNC(getSpecies, l_Shipclass, NULL, "Species name (string)", "Gets ship species")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.Parse(&idx)))
+	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -837,7 +839,7 @@ LUA_FUNC(getSpecies, l_Shipclass, NULL, "Species name (string)", "Gets ship spec
 LUA_FUNC(getShortName, l_Shipclass, NULL, "Short name (string)", "Gets ship class short name")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.Parse(&idx)))
+	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -849,7 +851,7 @@ LUA_FUNC(getShortName, l_Shipclass, NULL, "Short name (string)", "Gets ship clas
 LUA_FUNC(getHitpoints, l_Shipclass, NULL, "Hitpoints (number)", "Gets ship class hitpoints")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.Parse(&idx)))
+	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -861,7 +863,7 @@ LUA_FUNC(getHitpoints, l_Shipclass, NULL, "Hitpoints (number)", "Gets ship class
 LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the techroom", "Gets whether or not the ship class is available in the techroom")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.Parse(&idx)))
+	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -885,7 +887,7 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 	angles rot_angles = {0.0f, 0.0f, 0.0f};
 	bool r;
 	int idx;
-	if(!lua_get_args(L, "oiiii|bffff", l_Shipclass.Parse(&idx), &x1, &y1, &x2, &y2, &r, &rot_pct, &rot_angles.b, &rot_angles.b))
+	if(!lua_get_args(L, "oiiii|bffff", l_Shipclass.GetFromLua(&idx), &x1, &y1, &x2, &y2, &r, &rot_pct, &rot_angles.b, &rot_angles.b))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -985,7 +987,7 @@ lua_obj<int> l_Ship("ship", "Ship object", &l_Object);
 //Returns 0 if object sig does not exist, and does not change idx
 int lua_ship_get_idx(lua_State *L, int *idx)
 {
-	if(!lua_get_args(L, "o", l_Ship.Parse(idx)))
+	if(!lua_get_args(L, "o", l_Ship.GetFromLua(idx)))
 		return 0;
 
 	*idx = ship_get_by_signature(*idx);
@@ -1021,7 +1023,25 @@ LUA_FUNC(getClass, l_Ship, NULL, "Ship class handle (shipclass)", "Gets ship cla
 	if(!lua_ship_get_idx(L, &idx))
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "o", l_Shipclass.Return(&Objects[Ships[idx].objnum].signature));
+	return lua_set_args(L, "o", l_Shipclass.SetToLua(&Objects[Ships[idx].objnum].signature));
+}
+
+LUA_FUNC(setAfterburnerFuel, l_Ship, "[Fuel amount]", "[New] fuel amount", "Returns ship fuel amount, or sets it if amount is specified")
+{
+	int idx;
+	float fuel = -1.0f;
+	if(!lua_get_args(L, "of", l_Ship.GetFromLua(&idx), &fuel))
+		return 0;
+
+	idx = ship_get_by_signature(idx);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	if(fuel >= 0.0f)
+		Ships[idx].afterburner_fuel = fuel;
+
+	return lua_set_args(L, "f", Ships[idx].afterburner_fuel);
 }
 
 LUA_FUNC(warpIn, l_Ship, NULL, NULL, "Warps ship in")
@@ -1051,7 +1071,7 @@ lua_obj<int> l_Player("player", "Player object");
 
 int player_helper(lua_State *L, int *idx)
 {
-	if(!lua_get_args(L, "o", l_Player.Parse(idx)))
+	if(!lua_get_args(L, "o", l_Player.GetFromLua(idx)))
 		return 0;
 
 	if(*idx < 0 || *idx > Player_num)
@@ -1193,7 +1213,7 @@ LUA_FUNC(getCurrentPlayer, l_Base, NULL, "Current player", "Gets the current pla
 		return LUA_RETURN_NIL;
 
 	int idx = Player - Players;
-	return lua_set_args(L, "o", l_Player.Return(&idx));
+	return lua_set_args(L, "o", l_Player.SetToLua(&idx));
 }
 
 LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the named player")
@@ -1208,7 +1228,7 @@ LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the na
 	if(idx < 0 || idx > Player_num)
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "o", l_Player.Return(&idx));
+	return lua_set_args(L, "o", l_Player.SetToLua(&idx));
 }
 
 LUA_FUNC(getNumPlayers, l_Base, NULL, "Number of players", "Gets the number of currently loaded players")
@@ -1272,7 +1292,7 @@ LUA_FUNC(getNextMission, l_Campaign, NULL, "Cmission object, or false if there i
 	if(Campaign.next_mission < 0)
 		return LUA_RETURN_FALSE;
 
-	return lua_set_args(L, "o", l_Cmission.Return(&Campaign.next_mission));
+	return lua_set_args(L, "o", l_Cmission.SetToLua(&Campaign.next_mission));
 }
 
 LUA_FUNC(getPrevMissionName, l_Campaign, NULL, "Mission name, or false if there is no next mission", "Gets the name of the next mission in the campaign")
@@ -1288,7 +1308,7 @@ LUA_FUNC(getPrevMission, l_Campaign, NULL, "Cmission object, or false if there i
 	if(Campaign.prev_mission < 0)
 		return LUA_RETURN_FALSE;
 
-	return lua_set_args(L, "o", l_Cmission.Return(&Campaign.prev_mission));
+	return lua_set_args(L, "o", l_Cmission.SetToLua(&Campaign.prev_mission));
 }
 
 LUA_FUNC(getMissionByName, l_Campaign, "Mission name", "Cmission object, or false if mission does not exist", "Gets the specified mission from the campaign by its name")
@@ -1301,7 +1321,7 @@ LUA_FUNC(getMissionByName, l_Campaign, "Mission name", "Cmission object, or fals
 	for(int idx = 0; idx < Campaign.num_missions; idx++)
 	{
 		if(!stricmp(Campaign.missions[idx].name, s))
-			return lua_set_args(L, "o", l_Cmission.Return(&idx));
+			return lua_set_args(L, "o", l_Cmission.SetToLua(&idx));
 	}
 
 	return LUA_RETURN_FALSE;
@@ -1318,12 +1338,62 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 	if(idx < 0 || idx > Campaign.num_missions)
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "o", l_Cmission.Return(&idx));
+	return lua_set_args(L, "o", l_Cmission.SetToLua(&idx));
 }
 
 
 //**********LIBRARY: Mission
 lua_lib l_Mission("mn", "Mission library");
+
+//WMC - These are in freespace.cpp
+extern void game_level_init(int seed = -1);
+extern void game_post_level_init();
+extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);
+extern void game_render_frame(vec3d *eye_pos, matrix *eye_orient);
+extern void game_simulation_frame();
+extern void game_update_missiontime();
+extern void game_render_post_frame();
+LUA_FUNC(loadMission, l_Mission, "Mission name", "True if mission was loaded, false otherwise", "Loads a mission")
+{
+	char *s;
+	if(!lua_get_args(L, "s", &s))
+		return LUA_RETURN_NIL;
+
+	strncpy(Game_current_mission_filename, s, MAX_FILENAME_LEN-1);
+
+	//NOW do the loading stuff
+	game_stop_time();
+	get_mission_info(s, &The_mission);
+	game_level_init();
+
+	if(mission_load(s) == -1)
+		return LUA_RETURN_FALSE;
+
+	game_post_level_init();
+
+	Game_mode |= GM_IN_MISSION;
+
+	return LUA_RETURN_TRUE;
+}
+
+LUA_FUNC(simulateFrame, l_Mission, NULL, NULL, "Simulates mission frame")
+{
+	game_update_missiontime();
+	game_simulation_frame();
+
+	return LUA_RETURN_TRUE;
+}
+
+LUA_FUNC(renderFrame, l_Mission, NULL, NULL, "Renders mission frame, but does not move anything")
+{
+	vec3d eye_pos;
+	matrix eye_orient;
+	game_render_frame_setup(&eye_pos, &eye_orient);
+	game_render_frame( &eye_pos, &eye_orient );
+	game_render_post_frame();
+
+	return LUA_RETURN_TRUE;
+}
 
 LUA_FUNC(getShip, l_Mission, "Ship name", "Ship object", "Gets ship object")
 {
@@ -1337,7 +1407,7 @@ LUA_FUNC(getShip, l_Mission, "Ship name", "Ship object", "Gets ship object")
 		return LUA_RETURN_NIL;
 	}
 
-	return lua_set_args(L, "o", l_Shipclass.Return(&Objects[Ships[idx].objnum].signature));
+	return lua_set_args(L, "o", l_Shipclass.SetToLua(&Objects[Ships[idx].objnum].signature));
 }
 
 LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Ship object", "Gets escort ship")
@@ -1359,7 +1429,7 @@ LUA_FUNC(getEscortShip, l_Mission, "Escort index", "Ship object", "Gets escort s
 	if(idx < 0)
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "o", l_Ship.Return(&Objects[idx].signature));
+	return lua_set_args(L, "o", l_Ship.SetToLua(&Objects[idx].signature));
 }
 
 //**********LIBRARY: Tables
@@ -1386,7 +1456,7 @@ LUA_FUNC(getShipClassByIndex, l_Tables, "Class index", "Shipclass object", "Gets
 		return LUA_RETURN_NIL;
 	}
 
-	return lua_set_args(L, "o", l_Shipclass.Return(&idx));
+	return lua_set_args(L, "o", l_Shipclass.SetToLua(&idx));
 }
 
 LUA_FUNC(getShipClass, l_Tables, "Class name", "Shipclass object", "Gets ship class")
@@ -1404,7 +1474,7 @@ LUA_FUNC(getShipClass, l_Tables, "Class name", "Shipclass object", "Gets ship cl
 		return LUA_RETURN_NIL;
 	}
 
-	return lua_set_args(L, "o", l_Shipclass.Return(&idx));
+	return lua_set_args(L, "o", l_Shipclass.SetToLua(&idx));
 }
 
 //**********LIBRARY: Keyboard
@@ -1912,48 +1982,48 @@ SCRIPT_LUA_CALLBACK lua_fs2_lvec(lua_State *L)
 	vec3d v3 = vmd_zero_vector;
 	lua_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
 
-	return lua_set_args(L, "o", l_lvec.Return(&v3));
+	return lua_set_args(L, "o", l_lvec.SetToLua(&v3));
 }
 
 SCRIPT_LUA_CALLBACK lua_fs2_vec__addition(lua_State *L)
 {
 	vec3d v3a, v3b, v3r;
-	if(!lua_get_args(L, "oo", l_lvec.Parse(&v3a), l_lvec.Parse(&v3b)))
+	if(!lua_get_args(L, "oo", l_lvec.GetFromLua(&v3a), l_lvec.GetFromLua(&v3b)))
 		return 0;
 
 	vm_vec_add(&v3r, &v3a, &v3b);
 
-	return lua_set_args(L, "o", l_lvec.Return(&v3r));
+	return lua_set_args(L, "o", l_lvec.SetToLua(&v3r));
 }
 
 SCRIPT_LUA_CALLBACK lua_fs2_vec__subtraction(lua_State *L)
 {
 	vec3d v3a, v3b, v3r;
-	if(!lua_get_args(L, "oo", l_lvec.Parse(&v3a), l_lvec.Parse(&v3b)))
+	if(!lua_get_args(L, "oo", l_lvec.GetFromLua(&v3a), l_lvec.GetFromLua(&v3b)))
 		return 0;
 
 	vm_vec_sub(&v3r, &v3a, &v3b);
 
-	return lua_set_args(L, "o", l_lvec.Return(&v3r));
+	return lua_set_args(L, "o", l_lvec.SetToLua(&v3r));
 }
 
 SCRIPT_LUA_CALLBACK lua_fs2_vec__multiplication(lua_State *L)
 {
 	vec3d v3a, v3b, v3r;
 	float f;
-	if(lua_get_args(L, "of", l_lvec.Parse(&v3a), &f))
+	if(lua_get_args(L, "of", l_lvec.GetFromLua(&v3a), &f))
 	{
 		vm_vec_copy_scale(&v3r, &v3a, f);
 
-		return lua_set_args(L, "o", l_lvec.Return(&v3r));
+		return lua_set_args(L, "o", l_lvec.SetToLua(&v3r));
 	}
-	else if(lua_get_args(L, "oo", l_lvec.Parse(&v3a), l_lvec.Parse(&v3b)))
+	else if(lua_get_args(L, "oo", l_lvec.GetFromLua(&v3a), l_lvec.GetFromLua(&v3b)))
 	{
 		v3r.xyz.x = v3a.xyz.x * v3b.xyz.x;
 		v3r.xyz.y = v3a.xyz.y * v3b.xyz.y;
 		v3r.xyz.z = v3a.xyz.z * v3b.xyz.z;
 
-		return lua_set_args(L, "o", l_lvec.Return(&v3r));
+		return lua_set_args(L, "o", l_lvec.SetToLua(&v3r));
 	}
 
 	//Neither is valid...
@@ -1965,7 +2035,7 @@ SCRIPT_LUA_CALLBACK lua_fs2_vec__multiplication(lua_State *L)
 SCRIPT_LUA_CALLBACK lua_fs2_vec__tostring(lua_State *L)
 {
 	vec3d v3p;
-	if(!lua_get_args(L, "o", l_lvec.Parse(&v3p)))
+	if(!lua_get_args(L, "o", l_lvec.GetFromLua(&v3p)))
 		return 0;
 
 	char buf[32];
@@ -1978,7 +2048,7 @@ SCRIPT_LUA_CALLBACK lua_fs2_vec__index(lua_State *L)
 {
 	vec3d v3p;
 	int idx=0;
-	if(!lua_get_args(L, "o|i", l_lvec.Parse(&v3p), &idx))
+	if(!lua_get_args(L, "o|i", l_lvec.GetFromLua(&v3p), &idx))
 		return 0;
 
 	if(idx < 0 || idx > 2) {
@@ -1992,7 +2062,7 @@ SCRIPT_LUA_CALLBACK lua_fs2_vec_print(lua_State *L)
 {
 	vec3d v3p;
 	int idx=0;
-	if(!lua_get_args(L, "o|i", l_lvec.Parse(&v3p), &idx))
+	if(!lua_get_args(L, "o|i", l_lvec.GetFromLua(&v3p), &idx))
 		return 0;
 
 	if(idx < 0 || idx > 2) {
@@ -2025,7 +2095,7 @@ SCRIPT_LUA_CALLBACK lua_fs2_wvec(lua_State *L)
 	v3p.xyz.y = v3.xyz.y;
 	v3p.xyz.z = v3.xyz.z;
 
-	return lua_set_args(L, "o", l_wvec.Return(&v3p));
+	return lua_set_args(L, "o", l_wvec.SetToLua(&v3p));
 }
 
 static const script_lua_obj_func_list lua_fs2_wvec_funcs[] = {
@@ -2093,13 +2163,13 @@ SCRIPT_LUA_CALLBACK lua_msn_getShipInfo(lua_State *L)
 
 	ship_info *sip = &Ship_info[idx];
 
-	return lua_set_args(L, "o", l_ship_info.Return(&sip));
+	return lua_set_args(L, "o", l_ship_info.SetToLua(&sip));
 }
 
 SCRIPT_LUA_CALLBACK lua_msn_ShipInfo_print(lua_State *L)
 {
 	ship_info *sip;
-	if(!lua_get_args(L, "o", l_ship_info.Parse(&sip)))
+	if(!lua_get_args(L, "o", l_ship_info.GetFromLua(&sip)))
 		return 0;
 
 	//Error(LOCATION, "%s", sip->name);
@@ -2138,7 +2208,7 @@ SCRIPT_LUA_CALLBACK lua_msn_newShip(lua_State *L)
 	{
 		//Make the lua ship object and set the ptr to NULL
 		ship *shipp = &Ships[s_idx];
-		return lua_set_args(L, "o", l_ship.Return(&shipp));
+		return lua_set_args(L, "o", l_ship.SetToLua(&shipp));
 	}
 
 	return LUA_RETURN_NIL;
@@ -2149,7 +2219,7 @@ SCRIPT_LUA_CALLBACK lua_msn_ship_setSpeed(lua_State *L)
 	ship *shipp = NULL;
 	vec3d vel;
 
-	if(!lua_get_args(L, "offf", l_ship.Parse(&shipp), &vel.xyz.x, &vel.xyz.y, &vel.xyz.z))
+	if(!lua_get_args(L, "offf", l_ship.GetFromLua(&shipp), &vel.xyz.x, &vel.xyz.y, &vel.xyz.z))
 		return LUA_RETURN_NIL;
 
 	//Set the speed
@@ -2164,7 +2234,7 @@ SCRIPT_LUA_CALLBACK lua_msn_ship_setName(lua_State *L)
 	ship *shipp = NULL;
 	char *name = NULL;
 
-	if(!lua_get_args(L, "os", l_ship.Parse(&shipp), &name))
+	if(!lua_get_args(L, "os", l_ship.GetFromLua(&shipp), &name))
 		return LUA_RETURN_NIL;
 
 	//Set the name
@@ -2182,7 +2252,7 @@ SCRIPT_LUA_CALLBACK lua_msn_ship_getTarget(lua_State *L)
 {
 	ship *shipp = NULL;
 
-	if(!lua_get_args(L, "o", l_ship.Parse(&shipp)))
+	if(!lua_get_args(L, "o", l_ship.GetFromLua(&shipp)))
 		return 0;
 
 	if(shipp->ai_index != -1)
@@ -2191,7 +2261,7 @@ SCRIPT_LUA_CALLBACK lua_msn_ship_getTarget(lua_State *L)
 		if(aip->target_objnum && Objects[aip->target_objnum].type == OBJ_SHIP)
 		{
 			ship *tshipp = &Ships[Objects[aip->target_objnum].instance];
-			return lua_set_args(L, "o", l_ship.Return(&tshipp));
+			return lua_set_args(L, "o", l_ship.SetToLua(&tshipp));
 		}
 	}
 
@@ -2228,7 +2298,7 @@ static const script_lua_func_list lua_msn_lib[] = {
 SCRIPT_LUA_CALLBACK lua_grpc_model_getFilename(lua_State *L)
 {
 	polymodel *pm;
-	if(!lua_get_args(L, "o", l_model.Parse(&pm)))
+	if(!lua_get_args(L, "o", l_model.GetFromLua(&pm)))
 		return 0;
 
 	return lua_set_args(L, "s", pm->filename);
@@ -2237,7 +2307,7 @@ SCRIPT_LUA_CALLBACK lua_grpc_model_getFilename(lua_State *L)
 SCRIPT_LUA_CALLBACK lua_grpc_model_getnumEyepoints(lua_State *L)
 {
 	polymodel *pm;
-	if(!lua_get_args(L, "o", l_model.Parse(&pm)))
+	if(!lua_get_args(L, "o", l_model.GetFromLua(&pm)))
 		return 0;
 
 	return lua_set_args(L, "s", pm->filename);
@@ -2247,12 +2317,12 @@ SCRIPT_LUA_CALLBACK lua_grpc_model_getEyepointPos(lua_State *L)
 {
 	polymodel *pm;
 	int idx;
-	if(!lua_get_args(L, "oi", l_model.Parse(&pm), &idx))
+	if(!lua_get_args(L, "oi", l_model.GetFromLua(&pm), &idx))
 		return 0;
 
 	if(idx > -1 && idx < pm->n_view_positions)
 	{
-		return lua_set_args(L, "o", l_lvec.Return(&pm->view_positions[idx].pnt));
+		return lua_set_args(L, "o", l_lvec.SetToLua(&pm->view_positions[idx].pnt));
 	}
 
 	return LUA_RETURN_NIL;
@@ -2280,7 +2350,7 @@ SCRIPT_LUA_CALLBACK lua_grpc_loadModel(lua_State *L)
 	{
 		polymodel *pm = model_get(idx);
 		if(pm != NULL) {
-			return lua_set_args(L, "o", l_model.Return(&pm));
+			return lua_set_args(L, "o", l_model.SetToLua(&pm));
 		}
 	}
 
