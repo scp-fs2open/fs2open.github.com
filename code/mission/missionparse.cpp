@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.135 $
- * $Date: 2006-01-13 03:31:09 $
+ * $Revision: 2.136 $
+ * $Date: 2006-01-14 05:36:06 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.134  2006/01/04 08:19:21  taylor
  * fixes for regular texture replacement
  *
@@ -6398,7 +6401,7 @@ int get_parse_name_index(char *name)
 // Goober5000 - look for <any friendly>, <any hostile player>, etc.
 int get_special_anchor(char *name)
 {
-	char tmp[NAME_LENGTH];
+	char tmp[NAME_LENGTH + 15];
 	char *iff_name;
 	int iff_index;
 	
