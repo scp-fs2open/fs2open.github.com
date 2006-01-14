@@ -1257,7 +1257,7 @@ LUA_FUNC(getNextMission, l_Campaign, NULL, "Cmission object, or false if there i
 	return lua_ret_args(L, "o", l_Cmission.Return(&Campaign.next_mission));
 }
 
-LUA_FUNC(getPrevMission, l_Campaign, NULL, "Mission name, or false if there is no next mission", "Gets the previous mission in the campaign")
+LUA_FUNC(getPrevMission, l_Campaign, NULL, "Cmission object, or false if there is no next mission", "Gets the previous mission in the campaign")
 {
 	if(Campaign.prev_mission < 0)
 		return LUA_RETURN_FALSE;
