@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.75 $
- * $Author: Goober5000 $
- * $Date: 2006-01-13 03:31:09 $
+ * $Revision: 2.76 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-01-14 19:54:55 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.74  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -488,6 +491,9 @@
 #include "model/model.h"
 #include "object/object.h"
 #include "graphics/2d.h"
+
+//WMC - This should be here
+#define FS_MISSION_FILE_EXT				NOX(".fs2")
 
 struct wing;
 struct p_dock_instance;

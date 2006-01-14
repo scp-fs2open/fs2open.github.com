@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.130 $
- * $Date: 2006-01-14 09:21:27 $
+ * $Revision: 2.131 $
+ * $Date: 2006-01-14 19:54:55 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2006/01/14 09:21:27  wmcoolmon
+ * New Lua feature - globals control.
+ *
  * Revision 2.129  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -1521,6 +1524,10 @@ typedef struct ship_type_info {
 	int ai_bools;
 	int ai_active_dock;
 	int ai_passive_dock;
+	std::vector<int> ai_actively_pursues;
+
+	//Regen values - need to be converted after all types have loaded
+	std::vector<std::string> ai_actively_pursues_temp;
 
 	ship_type_info(){memset(this, 0, sizeof(ship_type_info));}
 } ship_type_info;

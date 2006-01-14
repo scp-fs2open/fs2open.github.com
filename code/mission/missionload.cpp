@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-05-12 17:49:13 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2006-01-14 19:54:55 $
+ * $Author: wmcoolmon $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.8  2005/04/01 07:31:10  taylor
  * *that blasted Enter key*, just fixing the log... nothing to see here...
  *
@@ -275,17 +279,20 @@ void ml_update_recent_missions(char *filename)
 }
 
 // Mission_load takes no parameters.
-// It expects the following global variables to be set correctly:
+// It sets the following global variables
 //   Game_current_mission_filename
 
 // returns -1 if failed, 0 if successful
-int mission_load()
+int mission_load(char *filename_ext)
 {
-	char filename[128], *ext;	
+	char filename[128], *ext;
 
-	mprintf(("MISSION LOAD: '%s'\n", Game_current_mission_filename));
+	if(filename_ext != NULL)
+		strncpy(Game_current_mission_filename, filename_ext, MAX_FILENAME_LEN-1);
 
-	strncpy(filename, Game_current_mission_filename, 127);
+	mprintf(("MISSION LOAD: '%s'\n", filename_ext));
+
+	strncpy(filename, filename_ext, 127);
 	ext = strchr(filename, '.');
 	if (ext) {
 		mprintf(( "Hmmm... Extension passed to mission_load...\n" ));
@@ -309,7 +316,7 @@ int mission_load()
 		Assert(!ret);
 	}
 
-	ml_update_recent_missions(Game_current_mission_filename);  // update recently played missions list
+	ml_update_recent_missions(filename_ext);  // update recently played missions list
 	write_pilot_file();
 	return 0;
 }

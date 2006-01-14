@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.9 $
- * $Date: 2005-12-06 03:13:49 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2006-01-14 19:54:55 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/12/06 03:13:49  taylor
+ * fix quite a few CFILE issues:
+ *   use #define's for path lengths when possible so it's easier to move between functions
+ *   fix huge Cfile_stack[] issue (how the hell did that get through :v: QA?)
+ *   add Int3() check on cfopen() so it's easier to know if it get's called before cfile is ready to use
+ *   move path separators to pstypes.h
+ *   fix possible string overruns when setting up CFILE roots
+ *   make sure we don't try to init current directory again thinking it's a CD-ROM
+ *   add the list of VP roots to debug log, this will undoubtedly be useful
+ * when -nosound is use go ahead and set -nomusic too to both checks are correct
+ * add list of cmdline options to debug log
+ * fix possible overwrite issues with get_version_string() and remove '(fs2_open)' from string plus change OGL->OpenGL, D3D->Direct3D
+ *
  * Revision 2.8  2005/10/10 17:16:22  taylor
  * remove NO_NETWORK
  * whether multi is disabled or not is now determined at runtime
@@ -186,7 +199,6 @@
 //
 														
 // filename extensions
-#define FS_MISSION_FILE_EXT				NOX(".fs2")
 #define FS_CAMPAIGN_FILE_EXT				NOX(".fc2")
 
 // CDROM volume names

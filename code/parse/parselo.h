@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.39 $
+ * $Revision: 2.40 $
  * $Author: wmcoolmon $
- * $Date: 2005-12-29 08:08:39 $
+ * $Date: 2006-01-14 19:54:55 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.38  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -382,6 +385,8 @@
 
 #include <csetjmp>
 #include <cstdio>
+#include <string>
+#include <vector>
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
@@ -492,6 +497,7 @@ extern int stuff_float_optional(float *f);
 extern void stuff_int(int *i);
 extern void stuff_sound(int *dest);
 extern void stuff_ubyte(ubyte *i);
+extern int stuff_string_list(std::vector<std::string> *slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);

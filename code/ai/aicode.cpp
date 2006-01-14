@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.51 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 1.52 $
+ * $Date: 2006-01-14 19:54:54 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.51  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 1.50  2006/01/11 21:15:15  wmcoolmon
  * Somewhat better turret comments
  *
@@ -8531,17 +8534,6 @@ void ai_cruiser_chase()
 	eshipp = &Ships[En_objp->instance];
 	esip = &Ship_info[eshipp->ship_info_index];
 
-	//WMC - Again, I don't think we need/want this anymore.
-	//However. It could conceivably break backwards compatibility.
-	//In that case, bug me. I would like to stay away from 'big' and 'small'
-	//designations for types if possible.
-	/*
-	if (!(esip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
-		// Int3();	//	Hmm, we're big and we're pursuing something other than a big ship?
-		aip->mode = AIM_NONE;
-		return;
-	}*/
-
 	vec3d	goal_pos;
 	float turn_time = Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time;
 
@@ -8703,6 +8695,29 @@ void ai_chase()
 
 	if (aip->mode != AIM_CHASE) {
 		Int3();
+	}
+
+	bool go_after_it = false;
+	if(sip->class_type > -1 && En_objp->type == OBJ_SHIP)
+	{
+		ship_info *esip = &Ship_info[Ships[En_objp->instance].ship_info_index];
+		if(esip->class_type > -1)
+		{
+			ship_type_info *stp = &Ship_types[sip->class_type];
+			for(uint i = 0; i < stp->ai_actively_pursues.size(); i++)
+			{
+				if(stp->ai_actively_pursues[i] == esip->class_type) {
+					go_after_it = true;
+					break;
+				}
+			}
+		}
+	}
+
+	//WMC - Guess we do need this
+	if (!go_after_it) {
+		aip->mode = AIM_NONE;
+		return;
 	}
 
 	if (sip->class_type > -1 && (Ship_types[sip->class_type].ai_bools & STI_AI_ATTEMPT_BROADSIDE)) {

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.295 $
- * $Date: 2006-01-13 13:06:15 $
- * $Author: taylor $
+ * $Revision: 2.296 $
+ * $Date: 2006-01-14 19:54:55 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.295  2006/01/13 13:06:15  taylor
+ * hmm, didn't put much thought in that the first time, this should work closer to the original but still be cleaner
+ *
  * Revision 2.294  2006/01/13 11:09:45  taylor
  * fix hud comm message screwups (missing support ship, no coverme, etc) that was part :V: bug and (bigger) part Ship_types related bug
  *
@@ -2283,7 +2286,7 @@ void init_ship_entry(int ship_info_index)
 	sip->warpout_player_speed = 0.0f;
 	
 	sip->explosion_propagates = 0;
-	sip->shockwave_count = 0;
+	sip->shockwave_count = 1;
 /*	sip->inner_rad = 0.0f;
 	sip->outer_rad = 0.0f;
 	sip->damage = 0.0f;
@@ -4085,6 +4088,10 @@ void parse_ship_type()
 			stuff_boolean_flag(&stp->ai_bools, STI_AI_ATTEMPT_BROADSIDE);
 		}
 
+		if(optional_string("+Actively Pursues:")) {
+			stuff_string_list(&stp->ai_actively_pursues_temp);
+		}
+
 		if(optional_string("+Guards attack this:")) {
 			stuff_boolean_flag(&stp->ai_bools, STI_AI_GUARDS_ATTACK);
 		}
@@ -4155,6 +4162,26 @@ void parse_shiptype_tbl(char *longname)
 		}
 
 		required_string("#End");
+	}
+
+	//DO ALL THE STUFF WE NEED TO DO AFTER LOADING
+	ship_type_info *stp;
+
+	uint i,j;
+	int idx;
+	for(i = 0; i < Ship_types.size(); i++)
+	{
+		stp = &Ship_types[i];
+
+		//Handle active pursuit
+		for(j = 0; j < stp->ai_actively_pursues_temp.size(); j++)
+		{
+			idx = ship_type_name_lookup((char*)stp->ai_actively_pursues_temp[j].c_str());
+			if(idx > -1) {
+				stp->ai_actively_pursues.push_back(idx);
+			}
+		}
+		stp->ai_actively_pursues_temp.clear();
 	}
 
 	lcl_ext_close();
@@ -5242,8 +5269,9 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 		// in debug builds, make sure only one of the docked objects has these flags set
 		if (infop->maintained_variables.bool_value)
 		{
-			Warning(LOCATION, "Ship %s and its docked ship %s are arriving or departing at the same time.\n",
-			Ships[infop->maintained_variables.objp_value->instance].ship_name, Ships[objp->instance].ship_name);
+			//WMC - This is annoying and triggered in sm2-10
+			//Warning(LOCATION, "Ship %s and its docked ship %s are arriving or departing at the same time.\n",
+			//Ships[infop->maintained_variables.objp_value->instance].ship_name, Ships[objp->instance].ship_name);
 		}
 #endif
 		// we found someone

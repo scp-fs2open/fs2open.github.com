@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.62 $
+ * $Revision: 2.63 $
  * $Author: wmcoolmon $
- * $Date: 2005-12-30 05:40:19 $
+ * $Date: 2006-01-14 19:54:55 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2005/12/30 05:40:19  wmcoolmon
+ * Assert -> parse warning
+ *
  * Revision 2.61  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -2206,6 +2209,39 @@ int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size)
 	//nobody saw that right
 
 	return num_strings;
+}
+
+int stuff_string_list(std::vector<std::string> *slp)
+{
+	(*slp).clear();
+
+	ignore_white_space();
+
+	if ( *Mp != '(' ) {
+		error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
+		longjmp(parse_abort, 100);
+	}
+
+	Mp++;
+
+	ignore_white_space();
+
+	char buf[NAME_LENGTH];
+
+	while (*Mp != ')') {
+		if(*Mp != '\"') {
+			error_display(0, "Missing quotation marks in string list.");
+		}
+		//Assert ( *Mp == '\"' );					// should always be enclosed in quotes
+
+		get_string( buf );
+		(*slp).push_back(std::string(buf));
+		ignore_white_space();
+	}
+
+	Mp++;
+
+	return (*slp).size();
 }
 
 // Stuffs a list of strings

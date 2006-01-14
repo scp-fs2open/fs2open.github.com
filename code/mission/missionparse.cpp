@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.137 $
- * $Date: 2006-01-14 06:25:11 $
- * $Author: taylor $
+ * $Revision: 2.138 $
+ * $Date: 2006-01-14 19:54:55 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2006/01/14 06:25:11  taylor
+ * make sure rship gets initialized before use
+ *
  * Revision 2.136  2006/01/14 05:36:06  Goober5000
  * tweaky tweak
  * --Goober5000
@@ -5074,6 +5077,13 @@ void post_process_mission()
 
 int get_mission_info(char *filename, mission *mission_p)
 {
+
+	char real_fname[MAX_FILENAME_LEN];
+	strcpy(real_fname, filename);
+	char *p = strchr(real_fname, '.');
+	if (p) *p = 0; // remove any extension
+	strcat(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
+
 	int rval;
 
 	// if mission_p is NULL, make it point to The_mission
@@ -5090,7 +5100,7 @@ int get_mission_info(char *filename, mission *mission_p)
 		// open localization
 		lcl_ext_open();
 
-		CFILE *ftemp = cfopen(filename, "rt");
+		CFILE *ftemp = cfopen(real_fname, "rt");
 		if (!ftemp){
 			// close localization
 			lcl_ext_close();
@@ -5108,7 +5118,7 @@ int get_mission_info(char *filename, mission *mission_p)
 			return -1;
 		}
 
-		read_file_text(filename, CF_TYPE_MISSIONS);
+		read_file_text(real_fname, CF_TYPE_MISSIONS);
 		memset( mission_p, 0, sizeof(mission) );
 		parse_init();
 		parse_mission_info(mission_p);
