@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.136 $
- * $Date: 2006-01-14 05:36:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.137 $
+ * $Date: 2006-01-14 06:25:11 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2006/01/14 05:36:06  Goober5000
+ * tweaky tweak
+ * --Goober5000
+ *
  * Revision 2.135  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -5934,6 +5938,7 @@ int parse_object_on_arrival_list(p_object *pobjp)
 void mission_eval_arrivals()
 {
 	int i;
+	int rship = -1;
 	wing *wingp;
 
 	// before checking arrivals, check to see if we should play a message concerning arrivals
@@ -6049,8 +6054,6 @@ void mission_eval_arrivals()
 			// multiplayer team vs. team
 			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
 			{
-				int rship;
-
 				// send a hostile wing arrived message
 				rship = wingp->ship_index[wingp->special_ship];
 
@@ -6074,35 +6077,31 @@ void mission_eval_arrivals()
 			// everything else
 			else
 			{
-				int rship;
+				rship = ship_get_random_ship_in_wing(i, SHIP_GET_NO_PLAYERS);
 
 				// see if this is a starting player wing
 				// Goober5000 - we have to test the actual names here, because the voice files are scripted for certain wings
 				if (!stricmp(wingp->name, "beta"))
 				{
-					rship = ship_get_random_ship_in_wing(i, SHIP_GET_NO_PLAYERS);
 					if (rship >= 0)
 						message_send_builtin_to_player(MESSAGE_BETA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				}
 				else if (!stricmp(wingp->name, "gamma"))
 				{
-					rship = ship_get_random_ship_in_wing(i, SHIP_GET_NO_PLAYERS);
 					if (rship >= 0)
 						message_send_builtin_to_player(MESSAGE_GAMMA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				}
 				else if (!stricmp(wingp->name, "delta"))
 				{
-					rship = ship_get_random_ship_in_wing(i, SHIP_GET_NO_PLAYERS);
 					if (rship >= 0)
 						message_send_builtin_to_player(MESSAGE_DELTA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				}
 				else if (!stricmp(wingp->name, "epsilon"))
 				{
-					rship = ship_get_random_ship_in_wing(i, SHIP_GET_NO_PLAYERS);
 					if (rship >= 0)
 						message_send_builtin_to_player( MESSAGE_EPSILON_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				}
-				else
+				else if (rship >= 0)
 				{
 
 					if (iff_x_attacks_y(Player_ship->team, Ships[rship].team))
