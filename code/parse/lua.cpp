@@ -1249,6 +1249,30 @@ LUA_FUNC(getNextMissionName, l_Campaign, NULL, "Mission name, or false if there 
 	return lua_ret_args(L, "s", Campaign.missions[Campaign.next_mission].name);
 }
 
+LUA_FUNC(getNextMission, l_Campaign, NULL, "Cmission object, or false if there is no next mission", "Gets the next mission in the campaign")
+{
+	if(Campaign.next_mission < 0)
+		return LUA_RETURN_FALSE;
+
+	return lua_ret_args(L, "o", l_Cmission.Return(&Campaign.next_mission));
+}
+
+LUA_FUNC(getPrevMissionName, l_Campaign, NULL, "Mission name, or false if there is no next mission", "Gets the name of the next mission in the campaign")
+{
+	if(Campaign.prev_mission < 0)
+		return LUA_RETURN_FALSE;
+
+	return lua_ret_args(L, "s", Campaign.missions[Campaign.prev_mission].name);
+}
+
+LUA_FUNC(getPrevMission, l_Campaign, NULL, "Cmission object, or false if there is no next mission", "Gets the previous mission in the campaign")
+{
+	if(Campaign.prev_mission < 0)
+		return LUA_RETURN_FALSE;
+
+	return lua_ret_args(L, "o", l_Cmission.Return(&Campaign.prev_mission));
+}
+
 LUA_FUNC(getMissionByName, l_Campaign, "Mission name", "Cmission object, or false if mission does not exist", "Gets the specified mission from the campaign by its name")
 {
 	char *s;
@@ -1279,21 +1303,6 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 	return lua_ret_args(L, "o", l_Cmission.Return(&idx));
 }
 
-LUA_FUNC(getNextMission, l_Campaign, NULL, "Cmission object, or false if there is no next mission", "Gets the next mission in the campaign")
-{
-	if(Campaign.next_mission < 0)
-		return LUA_RETURN_FALSE;
-
-	return lua_ret_args(L, "o", l_Cmission.Return(&Campaign.next_mission));
-}
-
-LUA_FUNC(getPrevMission, l_Campaign, NULL, "Cmission object, or false if there is no next mission", "Gets the previous mission in the campaign")
-{
-	if(Campaign.prev_mission < 0)
-		return LUA_RETURN_FALSE;
-
-	return lua_ret_args(L, "o", l_Cmission.Return(&Campaign.prev_mission));
-}
 
 //**********LIBRARY: Mission
 lua_lib l_Mission("mn", "Mission library");
