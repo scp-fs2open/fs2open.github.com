@@ -144,13 +144,17 @@ void script_state::RemGlobal(char *name)
 }
 
 //returns 0 on failure (Parse error), 1 on success
-int script_state::RunBytecode(script_hook &hd, char *format, ...)
+int script_state::RunBytecode(script_hook &hd, char format, void *data)
 {
 	if(hd.index >= 0)
 	{
 		if(hd.language == SC_LUA)
 		{
 #ifdef USE_LUA
+			int args_start;
+			if(/*format != NULL*/data != NULL) {
+				args_start = lua_gettop(LuaState);
+			}
 			lua_getref(GetLuaSession(), hd.index);
 			if(lua_pcall(GetLuaSession(), 0, 1, 0) != 0)
 			{
@@ -158,10 +162,25 @@ int script_state::RunBytecode(script_hook &hd, char *format, ...)
 				return 0;
 			}
 
-			va_list args;
-			va_start(args, format);
-			lua_get_args(LuaState, format, args);
-			va_end(args);
+			//WMC - Just allow one argument for now.
+			if(data != NULL)
+			{
+				char fmt[2] = {format, '\0'};
+				Lua_get_args_skip = args_start;
+				lua_get_args(LuaState, fmt, data);
+				Lua_get_args_skip = 0;
+			}
+/*
+			if(format != NULL)
+			{
+				va_list args;
+				va_start(args, format);
+				Lua_get_args_skip = args_start;
+				lua_get_args(LuaState, format, args);
+				Lua_get_args_skip = 0;
+				va_end(args);
+			}
+*/
 			return 1;
 #endif
 		}

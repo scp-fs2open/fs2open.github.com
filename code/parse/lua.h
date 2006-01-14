@@ -11,6 +11,9 @@ extern "C" {
 int lua_get_args(lua_State *L, char *fmt, ...);
 int lua_set_args(lua_State *L, char* fmt, ...);
 
+//WMC - Hack to allow for quick&easy return value parsing
+extern int Lua_get_args_skip;
+
 extern void lua_stackdump(lua_State *L, char *stackdump);
 
 #endif //USE_LUA

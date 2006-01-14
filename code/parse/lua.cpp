@@ -335,6 +335,8 @@ void lua_stackdump(lua_State *L, char *stackdump)
 	}
 }
 
+int Lua_get_args_skip = 0;
+
 //lua_get_args(state, arguments, variables)
 //----------------------------------------------
 //based on "Programming in Lua"
@@ -353,7 +355,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	//Check that we have all the arguments that we need
 	//If we don't, return 0
 	int needed_args = strlen(fmt);
-	int total_args = lua_gettop(L);
+	int total_args = lua_gettop(L) - Lua_get_args_skip;
 
 	if(strchr(fmt, '|') != NULL) {
 		needed_args = strchr(fmt, '|') - fmt;
@@ -372,7 +374,8 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	bool optional_args = false;
 
 	va_start(vl, fmt);
-	nargs = 1;
+	nargs = 1 + Lua_get_args_skip;
+	total_args += Lua_get_args_skip;
 	while(*fmt && nargs <= total_args)
 	{
 		//Skip functions; I assume these are being used to return args

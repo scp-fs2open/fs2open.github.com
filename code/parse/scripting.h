@@ -66,7 +66,7 @@ public:
 
 	//Hook handling functions
 	script_hook ParseChunk(char* debug_str=NULL);
-	int RunBytecode(script_hook &hd, char *format=NULL, ...);
+	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
 };
 
 
