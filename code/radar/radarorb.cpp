@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.19 $
- * $Date: 2006-01-14 03:28:29 $
+ * $Revision: 1.20 $
+ * $Date: 2006-01-14 04:44:29 $
  * $Author: phreak $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2006/01/14 03:28:29  phreak
+ * Make orb radar mode drawing again.
+ * Clarify "fudge" variable used for viewing transformations
+ *
  * Revision 1.18  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -160,7 +164,7 @@ vec3d vec_extents[]=
 
 //special view matrix to get the orb rotating the correct war
 static matrix view_perturb = { { { {1.0f, 0.0f, 0.0f }, {0.0f,1.0f,0.0f}, {0.0f,0.0f,-1.0f} } } };
-
+static vec3d Orb_eye_position = {0,0,-2.5};
 
 // forward declarations
 void draw_radar_blips_orb(int blip_type, int bright, int distort = 0);
@@ -498,14 +502,17 @@ void radar_orb_draw_contact(vec3d *pnt, int rad)
 
 	g3_rotate_vertex(&verts[1], pnt);
 	g3_project_vertex(&verts[1]);
+
+	float size = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
+	if (size < rad)	size = rad;
  
 	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
 	{
-		g3_draw_sphere(&verts[1],(float)Current_radar_global->Radar_blip_radius_target[gr_screen.res]/100.0f);
+		g3_draw_sphere(&verts[1],size/100.0f);
 	}
 	else
 	{
-		g3_draw_sphere(&verts[1],(float)Current_radar_global->Radar_blip_radius_target[gr_screen.res]/300.0f);
+		g3_draw_sphere(&verts[1],size/300.0f);
 	}
 
 	g3_draw_line(&verts[0],&verts[1]);
@@ -549,7 +556,7 @@ void radar_blip_draw_flicker_orb(blip *b)
 
 	float dist=vm_vec_normalize(&b->position);
 	vec3d out;
-	float distortion_angle=20;
+	float distortion_angle=10;
 
 	if ( (b-Blips) & 1 ) {
 		flicker_index=0;
@@ -568,7 +575,7 @@ void radar_blip_draw_flicker_orb(blip *b)
 
 	if ( rand() & 1 ) {
 
-		distortion_angle *= frand_range(-2.0f,2.0f)*frand_range(0.0f, 10.0f);
+		distortion_angle *= frand_range(0.1f,2.0f);
 		dist *= frand_range(0.75f, 1.25f);
 
 		if (dist > 1.25f) dist = 1.25f;
@@ -689,8 +696,6 @@ void radar_orb_setup_view()
 {
 	hud_save_restore_camera_data(1);
 
-	//draw the guide circles
-	static vec3d eye={0,0,-2.25};
 	g3_end_frame();
 
 	int w,h;
@@ -702,7 +707,7 @@ void radar_orb_setup_view()
 	float old_zoom=View_zoom;
 	View_zoom=.75;
 
-	g3_set_view_matrix( &eye, &vmd_identity_matrix, View_zoom);
+	g3_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix, View_zoom);
 
 	View_zoom=old_zoom;
 }
