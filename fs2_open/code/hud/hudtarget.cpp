@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.79 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.80 $
+ * $Date: 2006-01-14 06:24:27 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.78  2006/01/10 01:23:09  phreak
  * Fixed a logic error when dealing with non-targetable subsystems
  *
@@ -2018,7 +2021,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 		}
 
 		for (so=advance_ship(start, next_flag); so!=start; so=advance_ship(so, next_flag)) {
-			object *ship_obj = &Objects[so->objnum];
+			A = &Objects[so->objnum];
 
 			// don't look at header
 			if (so == &Ship_obj_list) {
@@ -2030,23 +2033,23 @@ void hud_target_missile(object *source_obj, int next_flag)
 				continue;
 			}
 
-			if(hud_target_invalid_awacs(ship_obj)){
+			if(hud_target_invalid_awacs(A)){
 				continue;
 			}
 
 			// check if ship type is bomber
-			if ( !(Ship_info[Ships[ship_obj->instance].ship_info_index].flags & SIF_BOMBER) ) {
+			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) ) {
 				continue;
 			}
 
 			// check if ignore
-			if ( Ships[ship_obj->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
+			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
 				continue;
 			}
 
 			// found a good one
 			target_found = TRUE;
-			set_target_objnum( aip, OBJ_INDEX(ship_obj) );
+			set_target_objnum( aip, OBJ_INDEX(A) );
 			break;
 		}
 	}
