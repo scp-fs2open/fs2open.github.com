@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.210 $
- * $Date: 2006-01-14 09:21:27 $
+ * $Revision: 2.211 $
+ * $Date: 2006-01-14 10:35:41 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.210  2006/01/14 09:21:27  wmcoolmon
+ * New Lua feature - globals control.
+ *
  * Revision 2.209  2006/01/13 04:46:17  wmcoolmon
  * More scripting stuff
  *
@@ -8096,9 +8099,7 @@ void game_do_state(int state)
 	{
 		game_set_frametime(state);
 		gr_clear();
-		int idx=-1;
-		Script_system.RunBytecode(GS_state_hooks[state], "i", &idx);
-		Error(LOCATION, "%d", idx);
+		Script_system.RunBytecode(GS_state_hooks[state]);
 		gr_flip();
 		return;
 	}
