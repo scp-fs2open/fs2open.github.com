@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.64 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.65 $
+ * $Date: 2006-01-15 18:56:45 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.63  2005/12/14 08:07:33  phreak
  * Handling of exit explosions for beams when a ship is about to get destroyed, or according to the code: "tooled".
  * Bumped beam frame collisions to 10 to compensate.
@@ -1968,7 +1971,8 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 	vm_vec_normalize( &rvec );	
 
 	vm_vec_crossprod(&uvec,fvec,&rvec);
-	vm_vec_normalize(&uvec);
+	// VECMAT-ERROR: NULL VEC3D (value of, fvec == rvec)
+	vm_vec_normalize_safe(&uvec);
 
 	vm_vec_scale_add( top, &temp, &uvec, w/2.0f );
 	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
