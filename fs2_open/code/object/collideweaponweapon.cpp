@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-10-30 06:44:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2006-01-15 01:02:01 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/10/30 06:44:58  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.6  2005/03/25 06:57:36  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -100,12 +103,6 @@
 
 
 
-#ifndef NDEBUG
-//XSTR:OFF
-char *lTeamNames[3] = { "Hostile", "Friendly", "Unknown" };
-//XSTR:ON
-#endif
-
 #define	BOMB_ARM_TIME	1.5f
 
 // Checks weapon-weapon collisions.  pair->a and pair->b are weapons.
@@ -160,9 +157,10 @@ int collide_weapon_weapon( obj_pair * pair )
 
 		sap = &Ships[Objects[A->parent].instance];
 		sbp = &Ships[Objects[B->parent].instance];
+
 		// MWA -- commented out next line because it was too long for output window on occation.
 		// Yes -- I should fix the output window, but I don't have time to do it now.
-		//nprintf(("AI", "[%s] %s's missile %i shot down by [%s] %s's laser %i\n", lTeamNames[sbp->team], sbp->ship_name, B->instance, lTeamNames[sap->team], sap->ship_name, A->instance));
+		//nprintf(("AI", "[%s] %s's missile %i shot down by [%s] %s's laser %i\n", Iff_info[sbp->team].iff_name, sbp->ship_name, B->instance, Iff_info[sap->team].iff_name, sap->ship_name, A->instance));
 		if (wipA->wi_flags & WIF_BOMB) {
 			if (wipB->wi_flags & WIF_BOMB) {		//	Two bombs collide, detonate both.
 				Weapons[A->instance].lifeleft = 0.01f;
