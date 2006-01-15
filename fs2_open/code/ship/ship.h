@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.131 $
- * $Date: 2006-01-14 19:54:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.132 $
+ * $Date: 2006-01-15 18:55:27 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.130  2006/01/14 09:21:27  wmcoolmon
  * New Lua feature - globals control.
  *
@@ -1528,8 +1531,6 @@ typedef struct ship_type_info {
 
 	//Regen values - need to be converted after all types have loaded
 	std::vector<std::string> ai_actively_pursues_temp;
-
-	ship_type_info(){memset(this, 0, sizeof(ship_type_info));}
 } ship_type_info;
 
 extern std::vector<ship_type_info> Ship_types;
