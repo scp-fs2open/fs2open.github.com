@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.17 $
- * $Date: 2006-01-06 11:25:29 $
+ * $Revision: 1.18 $
+ * $Date: 2006-01-15 21:22:22 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2006/01/06 11:25:29  taylor
+ * I refuse to comment on my own stupidity!  (fixes music interruption)
+ *
  * Revision 1.16  2005/12/28 22:17:02  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -262,7 +265,7 @@ public:
 	void	Set_Volume(long vol);
 	long	Get_Volume();
 	void	Init_Data();
-	void	Set_Sample_Cutoff(unsigned int num_bytes_cutoff);
+	void	Set_Sample_Cutoff(unsigned int sample_cutoff);
 	void  Set_Default_Volume(long converted_volume) { m_lDefaultVolume = converted_volume; }
 	long	Get_Default_Volume() { return m_lDefaultVolume; }
 	uint Get_Samples_Committed(void);
@@ -1377,12 +1380,12 @@ BOOL AudioStream::TimerCallback (ptr_u dwUser)
     return (pas->ServiceBuffer ());
 }
 
-void AudioStream::Set_Sample_Cutoff(unsigned int byte_cutoff)
+void AudioStream::Set_Sample_Cutoff(unsigned int sample_cutoff)
 {
 	if ( m_pwavefile == NULL )
 		return;
 
-	m_pwavefile->m_max_uncompressed_bytes_to_read = byte_cutoff;
+	m_pwavefile->m_max_uncompressed_bytes_to_read = ((sample_cutoff * m_pwavefile->m_wfmt.wBitsPerSample) / 8);
 }
 
 unsigned int AudioStream::Get_Samples_Committed(void)
@@ -1390,7 +1393,7 @@ unsigned int AudioStream::Get_Samples_Committed(void)
 	if ( m_pwavefile == NULL )
 		return 0;
 
-	return m_pwavefile->m_total_uncompressed_bytes_read;
+	return ((m_pwavefile->m_total_uncompressed_bytes_read * 8) / m_pwavefile->m_wfmt.wBitsPerSample);
 }
 
 
