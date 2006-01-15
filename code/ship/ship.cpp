@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.296 $
- * $Date: 2006-01-14 19:54:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.297 $
+ * $Date: 2006-01-15 18:55:27 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.296  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.295  2006/01/13 13:06:15  taylor
  * hmm, didn't put much thought in that the first time, this should work closer to the original but still be cleaner
  *
@@ -3979,7 +3982,7 @@ void parse_ship_type()
 {
 	char name_buf[NAME_LENGTH];
 	bool nocreate = false;
-	ship_type_info *stp = NULL;
+	ship_type_info stp_tmp, *stp = NULL;
 
 	required_string("$Name:");
 	stuff_string(name_buf, F_NAME);
@@ -3999,8 +4002,13 @@ void parse_ship_type()
 		{
 			Ship_types.resize(Ship_types.size()+1);
 			stp = &Ship_types[Ship_types.size()-1];
-			strcpy(stp->name, name_buf);
+		} else {
+			stp = &stp_tmp;
 		}
+
+		Assert( stp != NULL );
+		memset( stp, 0, sizeof(ship_type_info) );
+		strcpy(stp->name, name_buf);
 	}
 
 	//Okay, now we should have the values to parse
@@ -4164,26 +4172,6 @@ void parse_shiptype_tbl(char *longname)
 		required_string("#End");
 	}
 
-	//DO ALL THE STUFF WE NEED TO DO AFTER LOADING
-	ship_type_info *stp;
-
-	uint i,j;
-	int idx;
-	for(i = 0; i < Ship_types.size(); i++)
-	{
-		stp = &Ship_types[i];
-
-		//Handle active pursuit
-		for(j = 0; j < stp->ai_actively_pursues_temp.size(); j++)
-		{
-			idx = ship_type_name_lookup((char*)stp->ai_actively_pursues_temp[j].c_str());
-			if(idx > -1) {
-				stp->ai_actively_pursues.push_back(idx);
-			}
-		}
-		stp->ai_actively_pursues_temp.clear();
-	}
-
 	lcl_ext_close();
 }
 
@@ -4315,6 +4303,25 @@ void ship_init()
 			Module_ship_weapons_loaded = true;
 		}
 
+		// DO ALL THE STUFF WE NEED TO DO AFTER LOADING Ship_types
+		ship_type_info *stp;
+
+		uint i,j;
+		int idx;
+		for(i = 0; i < Ship_types.size(); i++)
+		{
+			stp = &Ship_types[i];
+
+			//Handle active pursuit
+			for(j = 0; j < stp->ai_actively_pursues_temp.size(); j++)
+			{
+				idx = ship_type_name_lookup((char*)stp->ai_actively_pursues_temp[j].c_str());
+				if(idx > -1) {
+					stp->ai_actively_pursues.push_back(idx);
+				}
+			}
+			stp->ai_actively_pursues_temp.clear();
+		}
 
 		//ships.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {
