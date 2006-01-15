@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.63 $
- * $Author: wmcoolmon $
- * $Date: 2006-01-14 19:54:55 $
+ * $Revision: 2.64 $
+ * $Author: taylor $
+ * $Date: 2006-01-15 18:53:19 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.62  2005/12/30 05:40:19  wmcoolmon
  * Assert -> parse warning
  *
@@ -2110,7 +2113,7 @@ void stuff_boolean(bool *b, bool a_to_eol)
 		}
 	}
 
-	diag_printf("Stuffed bool: %b\n", *b);
+	diag_printf("Stuffed bool: %s\n", (b) ? NOX("true") : NOX("false"));
 }
 
 int stuff_bool_list(bool *blp, int max_bools)
