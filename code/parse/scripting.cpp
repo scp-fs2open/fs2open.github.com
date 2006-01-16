@@ -44,6 +44,8 @@ int script_test(script_state *st)
 		if(optional_string("$HUD:")) {
 			Script_hudhook = st->ParseChunk("HUD");
 		}
+
+		required_string("#End");
 	}
 
 	if(optional_string("#State Hooks"))
