@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2006-01-16 11:02:23 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 1.4  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -250,7 +253,7 @@ void iff_init()
 		iff->default_ship_flags = 0;
 		if (optional_string("$Default Ship Flags:"))
 		{
-			int i, j;
+			int i, j=0;
 			char flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
 			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
 			for (i = 0; i < num_strings; i++)

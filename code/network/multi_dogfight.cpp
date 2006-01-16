@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2006-01-16 11:02:23 $
+ * $Author: wmcoolmon $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.12  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -399,7 +402,7 @@ void multi_df_debrief_init()
 		}
 
 		// refetch to try and resolve the display bug
-		int rescode = GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
+		GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
 
 	}
 	else

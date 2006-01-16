@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.55 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2006-01-16 11:02:23 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.54  2006/01/12 17:42:56  wmcoolmon
  * Even more scripting stuff.
  *
@@ -685,28 +688,27 @@ int Object_next_ship_signature = OBJECT_SIG_SHIP_START;
 int Object_inited = 0;
 int Show_waypoints = 0;
 
-#ifndef NDEBUG
+//WMC - Made these prettier
 char *Object_type_names[MAX_OBJECT_TYPES] = {
 //XSTR:OFF
-	"NONE",
-	"SHIP",
-	"WEAPON",
-	"FIREBALL",
-	"START",
-	"WAYPOINT",
-	"DEBRIS",
-	"CMEASURE",
-	"GHOST",
-	"POINT",
-	"SHOCKWAVE",
-	"WING",
-	"GHOST SAVE",
-	"OBSERVER",
-	"ASTEROID",
-	"JUMP NODE",
+	"None",
+	"Ship",
+	"Weapon",
+	"Fireball",
+	"Start",
+	"Waypoint",
+	"Debris",
+	"Countermeasure",
+	"Ghost",
+	"Point",
+	"Shockwave",
+	"Wing",
+	"Ghost Save",
+	"Observer",
+	"Asteroid",
+	"Jump Node",
 //XSTR:ON
 };
-#endif
 
 //-----------------------------------------------------------------------------
 //	Scan the object list, freeing down to num_used objects
