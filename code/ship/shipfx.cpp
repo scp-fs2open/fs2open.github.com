@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.61 $
- * $Date: 2006-01-09 04:54:14 $
- * $Author: phreak $
+ * $Revision: 2.62 $
+ * $Date: 2006-01-16 20:57:03 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2006/01/09 04:54:14  phreak
+ * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
+ *
  * Revision 2.60  2006/01/05 11:34:44  taylor
  * make Split_ships[] dynamic (wouldn't have been a big deal to just bump the limit, but what the hell)
  *
@@ -3119,6 +3122,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 	}
 }
 
+extern int model_should_render_engine_glow(int objnum, int bank_obj);
 int Wash_on = 1;
 DCF_BOOL(engine_wash, Wash_on);
 #define ENGINE_WASH_CHECK_INTERVAL		250	// (4x sec)
@@ -3206,6 +3210,11 @@ void engine_wash_ship_process(ship *shipp)
 
 		for (idx = 0; idx < pm->n_thrusters; idx++) {
 			thruster_bank *bank = &pm->thrusters[idx];
+
+			// make sure this engine is functional before we try to process a wash from it
+			if ( !model_should_render_engine_glow(OBJ_INDEX(ship_objp), bank->obj_num) ) {
+				continue;
+			}
 
 			// check if thruster bank has engine wash
 			if (bank->wash_info_pointer == NULL) {
