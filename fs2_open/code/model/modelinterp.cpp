@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.139 $
- * $Date: 2006-01-04 08:19:22 $
+ * $Revision: 2.140 $
+ * $Date: 2006-01-16 20:57:03 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2006/01/04 08:19:22  taylor
+ * fixes for regular texture replacement
+ *
  * Revision 2.138  2005/12/29 20:12:51  taylor
  * we are using gouraud lighting here so be sure to set the proper tmap flag (fixes D3D, corrects OGL)
  *
@@ -4256,7 +4259,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			int j;
 
 			// don't draw this thruster if the engine is destroyed or just not on
-			if ((bank->obj_num > -1) && !(model_should_render_engine_glow(objnum, bank->obj_num)))
+			if ( !model_should_render_engine_glow(objnum, bank->obj_num) )
 				continue;
 
 			for ( j=0; j<bank->num_slots; j++ )	{
@@ -6561,7 +6564,7 @@ void queued_animation::corect(){
 //         0 if it shouldn't
 int model_should_render_engine_glow(int objnum, int bank_obj)
 {
-	if ((bank_obj == -1) || (objnum == -1))
+	if ((bank_obj <= -1) || (objnum <= -1))
 		return 1;
 
 	object *obj = &Objects[objnum];
@@ -6574,6 +6577,8 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 		ship *shipp = &Ships[obj->instance];
 		ship_info *si = &Ship_info[shipp->ship_info_index];
 
+		Assert( bank_obj < shipp->n_subsystems );
+
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
 		strncpy(subname, si->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
@@ -6585,8 +6590,9 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 				if ( ssp->current_hits <= 0 )
 					return 0;
 
-				// TODO: there could also be something here for disabled engine subsystems
-				//       if the need arose.
+				// see if the subsystem is disrupted, in which case it should be inoperable
+				if ( ship_subsys_disrupted(ssp) )
+					return 0;
 
 				return 1;
 			}
