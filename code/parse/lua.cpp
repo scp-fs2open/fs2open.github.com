@@ -924,7 +924,7 @@ int lua_obj_get_idx(lua_State *L, int *idx)
 	return 1;
 }
 
-LUA_FUNC(getType, l_Object, NULL, "Object type name", "Gets object type")
+LUA_FUNC(getBreed, l_Object, NULL, "Object type name", "Gets object type")
 {
 	int idx;
 	if(!lua_obj_get_idx(L, &idx))
