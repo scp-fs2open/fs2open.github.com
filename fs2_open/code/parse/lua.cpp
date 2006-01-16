@@ -731,6 +731,24 @@ LUA_FUNC(getVariableValue, l_Cmission, "Variable number (Zero-based)", "Variable
 //**********CLASS: Shipclass
 lua_obj<int> l_Shipclass("shipclass", "Ship class object");
 extern int ships_inited;
+/*
+LUA_VAR(name, l_Ship, "String", "Ship class name")
+{
+	int idx;
+	char *s;
+	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR)
+	{
+		strncpy(Ship_info[idx].name, s, sizeof(Ship_info[idx].name)-1);
+	}
+
+	return lua_set_args(L, "s", Ship_info[idx].name);
+}*/
 
 LUA_FUNC(getName, l_Shipclass, NULL, "Name (string)", "Gets ship class name")
 {
@@ -1198,7 +1216,6 @@ int lua_ship_get_idx(lua_State *L, int *idx)
 
 	return 1;
 }
-
 
 LUA_FUNC(fetchName, l_Ship, "[New name]", "[New] ship name (string)", "Gets ship name")
 {
@@ -1861,7 +1878,7 @@ LUA_FUNC(getScreenHeight, l_Graphics, NULL, "Height in pixels (Number)", "Gets s
 	return lua_set_args(L, "i", gr_screen.max_h);
 }
 
-LUA_FUNC(drawText, l_Graphics, "String, x, y, [Resize]", NULL, "Draws a string")
+LUA_FUNC(drawString, l_Graphics, "String, x, y, [Resize]", NULL, "Draws a string")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
