@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.213 $
- * $Date: 2006-01-16 11:02:23 $
+ * $Revision: 2.214 $
+ * $Date: 2006-01-16 11:16:07 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.213  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.212  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -5847,8 +5850,10 @@ void game_render_post_frame()
 //is determined according to object type
 void obj_script_set_global(char *global_name, object *objp)
 {
-	if(objp == NULL)
+	if(objp == NULL) {
+		Script_system.RemGlobal(global_name);
 		return;
+	}
 
 	if(objp->type == OBJ_SHIP) {
 		Script_system.SetGlobal(global_name, 'o', &l_Ship.SetToLua(&objp->signature));
@@ -5969,26 +5974,12 @@ void game_frame(int paused)
 				gr_clear();
 			}
 
-			if(Player_obj != NULL)
-			{
-				if(Player_obj->type == OBJ_SHIP) {
-					Script_system.SetGlobal("plr", 'o', &l_Ship.SetToLua(&Player_obj->signature));
-				} else {
-					Script_system.SetGlobal("plr", 'o', &l_Object.SetToLua(&Player_obj->signature));
-				}
-			}
+			obj_script_set_global("plr", Player_obj);
 
 			clear_time2 = timer_get_fixed_seconds();
 			render3_time1 = timer_get_fixed_seconds();
 			game_render_frame_setup(&eye_pos, &eye_orient);
-			if(Viewer_obj != NULL)
-			{
-				if(Viewer_obj->type == OBJ_SHIP) {
-					Script_system.SetGlobal("slf", 'o', &l_Ship.SetToLua(&Viewer_obj->signature));
-				} else {
-					Script_system.SetGlobal("slf", 'o', &l_Object.SetToLua(&Viewer_obj->signature));
-				}
-			}
+			obj_script_set_global("slf", Viewer_obj);
 
 			game_render_frame( &eye_pos, &eye_orient );
 
