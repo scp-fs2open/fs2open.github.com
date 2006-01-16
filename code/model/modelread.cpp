@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.87 $
- * $Date: 2006-01-14 19:54:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.88 $
+ * $Date: 2006-01-16 07:46:03 $
+ * $Author: phreak $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.86  2006/01/11 21:23:43  wmcoolmon
  * Made turret handling code more descriptive
  *
@@ -2947,6 +2950,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	pm->used_this_mission++;
 
+#ifdef _DEBUG
 	if(Fred_running && Parse_normal_problem_count > 0)
 	{
 		char buffer[100];
@@ -2954,6 +2958,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			filename, Parse_normal_problem_count);
 		MessageBox(NULL,buffer,"Error", MB_OK);
 	}
+#endif
 
 
 //mprintf(( "Loading model '%s'\n", filename ));
