@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.212 $
- * $Date: 2006-01-14 19:54:55 $
+ * $Revision: 2.213 $
+ * $Date: 2006-01-16 11:02:23 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.212  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.211  2006/01/14 10:35:41  wmcoolmon
  * Allow RunByteCode to return an argument
  *
@@ -1535,6 +1538,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "network/fs2ox.h"
 #include "parse/scripting.h"
+#include "parse/lua.h"
 
 
 #include "freespace2/freespaceresource.h"
@@ -1586,7 +1590,6 @@ extern bool frame_rate_display;
 
 bool cube_map_drawen = false;
 
-void game_level_init(int seed = -1);
 void game_reset_view_clip();
 void game_reset_shade_frame();
 void game_post_level_init();
@@ -5840,6 +5843,20 @@ void game_render_post_frame()
 	}
 }
 
+//WMC - Used to set an object global, where the Lua type
+//is determined according to object type
+void obj_script_set_global(char *global_name, object *objp)
+{
+	if(objp == NULL)
+		return;
+
+	if(objp->type == OBJ_SHIP) {
+		Script_system.SetGlobal(global_name, 'o', &l_Ship.SetToLua(&objp->signature));
+	} else {
+		Script_system.SetGlobal(global_name, 'o', &l_Object.SetToLua(&objp->signature));
+	}
+}
+
 void game_frame(int paused)
 {
 	int actually_playing;
@@ -5952,11 +5969,26 @@ void game_frame(int paused)
 				gr_clear();
 			}
 
+			if(Player_obj != NULL)
+			{
+				if(Player_obj->type == OBJ_SHIP) {
+					Script_system.SetGlobal("plr", 'o', &l_Ship.SetToLua(&Player_obj->signature));
+				} else {
+					Script_system.SetGlobal("plr", 'o', &l_Object.SetToLua(&Player_obj->signature));
+				}
+			}
+
 			clear_time2 = timer_get_fixed_seconds();
 			render3_time1 = timer_get_fixed_seconds();
 			game_render_frame_setup(&eye_pos, &eye_orient);
-
-			Scripting_didnt_draw_hud = Script_system.RunBytecode(Script_hudhook) ? 0 : 1;
+			if(Viewer_obj != NULL)
+			{
+				if(Viewer_obj->type == OBJ_SHIP) {
+					Script_system.SetGlobal("slf", 'o', &l_Ship.SetToLua(&Viewer_obj->signature));
+				} else {
+					Script_system.SetGlobal("slf", 'o', &l_Object.SetToLua(&Viewer_obj->signature));
+				}
+			}
 
 			game_render_frame( &eye_pos, &eye_orient );
 
@@ -5965,6 +5997,10 @@ void game_frame(int paused)
 				Net_player->s_info.eye_pos = eye_pos;
 				Net_player->s_info.eye_orient = eye_orient;
 			}
+
+			Scripting_didnt_draw_hud = 1;
+			if(Script_system.RunBytecode(Script_hudhook) && Script_hudhook.IsOverride())
+				Scripting_didnt_draw_hud = 0;
 
 			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
 			{

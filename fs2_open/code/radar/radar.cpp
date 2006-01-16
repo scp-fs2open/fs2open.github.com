@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-01-14 19:54:55 $
+ * $Revision: 2.22 $
+ * $Date: 2006-01-16 11:02:23 $
  * $Author: wmcoolmon $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.20  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -303,7 +306,6 @@ void radar_init_std()
 // determine how the object blip should be drawn
 void radar_stuff_blip_info_std(object *objp, int is_bright, color **blip_color, int *blip_type)
 {
-	int color = 0;
 	ship *shipp = NULL;
 
 	switch(objp->type)
@@ -364,7 +366,7 @@ void radar_plot_object_std( object *objp )
 {
 	vec3d	pos, tempv;
 	float		dist, rscale, zdist, max_radar_dist;
-	int		xpos, ypos, color=0;
+	int		xpos, ypos;
 	vec3d	*world_pos = &objp->pos;	
 	float		awacs_level;
 

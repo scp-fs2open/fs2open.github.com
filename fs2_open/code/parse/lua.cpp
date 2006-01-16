@@ -1,6 +1,5 @@
 #include "parse/scripting.h"
 #ifdef USE_LUA
-#include <string.h>
 #include "parse/lua.h"
 #include "graphics/2d.h"
 #include "ship/ship.h"
@@ -18,139 +17,16 @@
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
 #include "freespace2/freespace.h"
+#include "weapon/weapon.h"
 
 //*************************Lua funcs*************************
 int script_remove_lib(lua_State *L, char *name);
 
-void lua_stackdump(lua_State *L);
-
-//*************************Lua helpers*************************
-//Used for internal object->lua_return and lua_parse->object communication
-struct script_lua_odata
-{
-	char *meta;
-	void *buf;
-	int size;
-
-	script_lua_odata(char *in_meta, void *in_buf, int in_size){meta=in_meta;buf=in_buf;size=in_size;}
-};
-
-//Used like _odata, except for object pointers
-struct script_lua_opdata
-{
-	char *meta;
-	void **buf;
-
-	script_lua_opdata(char* in_meta, void** in_buf){meta=in_meta; buf=in_buf;}
-};
-
-//Function helper helper
-//Stores data about functions
-struct lua_func_hh
-{
-	char *Name;
-	lua_CFunction Function;
-	char *Arguments;
-	char *ReturnValues;
-	char *Description;
-};
-
-class lua_lib_h
-{
-/*
-	friend class lua_lib;
-	friend class lua_obj_h;
-	friend int script_state::CreateLuaState();
-	friend void output_lib_meta(FILE *fp, lua_lib_h *lib);
-	friend void script_state::OutputLuaMeta(FILE *fp);
-*/
-//private:
-public:
-	char *Name;
-	char *Description;
-	std::vector<lua_func_hh> Functions;
-	int Derivator;
-
-public:
-	lua_lib_h(char *in_name, char *in_desc, int in_deriv=-1){Name = in_name; Description = in_desc; Derivator = in_deriv;}
-};
-
+//*************************Lua globals*************************
 std::vector<lua_lib_h> lua_Libraries;
 std::vector<lua_lib_h> lua_Objects;
 
-//Library class
-//This is what you define a variable of to make new libraryes
-class lua_lib {
-private:
-	int lib_idx;
-public:
-	lua_lib(char *in_name, char *in_desc){
-		lua_Libraries.push_back(lua_lib_h(in_name, in_desc));
-		lib_idx = lua_Libraries.size()-1;
-	}
-
-	void AddFunc(lua_func_hh *f){lua_Libraries[lib_idx].Functions.push_back(*f);}
-};
-
-//Lua_obj helper class
-//Because of some STUPID limitation with templates, I couldn't pass
-//a lua_obj object as a reference and then execute AddFunc()
-//This class is a hack via derivation to make it work -C
-class lua_obj_h
-{
-public:
-	int obj_idx;
-public:
-	lua_obj_h(char *in_name, char *in_desc, lua_obj_h *in_deriv = NULL) {
-		lua_Objects.push_back(lua_lib_h(in_name, in_desc, in_deriv == NULL ? -1 : in_deriv->obj_idx));	//WMC - Handle NULL case
-		obj_idx = lua_Objects.size()-1;
-	}
-
-	void AddFunc(lua_func_hh *f){lua_Objects[obj_idx].Functions.push_back(*f);}
-};
-
-//Function helper class
-//Lets us add functions via its constructor
-class lua_func_h {
-public:
-	lua_func_h(char *name, lua_CFunction func, lua_lib &lib, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
-		lua_func_hh f;
-
-		f.Name = name;
-		f.Function = func;
-		f.Description = desc;
-		f.Arguments = args;
-		f.ReturnValues = retvals;
-
-		lib.AddFunc(&f);
-	}
-
-	lua_func_h(char *name, lua_CFunction func, lua_obj_h &obj, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
-		lua_func_hh f;
-
-		f.Name = name;
-		f.Function = func;
-		f.Description = desc;
-		f.Arguments = args;
-		f.ReturnValues = retvals;
-
-		obj.AddFunc(&f);
-	}
-};
-
-//Object class
-//This is what you define a variable of to make new objects
-template <class StoreType> class lua_obj : public lua_obj_h
-{
-public:
-	lua_obj(char*in_name, char*in_desc, lua_obj* in_deriv=NULL):lua_obj_h(in_name, in_desc, in_deriv){};
-
-	//StoreType *Create(lua_State *L){StoreType *ptr = (StoreType*)LUA_NEW_OBJ(L, meta, StoreType); return ptr;}
-	script_lua_odata SetToLua(StoreType *obj){return script_lua_odata(lua_Objects[obj_idx].Name, obj, sizeof(StoreType));}
-	script_lua_odata GetFromLua(StoreType *ptr){return script_lua_odata(lua_Objects[obj_idx].Name, ptr, sizeof(StoreType));}
-	script_lua_opdata GetPtrFromLua(StoreType **ptr){return script_lua_opdata(lua_Objects[obj_idx].Name, ptr);}
-};
-
+//*************************Lua helpers*************************
 //Function macro
 //This is what you call to make new functions
 #define LUA_FUNC(name, objlib, args, retvals, desc)	\
@@ -337,6 +213,34 @@ void lua_stackdump(lua_State *L, char *stackdump)
 	}
 }
 
+char *lua_get_type_string(lua_State *L, int argnum)
+{
+	int type = lua_type(L, argnum);
+	switch(type)
+	{
+		case LUA_TNIL:
+			return "Nil";
+		case LUA_TNUMBER:
+			return "Number";
+		case LUA_TBOOLEAN:
+			return "Boolean";
+		case LUA_TSTRING:
+			return "String";
+		case LUA_TTABLE:
+			return "Table";
+		case LUA_TFUNCTION:
+			return "Function";
+		case LUA_TUSERDATA:
+			return "Userdata";
+		case LUA_TTHREAD:
+			return "Thread";
+		case LUA_TLIGHTUSERDATA:
+			return "Light Userdata";
+		default:
+			return "Unknown";
+	}
+}
+
 int Lua_get_args_skip = 0;
 
 //lua_get_args(state, arguments, variables)
@@ -390,7 +294,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isboolean(L, nargs)) {
 					*va_arg(vl, bool*) = lua_toboolean(L, nargs) > 0 ? true : false;
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type; boolean expected", nargs);
+					Warning(LOCATION, "Argument %d is an invalid type '%s'; boolean expected", nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -398,7 +302,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, double*) = (double)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type; float expected", nargs);
+					Warning(LOCATION, "Argument %d is an invalid type '%s'; number expected", nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -406,7 +310,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, float*) = (float)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type; float expected", nargs);
+					Warning(LOCATION, "Argument %d is an invalid type '%s'; number expected", nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -414,7 +318,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, int*) = (int)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type; int expected", nargs);
+					Warning(LOCATION, "Argument %d is an invalid type '%s'; number expected", nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -422,7 +326,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isstring(L, nargs)) {
 					*va_arg(vl, const char **) = lua_tostring(L, nargs);
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type; string expected", nargs);
+					Warning(LOCATION, "Argument %d is an invalid type '%s'; string expected", nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -438,7 +342,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				}
 				else
 				{
-					Warning(LOCATION, "Argument %d is an invalid type %d; type '%s' expected", nargs, lua_type(L, nargs), va_arg(vl, script_lua_odata).meta);
+					Warning(LOCATION, "Argument %d is an invalid type '%s'; type '%s' expected", nargs, lua_get_type_string(L, nargs), va_arg(vl, script_lua_odata).meta);
 					if(!optional_args) return 0;
 				}
 				break;
@@ -453,7 +357,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				}
 				else
 				{
-					Warning(LOCATION, "Argument %d is an invalid type %d; type '%s' expected", nargs, lua_type(L, nargs), va_arg(vl, script_lua_opdata).meta);
+					Warning(LOCATION, "Argument %d is an invalid type '%s'; type '%s' expected", nargs, lua_get_type_string(L, nargs), va_arg(vl, script_lua_opdata).meta);
 					if(!optional_args) return 0;
 				}
 				break;
@@ -470,6 +374,48 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	va_end(vl);
 	return nargs;
 }
+/*
+void lua_set_arg(lua_State *L, char fmt, void *dta)
+{
+	switch(fmt)
+	{
+		case 'b':
+			lua_pushboolean(L, *(int*)dta);
+			break;
+		case 'd':
+			lua_pushnumber(L, *(double*)dta);
+			break;
+		case 'f':
+			lua_pushnumber(L, *(double*)dta);
+			break;
+		case 'i':
+			lua_pushnumber(L, *(int*)dta);
+			break;
+		case 's':
+			lua_pushstring(L, *(char**)dta);
+			break;
+		case 'o':
+			{
+				//WMC - step by step
+				//Copy over objectdata
+				script_lua_odata od = *(script_lua_odata*)dta;
+
+				//Create new LUA object and get handle
+				void *newod = (void*)lua_newuserdata(L, od.size);
+				//Create or get object metatable
+				luaL_getmetatable(L, od.meta);
+				//Set the metatable for the object
+				lua_setmetatable(L, -2);
+
+				//Copy the actual object data to the Lua object
+				memcpy(newod, od.buf, od.size);
+				break;
+			}
+			//WMC - Don't forget to update lua_set_args
+		default:
+			Error(LOCATION, "Bad character passed to lua_set_args; (%c)", fmt);
+	}
+}*/
 //lua_set_args(state, arguments, variables)
 //----------------------------------------------
 //based on "Programming in Lua"
@@ -480,7 +426,6 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 //
 //NOTE: You can also use this to push arguments
 //on to the stack in series. See script_state::SetGlobal
-
 int lua_set_args(lua_State *L, char *fmt, ...)
 {
 	//Start throught
@@ -489,12 +434,12 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 
 	va_start(vl, fmt);
 	nargs = 0;
-	while(*fmt)
+	while(*fmt != '\0')
 	{
 		switch(*fmt++)
 		{
-			case 'b':
-				lua_pushboolean(L, va_arg(vl, bool) ? 1 : 0);
+			case 'b':	//WMC - Bool for GCC (Why...?)
+				lua_pushboolean(L, va_arg(vl, int) ? 1 : 0);
 				break;
 			case 'd':
 				lua_pushnumber(L, va_arg(vl, double));
@@ -508,15 +453,24 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 			case 's':
 				lua_pushstring(L, va_arg(vl, char *));
 				break;
-			case 'o':	//Just let nargs increment; it should already be on the stack
+			case 'o':
 				{
+					//WMC - step by step
+					//Copy over objectdata
 					script_lua_odata od = va_arg(vl, script_lua_odata);
-					void *newod = (void*)lua_newuserdata(L, sizeof(void*));
+
+					//Create new LUA object and get handle
+					void *newod = (void*)lua_newuserdata(L, od.size);
+					//Create or get object metatable
 					luaL_getmetatable(L, od.meta);
+					//Set the metatable for the object
 					lua_setmetatable(L, -2);
+
+					//Copy the actual object data to the Lua object
 					memcpy(newod, od.buf, od.size);
 					break;
 				}
+			//WMC -  Don't forget to update lua_set_arg
 			default:
 				Error(LOCATION, "Bad character passed to lua_set_args; (%c)", *fmt);
 		}
@@ -970,13 +924,282 @@ int lua_obj_get_idx(lua_State *L, int *idx)
 	return 1;
 }
 
-LUA_FUNC(getHitpointsLeft, l_Object, NULL, "Current hull hitpoints (number)", "Gets ship hull")
+LUA_FUNC(getType, l_Object, NULL, "Object type name", "Gets object type")
 {
 	int idx;
 	if(!lua_obj_get_idx(L, &idx))
 		return LUA_RETURN_NIL;
 
+	return lua_set_args(L, "s", Object_type_names[Objects[idx].type]);
+}
+
+LUA_FUNC(fetchShieldStrength, l_Object, "[Shield Quadrant], [New value]", "[New] shield strength",
+	"Returns total shield strength if no quadrant is specified, or individual quadrant strength if one is specified."
+	"Valid quadrants are \"Front\", \"Back\", \"Left\", and \"Right\". Specifying a new value will set the specified quadrant to that amount. "
+	"\"None\" may be used for the new value to be divided equally between all quadrants")
+{
+	int idx;
+	char *qd = NULL;
+	float nval = -1.0f;
+	if(!lua_get_args(L, "o|sf", l_Object.GetFromLua(&idx), &qd, &nval))
+		return 0;
+
+	idx = obj_get_by_signature(idx);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	object *objp = &Objects[idx];
+
+	//Which quadrant?
+	int qdx=-1;
+	if(qd == NULL || !stricmp(qd, "None"))
+		qdx = -1;
+	else if(!stricmp(qd, "Top"))
+		qdx = 0;
+	else if(!stricmp(qd, "Left"))
+		qdx = 1;
+	else if(!stricmp(qd, "Right"))
+		qdx = 2;
+	else if(!stricmp(qd, "Bottom"))
+		qdx = 3;
+	else
+		return LUA_RETURN_NIL;
+
+	//Set/get all quadrants
+	if(qdx == -1) {
+		if(nval >= 0.0f)
+			set_shield_strength(objp, nval);
+
+		return lua_set_args(L, "f", get_shield_strength(objp));
+	}
+
+	//Set one quadrant?
+	if(nval >= 0.0f)
+		objp->shield_quadrant[qdx] = nval;
+
+	//Get one quadrant
+	return lua_set_args(L, "f", objp->shield_quadrant[qdx]);
+}
+
+LUA_FUNC(fetchHitpointsLeft, l_Object, "[New value]", "[New] hitpoints", "Returns hitpoints left on an object, or sets them if a new value is specified")
+{
+	int idx;
+	float f = -1.0f;
+	if(!lua_get_args(L, "o|f", &idx))
+		return LUA_RETURN_NIL;
+
+	idx = obj_get_by_signature(idx);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	//Set hull strength.
+	if(f >= 0.0f) {
+		Objects[idx].hull_strength = f;
+	}
+
 	return lua_set_args(L, "f", Objects[idx].hull_strength);
+}
+
+//**********CLASS: Mounted Weapons
+struct mounted_weapons_h {
+	int signature;			//Ship signature
+	ship_subsys *subsys;	//Pointer to subsystem, or NULL for the hull
+};
+
+ship_weapon *lua_mw_helper(mounted_weapons_h *mw)
+{
+	if(mw->signature < 0)
+		return NULL;
+
+	int idx;
+	idx = ship_get_by_signature(mw->signature);
+
+	if(idx < 0)
+		return NULL;
+
+	if(mw->subsys == NULL)
+		return &Ships[idx].weapons;
+
+	return &mw->subsys->weapons;
+}
+
+lua_obj<mounted_weapons_h> l_MountedWeapons("mountedweapons", "Mounted weapons on a ship or subsystem");
+
+LUA_FUNC(getNumWeapons, l_MountedWeapons, "[Type]", "Number of weapons, or false if invalid type specified",
+		 "Gets total number of weapons mounted. For a specific type, use \"Primary\", \"Secondary\", or \"Tertiary\".")
+{
+	mounted_weapons_h mw;
+	char *t = NULL;
+	if(!lua_get_args(L, "o|s", l_MountedWeapons.GetFromLua(&mw), &t))
+		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = lua_mw_helper(&mw);
+
+	if(sw == NULL)
+		return LUA_RETURN_NIL;
+
+	//Now do stuff
+	//All weapons
+	if(t == NULL) {
+		return lua_set_args(L, "i", sw->num_primary_banks + sw->num_secondary_banks + sw->num_tertiary_banks);
+	}
+
+	//Just one type
+	if(!stricmp(t, "Primary"))
+		return lua_set_args(L, "i", sw->num_primary_banks);
+	else if(!stricmp(t, "Secondary"))
+		return lua_set_args(L, "i", sw->num_secondary_banks);
+	else if(!stricmp(t, "Tertiary"))
+		return lua_set_args(L, "i", sw->num_tertiary_banks);
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getBankName, l_MountedWeapons, "Type, Index", "Weapon name, or false if no weapon is mounted at that index, or an invalid type is specified",
+		 "Gets weapon name for specified mount index of type. Use \"Primary\" or \"Secondary\" for type.")
+{
+	mounted_weapons_h mw;
+	char *t = NULL;
+	int i = 0;
+	if(!lua_get_args(L, "osi", l_MountedWeapons.GetFromLua(&mw), &t, &i))
+		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = lua_mw_helper(&mw);
+
+	if(sw == NULL)
+		return LUA_RETURN_NIL;
+
+	if(i < 1)
+		return LUA_RETURN_FALSE;
+
+	//Lua->FS2
+	i--;
+
+	if(!stricmp(t, "Primary") && i < sw->num_primary_banks && sw->primary_bank_weapons[i] > -1)
+		return lua_set_args(L, "s", Weapon_info[sw->primary_bank_weapons[i]].name);
+	else if(!stricmp(t, "Secondary") && i < sw->num_secondary_banks && sw->secondary_bank_weapons[i] > -1)
+		return lua_set_args(L, "s", Weapon_info[sw->secondary_bank_weapons[i]].name);
+
+	//Invalid type or weapon missing
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(fetchCurrentWeapon, l_MountedWeapons, "Type, [New index]", "Mount index",
+		 "Gets currently armed weapon of type. Use \"Primary\", \"Secondary\", or \"Tertiary\" for type.")
+{
+	mounted_weapons_h mw;
+	char *t = NULL;
+	int i = 0;
+	if(!lua_get_args(L, "os|i", l_MountedWeapons.GetFromLua(&mw), &t, &i))
+		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = lua_mw_helper(&mw);
+
+	if(sw == NULL)
+		return LUA_RETURN_NIL;
+
+	//Lua->FS2
+	i--;
+
+	if(!stricmp(t, "Primary")) {
+		if( i > -1 && i < sw->num_primary_banks && sw->primary_bank_weapons[i] > -1)
+			sw->current_primary_bank = i;
+		return lua_set_args(L, "i", sw->current_primary_bank);
+	}
+	if(!stricmp(t, "Secondary")) {
+		if( i > -1 && i < sw->num_secondary_banks && sw->secondary_bank_weapons[i] > -1)
+			sw->current_secondary_bank = i;
+		return lua_set_args(L, "i", sw->current_secondary_bank);
+	}
+	if(!stricmp(t, "Tertiary")) {
+		if( i > -1 && i < sw->num_tertiary_banks)
+			sw->current_tertiary_bank = i;
+		return lua_set_args(L, "i", sw->current_tertiary_bank);
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(fetchBankAmmo, l_MountedWeapons, "Type, Index, [New ammo amount]", "[New] ammo amount",
+		 "Gets weapon ammo, or sets to a new amount if specified.. Use \"Primary\", \"Secondary\", or \"Tertiary\" for type.")
+{
+	mounted_weapons_h mw;
+	char *t = NULL;
+	int i = 0;
+	int a = -1;
+	if(!lua_get_args(L, "osi|i", l_MountedWeapons.GetFromLua(&mw), &t, &i, &a))
+		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = lua_mw_helper(&mw);
+
+	if(sw == NULL)
+		return LUA_RETURN_NIL;
+
+	if(i < 1)
+		return LUA_RETURN_FALSE;
+
+	//Lua->FS2
+	i--;
+
+	//Get/set
+	if(!stricmp(t, "Primary") && i < sw->num_primary_banks && sw->primary_bank_weapons[i] > -1) {
+		if(a > -1)
+			sw->primary_bank_ammo[i] = a;
+		return lua_set_args(L, "i", sw->primary_bank_ammo[i]);
+	} else if(!stricmp(t, "Secondary") && i < sw->num_secondary_banks && sw->secondary_bank_weapons[i] > -1) {
+		if(a > -1)
+			sw->secondary_bank_ammo[i] = a;
+		return lua_set_args(L, "i", sw->secondary_bank_ammo[i]);
+	} else if(!stricmp(t, "Tertiary") && i == 0) {
+		if(a > -1)
+			sw->tertiary_bank_ammo = a;
+		return lua_set_args(L, "i", sw->tertiary_bank_ammo);
+	}
+
+	//Invalid type or weapon missing
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(fetchBankCapacity, l_MountedWeapons, "Type, Index, [New ammo capacity]", "[New] ammo capacity",
+		 "Gets weapon capacity, or sets to a new amount if specified.. Use \"Primary\", \"Secondary\", or \"Tertiary\" for type.")
+{
+	mounted_weapons_h mw;
+	char *t = NULL;
+	int i = 0;
+	int a = -1;
+	if(!lua_get_args(L, "osi|i", l_MountedWeapons.GetFromLua(&mw), &t, &i, &a))
+		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = lua_mw_helper(&mw);
+
+	if(sw == NULL)
+		return LUA_RETURN_NIL;
+
+	if(i < 1)
+		return LUA_RETURN_FALSE;
+
+	//Lua->FS2
+	i--;
+
+	//Get/set
+	if(!stricmp(t, "Primary") && i < sw->num_primary_banks && sw->primary_bank_weapons[i] > -1) {
+		if(a > -1)
+			sw->primary_bank_start_ammo[i] = a;
+		return lua_set_args(L, "i", sw->primary_bank_start_ammo[i]);
+	} else if(!stricmp(t, "Secondary") && i < sw->num_secondary_banks && sw->secondary_bank_weapons[i] > -1) {
+		if(a > -1)
+			sw->secondary_bank_start_ammo[i] = a;
+		return lua_set_args(L, "i", sw->secondary_bank_start_ammo[i]);
+	} else if(!stricmp(t, "Tertiary") && i == 0) {
+		if(a > -1)
+			sw->tertiary_bank_start_ammo = a;
+		return lua_set_args(L, "i", sw->tertiary_bank_start_ammo);
+	}
+
+	//Invalid type or weapon missing
+	return LUA_RETURN_FALSE;
 }
 
 //**********CLASS: Ship
@@ -999,22 +1222,23 @@ int lua_ship_get_idx(lua_State *L, int *idx)
 }
 
 
-LUA_FUNC(getName, l_Ship, NULL, "ship name (string)", "Gets ship name")
+LUA_FUNC(fetchName, l_Ship, "[New name]", "[New] ship name (string)", "Gets ship name")
 {
 	int idx;
-	if(!lua_ship_get_idx(L, &idx))
+	char *s = NULL;
+	if(!lua_get_args(L, "o|f", l_Ship.GetFromLua(&idx), &s))
+		return 0;
+
+	idx = ship_get_by_signature(idx);
+
+	if(idx < 0)
 		return LUA_RETURN_NIL;
+
+	if(s == NULL) {
+		strncpy(Ships[idx].ship_name, s, sizeof(Ships[idx].ship_name)-1);
+	}
 
 	return lua_set_args(L, "s", Ships[idx].ship_name);
-}
-
-LUA_FUNC(getHitpoints, l_Ship, NULL, "max hull hitpoints (number)", "Gets ship hull max")
-{
-	int idx;
-	if(!lua_ship_get_idx(L, &idx))
-		return LUA_RETURN_NIL;
-
-	return lua_set_args(L, "f", Ship_info[Ships[idx].ship_info_index].max_hull_strength);
 }
 
 LUA_FUNC(getClass, l_Ship, NULL, "Ship class handle (shipclass)", "Gets ship class handle")
@@ -1026,11 +1250,40 @@ LUA_FUNC(getClass, l_Ship, NULL, "Ship class handle (shipclass)", "Gets ship cla
 	return lua_set_args(L, "o", l_Shipclass.SetToLua(&Objects[Ships[idx].objnum].signature));
 }
 
-LUA_FUNC(setAfterburnerFuel, l_Ship, "[Fuel amount]", "[New] fuel amount", "Returns ship fuel amount, or sets it if amount is specified")
+LUA_FUNC(getMountedWeapons, l_Ship, "[Subsystem name]", "mountedweapons object, or false if invalid subsystem specified", "Gets weapons mounted on a ship or subsystem")
+{
+	int idx;
+	char *s=NULL;
+	if(!lua_get_args(L, "o|s", l_Ship.GetFromLua(&idx), &s))
+		return 0;
+
+	mounted_weapons_h mw;
+	mw.signature = idx;
+
+	idx = ship_get_by_signature(idx);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	if(s == NULL)
+	{
+		mw.subsys = NULL;
+		return lua_set_args(L, "o", l_MountedWeapons.SetToLua(&mw));
+	}
+
+	mw.subsys = ship_get_subsys(&Ships[idx], s);
+
+	if(mw.subsys == NULL)
+		return LUA_RETURN_FALSE;
+
+	return lua_set_args(L, "o", l_MountedWeapons.SetToLua(&mw));
+}
+
+LUA_FUNC(fetchAfterburnerFuel, l_Ship, "[Fuel amount]", "[New] fuel amount", "Returns ship fuel amount, or sets it if amount is specified")
 {
 	int idx;
 	float fuel = -1.0f;
-	if(!lua_get_args(L, "of", l_Ship.GetFromLua(&idx), &fuel))
+	if(!lua_get_args(L, "o|f", l_Ship.GetFromLua(&idx), &fuel))
 		return 0;
 
 	idx = ship_get_by_signature(idx);
@@ -1196,6 +1449,9 @@ LUA_FUNC(getEventTypeName, l_Base, "Index of event type (number)", "Event name (
 	if(!lua_get_args(L, "i", &i))
 		return LUA_RETURN_NIL;
 
+	//Lua->FS2
+	i--;
+
 	if(i < 0 || i > Num_gs_state_text)
 		return LUA_RETURN_NIL;
 
@@ -1224,6 +1480,9 @@ LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the na
 	int idx;
 	if(!lua_get_args(L, "i", &idx))
 		return LUA_RETURN_NIL;
+
+	//Lua->FS2
+	idx--;
 
 	if(idx < 0 || idx > Player_num)
 		return LUA_RETURN_NIL;
@@ -1335,6 +1594,9 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 	if(!lua_get_args(L, "i", &idx))
 		return LUA_RETURN_NIL;
 
+	//Lua->FS2
+	idx--;
+
 	if(idx < 0 || idx > Campaign.num_missions)
 		return LUA_RETURN_NIL;
 
@@ -1346,13 +1608,6 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 lua_lib l_Mission("mn", "Mission library");
 
 //WMC - These are in freespace.cpp
-extern void game_level_init(int seed = -1);
-extern void game_post_level_init();
-extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);
-extern void game_render_frame(vec3d *eye_pos, matrix *eye_orient);
-extern void game_simulation_frame();
-extern void game_update_missiontime();
-extern void game_render_post_frame();
 LUA_FUNC(loadMission, l_Mission, "Mission name", "True if mission was loaded, false otherwise", "Loads a mission")
 {
 	char *s;
@@ -1421,8 +1676,11 @@ LUA_FUNC(getEscortShip, l_Mission, "Escort index", "Ship object", "Gets escort s
 	if(!lua_get_args(L, "i", &idx))
 		return 0;
 
-	if(idx < 0)
+	if(idx < 1)
 		return LUA_RETURN_NIL;
+
+	//Lua->FS2
+	idx--;
 
 	idx = hud_escort_return_objnum(idx);
 	
@@ -1451,6 +1709,9 @@ LUA_FUNC(getShipClassByIndex, l_Tables, "Class index", "Shipclass object", "Gets
 	int idx;
 	if(!lua_get_args(L, "i", &idx))
 		return 0;
+
+	//Lua->FS2
+	idx--;
 	
 	if(idx < 0 || idx > Num_ship_classes) {
 		return LUA_RETURN_NIL;
@@ -1689,6 +1950,9 @@ LUA_FUNC(setFont, l_Graphics, "Font index", NULL, "Sets current font")
 
 	if(!lua_get_args(L, "i", &fn))
 		return LUA_RETURN_NIL;
+
+	//Lua->FS2
+	fn--;
 
 	gr_set_font(fn);
 
@@ -2809,8 +3073,6 @@ void output_lib_meta(FILE *fp, lua_lib_h *lib, lua_lib_h *lib_deriv)
 void script_state::OutputLuaMeta(FILE *fp)
 {
 #ifdef USE_LUA
-	bool unnamed_display = false;
-
 	//***Output Libraries
 	fputs("<dl>", fp);
 	fputs("<dt>Libraries</dt>", fp);

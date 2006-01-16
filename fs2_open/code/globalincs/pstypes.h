@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.39 $
- * $Date: 2005-12-29 08:08:33 $
+ * $Revision: 2.40 $
+ * $Date: 2006-01-16 11:02:23 $
  * $Author: wmcoolmon $
- * $Revision: 2.39 $
- * $Date: 2005-12-29 08:08:33 $
+ * $Revision: 2.40 $
+ * $Date: 2006-01-16 11:02:23 $
  * $Author: wmcoolmon $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.38  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -1011,6 +1014,21 @@ void vm_free_all();
 	#define vm_realloc_q(ptr, size) _vm_realloc((ptr),(size),1)
 
 #endif
+
+//=========================================================
+// Scripting
+//=========================================================
+//-WMC
+typedef struct script_hook
+{
+	bool total_override;
+	int language;
+	int index;
+
+	script_hook(){language=0;index=-1;total_override=false;}
+	bool IsValid(){return (index > -1);}
+	bool IsOverride(){return total_override;}
+}script_hook;
 
 
 #endif		// PS_TYPES_H

@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.297 $
- * $Date: 2006-01-15 18:55:27 $
- * $Author: taylor $
+ * $Revision: 2.298 $
+ * $Date: 2006-01-16 11:02:23 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.297  2006/01/15 18:55:27  taylor
+ * fix compile issues from bad constructor
+ * make sure ai_actively_pursues gets filled for modular tables too
+ * fix NULL ptr reference when parsing ship type which doesn't exist and is set to not create
+ *
  * Revision 2.296  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -3547,7 +3552,7 @@ strcpy(parse_error_text, temp_error);
 		ci->bitmap = bm_load(trail_name);
 	}
 
-	man_thruster *mtp;
+	man_thruster *mtp = NULL;
 	man_thruster manwich;
 	while(optional_string("$Maneuvering:"))
 	{

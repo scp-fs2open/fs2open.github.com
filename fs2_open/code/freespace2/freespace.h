@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.10 $
- * $Date: 2006-01-14 19:54:55 $
+ * $Revision: 2.11 $
+ * $Date: 2006-01-16 11:02:23 $
  * $Author: wmcoolmon $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.9  2005/12/06 03:13:49  taylor
  * fix quite a few CFILE issues:
  *   use #define's for path lengths when possible so it's easier to move between functions
@@ -411,6 +414,15 @@ void oem_upsell_show_screens();
 // calls to be executed when the game is put in or restored from minimized or inactive state
 void game_pause();
 void game_unpause();
+
+//WMC - Stuff for scripting, these make the game go
+extern void game_level_init(int seed = -1);
+extern void game_post_level_init();
+extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);
+extern void game_render_frame(vec3d *eye_pos, matrix *eye_orient);
+extern void game_simulation_frame();
+extern void game_update_missiontime();
+extern void game_render_post_frame();
 
 #endif			// endif of #ifndef STAMPER_PROGRAM
 #endif 

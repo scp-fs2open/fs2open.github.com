@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.132 $
- * $Date: 2006-01-15 18:55:27 $
- * $Author: taylor $
+ * $Revision: 2.133 $
+ * $Date: 2006-01-16 11:02:23 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2006/01/15 18:55:27  taylor
+ * fix compile issues from bad constructor
+ * make sure ai_actively_pursues gets filled for modular tables too
+ * fix NULL ptr reference when parsing ship type which doesn't exist and is set to not create
+ *
  * Revision 2.131  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -777,7 +782,6 @@
 #include "render/3d.h"
 #include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
-#include "parse/scripting.h"
 
 #pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>

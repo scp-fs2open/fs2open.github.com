@@ -31,16 +31,19 @@ int script_test(script_state *st)
 		reset_parse();
 	}
 
-	if(optional_string("$Splash:")) {
-		Script_splashhook = st->ParseChunk("Splash");
-	}
+	if(optional_string("#Global Hooks"))
+	{
+		if(optional_string("$Global:")) {
+			Script_globalhook = st->ParseChunk("Global");
+		}
 
-	if(optional_string("$HUD:")) {
-		Script_hudhook = st->ParseChunk("HUD");
-	}
+		if(optional_string("$Splash:")) {
+			Script_splashhook = st->ParseChunk("Splash");
+		}
 
-	if(optional_string("$Global:")) {
-		Script_globalhook = st->ParseChunk("Global");
+		if(optional_string("$HUD:")) {
+			Script_hudhook = st->ParseChunk("HUD");
+		}
 	}
 
 	if(optional_string("#State Hooks"))
@@ -88,19 +91,25 @@ void script_init (void)
 #pragma message("WARNING: Python is not compiled in")
 #endif
 
-void script_state::SetGlobal(char *name, char format, ...)
+void script_state::SetGlobal(char *name, char format, void *data)
 {
+	Assert(data != NULL);
 #ifdef USE_LUA
 	if(LuaState != NULL)
 	{
 		char fmt[2] = {format, '\0'};
 
-		va_list vl;
-		va_start(vl, format);
-		//WMC - Why I had to * this, I don't know. I just did.
-		lua_set_args(LuaState, fmt, *vl);
-		va_end(vl);
-
+		//ERRORS? LOOK HERE!!!
+		//--------------------
+		//WMC - Now THIS has to be the nastiest hack I've made
+		//Basically, I tell it to copy over enough stack
+		//for a script_lua_odata object. If you pass
+		//_anything_ larger as a stack object, this will not work.
+		//You'll get memory corruption
+		lua_set_args(LuaState, fmt, *(script_lua_odata*)data);
+		//--------------------
+		//WMC - This was a separate function
+		//lua_set_arg(LuaState, format, data);
 		lua_setglobal(LuaState, name);
 	}
 #endif
@@ -151,8 +160,8 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 		if(hd.language == SC_LUA)
 		{
 #ifdef USE_LUA
-			int args_start;
-			if(/*format != NULL*/data != NULL) {
+			int args_start=0;
+			if(data != NULL) {
 				args_start = lua_gettop(LuaState);
 			}
 			lua_getref(GetLuaSession(), hd.index);
@@ -170,18 +179,10 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 				lua_get_args(LuaState, fmt, data);
 				Lua_get_args_skip = 0;
 			}
-/*
-			if(format != NULL)
-			{
-				va_list args;
-				va_start(args, format);
-				Lua_get_args_skip = args_start;
-				lua_get_args(LuaState, format, args);
-				Lua_get_args_skip = 0;
-				va_end(args);
-			}
-*/
-			return 1;
+
+			//WMC - Pop anything leftover from the function from the stack
+			args_start = lua_gettop(LuaState) - args_start;
+			for(; args_start > 0; args_start--) lua_pop(LuaState, -1);
 #endif
 		}
 		else if(hd.language == SC_PYTHON)
@@ -404,6 +405,7 @@ script_hook script_state::ParseChunk(char* debug_str)
 		//Add it to the lib
 		rval.index = PyBytecodeLib.Add(PyBytecode(Py_CompileString(raw_python, debug_str, Py_file_input)));
 #endif
+		//WTF THIS CRASHES
 		//vm_free(raw_python);
 	}
 	else
@@ -421,6 +423,9 @@ script_hook script_state::ParseChunk(char* debug_str)
 		rval.index = PyBytecodeLib.Add(PyBytecode(Py_CompileString(buf, debug_str, Py_eval_input));
 #endif
 	}
+
+	if(optional_string("+Override:"))
+		stuff_boolean(&rval.total_override);
 
 	return rval;
 }

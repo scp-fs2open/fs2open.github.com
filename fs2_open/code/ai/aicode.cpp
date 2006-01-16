@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.52 $
- * $Date: 2006-01-14 19:54:54 $
+ * $Revision: 1.53 $
+ * $Date: 2006-01-16 11:02:23 $
  * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.52  2006/01/14 19:54:54  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 1.51  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -8506,7 +8509,7 @@ int maybe_hack_cruiser_chase_abort()
 //	(Note, called "ai_cruiser_chase" because we already have ai_chase_big() which means fighter chases big ship.
 void ai_cruiser_chase()
 {
-	ship_info	*sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
+	//ship_info	*sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
 	ship			*shipp = &Ships[Pl_objp->instance];	
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 

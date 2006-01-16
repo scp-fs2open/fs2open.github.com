@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.21 $
- * $Date: 2006-01-14 19:54:55 $
+ * $Revision: 1.22 $
+ * $Date: 2006-01-16 11:02:23 $
  * $Author: wmcoolmon $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 1.20  2006/01/14 04:44:29  phreak
  * Tried to make the sphere size more uniform on opposite ends of the orb
  * Modified the radar disruption angle scale a bit.  Went from 200 degree to 20 degree disruption.  Otherwise, it was very confusing to find hidden objects.
@@ -211,7 +214,6 @@ void radar_init_orb()
 // determine how the object blip should be drawn
 void radar_stuff_blip_info_orb(object *objp, int is_bright, color **blip_color, int *blip_type)
 {
-	int color = 0;
 	ship *shipp = NULL;
 
 	switch(objp->type)
@@ -274,7 +276,6 @@ void radar_plot_object_orb( object *objp )
 	float		dist, max_radar_dist;
 	//float rscale, zdist;
 	//int		xpos, ypos;
-	int color=0;
 	vec3d	world_pos = objp->pos;	
 	float		awacs_level;
 
@@ -511,7 +512,7 @@ void radar_orb_draw_contact(vec3d *pnt, int rad)
 	g3_project_vertex(&verts[1]);
 
 	float size = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
-	if (size < rad)	size = rad;
+	if (size < i2fl(rad))	size = i2fl(rad);
  
 	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
 	{

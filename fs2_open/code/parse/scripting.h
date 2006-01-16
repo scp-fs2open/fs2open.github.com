@@ -3,21 +3,13 @@
 
 #include <stdio.h>
 #include <vector>
+#include "globalincs/pstypes.h"
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)
 #define SC_PYTHON		(1<<1)
 
 //*************************Scripting structs*************************
-typedef struct script_hook
-{
-	int language;
-	int index;
-
-	script_hook(){language=0;index=-1;}
-	bool IsValid(){return (index > -1);}
-}script_hook;
-
 #define SCRIPT_END_LIST		NULL
 
 //**********Main script_state function
@@ -33,7 +25,6 @@ private:
 	struct PyObject *PyLoc;
 
 private:
-	lua_State *GetLuaSession(){return LuaState;}
 	PyObject *GetPyLocals(){return PyLoc;}
 	PyObject *GetPyGlobals(){return PyGlb;}
 
@@ -49,6 +40,8 @@ public:
 	script_state& operator=(script_state &in);
 	~script_state();
 
+	lua_State *GetLuaSession(){return LuaState;}
+
 	//Init functions for langs
 	int CreateLuaState();
 	//int CreatePyState(const script_py_lib_list *libraries);
@@ -60,7 +53,7 @@ public:
 	//void MoveData(script_state &in);
 
 	//Variable handling functions
-	void SetGlobal(char *name, char format, ...);
+	void SetGlobal(char *name, char format, void *data);
 	bool GetGlobal(char *name, char format='\0', void *data=NULL);
 	void RemGlobal(char *name);
 
