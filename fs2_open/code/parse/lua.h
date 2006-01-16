@@ -161,7 +161,7 @@ public:
 
 	script_lua_opdata GetPtrFromLua(StoreType **ptr){
 		script_lua_opdata pd;
-		pd.meta = Name;
+		pd.meta = lua_Objects[obj_idx].Name;
 		pd.buf = ptr;
 		return pd;
 	}
