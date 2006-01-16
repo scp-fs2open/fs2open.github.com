@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-01-13 03:30:59 $
+ * $Revision: 2.27 $
+ * $Date: 2006-01-16 05:54:21 $
  * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.25  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -200,6 +203,7 @@
 #include "hud/hudparse.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
+#include "iff_defs/iff_defs.h"
 
 
 int Show_escort_view;
@@ -676,47 +680,62 @@ void hud_escort_cull_list()
 }
 
 // Set the color for the text to be displayed
-int hud_escort_set_gauge_color(int index, int friendly)
+// Goober5000 - changed second parameter from "friendly" (true/false) to "team";
+// also changed from hud color or red to team color
+int hud_escort_set_gauge_color(int index, int team)
 {
-	int is_flashing=0;
+	int is_flashing = 0;
+	int is_bright = 0;
+	int seen_from_team = (Player_ship != NULL) ? Player_ship->team : -1;
 	shield_hit_info	*shi;
 
 	shi = &Escort_ships[index].hit_info;
 
 	// multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))
+	{
 		hud_set_gauge_color(HUD_ESCORT_VIEW);
 		return 0;
 	}
 	
-	if(friendly){
-		hud_set_gauge_color(HUD_ESCORT_VIEW, HUD_C_DIM);
-	} else {
-		gr_set_color_fast(&Color_red);
-	}
-
 	// set flashing color
-	if ( !timestamp_elapsed(shi->shield_hit_timers[HULL_HIT_OFFSET]) ) {
-		if ( timestamp_elapsed(shi->shield_hit_next_flash[HULL_HIT_OFFSET]) ) {
+	if (!timestamp_elapsed(shi->shield_hit_timers[HULL_HIT_OFFSET]))
+	{
+		if (timestamp_elapsed(shi->shield_hit_next_flash[HULL_HIT_OFFSET]))
+		{
 			shi->shield_hit_next_flash[HULL_HIT_OFFSET] = timestamp(SHIELD_FLASH_INTERVAL);
-			shi->shield_show_bright ^= (1<<HULL_HIT_OFFSET);	// toggle between default and bright frames
+			shi->shield_show_bright ^= (1 << HULL_HIT_OFFSET);	// toggle between default and bright frames
 		}
 
-		is_flashing=1;
-		if ( shi->shield_show_bright & (1<<HULL_HIT_OFFSET) ) {
-			if(friendly){
-				hud_set_gauge_color(HUD_ESCORT_VIEW, HUD_C_BRIGHT);
-			} else {
-				gr_set_color_fast(&Color_bright_red);
-			}
-		} else {			
-			if(friendly){
-				hud_set_gauge_color(HUD_ESCORT_VIEW, HUD_C_DIM);
-			} else {
-				gr_set_color_fast(&Color_dim_red);
-			}			
+		is_flashing = 1;
+		if (shi->shield_show_bright & (1 << HULL_HIT_OFFSET))
+		{
+			is_bright = 1;
 		}
 	}
+
+
+	// Goober5000 - now base this on team color
+	gr_set_color_fast(iff_get_color_by_team(team, seen_from_team, is_bright));
+
+
+	// Goober5000 - an alternative; same as original but incorporating teams for non-friendlies
+	/*
+	if ((seen_from_team == team) || (seen_from_team < 0))	// :V: sez assume friendly if Player_ship is NULL
+		hud_set_gauge_color(HUD_ESCORT_VIEW, is_bright ? HUD_C_BRIGHT : HUD_C_DIM);
+	else
+		gr_set_color_fast(iff_get_color_by_team(team, seen_from_team, is_bright));
+	*/
+
+
+	// Goober5000 - original color logic
+	/*
+	if ((seen_from_team == team) || (seen_from_team < 0))	// :V: sez assume friendly if Player_ship is NULL
+		hud_set_gauge_color(HUD_ESCORT_VIEW, is_bright ? HUD_C_BRIGHT : HUD_C_DIM);
+	else
+		gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
+	*/
+
 
 	return is_flashing;
 }
@@ -790,11 +809,15 @@ void hud_escort_show_icon(int x, int y, int index)
 	ship	*sp		= &Ships[objp->instance];
 
 	// determine if its "friendly" or not	
+	// Goober5000 - changed in favor of just passing the team
+	hud_escort_set_gauge_color(index, sp->team);
+	/*
 	if(Player_ship != NULL){
 		hud_escort_set_gauge_color(index, (sp->team == Player_ship->team) ? 1 : 0);
 	} else {
 		hud_escort_set_gauge_color(index, 1);
 	}
+	*/
 
 	// draw a 'D' if a ship is disabled
 	if ( (sp->flags & SF_DISABLED) || (ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE)) ) {		
