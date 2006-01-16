@@ -52,6 +52,14 @@ struct lua_func_hh
 	char *Description;
 };
 
+struct lua_var_hh
+{
+	char *Name;
+	lua_CFunction Function;
+	char *Type;
+	char *Description;
+};
+
 class lua_lib_h
 {
 /*
@@ -65,11 +73,16 @@ class lua_lib_h
 public:
 	char *Name;
 	char *Description;
-	std::vector<lua_func_hh> Functions;
 	int Derivator;
 
+	std::vector<lua_func_hh> Functions;
+	std::vector<lua_var_hh> Variables;
+
+	lua_CFunction Indexer;
+	char *IndexerDescription;
+
 public:
-	lua_lib_h(char *in_name, char *in_desc, int in_deriv=-1){Name = in_name; Description = in_desc; Derivator = in_deriv;}
+	lua_lib_h(char *in_name, char *in_desc, int in_deriv=-1){Name = in_name; Description = in_desc; Derivator = in_deriv; Indexer = NULL;}
 };
 
 extern std::vector<lua_lib_h> lua_Libraries;
@@ -87,6 +100,8 @@ public:
 	}
 
 	void AddFunc(lua_func_hh *f){lua_Libraries[lib_idx].Functions.push_back(*f);}
+	void AddVar(lua_var_hh *v){lua_Libraries[lib_idx].Variables.push_back(*v);}
+	void SetIndexer(lua_CFunction func, char *desc){lua_Libraries[lib_idx].Indexer = func; lua_Libraries[lib_idx].IndexerDescription = desc;}
 };
 
 //Lua_obj helper class
@@ -104,6 +119,8 @@ public:
 	}
 
 	void AddFunc(lua_func_hh *f){lua_Objects[obj_idx].Functions.push_back(*f);}
+	void AddVar(lua_var_hh *v){lua_Objects[obj_idx].Variables.push_back(*v);}
+	void SetIndexer(lua_CFunction func, char *desc){lua_Objects[obj_idx].Indexer = func; lua_Objects[obj_idx].IndexerDescription = desc;}
 };
 
 //Function helper class
@@ -134,6 +151,43 @@ public:
 		obj.AddFunc(&f);
 	}
 };
+
+class lua_var_h {
+public:
+	lua_var_h(char *name, lua_CFunction func, lua_lib &lib, char *type=NULL, char *desc=NULL) {
+		lua_var_hh v;
+
+		v.Name = name;
+		v.Function = func;
+		v.Type = type;
+		v.Description = desc;
+
+		lib.AddVar(&v);
+	}
+
+	lua_var_h(char *name, lua_CFunction func, lua_obj_h &obj, char *type=NULL, char *desc=NULL) {
+		lua_var_hh v;
+
+		v.Name = name;
+		v.Function = func;
+		v.Type = type;
+		v.Description = desc;
+
+		obj.AddVar(&v);
+	}
+};
+
+class lua_indexer_h {
+public:
+	lua_indexer_h(lua_CFunction func, lua_lib &lib, char *desc=NULL) {
+		lib.SetIndexer(func, desc);
+	}
+
+	lua_indexer_h(lua_CFunction func, lua_obj_h &obj, char *desc=NULL) {
+		obj.SetIndexer(func, desc);
+	}
+};
+
 
 //Object class
 //This is what you define a variable of to make new objects

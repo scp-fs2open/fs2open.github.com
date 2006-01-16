@@ -33,79 +33,20 @@ std::vector<lua_lib_h> lua_Objects;
 	static int lua_##objlib##_##name(lua_State *L);	\
 	lua_func_h lua_##objlib##_##name##_h(#name, lua_##objlib##_##name, objlib, args, retvals, desc);	\
 	static int lua_##objlib##_##name(lua_State *L)
-/*
-//Callback typedef
-#define SCRIPT_LUA_CALLBACK static int
-//Function entry for a library
-typedef struct script_lua_func_list {
-	const char *name;
-	lua_CFunction func;
-	const char *description;
-	const char *args;
-	const char *retvals;
-} script_lua_func_list;
 
-//Function entry for an object
-typedef struct script_lua_obj_func_list {
-	const char *name;
-	lua_CFunction func;
-	const char *description;
-	const char *args;
-	const char *retvals;
-} script_lua_obj_func_list;
+#define LUA_VAR(name, objlib, type, desc)			\
+	static int lua_##objlib##_var##name(lua_State *L);	\
+	lua_var_h lua_##objlib##_var##name##_h(#name, lua_##objlib##_var##name, objlib, type, desc);	\
+	static int lua_##objlib##_var##name(lua_State *L)
 
-//Object entry for a library
-typedef struct script_lua_obj_list
-{
-	const char *object_name;
-	const script_lua_obj_func_list *object_funcs;
-	const char *description;
-}script_lua_obj_list;
+#define LUA_INDEXER(objlib, desc)			\
+	static int lua_##objlib##___indexer(lua_State *L);	\
+	lua_indexer_h lua_##objlib##___indexer_h(lua_##objlib##___indexer, objlib, desc);	\
+	static int lua_##objlib##___indexer(lua_State *L)
 
-//Library entry
-typedef struct script_lua_lib_list
-{
-	const char *library_name;
-	const script_lua_func_list *library_funcs;
-	const script_lua_obj_list *library_objects;
-	const char *description;
-}script_lua_lib_list;
+//Checks to determine whether LUA_VAR or LUA_INDEXER should set the variable
+#define LUA_SETTING_VAR	lua_toboolean(L,lua_upvalueindex(1))
 
-//LUA_NEW_OBJ(lua_State, object name, object struct)
-#define LUA_NEW_OBJ(L,n,s)					\
-	(s *) lua_newuserdata(L, sizeof(s));	\
-	luaL_getmetatable(L, n);				\
-	lua_setmetatable(L, -2)
-
-template <class StoreType> class lua_cvar
-{
-	char meta[NAME_LENGTH];
-public:
-	lua_cvar(char *in_meta){sprintf(meta, "fs2.%s", in_meta);}
-
-	char *GetName(){return meta;}
-	//StoreType *Create(lua_State *L){StoreType *ptr = (StoreType*)LUA_NEW_OBJ(L, meta, StoreType); return ptr;}
-	script_lua_odata Return(StoreType *obj){return script_lua_odata(meta, obj, sizeof(StoreType));}
-	script_lua_odata GetFromLua(StoreType *ptr){return script_lua_odata(meta, ptr, sizeof(StoreType));}
-	script_lua_opdata ParsePtr(StoreType **ptr){return script_lua_opdata(meta, ptr);}
-};
-*/
-/*struct script_lua_pdata
-{
-	char *meta;
-	void *buf;
-	
-	script_lua_pdata(char* in_meta, void* in_buf){meta=in_meta;buf=in_buf;}
-};*/
-
-//LUA_CVAR(name, pointer)
-//Call this with lua_get_args to store the pointer to
-//a specific set of userdata in a pointer.
-//-----EX:
-//lua_get_args(L, "u", LUA_CVAR("ship", &lua_ship))
-#define LUA_CVAR(n, p) script_lua_udata(n, (void**)&p)
-
-//#define LUA_PTR(n, p) script_lua_pdata(n, (void*)p)
 //*************************Lua return values*************************
 #define LUA_RETURN_NIL		0
 #define LUA_RETURN_OBJECT		1
@@ -268,7 +209,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	}
 
 	if(total_args < needed_args) {
-		Warning(LOCATION, "Not enough arguments for function");
+		Warning(LOCATION, "Not enough arguments for function - need %d, had %d", needed_args, total_args);
 		return 0;
 	}
 
@@ -374,48 +315,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	va_end(vl);
 	return nargs;
 }
-/*
-void lua_set_arg(lua_State *L, char fmt, void *dta)
-{
-	switch(fmt)
-	{
-		case 'b':
-			lua_pushboolean(L, *(int*)dta);
-			break;
-		case 'd':
-			lua_pushnumber(L, *(double*)dta);
-			break;
-		case 'f':
-			lua_pushnumber(L, *(double*)dta);
-			break;
-		case 'i':
-			lua_pushnumber(L, *(int*)dta);
-			break;
-		case 's':
-			lua_pushstring(L, *(char**)dta);
-			break;
-		case 'o':
-			{
-				//WMC - step by step
-				//Copy over objectdata
-				script_lua_odata od = *(script_lua_odata*)dta;
 
-				//Create new LUA object and get handle
-				void *newod = (void*)lua_newuserdata(L, od.size);
-				//Create or get object metatable
-				luaL_getmetatable(L, od.meta);
-				//Set the metatable for the object
-				lua_setmetatable(L, -2);
-
-				//Copy the actual object data to the Lua object
-				memcpy(newod, od.buf, od.size);
-				break;
-			}
-			//WMC - Don't forget to update lua_set_args
-		default:
-			Error(LOCATION, "Bad character passed to lua_set_args; (%c)", fmt);
-	}
-}*/
 //lua_set_args(state, arguments, variables)
 //----------------------------------------------
 //based on "Programming in Lua"
@@ -494,6 +394,84 @@ static lua_cvar<ship_info*>		l_ship_info("ship_info");
 static lua_cvar<ship*>			l_ship("ship");
 */
 
+//WMC - Bogus integer used to determine if a variable
+//in an object or library is modder-defined or code-defined.
+#define INDEX_HANDLER_VAR_TRIGGER	1337
+
+//Depends on one upvalue, a boolean.
+//false => __index
+//true => __newindex
+LUA_API lua_index_handler(lua_State *L)
+{
+	//Get the data at key in metatable
+	lua_getmetatable(L, 1);	//Get metatable
+	lua_pushvalue(L, 2);	//Get key
+
+	bool string_key = lua_type(L, -1) == LUA_TSTRING;
+	if(string_key)
+	{
+		lua_rawget(L, -2);
+		
+		//If it's a function or doesn't exist, we're done
+		//If it does exist but doesn't have the bogus value, we're also done. Either
+		//the modder messed with the variable or they set it themself.
+		if(lua_iscfunction(L, -1) || lua_isnil(L, -1) || lua_tonumber(L, -1) != INDEX_HANDLER_VAR_TRIGGER) {
+			//Push another copy of the object data onto the stack to return
+			lua_pushvalue(L, 1);
+			return 2;	//return object data and function
+		}
+
+		//WMC - Apparently we have a variable that the code is responsible for
+		lua_pop(L, 1);
+
+		//Allocate enough space for "var" + string
+		const char *s = lua_tostring(L, 2);	//WMC - IMPORTANT: Key is now a string.
+		char *funcname = new char[lua_strlen(L, 2) + 4];
+		strcpy(funcname, "var");
+		strcat(funcname, s);
+
+		//Return function (if it's there)
+		//Metatable is still there
+		lua_pushstring(L, funcname);	//Push key
+		lua_rawget(L, -2);
+	}
+	else
+	{
+		//Get rid of key on top of stack
+		lua_pop(L, 1);
+
+		lua_pushstring(L, "__indexer");
+		lua_rawget(L, -2);
+	}
+
+	//Set upvalue for function to same upvalue as this
+	//This tells it whether it is getting or setting the variable
+	lua_pushvalue(L, lua_upvalueindex(1));
+	lua_setupvalue(L, -2, 1);
+
+	//Push another copy of the object data onto the stack to return
+	lua_pushvalue(L, 1);
+
+	//WMC - save size of stack, minus arguments
+	int old_stacksize = lua_gettop(L) - 2;
+	if(!string_key)
+	{
+		//Push another copy of key onto stack to return
+		lua_pushvalue(L, 2);
+		//No need to change stacksize, it doesn't know about this
+	}
+
+	//Finally, call the function to get/set the variable
+	//Use 1 argument for string key, 2 for indexer
+	if(lua_pcall(L, string_key ? 1 : 2, LUA_MULTRET, 0) != 0)
+	{
+		LuaError(LOCATION, L);
+		return 0;
+	}
+
+	//Return however many things the function call put on the stack
+	return lua_gettop(L) - old_stacksize;
+}
 
 //**********CLASS: cmission
 lua_obj<int> l_Cmission("cmission", "Campaign mission object");
@@ -1665,7 +1643,7 @@ LUA_FUNC(getShip, l_Mission, "Ship name", "Ship object", "Gets ship object")
 	return lua_set_args(L, "o", l_Shipclass.SetToLua(&Objects[Ships[idx].objnum].signature));
 }
 
-LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Ship object", "Gets escort ship")
+LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Number", "Gets escort ship")
 {
 	return lua_set_args(L, "i", hud_escort_num_ships_on_list());
 }
@@ -2236,564 +2214,6 @@ LUA_FUNC(playInterfaceSound, l_SoundLib, "Sound filename", "True if sound was pl
 
 	return lua_set_args(L, "b", idx > -1);
 }
-
-//*************************Libraries*************************
-/*
-// **********LIBRARY: Base
-// *****CLASS: (l)vec
-SCRIPT_LUA_CALLBACK lua_fs2_lvec(lua_State *L)
-{
-	vec3d v3 = vmd_zero_vector;
-	lua_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
-
-	return lua_set_args(L, "o", l_lvec.SetToLua(&v3));
-}
-
-SCRIPT_LUA_CALLBACK lua_fs2_vec__addition(lua_State *L)
-{
-	vec3d v3a, v3b, v3r;
-	if(!lua_get_args(L, "oo", l_lvec.GetFromLua(&v3a), l_lvec.GetFromLua(&v3b)))
-		return 0;
-
-	vm_vec_add(&v3r, &v3a, &v3b);
-
-	return lua_set_args(L, "o", l_lvec.SetToLua(&v3r));
-}
-
-SCRIPT_LUA_CALLBACK lua_fs2_vec__subtraction(lua_State *L)
-{
-	vec3d v3a, v3b, v3r;
-	if(!lua_get_args(L, "oo", l_lvec.GetFromLua(&v3a), l_lvec.GetFromLua(&v3b)))
-		return 0;
-
-	vm_vec_sub(&v3r, &v3a, &v3b);
-
-	return lua_set_args(L, "o", l_lvec.SetToLua(&v3r));
-}
-
-SCRIPT_LUA_CALLBACK lua_fs2_vec__multiplication(lua_State *L)
-{
-	vec3d v3a, v3b, v3r;
-	float f;
-	if(lua_get_args(L, "of", l_lvec.GetFromLua(&v3a), &f))
-	{
-		vm_vec_copy_scale(&v3r, &v3a, f);
-
-		return lua_set_args(L, "o", l_lvec.SetToLua(&v3r));
-	}
-	else if(lua_get_args(L, "oo", l_lvec.GetFromLua(&v3a), l_lvec.GetFromLua(&v3b)))
-	{
-		v3r.xyz.x = v3a.xyz.x * v3b.xyz.x;
-		v3r.xyz.y = v3a.xyz.y * v3b.xyz.y;
-		v3r.xyz.z = v3a.xyz.z * v3b.xyz.z;
-
-		return lua_set_args(L, "o", l_lvec.SetToLua(&v3r));
-	}
-
-	//Neither is valid...
-
-	return LUA_RETURN_NIL;
-}
-
-
-SCRIPT_LUA_CALLBACK lua_fs2_vec__tostring(lua_State *L)
-{
-	vec3d v3p;
-	if(!lua_get_args(L, "o", l_lvec.GetFromLua(&v3p)))
-		return 0;
-
-	char buf[32];
-	sprintf(buf, "(%f, %f, %f)", v3p.xyz.x, v3p.xyz.y, v3p.xyz.z);
-
-	return lua_set_args(L, "s", buf);
-}
-
-SCRIPT_LUA_CALLBACK lua_fs2_vec__index(lua_State *L)
-{
-	vec3d v3p;
-	int idx=0;
-	if(!lua_get_args(L, "o|i", l_lvec.GetFromLua(&v3p), &idx))
-		return 0;
-
-	if(idx < 0 || idx > 2) {
-		return 0;
-	}
-
-	return lua_set_args(L, "f", v3p.a1d[idx]);
-}
-
-SCRIPT_LUA_CALLBACK lua_fs2_vec_print(lua_State *L)
-{
-	vec3d v3p;
-	int idx=0;
-	if(!lua_get_args(L, "o|i", l_lvec.GetFromLua(&v3p), &idx))
-		return 0;
-
-	if(idx < 0 || idx > 2) {
-		return 0;
-	}
-
-	//Error(LOCATION, "%f %f %f", v3p.xyz.x, v3p.xyz.y, v3p.xyz.z);
-
-	return 0;
-}
-
-static const script_lua_obj_func_list lua_fs2_lvec_funcs[] = {
-	{LUA_OPER_ADDITION, lua_fs2_vec__addition, "Adds two vectors"},
-	{LUA_OPER_SUBTRACTION, lua_fs2_vec__subtraction, "Subtracts one vector from another"},
-	{LUA_OPER_MULTIPLICATION, lua_fs2_vec__multiplication, "Multiplies two vectors, or a vector times a number"},
-	{LUA_OPER_TOSTRING, lua_fs2_vec__tostring, "Converts vector to string"},
-	{"print", lua_fs2_vec_print, "Prints a vector"},
-	//{LUA_OPER_INDEX, lua_fs2_vec__index, "Returns index into vector"},
-	{SCRIPT_END_LIST},
-};
-
-// *****CLASS: wvec
-SCRIPT_LUA_CALLBACK lua_fs2_wvec(lua_State *L)
-{
-	vec3d v3 = vmd_zero_vector;
-	lua_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
-
-	vec3d v3p;
-	v3p.xyz.x = v3.xyz.x;
-	v3p.xyz.y = v3.xyz.y;
-	v3p.xyz.z = v3.xyz.z;
-
-	return lua_set_args(L, "o", l_wvec.SetToLua(&v3p));
-}
-
-static const script_lua_obj_func_list lua_fs2_wvec_funcs[] = {
-	{LUA_OPER_ADDITION, lua_fs2_vec__addition, "Adds two vectors"},
-	{LUA_OPER_SUBTRACTION, lua_fs2_vec__subtraction, "Subtracts one vector from another"},
-	{LUA_OPER_MULTIPLICATION, lua_fs2_vec__multiplication, "Multiplies two vectors, or a vector times a number"},
-	{LUA_OPER_TOSTRING, lua_fs2_vec__tostring, "Converts vector to string"},
-	//{LUA_OPER_INDEX, lua_fs2_vec__index, "Returns index into vector"},
-	{SCRIPT_END_LIST},
-};
-
-// *****LIBRARY CLASSES
-
-static const script_lua_obj_list lua_base_lib_obj[] = {
-	{l_lvec.GetName(), lua_fs2_lvec_funcs, "Local vector"},
-	{l_wvec.GetName(), lua_fs2_wvec_funcs, "World vector"},
-	{SCRIPT_END_LIST},
-};
-
-// *****LIBRARY FUNCTIONS
-
-SCRIPT_LUA_CALLBACK lua_fs2_print(lua_State *L)
-{
-	Error(LOCATION, "LUA: %s", lua_tostring(L, -1));
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_fs2_error(lua_State *L)
-{
-	Error(LOCATION, "LUA ERROR: %s", lua_tostring(L, -1));
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_fs2_getState(lua_State *L)
-{
-	int depth = 0;
-	lua_get_args(L, "|i", &depth);
-
-	return lua_set_args(L, "s", GS_state_text[gameseq_get_state(depth)]);
-}
-
-static const script_lua_func_list lua_base_lib[] = {
-	{"lvec", lua_fs2_lvec, "Creates a new local vector: (x, y, z)"},
-	{"wvec", lua_fs2_wvec, "Creates a new world vector: (x, y, z)"},
-	{"print", lua_fs2_print, "Displays output"},
-	{"error", lua_fs2_error, "Causes an error"},
-	{"getState", lua_fs2_getState, "Returns the current FS2 state string"},
-	{SCRIPT_END_LIST},
-};
-
-// **********LIBRARY: Mission (msn)
-
-SCRIPT_LUA_CALLBACK lua_msn_getShipInfo(lua_State *L)
-{
-	char *ship_name = NULL;
-	if(!lua_get_args(L, "s", &ship_name))
-		return 0;
-
-	int idx = ship_info_lookup(ship_name);
-
-	if(idx < 0)
-		return 0;
-
-	ship_info *sip = &Ship_info[idx];
-
-	return lua_set_args(L, "o", l_ship_info.SetToLua(&sip));
-}
-
-SCRIPT_LUA_CALLBACK lua_msn_ShipInfo_print(lua_State *L)
-{
-	ship_info *sip;
-	if(!lua_get_args(L, "o", l_ship_info.GetFromLua(&sip)))
-		return 0;
-
-	//Error(LOCATION, "%s", sip->name);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_msn_newShip(lua_State *L)
-{
-	char *ship_name = NULL;
-	char *class_name = NULL;
-	vec3d pos;
-	angles ang = {0,0,0};
-
-	if(!lua_get_args(L, "ssfff|fff", &ship_name, &class_name, &pos.xyz.x, &pos.xyz.y, &pos.xyz.z, 
-		&ang.p, &ang.b, &ang.h))
-		return 0;
-
-	//New matrix
-	matrix ori = IDENTITY_MATRIX;
-	vm_angles_2_matrix(&ori, &ang);
-
-	//Find the class index
-	int si_idx = ship_info_lookup(class_name);
-	if(si_idx < 0)
-	{
-		//couldn't find it
-		return LUA_RETURN_NIL;
-	}
-
-	//Create the ship
-	int s_idx = ship_create(&ori, &pos, si_idx, ship_name);
-
-	//Make the lua ship object, if the ship was created
-	if(s_idx > -1)
-	{
-		//Make the lua ship object and set the ptr to NULL
-		ship *shipp = &Ships[s_idx];
-		return lua_set_args(L, "o", l_ship.SetToLua(&shipp));
-	}
-
-	return LUA_RETURN_NIL;
-}
-
-SCRIPT_LUA_CALLBACK lua_msn_ship_setSpeed(lua_State *L)
-{
-	ship *shipp = NULL;
-	vec3d vel;
-
-	if(!lua_get_args(L, "offf", l_ship.GetFromLua(&shipp), &vel.xyz.x, &vel.xyz.y, &vel.xyz.z))
-		return LUA_RETURN_NIL;
-
-	//Set the speed
-	Objects[shipp->objnum].phys_info.vel = vel;
-
-	//We're done!
-	return LUA_RETURN_NIL;
-}
-
-SCRIPT_LUA_CALLBACK lua_msn_ship_setName(lua_State *L)
-{
-	ship *shipp = NULL;
-	char *name = NULL;
-
-	if(!lua_get_args(L, "os", l_ship.GetFromLua(&shipp), &name))
-		return LUA_RETURN_NIL;
-
-	//Set the name
-	if(strlen(name)) {
-		strcpy(shipp->ship_name, name);
-	} else {
-		sprintf(shipp->ship_name, "Ship %d", SHIP_INDEX(shipp));
-	}
-
-	//We're done!
-	return LUA_RETURN_NIL;
-}
-
-SCRIPT_LUA_CALLBACK lua_msn_ship_getTarget(lua_State *L)
-{
-	ship *shipp = NULL;
-
-	if(!lua_get_args(L, "o", l_ship.GetFromLua(&shipp)))
-		return 0;
-
-	if(shipp->ai_index != -1)
-	{
-		ai_info *aip= &Ai_info[shipp->ai_index];
-		if(aip->target_objnum && Objects[aip->target_objnum].type == OBJ_SHIP)
-		{
-			ship *tshipp = &Ships[Objects[aip->target_objnum].instance];
-			return lua_set_args(L, "o", l_ship.SetToLua(&tshipp));
-		}
-	}
-
-	//We're done!
-	return 0;
-}
-
-static const script_lua_obj_func_list lua_msn_shipinfo_funcs[] = {
-	{"print",lua_msn_ShipInfo_print, "Prints ship name"},
-	{SCRIPT_END_LIST},
-};
-
-static const script_lua_obj_func_list lua_msn_ship_funcs[] = {
-	{"setSpeed", lua_msn_ship_setSpeed, "Sets ship speed: (x speed, y speed, z speed)"},
-	{"setName", lua_msn_ship_setName, "Changes ship name: (new name)"},
-	{"getTarget", lua_msn_ship_getTarget, "Returns handle to ship's targetted ship"},
-	{SCRIPT_END_LIST},
-};
-
-//LIBRARY define
-static const script_lua_obj_list lua_msn_lib_obj[] = {
-	{l_ship.GetName(),		 lua_msn_ship_funcs, "Ship handle"},
-	{l_ship_info.GetName(),	 lua_msn_shipinfo_funcs, "Ship info handle"},
-	{SCRIPT_END_LIST},
-};
-static const script_lua_func_list lua_msn_lib[] = {
-	{"newShip",			lua_msn_newShip, "Creates a new ship and returns a handle to it: (ship name, class name, x pos, y pos, z pos; x rot, y rot, z rot)"},
-	{"getShipInfo",		lua_msn_getShipInfo, "Gets ship info object"},
-	{SCRIPT_END_LIST},
-};
-
-// **********LIBRARY: Graphics (grl)
-// *****Class: model
-SCRIPT_LUA_CALLBACK lua_grpc_model_getFilename(lua_State *L)
-{
-	polymodel *pm;
-	if(!lua_get_args(L, "o", l_model.GetFromLua(&pm)))
-		return 0;
-
-	return lua_set_args(L, "s", pm->filename);
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_model_getnumEyepoints(lua_State *L)
-{
-	polymodel *pm;
-	if(!lua_get_args(L, "o", l_model.GetFromLua(&pm)))
-		return 0;
-
-	return lua_set_args(L, "s", pm->filename);
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_model_getEyepointPos(lua_State *L)
-{
-	polymodel *pm;
-	int idx;
-	if(!lua_get_args(L, "oi", l_model.GetFromLua(&pm), &idx))
-		return 0;
-
-	if(idx > -1 && idx < pm->n_view_positions)
-	{
-		return lua_set_args(L, "o", l_lvec.SetToLua(&pm->view_positions[idx].pnt));
-	}
-
-	return LUA_RETURN_NIL;
-}
-
-static const script_lua_obj_func_list lua_grpc_model_funcs[] = {
-	{"getFilename",			lua_grpc_model_getFilename, "Gets the model's filename",
-							NULL,"string"},
-	{"getnumEyepoints",		lua_grpc_model_getnumEyepoints, "Gets number of eyepoints on ship",
-							NULL,"number"},
-	{"getEyepointPos",		lua_grpc_model_getEyepointPos, "Gets selected eye position",
-							"number","lvec"},
-	{SCRIPT_END_LIST},
-};
-
-// *****Functions: Graphics library
-SCRIPT_LUA_CALLBACK lua_grpc_loadModel(lua_State *L)
-{
-	char *model_name;
-	if(!lua_get_args(L, "s", &model_name))
-		return 0;
-
-	int idx = model_load(model_name, 0, NULL, 0);
-	if(idx != -1)
-	{
-		polymodel *pm = model_get(idx);
-		if(pm != NULL) {
-			return lua_set_args(L, "o", l_model.SetToLua(&pm));
-		}
-	}
-
-	return LUA_RETURN_NIL;
-}
-SCRIPT_LUA_CALLBACK lua_grpc_setColor(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int r,g,b,a=255;
-
-	if(!lua_get_args(L, "iii|i", &r, &g, &b, &a))
-		return 0;
-
-	color ac;
-	gr_init_alphacolor(&ac,r,g,b,a);
-	gr_set_color_fast(&ac);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_setFont(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int fn;
-
-	if(!lua_get_args(L, "i", &fn))
-		return 0;
-
-	gr_set_font(fn);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_drawPixel(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int x,y;
-	bool r=true;
-
-	if(!lua_get_args(L, "ii|b", &x, &y, &r))
-		return 0;
-
-	gr_pixel(x,y,r);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_drawLine(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int x1,y1,x2,y2;
-	bool r=true;
-
-	if(!lua_get_args(L, "iiii|b", &x1, &y1, &x2, &y2, &r))
-		return 0;
-
-	gr_line(x1,y1,x2,y2,r);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_drawGradientLine(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int x1,y1,x2,y2;
-	bool r=true;
-
-	if(!lua_get_args(L, "iiii|b", &x1, &y1, &x2, &y2, &r))
-		return 0;
-
-	gr_gradient(x1,y1,x2,y2,r);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_drawCircle(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int x,y,ra;
-	bool r=true;
-
-	if(!lua_get_args(L, "iii|b", &x,&y,&ra,&r))
-		return 0;
-
-	gr_circle(x,y, ra, r);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_drawCurve(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int x,y,ra,d;
-
-	if(!lua_get_args(L, "iiii|b", &x,&y,&ra,&d))
-		return 0;
-
-	gr_curve(x,y,ra,d);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_drawText(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int x,y;
-	char *s;
-	bool r=true;
-
-	if(!lua_get_args(L, "iis|b", &x, &y, &s, &r))
-		return 0;
-
-	gr_string(x,y,s,r);
-
-	return 0;
-}
-
-SCRIPT_LUA_CALLBACK lua_grpc_flashScreen(lua_State *L)
-{
-	if(!Gr_inited)
-		return 0;
-
-	int r,g,b;
-
-	if(!lua_get_args(L, "iii", &r, &g, &b))
-		return 0;
-
-	gr_flash(r,g,b);
-
-	return 0;
-}
-
-//LIBRARY define
-static const script_lua_func_list lua_grpc_lib[] = {
-	{"loadModel",		lua_grpc_loadModel, "Loads the given model and returns a handle to it",
-						"string","model"},
-	{"setColor", lua_grpc_setColor, "Sets the current drawing color: (red, green, blue; alpha)"},
-	{"setFont", lua_grpc_setFont, "Sets the current drawing font: (font number)"},
-	{"drawPixel", lua_grpc_drawPixel, "Draws a pixel using the current color: (x, y; resize)"},
-	{"drawLine", lua_grpc_drawLine, "Draws a line using the current color: (x1, y1, x2, y2; resize)"},
-	{"drawGradientLine", lua_grpc_drawGradientLine, "Draws a line using the current color that gradually fades out: (x1, y1, x2, y2; resize)"},
-	{"drawCircle", lua_grpc_drawCircle, "Draws a circle using the current color: (x,y,radius; resize)"},
-	{"drawCurve", lua_grpc_drawCurve, "Draws a curve using the current color: (x,y,radius,direction)"},
-	{"drawText", lua_grpc_drawText, "Draws text using the current font and color: (x, y, text; resize)"},
-	{"flashScreen", lua_grpc_flashScreen, "Flashes the screen with the specified color: (red,green,blue)"},
-	{SCRIPT_END_LIST},
-};
-
-static const script_lua_obj_list lua_grpc_lib_obj[] = {
-	{l_model.GetName(), lua_grpc_model_funcs, "Model"},
-	{SCRIPT_END_LIST},
-};
-
-// **********LIBRARY Array
-//Add an item in here to add an item to scripting.
-//Elements: {library name, library function list, library object list}
-const script_lua_lib_list Lua_libraries[] = {
-	{"grpc", lua_grpc_lib, lua_grpc_lib_obj, "Graphics library"},
-	{"misn", lua_msn_lib, lua_msn_lib_obj, "Mission library"},
-	{NULL, lua_base_lib, lua_base_lib_obj, "Base FS2 library"},
-	{SCRIPT_END_LIST},
-};
-*/
 #endif //USE_LUA
 // *************************Housekeeping*************************
 
@@ -2826,6 +2246,8 @@ int script_state::CreateLuaState()
 	lua_lib_h *libobj = NULL;
 	lua_func_hh *func;
 	lua_func_hh *func_end;
+	lua_var_hh *var;
+	lua_var_hh *var_end;
 	int i;	//used later
 
 	//CHECK FOR BAD THINGS
@@ -2950,6 +2372,7 @@ int script_state::CreateLuaState()
 
 	lib = &lua_Objects[0];
 	lib_end = &lua_Objects[lua_Objects.size()];
+	std::string str;
 	for(; lib < lib_end; lib++)
 	{
 		if(!luaL_newmetatable(L, lib->Name))
@@ -2967,12 +2390,27 @@ int script_state::CreateLuaState()
 		bool index_oper_already = false;
 		bool index_meth_already = false;
 
-		func = &lib->Functions[0];
-		func_end = &lib->Functions[lib->Functions.size()];
-
 		//WMC - This is a bit odd. Basically, to handle derivatives, I have a double-loop set up.
+		lua_lib_h *clib;
 		for(i = 0; i < 2; i++)
 		{
+			if(i==0)
+			{
+				if(lib->Derivator > -1)
+					clib = &lua_Objects[lib->Derivator];
+				else
+					continue;
+			}
+			else
+			{
+				clib = lib;
+			}
+
+			func = &clib->Functions[0];
+			func_end = &clib->Functions[clib->Functions.size()];
+			var = &clib->Variables[0];
+			var_end = &clib->Variables[clib->Variables.size()];
+
 			for(; func < func_end; func++)
 			{
 				//WMC - First, do normal functions
@@ -2983,7 +2421,7 @@ int script_state::CreateLuaState()
 						if(!index_meth_already){
 							index_oper_already = true;
 						} else {
-							Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", lib->Name);
+							Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", clib->Name);
 						}
 					}
 					lua_pushstring(L, func->Name);
@@ -2993,7 +2431,7 @@ int script_state::CreateLuaState()
 				else	//This is an object method
 				{
 					if(index_oper_already) {
-						Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", lib->Name);
+						Error(LOCATION, "Attempt to set both an indexing operator and methods for Lua class '%s'; get a coder", clib->Name);
 					}
 
 					if(!index_meth_already)
@@ -3006,20 +2444,57 @@ int script_state::CreateLuaState()
 					}
 					lua_pushstring(L, func->Name);
 					lua_pushcclosure(L, func->Function, 0);
-					lua_settable(L, -3);
+					lua_settable(L, table_loc);
 				}
 			}
+			
+			//We have variables
+			if(var != var_end)
+			{
+				//Set __index to special handler
+				lua_pushstring(L, "__index");
+				lua_pushboolean(L, 0);	//Push boolean argument to tell index_handler we are "get"
+				lua_pushcclosure(L, lua_index_handler, 1);
+				lua_settable(L, table_loc);
 
-			//WMC - Now set function pointers to the derivator (source class). And loop!
-			//If there is no derivator, set them both to NULL to kill the loop like they did with Old Yeller
-			if(lib->Derivator > -1) {
-				func = &lua_Objects[lib->Derivator].Functions[0];
-				func_end = &lua_Objects[lib->Derivator].Functions[lua_Objects[lib->Derivator].Functions.size()];
-			} else {
-				//Die Old Yeller, die!
-				//func = func_end = NULL;
-				//Damn, I can just do it this way.
-				break;
+				lua_pushstring(L, "__newindex");
+				lua_pushboolean(L, 1);	//Push boolean argument to tell index_handler we are "set"
+				lua_pushcclosure(L, lua_index_handler, 1);
+				lua_settable(L, table_loc);
+			}
+
+			//Add variables
+			for(; var < var_end; var++)
+			{
+				//Set a bogus value here so index_handler knows it's there
+				//and not a typo
+				lua_pushstring(L, var->Name);
+				lua_pushnumber(L, (lua_Number)INDEX_HANDLER_VAR_TRIGGER);
+				lua_settable(L, table_loc);
+
+				//Set function
+				str = "var";
+				str += var->Name;
+				lua_pushstring(L, str.c_str());
+				lua_pushboolean(L, 0);	//Default is get
+				lua_pushcclosure(L, var->Function, 1);
+				//char buf[10240] = {0};
+				//lua_stackdump(L, buf);
+				lua_settable(L, table_loc);
+			}
+
+			//Set the indexer
+			if(i == 1 && clib->Indexer != NULL)
+			{
+				lua_pushstring(L, "__indexer");
+				lua_pushboolean(L, 0);	//Default is get
+				lua_pushcclosure(L, clib->Indexer, 1);
+				lua_settable(L, table_loc);
+			} else if(lua_Objects[clib->Derivator].Indexer != NULL) {
+				lua_pushstring(L, "__indexer");
+				lua_pushboolean(L, 0);	//Default is get
+				lua_pushcclosure(L, lua_Objects[clib->Derivator].Indexer, 1);
+				lua_settable(L, table_loc);
 			}
 		}
 	}
@@ -3032,14 +2507,75 @@ int script_state::CreateLuaState()
 }
 
 #ifdef USE_LUA
-void output_lib_meta(FILE *fp, lua_lib_h *lib, lua_lib_h *lib_deriv)
+void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 {
 	lua_func_hh *func, *func_end;
+	lua_var_hh *var, *var_end;
+	int i;
 	fputs("<dd><dl>", fp);
-	for(int i = 0; i < 2; i++)
+	lua_lib_h *lib = main_lib;
+
+	//Indexer
+	if(lib->Indexer == NULL)
+		lib = lib_deriv;
+
+	//WMC - TODO: Handle other operators here
+	if(lib != NULL && lib->Indexer != NULL) {
+		fprintf(fp,"<dt>Operators</dt><dd><dl><dt><b>[]</b></dt><dd>%s</dd>", lib->IndexerDescription);
+		if(lib->IndexerDescription != NULL) {
+			fprintf(fp,"<dd>%s</dd>", lib->IndexerDescription);
+		} else {
+			fputs("<dd>No description</dd>", fp);
+		}
+		fputs("</dl></dd>", fp);
+
+	}
+
+	//Variables
+	lib = main_lib;
+	for(i = 0; i < 2; i++)
+	{
+		var = &lib->Variables[0];
+		var_end = &lib->Variables[lib->Variables.size()];
+
+		if(var != var_end) {
+			fputs("<dt>Variables</dt><dd><dl>", fp);
+		}
+
+		for(; var < var_end; var++)
+		{
+			if(var->Type != NULL) {
+				fprintf(fp, "<dt><i>%s</i><b>%s</b></dt>", var->Type, var->Name);
+			} else {
+				fprintf(fp, "<dt><b>%s</b></dt>", var->Name);
+			}
+
+			if(var->Description != NULL) {
+				fprintf(fp, "<dd>%s</dd>", var->Description);
+			} else {
+				fputs("<dd>No description</dd>", fp);
+			}
+		}
+
+		if(var != var_end) {
+			fputs("</dl></dd>", fp);
+		}
+
+		if(lib_deriv == NULL)
+			break;
+
+		lib = lib_deriv;
+	}
+	//Functions
+	lib = main_lib;
+	for(i = 0; i < 2; i++)
 	{
 		func = &lib->Functions[0];
 		func_end = &lib->Functions[lib->Functions.size()];
+
+		if(func != func_end) {
+			fputs("<dt>Functions</dt><dd><dl>", fp);
+		}
 		for(; func < func_end; func++)
 		{
 			if(func->Arguments != NULL) {
@@ -3059,6 +2595,10 @@ void output_lib_meta(FILE *fp, lua_lib_h *lib, lua_lib_h *lib_deriv)
 			} else {
 				fputs("<dd><b>Return values:</b> None</dd>", fp);
 			}
+		}
+
+		if(func != func_end) {
+			fputs("</dl></dd>", fp);
 		}
 
 		if(lib_deriv == NULL)
