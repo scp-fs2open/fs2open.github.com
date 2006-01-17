@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.80 $
- * $Date: 2006-01-14 06:24:27 $
- * $Author: taylor $
+ * $Revision: 2.81 $
+ * $Date: 2006-01-17 17:41:05 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2006/01/14 06:24:27  taylor
+ * get object vars correct
+ *
  * Revision 2.79  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -534,6 +537,7 @@
 #include "cmdline/cmdline.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
+#include "graphics/font.h"
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
@@ -5172,23 +5176,54 @@ void hud_show_weapon_energy_gauge()
 		float remaining;
 		currentx = current_hud->Wenergy_coords[0] + 10;
 		currenty = current_hud->Wenergy_coords[1];
-		if(gr_screen.max_w_unscaled == 640)
-		{
+		if(gr_screen.max_w_unscaled == 640) {
 			max_w = 60;
 		}
 
+		//*****ENERGY GAUGE
+		if(Weapon_info[Player_ship->weapons.current_primary_bank].energy_consumed > 0.0f)
+			hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_BRIGHT);
+		
+		//Draw name
+		gr_string(currentx, currenty, "Energy");
+		currenty += 10;
+
+		//Draw background
+		hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_DIM);
+		gr_rect(currentx, currenty, max_w, 10);
+
+		//Draw gauge bar
+		hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_NORMAL);
+		remaining = max_w * ((float)Player_ship->weapon_energy/(float)Ship_info[Player_ship->ship_info_index].max_weapon_reserve);
+		if(remaining > 0)
+		{
+			hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_BRIGHT);
+			for(y = 0; y < 10; y++) {
+				gr_gradient(currentx, currenty + y, currentx + fl2i(remaining), currenty + y);
+			}
+		}
+		currenty += 12;
+
+		char shortened_name[NAME_LENGTH];
+		//*****BALLISTIC GAUGES
 		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 		{
+			//Skip all pure-energy weapons
+			if(!(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags2 & WIF2_BALLISTIC))
+				continue;
+
 			//Draw the weapon bright or normal depending if it's active or not.
-			if(x == Player_ship->weapons.current_primary_bank || (Player_ship->flags & SF_PRIMARY_LINKED))
-			{
+			if(x == Player_ship->weapons.current_primary_bank || (Player_ship->flags & SF_PRIMARY_LINKED)) {
 				hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_BRIGHT);
-			}
-			else
-			{
+			} else {
 				hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_NORMAL);
 			}
-			gr_string(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
+			if(gr_screen.max_w_unscaled == 640) {
+				gr_force_fit_string(shortened_name, NAME_LENGTH, 55);
+				gr_string(currentx, currenty, shortened_name);
+			} else {
+				gr_string(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
+			}
 
 			//Next 'line'
 			currenty += 10;
@@ -5201,25 +5236,9 @@ void hud_show_weapon_energy_gauge()
 			hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_NORMAL);
 			
 			//Draw the bar graph
-			if(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags2 & WIF2_BALLISTIC)
-			{
-				remaining = (max_w - 4) * ((float) Player_ship->weapons.primary_bank_ammo[x] / (float) Player_ship->weapons.primary_bank_start_ammo[x]);
-				if(remaining > 0)
-				{
-					gr_rect(currentx + 2, currenty + 2, fl2i(remaining), 6);
-				}
-			}
-			else
-			{
-				remaining = max_w * ((float)Player_ship->weapon_energy/(float)Ship_info[Player_ship->ship_info_index].max_weapon_reserve);
-				if(remaining > 0)
-				{
-					for(y = 0; y < 10; y++)
-					{
-						gr_gradient(currentx, currenty + y, currentx + fl2i(remaining), currenty + y);
-						hud_set_gauge_color(HUD_WEAPONS_ENERGY, HUD_C_BRIGHT);	//It's hard to read accurately unless bright
-					}
-				}
+			remaining = (max_w - 4) * ((float) Player_ship->weapons.primary_bank_ammo[x] / (float) Player_ship->weapons.primary_bank_start_ammo[x]);
+			if(remaining > 0) {
+				gr_rect(currentx + 2, currenty + 2, fl2i(remaining), 6);
 			}
 			//Increment for next 'line'
 			currenty += 12;
