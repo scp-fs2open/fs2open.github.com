@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.215 $
- * $Date: 2006-01-17 02:33:20 $
+ * $Revision: 2.216 $
+ * $Date: 2006-01-17 07:28:39 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.215  2006/01/17 02:33:20  wmcoolmon
+ * data/scripts directory
+ *
  * Revision 2.214  2006/01/16 11:16:07  wmcoolmon
  * Use obj_script_set_global for "plr" and "slf"; remove Lua variable if variable goes to NULL
  *
@@ -3736,6 +3739,7 @@ void game_init()
 
 	mprintf(("cfile_init() took %d\n", e1 - s1));
 	// mprintf(("1000 cfopens() took %d\n", e2 - s2));	
+	Script_system.RunBytecode(Script_gameinithook);
 }
 
 char transfer_text[128];
@@ -7262,6 +7266,11 @@ void game_leave_state( int old_state, int new_state )
 			break;
 	}
 
+	//WMC - Scripting override
+	if(GS_state_hooks[old_state].IsValid() && GS_state_hooks[old_state].IsOverride()) {
+		return;
+	}
+
 	switch (old_state) {
 		case GS_STATE_BRIEFING:
 			brief_stop_voices();
@@ -7622,6 +7631,11 @@ void game_leave_state( int old_state, int new_state )
 
 void game_enter_state( int old_state, int new_state )
 {
+	//WMC - Scripting override
+	if(GS_state_hooks[new_state].IsValid() && GS_state_hooks[new_state].IsOverride()) {
+		return;
+	}
+
 	switch (new_state) {
 		case GS_STATE_MAIN_MENU:				
 			// in multiplayer mode, be sure that we are not doing networking anymore.
@@ -8139,11 +8153,10 @@ void game_do_state(int state)
 		return;
 	}
 
-	if(GS_state_hooks[state].IsValid())
+	if(GS_state_hooks[state].IsOverride())
 	{
 		game_set_frametime(state);
 		gr_clear();
-		char *s;
 		Script_system.RunBytecode(GS_state_hooks[state]);
 		gr_flip();
 		return;
@@ -8416,6 +8429,10 @@ void game_do_state(int state)
 			break;
 
    } // end switch(gs_current_state)
+
+   //WMC - Unfortunately this will not flip properly...
+   if(!GS_state_hooks[state].IsOverride())
+		Script_system.RunBytecode(GS_state_hooks[state]);
 
 //   python_do_frame();
 }
@@ -10907,7 +10924,7 @@ void display_title_screen()
 	}
 #endif
 
-	if(!Script_system.RunBytecode(Script_splashhook))
+	if(!Script_splashhook.IsOverride())
 	{
 		title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 		title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
@@ -10933,6 +10950,8 @@ void display_title_screen()
 
 		}
 	}
+
+	Script_system.RunBytecode(Script_splashhook);
 
 #ifndef NO_DIRECT3D
 	// d3d	

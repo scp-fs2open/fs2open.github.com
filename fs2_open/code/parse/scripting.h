@@ -74,5 +74,6 @@ extern bool Output_scripting_meta;
 extern script_hook Script_globalhook;
 extern script_hook Script_hudhook;
 extern script_hook Script_splashhook;
+extern script_hook Script_gameinithook;
 
 #endif //_SCRIPTING_H

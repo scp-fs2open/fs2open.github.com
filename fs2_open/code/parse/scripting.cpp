@@ -14,6 +14,7 @@ bool Output_scripting_meta = false;
 script_hook Script_splashhook;
 script_hook Script_hudhook;
 script_hook Script_globalhook;
+script_hook Script_gameinithook;
 
 //*************************Scripting init and handling*************************
 
@@ -35,6 +36,10 @@ int script_test(script_state *st)
 	{
 		if(optional_string("$Global:")) {
 			Script_globalhook = st->ParseChunk("Global");
+		}
+
+		if(optional_string("$GameInit:")) {
+			Script_gameinithook = st->ParseChunk("GameInit");
 		}
 
 		if(optional_string("$Splash:")) {
@@ -367,18 +372,25 @@ script_hook script_state::ParseChunk(char* debug_str)
 #ifdef USE_LUA
 		//Load from file
 		CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS );
-		int len = cfilelength(cfp);
+		if(cfp == NULL)
+		{
+			Warning(LOCATION, "Could not load lua script file '%s'", filename);
+		}
+		else
+		{
+			int len = cfilelength(cfp);
 
-		char *raw_lua = (char*)vm_malloc(len+1);
-		raw_lua[len] = '\0';
+			char *raw_lua = (char*)vm_malloc(len+1);
+			raw_lua[len] = '\0';
 
-		cfread(raw_lua, len, 1, cfp);
-		cfclose(cfp);
+			cfread(raw_lua, len, 1, cfp);
+			cfclose(cfp);
 
-		luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str);
-		//luaL_loadfile(GetLuaSession(), filename);
+			luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str);
+			//luaL_loadfile(GetLuaSession(), filename);
 
-		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+			rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+		}
 #endif
 		//dealloc
 		//WMC - For some reason these cause crashes
