@@ -1076,7 +1076,7 @@ LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the
 LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], [Pitch %], [Bank %], [Zoom multiplier]", "Whether ship was rendered", "Draws ship model as if in techroom")
 {
 	int x1,y1,x2,y2;
-	angles rot_angles = {40.0f, 0.0f, 0.0f};
+	angles rot_angles = {0.0f, 0.0f, 40.0f};
 	bool r;
 	int idx;
 	float zoom = 1.3f;
