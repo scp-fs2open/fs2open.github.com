@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.63 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.64 $
+ * $Date: 2006-01-17 03:46:56 $
+ * $Author: phreak $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.62  2005/12/29 00:54:08  phreak
  * mirror parameter in hud_anim_render().  only used when briefing icons are fading in.
  *
@@ -2832,7 +2835,13 @@ void hud_support_view_blit()
 		{
 			if (Player_rearm_eta > 0)
 			{
-				sprintf(outstr, "%02d:%.2f", (int)Player_rearm_eta/60, Player_rearm_eta - 60*(int)(Player_rearm_eta/60));		
+				int min, sec, hund;
+		
+				min = (int)Player_rearm_eta / 60;
+				sec = (int)Player_rearm_eta % 60;
+				hund = (int)(Player_rearm_eta * 100) % 100;
+
+				sprintf(outstr, "%02d:%02d.%02d", min, sec, hund);
 			}
 			else
 			{
