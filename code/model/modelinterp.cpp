@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.140 $
- * $Date: 2006-01-16 20:57:03 $
+ * $Revision: 2.141 $
+ * $Date: 2006-01-17 01:31:43 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2006/01/16 20:57:03  taylor
+ * some minor changes to model_should_render_engine_glow(), better safety checks, support for disrupted engines
+ * check to see if a particular engine is disabled/destroyed/disrupted before making engine wash for it
+ *
  * Revision 2.139  2006/01/04 08:19:22  taylor
  * fixes for regular texture replacement
  *
@@ -6577,7 +6581,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 		ship *shipp = &Ships[obj->instance];
 		ship_info *si = &Ship_info[shipp->ship_info_index];
 
-		Assert( bank_obj < shipp->n_subsystems );
+		Assert( bank_obj < si->n_subsystems );
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
