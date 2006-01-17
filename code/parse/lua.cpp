@@ -403,15 +403,26 @@ static lua_cvar<ship*>			l_ship("ship");
 //true => __newindex
 LUA_API lua_index_handler(lua_State *L)
 {
+	//WMC - When this function is called, there should be
+	//two values on the stack - the object, and the key
+	//Everything else, then, is an argument.
+	int args_start = 2;
+	int args_stop = lua_gettop(L);
+
 	//Get the data at key in metatable
 	lua_getmetatable(L, 1);	//Get metatable
 	lua_pushvalue(L, 2);	//Get key
 
-	bool string_key = lua_type(L, -1) == LUA_TSTRING;
-	if(string_key)
+	bool using_indexer = lua_type(L, 2) != LUA_TSTRING;
+	
+	//WMC - I tried using lua_isnil here to use the indexer if an
+	//unknown string key was passed, but for some reason I got a crash
+	//at location 0x00000069 every time lua_pcall was called.
+	//Whether or not this is an internal bug, a bug on my part,
+	//or some Lua programmer sex joke, I don't know.
+	if(!using_indexer)
 	{
 		lua_rawget(L, -2);
-		
 		//If it's a function or doesn't exist, we're done
 		//If it does exist but doesn't have the bogus value, we're also done. Either
 		//the modder messed with the variable or they set it themself.
@@ -447,23 +458,37 @@ LUA_API lua_index_handler(lua_State *L)
 	//Set upvalue for function to same upvalue as this
 	//This tells it whether it is getting or setting the variable
 	lua_pushvalue(L, lua_upvalueindex(1));
-	lua_setupvalue(L, -2, 1);
+	if(lua_setupvalue(L, -2, 1) == NULL) {
+		//setupvalue failed for some reason,
+		//so pop the bool ourselves.
+		Warning(LOCATION, "lua_setupvalue in lua_index_handler failed; get a coder");
+		lua_pop(L, 1);
+	}
 
+	//*****BEGIN FUNCTION ARGUMENT HANDLING
+	int passed_args = 1;	//Object data
 	//Push another copy of the object data onto the stack to return
 	lua_pushvalue(L, 1);
 
 	//WMC - save size of stack, minus arguments
 	int old_stacksize = lua_gettop(L) - 2;
-	if(!string_key)
+	if(using_indexer)
 	{
 		//Push another copy of key onto stack to return
 		lua_pushvalue(L, 2);
+		passed_args++;
 		//No need to change stacksize, it doesn't know about this
+	}
+
+	//Push arguments onto stack.
+	for(; args_stop > args_start; args_stop--) {
+		lua_pushvalue(L, args_stop);
+		passed_args++;
 	}
 
 	//Finally, call the function to get/set the variable
 	//Use 1 argument for string key, 2 for indexer
-	if(lua_pcall(L, string_key ? 1 : 2, LUA_MULTRET, 0) != 0)
+	if(lua_pcall(L, passed_args, LUA_MULTRET, 0) != 0)
 	{
 		LuaError(LOCATION, L);
 		return 0;
@@ -728,86 +753,141 @@ LUA_FUNC(getVariableValue, l_Cmission, "Variable number (Zero-based)", "Variable
 	return LUA_RETURN_FALSE;
 }
 
+//**********CLASS: Species
+lua_obj<int> l_Species("species", "Species handle");
+extern int Species_initted;
+
+LUA_VAR(Name, l_Species, "String", "Species name")
+{
+	if(!Species_initted)
+		return LUA_RETURN_NIL;
+
+	char *s = NULL;
+	int idx;
+	if(!lua_get_args(L, "o|s", l_Species.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_species)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		strncpy(Species_info[idx].species_name, s, sizeof(Species_info[idx].species_name)-1);
+	}
+
+	return lua_set_args(L, "s", Species_info[idx].species_name);
+}
+
+//**********CLASS: Shiptype
+lua_obj<int> l_Shiptype("shiptype", "Ship type handle");
+extern int Species_initted;
+
+LUA_VAR(Name, l_Shiptype, "String", "Ship type name")
+{
+	if(!Species_initted)
+		return LUA_RETURN_NIL;
+
+	char *s = NULL;
+	int idx;
+	if(!lua_get_args(L, "o|s", l_Shiptype.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > (int)Ship_types.size())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		strncpy(Ship_types[idx].name, s, sizeof(Ship_types[idx].name)-1);
+	}
+
+	return lua_set_args(L, "s", Ship_types[idx].name);
+}
+
 //**********CLASS: Shipclass
-lua_obj<int> l_Shipclass("shipclass", "Ship class object");
+lua_obj<int> l_Shipclass("shipclass", "Ship class handle");
 extern int ships_inited;
-/*
-LUA_VAR(name, l_Ship, "String", "Ship class name")
+
+LUA_VAR(Name, l_Shipclass, "String", "Ship class name")
 {
 	int idx;
-	char *s;
+	char *s = NULL;
 	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
 		return LUA_RETURN_NIL;
 
-	if(LUA_SETTING_VAR)
-	{
+	if(LUA_SETTING_VAR) {
 		strncpy(Ship_info[idx].name, s, sizeof(Ship_info[idx].name)-1);
 	}
 
 	return lua_set_args(L, "s", Ship_info[idx].name);
-}*/
-
-LUA_FUNC(getName, l_Shipclass, NULL, "Name (string)", "Gets ship class name")
-{
-	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
-		return LUA_RETURN_NIL;
-
-	if(idx < 0 || idx > Num_ship_classes)
-		return LUA_RETURN_NIL;
-
-	return lua_set_args(L, "s", Ship_info[idx].name);
 }
 
-LUA_FUNC(getType, l_Shipclass, NULL, "Ship type (string)", "Gets ship type name")
+LUA_VAR(ShortName, l_Shipclass, "String", "Ship class short name")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "s", Ship_types[Ship_info[idx].class_type].name);
-}
-
-LUA_FUNC(getSpecies, l_Shipclass, NULL, "Species name (string)", "Gets ship species")
-{
-	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
-		return LUA_RETURN_NIL;
-
-	if(idx < 0 || idx > Num_ship_classes)
-		return LUA_RETURN_NIL;
-
-	return lua_set_args(L, "s", Species_info[Ship_info[idx].species].species_name);
-}
-
-LUA_FUNC(getShortName, l_Shipclass, NULL, "Short name (string)", "Gets ship class short name")
-{
-	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
-		return LUA_RETURN_NIL;
-
-	if(idx < 0 || idx > Num_ship_classes)
-		return LUA_RETURN_NIL;
+	if(LUA_SETTING_VAR) {
+		strncpy(Ship_info[idx].short_name, s, sizeof(Ship_info[idx].short_name)-1);
+	}
 
 	return lua_set_args(L, "s", Ship_info[idx].short_name);
 }
 
-LUA_FUNC(getHitpoints, l_Shipclass, NULL, "Hitpoints (number)", "Gets ship class hitpoints")
+LUA_VAR(Hitpoints, l_Shipclass, "Number", "Ship class hitpoints")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
+	float f = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Shipclass.GetFromLua(&idx), &f))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
 		return LUA_RETURN_NIL;
 
+	if(LUA_SETTING_VAR && f >= 0.0f) {
+		Ship_info[idx].max_hull_strength = f;
+	}
+
 	return lua_set_args(L, "f", Ship_info[idx].max_hull_strength);
+}
+
+LUA_VAR(Species, l_Shipclass, "Species", "Ship class species")
+{
+	int idx;
+	int sidx;
+	if(!lua_get_args(L, "o|o", l_Shipclass.GetFromLua(&idx), l_Species.GetFromLua(&sidx)))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && sidx > -1 && sidx < Num_species) {
+		Ship_info[idx].species = sidx;
+	}
+
+	return lua_set_args(L, "o", l_Species.SetToLua(&Ship_info[idx].species));
+}
+
+LUA_VAR(Type, l_Shipclass, "shiptype", "Ship class type")
+{
+	int idx;
+	int sidx;
+	if(!lua_get_args(L, "o|o", l_Shipclass.GetFromLua(&idx), l_Shiptype.GetFromLua(&sidx)))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && sidx > -1 && sidx < (int)Ship_types.size()) {
+		Ship_info[idx].class_type = sidx;
+	}
+
+	return lua_set_args(L, "o", l_Shiptype.SetToLua(&Ship_info[idx].class_type));
 }
 
 LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the techroom", "Gets whether or not the ship class is available in the techroom")
@@ -902,6 +982,58 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 	return lua_set_args(L, "b", true);
 }
 
+//**********CLASS: Shields
+lua_obj<int> l_Shields("shields", "Shields handle");
+
+LUA_INDEXER(l_Shields, "Shield quadrant")
+{
+	int idx;
+	char *qd = NULL;
+	float nval = -1.0f;
+	if(!lua_get_args(L, "os|f", l_Object.GetFromLua(&idx), &qd, &nval))
+		return 0;
+
+	idx = obj_get_by_signature(idx);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	object *objp = &Objects[idx];
+
+	//Which quadrant?
+	int qdx;
+	int qdi;
+	if(qd == NULL || !stricmp(qd, "None"))
+		qdx = -1;
+	else if((qdi = atoi(qd)) > 0 && qdi < 5)
+		qdx = qdi-1;	//LUA->FS2
+	else if(!stricmp(qd, "Top"))
+		qdx = 0;
+	else if(!stricmp(qd, "Left"))
+		qdx = 1;
+	else if(!stricmp(qd, "Right"))
+		qdx = 2;
+	else if(!stricmp(qd, "Bottom"))
+		qdx = 3;
+	else
+		return LUA_RETURN_NIL;
+
+	//Set/get all quadrants
+	if(qdx == -1) {
+		if(LUA_SETTING_VAR && nval >= 0.0f)
+			set_shield_strength(objp, nval);
+
+		return lua_set_args(L, "f", get_shield_strength(objp));
+	}
+
+	//Set one quadrant?
+	if(LUA_SETTING_VAR && nval >= 0.0f)
+		objp->shield_quadrant[qdx] = nval;
+
+	//Get one quadrant
+	return lua_set_args(L, "f", objp->shield_quadrant[qdx]);
+}
+
 //**********CLASS: Object
 lua_obj<int> l_Object("object", "Object");
 //Helper function
@@ -918,6 +1050,50 @@ int lua_obj_get_idx(lua_State *L, int *idx)
 		return 0;
 
 	return 1;
+}
+
+LUA_VAR(HitpointsLeft, l_Object, "Number", "Sets how many hitpoints an object has left")
+{
+	int idx;
+	float f = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Object.GetFromLua(&idx), &f))
+		return LUA_RETURN_NIL;
+
+	idx = obj_get_by_signature(idx);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	//Set hull strength.
+	if(LUA_SETTING_VAR && f >= 0.0f) {
+		Objects[idx].hull_strength = f;
+	}
+
+	return lua_set_args(L, "f", Objects[idx].hull_strength);
+}
+
+LUA_VAR(Shields, l_Object, "shields", "Shields")
+{
+	int idx=-1;
+	int sidx=-1;
+	if(!lua_get_args(L, "o|o", l_Object.GetFromLua(&idx), l_Shields.GetFromLua(&sidx)))
+		return LUA_RETURN_NIL;
+
+	idx = obj_get_by_signature(idx);
+	sidx = obj_get_by_signature(sidx);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	//WMC - copy shields
+	if(LUA_SETTING_VAR && sidx > -1) {
+		for(int i = 0; i < 4; i++)
+		{
+			Objects[idx].shield_quadrant[i] = Objects[sidx].shield_quadrant[i];
+		}
+	}
+
+	return lua_set_args(L, "o", l_Shields.SetToLua(&idx));
 }
 
 LUA_FUNC(getBreed, l_Object, NULL, "Object type name", "Gets object type")
@@ -976,26 +1152,6 @@ LUA_FUNC(fetchShieldStrength, l_Object, "[Shield Quadrant], [New value]", "[New]
 
 	//Get one quadrant
 	return lua_set_args(L, "f", objp->shield_quadrant[qdx]);
-}
-
-LUA_FUNC(fetchHitpointsLeft, l_Object, "[New value]", "[New] hitpoints", "Returns hitpoints left on an object, or sets them if a new value is specified")
-{
-	int idx;
-	float f = -1.0f;
-	if(!lua_get_args(L, "o|f", &idx))
-		return LUA_RETURN_NIL;
-
-	idx = obj_get_by_signature(idx);
-
-	if(idx < 0)
-		return LUA_RETURN_NIL;
-
-	//Set hull strength.
-	if(f >= 0.0f) {
-		Objects[idx].hull_strength = f;
-	}
-
-	return lua_set_args(L, "f", Objects[idx].hull_strength);
 }
 
 //**********CLASS: Mounted Weapons
@@ -2267,7 +2423,7 @@ int script_state::CreateLuaState()
 	lua_var_hh *var_end;
 	int i;	//used later
 
-	//CHECK FOR BAD THINGS
+	//*****CHECK FOR BAD THINGS
 #ifndef NDEBUG
 	lua_func_hh *ofunc;
 	//Like libraries/objects with identical names
@@ -2325,7 +2481,7 @@ int script_state::CreateLuaState()
 	}
 #endif
 
-	//INITIALIZE ALL LIBRARY FUNCTIONS
+	//*****INITIALIZE ALL LIBRARY FUNCTIONS
 	mprintf(("LUA: Initializing library functions"));
 	lib = &lua_Libraries[0];
 	lib_end = &lua_Libraries[lua_Libraries.size()];
@@ -2387,6 +2543,7 @@ int script_state::CreateLuaState()
 		//Handle objects and their methods in a library
 	}
 
+	//*****INITIALIZE OBJECT FUNCTIONS
 	lib = &lua_Objects[0];
 	lib_end = &lua_Objects[lua_Objects.size()];
 	std::string str;
@@ -2408,7 +2565,7 @@ int script_state::CreateLuaState()
 		bool index_meth_already = false;
 
 		//WMC - This is a bit odd. Basically, to handle derivatives, I have a double-loop set up.
-		lua_lib_h *clib;
+		lua_lib_h *clib = lib;
 		for(i = 0; i < 2; i++)
 		{
 			if(i==0)
@@ -2461,7 +2618,7 @@ int script_state::CreateLuaState()
 					}
 					lua_pushstring(L, func->Name);
 					lua_pushcclosure(L, func->Function, 0);
-					lua_settable(L, table_loc);
+					lua_settable(L, -3);
 				}
 			}
 			
@@ -2529,6 +2686,7 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 	lua_func_hh *func, *func_end;
 	lua_var_hh *var, *var_end;
 	int i;
+	bool draw_header;
 	fputs("<dd><dl>", fp);
 	lua_lib_h *lib = main_lib;
 
@@ -2538,7 +2696,7 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 
 	//WMC - TODO: Handle other operators here
 	if(lib != NULL && lib->Indexer != NULL) {
-		fprintf(fp,"<dt>Operators</dt><dd><dl><dt><b>[]</b></dt><dd>%s</dd>", lib->IndexerDescription);
+		fputs("<dt><h3>Operators</h3></dt><dd><dl><dt><b>[]</b></dt>", fp);
 		if(lib->IndexerDescription != NULL) {
 			fprintf(fp,"<dd>%s</dd>", lib->IndexerDescription);
 		} else {
@@ -2549,20 +2707,22 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 	}
 
 	//Variables
+	if(main_lib->Variables.size() || (lib_deriv != NULL && lib_deriv->Variables.size()))
+		draw_header = true;
+	else draw_header = false;
 	lib = main_lib;
+	if(draw_header) {
+		fputs("<dt><h3>Variables</h3></dt><dd><dl>", fp);
+	}
 	for(i = 0; i < 2; i++)
 	{
 		var = &lib->Variables[0];
 		var_end = &lib->Variables[lib->Variables.size()];
 
-		if(var != var_end) {
-			fputs("<dt>Variables</dt><dd><dl>", fp);
-		}
-
 		for(; var < var_end; var++)
 		{
 			if(var->Type != NULL) {
-				fprintf(fp, "<dt><i>%s</i><b>%s</b></dt>", var->Type, var->Name);
+				fprintf(fp, "<dt><i>%s</i> <b>%s</b></dt>", var->Type, var->Name);
 			} else {
 				fprintf(fp, "<dt><b>%s</b></dt>", var->Name);
 			}
@@ -2574,25 +2734,28 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 			}
 		}
 
-		if(var != var_end) {
-			fputs("</dl></dd>", fp);
-		}
-
 		if(lib_deriv == NULL)
 			break;
 
 		lib = lib_deriv;
 	}
+	if(draw_header) {
+		fputs("</dl></dd>", fp);
+	}
+
 	//Functions
+	if(main_lib->Functions.size() || (lib_deriv != NULL && lib_deriv->Functions.size()))
+		draw_header = true;
+	else draw_header = false;
 	lib = main_lib;
+	if(draw_header) {
+		fputs("<dt><h3>Functions</h3></dt><dd><dl>", fp);
+	}
 	for(i = 0; i < 2; i++)
 	{
 		func = &lib->Functions[0];
 		func_end = &lib->Functions[lib->Functions.size()];
 
-		if(func != func_end) {
-			fputs("<dt>Functions</dt><dd><dl>", fp);
-		}
 		for(; func < func_end; func++)
 		{
 			if(func->Arguments != NULL) {
@@ -2608,20 +2771,20 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 			}
 
 			if(func->ReturnValues != NULL) {
-				fprintf(fp, "<dd><b>Return values:</b> %s</dd>", func->ReturnValues);
+				fprintf(fp, "<dd><b>Return values:</b> %s<br>&nbsp;</dd>", func->ReturnValues);
 			} else {
-				fputs("<dd><b>Return values:</b> None</dd>", fp);
+				fputs("<dd><b>Return values:</b> None<br>&nbsp;</dd>", fp);
 			}
-		}
-
-		if(func != func_end) {
-			fputs("</dl></dd>", fp);
 		}
 
 		if(lib_deriv == NULL)
 			break;
 
 		lib = lib_deriv;
+	}
+
+	if(draw_header) {
+		fputs("</dl></dd>", fp);
 	}
 	fputs("<br></dl></dd>", fp);
 }
