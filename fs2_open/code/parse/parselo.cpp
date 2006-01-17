@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.64 $
- * $Author: taylor $
- * $Date: 2006-01-15 18:53:19 $
+ * $Revision: 2.65 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-01-17 07:10:01 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2006/01/15 18:53:19  taylor
+ * fix stuff_boolean() debug spew
+ *
  * Revision 2.63  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -1998,7 +2001,7 @@ int stuff_float_optional(float *f)
 		comma = true;
 	}
 	
-	if(skip_len < 0)
+	if(skip_len == 0)
 	{
 		if(comma) {
 			Mp++;

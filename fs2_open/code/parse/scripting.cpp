@@ -373,6 +373,7 @@ script_hook script_state::ParseChunk(char* debug_str)
 		raw_lua[len] = '\0';
 
 		cfread(raw_lua, len, 1, cfp);
+		cfclose(cfp);
 
 		luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str);
 		//luaL_loadfile(GetLuaSession(), filename);
