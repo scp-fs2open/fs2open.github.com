@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.298 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.299 $
+ * $Date: 2006-01-17 03:45:32 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.298  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.297  2006/01/15 18:55:27  taylor
  * fix compile issues from bad constructor
  * make sure ai_actively_pursues gets filled for modular tables too
@@ -11028,6 +11031,8 @@ float ship_calculate_rearm_duration( object *objp )
 
 	int i;
 	int num_reloads;
+
+	bool found_first_empty;
 	
 	Assert(objp->type == OBJ_SHIP);
 
@@ -11059,6 +11064,7 @@ float ship_calculate_rearm_duration( object *objp )
 	}
 
 	//now do the primary rearm time
+	found_first_empty = false;
 	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
 	{
 		for (i = 0; i < swp->num_primary_banks; i++)
@@ -11071,7 +11077,20 @@ float ship_calculate_rearm_duration( object *objp )
 
 				//take into account a fractional reload
 				if ((swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]) % REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH != 0)
+				{
 					num_reloads++;
+				}
+
+				//don't factor in the time it takes for the first reload, since that is loaded instantly
+				num_reloads--;
+
+				if (num_reloads < 0) continue;
+
+				if (!found_first_empty && (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]))
+				{
+					found_first_empty = true;
+					prim_rearm_time += (float)snd_get_duration(Snds[SND_MISSILE_START_LOAD].id) / 1000.0f;
+				}
 
 				prim_rearm_time += num_reloads * wip->rearm_rate;
 			}
@@ -11079,6 +11098,7 @@ float ship_calculate_rearm_duration( object *objp )
 	}
 
 	//and on to secondary rearm time
+	found_first_empty = false;
 	for (i = 0; i < swp->num_secondary_banks; i++)
 	{
 			wip = &Weapon_info[swp->secondary_bank_weapons[i]];
@@ -11088,13 +11108,27 @@ float ship_calculate_rearm_duration( object *objp )
 
 			//take into account a fractional reload
 			if ((swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]) % REARM_NUM_MISSILES_PER_BATCH != 0)
+			{
 				num_reloads++;
+			}
+
+			//don't factor in the time it takes for the first reload, since that is loaded instantly
+			num_reloads--;
+
+			if (num_reloads < 0) continue;
+
+			if (!found_first_empty && (swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]))
+			{
+				found_first_empty = true;
+				sec_rearm_time += (float)snd_get_duration(Snds[SND_MISSILE_START_LOAD].id) / 1000.0f;
+			}
 
 			sec_rearm_time += num_reloads * wip->rearm_rate;
 	}
 
 	//sum them up and you've got an estimated rearm time.
-	return shield_rep_time + hull_rep_time + subsys_rep_time + prim_rearm_time + sec_rearm_time;
+	//add 1.2 to compensate for release delay
+	return shield_rep_time + hull_rep_time + subsys_rep_time + prim_rearm_time + sec_rearm_time + 1.2f;
 }
 
 
@@ -11234,6 +11268,16 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	{
 		for (i = 0; i < swp->num_secondary_banks; i++ )
 		{
+			// Actual loading of missiles is preceded by a sound effect which is the missile
+			// loading equipment moving into place
+			if ( aip->rearm_first_missile == TRUE )
+			{
+				swp->secondary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[SND_MISSILE_START_LOAD].id));			
+
+				if (i == swp->num_secondary_banks - 1) 
+					aip->rearm_first_missile = FALSE;
+			}
+			
 			if ( swp->secondary_bank_ammo[i] < swp->secondary_bank_start_ammo[i] )
 			{
 				float rearm_time;
@@ -11245,39 +11289,30 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 				if ( timestamp_elapsed(swp->secondary_bank_rearm_time[i]) )
 				{
-					// Have to do some gymnastics to play the sound effects properly.  There is a
-					// one time sound effect which is the missile loading start, then for each missile
-					// loaded there is a sound effect.  These are only played for the player.
-					//
 					rearm_time = Weapon_info[swp->secondary_bank_weapons[i]].rearm_rate;
-					if ( aip->rearm_first_missile == TRUE )
-					{
-						rearm_time *= 3;
-					}
+					swp->secondary_bank_rearm_time[i] = timestamp((int)(rearm_time * 1000.0f));
+					
+					snd_play_3d( &Snds[SND_MISSILE_LOAD], &objp->pos, &View_position );
+					if (objp == Player_obj)
+						joy_ff_play_reload_effect();
 
-					swp->secondary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
-
-					// Actual loading of missiles is preceded by a sound effect which is the missile
-					// loading equipment moving into place
-					if ( aip->rearm_first_missile == TRUE )
+					swp->secondary_bank_ammo[i] += REARM_NUM_MISSILES_PER_BATCH;
+					if ( swp->secondary_bank_ammo[i] > swp->secondary_bank_start_ammo[i] ) 
 					{
-						snd_play_3d( &Snds[SND_MISSILE_START_LOAD], &objp->pos, &View_position );
-						aip->rearm_first_missile = FALSE;
-					}
-					else
-					{
-						snd_play_3d( &Snds[SND_MISSILE_LOAD], &objp->pos, &View_position );
-						if (objp == Player_obj)
-							joy_ff_play_reload_effect();
-
-						swp->secondary_bank_ammo[i] += REARM_NUM_MISSILES_PER_BATCH;
-						if ( swp->secondary_bank_ammo[i] > swp->secondary_bank_start_ammo[i] ) 
-							swp->secondary_bank_ammo[i] = swp->secondary_bank_start_ammo[i]; 
+						swp->secondary_bank_ammo[i] = swp->secondary_bank_start_ammo[i]; 
 					}
 				}
-
-			} else
+				else
+				{
+				}
+			} 
+			else
+			{
 				banks_full++;
+			}
+
+			if ((aip->rearm_first_missile == TRUE) && (i == swp->num_secondary_banks - 1) && (banks_full != swp->num_secondary_banks))
+					snd_play_3d( &Snds[SND_MISSILE_START_LOAD], &objp->pos, &View_position );
 		}	// end for
 
 		// rearm ballistic primaries - Goober5000
@@ -11287,6 +11322,16 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			{
 				if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC )
 				{
+					// Actual loading of bullets is preceded by a sound effect which is the bullet
+					// loading equipment moving into place
+					if ( aip->rearm_first_ballistic_primary == TRUE )
+					{
+						swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[SND_BALLISTIC_START_LOAD].id));			
+
+						if (i == swp->num_primary_banks - 1) 
+							aip->rearm_first_ballistic_primary = FALSE;
+					}
+
 					if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
 					{
 						float rearm_time;
@@ -11298,39 +11343,20 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 						if ( timestamp_elapsed(swp->primary_bank_rearm_time[i]) )
 						{
-							// Have to do some gymnastics to play the sound effects properly.  There is a
-							// one time sound effect which is the ballistic loading start, then for each ballistic
-							// loaded there is a sound effect.  These are only played for the player.
-							//
 							rearm_time = Weapon_info[swp->primary_bank_weapons[i]].rearm_rate;
-							if ( aip->rearm_first_ballistic_primary == TRUE )
-							{
-								rearm_time *= 3;
-							}
-
 							swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
 	
-							// Actual loading of ballistics is preceded by a sound effect which is the ballistic
-							// loading equipment moving into place
-							if ( aip->rearm_first_ballistic_primary == TRUE )
-							{
-								snd_play_3d( &Snds[SND_BALLISTIC_START_LOAD], &objp->pos, &View_position );
-								aip->rearm_first_ballistic_primary = FALSE;
-							}
-							else
-							{
-								snd_play_3d( &Snds[SND_BALLISTIC_LOAD], &objp->pos, &View_position );
+							snd_play_3d( &Snds[SND_BALLISTIC_LOAD], &objp->pos, &View_position );
 
 								/* don't provide force feedback for primary ballistics loading
 								if (objp == Player_obj)
 									joy_ff_play_reload_effect();
 								*/
 	
-								swp->primary_bank_ammo[i] += REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
-								if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
-								{
-									swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
-								}
+							swp->primary_bank_ammo[i] += REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
+							if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
+							{
+								swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
 							}
 						}
 					}
@@ -11344,6 +11370,9 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				{
 					primary_banks_full++;
 				}
+
+				if ((aip->rearm_first_ballistic_primary == TRUE) && (i == swp->num_primary_banks - 1) && (primary_banks_full != swp->num_primary_banks))
+					snd_play_3d( &Snds[SND_BALLISTIC_START_LOAD], &objp->pos, &View_position );
 			}	// end for
 		}	// end if - rearm ballistic primaries
 	} // end if (subsys_all_ok)
