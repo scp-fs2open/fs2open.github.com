@@ -18,6 +18,7 @@
 #include "mission/missionload.h"
 #include "freespace2/freespace.h"
 #include "weapon/weapon.h"
+#include "parse/parselo.h"
 
 //*************************Lua funcs*************************
 int script_remove_lib(lua_State *L, char *name);
@@ -808,7 +809,7 @@ LUA_VAR(Name, l_Shipclass, "String", "Ship class name")
 	if(idx < 0 || idx > Num_ship_classes)
 		return LUA_RETURN_NIL;
 
-	if(LUA_SETTING_VAR) {
+	if(LUA_SETTING_VAR && s != NULL) {
 		strncpy(Ship_info[idx].name, s, sizeof(Ship_info[idx].name)-1);
 	}
 
@@ -825,11 +826,180 @@ LUA_VAR(ShortName, l_Shipclass, "String", "Ship class short name")
 	if(idx < 0 || idx > Num_ship_classes)
 		return LUA_RETURN_NIL;
 
-	if(LUA_SETTING_VAR) {
+	if(LUA_SETTING_VAR && s != NULL) {
 		strncpy(Ship_info[idx].short_name, s, sizeof(Ship_info[idx].short_name)-1);
 	}
 
 	return lua_set_args(L, "s", Ship_info[idx].short_name);
+}
+
+LUA_VAR(TypeString, l_Shipclass, "String", "Ship class type string")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if(LUA_SETTING_VAR) {
+		vm_free(sip->type_str);
+		if(s != NULL) {
+			sip->type_str = (char*)vm_malloc(strlen(s)+1);
+			strcpy(sip->type_str, s);
+		} else {
+			sip->type_str = NULL;
+		}
+	}
+
+	if(sip->type_str != NULL)
+		return lua_set_args(L, "s", sip->type_str);
+	else
+		return lua_set_args(L, "s", "");
+}
+
+LUA_VAR(ManeuverabilityString, l_Shipclass, "String", "Ship class maneuverability string")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if(LUA_SETTING_VAR) {
+		vm_free(sip->maneuverability_str);
+		if(s != NULL) {
+			sip->maneuverability_str = (char*)vm_malloc(strlen(s)+1);
+			strcpy(sip->maneuverability_str, s);
+		} else {
+			sip->maneuverability_str = NULL;
+		}
+	}
+
+	if(sip->maneuverability_str != NULL)
+		return lua_set_args(L, "s", sip->maneuverability_str);
+	else
+		return lua_set_args(L, "s", "");
+}
+
+LUA_VAR(ArmorString, l_Shipclass, "String", "Ship class armor string")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if(LUA_SETTING_VAR) {
+		vm_free(sip->armor_str);
+		if(s != NULL) {
+			sip->armor_str = (char*)vm_malloc(strlen(s)+1);
+			strcpy(sip->armor_str, s);
+		} else {
+			sip->armor_str = NULL;
+		}
+	}
+
+	if(sip->armor_str != NULL)
+		return lua_set_args(L, "s", sip->armor_str);
+	else
+		return lua_set_args(L, "s", "");
+}
+
+LUA_VAR(ManufacturerString, l_Shipclass, "String", "Ship class manufacturer")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if(LUA_SETTING_VAR) {
+		vm_free(sip->manufacturer_str);
+		if(s != NULL) {
+			sip->manufacturer_str = (char*)vm_malloc(strlen(s)+1);
+			strcpy(sip->manufacturer_str, s);
+		} else {
+			sip->manufacturer_str = NULL;
+		}
+	}
+
+	if(sip->manufacturer_str != NULL)
+		return lua_set_args(L, "s", sip->manufacturer_str);
+	else
+		return lua_set_args(L, "s", "");
+}
+
+
+LUA_VAR(Description, l_Shipclass, "String", "Ship class description")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if(LUA_SETTING_VAR) {
+		vm_free(sip->desc);
+		if(s != NULL) {
+			sip->desc = (char*)vm_malloc(strlen(s)+1);
+			strcpy(sip->desc, s);
+		} else {
+			sip->desc = NULL;
+		}
+	}
+
+	if(sip->desc != NULL)
+		return lua_set_args(L, "s", sip->desc);
+	else
+		return lua_set_args(L, "s", "");
+}
+
+LUA_VAR(TechDescription, l_Shipclass, "String", "Ship class tech description")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if(LUA_SETTING_VAR) {
+		vm_free(sip->tech_desc);
+		if(s != NULL) {
+			sip->tech_desc = (char*)vm_malloc(strlen(s)+1);
+			strcpy(sip->tech_desc, s);
+		} else {
+			sip->tech_desc = NULL;
+		}
+	}
+
+	if(sip->tech_desc != NULL)
+		return lua_set_args(L, "s", sip->tech_desc);
+	else
+		return lua_set_args(L, "s", "");
 }
 
 LUA_VAR(Hitpoints, l_Shipclass, "Number", "Ship class hitpoints")
@@ -903,14 +1073,14 @@ LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the
 }
 
 
-LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], [Pitch radians], [Bank radians]", "Whether ship was rendered", "Draws ship model as if in techroom")
+LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], [Pitch %], [Bank %], [Zoom multiplier]", "Whether ship was rendered", "Draws ship model as if in techroom")
 {
 	int x1,y1,x2,y2;
-	float rot_pct = 40.0f;
-	angles rot_angles = {0.0f, 0.0f, 0.0f};
+	angles rot_angles = {40.0f, 0.0f, 0.0f};
 	bool r;
 	int idx;
-	if(!lua_get_args(L, "oiiii|bffff", l_Shipclass.GetFromLua(&idx), &x1, &y1, &x2, &y2, &r, &rot_pct, &rot_angles.b, &rot_angles.b))
+	float zoom = 1.3f;
+	if(!lua_get_args(L, "oiiii|bffff", l_Shipclass.GetFromLua(&idx), &x1, &y1, &x2, &y2, &r, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -919,10 +1089,18 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 	if(x2 < x1 || y2 < y1)
 		return lua_set_args(L, "b", false);
 
-	if(rot_pct < 0.0f)
-		rot_pct = 0.0f;
-	if(rot_pct > 100.0f)
-		rot_pct = 100.0f;
+	if(rot_angles.p < 0.0f)
+		rot_angles.p = 0.0f;
+	if(rot_angles.p > 100.0f)
+		rot_angles.p = 100.0f;
+	if(rot_angles.b < 0.0f)
+		rot_angles.b = 0.0f;
+	if(rot_angles.b > 100.0f)
+		rot_angles.b = 100.0f;
+	if(rot_angles.h < 0.0f)
+		rot_angles.h = 0.0f;
+	if(rot_angles.h > 100.0f)
+		rot_angles.h = 100.0f;
 
 	ship_info *sip = &Ship_info[idx];
 
@@ -937,7 +1115,9 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 	angles view_angles = {-0.6f, 0.0f, 0.0f};
 	vm_angles_2_matrix(&orient, &view_angles);
 
-	rot_angles.h = (rot_pct*0.01f) * PI2;
+	rot_angles.p = (rot_angles.p*0.01f) * PI2;
+	rot_angles.b = (rot_angles.b*0.01f) * PI2;
+	rot_angles.h = (rot_angles.h*0.01f) * PI2;
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
 	//Clip
@@ -945,7 +1125,7 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 
 	//Handle 3D init stuff
 	g3_start_frame(1);
-	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
+	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
 	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
 	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
@@ -2027,19 +2207,60 @@ LUA_FUNC(getScreenHeight, l_Graphics, NULL, "Height in pixels (Number)", "Gets s
 	return lua_set_args(L, "i", gr_screen.max_h);
 }
 
-LUA_FUNC(drawString, l_Graphics, "String, x, y, [Resize]", NULL, "Draws a string")
+#define MAX_TEXT_LINES		256
+
+LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [Resize], [x2], [y2]", NULL, "Draws a string")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
 	int x,y;
 	char *s;
+	int x2=-1,y2=-1;
 	bool r=true;
 
-	if(!lua_get_args(L, "sii|b", &s, &x, &y, &r))
+	if(!lua_get_args(L, "sii|bii", &s, &x, &y, &r, &x2, &y2))
 		return LUA_RETURN_NIL;
 
-	gr_string(x,y,s,r);
+	if(x2 < 0) {
+		gr_string(x,y,s,r);
+	}
+	else
+	{
+		int *linelengths = new int[MAX_TEXT_LINES];
+		char **linestarts = new char*[MAX_TEXT_LINES];
+
+		int num_lines = split_str(s, x2-x, linelengths, linestarts, MAX_TEXT_LINES);
+
+		//Make sure we don't go over size
+		int line_ht = gr_get_font_height();
+		y2 = line_ht * (y2-y);
+		if(y2 < num_lines)
+			num_lines = y2;
+
+		y2 = y;
+
+		char rep;
+		char *reptr;
+		for(int i = 0; i < num_lines; i++)
+		{
+			//Increment line height
+			y2 += line_ht;
+			//WMC - rather than make a new string each line, set the right character to null
+			reptr = &linestarts[i][linelengths[i]];
+			rep = *reptr;
+			*reptr = '\0';
+
+			//Draw the string
+			gr_string(x,y2,linestarts[i],r);
+
+			//Set character back
+			*reptr = rep;
+		}
+
+		delete[] linelengths;
+		delete[] linestarts;
+	}
 
 	return LUA_RETURN_NIL;
 }
