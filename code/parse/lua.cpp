@@ -154,6 +154,7 @@ void lua_stackdump(lua_State *L, char *stackdump)
 	}
 }
 
+//WMC - Gets type of object
 char *lua_get_type_string(lua_State *L, int argnum)
 {
 	int type = lua_type(L, argnum);
@@ -182,6 +183,8 @@ char *lua_get_type_string(lua_State *L, int argnum)
 	}
 }
 
+//WMC - hack to skip X number of arguments on the stack
+//Lets me use lua_get_args for global hook return values
 int Lua_get_args_skip = 0;
 
 //lua_get_args(state, arguments, variables)
@@ -379,20 +382,6 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 	va_end(vl);
 	return nargs;
 }
-//*************************Object #defines*************************
-//While you don't _need_ to add object defines here, it's a good idea
-//so you can catch misspellings and make sure the name isn't taken already
-//note that all object names should start with "fs2." to prevent conflicts
-//
-//IMPORTANT: Before you can use a type, it MUST be defined in a library
-//				that exists in the current state
-/*
-static lua_cvar<vec3d>			l_lvec("lvec");
-static lua_cvar<vec3d>			l_wvec("wvec");
-static lua_cvar<polymodel*>		l_model("model");
-static lua_cvar<ship_info*>		l_ship_info("ship_info");
-static lua_cvar<ship*>			l_ship("ship");
-*/
 
 //WMC - Bogus integer used to determine if a variable
 //in an object or library is modder-defined or code-defined.
@@ -497,6 +486,10 @@ LUA_API lua_index_handler(lua_State *L)
 	//Return however many things the function call put on the stack
 	return lua_gettop(L) - old_stacksize;
 }
+
+//*************************Begin non-lowlevel stuff*************************
+//If you are a coder who wants to add functionality to Lua, you want to be
+//below this point.
 
 //**********CLASS: cmission
 lua_obj<int> l_Cmission("cmission", "Campaign mission object");

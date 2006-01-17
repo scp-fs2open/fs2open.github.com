@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.214 $
- * $Date: 2006-01-16 11:16:07 $
+ * $Revision: 2.215 $
+ * $Date: 2006-01-17 02:33:20 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.214  2006/01/16 11:16:07  wmcoolmon
+ * Use obj_script_set_global for "plr" and "slf"; remove Lua variable if variable goes to NULL
+ *
  * Revision 2.213  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -8141,7 +8144,7 @@ void game_do_state(int state)
 		game_set_frametime(state);
 		gr_clear();
 		char *s;
-		Script_system.RunBytecode(GS_state_hooks[state], 's', &s);
+		Script_system.RunBytecode(GS_state_hooks[state]);
 		gr_flip();
 		return;
 	}
