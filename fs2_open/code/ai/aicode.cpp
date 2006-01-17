@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.53 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 1.54 $
+ * $Date: 2006-01-17 03:48:25 $
+ * $Author: phreak $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.53  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 1.52  2006/01/14 19:54:54  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -12296,6 +12299,8 @@ int find_repairing_objnum(int objnum)
 //	If object *objp is being repaired, deal with it!
 void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 {
+	static bool rearm_eta_found=false;
+
 	if (Ships[objp->instance].team == Iff_traitor) {
 		ai_abort_rearm_request(objp);
 		return;
@@ -12303,6 +12308,7 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 
 	if (aip->ai_flags & (AIF_BEING_REPAIRED | AIF_AWAITING_REPAIR)) {
 		int	support_objnum;
+		
 		ai_info	*repair_aip;
 
 		support_objnum = aip->support_ship_objnum; // find_repairing_objnum(objp-Objects);
@@ -12324,8 +12330,11 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 			if (Missiontime - repair_aip->submode_start_time > REARM_SOUND_DELAY) {
 				int repaired;
 
-				if (objp==Player_obj && Player_rearm_eta <= 0) 
+				if (!rearm_eta_found && objp==Player_obj && Player_rearm_eta <= 0) 
+				{
+					rearm_eta_found = true;
 					Player_rearm_eta = ship_calculate_rearm_duration(objp);
+				}
 
 				repaired = ship_do_rearm_frame( objp, frametime );		// hook to do missile rearming
 
@@ -12358,6 +12367,7 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 		//              finishes abnormally once sound begins looping.
 		if ( objp == Player_obj ) {
 			Player_rearm_eta = 0;
+			rearm_eta_found = false;
 			player_stop_repair_sound();
 		}
 	}
