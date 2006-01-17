@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.34 $
- * $Date: 2005-12-28 22:06:47 $
- * $Author: taylor $
+ * $Revision: 2.35 $
+ * $Date: 2006-01-17 02:33:20 $
+ * $Author: wmcoolmon $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2005/12/28 22:06:47  taylor
+ * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
+ *
  * Revision 2.33  2005/12/06 03:13:49  taylor
  * fix quite a few CFILE issues:
  *   use #define's for path lengths when possible so it's easier to move between functions
@@ -382,6 +385,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_DEMOS,					"data" DIR_SEPARATOR_STR "demos",															".fsd",						CF_TYPE_DATA	},
 	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",															".ani",						CF_TYPE_DATA	},
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",														".ani",						CF_TYPE_DATA	},
+	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",															".lua .lc",					CF_TYPE_DATA	},
 };
 
 

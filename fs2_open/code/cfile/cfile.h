@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.15 $
- * $Date: 2005-12-28 22:06:47 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2006-01-17 02:33:20 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/12/28 22:06:47  taylor
+ * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
+ *
  * Revision 2.14  2005/12/06 03:13:49  taylor
  * fix quite a few CFILE issues:
  *   use #define's for path lengths when possible so it's easier to move between functions
@@ -456,8 +459,9 @@ typedef struct {
 #define CF_TYPE_DEMOS				33
 #define CF_TYPE_CBANIMS				34
 #define CF_TYPE_INTEL_ANIMS			35
+#define CF_TYPE_SCRIPTS				36
 
-#define CF_MAX_PATH_TYPES				36			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+#define CF_MAX_PATH_TYPES				37			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 
 // TRUE if type is specified and valid

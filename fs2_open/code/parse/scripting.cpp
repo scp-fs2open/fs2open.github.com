@@ -364,15 +364,25 @@ script_hook script_state::ParseChunk(char* debug_str)
 
 		char *filename = alloc_block("[[", "]]");
 
-#ifdef LUA
+#ifdef USE_LUA
 		//Load from file
-		luaL_loadfile(GetLuaSession(), filename);
+		CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS );
+		int len = cfilelength(cfp);
+
+		char *raw_lua = (char*)vm_malloc(len+1);
+		raw_lua[len] = '\0';
+
+		cfread(raw_lua, len, 1, cfp);
+
+		luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str);
+		//luaL_loadfile(GetLuaSession(), filename);
 
 		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 #endif
 		//dealloc
-		//commented out b/c it may crash and i don't want to test it now
+		//WMC - For some reason these cause crashes
 		//vm_free(filename);
+		//vm_free(raw_lua);
 	}
 	else if(check_for_string("["))
 	{
