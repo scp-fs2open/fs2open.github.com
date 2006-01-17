@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.18 $
- * $Date: 2006-01-12 17:42:56 $
+ * $Revision: 2.19 $
+ * $Date: 2006-01-17 04:11:26 $
  * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/01/12 17:42:56  wmcoolmon
+ * Even more scripting stuff.
+ *
  * Revision 2.17  2005/12/04 19:07:49  wmcoolmon
  * Final commit of codebase
  *
@@ -415,9 +418,7 @@
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 
-#ifndef NDEBUG
 extern char	*Object_type_names[MAX_OBJECT_TYPES];
-#endif
 
 // each object type should have these functions:  (I will use weapon as example)
 //
