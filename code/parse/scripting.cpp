@@ -66,6 +66,8 @@ int script_test(script_state *st)
 			{
 				if(idx > -1) {
 					GS_state_hooks[idx] = st->ParseChunk(buf);
+				} else {
+					st->ParseChunk(buf);
 				}
 			}
 		}
