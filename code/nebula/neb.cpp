@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.44 $
- * $Date: 2005-12-29 08:08:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.45 $
+ * $Date: 2006-01-18 16:01:14 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.43  2005/12/08 15:17:34  taylor
  * fix several bad crash related problems from WMC's commits on the 4th
  *
@@ -663,65 +666,21 @@ void neb2_post_level_init()
 		Neb2_fog_colour_b = 157;
 
 		// OK, lets try something a bit more interesting
-		if(strlen(Neb2_texture_name))
-		{
-			int width, height;
-			int format = -1;
-			if(targa_read_header(Neb2_texture_name, NULL, &width, &height) == TARGA_ERROR_NONE)
-				format = 0;
-			else if(jpeg_read_header(Neb2_texture_name, NULL, &width, &height) == JPEG_ERROR_NONE)
-				format = 1;
-			/*else if(dds_read_header(Neb2_texture_name, NULL, &width, &height) == DDS_ERROR_NONE)
-				format = 2;*/
-			else if(pcx_read_header(Neb2_texture_name, NULL, &width, &height) == PCX_ERROR_NONE)
-				format = 3;
+		if (strlen(Neb2_texture_name)) {
+			Neb2_htl_fog_data = new ubyte[768];
 
-			if(format != -1)
-			{
-				bool loaded = false;
-				Neb2_max_fog_value = width * height;
-				Neb2_htl_fog_data = (ubyte *) vm_malloc(Neb2_max_fog_value * 4);
-
-				if(Neb2_htl_fog_data)
-				{
-					// Always read in 32 bit, bypass normal bitmap code to avoid D3D locking issues
-					switch(format)
-					{
-						case 0:
-							if(targa_read_bitmap(Neb2_texture_name, Neb2_htl_fog_data, NULL, 4) == TARGA_ERROR_NONE)
-								loaded = true;
-							break;
-						case 1:
-							if(jpeg_read_bitmap(Neb2_texture_name, Neb2_htl_fog_data, NULL, 4) == JPEG_ERROR_NONE)
-								loaded = true;
-							break;
-					/*	case 2:
-							if(dds_read_bitmap(Neb2_texture_name, Neb2_htl_fog_data) == DDS_ERROR_NONE)
-								loaded = true;
-							break;*/
-						case 3:
-							if(pcx_read_bitmap(Neb2_texture_name, Neb2_htl_fog_data, NULL, 4) == PCX_ERROR_NONE)
-								loaded = true;
-							break;
-					}
-					if(loaded)
-					{
-						Neb2_fog_colour_r = Neb2_htl_fog_data[2];
-						Neb2_fog_colour_g = Neb2_htl_fog_data[1];
-						Neb2_fog_colour_b = Neb2_htl_fog_data[0];
-					}
-					else 
-					{
-						vm_free(Neb2_htl_fog_data);
-						Neb2_htl_fog_data = NULL;
-					}
-				}
+			if ( pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE ) {
+				Neb2_fog_colour_r = Neb2_htl_fog_data[0];
+				Neb2_fog_colour_g = Neb2_htl_fog_data[1];
+				Neb2_fog_colour_b = Neb2_htl_fog_data[2];
 			}
-			else
-			{
-				Warning(LOCATION, "Could not open specified nebula texture '%s'", Neb2_texture_name);
+
+			if ( Neb2_htl_fog_data != NULL ) {
+				delete[] Neb2_htl_fog_data;
+				Neb2_htl_fog_data = NULL;
 			}
 		}
+
 		Neb2_render_mode = NEB2_RENDER_HTL;
 	}
 
@@ -794,31 +753,13 @@ void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
 		return;
 	}
 
-	if(Neb2_render_mode == NEB2_RENDER_HTL) {
-
-
-		if(Neb2_htl_fog_data)
-		{
-		  	Neb2_cur_fog_value++;
-				
-			if(Neb2_cur_fog_value >= (Neb2_max_fog_value*Neb2_cur_fog_factor))
-				Neb2_cur_fog_value = 0;
-
-			int index = Neb2_cur_fog_value / Neb2_cur_fog_factor * 4;
-			int r = (((int) Neb2_fog_colour_r) + ((int) Neb2_htl_fog_data[index+2]))/2;
-			int g = (((int) Neb2_fog_colour_g) + ((int) Neb2_htl_fog_data[index+1]))/2;
-			int b = (((int) Neb2_fog_colour_b) + ((int) Neb2_htl_fog_data[index+0]))/2;
-			Neb2_fog_colour_r = (ubyte) (r & 0xff);
-			Neb2_fog_colour_g = (ubyte) (g & 0xff);
-			Neb2_fog_colour_b = (ubyte) (b & 0xff);
-		}
-
+	if (Neb2_render_mode == NEB2_RENDER_HTL) {
 		// RT The background needs to be the same colour as the fog and this seems
 		// to be the ideal place to do it
-		unsigned char tr = gr_screen.current_clear_color.red;  
-		unsigned char tg = gr_screen.current_clear_color.green;
-		unsigned char tb = gr_screen.current_clear_color.blue; 
-		
+		ubyte tr = gr_screen.current_clear_color.red;  
+		ubyte tg = gr_screen.current_clear_color.green;
+		ubyte tb = gr_screen.current_clear_color.blue; 
+
 		neb2_get_fog_colour(
 			&gr_screen.current_clear_color.red,
 			&gr_screen.current_clear_color.green,
@@ -2008,6 +1949,23 @@ DCF(neb2_background, "")
 	Neb2_background_color[1] = g;
 	Neb2_background_color[2] = b;
 }
+
+DCF(neb2_fog_color, "")
+{
+	int r, g, b;
+
+	dc_get_arg(ARG_INT);
+	r = Dc_arg_int;
+	dc_get_arg(ARG_INT);
+	g = Dc_arg_int;
+	dc_get_arg(ARG_INT);
+	b = Dc_arg_int;
+
+	Neb2_fog_colour_r = r;
+	Neb2_fog_colour_g = g;
+	Neb2_fog_colour_b = b;
+}
+
 //WMC - Going bye-bye for ship types too
 /*
 DCF(neb2_fog_vals, "")
