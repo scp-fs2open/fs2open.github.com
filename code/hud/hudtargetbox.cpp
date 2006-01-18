@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.62 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.63 $
+ * $Date: 2006-01-18 16:14:04 $
+ * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.61  2005/12/12 21:32:14  taylor
  * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
  *
@@ -1076,7 +1079,8 @@ void hud_render_target_asteroid(object *target_objp)
 			else
 				model_set_outline_color(64,64,0);
 
-			flags = MR_SHOW_OUTLINE;
+			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;
 		}
@@ -1564,7 +1568,8 @@ void hud_render_target_ship(object *target_objp)
 				model_set_outline_color_fast(iff_get_color_by_team(target_shipp->team, Player_ship->team, is_bright));
 			}
 
-			flags = MR_SHOW_OUTLINE;
+			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;
 		}
@@ -1659,7 +1664,8 @@ void hud_render_target_debris(object *target_objp)
 		if (Targetbox_wire!=0)
 		{
 			model_set_outline_color(255,255,255);
-			flags = MR_SHOW_OUTLINE;
+			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;
 		}
@@ -1746,7 +1752,8 @@ void hud_render_target_weapon(object *target_objp)
 
 			model_set_outline_color_fast(iff_get_color_by_team(target_team, Player_ship->team, is_bright));
 
-			flags = MR_SHOW_OUTLINE;
+			flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+
 			if (Targetbox_wire==1)
 				flags |=MR_NO_POLYS;
 		}

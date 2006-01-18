@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.70 $
- * $Date: 2006-01-12 17:42:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.71 $
+ * $Date: 2006-01-18 16:14:04 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2006/01/12 17:42:56  wmcoolmon
+ * Even more scripting stuff.
+ *
  * Revision 2.69  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -1064,7 +1067,7 @@ typedef struct screen {
 	int	 (*gf_make_buffer)(poly_list*, uint flags);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_set_buffer)(int);
-	void (*gf_render_buffer)(int, int, ushort*);
+	void (*gf_render_buffer)(int, int, ushort*, int);
 	int	 (*gf_make_flat_buffer)(poly_list*);
 	int	 (*gf_make_line_buffer)(line_list*);
 	
@@ -1363,8 +1366,11 @@ __inline bool gr_bm_set_render_target(int n, int face = -1)
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
 #define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
-#define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)            
-#define gr_render_buffer				 GR_CALL(*gr_screen.gf_render_buffer)      
+#define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)
+__inline void gr_render_buffer(int start, int n_prim, ushort* index_buffer, int flags = TMAP_FLAG_TEXTURED)
+{
+	return (*gr_screen.gf_render_buffer)(start, n_prim, index_buffer, flags);
+}
 #define gr_set_buffer				 GR_CALL(*gr_screen.gf_set_buffer)      
       
 #define gr_make_flat_buffer					 GR_CALL(*gr_screen.gf_make_flat_buffer)            

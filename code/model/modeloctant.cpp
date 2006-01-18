@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-05-12 17:49:14 $
+ * $Revision: 2.9 $
+ * $Date: 2006-01-18 16:14:04 $
  * $Author: taylor $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/05/12 17:49:14  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.7  2005/04/19 06:25:23  taylor
  * don't try to allocate 0 bytes of memory when there are no shield tris, weird memory stuff frightens me
  *
@@ -194,11 +198,6 @@ void model_octant_find_shields( polymodel * pm, model_octant * oct )
 	Assert( oct->nshield_tris == n );
 }
 
-extern vec3d **htl_verts;
-//this whole module is called after model load 
-//htl_verts is realocated to be large enugh to hold all the verts, but never down sized
-//therefore it should be safe to use htl_verts in place of Interp_verts in HTL mode
-
     
 void moff_defpoints(ubyte * p)
 {
@@ -209,13 +208,8 @@ void moff_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	Assert( nverts < MAX_POLYGON_VECS );
-	// Assert( nnorms < MAX_POLYGON_NORMS );
-
 	for (n=0; n<nverts; n++ )	{
-
-		if(Cmdline_nohtl)Interp_verts[n] = src;
-		else htl_verts[n] = src;
+		Interp_verts[n] = src;
 
 		src += normcount[n]+1;
 	} 
@@ -234,10 +228,6 @@ void moff_defpoints(ubyte * p)
 // +44     nverts*(model_tmap_vert) vertlist (n,u,v)
 void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
-	vec3d ** oct_points;
-	if(Cmdline_nohtl) oct_points = Interp_verts;
-	else oct_points = htl_verts;
-
 	int i, nv;
 	model_tmap_vert *verts;
 
@@ -252,7 +242,7 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 		vm_vec_zero( &center_point );
 
 		for (i=0;i<nv;i++)	{
-			vm_vec_add2( &center_point, oct_points[verts[i].vertnum] );
+			vm_vec_add2( &center_point, Interp_verts[verts[i].vertnum] );
 		}
 
 		center_point.xyz.x /= nv;
@@ -264,7 +254,7 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 		float rad = 0.0f;
 
 		for (i=0;i<nv;i++)	{
-			float dist = vm_vec_dist( &center_point, oct_points[verts[i].vertnum] );
+			float dist = vm_vec_dist( &center_point, Interp_verts[verts[i].vertnum] );
 			if ( dist > rad )	{
 				rad = dist;
 			}
@@ -297,10 +287,6 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 // +44     nverts*int  vertlist
 void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
-	vec3d ** oct_points;
-	if(Cmdline_nohtl) oct_points = Interp_verts;
-	else oct_points = htl_verts;
-
 	int i, nv;
 	short *verts;
 
@@ -315,7 +301,7 @@ void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 		vm_vec_zero( &center_point );
 
 		for (i=0;i<nv;i++)	{
-			vm_vec_add2( &center_point, oct_points[verts[i*2]] );
+			vm_vec_add2( &center_point, Interp_verts[verts[i*2]] );
 		}
 
 		center_point.xyz.x /= nv;
@@ -327,7 +313,7 @@ void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 		float rad = 0.0f;
 
 		for (i=0;i<nv;i++)	{
-			float dist = vm_vec_dist( &center_point, oct_points[verts[i*2]] );
+			float dist = vm_vec_dist( &center_point, Interp_verts[verts[i*2]] );
 			if ( dist > rad )	{
 				rad = dist;
 			}

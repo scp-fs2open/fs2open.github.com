@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-10-28 14:45:55 $
+ * $Revision: 2.12 $
+ * $Date: 2006-01-18 16:14:04 $
  * $Author: taylor $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/10/28 14:45:55  taylor
+ * more TMAP_MAX_VERTS overflow protection for non-HTL usage (these are the things that need to be addressed to fix non-HTL)
+ * fix some compiler warning messages
+ * don't do any decal processing if decals are disabled, the math was a waste of CPU cycles in that case
+ *
  * Revision 2.10  2005/04/05 05:53:20  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -345,10 +350,34 @@ static vec3d		Mc_p1;			// The ray end rotated into the current submodel's frame 
 static float		Mc_mag;			// The length of the ray
 static vec3d		Mc_direction;	// A vector from the ray's origin to its end, in the current submodel's frame of reference
 
-static vec3d *	Mc_point_list[MAX_POLYGON_VECS];	// A pointer to the current submodel's vertex list
+static vec3d 		**Mc_point_list = NULL;		// A pointer to the current submodel's vertex list
 
 static float		Mc_edge_time;
 
+
+void model_collide_free_point_list()
+{
+	if (Mc_point_list != NULL) {
+		vm_free(Mc_point_list);
+		Mc_point_list = NULL;
+	}
+}
+
+// allocate the point list
+// NOTE: SHOULD ONLY EVER BE CALLED FROM model_allocate_interp_data()!!!
+void model_collide_allocate_point_list(int n_points)
+{
+	Assert( n_points > 0 );
+
+	if (Mc_point_list != NULL) {
+		vm_free(Mc_point_list);
+		Mc_point_list = NULL;
+	}
+
+	Mc_point_list = (vec3d**) vm_malloc( sizeof(vec3d) * n_points );
+
+	Verify( Mc_point_list != NULL );
+}
 
 // Returns non-zero if vector from p0 to pdir 
 // intersects the bounding box.
@@ -619,10 +648,9 @@ void model_collide_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 	
-	Assert( nverts < MAX_POLYGON_VECS );
+	Assert( Mc_point_list != NULL );
 
-	for (n=0; n<nverts; n++ )	{
-
+	for (n=0; n<nverts; n++ ) {
 		Mc_point_list[n] = src;
 
 		src += normcount[n]+1;

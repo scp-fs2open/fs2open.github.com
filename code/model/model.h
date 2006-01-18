@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.71 $
- * $Date: 2006-01-11 21:23:43 $
- * $Author: wmcoolmon $
+ * $Revision: 2.72 $
+ * $Date: 2006-01-18 16:14:04 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/01/11 21:23:43  wmcoolmon
+ * Made turret handling code more descriptive
+ *
  * Revision 2.70  2006/01/04 08:19:22  taylor
  * fixes for regular texture replacement
  *
@@ -1292,6 +1295,7 @@ void model_set_detail_level(int n);
 #define MR_EDGE_ALPHA		(1<<25)		// makes norms that are faceing away from you render more transparent -Bobboau
 #define MR_CENTER_ALPHA		(1<<26)		// oposite of above -Bobboau
 #define MR_NO_FOGGING				(1<<27)		// Don't fog - taylor
+#define MR_SHOW_OUTLINE_HTL			(1<<28)		// Show outlines (wireframe view) using HTL method
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags

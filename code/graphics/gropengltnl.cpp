@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.35 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.36 $
+ * $Date: 2006-01-18 16:14:04 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.34  2005/12/16 06:48:28  taylor
  * "House Keeping!!"
  *   - minor cleanup of things that have bothered me at one time or another
@@ -522,7 +525,7 @@ extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1
 GLuint normalisationCubeMap = -1;
 
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
-void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
+void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int flags)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -561,8 +564,11 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 		a = 255;
 	}
 
-	opengl_setup_render_states(r, g, b, a, tmap_type, TMAP_FLAG_TEXTURED);
+	int textured = (flags & TMAP_FLAG_TEXTURED);
+
+	opengl_setup_render_states(r, g, b, a, tmap_type, (textured) ? TMAP_FLAG_TEXTURED : 0);
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+
 // -------- BUMPMAP ------------------------------------------------------- //
 //bumpmap?
 #ifdef BUMPMAPPING
@@ -664,55 +670,57 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer)
 		glInterleavedArrays(vbp->format, 0, vbp->array_list);
 	}
 
-	// base texture
-	gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+	if (textured) {
+		// base texture
+		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
 
-	// increment texture count for this pass
-	pass_one++; // bump!
+		// increment texture count for this pass
+		pass_one++; // bump!
 
-	if ( (Interp_multitex_cloakmap > 0) && (vbp->flags & VERTEX_FLAG_UV1) ) {
-		SPECMAP = -1;	// don't add a spec map if we are cloaked
-		GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
+		if ( (Interp_multitex_cloakmap > 0) && (vbp->flags & VERTEX_FLAG_UV1) ) {
+			SPECMAP = -1;	// don't add a spec map if we are cloaked
+			GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
 
-		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo) {
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
-		} else {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
+			glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			if (vbp->vbo) {
+				glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
+			} else {
+				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
+			}
+
+			gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+
+			pass_one++; // bump!
 		}
 
-		gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+		// glowmaps!
+		if ( (GLOWMAP > -1) && !Cmdline_noglow && (vbp->flags & VERTEX_FLAG_UV1) ) {
+			glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			if (vbp->vbo) {
+				glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
+				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
+			} else {
+				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
+			}
 
-		pass_one++; // bump!
-	}
+			// set glowmap on relevant ARB
+			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
 
-	// glowmaps!
-	if ( (GLOWMAP > -1) && !Cmdline_noglow && (vbp->flags & VERTEX_FLAG_UV1) ) {
-		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		if (vbp->vbo) {
-			glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbp->vbo);
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, (void*)NULL );
-		} else {
-			glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
+			opengl_switch_arb(pass_one, 1);
+			opengl_set_additive_tex_env();
+
+			pass_one++; // bump!
 		}
-
-		// set glowmap on relevant ARB
-		gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
-
-		opengl_switch_arb(pass_one, 1);
-		opengl_set_additive_tex_env();
-
-		pass_one++; // bump!
 	}
 
 	opengl_pre_render_init_lights();
 	opengl_change_active_lights(0);
 
 	// only change lights if we have a specmap, don't render the specmap when fog is enabled
-	if ( (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) ) {
+	if ( (textured) && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) ) {
 		use_spec = true;
 		opengl_default_light_settings(1, 1, 0); // don't render with spec lighting here
 	} else {

@@ -85,10 +85,7 @@ void interp_clear_instance();
 // endian swapping stuff - tigital
 void swap_bsp_data( polymodel *pm, void *model_ptr );
 
-#define MAX_POLYGON_VECS	6500		//6500 (7x)
-//be sure to update 2d.h
-#define MAX_POLYGON_NORMS	6500		//6500 (3x)
 
-extern vec3d *Interp_verts[MAX_POLYGON_VECS];
+extern vec3d **Interp_verts;
 
 #endif

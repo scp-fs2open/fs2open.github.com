@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.20 $
- * $Date: 2005-10-16 11:20:43 $
+ * $Revision: 2.21 $
+ * $Date: 2006-01-18 16:14:04 $
  * $Author: taylor $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/10/16 11:20:43  taylor
+ * use unsigned index buffers
+ *
  * Revision 2.19  2005/07/13 02:50:47  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -229,7 +232,7 @@ void gr_d3d_get_region(int front, int w, int h, ubyte *data);
 
 int gr_d3d_make_buffer(poly_list *list, uint flags);
 void gr_d3d_destroy_buffer(int idx);
-void gr_d3d_render_buffer(int start, int n_prim, ushort* index_list);
+void gr_d3d_render_buffer(int start, int n_prim, ushort* index_list, int flags);
 void gr_d3d_set_buffer(int idx);
 int gr_d3d_make_flat_buffer(poly_list *list);
 int gr_d3d_make_line_buffer(line_list *list);
