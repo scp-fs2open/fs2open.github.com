@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.21 $
- * $Date: 2005-12-29 00:52:57 $
- * $Author: phreak $
+ * $Revision: 2.22 $
+ * $Date: 2006-01-18 16:14:04 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -110,7 +110,7 @@ int stub_mod_depth() {return 0;}
 uint stub_create_vbo(uint size, void** data) {return 0;}
 int gr_stub_make_buffer(poly_list *list, uint flags) {return 0;}
 void gr_stub_destroy_buffer(int idx) {}
-void gr_stub_render_buffer(int start, int n_prim, ushort* index_list) {}
+void gr_stub_render_buffer(int start, int n_prim, ushort* index_list, int flags) {}
 void gr_stub_set_buffer(int idx) {}
 void gr_stub_start_instance_matrix(vec3d *offset, matrix* rotation) {}
 void gr_stub_start_instance_angles(vec3d *pos, angles* rotation) {}

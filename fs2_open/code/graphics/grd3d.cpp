@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.91 $
- * $Date: 2005-12-08 15:08:39 $
+ * $Revision: 2.92 $
+ * $Date: 2006-01-18 16:14:04 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2005/12/08 15:08:39  taylor
+ * signed->unsigned compiler warning fix
+ *
  * Revision 2.90  2005/12/06 17:53:25  taylor
  * 15 individual commits, ya had know I was going to miss something :)
  *
@@ -2419,7 +2422,7 @@ IDirect3DIndexBuffer8 *global_index_buffer = NULL;
 int index_buffer_size = 0;
 
 
-void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer)
+void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags)
 {
 	if(set_buffer == NULL)return;
 	if(index_buffer != NULL){

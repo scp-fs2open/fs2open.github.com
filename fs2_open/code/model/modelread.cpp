@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.88 $
- * $Date: 2006-01-16 07:46:03 $
- * $Author: phreak $
+ * $Revision: 2.89 $
+ * $Date: 2006-01-18 16:14:04 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2006/01/16 07:46:03  phreak
+ * Only display the capped normal message in debug builds
+ *
  * Revision 2.87  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -4613,8 +4616,7 @@ void swap_bsp_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	Assert( nverts < MAX_POLYGON_VECS );
-	// Assert( nnorms < MAX_POLYGON_NORMS );
+	model_allocate_interp_data(nverts, n_norms);
 
 	for (n=0; n<nverts; n++ )	{
 		src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
