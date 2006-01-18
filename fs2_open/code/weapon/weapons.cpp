@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.169  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.168  2006/01/09 04:53:41  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
  *
@@ -5007,6 +5010,15 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		return -1;
 	}
 
+	// make sure we are loaded and useable
+	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
+		wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
+
+		if (wip->model_num < 0) {
+			Int3();
+			return -1;
+		}
+	}
 
 	//I am hopeing that this way does not alter the input orient matrix
 	//Feild of Fire code -Bobboau
