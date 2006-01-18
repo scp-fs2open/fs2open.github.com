@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.37 $
+ * $Date: 2006-01-18 17:45:01 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.35  2005/10/30 20:03:39  taylor
  * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
  * fix Mantis bug #381
@@ -1601,7 +1604,7 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 			}
 
 			for (idx=0; idx<MAX_INTEL_ENTRIES; idx++) {
-				Intel_info[idx].flags &= ~IIF_DEFAULT_IN_TECH_DATABASE;
+				Intel_info[idx].flags &= ~IIF_IN_TECH_DATABASE;
 			}
 		}
 
