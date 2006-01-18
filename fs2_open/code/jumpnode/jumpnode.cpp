@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-01-10 00:11:03 $
- * $Author: phreak $
+ * $Revision: 2.20 $
+ * $Date: 2006-01-18 15:59:33 $
+ * $Author: taylor $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/01/10 00:11:03  phreak
+ * Argument checking when setting jumpnode color.
+ *
  * Revision 2.18  2006/01/03 17:07:11  randomtiger
  * Added voice recognition functionality for Visual C6 project only.
  * Currently still a work in progress.
@@ -220,9 +223,9 @@ void jump_node::set_model(char *model_name, bool show_polys)
 
 	//Do we want to change poly showing?
 	if(show_polys)
-		m_flags &= ~JN_SHOW_POLYS;
-	else
 		m_flags |= JN_SHOW_POLYS;
+	else
+		m_flags &= ~JN_SHOW_POLYS;
 }
 
 void jump_node::set_alphacolor(int r, int g, int b, int alpha)
