@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.25 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 1.26 $
+ * $Date: 2006-01-18 16:17:33 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.24  2005/12/04 19:12:53  wmcoolmon
  * Post-final commit
  *
@@ -403,7 +406,10 @@ void make_options_window(Button *caller)
 
 	y += ccp->GetHeight() + 10;
 	ccp = RenderOptWin->AddChild(new Checkbox("Wireframe", 0, y));
-	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_OUTLINE | MR_NO_POLYS);
+	if (!Cmdline_nohtl)
+		((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_OUTLINE_HTL | MR_NO_POLYS);
+	else
+		((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_OUTLINE | MR_NO_POLYS);
 
 	y += ccp->GetHeight() + 10;
 	ccp = RenderOptWin->AddChild(new Checkbox("Transparent", 0, y));
