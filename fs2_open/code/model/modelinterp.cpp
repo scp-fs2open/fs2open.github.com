@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.142 $
- * $Date: 2006-01-18 16:14:04 $
+ * $Revision: 2.143 $
+ * $Date: 2006-01-18 16:36:32 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 2.141  2006/01/17 01:31:43  taylor
  * well that was super smart of me
  *
@@ -3924,7 +3930,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 
 	bool is_outlines_only = (flags & MR_NO_POLYS) && ((flags & MR_SHOW_OUTLINE_PRESET) || (flags & MR_SHOW_OUTLINE));
-	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & (MR_NO_POLYS | MR_SHOW_OUTLINE_HTL));
+	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
 	bool use_api = (!is_outlines_only_htl || (gr_screen.mode == GR_DIRECT3D)) || (gr_screen.mode == GR_OPENGL);
 
 
