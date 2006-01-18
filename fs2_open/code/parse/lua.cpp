@@ -19,6 +19,7 @@
 #include "freespace2/freespace.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
+#include "render/3d.h"
 
 //*************************Lua funcs*************************
 int script_remove_lib(lua_State *L, char *name);
@@ -37,9 +38,15 @@ std::vector<lua_lib_h> lua_Objects;
 
 #define LUA_VAR(name, objlib, type, desc)			\
 	static int lua_##objlib##_var##name(lua_State *L);	\
-	lua_var_h lua_##objlib##_var##name##_h(#name, lua_##objlib##_var##name, objlib, type, desc);	\
+	lua_var_h lua_##objlib##_var##name##_h(#name, lua_##objlib##_var##name, objlib, false, type, desc);	\
 	static int lua_##objlib##_var##name(lua_State *L)
-
+//WMC - Doesn't work
+/*
+#define LUA_ARRAY(name, objlib, type, desc)			\
+	static int lua_##objlib##_var##name(lua_State *L);	\
+	lua_var_h lua_##objlib##_var##name##_h(#name, lua_##objlib##_var##name, objlib, true, type, desc);	\
+	static int lua_##objlib##_var##name(lua_State *L)
+*/
 #define LUA_INDEXER(objlib, desc)			\
 	static int lua_##objlib##___indexer(lua_State *L);	\
 	lua_indexer_h lua_##objlib##___indexer_h(lua_##objlib##___indexer, objlib, desc);	\
@@ -133,8 +140,12 @@ void lua_stackdump(lua_State *L, char *stackdump)
 				strcat(stackdump, "Function");
 				break;
 			case LUA_TUSERDATA:
-				v = lua_touserdata(L, argnum);
-				sprintf(buf, "Userdata [%d]", v);
+				//v = lua_touserdata(L, argnum);
+				lua_getmetatable(L, argnum);
+				lua_rawget(L, LUA_REGISTRYINDEX);
+				s = (char *)lua_tostring(L, -1);
+				lua_pop(L, 1);
+				sprintf(buf, "Userdata [%s]", s);
 				strcat(stackdump, buf);
 				break;
 			case LUA_TTHREAD:
@@ -184,6 +195,17 @@ char *lua_get_type_string(lua_State *L, int argnum)
 	}
 }
 
+int lua_get_object(char *name)
+{
+	for(int i = 0; i < (int)lua_Objects.size(); i++)
+	{
+		if(!stricmp(lua_Objects[i].Name, name))
+			return i;
+	}
+
+	return -1;
+}
+
 //WMC - hack to skip X number of arguments on the stack
 //Lets me use lua_get_args for global hook return values
 int Lua_get_args_skip = 0;
@@ -217,6 +239,32 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 		return 0;
 	}
 
+	//WMC - Get function name, if it was stored as an upvalue
+	char funcname[128];
+	/*if(lua_type(L, lua_upvalueindex(1)) == LUA_TSTRING)
+		funcname = (char *)lua_tostring(L, lua_upvalueindex(1));
+	else if(lua_type(L, lua_upvalueindex(2)) == LUA_TSTRING)
+		funcname = (char *)lua_tostring(L, lua_upvalueindex(2));*/
+#ifndef NDEBUG
+	lua_Debug ar;
+	lua_getstack(L, 0, &ar);
+	lua_getinfo(L, "nl", &ar);
+	strcpy(funcname, "");
+	if(ar.name != NULL) {
+		strcat(funcname, ar.name);
+	}
+	if(ar.currentline > -1) {
+		char buf[8];
+		itoa(ar.currentline, buf, 10);
+		strcat(funcname, " (Line ");
+		strcat(funcname, buf);
+		strcat(funcname, ")");
+	}
+	if(!strlen(funcname)) {
+		strcpy(funcname, "<UNKNOWN>");
+	}
+#endif
+
 	//Start throught
 	va_list vl;
 	int nargs;
@@ -239,7 +287,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isboolean(L, nargs)) {
 					*va_arg(vl, bool*) = lua_toboolean(L, nargs) > 0 ? true : false;
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type '%s'; boolean expected", nargs, lua_get_type_string(L, nargs));
+					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; boolean expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -247,7 +295,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, double*) = (double)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type '%s'; number expected", nargs, lua_get_type_string(L, nargs));
+					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -255,7 +303,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, float*) = (float)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type '%s'; number expected", nargs, lua_get_type_string(L, nargs));
+					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -263,7 +311,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, int*) = (int)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type '%s'; number expected", nargs, lua_get_type_string(L, nargs));
+					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -271,7 +319,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isstring(L, nargs)) {
 					*va_arg(vl, const char **) = lua_tostring(L, nargs);
 				} else {
-					Warning(LOCATION, "Argument %d is an invalid type '%s'; string expected", nargs, lua_get_type_string(L, nargs));
+					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; string expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -279,15 +327,21 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isuserdata(L, nargs))
 				{
 					script_lua_odata od = va_arg(vl, script_lua_odata);
-					void *ptr = luaL_checkudata(L, nargs, od.meta);
-					if(ptr == NULL) {
-						Warning(LOCATION, "Argument %d is the wrong type of userdata; %s expected", nargs, od.meta);
+					lua_getmetatable(L, nargs);
+					lua_rawget(L, LUA_REGISTRYINDEX);
+					char *s = (char *)lua_tostring(L, -1);
+					if(stricmp(s, lua_Objects[od.meta].Name)) {
+						int idx = lua_get_object(s);
+						if(idx < 0 || (lua_Objects[idx].Derivator != od.meta)) {
+							Warning(LOCATION, "%s: Argument %d is the wrong type of userdata; %s given, but %s expected", funcname, nargs, s, lua_Objects[od.meta].Name);
+						}
 					}
-					memcpy(od.buf, ptr, od.size);
+					if(s) lua_pop(L, 1);
+					memcpy(od.buf, lua_touserdata(L, nargs), od.size);
 				}
 				else
 				{
-					Warning(LOCATION, "Argument %d is an invalid type '%s'; type '%s' expected", nargs, lua_get_type_string(L, nargs), va_arg(vl, script_lua_odata).meta);
+					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; type '%s' expected", funcname, nargs, lua_get_type_string(L, nargs), va_arg(vl, script_lua_odata).meta);
 					if(!optional_args) return 0;
 				}
 				break;
@@ -295,14 +349,21 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isuserdata(L, nargs))
 				{
 					script_lua_opdata pd = va_arg(vl, script_lua_opdata);
-					(*pd.buf) = luaL_checkudata(L, nargs, pd.meta);
-					if((*pd.buf) == NULL) {
-						Warning(LOCATION, "Argument %d is the wrong type of userdata; %s expected", nargs, pd.meta);
+					lua_getmetatable(L, nargs);
+					lua_rawget(L, LUA_REGISTRYINDEX);
+					char *s = (char *)lua_tostring(L, -1);
+					if(stricmp(s, lua_Objects[pd.meta].Name)) {
+						int idx = lua_get_object(s);
+						if(idx < 0 && (lua_Objects[idx].Derivator != pd.meta)) {
+							Warning(LOCATION, "%s: Argument %d is the wrong type of userdata; %s given, but %s expected", funcname, nargs, s, lua_Objects[pd.meta].Name);
+						}
 					}
+					if(s) lua_pop(L, 1);
+					(*pd.buf) = lua_touserdata(L, nargs);
 				}
 				else
 				{
-					Warning(LOCATION, "Argument %d is an invalid type '%s'; type '%s' expected", nargs, lua_get_type_string(L, nargs), va_arg(vl, script_lua_opdata).meta);
+					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; type '%s' expected", funcname, nargs, lua_get_type_string(L, nargs), va_arg(vl, script_lua_opdata).meta);
 					if(!optional_args) return 0;
 				}
 				break;
@@ -311,13 +372,13 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				optional_args = true;
 				break;
 			default:
-				Error(LOCATION, "Bad character passed to lua_get_args; (%c)", *(fmt-1));
+				Error(LOCATION, "%s: Bad character passed to lua_get_args; (%c)", funcname, *(fmt-1));
 				break;
 		}
 		nargs++;
 	}
 	va_end(vl);
-	return nargs;
+	return nargs--;
 }
 
 //lua_set_args(state, arguments, variables)
@@ -366,7 +427,7 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 					//Create new LUA object and get handle
 					void *newod = (void*)lua_newuserdata(L, od.size);
 					//Create or get object metatable
-					luaL_getmetatable(L, od.meta);
+					luaL_getmetatable(L, lua_Objects[od.meta].Name);
 					//Set the metatable for the object
 					lua_setmetatable(L, -2);
 
@@ -491,6 +552,61 @@ LUA_API lua_index_handler(lua_State *L)
 //*************************Begin non-lowlevel stuff*************************
 //If you are a coder who wants to add functionality to Lua, you want to be
 //below this point.
+
+//**********CLASS: vector
+lua_obj<vec3d> l_Vector("vector", "Vector");
+
+LUA_INDEXER(l_Vector, "Vector component")
+{
+	vec3d v3;
+	char *s = NULL;
+	float newval = 0.0f;
+	int numargs = lua_get_args(L, "os|f", l_Vector.GetFromLua(&v3), &s, &newval);
+
+	if(!numargs || s[1] != '\0')
+		LUA_RETURN_NIL;
+
+	int idx=-1;
+	if(s[0]=='x' || s[0] == '1')
+		idx = 0;
+	else if(s[0]=='y' || s[0] == '2')
+		idx = 1;
+	else if(s[0]=='z' || s[0] == '3')
+		idx = 2;
+
+	if(idx < 0 || idx > 2)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		v3.a1d[idx] = newval;
+	}
+
+	return lua_set_args(L, "f", v3.a1d[idx]);
+}
+
+LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if off-screen", "Gets screen cordinates of a vector (presumed in world coordinates)")
+{
+	vec3d v3;
+	if(!lua_get_args(L, "o", l_Vector.GetFromLua(&v3)))
+		return LUA_RETURN_NIL;
+
+	vertex vtx;
+	bool do_g3 = G3_count < 1;
+	if(do_g3)
+		g3_start_frame(1);
+	
+	g3_rotate_vertex(&vtx,&v3);
+	g3_project_vertex(&vtx);
+	gr_unsize_screen_posf( &vtx.sx, &vtx.sy );
+
+	if(do_g3)
+		g3_end_frame();
+
+	if(!(vtx.flags & PF_OVERFLOW))
+		return LUA_RETURN_FALSE;
+
+	return lua_set_args(L, "ii", vtx.sx, vtx.sy);
+}
 
 //**********CLASS: cmission
 lua_obj<int> l_Cmission("cmission", "Campaign mission object");
@@ -1163,7 +1279,7 @@ LUA_INDEXER(l_Shields, "Shield quadrant")
 	int idx;
 	char *qd = NULL;
 	float nval = -1.0f;
-	if(!lua_get_args(L, "os|f", l_Object.GetFromLua(&idx), &qd, &nval))
+	if(!lua_get_args(L, "os|f", l_Shields.GetFromLua(&idx), &qd, &nval))
 		return 0;
 
 	idx = obj_get_by_signature(idx);
@@ -1225,7 +1341,26 @@ int lua_obj_get_idx(lua_State *L, int *idx)
 	return 1;
 }
 
-LUA_VAR(HitpointsLeft, l_Object, "Number", "Sets how many hitpoints an object has left")
+LUA_VAR(Position, l_Object, "Vector", "Object position")
+{
+	int idx;
+	vec3d v3;
+	if(!lua_get_args(L, "o|o", l_Object.GetFromLua(&idx), l_Vector.GetFromLua(&v3)))
+		return LUA_RETURN_NIL;
+
+	idx = obj_get_by_signature(idx);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		Objects[idx].pos = v3;
+	}
+
+	return lua_set_args(L, "o", l_Vector.SetToLua(&Objects[idx].pos));
+}
+
+LUA_VAR(HitpointsLeft, l_Object, "Number", "Hitpoints an object has left")
 {
 	int idx;
 	float f = -1.0f;
@@ -1266,7 +1401,7 @@ LUA_VAR(Shields, l_Object, "shields", "Shields")
 		}
 	}
 
-	return lua_set_args(L, "o", l_Shields.SetToLua(&idx));
+	return lua_set_args(L, "o", l_Shields.SetToLua(&Objects[idx].signature));
 }
 
 LUA_FUNC(getBreed, l_Object, NULL, "Object type name", "Gets object type")
@@ -1835,6 +1970,13 @@ LUA_FUNC(getRandomNumber, l_Math, "[Smallest number], [Largest number]", "Random
 	return lua_set_args(L, "f", frand_range(min, max));
 }
 
+LUA_FUNC(newVector, l_Math, "[x], [y], [z]", "Vector object", "Creates a vector object")
+{
+	vec3d v3;
+	lua_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
+
+	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+}
 
 //**********LIBRARY: Campaign
 lua_lib l_Campaign("cn", "Campaign Library");
@@ -1927,7 +2069,6 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 	return lua_set_args(L, "o", l_Cmission.SetToLua(&idx));
 }
 
-
 //**********LIBRARY: Mission
 lua_lib l_Mission("mn", "Mission library");
 
@@ -1986,7 +2127,7 @@ LUA_FUNC(getShip, l_Mission, "Ship name", "Ship object", "Gets ship object")
 		return LUA_RETURN_NIL;
 	}
 
-	return lua_set_args(L, "o", l_Shipclass.SetToLua(&Objects[Ships[idx].objnum].signature));
+	return lua_set_args(L, "o", l_Ship.SetToLua(&Objects[Ships[idx].objnum].signature));
 }
 
 LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Number", "Gets escort ship")
@@ -2604,6 +2745,126 @@ LUA_FUNC(playInterfaceSound, l_SoundLib, "Sound filename", "True if sound was pl
 #endif //USE_LUA
 // *************************Housekeeping*************************
 
+void lua_add_vars(lua_State *L, int table_loc, lua_lib_h *lib, lua_var_hh *var, lua_var_hh *var_end)
+{
+	//We have variables
+	if(var != var_end || lib->Functions.size())
+	{
+		//Set __index to special handler
+		lua_pushstring(L, "__index");
+		lua_pushboolean(L, 0);	//Push boolean argument to tell index_handler we are "get"
+		lua_pushstring(L, "__index");
+		lua_pushcclosure(L, lua_index_handler, 2);
+		lua_settable(L, table_loc);
+
+		lua_pushstring(L, "__newindex");
+		lua_pushboolean(L, 1);	//Push boolean argument to tell index_handler we are "set"
+		lua_pushstring(L, "__newindex");
+		lua_pushcclosure(L, lua_index_handler, 2);
+		lua_settable(L, table_loc);
+	}
+
+	std::string str;
+	//Add variables
+	for(; var < var_end; var++)
+	{
+		//Set a bogus value here so index_handler knows it's there
+		//and not a typo
+		if(!var->IsArray)
+		{
+			lua_pushstring(L, var->Name);
+			lua_pushnumber(L, (lua_Number)INDEX_HANDLER_VAR_TRIGGER);
+			lua_settable(L, table_loc);
+
+			//Set function
+			str = "var";
+			str += var->Name;
+			lua_pushstring(L, str.c_str());
+			lua_pushboolean(L, 0);	//Default is get
+			lua_pushstring(L, str.c_str());
+			lua_pushcclosure(L, var->Function, 2);
+			lua_settable(L, table_loc);
+		}
+		else
+		{
+			//WMC - Bleh. This doesn't work.
+			//The table is set properly, but for some reason
+			//Lua doesn't call the indexing functions
+			//An array has its own metatable
+			lua_newtable(L);
+
+			//Set it for object metatable
+			lua_pushstring(L, var->Name);
+			lua_pushvalue(L, -2);
+			lua_rawset(L, table_loc);
+
+			//Set the metatable for the array to itself(?)
+			lua_pushstring(L, "__metatable");
+			lua_pushvalue(L, -2);
+			lua_rawset(L, -3);
+
+			//Index (get) function has upvalue of 0
+			lua_pushstring(L, "__index");
+			lua_pushboolean(L, 0);
+			lua_pushstring(L, "__index");
+			lua_pushcclosure(L, var->Function, 2);
+			lua_rawset(L, -3);
+
+			//Index (set) function has upvalue of 1
+			lua_pushstring(L, "__newindex");
+			lua_pushboolean(L, 1);
+			lua_pushstring(L, "__newindex");
+			lua_pushcclosure(L, var->Function, 2);
+			lua_rawset(L, -3);
+
+			//DEBUG:
+/*			lua_pushstring(L, var->Name);
+			lua_gettable(L, table_loc);
+			lua_pushstring(L, "__index");
+			lua_gettable(L, -2);
+
+			char buf[10240] = {0};
+			lua_stackdump(L, buf);
+			Error(LOCATION, buf);
+			lua_Debug ar;
+			lua_getstack(L, 0, &ar);
+			lua_getinfo(L, ">nl", &ar);*/
+
+			//Set array metatable
+			//lua_settable(L, table_loc);
+		}
+	}
+
+	//Set the indexer
+	if(lib->Indexer != NULL)
+	{
+		//If we are using the index handler, put it in its special spot
+		if(var != var_end || lib->Functions.size())
+		{
+			lua_pushstring(L, "__indexer");
+			lua_pushboolean(L, 0);	//Default is get
+			lua_pushcclosure(L, lib->Indexer, 1);
+			lua_settable(L, table_loc);
+		}
+		else
+		{
+			//Otherwise, we have to set the indexer up
+			//using Lua's normal __index variables
+			lua_pushstring(L, "__index");
+			lua_pushboolean(L, 0);
+			lua_pushstring(L, "__index");
+			lua_pushcclosure(L, lib->Indexer, 2);
+			lua_settable(L, table_loc);
+
+			lua_pushstring(L, "__newindex");
+			lua_pushboolean(L, 1);
+			lua_pushstring(L, "__newindex");
+			lua_pushcclosure(L, lib->Indexer, 2);
+			lua_settable(L, table_loc);
+		}
+	}
+}
+
 //Inits LUA
 //Note that "libraries" must end with a {NULL, NULL}
 //element
@@ -2641,7 +2902,7 @@ int script_state::CreateLuaState()
 #ifndef NDEBUG
 	lua_func_hh *ofunc;
 	//Like libraries/objects with identical names
-	mprintf(("LUA: Performing object/library name validity check"));
+	mprintf(("LUA: Performing object/library name validity check...\n"));
 	for(; lib < lib_end; lib++)
 	{
 		for(; obj < obj_end; obj++)
@@ -2696,7 +2957,8 @@ int script_state::CreateLuaState()
 #endif
 
 	//*****INITIALIZE ALL LIBRARY FUNCTIONS
-	mprintf(("LUA: Initializing library functions"));
+	mprintf(("LUA: Initializing library functions...\n"));
+	int table_loc;
 	lib = &lua_Libraries[0];
 	lib_end = &lua_Libraries[lua_Libraries.size()];
 	for(; lib < lib_end; lib++)
@@ -2728,15 +2990,20 @@ int script_state::CreateLuaState()
 				lua_settable(L, LUA_GLOBALSINDEX);				//Register the table with the new name
 			}
 
+			table_loc = lua_gettop(L);
+
 			func = &lib->Functions[0];
 			func_end = &lib->Functions[lib->Functions.size()];
 			for(; func < func_end; func++)
 			{
 				//Add each function
 				lua_pushstring(L, func->Name);				//Push the function's name onto the stack
-				lua_pushcclosure(L, func->Function, 0);		//Push the function pointer onto the stack
+				lua_pushstring(L, func->Name);				//Push upvalue
+				lua_pushcclosure(L, func->Function, 1);		//Push the function pointer onto the stack
 				lua_settable(L, -3);						//Add it into the current lib table
 			}
+
+			lua_add_vars(L, table_loc, lib, &lib->Variables[0], &lib->Variables[lib->Variables.size()]);
 		}
 		else
 		{
@@ -2750,14 +3017,20 @@ int script_state::CreateLuaState()
 				Assert(func->Function != NULL);
 
 				//Register the function with the name given as a global
-				lua_register(L, func->Name, func->Function);
+				lua_pushstring(L, func->Name);
+				lua_pushstring(L, func->Name);
+				lua_pushcclosure(L, func->Function, 1);
+				lua_settable(L, LUA_GLOBALSINDEX);
 			}
+
+			lua_add_vars(L, LUA_GLOBALSINDEX, lib, &lib->Variables[0], &lib->Variables[lib->Variables.size()]);
 		}
 
 		//Handle objects and their methods in a library
 	}
 
 	//*****INITIALIZE OBJECT FUNCTIONS
+	mprintf(("LUA: Initializing object functions...\n"));
 	lib = &lua_Objects[0];
 	lib_end = &lua_Objects[lua_Objects.size()];
 	std::string str;
@@ -2769,7 +3042,7 @@ int script_state::CreateLuaState()
 			continue;
 		}
 		//Get the absolute position of the object metatable for later use
-		int table_loc = lua_gettop(L);
+		table_loc = lua_gettop(L);
 
 		//***Add the functions into the metatables
 		//Because both the [] operator and function list share the "__index"
@@ -2813,7 +3086,8 @@ int script_state::CreateLuaState()
 						}
 					}
 					lua_pushstring(L, func->Name);
-					lua_pushcclosure(L, func->Function, 0);
+					lua_pushstring(L, func->Name);		//WMC - push upvalue for debugging/warnings
+					lua_pushcclosure(L, func->Function, 1);
 					lua_settable(L, table_loc);
 				}
 				else	//This is an object method
@@ -2831,59 +3105,13 @@ int script_state::CreateLuaState()
 						index_meth_already = true;
 					}
 					lua_pushstring(L, func->Name);
-					lua_pushcclosure(L, func->Function, 0);
+					lua_pushstring(L, func->Name);	//WMC - push upvalue
+					lua_pushcclosure(L, func->Function, 1);
 					lua_settable(L, -3);
 				}
 			}
-			
-			//We have variables
-			if(var != var_end)
-			{
-				//Set __index to special handler
-				lua_pushstring(L, "__index");
-				lua_pushboolean(L, 0);	//Push boolean argument to tell index_handler we are "get"
-				lua_pushcclosure(L, lua_index_handler, 1);
-				lua_settable(L, table_loc);
 
-				lua_pushstring(L, "__newindex");
-				lua_pushboolean(L, 1);	//Push boolean argument to tell index_handler we are "set"
-				lua_pushcclosure(L, lua_index_handler, 1);
-				lua_settable(L, table_loc);
-			}
-
-			//Add variables
-			for(; var < var_end; var++)
-			{
-				//Set a bogus value here so index_handler knows it's there
-				//and not a typo
-				lua_pushstring(L, var->Name);
-				lua_pushnumber(L, (lua_Number)INDEX_HANDLER_VAR_TRIGGER);
-				lua_settable(L, table_loc);
-
-				//Set function
-				str = "var";
-				str += var->Name;
-				lua_pushstring(L, str.c_str());
-				lua_pushboolean(L, 0);	//Default is get
-				lua_pushcclosure(L, var->Function, 1);
-				//char buf[10240] = {0};
-				//lua_stackdump(L, buf);
-				lua_settable(L, table_loc);
-			}
-
-			//Set the indexer
-			if(i == 1 && clib->Indexer != NULL)
-			{
-				lua_pushstring(L, "__indexer");
-				lua_pushboolean(L, 0);	//Default is get
-				lua_pushcclosure(L, clib->Indexer, 1);
-				lua_settable(L, table_loc);
-			} else if(lua_Objects[clib->Derivator].Indexer != NULL) {
-				lua_pushstring(L, "__indexer");
-				lua_pushboolean(L, 0);	//Default is get
-				lua_pushcclosure(L, lua_Objects[clib->Derivator].Indexer, 1);
-				lua_settable(L, table_loc);
-			}
+			lua_add_vars(L, table_loc, lib, var, var_end);
 		}
 	}
 	SetLuaSession(L);

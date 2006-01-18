@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-01-03 06:02:00 $
- * $Author: taylor $
+ * $Revision: 2.67 $
+ * $Date: 2006-01-18 06:13:18 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/01/03 06:02:00  taylor
+ * fix freaky nan error on line drawing where model would get loaded on second entry into WS screen when it should be animation
+ *
  * Revision 2.65  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -1933,7 +1936,7 @@ void wl_load_icons(int weapon_class)
 	//	Int3();	// Could not load in icon frames.. get Alan
 		if(strlen(wip->tech_model))
 		{
-			icon->model_index = model_load(wip->tech_model, 0, NULL);
+			icon->model_index = model_load(wip->tech_model, 0, NULL, 0);
 		}
 		if(wip->render_type != WRT_LASER && icon->model_index == -1)
 		{

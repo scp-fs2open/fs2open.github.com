@@ -26,7 +26,7 @@ extern int Lua_get_args_skip;
 //Used for internal object->lua_return and lua_parse->object communication
 struct script_lua_odata
 {
-	char *meta;
+	int meta;
 	void *buf;
 	int size;
 
@@ -36,7 +36,7 @@ struct script_lua_odata
 //Used like _odata, except for object pointers
 struct script_lua_opdata
 {
-	char *meta;
+	int meta;
 	void **buf;
 
 	//script_lua_opdata(char* in_meta, void** in_buf){meta=in_meta; buf=in_buf;}
@@ -55,6 +55,7 @@ struct lua_func_hh
 struct lua_var_hh
 {
 	char *Name;
+	bool IsArray;
 	lua_CFunction Function;
 	char *Type;
 	char *Description;
@@ -154,10 +155,11 @@ public:
 
 class lua_var_h {
 public:
-	lua_var_h(char *name, lua_CFunction func, lua_lib &lib, char *type=NULL, char *desc=NULL) {
+	lua_var_h(char *name, lua_CFunction func, lua_lib &lib, bool isarray, char *type=NULL, char *desc=NULL) {
 		lua_var_hh v;
 
 		v.Name = name;
+		v.IsArray = isarray;
 		v.Function = func;
 		v.Type = type;
 		v.Description = desc;
@@ -165,10 +167,11 @@ public:
 		lib.AddVar(&v);
 	}
 
-	lua_var_h(char *name, lua_CFunction func, lua_obj_h &obj, char *type=NULL, char *desc=NULL) {
+	lua_var_h(char *name, lua_CFunction func, lua_obj_h &obj, bool isarray, char *type=NULL, char *desc=NULL) {
 		lua_var_hh v;
 
 		v.Name = name;
+		v.IsArray = isarray;
 		v.Function = func;
 		v.Type = type;
 		v.Description = desc;
@@ -199,7 +202,7 @@ public:
 	//StoreType *Create(lua_State *L){StoreType *ptr = (StoreType*)LUA_NEW_OBJ(L, meta, StoreType); return ptr;}
 	script_lua_odata SetToLua(StoreType *obj) {
 		script_lua_odata od;
-		od.meta = lua_Objects[obj_idx].Name;
+		od.meta = obj_idx;
 		od.buf = obj;
 		od.size = sizeof(StoreType);
 		return od;
@@ -207,7 +210,7 @@ public:
 
 	script_lua_odata GetFromLua(StoreType *ptr){
 		script_lua_odata od;
-		od.meta = lua_Objects[obj_idx].Name;
+		od.meta = obj_idx;
 		od.buf = ptr;
 		od.size = sizeof(StoreType);
 		return od;
@@ -215,7 +218,7 @@ public:
 
 	script_lua_opdata GetPtrFromLua(StoreType **ptr){
 		script_lua_opdata pd;
-		pd.meta = lua_Objects[obj_idx].Name;
+		pd.meta = obj_idx;
 		pd.buf = ptr;
 		return pd;
 	}
