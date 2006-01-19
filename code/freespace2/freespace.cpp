@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.216 $
- * $Date: 2006-01-17 07:28:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.217 $
+ * $Date: 2006-01-19 03:15:31 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.216  2006/01/17 07:28:39  wmcoolmon
+ * Better state handling; added GameInit hook
+ *
  * Revision 2.215  2006/01/17 02:33:20  wmcoolmon
  * data/scripts directory
  *
@@ -5857,6 +5860,7 @@ void game_render_post_frame()
 //is determined according to object type
 void obj_script_set_global(char *global_name, object *objp)
 {
+#ifdef USE_LUA
 	if(objp == NULL) {
 		Script_system.RemGlobal(global_name);
 		return;
@@ -5867,6 +5871,7 @@ void obj_script_set_global(char *global_name, object *objp)
 	} else {
 		Script_system.SetGlobal(global_name, 'o', &l_Object.SetToLua(&objp->signature));
 	}
+#endif
 }
 
 void game_frame(int paused)
