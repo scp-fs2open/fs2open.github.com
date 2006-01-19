@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.61 $
- * $Date: 2006-01-02 07:13:38 $
- * $Author: taylor $
+ * $Revision: 2.62 $
+ * $Date: 2006-01-19 16:00:04 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2006/01/02 07:13:38  taylor
+ * make sure we clear out the vertex used to render a sun (just to be on the safe side)
+ * use parse_modular_table() for -str.tbm
+ *
  * Revision 2.60  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -2226,7 +2230,6 @@ void stars_draw_debris()
 	reload_old_debris = 0;
 }
 
-
 void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subspace, int env )
 {
 	int gr_zbuffering_save = gr_zbuffer_get();
@@ -2245,7 +2248,7 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 	fix xt1, xt2;
 	xt1 = timer_get_fixed_seconds();
 #endif
-	
+
 	if ( show_nebulas && (Game_detail_flags & DETAIL_FLAG_NEBULAS) && (Neb2_render_mode != NEB2_RENDER_POF) && (Neb2_render_mode != NEB2_RENDER_LAME))	{
 		nebula_render();
 	}

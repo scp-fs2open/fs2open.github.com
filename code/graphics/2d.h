@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.72 $
- * $Date: 2006-01-19 03:20:49 $
- * $Author: phreak $
+ * $Revision: 2.73 $
+ * $Date: 2006-01-19 16:00:04 $
+ * $Author: wmcoolmon $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2006/01/19 03:20:49  phreak
+ * gr_render_buffer shouldn't be returning values if it's supposed to return void
+ *
  * Revision 2.71  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -943,7 +946,7 @@ typedef struct screen {
 	void (*gf_clear)();
 
 	// void (*gf_bitmap)(int x,int y);
-	//void (*gf_bitmap_ex)(int x,int y,int w,int h,int sx,int sy);
+	void (*gf_bitmap_ex)(int x,int y,int w,int h,int sx,int sy);
 
 	void (*gf_aabitmap)(int x, int y, bool resize, bool mirror);
 	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror);
@@ -1257,6 +1260,11 @@ __inline void gr_aabitmap(int x, int y, bool resize = true, bool mirror = false)
 __inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize = true, bool mirror = false)
 {
 	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize,mirror);
+}
+//#define gr_aabitmap_ex		GR_CALL(gr_screen.gf_aabitmap_ex)
+__inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
+{
+	(*gr_screen.gf_bitmap_ex)(x,y,w,h,sx,sy);
 }
 
 void gr_rect(int x, int y, int w, int h, bool resize = true);

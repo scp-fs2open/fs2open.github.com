@@ -454,6 +454,8 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 //true => __newindex
 LUA_API lua_index_handler(lua_State *L)
 {
+	//WMC - We might need this. It's easier to push it now and deal with it later
+	lua_pushcfunction(L, LuaError);
 	//WMC - When this function is called, there should be
 	//two values on the stack - the object, and the key
 	//Everything else, then, is an argument.
@@ -517,6 +519,7 @@ LUA_API lua_index_handler(lua_State *L)
 	}
 
 	//*****BEGIN FUNCTION ARGUMENT HANDLING
+	//WMC - Pass error handler function
 	int passed_args = 1;	//Object data
 	//Push another copy of the object data onto the stack to return
 	lua_pushvalue(L, 1);
@@ -539,9 +542,9 @@ LUA_API lua_index_handler(lua_State *L)
 
 	//Finally, call the function to get/set the variable
 	//Use 1 argument for string key, 2 for indexer
-	if(lua_pcall(L, passed_args, LUA_MULTRET, 0) != 0)
+	//WMC - Error handler at top of function is last arg
+	if(lua_pcall(L, passed_args, LUA_MULTRET, 3) != 0)
 	{
-		LuaError(LOCATION, L);
 		return 0;
 	}
 
@@ -602,7 +605,7 @@ LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if o
 	if(do_g3)
 		g3_end_frame();
 
-	if(!(vtx.flags & PF_OVERFLOW))
+	if(vtx.flags & PF_OVERFLOW)
 		return LUA_RETURN_FALSE;
 
 	return lua_set_args(L, "ii", vtx.sx, vtx.sy);
@@ -2540,7 +2543,7 @@ LUA_FUNC(drawGradientLine, l_Graphics, "x1, y1, x2, y2, [Resize]", NULL, "Draws 
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawCircle, l_Graphics, "x, y, Radius, [Resize]", NULL, "Draws a circle")
+LUA_FUNC(drawCircle, l_Graphics, "Radius, x, y, [Resize]", NULL, "Draws a circle")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -2548,7 +2551,7 @@ LUA_FUNC(drawCircle, l_Graphics, "x, y, Radius, [Resize]", NULL, "Draws a circle
 	int x,y,ra;
 	bool r=true;
 
-	if(!lua_get_args(L, "iii|b", &x,&y,&ra,&r))
+	if(!lua_get_args(L, "iii|b", &ra,&x,&y,&r))
 		return LUA_RETURN_NIL;
 
 	gr_circle(x,y, ra, r);
@@ -2613,16 +2616,20 @@ LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show], [H
 	return lua_set_args(L, "b", true);
 }
 
-LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Resize]", "Whether image was drawn", "Draws an image")
+LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Width to show], [Height to show], [X start], [Y start]", "Whether image was drawn", "Draws an image")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
-	char *s;
 	int x,y;
-	bool r = true;
+	int rw,rh;
+	char *s;
+	int w=0;
+	int h=0;
+	int sx=0;
+	int sy=0;
 
-	if(!lua_get_args(L, "sii|b", &s,&x,&y,&r))
+	if(!lua_get_args(L, "sii|iiiibb", &s,&x,&y,&w,&h,&sx,&sy))
 		return LUA_RETURN_NIL;
 
 	int idx = bm_load(s);
@@ -2630,8 +2637,21 @@ LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Resize]", "Whether image was
 	if(idx < 0)
 		return lua_set_args(L, "b", false);
 
+	bm_get_info(idx, &rw, &rh);
+
+	if(w==0)
+		w = rw;
+	if(h==0)
+		h = rw;
+
+	if(sx < 0)
+		sx = rw + sx;
+
+	if(sy < 0)
+		sy = rh + sy;
+
 	gr_set_bitmap(idx);
-	gr_bitmap(x, y, r);
+	gr_bitmap_ex(x, y, w, h, sx, sy);
 
 	return lua_set_args(L, "b", true);
 }
