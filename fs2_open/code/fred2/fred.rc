@@ -1,0 +1,3244 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+// Generated Help ID header file
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "resource.hm"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE MOVEABLE PURE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE MOVEABLE PURE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE MOVEABLE PURE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif\r\n"
+    "#include ""res\\FRED.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#include ""afxprint.rc""       // printing/print preview resources\r\n"
+    "#endif\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\FRED.ico"
+IDR_FREDTYPE            ICON    DISCARDABLE     "res\\FREDDoc.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDR_MAINFRAME           BITMAP  MOVEABLE PURE   "res\\Toolbar.bmp"
+IDB_OPERATOR            BITMAP  MOVEABLE PURE   "res\\bitmap1.bmp"
+IDB_DATA                BITMAP  MOVEABLE PURE   "res\\data.bmp"
+IDB_ROOT                BITMAP  MOVEABLE PURE   "res\\root.bmp"
+IDB_CHAINED             BITMAP  MOVEABLE PURE   "res\\chained.bmp"
+IDB_PLAY                BITMAP  MOVEABLE PURE   "res\\bmp00001.bmp"
+IDB_ROOT_DIRECTIVE      BITMAP  MOVEABLE PURE   "res\\root_directive.bmp"
+IDB_CHAINED_DIRECTIVE   BITMAP  MOVEABLE PURE   "res\\chained_directive.bmp"
+IDB_GREEN_DOT           BITMAP  MOVEABLE PURE   "res\\green_do.bmp"
+IDB_BLACK_DOT           BITMAP  MOVEABLE PURE   "res\\black_do.bmp"
+IDB_VARIABLE            BITMAP  MOVEABLE PURE   "res\\variable.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Toolbar
+//
+
+IDR_MAINFRAME TOOLBAR MOVEABLE PURE  23, 23
+BEGIN
+    BUTTON      ID_SELECT
+    BUTTON      ID_SELECT_AND_MOVE
+    BUTTON      ID_SELECT_AND_ROTATE
+    SEPARATOR
+    BUTTON      ID_ROTATE_LOCALLY
+    SEPARATOR
+    BUTTON      ID_CONSTRAIN_X
+    BUTTON      ID_CONSTRAIN_Y
+    BUTTON      ID_CONSTRAIN_Z
+    BUTTON      ID_CONSTRAIN_XZ
+    BUTTON      ID_CONSTRAIN_YZ
+    BUTTON      ID_CONSTRAIN_XY
+    SEPARATOR
+    BUTTON      ID_SELECT_LIST
+    BUTTON      ID_SELECTION_LOCK
+    SEPARATOR
+    BUTTON      ID_FORM_WING
+    BUTTON      ID_DISBAND_WING
+    SEPARATOR
+    BUTTON      ID_ZOOM_SELECTED
+    BUTTON      ID_ZOOM_EXTENTS
+    SEPARATOR
+    BUTTON      ID_SHOW_DISTANCES
+    BUTTON      ID_LOOKAT_OBJ
+    SEPARATOR
+    BUTTON      ID_NEW_SHIP_TYPE
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAINMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New\tCtrl+N",                ID_FILE_NEW
+        MENUITEM "&Open...\tCtrl+O",            ID_FILE_OPEN
+        MENUITEM "&Save\tCtrl+S",               ID_FILE_SAVE
+        MENUITEM "Save &As...",                 ID_FILE_SAVE_AS
+        MENUITEM "Re&vert",                     ID_REVERT
+        MENUITEM SEPARATOR
+        POPUP "Save &Format"
+        BEGIN
+            MENUITEM "FS2 open",                    ID_FORMAT_FS2_OPEN
+            , CHECKED
+            MENUITEM "FS2 retail",                  ID_FORMAT_FS2_RETAIL
+        END
+        POPUP "&Import"
+        BEGIN
+            MENUITEM "&Freespace 1 mission...",     ID_FILE_IMPORT_FSM
+            MENUITEM "&Weapon loadouts...",         ID_FILE_IMPORT_WEAPONS
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Run FreeSpace\tAlt+R",       ID_RUN_FREESPACE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "Undo\tCtrl+Z",                ID_EDIT_UNDO
+        MENUITEM "Delete\tDel",                 ID_EDIT_DELETE
+        MENUITEM "Delete Wing\tCtrl+Del",       ID_EDIT_DELETE_WING
+        MENUITEM SEPARATOR
+        MENUITEM "Disable Undo",                ID_DISABLE_UNDO
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR, CHECKED
+        MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR, CHECKED
+        MENUITEM SEPARATOR
+        POPUP "Display Filter"
+        BEGIN
+            MENUITEM "Show Ships",                  ID_SHOW_SHIPS
+            MENUITEM "Show Player Starts",          ID_SHOW_STARTS
+            MENUITEM "Show Waypoints",              ID_SHOW_WAYPOINTS
+            MENUITEM SEPARATOR
+            MENUITEM "Show IFF 0",                  ID_SHOW_IFF_0
+            MENUITEM "Show IFF 1",                  ID_SHOW_IFF_1
+            MENUITEM "Show IFF 2",                  ID_SHOW_IFF_2
+            MENUITEM "Show IFF 3",                  ID_SHOW_IFF_3
+            MENUITEM "Show IFF 4",                  ID_SHOW_IFF_4
+            MENUITEM "Show IFF 5",                  ID_SHOW_IFF_5
+            MENUITEM "Show IFF 6",                  ID_SHOW_IFF_6
+            MENUITEM "Show IFF 7",                  ID_SHOW_IFF_7
+            MENUITEM "Show IFF 8",                  ID_SHOW_IFF_8
+            MENUITEM "Show IFF 9",                  ID_SHOW_IFF_9
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Hide Marked Objects",         ID_HIDE_OBJECTS
+        MENUITEM "Show Hidden Objects",         ID_SHOW_HIDDEN_OBJECTS
+        MENUITEM SEPARATOR
+        MENUITEM "Show Ship Models\tShift+Alt+M", 
+                                                ID_EDIT_POPUP_SHOW_SHIP_MODELS
+        , CHECKED
+        MENUITEM "Show Outlines\tShift+Alt+O",  ID_VIEW_OUTLINES
+        MENUITEM "Show Ship Info\tShift+Alt+I", ID_EDIT_POPUP_SHOW_SHIP_ICONS
+        , CHECKED, HELP
+        MENUITEM "Show Coordinates\tShift+Alt+C", ID_SHOW_COORDINATES
+        MENUITEM "Show Grid Positions\tShift+Alt+P", ID_SHOW_GRID_POSITIONS
+        MENUITEM "Show Distances\tD",           ID_SHOW_DISTANCES
+        MENUITEM "Show Model Paths",            ID_SHOW_PATHS
+        MENUITEM "Show Model Dock Points",      ID_SHOW_DOCK_POINTS
+        MENUITEM SEPARATOR
+        MENUITEM "Show &Grid\tShift+Alt+G",     ID_VIEW_GRID
+        MENUITEM "Show Horizon\tShift+Alt+H",   ID_SHOW_HORIZON
+        MENUITEM "Double Fine Gridlines",       ID_DOUBLE_FINE_GRIDLINES
+        MENUITEM "Anti-Aliased Gridlines",      ID_AA_GRIDLINES
+        MENUITEM "Show 3D Compass\tShift+Alt+3", ID_EDIT_POPUP_SHOW_COMPASS
+        , CHECKED
+        MENUITEM "Show Background\tShift+Alt+B", ID_SHOW_STARFIELD
+        MENUITEM SEPARATOR
+        POPUP "Viewpoint\tShift+V"
+        BEGIN
+            MENUITEM "Camera",                      ID_CHANGE_VIEWPOINT_EXTERNAL
+            , CHECKED
+            MENUITEM "Current Ship",                ID_CHANGE_VIEWPOINT_FOLLOW
+
+        END
+        MENUITEM "Save Camera Pos\tCtrl+P",     ID_SAVE_CAMERA
+        MENUITEM "Restore Camera Pos\tCtrl+R",  ID_RESTORE_CAMERA
+        MENUITEM SEPARATOR
+        MENUITEM "Lighting from Suns",          ID_VIEW_LIGHTING
+    END
+    POPUP "&Speed"
+    BEGIN
+        POPUP "Movement"
+        BEGIN
+            MENUITEM "x1\t1",                       ID_SPEED1, CHECKED
+            MENUITEM "x2\t2",                       ID_SPEED2
+            MENUITEM "x3\t3",                       ID_SPEED3
+            MENUITEM "x5\t4",                       ID_SPEED5
+            MENUITEM "x8\t5",                       ID_SPEED8
+            MENUITEM "x10\t6",                      ID_SPEED10
+            MENUITEM "x50\t7",                      ID_SPEED50
+            MENUITEM "x100\t8",                     ID_SPEED100
+        END
+        POPUP "Rotation"
+        BEGIN
+            MENUITEM "x1\tShift+1",                 ID_ROT1, CHECKED
+            MENUITEM "x5\tShift+2",                 ID_ROT2
+            MENUITEM "x12\tShift+3",                ID_ROT3
+            MENUITEM "x25\tShift+4",                ID_ROT4
+            MENUITEM "x50\tShift+5",                ID_ROT5
+        END
+    END
+    POPUP "E&ditors"
+    BEGIN
+        MENUITEM "&Ships\tShift+S",             ID_EDITORS_SHIPS
+        MENUITEM "&Wings\tShift+W",             ID_EDITORS_WING
+        MENUITEM "Objects\tShift+O",            ID_EDITORS_ORIENT
+        MENUITEM "Waypoint Paths\tShift+Y",     ID_EDITORS_WAYPOINT
+        MENUITEM "Mission &Objectives\tShift+G", ID_EDITORS_GOALS
+        MENUITEM "&Events\tShift+E",            ID_EDITORS_EVENTS
+        MENUITEM "Team Loadout\tShift+P",       ID_EDITORS_PLAYER
+        MENUITEM "Background\tShift+I",         ID_EDITORS_BG_BITMAPS
+        MENUITEM "Reinforcements\tShift+R",     ID_EDITORS_REINFORCEMENT
+        MENUITEM "Asteroid Field\tShift+A",     ID_ASTEROID_EDITOR
+        MENUITEM "&Mission Specs\tShift+N",     ID_FILE_MISSIONNOTES
+        MENUITEM "&Briefing\tShift+B",          ID_EDITORS_BRIEFING
+        MENUITEM "&Debriefing\tShift+D",        ID_EDITORS_DEBRIEFING
+        MENUITEM "Shield System",               ID_EDITORS_SHIELD_SYS
+        MENUITEM "Command Briefing",            ID_CMD_BRIEF
+        MENUITEM "Set Global Ship Flags",       ID_EDITORS_SET_GLOBAL_SHIP_FLAGS
+
+        MENUITEM "Voice Acting Manager",        ID_EDITORS_VOICE_MANAGER
+        MENUITEM SEPARATOR
+        MENUITEM "Campaign\tShift+C",           ID_EDITOR_CAMPAIGN
+    END
+    POPUP "&Groups"
+    BEGIN
+        MENUITEM "Group 1\tCtrl+1",             ID_GROUP1
+        MENUITEM "Group 2\tCtrl+2",             ID_GROUP2
+        MENUITEM "Group 3\tCtrl+3",             ID_GROUP3
+        MENUITEM "Group 4\tCtrl+4",             ID_GROUP4
+        MENUITEM "Group 5\tCtrl+5",             ID_GROUP5
+        MENUITEM "Group 6\tCtrl+6",             ID_GROUP6
+        MENUITEM "Group 7\tCtrl+7",             ID_GROUP7
+        MENUITEM "Group 8\tCtrl+8",             ID_GROUP8
+        MENUITEM "Group 9\tCtrl+9",             ID_GROUP9
+        POPUP "Set Group"
+        BEGIN
+            MENUITEM "Group 1",                     ID_SET_GROUP1
+            MENUITEM "Group 2",                     ID_SET_GROUP2
+            MENUITEM "Group 3",                     ID_SET_GROUP3
+            MENUITEM "Group 4",                     ID_SET_GROUP4
+            MENUITEM "Group 5",                     ID_SET_GROUP5
+            MENUITEM "Group 6",                     ID_SET_GROUP6
+            MENUITEM "Group 7",                     ID_SET_GROUP7
+            MENUITEM "Group 8",                     ID_SET_GROUP8
+            MENUITEM "Group 9",                     ID_SET_GROUP9
+        END
+    END
+    POPUP "&Misc"
+    BEGIN
+        MENUITEM "Level Object\tL",             ID_LEVEL_OBJ
+        MENUITEM "Align Object\tCtrl+L",        ID_ALIGN_OBJ
+        MENUITEM "Mark Wing\tW",                ID_MARK_WING
+        MENUITEM "Control Object\tT",           ID_CONTROL_OBJ
+        MENUITEM "Next Object\tTab",            ID_NEXT_OBJ
+        MENUITEM "Previous Object\tCtrl+Tab",   ID_PREV_OBJ
+        MENUITEM "Adjust Grid",                 ID_EDITORS_ADJUST_GRID
+        MENUITEM "Next Subsystem\tK",           ID_NEXT_SUBSYS
+        MENUITEM "Prev Subsystem\tShift+K",     ID_PREV_SUBSYS
+        MENUITEM "Cancel Subsystem\tAlt+K",     ID_CANCEL_SUBSYS
+        MENUITEM "Mission Statistics\tCtrl+Shift+D", ID_DUMP_STATS
+        MENUITEM SEPARATOR
+        MENUITEM "Error checker\tShift+H",      ID_ERROR_CHECKER
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&Help Topics",                ID_HELP_FINDER
+        MENUITEM SEPARATOR
+        MENUITEM "&About FRED2",                ID_APP_ABOUT
+        MENUITEM "Show Sexp Help",              ID_SHOW_SEXP_HELP
+    END
+END
+
+IDR_MENU_SHIP_POPUP MENU DISCARDABLE 
+BEGIN
+    POPUP "Properties"
+    BEGIN
+        MENUITEM "Edit Ship",                   ID_EDITORS_SHIPS
+        MENUITEM "Edit Position and Orientation", ID_EDITORS_ORIENT
+        MENUITEM "Edit Wing",                   ID_EDITORS_WING
+    END
+END
+
+IDR_MENU_EDIT_POPUP MENU DISCARDABLE 
+BEGIN
+    POPUP "EDIT"
+    BEGIN
+        MENUITEM "Show Ship Models",            ID_EDIT_POPUP_SHOW_SHIP_MODELS
+        , CHECKED
+        MENUITEM "Show Outlines",               ID_VIEW_OUTLINES
+        MENUITEM "Show Ship Info",              ID_EDIT_POPUP_SHOW_SHIP_ICONS
+        , CHECKED, HELP
+        MENUITEM "Show Coordinates",            ID_SHOW_COORDINATES
+        MENUITEM "Show Grid Positions",         ID_SHOW_GRID_POSITIONS
+        MENUITEM "Show Distances",              ID_SHOW_DISTANCES
+        MENUITEM SEPARATOR
+        POPUP "Control Mode"
+        BEGIN
+            MENUITEM "Camera",                      ID_CONTROL_MODE_CAMERA
+            MENUITEM "Current Ship",                ID_CONTROL_MODE_SHIP
+        END
+        POPUP "Viewpoint"
+        BEGIN
+            MENUITEM "Camera",                      ID_CHANGE_VIEWPOINT_EXTERNAL
+            , CHECKED
+            MENUITEM "Current Ship",                ID_CHANGE_VIEWPOINT_FOLLOW
+
+        END
+        MENUITEM SEPARATOR
+    END
+END
+
+IDR_MENU_CAMPAIGN MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New\tCtrl+N",                ID_CPGN_FILE_NEW
+        MENUITEM "&Open...\tCtrl+O",            ID_CPGN_FILE_OPEN
+        MENUITEM "&Save\tCtrl+S",               ID_CPGN_FILE_SAVE
+        MENUITEM "Save &As...",                 ID_CPGN_FILE_SAVE_AS
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_CLOSE
+    END
+    POPUP "Other"
+    BEGIN
+        MENUITEM "Error Checker\tAlt+H",        ID_ERROR_CHECKER
+    END
+    POPUP "&Initial Status"
+    BEGIN
+        MENUITEM "Ships",                       ID_INITIAL_SHIPS
+        MENUITEM "Weapons",                     ID_INITIAL_WEAPONS
+    END
+END
+
+IDR_MENU_EDIT_SEXP_TREE MENU DISCARDABLE 
+BEGIN
+    POPUP "Edit sexp tree"
+    BEGIN
+        MENUITEM "&Delete Item\tDelete",        ID_DELETE
+        MENUITEM "&Edit Data",                  ID_EDIT_TEXT
+        MENUITEM "Expand All",                  ID_EXPAND_ALL
+        MENUITEM SEPARATOR
+        MENUITEM "Cut\tCtrl+X",                 ID_EDIT_CUT, GRAYED
+        MENUITEM "Copy\tCtrl+C",                ID_EDIT_COPY
+        MENUITEM "Paste\tCtrl+V",               ID_EDIT_PASTE, GRAYED
+        MENUITEM "Add Paste",                   ID_EDIT_PASTE_SPECIAL
+        , GRAYED
+        MENUITEM SEPARATOR
+        POPUP "Add Operator"
+        BEGIN
+            MENUITEM "placeholder",                 ID_PLACEHOLDER, GRAYED
+        END
+        POPUP "Add Data"
+        BEGIN
+            MENUITEM "Number",                      ID_ADD_NUMBER, GRAYED
+            MENUITEM "String",                      ID_ADD_STRING, GRAYED
+            MENUITEM SEPARATOR
+        END
+        MENUITEM SEPARATOR
+        POPUP "Insert Operator"
+        BEGIN
+            MENUITEM "placeholder",                 ID_PLACEHOLDER, GRAYED
+        END
+        MENUITEM SEPARATOR
+        POPUP "Replace Operator"
+        BEGIN
+            MENUITEM "placeholder",                 ID_PLACEHOLDER, GRAYED
+        END
+        POPUP "Replace Data"
+        BEGIN
+            MENUITEM "Number",                      ID_REPLACE_NUMBER
+            , GRAYED
+            MENUITEM "String",                      ID_REPLACE_STRING
+            , GRAYED
+            MENUITEM SEPARATOR
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Add Variable",                ID_SEXP_TREE_ADD_VARIABLE
+        MENUITEM "Modify Variable",             ID_SEXP_TREE_MODIFY_VARIABLE
+        POPUP "Replace Variable"
+        BEGIN
+            MENUITEM "Placeholder",                 ID_PLACEHOLDER, GRAYED
+        END
+    END
+END
+
+IDR_WING_EDIT_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&Select Wing"
+    BEGIN
+        MENUITEM "PlaceHolder",                 ID_SELECTSHIP_PLACEHOLDER
+    END
+END
+
+IDR_SHIP_EDIT_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&Select Ship"
+    BEGIN
+        MENUITEM "PlaceHolder",                 ID_SELECTSHIP_PLACEHOLDER
+    END
+END
+
+IDR_PLAYER_EDIT_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "Select Team"
+    BEGIN
+        MENUITEM "Team 1",                      ID_TEAM_1
+        MENUITEM "Team 2",                      ID_TEAM_2
+    END
+END
+
+IDR_WAYPOINT_PATH_EDIT_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&Select Waypoint Path"
+    BEGIN
+        MENUITEM "PlaceHolder",                 ID_SELECTSHIP_PLACEHOLDER
+    END
+END
+
+IDR_ASTEROID_FIELD_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "Select Field"
+    BEGIN
+        MENUITEM "PlaceHolder",                 ID_SELECTSHIP_PLACEHOLDER
+    END
+END
+
+IDR_CPGN_VIEW_OFF MENU DISCARDABLE 
+BEGIN
+    POPUP "Blah"
+    BEGIN
+        MENUITEM "&Delete Row",                 ID_DELETE_ROW
+        MENUITEM "&Insert Row",                 ID_INSERT_ROW
+    END
+END
+
+IDR_CPGN_VIEW_ON MENU DISCARDABLE 
+BEGIN
+    POPUP "Blah"
+    BEGIN
+        MENUITEM "&Remove Mission\tDelete",     ID_REMOVE_MISSION
+        MENUITEM "Add a Repeat Link",           ID_ADD_REPEAT
+        MENUITEM "End of Campaign",             ID_END_OF_CAMPAIGN
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS MOVEABLE PURE 
+BEGIN
+    "1",            ID_SPEED1,              VIRTKEY, NOINVERT
+    "1",            ID_GROUP1,              VIRTKEY, CONTROL, NOINVERT
+    "1",            ID_ROT1,                VIRTKEY, SHIFT, NOINVERT
+    "2",            ID_SPEED2,              VIRTKEY, NOINVERT
+    "2",            ID_GROUP2,              VIRTKEY, CONTROL, NOINVERT
+    "2",            ID_ROT2,                VIRTKEY, SHIFT, NOINVERT
+    "3",            ID_SPEED3,              VIRTKEY, NOINVERT
+    "3",            ID_GROUP3,              VIRTKEY, CONTROL, NOINVERT
+    "3",            ID_ROT3,                VIRTKEY, SHIFT, NOINVERT
+    "3",            ID_EDIT_POPUP_SHOW_COMPASS, VIRTKEY, SHIFT, ALT, 
+                                                    NOINVERT
+    "4",            ID_SPEED5,              VIRTKEY, NOINVERT
+    "4",            ID_GROUP4,              VIRTKEY, CONTROL, NOINVERT
+    "4",            ID_ROT4,                VIRTKEY, SHIFT, NOINVERT
+    "5",            ID_SPEED8,              VIRTKEY, NOINVERT
+    "5",            ID_GROUP5,              VIRTKEY, CONTROL, NOINVERT
+    "5",            ID_ROT5,                VIRTKEY, SHIFT, NOINVERT
+    "6",            ID_SPEED10,             VIRTKEY, NOINVERT
+    "6",            ID_GROUP6,              VIRTKEY, CONTROL, NOINVERT
+    "7",            ID_SPEED50,             VIRTKEY, NOINVERT
+    "7",            ID_GROUP7,              VIRTKEY, CONTROL, NOINVERT
+    "8",            ID_SPEED100,            VIRTKEY, NOINVERT
+    "8",            ID_GROUP8,              VIRTKEY, CONTROL, NOINVERT
+    "9",            ID_GROUP9,              VIRTKEY, CONTROL, NOINVERT
+    "A",            ID_ASTEROID_EDITOR,     VIRTKEY, SHIFT, NOINVERT
+    "B",            ID_EDITORS_BRIEFING,    VIRTKEY, SHIFT, NOINVERT
+    "B",            ID_SHOW_STARFRIELD,     VIRTKEY, SHIFT, ALT, NOINVERT
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
+    "C",            ID_EDITOR_CAMPAIGN,     VIRTKEY, SHIFT, NOINVERT
+    "C",            ID_SHOW_COORDINATES,    VIRTKEY, SHIFT, ALT, NOINVERT
+    "D",            ID_SHOW_DISTANCES,      VIRTKEY, NOINVERT
+    "D",            ID_DISBAND_WING,        VIRTKEY, CONTROL, NOINVERT
+    "D",            ID_EDITORS_DEBRIEFING,  VIRTKEY, SHIFT, NOINVERT
+    "D",            ID_DUMP_STATS,          VIRTKEY, SHIFT, CONTROL, 
+                                                    NOINVERT
+    "E",            ID_EDITORS_EVENTS,      VIRTKEY, SHIFT, NOINVERT
+    "G",            ID_EDITORS_GOALS,       VIRTKEY, SHIFT, NOINVERT
+    "G",            ID_VIEW_GRID,           VIRTKEY, SHIFT, ALT, NOINVERT
+    "H",            ID_SELECT_LIST,         VIRTKEY, NOINVERT
+    "H",            ID_ERROR_CHECKER,       VIRTKEY, SHIFT, NOINVERT
+    "H",            ID_SHOW_HORIZON,        VIRTKEY, SHIFT, ALT, NOINVERT
+    "I",            ID_EDITORS_BG_BITMAPS,  VIRTKEY, SHIFT, NOINVERT
+    "I",            ID_EDIT_POPUP_SHOW_SHIP_ICONS, VIRTKEY, SHIFT, ALT, 
+                                                    NOINVERT
+    "K",            ID_NEXT_SUBSYS,         VIRTKEY, NOINVERT
+    "K",            ID_CANCEL_SUBSYS,       VIRTKEY, ALT, NOINVERT
+    "K",            ID_PREV_SUBSYS,         VIRTKEY, SHIFT, NOINVERT
+    "L",            ID_LEVEL_OBJ,           VIRTKEY, NOINVERT
+    "L",            ID_ALIGN_OBJ,           VIRTKEY, CONTROL, NOINVERT
+    "M",            ID_SELECT_AND_MOVE,     VIRTKEY, NOINVERT
+    "M",            ID_EDIT_POPUP_SHOW_SHIP_MODELS, VIRTKEY, SHIFT, ALT, 
+                                                    NOINVERT
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL, NOINVERT
+    "N",            ID_FILE_MISSIONNOTES,   VIRTKEY, SHIFT, NOINVERT
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
+    "O",            ID_EDITORS_ORIENT,      VIRTKEY, SHIFT, NOINVERT
+    "O",            ID_VIEW_OUTLINES,       VIRTKEY, SHIFT, ALT, NOINVERT
+    "P",            ID_SAVE_CAMERA,         VIRTKEY, CONTROL, NOINVERT
+    "P",            ID_EDITORS_PLAYER,      VIRTKEY, SHIFT, NOINVERT
+    "P",            ID_SHOW_GRID_POSITIONS, VIRTKEY, SHIFT, ALT, NOINVERT
+    "R",            ID_RESTORE_CAMERA,      VIRTKEY, CONTROL, NOINVERT
+    "R",            ID_RUN_FREESPACE,       VIRTKEY, ALT, NOINVERT
+    "R",            ID_EDITORS_REINFORCEMENT, VIRTKEY, SHIFT, NOINVERT
+    "S",            ID_SELECT,              VIRTKEY, NOINVERT
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_EDITORS_SHIPS,       VIRTKEY, SHIFT, NOINVERT
+    "T",            ID_CONTROL_OBJ,         VIRTKEY, NOINVERT
+    "V",            ID_LOOKAT_OBJ,          VIRTKEY, CONTROL, NOINVERT
+    "V",            ID_TOGGLE_VIEWPOINT,    VIRTKEY, SHIFT, NOINVERT
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
+    VK_DELETE,      ID_EDIT_DELETE,         VIRTKEY, NOINVERT
+    VK_DELETE,      ID_EDIT_DELETE_WING,    VIRTKEY, CONTROL, NOINVERT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT, NOINVERT
+    VK_F1,          ID_CONTEXT_HELP,        VIRTKEY, SHIFT, NOINVERT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
+    VK_SPACE,       ID_MISC_STATISTICS,     VIRTKEY, ALT, NOINVERT
+    VK_TAB,         ID_NEXT_OBJ,            VIRTKEY, NOINVERT
+    VK_TAB,         ID_PREV_OBJ,            VIRTKEY, CONTROL, NOINVERT
+    "W",            ID_MARK_WING,           VIRTKEY, NOINVERT
+    "W",            ID_FORM_WING,           VIRTKEY, CONTROL, NOINVERT
+    "W",            ID_EDITORS_WING,        VIRTKEY, SHIFT, NOINVERT
+    "X",            ID_ROTATE_LOCALLY,      VIRTKEY, NOINVERT
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL, NOINVERT
+    "Y",            ID_EDITORS_WAYPOINT,    VIRTKEY, SHIFT, NOINVERT
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
+    "Z",            ID_ZOOM_SELECTED,       VIRTKEY, ALT, NOINVERT
+    "Z",            ID_ZOOM_EXTENTS,        VIRTKEY, SHIFT, NOINVERT
+END
+
+IDR_ACC_CAMPAIGN ACCELERATORS MOVEABLE PURE 
+BEGIN
+    "H",            ID_ERROR_CHECKER,       VIRTKEY, ALT, NOINVERT
+    "N",            ID_CPGN_FILE_NEW,       VIRTKEY, CONTROL, NOINVERT
+    "O",            ID_CPGN_FILE_OPEN,      VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_CPGN_FILE_SAVE,      VIRTKEY, CONTROL, NOINVERT
+    VK_RETURN,      ID_END_EDIT,            VIRTKEY, NOINVERT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 284, 89
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About FRED2"
+FONT 8, "MS Sans Serif"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.7 OpenGL",
+                    IDC_STATIC,39,8,184,10,SS_NOPREFIX
+    LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",
+                    IDC_STATIC,39,17,164,8
+    DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
+    LTEXT           """Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",
+                    IDC_STATIC,39,62,238,20
+    LTEXT           "Ported to OGL by RT",IDC_STATIC,39,40,68,8
+    LTEXT           "Bravely maintained by Goober5000 and WMCoolmon",
+                    IDC_STATIC,39,32,181,8
+    PUSHBUTTON      "Report a Bug",IDC_BUG,227,24,50,14
+    PUSHBUTTON      "Visit Forums",IDC_FORUMS,227,41,50,14
+    LTEXT           "Original fs2_open OGL port by Phreak and Fry_day",
+                    IDC_STATIC,39,49,161,8
+END
+
+IDD_SHIP_EDITBAR DIALOGEX 0, 0, 293, 52
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION
+CAPTION "Ship Editbar"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_SHIP_NAME,26,2,60,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_SHIP_CLASS,26,19,60,30,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SHIP_WING,26,35,60,30,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_POS_X,101,2,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN_POSITIONX,"msctls_updown32",
+                    UDS_ARROWKEYS,141,2,11,14
+    EDITTEXT        IDC_POS_Y,101,19,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN_POSITIONY,"msctls_updown32",
+                    UDS_ARROWKEYS,141,19,11,14
+    EDITTEXT        IDC_POS_Z,101,35,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN_POSITIONZ,"msctls_updown32",
+                    UDS_ARROWKEYS,141,35,11,14
+    COMBOBOX        IDC_SHIP_IFF,189,2,57,30,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SHIP_AI_CLASS,189,19,57,30,CBS_DROPDOWNLIST | 
+                    CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SHIP_STATUS,189,35,57,30,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Edit",IDC_SHIP_EDITOR,250,1,41,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Goals",IDC_GOAL_EDITOR,250,18,41,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Waypoints",IDC_WAYPOINT_EDITOR,250,35,41,14,0,
+                    WS_EX_STATICEDGE
+    LTEXT           "X",IDC_STATIC,94,5,8,8
+    LTEXT           "Z",IDC_STATIC,94,38,8,8
+    LTEXT           "Y",IDC_STATIC,94,22,8,8
+    LTEXT           "Name",IDC_STATIC,2,6,22,8
+    LTEXT           "Class",IDC_STATIC,6,22,18,8
+    LTEXT           "Wing",IDC_STATIC,6,38,18,8
+    LTEXT           "IFF",IDC_STATIC,173,6,11,8
+    LTEXT           "AI Class",IDC_STATIC,159,22,26,8
+    LTEXT           "Status",IDC_STATIC,163,38,21,8
+END
+
+IDD_MESSAGE_EDITOR DIALOGEX 0, 0, 198, 366
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Message Editor"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    LISTBOX         IDC_MESSAGE_LIST,7,18,127,74,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_NAME,31,96,127,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MESSAGE_TEXT,7,126,184,54,ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_WANTRETURN
+    COMBOBOX        IDC_AVI_FILENAME,49,196,71,111,CBS_DROPDOWN | 
+                    CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Browse",IDC_BROWSE_AVI,126,196,50,12
+    COMBOBOX        IDC_WAVE_FILENAME,49,211,71,110,CBS_DROPDOWN | 
+                    CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,126,211,50,12
+    COMBOBOX        IDC_PERSONA_NAME,49,226,71,57,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SENDER,40,262,71,122,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_PRIORITY,144,262,41,91,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "Tree1",IDC_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    WS_BORDER | WS_TABSTOP,13,289,171,63,WS_EX_CLIENTEDGE
+    PUSHBUTTON      "New",IDC_NEW,141,18,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete",IDC_DELETE,141,36,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "OK",ID_OK,141,58,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,141,76,50,14
+    LTEXT           "Message Text",IDC_STATIC,7,115,48,8
+    LTEXT           "Name",IDC_STATIC,7,98,20,8
+    LTEXT           "Messages",IDC_STATIC,57,8,35,8
+    LTEXT           "ANI file",IDC_STATIC,21,198,23,8
+    LTEXT           "Wave file",IDC_STATIC,13,213,31,8
+    LTEXT           "Formula",IDC_STATIC,13,279,66,8
+    GROUPBOX        "Default Send",IDC_STATIC,7,251,184,107
+    LTEXT           "Sender",IDC_STATIC,13,264,24,8
+    LTEXT           "Priority",IDC_STATIC,119,264,22,8
+    LTEXT           "Persona",IDC_STATIC,17,228,27,8
+    GROUPBOX        "Message Properties",IDC_STATIC,7,184,184,60
+END
+
+IDD_SHIP_GOALS_EDITOR DIALOG DISCARDABLE  0, 0, 412, 205
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Initial Orders"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Behavior",IDC_STATIC,57,8,29,8
+    LTEXT           "Priority",IDC_STATIC,383,8,22,8
+    LTEXT           "Object",IDC_STATIC,135,8,22,8
+    LTEXT           "Subsys/Docker's Bay",IDC_STATIC,209,8,69,8
+    LTEXT           "Dockee's Bay",IDC_STATIC,303,8,45,8
+    LTEXT           "Order 1",IDC_STATIC,7,23,24,8
+    COMBOBOX        IDC_BEHAVIOR1,37,20,71,132,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_OBJECT1,111,20,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM1,208,20,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK1,291,20,71,93,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY1,365,20,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,20,11,
+                    12
+    LTEXT           "Order 2",IDC_STATIC,7,39,24,8
+    COMBOBOX        IDC_BEHAVIOR2,37,36,71,128,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_OBJECT2,111,36,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM2,208,36,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK2,291,36,71,102,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY2,365,36,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN2,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,36,11,
+                    12
+    LTEXT           "Order 3",IDC_STATIC,7,55,24,8
+    COMBOBOX        IDC_BEHAVIOR3,37,52,71,132,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_OBJECT3,111,52,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM3,208,52,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK3,291,52,71,96,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY3,365,52,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN3,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,52,11,
+                    12
+    LTEXT           "Order 4",IDC_STATIC,7,71,24,8
+    COMBOBOX        IDC_BEHAVIOR4,37,68,71,130,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_OBJECT4,111,68,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM4,208,68,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK4,291,68,71,97,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY4,365,68,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN4,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,68,11,
+                    12
+    LTEXT           "Order 5",IDC_STATIC,7,87,24,8
+    COMBOBOX        IDC_BEHAVIOR5,37,84,71,133,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_OBJECT5,111,84,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM5,208,84,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK5,291,84,71,108,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY5,365,84,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN5,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,84,11,
+                    12
+    LTEXT           "Order 6",IDC_STATIC,7,103,24,8
+    COMBOBOX        IDC_BEHAVIOR6,37,100,71,126,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_OBJECT6,111,100,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM6,208,100,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK6,291,100,71,98,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY6,365,100,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN6,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,100,
+                    11,12
+    LTEXT           "Order 7",IDC_STATIC,7,119,24,8
+    COMBOBOX        IDC_BEHAVIOR7,37,116,71,130,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_OBJECT7,111,116,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM7,208,116,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK7,291,116,71,119,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY7,365,116,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN7,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,116,
+                    11,12
+    LTEXT           "Order 8",IDC_STATIC,7,135,24,8
+    COMBOBOX        IDC_BEHAVIOR8,37,132,71,133,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_OBJECT8,111,132,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM8,208,132,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK8,291,132,71,102,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY8,365,132,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN8,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,132,
+                    11,12
+    LTEXT           "Order 9",IDC_STATIC,7,151,24,8
+    COMBOBOX        IDC_BEHAVIOR9,37,148,71,129,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_OBJECT9,111,148,94,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM9,208,148,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK9,291,148,71,118,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY9,365,148,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN9,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,148,
+                    11,12
+    LTEXT           "Order 10",IDC_STATIC,7,167,28,8
+    COMBOBOX        IDC_BEHAVIOR10,37,164,71,131,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_OBJECT10,111,164,94,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SUBSYSTEM10,208,164,79,109,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DOCK10,291,164,71,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PRIORITY10,365,164,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN10,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,365,164,
+                    11,12
+    PUSHBUTTON      "OK",IDOK,299,184,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,355,184,50,14
+END
+
+IDD_MISSION_NOTES DIALOG DISCARDABLE  0, 0, 322, 335
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Mission Specs"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_MISSION_TITLE,41,7,109,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_DESIGNER_NAME,41,23,109,14,ES_AUTOHSCROLL
+    CONTROL         "Single Player",IDC_SINGLE,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP,7,42,57,10
+    CONTROL         "Multi Player",IDC_MULTI,"Button",BS_AUTORADIOBUTTON,7,
+                    51,52,10
+    CONTROL         "Training",IDC_TRAINING,"Button",BS_AUTORADIOBUTTON,7,60,
+                    41,10
+    CONTROL         "Cooperative",IDC_COOP,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP,76,42,54,10
+    CONTROL         "Team Vs. Team",IDC_TEAMVTEAM,"Button",
+                    BS_AUTORADIOBUTTON,76,51,66,10
+    CONTROL         "Dogfight",IDC_DOGFIGHT,"Button",BS_AUTORADIOBUTTON,76,
+                    60,43,10
+    EDITTEXT        IDC_SQUAD_NAME,53,125,98,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Logo",IDC_SQUAD_LOGO_BUTTON,13,140,31,14
+    EDITTEXT        IDC_SQUAD_LOGO,53,140,98,14,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_RESPAWNS,69,213,50,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin1",IDC_RESPAWN_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,119,213,11,14
+    COMBOBOX        IDC_MUSIC,206,222,109,140,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "All Teams at War",IDC_FULL_WAR,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,165,7,72,10
+    CONTROL         "Red Alert Mission",IDC_RED_ALERT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,165,16,78,10
+    CONTROL         "Scramble Mission",IDC_SCRAMBLE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,165,25,72,10
+    CONTROL         "No Briefing",IDC_NO_BRIEFING,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,165,34,72,10
+    CONTROL         "No Debriefing",IDC_NO_DEBRIEFING,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,165,43,72,10
+    CONTROL         "Disallow Promotions/Badges",IDC_NO_PROMOTION,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,165,55,106,10
+    CONTROL         "Disable Built-in Messages",IDC_DISABLE_BUILTIN_MSGS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,64,123,10
+    CONTROL         "No Traitor",IDC_NO_TRAITOR,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,165,73,123,10
+    CONTROL         "Toggle (off in nebula; on elsewhere)",
+                    IDC_SPECS_TOGGLE_TRAILS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,165,191,141,10
+    CONTROL         "All Ships Beam-Freed By Default",
+                    IDC_BEAM_FREE_ALL_BY_DEFAULT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,165,82,123,10
+    CONTROL         "Disallow Support Ships",IDC_SUPPORT_ALLOWED,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,165,118,95,10
+    CONTROL         "Support Ships Repair Hull",IDC_SUPPORT_REPAIRS_HULL,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,128,123,10
+    EDITTEXT        IDC_MISSION_DESC,7,246,307,38,ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_WANTRETURN
+    EDITTEXT        IDC_MISSION_NOTES,7,292,307,38,ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_WANTRETURN
+    DEFPUSHBUTTON   "OK",IDOK,264,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,264,25,50,14
+    LTEXT           "Max Respawns",IDC_STATIC,17,216,52,8
+    RTEXT           "Title",IDC_STATIC,7,10,29,8
+    RTEXT           "Designer Notes",IDC_STATIC,7,284,50,8
+    LTEXT           "xx/xx/xx",IDC_MODIFIED,57,83,101,8
+    RTEXT           "Designer",IDC_STATIC,7,25,29,8
+    RTEXT           "Created:",IDC_STATIC,23,74,28,8
+    LTEXT           "xx/xx/xx",IDC_CREATED,57,74,103,8
+    RTEXT           "Last Modified:",IDC_STATIC,7,83,45,8
+    LTEXT           "Mission Description",IDC_STATIC,7,236,62,8
+    LTEXT           "Music",IDC_STATIC,178,225,20,8
+    GROUPBOX        "Squadron Reassign",IDC_STATIC,7,115,151,45
+    LTEXT           "Name",IDC_STATIC,19,126,28,8
+    GROUPBOX        "Loading Screen",IDC_STATIC,7,165,151,46
+    PUSHBUTTON      "640x480",IDC_LOADING_SCREEN_BUTTON640,13,175,40,14
+    PUSHBUTTON      "1024x768",IDC_LOADING_SCREEN_BUTTON1024,13,191,40,16
+    EDITTEXT        IDC_LOADING_SCREEN640,53,175,97,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LOADING_SCREEN1024,53,191,97,16,ES_AUTOHSCROLL
+    GROUPBOX        "Support Ships",IDC_STATIC,163,109,154,67
+    EDITTEXT        IDC_MAX_HULL_REPAIR_VAL,244,142,59,14,ES_AUTOHSCROLL
+    LTEXT           "Hull Repair Ceiling",IDC_STATIC,165,144,60,8
+    LTEXT           "Subsytem Repair Ceiling",IDC_STATIC,165,160,80,8
+    LTEXT           "%",IDC_STATIC,306,146,8,8
+    EDITTEXT        IDC_MAX_SUBSYS_REPAIR_VAL,244,158,59,14,ES_AUTOHSCROLL
+    LTEXT           "%",IDC_STATIC,306,161,8,8
+    GROUPBOX        "Ship Trails",IDC_STATIC,163,181,154,39
+    CONTROL         "Minimium speed to display",IDC_CONTRAIL_THRESHOLD_CHECK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,202,97,10
+    EDITTEXT        IDC_CONTRAIL_THRESHOLD,264,201,48,14,ES_READONLY
+    PUSHBUTTON      "Custom Wing Names",IDC_CUSTOM_WING_NAMES,15,97,136,14
+    CONTROL         "Allow Daisy-Chained Docking",IDC_ALLOW_DOCK_TREES,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,91,123,10
+END
+
+IDD_PREFERENCES DIALOG DISCARDABLE  0, 0, 333, 81
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Preferences"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Confirm deleting objects",ID_CONFIRM_DELETING,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,18,91,10
+    CONTROL         "Star Field",IDC_PREF_STARFIELD,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,36,45,10
+    CONTROL         "Fighters",ID_SHOW_FIGHTERS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,119,18,41,10
+    CONTROL         "Capital Ships",ID_SHOW_CAPITALSHIPS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,119,28,57,10
+    CONTROL         "Planets",ID_SHOW_PLANETS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,119,39,39,10
+    CONTROL         "Misc Objects",ID_SHOW_MISCOBJECTS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,119,49,57,10
+    CONTROL         "Waypoints",ID_SHOW_WAYPOINTS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,179,18,49,10
+    CONTROL         "Grid",ID_SHOW_GRID,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,179,28,29,10
+    CONTROL         "Elevations",ID_SHOW_ELEVATIONS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,179,39,49,10
+    PUSHBUTTON      "Save as Default",IDC_SAVE_DEFAULT_PREFS,270,47,56,14
+    DEFPUSHBUTTON   "OK",IDOK,276,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,276,24,50,14
+    GROUPBOX        "Default Display",IDC_DISPLAY,107,7,136,56
+END
+
+IDD_SHIP_EDITOR DIALOGEX 0, 0, 321, 435
+STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+EXSTYLE WS_EX_NOPARENTNOTIFY | WS_EX_CLIENTEDGE | WS_EX_CONTEXTHELP
+CAPTION "Edit Ship"
+MENU IDR_SHIP_EDIT_MENU
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Prev",IDC_PREV,264,7,24,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Next",IDC_NEXT,290,7,24,14,0,WS_EX_STATICEDGE
+    EDITTEXT        IDC_SHIP_NAME,47,7,94,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_SHIP_CLASS,47,22,94,207,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_AI_CLASS,47,36,94,185,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SHIP_TEAM,47,50,94,196,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SHIP_CARGO1,47,64,94,258,CBS_DROPDOWN | 
+                    CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SHIP_ALT,47,79,94,125,CBS_DROPDOWN | WS_VSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "Texture Replacement",IDC_TEXTURES,47,95,93,14,0,
+                    WS_EX_STATICEDGE
+    COMBOBOX        IDC_HOTKEY,180,21,68,122,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_SHIP_PERSONA,180,37,68,129,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_SCORE,180,52,68,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Player Ship",IDC_PLAYER_SHIP,"Button",BS_3STATE | 
+                    WS_TABSTOP,180,71,51,10
+    PUSHBUTTON      "Set As Player Ship",IDC_SET_AS_PLAYER_SHIP,180,83,69,14,
+                    0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Misc",IDC_FLAGS,47,118,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Initial Status",IDC_INITIAL_STATUS,101,118,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Initial Orders",IDC_GOALS,156,118,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "TBL Info",IDC_SHIP_TBL,210,118,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete",IDC_DELETE_SHIP,264,23,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Reset",IDC_SHIP_RESET,264,39,50,14,BS_CENTER | 
+                    BS_MULTILINE,WS_EX_STATICEDGE
+    PUSHBUTTON      "Weapons",IDC_WEAPONS,264,55,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Player Orders",IDC_IGNORE_ORDERS,264,71,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Special Exp",IDC_SPECIAL_EXP,264,87,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Special Hits",IDC_SPECIAL_HITPOINTS,264,103,50,14,0,
+                    WS_EX_STATICEDGE
+    CONTROL         "Hide Cues",IDC_HIDE_CUES,"Button",BS_AUTOCHECKBOX | 
+                    BS_PUSHLIKE | WS_TABSTOP,265,119,49,12
+    COMBOBOX        IDC_ARRIVAL_LOCATION,46,150,103,127,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_ARRIVAL_TARGET,46,164,103,262,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_ARRIVAL_DISTANCE,46,178,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    EDITTEXT        IDC_ARRIVAL_DELAY,46,194,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    CONTROL         "Spin1",IDC_ARRIVAL_DELAY_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,86,194,11,14
+    LTEXT           "Seconds",IDC_STATIC,94,198,45,8
+    CONTROL         "Update Cue",IDC_UPDATE_ARRIVAL,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,94,212,54,10
+    CONTROL         "Tree1",IDC_ARRIVAL_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    WS_BORDER | WS_TABSTOP,15,222,133,84,WS_EX_CLIENTEDGE
+    CONTROL         "No Warp Effect",IDC_NO_ARRIVAL_WARP,"Button",BS_3STATE | 
+                    WS_TABSTOP,16,308,65,10
+    COMBOBOX        IDC_DEPARTURE_LOCATION,202,150,103,127,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DEPARTURE_TARGET,202,164,103,262,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_DEPARTURE_DELAY,201,194,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    CONTROL         "Spin3",IDC_DEPARTURE_DELAY_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,240,194,11,14
+    LTEXT           "Seconds",IDC_STATIC,247,198,45,8
+    CONTROL         "Update Cue",IDC_UPDATE_DEPARTURE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,251,212,54,10
+    CONTROL         "Tree1",IDC_DEPARTURE_TREE,"SysTreeView32",
+                    TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | 
+                    TVS_EDITLABELS | WS_BORDER | WS_TABSTOP,172,222,133,84,
+                    WS_EX_CLIENTEDGE
+    CONTROL         "No Warp Effect",IDC_NO_DEPARTURE_WARP,"Button",
+                    BS_3STATE | WS_TABSTOP,172,308,65,10
+    EDITTEXT        IDC_HELP_BOX,7,333,307,95,ES_MULTILINE | ES_READONLY,
+                    WS_EX_TRANSPARENT
+    LTEXT           "Ship Name",IDC_STATIC,7,10,36,8
+    LTEXT           "Ship Class",IDC_STATIC,9,24,34,8
+    LTEXT           "Cargo",IDC_STATIC,23,66,20,8
+    RTEXT           "Wing:",IDC_STATIC,156,10,20,8
+    LTEXT           "Team",IDC_STATIC,24,52,19,8
+    LTEXT           "Location",IDC_STATIC,15,150,28,8
+    LTEXT           "Cue:",IDC_STATIC,15,212,16,8
+    GROUPBOX        "Arrival",IDC_CUE_FRAME,7,137,150,185
+    LTEXT           "Location",IDC_STATIC,172,150,28,8
+    LTEXT           "Cue:",IDC_STATIC,172,212,16,8
+    GROUPBOX        "Departure",IDC_STATIC,164,137,150,185
+    LTEXT           "AI Class",IDC_STATIC,17,38,26,8
+    LTEXT           "Delay",IDC_STATIC,15,198,19,8
+    LTEXT           "Delay",IDC_STATIC,172,198,19,8
+    LTEXT           "Static",IDC_WING,180,10,67,8
+    LTEXT           "Hotkey",IDC_STATIC,152,23,24,8
+    LTEXT           "Score",IDC_STATIC,156,55,20,8
+    LTEXT           "Target",IDC_STATIC,15,166,22,8
+    LTEXT           "Distance",IDC_STATIC,15,182,29,8
+    LTEXT           "Target",IDC_STATIC,172,166,22,8
+    LTEXT           "Persona",IDC_STATIC,149,39,27,8
+    LTEXT           "Alt Name",IDC_STATIC,14,80,30,8
+END
+
+IDD_WEAPON_EDITOR DIALOG DISCARDABLE  0, 0, 445, 79
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Weapon Editor"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDC_LIST,7,8,75,64,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_GUN1,136,9,67,101,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_GUN2,136,26,67,117,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_GUN3,136,44,67,120,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_AI_CLASS,136,62,67,108,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_MISSILE1,270,9,67,116,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_AMMO1,342,8,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,386,46,9,
+                    14
+    COMBOBOX        IDC_MISSILE2,270,26,67,111,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_AMMO2,342,25,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin2",IDC_SPIN2,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,396,46,9,
+                    14
+    COMBOBOX        IDC_MISSILE3,270,44,67,109,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_AMMO3,342,43,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin3",IDC_SPIN3,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,408,46,9,
+                    14
+    COMBOBOX        IDC_MISSILE4,270,62,67,114,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_AMMO4,342,60,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin4",IDC_SPIN4,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,418,46,9,
+                    14
+    DEFPUSHBUTTON   "Close",IDOK,388,9,50,14
+    LTEXT           "Gun bank 1",IDC_STATIC,92,11,38,8
+    LTEXT           "Gun bank 2",IDC_STATIC,92,28,38,8
+    LTEXT           "Gun bank 3",IDC_STATIC,92,46,38,8
+    LTEXT           "AI class",IDC_STATIC,104,63,26,8
+    LTEXT           "Missile bank 1",IDC_STATIC,218,11,46,8
+    LTEXT           "Missile bank 2",IDC_STATIC,218,28,46,8
+    LTEXT           "Missile bank 3",IDC_STATIC,218,46,46,8
+    LTEXT           "Missile bank 4",IDC_STATIC,218,63,46,8
+END
+
+IDD_SHIP_MARKINGS DIALOG DISCARDABLE  0, 0, 252, 140
+STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | 
+    WS_CAPTION
+CAPTION "Ship Markings"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Markings",-1,19,10,29,8
+    COMBOBOX        IDC_MODEL_NAME,52,8,88,30,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "",IDC_MODEL_WINDOW,"Static",SS_BLACKFRAME,11,33,164,97
+    DEFPUSHBUTTON   "OK",IDOK,187,8,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,187,25,50,14
+END
+
+IDD_MISSION_GOALS DIALOGEX 0, 0, 299, 270
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Mission Objectives"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CONTROL         "Tree1",IDC_GOALS_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    TVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,6,7,136,153,
+                    WS_EX_CLIENTEDGE
+    COMBOBOX        IDC_DISPLAY_GOAL_TYPES_DROP,219,7,73,119,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_GOAL_TYPE_DROP,211,34,73,108,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_GOAL_NAME,211,49,73,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_GOAL_DESC,157,65,127,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_GOAL_SCORE,211,81,73,14,ES_AUTOHSCROLL | ES_NUMBER
+    COMBOBOX        IDC_OBJ_TEAM,211,97,73,71,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Objective Invalid",IDC_GOAL_INVALID,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,157,116,69,10
+    CONTROL         "Don't Play Completion Sound",IDC_NO_MUSIC,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,157,126,107,10
+    PUSHBUTTON      "New Obj.",IDC_BUTTON_NEW_GOAL,152,146,44,14,0,
+                    WS_EX_STATICEDGE,HIDC_BUTTON_NEW_GOAL
+    PUSHBUTTON      "OK",ID_OK,200,146,44,14
+    PUSHBUTTON      "Cancel",IDCANCEL,248,146,44,14
+    EDITTEXT        IDC_HELP_BOX,6,167,286,95,ES_MULTILINE | ES_READONLY | 
+                    WS_VSCROLL,WS_EX_TRANSPARENT
+    GROUPBOX        "Current Objective",IDC_STATIC,152,24,140,117
+    LTEXT           "Display Types",IDC_STATIC,170,9,45,8,NOT WS_GROUP
+    LTEXT           "Type",IDC_STATIC,188,36,17,8,NOT WS_GROUP
+    LTEXT           "Name",IDC_STATIC,185,52,20,8
+    LTEXT           "Score",IDC_STATIC,185,84,20,8
+    LTEXT           "Team",IDC_STATIC,186,99,19,8
+END
+
+IDD_SHIP_SELECT DIALOGEX 0, 0, 204, 207
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "Ship Selection"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDC_SHIP_LIST,7,7,98,131,LBS_NOINTEGRALHEIGHT | 
+                    LBS_EXTENDEDSEL | WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_WING_LIST,7,139,98,61,LBS_NOINTEGRALHEIGHT | 
+                    LBS_EXTENDEDSEL | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Player starting points",IDC_FILTER_STARTS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,115,7,81,10
+    CONTROL         "Waypoints",IDC_FILTER_WAYPOINTS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,115,18,49,10
+    CONTROL         "Ships",IDC_FILTER_SHIPS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,115,29,33,10
+    PUSHBUTTON      "All",IDC_ALL,114,161,28,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Clear",IDC_CLEAR,114,173,28,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Invert",IDC_INVERT,114,186,28,14,0,WS_EX_STATICEDGE
+    DEFPUSHBUTTON   "OK",IDOK,149,167,32,14
+    PUSHBUTTON      "Cancel",IDCANCEL,149,186,32,14
+    CONTROL         "IFF 0",IDC_FILTER_SHIPS_IFF_0,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,40,68,10
+    CONTROL         "IFF 1",IDC_FILTER_SHIPS_IFF_1,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,51,68,10
+    CONTROL         "IFF 2",IDC_FILTER_SHIPS_IFF_2,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,62,68,10
+    CONTROL         "IFF 3",IDC_FILTER_SHIPS_IFF_3,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,73,68,10
+    CONTROL         "IFF 4",IDC_FILTER_SHIPS_IFF_4,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,84,68,10
+    CONTROL         "IFF 5",IDC_FILTER_SHIPS_IFF_5,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,95,68,10
+    CONTROL         "IFF 6",IDC_FILTER_SHIPS_IFF_6,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,106,68,10
+    CONTROL         "IFF 7",IDC_FILTER_SHIPS_IFF_7,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,117,68,10
+    CONTROL         "IFF 8",IDC_FILTER_SHIPS_IFF_8,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,128,68,10
+    CONTROL         "IFF 9",IDC_FILTER_SHIPS_IFF_9,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,128,139,68,10
+END
+
+IDD_WING_EDITOR DIALOGEX 0, 0, 297, 439
+STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+EXSTYLE WS_EX_CLIENTEDGE
+CAPTION "Wing Edit"
+MENU IDR_WING_EDIT_MENU
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Prev",IDC_PREV,240,7,24,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Next",IDC_NEXT,266,7,24,14,0,WS_EX_STATICEDGE
+    EDITTEXT        IDC_WING_NAME,65,7,73,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_WING_SPECIAL_SHIP,65,23,73,161,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_WING_WAVES,65,37,61,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN_WAVES,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,127,37,11,
+                    15
+    EDITTEXT        IDC_WING_WAVE_THRESHOLD,65,53,61,15,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    CONTROL         "Spin2",IDC_SPIN_WAVE_THRESHOLD,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,127,53,11,15
+    COMBOBOX        IDC_HOTKEY,65,70,73,115,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "Squad Logo",IDC_WING_SQUAD_LOGO_BUTTON,7,89,55,14
+    EDITTEXT        IDC_WING_SQUAD_LOGO,65,90,98,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    CONTROL         "Reinforcement Unit",IDC_REINFORCEMENT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,143,16,77,10
+    CONTROL         "Ignore for Counting Goals",IDC_IGNORE_COUNT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,143,27,96,10
+    CONTROL         "No Arrival Music",IDC_NO_ARRIVAL_MUSIC,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,143,38,67,10
+    CONTROL         "No Arrival Message",IDC_NO_ARRIVAL_MESSAGE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,143,49,77,10
+    CONTROL         "No Dynamic Goals",IDC_NO_DYNAMIC,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,143,60,75,10
+    COMBOBOX        IDC_ARRIVAL_LOCATION,47,122,91,127,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_ARRIVAL_DELAY,47,138,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    CONTROL         "Spin3",IDC_ARRIVAL_DELAY_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,88,138,11,14
+    EDITTEXT        IDC_ARRIVAL_DELAY_MIN,39,164,28,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    EDITTEXT        IDC_ARRIVAL_DELAY_MAX,99,164,28,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    COMBOBOX        IDC_ARRIVAL_TARGET,46,189,91,188,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_ARRIVAL_DISTANCE,46,203,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    CONTROL         "Tree1",IDC_ARRIVAL_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    WS_BORDER | WS_TABSTOP,15,229,121,84,WS_EX_CLIENTEDGE
+    CONTROL         "No Warp Effect",IDC_NO_ARRIVAL_WARP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,13,314,91,10
+    COMBOBOX        IDC_DEPARTURE_LOCATION,192,122,91,127,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_DEPARTURE_DELAY,192,138,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    CONTROL         "Spin3",IDC_DEPARTURE_DELAY_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,234,138,11,14
+    COMBOBOX        IDC_DEPARTURE_TARGET,188,189,91,188,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Tree1",IDC_DEPARTURE_TREE,"SysTreeView32",
+                    TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | 
+                    TVS_EDITLABELS | WS_BORDER | WS_TABSTOP,160,229,121,84,
+                    WS_EX_CLIENTEDGE
+    CONTROL         "No Warp Effect",IDC_NO_DEPARTURE_WARP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,155,314,92,10
+    EDITTEXT        IDC_HELP_BOX,7,337,283,95,ES_MULTILINE | ES_READONLY,
+                    WS_EX_TRANSPARENT
+    LTEXT           "Seconds",IDC_STATIC,245,141,33,8
+    PUSHBUTTON      "Delete Wing",IDC_DELETE_WING,240,23,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Disband Wing",IDC_DISBAND_WING,240,39,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Initial Orders",IDC_GOALS2,240,55,50,14,0,
+                    WS_EX_STATICEDGE
+    CONTROL         "Hide Cues",IDC_HIDE_CUES,"Button",BS_AUTOCHECKBOX | 
+                    BS_PUSHLIKE | WS_TABSTOP,240,71,49,12
+    GROUPBOX        "Departure",IDC_STATIC,152,110,138,219
+    RTEXT           "Wing Name",IDC_STATIC,19,10,42,8
+    RTEXT           "Wave Threshold",IDC_STATIC,7,56,54,8
+    RTEXT           "# of Waves",IDC_STATIC,16,40,45,8
+    RTEXT           "Leader",IDC_STATIC,38,25,23,8,NOT WS_GROUP
+    LTEXT           "Location",IDC_STATIC,15,124,28,8
+    LTEXT           "Cue:",IDC_STATIC,15,218,16,8
+    GROUPBOX        "Arrival",IDC_CUE_FRAME,7,110,138,219
+    LTEXT           "Location",IDC_STATIC,160,124,28,8
+    LTEXT           "Cue:",IDC_STATIC,160,218,16,8
+    LTEXT           "Delay",IDC_STATIC,160,140,19,8
+    LTEXT           "Delay",IDC_STATIC,15,140,19,8
+    LTEXT           "Seconds",IDC_STATIC,102,141,45,8
+    RTEXT           "Hotkey",IDC_STATIC,37,72,24,8
+    GROUPBOX        "Delay Between Waves",IDC_STATIC,15,154,119,30
+    LTEXT           "Min",IDC_STATIC,21,167,12,8
+    LTEXT           "Max",IDC_STATIC,80,167,14,8
+    LTEXT           "Target",IDC_STATIC,15,191,22,8
+    LTEXT           "Distance",IDC_STATIC,15,206,29,8
+    LTEXT           "Target",IDC_STATIC,157,191,22,8
+END
+
+IDD_OPERATOR_ARGUMENT_TYPES DIALOG DISCARDABLE  0, 0, 235, 50
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Select Argument Types"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "Numbers",ID_NUMBERS,7,29,50,14
+    PUSHBUTTON      "Ships",ID_SHIPS,64,29,50,14
+    PUSHBUTTON      "Wings",ID_WINGS,121,29,50,14
+    PUSHBUTTON      "Boolean",ID_BOOLEAN,178,29,50,14
+    LTEXT           "This operator can accept any type of arguments, however they must\nall match.  What type of arguments would you like to use?",
+                    IDC_STATIC,7,7,221,18
+END
+
+IDD_LOADOUT_EDITOR DIALOG DISCARDABLE  0, 0, 204, 199
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Team Loadout Editor"
+MENU IDR_PLAYER_EDIT_MENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDC_SHIP_LIST,7,19,91,103,LBS_OWNERDRAWFIXED | 
+                    LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_SHIP_POOL,67,124,32,14,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,57,124,11,
+                    14
+    LISTBOX         IDC_WEAPON_LIST,104,19,93,103,LBS_OWNERDRAWFIXED | 
+                    LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_WEAPON_POOL,165,124,32,14,ES_AUTOHSCROLL
+    CONTROL         "Spin2",IDC_POOL_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,155,124,
+                    11,14
+    EDITTEXT        IDC_DELAY,119,158,32,14,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,47,156,9,
+                    14
+    DEFPUSHBUTTON   "OK",IDOK,48,178,41,14
+    PUSHBUTTON      "Cancel",IDCANCEL,99,178,41,14
+    LTEXT           "Available starting ships",IDC_STATIC,7,7,74,8
+    LTEXT           "Extra available",IDC_STATIC,7,127,52,8
+    LTEXT           "Amount used in wings:",IDC_STATIC,7,141,72,8
+    LTEXT           "",IDC_WINGS_SHP_COUNT,81,141,18,8
+    LTEXT           "Player entry delay",IDC_STATIC,59,160,58,8
+    LTEXT           "Available weapons pool",IDC_STATIC,104,7,76,8
+    LTEXT           "Amount used in wings:",IDC_STATIC,104,141,72,8
+    LTEXT           "",IDC_WINGS_WPN_COUNT,179,141,18,8
+    LTEXT           "Extra available",IDC_STATIC,104,127,52,8
+END
+
+IDD_ORIENT_EDITOR DIALOG DISCARDABLE  0, 0, 229, 119
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Object Orientation Editor"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_POSITION_X,24,19,49,14,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,75,19,9,
+                    14
+    EDITTEXT        IDC_POSITION_Y,24,35,49,14,ES_AUTOHSCROLL
+    CONTROL         "Spin2",IDC_SPIN2,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,75,35,9,
+                    14
+    EDITTEXT        IDC_POSITION_Z,24,51,49,14,ES_AUTOHSCROLL
+    CONTROL         "Spin3",IDC_SPIN3,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,75,51,9,
+                    14
+    CONTROL         "Point to:",IDC_POINT_TO_CHECKBOX,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,99,7,42,10
+    CONTROL         "Object:",IDC_POINT_TO_OBJECT,"Button",
+                    BS_AUTORADIOBUTTON,116,20,39,10
+    COMBOBOX        IDC_OBJECT_LIST,137,34,85,85,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Location:",IDC_POINT_TO_LOCATION,"Button",
+                    BS_AUTORADIOBUTTON,116,51,45,10
+    EDITTEXT        IDC_LOCATION_X,138,65,49,14,ES_AUTOHSCROLL
+    CONTROL         "Spin4",IDC_SPIN4,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,189,65,9,
+                    14
+    EDITTEXT        IDC_LOCATION_Y,138,81,49,14,ES_AUTOHSCROLL
+    CONTROL         "Spin5",IDC_SPIN5,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,189,82,9,
+                    14
+    EDITTEXT        IDC_LOCATION_Z,138,98,49,14,ES_AUTOHSCROLL
+    CONTROL         "Spin6",IDC_SPIN6,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,189,98,9,
+                    14
+    DEFPUSHBUTTON   "OK",IDOK,7,79,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,7,98,50,14
+    LTEXT           "X:",IDC_STATIC,13,21,8,8
+    LTEXT           "Y:",IDC_STATIC,13,36,8,8
+    LTEXT           "Z:",IDC_STATIC,13,53,8,8
+    LTEXT           "X:",IDC_STATIC,128,67,8,8
+    LTEXT           "Y:",IDC_STATIC,128,83,8,8
+    LTEXT           "Z:",IDC_STATIC,128,99,8,8
+    GROUPBOX        "Position",IDC_STATIC,7,7,74,64
+END
+
+IDD_EVENT_EDITOR DIALOGEX 0, 0, 437, 414
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Mission Event Edit"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CONTROL         "Tree1",IDC_EVENT_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    TVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,7,7,196,236,
+                    WS_EX_CLIENTEDGE
+    PUSHBUTTON      "New Event",IDC_BUTTON_NEW_EVENT,207,7,50,14,0,
+                    WS_EX_STATICEDGE,HIDC_BUTTON_NEW_EVENT
+    PUSHBUTTON      "Insert Event",IDC_INSERT,207,24,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete Event",IDC_DELETE,207,41,50,14,0,
+                    WS_EX_STATICEDGE
+    EDITTEXT        IDC_REPEAT_COUNT,210,108,45,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    EDITTEXT        IDC_INTERVAL_TIME,210,138,45,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    EDITTEXT        IDC_EVENT_SCORE,210,168,45,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_EVENT_TEAM,209,187,46,76,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Chained",IDC_CHAINED,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,211,204,42,10
+    LTEXT           "Chain Delay",IDC_STATIC,211,217,39,8
+    EDITTEXT        IDC_CHAIN_DELAY,211,228,45,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_OBJ_TEXT,86,246,117,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_OBJ_KEY_TEXT,86,262,117,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_HELP_BOX,7,283,423,124,ES_MULTILINE | ES_READONLY,
+                    WS_EX_TRANSPARENT
+    PUSHBUTTON      "New Msg",IDC_NEW_MSG,229,59,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete Msg",IDC_DELETE_MSG,229,77,50,14,0,
+                    WS_EX_STATICEDGE
+    LISTBOX         IDC_MESSAGE_LIST,285,17,145,74,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_MESSAGE_NAME,285,95,145,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MESSAGE_TEXT,261,125,169,54,ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_WANTRETURN
+    COMBOBOX        IDC_AVI_FILENAME,303,194,67,111,CBS_DROPDOWN | 
+                    CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Browse",IDC_BROWSE_AVI,374,194,49,14,0,WS_EX_STATICEDGE
+    COMBOBOX        IDC_WAVE_FILENAME,303,210,67,110,CBS_DROPDOWN | 
+                    CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,374,210,34,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,410,210,13,14,BS_BITMAP,
+                    WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    COMBOBOX        IDC_PERSONA_NAME,303,225,67,57,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Update Stuff",IDC_UPDATE,373,226,50,14
+    COMBOBOX        IDC_MESSAGE_TEAM,304,243,46,76,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "OK",ID_OK,324,266,50,14
+    PUSHBUTTON      "Cancel",ID_CANCEL,380,266,50,14
+    LTEXT           "Repeat Count",IDC_STATIC,210,98,45,8
+    LTEXT           "Interval time",IDC_STATIC,210,127,45,8
+    LTEXT           "Score",IDC_STATIC,210,159,45,8
+    LTEXT           "Directive text",IDC_STATIC,37,249,44,8
+    LTEXT           "Directive keypress text",IDC_STATIC,7,265,74,8
+    LTEXT           "Message Text",IDC_STATIC,261,114,48,8
+    LTEXT           "Name",IDC_STATIC,261,97,20,8
+    LTEXT           "Messages",IDC_STATIC,335,7,35,8
+    LTEXT           "ANI file",IDC_STATIC,275,197,23,8
+    LTEXT           "Wave file",IDC_STATIC,267,212,31,8
+    LTEXT           "Persona",IDC_STATIC,271,227,27,8
+    GROUPBOX        "Message Properties",IDC_STATIC,261,183,169,80
+    LTEXT           "Team",IDC_STATIC,279,245,20,8
+    LTEXT           "(multiplayer TvT only)",IDC_STATIC,353,246,68,8
+END
+
+IDD_BG_BITMAP DIALOG DISCARDABLE  0, 0, 431, 295
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Background Editor"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDC_SBITMAP_LIST,14,19,102,87,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Add",IDC_ADD_SBITMAP,14,112,41,14
+    PUSHBUTTON      "Delete",IDC_DEL_SBITMAP,76,112,40,14
+    COMBOBOX        IDC_SBITMAP,123,20,83,265,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_SBITMAP_P,135,41,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin4",IDC_SBITMAP_P_SPIN,"msctls_updown32",
+                    UDS_ARROWKEYS,160,41,11,14
+    EDITTEXT        IDC_SBITMAP_B,135,57,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin3",IDC_SBITMAP_B_SPIN,"msctls_updown32",
+                    UDS_ARROWKEYS,160,57,11,14
+    EDITTEXT        IDC_SBITMAP_H,135,73,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SBITMAP_H_SPIN,"msctls_updown32",
+                    UDS_ARROWKEYS,160,73,11,14
+    EDITTEXT        IDC_SBITMAP_SCALE_X,127,103,36,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SBITMAP_SCALE_Y,165,103,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SBITMAP_DIV_X,127,131,36,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    EDITTEXT        IDC_SBITMAP_DIV_Y,165,131,41,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    LISTBOX         IDC_SUN1_LIST,229,19,106,85,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Add",IDC_ADD_SUN,229,112,41,14
+    PUSHBUTTON      "Delete",IDC_DEL_SUN,295,112,40,14
+    COMBOBOX        IDC_SUN1,338,19,71,265,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_SUN1_P,349,39,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin4",IDC_SUN1_P_SPIN,"msctls_updown32",UDS_ARROWKEYS,
+                    373,39,11,14
+    EDITTEXT        IDC_SUN1_B,349,54,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin3",IDC_SUN1_B_SPIN,"msctls_updown32",UDS_ARROWKEYS,
+                    373,54,11,14
+    EDITTEXT        IDC_SUN1_H,349,70,23,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_SUN1_H_SPIN,"msctls_updown32",UDS_ARROWKEYS,
+                    373,70,11,14
+    EDITTEXT        IDC_SUN1_SCALE,362,88,23,14,ES_AUTOHSCROLL
+    CONTROL         "Full Nebula",IDC_FULLNEB,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,14,166,62,10
+    EDITTEXT        IDC_NEB2_INTENSITY,68,185,63,12,ES_AUTOHSCROLL
+    COMBOBOX        IDC_NEB2_TEXTURE,68,201,63,88,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_NEB2_LIGHTNING,68,216,63,91,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Toggle ship trails",IDC_NEB_TOGGLE_TRAILS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,14,234,123,10
+    CONTROL         "Check1",IDC_POOF0,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    144,172,62,10
+    CONTROL         "Check2",IDC_POOF1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    144,182,62,10
+    CONTROL         "Check3",IDC_POOF2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    144,191,62,10
+    CONTROL         "Check4",IDC_POOF3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    144,200,62,10
+    CONTROL         "Check5",IDC_POOF4,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    144,209,62,10
+    CONTROL         "Check6",IDC_POOF5,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    144,218,62,10
+    COMBOBOX        IDC_NEBPATTERN,42,255,61,108,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_NEBCOLOR,42,271,61,108,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_PITCH,166,235,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_BANK,166,252,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_HEADING,166,269,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Slider1",IDC_SLIDER1,"msctls_trackbar32",TBS_BOTH | 
+                    TBS_NOTICKS | WS_TABSTOP,228,221,178,15
+    CONTROL         "Takes place inside Subspace",IDC_SUBSPACE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,229,244,109,10
+    LTEXT           "Pattern:",IDC_STATIC,14,257,26,8
+    LTEXT           "Color:",IDC_STATIC,15,273,23,8
+    LTEXT           "Pitch",IDC_STATIC,145,238,17,8
+    GROUPBOX        "Nebula",IDC_STATIC,5,154,210,137
+    LTEXT           "Bank",IDC_STATIC,144,255,18,8
+    LTEXT           "Heading",IDC_STATIC,134,272,28,8
+    LTEXT           "Number of stars:",IDC_STATIC,228,210,52,8
+    LTEXT           "Static",IDC_TOTAL,284,210,43,8
+    GROUPBOX        "Misc",IDC_STATIC,225,201,203,89
+    GROUPBOX        "Suns",IDC_STATIC,223,6,205,124
+    GROUPBOX        "Bitmaps",IDC_STATIC,5,6,210,145
+    LTEXT           "Scale",IDC_STATIC,340,91,19,8
+    LTEXT           "P",IDC_STATIC,339,42,8,8
+    LTEXT           "B",IDC_STATIC,339,57,8,8
+    LTEXT           "H",IDC_STATIC,339,73,8,8
+    LTEXT           "Scale (x/y)",IDC_STATIC,150,94,35,8
+    LTEXT           "P",IDC_STATIC,125,44,8,8
+    LTEXT           "B",IDC_STATIC,125,60,8,8
+    LTEXT           "H",IDC_STATIC,125,76,8,8
+    LTEXT           "Range:",IDC_STATIC,14,185,24,8
+    LTEXT           "Pattern:",IDC_STATIC,14,200,26,8
+    LTEXT           "Poofs",IDC_STATIC,142,160,19,8
+    LTEXT           "# divisions (x/y)",IDC_STATIC,144,122,50,8
+    LTEXT           "Lightning Storm",IDC_STATIC,14,217,50,8
+    LTEXT           "Skybox Model Filename",IDC_STATIC,229,258,94,8
+    EDITTEXT        IDC_SKYBOX_FNAME,229,269,110,14,ES_AUTOHSCROLL
+    CONTROL         "Slider2",IDC_AMBIENT_R_SLIDER,"msctls_trackbar32",
+                    TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,231,148,144,15
+    CONTROL         "Slider3",IDC_AMBIENT_G_SLIDER,"msctls_trackbar32",
+                    TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,231,164,144,15
+    CONTROL         "Slider4",IDC_AMBIENT_B_SLIDER,"msctls_trackbar32",
+                    TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,231,180,144,15
+    LTEXT           "Static",IDC_AMBIENT_R_TEXT,381,150,42,8
+    LTEXT           "Static",IDC_AMBIENT_G_TEXT,381,166,42,8
+    LTEXT           "Static",IDC_AMBIENT_B_TEXT,381,182,42,8
+    GROUPBOX        "Ambient light",IDC_STATIC,225,136,203,62
+    PUSHBUTTON      "Import...",IDC_IMPORT_BACKGROUND,14,132,41,14
+END
+
+IDD_REINFORCEMENT_EDITOR DIALOGEX 0, 0, 183, 119
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Reinforcements Editor"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    LISTBOX         IDC_LIST,7,7,113,66,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_TABSTOP,WS_EX_CLIENTEDGE | WS_EX_STATICEDGE
+    PUSHBUTTON      "Add",IDC_ADD,126,7,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete",IDC_DELETE,126,23,50,14,WS_DISABLED,
+                    WS_EX_STATICEDGE
+    EDITTEXT        IDC_USES,67,77,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin1",IDC_USES_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,109,77,11,
+                    14
+    EDITTEXT        IDC_DELAY,67,98,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,109,98,11,
+                    14
+    DEFPUSHBUTTON   "OK",IDOK,126,45,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,126,62,50,14
+    LTEXT           "Uses",IDC_STATIC,47,78,17,8
+    LTEXT           "Delay After Arrival",IDC_STATIC,7,99,57,8
+END
+
+IDD_REINFORCEMENT_SELECT DIALOG DISCARDABLE  0, 0, 156, 132
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Select Reinforcement Unit"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDC_LIST,7,7,87,118,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,99,94,50,14,WS_DISABLED
+    PUSHBUTTON      "Cancel",IDCANCEL,99,111,50,14
+END
+
+IDD_WAYPOINT_PATH_EDITOR DIALOG DISCARDABLE  0, 0, 145, 29
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Waypoint Path/Jump Node Editor"
+MENU IDR_WAYPOINT_PATH_EDIT_MENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Name",IDC_STATIC,7,10,20,8
+    EDITTEXT        IDC_NAME,32,7,106,14,ES_AUTOHSCROLL
+END
+
+IDD_WING_CREATE DIALOG DISCARDABLE  0, 0, 119, 68
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Create Wing"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_NAME,7,27,105,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,7,47,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,62,47,50,14
+    LTEXT           "Please specify a name for this\nnew wing",IDC_STATIC,7,
+                    7,99,18
+END
+
+IDD_INITIAL_STATUS DIALOG DISCARDABLE  0, 0, 197, 297
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Initial Status Editor"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_VELOCITY,57,7,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_VELOCITY_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,98,7,11,14
+    EDITTEXT        IDC_HULL,57,24,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin1",IDC_HULL_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,98,24,11,
+                    14
+    CONTROL         "Has Shield System",IDC_HAS_SHIELDS,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,42,75,10
+    CONTROL         "Locked",IDC_LOCKED,"Button",BS_3STATE | WS_TABSTOP,7,78,
+                    40,10
+    EDITTEXT        IDC_SHIELDS,57,55,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin3",IDC_SHIELDS_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,99,56,9,14
+    COMBOBOX        IDC_DOCKEE,103,123,80,106,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_DOCKEE_POINT,103,137,80,102,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_SUBSYS,16,205,68,60,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_CARGO_NAME,39,271,86,12,ES_AUTOHSCROLL
+    LTEXT           "Integrity",IDC_STATIC,90,205,28,8
+    EDITTEXT        IDC_DAMAGE,90,215,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin1",IDC_DAMAGE_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,118,237,9,14
+    DEFPUSHBUTTON   "OK",IDOK,140,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,140,24,50,14
+    LTEXT           "Velocity",IDC_STATIC,27,10,26,8
+    LTEXT           "Shield Integrity",IDC_STATIC,7,58,47,8
+    GROUPBOX        "Subsystems",IDC_STATIC,7,191,132,99
+    LTEXT           "Hull Integrity",IDC_STATIC,14,27,40,8
+    LTEXT           "Cargo:",IDC_STATIC,15,273,22,8
+    GROUPBOX        "Dockpoints",IDC_STATIC,7,98,183,80
+    LISTBOX         IDC_DOCKER_POINT,16,111,79,60,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Occupied by",IDC_STATIC,103,111,52,8
+END
+
+IDD_ASTEROID_EDITOR DIALOG DISCARDABLE  0, 0, 376, 210
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Debris Field Editor"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Enabled",IDC_ENABLE_ASTEROIDS,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,7,42,10
+    CONTROL         "Active Field",IDC_ACTIVE_FIELD,"Button",
+                    BS_AUTORADIOBUTTON,33,35,53,10
+    CONTROL         "Passive Field",IDC_PASSIVE_FIELD,"Button",
+                    BS_AUTORADIOBUTTON,33,47,57,10
+    CONTROL         "Asteroid",IDC_FIELD_ASTEROID,"Button",
+                    BS_AUTORADIOBUTTON,55,74,41,10
+    CONTROL         "Ship",IDC_FIELD_SHIP,"Button",BS_AUTORADIOBUTTON,55,85,
+                    30,10
+    CONTROL         "Brown",IDC_SUBTYPE1,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,39,102,36,10
+    COMBOBOX        IDC_SHIP_DEBRIS1,92,100,74,95,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Blue",IDC_SUBTYPE2,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,39,117,30,10
+    COMBOBOX        IDC_SHIP_DEBRIS2,92,115,74,95,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Orange",IDC_SUBTYPE3,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,39,132,39,10
+    COMBOBOX        IDC_SHIP_DEBRIS3,92,130,74,95,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_MIN_X,230,50,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_X,230,66,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MIN_Y,230,82,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_Y,230,98,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MIN_Z,230,114,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_Z,230,129,40,14,ES_AUTOHSCROLL
+    CONTROL         "Enable",IDC_ENABLE_INNER_BOX,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,292,36,38,10
+    EDITTEXT        IDC_INNER_MIN_X,320,50,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_INNER_MAX_X,320,66,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_INNER_MIN_Y,320,82,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_INNER_MAX_Y,320,98,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_INNER_MIN_Z,320,114,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_INNER_MAX_Z,320,129,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_DENSITY,60,162,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin1",IDC_DENSITY_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,102,162,11,14
+    EDITTEXT        IDC_AVG_SPEED,60,178,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    DEFPUSHBUTTON   "OK",IDOK,319,172,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,319,189,50,14
+    LTEXT           "Min X:",IDC_STATIC,204,52,21,8
+    LTEXT           "Max X:",IDC_STATIC,204,68,23,8
+    LTEXT           "Min Y:",IDC_STATIC,204,84,21,8
+    LTEXT           "Max Y:",IDC_STATIC,204,100,23,8
+    LTEXT           "Min Z:",IDC_STATIC,204,116,21,8
+    LTEXT           "Max Z:",IDC_STATIC,204,132,23,8
+    LTEXT           "Number:",IDC_STATIC,13,166,28,8
+    LTEXT           "Avg. Speed:",IDC_STATIC,13,182,40,8
+    LTEXT           "Min X:",IDC_STATIC,294,52,21,8
+    LTEXT           "Max X:",IDC_STATIC,294,68,23,8
+    LTEXT           "Min Y:",IDC_STATIC,294,84,21,8
+    LTEXT           "Max Y:",IDC_STATIC,294,100,23,8
+    LTEXT           "Min Z:",IDC_STATIC,294,116,21,8
+    LTEXT           "Max Z:",IDC_STATIC,294,132,23,8
+    GROUPBOX        "Outer Box",IDC_STATIC,192,20,86,148
+    GROUPBOX        "Inner Box",IDC_STATIC,288,20,79,148
+    GROUPBOX        "Field Properties",IDC_STATIC,7,20,175,176
+    GROUPBOX        "",IDC_STATIC,28,28,71,30
+    GROUPBOX        "",IDC_STATIC,16,61,159,94
+END
+
+IDD_CAMPAIGN DIALOGEX 0, 0, 237, 425
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    LISTBOX         IDC_FILELIST,7,17,221,77,LBS_SORT | LBS_NOINTEGRALHEIGHT | 
+                    LBS_MULTICOLUMN | WS_HSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_NAME,63,98,69,12,ES_AUTOHSCROLL
+    COMBOBOX        IDC_CAMPAIGN_TYPE,160,98,68,116,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_DESC2,7,123,221,24,ES_MULTILINE | ES_AUTOVSCROLL
+    CONTROL         "Uses custom tech database",IDC_CUSTOM_TECH_DB,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,126,151,102,9
+    EDITTEXT        IDC_BRIEFING_CUTSCENE,73,175,66,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAIN_HALL,200,175,21,12,ES_NUMBER,WS_EX_RIGHT
+    CONTROL         "Tree1",IDC_SEXP_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    TVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP,7,208,157,111,
+                    WS_EX_CLIENTEDGE
+    PUSHBUTTON      "Move Up",IDC_MOVE_UP,171,209,53,14,BS_CENTER,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Move Down",IDC_MOVE_DOWN,171,226,53,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Toggle Loop",IDC_TOGGLE_LOOP,171,243,53,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Realign Tree",IDC_ALIGN,175,270,53,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Load Mission",ID_LOAD,175,287,53,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Close",ID_CPGN_CLOSE,175,304,53,14,0,WS_EX_STATICEDGE
+    EDITTEXT        IDC_HELP_BOX,7,323,221,24,ES_MULTILINE | ES_READONLY | 
+                    NOT WS_TABSTOP,WS_EX_TRANSPARENT
+    EDITTEXT        IDC_MISSISON_LOOP_DESC,7,361,221,24,ES_MULTILINE | 
+                    ES_AUTOVSCROLL
+    EDITTEXT        IDC_LOOP_BRIEF_ANIM,69,390,100,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_LOOP_BRIEF_BROWSE,175,390,53,13,0,
+                    WS_EX_STATICEDGE
+    EDITTEXT        IDC_LOOP_BRIEF_SOUND,69,406,100,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_LOOP_BRIEF_SOUND_BROWSE,175,406,53,13,0,
+                    WS_EX_STATICEDGE
+    LTEXT           "Available missions",IDC_STATIC,7,7,58,8
+    LTEXT           "Campaign name",IDC_STATIC,7,99,52,8
+    LTEXT           "Type",IDC_STATIC,138,99,17,8
+    LTEXT           "Branches",IDC_STATIC,7,198,31,8
+    LTEXT           "Briefing cutscene",IDC_STATIC,13,176,56,8
+    LTEXT           "Number of Players:",IDC_PLAYERS_LABEL,7,151,60,8
+    LTEXT           "Static",IDC_NUM_PLAYERS,70,151,19,8,0,WS_EX_TRANSPARENT
+    LTEXT           "Campaign description",IDC_STATIC,7,113,68,8
+    GROUPBOX        "Branch Options",IDC_STATIC,167,198,61,64
+    LTEXT           "Mission loop description",IDC_STATIC,7,351,76,8
+    LTEXT           "Loop brief anim",IDC_STATIC,13,392,49,8
+    LTEXT           "Loop brief voice",IDC_STATIC,13,407,52,8
+    LTEXT           "Main hall index",IDC_MAINHALL_LABEL,147,177,48,8
+    GROUPBOX        "Mission options",IDC_MISSION_OPTIONS,7,165,221,28
+END
+
+IDD_TEXT_VIEW DIALOG DISCARDABLE  0, 0, 324, 285
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Ship TBL Data"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_EDIT1,7,7,310,271,ES_MULTILINE | ES_AUTOVSCROLL | 
+                    ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL | WS_HSCROLL
+END
+
+IDD_BRIEFING_EDITOR DIALOGEX 0, 0, 258, 393
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Briefing Editor"
+MENU IDR_PLAYER_EDIT_MENU
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Prev",IDC_PREV,147,7,23,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Next",IDC_NEXT,173,7,23,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Add Stage",IDC_ADD_STAGE,147,22,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Insert Stage",IDC_INSERT_STAGE,147,38,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete Stage",IDC_DELETE_STAGE,147,54,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Save View",IDC_SAVE_VIEW,201,7,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Goto View",IDC_GOTO_VIEW,201,23,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Copy View",IDC_COPY_VIEW,201,39,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Paste View",IDC_PASTE_VIEW,201,55,50,14,0,
+                    WS_EX_STATICEDGE
+    EDITTEXT        IDC_TIME,103,23,31,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Cut to next stage",IDC_CUT_NEXT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,38,69,10
+    CONTROL         "Cut to previous stage",IDC_CUT_PREV,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,47,83,10
+    EDITTEXT        IDC_TEXT,7,75,244,40,ES_MULTILINE | ES_AUTOVSCROLL | 
+                    ES_WANTRETURN
+    EDITTEXT        IDC_VOICE,63,118,83,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_BROWSE,150,118,42,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,194,118,13,14,BS_BITMAP,
+                    WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    COMBOBOX        IDC_BRIEFING_MUSIC,63,134,83,135,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Tree1",IDC_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    WS_BORDER | WS_TABSTOP,7,167,244,71,WS_EX_CLIENTEDGE
+    EDITTEXT        IDC_ICON_LABEL,51,263,75,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_ICON_IMAGE,52,279,75,135,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SHIP_TYPE,52,295,75,145,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_TEAM,52,311,75,84,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    EDITTEXT        IDC_ID,151,259,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Highlight",IDC_HILIGHT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,135,277,43,10
+    CONTROL         "Change locally",IDC_LOCAL,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,135,294,62,10
+    CONTROL         "Draw lines between marked icons",IDC_LINES,"Button",
+                    BS_3STATE | WS_TABSTOP,129,241,122,10
+    PUSHBUTTON      "Make Icon",IDC_MAKE_ICON,197,258,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete Icon",IDC_DELETE_ICON,197,275,50,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "Propagate",IDC_PROPAGATE_ICONS,197,292,50,14,0,
+                    WS_EX_STATICEDGE
+    EDITTEXT        IDC_ICON_TEXT,14,338,230,40,ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_WANTRETURN
+    LTEXT           "Stage 1 of 9",IDC_STAGE_TITLE,7,7,53,8
+    GROUPBOX        "Current Icon Info",IDC_STATIC,7,250,244,136
+    LTEXT           "Label",IDC_STATIC,13,266,18,8
+    LTEXT           "Icon image",IDC_STATIC,13,282,36,8
+    LTEXT           "Text",IDC_STATIC,7,65,15,8
+    LTEXT           "Camera Transition Time (ms)",IDC_STATIC,7,25,90,8
+    LTEXT           "Voice Wave File",IDC_STATIC,7,120,53,8
+    LTEXT           "Text",IDC_STATIC,14,327,15,8
+    LTEXT           "Team",IDC_STATIC,13,314,19,8
+    LTEXT           "Ship Type",IDC_STATIC,13,298,33,8
+    LTEXT           "ID",IDC_STATIC,137,261,8,8
+    LTEXT           "Briefing Music",IDC_STATIC,9,137,45,8
+    LTEXT           "Usage Formula",IDC_STATIC,7,157,48,8
+    CONTROL         "Flip Icon",IDC_FLIP_ICON,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,136,310,43,10
+END
+
+IDD_IGNORE_ORDERS DIALOG DISCARDABLE  0, 0, 120, 217
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Ignore Orders"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "order 1",IDC_CHECK1,"Button",BS_3STATE | WS_TABSTOP,7,
+                    47,105,10
+    CONTROL         "order 2",IDC_CHECK2,"Button",BS_3STATE | WS_TABSTOP,7,
+                    62,105,10
+    CONTROL         "order 3",IDC_CHECK3,"Button",BS_3STATE | WS_TABSTOP,7,
+                    77,105,10
+    CONTROL         "order 4",IDC_CHECK4,"Button",BS_3STATE | WS_TABSTOP,7,
+                    92,105,10
+    CONTROL         "order 5",IDC_CHECK5,"Button",BS_3STATE | WS_TABSTOP,7,
+                    107,105,10
+    CONTROL         "order 6",IDC_CHECK6,"Button",BS_3STATE | WS_TABSTOP,7,
+                    122,105,10
+    CONTROL         "order 7",IDC_CHECK7,"Button",BS_3STATE | WS_TABSTOP,7,
+                    137,105,10
+    CONTROL         "order 8",IDC_CHECK8,"Button",BS_3STATE | WS_TABSTOP,7,
+                    152,105,10
+    CONTROL         "order 9",IDC_CHECK9,"Button",BS_3STATE | WS_TABSTOP,7,
+                    167,105,10
+    DEFPUSHBUTTON   "OK",IDOK,62,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,62,24,50,14
+    CONTROL         "order 10",IDC_CHECK10,"Button",BS_3STATE | WS_TABSTOP,7,
+                    183,105,10
+END
+
+IDD_DEBRIEFING_EDITOR DIALOGEX 0, 0, 322, 172
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Debriefing Editor"
+MENU IDR_PLAYER_EDIT_MENU
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Prev",IDC_PREV,73,7,25,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Next",IDC_NEXT,101,7,25,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Add",IDC_ADD_STAGE,7,24,38,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Insert",IDC_INSERT_STAGE,48,24,38,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete",IDC_DELETE_STAGE,89,24,38,14,0,WS_EX_STATICEDGE
+    CONTROL         "Tree1",IDC_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | 
+                    WS_BORDER | WS_TABSTOP,7,55,122,110,WS_EX_CLIENTEDGE
+    EDITTEXT        IDC_VOICE,193,7,68,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_BROWSE,265,7,34,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,302,7,13,14,BS_BITMAP,
+                    WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    EDITTEXT        IDC_TEXT,135,34,179,57,ES_MULTILINE | ES_AUTOVSCROLL | 
+                    ES_WANTRETURN | WS_VSCROLL
+    EDITTEXT        IDC_REC_TEXT,136,108,179,57,ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_WANTRETURN
+    LTEXT           "Text",IDC_STATIC,135,24,15,8
+    LTEXT           "Voice Wave File",IDC_STATIC,135,10,53,8
+    LTEXT           "Stage 1 of 9",IDC_STAGE_TITLE,7,10,53,8
+    LTEXT           "Usage Formula",IDC_STATIC,7,43,48,8
+    LTEXT           "Recommendation Text",IDC_STATIC,135,96,72,8
+END
+
+IDD_ADJUST_GRID DIALOG DISCARDABLE  0, 0, 153, 94
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Adjust Grid"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "X-Z Plane",IDC_XZ_PLANE,"Button",BS_AUTORADIOBUTTON | 
+                    BS_PUSHLIKE,7,18,47,13
+    EDITTEXT        IDC_EDIT_Y,106,17,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_SPIN_Y,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,61,73,10,
+                    14
+    CONTROL         "X-Y Plane",IDC_XY_PLANE,"Button",BS_AUTORADIOBUTTON | 
+                    BS_PUSHLIKE,7,33,47,13
+    EDITTEXT        IDC_EDIT_Z,106,32,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin3",IDC_SPIN_Z,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,81,73,10,
+                    14
+    CONTROL         "Y-Z Plane",IDC_YZ_PLANE,"Button",BS_AUTORADIOBUTTON | 
+                    BS_PUSHLIKE,7,48,47,13
+    EDITTEXT        IDC_EDIT_X,106,47,40,14,ES_AUTOHSCROLL
+    CONTROL         "Spin2",IDC_SPIN_X,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,71,73,10,
+                    14
+    DEFPUSHBUTTON   "OK",IDOK,7,73,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,96,73,50,14
+    LTEXT           "Type:",IDC_STATIC,7,7,19,8
+    LTEXT           "Y Level",IDC_STATIC,69,20,25,8
+    LTEXT           "Z Level",IDC_STATIC,69,35,25,8
+    LTEXT           "X Level",IDC_STATIC,69,50,25,8
+END
+
+IDD_SHIELD_SYS DIALOG DISCARDABLE  0, 0, 192, 106
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Shield System Editor"
+FONT 8, "MS Sans Serif"
+BEGIN
+    COMBOBOX        IDC_TYPE,13,21,72,102,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "Has shield system",IDC_TYPE_YES,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP,13,38,72,10
+    CONTROL         "No shield system",IDC_TYPE_NO,"Button",
+                    BS_AUTORADIOBUTTON,13,48,69,10
+    COMBOBOX        IDC_TEAM,106,20,72,132,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "Has shield system",IDC_TEAM_YES,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP,106,39,72,10
+    CONTROL         "No shield system",IDC_TEAM_NO,"Button",
+                    BS_AUTORADIOBUTTON,106,49,69,10
+    GROUPBOX        "All ships of type",IDC_STATIC,7,7,85,55
+    GROUPBOX        "All ships on team",IDC_STATIC,99,7,85,55
+    DEFPUSHBUTTON   "OK",IDOK,134,69,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,134,86,50,14
+END
+
+IDD_INITIAL_SHIPS DIALOG DISCARDABLE  0, 0, 127, 210
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Initial Ships Allowed"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDC_INITIAL_LIST,10,7,107,173,LBS_OWNERDRAWFIXED | 
+                    LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | LBS_EXTENDEDSEL | 
+                    WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,7,189,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,70,189,50,14
+END
+
+IDD_CMD_BRIEF DIALOGEX 0, 0, 189, 158
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Command Briefing Editor"
+MENU IDR_PLAYER_EDIT_MENU
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Prev",IDC_PREV,73,7,25,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Next",IDC_NEXT,101,7,25,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Add",IDC_ADD_STAGE,7,24,38,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Insert",IDC_INSERT_STAGE,48,24,38,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete",IDC_DELETE_STAGE,89,24,38,14,0,WS_EX_STATICEDGE
+    EDITTEXT        IDC_TEXT,7,55,175,59,ES_MULTILINE | ES_AUTOVSCROLL | 
+                    ES_WANTRETURN | WS_VSCROLL
+    EDITTEXT        IDC_ANI_FILENAME,61,118,68,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_BROWSE_ANI,132,118,50,14,0,WS_EX_STATICEDGE
+    EDITTEXT        IDC_WAVE_FILENAME,61,136,68,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,132,136,34,14,0,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,169,136,13,14,BS_BITMAP,
+                    WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    DEFPUSHBUTTON   "OK",IDOK,132,14,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,132,31,50,14
+    LTEXT           "Briefing Text",IDC_STATIC,7,44,40,8
+    LTEXT           "Ani Filename",IDC_STATIC,7,121,41,8
+    LTEXT           "Stage 1 of 9",IDC_STAGE_TITLE,7,10,53,8
+    LTEXT           "Wave Filename",IDC_STATIC,7,139,50,8
+END
+
+IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 149, 292
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Additional Ship Properties"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Destroy before Mission",IDC_DESTROY_CHECK,"Button",
+                    BS_3STATE | WS_TABSTOP,7,7,87,10
+    EDITTEXT        IDC_DESTROY_VALUE,19,17,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Spin2",IDC_DESTROY_SPIN,"msctls_updown32",
+                    UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
+                    UDS_ARROWKEYS,7,17,11,14
+    CONTROL         "Scannable",IDC_SCANNABLE,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,34,50,10
+    CONTROL         "Cargo Known",IDC_CARGO_KNOWN,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,43,59,10
+    CONTROL         "Reinforcement Unit",IDC_REINFORCEMENT,"Button",
+                    BS_3STATE | WS_TABSTOP,7,62,75,10
+    CONTROL         "Protect Ship",IDC_PROTECT_SHIP,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,72,59,10
+    CONTROL         "Beam Protect Ship",IDC_BEAM_PROTECT_SHIP,"Button",
+                    BS_3STATE | WS_TABSTOP,7,82,80,8
+    CONTROL         "Ignore for Counting Goals",IDC_IGNORE_COUNT,"Button",
+                    BS_3STATE | WS_TABSTOP,7,91,93,10
+    CONTROL         "Escort Ship",IDC_ESCORT,"Button",BS_3STATE | WS_TABSTOP,
+                    7,101,52,10
+    EDITTEXT        IDC_ESCORT_PRIORITY,43,112,26,12,ES_AUTOHSCROLL
+    CONTROL         "No Arrival Music",IDC_NO_ARRIVAL_MUSIC,"Button",
+                    BS_3STATE | WS_TABSTOP,7,126,67,10
+    CONTROL         "Invulnerable",IDC_INVULNERABLE,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,136,55,10
+    CONTROL         "Hidden from Sensors",IDC_HIDDEN_FROM_SENSORS,"Button",
+                    BS_3STATE | WS_TABSTOP,7,146,81,10
+    CONTROL         "Primitive Sensors",IDC_PRIMITIVE_SENSORS,"Button",
+                    BS_3STATE | WS_TABSTOP,7,156,69,10
+    CONTROL         "No Subspace Drive",IDC_NO_SUBSPACE_DRIVE,"Button",
+                    BS_3STATE | WS_TABSTOP,7,165,78,10
+    CONTROL         "Kamikaze",IDC_KAMIKAZE,"Button",BS_3STATE | WS_TABSTOP,
+                    7,175,47,10
+    EDITTEXT        IDC_KDAMAGE,51,184,57,12,ES_AUTOHSCROLL
+    CONTROL         "No Dynamic Goals",IDC_NO_DYNAMIC,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,198,75,10
+    CONTROL         "Red Alert Carry Status",IDC_REDALERTCARRY,"Button",
+                    BS_3STATE | WS_TABSTOP,7,208,85,10
+    CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,240,59,10
+    EDITTEXT        IDC_RESPAWN_PRIORITY,93,253,49,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,7,271,65,14
+    PUSHBUTTON      "Cancel",IDCANCEL,77,271,65,14
+    LTEXT           "Seconds",IDC_STATIC,63,20,29,8
+    LTEXT           "Damage",IDC_STATIC,19,186,28,8
+    LTEXT           "Priority",IDC_STATIC,19,114,22,8
+    LTEXT           "Respawn Priority",IDC_STATIC,30,256,54,8
+    CONTROL         "Doesn't Bank When Turning",IDC_NO_BANK,"Button",
+                    BS_3STATE | WS_TABSTOP,7,230,135,10
+    CONTROL         "Affected By Gravity",IDC_AFFECTED_BY_GRAVITY,"Button",
+                    BS_3STATE | WS_TABSTOP,7,219,77,10
+    CONTROL         "Toggle Subsystem Scanning",
+                    IDC_TOGGLE_SUBSYSTEM_SCANNING,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,52,135,10
+END
+
+IDD_ADD_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Add Variable"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "String",IDC_TYPE_STRING,"Button",BS_AUTORADIOBUTTON,21,
+                    19,34,10
+    CONTROL         "Number",IDC_TYPE_NUMBER,"Button",BS_AUTORADIOBUTTON,21,
+                    32,41,10
+    EDITTEXT        IDC_ADD_VARIABLE_NAME,137,24,98,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_ADD_VARIABLE_DEFAULT_VALUE,251,24,98,12,
+                    ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,365,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,365,24,50,14
+    LTEXT           "Variable Name",IDC_STATIC,138,15,47,8
+    LTEXT           "Default Value",IDC_STATIC,251,15,44,8
+    GROUPBOX        "Variable Type",IDC_STATIC,7,7,114,38
+    CONTROL         "Campaign-Persistent",IDC_TYPE_CAMPAIGN_PERSISTENT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,47,84,11
+    CONTROL         "Player-Persistent",IDC_TYPE_PLAYER_PERSISTENT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,137,59,84,11
+END
+
+IDD_MODIFY_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Modify Variable"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "String",IDC_TYPE_STRING,"Button",BS_AUTORADIOBUTTON,21,
+                    19,34,10
+    CONTROL         "Number",IDC_TYPE_NUMBER,"Button",BS_AUTORADIOBUTTON,21,
+                    32,41,10
+    COMBOBOX        IDC_MODIFY_VARIABLE_NAME,137,24,98,66,CBS_DROPDOWN | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_MODIFY_DEFAULT_VALUE,251,24,98,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Delete",ID_DELETE_VARIABLE,37,72,50,14
+    DEFPUSHBUTTON   "OK",IDOK,365,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,365,24,50,14
+    GROUPBOX        "Modify Variable Type",IDC_STATIC,7,7,114,38
+    LTEXT           "Variable Name",IDC_STATIC,138,15,47,8
+    LTEXT           "Default Value",IDC_STATIC,251,15,44,8
+    GROUPBOX        "Delete Variable and References",IDC_STATIC,7,56,114,38
+    CONTROL         "Campaign-Persistent",IDC_TYPE_CAMPAIGN_PERSISTENT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,47,84,11
+    CONTROL         "Player-Persistent",IDC_TYPE_PLAYER_PERSISTENT,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,137,59,84,11
+END
+
+IDD_SPECIAL_DAMAGE DIALOG DISCARDABLE  0, 0, 234, 103
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Special Explosion"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Enable Special Explosion",IDC_ENABLE_SPECIAL_EXP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,7,95,10
+    EDITTEXT        IDC_SPECIAL_DAMAGE,91,19,62,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SPECIAL_BLAST,91,33,62,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SPECIAL_INNER_RAD,91,47,62,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SPECIAL_OUTER_RAD,91,61,62,12,ES_AUTOHSCROLL
+    CONTROL         "",IDC_ENABLE_SHOCKWAVE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,91,75,16,8
+    EDITTEXT        IDC_SPECIAL_SHOCK_SPEED,91,85,62,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,177,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,177,24,50,14
+    LTEXT           "Inner Damage Radius:",IDC_STATIC,15,49,72,8
+    LTEXT           "Outer Damage Radius:",IDC_STATIC,14,62,73,8
+    LTEXT           "Damage:",IDC_STATIC,57,23,30,8
+    LTEXT           "Create Shockwave:",IDC_STATIC,23,75,64,8
+    LTEXT           "Shockwave Speed:",IDC_STATIC,23,88,64,8
+    LTEXT           "Blast:",IDC_STATIC,69,36,18,8
+END
+
+IDD_DUMP_STATS DIALOG DISCARDABLE  0, 0, 577, 375
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Mission Stats"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "Dump to File",IDC_DUMP_TO_FILE,209,349,76,19
+    PUSHBUTTON      "Cancel",IDCANCEL,292,348,76,19
+    EDITTEXT        IDC_STATS_TEXT,7,7,563,333,ES_MULTILINE | ES_AUTOHSCROLL | 
+                    ES_READONLY | ES_WANTRETURN | ES_NUMBER | WS_VSCROLL
+END
+
+IDD_SHIP_TEXTURES DIALOG DISCARDABLE  0, 0, 296, 69
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Ship Texture Replace"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_NEW_TEXTURE,152,16,137,13,ES_LOWERCASE | 
+                    ES_AUTOHSCROLL
+    CONTROL         "Regular Texture Replacement",IDC_REGULAR_REPLACE,"Button",
+                    BS_AUTORADIOBUTTON,7,39,111,10
+    CONTROL         "Duplicate Model Texture Replacement",
+                    IDC_DUPLICATE_REPLACE,"Button",BS_AUTORADIOBUTTON,7,51,
+                    137,10
+    DEFPUSHBUTTON   "OK",IDOK,185,48,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,239,48,50,14
+    LTEXT           "Old texture:",IDC_LABEL1,7,7,44,9
+    LTEXT           "New texture:",IDC_LABEL2,152,7,44,9
+    COMBOBOX        IDC_OLD_TEXTURE_LIST,7,16,137,85,CBS_DROPDOWNLIST | 
+                    CBS_SORT | WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_SPECIAL_HITPOINTS DIALOG DISCARDABLE  0, 0, 234, 57
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Special Hitpoints"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Enable Special Hitpoints",IDC_ENABLE_SPECIAL_HITPOINTS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,93,10
+    EDITTEXT        IDC_SPECIAL_SHIELDS,91,19,62,12,ES_AUTOHSCROLL
+    LTEXT           "Shields:",-1,61,23,26,8
+    EDITTEXT        IDC_SPECIAL_HULL,91,33,62,12,ES_AUTOHSCROLL
+    LTEXT           "Hull:",-1,72,36,15,8
+    DEFPUSHBUTTON   "OK",ID_OK,177,7,50,14
+    PUSHBUTTON      "Cancel",ID_CANCEL,177,24,50,14
+END
+
+IDD_SET_GLOBAL_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 114, 79
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Set Global Ship Flags"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "Global No-Subspace-Drive",IDC_NO_SUBSPACE_DRIVE,7,24,
+                    100,14
+    PUSHBUTTON      "Global No-Shields",IDC_NO_SHIELDS,7,7,100,14
+    PUSHBUTTON      "Global Primitive-Sensors",IDC_PRIMITIVE_SENSORS,7,41,
+                    100,14
+    PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,
+                    58,100,14
+END
+
+IDD_VOICE_FILES DIALOG DISCARDABLE  0, 0, 144, 217
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Voice File Manager"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "File Name Options",IDC_FILENAME_OPTIONS,7,7,130,203
+    GROUPBOX        "Abbreviations",IDC_ABBREVIATIONS,12,17,120,101
+    LTEXT           "Campaign",IDC_LBL_ABBREV_CAMPAIGN,17,28,58,10
+    EDITTEXT        IDC_ABBREV_CAMPAIGN,82,27,45,12,ES_AUTOHSCROLL
+    LTEXT           "Mission",IDC_LBL_ABBREV_MISSION,17,44,58,10
+    EDITTEXT        IDC_ABBREV_MISSION,82,42,45,12,ES_AUTOHSCROLL
+    LTEXT           "Cmd. Briefing Stage",IDC_LBL_ABBREV_COMMAND_BRIEFING,17,
+                    58,63,10
+    EDITTEXT        IDC_ABBREV_COMMAND_BRIEFING,82,57,45,12,ES_AUTOHSCROLL
+    LTEXT           "Briefing Stage",IDC_LBL_ABBREV_BRIEFING,17,72,60,10
+    EDITTEXT        IDC_ABBREV_BRIEFING,82,72,45,12,ES_AUTOHSCROLL
+    LTEXT           "Debriefing Stage",IDC_LBL_ABBREV_DEBRIEFING,17,88,60,10
+    EDITTEXT        IDC_ABBREV_DEBRIEFING,82,86,45,12,ES_AUTOHSCROLL
+    LTEXT           "Message",IDC_LBL_ABBREV_MESSAGE,17,101,60,10
+    EDITTEXT        IDC_ABBREV_MESSAGE,82,101,45,12,ES_AUTOHSCROLL
+    GROUPBOX        "Separators",IDC_SEPARATORS,12,122,120,43
+    CONTROL         "Underscores",IDC_SEP_UNDERSCORES,"Button",
+                    BS_AUTORADIOBUTTON,17,131,60,10
+    CONTROL         "Dashes",IDC_SEP_DASHES,"Button",BS_AUTORADIOBUTTON,17,
+                    141,60,10
+    CONTROL         "Nothing",IDC_SEP_NOTHING,"Button",BS_AUTORADIOBUTTON,17,
+                    152,60,10
+    LTEXT           "Example",IDC_LBL_EXAMPLE,17,173,31,10
+    EDITTEXT        IDC_EXAMPLE,49,171,77,12,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "Autogenerate",IDC_AUTOGENERATE,12,190,120,14
+END
+
+IDD_BRIEFING_PERSONAS DIALOG DISCARDABLE  0, 0, 320, 201
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,263,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,263,24,50,14
+END
+
+IDD_VOICE_MANAGER DIALOG DISCARDABLE  0, 0, 320, 201
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Voice Acting Manager"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "Generate File Names",IDC_GEN_FILENAMES,41,54,79,29
+END
+
+IDD_CUSTOM_WING_NAMES DIALOG DISCARDABLE  0, 0, 390, 54
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Custom Wing Names"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Starting wing names:",IDC_STARTING_WING_NAMES_LABEL,7,
+                    10,72,12
+    EDITTEXT        IDC_STARTING_WING_NAME_1,113,7,39,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_STARTING_WING_NAME_2,154,7,39,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_STARTING_WING_NAME_3,195,7,39,12,ES_AUTOHSCROLL
+    LTEXT           "Squadron wing names:",IDC_SQUADRON_WING_NAMES_LABEL,7,
+                    23,83,12
+    EDITTEXT        IDC_SQUADRON_WING_NAME_1,113,20,39,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SQUADRON_WING_NAME_2,154,20,39,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SQUADRON_WING_NAME_3,195,20,39,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SQUADRON_WING_NAME_4,236,20,39,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SQUADRON_WING_NAME_5,277,20,39,12,ES_AUTOHSCROLL
+    LTEXT           "Team-versus-team wing names:",IDC_TVT_WING_NAMES_LABEL,
+                    7,36,106,9
+    EDITTEXT        IDC_TVT_WING_NAME_1,113,34,39,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_TVT_WING_NAME_2,154,34,39,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,333,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,333,24,50,14
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "Volition Inc.\0"
+            VALUE "FileDescription", "Fred2_open 3.6.7\0"
+            VALUE "FileVersion", "3.6.7\0"
+            VALUE "InternalName", "FRED\0"
+            VALUE "LegalCopyright", "Copyright © 1998\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "FRED.EXE\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "FreeSpace\0"
+            VALUE "ProductVersion", "3.6.7\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO MOVEABLE PURE 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 277
+        VERTGUIDE, 39
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 82
+    END
+
+    IDD_SHIP_EDITBAR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 286
+        TOPMARGIN, 8
+        BOTTOMMARGIN, 45
+    END
+
+    IDD_MESSAGE_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 191
+        TOPMARGIN, 8
+        BOTTOMMARGIN, 359
+    END
+
+    IDD_SHIP_GOALS_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 405
+        TOPMARGIN, 8
+        BOTTOMMARGIN, 198
+    END
+
+    IDD_PREFERENCES, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 326
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 74
+    END
+
+    IDD_SHIP_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 314
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 428
+    END
+
+    IDD_WEAPON_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 438
+        TOPMARGIN, 8
+        BOTTOMMARGIN, 72
+    END
+
+    IDD_SHIP_MARKINGS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 245
+        TOPMARGIN, 8
+        BOTTOMMARGIN, 133
+    END
+
+    IDD_MISSION_GOALS, DIALOG
+    BEGIN
+        LEFTMARGIN, 6
+        RIGHTMARGIN, 292
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 263
+    END
+
+    IDD_SHIP_SELECT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 196
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 200
+    END
+
+    IDD_WING_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 290
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 432
+    END
+
+    IDD_OPERATOR_ARGUMENT_TYPES, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 43
+    END
+
+    IDD_LOADOUT_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 197
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 192
+    END
+
+    IDD_ORIENT_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 222
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 112
+    END
+
+    IDD_EVENT_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 430
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 407
+    END
+
+    IDD_BG_BITMAP, DIALOG
+    BEGIN
+        VERTGUIDE, 5
+        VERTGUIDE, 14
+        VERTGUIDE, 55
+        VERTGUIDE, 215
+        VERTGUIDE, 225
+        VERTGUIDE, 423
+        VERTGUIDE, 428
+        HORZGUIDE, 126
+        HORZGUIDE, 132
+    END
+
+    IDD_REINFORCEMENT_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 176
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 112
+    END
+
+    IDD_REINFORCEMENT_SELECT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 149
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 125
+    END
+
+    IDD_WAYPOINT_PATH_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 138
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 22
+    END
+
+    IDD_WING_CREATE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 112
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 61
+    END
+
+    IDD_INITIAL_STATUS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 190
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 290
+    END
+
+    IDD_ASTEROID_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 369
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 203
+    END
+
+    IDD_CAMPAIGN, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 419
+    END
+
+    IDD_TEXT_VIEW, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 317
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 278
+    END
+
+    IDD_BRIEFING_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 251
+        VERTGUIDE, 136
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 386
+    END
+
+    IDD_IGNORE_ORDERS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 112
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 210
+    END
+
+    IDD_DEBRIEFING_EDITOR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 315
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 165
+    END
+
+    IDD_ADJUST_GRID, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 146
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 87
+    END
+
+    IDD_SHIELD_SYS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 185
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 99
+    END
+
+    IDD_INITIAL_SHIPS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 120
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 203
+    END
+
+    IDD_CMD_BRIEF, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 182
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 151
+    END
+
+    IDD_SHIP_FLAGS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 142
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 285
+    END
+
+    IDD_ADD_VARIABLE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 415
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 95
+    END
+
+    IDD_MODIFY_VARIABLE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 415
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 95
+    END
+
+    IDD_SPECIAL_DAMAGE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 227
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 96
+    END
+
+    IDD_DUMP_STATS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 570
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 368
+    END
+
+    IDD_SHIP_TEXTURES, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 289
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 62
+    END
+
+    IDD_SPECIAL_HITPOINTS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 227
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 50
+    END
+
+    IDD_SET_GLOBAL_SHIP_FLAGS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 107
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 72
+    END
+
+    IDD_VOICE_FILES, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 137
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 210
+    END
+
+    IDD_BRIEFING_PERSONAS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 313
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 194
+    END
+
+    IDD_VOICE_MANAGER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 313
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 194
+    END
+
+    IDD_CUSTOM_WING_NAMES, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 383
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 47
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_SHIP_EDITBAR DLGINIT
+BEGIN
+    IDC_SHIP_CLASS, 0x403, 6, 0
+0x6977, 0x676e, 0x0031, 
+    IDC_SHIP_WING, 0x403, 6, 0
+0x6977, 0x676e, 0x0031, 
+    IDC_SHIP_IFF, 0x403, 6, 0
+0x6977, 0x676e, 0x0031, 
+    IDC_SHIP_AI_CLASS, 0x403, 6, 0
+0x6977, 0x676e, 0x0031, 
+    IDC_SHIP_STATUS, 0x403, 6, 0
+0x6977, 0x676e, 0x0031, 
+    0
+END
+
+IDD_SHIP_EDITOR DLGINIT
+BEGIN
+    IDC_SHIP_CLASS, 0x403, 1, 0
+"\000" 
+    IDC_SHIP_TEAM, 0x403, 8, 0
+0x6f48, 0x7473, 0x6c69, 0x0065, 
+    IDC_SHIP_TEAM, 0x403, 9, 0
+0x7246, 0x6569, 0x646e, 0x796c, "\000" 
+    IDC_SHIP_TEAM, 0x403, 8, 0
+0x654e, 0x7475, 0x6172, 0x006c, 
+    IDC_SHIP_TEAM, 0x403, 8, 0
+0x6e55, 0x6e6b, 0x776f, 0x006e, 
+    IDC_HOTKEY, 0x403, 5, 0
+0x6f4e, 0x656e, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2031, 0x4628, 0x2935, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2032, 0x4628, 0x2936, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2033, 0x4628, 0x2937, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2034, 0x4628, 0x2938, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2035, 0x4628, 0x2939, "\000" 
+    IDC_HOTKEY, 0x403, 12, 0
+0x6553, 0x2074, 0x2036, 0x4628, 0x3031, 0x0029, 
+    IDC_HOTKEY, 0x403, 12, 0
+0x6553, 0x2074, 0x2037, 0x4628, 0x3131, 0x0029, 
+    IDC_HOTKEY, 0x403, 12, 0
+0x6553, 0x2074, 0x2038, 0x4628, 0x3231, 0x0029, 
+    IDC_HOTKEY, 0x403, 7, 0
+0x6948, 0x6464, 0x6e65, "\000" 
+    0
+END
+
+IDD_SHIP_MARKINGS DLGINIT
+BEGIN
+    IDC_MODEL_NAME, 0x403, 6, 0
+0x6977, 0x676e, 0x0031, 
+    0
+END
+
+IDD_MISSION_GOALS DLGINIT
+BEGIN
+    IDC_DISPLAY_GOAL_TYPES_DROP, 0x403, 14, 0
+0x7250, 0x6d69, 0x7261, 0x2079, 0x6f47, 0x6c61, 0x0073, 
+    IDC_DISPLAY_GOAL_TYPES_DROP, 0x403, 16, 0
+0x6553, 0x6f63, 0x646e, 0x7261, 0x2079, 0x6f47, 0x6c61, 0x0073, 
+    IDC_DISPLAY_GOAL_TYPES_DROP, 0x403, 12, 0
+0x6f42, 0x756e, 0x2073, 0x6f47, 0x6c61, 0x0073, 
+    IDC_GOAL_TYPE_DROP, 0x403, 13, 0
+0x7250, 0x6d69, 0x7261, 0x2079, 0x6f47, 0x6c61, "\000" 
+    IDC_GOAL_TYPE_DROP, 0x403, 15, 0
+0x6553, 0x6f63, 0x646e, 0x7261, 0x2079, 0x6f47, 0x6c61, "\000" 
+    IDC_GOAL_TYPE_DROP, 0x403, 11, 0
+0x6f42, 0x756e, 0x2073, 0x6f47, 0x6c61, "\000" 
+    IDC_OBJ_TEAM, 0x403, 7, 0
+0x6554, 0x6d61, 0x3120, "\000" 
+    IDC_OBJ_TEAM, 0x403, 7, 0
+0x6554, 0x6d61, 0x3220, "\000" 
+    0
+END
+
+IDD_WING_EDITOR DLGINIT
+BEGIN
+    IDC_WING_SPECIAL_SHIP, 0x403, 6, 0
+0x6977, 0x676e, 0x0031, 
+    IDC_HOTKEY, 0x403, 5, 0
+0x6f4e, 0x656e, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2031, 0x4628, 0x2935, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2032, 0x4628, 0x2936, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2033, 0x4628, 0x2937, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2034, 0x4628, 0x2938, "\000" 
+    IDC_HOTKEY, 0x403, 11, 0
+0x6553, 0x2074, 0x2035, 0x4628, 0x2939, "\000" 
+    IDC_HOTKEY, 0x403, 12, 0
+0x6553, 0x2074, 0x2036, 0x4628, 0x3031, 0x0029, 
+    IDC_HOTKEY, 0x403, 12, 0
+0x6553, 0x2074, 0x2037, 0x4628, 0x3131, 0x0029, 
+    IDC_HOTKEY, 0x403, 12, 0
+0x6553, 0x2074, 0x2038, 0x4628, 0x3231, 0x0029, 
+    IDC_HOTKEY, 0x403, 7, 0
+0x6948, 0x6464, 0x6e65, "\000" 
+    0
+END
+
+IDD_ORIENT_EDITOR DLGINIT
+BEGIN
+    IDC_OBJECT_LIST, 0x403, 12, 0
+0x6c70, 0x6361, 0x6865, 0x6c6f, 0x6564, 0x0072, 
+    0
+END
+
+IDD_MESSAGE_EDITOR DLGINIT
+BEGIN
+    IDC_PRIORITY, 0x403, 4, 0
+0x6f4c, 0x0077, 
+    IDC_PRIORITY, 0x403, 7, 0
+0x6f4e, 0x6d72, 0x6c61, "\000" 
+    IDC_PRIORITY, 0x403, 5, 0
+0x6948, 0x6867, "\000" 
+    0
+END
+
+IDD_MODIFY_VARIABLE DLGINIT
+BEGIN
+    IDC_MODIFY_VARIABLE_NAME, 0x403, 1, 0
+"\000" 
+    0
+END
+
+IDD_EVENT_EDITOR DLGINIT
+BEGIN
+    IDC_EVENT_TEAM, 0x403, 8, 0
+0x6554, 0x6d61, 0x3120, 0x0020, 
+    IDC_EVENT_TEAM, 0x403, 7, 0
+0x6554, 0x6d61, 0x3220, "\000" 
+    IDC_EVENT_TEAM, 0x403, 5, 0
+0x6f6e, 0x656e, "\000" 
+    IDC_MESSAGE_TEAM, 0x403, 8, 0
+0x6554, 0x6d61, 0x3120, 0x0020, 
+    IDC_MESSAGE_TEAM, 0x403, 7, 0
+0x6554, 0x6d61, 0x3220, "\000" 
+    IDC_MESSAGE_TEAM, 0x403, 5, 0
+0x6f6e, 0x656e, "\000" 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Cursor
+//
+
+IDC_CURSOR1             CURSOR  DISCARDABLE     "res\\cursor1.cur"
+IDC_CURSOR2             CURSOR  DISCARDABLE     "res\\cursor2.cur"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDR_MAINFRAME           "FRED2_OPEN 3.6.7 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    AFX_IDS_APP_TITLE       "FRED2"
+    AFX_IDS_IDLEMESSAGE     "For Help, press F1"
+    AFX_IDS_HELPMODEMESSAGE "Select an object on which to get Help"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FILE_NEW             "Create a new campaign\nNew"
+    ID_FILE_OPEN            "Open an existing campaign\nOpen"
+    ID_FILE_CLOSE           "Close the active document\nClose"
+    ID_FILE_SAVE            "Save the active campaign\nSave"
+    ID_FILE_SAVE_AS         "Save the active campaign with a new name\nSave As"
+    ID_FILE_PAGE_SETUP      "Change the printing options\nPage Setup"
+    ID_FILE_PRINT_SETUP     "Change the printer and printing options\nPrint Setup"
+    ID_FILE_PRINT           "Print the active document\nPrint"
+    ID_FILE_PRINT_PREVIEW   "Display full pages\nPrint Preview"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_APP_ABOUT            "Display program information, version number and copyright\nAbout"
+    ID_APP_EXIT             "Exit the campaign editor\nExit"
+    ID_HELP_INDEX           "Opens Help\nHelp Topics"
+    ID_HELP_FINDER          "List Help topics\nHelp Topics"
+    ID_HELP_USING           "Display instructions about how to use help\nHelp"
+    ID_CONTEXT_HELP         "Display help for clicked on buttons, menus and windows\nHelp"
+    ID_HELP                 "Display help for current task or command\nHelp"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FILE_MRU_FILE1       "Open this document"
+    ID_FILE_MRU_FILE2       "Open this document"
+    ID_FILE_MRU_FILE3       "Open this document"
+    ID_FILE_MRU_FILE4       "Open this document"
+    ID_FILE_MRU_FILE5       "Open this document"
+    ID_FILE_MRU_FILE6       "Open this document"
+    ID_FILE_MRU_FILE7       "Open this document"
+    ID_FILE_MRU_FILE8       "Open this document"
+    ID_FILE_MRU_FILE9       "Open this document"
+    ID_FILE_MRU_FILE10      "Open this document"
+    ID_FILE_MRU_FILE11      "Open this document"
+    ID_FILE_MRU_FILE12      "Open this document"
+    ID_FILE_MRU_FILE13      "Open this document"
+    ID_FILE_MRU_FILE14      "Open this document"
+    ID_FILE_MRU_FILE15      "Open this document"
+    ID_FILE_MRU_FILE16      "Open this document"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_NEXT_PANE            "Switch to the next window pane\nNext Pane"
+    ID_PREV_PANE            "Switch back to the previous window pane\nPrevious Pane"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_WINDOW_SPLIT         "Split the active window into panes\nSplit"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_EDIT_CLEAR           "Erase the selection\nErase"
+    ID_EDIT_CLEAR_ALL       "Erase everything\nErase All"
+    ID_EDIT_COPY            "Select and Move objects\nSelect and Move"
+    ID_EDIT_CUT             "Cut the selection and put it on the Clipboard\nCut"
+    ID_EDIT_FIND            "Find the specified text\nFind"
+    ID_EDIT_PASTE           "Insert Clipboard contents\nPaste"
+    ID_EDIT_REPEAT          "Repeat the last action\nRepeat"
+    ID_EDIT_REPLACE         "Replace specific text with different text\nReplace"
+    ID_EDIT_SELECT_ALL      "Select the entire document\nSelect All"
+    ID_EDIT_UNDO            "Undo the last action\nUndo"
+    ID_EDIT_REDO            "Redo the previously undone action\nRedo"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_VIEW_TOOLBAR         "Show or hide the toolbar\nToggle ToolBar"
+    ID_VIEW_STATUS_BAR      "Show or hide the status bar\nToggle StatusBar"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    AFX_IDS_SCSIZE          "Change the window size"
+    AFX_IDS_SCMOVE          "Change the window position"
+    AFX_IDS_SCMINIMIZE      "Reduce the window to an icon"
+    AFX_IDS_SCMAXIMIZE      "Enlarge the window to full size"
+    AFX_IDS_SCNEXTWINDOW    "Switch to the next document window"
+    AFX_IDS_SCPREVWINDOW    "Switch to the previous document window"
+    AFX_IDS_SCCLOSE         "Close the active window and prompts to save the documents"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    AFX_IDS_SCRESTORE       "Restore the window to normal size"
+    AFX_IDS_SCTASKLIST      "Activate Task List"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    AFX_IDS_PREVIEW_CLOSE   "Close print preview mode\nCancel Preview"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FILE_MISSIONNOTES    "Displays designer notes and mission properties\nMission Specs"
+    ID_SELECT               "Select objects mode\nSelect (S)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_VIEW_FIGHTERS        "Show/Hide Fighter objects"
+    ID_VIEW_CAPITALSHIPS    "Show/Hide Capital Ship objects"
+    ID_VIEW_PLANETS         "Show/Hide Planet objects"
+    ID_VIEW_MISCOBJECTS     "Show/Hide misc objects"
+    ID_FILE_PREFERENCES     "Set FRED2 user preferences\nUser preferences"
+    ID_EDIT_DELETE          "Delete selected object(s)\nDelete object(s)"
+    ID_EDIT_HOLD            "Hold current state in buffer\nHold state"
+    ID_EDIT_FETCH           "Fetch held state from buffer\nFetch state"
+    ID_EDITORS_OBJECTS      "Activates Ship Editor screen\nShip Editor"
+    ID_EDITORS_AI_CLASSES   "Activates AI Class editor screen\nAI Class"
+    ID_EDITORS_ART          "Activates Art Editor screen\nArt Editor"
+    ID_EDITORS_MESSAGE      "Activates Message Editor\nMessage Editor"
+    ID_EDITORS_MUSIC        "Activates Music Editor screen\nMusic Editor"
+    ID_EDITORS_SHIPS        "Open ship editor dialog window to edit ship"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_EDITORS_GOALS        "Activates Mission Goal Editor\nMission Goal Editor"
+    ID_EDITORS_WAYPOINTS    "Activates Waypoint Editor\nWaypoint Editor"
+    ID_EDITORS_SOUND        "Activates Sound Editor\nSound Editor"
+    ID_EDITORS_TERRAIN      "Activates Terrain Editor Screen\nTerrain Editor"
+    ID_EDIT_DUPLICATE       "Duplicate selected object(s)\nDuplicate object(s)"
+    ID_MIKE_GRIDCONTROL     "Gahooga!"
+    ID_PROPERTIES_ONE       "This is Mike's prompt!"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_INDICATOR_EXT        "EXT"
+    ID_INDICATOR_CAPS       "CAP"
+    ID_INDICATOR_NUM        "NUM"
+    ID_INDICATOR_SCRL       "SCRL"
+    ID_INDICATOR_OVR        "OVR"
+    ID_INDICATOR_REC        "REC"
+    ID_INDICATOR_MODE       "MODE"
+    ID_INDICATOR_LEFT       "LEFT"
+    ID_INDICATOR_RIGHT      "RIGHT"
+    ID_INDICATOR_MODIFIED   "MODIFIED"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_MISCSTUFF_SHOWSHIPSASICONS "This is the (help?) prompt!"
+    ID_EDIT_POPUP_SHOW_SHIP_MODELS 
+                            "Show actual polygon models for visible ships"
+    ID_EDIT_POPUP_SHOW_SHIP_ICONS 
+                            "Display ship names and ship types for visible ships"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_ADD_MISSION_TIME     "Evaluates to elapsed time into mission in seconds"
+    ID_ADD_EQUALS           "Evaluates to true if numbers or objects are the same"
+    ID_ADD_GREATER_THAN     "Evaluates to true if first value is larger than second"
+    ID_ADD_AND              "Evaluates to true only if all subexpressions are true"
+    ID_ADD_OR               "Evaluates to true if any subexpression is true."
+    ID_ADD_MULTIPLY         "Evaluates to product of subexpressions"
+    ID_ADD_DIVIDE           "Evaluates to division of first subexpressions by remaining subexpressions"
+    ID_ADD_MOD              "Evaluates to remainder of division of first subexpression by remaining subexpressions"
+    ID_EDIT_TEXT            "Change this item's text data"
+    ID_ADD_TRUE             "Evaluates to a boolean value of true"
+    ID_ADD_FALSE            "Evaluates to a boolean value of false"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_EDIT_POPUP_SHOW_COMPASS 
+                            "Display a 3 dimentional compass in the upper right corner of window"
+    ID_CHANGE_VIEWPOINT_EXTERNAL 
+                            "See things from an external camera's viewpoint"
+    ID_CHANGE_VIEWPOINT_START 
+                            "See things from the player's starting position viewpoint"
+    ID_CHANGE_VIEWPOINT_FOLLOW 
+                            "See things from the current object's viewpoint"
+    ID_ADD_PLUS             "Evaluates to sum of subexpressions"
+    ID_ADD_MINUS            "Evaluates to difference between first subexpression and remaining subexpressions"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_SHOW_GRID_POSITIONS  "Show position on grid for all visible objects"
+    ID_SHOW_COORDINATES     "Display the coordinates of objects/waypoints."
+    ID_SELECT_LIST          "Select from List\nSelect List (H)"
+    ID_CONTRAIN_X           "Constrain to X axis\nX Constraint"
+    ID_CONSTRAIN_Y          "Constrain to Y axis\nY Constraint (`)"
+    ID_BUTTON32922          "Constrain to X axis\nX Constraint"
+    ID_BUTTON32923          "Constrain to XZ axis\nXZ Constraint"
+    ID_ZOOM                 "Zoom view in/out\nZoom Mode"
+    ID_SELECTION_LOCK       "Selection Lock\nSelection Lock (Spacebar)"
+    ID_BUTTON32926          "Fo"
+    ID_DISSOLVE_WING        "Remove selected ships from Wing(s)\nRemove from Wing"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_SELECT_AND_MOVE      "Select and Move objects\nSelect and Move (M)"
+    ID_SELECT_AND_ROTATE    "Select and Rotate objects\nSelect and Rotate (R)"
+    ID_CONSTRAIN_X          "Constrain to global X axis\nX Constraint (`)"
+    ID_CONSTRAIN_Z          "Constrain to global Z axis\nZ Constraint (`)"
+    ID_CONSTRAIN_XZ         "Constrain to global XZ plane\nXZ Constraint (`)"
+    ID_FORM_WING            "Form marked ships into Wing\nForm Wing (Ctrl+W)"
+    ID_DISBAND_WING         "Take marked ships out of wing\nDisband Wing (Ctrl+D)"
+    ID_SHOW_DISTANCED       "Show distances between marked objects"
+    ID_SHOW_DISTANCES       "Show distances between marked objects\nShow distances (D)"
+    ID_UNIVERSAL_HEADING    "Heading changes are universal, instead of local"
+    ID_FIND_DISTANCE        "Find Distance between two objects\nFind Distance"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_BUTTON32944          "Constrain to YZ axis\nYZ Constraint"
+    ID_BUTTON32945          "Constrain to XY axis\nXY Constraint"
+    ID_CONSTRAIN_YZ         "Constrain to global YZ plane\nYZ Constraint (`)"
+    ID_CONSTRAIN_XY         "Constrain to global XY plane\nXY Constraint (`)"
+    ID_FLYING_CONTROLS      "Use real time flying controls instead of stepped controls"
+    ID_SELECT_AND_ROTATE_LOCALLY "Rotate objects locally\nRotate Locally"
+    ID_ROTATE_LOCALLY       "Rotate around local object's axis system\nRotate locally (X)"
+    ID_ZOOM_TO_SELECTED     "Zoom Selected\nZoom Selected"
+    ID_ZOOM_SELECTED        "Zoom in on selected object\nZoom Selected (Alt Z)"
+    ID_ZOOM_EXTENTS         "Zoom out to view all objects in universe\nZoom Extents (Shift Z)"
+    ID_SHOW_HORIZON         "Show the horizon line"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_EDITORS_PLAYER       "Edit loadout information for all teams"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_REVERT               "Revert changes by reloading mission from last save\nRevert"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_ERROR_CHECKER        "Checks campaign for errors"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_LOOKAT_OBJ           "Rotate camera around selected object\nRotate around object (Ctrl+V)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_EDITORS_ADJUST_GRID  "Adjust the orientation and level of the grid."
+    ID_EDITORS_SHIELD_SYS   "Editor for availability of shield system for ships."
+    ID_LEVEL_CAMERA         "Level object to grid (use camera if no objects are marked)"
+    ID_ALIGN_OBJ            "Align object's axis with global axis (use camera if no objects are marked)"
+    ID_MARK_WING            "Mark entire wing selected object is a member of."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_CONTROL_OBJ          "Movement keys control marked objects instead of camera."
+    ID_CHECKOUT             "Checks out the mission from Source Safe"
+    ID_CHECKIN              "Checks in the mission to Source Safe"
+    ID_AA_GRIDLINES         "Toggle Gridlines being drawn anti-aliased or not."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FORMAT_FS2_OPEN      "Save missions with SCP features"
+    ID_FORMAT_FS2_RETAIL    "Save missions compatible with FS2 retail"
+    ID_FORMAT_FS1           "Save missions compatible with FS1 retail"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FORMAT_FS1_RETAIL    "Save missions compatible with FS1 retail"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif
+#include "res\FRED.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#include "afxprint.rc"       // printing/print preview resources
+#endif
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

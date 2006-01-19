@@ -24,6 +24,36 @@ Package=<4>
 
 ###############################################################################
 
+Project: "Fred2"=.\Fred2.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name code
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "wxFRED2"=.\wxFRED2.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name code
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "code"=.\code.dsp - Package Owner=<4>
 
 Package=<5>
@@ -56,21 +86,6 @@ Package=<5>
 
 Package=<4>
 {{{
-}}}
-
-###############################################################################
-
-Project: "wxFRED2"=.\wxFRED2.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name code
-    End Project Dependency
 }}}
 
 ###############################################################################
