@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.155 $
- * $Date: 2006-01-02 07:25:11 $
- * $Author: taylor $
+ * $Revision: 2.156 $
+ * $Date: 2006-01-19 16:00:04 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.155  2006/01/02 07:25:11  taylor
+ * don't specify a read buffer, something with this is screwing up ATI cards, a debug string should satisfy a hunch
+ * ifdef out the bumpmap stuff, it's very wrong anyway :)
+ *
  * Revision 2.154  2005/12/29 20:12:51  taylor
  * we are using gouraud lighting here so be sure to set the proper tmap flag (fixes D3D, corrects OGL)
  *
@@ -2925,6 +2929,9 @@ void gr_opengl_cleanup(int minimize)
 	if ( !OGL_enabled )
 		return;
 
+	//WMC - Try to get rid of annoying crash on exit
+	gr_unset_cursor_bitmap(Gr_cursor);
+
 	if (!Fred_running) {
 		gr_reset_clip();
 		gr_clear();
@@ -4050,7 +4057,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_shader = gr_opengl_set_shader;
 	gr_screen.gf_clear = gr_opengl_clear;
 //	gr_screen.gf_bitmap = gr_opengl_bitmap;
-//	gr_screen.gf_bitmap_ex = gr_opengl_bitmap_ex;
+	gr_screen.gf_bitmap_ex = gr_opengl_bitmap_ex;
 	gr_screen.gf_aabitmap = gr_opengl_aabitmap;
 	gr_screen.gf_aabitmap_ex = gr_opengl_aabitmap_ex;
 	

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-04-05 05:53:18 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2006-01-19 16:00:04 $
+ * $Author: wmcoolmon $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/04/05 05:53:18  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.16  2005/03/01 06:55:41  bobboau
  * oh, hey look I've commited something :D
  * animation system, weapon models detail box alt-tab bug, probly other stuff
@@ -949,7 +952,6 @@ void light_set_shadow( int state )
 {
 	Light_in_shadow = state;
 }
-
 
 void light_set_all_relevent(){
 	int i = 0;

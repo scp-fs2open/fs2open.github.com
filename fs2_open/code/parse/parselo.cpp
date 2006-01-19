@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.65 $
+ * $Revision: 2.66 $
  * $Author: wmcoolmon $
- * $Date: 2006-01-17 07:10:01 $
+ * $Date: 2006-01-19 16:00:04 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/01/17 07:10:01  wmcoolmon
+ * Various minor improvements
+ *
  * Revision 2.64  2006/01/15 18:53:19  taylor
  * fix stuff_boolean() debug spew
  *
@@ -1215,7 +1218,7 @@ char* alloc_block(char* startstr, char* endstr)
 	//Check that we left the file
 	if(level > 0)
 	{
-		Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" in file", startstr, endstr);
+		Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" on line %d in file", startstr, endstr, get_line_num());
 		longjmp(parse_abort, 3);
 	}
 	else
@@ -1814,6 +1817,11 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 
 	// read the entire file in
 	int file_len = cfilelength(mf);
+
+	if(!file_len) {
+		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+		longjmp(parse_abort, 5);
+	}
 
 	//	If you hit this assert, it is probably telling you the obvious.  The file
 	//	you are trying to read is truly too large.  Look at *filename to see the file name.

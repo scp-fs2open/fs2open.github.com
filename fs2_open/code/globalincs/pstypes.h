@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.40 $
- * $Date: 2006-01-16 11:02:23 $
+ * $Revision: 2.41 $
+ * $Date: 2006-01-19 16:00:04 $
  * $Author: wmcoolmon $
- * $Revision: 2.40 $
- * $Date: 2006-01-16 11:02:23 $
+ * $Revision: 2.41 $
+ * $Date: 2006-01-19 16:00:04 $
  * $Author: wmcoolmon $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.39  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -553,7 +556,7 @@ extern int spec;
 
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
-extern void _cdecl LuaError(char * filename, int line, struct lua_State *L);
+extern int LuaError(struct lua_State *L);
 extern void _cdecl Error( char * filename, int line, char * format, ... );
 extern void _cdecl Warning( char * filename, int line, char * format, ... );
 

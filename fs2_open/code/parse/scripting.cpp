@@ -173,10 +173,10 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 			if(data != NULL) {
 				args_start = lua_gettop(LuaState);
 			}
+			lua_pushcfunction(GetLuaSession(), LuaError);
 			lua_getref(GetLuaSession(), hd.index);
-			if(lua_pcall(GetLuaSession(), 0, 1, 0) != 0)
+			if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, -2) != 0)
 			{
-				LuaError(LOCATION, GetLuaSession());
 				return 0;
 			}
 
@@ -191,7 +191,7 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 
 			//WMC - Pop anything leftover from the function from the stack
 			args_start = lua_gettop(LuaState) - args_start;
-			for(; args_start > 0; args_start--) lua_pop(LuaState, -1);
+			for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
 #endif
 		}
 		else if(hd.language == SC_PYTHON)
