@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.143 $
- * $Date: 2006-01-18 16:36:32 $
+ * $Revision: 2.144 $
+ * $Date: 2006-01-19 14:06:33 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2006/01/18 16:36:32  taylor
+ * oops! :)
+ *
  * Revision 2.142  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -4178,13 +4181,11 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			
 //start rendering glow points -Bobboau
 
-		if ( (pm->n_glows) /*&& (Interp_flags & MR_SHOW_THRUSTERS) && (Detail.engine_glows)*/ )	{
-
-
-
+	if ( (pm->n_glows) && !is_outlines_only && !is_outlines_only_htl /*&& (Interp_flags & MR_SHOW_THRUSTERS) && (Detail.engine_glows)*/ )	{
 		for (i = 0; i < pm->n_glows; i++ ) {
 			glow_bank *bank = &pm->glows[i];
 			int j;
+
 			if(bank->is_on)
 			{
 				if(is_ship && i<32)
@@ -4342,7 +4343,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 //end rendering glow points
 
 	// Draw the thruster glow
-	if ( (Interp_thrust_glow_bitmap != -1) && (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
+	if ( (Interp_thrust_glow_bitmap != -1) && !is_outlines_only && !is_outlines_only_htl && (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
 		int i;
 		int n_q = 0;
 		vec3d norm;
@@ -5668,6 +5669,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	for(i=0; i<MAX_MODEL_TEXTURES; i++){
 		total_verts += list[i].n_verts;
 	}
+
 	model_list.allocate(total_verts);
 	model_list.n_verts = 0;
 	model_list.n_prim = 0;
