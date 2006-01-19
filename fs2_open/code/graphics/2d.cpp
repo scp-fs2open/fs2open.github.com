@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.64 $
- * $Date: 2006-01-12 04:16:27 $
+ * $Revision: 2.65 $
+ * $Date: 2006-01-19 20:18:11 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2006/01/12 04:16:27  wmcoolmon
+ * Oops, missed a file
+ *
  * Revision 2.63  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -754,6 +757,7 @@
 #include "debugconsole/dbugfile.h"
 #include "graphics/grbatch.h"
 #include "parse/scripting.h"
+#include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 
 // 3dnow stuff
 // #include "amd3d.h"
@@ -2071,9 +2075,16 @@ void python_do_frame();
 #endif
 void gr_flip()
 {
-#ifdef USE_PYTHON
-	python_do_frame();
-#endif
+	//WMC - Evaluate state script hook if not override
+	if(gameseq_get_depth() > -1)	//WMC - Make sure we're _in_ a state
+	{
+		int state = gameseq_get_state();
+		if(!GS_state_hooks[state].IsOverride()) {
+			Script_system.RunBytecode(GS_state_hooks[state]);
+		}
+	}
+
+	//WMC - Evaluate global hook if not override.
 	Script_system.RunBytecode(Script_globalhook);
 	gr_screen.gf_flip();
 }

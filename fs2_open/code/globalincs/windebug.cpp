@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-01-19 16:00:04 $
+ * $Revision: 2.34 $
+ * $Date: 2006-01-19 20:18:11 $
  * $Author: wmcoolmon $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/01/19 16:00:04  wmcoolmon
+ * Lua debugging stuff; gr_bitmap_ex stuff for taylor
+ *
  * Revision 2.32  2006/01/12 04:18:10  wmcoolmon
  * Finished committing codebase
  *
@@ -1012,7 +1015,7 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 } 
 
-int LuaError(struct lua_State *L)
+void LuaError(struct lua_State *L, char *format, ...)
 {
 #ifdef USE_LUA
 	int val;
@@ -1029,9 +1032,25 @@ int LuaError(struct lua_State *L)
 	//sprintf(AssertText2,"LuaError: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
 
 	dumpBuffer.Clear();
-	dumpBuffer.Printf("LUA ERROR: %s", lua_tostring(L, -1));
-	lua_pop(L, -1);
+	//WMC - if format is set to NULL, assume this is acting as an
+	//error handler for Lua.
+	if(format == NULL)
+	{
+		dumpBuffer.Printf("LUA ERROR: %s", lua_tostring(L, -1));
+		lua_pop(L, -1);
+	}
+	else
+	{
+		va_list args;
+		va_start(args, format);
+		vsprintf(AssertText1,format,args);
+		dumpBuffer.Printf(AssertText1);
+		va_end(args);
+	}
 
+	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf( "LUA Debug:" );
 	dumpBuffer.Printf( "\r\n" );
 	dumpBuffer.Printf(Separator);
 
@@ -1062,6 +1081,7 @@ int LuaError(struct lua_State *L)
 	dumpBuffer.Printf(Separator);
 	lua_stackdump(L, AssertText2);
 	dumpBuffer.Printf( AssertText2 );
+	dumpBuffer.Printf( "\r\n" );
 	dumpBuffer.Printf(Separator);
 
 	dump_text_to_clipboard(dumpBuffer.buffer);
@@ -1082,9 +1102,6 @@ int LuaError(struct lua_State *L)
 	}
 
 #endif
-	//WMC - According to documentation, this will always be the error
-	//if error handler is called
-	return LUA_ERRRUN;
 }
 
 void _cdecl Error( char * filename, int line, char * format, ... )

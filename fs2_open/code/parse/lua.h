@@ -12,9 +12,9 @@ extern "C" {
 //*************************Lua funcs*************************
 //Used to parse arguments on the stack to C values
 int lua_get_args(lua_State *L, char *fmt, ...);
-//void lua_set_arg(lua_State *L, char fmt, void *dta);
 int lua_set_args(lua_State *L, char* fmt, ...);
 void lua_stackdump(lua_State *L, char *stackdump);
+int lua_friendly_error(lua_State *L);
 
 //*************************Lua hacks*************************
 //WMC - Hack to allow for quick&easy return value parsing
@@ -22,24 +22,15 @@ extern int Lua_get_args_skip;
 
 //*************************Lua types*************************
 //WMC - These should really all be internal, but I needed lua_obj
-//WMC - Types
-//Used for internal object->lua_return and lua_parse->object communication
+
+//WMC - Define to say that this is to store just a pointer.
+#define ODATA_PTR_SIZE		-1
+//script_lua_odata Used for internal object->lua_set and lua_get->object communication
 struct script_lua_odata
 {
 	int meta;
 	void *buf;
 	int size;
-
-	//script_lua_odata(char *in_meta, void *in_buf, int in_size){meta=in_meta;buf=in_buf;size=in_size;}
-};
-
-//Used like _odata, except for object pointers
-struct script_lua_opdata
-{
-	int meta;
-	void **buf;
-
-	//script_lua_opdata(char* in_meta, void** in_buf){meta=in_meta; buf=in_buf;}
 };
 //Function helper helper
 //Stores data about functions
@@ -73,6 +64,7 @@ class lua_lib_h
 //private:
 public:
 	char *Name;
+	char *ShortName;
 	char *Description;
 	int Derivator;
 
@@ -83,7 +75,7 @@ public:
 	char *IndexerDescription;
 
 public:
-	lua_lib_h(char *in_name, char *in_desc, int in_deriv=-1){Name = in_name; Description = in_desc; Derivator = in_deriv; Indexer = NULL;}
+	lua_lib_h(char *in_name,  char *in_shortname=NULL, char *in_desc=NULL, int in_deriv=-1){Name = in_name; ShortName=in_shortname; Description = in_desc; Derivator = in_deriv; Indexer = NULL;}
 };
 
 extern std::vector<lua_lib_h> lua_Libraries;
@@ -95,8 +87,8 @@ class lua_lib {
 private:
 	int lib_idx;
 public:
-	lua_lib(char *in_name, char *in_desc) {
-		lua_Libraries.push_back(lua_lib_h(in_name, in_desc));
+	lua_lib(char *in_name, char *in_shortname=NULL, char *in_desc=NULL) {
+		lua_Libraries.push_back(lua_lib_h(in_name, in_shortname, in_desc));
 		lib_idx = lua_Libraries.size()-1;
 	}
 
@@ -115,7 +107,7 @@ public:
 	int obj_idx;
 public:
 	lua_obj_h(char *in_name, char *in_desc, lua_obj_h *in_deriv = NULL) {
-		lua_Objects.push_back(lua_lib_h(in_name, in_desc, in_deriv == NULL ? -1 : in_deriv->obj_idx));	//WMC - Handle NULL case
+		lua_Objects.push_back(lua_lib_h(in_name, NULL, in_desc, in_deriv == NULL ? -1 : in_deriv->obj_idx));	//WMC - Handle NULL case
 		obj_idx = lua_Objects.size()-1;
 	}
 
@@ -199,7 +191,7 @@ template <class StoreType> class lua_obj : public lua_obj_h
 public:
 	lua_obj(char*in_name, char*in_desc, lua_obj* in_deriv=NULL):lua_obj_h(in_name, in_desc, in_deriv){};
 
-	//StoreType *Create(lua_State *L){StoreType *ptr = (StoreType*)LUA_NEW_OBJ(L, meta, StoreType); return ptr;}
+	//WMC - Use this to store object data for return, or for setting as a global
 	script_lua_odata SetToLua(StoreType *obj) {
 		script_lua_odata od;
 		od.meta = obj_idx;
@@ -208,6 +200,7 @@ public:
 		return od;
 	}
 
+	//WMC - Use this to copy object data, for modification or whatever
 	script_lua_odata GetFromLua(StoreType *ptr){
 		script_lua_odata od;
 		od.meta = obj_idx;
@@ -216,11 +209,16 @@ public:
 		return od;
 	}
 
-	script_lua_opdata GetPtrFromLua(StoreType **ptr){
-		script_lua_opdata pd;
-		pd.meta = obj_idx;
-		pd.buf = ptr;
-		return pd;
+	//WMC - Use this to get a pointer to Lua object data.
+	//Use >ONLY< when:
+	//1 - You are setting the data of an object (ie 'x' component of vector)
+	//2 - To speed up read-only calcs (ie computing dot product of vectors)
+	script_lua_odata GetPtrFromLua(StoreType **ptr){
+		script_lua_odata od;
+		od.meta = obj_idx;
+		od.buf = (void**)ptr;
+		od.size = -1;
+		return od;
 	}
 };
 

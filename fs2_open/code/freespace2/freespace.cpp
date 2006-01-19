@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.217 $
- * $Date: 2006-01-19 03:15:31 $
- * $Author: phreak $
+ * $Revision: 2.218 $
+ * $Date: 2006-01-19 20:18:11 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.217  2006/01/19 03:15:31  phreak
+ * obj_script_set_global() should have an #ifdef/#endif USE_LUA pair in the function body.
+ *
  * Revision 2.216  2006/01/17 07:28:39  wmcoolmon
  * Better state handling; added GameInit hook
  *
@@ -5860,12 +5863,11 @@ void game_render_post_frame()
 //is determined according to object type
 void obj_script_set_global(char *global_name, object *objp)
 {
-#ifdef USE_LUA
 	if(objp == NULL) {
 		Script_system.RemGlobal(global_name);
 		return;
 	}
-
+#ifdef USE_LUA
 	if(objp->type == OBJ_SHIP) {
 		Script_system.SetGlobal(global_name, 'o', &l_Ship.SetToLua(&objp->signature));
 	} else {
