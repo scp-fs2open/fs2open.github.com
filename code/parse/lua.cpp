@@ -36,6 +36,8 @@ std::vector<lua_lib_h> lua_Objects;
 	lua_func_h lua_##objlib##_##name##_h(#name, lua_##objlib##_##name, objlib, args, retvals, desc);	\
 	static int lua_##objlib##_##name(lua_State *L)
 
+//Use this to handle forms of type vec.x and vec['x']. Basically an indexer for a specific variable.
+//Format string should be "o*%", where * is indexing value, and % is the value to set to when LUA_SETTTING_VAR is set
 #define LUA_VAR(name, objlib, type, desc)			\
 	static int lua_##objlib##_var##name(lua_State *L);	\
 	lua_var_h lua_##objlib##_var##name##_h(#name, lua_##objlib##_var##name, objlib, false, type, desc);	\
@@ -47,6 +49,9 @@ std::vector<lua_lib_h> lua_Objects;
 	lua_var_h lua_##objlib##_var##name##_h(#name, lua_##objlib##_var##name, objlib, true, type, desc);	\
 	static int lua_##objlib##_var##name(lua_State *L)
 */
+
+//Use this with objects to deal with forms such as vec.x, vec['x'], vec[0]
+//Format string should be "o*%", where * is indexing value, and % is the value to set to when LUA_SETTTING_VAR is set
 #define LUA_INDEXER(objlib, desc)			\
 	static int lua_##objlib##___indexer(lua_State *L);	\
 	lua_indexer_h lua_##objlib##___indexer_h(lua_##objlib##___indexer, objlib, desc);	\
@@ -55,30 +60,42 @@ std::vector<lua_lib_h> lua_Objects;
 //Checks to determine whether LUA_VAR or LUA_INDEXER should set the variable
 #define LUA_SETTING_VAR	lua_toboolean(L,lua_upvalueindex(1))
 
+struct string_conv {
+	char *src;
+	char *dest;
+};
+
+//*************************Lua operators*************************
+//These are the various types of operators you can
+//set in Lua. Use these as function name to activate.
+//
+//Format string should be "*o" or "o*", where "*" is the type of
+//variable you want to deal with.
+//The order varies with order of variables
+string_conv lua_Operators[] = {
+	{"__add",		"+"},			//var +  obj
+	{"__sub",		"-"},			//var -  obj
+	{"__mult",		"*"},			//var *  obj
+	{"__div",		"/"},			//var /  obj
+	{"__pow",		"^"},			//var ^  obj
+	{"__unm",		"~"},			//var ~  obj
+	{"__concat"		".."},			//var .. obj	NOTE: Automatically added (calls tostring if possible), add yourself to override
+	{"__eq",		"=="},			//var == obj
+	{"__lt",		"<"},			//var <  obj
+	{"__le",		"<="},			//var <= obj
+	{"__tostring",	"(string)"},	//(String) obj
+	{"__call",		"?"},			//*shrug*
+	//WMC - This is NOT a Lua type, but for the LUA_INDEXER define
+	{"__indexer",	"[]"},			//obj[var]
+};
+
+int lua_Num_operators = sizeof(lua_Operators)/sizeof(string_conv);
+
 //*************************Lua return values*************************
 #define LUA_RETURN_NIL		0
 #define LUA_RETURN_OBJECT		1
 #define LUA_RETURN_TRUE		lua_set_args(L, "b", true)
 #define LUA_RETURN_FALSE	lua_set_args(L, "b", true)
-
-//*************************Lua defines*************************
-//These are the various types of operators you can
-//set in Lua. Define these in script_lua_obj_func_list
-#define	LUA_OPER_METHOD				"__index"
-#define	LUA_OPER_ADDITION			"__add"
-#define LUA_OPER_SUBTRACTION		"__sub"
-#define LUA_OPER_MULTIPLICATION		"__mult"
-#define LUA_OPER_DIVISION			"__div"
-#define LUA_OPER_POWER				"__pow"
-#define LUA_OPER_UNARY				"__unm"
-#define LUA_OPER_CONCATENATION		"__concat"
-#define LUA_OPER_EQUALTO			"__eq"
-#define LUA_OPER_LESSTHAN			"__lt"
-#define LUA_OPER_LESSTHANEQUALTO	"__le"
-#define LUA_OPER_INDEX				"__index"
-#define LUA_OPER_NEWINDEX			"__newindex"
-#define LUA_OPER_CALL				"__call"
-#define LUA_OPER_TOSTRING			"__tostring"
 
 //*************************General Functions*************************
 //WMC - This doesn't work.
@@ -235,16 +252,11 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	}
 
 	if(total_args < needed_args) {
-		Warning(LOCATION, "Not enough arguments for function - need %d, had %d", needed_args, total_args);
+		LuaError(L, "Not enough arguments for function - need %d, had %d. If you are using objects or handles, make sure that you are using \":\" to access member functions, rather than \".\"", needed_args, total_args);
 		return 0;
 	}
 
-	//WMC - Get function name, if it was stored as an upvalue
 	char funcname[128];
-	/*if(lua_type(L, lua_upvalueindex(1)) == LUA_TSTRING)
-		funcname = (char *)lua_tostring(L, lua_upvalueindex(1));
-	else if(lua_type(L, lua_upvalueindex(2)) == LUA_TSTRING)
-		funcname = (char *)lua_tostring(L, lua_upvalueindex(2));*/
 #ifndef NDEBUG
 	lua_Debug ar;
 	lua_getstack(L, 0, &ar);
@@ -261,7 +273,16 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 		strcat(funcname, ")");
 	}
 	if(!strlen(funcname)) {
-		strcpy(funcname, "<UNKNOWN>");
+		//WMC - Try and get at function name from upvalues
+		if(lua_type(L, lua_upvalueindex(1)) == LUA_TSTRING)
+			strcpy(funcname, lua_tostring(L, lua_upvalueindex(1)));
+		else if(lua_type(L, lua_upvalueindex(2)) == LUA_TSTRING)
+			strcpy(funcname, lua_tostring(L, lua_upvalueindex(2)));
+
+		//WMC - Totally unknown function
+		if(!strlen(funcname)) {
+			strcpy(funcname, "<UNKNOWN>");
+		}
 	}
 #endif
 
@@ -287,7 +308,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isboolean(L, nargs)) {
 					*va_arg(vl, bool*) = lua_toboolean(L, nargs) > 0 ? true : false;
 				} else {
-					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; boolean expected", funcname, nargs, lua_get_type_string(L, nargs));
+					LuaError(L, "%s: Argument %d is an invalid type '%s'; boolean expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -295,7 +316,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, double*) = (double)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
+					LuaError(L, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -303,7 +324,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, float*) = (float)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
+					LuaError(L, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -311,7 +332,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isnumber(L, nargs)) {
 					*va_arg(vl, int*) = (int)lua_tonumber(L, nargs);
 				} else {
-					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
+					LuaError(L, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -319,7 +340,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				if(lua_isstring(L, nargs)) {
 					*va_arg(vl, const char **) = lua_tostring(L, nargs);
 				} else {
-					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; string expected", funcname, nargs, lua_get_type_string(L, nargs));
+					LuaError(L, "%s: Argument %d is an invalid type '%s'; string expected", funcname, nargs, lua_get_type_string(L, nargs));
 					if(!optional_args) return 0;
 				}
 				break;
@@ -333,37 +354,20 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 					if(stricmp(s, lua_Objects[od.meta].Name)) {
 						int idx = lua_get_object(s);
 						if(idx < 0 || (lua_Objects[idx].Derivator != od.meta)) {
-							Warning(LOCATION, "%s: Argument %d is the wrong type of userdata; %s given, but %s expected", funcname, nargs, s, lua_Objects[od.meta].Name);
+							LuaError(L, "%s: Argument %d is the wrong type of userdata; %s given, but %s expected", funcname, nargs, s, lua_Objects[od.meta].Name);
 						}
 					}
 					if(s) lua_pop(L, 1);
-					memcpy(od.buf, lua_touserdata(L, nargs), od.size);
-				}
-				else
-				{
-					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; type '%s' expected", funcname, nargs, lua_get_type_string(L, nargs), va_arg(vl, script_lua_odata).meta);
-					if(!optional_args) return 0;
-				}
-				break;
-			case 'p':
-				if(lua_isuserdata(L, nargs))
-				{
-					script_lua_opdata pd = va_arg(vl, script_lua_opdata);
-					lua_getmetatable(L, nargs);
-					lua_rawget(L, LUA_REGISTRYINDEX);
-					char *s = (char *)lua_tostring(L, -1);
-					if(stricmp(s, lua_Objects[pd.meta].Name)) {
-						int idx = lua_get_object(s);
-						if(idx < 0 && (lua_Objects[idx].Derivator != pd.meta)) {
-							Warning(LOCATION, "%s: Argument %d is the wrong type of userdata; %s given, but %s expected", funcname, nargs, s, lua_Objects[pd.meta].Name);
-						}
+					if(od.size != ODATA_PTR_SIZE)
+					{
+						memcpy(od.buf, lua_touserdata(L, nargs), od.size);
+					} else {
+						(*(void**)od.buf) = lua_touserdata(L, nargs);
 					}
-					if(s) lua_pop(L, 1);
-					(*pd.buf) = lua_touserdata(L, nargs);
 				}
 				else
 				{
-					Warning(LOCATION, "%s: Argument %d is an invalid type '%s'; type '%s' expected", funcname, nargs, lua_get_type_string(L, nargs), va_arg(vl, script_lua_opdata).meta);
+					LuaError(L, "%s: Argument %d is an invalid type '%s'; type '%s' expected", funcname, nargs, lua_get_type_string(L, nargs), lua_Objects[va_arg(vl, script_lua_odata).meta].Name);
 					if(!optional_args) return 0;
 				}
 				break;
@@ -445,6 +449,74 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 	return nargs;
 }
 
+LUA_API lua_friendly_error(lua_State *L)
+{
+	LuaError(L);
+
+	//WMC - According to documentation, this will always be the error
+	//if error handler is called
+	return LUA_ERRRUN;
+}
+
+//WMC - Used to automatically use an object's __tostring function to concatenate
+LUA_API lua_concat_handler(lua_State *L)
+{
+	const char *s = NULL;
+	int objpos = 2;
+	if(lua_isstring(L, 1)) {
+		s = lua_tostring(L, 1);
+	} else {
+		s = lua_tostring(L, 2);
+		objpos = 1;
+	}
+
+	//Get metatable
+	lua_getmetatable(L, objpos);
+
+	//Plan for the future - stacksize & error handler
+	int stacksize = lua_gettop(L);
+	lua_pushcfunction(L, lua_friendly_error);
+
+	//Get tostring function
+	lua_pushstring(L, "__tostring");
+	lua_rawget(L, -3);
+
+	if(!lua_iscfunction(L, -1)) {
+		//Return original string to fail gracefully
+		lua_pushstring(L, s);
+		return 1;
+	}
+
+	//Push the object
+	lua_pushvalue(L, objpos);
+	if(lua_pcall(L, 1, 1, -3) || lua_gettop(L) - stacksize < 1)
+	{
+		//Return original string to fail gracefully
+		lua_pushstring(L, s);
+		return 1;
+	}
+
+	//Now take return value and concat
+	const char *s2 = lua_tostring(L, -1);
+	char *buf = new char[strlen(s) + strlen(s2) + 1];
+	strcpy(buf, "");
+	//String in back
+	if(objpos == 2) {
+		strcat(buf, s);
+	}
+
+	strcat(buf, s2);
+
+	//Original string in back
+	if(objpos == 1) {
+		strcat(buf, s);
+	}
+
+	lua_pushstring(L, buf);
+	delete[] buf;
+	return 1;
+}
+
 //WMC - Bogus integer used to determine if a variable
 //in an object or library is modder-defined or code-defined.
 #define INDEX_HANDLER_VAR_TRIGGER	1337
@@ -455,7 +527,7 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 LUA_API lua_index_handler(lua_State *L)
 {
 	//WMC - We might need this. It's easier to push it now and deal with it later
-	lua_pushcfunction(L, LuaError);
+	lua_pushcfunction(L, lua_friendly_error);
 	//WMC - When this function is called, there should be
 	//two values on the stack - the object, and the key
 	//Everything else, then, is an argument.
@@ -467,6 +539,13 @@ LUA_API lua_index_handler(lua_State *L)
 	lua_pushvalue(L, 2);	//Get key
 
 	bool using_indexer = lua_type(L, 2) != LUA_TSTRING;
+	if(!using_indexer)
+	{
+		lua_rawget(L, -2);
+		if(lua_isnil(L, -1)) {
+			using_indexer = true;
+		}
+	}
 	
 	//WMC - I tried using lua_isnil here to use the indexer if an
 	//unknown string key was passed, but for some reason I got a crash
@@ -476,6 +555,20 @@ LUA_API lua_index_handler(lua_State *L)
 	if(!using_indexer)
 	{
 		lua_rawget(L, -2);
+		if(lua_isnil(L, -1)) {
+			using_indexer = true;
+		}
+	}
+	//WMC - UPDATE!! This magically fixed itself or something.
+	//Persistence pays off.
+	//If this bug crops up again, the fix is to comment out the sandwiched
+	//if section, and uncomment the lua_rawget(L, -2) in the next !using_indexer
+	//if section.
+	if(!using_indexer)
+	{
+		//WMC - 0x00000069 bug fixed itself
+		//lua_rawget(L, -2);
+
 		//If it's a function or doesn't exist, we're done
 		//If it does exist but doesn't have the bogus value, we're also done. Either
 		//the modder messed with the variable or they set it themself.
@@ -561,10 +654,10 @@ lua_obj<vec3d> l_Vector("vector", "Vector");
 
 LUA_INDEXER(l_Vector, "Vector component")
 {
-	vec3d v3;
+	vec3d *v3;
 	char *s = NULL;
 	float newval = 0.0f;
-	int numargs = lua_get_args(L, "os|f", l_Vector.GetFromLua(&v3), &s, &newval);
+	int numargs = lua_get_args(L, "os|f", l_Vector.GetPtrFromLua(&v3), &s, &newval);
 
 	if(!numargs || s[1] != '\0')
 		LUA_RETURN_NIL;
@@ -581,10 +674,129 @@ LUA_INDEXER(l_Vector, "Vector component")
 		return LUA_RETURN_NIL;
 
 	if(LUA_SETTING_VAR) {
-		v3.a1d[idx] = newval;
+		v3->a1d[idx] = newval;
 	}
 
-	return lua_set_args(L, "f", v3.a1d[idx]);
+	return lua_set_args(L, "f", v3->a1d[idx]);
+}
+
+LUA_FUNC(__add, l_Vector, NULL, NULL, "Adds vector object")
+{
+	vec3d v3;
+	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
+	{
+		float f;
+		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.GetFromLua(&v3))
+			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.GetFromLua(&v3), &f))
+		{
+			v3.xyz.x += f;
+			v3.xyz.y += f;
+			v3.xyz.z += f;
+		}
+	}
+	else
+	{
+		vec3d v3b;
+		//WMC - doesn't really matter which is which
+		if(lua_get_args(L, "oo", l_Vector.GetFromLua(&v3), l_Vector.GetFromLua(&v3b)))
+		{
+			vm_vec_add2(&v3, &v3b);
+		}
+	}
+	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+}
+
+LUA_FUNC(__sub, l_Vector, NULL, NULL, "Subtracts vector object")
+{
+	vec3d v3;
+	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
+	{
+		float f;
+		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.GetFromLua(&v3))
+			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.GetFromLua(&v3), &f))
+		{
+			v3.xyz.x += f;
+			v3.xyz.y += f;
+			v3.xyz.z += f;
+		}
+	}
+	else
+	{
+		vec3d v3b;
+		//WMC - doesn't really matter which is which
+		if(lua_get_args(L, "oo", l_Vector.GetFromLua(&v3), l_Vector.GetFromLua(&v3b)))
+		{
+			vm_vec_sub2(&v3, &v3b);
+		}
+	}
+
+	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+}
+
+LUA_FUNC(__mult, l_Vector, NULL, NULL, "Scales vector object")
+{
+	vec3d v3;
+	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
+	{
+		float f;
+		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.GetFromLua(&v3))
+			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.GetFromLua(&v3), &f))
+		{
+			vm_vec_scale(&v3, f);
+		}
+	}
+
+	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+}
+
+LUA_FUNC(__div, l_Vector, NULL, NULL, "Scales vector object")
+{
+	vec3d v3;
+	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
+	{
+		float f;
+		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.GetFromLua(&v3))
+			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.GetFromLua(&v3), &f))
+		{
+			vm_vec_scale(&v3, 1.0f/f);
+		}
+	}
+
+	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+}
+
+
+LUA_FUNC(__tostring, l_Vector, NULL, NULL, "Converts a vector to string with format \"(x,y,z)\"")
+{
+	vec3d v3;
+	if(!lua_get_args(L, "o", l_Vector.GetFromLua(&v3)))
+		return LUA_RETURN_NIL;
+
+	char buf[32];
+	sprintf(buf, "(%f,%f,%f)", v3.xyz.x, v3.xyz.y, v3.xyz.z);
+
+	return lua_set_args(L, "s", buf);
+}
+
+LUA_FUNC(getDotProduct, l_Vector, "vector argument", "Dot product (number)", "Returns dot product of vector object with vector argument")
+{
+	vec3d *v3a, *v3b;
+	if(!lua_get_args(L, "oo", l_Vector.GetPtrFromLua(&v3a), l_Vector.GetPtrFromLua(&v3b)))
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "f", vm_vec_dotprod(v3a, v3b));
+}
+
+LUA_FUNC(getCrossProduct, l_Vector, "vector argument", "Dot product (number)", "Returns cross product of vector object with vector argument")
+{
+	vec3d *v3a, *v3b;
+	if(!lua_get_args(L, "oo", l_Vector.GetPtrFromLua(&v3a), l_Vector.GetPtrFromLua(&v3b)))
+		return LUA_RETURN_NIL;
+
+	vec3d v3r;
+	vm_vec_crossprod(&v3r, v3a, v3b);
+
+	return lua_set_args(L, "o",l_Vector.SetToLua(&v3r));
 }
 
 LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if off-screen", "Gets screen cordinates of a vector (presumed in world coordinates)")
@@ -1845,7 +2057,7 @@ LUA_FUNC(getMainHall, l_Player, NULL, "Main hall number", "Gets player's main ha
 }
 
 //**********LIBRARY: Base
-lua_lib l_Base("bs", "Base library");
+lua_lib l_Base("Base", "bs", "Base Freespace 2 functions");
 
 LUA_FUNC(print, l_Base, "String", NULL, "Prints a string")
 {
@@ -1959,7 +2171,7 @@ LUA_FUNC(getNumPlayers, l_Base, NULL, "Number of players", "Gets the number of c
 
 
 //**********LIBRARY: Math
-lua_lib l_Math("ma", "Math library");
+lua_lib l_Math("Math", "ma", "Math library");
 
 LUA_FUNC(getRandomNumber, l_Math, "[Smallest number], [Largest number]", "Random number", "Returns a random number; default is 0 to 1")
 {
@@ -1982,7 +2194,7 @@ LUA_FUNC(newVector, l_Math, "[x], [y], [z]", "Vector object", "Creates a vector 
 }
 
 //**********LIBRARY: Campaign
-lua_lib l_Campaign("cn", "Campaign Library");
+lua_lib l_Campaign("Campaign", "cn", "Campaign Library");
 
 LUA_FUNC(getName, l_Campaign, NULL, "Campaign name", "Gets campaign name")
 {
@@ -2073,7 +2285,7 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 }
 
 //**********LIBRARY: Mission
-lua_lib l_Mission("mn", "Mission library");
+lua_lib l_Mission("Mission", "mn", "Mission library");
 
 //WMC - These are in freespace.cpp
 LUA_FUNC(loadMission, l_Mission, "Mission name", "True if mission was loaded, false otherwise", "Loads a mission")
@@ -2159,7 +2371,7 @@ LUA_FUNC(getEscortShip, l_Mission, "Escort index", "Ship object", "Gets escort s
 }
 
 //**********LIBRARY: Tables
-lua_lib l_Tables("tb", "Tables library");
+lua_lib l_Tables("Tables", "tb", "Tables library");
 
 LUA_FUNC(getNumShipClasses, l_Tables, NULL, "Number", "Gets number of ship classes")
 {
@@ -2224,7 +2436,7 @@ LUA_FUNC(isKeyPressed, l_Keyboard, "Letter", "True if key is pressed, false if n
 }*/
 
 //**********LIBRARY: Mouse
-lua_lib l_Mouse("ms", "Mouse library");
+lua_lib l_Mouse("Mouse", "ms", "Mouse library");
 
 extern int mouse_inited;
 
@@ -2333,7 +2545,30 @@ LUA_FUNC(setMouseHidden, l_Mouse, "True to hide mouse, false to show it", NULL, 
 }
 
 //**********LIBRARY: Graphics
-lua_lib l_Graphics("gr", "Graphics Library");
+lua_lib l_Graphics("Graphics", "gr", "Graphics Library");
+
+LUA_FUNC(clearScreen, l_Graphics, "[Red], [Green], [Blue]", NULL, "Clears the screen to black, or the color specified.")
+{
+	int r,g,b;
+	r=g=b=0;
+	lua_get_args(L, "|iii", &r, &g, &b);
+
+	//WMC - Set to valid values
+	if(r != 0 || g != 0 || b != 0)
+	{
+		CAP(r,0,255);
+		CAP(g,0,255);
+		CAP(b,0,255);
+		gr_set_clear_color(r,g,b);
+		gr_clear();
+		gr_set_clear_color(0,0,0);
+
+		return LUA_RETURN_NIL;
+	}
+
+	gr_clear();
+	return LUA_RETURN_NIL;
+}
 
 LUA_FUNC(getScreenWidth, l_Graphics, NULL, "Width in pixels (Number)", "Gets screen width")
 {
@@ -2708,7 +2943,7 @@ LUA_FUNC(flashScreen, l_Graphics, "Red, Green, Blue", NULL, "Flashes the screen"
 }
 
 //**********LIBRARY: Sound
-lua_lib l_SoundLib("sd", "Sound Library");
+lua_lib l_SoundLib("Sound", "sd", "Sound Library");
 
 LUA_FUNC(playGameSound, l_SoundLib, "Sound filename, [Panning (-1.0 left to 1.0 right)], [Volume %], [Priority 0-3] [Voice Message?]", "True if sound was played, false if not (Replaced with a sound instance object in the future)", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played")
 {
@@ -2912,6 +3147,7 @@ int script_state::CreateLuaState()
 	lua_lib_h *obj = &lua_Objects[0];
 	lua_lib_h *obj_end = &lua_Objects[lua_Objects.size()];
 	lua_lib_h *libobj = NULL;
+	lua_lib_h *libobj_end = &lua_Libraries[lua_Libraries.size()];
 	lua_func_hh *func;
 	lua_func_hh *func_end;
 	lua_var_hh *var;
@@ -2921,22 +3157,70 @@ int script_state::CreateLuaState()
 	//*****CHECK FOR BAD THINGS
 #ifndef NDEBUG
 	lua_func_hh *ofunc;
-	//Like libraries/objects with identical names
-	mprintf(("LUA: Performing object/library name validity check...\n"));
-	for(; lib < lib_end; lib++)
+	lua_func_hh *ofunc_end;
+
+	//Global functions/libraries/objects
+	mprintf(("LUA: Performing global function/(library/object) name repeat check...\n"));
+	lib = &lua_Libraries[0];
+	libobj = &lua_Libraries[0];
+	for(; libobj < libobj_end; libobj++)
 	{
-		for(; obj < obj_end; obj++)
+		if(libobj->Name != NULL && strlen(lib->Name))
+			continue;
+		
+		func = &libobj->Functions[0];
+		func_end = &libobj->Functions[libobj->Functions.size()];
+
+		for(; func < func_end; func++)
+		{
+			for(lib = &lua_Libraries[0]; lib < lib_end; lib++)
+			{
+				if(!stricmp(func->Name, lib->Name))
+					Error(LOCATION, "Lua global function '%s' has the name as library '%s'. Get a coder.", func->Name, lib->Name);
+				if(!stricmp(func->Name, lib->ShortName))
+					Error(LOCATION, "Lua global function '%s' has the name as library '%s (%s)' shortname. Get a coder.", func->Name, lib->Name, lib->ShortName);
+
+				if(lib->Name == NULL || !strlen(lib->Name))
+				{
+					ofunc = &lib->Functions[0];
+					ofunc_end = &lib->Functions[lib->Functions.size()];
+					for(; ofunc < func_end; func++)
+					{
+						if(func == ofunc)
+							continue;
+
+						if(!stricmp(func->Name, ofunc->Name))
+							Error(LOCATION, "Global function '%s' in lib '%s' and global function '%s' in lib '%s' have the same name.", func->Name, libobj->Name, ofunc->Name, lib->Name);
+					}
+				}
+			}
+
+			for(obj = &lua_Objects[0]; obj < obj_end; obj++) {
+				if(!stricmp(func->Name, obj->Name))
+					Error(LOCATION, "Lua global function '%s' and object '%s' have the same name. Get a coder.", func->Name, obj->Name);
+			}
+		}
+	}
+
+	//Libraries/objects
+	mprintf(("LUA: Performing library/object name repeat check...\n"));
+	for(lib = &lua_Libraries[0]; lib < lib_end; lib++)
+	{
+		for(obj = &lua_Objects[0]; obj < obj_end; obj++)
 		{
 			if(!stricmp(lib->Name, obj->Name))
 				Error(LOCATION, "Lua library '%s' and object '%s' have the same name. Get a coder.", lib->Name, obj->Name);
+			if(!stricmp(lib->ShortName, obj->Name))
+				Error(LOCATION, "Lua library '%s (%s)' has the same shortname as object name '%s'. Get a coder.", lib->Name, lib->ShortName, obj->Name);
 		}
 	}
 
 	//Do double-object check
-	for(; obj < obj_end; obj++)
+	mprintf(("LUA: Performing object/object name repeat check...\n"));
+	for(obj = &lua_Objects[0]; obj < obj_end; obj++)
 	{
-		libobj = obj;
-		for(; libobj < obj_end; libobj++) {
+		for(libobj = obj+1; libobj < obj_end; libobj++)
+		{
 			if(!stricmp(obj->Name, libobj->Name))
 				Error(LOCATION, "Lua object '%s' and object '%s' have the same name. Get a coder.", obj->Name, libobj->Name);
 		}
@@ -2945,7 +3229,7 @@ int script_state::CreateLuaState()
 		func = &obj->Functions[0];
 		func_end = &obj->Functions[obj->Functions.size()];
 		for(; func < func_end; func++) {
-			ofunc = func;
+			ofunc = func+1;
 			for(; ofunc < func_end; ofunc++) {
 				if(!stricmp(func->Name, ofunc->Name))
 					Error(LOCATION, "Function '%s' and function '%s' have the same name within object '%s'. Get a coder.", func->Name, ofunc->Name, obj->Name);
@@ -2954,12 +3238,15 @@ int script_state::CreateLuaState()
 	}
 
 	//Do lib-on-lib check
-	for(; lib < lib_end; lib++)
+	mprintf(("LUA: Performing library/library name repeat check...\n"));
+	for(lib = &lua_Libraries[0]; lib < lib_end; lib++)
 	{
-		libobj = lib;
-		for(; libobj < lib_end; libobj++) {
-			if(!stricmp(lib->Name, libobj->Name))
-				Error(LOCATION, "Lua library '%s' and library '%s' have the same name. Get a coder.", lib->Name, libobj->Name);
+		for(libobj = lib+1; libobj < lib_end; libobj++) {
+			if(!stricmp(lib->Name, libobj->Name)
+				|| !stricmp(lib->ShortName, libobj->ShortName)
+				|| !stricmp(lib->Name, libobj->ShortName)
+				|| !stricmp(lib->ShortName, libobj->ShortName))
+				Error(LOCATION, "Lua library '%s (%s)' and library '%s (%s)' have the same name or shortname. Get a coder.", lib->Name, lib->ShortName, libobj->Name, libobj->ShortName);
 		}
 
 		//Check for duplicate functions within libs
@@ -2967,8 +3254,7 @@ int script_state::CreateLuaState()
 		func_end = &lib->Functions[lib->Functions.size()];
 		for(; func < func_end; func++)
 		{
-			ofunc = func;
-			for(; ofunc < func_end; ofunc++) {
+			for(ofunc = func+1; ofunc < func_end; ofunc++) {
 				if(!stricmp(func->Name, ofunc->Name))
 					Error(LOCATION, "Function '%s' and function '%s' have the same name within library '%s'. Get a coder.", func->Name, ofunc->Name, lib->Name);
 			}
@@ -3005,9 +3291,12 @@ int script_state::CreateLuaState()
 			{
 				lua_pop(L, 1);									//Pop the nil resultfrom the stack
 				lua_newtable(L);								//Create a new table
-				lua_pushstring(L, lib->Name);		//Add a string to the stack
+				lua_pushstring(L, lib->Name);					//Add a string to the stack
 				lua_pushvalue(L, -2);							//Push the table
 				lua_settable(L, LUA_GLOBALSINDEX);				//Register the table with the new name
+				lua_pushstring(L, lib->ShortName);				//Add short name string to the stack
+				lua_pushvalue(L, -2);							//Push the table again
+				lua_settable(L, LUA_GLOBALSINDEX);				//Register the table with the short name
 			}
 
 			table_loc = lua_gettop(L);
@@ -3016,6 +3305,10 @@ int script_state::CreateLuaState()
 			func_end = &lib->Functions[lib->Functions.size()];
 			for(; func < func_end; func++)
 			{
+				Assert(func->Name != NULL && strlen(func->Name));
+				if(func->Function == NULL)
+					continue;
+
 				//Add each function
 				lua_pushstring(L, func->Name);				//Push the function's name onto the stack
 				lua_pushstring(L, func->Name);				//Push upvalue
@@ -3034,7 +3327,8 @@ int script_state::CreateLuaState()
 			{
 				//Sanity checking
 				Assert(func->Name != NULL && strlen(func->Name));
-				Assert(func->Function != NULL);
+				if(func->Function == NULL)
+					continue;
 
 				//Register the function with the name given as a global
 				lua_pushstring(L, func->Name);
@@ -3070,6 +3364,7 @@ int script_state::CreateLuaState()
 		//to be safe
 		bool index_oper_already = false;
 		bool index_meth_already = false;
+		bool concat_oper_already = false;
 
 		//WMC - This is a bit odd. Basically, to handle derivatives, I have a double-loop set up.
 		lua_lib_h *clib = lib;
@@ -3094,7 +3389,11 @@ int script_state::CreateLuaState()
 
 			for(; func < func_end; func++)
 			{
-				//WMC - First, do normal functions
+				Assert(func->Name != NULL && strlen(func->Name));
+				if(func->Function == NULL)
+					continue;
+
+				//WMC - First, do operator functions
 				if(!strnicmp(func->Name, "__", 2))
 				{
 					if(!stricmp(func->Name, "__index"))
@@ -3133,6 +3432,15 @@ int script_state::CreateLuaState()
 
 			lua_add_vars(L, table_loc, lib, var, var_end);
 		}
+
+		//Add concat operator if necessary
+		if(!concat_oper_already)
+		{
+			lua_pushstring(L, "__concat");
+			lua_pushstring(L, "__concat");		//WMC - push upvalue for debugging/warnings
+			lua_pushcclosure(L, lua_concat_handler, 1);
+			lua_settable(L, table_loc);
+		}
 	}
 	SetLuaSession(L);
 
@@ -3147,25 +3455,80 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 {
 	lua_func_hh *func, *func_end;
 	lua_var_hh *var, *var_end;
-	int i;
+	int i,j;
 	bool draw_header;
 	fputs("<dd><dl>", fp);
 	lua_lib_h *lib = main_lib;
 
-	//Indexer
-	if(lib->Indexer == NULL)
-		lib = lib_deriv;
+	//Operators
+	draw_header = false;
+	if(main_lib->Functions.size() || (lib_deriv != NULL && lib_deriv->Functions.size()))
+	{
+		for(i = 0; i < 2; i++)
+		{
+			func = &lib->Functions[0];
+			func_end = &lib->Functions[lib->Functions.size()];
+			for(; func < func_end; func++)
+			{
+				if(!strncmp(func->Name, "__", 2)) {
+					draw_header = true;
+					break;
+				}
+			}
+			if(lib_deriv == NULL)
+				break;
 
-	//WMC - TODO: Handle other operators here
-	if(lib != NULL && lib->Indexer != NULL) {
-		fputs("<dt><h3>Operators</h3></dt><dd><dl><dt><b>[]</b></dt>", fp);
-		if(lib->IndexerDescription != NULL) {
-			fprintf(fp,"<dd>%s</dd>", lib->IndexerDescription);
-		} else {
-			fputs("<dd>No description</dd>", fp);
+			lib = lib_deriv;
 		}
-		fputs("</dl></dd>", fp);
+	}
 
+	lib = main_lib;
+	if(draw_header) {
+		fputs("<dt><h3>Operators</h3></dt><dd><dl>", fp);
+	}
+	for(i = 0; i < 2; i++)
+	{
+		func = &lib->Functions[0];
+		func_end = &lib->Functions[lib->Functions.size()];
+
+		for(; func < func_end; func++)
+		{
+			if(strncmp(func->Name, "__", 2)) {
+				continue;
+			}
+
+			char *draw_name = func->Name;
+			for(j = 0; j < lua_Num_operators; j++)
+			{
+				if(!stricmp(draw_name, lua_Operators[j].src)) {
+					draw_name = lua_Operators[j].dest;
+					break;
+				}
+			}
+
+			if(func->Arguments != NULL) {
+				fprintf(fp, "<dt><b>%s - <i>%s</i></b></dt>", draw_name, func->Arguments);
+			} else {
+				fprintf(fp, "<dt><b>%s</b></dt>", draw_name);
+			}
+
+			if(func->Description != NULL) {
+				fprintf(fp, "<dd>%s</dd>", func->Description);
+			} else {
+				fputs("<dd>No description</dd>", fp);
+			}
+
+			if(func->ReturnValues != NULL) {
+				fprintf(fp, "<dd><b>Return values:</b> %s<br>&nbsp;</dd>", func->ReturnValues);
+			} else {
+				fputs("<dd><b>Return values:</b> None<br>&nbsp;</dd>", fp);
+			}
+		}
+
+		if(lib_deriv == NULL)
+			break;
+
+		lib = lib_deriv;
 	}
 
 	//Variables
@@ -3220,6 +3583,10 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 
 		for(; func < func_end; func++)
 		{
+			if(!strncmp(func->Name, "__", 2)) {
+				continue;
+			}
+
 			if(func->Arguments != NULL) {
 				fprintf(fp, "<dt><b>%s(</b><i>%s</i><b>)</b></dt>", func->Name, func->Arguments);
 			} else {
@@ -3262,7 +3629,7 @@ void script_state::OutputLuaMeta(FILE *fp)
 	lua_lib_h *lib_end = &lua_Libraries[lua_Libraries.size()];
 	for(; lib < lib_end; lib++)
 	{
-		fprintf(fp, "<dd><a href=\"#%s\">%s</a> - %s</dd>", lib->Name, lib->Name, lib->Description);
+		fprintf(fp, "<dd><a href=\"#%s\">%s (%s)</a> - %s</dd>", lib->Name, lib->Name, lib->ShortName, lib->Description);
 	}
 
 	//***Output objects
@@ -3281,7 +3648,7 @@ void script_state::OutputLuaMeta(FILE *fp)
 	lib_end = &lua_Libraries[lua_Libraries.size()];
 	for(; lib < lib_end; lib++)
 	{
-		fprintf(fp, "<dt id=\"%s\"><h2>%s - %s</h2></dt>", lib->Name, lib->Name, lib->Description);
+		fprintf(fp, "<dt id=\"%s\"><h2>%s (%s)</h2></dt>", lib->Name, lib->Name, lib->ShortName);
 
 		//Last param is something of a hack to handle lib derivs
 		output_lib_meta(fp, lib, lib->Derivator > -1 ? &lua_Libraries[lib->Derivator] : NULL);

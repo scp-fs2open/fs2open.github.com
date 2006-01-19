@@ -38,12 +38,12 @@ int script_test(script_state *st)
 			Script_globalhook = st->ParseChunk("Global");
 		}
 
-		if(optional_string("$GameInit:")) {
-			Script_gameinithook = st->ParseChunk("GameInit");
-		}
-
 		if(optional_string("$Splash:")) {
 			Script_splashhook = st->ParseChunk("Splash");
+		}
+
+		if(optional_string("$GameInit:")) {
+			Script_gameinithook = st->ParseChunk("GameInit");
 		}
 
 		if(optional_string("$HUD:")) {
@@ -173,7 +173,7 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 			if(data != NULL) {
 				args_start = lua_gettop(LuaState);
 			}
-			lua_pushcfunction(GetLuaSession(), LuaError);
+			lua_pushcfunction(GetLuaSession(), lua_friendly_error);
 			lua_getref(GetLuaSession(), hd.index);
 			if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, -2) != 0)
 			{
