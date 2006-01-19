@@ -1,0 +1,5 @@
+// Microsoft Developer Studio generated Help ID include file.
+// Used by FRED.rc
+//
+#define HIDC_BUTTON_NEW_EVENT           0x80cb04f1
+#define HIDC_BUTTON_NEW_GOAL            0x80b3049f
