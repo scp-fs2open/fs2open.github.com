@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.202 $
- * $Date: 2006-01-13 03:31:20 $
- * $Author: Goober5000 $
+ * $Revision: 2.203 $
+ * $Date: 2006-01-19 03:17:12 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.202  2006/01/13 03:31:20  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.201  2006/01/13 02:56:01  Goober5000
  * formatting, meh
  * --Goober5000
@@ -1358,8 +1361,8 @@ sexp_oper Operators[] = {
 	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
-	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 3,			},
-	{ "set-subsystem-strength",	OP_SET_SUBSYSTEM_STRNGTH,			3, 3,			},
+	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 4,			},
+	{ "set-subsystem-strength",	OP_SET_SUBSYSTEM_STRNGTH,			3, 4,			},
 	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
 	{ "self-destruct",				OP_SELF_DESTRUCT,				1, INT_MAX,	},
 	{ "transfer-cargo",				OP_TRANSFER_CARGO,				1, 2,			},
@@ -8577,6 +8580,12 @@ void sexp_sabotage_subsystem( int n )
 	ss->current_hits -= sabotage_hits;
 	if ( ss->current_hits < 0.0f )
 		ss->current_hits = 0.0f;
+
+	// maybe blow up subsys
+	if (ss->current_hits <= 0) {
+		do_subobj_destroyed_stuff(shipp, ss, NULL);
+	}
+
 	ship_recalc_subsys_strength( shipp );
 }
 
@@ -8585,7 +8594,7 @@ void sexp_sabotage_subsystem( int n )
 void sexp_repair_subsystem( int n )
 {
 	char *shipname, *subsystem;
-	int	percentage, shipnum, index;
+	int	percentage, shipnum, index, do_submodel_repair;
 	float repair_hits;
 	ship *shipp;
 	ship_subsys *ss;
@@ -8593,6 +8602,15 @@ void sexp_repair_subsystem( int n )
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
 	shipnum = ship_name_lookup(shipname);
+	
+	if (CDDDR(n) == -1)
+	{
+		do_submodel_repair = 1;
+	}
+	else
+	{
+		do_submodel_repair = eval_sexp(CADDDR(n));
+	}
 	
 	// if no ship, then return immediately.
 	if ( shipnum == -1 ) {
@@ -8637,6 +8655,13 @@ void sexp_repair_subsystem( int n )
 	ss->current_hits += repair_hits;
 	if ( ss->current_hits > ss->max_hits )
 		ss->current_hits = ss->max_hits;
+
+	if ((ss->current_hits > 0) && (do_submodel_repair))
+	{
+		ss->submodel_info_1.blown_off = 0;
+		ss->submodel_info_2.blown_off = 0;
+	}
+
 	ship_recalc_subsys_strength( shipp );
 }
 
@@ -8644,13 +8669,22 @@ void sexp_repair_subsystem( int n )
 void sexp_set_subsystem_strength( int n )
 {
 	char *shipname, *subsystem;
-	int	percentage, shipnum, index;
+	int	percentage, shipnum, index, do_submodel_repair;
 	ship *shipp;
 	ship_subsys *ss;
 
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
 	percentage = eval_num(CDR(CDR(n)));
+
+	if (CDDDR(n) == -1)
+	{
+		do_submodel_repair = 1;
+	}
+	else
+	{
+		do_submodel_repair = eval_sexp(CADDDR(n));
+	}
 
 	shipnum = ship_name_lookup(shipname);
 	
@@ -8707,6 +8741,12 @@ void sexp_set_subsystem_strength( int n )
 
 	// set hit points
 	ss->current_hits = ss->max_hits * ((float)percentage / 100.0f);
+
+	if ((ss->current_hits > 0) && (do_submodel_repair))
+	{
+		ss->submodel_info_1.blown_off = 0;
+		ss->submodel_info_2.blown_off = 0;
+	}
 
 	ship_recalc_subsys_strength( shipp );
 }
@@ -16111,14 +16151,23 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_SABOTAGE_SUBSYSTEM:
-		case OP_REPAIR_SUBSYSTEM:
-		case OP_SET_SUBSYSTEM_STRNGTH:
 			if (!argnum)
 				return OPF_SHIP;		// changed from OPF_SHIP_NOT_PLAYER by Goober5000: now it can be the player ship also
 			else if (argnum == 1 )
 				return OPF_SUBSYSTEM;
 			else
 				return OPF_POSITIVE;
+
+		case OP_REPAIR_SUBSYSTEM:
+		case OP_SET_SUBSYSTEM_STRNGTH:
+			if (!argnum)
+				return OPF_SHIP;		// changed from OPF_SHIP_NOT_PLAYER by Goober5000: now it can be the player ship also
+			else if (argnum == 1 )
+				return OPF_SUBSYSTEM;
+			else if (argnum == 2)
+				return OPF_POSITIVE;
+			else 
+				return OPF_BOOL;
 
 		case OP_WAYPOINTS_DONE:
 			if ( argnum == 0 )
@@ -18494,10 +18543,11 @@ sexp_help_struct Sexp_help[] = {
 		"\tIncreases the specified subsystem integrity by the specified percentage."
 		"If the percntage strength of the subsystem (after completion) is greater than 100%,"
 		"subsystem strength is set to 100%.\r\n\r\n"
-		"Takes 3 arguments...\r\n"
+		"Takes 4 arguments...\r\n"
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\t2:\tName of subsystem to repair.\r\n"
-		"\t3:\tPercentage to increase subsystem integrity by." },
+		"\t3:\tPercentage to increase subsystem integrity by.\r\n"
+		"\t4:\tRepair turret submodel.  Optional argument that defaults to true.  Only will be recognized for fs2_open 3.6.8 and later."},
 
 	{ OP_SET_SUBSYSTEM_STRNGTH, "Set Subsystem Strength (Action operator)\r\n"
 		"\tSets the specified subsystem to the the specified percentage."
@@ -18506,7 +18556,8 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\t2:\tName of subsystem to set strength.\r\n"
-		"\t3:\tPercentage to set subsystem integrity to." },
+		"\t3:\tPercentage to set subsystem integrity to.\r\n" 
+		"\t4:\tRepair turret submodel.  Optional argument that defaults to true.  Only will be recognized for fs2_open 3.6.8 and later."},
 
 	{ OP_INVALIDATE_GOAL, "Invalidate goal (Action operator)\r\n"
 		"\tMakes a mission goal invalid, which causes it to now show up on mission goals "
