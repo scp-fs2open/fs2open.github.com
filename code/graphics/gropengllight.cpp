@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.22 $
- * $Date: 2006-01-14 19:25:55 $
- * $Author: taylor $
+ * $Revision: 1.23 $
+ * $Date: 2006-01-19 05:40:19 $
+ * $Author: wmcoolmon $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2006/01/14 19:25:55  taylor
+ * minor OGL lighting fix
+ *
  * Revision 1.21  2005/12/06 02:50:41  taylor
  * clean up some init stuff and fix a minor SDL annoyance
  * make debug messages a bit more readable
@@ -169,7 +172,6 @@ static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 
 void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
-
 	GLLight->Diffuse.r = FSLight->r;// * FSLight->intensity;
 	GLLight->Diffuse.g = FSLight->g;// * FSLight->intensity;
 	GLLight->Diffuse.b = FSLight->b;// * FSLight->intensity;
@@ -182,7 +184,6 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 	GLLight->Ambient.a = 1.0f;
 	GLLight->Specular.a = 1.0f;
 	GLLight->Diffuse.a = 1.0f;
-
 
 	//If the light is a directional light
 	if(FSLight->type == LT_DIRECTIONAL) {
@@ -200,7 +201,6 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 		GLLight->LinearAtten = 0.0f;
 		GLLight->QuadraticAtten = 0.0f;
 	}
-
 	//If the light is a point or tube type
 	if((FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE)) {
 
@@ -311,6 +311,9 @@ void gr_opengl_destroy_light(int idx)
 void gr_opengl_set_light(light_data *light)
 {
 	//Init the light
+	//WMC - This can cause a memleak in currently_enabled_lights.
+	Assert(active_gl_lights < MAX_LIGHTS);
+
 	FSLight2GLLight(&opengl_lights[active_gl_lights],light);
 	opengl_lights[active_gl_lights].occupied = true;
 	active_light_list[active_gl_lights++] = true;
