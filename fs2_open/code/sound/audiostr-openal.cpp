@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.18 $
- * $Date: 2006-01-15 21:22:22 $
+ * $Revision: 1.19 $
+ * $Date: 2006-01-19 11:49:12 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2006/01/15 21:22:22  taylor
+ * correct get/set sample math, it expects 8-bit sizes so we have to convert to/from actual
+ *
  * Revision 1.17  2006/01/06 11:25:29  taylor
  * I refuse to comment on my own stupidity!  (fixes music interruption)
  *
@@ -151,6 +154,86 @@ ubyte *Compressed_service_buffer = NULL;	// Used to read in compressed data duri
 int Audiostream_inited = 0;
 
 
+static int dbg_print_ogg_error(const char *filename, int rc)
+{
+	int fatal = 0;
+	char err_msg[100];
+	memset( &err_msg, 0, sizeof(err_msg) );
+
+	Assert( filename != NULL );
+
+	switch (rc) {
+		case OV_FALSE:
+			strncpy(err_msg, "A false status was returned", 99);
+			// should this be fatal?
+			break;
+		case OV_EOF:
+			strncpy(err_msg, "End-of-file reached", 99);
+			fatal = 1;
+			break;
+		case OV_HOLE:
+			strncpy(err_msg, "Data interruption (hole)", 99);
+			// special handling
+			break;
+		case OV_EREAD:
+			strncpy(err_msg, "Media read error", 99);
+			fatal = 1;
+			break;
+		case OV_EFAULT:
+			strncpy(err_msg, "Internal logic fault", 99);
+			fatal = 1;
+			break;
+		case OV_EIMPL:
+			strncpy(err_msg, "Attempted to use a feature that's not supported", 99);
+			fatal = 1;
+			break;
+		case OV_EINVAL:
+			strncpy(err_msg, "Invalid argument value", 99);
+			// doesn't appear to be fatal
+			break;
+		case OV_ENOTVORBIS:
+			strncpy(err_msg, "File contains non-Vorbis data, or is not a Vorbis file", 99);
+			fatal = 1;
+			break;
+		case OV_EBADHEADER:
+			strncpy(err_msg, "Invalid bitstream header", 99);
+			fatal = 1;
+			break;
+		case OV_EVERSION:
+			strncpy(err_msg, "Vorbis version mismatch", 99);
+			fatal = 1;
+			break;
+		case OV_ENOTAUDIO:
+			strncpy(err_msg, "Submitted data is not audio", 99);
+			fatal = 1;
+			break;
+		case OV_EBADPACKET:
+			strncpy(err_msg, "An invalid packet was submitted", 99);
+			// is this fatal?
+			break;
+		case OV_EBADLINK:
+			strncpy(err_msg, "Invalid stream section supplied, or corrupt link", 99);
+			fatal = 1; // is this really fatal or does the lib compensate?
+			break;
+		case OV_ENOSEEK:
+			strncpy(err_msg, "Bitstream is not seekable", 99);
+			fatal = 1;
+			break;
+		default:
+			strncpy(err_msg, "Unknown error occurred", 99);
+			fatal = 1; // assume fatal
+			break;
+	}
+
+	// only dump fatal errors, everything else should be handled silently by default
+	if (fatal)
+		mprintf(("OGG ERROR: \"%s\" in %s\n", err_msg, filename));
+//	else
+//		nprintf(("OGGISH", "OGG ERROR: \"%s\" in %s\n", err_msg, filename));
+
+	return fatal;
+}
+
 static int audiostr_read_uint(HMMIO rw, uint *i)
 {
 	int rc = mmioRead( rw, (char *)i, sizeof(uint) );
@@ -245,6 +328,7 @@ protected:
 	void			*m_hStream;
 	int				m_hStream_open;
 	WAVEFORMATEX	m_wfxDest;
+	char			m_wFilename[MAX_FILENAME_LEN];
 };
 
 class AudioStream
@@ -409,6 +493,7 @@ void WaveFile::Init(void)
 	m_nBytesPlayed = 0;
 	m_total_uncompressed_bytes_read = 0;
 	m_max_uncompressed_bytes_to_read = AS_HIGHEST_MAX;
+	memset(&m_wFilename, 0, MAX_FILENAME_LEN);
 
 	m_hStream_open = 0;
 	m_abort_next_read = FALSE;
@@ -625,7 +710,7 @@ BOOL WaveFile::Open (char *pszFilename)
     
 OPEN_ERROR:
 	// Handle all errors here
-	nprintf(("SOUND","SOUND ==> Could not open wave file %s for streaming\n",pszFilename));
+	nprintf(("SOUND","SOUND ==> Could not open wave file %s for streaming\n", pszFilename));
 
 	fRtn = FAILURE;
 	if (m_snd_info.cfp != NULL) {
@@ -642,6 +727,7 @@ OPEN_ERROR:
 	}
 
 OPEN_DONE:
+	strncpy(m_wFilename, pszFilename, MAX_FILENAME_LEN-1);
 	return (fRtn);
 }
 
@@ -738,7 +824,7 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 			break;
 
 		default:
-			nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n"));
+			nprintf(("SOUND", "SOUND => Not supporting %d format for playing wave files\n", m_wave_format));
 			Int3();
 			break;
 
@@ -781,8 +867,14 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 					actual_read += rc;
 				} else if ( rc == 0 ) {
 					break;
-				} else if ( rc == OV_EBADLINK ) {
-					goto READ_ERROR;
+				} else if ( rc < 0 ) {
+					if ( dbg_print_ogg_error(m_wFilename, rc) ) {
+						// must be a fatal error
+						goto READ_ERROR;
+					} else {
+						// not fatal, just continue on
+						break;
+					}
 				}
 			}
 		}
