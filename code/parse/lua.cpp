@@ -657,7 +657,7 @@ LUA_INDEXER(l_Vector, "Vector component")
 	vec3d *v3;
 	char *s = NULL;
 	float newval = 0.0f;
-	int numargs = lua_get_args(L, "os|f", l_Vector.GetPtrFromLua(&v3), &s, &newval);
+	int numargs = lua_get_args(L, "os|f", l_Vector.GetPtr(&v3), &s, &newval);
 
 	if(!numargs || s[1] != '\0')
 		LUA_RETURN_NIL;
@@ -686,8 +686,8 @@ LUA_FUNC(__add, l_Vector, NULL, NULL, "Adds vector object")
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
-		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.GetFromLua(&v3))
-			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.GetFromLua(&v3), &f))
+		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.Get(&v3))
+			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.Get(&v3), &f))
 		{
 			v3.xyz.x += f;
 			v3.xyz.y += f;
@@ -698,12 +698,12 @@ LUA_FUNC(__add, l_Vector, NULL, NULL, "Adds vector object")
 	{
 		vec3d v3b;
 		//WMC - doesn't really matter which is which
-		if(lua_get_args(L, "oo", l_Vector.GetFromLua(&v3), l_Vector.GetFromLua(&v3b)))
+		if(lua_get_args(L, "oo", l_Vector.Get(&v3), l_Vector.Get(&v3b)))
 		{
 			vm_vec_add2(&v3, &v3b);
 		}
 	}
-	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+	return lua_set_args(L, "o", l_Vector.Set(v3));
 }
 
 LUA_FUNC(__sub, l_Vector, NULL, NULL, "Subtracts vector object")
@@ -712,8 +712,8 @@ LUA_FUNC(__sub, l_Vector, NULL, NULL, "Subtracts vector object")
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
-		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.GetFromLua(&v3))
-			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.GetFromLua(&v3), &f))
+		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.Get(&v3))
+			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.Get(&v3), &f))
 		{
 			v3.xyz.x += f;
 			v3.xyz.y += f;
@@ -724,13 +724,13 @@ LUA_FUNC(__sub, l_Vector, NULL, NULL, "Subtracts vector object")
 	{
 		vec3d v3b;
 		//WMC - doesn't really matter which is which
-		if(lua_get_args(L, "oo", l_Vector.GetFromLua(&v3), l_Vector.GetFromLua(&v3b)))
+		if(lua_get_args(L, "oo", l_Vector.Get(&v3), l_Vector.Get(&v3b)))
 		{
 			vm_vec_sub2(&v3, &v3b);
 		}
 	}
 
-	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+	return lua_set_args(L, "o", l_Vector.Set(v3));
 }
 
 LUA_FUNC(__mult, l_Vector, NULL, NULL, "Scales vector object")
@@ -739,14 +739,14 @@ LUA_FUNC(__mult, l_Vector, NULL, NULL, "Scales vector object")
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
-		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.GetFromLua(&v3))
-			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.GetFromLua(&v3), &f))
+		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.Get(&v3))
+			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.Get(&v3), &f))
 		{
 			vm_vec_scale(&v3, f);
 		}
 	}
 
-	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+	return lua_set_args(L, "o", l_Vector.Set(v3));
 }
 
 LUA_FUNC(__div, l_Vector, NULL, NULL, "Scales vector object")
@@ -755,21 +755,21 @@ LUA_FUNC(__div, l_Vector, NULL, NULL, "Scales vector object")
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
-		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.GetFromLua(&v3))
-			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.GetFromLua(&v3), &f))
+		if(lua_isnumber(L, 1) && lua_get_args(L, "fo", &f, l_Vector.Get(&v3))
+			|| lua_isnumber(L, 2) && lua_get_args(L, "of", l_Vector.Get(&v3), &f))
 		{
 			vm_vec_scale(&v3, 1.0f/f);
 		}
 	}
 
-	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+	return lua_set_args(L, "o", l_Vector.Set(v3));
 }
 
 
 LUA_FUNC(__tostring, l_Vector, NULL, NULL, "Converts a vector to string with format \"(x,y,z)\"")
 {
 	vec3d v3;
-	if(!lua_get_args(L, "o", l_Vector.GetFromLua(&v3)))
+	if(!lua_get_args(L, "o", l_Vector.Get(&v3)))
 		return LUA_RETURN_NIL;
 
 	char buf[32];
@@ -781,7 +781,7 @@ LUA_FUNC(__tostring, l_Vector, NULL, NULL, "Converts a vector to string with for
 LUA_FUNC(getDotProduct, l_Vector, "vector argument", "Dot product (number)", "Returns dot product of vector object with vector argument")
 {
 	vec3d *v3a, *v3b;
-	if(!lua_get_args(L, "oo", l_Vector.GetPtrFromLua(&v3a), l_Vector.GetPtrFromLua(&v3b)))
+	if(!lua_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b)))
 		return LUA_RETURN_NIL;
 
 	return lua_set_args(L, "f", vm_vec_dotprod(v3a, v3b));
@@ -790,19 +790,19 @@ LUA_FUNC(getDotProduct, l_Vector, "vector argument", "Dot product (number)", "Re
 LUA_FUNC(getCrossProduct, l_Vector, "vector argument", "Dot product (number)", "Returns cross product of vector object with vector argument")
 {
 	vec3d *v3a, *v3b;
-	if(!lua_get_args(L, "oo", l_Vector.GetPtrFromLua(&v3a), l_Vector.GetPtrFromLua(&v3b)))
+	if(!lua_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b)))
 		return LUA_RETURN_NIL;
 
 	vec3d v3r;
 	vm_vec_crossprod(&v3r, v3a, v3b);
 
-	return lua_set_args(L, "o",l_Vector.SetToLua(&v3r));
+	return lua_set_args(L, "o",l_Vector.Set(v3r));
 }
 
 LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if off-screen", "Gets screen cordinates of a vector (presumed in world coordinates)")
 {
 	vec3d v3;
-	if(!lua_get_args(L, "o", l_Vector.GetFromLua(&v3)))
+	if(!lua_get_args(L, "o", l_Vector.Get(&v3)))
 		return LUA_RETURN_NIL;
 
 	vertex vtx;
@@ -1089,7 +1089,7 @@ LUA_VAR(Name, l_Species, "String", "Species name")
 
 	char *s = NULL;
 	int idx;
-	if(!lua_get_args(L, "o|s", l_Species.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Species.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_species)
@@ -1113,7 +1113,7 @@ LUA_VAR(Name, l_Shiptype, "String", "Ship type name")
 
 	char *s = NULL;
 	int idx;
-	if(!lua_get_args(L, "o|s", l_Shiptype.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shiptype.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > (int)Ship_types.size())
@@ -1134,7 +1134,7 @@ LUA_VAR(Name, l_Shipclass, "String", "Ship class name")
 {
 	int idx;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1151,7 +1151,7 @@ LUA_VAR(ShortName, l_Shipclass, "String", "Ship class short name")
 {
 	int idx;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1168,7 +1168,7 @@ LUA_VAR(TypeString, l_Shipclass, "String", "Ship class type string")
 {
 	int idx;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1196,7 +1196,7 @@ LUA_VAR(ManeuverabilityString, l_Shipclass, "String", "Ship class maneuverabilit
 {
 	int idx;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1224,7 +1224,7 @@ LUA_VAR(ArmorString, l_Shipclass, "String", "Ship class armor string")
 {
 	int idx;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1252,7 +1252,7 @@ LUA_VAR(ManufacturerString, l_Shipclass, "String", "Ship class manufacturer")
 {
 	int idx;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1281,7 +1281,7 @@ LUA_VAR(Description, l_Shipclass, "String", "Ship class description")
 {
 	int idx;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1309,7 +1309,7 @@ LUA_VAR(TechDescription, l_Shipclass, "String", "Ship class tech description")
 {
 	int idx;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|s", l_Shipclass.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1337,7 +1337,7 @@ LUA_VAR(Hitpoints, l_Shipclass, "Number", "Ship class hitpoints")
 {
 	int idx;
 	float f = -1.0f;
-	if(!lua_get_args(L, "o|f", l_Shipclass.GetFromLua(&idx), &f))
+	if(!lua_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1354,7 +1354,7 @@ LUA_VAR(Species, l_Shipclass, "Species", "Ship class species")
 {
 	int idx;
 	int sidx;
-	if(!lua_get_args(L, "o|o", l_Shipclass.GetFromLua(&idx), l_Species.GetFromLua(&sidx)))
+	if(!lua_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Species.Get(&sidx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1364,14 +1364,14 @@ LUA_VAR(Species, l_Shipclass, "Species", "Ship class species")
 		Ship_info[idx].species = sidx;
 	}
 
-	return lua_set_args(L, "o", l_Species.SetToLua(&Ship_info[idx].species));
+	return lua_set_args(L, "o", l_Species.Set(Ship_info[idx].species));
 }
 
 LUA_VAR(Type, l_Shipclass, "shiptype", "Ship class type")
 {
 	int idx;
 	int sidx;
-	if(!lua_get_args(L, "o|o", l_Shipclass.GetFromLua(&idx), l_Shiptype.GetFromLua(&sidx)))
+	if(!lua_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Shiptype.Get(&sidx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1381,13 +1381,13 @@ LUA_VAR(Type, l_Shipclass, "shiptype", "Ship class type")
 		Ship_info[idx].class_type = sidx;
 	}
 
-	return lua_set_args(L, "o", l_Shiptype.SetToLua(&Ship_info[idx].class_type));
+	return lua_set_args(L, "o", l_Shiptype.Set(Ship_info[idx].class_type));
 }
 
 LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the techroom", "Gets whether or not the ship class is available in the techroom")
 {
 	int idx;
-	if(!lua_get_args(L, "o", l_Shipclass.GetFromLua(&idx)))
+	if(!lua_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1411,7 +1411,7 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 	bool r;
 	int idx;
 	float zoom = 1.3f;
-	if(!lua_get_args(L, "oiiii|bffff", l_Shipclass.GetFromLua(&idx), &x1, &y1, &x2, &y2, &r, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom))
+	if(!lua_get_args(L, "oiiii|bffff", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &r, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1487,22 +1487,20 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 }
 
 //**********CLASS: Shields
-lua_obj<int> l_Shields("shields", "Shields handle");
+lua_obj<object_h> l_Shields("shields", "Shields handle");
 
 LUA_INDEXER(l_Shields, "Shield quadrant")
 {
-	int idx;
+	object_h *objh;
 	char *qd = NULL;
 	float nval = -1.0f;
-	if(!lua_get_args(L, "os|f", l_Shields.GetFromLua(&idx), &qd, &nval))
+	if(!lua_get_args(L, "os|f", l_Shields.GetPtr(&objh), &qd, &nval))
 		return 0;
 
-	idx = obj_get_by_signature(idx);
-
-	if(idx < 0)
+	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	object *objp = &Objects[idx];
+	object *objp = objh->objp;
 
 	//Which quadrant?
 	int qdx;
@@ -1539,93 +1537,113 @@ LUA_INDEXER(l_Shields, "Shield quadrant")
 }
 
 //**********CLASS: Object
-lua_obj<int> l_Object("object", "Object");
+lua_obj<object_h> l_Object("object", "Object");
 //Helper function
 //Returns 1 if object sig stored in idx exists, and stores Objects[] index in idx
 //Returns 0 if object sig does not exist, and does not change idx
-int lua_obj_get_idx(lua_State *L, int *idx)
+
+LUA_VAR(Position, l_Object, "World vector", "Object world position")
 {
-	if(!lua_get_args(L, "o", idx))
-		return 0;
-
-	*idx = obj_get_by_signature(*idx);
-
-	if(*idx < 0)
-		return 0;
-
-	return 1;
-}
-
-LUA_VAR(Position, l_Object, "Vector", "Object position")
-{
-	int idx;
-	vec3d v3;
-	if(!lua_get_args(L, "o|o", l_Object.GetFromLua(&idx), l_Vector.GetFromLua(&v3)))
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!lua_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return LUA_RETURN_NIL;
 
-	idx = obj_get_by_signature(idx);
-
-	if(idx < 0)
+	if(!objh->IsValid() || v3==NULL)
 		return LUA_RETURN_NIL;
 
 	if(LUA_SETTING_VAR) {
-		Objects[idx].pos = v3;
+		objh->objp->pos = *v3;
 	}
 
-	return lua_set_args(L, "o", l_Vector.SetToLua(&Objects[idx].pos));
+	return lua_set_args(L, "o", l_Vector.Set(objh->objp->pos));
 }
+
+LUA_VAR(Velocity, l_Object, "World vector", "Object world velocity")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!lua_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid() || v3==NULL)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		objh->objp->phys_info.vel = *v3;
+	}
+
+	return lua_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.vel));
+}
+
+LUA_VAR(MaxVelocity, l_Object, "Local vector", "Object max local velocity")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!lua_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid() || v3==NULL)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		objh->objp->phys_info.max_vel = *v3;
+	}
+
+	return lua_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.max_vel));
+}
+
 
 LUA_VAR(HitpointsLeft, l_Object, "Number", "Hitpoints an object has left")
 {
-	int idx;
+	object_h *objh;
 	float f = -1.0f;
-	if(!lua_get_args(L, "o|f", l_Object.GetFromLua(&idx), &f))
+	if(!lua_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
 		return LUA_RETURN_NIL;
 
-	idx = obj_get_by_signature(idx);
-
-	if(idx < 0)
+	if(!objh->IsValid() || f < 0.0f)
 		return LUA_RETURN_NIL;
 
 	//Set hull strength.
 	if(LUA_SETTING_VAR && f >= 0.0f) {
-		Objects[idx].hull_strength = f;
+		objh->objp->hull_strength = f;
 	}
 
-	return lua_set_args(L, "f", Objects[idx].hull_strength);
+	return lua_set_args(L, "f", objh->objp->hull_strength);
 }
 
 LUA_VAR(Shields, l_Object, "shields", "Shields")
 {
-	int idx=-1;
-	int sidx=-1;
-	if(!lua_get_args(L, "o|o", l_Object.GetFromLua(&idx), l_Shields.GetFromLua(&sidx)))
+	object_h *objh;
+	object_h *sobjh;
+	if(!lua_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Shields.GetPtr(&sobjh)))
 		return LUA_RETURN_NIL;
 
-	idx = obj_get_by_signature(idx);
-	sidx = obj_get_by_signature(sidx);
-
-	if(idx < 0)
+	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
 	//WMC - copy shields
-	if(LUA_SETTING_VAR && sidx > -1) {
+	if(LUA_SETTING_VAR && sobjh->IsValid())
+	{
 		for(int i = 0; i < 4; i++)
 		{
-			Objects[idx].shield_quadrant[i] = Objects[sidx].shield_quadrant[i];
+			objh->objp->shield_quadrant[i] = sobjh->objp->shield_quadrant[i];
 		}
 	}
 
-	return lua_set_args(L, "o", l_Shields.SetToLua(&Objects[idx].signature));
+	return lua_set_args(L, "o", l_Shields.Set(object_h(objh->objp)));
 }
 
 LUA_FUNC(getBreed, l_Object, NULL, "Object type name", "Gets object type")
 {
-	int idx;
-	if(!lua_obj_get_idx(L, &idx))
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Object.GetPtr(&objh)))
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "s", Object_type_names[Objects[idx].type]);
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
 LUA_FUNC(fetchShieldStrength, l_Object, "[Shield Quadrant], [New value]", "[New] shield strength",
@@ -1633,18 +1651,16 @@ LUA_FUNC(fetchShieldStrength, l_Object, "[Shield Quadrant], [New value]", "[New]
 	"Valid quadrants are \"Front\", \"Back\", \"Left\", and \"Right\". Specifying a new value will set the specified quadrant to that amount. "
 	"\"None\" may be used for the new value to be divided equally between all quadrants")
 {
-	int idx;
+	object_h *objh;
 	char *qd = NULL;
 	float nval = -1.0f;
-	if(!lua_get_args(L, "o|sf", l_Object.GetFromLua(&idx), &qd, &nval))
+	if(!lua_get_args(L, "o|sf", l_Object.GetPtr(&objh), &qd, &nval))
 		return 0;
 
-	idx = obj_get_by_signature(idx);
-
-	if(idx < 0)
+	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	object *objp = &Objects[idx];
+	object *objp = objh->objp;
 
 	//Which quadrant?
 	int qdx=-1;
@@ -1678,42 +1694,31 @@ LUA_FUNC(fetchShieldStrength, l_Object, "[Shield Quadrant], [New value]", "[New]
 }
 
 //**********CLASS: Mounted Weapons
-struct mounted_weapons_h {
-	int signature;			//Ship signature
-	ship_subsys *subsys;	//Pointer to subsystem, or NULL for the hull
+struct ship_weapon_h : public object_h
+{
+	ship_weapon *sw;	//Pointer to subsystem, or NULL for the hull
+
+	bool IsValid(){return objp->signature == sig;}
+	ship_weapon_h(object *objp, ship_weapon *wpn) : object_h(objp)
+	{
+		sw = wpn;
+	}
 };
 
-ship_weapon *lua_mw_helper(mounted_weapons_h *mw)
-{
-	if(mw->signature < 0)
-		return NULL;
-
-	int idx;
-	idx = ship_get_by_signature(mw->signature);
-
-	if(idx < 0)
-		return NULL;
-
-	if(mw->subsys == NULL)
-		return &Ships[idx].weapons;
-
-	return &mw->subsys->weapons;
-}
-
-lua_obj<mounted_weapons_h> l_MountedWeapons("mountedweapons", "Mounted weapons on a ship or subsystem");
+lua_obj<ship_weapon_h> l_MountedWeapons("mountedweapons", "Mounted weapons on a ship or subsystem");
 
 LUA_FUNC(getNumWeapons, l_MountedWeapons, "[Type]", "Number of weapons, or false if invalid type specified",
 		 "Gets total number of weapons mounted. For a specific type, use \"Primary\", \"Secondary\", or \"Tertiary\".")
 {
-	mounted_weapons_h mw;
+	ship_weapon_h *mw;
 	char *t = NULL;
-	if(!lua_get_args(L, "o|s", l_MountedWeapons.GetFromLua(&mw), &t))
+	if(!lua_get_args(L, "o|s", l_MountedWeapons.GetPtr(&mw), &t))
 		return LUA_RETURN_NIL;
 
-	ship_weapon *sw = lua_mw_helper(&mw);
-
-	if(sw == NULL)
+	if(!mw->IsValid())
 		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = mw->sw;
 
 	//Now do stuff
 	//All weapons
@@ -1735,16 +1740,16 @@ LUA_FUNC(getNumWeapons, l_MountedWeapons, "[Type]", "Number of weapons, or false
 LUA_FUNC(getBankName, l_MountedWeapons, "Type, Index", "Weapon name, or false if no weapon is mounted at that index, or an invalid type is specified",
 		 "Gets weapon name for specified mount index of type. Use \"Primary\" or \"Secondary\" for type.")
 {
-	mounted_weapons_h mw;
+	ship_weapon_h *mw;
 	char *t = NULL;
 	int i = 0;
-	if(!lua_get_args(L, "osi", l_MountedWeapons.GetFromLua(&mw), &t, &i))
+	if(!lua_get_args(L, "osi", l_MountedWeapons.GetPtr(&mw), &t, &i))
 		return LUA_RETURN_NIL;
 
-	ship_weapon *sw = lua_mw_helper(&mw);
-
-	if(sw == NULL)
+	if(!mw->IsValid())
 		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = mw->sw;
 
 	if(i < 1)
 		return LUA_RETURN_FALSE;
@@ -1764,16 +1769,16 @@ LUA_FUNC(getBankName, l_MountedWeapons, "Type, Index", "Weapon name, or false if
 LUA_FUNC(fetchCurrentWeapon, l_MountedWeapons, "Type, [New index]", "Mount index",
 		 "Gets currently armed weapon of type. Use \"Primary\", \"Secondary\", or \"Tertiary\" for type.")
 {
-	mounted_weapons_h mw;
+	ship_weapon_h *mw;
 	char *t = NULL;
 	int i = 0;
-	if(!lua_get_args(L, "os|i", l_MountedWeapons.GetFromLua(&mw), &t, &i))
+	if(!lua_get_args(L, "os|i", l_MountedWeapons.GetPtr(&mw), &t, &i))
 		return LUA_RETURN_NIL;
 
-	ship_weapon *sw = lua_mw_helper(&mw);
-
-	if(sw == NULL)
+	if(!mw->IsValid())
 		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = mw->sw;
 
 	//Lua->FS2
 	i--;
@@ -1800,18 +1805,17 @@ LUA_FUNC(fetchCurrentWeapon, l_MountedWeapons, "Type, [New index]", "Mount index
 LUA_FUNC(fetchBankAmmo, l_MountedWeapons, "Type, Index, [New ammo amount]", "[New] ammo amount",
 		 "Gets weapon ammo, or sets to a new amount if specified.. Use \"Primary\", \"Secondary\", or \"Tertiary\" for type.")
 {
-	mounted_weapons_h mw;
+	ship_weapon_h *mw;
 	char *t = NULL;
 	int i = 0;
 	int a = -1;
-	if(!lua_get_args(L, "osi|i", l_MountedWeapons.GetFromLua(&mw), &t, &i, &a))
+	if(!lua_get_args(L, "osi|i", l_MountedWeapons.GetPtr(&mw), &t, &i, &a))
 		return LUA_RETURN_NIL;
 
-	ship_weapon *sw = lua_mw_helper(&mw);
-
-	if(sw == NULL)
+	if(!mw->IsValid())
 		return LUA_RETURN_NIL;
 
+	ship_weapon *sw = mw->sw;
 	if(i < 1)
 		return LUA_RETURN_FALSE;
 
@@ -1840,17 +1844,17 @@ LUA_FUNC(fetchBankAmmo, l_MountedWeapons, "Type, Index, [New ammo amount]", "[Ne
 LUA_FUNC(fetchBankCapacity, l_MountedWeapons, "Type, Index, [New ammo capacity]", "[New] ammo capacity",
 		 "Gets weapon capacity, or sets to a new amount if specified.. Use \"Primary\", \"Secondary\", or \"Tertiary\" for type.")
 {
-	mounted_weapons_h mw;
+	ship_weapon_h *mw;
 	char *t = NULL;
 	int i = 0;
 	int a = -1;
-	if(!lua_get_args(L, "osi|i", l_MountedWeapons.GetFromLua(&mw), &t, &i, &a))
+	if(!lua_get_args(L, "osi|i", l_MountedWeapons.GetPtr(&mw), &t, &i, &a))
 		return LUA_RETURN_NIL;
 
-	ship_weapon *sw = lua_mw_helper(&mw);
-
-	if(sw == NULL)
+	if(!mw->IsValid())
 		return LUA_RETURN_NIL;
+
+	ship_weapon *sw = mw->sw;
 
 	if(i < 1)
 		return LUA_RETURN_FALSE;
@@ -1876,121 +1880,209 @@ LUA_FUNC(fetchBankCapacity, l_MountedWeapons, "Type, Index, [New ammo capacity]"
 	//Invalid type or weapon missing
 	return LUA_RETURN_FALSE;
 }
+//**********CLASS: Subsystem
+struct ship_subsys_h : public object_h
+{
+	ship_subsys *ss;	//Pointer to subsystem, or NULL for the hull
+
+	bool IsValid(){return objp->signature == sig;}
+	ship_subsys_h(object *objp, ship_subsys *sub) : object_h(objp) {
+		ss = sub;
+	}
+};
+lua_obj<ship_subsys_h> l_Subsystem("subsystem", "Ship subsystem object");
+
+LUA_VAR(Target, l_Subsystem, "Object", "Object targetted by this subsystem")
+{
+	ship_subsys_h *sso;
+	object_h *objh;
+	if(!lua_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Object.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship_subsys *ss = sso->ss;
+
+	if(LUA_SETTING_VAR && objh->IsValid())
+	{
+		ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
+		ss->turret_enemy_sig = objh->sig;
+		ss->targeted_subsys = NULL;
+	}
+
+	return lua_set_args(L, "f", ss->current_hits);
+}
+
+LUA_VAR(HitpointsLeft, l_Subsystem, "Number", "Subsystem hitpoints left")
+{
+	ship_subsys_h *sso;
+	float f = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && f >= 0.0f)
+		sso->ss->current_hits = f;
+
+	return lua_set_args(L, "f", sso->ss->current_hits);
+}
+
+LUA_VAR(HitpointsMax, l_Subsystem, "Number", "Subsystem hitpoints max")
+{
+	ship_subsys_h *sso;
+	float f = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && f >= 0.0f)
+		sso->ss->max_hits = f;
+
+	return lua_set_args(L, "f", sso->ss->max_hits);
+}
+
+LUA_VAR(AWACSIntensity, l_Subsystem, "Number", "Subsystem AWACS intensity")
+{
+	ship_subsys_h *sso;
+	float f = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && f >= 0.0f)
+		sso->ss->awacs_intensity = f;
+
+	return lua_set_args(L, "f", sso->ss->awacs_intensity);
+}
+
+LUA_VAR(AWACSRadius, l_Subsystem, "Number", "Subsystem AWACS radius")
+{
+	ship_subsys_h *sso;
+	float f = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &f))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && f >= 0.0f)
+		sso->ss->awacs_radius = f;
+
+	return lua_set_args(L, "f", sso->ss->awacs_radius);
+}
 
 //**********CLASS: Ship
-lua_obj<int> l_Ship("ship", "Ship object", &l_Object);
-
-//Helper function
-//Returns 1 if object sig stored in idx exists, and stores Ships[] index in idx
-//Returns 0 if object sig does not exist, and does not change idx
-int lua_ship_get_idx(lua_State *L, int *idx)
-{
-	if(!lua_get_args(L, "o", l_Ship.GetFromLua(idx)))
-		return 0;
-
-	*idx = ship_get_by_signature(*idx);
-
-	if(*idx < 0)
-		return 0;
-
-	return 1;
-}
+lua_obj<object_h> l_Ship("ship", "Ship object", &l_Object);
 
 LUA_FUNC(fetchName, l_Ship, "[New name]", "[New] ship name (string)", "Gets ship name")
 {
-	int idx;
+	object_h *objh;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|f", l_Ship.GetFromLua(&idx), &s))
-		return 0;
-
-	idx = ship_get_by_signature(idx);
-
-	if(idx < 0)
+	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh), &s))
 		return LUA_RETURN_NIL;
 
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
 	if(s == NULL) {
-		strncpy(Ships[idx].ship_name, s, sizeof(Ships[idx].ship_name)-1);
+		strncpy(shipp->ship_name, s, sizeof(shipp->ship_name)-1);
 	}
 
-	return lua_set_args(L, "s", Ships[idx].ship_name);
+	return lua_set_args(L, "s", shipp->ship_name);
 }
 
 LUA_FUNC(getClass, l_Ship, NULL, "Ship class handle (shipclass)", "Gets ship class handle")
 {
-	int idx;
-	if(!lua_ship_get_idx(L, &idx))
+	object_h *objh;
+	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh)))
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "o", l_Shipclass.SetToLua(&Objects[Ships[idx].objnum].signature));
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "o", l_Shipclass.Set(Ships[objh->objp->instance].ship_info_index));
 }
 
 LUA_FUNC(getMountedWeapons, l_Ship, "[Subsystem name]", "mountedweapons object, or false if invalid subsystem specified", "Gets weapons mounted on a ship or subsystem")
 {
-	int idx;
+	object_h *objh;
 	char *s=NULL;
-	if(!lua_get_args(L, "o|s", l_Ship.GetFromLua(&idx), &s))
+	if(!lua_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return 0;
 
-	mounted_weapons_h mw;
-	mw.signature = idx;
-
-	idx = ship_get_by_signature(idx);
-
-	if(idx < 0)
+	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
+
+	ship_weapon_h mw(objh->objp, NULL);
 
 	if(s == NULL)
 	{
-		mw.subsys = NULL;
-		return lua_set_args(L, "o", l_MountedWeapons.SetToLua(&mw));
+		mw.sw = NULL;
+		return lua_set_args(L, "o", l_MountedWeapons.Set(mw));
 	}
 
-	mw.subsys = ship_get_subsys(&Ships[idx], s);
-
-	if(mw.subsys == NULL)
+	ship_subsys *ss = ship_get_subsys(&Ships[objh->objp->instance], s);
+	if(ss == NULL)
 		return LUA_RETURN_FALSE;
 
-	return lua_set_args(L, "o", l_MountedWeapons.SetToLua(&mw));
+	mw.sw = &ss->weapons;
+
+	return lua_set_args(L, "o", l_MountedWeapons.Set(mw));
 }
 
 LUA_FUNC(fetchAfterburnerFuel, l_Ship, "[Fuel amount]", "[New] fuel amount", "Returns ship fuel amount, or sets it if amount is specified")
 {
-	int idx;
+	object_h *objh;
 	float fuel = -1.0f;
-	if(!lua_get_args(L, "o|f", l_Ship.GetFromLua(&idx), &fuel))
-		return 0;
-
-	idx = ship_get_by_signature(idx);
-
-	if(idx < 0)
+	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fuel))
 		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
 
 	if(fuel >= 0.0f)
-		Ships[idx].afterburner_fuel = fuel;
+		shipp->afterburner_fuel = fuel;
 
-	return lua_set_args(L, "f", Ships[idx].afterburner_fuel);
+	return lua_set_args(L, "f", shipp->afterburner_fuel);
 }
 
-LUA_FUNC(warpIn, l_Ship, NULL, NULL, "Warps ship in")
+LUA_FUNC(warpIn, l_Ship, NULL, "True", "Warps ship in")
 {
-	int idx;
-	if(!lua_ship_get_idx(L, &idx))
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return LUA_RETURN_NIL;
 
-	shipfx_warpin_start(&Objects[Ships[idx].objnum]);
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
 
-	return LUA_RETURN_NIL;
+	shipfx_warpin_start(objh->objp);
+
+	return LUA_RETURN_TRUE;
 }
 
-LUA_FUNC(warpOut, l_Ship, NULL, NULL, "Warps ship out")
+LUA_FUNC(warpOut, l_Ship, NULL, "True", "Warps ship out")
 {
-	int idx;
-	if(!lua_ship_get_idx(L, &idx))
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return LUA_RETURN_NIL;
 
-	shipfx_warpout_start(&Objects[Ships[idx].objnum]);
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
 
-	return LUA_RETURN_NIL;
+	shipfx_warpout_start(objh->objp);
+
+	return LUA_RETURN_TRUE;
 }
 
 //**********OBJECT: Player
@@ -1998,7 +2090,7 @@ lua_obj<int> l_Player("player", "Player object");
 
 int player_helper(lua_State *L, int *idx)
 {
-	if(!lua_get_args(L, "o", l_Player.GetFromLua(idx)))
+	if(!lua_get_args(L, "o", l_Player.Get(idx)))
 		return 0;
 
 	if(*idx < 0 || *idx > Player_num)
@@ -2143,7 +2235,7 @@ LUA_FUNC(getCurrentPlayer, l_Base, NULL, "Current player", "Gets the current pla
 		return LUA_RETURN_NIL;
 
 	int idx = Player - Players;
-	return lua_set_args(L, "o", l_Player.SetToLua(&idx));
+	return lua_set_args(L, "o", l_Player.Set(idx));
 }
 
 LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the named player")
@@ -2161,7 +2253,7 @@ LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the na
 	if(idx < 0 || idx > Player_num)
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "o", l_Player.SetToLua(&idx));
+	return lua_set_args(L, "o", l_Player.Set(idx));
 }
 
 LUA_FUNC(getNumPlayers, l_Base, NULL, "Number of players", "Gets the number of currently loaded players")
@@ -2190,7 +2282,7 @@ LUA_FUNC(newVector, l_Math, "[x], [y], [z]", "Vector object", "Creates a vector 
 	vec3d v3;
 	lua_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
 
-	return lua_set_args(L, "o", l_Vector.SetToLua(&v3));
+	return lua_set_args(L, "o", l_Vector.Set(v3));
 }
 
 //**********LIBRARY: Campaign
@@ -2232,7 +2324,7 @@ LUA_FUNC(getNextMission, l_Campaign, NULL, "Cmission object, or false if there i
 	if(Campaign.next_mission < 0)
 		return LUA_RETURN_FALSE;
 
-	return lua_set_args(L, "o", l_Cmission.SetToLua(&Campaign.next_mission));
+	return lua_set_args(L, "o", l_Cmission.Set(Campaign.next_mission));
 }
 
 LUA_FUNC(getPrevMissionName, l_Campaign, NULL, "Mission name, or false if there is no next mission", "Gets the name of the next mission in the campaign")
@@ -2248,7 +2340,7 @@ LUA_FUNC(getPrevMission, l_Campaign, NULL, "Cmission object, or false if there i
 	if(Campaign.prev_mission < 0)
 		return LUA_RETURN_FALSE;
 
-	return lua_set_args(L, "o", l_Cmission.SetToLua(&Campaign.prev_mission));
+	return lua_set_args(L, "o", l_Cmission.Set(Campaign.prev_mission));
 }
 
 LUA_FUNC(getMissionByName, l_Campaign, "Mission name", "Cmission object, or false if mission does not exist", "Gets the specified mission from the campaign by its name")
@@ -2261,7 +2353,7 @@ LUA_FUNC(getMissionByName, l_Campaign, "Mission name", "Cmission object, or fals
 	for(int idx = 0; idx < Campaign.num_missions; idx++)
 	{
 		if(!stricmp(Campaign.missions[idx].name, s))
-			return lua_set_args(L, "o", l_Cmission.SetToLua(&idx));
+			return lua_set_args(L, "o", l_Cmission.Set(idx));
 	}
 
 	return LUA_RETURN_FALSE;
@@ -2281,7 +2373,7 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 	if(idx < 0 || idx > Campaign.num_missions)
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "o", l_Cmission.SetToLua(&idx));
+	return lua_set_args(L, "o", l_Cmission.Set(idx));
 }
 
 //**********LIBRARY: Mission
@@ -2342,7 +2434,7 @@ LUA_FUNC(getShip, l_Mission, "Ship name", "Ship object", "Gets ship object")
 		return LUA_RETURN_NIL;
 	}
 
-	return lua_set_args(L, "o", l_Ship.SetToLua(&Objects[Ships[idx].objnum].signature));
+	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum])));
 }
 
 LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Number", "Gets escort ship")
@@ -2367,7 +2459,7 @@ LUA_FUNC(getEscortShip, l_Mission, "Escort index", "Ship object", "Gets escort s
 	if(idx < 0)
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "o", l_Ship.SetToLua(&Objects[idx].signature));
+	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[idx])));
 }
 
 //**********LIBRARY: Tables
@@ -2397,7 +2489,7 @@ LUA_FUNC(getShipClassByIndex, l_Tables, "Class index", "Shipclass object", "Gets
 		return LUA_RETURN_NIL;
 	}
 
-	return lua_set_args(L, "o", l_Shipclass.SetToLua(&idx));
+	return lua_set_args(L, "o", l_Shipclass.Set(idx));
 }
 
 LUA_FUNC(getShipClass, l_Tables, "Class name", "Shipclass object", "Gets ship class")
@@ -2415,7 +2507,7 @@ LUA_FUNC(getShipClass, l_Tables, "Class name", "Shipclass object", "Gets ship cl
 		return LUA_RETURN_NIL;
 	}
 
-	return lua_set_args(L, "o", l_Shipclass.SetToLua(&idx));
+	return lua_set_args(L, "o", l_Shipclass.Set(idx));
 }
 
 //**********LIBRARY: Keyboard
@@ -2809,7 +2901,7 @@ LUA_FUNC(drawCurve, l_Graphics, "x, y, Radius, Direction", NULL, "Draws a curve"
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show], [Height to show], [X start], [Y start], [Resize], [Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
+LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Resize], [Width to show], [Height to show], [X start], [Y start], [Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -2824,7 +2916,7 @@ LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show], [H
 	bool r = true;
 	bool m = false;
 
-	if(!lua_get_args(L, "sii|iiiibb", &s,&x,&y,&w,&h,&sx,&sy,&r,&m))
+	if(!lua_get_args(L, "sii|biiiib", &s,&x,&y,&r,&w,&h,&sx,&sy,&m))
 		return LUA_RETURN_NIL;
 
 	int idx = bm_load(s);
@@ -2851,7 +2943,7 @@ LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show], [H
 	return lua_set_args(L, "b", true);
 }
 
-LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Width to show], [Height to show], [X start], [Y start]", "Whether image was drawn", "Draws an image")
+LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Resize], [Width to show], [Height to show], [X start], [Y start]", "Whether image was drawn", "Draws an image")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -2863,8 +2955,9 @@ LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Width to show], [Height to s
 	int h=0;
 	int sx=0;
 	int sy=0;
+	bool r;
 
-	if(!lua_get_args(L, "sii|iiiibb", &s,&x,&y,&w,&h,&sx,&sy))
+	if(!lua_get_args(L, "sii|biiii", &s,&x,&y,&r,&w,&h,&sx,&sy))
 		return LUA_RETURN_NIL;
 
 	int idx = bm_load(s);

@@ -8,6 +8,7 @@ extern "C" {
 }
 
 #include <vector>
+#include "object/object.h"
 
 //*************************Lua funcs*************************
 //Used to parse arguments on the stack to C values
@@ -192,16 +193,16 @@ public:
 	lua_obj(char*in_name, char*in_desc, lua_obj* in_deriv=NULL):lua_obj_h(in_name, in_desc, in_deriv){};
 
 	//WMC - Use this to store object data for return, or for setting as a global
-	script_lua_odata SetToLua(StoreType *obj) {
+	script_lua_odata Set(const StoreType &obj) {
 		script_lua_odata od;
 		od.meta = obj_idx;
-		od.buf = obj;
+		od.buf = (void*)&obj;
 		od.size = sizeof(StoreType);
 		return od;
 	}
 
 	//WMC - Use this to copy object data, for modification or whatever
-	script_lua_odata GetFromLua(StoreType *ptr){
+	script_lua_odata Get(StoreType *ptr){
 		script_lua_odata od;
 		od.meta = obj_idx;
 		od.buf = ptr;
@@ -213,7 +214,7 @@ public:
 	//Use >ONLY< when:
 	//1 - You are setting the data of an object (ie 'x' component of vector)
 	//2 - To speed up read-only calcs (ie computing dot product of vectors)
-	script_lua_odata GetPtrFromLua(StoreType **ptr){
+	script_lua_odata GetPtr(StoreType **ptr){
 		script_lua_odata od;
 		od.meta = obj_idx;
 		od.buf = (void**)ptr;
@@ -222,9 +223,18 @@ public:
 	}
 };
 
+//*************************Lua global structs*************************
+struct object_h {
+	object *objp;
+	int sig;
+
+	bool IsValid(){return objp->signature == sig;}
+	object_h(object *objp){objp=objp; sig=objp->signature;}
+};
+
 //*************************Lua globals*************************
-extern lua_obj<int> l_Ship;
-extern lua_obj<int> l_Object;
+extern lua_obj<object_h> l_Ship;
+extern lua_obj<object_h> l_Object;
 
 #endif //USE_LUA
 #endif //_LUA_H
