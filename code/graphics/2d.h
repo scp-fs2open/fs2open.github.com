@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.71 $
- * $Date: 2006-01-18 16:14:04 $
- * $Author: taylor $
+ * $Revision: 2.72 $
+ * $Date: 2006-01-19 03:20:49 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 2.70  2006/01/12 17:42:56  wmcoolmon
  * Even more scripting stuff.
  *
@@ -1369,8 +1375,9 @@ __inline bool gr_bm_set_render_target(int n, int face = -1)
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)
 __inline void gr_render_buffer(int start, int n_prim, ushort* index_buffer, int flags = TMAP_FLAG_TEXTURED)
 {
-	return (*gr_screen.gf_render_buffer)(start, n_prim, index_buffer, flags);
+	(*gr_screen.gf_render_buffer)(start, n_prim, index_buffer, flags);
 }
+
 #define gr_set_buffer				 GR_CALL(*gr_screen.gf_set_buffer)      
       
 #define gr_make_flat_buffer					 GR_CALL(*gr_screen.gf_make_flat_buffer)            
