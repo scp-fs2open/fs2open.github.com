@@ -110,239 +110,239 @@ SOURCE="$(InputPath)"
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=.\AddVariableDlg.cpp
+SOURCE=..\..\code\fred2\AddVariableDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\AdjustGridDlg.cpp
+SOURCE=..\..\code\fred2\AdjustGridDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\AsteroidEditorDlg.cpp
+SOURCE=..\..\code\fred2\AsteroidEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\BgBitmapDlg.cpp
+SOURCE=..\..\code\fred2\BgBitmapDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\BriefingEditorDlg.cpp
+SOURCE=..\..\code\fred2\BriefingEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CampaignEditorDlg.cpp
+SOURCE=..\..\code\fred2\CampaignEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CampaignFilelistBox.cpp
+SOURCE=..\..\code\fred2\CampaignFilelistBox.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CampaignTreeView.cpp
+SOURCE=..\..\code\fred2\CampaignTreeView.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CampaignTreeWnd.cpp
+SOURCE=..\..\code\fred2\CampaignTreeWnd.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CmdBrief.cpp
+SOURCE=..\..\code\fred2\CmdBrief.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CreateWingDlg.cpp
+SOURCE=..\..\code\fred2\CreateWingDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CustomWingNames.cpp
+SOURCE=..\..\code\fred2\CustomWingNames.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\DebriefingEditorDlg.cpp
+SOURCE=..\..\code\fred2\DebriefingEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\dialog1.cpp
+SOURCE=..\..\code\fred2\dialog1.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\DumpStats.cpp
+SOURCE=..\..\code\fred2\DumpStats.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\EventEditor.cpp
+SOURCE=..\..\code\fred2\EventEditor.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\FRED.cpp
+SOURCE=..\..\code\fred2\FRED.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\FRED.rc
+SOURCE=..\..\code\fred2\FRED.rc
 # End Source File
 # Begin Source File
 
-SOURCE=.\FREDDoc.cpp
+SOURCE=..\..\code\fred2\FREDDoc.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\FredRender.cpp
+SOURCE=..\..\code\fred2\FredRender.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\FredStubs.cpp
+SOURCE=..\..\code\fred2\FredStubs.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\FREDView.cpp
+SOURCE=..\..\code\fred2\FREDView.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\Grid.cpp
+SOURCE=..\..\code\fred2\Grid.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\IgnoreOrdersDlg.cpp
+SOURCE=..\..\code\fred2\IgnoreOrdersDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\InitialShips.cpp
+SOURCE=..\..\code\fred2\InitialShips.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\InitialStatus.cpp
+SOURCE=..\..\code\fred2\InitialStatus.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MainFrm.cpp
+SOURCE=..\..\code\fred2\MainFrm.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\Management.cpp
+SOURCE=..\..\code\fred2\Management.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MessageEditorDlg.cpp
+SOURCE=..\..\code\fred2\MessageEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MissionGoalsDlg.cpp
+SOURCE=..\..\code\fred2\MissionGoalsDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MissionNotesDlg.cpp
+SOURCE=..\..\code\fred2\MissionNotesDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MissionSave.cpp
+SOURCE=..\..\code\fred2\MissionSave.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ModifyVariableDlg.cpp
+SOURCE=..\..\code\fred2\ModifyVariableDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\OperatorArgTypeSelect.cpp
+SOURCE=..\..\code\fred2\OperatorArgTypeSelect.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\OrientEditor.cpp
+SOURCE=..\..\code\fred2\OrientEditor.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\PlayerStartEditor.cpp
+SOURCE=..\..\code\fred2\PlayerStartEditor.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\PrefsDlg.cpp
+SOURCE=..\..\code\fred2\PrefsDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ReinforcementEditorDlg.cpp
+SOURCE=..\..\code\fred2\ReinforcementEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\SetGlobalShipFlags.cpp
+SOURCE=..\..\code\fred2\SetGlobalShipFlags.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\Sexp_tree.cpp
+SOURCE=..\..\code\fred2\Sexp_tree.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShieldSysDlg.cpp
+SOURCE=..\..\code\fred2\ShieldSysDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ship_select.cpp
+SOURCE=..\..\code\fred2\ship_select.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipCheckListBox.cpp
+SOURCE=..\..\code\fred2\ShipCheckListBox.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipClassEditorDlg.cpp
+SOURCE=..\..\code\fred2\ShipClassEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipEditorDlg.cpp
+SOURCE=..\..\code\fred2\ShipEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipFlagsDlg.cpp
+SOURCE=..\..\code\fred2\ShipFlagsDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipGoalsDlg.cpp
+SOURCE=..\..\code\fred2\ShipGoalsDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipSpecialDamage.cpp
+SOURCE=..\..\code\fred2\ShipSpecialDamage.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipSpecialHitpoints.cpp
+SOURCE=..\..\code\fred2\ShipSpecialHitpoints.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipTexturesDlg.cpp
+SOURCE=..\..\code\fred2\ShipTexturesDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\StarfieldEditor.cpp
+SOURCE=..\..\code\fred2\StarfieldEditor.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\StdAfx.cpp
+SOURCE=..\..\code\fred2\StdAfx.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TextViewDlg.cpp
+SOURCE=..\..\code\fred2\TextViewDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\VoiceActingManager.cpp
+SOURCE=..\..\code\fred2\VoiceActingManager.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\VoiceFileManager.cpp
+SOURCE=..\..\code\fred2\VoiceFileManager.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\WaypointPathDlg.cpp
+SOURCE=..\..\code\fred2\WaypointPathDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\WeaponEditorDlg.cpp
+SOURCE=..\..\code\fred2\WeaponEditorDlg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\wing.cpp
+SOURCE=..\..\code\fred2\wing.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\wing_editor.cpp
+SOURCE=..\..\code\fred2\wing_editor.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -350,239 +350,239 @@ SOURCE=.\wing_editor.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\AddVariableDlg.h
+SOURCE=..\..\code\fred2\AddVariableDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AdjustGridDlg.h
+SOURCE=..\..\code\fred2\AdjustGridDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AsteroidEditorDlg.h
+SOURCE=..\..\code\fred2\AsteroidEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\BgBitmapDlg.h
+SOURCE=..\..\code\fred2\BgBitmapDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\BriefingEditorDlg.h
+SOURCE=..\..\code\fred2\BriefingEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CampaignEditorDlg.h
+SOURCE=..\..\code\fred2\CampaignEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CampaignFilelistBox.h
+SOURCE=..\..\code\fred2\CampaignFilelistBox.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CampaignTreeView.h
+SOURCE=..\..\code\fred2\CampaignTreeView.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CampaignTreeWnd.h
+SOURCE=..\..\code\fred2\CampaignTreeWnd.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CmdBrief.h
+SOURCE=..\..\code\fred2\CmdBrief.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CreateWingDlg.h
+SOURCE=..\..\code\fred2\CreateWingDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CustomWingNames.h
+SOURCE=..\..\code\fred2\CustomWingNames.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\DebriefingEditorDlg.h
+SOURCE=..\..\code\fred2\DebriefingEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\dialog1.h
+SOURCE=..\..\code\fred2\dialog1.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\DumpStats.h
+SOURCE=..\..\code\fred2\DumpStats.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\editor.h
+SOURCE=..\..\code\fred2\editor.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\EventEditor.h
+SOURCE=..\..\code\fred2\EventEditor.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\FRED.h
+SOURCE=..\..\code\fred2\FRED.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\FREDDoc.h
+SOURCE=..\..\code\fred2\FREDDoc.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\FredRender.h
+SOURCE=..\..\code\fred2\FredRender.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\FREDView.h
+SOURCE=..\..\code\fred2\FREDView.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\Grid.h
+SOURCE=..\..\code\fred2\Grid.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\IgnoreOrdersDlg.h
+SOURCE=..\..\code\fred2\IgnoreOrdersDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\InitialShips.h
+SOURCE=..\..\code\fred2\InitialShips.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\InitialStatus.h
+SOURCE=..\..\code\fred2\InitialStatus.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\MainFrm.h
+SOURCE=..\..\code\fred2\MainFrm.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\Management.h
+SOURCE=..\..\code\fred2\Management.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\MessageEditorDlg.h
+SOURCE=..\..\code\fred2\MessageEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\MissionGoalsDlg.h
+SOURCE=..\..\code\fred2\MissionGoalsDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\MissionNotesDlg.h
+SOURCE=..\..\code\fred2\MissionNotesDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\MissionSave.h
+SOURCE=..\..\code\fred2\MissionSave.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ModifyVariableDlg.h
+SOURCE=..\..\code\fred2\ModifyVariableDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OperatorArgTypeSelect.h
+SOURCE=..\..\code\fred2\OperatorArgTypeSelect.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\OrientEditor.h
+SOURCE=..\..\code\fred2\OrientEditor.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\PlayerStartEditor.h
+SOURCE=..\..\code\fred2\PlayerStartEditor.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\PrefsDlg.h
+SOURCE=..\..\code\fred2\PrefsDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ReinforcementEditorDlg.h
+SOURCE=..\..\code\fred2\ReinforcementEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\resource.h
+SOURCE=..\..\code\fred2\resource.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\SetGlobalShipFlags.h
+SOURCE=..\..\code\fred2\SetGlobalShipFlags.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\Sexp_tree.h
+SOURCE=..\..\code\fred2\Sexp_tree.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShieldSysDlg.h
+SOURCE=..\..\code\fred2\ShieldSysDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ship_select.h
+SOURCE=..\..\code\fred2\ship_select.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipCheckListBox.h
+SOURCE=..\..\code\fred2\ShipCheckListBox.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipClassEditorDlg.h
+SOURCE=..\..\code\fred2\ShipClassEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipEditorDlg.h
+SOURCE=..\..\code\fred2\ShipEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipFlagsDlg.h
+SOURCE=..\..\code\fred2\ShipFlagsDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipGoalsDlg.h
+SOURCE=..\..\code\fred2\ShipGoalsDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipSpecialDamage.h
+SOURCE=..\..\code\fred2\ShipSpecialDamage.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipSpecialHitpoints.h
+SOURCE=..\..\code\fred2\ShipSpecialHitpoints.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ShipTexturesDlg.h
+SOURCE=..\..\code\fred2\ShipTexturesDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\StarfieldEditor.h
+SOURCE=..\..\code\fred2\StarfieldEditor.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\stdafx.h
+SOURCE=..\..\code\fred2\stdafx.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\TextViewDlg.h
+SOURCE=..\..\code\fred2\TextViewDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\VoiceActingManager.h
+SOURCE=..\..\code\fred2\VoiceActingManager.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\VoiceFileManager.h
+SOURCE=..\..\code\fred2\VoiceFileManager.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\WaypointPathDlg.h
+SOURCE=..\..\code\fred2\WaypointPathDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\WeaponEditorDlg.h
+SOURCE=..\..\code\fred2\WeaponEditorDlg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\wing.h
+SOURCE=..\..\code\fred2\wing.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\wing_editor.h
+SOURCE=..\..\code\fred2\wing_editor.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"
@@ -590,63 +590,63 @@ SOURCE=.\wing_editor.h
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 # Begin Source File
 
-SOURCE=.\res\bitmap1.bmp
+SOURCE=..\..\code\fred2\res\bitmap1.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\black_do.bmp
+SOURCE=..\..\code\fred2\res\black_do.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\bmp00001.bmp
+SOURCE=..\..\code\fred2\res\bmp00001.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\chained.bmp
+SOURCE=..\..\code\fred2\res\chained.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\chained_directive.bmp
+SOURCE=..\..\code\fred2\res\chained_directive.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\cursor1.cur
+SOURCE=..\..\code\fred2\res\cursor1.cur
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\cursor2.cur
+SOURCE=..\..\code\fred2\res\cursor2.cur
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\data.bmp
+SOURCE=..\..\code\fred2\res\data.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\FRED.ico
+SOURCE=..\..\code\fred2\res\FRED.ico
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\FREDDoc.ico
+SOURCE=..\..\code\fred2\res\FREDDoc.ico
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\green_do.bmp
+SOURCE=..\..\code\fred2\res\green_do.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\root.bmp
+SOURCE=..\..\code\fred2\res\root.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\root_directive.bmp
+SOURCE=..\..\code\fred2\res\root_directive.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\Toolbar.bmp
+SOURCE=..\..\code\fred2\res\Toolbar.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\variable.bmp
+SOURCE=..\..\code\fred2\res\variable.bmp
 # End Source File
 # End Group
 # End Target
