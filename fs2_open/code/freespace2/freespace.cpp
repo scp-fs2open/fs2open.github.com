@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.218 $
- * $Date: 2006-01-19 20:18:11 $
+ * $Revision: 2.219 $
+ * $Date: 2006-01-19 22:25:01 $
  * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.218  2006/01/19 20:18:11  wmcoolmon
+ * More Lua checks; added Lua vector object; better operator support.
+ *
  * Revision 2.217  2006/01/19 03:15:31  phreak
  * obj_script_set_global() should have an #ifdef/#endif USE_LUA pair in the function body.
  *
@@ -5869,9 +5872,9 @@ void obj_script_set_global(char *global_name, object *objp)
 	}
 #ifdef USE_LUA
 	if(objp->type == OBJ_SHIP) {
-		Script_system.SetGlobal(global_name, 'o', &l_Ship.SetToLua(&objp->signature));
+		Script_system.SetGlobal(global_name, 'o', &l_Ship.Set(object_h(objp)));
 	} else {
-		Script_system.SetGlobal(global_name, 'o', &l_Object.SetToLua(&objp->signature));
+		Script_system.SetGlobal(global_name, 'o', &l_Object.Set(object_h(objp)));
 	}
 #endif
 }
