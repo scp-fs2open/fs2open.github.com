@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.13 $
- * $Date: 2006-01-02 07:11:41 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2006-01-20 06:24:01 $
+ * $Author: Goober5000 $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/01/02 07:11:41  taylor
+ * start of DDS volume/cube map support (rest of this needs code not ready for CVS but this will be needed later)
+ *
  * Revision 2.12  2005/12/28 22:34:01  taylor
  * getting tired of having to ifdef the snprintf/_snprintf thing that Microsoft can't do right
  *
@@ -60,22 +63,22 @@
 
 #if defined _WIN32
 
-// 4127 is constant conditional (assert)
 // 4100 is unreferenced formal parameters,
-// 4514 is unreferenced inline function removed, 
-// 4201 is nameless struct extension used. (used by windows header files)
+// 4127 is constant conditional (assert)
+// 4201 nonstandard extension used: nameless struct/union (happens a lot in Windows include headers)
+// 4390 emptry control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
 // 4410 illegal size for operand... ie... 	fxch st(1)
+// 4514 is unreferenced inline function removed, 
 // 4611 is _setjmp warning.  Since we use setjmp alot, and we don't really use constructors or destructors, this warning doesn't really apply to us.
+// 4702 unreachable code.  I care, but too many to deal with
+// 4710 is inline function not expanded (who cares?)
+// 4711 tells us an inline function was expanded (who cares?)
 // 4725 is the pentium division bug warning, and I can't seem to get rid of it, even with this pragma.
 //      JS: I figured out the disabling 4725 works, but not on the first function in the module.
 //      So to disable this, I add in a stub function at the top of each module that does nothing.
-// 4710 is inline function not expanded (who cares?)
-// 4711 tells us an inline function was expanded (who cares?)
-// 4702 unreachable code.  I care, but too many to deal with
-// 4201 nonstandard extension used : nameless struct/union (happens a lot in Windows include headers)
-// 4390 emptry control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
+// 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
 // 4996 depreciated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
-#pragma warning(disable: 4127 4100 4514 4201 4410 4611 4725 4710 4711 4702 4201 4390 4996)
+#pragma warning(disable: 4100 4127 4201 4390 4410 4514 4611 /*4702*/ 4710 4711 4725 4786 4996)
 
 
 #if !defined BYTE_ORDER
