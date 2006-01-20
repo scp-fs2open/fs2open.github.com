@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FredStubs.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-20 05:35:59 $
+ * $Author: wmcoolmon $
  *
  * Bogus C file for functions and variable stubs that Fred needs because it
  * includes some libraries that makes functions calls to other libraries that FRED
@@ -20,6 +20,10 @@
  * to each other.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.12  2005/12/06 21:45:04  taylor
  * stub fix for get_version_string() change
  *
@@ -690,3 +694,12 @@ float flRealframetime;
 void lock_time_compression(bool is_locked){};
 void change_time_compression(float multiplier){};
 void set_time_compression(float multiplier, float change_time){};
+
+//WMC
+void game_level_init(int seed){};
+void game_post_level_init(){};
+void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient){};
+void game_render_frame(vec3d *eye_pos, matrix *eye_orient){};
+void game_simulation_frame(){};
+void game_update_missiontime(){};
+void game_render_post_frame(){};
