@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.203 $
- * $Date: 2006-01-19 03:17:12 $
- * $Author: phreak $
+ * $Revision: 2.204 $
+ * $Date: 2006-01-20 04:33:21 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.203  2006/01/19 03:17:12  phreak
+ * give repair-subsystem and set-subsystem-strength a fourth optional parameter used to possibly regenerate the submodel of a given subsystem
+ * sabotage-subsystem should make the subsystems explode
+ *
  * Revision 2.202  2006/01/13 03:31:20  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -18560,7 +18564,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t4:\tRepair turret submodel.  Optional argument that defaults to true.  Only will be recognized for fs2_open 3.6.8 and later."},
 
 	{ OP_INVALIDATE_GOAL, "Invalidate goal (Action operator)\r\n"
-		"\tMakes a mission goal invalid, which causes it to now show up on mission goals "
+		"\tMakes a mission goal invalid, which causes it to not show up on mission goals "
 		"screen, or be evaluated.\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of mission goal to invalidate." },
