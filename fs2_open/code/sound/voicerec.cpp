@@ -10,7 +10,7 @@
 #ifndef FS2_VOICER
 
 #if NDEBUG
-	#pragma message( "WARNING: You have not voice recognition into this build (use FS2_VOICER)" )
+	#pragma message( "WARNING: You have not compiled voice recognition into this build (use FS2_VOICER)" )
 #endif // NDEBUG
 
 #else // to end-of-file ...
