@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.219 $
- * $Date: 2006-01-19 22:25:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.220 $
+ * $Date: 2006-01-20 06:26:41 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.219  2006/01/19 22:25:01  wmcoolmon
+ * Faster object handles
+ *
  * Revision 2.218  2006/01/19 20:18:11  wmcoolmon
  * More Lua checks; added Lua vector object; better operator support.
  *
@@ -1430,10 +1433,11 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
  #include <sys/stat.h>
 #endif
 
-
 #include "anim/animplay.h"
 #include "asteroid/asteroid.h"
+#include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
+#include "camera/camera.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
@@ -1444,6 +1448,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "exceptionhandler/exceptionhandler.h"
 #include "fireball/fireballs.h"
 #include "freespace2/freespace.h"
+#include "freespace2/freespaceresource.h"
 #include "freespace2/levelpaging.h"
 #include "gamehelp/contexthelp.h"
 #include "gamehelp/gameplayhelp.h"
@@ -1467,6 +1472,9 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "jumpnode/jumpnode.h"
+#include "lab/lab.h"
+#include "lab/wmcgui.h"	//So that GUI_System can be initialized
 #include "lighting/lighting.h"
 #include "localization/localize.h"
 #include "math/staticrand.h"
@@ -1500,46 +1508,8 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
-#include "network/stand_gui.h"
-#include "object/objcollide.h"
-#include "object/objectsnd.h"
-#include "observer/observer.h"
-#include "osapi/osapi.h"
-#include "osapi/osregistry.h"
-#include "parse/encrypt.h"
-#include "parse/sexp.h"
-#include "particle/particle.h"
-#include "playerman/managepilot.h"
-#include "playerman/player.h"
-#include "popup/popup.h"
-#include "popup/popupdead.h"
-#include "radar/radar.h"
-#include "render/3d.h"
-#include "ship/afterburner.h"
-#include "ship/awacs.h"
-#include "ship/ship.h"
-#include "ship/shipcontrails.h"
-#include "ship/shipfx.h"
-#include "ship/shiphit.h"
-#include "sound/audiostr.h"
-#include "sound/fsspeech.h"
-#include "sound/sound.h"
-#include "starfield/starfield.h"
-#include "starfield/supernova.h"
-#include "stats/medals.h"
-#include "stats/stats.h"
-#include "weapon/beam.h"
-#include "weapon/emp.h"
-#include "weapon/flak.h"
-#include "weapon/muzzleflash.h"
-#include "weapon/shockwave.h"
-#include "weapon/weapon.h"
-#include "radar/radarsetup.h"
-#include "camera/camera.h"
-#include "lab/lab.h"
-#include "lab/wmcgui.h"	//So that GUI_System can be initialized
-#include "jumpnode/jumpnode.h"
-#include "autopilot/autopilot.h"
+extern int Om_tracker_flag; // needed for FS2OpenPXO config
+#include "network/fs2ox.h"
 #include "network/multi.h"
 #include "network/multi_dogfight.h"
 #include "network/multi_endgame.h"
@@ -1553,21 +1523,54 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "network/multiutil.h"
-extern int Om_tracker_flag; // needed for FS2OpenPXO config
-#include "network/fs2ox.h"
-#include "parse/scripting.h"
+#include "network/stand_gui.h"
+#include "object/objcollide.h"
+#include "object/objectsnd.h"
+#include "observer/observer.h"
+#include "osapi/osapi.h"
+#include "osapi/osregistry.h"
+#include "parse/encrypt.h"
 #include "parse/lua.h"
-
-
-#include "freespace2/freespaceresource.h"
+#include "parse/scripting.h"
+#include "parse/sexp.h"
+#include "particle/particle.h"
+#include "playerman/managepilot.h"
+#include "playerman/player.h"
+#include "popup/popup.h"
+#include "popup/popupdead.h"
+#include "radar/radar.h"
+#include "radar/radarsetup.h"
+#include "render/3d.h"
+#include "ship/afterburner.h"
+#include "ship/awacs.h"
+#include "ship/ship.h"
+#include "ship/shipcontrails.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
+#include "sound/audiostr.h"
+#include "sound/fsspeech.h"
+#include "sound/sound.h"
 #include "sound/voicerec.h"
+#include "starfield/starfield.h"
+#include "starfield/supernova.h"
+#include "stats/medals.h"
+#include "stats/stats.h"
+#include "weapon/beam.h"
+#include "weapon/emp.h"
+#include "weapon/flak.h"
+#include "weapon/muzzleflash.h"
+#include "weapon/shockwave.h"
+#include "weapon/weapon.h"
+
+#include "globalincs/pstypes.h"
 
 
 #ifdef NDEBUG
 #ifdef FRED
-#error macro FRED is defined when trying to build release Fred.  Please undefine FRED macro in build settings
+#error macro FRED is defined when trying to build release Freespace.  Please undefine FRED macro in build settings
 #endif
 #endif
+
 
 //	Revision history.
 //	Full version:
