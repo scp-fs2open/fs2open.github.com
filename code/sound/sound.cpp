@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-10-23 19:08:01 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/10/23 19:08:01  taylor
+ * fix crashes and minor slowdowns when sound is disabled (-nosound)
+ *
  * Revision 2.29  2005/09/24 02:40:09  Goober5000
  * get rid of a whole bunch of Microsoft warnings
  * --Goober5000
@@ -404,15 +407,6 @@
  * $NoKeywords: $
  */
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <limits.h>
-
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
-#include <vector>
-#pragma warning(pop)
-
 #include "render/3d.h"
 #include "sound/sound.h"
 #include "sound/audiostr.h"
@@ -428,7 +422,15 @@
 #include "sound/acm.h"
 #include "sound/dscap.h"
 #include "sound/ogg/ogg.h"
-		
+
+#include "globalincs/pstypes.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#include <limits.h>
+
+#include <vector>		
 
 unsigned short UserSampleRate, UserSampleBits;
 

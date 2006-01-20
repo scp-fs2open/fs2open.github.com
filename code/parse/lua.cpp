@@ -3090,7 +3090,7 @@ LUA_FUNC(playInterfaceSound, l_SoundLib, "Sound filename", "True if sound was pl
 
 	return lua_set_args(L, "b", idx > -1);
 }
-#endif //USE_LUA
+
 // *************************Housekeeping*************************
 
 void lua_add_vars(lua_State *L, int table_loc, lua_lib_h *lib, lua_var_hh *var, lua_var_hh *var_end)
@@ -3212,6 +3212,8 @@ void lua_add_vars(lua_State *L, int table_loc, lua_lib_h *lib, lua_var_hh *var, 
 		}
 	}
 }
+
+#endif //USE_LUA
 
 //Inits LUA
 //Note that "libraries" must end with a {NULL, NULL}

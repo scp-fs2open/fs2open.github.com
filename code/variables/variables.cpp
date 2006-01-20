@@ -1,13 +1,12 @@
 
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
-#include <string>
-#pragma warning(pop)
-
-#include <stack>
-#include <math.h>
 #include "variables/variables.h"
 #include "io/timer.h"
-#include"ship/ship.h"
+#include "ship/ship.h"
+#include "globalincs/pstypes.h"
+
+#include <string>
+#include <stack>
+#include <math.h>
 
 using namespace std;
 

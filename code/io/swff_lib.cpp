@@ -30,6 +30,9 @@ Version	Date		Author	Comments
 
 ****************************************************************************/
 
+
+#include "globalincs/pstypes.h"
+
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,9 +44,6 @@ Version	Date		Author	Comments
 #include "directx/vdinput.h"
 #undef INITGUIDS
 
-
-
-#pragma warning(disable:4711)	// function selected for inlining
 
 BOOL CALLBACK DIEnumAndDestroyCreatedEffectsProc(LPDIRECTINPUTEFFECT pDIEffect, LPVOID lpvRef);
 BOOL CALLBACK DIEnumDevicesProc(LPCDIDEVICEINSTANCE lpddi, LPVOID lpvContext);

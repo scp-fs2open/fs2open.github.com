@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.cpp $
- * $Revision: 1.11 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 1.12 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.10  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -54,9 +57,8 @@
  *
  */
 
-
-#pragma warning(disable:4710)	// function not inlined
-#pragma warning(disable:4711)	// function inlined
+#include "fs2open_pxo/udpsocket.h"
+#include "globalincs/pstypes.h"
 
 #include <iostream>
 
@@ -66,8 +68,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
-
-#include "fs2open_pxo/udpsocket.h"
 
 using namespace std;
 

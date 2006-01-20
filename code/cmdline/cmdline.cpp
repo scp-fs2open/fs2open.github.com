@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.131 $
- * $Date: 2006-01-10 18:37:45 $
- * $Author: randomtiger $
+ * $Revision: 2.132 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2006/01/10 18:37:45  randomtiger
+ * Improvements to voice recognition system.
+ * Also function put on -voicer launcher option.
+ *
  * Revision 2.130  2005/12/14 17:58:26  taylor
  * should have tested that better, it was still finding or ignoring options that it shouldn't if they were in the wrong order on
  *  the same source (source being the two possible cmdline_fso.cfg files and the actual args passed on the cmdline)
@@ -753,32 +757,31 @@
  * $NoKeywords: $
  */
 
-#ifdef _WIN32
-#include <direct.h>
-#elif defined(APPLE_APP)
-#include <CoreFoundation/CoreFoundation.h>
-#endif
-
-#include <string.h>
-#include <stdlib.h>
-#include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
 #include "network/multi.h"
 #include "hud/hudconfig.h"
 #include "parse/scripting.h"
-
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
-#include <vector>
-#pragma warning(pop)
-
-#include "globalincs/version.h"
 #include "parse/sexp.h"
+#include "globalincs/version.h"
+#include "globalincs/pstypes.h"
+
+#ifdef _WIN32
+#include <direct.h>
+#elif defined(APPLE_APP)
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 #ifdef SCP_UNIX
 #include "osapi/osapi.h"
 #endif
+
+#include <string.h>
+#include <stdlib.h>
+
+#include <vector>
+
 
 // variables
 class cmdline_parm {

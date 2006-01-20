@@ -11,12 +11,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.h $
- * $Revision: 1.11 $
- * $Date: 2005-07-13 02:50:49 $
+ * $Revision: 1.12 $
+ * $Date: 2006-01-20 07:10:33 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.10  2005/06/29 18:49:37  taylor
  * various FS2NetD fixes:
  *  - replace timer stuff with something that more accurately works cross-platform and without being affected by load
@@ -56,6 +60,8 @@
 #if !defined(__TCP_SOCKET_H_)
 #define __TCP_SOCKET_H_
 
+#include "globalincs/pstypes.h" // make sure _cdecl is defined correctly on *nix
+
 // Enable Multithread
 //#define MT_TCP_Socket
 
@@ -63,25 +69,18 @@
 //#define FS2_TCP_RMultithread
 
 #if defined(WIN32)
-// Windows Version
+// Windows version
 #include <windows.h>
 #include <process.h>
-
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
-#include <string>
-#pragma warning(pop)
-
-//#include <winsock2.h>
-
 #else
+// other OS version
 #include <cstdio>
 #include <stdlib.h>
 #include <unistd.h>
 #include <cerrno>
-#include <string>
 #endif
 
-#include "globalincs/pstypes.h" // make sure _cdecl is defined correctly on *nix
+#include <string>
 
 
 #if !defined(CLOSEFUNC)

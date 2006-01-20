@@ -1,4 +1,5 @@
 #ifdef USE_PYTHON
+
 #include "parse/python.h"
 #include "parse/parselo.h"
 #include "localization\localize.h"
@@ -6,6 +7,8 @@
 #include "graphics/2d.h"
 #include "gamesequence/gamesequence.h"
 #include "ship/ship.h"
+#include "globalincs/pstypes.h"
+
 #include <vector>
 
 //*************************GLOBALS*************************

@@ -8,13 +8,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.22 $
- * $Date: 2005-07-13 03:35:29 $
+ * $Revision: 1.23 $
+ * $Date: 2006-01-20 07:10:33 $
  * $Author: Goober5000 $
  *
  * Platform specific text-to-speech functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2005/07/13 03:35:29  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.21  2005/07/02 19:39:23  taylor
  * fix compiler warnings introduced by recent stub changes (defining an empty stub as something is wrong, it should be nothing)
  * assuming that GetStatus thing wasn't tested since it would never have worked
@@ -49,7 +53,9 @@
 #endif // _WIN32
 #else // to end-of-file ...
 
-#pragma warning(disable:4711)	// function selected for inlining
+#include "speech.h"
+#include "globalincs/pstypes.h"
+
 
 #ifdef LAUNCHER
 #include "stdafx.h"
@@ -71,8 +77,6 @@
 	#pragma error( "ERROR: Unknown platform, speech (FS2_SPEECH) is not supported" )
 #endif	//_WIN32
 
-#include "globalincs/pstypes.h"
-#include "speech.h"
 
 bool Speech_init = false;
 

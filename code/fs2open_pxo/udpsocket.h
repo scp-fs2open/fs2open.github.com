@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
- * $Revision: 1.8 $
- * $Date: 2005-09-24 02:57:12 $
+ * $Revision: 1.9 $
+ * $Date: 2006-01-20 07:10:33 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/09/24 02:57:12  Goober5000
+ * a fix
+ * --Goober5000
+ *
  * Revision 1.7  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -44,26 +48,21 @@
 #if !defined(__protocol_h_)
 #define __protocol_h_
 
+#include "globalincs/pstypes.h"
+
 #ifdef _WIN32
 #include <windows.h>
-
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
-#include <string>
-#pragma warning(pop)
-
 //#include <winsock2.h>
 #define STYPE SOCKET
 #define CLOSEFUNC closesocket
-
 #else
-#include <string>
 #include <cstdio>
 #include <stdlib.h>
 #include <unistd.h>
 #include <cerrno>
 #endif
 
-#include "globalincs/pstypes.h"
+#include <string>
 
 #define CLOSEFUNC closesocket
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.30 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.29  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -454,9 +457,6 @@
  * $NoKeywords: $
  */
 
-#include <stdlib.h>
-#include <vector>
-
 #include "fireball/fireballs.h"
 #include "graphics/tmapper.h"
 #include "render/3d.h"
@@ -467,6 +467,10 @@
 #include "localization/localize.h"
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
+#include "globalincs/pstypes.h"
+
+#include <stdlib.h>
+#include <vector>
 
 
 // make use of the LOD checker for tbl/tbm parsing (from weapons.cpp)

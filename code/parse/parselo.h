@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.40 $
- * $Author: wmcoolmon $
- * $Date: 2006-01-14 19:54:55 $
+ * $Revision: 2.41 $
+ * $Author: Goober5000 $
+ * $Date: 2006-01-20 07:10:33 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.39  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -383,14 +386,14 @@
 #ifndef _PARSELO_H
 #define _PARSELO_H
 
+#include "globalincs/globals.h"
+#include "cfile/cfile.h"
+#include "globalincs/pstypes.h"
+
 #include <csetjmp>
 #include <cstdio>
 #include <string>
 #include <vector>
-
-#include "globalincs/globals.h"
-#include "globalincs/pstypes.h"
-#include "cfile/cfile.h"
 
 #define	MISSION_TEXT_SIZE	1000000
 

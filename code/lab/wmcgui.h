@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.h $
- * $Revision: 1.23 $
- * $Date: 2005-12-04 19:07:48 $
- * $Author: wmcoolmon $
+ * $Revision: 1.24 $
+ * $Date: 2006-01-20 07:10:34 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2005/12/04 19:07:48  wmcoolmon
+ * Final commit of codebase
+ *
  * Revision 1.21  2005/10/23 05:01:49  wmcoolmon
  * *Fix*
  *
@@ -36,14 +39,14 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
+#include "globalincs/pstypes.h"
+
 #ifdef USE_PYTHON
 #include "parse/python.h"
 #endif
 
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
 #include <vector>
-#pragma warning(pop)
 
 //*****************************Low-level abstraction*******************************
 //Lame attempt to keep things from being exceedingly difficult when switching to ferrium
