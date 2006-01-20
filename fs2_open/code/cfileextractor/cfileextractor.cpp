@@ -5,13 +5,17 @@
 
 /*
  * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-09-24 02:40:09 $
+ * $Revision: 1.9 $
+ * $Date: 2006-01-20 07:10:33 $
  * $Author: Goober5000 $
  *
  * Cross-platform cmdline extractor for VP files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/09/24 02:40:09  Goober5000
+ * get rid of a whole bunch of Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.7  2005/09/20 02:45:47  taylor
  * bump version to 0.6
  * add a specified directory to output files to
@@ -41,10 +45,10 @@
  * $NoKeywords: $
  */
 
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
-#include <vector>
-#pragma warning(pop)
+#include "cfile/cfile.h"
+#include "globalincs/pstypes.h"
 
+#include <vector>
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
@@ -60,9 +64,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
-
-#include "globalincs/pstypes.h"
-#include "cfile/cfile.h"
 
 
 // /////////////////////////////////////////////////////////////////////////////

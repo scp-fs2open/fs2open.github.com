@@ -8,13 +8,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/fsspeech.cpp $
- * $Revision: 1.18 $
- * $Date: 2005-07-13 03:35:29 $
+ * $Revision: 1.19 $
+ * $Date: 2006-01-20 07:10:33 $
  * $Author: Goober5000 $
  *
  * This module contains freespace specific stuff leaving the speech module to handle generic stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/07/13 03:35:29  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.17  2005/06/30 02:35:00  Goober5000
  * added functions to check if speech is playing
  * --Goober5000
@@ -53,8 +57,6 @@
 
 
 extern int Cmdline_freespace_no_sound;
-
-#pragma warning(disable:4711)	// function selected for inlining
 
 const int MAX_SPEECH_BUFFER_LEN = 4096;
 

@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.12 $
- * $Date: 2005-10-23 20:34:30 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/10/23 20:34:30  taylor
+ * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
+ *
  * Revision 1.11  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -59,15 +62,13 @@
 #if !defined(_IRC_H_)
 #define _IRC_H_
 
+#include "fs2open_pxo/TCP_Socket.h"
+#include "globalincs/pstypes.h"
 
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <string>
 #include <vector>
-#pragma warning(pop)
 
 #include <fstream>
-
-#include "fs2open_pxo/TCP_Socket.h"
 
 
 struct irc_user

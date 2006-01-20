@@ -1,9 +1,10 @@
 #ifndef _SCRIPTING_H
 #define _SCRIPTING_H
 
+#include "globalincs/pstypes.h"
+
 #include <stdio.h>
 #include <vector>
-#include "globalincs/pstypes.h"
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)

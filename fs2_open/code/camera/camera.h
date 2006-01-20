@@ -2,13 +2,11 @@
 #ifndef _CAMERA_H
 #define _CAMERA_H
 
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
+#include "graphics/2d.h"
+#include "globalincs/pstypes.h"
+
 #include <string>
 #include <vector>
-#pragma warning(pop)
-
-#include "globalincs/pstypes.h"
-#include "graphics/2d.h"
 
 class camera
 {

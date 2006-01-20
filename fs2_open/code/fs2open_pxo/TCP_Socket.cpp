@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.17 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 1.18 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.16  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -83,11 +86,8 @@
  */
 
 
-// 4100 = unreferenced formal parameter
-// 4511 = copy constructor could not be generated
-// 4512 = assignment operator could not be generated
-// 4711 = function selected for inlining
-#pragma warning(disable:4100 4511 4512 4711)
+#include "fs2open_pxo/TCP_Socket.h"
+#include "globalincs/pstypes.h"
 
 #include <iostream>
 
@@ -98,9 +98,11 @@
 #include <arpa/inet.h>
 #endif
 
-#include "fs2open_pxo/TCP_Socket.h"
-//#include <process.h>
 
+// 4100 = unreferenced formal parameter
+// 4511 = copy constructor could not be generated
+// 4512 = assignment operator could not be generated
+#pragma warning(disable:4100 4511 4512)
 
 using namespace std;
 

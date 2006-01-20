@@ -10,11 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.20 $
- * $Date: 2005-10-10 17:21:05 $
- * $Author: taylor $
+ * $Revision: 1.21 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.19  2005/07/16 06:33:16  wmcoolmon
  * Commented out lines 554 and 555 so the code would compile
  *
@@ -83,17 +86,13 @@
  *
  */
 
+#include "irc/irc.h"
+#include "globalincs/pstypes.h"
 
-// 4786 = identifier truncated in the debug information
-// 4710 = function not inlined
-// 4711 = function inlined
 // 4097 = something used as synonym for class
 // 4127 = conditional expression is constant
 // 4701 = variable may be used without having been initialized
-// 4702 = unreachable code
-#pragma warning(disable: 4786 4710 4711 4097 4127 4701 4702)
-
-#include "irc.h"
+#pragma warning(disable: 4097 4127 4701)
 
 #ifdef _WIN32
 #include <direct.h>

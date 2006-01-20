@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.133 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.134 $
+ * $Date: 2006-01-20 07:10:34 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.132  2006/01/15 18:55:27  taylor
  * fix compile issues from bad constructor
  * make sure ai_actively_pursues gets filled for modular tables too
@@ -782,10 +785,9 @@
 #include "render/3d.h"
 #include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
+#include "globalincs/pstypes.h"
 
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>
-#pragma warning(pop)
 
 struct object;
 

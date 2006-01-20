@@ -7,8 +7,10 @@ extern "C" {
 	#include "lualib.h"
 }
 
-#include <vector>
 #include "object/object.h"
+#include "globalincs/pstypes.h"
+
+#include <vector>
 
 //*************************Lua funcs*************************
 //Used to parse arguments on the stack to C values

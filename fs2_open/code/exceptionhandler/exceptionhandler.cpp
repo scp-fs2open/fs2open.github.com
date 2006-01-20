@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-01-31 23:27:52 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/01/31 23:27:52  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.7  2004/07/26 20:47:27  Kazan
  * remove MCD complete
  *
@@ -78,10 +81,10 @@ on how to hook it in.
 
 #ifdef _WIN32
 
+#include "globalincs/pstypes.h"
+
 #include <windows.h>
 
-
-#pragma warning(disable:4711)	// function selected for inlining
 
 // --------------------
 //

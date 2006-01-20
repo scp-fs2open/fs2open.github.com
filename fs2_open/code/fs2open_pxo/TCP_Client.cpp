@@ -11,11 +11,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.33 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.34 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.32  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -143,14 +146,6 @@
  */
 
 
-// 4018 = signed/unsigned mismatch
-// 4663 = new template specification syntax
-// 4245 = signed/unsigned mismatch in conversion of const value
-// 4711 = function selected for automatic inline expansion
-#pragma warning(disable: 4663 4018 4663 4245 4711)
-
-#include <iostream>
-
 
 #include "fs2open_pxo/Client.h"
 #include "fs2open_pxo/protocol.h"
@@ -159,6 +154,14 @@
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include "io/timer.h"
+#include "globalincs/pstypes.h"
+
+#include <iostream>
+
+// 4018 = signed/unsigned mismatch
+// 4663 = new template specification syntax
+// 4245 = signed/unsigned mismatch in conversion of const value
+#pragma warning(disable: 4663 4018 4663 4245)
 
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);

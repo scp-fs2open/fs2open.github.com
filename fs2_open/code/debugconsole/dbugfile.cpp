@@ -1,3 +1,6 @@
+#include "dbugfile.h"
+#include "globalincs/pstypes.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -7,11 +10,6 @@
 #include <sys/types.h>
 #include <sys/timeb.h>
 
-#include "dbugfile.h"
-
-
-
-#pragma warning(disable:4711)	// function selected for inlining
 
 int  dbugfile_counters[MAX_COUNTERS];
 bool dbugfile_init_var = false;

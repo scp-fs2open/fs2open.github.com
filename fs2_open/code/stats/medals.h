@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.10 $
- * $Date: 2005-09-24 02:40:10 $
+ * $Revision: 2.11 $
+ * $Date: 2006-01-20 07:10:34 $
  * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/09/24 02:40:10  Goober5000
+ * get rid of a whole bunch of Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.9  2005/09/14 20:03:40  taylor
  * fix ace badges not getting displayed in debriefing
  *
@@ -95,9 +99,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-#pragma warning(push, 2)	// ignore all those warnings for Microsoft stuff
 #include <vector>
-#pragma warning(pop)
 
 struct scoring_struct;
 struct player;

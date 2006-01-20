@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.23 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.24 $
+ * $Date: 2006-01-20 07:10:33 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.22  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -92,19 +95,17 @@
  */
 
 
-// 4711 = function selected for automatic inline expansion
-#pragma warning(disable: 4711)
-
-#include <iostream>
-#include <time.h>
-
-
 #include "fs2open_pxo/Client.h"
 //#include "fs2open_pxo/protocol.h"
 #include "fs2open_pxo/udpsocket.h"
 #include "network/multi_log.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
+#include "globalincs/pstypes.h"
+
+#include <iostream>
+#include <time.h>
+
 
 PXO_Socket FS2OpenPXO_Socket;
 
