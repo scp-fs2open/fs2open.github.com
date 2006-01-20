@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.76 $
- * $Date: 2005-12-28 22:04:00 $
+ * $Revision: 2.77 $
+ * $Date: 2006-01-20 23:47:51 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2005/12/28 22:04:00  taylor
+ * allow for 24-bit user created bitmap images
+ * make sure we have proper memory size requirements for non-DDS EFFs
+ *
  * Revision 2.75  2005/12/06 03:05:53  taylor
  * add base support for 8-bit DDS images
  * clean up some DDS error messages and other minor bug/comment fixes
@@ -1633,9 +1637,11 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	}
 
 	// safety catch for strcat...
-	// MAX_FILENAME_LEN-5 == '.' plus 3 letter ext plus NULL terminator
-	if (strlen(filename) > MAX_FILENAME_LEN-5)
-		Error( LOCATION, "Passed filename, '%s', is too long to support an extension!!\n\nMaximum length, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-5 );
+	// an ANI needs about 5 extra characters to have the "[###]" frame designator
+	// an EFF needs 5 extra characters for each frame filename too, which just happens to be the same length as the frame designator needed otherwise
+	// MAX_FILENAME_LEN-10 == 5 character frame designator plus '.' plus 3 letter ext plus NULL terminator
+	if (strlen(filename) > MAX_FILENAME_LEN-10)
+		Error( LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-10 );
 
 	// used later if EFF type
 	strcpy( clean_name, filename );
