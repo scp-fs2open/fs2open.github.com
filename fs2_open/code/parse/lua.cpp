@@ -123,8 +123,8 @@ void lua_stackdump(lua_State *L, char *stackdump)
 	double d;
 	int b;
 	char *s;
-	void *v;
-	lua_State *ls;
+//	void *v;
+//	lua_State *ls;
 	for(int argnum = 1; argnum <= stacksize; argnum++)
 	{
 		int type = lua_type(L, argnum);
@@ -166,17 +166,17 @@ void lua_stackdump(lua_State *L, char *stackdump)
 				strcat(stackdump, buf);
 				break;
 			case LUA_TTHREAD:
-				ls = lua_tothread(L, argnum);
-				sprintf(buf, "Thread [%d]", ls);
+				//ls = lua_tothread(L, argnum);
+				sprintf(buf, "Thread");
 				strcat(stackdump, buf);
 				break;
 			case LUA_TLIGHTUSERDATA:
-				v = lua_touserdata(L, argnum);
-				sprintf(buf, "Light userdata [%d]", v);
+				//v = lua_touserdata(L, argnum);
+				sprintf(buf, "Light userdata");
 				strcat(stackdump, buf);
 				break;
 			default:
-				sprintf(buf, "<UNKNOWN>: %s (%d) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
+				sprintf(buf, "<UNKNOWN>: %s (%f) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
 				strcat(stackdump, buf);
 				break;
 		}
@@ -449,7 +449,7 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 	return nargs;
 }
 
-LUA_API lua_friendly_error(lua_State *L)
+int lua_friendly_error(lua_State *L)
 {
 	LuaError(L);
 
@@ -459,7 +459,7 @@ LUA_API lua_friendly_error(lua_State *L)
 }
 
 //WMC - Used to automatically use an object's __tostring function to concatenate
-LUA_API lua_concat_handler(lua_State *L)
+int lua_concat_handler(lua_State *L)
 {
 	const char *s = NULL;
 	int objpos = 2;
@@ -524,7 +524,7 @@ LUA_API lua_concat_handler(lua_State *L)
 //Depends on one upvalue, a boolean.
 //false => __index
 //true => __newindex
-LUA_API lua_index_handler(lua_State *L)
+int lua_index_handler(lua_State *L)
 {
 	//WMC - We might need this. It's easier to push it now and deal with it later
 	lua_pushcfunction(L, lua_friendly_error);
@@ -680,7 +680,7 @@ LUA_INDEXER(l_Vector, "Vector component")
 	return lua_set_args(L, "f", v3->a1d[idx]);
 }
 
-LUA_FUNC(__add, l_Vector, NULL, NULL, "Adds vector object")
+LUA_FUNC(__add, l_Vector, "{Number, Vector}", "Vector", "Adds vector by another vector, or adds all axes by value")
 {
 	vec3d v3;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
@@ -706,7 +706,7 @@ LUA_FUNC(__add, l_Vector, NULL, NULL, "Adds vector object")
 	return lua_set_args(L, "o", l_Vector.Set(v3));
 }
 
-LUA_FUNC(__sub, l_Vector, NULL, NULL, "Subtracts vector object")
+LUA_FUNC(__sub, l_Vector, "{Number, Vector}", "Vector", "Subtracts vector from another vector, or subtracts all axes by value")
 {
 	vec3d v3;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
@@ -733,7 +733,7 @@ LUA_FUNC(__sub, l_Vector, NULL, NULL, "Subtracts vector object")
 	return lua_set_args(L, "o", l_Vector.Set(v3));
 }
 
-LUA_FUNC(__mult, l_Vector, NULL, NULL, "Scales vector object")
+LUA_FUNC(__mult, l_Vector, "Number", "Vector", "Scales vector object (Multiplies all axes by number)")
 {
 	vec3d v3;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
@@ -749,7 +749,7 @@ LUA_FUNC(__mult, l_Vector, NULL, NULL, "Scales vector object")
 	return lua_set_args(L, "o", l_Vector.Set(v3));
 }
 
-LUA_FUNC(__div, l_Vector, NULL, NULL, "Scales vector object")
+LUA_FUNC(__div, l_Vector, "Number", "Vector", "Scales vector object (Divide all axes by number)")
 {
 	vec3d v3;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
@@ -766,7 +766,7 @@ LUA_FUNC(__div, l_Vector, NULL, NULL, "Scales vector object")
 }
 
 
-LUA_FUNC(__tostring, l_Vector, NULL, NULL, "Converts a vector to string with format \"(x,y,z)\"")
+LUA_FUNC(__tostring, l_Vector, NULL, "String", "Converts a vector to string with format \"(x,y,z)\"")
 {
 	vec3d v3;
 	if(!lua_get_args(L, "o", l_Vector.Get(&v3)))
@@ -787,7 +787,7 @@ LUA_FUNC(getDotProduct, l_Vector, "vector argument", "Dot product (number)", "Re
 	return lua_set_args(L, "f", vm_vec_dotprod(v3a, v3b));
 }
 
-LUA_FUNC(getCrossProduct, l_Vector, "vector argument", "Dot product (number)", "Returns cross product of vector object with vector argument")
+LUA_FUNC(getCrossProduct, l_Vector, "vector argument", "Cross product (number)", "Returns cross product of vector object with vector argument")
 {
 	vec3d *v3a, *v3b;
 	if(!lua_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b)))
