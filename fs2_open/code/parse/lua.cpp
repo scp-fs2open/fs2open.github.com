@@ -514,6 +514,7 @@ int lua_concat_handler(lua_State *L)
 
 	lua_pushstring(L, buf);
 	delete[] buf;
+
 	return 1;
 }
 
@@ -648,6 +649,22 @@ int lua_index_handler(lua_State *L)
 //*************************Begin non-lowlevel stuff*************************
 //If you are a coder who wants to add functionality to Lua, you want to be
 //below this point.
+
+//**********CLASS: orientation matrix
+//WMC - Due to the exorbitant times required to store matrix data,
+//I initially store the matrix in this struct.
+#define MH_FINE					0
+#define MH_MATRIX_OUTOFDATE		1
+#define MH_ANGLES_OUTOFDATE		2
+struct matrix_h {
+	int status;
+	matrix mtx;
+	angles ang;
+
+	matrix_h(matrix *in){mtx = *in; status = MH_ANGLES_OUTOFDATE;}
+	matrix_h(angles *in){ang = *in; status = MH_MATRIX_OUTOFDATE;}
+};
+lua_obj<matrix_h> l_Matrix("orientation", "Orientation matrix");
 
 //**********CLASS: vector
 lua_obj<vec3d> l_Vector("vector", "Vector");
@@ -2401,6 +2418,14 @@ LUA_FUNC(loadMission, l_Mission, "Mission name", "True if mission was loaded, fa
 	Game_mode |= GM_IN_MISSION;
 
 	return LUA_RETURN_TRUE;
+}
+
+LUA_FUNC(unloadMission, l_Mission, NULL, NULL, "Unloads a loaded mission")
+{
+	game_level_close();
+	Game_mode &= ~GM_IN_MISSION;
+
+	return LUA_RETURN_NIL;
 }
 
 LUA_FUNC(simulateFrame, l_Mission, NULL, NULL, "Simulates mission frame")
