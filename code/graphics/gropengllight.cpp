@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.23 $
- * $Date: 2006-01-19 05:40:19 $
- * $Author: wmcoolmon $
+ * $Revision: 1.24 $
+ * $Date: 2006-01-20 17:15:16 $
+ * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/01/19 05:40:19  wmcoolmon
+ * Possible overflow check
+ *
  * Revision 1.22  2006/01/14 19:25:55  taylor
  * minor OGL lighting fix
  *
@@ -421,6 +424,9 @@ void opengl_default_light_settings(int ambient = 1, int emission = 1, int specul
 
 void gr_opengl_set_lighting(bool set, bool state)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	lighting_is_enabled = set;
 
 	opengl_default_light_settings();

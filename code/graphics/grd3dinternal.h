@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.50 $
- * $Date: 2005-12-29 00:52:57 $
- * $Author: phreak $
+ * $Revision: 2.51 $
+ * $Date: 2006-01-20 17:15:16 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2005/12/29 00:52:57  phreak
+ * changed around aabitmap calls to accept a "mirror" parameter.  defaults to false, and is only true for mirrored briefing icons.
+ * If the mirror param is true, then the picture is mirrored about the y-axis so left becomes right and vice versa.
+ *
  * Revision 2.49  2005/12/06 02:53:02  taylor
  * clean up some D3D debug messages to better match new OGL messages (for easier debugging)
  * remove D3D_32bit variable since it's basically useless and the same thing can be done another way
@@ -630,6 +634,7 @@ void gr_d3d_get_color( int * r, int * g, int * b );
 void gr_d3d_set_color_fast(color *dst);
 void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx=-1, int sy=-1 );
 void gr_d3d_bitmap(int x, int y);
+void gr_d3d_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize);
 void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize, bool mirror);
 void gr_d3d_aabitmap(int x, int y, bool resize, bool mirror);
 //void gr_d3d_rect(int x,int y,int w,int h,bool resize);

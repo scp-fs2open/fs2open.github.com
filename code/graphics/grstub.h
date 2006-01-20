@@ -2,8 +2,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.22 $
- * $Date: 2006-01-18 16:14:04 $
+ * $Revision: 2.23 $
+ * $Date: 2006-01-20 17:15:16 $
  * $Author: taylor $
  *
  * $NoKeywords: $
@@ -35,7 +35,8 @@ void gr_stub_create_shader(shader * shade, float r, float g, float b, float c ) 
 void gr_stub_rect_internal(int x, int y, int w, int h, int r, int g, int b, int a) {}
 void gr_stub_rect(int x,int y,int w,int h,bool resize) {}
 //void gr_stub_shade(int x,int y,int w,int h) {}
-void gr_stub_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy) {}
+void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize) {}
+void gr_stub_aabitmap_ex_internal(int x,int y,int w,int h,int sx,int sy,bool resize,bool mirror) {}
 void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize,bool mirror) {}
 void gr_stub_aabitmap(int x, int y,bool resize, bool mirror) {}
 void gr_stub_string( int sx, int sy, char *s, bool resize = false) {}
@@ -150,6 +151,7 @@ void gr_stub_init()
 	gr_screen.gf_create_shader = gr_stub_create_shader;
 	gr_screen.gf_set_shader = gr_stub_set_shader;
 	gr_screen.gf_clear = gr_stub_clear;
+	gr_screen.gf_bitmap_ex = gr_stub_bitmap_ex;
 	gr_screen.gf_aabitmap = gr_stub_aabitmap;
 	gr_screen.gf_aabitmap_ex = gr_stub_aabitmap_ex;
 	

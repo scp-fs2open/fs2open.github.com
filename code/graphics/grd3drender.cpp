@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.81 $
- * $Date: 2005-12-29 07:58:02 $
+ * $Revision: 2.82 $
+ * $Date: 2006-01-20 17:15:16 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2005/12/29 07:58:02  taylor
+ * add <gamedir>/screenshots support and save screenshot images in TGA rather than BMP format
+ *
  * Revision 2.80  2005/12/29 00:52:57  phreak
  * changed around aabitmap calls to accept a "mirror" parameter.  defaults to false, and is only true for mirrored briefing icons.
  * If the mirror param is true, then the picture is mirrored about the y-axis so left becomes right and vice versa.
@@ -2755,6 +2758,223 @@ void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, fl
 	gr_screen.current_bitmap = bitmap_num;
 	gr_screen.current_bitmap_sx = sx;
 	gr_screen.current_bitmap_sy = sy;
+}
+
+/**
+ * @param int x
+ * @param int y
+ * @param int w
+ * @param int h
+ * @param int sx
+ * @param int sy
+ *
+ * @return void
+ */
+void d3d_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize)
+{
+	if ( w < 1 ) return;
+	if ( h < 1 ) return;
+
+	if ( !gr_screen.current_color.is_alphacolor )	return;
+
+	float u_scale, v_scale;
+
+	gr_d3d_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+
+	if ( !gr_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_INTERFACE, &u_scale, &v_scale ) )	{
+		// Couldn't set texture
+		return;
+	}
+
+	D3DVERTEX2D *src_v;
+	D3DVERTEX2D d3d_verts[4];
+
+	float u0, u1, v0, v1;
+	float x1, x2, y1, y2;
+	int bw, bh, do_resize;
+
+	if ( (gr_screen.custom_size != -1) && (resize || (gr_screen.rendering_to_texture != -1)) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
+
+	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
+
+	float fbw = i2fl(bw);
+	float fbh = i2fl(bh);
+
+	// Rendition 
+	if(GlobalD3DVars::D3D_Antialiasing) {
+		u0 = u_scale*(i2fl(sx)-0.5f) / fbw;
+		v0 = v_scale*(i2fl(sy)+0.05f) / fbh;
+		u1 = u_scale*(i2fl(sx+w)-0.5f) / fbw;
+		v1 = v_scale*(i2fl(sy+h)-0.5f) / fbh;
+	} else if (GlobalD3DVars::D3D_rendition_uvs )	{
+		u0 = u_scale*(i2fl(sx)+0.5f) / fbw;
+		v0 = v_scale*(i2fl(sy)+0.5f) / fbh;
+
+		u1 = u_scale*(i2fl(sx+w)+0.5f) / fbw;
+		v1 = v_scale*(i2fl(sy+h)+0.5f) / fbh;
+	} else {
+		u0 = u_scale*i2fl(sx)/ fbw;
+		v0 = v_scale*i2fl(sy)/ fbh;
+		u1 = u_scale*i2fl(sx+w)/ fbw;
+		v1 = v_scale*i2fl(sy+h)/ fbh;
+	} 
+
+	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	x2 = i2fl(x + w + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y2 = i2fl(y + h + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	
+	if ( do_resize ) {
+		gr_resize_screen_posf( &x1, &y1 );
+		gr_resize_screen_posf( &x2, &y2 );
+	}
+
+	src_v = d3d_verts;
+
+	uint color;
+
+	color = D3DCOLOR_ARGB( (gr_screen.current_color.alpha * 255), 255, 255, 255 );
+
+	src_v->sz = 0.99f;
+	src_v->rhw = 1.0f;
+	src_v->color = color;	 
+	src_v->sx = x1;
+	src_v->sy = y1;
+	src_v->tu = u0;
+	src_v->tv = v0;
+	src_v++;
+
+	src_v->sz = 0.99f;
+	src_v->rhw = 1.0f;
+	src_v->color = color;	 
+	src_v->sx = x2;
+	src_v->sy = y1;
+	src_v->tu = u1;
+	src_v->tv = v0;
+	src_v++;
+
+	src_v->sz = 0.99f;
+	src_v->rhw = 1.0f;
+	src_v->color = color;	 
+	src_v->sx = x2;
+	src_v->sy = y2;
+	src_v->tu = u1;
+	src_v->tv = v1;
+	src_v++;
+
+	src_v->sz = 0.99f;
+	src_v->rhw = 1.0f;
+	src_v->color = color;	 
+	src_v->sx = x1;
+	src_v->sy = y2;
+	src_v->tu = u0;
+	src_v->tv = v1;
+
+	d3d_set_initial_render_state();
+
+	TIMERBAR_PUSH(4);
+  	d3d_DrawPrimitive(D3DVT_VERTEX2D, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+	TIMERBAR_POP();
+}			
+ 
+/**
+ * @param int x
+ * @param int y
+ * @param int w
+ * @param int h
+ * @param int sx
+ * @param int sy
+ *
+ * @return void
+ */
+void gr_d3d_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize)
+{
+	int reclip;
+	#ifndef NDEBUG
+	int count = 0;
+	#endif
+
+	int dx1=x, dx2=x+w-1;
+	int dy1=y, dy2=y+h-1;
+
+	int bw, bh;
+	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
+
+	int clip_left = ((resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+
+	do {
+		reclip = 0;
+		#ifndef NDEBUG
+			if ( count > 1 ) Int3();
+			count++;
+		#endif
+	
+		if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
+		if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
+		if ( dx1 < clip_left ) { sx += clip_left-dx1; dx1 = clip_left; }
+		if ( dy1 < clip_top ) { sy += clip_top-dy1; dy1 = clip_top; }
+		if ( dx2 > clip_right ) { dx2 = clip_right; }
+		if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
+
+		if ( sx < 0 ) {
+			dx1 -= sx;
+			sx = 0;
+			reclip = 1;
+		}
+
+		if ( sy < 0 ) {
+			dy1 -= sy;
+			sy = 0;
+			reclip = 1;
+		}
+
+		w = dx2-dx1+1;
+		h = dy2-dy1+1;
+
+		if ( sx + w > bw ) {
+			w = bw - sx;
+			dx2 = dx1 + w - 1;
+		}
+
+		if ( sy + h > bh ) {
+			h = bh - sy;
+			dy2 = dy1 + h - 1;
+		}
+
+		if ( w < 1 ) return;		// clipped away!
+		if ( h < 1 ) return;		// clipped away!
+
+	} while (reclip);
+
+	// Make sure clipping algorithm works
+	#ifndef NDEBUG
+		Assert( w > 0 );
+		Assert( h > 0 );
+		Assert( w == (dx2-dx1+1) );
+		Assert( h == (dy2-dy1+1) );
+		Assert( sx >= 0 );
+		Assert( sy >= 0 );
+		Assert( sx+w <= bw );
+		Assert( sy+h <= bh );
+		Assert( dx2 >= dx1 );
+		Assert( dy2 >= dy1 );
+		Assert( (dx1 >= clip_left ) && (dx1 <= clip_right) );
+		Assert( (dx2 >= clip_left ) && (dx2 <= clip_right) );
+		Assert( (dy1 >= clip_top ) && (dy1 <= clip_bottom) );
+		Assert( (dy2 >= clip_top ) && (dy2 <= clip_bottom) );
+	#endif
+
+	d3d_set_initial_render_state();
+
+	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
+	d3d_bitmap_ex_internal(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy,resize);
 }
 
 /**
