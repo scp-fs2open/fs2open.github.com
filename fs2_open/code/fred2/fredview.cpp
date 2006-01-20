@@ -9,8 +9,8 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-20 07:50:25 $
  * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,6 +19,10 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.30  2006/01/16 00:34:34  Goober5000
  * final (I hope) IFF fixage involving the FRED dialogs :p
  * --Goober5000
@@ -5089,8 +5093,6 @@ void CFREDView::OnDestroy()
 
 int CFREDView::OnCreate(LPCREATESTRUCT lpCreateStruct) 
 {
-	int i;
-
 	if (CView::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	
