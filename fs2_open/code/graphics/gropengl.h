@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.14 $
- * $Date: 2005-12-16 06:48:28 $
+ * $Revision: 2.15 $
+ * $Date: 2006-01-20 17:15:16 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/12/16 06:48:28  taylor
+ * "House Keeping!!"
+ *   - minor cleanup of things that have bothered me at one time or another
+ *   - slight speedup from state switching
+ *   - slightly better specmap handling, fixes a couple of (not frequent) strange and sorta random issues
+ *   - make sure to only disable HTL arb stuff when in HTL mode
+ *   - handle any extra lighting pass before spec pass so the light can be applied properly
+ *
  * Revision 2.13  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -153,8 +161,8 @@ void gr_opengl_init(int reinit=0);
 void gr_opengl_cleanup(int minimize=1);
 void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler = 0);
 void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type zt);
-void gr_opengl_bitmap(int x, int y);
-void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy);
+//void gr_opengl_bitmap(int x, int y);
+void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize);
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0 );
 void opengl_reset_spec_mapping();
 int opengl_check_for_errors();

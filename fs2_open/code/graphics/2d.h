@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.73 $
- * $Date: 2006-01-19 16:00:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.74 $
+ * $Date: 2006-01-20 17:15:16 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/01/19 16:00:04  wmcoolmon
+ * Lua debugging stuff; gr_bitmap_ex stuff for taylor
+ *
  * Revision 2.72  2006/01/19 03:20:49  phreak
  * gr_render_buffer shouldn't be returning values if it's supposed to return void
  *
@@ -945,8 +948,8 @@ typedef struct screen {
 	// clears entire clipping region to current color
 	void (*gf_clear)();
 
-	// void (*gf_bitmap)(int x,int y);
-	void (*gf_bitmap_ex)(int x,int y,int w,int h,int sx,int sy);
+	// void (*gf_bitmap)(int x, int y, bool resize);
+	void (*gf_bitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize);
 
 	void (*gf_aabitmap)(int x, int y, bool resize, bool mirror);
 	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror);
@@ -1261,10 +1264,10 @@ __inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, bool re
 {
 	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize,mirror);
 }
-//#define gr_aabitmap_ex		GR_CALL(gr_screen.gf_aabitmap_ex)
-__inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy)
+//#define gr_bitmap_ex		GR_CALL(gr_screen.gf_bitmap_ex)
+__inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize = true)
 {
-	(*gr_screen.gf_bitmap_ex)(x,y,w,h,sx,sy);
+	(*gr_screen.gf_bitmap_ex)(x, y, w, h, sx, sy, resize);
 }
 
 void gr_rect(int x, int y, int w, int h, bool resize = true);

@@ -9,6 +9,10 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/12/06 02:53:02  taylor
+ * clean up some D3D debug messages to better match new OGL messages (for easier debugging)
+ * remove D3D_32bit variable since it's basically useless and the same thing can be done another way
+ *
  * Revision 2.52  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -776,6 +780,7 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_create_shader = gr_d3d_create_shader;
 	gr_screen.gf_set_shader = gr_d3d_set_shader;
 	gr_screen.gf_clear = gr_d3d_clear;
+	gr_screen.gf_bitmap_ex = gr_d3d_bitmap_ex;
 	gr_screen.gf_aabitmap = gr_d3d_aabitmap;
 	gr_screen.gf_aabitmap_ex = gr_d3d_aabitmap_ex;
 

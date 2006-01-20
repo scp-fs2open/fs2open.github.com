@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.156 $
- * $Date: 2006-01-19 16:00:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.157 $
+ * $Date: 2006-01-20 17:15:16 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.156  2006/01/19 16:00:04  wmcoolmon
+ * Lua debugging stuff; gr_bitmap_ex stuff for taylor
+ *
  * Revision 2.155  2006/01/02 07:25:11  taylor
  * don't specify a read buffer, something with this is screwing up ATI cards, a debug string should satisfy a hunch
  * ifdef out the bumpmap stuff, it's very wrong anyway :)
@@ -1840,7 +1843,7 @@ void gr_opengl_aabitmap(int x, int y, bool resize, bool mirror)
 	if ( sy >= h ) return;
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-	gr_aabitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize, mirror);
+	gr_opengl_aabitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize, mirror);
 }
 
 
@@ -3513,91 +3516,71 @@ void opengl_zbias(int bias)
 	}
 }
        
-void opengl_bitmap_internal(int x,int y,int w,int h,int sx,int sy)
+void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize)
 {
+	if ( (w < 1) || (h < 1) )
+		return;
 
-	//int i,j,k;
-	GLuint tex=0;			//gl texture number
+	float u_scale, v_scale;
+	float u0, u1, v0, v1;
+	float x1, x2, y1, y2;
+	int bw, bh, do_resize;
 
-	bitmap * bmp;
-	int size;
-
-
-	int htemp=(int)pow((double)2,ceil(log10((double)h)/log10((double)2)));
-	int wtemp=(int)pow((double)2,ceil(log10((double)w)/log10((double)2)));
-	//opengl_set_state(TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_NONE, ZBUFFER_TYPE_NONE);
-
-	glGenTextures(1, &tex);
-
-	Assert(tex !=0);
-  	//Assert(opengl_screen != NULL);
-	//Assert(opengl_bmp_buffer != NULL);
-
-	// mharris mod - not sure if this is right...
-	bmp = bm_lock( gr_screen.current_bitmap, 16, 0 );
-
-	if (bmp == NULL) {
+	if ( !gr_opengl_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_INTERFACE, &u_scale, &v_scale ) )	{
+		// Couldn't set texture
 		return;
 	}
 
-	size=w*h*4;
+	opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 
-	/*mprintf(("opengl_bitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s -- temp (%d,%d)\n", 
-  				x, y, w, h, 
- 				bm_get_filename(gr_screen.current_bitmap),wtemp,htemp));*/
 
-	const ushort * sptr = (const ushort*)bmp->data;
-
-	glColor3ub(255,255,255);
-
-	glBindTexture(GL_TEXTURE_2D,tex);
-	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	if (bmp->bpp == 32) {
-		glTexImage2D(GL_TEXTURE_2D, 0, 4, wtemp, htemp, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-		glTexSubImage2D(GL_TEXTURE_2D, 0,0,0,w,h, GL_BGRA,GL_UNSIGNED_INT_8_8_8_8_REV, sptr);
+	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
+		do_resize = 1;
 	} else {
-		glTexImage2D(GL_TEXTURE_2D, 0, 4, wtemp, htemp, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
-		glTexSubImage2D(GL_TEXTURE_2D, 0,0,0,w,h, GL_BGRA,GL_UNSIGNED_SHORT_1_5_5_5_REV, sptr);
+		do_resize = 0;
 	}
-	
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,0);
-		glVertex2i(x,y);
 
-		glTexCoord2f(0,i2fl(h)/i2fl(htemp));
-		glVertex2i(x,y+h);
+	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
 
-		glTexCoord2f(i2fl(w)/i2fl(wtemp),i2fl(h)/i2fl(htemp));
-		glVertex2i(x+w,y+h);
+	u0 = u_scale*i2fl(sx)/i2fl(bw);
+	v0 = v_scale*i2fl(sy)/i2fl(bh);
 
-		glTexCoord2f(i2fl(w)/i2fl(wtemp),0);
-		glVertex2i(x+w,y);
-	glEnd();
+	u1 = u_scale*i2fl(sx+w)/i2fl(bw);
+	v1 = v_scale*i2fl(sy+h)/i2fl(bh);
 
-	bm_unlock(gr_screen.current_bitmap);
+	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	x2 = i2fl(x + w + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+	y2 = i2fl(y + h + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
 
-	glDeleteTextures(1, &tex);
+	if ( do_resize ) {
+		gr_resize_screen_posf( &x1, &y1 );
+		gr_resize_screen_posf( &x2, &y2 );
+		u1 -= GL_uv_resize_offset_u;
+		v1 -= GL_uv_resize_offset_v;
+	}
 
-//	// set the raster pos
-/*	int gl_y_origin = y+h;
+	glColor4ub( 255, 255, 255, GLubyte(gr_screen.current_alpha * 255.0f) );
+	glSecondaryColor3ubvEXT(GL_zero_3ub);
 
-	glRasterPos2i(gr_screen.offset_x + x, gl_y_origin);
+	glBegin (GL_QUADS);
+	  glTexCoord2f (u0, v1);
+	  glVertex3f (x1, y2, -0.99f);
 
-	// put the bitmap into the GL framebuffer
-	// BAD BAD BAD - change this asap
-	glDrawPixels(w, h,					// width, height
-					 GL_RGBA,			// format
-					 GL_UNSIGNED_BYTE,	// type
-					 data);
-	*/
+	  glTexCoord2f (u1, v1);
+	  glVertex3f (x2, y2, -0.99f);
+
+	  glTexCoord2f (u1, v0);
+	  glVertex3f (x2, y1, -0.99f);
+
+	  glTexCoord2f (u0, v0);
+	  glVertex3f (x1, y1, -0.99f);
+	glEnd ();
 }
 
 
 //these are penguins bitmap functions
-void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
+void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize)
 {
 	int reclip;
 	#ifndef NDEBUG
@@ -3607,8 +3590,20 @@ void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
 	int dx1=x, dx2=x+w-1;
 	int dy1=y, dy2=y+h-1;
 
-	int bw, bh;
+	int bw, bh, do_resize;
+
 	bm_get_info( gr_screen.current_bitmap, &bw, &bh, NULL );
+
+	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
+
+	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
 	do {
 		reclip = 0;
@@ -3617,12 +3612,12 @@ void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
 			count++;
 		#endif
 	
-		if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
-		if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
-		if ( dx1 < gr_screen.clip_left ) { sx += gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
-		if ( dy1 < gr_screen.clip_top ) { sy += gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
-		if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
-		if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
+		if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
+		if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
+		if ( dx1 < clip_left ) { sx += clip_left-dx1; dx1 = clip_left; }
+		if ( dy1 < clip_top ) { sy += clip_top-dx1; dy1 = clip_top; }
+		if ( dx2 > clip_right ) { dx2 = clip_right; }
+		if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
 
 		if ( sx < 0 ) {
 			dx1 -= sx;
@@ -3666,31 +3661,43 @@ void gr_opengl_bitmap_ex(int x,int y,int w,int h,int sx,int sy)
 		Assert( sy+h <= bh );
 		Assert( dx2 >= dx1 );
 		Assert( dy2 >= dy1 );
-		Assert( (dx1 >= gr_screen.clip_left ) && (dx1 <= gr_screen.clip_right) );
-		Assert( (dx2 >= gr_screen.clip_left ) && (dx2 <= gr_screen.clip_right) );
-		Assert( (dy1 >= gr_screen.clip_top ) && (dy1 <= gr_screen.clip_bottom) );
-		Assert( (dy2 >= gr_screen.clip_top ) && (dy2 <= gr_screen.clip_bottom) );
+		Assert( (dx1 >= clip_left ) && (dx1 <= clip_right) );
+		Assert( (dx2 >= clip_left ) && (dx2 <= clip_right) );
+		Assert( (dy1 >= clip_top ) && (dy1 <= clip_bottom) );
+		Assert( (dy2 >= clip_top ) && (dy2 <= clip_bottom) );
 	#endif
 
-	opengl_bitmap_internal(x,y,w,h,sx,sy);
-
+	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
+	opengl_bitmap_ex_internal(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize);
 }
 
-void gr_opengl_bitmap(int x, int y)
+/*void gr_opengl_bitmap(int x, int y, bool resize)
 {
-	int w, h;
+	int w, h, do_resize;
 
 	bm_get_info( gr_screen.current_bitmap, &w, &h, NULL );
+
+	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
+
 	int dx1=x, dx2=x+w-1;
 	int dy1=y, dy2=y+h-1;
 	int sx=0, sy=0;
 
-	if ((dx1 > gr_screen.clip_right ) || (dx2 < gr_screen.clip_left)) return;
-	if ((dy1 > gr_screen.clip_bottom ) || (dy2 < gr_screen.clip_top)) return;
-	if ( dx1 < gr_screen.clip_left ) { sx = gr_screen.clip_left-dx1; dx1 = gr_screen.clip_left; }
-	if ( dy1 < gr_screen.clip_top ) { sy = gr_screen.clip_top-dy1; dy1 = gr_screen.clip_top; }
-	if ( dx2 > gr_screen.clip_right )	{ dx2 = gr_screen.clip_right; }
-	if ( dy2 > gr_screen.clip_bottom )	{ dy2 = gr_screen.clip_bottom; }
+	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+
+	if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
+	if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
+	if ( dx1 < clip_left ) { sx = clip_left-dx1; dx1 = clip_left; }
+	if ( dy1 < clip_top ) { sy = clip_top-dy1; dy1 = clip_top; }
+	if ( dx2 > clip_right )	{ dx2 = clip_right; }
+	if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
 
 	if ( sx < 0 ) return;
 	if ( sy < 0 ) return;
@@ -3698,9 +3705,8 @@ void gr_opengl_bitmap(int x, int y)
 	if ( sy >= h ) return;
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
-
-	gr_opengl_bitmap_ex(dx1,dy1,dx2-dx1+1,dy2-dy1+1,sx,sy);
-}
+	gr_opengl_bitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize);
+}*/
 
 void gr_opengl_push_texture_matrix(int unit)
 {
@@ -4350,9 +4356,6 @@ void gr_opengl_init(int reinit)
 	if ( !Cmdline_nohtl && !Cmdline_novbo && opengl_extension_is_enabled(GL_ARB_VBO_BIND_BUFFER) )
 		VBO_ENABLED = 1;
 	
-//	glTexParameteri(GL_TEXTURE_2D,GL_GENERATE_MIPMAP_SGIS,GL_TRUE);
-//	glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
-
 	// setup the best fog function found
 	// start with NV Radial Fog (GeForces only)  -- needs t&l, will have to wait
 	/*if ( opengl_extension_is_enabled(GL_NV_RADIAL_FOG) && !Fred_running ) {
