@@ -841,6 +841,10 @@ SOURCE=..\..\code\hud\hudparse.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\hud\hudparse.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Hud\HUDreticle.cpp
 # End Source File
 # Begin Source File
