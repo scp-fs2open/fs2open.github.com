@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.77 $
- * $Date: 2006-01-20 23:47:51 $
+ * $Revision: 2.78 $
+ * $Date: 2006-01-21 01:56:58 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2006/01/20 23:47:51  taylor
+ * fix anim filename length check, they need at least 5 extra characters for the frame number on the filenames
+ *
  * Revision 2.76  2005/12/28 22:04:00  taylor
  * allow for 24-bit user created bitmap images
  * make sure we have proper memory size requirements for non-DDS EFFs
@@ -1637,11 +1640,10 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	}
 
 	// safety catch for strcat...
-	// an ANI needs about 5 extra characters to have the "[###]" frame designator
-	// an EFF needs 5 extra characters for each frame filename too, which just happens to be the same length as the frame designator needed otherwise
-	// MAX_FILENAME_LEN-10 == 5 character frame designator plus '.' plus 3 letter ext plus NULL terminator
-	if (strlen(filename) > MAX_FILENAME_LEN-10)
-		Error( LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-10 );
+	// MAX_FILENAME_LEN-5 == '.' plus 3 letter ext plus NULL terminator
+	if (strlen(filename) > MAX_FILENAME_LEN-5) {
+		Error( LOCATION, "Passed filename, '%s', is too long to support an extension!!\n\nMaximum length, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-5 );
+	}
 
 	// used later if EFF type
 	strcpy( clean_name, filename );
@@ -1681,6 +1683,15 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		if(found == false) {
 			return -1;
 		}
+	}
+
+	// If we found an animation then there is an extra 5 char size limit to adhere to. We don't do this check earlier since it's only needed if we found an anim
+	// an ANI needs about 5 extra characters to have the "[###]" frame designator
+	// an EFF needs 5 extra characters for each frame filename too, which just happens to be the same length as the frame designator needed otherwise
+	// MAX_FILENAME_LEN-10 == 5 character frame designator plus '.' plus 3 letter ext plus NULL terminator
+	// we only check for -5 here since the filename should already have the extension on it, and it must have passed the previous check
+	if (strlen(filename) > MAX_FILENAME_LEN-5) {
+		Error( LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-10 );
 	}
 
 	// it's an effect file, any readable image type with eff being txt
