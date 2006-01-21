@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.220 $
- * $Date: 2006-01-20 06:26:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.221 $
+ * $Date: 2006-01-21 02:22:04 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.220  2006/01/20 06:26:41  Goober5000
+ * sorted the #include listing again
+ * --Goober5000
+ *
  * Revision 2.219  2006/01/19 22:25:01  wmcoolmon
  * Faster object handles
  *
@@ -7284,6 +7288,9 @@ void game_leave_state( int old_state, int new_state )
 		return;
 	}
 
+	//WMC - Clear scripting bitmaps
+	Script_system.UnloadImages();
+
 	switch (old_state) {
 		case GS_STATE_BRIEFING:
 			brief_stop_voices();
@@ -8442,10 +8449,6 @@ void game_do_state(int state)
 			break;
 
    } // end switch(gs_current_state)
-
-   //WMC - Unfortunately this will not flip properly...
-   if(!GS_state_hooks[state].IsOverride())
-		Script_system.RunBytecode(GS_state_hooks[state]);
 
 //   python_do_frame();
 }

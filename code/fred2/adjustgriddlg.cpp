@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/AdjustGridDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-21 02:22:04 $
+ * $Author: wmcoolmon $
  *
  * Editor to allow one to change Fred's grid orientation and position.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.3  2002/08/15 04:35:44  penguin
  * Changes to build with fs2_open code.lib
  *
@@ -115,9 +119,9 @@ BOOL adjust_grid_dlg::OnInitDialog()
 		GetDlgItem(IDC_EDIT_Z)->EnableWindow(FALSE);
 	}
 
-	m_spinx.SetRange(99999, -99999);
-	m_spiny.SetRange(99999, -99999);
-	m_spinz.SetRange(99999, -99999);
+	m_spinx.SetRange((short)99999, (short)-99999);
+	m_spiny.SetRange((short)99999, (short)-99999);
+	m_spinz.SetRange((short)99999, (short)-99999);
 	return TRUE;
 }
 

@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.33 $
- * $Date: 2005-12-06 03:05:53 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2006-01-21 02:22:04 $
+ * $Author: wmcoolmon $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/12/06 03:05:53  taylor
+ * add base support for 8-bit DDS images
+ * clean up some DDS error messages and other minor bug/comment fixes
+ * move bitmap stuff from pstypes.h, it makes more sense here anyway
+ * start of 8-bit palette conversion, needs work but is here for WMCoolmon to look at and play with
+ *
  * Revision 2.32  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -521,7 +527,8 @@ extern uint bm_get_signature( int bitmapnum);
 extern void bm_unlock( int bitmapnum );
 
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
-extern void bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL );
+//WMC - Returns -1 on failure, handle or first frame handle on success.
+int bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL );
 
 // get filename
 extern void bm_get_filename(int bitmapnum, char *filename);	 
