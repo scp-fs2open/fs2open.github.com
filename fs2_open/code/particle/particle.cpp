@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-09-24 02:43:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2006-01-21 09:36:58 $
+ * $Author: wmcoolmon $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/09/24 02:43:33  Goober5000
+ * whoops
+ * --Goober5000
+ *
  * Revision 2.14  2005/06/19 09:00:09  taylor
  * minor sanity checking for geometry_batcher
  * make particle batchers allocate dynamically
@@ -488,7 +492,7 @@ KillAnother:
 	}
 }
 
-void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data )
+void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data, float tracer_length, object *objp, bool reverse )
 {
 	particle_info pinfo;
 
@@ -502,9 +506,17 @@ void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int typ
 
 	// setup new data
 	pinfo.tracer_length = -1.0f;
-	pinfo.attached_objnum = -1;
-	pinfo.attached_sig = -1;
-	pinfo.reverse = 0;
+	if(objp == NULL)
+	{
+		pinfo.attached_objnum = -1;
+		pinfo.attached_sig = -1;
+	}
+	else
+	{
+		pinfo.attached_objnum = OBJ_INDEX(objp);
+		pinfo.attached_sig = objp->signature;
+	}
+	pinfo.reverse = reverse? 1 : 0;
 
 	// lower level function
 	particle_create(&pinfo);

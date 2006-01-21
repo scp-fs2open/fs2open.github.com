@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.299 $
- * $Date: 2006-01-17 03:45:32 $
- * $Author: phreak $
+ * $Revision: 2.300 $
+ * $Date: 2006-01-21 09:36:58 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.299  2006/01/17 03:45:32  phreak
+ * Rearranged the rearming code so it doesn't potentially take 2 minutes to reload a single bomb.
+ *
  * Revision 2.298  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -5698,7 +5701,7 @@ void ship_render(object * obj)
 		// small ships
 		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (si->flags & SIF_SMALL_SHIP)){			
 			// force detail levels
-			float fog_val = neb2_get_fog_intensity(obj);
+ 			float fog_val = neb2_get_fog_intensity(obj);
 			if(fog_val >= 0.6f){
 				model_set_detail_level(2);
 				model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj), -1, shipp->replacement_textures );

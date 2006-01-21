@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:35:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2006-01-21 09:36:58 $
+ * $Author: wmcoolmon $
  *
  * Includes for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:35:34  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/06/19 09:00:09  taylor
  * minor sanity checking for geometry_batcher
  * make particle batchers allocate dynamically
@@ -156,7 +160,7 @@ typedef struct particle_info {
 
 // Creates a single particle. See the PARTICLE_?? defines for types.
 void particle_create( particle_info *pinfo );
-void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data = 0 );
+void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data=0, float tracer_length=-1.0f, struct object *objp=NULL, bool reverse=false );
 
 
 //============================================================================

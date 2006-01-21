@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.101 $
+ * $Revision: 2.102 $
  * $Author: wmcoolmon $
- * $Date: 2006-01-06 04:18:55 $
+ * $Date: 2006-01-21 09:36:58 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2006/01/06 04:18:55  wmcoolmon
+ * turret-target-order SEXPs, ship thrusters
+ *
  * Revision 2.100  2005/12/31 01:47:35  wmcoolmon
  * num-within-box
  *
@@ -994,6 +997,8 @@ struct ship_subsys;
 #define OP_CURRENT_SPEED					(0x002b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 #define	OP_IS_IFF							(0x002c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define OP_NUM_WITHIN_BOX					(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// WMCoolmon
+#define OP_SCRIPT_EVAL_NUM					(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
+#define OP_SCRIPT_EVAL_STRING				(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
