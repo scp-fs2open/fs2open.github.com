@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.54 $
- * $Date: 2006-01-17 03:48:25 $
- * $Author: phreak $
+ * $Revision: 1.55 $
+ * $Date: 2006-01-21 02:43:23 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.54  2006/01/17 03:48:25  phreak
+ * Make sure the rearm eta isn't recalcuated until the player docks again with a support ship
+ *
  * Revision 1.53  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -2273,7 +2276,12 @@ void set_accel_for_target_speed(object *objp, float tspeed)
 
 	max_speed = Ships[objp->instance].current_max_speed;
 
-	AI_ci.forward = tspeed/max_speed;
+	if (max_speed > 0.0f) {
+		AI_ci.forward = tspeed/max_speed;
+	} else {
+		AI_ci.forward = 0.0f;
+	}
+
 	aip->prev_accel = AI_ci.forward;
 
 	adjust_accel_for_docking(aip);
