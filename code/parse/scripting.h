@@ -73,6 +73,7 @@ public:
 	void RemGlobal(char *name);
 
 	//Hook handling functions
+	bool EvalString(char* string, char *format, void *rtn, char *debug_str);
 	script_hook ParseChunk(char* debug_str=NULL);
 	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
 };

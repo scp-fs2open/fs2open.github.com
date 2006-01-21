@@ -164,7 +164,7 @@ void script_state::RemGlobal(char *name)
 
 int script_state::LoadBm(char *name)
 {
-	for(int i = 0; i < ScriptImages.size(); i++)
+	for(int i = 0; i < (int)ScriptImages.size(); i++)
 	{
 		if(!stricmp(name, ScriptImages[i].fname))
 			return ScriptImages[i].handle;
@@ -184,7 +184,7 @@ int script_state::LoadBm(char *name)
 
 void script_state::UnloadImages()
 {
-	for(int i = 0; i < ScriptImages.size(); i++)
+	for(int i = 0; i < (int)ScriptImages.size(); i++)
 	{
 		bm_unload(ScriptImages[i].handle);
 	}
@@ -377,6 +377,67 @@ int script_state::OutputMeta(char *filename)
 	return 1;
 }
 
+bool script_state::EvalString(char* string, char *format, void *rtn, char *debug_str)
+{
+	char *lcp = &string[strlen(string)-1];
+	char lastchar = *lcp;
+
+	if(string[0] == '{')
+	{
+#ifdef USE_PYTHON
+		if(lastchar == '}')
+		{
+			*lcp = '\0';
+		}
+		else
+		{
+			return false;
+		}
+
+		//WMC - Whoever comes next to Python...needs to fix this.
+		Py_RunString(string, Py_file_input, PyGlb, PyLoc);
+
+		*lcp = lastchar;
+		return true;
+#else
+		return false;
+#endif
+	}
+	char *s = string;
+	if(string[0] != '[')
+	{
+		s = new char[strlen(string) + 8];
+		strcpy(s, "return ");
+		strcpy(s, string);
+	}
+	else if(lastchar != ']')
+	{
+		return false;
+	}
+	else
+	{
+		*lcp = '\0';
+	}
+
+	//WMC - Push error handling function
+	lua_pushcfunction(LuaState, lua_friendly_error);
+	//Parse string
+	luaL_loadbuffer(LuaState, s, strlen(s), "SEXP");
+	//Call function
+	if(!lua_pcall(LuaState, 0, 1, -2))
+	{
+		return false;
+	}
+
+	//Default return if no return - 0
+	lua_get_args(LuaState, format, *(script_lua_odata*)rtn);
+
+	if(lastchar == ']')
+		*lcp = lastchar;
+
+	return true;
+}
+
 script_hook script_state::ParseChunk(char* debug_str)
 {
 	static int total_parse_calls = 0;
@@ -423,12 +484,12 @@ script_hook script_state::ParseChunk(char* debug_str)
 			//luaL_loadfile(GetLuaSession(), filename);
 
 			rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+			vm_free(raw_lua);
 		}
 #endif
 		//dealloc
 		//WMC - For some reason these cause crashes
 		//vm_free(filename);
-		//vm_free(raw_lua);
 	}
 	else if(check_for_string("["))
 	{
@@ -447,7 +508,6 @@ script_hook script_state::ParseChunk(char* debug_str)
 		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 #endif
 		//free the mem
-		//WTF THIS CRASHES
 		//vm_free(raw_lua);
 	}
 	else if(check_for_string("{"))
@@ -463,22 +523,23 @@ script_hook script_state::ParseChunk(char* debug_str)
 		//Add it to the lib
 		rval.index = PyBytecodeLib.Add(PyBytecode(Py_CompileString(raw_python, debug_str, Py_file_input)));
 #endif
-		//WTF THIS CRASHES
-		//vm_free(raw_python);
+		vm_free(raw_python);
 	}
 	else
 	{
-		//Python eval
-		//Maybe remove this and force brackets, or use custom system?
+		//Assume lua
+		rval.language = SC_LUA;
 
-		//Assume python
-		rval.language = SC_PYTHON;
+		strcpy(buf, "return ");
 
 		//Stuff it
-		stuff_string(buf, F_RAW, NULL, sizeof(buf)-1);
-#ifdef USE_PYTHON
-		//Add it to the lib
-		rval.index = PyBytecodeLib.Add(PyBytecode(Py_CompileString(buf, debug_str, Py_eval_input));
+		stuff_string(buf+strlen(buf), F_RAW, NULL, sizeof(buf)-1);
+#ifdef USE_LUA
+		//Load it into a buffer & parse it
+		luaL_loadbuffer(GetLuaSession(), buf, strlen(buf), debug_str);
+
+		//Stick it in the registry
+		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 #endif
 	}
 

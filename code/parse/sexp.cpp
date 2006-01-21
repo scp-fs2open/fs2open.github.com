@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.204 $
- * $Date: 2006-01-20 04:33:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.205 $
+ * $Date: 2006-01-21 09:36:58 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.204  2006/01/20 04:33:21  Goober5000
+ * fixed a sexp help message
+ * --Goober5000
+ *
  * Revision 2.203  2006/01/19 03:17:12  phreak
  * give repair-subsystem and set-subsystem-strength a fourth optional parameter used to possibly regenerate the submodel of a given subsystem
  * sabotage-subsystem should make the subsystems explode
@@ -1186,6 +1190,8 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "network/multi_team.h"
+#include "parse/lua.h"
+#include "parse/scripting.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -1580,6 +1586,9 @@ sexp_oper Operators[] = {
 	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
 	{ "show-jumpnode",				OP_JUMP_NODE_SHOW_JUMPNODE,				1, 1, },
 	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, 1, },
+
+	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
+	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
 
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
@@ -13636,6 +13645,18 @@ void sexp_hide_jumpnode(int n)
 		jnp->show(false);
 }
 
+//WMC - This is a bit of a hack, however, it's easier than
+//coding in a whole new SCript_system function.
+int sexp_script_eval(int n, bool return_text)
+{
+	char *s = CTEXT(n);
+
+	int r = -1;
+	Script_system.EvalString(s, "|i", &r, "SEXP");
+
+	return r;
+}
+
 // high-level sexpression evaluator
 int eval_sexp(int cur_node, int referenced_node)
 {
@@ -15043,6 +15064,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_hide_jumpnode(node);
 				break;
 
+			case OP_SCRIPT_EVAL_NUM:
+				sexp_val = sexp_script_eval(node, false);
+				break;
+
+			case OP_SCRIPT_EVAL_STRING:
+				sexp_val = sexp_script_eval(node, true);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -15292,6 +15321,8 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_RELATIVE_X:
 		case OP_GET_OBJECT_RELATIVE_Y:
 		case OP_GET_OBJECT_RELATIVE_Z:
+		case OP_SCRIPT_EVAL_NUM:
+		case OP_SCRIPT_EVAL_STRING:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -16732,6 +16763,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NEBULA_TOGGLE_POOF:
 			if (argnum == 1) return OPF_BOOL;
 			else return OPF_NEBULA_POOF;
+
+		case OP_SCRIPT_EVAL_NUM:
+		case OP_SCRIPT_EVAL_STRING:
+			return OPF_STRING;
 
 		default:
 			Int3();
@@ -20001,6 +20036,18 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of nebula poof to toggle\r\n"
 		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do the opposite."
+	},
+
+	{OP_SCRIPT_EVAL_NUM, "script-eval-num\r\n"
+		"\tEvaluates script to return a number"
+		"Takes 1 argument...\r\n"
+		"\t1:\tScript\r\n"
+	},
+
+	{OP_SCRIPT_EVAL_STRING, "script-eval-string\r\n"
+		"\tEvaluates script to return a string"
+		"Takes 1 argument...\r\n"
+		"\t1:\tScript\r\n"
 	},
 
 };

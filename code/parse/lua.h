@@ -250,7 +250,7 @@ struct object_h {
 	int sig;
 
 	bool IsValid(){return objp->signature == sig;}
-	object_h(object *objp){objp=objp; sig=objp->signature;}
+	object_h(object *in){objp=in; sig=in->signature;}
 };
 
 //*************************Lua globals*************************

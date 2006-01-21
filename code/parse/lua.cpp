@@ -20,6 +20,7 @@
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
+#include "particle/particle.h"
 
 //*************************Lua funcs*************************
 int script_remove_lib(lua_State *L, char *name);
@@ -1799,53 +1800,6 @@ LUA_FUNC(getBreed, l_Object, NULL, "Object type name", "Gets object type")
 	return lua_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
-LUA_FUNC(fetchShieldStrength, l_Object, "[Shield Quadrant], [New value]", "[New] shield strength",
-	"Returns total shield strength if no quadrant is specified, or individual quadrant strength if one is specified."
-	"Valid quadrants are \"Front\", \"Back\", \"Left\", and \"Right\". Specifying a new value will set the specified quadrant to that amount. "
-	"\"None\" may be used for the new value to be divided equally between all quadrants")
-{
-	object_h *objh;
-	char *qd = NULL;
-	float nval = -1.0f;
-	if(!lua_get_args(L, "o|sf", l_Object.GetPtr(&objh), &qd, &nval))
-		return 0;
-
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
-
-	object *objp = objh->objp;
-
-	//Which quadrant?
-	int qdx=-1;
-	if(qd == NULL || !stricmp(qd, "None"))
-		qdx = -1;
-	else if(!stricmp(qd, "Top"))
-		qdx = 0;
-	else if(!stricmp(qd, "Left"))
-		qdx = 1;
-	else if(!stricmp(qd, "Right"))
-		qdx = 2;
-	else if(!stricmp(qd, "Bottom"))
-		qdx = 3;
-	else
-		return LUA_RETURN_NIL;
-
-	//Set/get all quadrants
-	if(qdx == -1) {
-		if(nval >= 0.0f)
-			set_shield_strength(objp, nval);
-
-		return lua_set_args(L, "f", get_shield_strength(objp));
-	}
-
-	//Set one quadrant?
-	if(nval >= 0.0f)
-		objp->shield_quadrant[qdx] = nval;
-
-	//Get one quadrant
-	return lua_set_args(L, "f", objp->shield_quadrant[qdx]);
-}
-
 //**********CLASS: Mounted Weapons
 struct ship_weapon_h : public object_h
 {
@@ -2130,199 +2084,7 @@ LUA_VAR(AWACSRadius, l_Subsystem, "Number", "Subsystem AWACS radius")
 
 	return lua_set_args(L, "f", sso->ss->awacs_radius);
 }
-
-//**********CLASS: Ship
-lua_obj<object_h> l_Ship("ship", "Ship object", &l_Object);
-
-LUA_FUNC(fetchName, l_Ship, "[New name]", "[New] ship name (string)", "Gets ship name")
-{
-	object_h *objh;
-	char *s = NULL;
-	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh), &s))
-		return LUA_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
-
-	ship *shipp = &Ships[objh->objp->instance];
-
-	if(s == NULL) {
-		strncpy(shipp->ship_name, s, sizeof(shipp->ship_name)-1);
-	}
-
-	return lua_set_args(L, "s", shipp->ship_name);
-}
-
-LUA_FUNC(getClass, l_Ship, NULL, "Ship class handle (shipclass)", "Gets ship class handle")
-{
-	object_h *objh;
-	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh)))
-		return LUA_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
-
-	return lua_set_args(L, "o", l_Shipclass.Set(Ships[objh->objp->instance].ship_info_index));
-}
-
-LUA_FUNC(getMountedWeapons, l_Ship, "[Subsystem name]", "mountedweapons object, or false if invalid subsystem specified", "Gets weapons mounted on a ship or subsystem")
-{
-	object_h *objh;
-	char *s=NULL;
-	if(!lua_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
-		return 0;
-
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
-
-	ship_weapon_h mw(objh->objp, NULL);
-
-	if(s == NULL)
-	{
-		mw.sw = NULL;
-		return lua_set_args(L, "o", l_MountedWeapons.Set(mw));
-	}
-
-	ship_subsys *ss = ship_get_subsys(&Ships[objh->objp->instance], s);
-	if(ss == NULL)
-		return LUA_RETURN_FALSE;
-
-	mw.sw = &ss->weapons;
-
-	return lua_set_args(L, "o", l_MountedWeapons.Set(mw));
-}
-
-LUA_FUNC(fetchAfterburnerFuel, l_Ship, "[Fuel amount]", "[New] fuel amount", "Returns ship fuel amount, or sets it if amount is specified")
-{
-	object_h *objh;
-	float fuel = -1.0f;
-	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fuel))
-		return LUA_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
-
-	ship *shipp = &Ships[objh->objp->instance];
-
-	if(fuel >= 0.0f)
-		shipp->afterburner_fuel = fuel;
-
-	return lua_set_args(L, "f", shipp->afterburner_fuel);
-}
-
-LUA_FUNC(warpIn, l_Ship, NULL, "True", "Warps ship in")
-{
-	object_h *objh;
-	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
-		return LUA_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
-
-	shipfx_warpin_start(objh->objp);
-
-	return LUA_RETURN_TRUE;
-}
-
-LUA_FUNC(warpOut, l_Ship, NULL, "True", "Warps ship out")
-{
-	object_h *objh;
-	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
-		return LUA_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
-
-	shipfx_warpout_start(objh->objp);
-
-	return LUA_RETURN_TRUE;
-}
-
-//**********HANDLE: Wing
-lua_obj<int> l_Wing("wing", "Wing handle");
-
-LUA_INDEXER(l_Wing, "Index", "Ship", "Ship via number in wing")
-{
-	int wdx;
-	int sdx;
-	object_h *ndx=NULL;
-	if(!lua_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
-		return LUA_RETURN_NIL;
-
-	if(sdx < Wings[wdx].current_count) {
-		return LUA_RETURN_NIL;
-	}
-
-	if(LUA_SETTING_VAR && ndx != NULL && ndx->IsValid()) {
-		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
-	}
-
-	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
-}
-//**********OBJECT: Player
-lua_obj<int> l_Player("player", "Player object");
-
-int player_helper(lua_State *L, int *idx)
-{
-	if(!lua_get_args(L, "o", l_Player.Get(idx)))
-		return 0;
-
-	if(*idx < 0 || *idx > Player_num)
-		return 0;
-
-	return 1;
-}
-
-LUA_FUNC(getName, l_Player, NULL, "Player name (string)", "Gets current player name")
-{
-	int idx;
-	player_helper(L, &idx);
-
-	return lua_set_args(L, "s", Players[idx].callsign);
-}
-
-LUA_FUNC(getImage, l_Player, NULL, "Player image (string)", "Gets current player image")
-{
-	int idx;
-	player_helper(L, &idx);
-
-	return lua_set_args(L, "s", Players[idx].image_filename);
-}
-
-LUA_FUNC(getSquadronName, l_Player, NULL, "Squad name (string)", "Gets current player squad name")
-{
-	int idx;
-	player_helper(L, &idx);
-
-	return lua_set_args(L, "s", Players[idx].squad_name);
-}
-//WMC - This isn't working
-/*
-LUA_FUNC(getSquadronImage, l_Player, NULL, "Squad image (string)", "Gets current player squad image")
-{
-	int idx;
-	player_helper(L, &idx);
-
-	return lua_set_args(L, "s", Players[idx].squad_filename);
-}*/
-
-LUA_FUNC(getCampaignName, l_Player, NULL, "Campaign name (string)", "Gets current player campaign")
-{
-	int idx;
-	player_helper(L, &idx);
-
-	return lua_set_args(L, "s", Players[idx].current_campaign);
-}
-
-LUA_FUNC(getMainHall, l_Player, NULL, "Main hall number", "Gets player's main hall number")
-{
-	int idx;
-	player_helper(L, &idx);
-
-	return lua_set_args(L, "i", (int)Players[idx].main_hall);
-}
-
-//**********LIBRARY: Texture
+//**********HANDLE: Texture
 lua_obj<int> l_Texture("texture", "Texture handle");
 //WMC - int should NEVER EVER be an invalid handle. Return Nil instead. Nil FTW.
 
@@ -2426,6 +2188,291 @@ LUA_FUNC(getFPS, l_Texture, NULL, "Texture FPS", "Gets frames-per-second of text
 		return LUA_RETURN_FALSE;
 	else
 		return lua_set_args(L, "i", fps);
+}
+
+
+//**********HANDLE: Textures
+struct ship_textures_h : public object_h
+{
+	ship_textures_h(object *objp) : object_h(objp){}
+};
+
+lua_obj<ship_textures_h> l_ShipTextures("shiptextures", "Ship textures");
+
+LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
+{
+	ship_textures_h *sh;
+	char *s;
+	int tdx=-1;
+	if(!lua_get_args(L, "os|o", l_ShipTextures.GetPtr(&sh), &s, l_Texture.Get(&tdx)))
+		return LUA_RETURN_NIL;
+
+	if(!sh->IsValid() || s==NULL)
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[sh->objp->instance];
+	polymodel *pm = model_get(shipp->modelnum);
+	int idx = -1;
+	int i;
+
+	char fname[MAX_FILENAME_LEN];
+	char *p;
+	for(i = 0; i < pm->n_textures; i++)
+	{
+		if(pm->textures[i] > -1)
+		{
+			bm_get_filename(pm->textures[i], fname);
+			
+			//Get rid of extension
+			p = strchr( fname, '.' );
+			if ( p != NULL)
+				*p = 0;
+
+			if(!stricmp(fname, s)) {
+				idx = i;
+				break;
+			}
+		}
+
+		if(shipp->replacement_textures != NULL && pm->textures[i] > -1)
+		{
+			bm_get_filename(shipp->replacement_textures[i], fname);
+			//Get rid of extension
+			p = strchr( fname, '.' );
+			if ( p != NULL)
+				*p = 0;
+
+			if(!stricmp(fname, s)) {
+				idx = i;
+				break;
+			}
+		}
+	}
+
+	if(idx < 0)
+	{
+		i = atoi(s);
+		i--; //Lua->FS2
+		if(i < 0 || i >= pm->n_textures || (pm->textures[i] < 0 && shipp->replacement_textures[i] < 0))
+			return LUA_RETURN_FALSE;
+	}
+
+	if(LUA_SETTING_VAR && tdx > -1) {
+		shipp->replacement_textures = shipp->replacement_textures_buf;
+		shipp->replacement_textures[idx] = tdx;
+	}
+
+	if(shipp->replacement_textures != NULL && shipp->replacement_textures[idx] > -1)
+		return lua_set_args(L, "o", l_Texture.Set(shipp->replacement_textures[idx]));
+	else
+		return lua_set_args(L, "o", l_Texture.Set(pm->textures[idx]));
+}
+
+//**********CLASS: Ship
+lua_obj<object_h> l_Ship("ship", "Ship object", &l_Object);
+
+LUA_VAR(Name, l_Ship, "String", "Ship name")
+{
+	object_h *objh;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh), &s))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		strncpy(shipp->ship_name, s, sizeof(shipp->ship_name)-1);
+	}
+
+	return lua_set_args(L, "s", shipp->ship_name);
+}
+
+LUA_VAR(Textures, l_Ship, "shiptextures", "Gets ship textures")
+{
+	object_h *objh;
+	ship_textures_h *th;
+	if(!lua_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_ShipTextures.GetPtr(&th)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && th != NULL && th->IsValid()) {
+		ship *src = &Ships[objh->objp->instance];
+		ship *dest = &Ships[th->objp->instance];
+		if(src->replacement_textures != NULL)
+		{
+			dest->replacement_textures = dest->replacement_textures_buf;
+			memcpy(dest->replacement_textures_buf, src->replacement_textures_buf, sizeof(dest->replacement_textures_buf));
+		}
+	}
+
+	return lua_set_args(L, "o", l_ShipTextures.Set(ship_textures_h(objh->objp)));
+}
+
+LUA_VAR(AfterburnerFuel, l_Ship, "Number", "Afterburner fuel amount")
+{
+	object_h *objh;
+	float fuel = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fuel))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(LUA_SETTING_VAR && fuel >= 0.0f)
+		shipp->afterburner_fuel = fuel;
+
+	return lua_set_args(L, "f", shipp->afterburner_fuel);
+}
+
+LUA_VAR(MountedWeapons, l_Ship, "mountedweapons", "Weapons mounted on ship")
+{
+	object_h *objh;
+	ship_weapon_h *swh;
+	if(!lua_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_MountedWeapons.GetPtr(&swh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship_weapon_h mw(objh->objp, NULL);
+
+	if(LUA_SETTING_VAR && swh != NULL && swh->IsValid())
+	{
+		Ships[objh->objp->instance].weapons = Ships[swh->objp->instance].weapons;
+	}
+
+	return lua_set_args(L, "o", l_MountedWeapons.Set(mw));
+}
+
+LUA_FUNC(getClass, l_Ship, NULL, "Ship class handle (shipclass)", "Gets ship class handle")
+{
+	object_h *objh;
+	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "o", l_Shipclass.Set(Ships[objh->objp->instance].ship_info_index));
+}
+
+LUA_FUNC(warpIn, l_Ship, NULL, "True", "Warps ship in")
+{
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	shipfx_warpin_start(objh->objp);
+
+	return LUA_RETURN_TRUE;
+}
+
+LUA_FUNC(warpOut, l_Ship, NULL, "True", "Warps ship out")
+{
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	shipfx_warpout_start(objh->objp);
+
+	return LUA_RETURN_TRUE;
+}
+
+//**********HANDLE: Wing
+lua_obj<int> l_Wing("wing", "Wing handle");
+
+LUA_INDEXER(l_Wing, "Index", "Ship", "Ship via number in wing")
+{
+	int wdx;
+	int sdx;
+	object_h *ndx=NULL;
+	if(!lua_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
+		return LUA_RETURN_NIL;
+
+	if(sdx < Wings[wdx].current_count) {
+		return LUA_RETURN_NIL;
+	}
+
+	if(LUA_SETTING_VAR && ndx != NULL && ndx->IsValid()) {
+		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
+	}
+
+	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
+}
+//**********HANDLE: Player
+lua_obj<int> l_Player("player", "Player object");
+
+int player_helper(lua_State *L, int *idx)
+{
+	if(!lua_get_args(L, "o", l_Player.Get(idx)))
+		return 0;
+
+	if(*idx < 0 || *idx > Player_num)
+		return 0;
+
+	return 1;
+}
+
+LUA_FUNC(getName, l_Player, NULL, "Player name (string)", "Gets current player name")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_set_args(L, "s", Players[idx].callsign);
+}
+
+LUA_FUNC(getImage, l_Player, NULL, "Player image (string)", "Gets current player image")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_set_args(L, "s", Players[idx].image_filename);
+}
+
+LUA_FUNC(getSquadronName, l_Player, NULL, "Squad name (string)", "Gets current player squad name")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_set_args(L, "s", Players[idx].squad_name);
+}
+//WMC - This isn't working
+/*
+LUA_FUNC(getSquadronImage, l_Player, NULL, "Squad image (string)", "Gets current player squad image")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_set_args(L, "s", Players[idx].squad_filename);
+}*/
+
+LUA_FUNC(getCampaignName, l_Player, NULL, "Campaign name (string)", "Gets current player campaign")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_set_args(L, "s", Players[idx].current_campaign);
+}
+
+LUA_FUNC(getMainHall, l_Player, NULL, "Main hall number", "Gets player's main hall number")
+{
+	int idx;
+	player_helper(L, &idx);
+
+	return lua_set_args(L, "i", (int)Players[idx].main_hall);
 }
 
 //**********LIBRARY: Base
@@ -3031,6 +3078,85 @@ LUA_FUNC(getScreenHeight, l_Graphics, NULL, "Height in pixels (Number)", "Gets s
 	return lua_set_args(L, "i", gr_screen.max_h);
 }
 
+LUA_FUNC(setTarget, l_Graphics, "[texture Texture]", "True if successful, false otherwise",
+		"If texture is specified, sets current rendering surface to a texture."
+		"Otherwise, sets rendering surface back to screen.")
+{
+	int idx = -1;
+	lua_get_args(L, "|o", l_Texture.Get(&idx));
+
+	bool b = bm_set_render_target(idx);
+
+	return lua_set_args(L, "b", b);
+}
+
+LUA_FUNC(setColor, l_Graphics, "Red, Green, Blue, [alpha]", NULL, "Sets 2D drawing color")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int r,g,b,a=255;
+
+	if(!lua_get_args(L, "iii|i", &r, &g, &b, &a))
+		return LUA_RETURN_NIL;
+
+	color ac;
+	gr_init_alphacolor(&ac,r,g,b,a);
+	gr_set_color_fast(&ac);
+
+	return 0;
+}
+
+LUA_FUNC(setOpacity, l_Graphics, "Opacity %, [Opacity Type]", NULL,
+		 "Sets opacity for 2D image drawing functions to specified amount and type. Valid types are:"
+		 "<br>None"
+		 "<br>Filter")
+{
+	float f;
+	char *s=NULL;
+	int idx=-1;
+
+	if(!lua_get_args(L, "f|s", &f, &s))
+		return LUA_RETURN_NIL;
+
+	if(f > 100.0f)
+		f = 100.0f;
+	if(f < 0.0f)
+		f = 0.0f;
+
+	if(s != NULL)
+	{
+		if(!stricmp(s, "Filter"))
+			idx = GR_ALPHABLEND_FILTER;
+		else
+			idx = GR_ALPHABLEND_NONE;
+	}
+
+	lua_Opacity = f*0.01f;
+	if(idx > -1)
+		lua_Opacity_type = idx;
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(setFont, l_Graphics, "Font index", NULL, "Sets current font")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int fn;
+
+	if(!lua_get_args(L, "i", &fn))
+		return LUA_RETURN_NIL;
+
+	//Lua->FS2
+	fn--;
+
+	gr_set_font(fn);
+
+	return 0;
+}
+
 #define MAX_TEXT_LINES		256
 
 LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [Resize], [x2], [y2]", NULL, "Draws a string")
@@ -3111,73 +3237,6 @@ LUA_FUNC(getTextHeight, l_Graphics, NULL, "Text height", "Gets current font's he
 		return LUA_RETURN_NIL;
 	
 	return lua_set_args(L, "i", gr_get_font_height());
-}
-
-LUA_FUNC(setColor, l_Graphics, "Red, Green, Blue, [alpha]", NULL, "Sets 2D drawing color")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-
-	int r,g,b,a=255;
-
-	if(!lua_get_args(L, "iii|i", &r, &g, &b, &a))
-		return LUA_RETURN_NIL;
-
-	color ac;
-	gr_init_alphacolor(&ac,r,g,b,a);
-	gr_set_color_fast(&ac);
-
-	return 0;
-}
-
-LUA_FUNC(setOpacity, l_Graphics, "Opacity %, [Opacity Type]", NULL,
-		 "Sets opacity for 2D image drawing functions to specified amount and type. Valid types are:"
-		 "<br>None"
-		 "<br>Filter")
-{
-	float f;
-	char *s=NULL;
-	int idx=-1;
-
-	if(!lua_get_args(L, "f|s", &f, &s))
-		return LUA_RETURN_NIL;
-
-	if(f > 100.0f)
-		f = 100.0f;
-	if(f < 0.0f)
-		f = 0.0f;
-
-	if(s != NULL)
-	{
-		if(!stricmp(s, "Filter"))
-			idx = GR_ALPHABLEND_FILTER;
-		else
-			idx = GR_ALPHABLEND_NONE;
-	}
-
-	lua_Opacity = f*0.01f;
-	if(idx > -1)
-		lua_Opacity_type = idx;
-
-	return LUA_RETURN_NIL;
-}
-
-LUA_FUNC(setFont, l_Graphics, "Font index", NULL, "Sets current font")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-
-	int fn;
-
-	if(!lua_get_args(L, "i", &fn))
-		return LUA_RETURN_NIL;
-
-	//Lua->FS2
-	fn--;
-
-	gr_set_font(fn);
-
-	return 0;
 }
 
 LUA_FUNC(drawPixel, l_Graphics, "x, y, [Resize]", NULL, "Sets pixel to current color")
@@ -3326,6 +3385,27 @@ LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Resize], [Width to
 	gr_aabitmap_ex(x, y, w, h, sx, sy, r, m);
 
 	return lua_set_args(L, "b", true);
+}
+
+LUA_FUNC(createTexture, l_Graphics, "Width, Height, Type", "Handle to new texture", "Creates a texture for rendering to. Types are static - for infrequent rendering - and dynamic - for frequent rendering.")
+{
+	int w,h;
+	char *s;
+	if(!lua_get_args(L, "iis", &w, &h, &s))
+		return LUA_RETURN_NIL;
+
+	int t = 0;
+	if(!stricmp(s, "Static"))
+		t = BMP_TEX_STATIC_RENDER_TARGET;
+	else if(!stricmp(s, "Dynamic"))
+		t = BMP_TEX_DYNAMIC_RENDER_TARGET;
+
+	int idx = bm_make_render_target(w, h, t);
+
+	if(idx < 0)
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "o", l_Texture.Set(idx));
 }
 
 LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation], [No drop frames]", "Texture handle, false if invalid name",
@@ -3515,7 +3595,54 @@ LUA_FUNC(playInterfaceSound, l_SoundLib, "Sound filename", "True if sound was pl
 //This section is for stuff that's considered experimental.
 lua_lib l_Testing("Testing", "ts", "Experimental or testing stuff");
 
+LUA_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Lifetime, number Radius, string Type, [number Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]", NULL,
+		 "Creates a particle. Types are 'Debug', 'Bitmap', 'Fire', 'Smoke', 'Smoke2', and 'Persistent Bitmap'."
+		 "Reverse reverse animation, if one is specified"
+		 "Attached object specifies object that Position will be (and always be) relative to.")
+{
+	particle_info pi;
+	pi.type = PARTICLE_DEBUG;
+	pi.optional_data = 0;
+	pi.tracer_length = 1.0f;
+	pi.attached_objnum = -1;
+	pi.attached_sig = -1;
+	pi.reverse = 0;
 
+	char *s=NULL;
+	bool rev=false;
+	object_h *objh=NULL;
+	if(!lua_get_args(L, "ooffs|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad, &s, &pi.tracer_length, &rev, l_Texture.Get((int*)&pi.optional_data), l_Object.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(s != NULL)
+	{
+		if(!stricmp(s, "Debug"))
+			pi.type = PARTICLE_DEBUG;
+		else if(!stricmp(s, "Bitmap"))
+			pi.type = PARTICLE_BITMAP;
+		else if(!stricmp(s, "Fire"))
+			pi.type = PARTICLE_FIRE;
+		else if(!stricmp(s, "Smoke"))
+			pi.type = PARTICLE_SMOKE;
+		else if(!stricmp(s, "Smoke2"))
+			pi.type = PARTICLE_SMOKE2;
+		else if(!stricmp(s, "Persistent bitmap"))
+			pi.type = PARTICLE_BITMAP_PERSISTENT;
+	}
+
+	if(rev)
+		pi.reverse = 0;
+
+	if(objh != NULL && objh->IsValid())
+	{
+		pi.attached_objnum = OBJ_INDEX(objh->objp);
+		pi.attached_sig = objh->objp->signature;
+	}
+
+	particle_create(&pi);
+
+	return LUA_RETURN_NIL;
+}
 
 // *************************Housekeeping*************************
 
