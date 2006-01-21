@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.157 $
- * $Date: 2006-01-20 17:15:16 $
+ * $Revision: 2.158 $
+ * $Date: 2006-01-21 00:14:25 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157  2006/01/20 17:15:16  taylor
+ * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
+ * several other very minor changes as well
+ *
  * Revision 2.156  2006/01/19 16:00:04  wmcoolmon
  * Lua debugging stuff; gr_bitmap_ex stuff for taylor
  *
@@ -4321,7 +4325,7 @@ void gr_opengl_init(int reinit)
 	
 	glEnable(GL_TEXTURE_2D);
 
-	glDisable(GL_MULTISAMPLE_ARB);
+//	glDisable(GL_MULTISAMPLE_ARB);
 
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
