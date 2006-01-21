@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.78 $
- * $Date: 2006-01-21 01:56:58 $
- * $Author: taylor $
+ * $Revision: 2.79 $
+ * $Date: 2006-01-21 02:22:04 $
+ * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/01/21 01:56:58  taylor
+ * that wasn't too smart of me, move extra anim filename size check to *after* we have found an anim
+ *
  * Revision 2.77  2006/01/20 23:47:51  taylor
  * fix anim filename length check, they need at least 5 extra characters for the frame number on the filenames
  *
@@ -1826,11 +1829,11 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 }
 
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
-void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *fps )
+int bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *fps)
 {
 	bitmap * bmp;
 
-	if ( !bm_inited ) return;
+	if ( !bm_inited ) return -1;
 
 	int bitmapnum = handle % MAX_BITMAPS;
 
@@ -1842,7 +1845,7 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 		if (flags) *flags = 0;
 		if (nframes) *nframes=0;
 		if (fps) *fps=0;
-		return;
+		return -1;
 	}
 
 	bmp = &(bm_bitmaps[bitmapnum].bm);
@@ -1858,6 +1861,8 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 		if (fps) {
 			*fps= bm_bitmaps[bitmapnum].info.ani.fps;
 		}
+
+		return bm_bitmaps[bm_bitmaps[bitmapnum].info.ani.first_frame].handle;
 	} else {
 		if (nframes) {
 			*nframes = 1;
@@ -1865,6 +1870,8 @@ void bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int 
 		if (fps) {
 			*fps= 0;
 		}
+
+		return handle;
 	}
 }
 

@@ -5,6 +5,7 @@
 #include "parse/parselo.h"
 #include "globalincs/version.h"
 #include "gamesequence/gamesequence.h"
+#include "bmpman/bmpman.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -159,6 +160,36 @@ void script_state::RemGlobal(char *name)
 		lua_setglobal(LuaState, name);
 	}
 #endif
+}
+
+int script_state::LoadBm(char *name)
+{
+	for(int i = 0; i < ScriptImages.size(); i++)
+	{
+		if(!stricmp(name, ScriptImages[i].fname))
+			return ScriptImages[i].handle;
+	}
+
+	image_desc id;
+	int idx = bm_load(name);
+
+	if(idx > -1) {
+		id.handle = idx;
+		strcpy(id.fname, name);
+		ScriptImages.push_back(id);
+	}
+
+	return idx;
+}
+
+void script_state::UnloadImages()
+{
+	for(int i = 0; i < ScriptImages.size(); i++)
+	{
+		bm_unload(ScriptImages[i].handle);
+	}
+
+	ScriptImages.clear();
 }
 
 //returns 0 on failure (Parse error), 1 on success

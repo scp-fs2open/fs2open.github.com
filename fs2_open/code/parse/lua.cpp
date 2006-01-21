@@ -52,9 +52,9 @@ std::vector<lua_lib_h> lua_Objects;
 
 //Use this with objects to deal with forms such as vec.x, vec['x'], vec[0]
 //Format string should be "o*%", where * is indexing value, and % is the value to set to when LUA_SETTTING_VAR is set
-#define LUA_INDEXER(objlib, desc)			\
-	static int lua_##objlib##___indexer(lua_State *L);	\
-	lua_indexer_h lua_##objlib##___indexer_h(lua_##objlib##___indexer, objlib, desc);	\
+#define LUA_INDEXER(objlib, args, retvals, desc)			\
+	static int lua_##objlib##___indexer(lua_State *L);		\
+	lua_indexer_h lua_##objlib##___indexer_h(lua_##objlib##___indexer, objlib, args, retvals, desc);	\
 	static int lua_##objlib##___indexer(lua_State *L)
 
 //Checks to determine whether LUA_VAR or LUA_INDEXER should set the variable
@@ -540,13 +540,6 @@ int lua_index_handler(lua_State *L)
 	lua_pushvalue(L, 2);	//Get key
 
 	bool using_indexer = lua_type(L, 2) != LUA_TSTRING;
-	if(!using_indexer)
-	{
-		lua_rawget(L, -2);
-		if(lua_isnil(L, -1)) {
-			using_indexer = true;
-		}
-	}
 	
 	//WMC - I tried using lua_isnil here to use the indexer if an
 	//unknown string key was passed, but for some reason I got a crash
@@ -563,8 +556,7 @@ int lua_index_handler(lua_State *L)
 	//WMC - UPDATE!! This magically fixed itself or something.
 	//Persistence pays off.
 	//If this bug crops up again, the fix is to comment out the sandwiched
-	//if section, and uncomment the lua_rawget(L, -2) in the next !using_indexer
-	//if section.
+	//if section, and uncomment the lua_rawget(L, -2) in the next !using_indexer if section.
 	if(!using_indexer)
 	{
 		//WMC - 0x00000069 bug fixed itself
@@ -608,7 +600,7 @@ int lua_index_handler(lua_State *L)
 	if(lua_setupvalue(L, -2, 1) == NULL) {
 		//setupvalue failed for some reason,
 		//so pop the bool ourselves.
-		Warning(LOCATION, "lua_setupvalue in lua_index_handler failed; get a coder");
+		LuaError(L, "lua_setupvalue in lua_index_handler failed; get a coder");
 		lua_pop(L, 1);
 	}
 
@@ -651,6 +643,8 @@ int lua_index_handler(lua_State *L)
 //below this point.
 
 //**********CLASS: orientation matrix
+//WMC - So matrix can use vector, I define it up here.
+lua_obj<vec3d> l_Vector("vector", "Vector");
 //WMC - Due to the exorbitant times required to store matrix data,
 //I initially store the matrix in this struct.
 #define MH_FINE					0
@@ -663,13 +657,136 @@ struct matrix_h {
 
 	matrix_h(matrix *in){mtx = *in; status = MH_ANGLES_OUTOFDATE;}
 	matrix_h(angles *in){ang = *in; status = MH_MATRIX_OUTOFDATE;}
+
+	//WMC - Call these to make sure what you want
+	//is up to date
+	void ValidateAngles() {
+		if(status == MH_ANGLES_OUTOFDATE) {
+			vm_extract_angles_matrix(&ang, &mtx);
+			status = MH_FINE;
+		}
+	}
+
+	void ValidateMatrix() {
+		if(status == MH_MATRIX_OUTOFDATE) {
+			vm_angles_2_matrix(&mtx, &ang);
+			status = MH_FINE;
+		}
+	}
+
+	//IMPORTANT!!!:
+	//Don't forget to set status appropriately when you change ang or mtx.
 };
 lua_obj<matrix_h> l_Matrix("orientation", "Orientation matrix");
 
-//**********CLASS: vector
-lua_obj<vec3d> l_Vector("vector", "Vector");
+LUA_INDEXER(l_Matrix, "p,b,h or 0-9", "Number", "Orientation component - pitch, bank, heading, or index into 3x3 matrix (1-9)")
+{
+	matrix_h *mh;
+	char *s = NULL;
+	float newval = 0.0f;
+	int numargs = lua_get_args(L, "os|f", l_Matrix.GetPtr(&mh), &s, &newval);
 
-LUA_INDEXER(l_Vector, "Vector component")
+	if(!numargs || s[1] != '\0')
+		LUA_RETURN_NIL;
+
+	int idx=0;
+	if(s[0]=='p')
+		idx = -1;
+	else if(s[0]=='b')
+		idx = -2;
+	else if(s[0]=='h')
+		idx = -3;
+	else if(atoi(s))
+		idx = atoi(s);
+
+	if(idx < -3 || idx==0 || idx > 9)
+		return LUA_RETURN_NIL;
+
+	//Handle out of date stuff.
+	float *val = NULL;
+	if(idx < 0)
+	{
+		mh->ValidateAngles();
+
+		if(idx == -1)
+			val = &mh->ang.p;
+		if(idx == -2)
+			val = &mh->ang.b;
+		if(idx == -3)
+			val = &mh->ang.h;
+	}
+	else
+	{
+		mh->ValidateMatrix();
+
+		idx--;	//Lua->FS2
+		val = &mh->mtx.a1d[idx];
+	}
+
+	if(LUA_SETTING_VAR && *val != newval)
+	{
+		//WMC - I figure this is quicker
+		//than just assuming matrix or angles is diff
+		//and recalculating every time.
+
+		if(idx < 0)
+			mh->status = MH_MATRIX_OUTOFDATE;
+		else
+			mh->status = MH_ANGLES_OUTOFDATE;
+
+		//Might as well put this here
+		*val = newval;
+	}
+
+	return lua_set_args(L, "f", *val);
+}
+
+LUA_FUNC(transpose, l_Matrix, NULL, NULL, "Transposes matrix")
+{
+	matrix_h *mh;
+	if(!lua_get_args(L, "o", l_Matrix.GetPtr(&mh)))
+		return LUA_RETURN_NIL;
+
+	mh->ValidateMatrix();
+	vm_transpose_matrix(&mh->mtx);
+	mh->status = MH_ANGLES_OUTOFDATE;
+
+	return LUA_RETURN_NIL;
+}
+
+
+LUA_FUNC(rotateVector, l_Matrix, "Vector object", "Rotated vector", "Rotates given vector")
+{
+	matrix_h *mh;
+	vec3d *v3;
+	if(!lua_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3)))
+		return LUA_RETURN_NIL;
+
+	vec3d v3r;
+	mh->ValidateMatrix();
+	vm_vec_rotate(&v3r, v3, &mh->mtx);
+
+	return lua_set_args(L, "o", l_Vector.Set(v3r));
+}
+
+LUA_FUNC(unrotateVector, l_Matrix, "Vector object", "Unrotated vector", "Unrotates given vector")
+{
+	matrix_h *mh;
+	vec3d *v3;
+	if(!lua_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3)))
+		return LUA_RETURN_NIL;
+
+	vec3d v3r;
+	mh->ValidateMatrix();
+	vm_vec_unrotate(&v3r, v3, &mh->mtx);
+
+	return lua_set_args(L, "o", l_Vector.Set(v3r));
+}
+
+//**********CLASS: vector
+//WMC - see matrix for lua_obj def
+
+LUA_INDEXER(l_Vector, "x,y,z or 1-3", "Vector", "Vector component")
 {
 	vec3d *v3;
 	char *s = NULL;
@@ -687,7 +804,7 @@ LUA_INDEXER(l_Vector, "Vector component")
 	else if(s[0]=='z' || s[0] == '3')
 		idx = 2;
 
-	if(idx < 0 || idx > 2)
+	if(idx < 0 || idx > 3)
 		return LUA_RETURN_NIL;
 
 	if(LUA_SETTING_VAR) {
@@ -1506,7 +1623,7 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 //**********CLASS: Shields
 lua_obj<object_h> l_Shields("shields", "Shields handle");
 
-LUA_INDEXER(l_Shields, "Shield quadrant")
+LUA_INDEXER(l_Shields, "Front, left, right, back, or 1-4", "Number", "Gets or sets shield quadrant strength")
 {
 	object_h *objh;
 	char *qd = NULL;
@@ -1526,13 +1643,13 @@ LUA_INDEXER(l_Shields, "Shield quadrant")
 		qdx = -1;
 	else if((qdi = atoi(qd)) > 0 && qdi < 5)
 		qdx = qdi-1;	//LUA->FS2
-	else if(!stricmp(qd, "Top"))
+	else if(!stricmp(qd, "Front"))
 		qdx = 0;
 	else if(!stricmp(qd, "Left"))
 		qdx = 1;
 	else if(!stricmp(qd, "Right"))
 		qdx = 2;
-	else if(!stricmp(qd, "Bottom"))
+	else if(!stricmp(qd, "Back"))
 		qdx = 3;
 	else
 		return LUA_RETURN_NIL;
@@ -1566,10 +1683,10 @@ LUA_VAR(Position, l_Object, "World vector", "Object world position")
 	if(!lua_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return LUA_RETURN_NIL;
 
-	if(!objh->IsValid() || v3==NULL)
+	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	if(LUA_SETTING_VAR) {
+	if(LUA_SETTING_VAR && v3 != NULL) {
 		objh->objp->pos = *v3;
 	}
 
@@ -1583,10 +1700,10 @@ LUA_VAR(Velocity, l_Object, "World vector", "Object world velocity")
 	if(!lua_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return LUA_RETURN_NIL;
 
-	if(!objh->IsValid() || v3==NULL)
+	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	if(LUA_SETTING_VAR) {
+	if(LUA_SETTING_VAR && v3 != NULL) {
 		objh->objp->phys_info.vel = *v3;
 	}
 
@@ -1600,16 +1717,35 @@ LUA_VAR(MaxVelocity, l_Object, "Local vector", "Object max local velocity")
 	if(!lua_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
 		return LUA_RETURN_NIL;
 
-	if(!objh->IsValid() || v3==NULL)
+	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	if(LUA_SETTING_VAR) {
+	if(LUA_SETTING_VAR && v3 != NULL) {
 		objh->objp->phys_info.max_vel = *v3;
 	}
 
 	return lua_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.max_vel));
 }
 
+LUA_VAR(Orientation, l_Object, "World orientation", "Object world orientation")
+{
+	object_h *objh;
+	matrix_h *mh=NULL;
+	if(!lua_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Matrix.GetPtr(&mh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && mh != NULL) {
+		if(mh->status == MH_MATRIX_OUTOFDATE) {
+			vm_angles_2_matrix(&mh->mtx, &mh->ang);
+		}
+		objh->objp->orient = mh->mtx;
+	}
+
+	return lua_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->orient)));
+}
 
 LUA_VAR(HitpointsLeft, l_Object, "Number", "Hitpoints an object has left")
 {
@@ -2102,6 +2238,27 @@ LUA_FUNC(warpOut, l_Ship, NULL, "True", "Warps ship out")
 	return LUA_RETURN_TRUE;
 }
 
+//**********HANDLE: Wing
+lua_obj<int> l_Wing("wing", "Wing handle");
+
+LUA_INDEXER(l_Wing, "Index", "Ship", "Ship via number in wing")
+{
+	int wdx;
+	int sdx;
+	object_h *ndx=NULL;
+	if(!lua_get_args(L, "oi|o", l_Wing.Get(&wdx), &sdx, l_Ship.GetPtr(&ndx)))
+		return LUA_RETURN_NIL;
+
+	if(sdx < Wings[wdx].current_count) {
+		return LUA_RETURN_NIL;
+	}
+
+	if(LUA_SETTING_VAR && ndx != NULL && ndx->IsValid()) {
+		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
+	}
+
+	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
+}
 //**********OBJECT: Player
 lua_obj<int> l_Player("player", "Player object");
 
@@ -2165,8 +2322,114 @@ LUA_FUNC(getMainHall, l_Player, NULL, "Main hall number", "Gets player's main ha
 	return lua_set_args(L, "i", (int)Players[idx].main_hall);
 }
 
+//**********LIBRARY: Texture
+lua_obj<int> l_Texture("texture", "Texture handle");
+//WMC - int should NEVER EVER be an invalid handle. Return Nil instead. Nil FTW.
+
+static float lua_Opacity = 1.0f;
+static int lua_Opacity_type = GR_ALPHABLEND_NONE;
+
+LUA_INDEXER(l_Texture, "Index", "Texture handle",
+			"Returns texture handle to specified frame number in current texture's animation."
+			"This means that [1] will always return the first frame in an animation, no matter what frame an animation is."
+			"You cannot change a texture animation frame.")
+{
+	int idx;
+	int frame=-1;
+	int newframe=-1;	//WMC - Ignore for now
+	if(!lua_get_args(L, "oi|i", l_Texture.Get(&idx), &frame, &newframe))
+		return LUA_RETURN_NIL;
+
+	if(frame < 1)
+		return LUA_RETURN_NIL;
+
+	//Get me some info
+	int num=-1;
+	int first=-1;
+	first = bm_get_info(idx, NULL, NULL, NULL, &num);
+
+	//Check it's a valid one
+	if(first < 0 || frame > num)
+		return LUA_RETURN_NIL;
+
+	frame--; //Lua->FS2
+
+	//Get actual texture handle
+	frame = first + frame;
+
+	return lua_set_args(L, "o", l_Texture.Set(frame));
+}
+
+LUA_FUNC(unload, l_Texture, NULL, NULL, "Unloads a texture from memory")
+{
+	int idx;
+
+	if(!lua_get_args(L, "o", l_Texture.Get(&idx)))
+		return LUA_RETURN_NIL;
+
+	bm_unload(idx);
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(getWidth, l_Texture, NULL, "Texture width, or false if invalid handle", "Gets texture width")
+{
+	int idx;
+	if(!lua_get_args(L, "o", l_Texture.Get(&idx)))
+		return LUA_RETURN_NIL;
+
+	int w = -1;
+
+	if(bm_get_info(idx, &w) < 0)
+		return LUA_RETURN_FALSE;
+	else
+		return lua_set_args(L, "i", w);
+}
+
+LUA_FUNC(getHeight, l_Texture, NULL, "Texture height, or false if invalid handle", "Gets texture width")
+{
+	int idx;
+	if(!lua_get_args(L, "o", l_Texture.Get(&idx)))
+		return LUA_RETURN_NIL;
+
+	int h=-1;
+
+	if(bm_get_info(idx, NULL, &h) < 0)
+		return LUA_RETURN_FALSE;
+	else
+		return lua_set_args(L, "i", h);
+}
+
+LUA_FUNC(getFramesLeft, l_Texture, NULL, "Number of frames left", "Gets number of frames left, from handle's position in animation")
+{
+	int idx;
+	if(!lua_get_args(L, "o", l_Texture.Get(&idx)))
+		return LUA_RETURN_NIL;
+
+	int num=-1;
+
+	if(bm_get_info(idx, NULL, NULL, NULL, &num) < 0)
+		return LUA_RETURN_FALSE;
+	else
+		return lua_set_args(L, "i", num);
+}
+
+LUA_FUNC(getFPS, l_Texture, NULL, "Texture FPS", "Gets frames-per-second of texture")
+{
+	int idx;
+	if(!lua_get_args(L, "o", l_Texture.Get(&idx)))
+		return LUA_RETURN_NIL;
+
+	int fps=-1;
+
+	if(bm_get_info(idx, NULL, NULL, NULL, NULL, &fps) < 0)
+		return LUA_RETURN_FALSE;
+	else
+		return lua_set_args(L, "i", fps);
+}
+
 //**********LIBRARY: Base
-lua_lib l_Base("Base", "bs", "Base Freespace 2 functions");
+lua_lib l_Base("Base", "ba", "Base Freespace 2 functions");
 
 LUA_FUNC(print, l_Base, "String", NULL, "Prints a string")
 {
@@ -2255,6 +2518,11 @@ LUA_FUNC(getCurrentPlayer, l_Base, NULL, "Current player", "Gets the current pla
 	return lua_set_args(L, "o", l_Player.Set(idx));
 }
 
+LUA_FUNC(getNumPlayers, l_Base, NULL, "Number of players", "Gets the number of currently loaded players")
+{
+	return lua_set_args(L, "i", Player_num);
+}
+
 LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the named player")
 {
 	if(Player == NULL)
@@ -2271,11 +2539,6 @@ LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the na
 		return LUA_RETURN_NIL;
 
 	return lua_set_args(L, "o", l_Player.Set(idx));
-}
-
-LUA_FUNC(getNumPlayers, l_Base, NULL, "Number of players", "Gets the number of currently loaded players")
-{
-	return lua_set_args(L, "i", Player_num);
 }
 
 
@@ -2460,6 +2723,71 @@ LUA_FUNC(getShip, l_Mission, "Ship name", "Ship object", "Gets ship object")
 	}
 
 	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum])));
+}
+
+LUA_FUNC(getNumShips, l_Mission, NULL, "Number of ships in mission", "Gets number of ships in mission. Note that this is only accurate for a short while.")
+{
+	return lua_set_args(L, "i", ship_get_num_ships());
+}
+
+LUA_FUNC(getShipByIndex, l_Mission, "Index", "Ship handle, or false if invalid index",
+		"Gets ship by its order in the mission."
+		"Note that as ships are added, they may take the index of destroyed ships")
+{
+	int idx;
+	if(!lua_get_args(L, "i", &idx))
+		return LUA_RETURN_NIL;
+
+	//Remember, Lua indices start at 0.
+	int count=1;
+
+	for(int i = 0; i < MAX_SHIPS; i++)
+	{
+		if (Ships[i].objnum < 0 || Objects[Ships[i].objnum].type != OBJ_SHIP)
+			continue;
+
+		if(count == idx) {
+			return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[i].objnum])));
+		}
+
+		count++;
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getWing, l_Mission, "Wing name", "Wing handle", "Gets wing handle")
+{
+	char *name;
+	if(!lua_get_args(L, "s", &name))
+		return 0;
+
+	int idx = wing_name_lookup(name);
+	
+	if(idx < 0) {
+		return LUA_RETURN_NIL;
+	}
+
+	return lua_set_args(L, "o", l_Wing.Set(idx));
+}
+
+LUA_FUNC(getNumWings, l_Mission, NULL, "Number of ships in mission", "Gets number of ships in mission")
+{
+	return lua_set_args(L, "i", Num_wings);
+}
+
+LUA_FUNC(getWingByIndex, l_Mission, "Index", "Wing handle, or false if invalid index", "Gets wing by its index in the mission")
+{
+	int idx;
+	if(!lua_get_args(L, "i", &idx))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_wings)
+		return LUA_RETURN_FALSE;
+	
+	idx--; //Lua->FS2
+
+	return lua_set_args(L, "o", l_Wing.Set(idx));
 }
 
 LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Number", "Gets escort ship")
@@ -2802,6 +3130,38 @@ LUA_FUNC(setColor, l_Graphics, "Red, Green, Blue, [alpha]", NULL, "Sets 2D drawi
 	return 0;
 }
 
+LUA_FUNC(setOpacity, l_Graphics, "Opacity %, [Opacity Type]", NULL,
+		 "Sets opacity for 2D image drawing functions to specified amount and type. Valid types are:"
+		 "<br>None"
+		 "<br>Filter")
+{
+	float f;
+	char *s=NULL;
+	int idx=-1;
+
+	if(!lua_get_args(L, "f|s", &f, &s))
+		return LUA_RETURN_NIL;
+
+	if(f > 100.0f)
+		f = 100.0f;
+	if(f < 0.0f)
+		f = 0.0f;
+
+	if(s != NULL)
+	{
+		if(!stricmp(s, "Filter"))
+			idx = GR_ALPHABLEND_FILTER;
+		else
+			idx = GR_ALPHABLEND_NONE;
+	}
+
+	lua_Opacity = f*0.01f;
+	if(idx > -1)
+		lua_Opacity_type = idx;
+
+	return LUA_RETURN_NIL;
+}
+
 LUA_FUNC(setFont, l_Graphics, "Font index", NULL, "Sets current font")
 {
 	if(!Gr_inited)
@@ -2962,35 +3322,70 @@ LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Resize], [Width to
 	if(sy < 0)
 		sy = rh + sy;
 
-	gr_set_bitmap(idx);
+	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
 	gr_aabitmap_ex(x, y, w, h, sx, sy, r, m);
 
 	return lua_set_args(L, "b", true);
 }
 
-LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Resize], [Width to show], [Height to show], [X start], [Y start]", "Whether image was drawn", "Draws an image")
+LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation], [No drop frames]", "Texture handle, false if invalid name",
+		 "Gets a handle to a texture. If second argument is set to true, animations will also be loaded."
+		 "If third argument is set to true, every other animation frame will not be loaded if system has less than 48 MB memory."
+		 "<br><strong>IMPORTANT:</strong> Textures will not be unloaded unless you explicitly tell them to do so."
+		 "When you are done with a texture, call the Unload() function to free up memory.")
+{
+	char *s;
+	int idx;
+	bool b=false;
+	bool d=false;
+
+	if(!lua_get_args(L, "s|b", &s, &b, &d))
+		return LUA_RETURN_NIL;
+
+	idx = bm_load(s);
+	if(idx < 0 && b) {
+		idx = bm_load_animation(s, NULL, NULL, d ? 1 : 0);
+	}
+
+	if(idx < 0)
+		return LUA_RETURN_FALSE;
+
+	return lua_set_args(L, "o", l_Texture.Set(idx));
+}
+
+LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Resize], [Width to show], [Height to show], [X start], [Y start]", "Whether image or texture was drawn", "Draws an image or texture.")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
+	int idx;
 	int x,y;
 	int rw,rh;
-	char *s;
 	int w=0;
 	int h=0;
 	int sx=0;
 	int sy=0;
 	bool r;
 
-	if(!lua_get_args(L, "sii|biiii", &s,&x,&y,&r,&w,&h,&sx,&sy))
-		return LUA_RETURN_NIL;
+	if(lua_isstring(L, 1))
+	{
+		char *s;
+		if(!lua_get_args(L, "sii|biiii", &s,&x,&y,&r,&w,&h,&sx,&sy))
+			return LUA_RETURN_NIL;
 
-	int idx = bm_load(s);
+		idx = Script_system.LoadBm(s);
 
-	if(idx < 0)
-		return lua_set_args(L, "b", false);
+		if(idx < 0)
+			return LUA_RETURN_FALSE;
+	}
+	else
+	{
+		if(!lua_get_args(L, "oii|biiii", l_Texture.Get(&idx),&x,&y,&r,&w,&h,&sx,&sy))
+			return LUA_RETURN_NIL;
+	}
 
-	bm_get_info(idx, &rw, &rh);
+	if(bm_get_info(idx, &rw, &rh) < 0)
+		return LUA_RETURN_FALSE;
 
 	if(w==0)
 		w = rw;
@@ -3003,10 +3398,10 @@ LUA_FUNC(drawImage, l_Graphics, "Image name, x, y, [Resize], [Width to show], [H
 	if(sy < 0)
 		sy = rh + sy;
 
-	gr_set_bitmap(idx);
+	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
 	gr_bitmap_ex(x, y, w, h, sx, sy);
 
-	return lua_set_args(L, "b", true);
+	return LUA_RETURN_TRUE;
 }
 
 LUA_FUNC(getImageWidth, l_Graphics, "Image name, [Resize]", "Image width", "Gets image width")
@@ -3115,6 +3510,12 @@ LUA_FUNC(playInterfaceSound, l_SoundLib, "Sound filename", "True if sound was pl
 
 	return lua_set_args(L, "b", idx > -1);
 }
+
+//*************************Testing stuff*************************
+//This section is for stuff that's considered experimental.
+lua_lib l_Testing("Testing", "ts", "Experimental or testing stuff");
+
+
 
 // *************************Housekeeping*************************
 
@@ -3472,7 +3873,7 @@ int script_state::CreateLuaState()
 	{
 		if(!luaL_newmetatable(L, lib->Name))
 		{
-			Warning(LOCATION, "Couldn't create metatable for object '%s'", lib->Name);
+			LuaError(L, "Couldn't create metatable for object '%s'", lib->Name);
 			continue;
 		}
 		//Get the absolute position of the object metatable for later use
@@ -3586,6 +3987,11 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 	{
 		for(i = 0; i < 2; i++)
 		{
+			if(lib->Indexer != NULL) {
+				draw_header = true;
+				break;
+			}
+
 			func = &lib->Functions[0];
 			func_end = &lib->Functions[lib->Functions.size()];
 			for(; func < func_end; func++)
@@ -3595,7 +4001,8 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 					break;
 				}
 			}
-			if(lib_deriv == NULL)
+
+			if(lib_deriv == NULL || draw_header)
 				break;
 
 			lib = lib_deriv;
@@ -3627,7 +4034,7 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 			}
 
 			if(func->Arguments != NULL) {
-				fprintf(fp, "<dt><b>%s - <i>%s</i></b></dt>", draw_name, func->Arguments);
+				fprintf(fp, "<dt><b>%s</b> <i>%s</i></dt>", draw_name, func->Arguments);
 			} else {
 				fprintf(fp, "<dt><b>%s</b></dt>", draw_name);
 			}
@@ -3639,9 +4046,9 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 			}
 
 			if(func->ReturnValues != NULL) {
-				fprintf(fp, "<dd><b>Return values:</b> %s<br>&nbsp;</dd>", func->ReturnValues);
+				fprintf(fp, "<dd><b>Result:</b> %s<br>&nbsp;</dd>", func->ReturnValues);
 			} else {
-				fputs("<dd><b>Return values:</b> None<br>&nbsp;</dd>", fp);
+				fputs("<dd><b>Result:</b> None<br>&nbsp;</dd>", fp);
 			}
 		}
 
@@ -3649,6 +4056,9 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 			break;
 
 		lib = lib_deriv;
+	}
+	if(draw_header) {
+		fputs("</dl></dd>", fp);
 	}
 
 	//Variables
@@ -3689,10 +4099,28 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 	}
 
 	//Functions
-	if(main_lib->Functions.size() || (lib_deriv != NULL && lib_deriv->Functions.size()))
-		draw_header = true;
-	else draw_header = false;
 	lib = main_lib;
+	draw_header = false;
+	if(main_lib->Functions.size() || (lib_deriv != NULL && lib_deriv->Functions.size()))
+	{
+		for(i = 0; i < 2; i++)
+		{
+			func = &lib->Functions[0];
+			func_end = &lib->Functions[lib->Functions.size()];
+			for(; func < func_end; func++)
+			{
+				if(strncmp(func->Name, "__", 2)) {
+					draw_header = true;
+					break;
+				}
+			}
+
+			if(lib_deriv == NULL || draw_header)
+				break;
+
+			lib = lib_deriv;
+		}
+	}
 	if(draw_header) {
 		fputs("<dt><h3>Functions</h3></dt><dd><dl>", fp);
 	}
@@ -3744,7 +4172,7 @@ void script_state::OutputLuaMeta(FILE *fp)
 #ifdef USE_LUA
 	//***Output Libraries
 	fputs("<dl>", fp);
-	fputs("<dt>Libraries</dt>", fp);
+	fputs("<dt><b>Libraries</b></dt>", fp);
 	lua_lib_h *lib = &lua_Libraries[0];
 	lua_lib_h *lib_end = &lua_Libraries[lua_Libraries.size()];
 	for(; lib < lib_end; lib++)
@@ -3755,7 +4183,7 @@ void script_state::OutputLuaMeta(FILE *fp)
 	//***Output objects
 	lib = &lua_Objects[0];
 	lib_end = &lua_Objects[lua_Objects.size()];
-	fputs("<dt>Objects</dt>", fp);
+	fputs("<dt><b>Objects</b></dt>", fp);
 	for(; lib < lib_end; lib++)
 	{
 		fprintf(fp, "<dd><a href=\"#%s\">%s</a> - %s</dd>", lib->Name, lib->Name, lib->Description);

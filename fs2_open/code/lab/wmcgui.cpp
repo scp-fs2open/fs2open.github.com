@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.26 $
- * $Date: 2005-12-06 03:17:48 $
- * $Author: taylor $
+ * $Revision: 1.27 $
+ * $Date: 2006-01-21 02:22:05 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2005/12/06 03:17:48  taylor
+ * cleanup some debug log messages:
+ *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
+ *   make sure that OpenAL init failures always get to the debug log
+ *
  * Revision 1.25  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -1275,7 +1280,7 @@ void GUIObject::SetPosition(int x, int y)
 int Window::DoRefreshSize()
 {
 	float num;
-	int w, h;
+	int w=0, h=0;
 	//Top left, top right, bottom left, bottom right
 	int CornerWidths[4];
 

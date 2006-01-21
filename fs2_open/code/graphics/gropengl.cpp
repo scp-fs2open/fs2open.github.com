@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.158 $
- * $Date: 2006-01-21 00:14:25 $
- * $Author: taylor $
+ * $Revision: 2.159 $
+ * $Date: 2006-01-21 02:22:04 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.158  2006/01/21 00:14:25  taylor
+ * don't forcefully disable multisample still (part of an old ATI fix that didn't actually fix anything)
+ *
  * Revision 2.157  2006/01/20 17:15:16  taylor
  * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
  * several other very minor changes as well
@@ -2896,8 +2899,8 @@ void gr_opengl_print_screen(char *filename)
 	}
 
 	// Write the TGA header
-	width = INTEL_SHORT(gr_screen.max_w);
-	height = INTEL_SHORT(gr_screen.max_h);
+	width = INTEL_SHORT((ushort)gr_screen.max_w);
+	height = INTEL_SHORT((ushort)gr_screen.max_h);
 
 	memset( tga_hdr, 0, sizeof(tga_hdr) );
 
@@ -2935,9 +2938,6 @@ void gr_opengl_cleanup(int minimize)
 {	
 	if ( !OGL_enabled )
 		return;
-
-	//WMC - Try to get rid of annoying crash on exit
-	gr_unset_cursor_bitmap(Gr_cursor);
 
 	if (!Fred_running) {
 		gr_reset_clip();

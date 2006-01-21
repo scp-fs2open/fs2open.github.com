@@ -177,12 +177,31 @@ public:
 
 class lua_indexer_h {
 public:
-	lua_indexer_h(lua_CFunction func, lua_lib &lib, char *desc=NULL) {
+	lua_indexer_h(lua_CFunction func, lua_lib &lib, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
 		lib.SetIndexer(func, desc);
+
+		//Add function for meta
+		lua_func_hh f={0};
+		f.Name = "__indexer";
+		f.Function = NULL;
+		f.Arguments = args;
+		f.ReturnValues = retvals;
+		f.Description = desc;
+
+		lib.AddFunc(&f);
 	}
 
-	lua_indexer_h(lua_CFunction func, lua_obj_h &obj, char *desc=NULL) {
+	lua_indexer_h(lua_CFunction func, lua_obj_h &obj, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
 		obj.SetIndexer(func, desc);
+
+		//Add function for meta
+		lua_func_hh f={0};
+		f.Name = "__indexer";
+		f.Function = NULL;
+		f.Arguments = args;
+		f.ReturnValues = retvals;
+		f.Description = desc;
+		obj.AddFunc(&f);
 	}
 };
 

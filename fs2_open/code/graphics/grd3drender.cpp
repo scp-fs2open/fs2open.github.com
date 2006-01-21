@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.82 $
- * $Date: 2006-01-20 17:15:16 $
- * $Author: taylor $
+ * $Revision: 2.83 $
+ * $Date: 2006-01-21 02:22:04 $
+ * $Author: wmcoolmon $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2006/01/20 17:15:16  taylor
+ * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
+ * several other very minor changes as well
+ *
  * Revision 2.81  2005/12/29 07:58:02  taylor
  * add <gamedir>/screenshots support and save screenshot images in TGA rather than BMP format
  *
@@ -4085,8 +4089,8 @@ void gr_d3d_print_screen(char *filename)
 
 
 	// Write the TGA header
-	width = INTEL_SHORT(gr_screen.max_w);
-	height = INTEL_SHORT(gr_screen.max_h);
+	width = (ushort)INTEL_SHORT(gr_screen.max_w);
+	height = (ushort)INTEL_SHORT(gr_screen.max_h);
 
 	memset( tga_hdr, 0, sizeof(tga_hdr) );
 

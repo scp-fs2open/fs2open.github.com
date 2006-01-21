@@ -13,6 +13,12 @@
 //*************************Scripting structs*************************
 #define SCRIPT_END_LIST		NULL
 
+struct image_desc
+{
+	char fname[MAX_FILENAME_LEN];
+	int handle;
+};
+
 //**********Main script_state function
 class script_state
 {
@@ -24,6 +30,9 @@ private:
 	const struct script_lua_lib_list *LuaLibs;
 	struct PyObject *PyGlb;
 	struct PyObject *PyLoc;
+
+	//Utility variables
+	std::vector<image_desc> ScriptImages;
 
 private:
 	PyObject *GetPyLocals(){return PyLoc;}
@@ -37,9 +46,14 @@ private:
 	void Clear();
 
 public:
+	//Init/Deinit
 	script_state(char *name);
 	script_state& operator=(script_state &in);
 	~script_state();
+
+	//Internal scripting stuff
+	int LoadBm(char *name);
+	void UnloadImages();
 
 	lua_State *GetLuaSession(){return LuaState;}
 
