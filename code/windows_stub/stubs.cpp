@@ -1,13 +1,19 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.26 $
- * $Date: 2006-01-13 14:19:34 $
+ * $Revision: 2.27 $
+ * $Date: 2006-01-21 00:11:51 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/01/13 14:19:34  taylor
+ * move SDL autoconf checks up so we get the defines earlier
+ * fix some Lua build problems on Linux (enabled by default now, but with configure option)
+ * newline fixage
+ * comment fixage
+ *
  * Revision 2.25  2005/10/27 16:23:03  taylor
  * go back to using abort() over exit() for Assert's and Int3's but close out SDL first this time, makes debugging much easier
  *
@@ -255,18 +261,27 @@ void Error( char * filename, int line, char * format, ... )
 	exit(EXIT_FAILURE);
 }
 
-void LuaError(char * filename, int line, struct lua_State *L)
+void LuaError(struct lua_State *L, char *format, ...)
 {
 #ifdef USE_LUA
+	va_list args;
 	memset( &buffer, 0, sizeof(buffer) );
 
-	// make sure to cap to a sane string size
-	snprintf( buffer, sizeof(buffer) - 1, "%s", lua_tostring(L, -1) );
-	lua_pop(L, -1);
+	if (format == NULL) {
+		// make sure to cap to a sane string size
+		snprintf( buffer, sizeof(buffer) - 1, "%s", lua_tostring(L, -1) );
+		lua_pop(L, -1);
+	} else {
+		va_start(args, format);
+		vsnprintf(buffer, sizeof(buffer) - 1, format, args);
+		va_end(args);
+	}
 
 	// Order UP!!
-	fprintf(stderr, "LUA ERROR: \"%s\" at %s:%d\n", buffer, filename, line);
+	fprintf(stderr, "LUA ERROR: \"%s\"\n", buffer);
 #endif
+
+	exit(EXIT_FAILURE);
 }
 
 
