@@ -795,7 +795,7 @@ LUA_INDEXER(l_Vector, "x,y,z or 1-3", "Vector", "Vector component")
 	int numargs = lua_get_args(L, "os|f", l_Vector.GetPtr(&v3), &s, &newval);
 
 	if(!numargs || s[1] != '\0')
-		LUA_RETURN_NIL;
+		return LUA_RETURN_NIL;
 
 	int idx=-1;
 	if(s[0]=='x' || s[0] == '1')
