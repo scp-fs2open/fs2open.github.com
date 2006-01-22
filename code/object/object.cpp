@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.56 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.57 $
+ * $Date: 2006-01-22 01:32:07 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.55  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
