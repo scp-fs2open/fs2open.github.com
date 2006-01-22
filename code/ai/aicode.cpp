@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.57 $
- * $Date: 2006-01-22 14:09:01 $
+ * $Revision: 1.58 $
+ * $Date: 2006-01-22 22:41:16 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.57  2006/01/22 14:09:01  taylor
+ * more class type name fixage (maybe an AltName: line for objettypes.tbl in the future?)
+ * if a ship has no class_type in ai_chase() then assume it's ok to chase, but log it in debug
+ *   (uncomment Int3() here after this has been tested a little more)
+ *
  * Revision 1.56  2006/01/22 01:28:06  taylor
  * handle NULL ptr ref in debug message (needs to be reconsidered as to whether the function should actually return here or not)
  *
@@ -5027,7 +5032,7 @@ void ai_fly_to_ship()
 		accelerate_ship(aip, max_allowed_speed / shipp->current_max_speed);
 	}
 
-	if (vm_vec_dist_quick(&Pl_objp->last_pos, &Pl_objp->pos) > 0.1f) {
+	if ( (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || (vm_vec_dist_quick(&Pl_objp->last_pos, &Pl_objp->pos) > 0.1f) ) {
 		vec3d	nearest_point;
 		float		r;
 
@@ -5273,7 +5278,7 @@ void ai_waypoints()
 		accelerate_ship(aip, max_allowed_speed / shipp->current_max_speed);
 	}
 
-	if (vm_vec_dist_quick(&Pl_objp->last_pos, &Pl_objp->pos) > 0.1f) {
+	if ( (dist_to_goal < MIN_DIST_TO_WAYPOINT_GOAL) || (vm_vec_dist_quick(&Pl_objp->last_pos, &Pl_objp->pos) > 0.1f) ) {
 		vec3d	nearest_point;
 		float		r;
 
@@ -10331,7 +10336,8 @@ void ai_big_guard()
 				}
 			}
 
-			if (Pl_objp->phys_info.fspeed > 0) {
+			// make sure we have a forward velocity worth calculating (values too low can produce NaN in goal_pt) - taylor
+			if (Pl_objp->phys_info.fspeed > 0.0001f) {
 				// modify goal_pt to take account moving guard objp
 				float dist = vm_vec_dist_quick(&Pl_objp->pos, &goal_pt);
 				float time = dist / Pl_objp->phys_info.fspeed;
