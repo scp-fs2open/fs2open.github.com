@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-11-13 06:40:19 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2006-01-22 19:57:35 $
+ * $Author: wmcoolmon $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/11/13 06:40:19  taylor
+ * add support for 8/16/24/32 bit output from ani frame decoder
+ *
  * Revision 2.10  2005/05/24 03:13:36  taylor
  * extra check to make sure that RLE reading never goes over frame size in new ANI formats
  *
@@ -834,7 +837,7 @@ void convert_24_to_16(int bit_24, ushort *bit_16)
 	ubyte *pixel = (ubyte*)&bit_24;
 	ubyte alpha = 1;
 
-	bm_set_components((ubyte*)bit_16, (ubyte*)&pixel[0], (ubyte*)&pixel[1], (ubyte*)&pixel[2], &alpha);	
+	bm_set_components((ubyte*)bit_16, (ubyte*)&pixel[0], (ubyte*)&pixel[1], (ubyte*)&pixel[2], &alpha);
 }
 
 // unpack a pixel given the passed index and the anim_instance's palette, return bytes stuffed
@@ -878,7 +881,7 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 				pixel[0] = ai->parent->palette[pix * 3 + 2];
 				pixel[1] = ai->parent->palette[pix * 3 + 1];
 				pixel[2] = ai->parent->palette[pix * 3];
-				pixel[4] = 255;
+				pixel[3] = 255;
 				memcpy(&bit_24, pixel, sizeof(int));
 
 				if (pixel_size == 4) {
@@ -959,7 +962,7 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count, int
 				pixel[0] = ai->parent->palette[pix * 3 + 2];
 				pixel[1] = ai->parent->palette[pix * 3 + 1];
 				pixel[2] = ai->parent->palette[pix * 3];
-				pixel[4] = 255;
+				pixel[3] = 255;
 				memcpy(&bit_24, pixel, sizeof(int));
 
 				if (pixel_size == 4) {
