@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.206 $
- * $Date: 2006-01-22 01:33:39 $
+ * $Revision: 2.207 $
+ * $Date: 2006-01-22 01:35:23 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.206  2006/01/22 01:33:39  taylor
+ * warning fixage
+ * don't Int3() when trying to set ship speed via sexp if ship is not in mission yet, this shouldn't be fatal
+ *
  * Revision 2.205  2006/01/21 09:36:58  wmcoolmon
  * Texture replacement stuff
  *
@@ -4880,7 +4884,7 @@ int sexp_are_waypoints_done_delay( int n )
 int sexp_ship_type_destroyed( int n )
 {
 	int percent;
-	unsigned int type;
+	uint type;
 	char *shiptype;
 
 	percent = eval_num(n);
@@ -4894,7 +4898,7 @@ int sexp_ship_type_destroyed( int n )
 		return 0;
 	}
 
-	if ( type <= (int)Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
+	if ( type <= Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
 		return 0;
 
 	//We are safe from array indexing probs b/c of previous if.
