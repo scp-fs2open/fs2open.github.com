@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 03:15:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2006-01-22 01:31:44 $
+ * $Author: taylor $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 03:15:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.11  2005/07/07 16:36:57  taylor
  * various compiler warning fixes (some of these from dizzy)
  *
@@ -229,12 +233,12 @@
 //Macros/functions to fill in fields of structures
 
 //macro to check if vector is zero
-#define IS_VEC_NULL(v) (((v)->xyz.x == (float)0.0) && ((v)->xyz.y == (float)0.0) && ((v)->xyz.z == (float)0.0))
+#define IS_VEC_NULL(v) (((v)->xyz.x == 0.0f) && ((v)->xyz.y == 0.0f) && ((v)->xyz.z == 0.0f))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
 //macro, but it's probably better to let the compiler optimize it.
 //Note: NO RETURN VALUE
-#define vm_vec_zero(v) (v)->xyz.x=(v)->xyz.y=(v)->xyz.z=(float)0.0
+#define vm_vec_zero(v) (v)->xyz.x=(v)->xyz.y=(v)->xyz.z=0.0f
 
 /*
 //macro set set a matrix to the identity. Note: NO RETURN VALUE
