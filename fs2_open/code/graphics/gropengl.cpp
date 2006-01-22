@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.159 $
- * $Date: 2006-01-21 02:22:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.160 $
+ * $Date: 2006-01-22 01:30:33 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.159  2006/01/21 02:22:04  wmcoolmon
+ * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
+ *
  * Revision 2.158  2006/01/21 00:14:25  taylor
  * don't forcefully disable multisample still (part of an old ATI fix that didn't actually fix anything)
  *
@@ -1414,6 +1417,8 @@ void gr_opengl_flip()
 		GL_deactivate = 0;
 		// gr_opengl_clip_cursor(0);  // mouse grab, see opengl_activate
 	}
+
+	glClear(GL_DEPTH_BUFFER_BIT);
 
 #ifndef NDEBUG
 	int ic = opengl_check_for_errors();
@@ -3799,19 +3804,25 @@ void gr_opengl_draw_line_list(colored_vector *lines, int num)
 int opengl_check_for_errors()
 {
 	GLenum error = GL_NO_ERROR;
-	
-	error = glGetError();
-	
-	if (error != GL_NO_ERROR) {
-		nprintf(("OpenGL", "OpenGL ERROR: %s (%i)\n", gluErrorString(error), error));
-		return 1;
-	}
-	
-	return 0;
+	int num_errors = 0;
+
+	do {
+		error = glGetError();
+
+		if (error != GL_NO_ERROR) {
+			nprintf(("OpenGL", "OpenGL ERROR: %s (%i)\n", gluErrorString(error), error));
+			num_errors++;
+		}
+	} while (error != GL_NO_ERROR);
+
+	return num_errors;
 }
 
-void gr_opengl_close()
+void opengl_close()
 {
+	if (!OGL_enabled || (gr_screen.mode != GR_OPENGL))
+		return;
+
 	if (currently_enabled_lights != NULL) {
 		vm_free(currently_enabled_lights);
 		currently_enabled_lights = NULL;
@@ -3832,6 +3843,8 @@ void gr_opengl_close()
 	// restore original gamma settings
 	SetDeviceGammaRamp( dev_context, original_gamma_ramp );
 #endif
+
+	OGL_enabled = 0;
 }
 
 int opengl_init_display_device()
@@ -4261,6 +4274,10 @@ void gr_opengl_init(int reinit)
 	//shut these command line parameters down if they are in use
 	Cmdline_batch_3dunlit = 0;
 
+	if ( !OGL_enabled ) {
+		atexit(opengl_close);
+	}
+
 	if ( OGL_enabled )	{
 		gr_opengl_cleanup();
 		OGL_enabled = 0;
@@ -4410,9 +4427,7 @@ void gr_opengl_init(int reinit)
 		gr_unsize_screen_posf( &GL_uv_resize_offset_u, &GL_uv_resize_offset_v );
 	}
 
-	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);	
-
-	atexit( gr_opengl_close );
+	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);
 
 #ifdef BUMPMAPING
 	//WMC - Generate normalization bump map
