@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.56 $
- * $Date: 2006-01-22 01:28:06 $
+ * $Revision: 1.57 $
+ * $Date: 2006-01-22 14:09:01 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.56  2006/01/22 01:28:06  taylor
+ * handle NULL ptr ref in debug message (needs to be reconsidered as to whether the function should actually return here or not)
+ *
  * Revision 1.55  2006/01/21 02:43:23  taylor
  * long way to go for a simple div-by-0 fix
  *
@@ -8728,6 +8731,14 @@ void ai_chase()
 					break;
 				}
 			}
+		}
+		else
+		{
+			// if there was no class type then assume we can go after it ...
+			go_after_it = true;
+			// ... but also log this in debug so it doesn't go unchecked (NOTE that this can completely flood a debug log!)
+			mprintf(("AI-WARNING: No class_type specified for '%s', assuming that it's ok to chase!\n", esip->name));
+		//	Int3();
 		}
 	}
 
