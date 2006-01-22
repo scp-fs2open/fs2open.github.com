@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.55 $
- * $Date: 2006-01-21 02:43:23 $
+ * $Revision: 1.56 $
+ * $Date: 2006-01-22 01:28:06 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.55  2006/01/21 02:43:23  taylor
+ * long way to go for a simple div-by-0 fix
+ *
  * Revision 1.54  2006/01/17 03:48:25  phreak
  * Make sure the rearm eta isn't recalcuated until the player docks again with a support ship
  *
@@ -3119,7 +3122,7 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 	}
 
 	//	Only set to chase if a fighter or bomber, otherwise just return.
-	if (!(Ship_info[Ships[attacker->instance].ship_info_index].flags & SIF_SMALL_SHIP)) {
+	if (!(Ship_info[Ships[attacker->instance].ship_info_index].flags & SIF_SMALL_SHIP) && (attacked != NULL)) {
 //		nprintf(("AI","Note: AI ship %s refusing to set AI mode to AIM_CHASE\n", Ships[attacker->instance].ship_name));
 //		return;
 		nprintf(("AI", "AI ship %s is large ship ordered to attack %s\n", Ships[attacker->instance].ship_name, Ships[attacked->instance].ship_name));
