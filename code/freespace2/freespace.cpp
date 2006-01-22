@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.221 $
- * $Date: 2006-01-21 02:22:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.222 $
+ * $Date: 2006-01-22 01:26:15 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.221  2006/01/21 02:22:04  wmcoolmon
+ * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
+ *
  * Revision 2.220  2006/01/20 06:26:41  Goober5000
  * sorted the #include listing again
  * --Goober5000
@@ -5877,12 +5880,17 @@ void obj_script_set_global(char *global_name, object *objp)
 		Script_system.RemGlobal(global_name);
 		return;
 	}
+
 #ifdef USE_LUA
+	script_lua_odata luaobj;
+
 	if(objp->type == OBJ_SHIP) {
-		Script_system.SetGlobal(global_name, 'o', &l_Ship.Set(object_h(objp)));
+		luaobj = l_Ship.Set(object_h(objp));
 	} else {
-		Script_system.SetGlobal(global_name, 'o', &l_Object.Set(object_h(objp)));
+		luaobj = l_Object.Set(object_h(objp));
 	}
+
+	Script_system.SetGlobal(global_name, 'o', &luaobj);
 #endif
 }
 
