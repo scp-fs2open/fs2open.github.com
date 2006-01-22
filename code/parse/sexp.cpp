@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.205 $
- * $Date: 2006-01-21 09:36:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.206 $
+ * $Date: 2006-01-22 01:33:39 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.205  2006/01/21 09:36:58  wmcoolmon
+ * Texture replacement stuff
+ *
  * Revision 2.204  2006/01/20 04:33:21  Goober5000
  * fixed a sexp help message
  * --Goober5000
@@ -4891,7 +4894,7 @@ int sexp_ship_type_destroyed( int n )
 		return 0;
 	}
 
-	if ( type <= Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
+	if ( type <= (int)Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
 		return 0;
 
 	//We are safe from array indexing probs b/c of previous if.
@@ -9041,7 +9044,7 @@ void sexp_cap_waypoint_speed(int n)
 	shipnum = ship_name_lookup(shipname);
 
 	if (shipnum == -1) {
-		Int3();	// trying to set waypoint speed of ship not already in game
+	//	Int3();	// trying to set waypoint speed of ship not already in game
 		return;
 	}
 
