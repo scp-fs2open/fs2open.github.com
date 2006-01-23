@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.83 $
- * $Date: 2006-01-21 02:22:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.84 $
+ * $Date: 2006-01-23 09:39:30 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2006/01/21 02:22:04  wmcoolmon
+ * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
+ *
  * Revision 2.82  2006/01/20 17:15:16  taylor
  * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
  * several other very minor changes as well
@@ -2841,7 +2844,7 @@ void d3d_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool res
 
 	uint color;
 
-	color = D3DCOLOR_ARGB( (gr_screen.current_color.alpha * 255), 255, 255, 255 );
+	color = D3DCOLOR_ARGB( gr_screen.current_color.alpha, 255, 255, 255 );
 
 	src_v->sz = 0.99f;
 	src_v->rhw = 1.0f;
