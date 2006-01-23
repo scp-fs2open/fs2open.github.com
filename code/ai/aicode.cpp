@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.58 $
- * $Date: 2006-01-22 22:41:16 $
+ * $Revision: 1.59 $
+ * $Date: 2006-01-23 13:51:11 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.58  2006/01/22 22:41:16  taylor
+ * add fixes for capships that hit waypoints and just spin around
+ * try and fix a big ship guard NaN error that is the result of an incredibly small forward speed value
+ *
  * Revision 1.57  2006/01/22 14:09:01  taylor
  * more class type name fixage (maybe an AltName: line for objettypes.tbl in the future?)
  * if a ship has no class_type in ai_chase() then assume it's ok to chase, but log it in debug
@@ -8457,8 +8461,12 @@ void ai_chase_big_parallel_set_goal(vec3d *goal_pos, object *attack_objp, object
 	vm_vec_sub(&vec_to_target, &target_objp->pos, &attack_objp->pos);
 	float perp_dist = vm_vec_dotprod(&vec_to_target, &target_objp->orient.vec.fvec);
 
-	float match_accel = target_objp->phys_info.vel.xyz.z / Ship_info[Ships[attack_objp->instance].ship_info_index].max_vel.xyz.z;
+	float match_accel = 0.0f;
 	float length_scale = attack_objp->radius;
+
+	if (Ship_info[Ships[attack_objp->instance].ship_info_index].max_vel.xyz.z != 0.0f) {
+		match_accel = target_objp->phys_info.vel.xyz.z / Ship_info[Ships[attack_objp->instance].ship_info_index].max_vel.xyz.z;
+	}
 
 	// if we're heading toward enemy ship, we want to keep going if we're ahead
 	if (opposing) {
