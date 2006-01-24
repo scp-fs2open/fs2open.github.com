@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.160 $
- * $Date: 2006-01-22 01:30:33 $
+ * $Revision: 2.161 $
+ * $Date: 2006-01-24 13:38:30 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.160  2006/01/22 01:30:33  taylor
+ * clear depth buffer on each page flip (may give a slight speed increase)
+ * change error check handling again, FRED may like this better but if it starts hanging again I have another fix
+ * little safety checks for opengl_close()
+ * fix atexit() call for OGL closeout
+ *
  * Revision 2.159  2006/01/21 02:22:04  wmcoolmon
  * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
  *
@@ -3813,7 +3819,7 @@ int opengl_check_for_errors()
 			nprintf(("OpenGL", "OpenGL ERROR: %s (%i)\n", gluErrorString(error), error));
 			num_errors++;
 		}
-	} while (error != GL_NO_ERROR);
+	} while ((error != GL_NO_ERROR) && !Fred_running);
 
 	return num_errors;
 }
