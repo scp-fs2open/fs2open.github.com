@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.16 $
- * $Date: 2006-01-11 05:42:17 $
+ * $Revision: 1.17 $
+ * $Date: 2006-01-25 22:51:07 $
  * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2006/01/11 05:42:17  taylor
+ * allow for an equals value in qsort() comparison function, will hopefully fix Enif station bug and not cause any new problems
+ *
  * Revision 1.15  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -2227,7 +2230,11 @@ int ai_goal_priority_compare(const void *a, const void *b)
 
 
 	// the two are equal
+#ifdef _WIN32
+	return 1;	// Grrrr.
+#else
 	return 0;
+#endif
 }
 
 //	Prioritize goal list.
