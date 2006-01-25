@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.36 $
- * $Date: 2006-01-18 16:14:04 $
- * $Author: taylor $
+ * $Revision: 1.37 $
+ * $Date: 2006-01-25 03:11:52 $
+ * $Author: phreak $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 1.35  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -1159,7 +1165,8 @@ void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
 	if (Cmdline_nohtl)
 		return;
 
-	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
+	gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
+	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, zbuffer_state);
 	glBegin(GL_LINES);
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 		glSecondaryColor3ubvEXT(GL_zero_3ub);
