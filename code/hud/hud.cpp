@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.64 $
- * $Date: 2006-01-17 03:46:56 $
- * $Author: phreak $
+ * $Revision: 2.65 $
+ * $Date: 2006-01-25 07:46:13 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2006/01/17 03:46:56  phreak
+ * Modified the formatting for the rearm countdown timer once docked.
+ *
  * Revision 2.63  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -1475,6 +1478,11 @@ void hud_show_radar()
 		return;
 	}
 
+	//WMC - This strikes me as a bit hackish
+	bool g3_yourself = G3_count == 0;
+	if(g3_yourself)
+		g3_start_frame(1);
+
 	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | /*VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
 		if ( Game_detail_flags & DETAIL_FLAG_HUD )	{
 			if ( hud_gauge_active(HUD_RADAR) ) {
@@ -1483,6 +1491,8 @@ void hud_show_radar()
 			}
 		}
 	}
+	if(g3_yourself)
+		g3_end_frame();
 }
 
 // Render model of target in the target view box
