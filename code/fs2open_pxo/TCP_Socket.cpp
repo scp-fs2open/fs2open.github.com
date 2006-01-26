@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.18 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 1.19 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.17  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -51,7 +55,7 @@
  *
  * Revision 1.9  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.8  2004/03/09 17:59:01  Kazan
@@ -98,11 +102,6 @@
 #include <arpa/inet.h>
 #endif
 
-
-// 4100 = unreferenced formal parameter
-// 4511 = copy constructor could not be generated
-// 4512 = assignment operator could not be generated
-#pragma warning(disable:4100 4511 4512)
 
 using namespace std;
 
@@ -250,8 +249,6 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 
 }
 
-#pragma warning(push)
-#pragma warning(disable:4127)	// conditional expression is constant
 bool TCP_Socket::DataReady()
 {
 	timeval wait;
@@ -312,7 +309,6 @@ bool TCP_Socket::OOBDataReady()
 
 	return (status != 0 && status != SOCKET_ERROR);
 }
-#pragma warning(pop)
 
 #if defined(FS2_TCP_RMultithread)
 

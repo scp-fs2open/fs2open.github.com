@@ -9,13 +9,16 @@
 
 /*
  * $Logfile$
- * $Revision: 1.18 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 1.19 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * C file for implementing PXO-substitute (FS2OX -- "fs2_open exchange") screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 1.17  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -54,7 +57,7 @@
  *
  * Revision 1.7  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.6  2004/03/10 20:51:16  Kazan
@@ -81,10 +84,8 @@
 
 
 
-// 4786 = identifier truncated in the debug information
-// 4710 = function not inlined
 // 4097 = something used as synonym for class
-#pragma warning(disable:4786 4710 4097)
+#pragma warning(disable:4097)
 
 #include "globalincs/pstypes.h"
 #include "ui/ui.h"

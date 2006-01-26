@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-01-13 03:30:59 $
+ * $Revision: 2.23 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.21  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -73,7 +76,7 @@
  *
  * Revision 2.6  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.5  2004/03/05 09:02:03  Goober5000
@@ -339,14 +342,13 @@
 #include "hud/hudobserver.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/pstypes.h"
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 #include "iff_defs/iff_defs.h"
 
-
-#pragma warning(disable:4710)	// function not inlined
 
 //////////////////////////////////////////////////////////////////////////////
 // Game-wide Globals

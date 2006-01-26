@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.13 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 1.14 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.12  2005/10/23 20:34:30  taylor
  * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
  *
@@ -45,7 +49,7 @@
  *
  * Revision 1.3  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.2  2004/03/10 20:51:16  Kazan

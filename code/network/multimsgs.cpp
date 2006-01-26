@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.53 $
- * $Date: 2005-12-29 08:08:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.54 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.52  2005/12/22 04:35:04  taylor
  * more big-endian fixes
  * fix the totally retarded check I made for multi fighter beams (they really don't work right yet anyway) since it broke normal beams for clients
@@ -142,7 +145,7 @@
  *
  * Revision 2.17  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.16  2004/03/17 04:07:30  bobboau
@@ -598,20 +601,12 @@
 #include "network/multi_log.h"
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
-
-
-#pragma warning(push)
-// 4018 = signed/unsigned mismatch
-// 4663 = new template specification syntax
-// 4245 = signed/unsigned mismatch in conversion of const value
-#pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 
 
 extern int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[];
 extern int PXO_port;
-#pragma warning(pop)
 
 
 

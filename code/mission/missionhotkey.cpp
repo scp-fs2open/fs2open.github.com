@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-01-13 03:31:09 $
+ * $Revision: 2.14 $
+ * $Date: 2006-01-26 03:23:30 $
  * $Author: Goober5000 $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.12  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -37,7 +40,7 @@
  *
  * Revision 2.6  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.5  2004/03/05 09:02:06  Goober5000
@@ -203,6 +206,7 @@
  * $NoKeywords: $
  */
 
+#include "globalincs/pstypes.h"
 #include "mission/missionhotkey.h"
 #include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
@@ -386,10 +390,6 @@ static int Hotkey_ship_x[GR_NUM_RESOLUTIONS] = {
 	448			// GR_1024
 };
 
-// pragma pair put into place because of compiler warnings about being unable to inline
-// the constructor function of the hotkey_buttons set.
-#pragma warning(disable: 4710)	// function not inlined
-
 struct hotkey_buttons {
 	char *filename;
 	int x, y;
@@ -430,7 +430,6 @@ static hotkey_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	}
 //XSTR:ON
 };
-#pragma warning(default: 4710)	// function not inlined
 
 #define HOTKEY_NUM_TEXT		6
 static UI_XSTR Hotkey_text[GR_NUM_RESOLUTIONS][HOTKEY_NUM_TEXT] = {

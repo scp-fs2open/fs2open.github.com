@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.28 $
- * $Date: 2006-01-05 05:12:11 $
- * $Author: taylor $
+ * $Revision: 1.29 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/01/05 05:12:11  taylor
+ * allow both +Pri style and original style (+Normal, etc) for species_defs TBMs
+ * allow for "<none>" as a bitmap/anim name, to have no effect
+ * fix ship/weapon thruster rendering to handle missing primary animation and/or glow graphics
+ *
  * Revision 1.27  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -85,7 +90,7 @@
  *
  * Revision 1.8  2004/03/31 05:42:29  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.7  2004/03/05 09:02:13  Goober5000
@@ -122,8 +127,7 @@
  */
 
 
-#pragma warning(disable:4710)	// function not inlined
-
+#include "globalincs/pstypes.h"
 #include "globalincs/def_files.h"
 #include "species_defs/species_defs.h"
 #include "cfile/cfile.h"

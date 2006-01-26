@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-01-13 03:30:59 $
+ * $Revision: 2.34 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.32  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -96,7 +99,7 @@
  *
  * Revision 2.7  2004/03/31 05:42:25  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.6  2004/03/05 09:01:53  Goober5000
@@ -1248,8 +1251,6 @@ void asteroid_process_pre( object *objp, float frame_time)
 	}
 }
 
-#pragma warning ( push )
-#pragma warning ( disable : 4701 )	// possible use of variable without initialization
 int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos, collision_info_struct *asteroid_hit_info)
 {
 	if (!Asteroids_enabled) {
@@ -1505,8 +1506,6 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		return 0;
 	}
 }
-#pragma warning ( pop )
-
 
 void asteroid_render(object * obj)
 {

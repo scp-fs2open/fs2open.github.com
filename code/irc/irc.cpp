@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.21 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 1.22 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.20  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
  *
@@ -73,7 +77,7 @@
  *
  * Revision 1.3  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.2  2004/03/10 20:51:16  Kazan
@@ -90,9 +94,7 @@
 #include "globalincs/pstypes.h"
 
 // 4097 = something used as synonym for class
-// 4127 = conditional expression is constant
-// 4701 = variable may be used without having been initialized
-#pragma warning(disable: 4097 4127 4701)
+#pragma warning(disable: 4097)
 
 #ifdef _WIN32
 #include <direct.h>

@@ -367,7 +367,6 @@ HRESULT SWFF_DestroyAllEffects(
 	return hResult;
 }
 
-#pragma warning(push)
 #pragma warning(disable:4100)	// unreferenced formal parameter
 BOOL CALLBACK DIEnumAndDestroyCreatedEffectsProc(LPDIRECTINPUTEFFECT pDIEffect, LPVOID lpvRef)
 {
@@ -375,7 +374,7 @@ BOOL CALLBACK DIEnumAndDestroyCreatedEffectsProc(LPDIRECTINPUTEFFECT pDIEffect, 
 
 	return DIENUM_CONTINUE;
 }
-#pragma warning(pop)
+#pragma warning(default:4100)	// unreferenced formal parameter
 
 // ----------------------------------------------------------------------------
 // Function: 	SWFF_SetGain

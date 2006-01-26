@@ -190,9 +190,6 @@ void CModifyVariableDlg::OnTypeCampaignPersistent()
 	set_variable_type();
 }
 
-#pragma warning (push)
-#pragma warning( disable : 4800 ) // Disable "forcing value to bool 'true' or 'false'"
-
 void CModifyVariableDlg::OnSelchangeModifyVariableName()
 {
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_MODIFY_VARIABLE_NAME);
@@ -224,9 +221,9 @@ void CModifyVariableDlg::OnSelchangeModifyVariableName()
 	int sexp_variable_index = get_sexp_var_index();
 	
 	// Set new type for selection
-	m_type_number = (bool) (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER);
-	m_type_campaign_persistent = (bool) (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT);
-	m_type_player_persistent = (bool) (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_PLAYER_PERSISTENT);
+	m_type_number = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER) != 0) ? true : false;
+	m_type_campaign_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) != 0) ? true : false;
+	m_type_player_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_PLAYER_PERSISTENT) != 0) ? true : false;
 	set_variable_type();
 
 	// Set new default value for selection
@@ -235,7 +232,6 @@ void CModifyVariableDlg::OnSelchangeModifyVariableName()
 		edit->SetWindowText(Sexp_variables[sexp_variable_index].text);
 	}
 }
-#pragma warning (pop)
 
 // Check if variable name has changed from Sexp_variables[].varaible name
 void CModifyVariableDlg::OnEditchangeModifyVariableName() 
@@ -254,10 +250,6 @@ void CModifyVariableDlg::OnEditchangeModifyVariableName()
 		m_modified_name = false;
 	}
 }
-
-
-#pragma warning (push)
-#pragma warning( disable : 4800 ) // Disable "forcing value to bool 'true' or 'false'"
 
 BOOL CModifyVariableDlg::OnInitDialog() 
 {
@@ -314,9 +306,9 @@ BOOL CModifyVariableDlg::OnInitDialog()
 	m_old_var_name = Sexp_variables[m_translate_combo_to_sexp[last_modified]].variable_name;
 	
 	// Set type
-	m_type_number = (bool) (Sexp_variables[last_modified].type & SEXP_VARIABLE_NUMBER);
-	m_type_campaign_persistent = (bool) (Sexp_variables[last_modified].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT);
-	m_type_player_persistent = (bool) (Sexp_variables[last_modified].type & SEXP_VARIABLE_PLAYER_PERSISTENT);
+	m_type_number = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_NUMBER) != 0) ? true : false;
+	m_type_campaign_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) != 0) ? true : false;
+	m_type_player_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_PLAYER_PERSISTENT) != 0) ? true : false;
 	set_variable_type();
 
 	// keep track of changes
@@ -334,8 +326,6 @@ BOOL CModifyVariableDlg::OnInitDialog()
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }
-#pragma warning (pop)
-
 
 void CModifyVariableDlg::set_variable_type()
 {

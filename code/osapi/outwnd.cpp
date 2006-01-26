@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-04-20 04:34:42 $
- * $Author: phreak $
+ * $Revision: 2.15 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/04/20 04:34:42  phreak
+ * NMONO should not interfere with the debug window
+ *
  * Revision 2.13  2005/03/03 06:05:30  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -27,7 +30,7 @@
  *
  * Revision 2.10  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.9  2004/03/06 23:28:23  bobboau

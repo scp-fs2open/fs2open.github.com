@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.89 $
- * $Date: 2006-01-18 16:14:04 $
- * $Author: taylor $
+ * $Revision: 2.90 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 2.88  2006/01/16 07:46:03  phreak
  * Only display the capped normal message in debug builds
  *
@@ -220,7 +226,7 @@
  *
  * Revision 2.37  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.36  2004/03/21 10:34:05  bobboau
@@ -3529,8 +3535,6 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 
 
 // Does stepped rotation of a submodel
-#pragma warning ( push )
-#pragma warning (disable : 4701)	// possible use of variable without initialization
 void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 {
 	Assert(psub->flags & MSS_FLAG_STEPPED_ROTATE);
@@ -3626,7 +3630,6 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 		sii->cur_turn_rate = 0.0f;
 	}
 }
-#pragma warning ( pop )
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
