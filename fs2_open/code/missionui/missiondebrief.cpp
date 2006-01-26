@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.47 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.48 $
+ * $Date: 2006-01-26 03:58:14 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.46  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -2456,6 +2459,8 @@ void debrief_text_init()
 extern int Multi_debrief_stats_accept_code;
 void debrief_init()
 {
+	int i;
+
 	Assert(!Debrief_inited);
 //	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
@@ -2465,6 +2470,12 @@ void debrief_init()
 		Debriefing = &Debriefings[Net_player->p_info.team];
 	} else {
 		Debriefing = &Debriefings[0];			
+	}
+
+	// Goober5000 - replace any variables with their values
+	for (i = 0; i < Debriefing->num_stages; i++)
+	{
+		sexp_replace_variable_names_with_values(Debriefing->stages[i].new_text, MAX_DEBRIEF_LEN);
 	}
 
 	// no longer is mission

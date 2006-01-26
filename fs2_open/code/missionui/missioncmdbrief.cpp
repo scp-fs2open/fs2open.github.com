@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-07-02 19:43:54 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2006-01-26 03:58:14 $
+ * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.15  2005/06/03 06:39:26  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -825,6 +828,12 @@ void cmd_brief_init(int team)
 
 	Cmd_brief_inited = 0;
 	Cur_cmd_brief = &Cmd_briefs[team];
+
+	// Goober5000 - replace any variables (probably persistent variables) with their values
+	for (i = 0; i < Cur_cmd_brief->num_stages; i++)
+	{
+		sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text, CMD_BRIEF_TEXT_MAX);
+	}
 
 	if ( red_alert_mission() ) {
 		gameseq_post_event(GS_EVENT_RED_ALERT);

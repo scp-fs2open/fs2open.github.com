@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.40 $
+ * $Date: 2006-01-26 03:58:14 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.38  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -1275,6 +1278,8 @@ void brief_compact_stages()
 //
 void brief_init()
 {
+	int i;
+
 	// Since first stage of briefing can take some time to arrive and play, 
 	// reset the trailer timer on briefing init.
 #ifdef FS2_DEMO
@@ -1300,6 +1305,12 @@ void brief_init()
 		Briefing = &Briefings[0];			
 	}
 
+	// Goober5000 - replace any variables (probably persistent variables) with their values
+	for (i = 0; i < Briefing->num_stages; i++)
+	{
+		sexp_replace_variable_names_with_values(Briefing->stages[i].new_text, MAX_BRIEF_LEN);
+	}
+
 	Brief_last_auto_advance = 0;
 
 	brief_compact_stages();			// compact the briefing array to eliminate unused stages
@@ -1312,7 +1323,6 @@ void brief_init()
 	brief_restart_text_wipe();
 	common_flash_button_init();
 	common_music_init(SCORE_BRIEFING);
-
 
 	help_overlay_set_state(BR_OVERLAY,0);
 
