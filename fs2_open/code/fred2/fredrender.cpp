@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-26 23:04:45 $
+ * $Author: phreak $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.21  2006/01/14 23:49:01  Goober5000
  * second pass; all the errors are fixed now; one more thing to take care of
  * --Goober5000
@@ -1647,6 +1651,7 @@ void fred_render_grid(grid *gridp)
 	if (!Cmdline_nohtl)
 	{
 		fred_enable_htl();
+		gr_zbuffer_set(0);
 	}	
 	
 	if ( !Fred_grid_colors_inited )	{
@@ -1707,6 +1712,7 @@ void fred_render_grid(grid *gridp)
 	if (!Cmdline_nohtl)
 	{
 		fred_disable_htl();
+		gr_zbuffer_set(1);
 	}
 }
 
