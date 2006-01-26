@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.13 $
- * $Date: 2005-12-29 00:49:43 $
- * $Author: phreak $
+ * $Revision: 2.14 $
+ * $Date: 2006-01-26 04:01:58 $
+ * $Author: Goober5000 $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/12/29 00:49:43  phreak
+ * Briefing icons can now be mirrored so one can point them in the opposite direction.
+ *
  * Revision 2.12  2005/11/21 23:55:57  taylor
  * move generic_* functions to their own file
  *
@@ -163,7 +166,7 @@
  * Add support for icon lines in the briefing.
  * 
  * 50    2/09/98 9:25p Allender
- * team v team support.  multiple pools and breifings
+ * team v team support.  multiple pools and briefings
  * 
  * 49    2/06/98 4:32p Lawrance
  * Allow briefing voices to be toggled on/off

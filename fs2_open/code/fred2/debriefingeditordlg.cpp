@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/DebriefingEditorDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * Debriefing editor dialog.  Used to edit mission debriefings of course.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.4  2005/10/22 05:54:48  wmcoolmon
  * Fixed cf_find_file_location
  *
@@ -61,14 +65,14 @@
  * Changed starting directory for browse buttons in several editors.
  * 
  * 13    4/03/98 11:34a John
- * Fixed the stuff I broke in Fred from the new breifing
+ * Fixed the stuff I broke in Fred from the new briefing
  * 
  * 12    3/17/98 2:06p Hoffoss
  * Made enter key not close the dialog box (default windows behavior, even
  * when no ok button.  Talk about stupid. :)
  * 
  * 11    2/09/98 9:25p Allender
- * team v team support.  multiple pools and breifings
+ * team v team support.  multiple pools and briefings
  * 
  * 10    2/04/98 4:32p Allender
  * support for multiple briefings and debriefings.  Changes to mission

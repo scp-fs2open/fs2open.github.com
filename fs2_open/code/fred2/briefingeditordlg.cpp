@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BriefingEditorDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * Briefing editor dialog box class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.13  2006/01/14 05:24:18  Goober5000
  * first pass at converting FRED to use new IFF stuff
  * --Goober5000
@@ -24,7 +28,7 @@
  * No my widdle FRED, I didn't forget about you ^_^ (codebase commit)
  *
  * Revision 1.11  2005/12/29 00:55:25  phreak
- * Breifing icons are now able to be flipped.  Left becomes right and vice versa.
+ * Briefing icons are now able to be flipped.  Left becomes right and vice versa.
  *
  * Revision 1.10  2005/10/22 05:54:48  wmcoolmon
  * Fixed cf_find_file_location
@@ -135,7 +139,7 @@
  * Changed starting directory for browse buttons in several editors.
  * 
  * 50    4/03/98 11:34a John
- * Fixed the stuff I broke in Fred from the new breifing
+ * Fixed the stuff I broke in Fred from the new briefing
  * 
  * 49    3/26/98 6:40p Lawrance
  * Don't store icon text for briefings
@@ -154,7 +158,7 @@
  * Added support for lines between icons in briefings for Fred.
  * 
  * 44    2/09/98 9:25p Allender
- * team v team support.  multiple pools and breifings
+ * team v team support.  multiple pools and briefings
  * 
  * 43    2/04/98 4:31p Allender
  * support for multiple briefings and debriefings.  Changes to mission

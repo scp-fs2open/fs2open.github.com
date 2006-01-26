@@ -9,8 +9,8 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-20 07:50:25 $
+ * $Revision: 1.3 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/20 07:50:25  Goober5000
+ * remove unreferenced variable
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -320,7 +323,7 @@
  * Allow for mutliple structures in the briefing code.
  * 
  * 218   2/09/98 9:25p Allender
- * team v team support.  multiple pools and breifings
+ * team v team support.  multiple pools and briefings
  * 
  * 217   2/07/98 9:13p Hoffoss
  * Added some more error checking to global error checker.

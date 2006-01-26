@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.26  2005/10/30 07:28:22  Goober5000
  * added Daisy Chain mission flag stuff in FRED
  * --Goober5000
@@ -179,7 +183,7 @@
  * sexpressions.  Add time cargo revealed to ship structure
  * 
  * 13    2/09/98 9:25p Allender
- * team v team support.  multiple pools and breifings
+ * team v team support.  multiple pools and briefings
  * 
  * 12    2/04/98 4:32p Allender
  * support for multiple briefings and debriefings.  Changes to mission

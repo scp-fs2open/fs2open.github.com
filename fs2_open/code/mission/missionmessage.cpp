@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.47 $
- * $Date: 2006-01-13 03:31:09 $
+ * $Revision: 2.48 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.46  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
  *
@@ -65,7 +68,7 @@
  * --Goober5000
  *
  * Revision 2.35  2005/05/26 05:07:19  Goober5000
- * some bracket happiness, plus fixed the traning message version of the crazy semicolon bug
+ * some bracket happiness, plus fixed the training message version of the crazy semicolon bug
  * (thanks to taylor for fixing the regular message version)
  * --Goober500
  *

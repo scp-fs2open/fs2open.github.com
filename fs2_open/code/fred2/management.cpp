@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.48  2006/01/16 00:34:34  Goober5000
  * final (I hope) IFF fixage involving the FRED dialogs :p
  * --Goober5000
@@ -347,7 +351,7 @@
  * Upped the gamma for Fred.
  * 
  * 215   4/03/98 11:34a John
- * Fixed the stuff I broke in Fred from the new breifing
+ * Fixed the stuff I broke in Fred from the new briefing
  * 
  * 214   4/02/98 3:00p Johnson
  * Fixed a bug a release build turned up.

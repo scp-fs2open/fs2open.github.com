@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:25:58 $
+ * $Revision: 2.7 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * Header file for code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/06/03 06:39:26  taylor
  * better audio pause/unpause support when game window loses focus or is minimized
  *
@@ -178,7 +182,7 @@ extern int	Brief_background_bitmap;
 extern UI_INPUTBOX	Common_multi_text_inputbox[3];
 
 // Sounds
-#define		BRIEFING_MUSIC_DELAY	2500		// 650 ms delay before breifing music starts
+#define		BRIEFING_MUSIC_DELAY	2500		// 650 ms delay before briefing music starts
 extern int	Briefing_music_handle;
 extern int	Briefing_music_begin_timestamp;
 
