@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.45 $
- * $Date: 2006-01-18 16:01:14 $
+ * $Revision: 2.46 $
+ * $Date: 2006-01-26 03:59:59 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2006/01/18 16:01:14  taylor
+ * support only PCX for the nebula background graphics (given how it works that's the fastest and easiest way to get it done)
+ *
  * Revision 2.44  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -324,14 +327,12 @@
 
 bool Nebula_sexp_used = false;
 
-unsigned char Neb2_fog_colour_r = 0;
-unsigned char Neb2_fog_colour_g = 0;
-unsigned char Neb2_fog_colour_b = 0;
+static ubyte Neb2_fog_color_r = 0;
+static ubyte Neb2_fog_color_g = 0;
+static ubyte Neb2_fog_color_b = 0;
 
-ubyte *Neb2_htl_fog_data = NULL;
-int Neb2_max_fog_value = 0;
-int Neb2_cur_fog_value = 0;
-const int Neb2_cur_fog_factor = 10;
+static ubyte *Neb2_htl_fog_data = NULL;
+static int Neb2_cur_fog_value = 0;
 
 // #define NEB2_THUMBNAIL
 
@@ -628,9 +629,9 @@ void neb2_set_detail_level(int level)
 
 void neb2_get_fog_colour(unsigned char *r, unsigned char *g, unsigned char *b)
 {
-	if(r) *r = Neb2_fog_colour_r;
-	if(g) *g = Neb2_fog_colour_g;
-	if(b) *b = Neb2_fog_colour_b;
+	if(r) *r = Neb2_fog_color_r;
+	if(g) *g = Neb2_fog_color_g;
+	if(b) *b = Neb2_fog_color_b;
 }
 
 void neb2_level_init()
@@ -660,24 +661,36 @@ void neb2_post_level_init()
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
 	} else {
-		// Set a default colour just incase something goes wrong
-		Neb2_fog_colour_r =  30;
-		Neb2_fog_colour_g =  52;
-		Neb2_fog_colour_b = 157;
+		// Set a default colour just in case something goes wrong
+		Neb2_fog_color_r =  30;
+		Neb2_fog_color_g =  52;
+		Neb2_fog_color_b = 157;
 
 		// OK, lets try something a bit more interesting
 		if (strlen(Neb2_texture_name)) {
 			Neb2_htl_fog_data = new ubyte[768];
 
 			if ( pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE ) {
-				Neb2_fog_colour_r = Neb2_htl_fog_data[0];
-				Neb2_fog_colour_g = Neb2_htl_fog_data[1];
-				Neb2_fog_colour_b = Neb2_htl_fog_data[2];
-			}
+				// based on the palette, get an average color value (this doesn't really account for actual pixel usage though)
+				ushort r = 0, g = 0, b = 0, pcount = 0;
+				for (idx = 0; idx < 768; idx += 3) {
+					if (Neb2_htl_fog_data[idx] || Neb2_htl_fog_data[idx+1] || Neb2_htl_fog_data[idx+2]) {
+						r += Neb2_htl_fog_data[idx];
+						g += Neb2_htl_fog_data[idx+1];
+						b += Neb2_htl_fog_data[idx+2];
+						pcount++;
+					}
+				}
 
-			if ( Neb2_htl_fog_data != NULL ) {
-				delete[] Neb2_htl_fog_data;
-				Neb2_htl_fog_data = NULL;
+				Neb2_fog_color_r = (ubyte)(r / pcount);
+				Neb2_fog_color_g = (ubyte)(g / pcount);
+				Neb2_fog_color_b = (ubyte)(b / pcount);
+
+				// done, now free up the palette data
+				if ( Neb2_htl_fog_data != NULL ) {
+					delete[] Neb2_htl_fog_data;
+					Neb2_htl_fog_data = NULL;
+				}
 			}
 		}
 
@@ -733,9 +746,8 @@ void neb2_level_close()
 	// unflag the mission as being fullneb so stuff doesn't fog in the techdata room :D
 	The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 
-	if(Neb2_htl_fog_data)
-	{
-		vm_free(Neb2_htl_fog_data);
+	if (Neb2_htl_fog_data) {
+		delete[] Neb2_htl_fog_data;
 		Neb2_htl_fog_data = NULL;
 	}
 }
@@ -1961,9 +1973,9 @@ DCF(neb2_fog_color, "")
 	dc_get_arg(ARG_INT);
 	b = Dc_arg_int;
 
-	Neb2_fog_colour_r = r;
-	Neb2_fog_colour_g = g;
-	Neb2_fog_colour_b = b;
+	Neb2_fog_color_r = r;
+	Neb2_fog_color_g = g;
+	Neb2_fog_color_b = b;
 }
 
 //WMC - Going bye-bye for ship types too
