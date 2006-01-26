@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.28  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -53,7 +56,7 @@
  *
  * Revision 2.18  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.17  2004/03/09 17:59:01  Kazan
@@ -332,23 +335,14 @@
 #include "hud/hudescort.h"
 #include "hud/hudmessage.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
-
-
-#pragma warning(push)
-// 4018 = signed/unsigned mismatch
-// 4663 = new template specification syntax
-// 4245 = signed/unsigned mismatch in conversion of const value
-#pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
 
 
 extern int PXO_SID; // FS2 Open PXO Session ID
 extern char PXO_Server[];
 extern int PXO_port;
-
-#pragma warning(pop)
-
 
 
 // ----------------------------------------------------------------------------------------

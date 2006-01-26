@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-10-27 16:21:19 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/10/27 16:21:19  taylor
+ * fix some automake errors with OSX 10.4's crappy AutoMake and a couple of other OS X related terminal compile fixage
+ *
  * Revision 2.16  2005/10/10 17:21:08  taylor
  * remove NO_NETWORK
  *
@@ -37,7 +40,7 @@
  *
  * Revision 2.10  2004/03/31 05:42:27  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.9  2004/03/05 09:02:02  Goober5000
@@ -406,14 +409,7 @@
 #include "globalincs/version.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
-
-#pragma warning(push)
-// 4018 = signed/unsigned mismatch
-// 4663 = new template specification syntax
-// 4245 = signed/unsigned mismatch in conversion of const value
-#pragma warning(disable: 4663 4018 4663 4245)
 #include "fs2open_pxo/Client.h"
-#pragma warning(pop)
 
 
 HANDLE Standalone_thread;

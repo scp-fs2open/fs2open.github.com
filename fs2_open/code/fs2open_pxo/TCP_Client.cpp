@@ -11,11 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.34 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 1.35 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.33  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -88,7 +92,7 @@
  *
  * Revision 1.15  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.14  2004/03/09 17:59:01  Kazan
@@ -157,12 +161,6 @@
 #include "globalincs/pstypes.h"
 
 #include <iostream>
-
-// 4018 = signed/unsigned mismatch
-// 4663 = new template specification syntax
-// 4245 = signed/unsigned mismatch in conversion of const value
-#pragma warning(disable: 4663 4018 4663 4245)
-
 
 #define PXO_ADDINT(n)	*((int *)cur) = (n); cur += sizeof(int);
 #define PXO_ADDSTRING(x, y) memcpy(cur, x, y); cur += y;

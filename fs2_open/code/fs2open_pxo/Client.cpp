@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.24 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 1.25 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.23  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -94,6 +98,7 @@
  *
  */
 
+#include "globalincs/pstypes.h"
 
 #include "fs2open_pxo/Client.h"
 //#include "fs2open_pxo/protocol.h"
@@ -101,7 +106,6 @@
 #include "network/multi_log.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
-#include "globalincs/pstypes.h"
 
 #include <iostream>
 #include <time.h>

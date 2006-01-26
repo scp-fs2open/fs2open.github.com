@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-01-10 18:37:46 $
- * $Author: randomtiger $
+ * $Revision: 2.33 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/01/10 18:37:46  randomtiger
+ * Improvements to voice recognition system.
+ * Also function put on -voicer launcher option.
+ *
  * Revision 2.31  2006/01/03 17:07:11  randomtiger
  * Added voice recognition functionality for Visual C6 project only.
  * Currently still a work in progress.
@@ -60,7 +64,7 @@
  *
  * Revision 2.18  2004/03/31 05:42:28  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.17  2004/03/05 09:02:08  Goober5000

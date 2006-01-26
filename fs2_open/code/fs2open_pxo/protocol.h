@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/protocol.h $
- * $Revision: 1.16 $
- * $Date: 2005-07-13 02:50:49 $
+ * $Revision: 1.17 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.15  2005/02/04 20:06:03  taylor
  * merge with Linux/OSX tree - p0204-2
  *
@@ -30,7 +34,7 @@
  *
  * Revision 1.11  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.10  2004/03/07 23:07:20  Kazan
@@ -57,9 +61,7 @@
 #define __pxo_protocol_h_
 
 
-#include "globalincs/pstypes.h" // for _fs_time_t
-
-#pragma warning(disable:4663)	// new template specification syntax
+#include "globalincs/pstypes.h"
 
 #define PXO_PROTO_VER "1.2"
 // PUT the Protocol into TCP mode

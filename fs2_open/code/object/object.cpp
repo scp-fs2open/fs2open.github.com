@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.57 $
- * $Date: 2006-01-22 01:32:07 $
- * $Author: taylor $
+ * $Revision: 2.58 $
+ * $Date: 2006-01-26 03:23:30 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2006/01/22 01:32:07  taylor
+ * newline fixage
+ *
  * Revision 2.56  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -1419,8 +1422,6 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 	
 }
 
-#pragma warning(push)
-#pragma warning(disable: 4102)
 void obj_move_call_physics(object *objp, float frametime)
 {
 	int has_fired = -1;	//stop fireing stuff-Bobboau
@@ -1591,13 +1592,11 @@ obj_maybe_fire:
 		objp->phys_info.desired_vel.xyz.y = 0.0f;
 	}
 }
-#pragma warning(pop)
 
 
 #define IMPORTANT_FLAGS (OF_COLLIDES)
 
 #ifdef OBJECT_CHECK 
-
 
 void obj_check_object( object *obj )
 {

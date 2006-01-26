@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/udpsocket.h $
- * $Revision: 1.9 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 1.10 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.8  2005/09/24 02:57:12  Goober5000
  * a fix
  * --Goober5000
@@ -32,7 +36,7 @@
  *
  * Revision 1.4  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.3  2004/02/21 00:59:43  Kazan
@@ -40,8 +44,6 @@
  *
  * Revision 1.2  2003/10/13 06:02:50  Kazan
  * Added Log Comment Thingy to these files
- *
- *
  *
  */
 

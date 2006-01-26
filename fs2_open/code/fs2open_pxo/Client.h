@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.19 $
- * $Date: 2005-07-13 02:50:49 $
+ * $Revision: 1.20 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.18  2005/03/02 21:18:18  taylor
  * better support for Inferno builds (in PreProcDefines.h now, no networking support)
  * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
@@ -32,7 +36,7 @@
  *
  * Revision 1.14  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 1.13  2004/03/09 00:02:16  Kazan
@@ -73,12 +77,10 @@
 #define __pxo_client_h_
 
 
+#include "globalincs/pstypes.h"
+
 #pragma warning(disable:4018)	// signed/unsigned mismatch
-#pragma warning(disable:4100)	// unreferenced formal parameter
-#pragma warning(disable:4511)	// copy constructor could not be generated
-#pragma warning(disable:4512)	// assignment operator could not be generated
-#pragma warning(disable:4663)	// new template specification syntax
-#pragma warning(disable:4710)	// function not inlined
+#pragma warning(disable:4245)	// signed/unsigned mismatch in conversion of const value
 
 
 #define MAX_SERVERS 512

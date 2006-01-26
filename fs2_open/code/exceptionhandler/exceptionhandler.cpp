@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 2.10 $
+ * $Date: 2006-01-26 03:23:29 $
  * $Author: Goober5000 $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.8  2005/01/31 23:27:52  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -27,7 +31,7 @@
  *
  * Revision 2.5  2004/03/31 05:42:26  Goober5000
  * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * for #pragma warning disable to indicate the message being disabled
+ * to indicate which warnings were being disabled
  * --Goober5000
  *
  * Revision 2.4  2004/03/06 23:28:22  bobboau
