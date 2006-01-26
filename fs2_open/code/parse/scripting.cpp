@@ -403,6 +403,7 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 		return false;
 #endif
 	}
+
 	char *s = string;
 	if(string[0] != '[')
 	{
@@ -419,6 +420,7 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 		*lcp = '\0';
 	}
 
+#ifdef USE_LUA
 	//WMC - Push error handling function
 	lua_pushcfunction(LuaState, lua_friendly_error);
 	//Parse string
@@ -431,6 +433,9 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 
 	//Default return if no return - 0
 	lua_get_args(LuaState, format, *(script_lua_odata*)rtn);
+#else
+	return false;
+#endif
 
 	if(lastchar == ']')
 		*lcp = lastchar;
