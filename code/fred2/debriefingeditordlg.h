@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/DebriefingEditorDlg.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * Debriefing editor dialog.  Used to edit mission debriefings of course.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.3  2005/07/13 02:40:50  Goober5000
  * remove PreProcDefine #includes in FRED
  * --Goober5000
@@ -46,7 +50,7 @@
  * when no ok button.  Talk about stupid. :)
  * 
  * 6     2/09/98 9:25p Allender
- * team v team support.  multiple pools and breifings
+ * team v team support.  multiple pools and briefings
  * 
  * 5     2/04/98 4:32p Allender
  * support for multiple briefings and debriefings.  Changes to mission

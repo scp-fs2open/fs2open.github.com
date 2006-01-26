@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.138 $
- * $Date: 2006-01-14 19:54:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.139 $
+ * $Date: 2006-01-26 04:01:58 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.137  2006/01/14 06:25:11  taylor
  * make sure rship gets initialized before use
  *
@@ -1808,7 +1811,7 @@ void parse_briefing(mission *pm)
 	
 	brief_reset();
 
-	// MWA -- 2/3/98.  we can now have multiple briefing and debreifings in a mission
+	// MWA -- 2/3/98.  we can now have multiple briefing and debriefings in a mission
 	for ( nt = 0; nt < Num_teams; nt++ ) {
 		if ( !optional_string("#Briefing") )
 			break;

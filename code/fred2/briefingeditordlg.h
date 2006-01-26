@@ -9,15 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/BriefingEditorDlg.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * Briefing editor dialog box class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.6  2005/12/29 00:55:25  phreak
- * Breifing icons are now able to be flipped.  Left becomes right and vice versa.
+ * Briefing icons are now able to be flipped.  Left becomes right and vice versa.
  *
  * Revision 1.5  2005/07/13 02:40:50  Goober5000
  * remove PreProcDefine #includes in FRED
@@ -63,7 +67,7 @@
  * Added support for lines between icons in briefings for Fred.
  * 
  * 20    2/09/98 9:25p Allender
- * team v team support.  multiple pools and breifings
+ * team v team support.  multiple pools and briefings
  * 
  * 19    2/04/98 4:32p Allender
  * support for multiple briefings and debriefings.  Changes to mission

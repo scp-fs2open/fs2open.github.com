@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.50  2006/01/14 23:49:01  Goober5000
  * second pass; all the errors are fixed now; one more thing to take care of
  * --Goober5000
@@ -28,7 +32,7 @@
  * No my widdle FRED, I didn't forget about you ^_^ (codebase commit)
  *
  * Revision 1.47  2005/12/29 00:55:25  phreak
- * Breifing icons are now able to be flipped.  Left becomes right and vice versa.
+ * Briefing icons are now able to be flipped.  Left becomes right and vice versa.
  *
  * Revision 1.46  2005/11/22 09:07:59  Goober5000
  * fred will now load and save ai profiles

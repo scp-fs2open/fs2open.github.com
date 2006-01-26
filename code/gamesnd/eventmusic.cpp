@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-01-13 03:30:59 $
+ * $Revision: 2.32 $
+ * $Date: 2006-01-26 04:01:58 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.30  2006/01/11 05:39:49  taylor
  * skip ourselves in hostile check, this isn't really needed since it's handled by the next check but for clarity sake it's here now
  *
@@ -475,7 +478,7 @@ extern int hud_target_invalid_awacs(object *objp);
 menu_music Spooled_music[MAX_SPOOLED_MUSIC];
 int Num_music_files;				// Number of spooled music files
 
-// Array that holds indicies into Spooled_music[], these specify which music is played in breifing/debriefing
+// Array that holds indicies into Spooled_music[], these specify which music is played in briefing/debriefing
 int Mission_music[NUM_SCORES];	
 
 // Goober5000
