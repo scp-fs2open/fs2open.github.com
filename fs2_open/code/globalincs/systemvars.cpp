@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-01-27 06:03:41 $
+ * $Revision: 2.10 $
+ * $Date: 2006-01-27 20:29:30 $
  * $Author: Goober5000 $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/01/27 06:03:41  Goober5000
+ * add an insertion sort function for small or almost-sorted arrays; it has the same prototype as stdlib's quick sort
+ * --Goober5000
+ *
  * Revision 2.8  2005/05/26 04:27:10  taylor
  * timer changes to fix game_busy() on the loading screen and 100% incorrect values on some machines,
  *   don't know if this is going to work that great but it's more like the Linux SDL code now which
@@ -766,9 +770,10 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 #endif
 
 // Goober5000
+// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
 void insertion_sort(void *array_base, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *))
 {
-	unsigned int i, j;
+	int i, j;
 	void *current;
 	char *array_byte_base;
 	
@@ -776,10 +781,15 @@ void insertion_sort(void *array_base, size_t array_size, size_t element_size, in
 	array_byte_base = (char *) array_base;
 
 	// allocate space for the element being moved
-	current = vm_malloc(element_size);
+	current = malloc(element_size);
+	if (current == NULL)
+	{
+		Int3();
+		return;
+	}
 
 	// loop
-	for (i = 1; i < array_size; i++)
+	for (i = 1; (unsigned) i < array_size; i++)
 	{	
 		// grab the current element
 		memcpy(current, array_byte_base + (i * element_size), element_size);
@@ -795,5 +805,5 @@ void insertion_sort(void *array_base, size_t array_size, size_t element_size, in
 	}
 
 	// free the allocated space
-	vm_free(current);
+	free(current);
 }
