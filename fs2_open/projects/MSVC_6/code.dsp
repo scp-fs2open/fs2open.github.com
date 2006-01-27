@@ -2030,6 +2030,23 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
+# Begin Custom Build
+InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
+InputPath=..\..\code\sound\phrases.xml
+InputName=phrases
+
+BuildCmds= \
+	$(InputDir)\gc $(InputDir)\$(InputName) \
+	$(InputDir)\gc /h $(InputDir)\grammar.h $(InputDir)\$(InputName) \
+	
+
+"$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"$(InputDir)\grammar.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
 !ENDIF 
 
 # End Source File
@@ -2068,6 +2085,10 @@ SOURCE=..\..\code\sound\speech.h
 # Begin Source File
 
 SOURCE=..\..\code\sound\voicerec.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\sound\voicerec.h
 # End Source File
 # Begin Source File
 
