@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-05-26 04:27:10 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2006-01-27 06:03:41 $
+ * $Author: Goober5000 $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/05/26 04:27:10  taylor
+ * timer changes to fix game_busy() on the loading screen and 100% incorrect values on some machines,
+ *   don't know if this is going to work that great but it's more like the Linux SDL code now which
+ *   has worked for years without major problems
+ *
  * Revision 2.7  2005/03/03 06:05:27  wmcoolmon
  * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
  *
@@ -759,3 +764,36 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 	}
 }
 #endif
+
+// Goober5000
+void insertion_sort(void *array_base, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *))
+{
+	unsigned int i, j;
+	void *current;
+	char *array_byte_base;
+	
+	// this is used to avoid having to cast array_base to (char *) all the time
+	array_byte_base = (char *) array_base;
+
+	// allocate space for the element being moved
+	current = vm_malloc(element_size);
+
+	// loop
+	for (i = 1; i < array_size; i++)
+	{	
+		// grab the current element
+		memcpy(current, array_byte_base + (i * element_size), element_size);
+
+		// bump other elements toward the end of the array
+		for (j = i - 1; (j >= 0) && (fncompare(array_byte_base + (j * element_size), current) > 0); j--)
+		{
+			memcpy(array_byte_base + ((j + 1) * element_size), array_byte_base + (j * element_size), element_size);
+		}
+
+		// insert the current element at the correct place
+		memcpy(array_byte_base + ((j + 1) * element_size), current, element_size);
+	}
+
+	// free the allocated space
+	vm_free(current);
+}
