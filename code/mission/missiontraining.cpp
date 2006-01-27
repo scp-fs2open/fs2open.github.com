@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.22 $
- * $Date: 2005-10-28 14:49:35 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2006-01-27 06:21:10 $
+ * $Author: Goober5000 $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2005/10/28 14:49:35  taylor
+ * some minor cleanup and compiler warning fixes
+ *
  * Revision 2.21  2005/10/27 16:24:24  taylor
  * some minor fixes to message_translate_tokens(), fixes a bug and adds some out-of-bounds checks
  *
@@ -694,7 +697,7 @@ void sort_training_objectives()
 	int i, event_status, offset;
 
 	// start by sorting on born on date
-	qsort(Training_obj_lines, Training_obj_num_lines, sizeof(int), comp_training_lines_by_born_on_date);
+	insertion_sort(Training_obj_lines, Training_obj_num_lines, sizeof(int), comp_training_lines_by_born_on_date);
 
 	// get the index of the first directive that will be displayed
 	// if less than 0, display all lines

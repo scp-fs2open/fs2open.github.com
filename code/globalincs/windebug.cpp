@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.34 $
- * $Date: 2006-01-19 20:18:11 $
- * $Author: wmcoolmon $
+ * $Revision: 2.35 $
+ * $Date: 2006-01-27 06:21:10 $
+ * $Author: Goober5000 $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/01/19 20:18:11  wmcoolmon
+ * More Lua checks; added Lua vector object; better operator support.
+ *
  * Revision 2.33  2006/01/19 16:00:04  wmcoolmon
  * Lua debugging stuff; gr_bitmap_ex stuff for taylor
  *
@@ -237,6 +240,7 @@
 
 #include "osapi/osapi.h"
 #include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 #include "parse/lua.h"
 
@@ -543,7 +547,7 @@ void DumpSymbols()
 {
 	int i;
 
-	qsort( Symbols, Num_symbols, sizeof(MemSymbol), Sym_compare );
+	insertion_sort( Symbols, Num_symbols, sizeof(MemSymbol), Sym_compare );
 	
 	for (i=0;i<Num_symbols; i++ )	{
 		MemSymbol * sym1 = &Symbols[i];
@@ -555,7 +559,7 @@ void DumpSymbols()
 		}
 	}
 
-	qsort( Symbols, Num_symbols, sizeof(MemSymbol), Sym_compare1 );
+	insertion_sort( Symbols, Num_symbols, sizeof(MemSymbol), Sym_compare1 );
 
 
 	FILE *fp = fopen( "dump", "wt" );
@@ -1458,7 +1462,7 @@ int memblockinfo_sort_compare( const void *arg1, const void *arg2 )
 
 void memblockinfo_sort()
 {
-	qsort(mem_block_list, MAX_MEM_MODULES, sizeof(MemBlockInfo), memblockinfo_sort_compare );
+	insertion_sort(mem_block_list, MAX_MEM_MODULES, sizeof(MemBlockInfo), memblockinfo_sort_compare );
 }
 
 void memblockinfo_sort_get_entry(int index, char *filename, int *size)

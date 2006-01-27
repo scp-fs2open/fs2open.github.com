@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.48 $
- * $Date: 2006-01-26 04:01:58 $
+ * $Revision: 2.49 $
+ * $Date: 2006-01-27 06:21:10 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 2.47  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -1154,7 +1157,7 @@ void message_mission_close()
 
 // functions to deal with queuing messages to the message system.
 
-//	Compare function for system qsort() for sorting message queue entries based on priority.
+//	Compare function for sorting message queue entries based on priority.
 //	Return values set to sort array in _decreasing_ order.  If priorities equal, sort based
 // on time added into queue
 int message_queue_priority_compare(const void *a, const void *b)
@@ -1329,7 +1332,7 @@ void message_remove_from_queue(message_q *q)
 	}
 
 	if ( MessageQ_num > 0 ) {
-		qsort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
+		insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
 	}
 }
 
@@ -1976,7 +1979,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 		MessageQ[i].window_timestamp = timestamp(MESSAGE_ANYTIME_TIMESTAMP);		// make invalid
 
 	MessageQ_num++;
-	qsort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
+	insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
 
 	// Try to start it!
 	// MWA -- called every frame from game loop

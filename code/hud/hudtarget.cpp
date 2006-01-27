@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.81 $
- * $Date: 2006-01-17 17:41:05 $
- * $Author: wmcoolmon $
+ * $Revision: 2.82 $
+ * $Date: 2006-01-27 06:21:10 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2006/01/17 17:41:05  wmcoolmon
+ * Switch ballistic weapon hudgauge to show "Energy" field in place of pure-energy weapons
+ *
  * Revision 2.80  2006/01/14 06:24:27  taylor
  * get object vars correct
  *
@@ -2218,7 +2221,7 @@ typedef struct eval_next_turret {
 	float dist;
 } eval_next_turret;
 
-int sort_turret_func(const void *e1, const void *e2)
+int turret_compare_func(const void *e1, const void *e2)
 {
 	eval_next_turret *p1 = (eval_next_turret*)e1;
 	eval_next_turret *p2 = (eval_next_turret*)e2;
@@ -2291,7 +2294,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 
 	// initialize eval struct
 	memset(ent,0, sizeof(ent));
-	int use_straigh_ahead_turret = FALSE;
+	int use_straight_ahead_turret = FALSE;
 
 	// go through list of turrets
 	for (A=GET_FIRST(&target_shipp->subsys_list); A!=END_OF_LIST(&target_shipp->subsys_list); A=GET_NEXT(A))  {
@@ -2313,7 +2316,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 						// if within 3 degrees and not previous subsys, use subsys in front
 						dot = vm_vec_dotprod(&vec_to_subsys, &Player_obj->orient.vec.fvec);
 						if ((dot > 0.9986) && facing) {
-							use_straigh_ahead_turret = TRUE;
+							use_straight_ahead_turret = TRUE;
 							break;
 						}
 					}
@@ -2346,12 +2349,12 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 		}
 	}
 
-	// sort the list if we're not using turret straigh ahead of us
-	if (!use_straigh_ahead_turret) {
-		qsort(ent, num_live_turrets, sizeof(eval_next_turret), sort_turret_func);
+	// sort the list if we're not using turret straight ahead of us
+	if (!use_straight_ahead_turret) {
+		insertion_sort(ent, num_live_turrets, sizeof(eval_next_turret), turret_compare_func);
 	}
 
-	if (use_straigh_ahead_turret) {
+	if (use_straight_ahead_turret) {
 	// use the straight ahead turret
 		live_turret = A;
 	} else {

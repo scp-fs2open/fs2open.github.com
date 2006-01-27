@@ -12,6 +12,7 @@
 #include "graphics/GrD3DLight.h"
 #include "particle/particle.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/systemvars.h"
 
 #include "GrD3DParticle.h"
 
@@ -63,7 +64,7 @@ void gr_d3d_particle_reset_list()
 	Current_index = 0;
 }
 
-int qsort_texture_compare_func(const void *elem1, const void *elem2 ) 
+int texture_compare_func(const void *elem1, const void *elem2 ) 
 {
 	D3DPOINTVERTEX *p1 = (D3DPOINTVERTEX *) elem1;
 	D3DPOINTVERTEX *p2 = (D3DPOINTVERTEX *) elem2;
@@ -91,7 +92,7 @@ bool gr_d3d_particle_render_list()
 
 	// Sort by texture (only if its worth doing)
 	if(Current_index > 10)
-		qsort( Particle_list, Current_index, sizeof(D3DPOINTVERTEX), qsort_texture_compare_func);
+		insertion_sort( Particle_list, Current_index, sizeof(D3DPOINTVERTEX), texture_compare_func);
 
 	// Set engine requirements
 
