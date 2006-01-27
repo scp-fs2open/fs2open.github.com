@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.17 $
- * $Date: 2006-01-25 22:51:07 $
- * $Author: taylor $
+ * $Revision: 1.18 $
+ * $Date: 2006-01-27 06:21:10 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2006/01/25 22:51:07  taylor
+ * quick and ugly hack to get aigoal sorting working on Windows again (temporary, should be replaced by better and permanent sorting function)
+ *
  * Revision 1.16  2006/01/11 05:42:17  taylor
- * allow for an equals value in qsort() comparison function, will hopefully fix Enif station bug and not cause any new problems
+ * allow for an equals value in sort comparison function, will hopefully fix Enif station bug and not cause any new problems
  *
  * Revision 1.15  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
@@ -2186,7 +2189,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	return AI_GOAL_NOT_KNOWN;
 }
 
-//	Compare function for system qsort() for sorting ai_goals based on priority.
+//	Compare function for sorting ai_goals based on priority.
 //	Return values set to sort array in _decreasing_ order.
 int ai_goal_priority_compare(const void *a, const void *b)
 {
@@ -2228,13 +2231,8 @@ int ai_goal_priority_compare(const void *a, const void *b)
 	else if ( ga->time < gb->time )
 		return 1;
 
-
 	// the two are equal
-#ifdef _WIN32
-	return 1;	// Grrrr.
-#else
 	return 0;
-#endif
 }
 
 //	Prioritize goal list.
@@ -2244,10 +2242,8 @@ int ai_goal_priority_compare(const void *a, const void *b)
 //	*aip		The AI info to act upon.  Goals are stored at aip->goals
 void prioritize_goals(int objnum, ai_info *aip)
 {
-
 	//	First sort based on priority field.
-	qsort(aip->goals, MAX_AI_GOALS, sizeof(ai_goal), ai_goal_priority_compare);
-
+	insertion_sort(aip->goals, MAX_AI_GOALS, sizeof(ai_goal), ai_goal_priority_compare);
 }
 
 //	Scan the list of goals at aip->goals.

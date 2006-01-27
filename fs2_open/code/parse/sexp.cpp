@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.207 $
- * $Date: 2006-01-22 01:35:23 $
- * $Author: taylor $
+ * $Revision: 2.208 $
+ * $Date: 2006-01-27 06:21:10 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.207  2006/01/22 01:35:23  taylor
+ * oops, didn't notice that was out of the wrong diff
+ *
  * Revision 2.206  2006/01/22 01:33:39  taylor
  * warning fixage
  * don't Int3() when trying to set ship speed via sexp if ship is not in mission yet, this shouldn't be fatal
@@ -17601,7 +17604,7 @@ int sexp_variable_block_count()
 // Sort sexp_variable list lexigraphically, with set before unset
 void sexp_variable_sort()
 {
-	qsort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES - sexp_variable_block_count()), sizeof(sexp_variable), sexp_var_compare );
+	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES - sexp_variable_block_count()), sizeof(sexp_variable), sexp_var_compare );
 }
 
 int sexp_variable_allocate_block(const char* block_name, int block_type)

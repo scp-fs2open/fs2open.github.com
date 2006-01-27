@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-01-16 05:54:21 $
+ * $Revision: 2.28 $
+ * $Date: 2006-01-27 06:21:10 $
  * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/01/16 05:54:21  Goober5000
+ * use IFF colors in escort list
+ *
  * Revision 2.26  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -522,7 +525,7 @@ void hud_setup_escort_list(int level)
 	hud_create_complete_escort_list(complete_escorts, &num_complete_escorts);
 
 	// sort escort list by priority
-	qsort(complete_escorts, num_complete_escorts, sizeof(escort_info), escort_compare_func);
+	insertion_sort(complete_escorts, num_complete_escorts, sizeof(escort_info), escort_compare_func);
 
 	// set number in escort list
 	num_escorts = num_complete_escorts;
@@ -638,7 +641,7 @@ void hud_remove_ship_from_escort_index(int dead_index, int objnum)
 	hud_create_complete_escort_list(complete_escorts, &num_complete_escorts);
 
 	// sort escort list by priority
-	qsort(complete_escorts, num_complete_escorts, sizeof(escort_info), escort_compare_func);
+	insertion_sort(complete_escorts, num_complete_escorts, sizeof(escort_info), escort_compare_func);
 
 	// merge list
 	merge_escort_lists(complete_escorts, num_complete_escorts);
@@ -988,7 +991,7 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 	}
 
 	// sort escort list by priority
-	qsort(complete_escorts, num_complete_escorts, sizeof(escort_info), escort_compare_func);
+	insertion_sort(complete_escorts, num_complete_escorts, sizeof(escort_info), escort_compare_func);
 
 	// merge list
 	merge_escort_lists(complete_escorts, num_complete_escorts);
