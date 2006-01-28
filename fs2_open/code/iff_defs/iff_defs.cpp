@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.6 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 1.7 $
+ * $Date: 2006-01-28 04:33:06 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 1.5  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -47,8 +50,6 @@ int Iff_traitor;
 
 // global only to file
 color Iff_colors[MAX_IFF_COLORS][2];		// AL 1-2-97: Create two IFF colors, regular and bright
-int Iff_all_teams_at_war_attackee_bitmask = 0;
-
 
 
 // borrowed from ship.cpp, ship_iff_init_colors
@@ -224,9 +225,6 @@ void iff_init()
 			num_observed_colors[cur_iff]++;
 		}
 
-		// also assume this guy is attacked in all teams at war
-		Iff_all_teams_at_war_attackee_bitmask |= iff_get_mask(cur_iff);
-
 
 		// get flags ----------------------------------------------------------
 
@@ -235,15 +233,15 @@ void iff_init()
 		if (optional_string("$Flags:"))
 		{
 			int i;
-			// the extra 1 is for EFATAW which is a flag but not in the flags array
-			char flag_strings[MAX_IFF_FLAGS+1][NAME_LENGTH];
-			int num_strings = stuff_string_list(flag_strings, MAX_IFF_FLAGS+1);
+			char flag_strings[MAX_IFF_FLAGS][NAME_LENGTH];
+
+			int num_strings = stuff_string_list(flag_strings, MAX_IFF_FLAGS);
 			for (i = 0; i < num_strings; i++)
 			{
-				if (!stricmp(NOX("exempt from all teams at war"), flag_strings[i]))
-					Iff_all_teams_at_war_attackee_bitmask &= ~iff_get_mask(cur_iff);
-				else if (!stricmp(NOX("support allowed"), flag_strings[i]))
+				if (!stricmp(NOX("support allowed"), flag_strings[i]))
 					iff->flags |= IFFF_SUPPORT_ALLOWED;
+				else if (!stricmp(NOX("exempt from all teams at war"), flag_strings[i]))
+					iff->flags |= IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR;
 				else
 					Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_strings[i]);
 			}
@@ -286,13 +284,14 @@ void iff_init()
 		Warning(LOCATION, "Traitor IFF %s not found in iff_defs.tbl!  Defaulting to %s.\n", traitor_name, Iff_info[Iff_traitor].iff_name);
 	}
 
-	// next get the attackers and colors
+	// next get the attackees and colors
 	for (int cur_iff = 0; cur_iff < Num_iffs; cur_iff++)
 	{
 		iff_info *iff = &Iff_info[cur_iff];
 
 		// clear the iffs to be attacked
 		iff->attackee_bitmask = 0;
+		iff->attackee_bitmask_all_teams_at_war = 0;
 
 		// clear the observed colors
 		for (int j = 0; j < MAX_IFFS; j++)
@@ -327,6 +326,30 @@ void iff_init()
 					Warning(LOCATION, "Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n", observed_color_table[cur_iff][list_index].iff_name, iff->iff_name);
 			}
 		}
+
+		// resolve the all teams at war relationships
+		if (iff->flags & IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR)
+		{
+			// exempt, so use standard attacks
+			iff->attackee_bitmask_all_teams_at_war = iff->attackee_bitmask;
+		}
+		else
+		{
+			// nonexempt, so build bitmask of all other nonexempt teams
+			for (int other_iff = 0; other_iff < Num_iffs; other_iff++)
+			{
+				// skip myself (unless I attack myself normally)
+				if ((other_iff == cur_iff) && !iff_x_attacks_y(cur_iff, cur_iff))
+					continue;
+
+				// skip anyone exempt
+				if (Iff_info[other_iff].flags & IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR)
+					continue;
+
+				// add everyone else
+				iff->attackee_bitmask_all_teams_at_war |= iff_get_mask(other_iff);
+			}
+		}
 	}
 }
 
@@ -350,10 +373,10 @@ int iff_get_attackee_mask(int attacker_team)
 {
 	Assert(attacker_team >= 0 && attacker_team < Num_iffs);
 
-	//	All teams attack all teams.
+	//	All teams attack all other teams.
 	if (Mission_all_attack)
 	{
-		return Iff_all_teams_at_war_attackee_bitmask;
+		return Iff_info[attacker_team].attackee_bitmask_all_teams_at_war;
 	}
 	// normal
 	else

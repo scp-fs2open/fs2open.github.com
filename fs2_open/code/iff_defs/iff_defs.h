@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.h $
- * $Revision: 1.3 $
- * $Date: 2006-01-13 03:31:09 $
+ * $Revision: 1.4 $
+ * $Date: 2006-01-28 04:33:06 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 1.2  2005/09/30 03:40:40  Goober5000
  * hooray for more work on the iff code
  * --Goober5000
@@ -40,7 +43,8 @@
 
 // iff flags
 #define IFFF_SUPPORT_ALLOWED				(1 << 0)	// this IFF can call for support
-#define MAX_IFF_FLAGS						1
+#define IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR	(1 << 1)	// self-explanatory
+#define MAX_IFF_FLAGS						2
 
 // Goober5000
 typedef struct iff_info {
@@ -51,16 +55,15 @@ typedef struct iff_info {
 
 	// relationships
 	int attackee_bitmask;						// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
+	int attackee_bitmask_all_teams_at_war;		// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 	int observed_color_index[MAX_IFFS];			// treat this as private and use iff_get_color or iff_get_color_by_team
 
 	// flags
 	int flags;
 	int default_ship_flags;
 
-
 	// used internally, not parsed
 	int ai_rearm_timestamp;
-
 
 	// constructor to initialize everything to 0
 	iff_info()
@@ -75,8 +78,6 @@ extern int Num_iffs;
 extern iff_info Iff_info[MAX_IFFS];
 
 extern int Iff_traitor;
-
-extern int Iff_all_teams_at_war_attackee_bitmask;	// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 
 
 // load the iff table
