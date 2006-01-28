@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.139 $
- * $Date: 2006-01-26 04:01:58 $
+ * $Revision: 2.140 $
+ * $Date: 2006-01-28 02:59:55 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 2.138  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -3288,7 +3291,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 	// Goober5000
 	// shunt this guy to the arrival list if he meets one of the following conditions:
 	// 1) he's docked but not the dock leader
-	// 2) this is FS2 AND he meets one of the following conditions:
+	// 2) this is FS2 (i.e. not FRED2) AND he meets one of the following conditions:
 	//    a) he's not cued to arrive yet
 	//    b) his arrival delay hasn't elapsed
 	//    c) he's reinforcement
@@ -3458,14 +3461,9 @@ void parse_objects(mission *pm, int flag)
 		}
 	}
 
-	// Goober5000 - now that we've parsed all the objects, resolve the initially docked references.
-	// This must be done immediately after parsing everything!!
-	mission_parse_set_up_initial_docks();
-
-	// Goober5000 - now create all objects that we can.  This must be done after the dock references
-	// are resolved but before any ship stuff is done.  This was originally done in parse_object().
-	for (int i = 0; i < Num_parse_objects; i++)
-		mission_parse_maybe_create_parse_object(&Parse_objects[i]);
+	// Goober5000 - I moved the docking stuff to post_process_ships_wings because of interdependencies
+	// between ships and wings.  Neither docking stuff nor ship stuff (for ships present at mission start)
+	// will be valid until after post_process_ships_wings is run.
 }
 
 p_object *mission_parse_get_parse_object(ushort net_signature)
@@ -3508,8 +3506,7 @@ int find_wing_name(char *name)
 	return -1;
 }
 
-// function to create ships in the wing that need to be created.  We psas the wing pointer, it's index
-// into the Wings array
+// function to create ships in the wing that need to be created
 int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int specific_instance )
 {
 	int wingnum, objnum, num_create_save;
@@ -3597,7 +3594,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			return 0;
 
 		// check the wave_delay_timestamp field.  If it is not valid, make it valid (based on wave delay min
-		// and max valuds).  If it is valid, and not elapsed, then return.  If it is valid and elasped, then
+		// and max values).  If it is valid, and not elapsed, then return.  If it is valid and elasped, then
 		// continue on.
 		if ( !timestamp_valid(wingp->wave_delay_timestamp) ) {
 
@@ -3649,7 +3646,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 	objnum = -1;
 
-	// we can't do a straight increment because the current object
+	// we have to do a sneaky increment because the current object
 	// might get removed from the list in the middle of the loop!
 	for (p_object *objp = GET_FIRST(&Ship_arrival_list), *next_objp = GET_NEXT(objp); objp != END_OF_LIST(&Ship_arrival_list); objp = next_objp, next_objp = GET_NEXT(objp))
 	{
@@ -4104,8 +4101,10 @@ void parse_wing(mission *pm)
 				Int3();					// this is impossible under the new system
 
 			} else {
-				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+				for (int i = 0; i < Num_parse_objects; i++)
 				{
+					p_object *p_objp = &Parse_objects[i];
+
 					if (!strcmp(ship_name, p_objp->name))
 					{
 						// get Allender -- ship appears to be in multiple wings
@@ -4117,23 +4116,53 @@ void parse_wing(mission *pm)
 				}
 			}
 
-			if ( !assigned || (assigned > 1) )
-				Error(LOCATION, "Cannot load mission -- wing %s -- ship %s not present in #Objects section (or specified multiple times in wing.\n", wingp->name, ship_name);
+			if (assigned == 0)
+				Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_name);
+			else if (assigned > 1)
+				Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is specified multiple times in wing.\n", wingp->name, ship_name);
 		}
 	}
 
-	// Fred doesn't create the wing.  otherwise, create the wing if is isn't a reinforcement.
-	if ( !Fred_running && !(wingp->flags & WF_REINFORCEMENT) )
-		parse_wing_create_ships( wingp, wingp->wave_count );
+	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
 void parse_wings(mission *pm)
 {
 	required_string("#Wings");
-	while (required_string_either("#Events", "$Name:")) {
+	while (required_string_either("#Events", "$Name:"))
+	{
 		Assert(Num_wings < MAX_WINGS);
 		parse_wing(pm);
 		Num_wings++;
+	}
+}
+
+// Goober5000
+void post_process_ships_wings()
+{
+	int i;
+
+	// Goober5000 - now that we've parsed all the objects, resolve the initially docked references.
+	// This must be done before anything that relies on the dock references but can't be done until
+	// both ships and wings have been parsed.
+	mission_parse_set_up_initial_docks();
+
+	// Goober5000 - now create all objects that we can.  This must be done before any ship stuff
+	// but can't be done until the dock references are resolved.  This was originally done
+	// in parse_object().
+	for (i = 0; i < Num_parse_objects; i++)
+	{
+		mission_parse_maybe_create_parse_object(&Parse_objects[i]);
+	}
+
+	// Goober5000 - now create the wings.  This must be done after both dock stuff and ship stuff.
+	for (i = 0; i < Num_wings; i++)
+	{
+		wing *wingp = &Wings[i];
+
+		// Fred doesn't create the wing.  otherwise, create the wing if is isn't a reinforcement.
+		if (!Fred_running && !(wingp->flags & WF_REINFORCEMENT))
+			parse_wing_create_ships(wingp, wingp->wave_count);
 	}
 }
 
@@ -4854,6 +4883,9 @@ void post_process_mission()
 	ship_weapon	*swp;
 	ship_obj *so;
 
+	// Goober5000 - must be done before all other post processing
+	post_process_ships_wings();
+
 	// the player_start_shipname had better exist at this point!
 	Player_start_shipnum = ship_name_lookup( Player_start_shipname );
 	Assert ( Player_start_shipnum != -1 );
@@ -5328,18 +5360,35 @@ void mission_parse_set_arrival_locations()
 }
 
 // Goober5000
+bool sexp_is_locked_false(int node)
+{
+	// dunno why these are different, but they are
+	if (Fred_running)
+		return (node == Locked_sexp_false);
+	else
+		return (Sexp_nodes[node].value == SEXP_KNOWN_FALSE);
+}
+
+// Goober5000
 // NOTE - in both retail and SCP, the dock "leader" is defined as the only guy in his
 // group with a non-false arrival cue
 void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info *infop)
 {
-	// all ships except the leader should have a locked false arrival cue
-	bool leader_flag;
-	if (Fred_running)
-		leader_flag = (pobjp->arrival_cue != Locked_sexp_false);
-	else
-		leader_flag = (Sexp_nodes[pobjp->arrival_cue].value != SEXP_KNOWN_FALSE);
+	int cue_to_check;
 
-	if (leader_flag)
+	// if this guy is part of a wing, he uses his wing's arrival cue
+	if (pobjp->wingnum >= 0)
+	{
+		cue_to_check = Wings[pobjp->wingnum].arrival_cue;
+	}
+	// check the object's arrival cue
+	else
+	{
+		cue_to_check = pobjp->arrival_cue;
+	}
+
+	// is he a leader (using the definition above)?
+	if (!sexp_is_locked_false(cue_to_check))
 	{
 		p_object *existing_leader;
 
@@ -5407,7 +5456,7 @@ void parse_object_clear_all_handled_flags()
 
 // Goober5000
 // This function iterates through the Initially_docked array and builds the dock trees
-// for each parse object.  This can only be done after all objects have been parsed.
+// for each parse object.  This can only be done after all objects and wings have been parsed.
 void mission_parse_set_up_initial_docks()
 {
 	int i;
