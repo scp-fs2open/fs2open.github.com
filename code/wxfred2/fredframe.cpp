@@ -7,13 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/wxFRED2/FREDFrame.cpp $
- * $Revision: 1.4 $
- * $Date: 2005-05-12 14:00:14 $
+ * $Revision: 1.5 $
+ * $Date: 2006-01-28 00:23:36 $
  * $Author: Goober5000 $
  *
  * FRED app frame
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/05/12 14:00:14  Goober5000
+ * added a bunch of dialogs to wxFRED... thanks, taylor, for the GUI development :)
+ * --Goober5000
+ *
  * Revision 1.3  2005/04/25 12:14:21  Goober5000
  * -made the XRC file parsed on load instead of embedded
  * -migrated wxFRED to wxWidgets 2.6.0
@@ -86,7 +90,7 @@ FREDFrame::FREDFrame(const wxChar *title, int xpos, int ypos, int width, int hei
 	SetMenuBar(myMenuBar);
 
 	CreateStatusBar(5);
-	SetStatusText("For Help, press F1", 0);
+	SetStatusText(_T("For Help, press F1"), 0);
 }
 
 FREDFrame::~FREDFrame()
