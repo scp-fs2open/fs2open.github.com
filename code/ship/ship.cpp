@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.301 $
- * $Date: 2006-01-29 07:42:49 $
+ * $Revision: 2.302 $
+ * $Date: 2006-01-29 18:01:04 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.301  2006/01/29 07:42:49  wmcoolmon
+ * Make sure stuff is set up properly for ship kills
+ *
  * Revision 2.300  2006/01/21 09:36:58  wmcoolmon
  * Texture replacement stuff
  *
@@ -11907,7 +11910,7 @@ void ship_add_ship_type_count( int ship_info_index, int num )
 	}
 
 	//Resize if we need to
-	uint oldcount = Ship_type_counts.size();
+	uint oldsize = Ship_type_counts.size();
 	if(type >= (int) oldsize) {
 		Ship_type_counts.resize(type+1);
 
