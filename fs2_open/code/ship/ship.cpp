@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.300 $
- * $Date: 2006-01-21 09:36:58 $
+ * $Revision: 2.301 $
+ * $Date: 2006-01-29 07:42:49 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.300  2006/01/21 09:36:58  wmcoolmon
+ * Texture replacement stuff
+ *
  * Revision 2.299  2006/01/17 03:45:32  phreak
  * Rearranged the rearming code so it doesn't potentially take 2 minutes to reload a single bomb.
  *
@@ -11904,8 +11907,15 @@ void ship_add_ship_type_count( int ship_info_index, int num )
 	}
 
 	//Resize if we need to
-	if(type >= (int)Ship_type_counts.size()) {
+	uint oldcount = Ship_type_counts.size();
+	if(type >= (int) oldsize) {
 		Ship_type_counts.resize(type+1);
+
+		//WMC - Set everything to 0
+		for(uint i = oldsize; i < Ship_type_counts.size(); i++) {
+			Ship_type_counts[i].killed = 0;
+			Ship_type_counts[i].total = 0;
+		}
 	}
 
 	//Add it
@@ -11922,8 +11932,15 @@ void ship_add_ship_type_kill_count( int ship_info_index )
 	}
 
 	//Resize if we need to
-	if(type >= (int)Ship_type_counts.size()) {
+	uint oldsize = Ship_type_counts.size();
+	if(type >= (int) oldsize) {
 		Ship_type_counts.resize(type+1);
+
+		//WMC - Set everything to 0
+		for(uint i = oldsize; i < Ship_type_counts.size(); i++) {
+			Ship_type_counts[i].killed = 0;
+			Ship_type_counts[i].total = 0;
+		}
 	}
 
 	//Add it
