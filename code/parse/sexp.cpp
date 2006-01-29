@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.208 $
- * $Date: 2006-01-27 06:21:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.209 $
+ * $Date: 2006-01-29 07:41:57 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.208  2006/01/27 06:21:10  Goober5000
+ * replace quick sort with insertion sort in many places
+ * --Goober5000
+ *
  * Revision 2.207  2006/01/22 01:35:23  taylor
  * oops, didn't notice that was out of the wrong diff
  *
@@ -4897,7 +4901,7 @@ int sexp_ship_type_destroyed( int n )
 
 	// bogus if we reach the end of this array!!!!
 	if ( type < 0 ) {
-		Warning(LOCATION, "Invalid shiptype passed to sexp_ship_type_destroyed");
+		Warning(LOCATION, "Invalid shiptype passed to ship-type-destroyed");
 		return 0;
 	}
 
