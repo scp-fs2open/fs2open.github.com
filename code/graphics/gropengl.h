@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.15 $
- * $Date: 2006-01-20 17:15:16 $
+ * $Revision: 2.16 $
+ * $Date: 2006-01-30 06:40:49 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/01/20 17:15:16  taylor
+ * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
+ * several other very minor changes as well
+ *
  * Revision 2.14  2005/12/16 06:48:28  taylor
  * "House Keeping!!"
  *   - minor cleanup of things that have bothered me at one time or another
@@ -127,6 +131,7 @@
 
 
 #ifdef _WIN32
+	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 
 	#include "graphics/gl/gl.h"

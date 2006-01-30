@@ -2,8 +2,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.23 $
- * $Date: 2006-01-20 17:15:16 $
+ * $Revision: 2.24 $
+ * $Date: 2006-01-30 06:40:49 $
  * $Author: taylor $
  *
  * $NoKeywords: $
@@ -11,10 +11,10 @@
 
 #include "graphics/2d.h"
 
-int	gr_stub_make_light(light_data* light, int idx, int priority){return 0;}
-void gr_stub_modify_light(light_data* light, int idx, int priority) {}
+int	gr_stub_make_light(light* light, int idx, int priority){return 0;}
+void gr_stub_modify_light(light* light, int idx, int priority) {}
 void gr_stub_destroy_light(int idx)	{}
-void gr_stub_set_light(light_data *light) {}
+void gr_stub_set_light(light *light) {}
 void gr_stub_reset_lighting() {}
 void gr_stub_set_lighting(bool set, bool state) {}
 void stub_go_fullscreen(HWND wnd) {}
@@ -30,7 +30,7 @@ void gr_stub_flip() {}
 void gr_stub_flip_window(uint _hdc, int x, int y, int w, int h ) {}
 void gr_stub_set_clip(int x,int y,int w,int h, bool resize) {}
 void gr_stub_reset_clip() {}
-void gr_stub_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx, int sy ) {}
+void gr_stub_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha ) {}
 void gr_stub_create_shader(shader * shade, float r, float g, float b, float c ) {}
 void gr_stub_rect_internal(int x, int y, int w, int h, int r, int g, int b, int a) {}
 void gr_stub_rect(int x,int y,int w,int h,bool resize) {}
@@ -75,8 +75,8 @@ void stub_tcache_flush () {}
 void stub_tcache_cleanup () {}
 void stub_tcache_frame () {}
 void stub_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out) {}
-int gr_stub_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int tex_unit = 0) {return 1;}
-int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int tex_unit = 0) {return 0;}
+int gr_stub_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int tex_unit = 0) {return 1;}
+int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int tex_unit = 0) {return 0;}
 void gr_stub_set_clear_color(int r, int g, int b) {}
 void gr_stub_flash(int r, int g, int b) {}
 int gr_stub_zbuffer_get() {return 0;}

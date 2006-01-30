@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.74 $
- * $Date: 2006-01-20 17:15:16 $
+ * $Revision: 2.75 $
+ * $Date: 2006-01-30 06:40:49 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/01/20 17:15:16  taylor
+ * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
+ * several other very minor changes as well
+ *
  * Revision 2.73  2006/01/19 16:00:04  wmcoolmon
  * Lua debugging stuff; gr_bitmap_ex stuff for taylor
  *
@@ -813,23 +817,7 @@ struct line_list{
 	vertex *vert;
 };
 
-//exactly the same as the light structure from light.cpp, 
-//I did this only becase it wouldn't compile from the header for some reason
-//and becase we may need to add some data to it
-struct light_data {
-	int		type;							// What type of light this is
-	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
-	vec3d	vec2;							// second point on a tube light
-	vec3d	local_vec;					// rotated light vector
-	vec3d	local_vec2;					// rotated 2nd light vector for a tube light
-	float		intensity;					// How bright the light is.
-	float		rada, rada_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		r,g,b;						// The color components of the light
-	float		spec_r,spec_g,spec_b;		// The specular color components of the light
-	int		ignore_objnum;				// Don't light this object.  Used to optimize weapons casting light on parents.
-	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
-};
+struct light;
 
 
 #define GR_ALPHABLEND_NONE			0		// no blending
@@ -871,8 +859,6 @@ typedef struct screen {
 	int		current_bitblt_mode;				// See GR_BITBLT_MODE defines above
 	int		current_fog_mode;					// See GR_FOGMODE_* defines above
 	int		current_bitmap;
-	int		current_bitmap_sx;				// bitmap x section
-	int		current_bitmap_sy;				// bitmap y section
 	color		current_color;
 	color		current_fog_color;				// current fog color
 	color		current_clear_color;				// current clear color
@@ -925,7 +911,7 @@ typedef struct screen {
 	void (*gf_set_font)(int fontnum);
 
 	// Sets the current bitmap
-	void (*gf_set_bitmap)( int bitmap_num, int alphablend, int bitbltmode, float alpha, int sx, int sy);
+	void (*gf_set_bitmap)( int bitmap_num, int alphablend, int bitbltmode, float alpha);
 
 	// Call this to create a shader.   
 	// This function takes a while, so don't call it once a frame!
@@ -1051,7 +1037,7 @@ typedef struct screen {
 	void (*gf_filter_set)(int filter);
 
 	// set a texture into cache. for sectioned bitmaps, pass in sx and sy to set that particular section of the bitmap
-	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage);	
+	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int force, int stage);	
 
 	// preload a bitmap into texture memory
 	int (*gf_preload)(int bitmap_num, int is_aabitmap);
@@ -1098,10 +1084,10 @@ typedef struct screen {
 	void (*gf_start_angles_instance_matrix)(vec3d *, angles*);
 	void (*gf_end_instance_matrix)();
 
-	int	 (*gf_make_light)(light_data*, int, int );
-	void (*gf_modify_light)(light_data*, int, int );
+	int	 (*gf_make_light)(light*, int, int );
+	void (*gf_modify_light)(light*, int, int );
 	void (*gf_destroy_light)(int);
-	void (*gf_set_light)(light_data*);
+	void (*gf_set_light)(light*);
 	void (*gf_reset_lighting)();
 	void (*gf_set_ambient_light)(int,int,int);
 
@@ -1246,9 +1232,9 @@ __inline void gr_init_alphacolor( color * dst, int r, int g, int b, int alpha, i
 #define gr_set_color_fast	GR_CALL(gr_screen.gf_set_color_fast)
 
 //#define gr_set_bitmap			GR_CALL(gr_screen.gf_set_bitmap)
-__inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, int bitbltmode=GR_BITBLT_MODE_NORMAL, float alpha=1.0f, int sx = -1, int sy = -1 )
+__inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, int bitbltmode=GR_BITBLT_MODE_NORMAL, float alpha=1.0f )
 {
-	(*gr_screen.gf_set_bitmap)(bitmap_num, alphablend, bitbltmode, alpha, sx, sy);
+	(*gr_screen.gf_set_bitmap)(bitmap_num, alphablend, bitbltmode, alpha);
 }
 
 #define gr_create_shader	GR_CALL(gr_screen.gf_create_shader)
@@ -1348,9 +1334,9 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 #define gr_filter_set		GR_CALL(gr_screen.gf_filter_set)
 
 //#define gr_tcache_set		GR_CALL(gr_screen.gf_tcache_set)
-__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0)
+__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int stage = 0)
 {
-	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, stage);
+	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, fail_on_full, force, stage);
 }
 
 #define gr_preload			GR_CALL(gr_screen.gf_preload)

@@ -6,25 +6,19 @@
 #include "math/vecmat.h"
 #include "graphics/grd3dinternal.h"
 #include "cmdline/cmdline.h"
+#include "lighting/lighting.h"
 
 
 
 // Constants
-const int MAX_LIGHTS     = 256;
 const int MAX_D3D_LIGHTS = 8;		// Maximum number of lights that DX8 supports in one pass
 
-enum
-{
-	LT_DIRECTIONAL,		// A light like a sun
-	LT_POINT,			// A point light, like an explosion
-	LT_TUBE,			// A tube light, like a fluorescent light
-};
 
 // Structures
 struct d3d_light{
 	// RT, not keen on this, is it a class or a structure? A bit of both is dangerous!
 	d3d_light():occupied(false), priority(1){};
-	D3DLIGHT8 light;
+	D3DLIGHT8 dxlight;
 	bool occupied;
 	int priority;
 };
@@ -76,7 +70,7 @@ bool d3d_init_light()
 	return true;
 }
 
-void FSLight2DXLight(D3DLIGHT8 *DXLight,light_data *FSLight) 
+void FSLight2DXLight(D3DLIGHT8 *DXLight, light *FSLight) 
 {
 	//Copy the vars into a dx compatible struct
 	DXLight->Diffuse.r = FSLight->r * FSLight->intensity;
@@ -138,7 +132,7 @@ void FSLight2DXLight(D3DLIGHT8 *DXLight,light_data *FSLight)
 		DXLight->Specular.b *= 2;
 
 		//They also have almost no radius...
-		DXLight->Range = FSLight->radb +FSLight->rada * r;
+		DXLight->Range = FSLight->rada + FSLight->radb * r;
 		DXLight->Attenuation0 = 0.0f;
 		DXLight->Attenuation1 = 1.0f;
 		DXLight->Attenuation2 = 0.0f;
@@ -179,7 +173,7 @@ void shift_active_lights(int pos){
 			int slot = (pos * GlobalD3DVars::d3d_caps.MaxActiveLights)+l;
 			if(active_list[slot]){
 				if(d3d_lights[slot].occupied){
-					GlobalD3DVars::lpD3DDevice->SetLight(slot,&d3d_lights[slot].light);
+					GlobalD3DVars::lpD3DDevice->SetLight(slot,&d3d_lights[slot].dxlight);
 					GlobalD3DVars::lpD3DDevice->LightEnable(slot,true);
 					currently_enabled[i] = slot;
 					move = true;
@@ -190,13 +184,13 @@ void shift_active_lights(int pos){
 	}
 }
 
-int	gr_d3d_make_light(light_data* light, int idx, int priority)
+int	gr_d3d_make_light(light *light, int idx, int priority)
 {
 //Stub
 	return idx;
 }
 
-void gr_d3d_modify_light(light_data* light, int idx, int priority)
+void gr_d3d_modify_light(light *light, int idx, int priority)
 {
 //Stub
 }
@@ -206,13 +200,13 @@ void gr_d3d_destroy_light(int idx)
 //Stub
 }
 
-void gr_d3d_set_light(light_data *light)
+void gr_d3d_set_light(light *light)
 {
 	//Init the light
-	FSLight2DXLight(&d3d_lights[n_active_lights].light,light);
+	FSLight2DXLight(&d3d_lights[n_active_lights].dxlight, light);
 #ifndef NDEBUG
-	Assert(d3d_lights[n_active_lights].light.Range >= 0);
-	Assert(d3d_lights[n_active_lights].light.Range != 0 || d3d_lights[n_active_lights].light.Type == D3DLIGHT_DIRECTIONAL);
+	Assert(d3d_lights[n_active_lights].dxlight.Range >= 0);
+	Assert(d3d_lights[n_active_lights].dxlight.Range != 0 || d3d_lights[n_active_lights].dxlight.Type == D3DLIGHT_DIRECTIONAL);
 #endif
 	d3d_lights[n_active_lights].occupied = true;
 	active_list[n_active_lights++] = true;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.84 $
- * $Date: 2006-01-23 09:39:30 $
+ * $Revision: 2.85 $
+ * $Date: 2006-01-30 06:40:49 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2006/01/23 09:39:30  taylor
+ * fix d3d_bitmap_ex coloring (thanks Alpha0!)
+ *
  * Revision 2.83  2006/01/21 02:22:04  wmcoolmon
  * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
  *
@@ -1788,7 +1791,7 @@ void gr_d3d_tmapper_internal_2d( int nverts, vertex **verts, uint flags, int is_
 	texture_source = TEXTURE_SOURCE_NONE;
  
 	if ( flags & TMAP_FLAG_TEXTURED )	{
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))	{
+		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0 ))	{
 			// SHUT UP! -- Kazan -- This is massively slowing debug builds down
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
@@ -2219,8 +2222,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	
 			set_stage_for_cell_shaded();
 		}else{
-			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
-			d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 2);
+			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, 2);
 
 			if(GlobalD3DVars::d3d_caps.MaxSimultaneousTextures > 2)
 				set_stage_for_cell_glowmapped_shaded();
@@ -2229,8 +2232,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 		}
 
-		gr_screen.gf_set_bitmap(cell_shaded_lightmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
-		d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
+		gr_screen.gf_set_bitmap(cell_shaded_lightmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, 1);
 
 		for (i=0; i<nverts; i++ )	{
 			//d3d_verts[i].color = D3DCOLOR_ARGB(255,255,255,255);
@@ -2244,8 +2247,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 //		d3d_DrawPrimitive(D3DVT_TLVERTEX, D3DPT_TRIANGLEFAN, (LPVOID)d3d_verts, nverts);
 
 		if(GlobalD3DVars::d3d_caps.MaxSimultaneousTextures < 3){
-			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
-			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
+			gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+			if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, 0))	{
 				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
 				return;
 			}
@@ -2272,8 +2275,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 	//	d3d_SetTexture(1, NULL);
 	//	d3d_SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	}else{
-		gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
-		d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1);
+		gr_screen.gf_set_bitmap(GLOWMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, 1);
 	}
 
 	if(has_spec){
@@ -2318,8 +2321,8 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 
 	//spec mapping
 	if(has_spec && (SPECMAP > 0)){
-		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0, -1, -1);
-		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 0))	{
+		gr_screen.gf_set_bitmap(SPECMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+		if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, 0))	{
 				mprintf(( "Not rendering specmap texture because it didn't fit in VRAM!\n" ));
 			//	Error(LOCATION, "Not rendering specmap texture because it didn't fit in VRAM!");
 				return;
@@ -2356,7 +2359,7 @@ void gr_d3d_tmapper_internal( int nverts, vertex **verts, uint flags, int is_sca
 /*
 			if(env_enabled){
 				gr_screen.gf_set_bitmap(ENVMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
-				if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, 1))	{
+				if ( !d3d_tcache_set_internal(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, 1))	{
 						mprintf(( "Not rendering environment texture because it didn't fit in VRAM!\n" ));
 						return;
 				}
@@ -2757,14 +2760,12 @@ void gr_d3d_set_color_fast(color *dst)
  *
  * @return void
  */
-void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx, int sy )
+void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha )
 {
 	gr_screen.current_alpha = alpha;
 	gr_screen.current_alphablend_mode = alphablend_mode;
 	gr_screen.current_bitblt_mode = bitblt_mode;
 	gr_screen.current_bitmap = bitmap_num;
-	gr_screen.current_bitmap_sx = sx;
-	gr_screen.current_bitmap_sy = sy;
 }
 
 /**
