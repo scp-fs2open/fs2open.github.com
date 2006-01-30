@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.7 $
- * $Date: 2005-09-05 09:36:41 $
+ * $Revision: 1.8 $
+ * $Date: 2006-01-30 06:40:49 $
  * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/09/05 09:36:41  taylor
+ * merge of OSX tree
+ * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
+ * fix OGL version check, it would allow a required major version to be higher if the required minor version was lower than current
+ *
  * Revision 1.6  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -55,15 +60,6 @@
 #include "graphics/gropengl.h"
 
 
-#define MAX_LIGHTS 256
-
-enum
-{
-	LT_DIRECTIONAL,		// A light like a sun
-	LT_POINT,			// A point light, like an explosion
-	LT_TUBE,			// A tube light, like a fluorescent light
-};
-
 //Variables
 extern struct opengl_light opengl_lights[MAX_LIGHTS];
 extern bool active_light_list[MAX_LIGHTS];
@@ -74,35 +70,44 @@ extern int active_gl_lights;
 extern int n_active_gl_lights;
 extern int GL_center_alpha;
 
-struct ogl_light_struct_col
-{
-		float r,g,b,a;
-};
-
-struct ogl_light_struct_pos 
-{
-		float x,y,z,w;
+struct ogl_light_color {
+	float r,g,b,a;
 };
 
 // Structures
-struct opengl_light{
-	opengl_light():occupied(false), priority(1){};
-	ogl_light_struct_col Diffuse, Specular, Ambient;
-	ogl_light_struct_pos Position;
+struct opengl_light
+{
+	ogl_light_color Diffuse, Specular, Ambient;
+
+	// light position
+	struct {
+		float x, y, z, w;
+	} Position;
+
+	// spotlight direction (for tube lights)
+	struct {
+		float x, y, z;
+	} SpotDir;
+
+	float SpotExp, SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
+
 	bool occupied;
 	int priority;
+	int type;
+
+	opengl_light() : occupied(false), priority(1), type(0) {};
 };
 
 struct light_data;
 
 
 //Functions
-void FSLight2GLLight(opengl_light *GLLight, light_data *FSLight);
-int	gr_opengl_make_light(light_data* light, int idx, int priority);		//unused -- stub function
-void gr_opengl_modify_light(light_data* light, int idx, int priority);	//unused -- stub function
+void FSLight2GLLight(opengl_light *GLLight, light *FSLight);
+int	gr_opengl_make_light(light *fs_light, int idx, int priority);		//unused -- stub function
+void gr_opengl_modify_light(light *fs_light, int idx, int priority);	//unused -- stub function
 void gr_opengl_destroy_light(int idx);									//unused -- stub function
-void gr_opengl_set_light(light_data *light);
+void gr_opengl_set_light(light *fs_light);
 void gr_opengl_reset_lighting();
 void gr_opengl_set_lighting(bool set, bool state);
 void opengl_pre_render_init_lights();

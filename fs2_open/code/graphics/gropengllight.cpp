@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.24 $
- * $Date: 2006-01-20 17:15:16 $
+ * $Revision: 1.25 $
+ * $Date: 2006-01-30 06:40:49 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2006/01/20 17:15:16  taylor
+ * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
+ * several other very minor changes as well
+ *
  * Revision 1.23  2006/01/19 05:40:19  wmcoolmon
  * Possible overflow check
  *
@@ -137,6 +141,7 @@
  */
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
@@ -147,6 +152,7 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
+#include "lighting/lighting.h"
 
 
 
@@ -172,15 +178,19 @@ GLint GL_max_lights = 0;
 static const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 static const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
+static const float GL_light_emission[4] = { 0.1f, 0.1f, 0.1f, 0.7f };
+static const float GL_light_true_zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+static float GL_light_ambient[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 
-void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
-	GLLight->Diffuse.r = FSLight->r;// * FSLight->intensity;
-	GLLight->Diffuse.g = FSLight->g;// * FSLight->intensity;
-	GLLight->Diffuse.b = FSLight->b;// * FSLight->intensity;
-	GLLight->Specular.r = FSLight->spec_r;// * FSLight->intensity;
-	GLLight->Specular.g = FSLight->spec_g;// * FSLight->intensity;
-	GLLight->Specular.b = FSLight->spec_b;// * FSLight->intensity;
+
+void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
+{
+	GLLight->Diffuse.r = FSLight->r * FSLight->intensity;
+	GLLight->Diffuse.g = FSLight->g * FSLight->intensity;
+	GLLight->Diffuse.b = FSLight->b * FSLight->intensity;
+	GLLight->Specular.r = FSLight->spec_r * FSLight->intensity;
+	GLLight->Specular.g = FSLight->spec_g * FSLight->intensity;
+	GLLight->Specular.b = FSLight->spec_b * FSLight->intensity;
 	GLLight->Ambient.r = 0.0f;
 	GLLight->Ambient.g = 0.0f;
 	GLLight->Ambient.b = 0.0f;
@@ -188,29 +198,46 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 	GLLight->Specular.a = 1.0f;
 	GLLight->Diffuse.a = 1.0f;
 
+	GLLight->type = FSLight->type;
+
+	// GL default values...
+	// spot direction
+	GLLight->SpotDir.x = 0.0f;
+	GLLight->SpotDir.y = 0.0f;
+	GLLight->SpotDir.z = -1.0f;
+	// spot exponent
+	GLLight->SpotExp = Cmdline_ogl_spec;
+	// spot cutoff
+	GLLight->SpotCutOff = 180.0f; // special value, light in all directions
+	// defaults to disable attenuation
+	GLLight->ConstantAtten = 1.0f;
+	GLLight->LinearAtten = 0.0f;
+	GLLight->QuadraticAtten = 0.0f;
+
+
 	//If the light is a directional light
-	if(FSLight->type == LT_DIRECTIONAL) {
+	if (FSLight->type == LT_DIRECTIONAL) {
 		GLLight->Position.x = -FSLight->vec.xyz.x;
 		GLLight->Position.y = -FSLight->vec.xyz.y;
 		GLLight->Position.z = -FSLight->vec.xyz.z;
-		GLLight->Position.w = 0.0f; //Directional lights in OpenGL have w set to 0 and the direction vector in the position field
+		GLLight->Position.w = 0.0f; // Directional lights in OpenGL have w set to 0 and the direction vector in the position field
 
 		GLLight->Specular.r *= static_light_factor;
 		GLLight->Specular.g *= static_light_factor;
 		GLLight->Specular.b *= static_light_factor;
-
-		// default values
-		GLLight->ConstantAtten = 1.0f;
-		GLLight->LinearAtten = 0.0f;
-		GLLight->QuadraticAtten = 0.0f;
 	}
+
 	//If the light is a point or tube type
-	if((FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE)) {
+	if ((FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE)) {
+		// this crap still needs work...
+		GLLight->ConstantAtten = 0.0f;
+		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb));
 
 		if(FSLight->type == LT_POINT){
 			GLLight->Specular.r *= static_point_factor;
 			GLLight->Specular.g *= static_point_factor;
 			GLLight->Specular.b *= static_point_factor;
+			GLLight->LinearAtten *= 2.0f;
 		}else{
 			GLLight->Specular.r *= static_tube_factor;
 			GLLight->Specular.g *= static_tube_factor;
@@ -219,68 +246,77 @@ void FSLight2GLLight(opengl_light *GLLight,light_data *FSLight) {
 
 		GLLight->Position.x = FSLight->vec.xyz.x;
 		GLLight->Position.y = FSLight->vec.xyz.y;
-		GLLight->Position.z = FSLight->vec.xyz.z; //flipped axis for FS2
+		GLLight->Position.z = FSLight->vec.xyz.z; // flipped axis for FS2
 		GLLight->Position.w = 1.0f;		
 
-		//They also have almost no radius...
-//		GLLight->Range = FSLight->radb +FSLight->rada; //No range function in OpenGL that I'm aware of
-		GLLight->ConstantAtten = 3.0f;
-		GLLight->LinearAtten = 0.0f;
-		GLLight->QuadraticAtten = 0.0f; 
+		if (FSLight->type == LT_TUBE) {
+			GLLight->SpotDir.x = FSLight->vec2.xyz.x;
+			GLLight->SpotDir.y = FSLight->vec2.xyz.y;
+			GLLight->SpotDir.z = FSLight->vec2.xyz.z;
+			GLLight->SpotCutOff = 90.0f;
+		}
 	}
-
 }
 
-void set_opengl_light(int light_num, opengl_light *light)
+void opengl_set_light(int light_num, opengl_light *light)
 {
 	Assert(light_num < GL_max_lights);
+
 	glLightfv(GL_LIGHT0+light_num, GL_POSITION, &light->Position.x);
 	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, &light->Ambient.r);
 	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, &light->Diffuse.r);
 	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, &light->Specular.r);
+	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, &light->SpotDir.x);
 	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, light->ConstantAtten);
 	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, light->LinearAtten);
 	glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, light->QuadraticAtten);
+	glLightf(GL_LIGHT0+light_num, GL_SPOT_EXPONENT, light->SpotExp);
+	glLightf(GL_LIGHT0+light_num, GL_SPOT_CUTOFF, light->SpotCutOff);
 }
 
 //finds the first unocupyed light
-void opengl_pre_render_init_lights(){
-	for(int i = 0; i<GL_max_lights; i++){
-		if(currently_enabled_lights[i] > -1) glDisable(GL_LIGHT0+i);
+void opengl_pre_render_init_lights()
+{
+	for (int i = 0; i < GL_max_lights; i++) {
+		if (currently_enabled_lights[i] > -1)
+			glDisable(GL_LIGHT0+i);
+
 		currently_enabled_lights[i] = -1;
 	}
 }
 
 
-void opengl_change_active_lights(int pos){
-	int k = 0;
-	int l = 0;
-	if(!lighting_is_enabled)return;
+void opengl_change_active_lights(int pos)
+{
+	if ( !lighting_is_enabled )
+		return;
+
+	int i, k = 0, l = 0;
 	bool move = false;
+	vec3d fwd;
+	vec3d *uvec = &Eye_matrix.vec.uvec;
+
 	glMatrixMode(GL_MODELVIEW); 
 	glPushMatrix();				
 	glLoadIdentity();
 
-//straight cut'n'paste out of gr_opengl_set_view_matrix, but I couldn't use that, since it messes up with the stack depth var
-	vec3d fwd;
-	vec3d *uvec=&Eye_matrix.vec.uvec;
-
 	vm_vec_add(&fwd, &Eye_position, &Eye_matrix.vec.fvec);
 
-	gluLookAt(Eye_position.xyz.x,Eye_position.xyz.y,-Eye_position.xyz.z,
-	fwd.xyz.x,fwd.xyz.y,-fwd.xyz.z,
-	uvec->xyz.x, uvec->xyz.y,-uvec->xyz.z);
+	gluLookAt(Eye_position.xyz.x, Eye_position.xyz.y, -Eye_position.xyz.z,
+				fwd.xyz.x, fwd.xyz.y, -fwd.xyz.z, uvec->xyz.x, uvec->xyz.y, -uvec->xyz.z);
 
-	glScalef(1,1,-1);
-	
-	for(int i = 0; (i < GL_max_lights) && ((pos * GL_max_lights)+i < active_gl_lights); i++){
+	glScalef(1.0f, 1.0f, -1.0f);
+
+	for (i = 0; (i < GL_max_lights) && (((pos * GL_max_lights) + i) < active_gl_lights); i++) {
 		glDisable(GL_LIGHT0+i);
 		move = false;
-		for(k=0; k<MAX_LIGHTS && !move; k++){
-			int slot = (pos * GL_max_lights)+l;
-			if(active_light_list[slot]){
-				if(opengl_lights[slot].occupied){
-					set_opengl_light(i,&opengl_lights[slot]);
+
+		for (k = 0; (k < MAX_LIGHTS) && !move; k++) {
+			int slot = (pos * GL_max_lights) + l;
+
+			if (active_light_list[slot]) {
+				if (opengl_lights[slot].occupied) {
+					opengl_set_light(i,&opengl_lights[slot]);
 					glEnable(GL_LIGHT0+i);
 					currently_enabled_lights[i] = slot;
 					move = true;
@@ -289,35 +325,33 @@ void opengl_change_active_lights(int pos){
 			}
 		}
 	}
-	
 
 	glPopMatrix();
-
 }
 
-int	gr_opengl_make_light(light_data* light, int idx, int priority)
+int gr_opengl_make_light(light *fs_light, int idx, int priority)
 {
-//Stub
 	return idx;
 }
 
-void gr_opengl_modify_light(light_data* light, int idx, int priority)
+void gr_opengl_modify_light(light *fs_light, int idx, int priority)
 {
-//Stub
 }
 
 void gr_opengl_destroy_light(int idx)
 {
-//Stub
 }
 
-void gr_opengl_set_light(light_data *light)
+void gr_opengl_set_light(light *fs_light)
 {
+	if (Cmdline_nohtl)
+		return;
+
 	//Init the light
 	//WMC - This can cause a memleak in currently_enabled_lights.
 	Assert(active_gl_lights < MAX_LIGHTS);
 
-	FSLight2GLLight(&opengl_lights[active_gl_lights],light);
+	FSLight2GLLight(&opengl_lights[active_gl_lights], fs_light);
 	opengl_lights[active_gl_lights].occupied = true;
 	active_light_list[active_gl_lights++] = true;
 }
@@ -336,22 +370,87 @@ void gr_opengl_center_alpha(int type)
 }
 
 void gr_opengl_set_center_alpha(int type)
-{	
+{
+	if (!type || Cmdline_nohtl)
+		return;
+
+	opengl_light glight; // = &opengl_lights[active_gl_lights];
+
+	vec3d dir;
+	vm_vec_sub(&dir, &Eye_position, &Object_position);
+	vm_vec_normalize(&dir);
+
+	if (type == 1) {
+		glight.Diffuse.r = 0.0f;
+		glight.Diffuse.g = 0.0f;
+		glight.Diffuse.b = 0.0f;
+		glight.Ambient.r = gr_screen.current_alpha;
+		glight.Ambient.g = gr_screen.current_alpha;
+		glight.Ambient.b = gr_screen.current_alpha;
+	} else {
+		glight.Diffuse.r = gr_screen.current_alpha;
+		glight.Diffuse.g = gr_screen.current_alpha;
+		glight.Diffuse.b = gr_screen.current_alpha;
+		glight.Ambient.r = 0.0f;
+		glight.Ambient.g = 0.0f;
+		glight.Ambient.b = 0.0f;
+	}
+
+	glight.Specular.r = 0.0f;
+	glight.Specular.g = 0.0f;
+	glight.Specular.b = 0.0f;
+	glight.Specular.a = 0.0f;
+
+	glight.Ambient.a = 1.0f;
+	glight.Diffuse.a = 1.0f;
+
+	glight.Position.x = -dir.xyz.x;
+	glight.Position.y = -dir.xyz.y;
+	glight.Position.z = -dir.xyz.z;
+	glight.Position.w = 0.0f;
+
+	// defaults
+	glight.ConstantAtten = 1.0f;
+	glight.LinearAtten = 0.0f;
+	glight.QuadraticAtten = 0.0f;
+
+	// first light
+	memcpy( &opengl_lights[active_gl_lights], &glight, sizeof(opengl_light) );
+
+	opengl_lights[active_gl_lights].occupied = true;
+	active_light_list[active_gl_lights++] = true;
+
+	// second light
+	glight.Position.x = dir.xyz.x;
+	glight.Position.y = dir.xyz.y;
+	glight.Position.z = dir.xyz.z;
+
+	memcpy( &opengl_lights[active_gl_lights], &glight, sizeof(opengl_light) );
+
+	opengl_lights[active_gl_lights].occupied = true;
+	active_light_list[active_gl_lights++] = true;
+
+	// reset center alpha
+	GL_center_alpha = 0;
 }
 
 void gr_opengl_reset_lighting()
 {
 	int i;
 
-	for(i = 0; i<MAX_LIGHTS; i++){
+	if (Cmdline_nohtl)
+		return;
+
+	for (i = 0; i<MAX_LIGHTS; i++) {
 		opengl_lights[i].occupied = false;
 	}
-	for(i=0; i<GL_max_lights; i++){
+
+	for (i = 0; i < GL_max_lights; i++) {
 		glDisable(GL_LIGHT0+i);
 		active_light_list[i] = false;
 	}
-	active_gl_lights =0;
 
+	active_gl_lights =0;
 	GL_center_alpha = 0;
 }
 
@@ -389,7 +488,7 @@ void opengl_init_light()
 	Verify(GL_max_lights > 0);
 
 	if ( currently_enabled_lights == NULL )
-		currently_enabled_lights = (int*)vm_malloc(GL_max_lights * sizeof(int));
+		currently_enabled_lights = (int *) vm_malloc_q(GL_max_lights * sizeof(int));
 
 	if (currently_enabled_lights == NULL)
 		Error( LOCATION, "Unable to allocate memory for lights!\n");
@@ -403,13 +502,19 @@ void opengl_default_light_settings(int ambient = 1, int emission = 1, int specul
 		return;
 
 	if (ambient) {
-		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_color );
+		glMaterialfv( GL_FRONT_AND_BACK, GL_DIFFUSE, GL_light_color );
+		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT, GL_light_ambient );
 	} else {
-		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
+		if (GL_center_alpha) {
+			glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
+		} else {
+			glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
+		}
 	}
 
 	if (emission) {
-		glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, GL_light_ambient );
+		// emissive light is just a general glow but without it things are *terribly* dark if there is no light on them
+		glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, GL_light_emission );
 	} else {
 		glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, GL_light_zero );
 	}
@@ -457,5 +562,6 @@ void gr_opengl_set_ambient_light(int red, int green, int blue)
 	GL_light_ambient[1] = i2fl(green)/255.0f;
 	GL_light_ambient[2] = i2fl(blue)/255.0f;
 	GL_light_ambient[3] = 1.0f;
+
 	opengl_calculate_ambient_factor();
 }

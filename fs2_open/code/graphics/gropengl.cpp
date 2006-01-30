@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.161 $
- * $Date: 2006-01-24 13:38:30 $
+ * $Revision: 2.162 $
+ * $Date: 2006-01-30 06:40:49 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.161  2006/01/24 13:38:30  taylor
+ * break out of error check loop after the first check in FRED since it doesn't like this for some reason
+ *
  * Revision 2.160  2006/01/22 01:30:33  taylor
  * clear depth buffer on each page flip (may give a slight speed increase)
  * change error check handling again, FRED may like this better but if it starts hanging again I have another fix
@@ -1518,15 +1521,12 @@ void gr_opengl_reset_clip()
 	glDisable(GL_SCISSOR_TEST);
 }
 
-void gr_opengl_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha, int sx, int sy )
+void gr_opengl_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha )
 {
 	gr_screen.current_alpha = alpha;
 	gr_screen.current_alphablend_mode = alphablend_mode;
 	gr_screen.current_bitblt_mode = bitblt_mode;
 	gr_screen.current_bitmap = bitmap_num;
-
-	gr_screen.current_bitmap_sx = sx;
-	gr_screen.current_bitmap_sy = sy;
 }
 
 void gr_opengl_create_shader(shader * shade, float r, float g, float b, float c )
@@ -2402,7 +2402,7 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage )
 {
-	if ( !gr_opengl_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+	if ( !gr_opengl_tcache_set(SPECMAP, tmap_type, u_scale, v_scale, 0, 0, stage )) {
 		//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 		return;
 	}
@@ -2528,7 +2528,7 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags, is_scaler);
 
 	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, stage )) {
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
 		}
@@ -2539,7 +2539,7 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 			SPECMAP = -1;	// don't add a spec map if we are cloaked
 			GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
 
-			if ( !gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+			if ( !gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, 0, stage )) {
 				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 				return;
 			}
@@ -2549,7 +2549,7 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 
 		// glowmap
 		if ( (GLOWMAP > -1) && !Cmdline_noglow ) {
-			if ( !gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, stage )) {
+			if ( !gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, 0, stage )) {
 				//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 				return;
 			}
@@ -2640,7 +2640,7 @@ void opengl_tmapper_internal3d( int nv, vertex **verts, uint flags )
 	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
 
 	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy ))
+		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0 ))
 		{
 			//mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
 			return;
@@ -4318,7 +4318,7 @@ void gr_opengl_init(int reinit)
 		opengl_get_extensions();
 
 		// ready the texture system
-		opengl_tcache_init(0);
+		opengl_tcache_init();
 
 		opengl_init_vertex_buffers();
 
