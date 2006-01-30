@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.19 $
- * $Date: 2006-01-19 11:49:12 $
+ * $Revision: 1.20 $
+ * $Date: 2006-01-30 06:35:02 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2006/01/19 11:49:12  taylor
+ * better error handling for OGG Voris files
+ *
  * Revision 1.18  2006/01/15 21:22:22  taylor
  * correct get/set sample math, it expects 8-bit sizes so we have to convert to/from actual
  *
@@ -1077,12 +1080,12 @@ BOOL AudioStream::Create (char *pszFilename)
 				// cut it down by the number of buffers we rotate with to maintain some measure of sane memory usage
 				m_cbBufSize /= MAX_STREAM_BUFFERS;
 
-				// if the requested buffer size is too big then cap it
-				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
-
 				// ??? there tends to be static in the audio if m_cbBufSize equals the samples per second, so make it unqual
 				if (m_cbBufSize == m_pwavefile->m_wfmt.nSamplesPerSec)
-					m_cbBufSize -= 1;
+					m_cbBufSize = (uint)((float)m_cbBufSize * 1.7f);
+
+				// if the requested buffer size is too big then cap it
+				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
 
 //				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
 
