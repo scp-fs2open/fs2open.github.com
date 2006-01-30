@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-26 04:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2006-01-30 06:27:59 $
+ * $Author: taylor $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -2785,11 +2788,12 @@ int CFred_mission_save::save_reinforcements()
 int CFred_mission_save::save_bitmaps()
 {	
 	int idx;
+	starfield_bitmap_instance *sbi = NULL;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Background bitmaps");
 	parse_comments(2);
-	fout("\t\t;! %d total\n", Num_starfield_bitmaps);
+	fout("\t\t;! %d total\n", stars_get_num_bitmaps());
 
 	required_string_fred("$Num stars:");
 	parse_comments();
@@ -2839,48 +2843,54 @@ int CFred_mission_save::save_bitmaps()
 	}
 
 	// save suns by sun bitmap filename
-	for(idx=0; idx<Num_suns; idx++){
-		// sun name, angles and scale
-		required_string_fred("$Sun:");
-		parse_comments();
-		fout(" %s", Suns[idx].filename);
+	for (idx=0; idx<stars_get_num_suns(); idx++) {
+		sbi = stars_get_sun_instance(idx);
+		Assert( sbi != NULL );
 
-		required_string_fred("+Angles:");
-		parse_comments();
-		fout(" %f %f %f", Suns[idx].ang.p, Suns[idx].ang.b, Suns[idx].ang.h);
+ 		// sun name, angles and scale
+ 		required_string_fred("$Sun:");
+ 		parse_comments();
+		fout(" %s", stars_get_sun_name(idx));
 
-		required_string_fred("+Scale:");
-		parse_comments();
-		fout(" %f", Suns[idx].scale_x);
-	}
+ 		required_string_fred("+Angles:");
+ 		parse_comments();
+		fout(" %f %f %f", sbi->ang.p, sbi->ang.b, sbi->ang.h);
+
+ 		required_string_fred("+Scale:");
+ 		parse_comments();
+		fout(" %f", sbi->scale_x);
+ 	}
 
 	// save background bitmaps by filename
-	for(idx=0; idx<Num_starfield_bitmaps; idx++){
-		// sun name, angles and scale
-		required_string_fred("$Starbitmap:");
-		parse_comments();
-		fout(" %s", Starfield_bitmap_instance[idx].filename);
+	for(idx=0; idx<stars_get_num_bitmaps(); idx++){
+		sbi = stars_get_bitmap_instance(idx);
+		Assert( sbi != NULL );
 
-		required_string_fred("+Angles:");
-		parse_comments();
-		fout(" %f %f %f", Starfield_bitmap_instance[idx].ang.p, Starfield_bitmap_instance[idx].ang.b, Starfield_bitmap_instance[idx].ang.h);
+ 		// sun name, angles and scale
+ 		required_string_fred("$Starbitmap:");
+ 		parse_comments();
+		fout(" %s", stars_get_bitmap_name(idx));
 
-		required_string_fred("+ScaleX:");
-		parse_comments();
-		fout(" %f", Starfield_bitmap_instance[idx].scale_x);
+ 		required_string_fred("+Angles:");
+ 		parse_comments();
+		fout(" %f %f %f", sbi->ang.p, sbi->ang.b, sbi->ang.h);
 
-		required_string_fred("+ScaleY:");
-		parse_comments();
-		fout(" %f", Starfield_bitmap_instance[idx].scale_y);
+ 		required_string_fred("+ScaleX:");
+ 		parse_comments();
+		fout(" %f", sbi->scale_x);
 
-		required_string_fred("+DivX:");
-		parse_comments();
-		fout(" %d", Starfield_bitmap_instance[idx].div_x);
+ 		required_string_fred("+ScaleY:");
+ 		parse_comments();
+		fout(" %f", sbi->scale_y);
 
-		required_string_fred("+DivY:");
-		parse_comments();
-		fout(" %d", Starfield_bitmap_instance[idx].div_y);
-	}
+ 		required_string_fred("+DivX:");
+ 		parse_comments();
+		fout(" %d", sbi->div_x);
+
+ 		required_string_fred("+DivY:");
+ 		parse_comments();
+		fout(" %d", sbi->div_y);
+ 	}
 
 	return err;
 }

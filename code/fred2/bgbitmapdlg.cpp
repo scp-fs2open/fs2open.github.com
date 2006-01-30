@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-30 06:27:59 $
+ * $Author: taylor $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.11  2005/12/22 01:44:43  phreak
  * Extra error code for background importing
  *
@@ -522,7 +526,7 @@ void bg_bitmap_dlg::OnClose()
 	// close bitmap data
 	bitmap_data_close();
 
-	stars_generate_bitmap_instance_vertex_buffers();
+	stars_generate_bitmap_instance_buffers();
 	theApp.record_window_data(&Bg_wnd_data, this);
 	delete Bg_bitmap_dialog;
 	Bg_bitmap_dialog = NULL;
@@ -709,25 +713,21 @@ void bg_bitmap_dlg::sun_data_init()
 	CListBox *clb;
 	
 	// add all suns to the drop down
-	idx=0;
-	while((idx < MAX_STARFIELD_BITMAPS) && (Sun_bitmaps[idx].bitmap != -1)){
-		((CComboBox*)GetDlgItem(IDC_SUN1))->AddString(Sun_bitmaps[idx].filename);
-		
-		// next
-		idx++;
-	}
+	for (idx = 0; idx < stars_get_num_entries(true, true); idx++) {
+		((CComboBox*)GetDlgItem(IDC_SUN1))->AddString(stars_get_name_FRED(idx, true));
+ 	}
 
 	//clear instances if necessary
 	clb = (CListBox*)GetDlgItem(IDC_SUN1_LIST);
 	clb->ResetContent();
 
 	// add all suns by bitmap filename to the list
-	for(idx=0; idx<Num_suns; idx++){	
-		clb->AddString(Suns[idx].filename);
+	for (idx = 0; idx < stars_get_num_suns(); idx++) {	
+		clb->AddString( stars_get_sun_name(idx) );
 	}		
 
 	// if we have at least one item, select it
-	if(Num_suns > 0){
+	if (stars_get_num_suns() > 0) {
 		clb->SetCurSel(0);
 		OnSunChange();
 	}
@@ -740,27 +740,32 @@ void bg_bitmap_dlg::sun_data_close()
 }
 
 void bg_bitmap_dlg::sun_data_save_current()
-{	
+{
+	starfield_bitmap_instance sbi;
+
 	// if we have an active item
 	if(s_index >= 0){
 		// read out of the controls
 		UpdateData(TRUE);
 
 		// store the data
-		strcpy(Suns[s_index].filename, (const char*)s_name);
-		Suns[s_index].scale_x = (float)s_scale;
-		Suns[s_index].scale_y = 1.0f;
-		Suns[s_index].div_x = 1;
-		Suns[s_index].div_y = 1;
-		Suns[s_index].ang.p = (float)fl_radian(s_pitch);
-		Suns[s_index].ang.b = (float)fl_radian(s_bank);
-		Suns[s_index].ang.h = (float)fl_radian(s_heading);		
+		memset( &sbi, 0, sizeof(starfield_bitmap_instance) );
+		sbi.scale_x = (float)s_scale;
+		sbi.scale_y = 1.0f;
+		sbi.div_x = 1;
+		sbi.div_y = 1;
+		sbi.ang.p = (float)fl_radian(s_pitch);
+		sbi.ang.b = (float)fl_radian(s_bank);
+		sbi.ang.h = (float)fl_radian(s_heading);
+
+		stars_modify_instance_FRED( s_index, (LPCTSTR)s_name, &sbi, true );
 	}
 }
 
 void bg_bitmap_dlg::OnSunChange()
 {	
 	int drop_index;
+	starfield_bitmap_instance *sbi = NULL;
 
 	// save the current sun
 	sun_data_save_current();
@@ -769,18 +774,22 @@ void bg_bitmap_dlg::OnSunChange()
 	s_index = ((CListBox*)GetDlgItem(IDC_SUN1_LIST))->GetCurSel();
 
 	// setup data	
-	if(s_index >= 0){				
-		s_pitch = (int)(fl_degrees(Suns[s_index].ang.p) + delta);
-		s_bank = (int)(fl_degrees(Suns[s_index].ang.b) + delta);
-		s_heading = (int)(fl_degrees(Suns[s_index].ang.h) + delta);
-		s_scale = Suns[s_index].scale_x;		
-		s_name = CString(Suns[s_index].filename);
+	if (s_index >= 0) {
+		sbi = stars_get_instance(s_index, true);
+		Assert( sbi != NULL );
+		Assert( sbi->star_bitmap_index >= 0 );
+
+		s_pitch = (int)(fl_degrees(sbi->ang.p) + delta);
+		s_bank = (int)(fl_degrees(sbi->ang.b) + delta);
+		s_heading = (int)(fl_degrees(sbi->ang.h) + delta);
+		s_scale = sbi->scale_x;
+		s_name = CString( stars_get_name_FRED(sbi->star_bitmap_index, true) );
 
 		// stuff back into the controls
 		UpdateData(FALSE);
 
 		// select the proper item from the dropdown
-		drop_index = ((CComboBox*)GetDlgItem(IDC_SUN1))->FindString( -1, Suns[s_index].filename );
+		drop_index = ((CComboBox*)GetDlgItem(IDC_SUN1))->FindString( -1, stars_get_name_FRED(sbi->star_bitmap_index, true) );
 		Assert(drop_index != CB_ERR);
 		if(drop_index != CB_ERR){
 			((CComboBox*)GetDlgItem(IDC_SUN1))->SetCurSel(drop_index);
@@ -790,40 +799,36 @@ void bg_bitmap_dlg::OnSunChange()
 
 void bg_bitmap_dlg::OnAddSun()
 {
-	starfield_bitmap_instance *b;
-
-	// if we've already reached max suns
-	if(Num_suns >= MAX_STARFIELD_BITMAPS){
-		MessageBox("Max suns reached!");
-		return;
-	}
+	starfield_bitmap_instance sbi;
 
 	// save any current
 	sun_data_save_current();
-	
+
+	memset( &sbi, 0, sizeof(starfield_bitmap_instance) );
+
 	// select the first sun by default
-	b = &Suns[Num_suns++];
-	strcpy(b->filename, Sun_bitmaps[0].filename);
-	b->scale_x = 1.0f;
-	b->scale_y = 1.0f;
-	b->div_x = 1;
-	b->div_y = 1;
-	b->ang.p = 0;
-	b->ang.b = 0;
-	b->ang.h = 0;
+	sbi.star_bitmap_index = 0;
+
+	sbi.scale_x = 1.0f;
+	sbi.scale_y = 1.0f;
+	sbi.div_x = 1;
+	sbi.div_y = 1;
+	sbi.ang.p = 0;
+	sbi.ang.b = 0;
+	sbi.ang.h = 0;
+
+	stars_add_sun_instance( (char*)stars_get_name_FRED(0, true), &sbi );
 
 	// add to the listbox and select it
-	int add_index = ((CListBox*)GetDlgItem(IDC_SUN1_LIST))->AddString(b->filename);
+	int add_index = ((CListBox*)GetDlgItem(IDC_SUN1_LIST))->AddString( stars_get_name_FRED(0, true) );
 	((CListBox*)GetDlgItem(IDC_SUN1_LIST))->SetCurSel(add_index);
-	
+
 	// call the OnSunChange function to setup all relvant data in the class
 	OnSunChange();
 }
 
 void bg_bitmap_dlg::OnDelSun()
 {
-	int idx;
-
 	// if we don't have an active item
 	if(s_index < 0){
 		return;
@@ -832,14 +837,8 @@ void bg_bitmap_dlg::OnDelSun()
 	// remove the item from the list
 	((CListBox*)GetDlgItem(IDC_SUN1_LIST))->DeleteString(s_index);
 
-	// remove it from the list
-	for(idx=s_index; idx<Num_suns-1; idx++){
-		Suns[idx] = Suns[idx+1];
-		strcpy(Suns[idx].filename, Suns[idx+1].filename);
-	}
-
-	// decrement the count
-	Num_suns--;
+	// remove it from the instance list
+	stars_delete_instance_FRED(s_index, true);
 
 	// no item selected, let the message handler assign a new one
 	s_index = -1;
@@ -872,26 +871,22 @@ void bg_bitmap_dlg::bitmap_data_init()
 	int idx;
 	CListBox* clb;
 
-	// add all suns to the drop down
-	idx=0;
-	while((idx < MAX_STARFIELD_BITMAPS) && (Starfield_bitmaps[idx].bitmap != -1)){
-		((CComboBox*)GetDlgItem(IDC_SBITMAP))->AddString(Starfield_bitmaps[idx].filename);
-		
-		// next
-		idx++;
+	// add all bitmaps to the drop down
+	for (idx = 0; idx < stars_get_num_entries(false, true); idx++) {
+		((CComboBox*)GetDlgItem(IDC_SBITMAP))->AddString(stars_get_name_FRED(idx, false));
 	}
-	
+
 	clb = (CListBox*)GetDlgItem(IDC_SBITMAP_LIST);
 	clb->ResetContent();
 
 
-	// add all suns by bitmap filename to the list
-	for(idx=0; idx<Num_starfield_bitmaps; idx++){	
-		clb->AddString(Starfield_bitmap_instance[idx].filename);
+	// add all bitmaps by bitmap filename to the list
+	for (idx = 0; idx < stars_get_num_bitmaps(); idx++) {	
+		clb->AddString( stars_get_bitmap_name(idx) );
 	}		
 
 	// if we have at least one item, select it
-	if(Num_starfield_bitmaps > 0){
+	if (stars_get_num_bitmaps() > 0) {
 		clb->SetCurSel(0);
 		OnBitmapChange();
 	}
@@ -905,26 +900,31 @@ void bg_bitmap_dlg::bitmap_data_close()
 
 void bg_bitmap_dlg::bitmap_data_save_current()
 {
+	starfield_bitmap_instance sbi;
+
 	// if we have an active item
-	if(b_index >= 0){
+	if (b_index >= 0) {
 		// read out of the controls
 		UpdateData(TRUE);
 
 		// store the data
-		strcpy(Starfield_bitmap_instance[b_index].filename, (const char*)b_name);
-		Starfield_bitmap_instance[b_index].scale_x = (float)b_scale_x;
-		Starfield_bitmap_instance[b_index].scale_y = (float)b_scale_y;
-		Starfield_bitmap_instance[b_index].div_x = b_div_x;
-		Starfield_bitmap_instance[b_index].div_y = b_div_y;
-		Starfield_bitmap_instance[b_index].ang.p = (float)fl_radian(b_pitch);
-		Starfield_bitmap_instance[b_index].ang.b = (float)fl_radian(b_bank);
-		Starfield_bitmap_instance[b_index].ang.h = (float)fl_radian(b_heading);
+		memset( &sbi, 0, sizeof(starfield_bitmap_instance) );
+		sbi.scale_x = (float)b_scale_x;
+		sbi.scale_y = (float)b_scale_y;
+		sbi.div_x = b_div_x;
+		sbi.div_y = b_div_y;
+		sbi.ang.p = (float)fl_radian(b_pitch);
+		sbi.ang.b = (float)fl_radian(b_bank);
+		sbi.ang.h = (float)fl_radian(b_heading);
+
+		stars_modify_instance_FRED( b_index, (LPCTSTR)b_name, &sbi, false );
 	}
 }
 
 void bg_bitmap_dlg::OnBitmapChange()
 {
 	int drop_index;
+	starfield_bitmap_instance *sbi = NULL;
 
 	// save the current bitmap
 	bitmap_data_save_current();
@@ -933,56 +933,58 @@ void bg_bitmap_dlg::OnBitmapChange()
 	b_index = ((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->GetCurSel();
 
 	// setup data	
-	if(b_index >= 0){		
-		b_pitch = (int)(fl_degrees(Starfield_bitmap_instance[b_index].ang.p) + delta);
-		b_bank = (int)(fl_degrees(Starfield_bitmap_instance[b_index].ang.b) + delta);
-		b_heading = (int)(fl_degrees(Starfield_bitmap_instance[b_index].ang.h) + delta);
-		b_scale_x = Starfield_bitmap_instance[b_index].scale_x;
-		b_scale_y = Starfield_bitmap_instance[b_index].scale_y;
-		b_div_x = Starfield_bitmap_instance[b_index].div_x;
-		b_div_y = Starfield_bitmap_instance[b_index].div_y;
-		b_name = CString(Starfield_bitmap_instance[b_index].filename);
+	if (b_index >= 0) {
+		sbi = stars_get_instance(b_index, false);
+		Assert( sbi != NULL );
+		Assert( sbi->star_bitmap_index >= 0 );
+
+		b_pitch = (int)(fl_degrees(sbi->ang.p) + delta);
+		b_bank = (int)(fl_degrees(sbi->ang.b) + delta);
+		b_heading = (int)(fl_degrees(sbi->ang.h) + delta);
+		b_scale_x = sbi->scale_x;
+		b_scale_y = sbi->scale_y;
+		b_div_x = sbi->div_x;
+		b_div_y = sbi->div_y;
+		b_name = CString( stars_get_name_FRED(sbi->star_bitmap_index, false) );
 
 		// stuff back into the controls
 		UpdateData(FALSE);
 
 		// select the proper item from the dropdown
-		drop_index = ((CComboBox*)GetDlgItem(IDC_SBITMAP))->FindString( -1, Starfield_bitmap_instance[b_index].filename );
+		drop_index = ((CComboBox*)GetDlgItem(IDC_SBITMAP))->FindString( -1, stars_get_name_FRED(sbi->star_bitmap_index, false) );
 		Assert(drop_index != CB_ERR);
 		if(drop_index != CB_ERR){
 			((CComboBox*)GetDlgItem(IDC_SBITMAP))->SetCurSel(drop_index);
 		}
 	}
 
-	stars_generate_bitmap_instance_vertex_buffers();
+	stars_generate_bitmap_instance_buffers();
 }
 
 void bg_bitmap_dlg::OnAddBitmap()
 {
-	starfield_bitmap_instance *b;
-
-	// if we've already reached max bitmaps
-	if(Num_starfield_bitmaps >= MAX_STARFIELD_BITMAPS){
-		MessageBox("Max starfield bitmaps reached!");
-		return;
-	}
+	starfield_bitmap_instance sbi;
 
 	// save any current
 	bitmap_data_save_current();
-	
-	// select the first sun by default
-	b = &Starfield_bitmap_instance[Num_starfield_bitmaps++];
-	strcpy(b->filename, Starfield_bitmaps[0].filename);
-	b->scale_x = 1.0f;
-	b->scale_y = 1.0f;
-	b->div_x = 1;
-	b->div_y = 1;
-	b->ang.p = 0;
-	b->ang.b = 0;
-	b->ang.h = 0;
+
+	memset( &sbi, 0, sizeof(starfield_bitmap_instance) );
+
+	// select the first bitmap by default
+	sbi.star_bitmap_index = 0;
+
+	sbi.scale_x = 1.0f;
+	sbi.scale_y = 1.0f;
+	sbi.div_x = 1;
+	sbi.div_y = 1;
+	sbi.ang.p = 0;
+	sbi.ang.b = 0;
+	sbi.ang.h = 0;
+
+	stars_add_bitmap_instance( (char*)stars_get_name_FRED(0, false), &sbi );
 
 	// add to the listbox and select it
-	int add_index = ((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->AddString(b->filename);
+	int add_index = ((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->AddString( stars_get_name_FRED(0, false) );
 	((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->SetCurSel(add_index);
 	
 	// call the OnBitmapChange function to setup all relvant data in the class
@@ -991,29 +993,16 @@ void bg_bitmap_dlg::OnAddBitmap()
 
 void bg_bitmap_dlg::OnDelBitmap()
 {
-	int idx;
-
 	// if we don't have an active item
 	if(b_index < 0){
 		return;
 	}
 	
-	// remove the item from the list
-	((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->DeleteString(b_index);
-
-	// remove it from the list
-	for(idx=b_index; idx<Num_starfield_bitmaps-1; idx++){
-		Starfield_bitmap_instance[idx] = Starfield_bitmap_instance[idx+1];
-		strcpy(Starfield_bitmap_instance[idx].filename, Starfield_bitmap_instance[idx+1].filename);
-	}
-
-	// decrement the count
-	Num_starfield_bitmaps--;
+	// remove it from the instance list
+	stars_delete_instance_FRED(b_index, false);
 
 	// no item selected, let the message handler assign a new one
 	b_index = -1;
-
-	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void bg_bitmap_dlg::OnBitmapDropdownChange()
@@ -1275,7 +1264,7 @@ void bg_bitmap_dlg::OnImportBackground()
 {
 	CFileDialog cfd(TRUE, ".fs2", NULL, 0, "Freespace2 Missions (*.fs2)|*.fs2||\0");
 	char filename[256], error_str[1024];
-	int i,j, rval, num_starfield_bitmaps_pre_safety, num_suns_pre_safety;
+	int rval;
 	
 
 	//warn on pressing the button
@@ -1302,10 +1291,7 @@ void bg_bitmap_dlg::OnImportBackground()
 	else
 	{
 		//Reset the starfield structures
-		Num_starfield_bitmaps = 0;
-		Num_suns = 0;
-		memset(Starfield_bitmap_instance,0,sizeof(starfield_bitmap_instance) * MAX_STARFIELD_BITMAPS);
-		memset(Suns,0,sizeof(starfield_bitmap_instance) * MAX_STARFIELD_BITMAPS);
+		stars_pre_level_init();
 
 		//parse in the new file
 		read_file_text(filename);
@@ -1316,59 +1302,6 @@ void bg_bitmap_dlg::OnImportBackground()
 			parse_bitmaps(&The_mission);
 		}
 		else return;
-
-		//safety check.  Find bitmaps invalid bitmap names and get rid of them.
-		num_starfield_bitmaps_pre_safety = Num_starfield_bitmaps;	//store the original number of bitmaps
-		for (i = 0; i < Num_starfield_bitmaps; i++)
-		{
-			//couldn't get find the specified bitmap name,  get rid of it.
-			if (stars_find_bitmap(Starfield_bitmap_instance[i].filename) == -1)
-			{
-				sprintf(error_str,"Starfield Bitmap with filename %s not found.  Removing it from the list.", Starfield_bitmap_instance[i].filename);
-				MessageBox(error_str, "Starfield Bitmap not found", MB_ICONERROR | MB_OK);
-				for (j = i; j < Num_starfield_bitmaps - 1; j++)
-				{
-					Starfield_bitmap_instance[j] = Starfield_bitmap_instance[j+1];
-				}
-	
-				Num_starfield_bitmaps--;
-				i--;			//need to check i again.
-				memset(&Starfield_bitmap_instance[j],0,sizeof(starfield_bitmap_instance));
-			}
-		}
-	
-
-		if (num_starfield_bitmaps_pre_safety != Num_starfield_bitmaps)
-		{
-			sprintf(error_str, "Of the %d bitmaps imported, only %d were found.", num_starfield_bitmaps_pre_safety, Num_starfield_bitmaps);
-			MessageBox(error_str, "Starfield Bitmap not found", MB_ICONERROR | MB_OK);
-		}
-
-		num_suns_pre_safety = Num_suns;
-		//Do the same safety check for the sun bitmaps
-		for (i = 0; i < Num_suns; i++)
-		{
-			//couldn't get find the specified bitmap name,  get rid of it.
-			if (stars_find_sun(Suns[i].filename) == -1)
-			{
-				sprintf(error_str,"Sun Bitmap with filename %s not found.  Removing it from the list.", Suns[i].filename);
-				MessageBox(error_str, "Sun Bitmap not found", MB_ICONERROR | MB_OK);
-				for (j = i; j < Num_suns - 1; j++)
-				{
-					Suns[j] = Suns[j+1];
-				}
-
-				Num_suns--;
-				i--;		//need to check i again.
-				memset(&Suns[j],0,sizeof(starfield_bitmap_instance));
-			}
-		}
-	
-		if (num_suns_pre_safety != Num_suns)
-		{
-			sprintf(error_str, "Of the %d suns imported, only %d were found.", num_suns_pre_safety, Num_suns);
-			MessageBox(error_str, "Sun Bitmap not found", MB_ICONERROR | MB_OK);
-		}
 
 		//reinitalize the dialog
 		sun_data_init();

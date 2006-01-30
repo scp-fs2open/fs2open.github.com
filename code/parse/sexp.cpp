@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.209 $
- * $Date: 2006-01-29 07:41:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.210 $
+ * $Date: 2006-01-30 06:30:03 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.209  2006/01/29 07:41:57  wmcoolmon
+ * Minor warning update
+ *
  * Revision 2.208  2006/01/27 06:21:10  Goober5000
  * replace quick sort with insertion sort in many places
  * --Goober5000
@@ -9200,7 +9203,7 @@ void sexp_add_background_bitmap(int n)
 	int new_number;
 	char *bg_bitmap_fname;
 	char number_as_str[TOKEN_LENGTH];
-	starfield_bitmap_instance* sbip;
+	starfield_bitmap_instance sbip;
 
 	
 	//get all the info out of the sexp
@@ -9252,7 +9255,7 @@ void sexp_add_background_bitmap(int n)
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
-		new_number = Num_starfield_bitmaps;
+		new_number = stars_get_num_bitmaps();
 		sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
@@ -9264,40 +9267,29 @@ void sexp_add_background_bitmap(int n)
 		return;
 	}
 
-	//sanity checking
-	if (Num_starfield_bitmaps >= MAX_STARFIELD_BITMAPS)
-	{
-		Error(LOCATION, "sexp-add-background-bitmap: Too many background bitmaps in mission!");
-		return;
+	// add this new instance
+	memset( &sbip, 0, sizeof(starfield_bitmap_instance) );
+	sbip.ang = ang;
+	sbip.div_x = dx;
+	sbip.div_y = dy;
+	sbip.scale_x = sx;
+	sbip.scale_y = sy;
+
+	if ( !stars_add_bitmap_instance(bg_bitmap_fname, &sbip) ) {
+		Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", bg_bitmap_fname);
+	} else {
+		stars_generate_bitmap_instance_buffers();
 	}
-
-	//get the pointer to the next bitmap, increase bitmap count
-	sbip = &Starfield_bitmap_instance[Num_starfield_bitmaps++];
-	sbip->ang = ang;
-	sbip->div_x = dx;
-	sbip->div_y = dy;
-	strcpy(sbip->filename, bg_bitmap_fname);
-	sbip->scale_x = sx;
-	sbip->scale_y = sy;
-
-	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void sexp_remove_background_bitmap(int n)
 {
 	int slot = eval_sexp(n);
 
-	Assert( (slot >= 0) && (slot < Num_starfield_bitmaps) );
-
-	for (; slot < Num_starfield_bitmaps-1; slot++)
-	{
-		Starfield_bitmap_instance[slot] = Starfield_bitmap_instance[slot+1];
+	if (slot >= 0) {
+		stars_mark_bitmap_unused( slot );
+		stars_generate_bitmap_instance_buffers();
 	}
-
-	memset(&Starfield_bitmap_instance[slot], 0, sizeof(starfield_bitmap_instance));
-	Num_starfield_bitmaps--;
-
-	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void sexp_add_sun_bitmap(int n)
@@ -9309,7 +9301,7 @@ void sexp_add_sun_bitmap(int n)
 	int new_number;
 	char *sun_bitmap_fname;
 	char number_as_str[TOKEN_LENGTH];
-	starfield_bitmap_instance* sbip;
+	starfield_bitmap_instance sbip;
 
 	
 	//get all the info out of the sexp
@@ -9352,7 +9344,7 @@ void sexp_add_sun_bitmap(int n)
 	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
-		new_number = Num_suns;
+		new_number = stars_get_num_suns();
 		sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
@@ -9364,40 +9356,29 @@ void sexp_add_sun_bitmap(int n)
 		return;
 	}
 
-	//sanity checking
-	if (Num_suns >= MAX_STARFIELD_BITMAPS)
-	{
-		Error(LOCATION, "sexp-add-sun-bitmap: Too many suns in mission!");
-		return;
+	// add this new instance
+	memset( &sbip, 0, sizeof(starfield_bitmap_instance) );
+	sbip.ang = ang;
+	sbip.div_x = 1;
+	sbip.div_y = 1;
+	sbip.scale_x = sx;
+	sbip.scale_y = sx;
+
+	if ( !stars_add_sun_instance(sun_bitmap_fname, &sbip) ) {
+		Warning(LOCATION, "Unable to add sun: '%s'!", sun_bitmap_fname);
+	} else {
+		stars_generate_bitmap_instance_buffers();
 	}
-
-	//get the pointer to the next bitmap, increase bitmap count
-	sbip = &Suns[Num_suns++];
-	sbip->ang = ang;
-	sbip->div_x = 1;
-	sbip->div_y = 1;
-	strcpy(sbip->filename, sun_bitmap_fname);
-	sbip->scale_x = sx;
-	sbip->scale_y = sx;
-
-	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void sexp_remove_sun_bitmap(int n)
 {
 	int slot = eval_sexp(n);
 
-	Assert((slot >= 0) && (slot < Num_suns) );
-
-	for (; slot < Num_suns-1; slot++)
-	{
-		Suns[slot] = Suns[slot+1];
+	if (slot >= 0) {
+		stars_mark_sun_unused( slot );
+		stars_generate_bitmap_instance_buffers();
 	}
-
-	memset(&Suns[slot], 0, sizeof(starfield_bitmap_instance));
-	Num_suns--;
-
-	stars_generate_bitmap_instance_vertex_buffers();
 }
 
 void sexp_nebula_change_storm(int n)

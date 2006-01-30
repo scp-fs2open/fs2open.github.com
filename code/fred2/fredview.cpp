@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-01-26 04:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2006-01-30 06:27:59 $
+ * $Author: taylor $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 1.2  2006/01/20 07:50:25  Goober5000
  * remove unreferenced variable
  *
@@ -4659,7 +4662,7 @@ void CFREDView::OnNextObj()
 	if (Bg_bitmap_dialog) {
 		if (Cur_bitmap == -1)
 		{
-			if (Num_starfield_bitmaps)
+			if (stars_get_num_bitmaps())
 			{
 				Cur_bitmap = 0;
 				Bg_bitmap_dialog -> update_data();
@@ -4669,7 +4672,7 @@ void CFREDView::OnNextObj()
 		}
 
 		Cur_bitmap++;
-		if (Cur_bitmap >= Num_starfield_bitmaps)
+		if (Cur_bitmap >= stars_get_num_bitmaps())
 			Cur_bitmap = 0;
 
 		Bg_bitmap_dialog -> update_data();
@@ -4713,9 +4716,9 @@ void CFREDView::OnPrevObj()
 	if (Bg_bitmap_dialog) {
 		if (Cur_bitmap == -1)
 		{
-			if (Num_starfield_bitmaps)
+			if (stars_get_num_bitmaps())
 			{
-				Cur_bitmap = Num_starfield_bitmaps - 1;
+				Cur_bitmap = stars_get_num_bitmaps() - 1;
 				Bg_bitmap_dialog -> update_data();
 			}
 
@@ -4724,7 +4727,7 @@ void CFREDView::OnPrevObj()
 
 		Cur_bitmap--;
 		if (Cur_bitmap < 0)
-			Cur_bitmap = Num_starfield_bitmaps - 1;
+			Cur_bitmap = stars_get_num_bitmaps() - 1;
 
 		Bg_bitmap_dialog -> update_data();
 		return;
