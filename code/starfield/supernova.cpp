@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-07-02 19:36:04 $
+ * $Revision: 2.7 $
+ * $Date: 2006-01-30 06:31:30 $
  * $Author: taylor $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/02 19:36:04  taylor
+ * some supernova fixing
+ *
  * Revision 2.5  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -134,7 +137,7 @@ void supernova_start(int seconds)
 	}
 
 	// only good if we have one sun
-	if(Num_suns != 1){
+	if (stars_get_num_suns() != 1) {
 		return;
 	}
 

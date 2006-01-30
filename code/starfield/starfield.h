@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.13 $
- * $Date: 2005-10-09 08:03:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.14 $
+ * $Date: 2006-01-30 06:31:30 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/10/09 08:03:21  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.12  2005/07/13 03:35:34  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -173,7 +176,6 @@
 #include "graphics/2d.h"
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
-#define MAX_STARFIELD_BITMAPS			160
 #define MAX_ASTEROID_FIELDS			4
 
 
@@ -188,56 +190,93 @@ typedef struct flare_info {
 	int tex_num;
 } flare_info;
 
+typedef struct flare_bitmap {
+	char filename[MAX_FILENAME_LEN];
+	int bitmap_id;
+} flare_bitmap;
+
 // global info (not individual instances)
 typedef struct starfield_bitmap {
-	char filename[MAX_FILENAME_LEN+1];				// bitmap filename
-	char glow_filename[MAX_FILENAME_LEN+1];		// only for suns
-	char flare_filenames[MAX_FLARE_BMP][MAX_FILENAME_LEN+1]; //only for suns
-	int bitmap;												// bitmap handle
+	char filename[MAX_FILENAME_LEN];					// bitmap filename
+	char glow_filename[MAX_FILENAME_LEN];				// only for suns
+	int bitmap;											// bitmap handle
 	int n_frames;
 	int fps;
-	int glow_bitmap;										// only for suns
+	int glow_bitmap;									// only for suns
 	int glow_n_frames;
 	int glow_fps;
 	int xparent;	
-	float r, g, b, i, spec_r, spec_g, spec_b;										// only for suns
-	int glare;												// only for suns
-	int flare;												// Is there a lens-flare for this sun?
-	int flare_bitmaps[MAX_FLARE_BMP];							// bitmaps for different lens flares (can be re-used)
-	flare_info flare_infos[MAX_FLARE_COUNT];						// each flare can use a texture in flare_bmp, with different scale
-	int flare_n_flares;										// number of flares actually used
-	int flare_n_tex;
+	float r, g, b, i, spec_r, spec_g, spec_b;			// only for suns
+	int glare;											// only for suns
+	int flare;											// Is there a lens-flare for this sun?
+	flare_info flare_infos[MAX_FLARE_COUNT];			// each flare can use a texture in flare_bmp, with different scale
+	flare_bitmap flare_bitmaps[MAX_FLARE_BMP];			// bitmaps for different lens flares (can be re-used)
+	int n_flares;										// number of flares actually used
+	int n_flare_bitmaps;								// number of flare bitmaps available
+	int used_this_level;
 } starfield_bitmap;
 
 // starfield bitmap instance
 typedef struct starfield_bitmap_instance {
 	index_list buffer;
 	index_list env_buffer;
-	char filename[MAX_FILENAME_LEN+1];				// used to match up into the starfield_bitmap array	
-	float scale_x, scale_y;								// x and y scale
-	int div_x, div_y;										// # of x and y divisions
+	float scale_x, scale_y;							// x and y scale
+	int div_x, div_y;								// # of x and y divisions
 	angles ang;	
 	int n_prim;// angles from fred
+	int star_bitmap_index;							// index into starfield_bitmap array
 } starfield_bitmap_instance;
 
-// background bitmaps
-extern starfield_bitmap Starfield_bitmaps[MAX_STARFIELD_BITMAPS];
-extern starfield_bitmap_instance Starfield_bitmap_instance[MAX_STARFIELD_BITMAPS];
-extern int Num_starfield_bitmaps;
 
-// sun bitmaps and sun glow bitmaps
-extern starfield_bitmap Sun_bitmaps[MAX_STARFIELD_BITMAPS];
-extern starfield_bitmap_instance Suns[MAX_STARFIELD_BITMAPS];
-extern int Num_suns;
+// add a new sun or bitmap instance
+int stars_add_sun_instance(char *name, starfield_bitmap_instance *sun);
+int stars_add_bitmap_instance(char *name, starfield_bitmap_instance *bm);
+
+// get the number of entries that each vector contains
+// "sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
+// "bitmap_count" will get number of starfield_bitmap entries rather than starfield_bitmap_instance entries
+int stars_get_num_entries(bool sun, bool bitmap_count);
+// macros to get the number of sun or starfield bitmap *instances* available
+#define stars_get_num_bitmaps()	stars_get_num_entries(false,false)
+#define stars_get_num_suns()	stars_get_num_entries(true,false)
+
+// return the starfield bitmap entry with the instance index "index", set "sun" to true if it's a sun instance
+starfield_bitmap *stars_get_bitmap_entry(int index, bool sun);
+
+// return the starfield instance entry with index "index", set "sun" to true to get a sun instance
+starfield_bitmap_instance *stars_get_instance(int index, bool sun);
+// macros to easly get a sun or bitmap instance
+#define stars_get_sun_instance(x)		stars_get_instance((x),true)
+#define stars_get_bitmap_instance(x)	stars_get_instance((x),false)
+
+// make a bitmap or sun instance as unusable (doesn't free anything but does prevent rendering)
+void stars_mark_instance_unused(int index, bool sun);
+// macros to easily mark a sun or bitmap as unused
+#define stars_mark_sun_unused(x)	stars_mark_instance_unused((x),true)
+#define stars_mark_bitmap_unused(x)	stars_mark_instance_unused((x),false)
+
+// get a name from an instance index
+const char *stars_get_name_from_instance(int index, bool sun);
+// macros to easily get a sun or a bitmap name
+#define stars_get_sun_name(x)		stars_get_name_from_instance((x),true)
+#define stars_get_bitmap_name(x)	stars_get_name_from_instance((x),false)
 
 extern const int MAX_STARS;
 extern int Num_stars;
 
+void stars_generate_bitmap_instance_buffers();
+
 // call on game startup
 void stars_init();
 
+// call this before mission parse to reset all data to a sane state
+void stars_pre_level_init();
+
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not
-void stars_level_init();
+void stars_post_level_init();
+
+// draw background bitmaps
+void stars_draw_background(int env);
 
 // This *must* be called to initialize the lighting.
 // You can turn off all the stars and suns and nebulas, though.
@@ -264,16 +303,24 @@ int stars_find_sun(char *name);
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos);
 
-void stars_generate_bitmap_instance_vertex_buffers();
-void starfield_kill_bitmap_buffer();
 
 typedef struct debris_vclip {
 	int	bm;
 	int	nframes;
-	char  name[MAX_FILENAME_LEN+1];
+	char  name[MAX_FILENAME_LEN];
 } debris_vclip;
 extern debris_vclip Debris_vclips_normal[];
 extern debris_vclip Debris_vclips_nebula[];
 extern debris_vclip *Debris_vclips;
+
+
+// Starfield functions that should be used only by FRED ...
+
+// get a name based on the index into starfield_bitmap, only FRED should ever need this
+const char *stars_get_name_FRED(int index, bool sun);
+// erase an instance, note that this is very slow so it should only be done in FRED
+void stars_delete_instance_FRED(int index, bool sun);
+// modify an existing starfield bitmap instance, or add a new one if needed
+void stars_modify_instance_FRED(int index, const char *name, starfield_bitmap_instance *sbi_new, bool sun);
 
 #endif
