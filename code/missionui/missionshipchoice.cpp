@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.56 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.57 $
+ * $Date: 2006-01-30 06:37:49 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.55  2005/12/16 06:51:31  taylor
  * fix a NULL pointer crash from shipselect screen
  * make sure to reset "display_type" for weapon select since it would only render one ship correctly
@@ -3664,7 +3667,7 @@ void ss_init_wing_info(int wing_num,int starting_wing_num)
 
 	Assert( Ss_wings != NULL );
 
-	ss_wing = &Ss_wings[wing_num];	
+	ss_wing = &Ss_wings[wing_num];
 
 	if ( Starting_wings[starting_wing_num] < 0 ) {
 		return;
@@ -3673,7 +3676,7 @@ void ss_init_wing_info(int wing_num,int starting_wing_num)
 	ss_wing->wingnum = Starting_wings[starting_wing_num];
 	Wss_num_wings++;
 
-	wp = &Wings[Ss_wings[wing_num].wingnum];
+	wp = &Wings[ss_wing->wingnum];
 	ss_wing->num_slots = wp->current_count;
 
 	if ( wp->current_count == 0 || wp->ship_index[0] == -1 ) {
@@ -3839,8 +3842,8 @@ void ship_select_init_team_data(int team_num)
 		ss_init_wing_info(0,team_num);			
 	} else {			
 		// now setup wings for easy reference
-		for(idx=0;idx<MAX_STARTING_WINGS;idx++){
-			ss_init_wing_info(idx,idx);	
+		for (idx = 0; idx < MAX_STARTING_WINGS; idx++) {
+			ss_init_wing_info(Wss_num_wings, idx);	
 		}
 	}
 	
