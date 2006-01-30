@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:15:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2006-01-30 06:38:34 $
+ * $Author: taylor $
  *
  * Include file for lighting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:15:53  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -130,6 +134,27 @@
 // call light_rotatate_all to rotate all valid
 // lights into current coordinates.
 // call light_apply to fill in lighting for a point.
+
+#define LT_DIRECTIONAL	0		// A light like a sun
+#define LT_POINT		1		// A point light, like an explosion
+#define LT_TUBE			2		// A tube light, like a fluorescent light
+
+
+typedef struct light {
+	int		type;							// What type of light this is
+	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
+	vec3d	vec2;							// second point on a tube light
+	vec3d	local_vec;					// rotated light vector
+	vec3d	local_vec2;					// rotated 2nd light vector for a tube light
+	float		intensity;					// How bright the light is.
+	float		rada, rada_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
+	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
+	float		r,g,b;						// The color components of the light
+	float		spec_r,spec_g,spec_b;		// The specular color components of the light
+	int		ignore_objnum;				// Don't light this object.  Used to optimize weapons casting light on parents.
+	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
+	int instance;
+} light;
 
 void light_reset();
 void light_set_ambient(float ambient_light);
