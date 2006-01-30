@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.37 $
- * $Date: 2006-01-25 03:11:52 $
- * $Author: phreak $
+ * $Revision: 1.38 $
+ * $Date: 2006-01-30 06:52:15 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2006/01/25 03:11:52  phreak
+ * htl_lines should follow zbuffering rules
+ *
  * Revision 1.36  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -582,7 +585,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 	{
 		//Bind normal map to texture unit 0
 		glClientActiveTextureARB(GL_TEXTURE0_ARB+pass_one);
-		gr_opengl_tcache_set(BUMPMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+		gr_opengl_tcache_set(BUMPMAP, tmap_type, &u_scale, &v_scale, 0, 0, pass_one);
 		glEnable(GL_TEXTURE_2D);
 
 		//Bind normalisation cube map to texture unit 1
@@ -678,7 +681,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 	if (textured) {
 		// base texture
-		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, 0, 0, pass_one);
 
 		// increment texture count for this pass
 		pass_one++; // bump!
@@ -696,7 +699,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 				glTexCoordPointer( 2, GL_FLOAT, vbp->stride, vbp->array_list );
 			}
 
-			gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+			gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, 0, pass_one);
 
 			pass_one++; // bump!
 		}
@@ -713,7 +716,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 			}
 
 			// set glowmap on relevant ARB
-			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, gr_screen.current_bitmap_sx, gr_screen.current_bitmap_sy, 0, pass_one);
+			gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, 0, 0, pass_one);
 
 			opengl_switch_arb(pass_one, 1);
 			opengl_set_additive_tex_env();
@@ -722,17 +725,22 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 		}
 	}
 
+	if (lighting_is_enabled)
+		glEnable(GL_NORMALIZE);
+
 	opengl_pre_render_init_lights();
 	opengl_change_active_lights(0);
 
 	// only change lights if we have a specmap, don't render the specmap when fog is enabled
 	if ( (textured) && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) ) {
 		use_spec = true;
-		opengl_default_light_settings(1, 1, 0); // don't render with spec lighting here
+		opengl_default_light_settings(!GL_center_alpha, 1, 0); // don't render with spec lighting here
 	} else {
 		// reset to defaults
-		opengl_default_light_settings();
+		opengl_default_light_settings(!GL_center_alpha);
 	}
+
+	gr_opengl_set_center_alpha(GL_center_alpha);
 
 	glLockArraysEXT( 0, vbp->n_verts);
 
@@ -760,6 +768,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 	glUnlockArraysEXT();
 // -------- End 1st PASS --------------------------------------------------------- //
+
 // -------- Begin lighting pass (conditional but should happen before spec pass) - //
 	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/GL_max_lights > 0) ) {
 		opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
@@ -799,6 +808,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 		glUnlockArraysEXT();
 	}
 // -------- End lighting PASS ---------------------------------------------------- //
+
 // -------- Begin 2nd (specular) PASS -------------------------------------------- //
 	if ( use_spec ) {
 		// turn all previously used arbs off before the specular pass
@@ -853,6 +863,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 	// make sure everthing gets turned back off, fixes hud issue with spec lighting and VBO crash in starfield
 	opengl_switch_arb(-1, 0);
+	opengl_reset_spec_mapping();
+	glDisable(GL_NORMALIZE);
 
 
 #if defined(DRAW_DEBUG_LINES) && defined(_DEBUG)

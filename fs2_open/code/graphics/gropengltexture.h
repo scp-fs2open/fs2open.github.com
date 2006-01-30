@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.17 $
- * $Date: 2006-01-03 02:59:14 $
+ * $Revision: 1.18 $
+ * $Date: 2006-01-30 06:52:15 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2006/01/03 02:59:14  taylor
+ * fix a couple of minor mipmap problems
+ * add resizing with mipmaps rather than a physical change in memory when detail levels dictate scaling (maybe this won't blow up)
+ *
  * Revision 1.16  2005/12/28 22:28:44  taylor
  * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
  * better support for mipmaps and mipmap filtering
@@ -161,12 +165,12 @@ extern int GL_should_preload;
 extern ubyte GL_xlat[256];
 extern int GL_mipmap_filter;
 
-void opengl_tcache_init(int use_sections);
+void opengl_tcache_init();
 void opengl_free_texture_slot(int n);
 void opengl_tcache_flush();
 void opengl_tcache_cleanup();
 void opengl_tcache_frame();
-int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int stage = 0);
+int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int stage = 0);
 void opengl_set_additive_tex_env();
 void opengl_set_modulate_tex_env();
 void gr_opengl_set_tex_env_scale(float scale);
