@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-01-18 16:14:04 $
+ * $Revision: 2.10 $
+ * $Date: 2006-01-30 06:36:35 $
  * $Author: taylor $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 2.8  2005/05/12 17:49:14  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -130,6 +136,8 @@
 #include "model/modelsinc.h"
 #include "cmdline/cmdline.h"
 
+extern void model_allocate_interp_data(int n_verts, int n_norms);
+
 
 // returns 1 if a point is in an octant.
 int point_in_octant( polymodel * pm, model_octant * oct, vec3d *vert )
@@ -199,14 +207,28 @@ void model_octant_find_shields( polymodel * pm, model_octant * oct )
 }
 
     
-void moff_defpoints(ubyte * p)
+void moff_defpoints(ubyte * p, int just_count)
 {
 	int n;
 	int nverts = w(p+8);	
-	int offset = w(p+16);	
+	int offset = w(p+16);
+	int nnorms = 0;
+
+	// if we are just counting then we don't need to be here
+	if (just_count)
+		return;
 
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
+
+	// make sure we have enough space allocated for the new data
+	for (n = 0; n < nverts; n++) {
+		nnorms += normcount[n];
+	}
+
+	model_allocate_interp_data( nverts, nnorms );
+
+	Assert( Interp_verts != NULL );
 
 	for (n=0; n<nverts; n++ )	{
 		Interp_verts[n] = src;
@@ -236,10 +258,12 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 
 	verts = (model_tmap_vert *)(p+44);
 
-	if ( pm->version < 2003 )	{
+	if ( (pm->version < 2003) && !just_count )	{
 		// Set the "normal_point" part of field to be the center of the polygon
 		vec3d center_point;
 		vm_vec_zero( &center_point );
+
+		Assert( Interp_verts != NULL );
 
 		for (i=0;i<nv;i++)	{
 			vm_vec_add2( &center_point, Interp_verts[verts[i].vertnum] );
@@ -295,10 +319,12 @@ void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 
 	verts = (short *)(p+44);
 
-	if ( pm->version < 2003 )	{
+	if ( (pm->version < 2003) && !just_count )	{
 		// Set the "normal_point" part of field to be the center of the polygon
 		vec3d center_point;
 		vm_vec_zero( &center_point );
+
+		Assert( Interp_verts != NULL );
 
 		for (i=0;i<nv;i++)	{
 			vm_vec_add2( &center_point, Interp_verts[verts[i*2]] );
@@ -345,7 +371,7 @@ int model_octant_find_faces_sub(polymodel * pm, model_octant * oct, void *model_
 		switch (chunk_type) {
 		case OP_EOF:			return 1;
 		case OP_DEFPOINTS:	
-			moff_defpoints(p); 
+			moff_defpoints(p, just_count); 
 			break;
 		case OP_FLATPOLY:		moff_flatpoly(p, pm, oct, just_count ); break;
 		case OP_TMAPPOLY:		moff_tmappoly(p, pm, oct, just_count ); break;
