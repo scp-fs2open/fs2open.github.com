@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.302 $
- * $Date: 2006-01-29 18:01:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.303 $
+ * $Date: 2006-01-30 06:34:06 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.302  2006/01/29 18:01:04  wmcoolmon
+ * Apologies, don't know how I missed this...
+ *
  * Revision 2.301  2006/01/29 07:42:49  wmcoolmon
  * Make sure stuff is set up properly for ship kills
  *
@@ -12375,11 +12378,20 @@ int ship_navigation_ok_to_warp(ship *sp)
 int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm)
 {
 	if ( ss->system_info->path_num >= 0 ) {
-		polymodel	*pm;
+		polymodel	*pm = NULL;
 		model_path	*mp;
 		vec3d		*path_point;
 		vec3d		gpath_point;
 		pm = model_get(sp->modelnum);
+		Assert( pm != NULL );
+
+		if (ss->system_info->path_num > pm->n_paths) {
+			// possibly a bad model?
+			mprintf(("WARNING: Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->name));
+		//	Int3();
+			return 1;
+		}
+
 		mp = &pm->paths[ss->system_info->path_num];
 		if ( mp->nverts >= 2 ) {
 //			path_point = &mp->verts[mp->nverts-1].pos;
