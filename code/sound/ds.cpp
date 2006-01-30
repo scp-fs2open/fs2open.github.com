@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-12-06 03:17:48 $
+ * $Revision: 2.37 $
+ * $Date: 2006-01-30 07:14:32 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/12/06 03:17:48  taylor
+ * cleanup some debug log messages:
+ *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
+ *   make sure that OpenAL init failures always get to the debug log
+ *
  * Revision 2.35  2005/11/14 05:12:01  taylor
  * now able to build with OpenAL 1.0 and 1.1 thanks to newer OpenAL CVS changes (patch from icculus.org FS2 mailing list)
  *
@@ -770,6 +775,10 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 	ushort			cbExtra = 0;
 	unsigned int	tag, size, next_chunk;
 	bool			got_fmt = false, got_data = false;
+
+	// some preinit stuff, could be done from calling function but this should guarantee it's right
+	*dest = NULL;
+	*dest_size = 0;
 
 	if ( fp == NULL )	{
 		return -1;
