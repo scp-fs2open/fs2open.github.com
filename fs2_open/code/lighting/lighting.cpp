@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-01-19 16:00:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.19 $
+ * $Date: 2006-01-30 06:38:34 $
+ * $Author: taylor $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/01/19 16:00:04  wmcoolmon
+ * Lua debugging stuff; gr_bitmap_ex stuff for taylor
+ *
  * Revision 2.17  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -274,30 +277,25 @@
 
 
 
-
-#define MAX_LIGHTS 256
 #define MAX_LIGHT_LEVELS 16
 
-#define LT_DIRECTIONAL	0		// A light like a sun
-#define LT_POINT			1		// A point light, like an explosion
-#define LT_TUBE			2		// A tube light, like a fluorescent light
 
 int cell_shaded_lightmap = -1;
-typedef struct light {
+/*typedef struct light {
 	int		type;							// What type of light this is
 	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
 	vec3d	vec2;							// second point on a tube light
 	vec3d	local_vec;					// rotated light vector
 	vec3d	local_vec2;					// rotated 2nd light vector for a tube light
 	float		intensity;					// How bright the light is.
-	float		rad1, rad1_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		rad2, rad2_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
+	float		rada, rada_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
+	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
 	float		r,g,b;						// The color components of the light
 	float		spec_r,spec_g,spec_b;		// The specular color components of the light
 	int		ignore_objnum;				// Don't light this object.  Used to optimize weapons casting light on parents.
 	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
 	int instance;
-} light;
+} light;*/
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
@@ -436,8 +434,8 @@ void light_rotate(light * l)
 		// Rotate the light direction into local coodinates
 
 		if(!Cmdline_nohtl) {
-			light_data L = *(light_data*)(void*)l;
-			gr_modify_light(&L,l->instance, 2);
+		//	light_data *L = *(light_data*)(void*)l;
+			gr_modify_light(l, l->instance, 2);
 		}
 		
 		vm_vec_rotate(&l->local_vec, &l->vec, &Light_matrix );
@@ -451,8 +449,8 @@ void light_rotate(light * l)
 			vm_vec_rotate(&l->local_vec, &tempv, &Light_matrix );
 
 			if(!Cmdline_nohtl) {
-				light_data L = *(light_data*)(void*)l;
-				gr_modify_light(&L,l->instance, 2);
+			//	light_data L = *(light_data*)(void*)l;
+				gr_modify_light(l, l->instance, 2);
 			}
 		}
 		break;
@@ -493,10 +491,10 @@ void light_rotate(light * l)
 						pos = l->vec2;
 						break;
 					}
-				light_data L = *(light_data*)(void*)l;
-				L.vec = pos;
-				L.local_vec = pos;
-				gr_modify_light(&L,l->instance, 2);
+			//	light_data L = *(light_data*)(void*)l;
+			//	L.vec = pos;
+			//	L.local_vec = pos;
+				gr_modify_light(l, l->instance, 2);
 			}
 		}
 		break;
@@ -542,10 +540,10 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 	l->spec_g = spec_g;
 	l->spec_b = spec_b;
 	l->intensity = intensity;
-	l->rad1 = 0.0f;
-	l->rad2 = 0.0f;
-	l->rad1_squared = l->rad1*l->rad1;
-	l->rad2_squared = l->rad2*l->rad2;
+	l->rada = 0.0f;
+	l->radb = 0.0f;
+	l->rada_squared = l->rada*l->rada;
+	l->radb_squared = l->radb*l->radb;
 	l->ignore_objnum = -1;
 	l->affected_objnum = -1;
 	l->instance = Num_lights-1;
@@ -556,22 +554,24 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 	if(Static_light_count < MAX_STATIC_LIGHTS){		
 		Static_light[Static_light_count++] = l;
 	}
-	if(!Cmdline_nohtl) {
-		light_data *L = (light_data*)(void*)l;
-		gr_make_light(L,Num_lights-1, 1);
-	}
+/*	if(!Cmdline_nohtl) {
+	//	light_data *L = (light_data*)(void*)l;
+		gr_make_light(l, l->instance, 1);
+	}*/
 }
 
 
-void light_add_point( vec3d * pos, float rad1, float rad2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
+void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
 {
-	Assert(rad1 >0);
-	Assert(rad2 >0);
+	Assert( r1 > 0.0f );
+	Assert( r2 > 0.0f );
+
 	if(!specular){
 		spec_r = r;
 		spec_g = g;
 		spec_b = b;
 	}
+
 	light * l;
 
 	if ( Lighting_off ) return;
@@ -596,28 +596,26 @@ void light_add_point( vec3d * pos, float rad1, float rad2, float intensity, floa
 	l->spec_g = spec_g;
 	l->spec_b = spec_b;
 	l->intensity = intensity;
-	l->rad1 = rad1;
-	l->rad2 = rad2;
-	l->rad1_squared = l->rad1*l->rad1;
-	l->rad2_squared = l->rad2*l->rad2;
+	l->rada = r1;
+	l->radb = r2;
+	l->rada_squared = l->rada*l->rada;
+	l->radb_squared = l->radb*l->radb;
 	l->ignore_objnum = ignore_objnum;
 	l->affected_objnum = -1;
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-	if(!Cmdline_nohtl) {
-		light_data *L = (light_data*)(void*)l;
-		gr_make_light(L,Num_lights-1, 2);
-	}
+/*	if(!Cmdline_nohtl) {
+	//	light_data *L = (light_data*)(void*)l;
+		gr_make_light(l, l->instance, 2);
+	}*/
 //	Relevent_lights[Num_relevent_lights[Num_light_levels-1]++][Num_light_levels-1] = l;
-//	light_data *L = (light_data*)(void*)l;
-//	l->API_index = gr_make_light(L);
 }
 
-void light_add_point_unique( vec3d * pos, float rad1, float rad2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
+void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
-	Assert(rad1 >0);
-	Assert(rad2 >0);
+	Assert(r1 >0);
+	Assert(r2 >0);
 	if(!specular){
 		spec_r = r;
 		spec_g = g;
@@ -647,21 +645,19 @@ void light_add_point_unique( vec3d * pos, float rad1, float rad2, float intensit
 	l->spec_g = spec_g;
 	l->spec_b = spec_b;
 	l->intensity = intensity;
-	l->rad1 = rad1;
-	l->rad2 = rad2;
-	l->rad1_squared = l->rad1*l->rad1;
-	l->rad2_squared = l->rad2*l->rad2;
+	l->rada = r1;
+	l->radb = r2;
+	l->rada_squared = l->rada*l->rada;
+	l->radb_squared = l->radb*l->radb;
 	l->ignore_objnum = -1;
 	l->affected_objnum = affected_objnum;
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
 	if(!Cmdline_nohtl) {
-		light_data *L = (light_data*)(void*)l;
-		gr_make_light(L,Num_lights-1, 2);
+	//	light_data *L = (light_data*)(void*)l;
+		gr_make_light(l, l->instance, 2);
 	}
-//	light_data *L = (light_data*)(void*)l;
-//	l->API_index = gr_make_light(L);
 }
 
 // for now, tube lights only affect one ship (to keep the filter stuff simple)
@@ -699,18 +695,18 @@ void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, f
 	l->spec_g = spec_g;
 	l->spec_b = spec_b;
 	l->intensity = intensity;
-	l->rad1 = r1;
-	l->rad2 = r2;
-	l->rad1_squared = l->rad1*l->rad1;
-	l->rad2_squared = l->rad2*l->rad2;
+	l->rada = r1;
+	l->radb = r2;
+	l->rada_squared = l->rada*l->rada;
+	l->radb_squared = l->radb*l->radb;
 	l->ignore_objnum = -1;
 	l->affected_objnum = affected_objnum;
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
 	if(!Cmdline_nohtl) {
-		light_data *L = (light_data*)(void*)l;
-		gr_make_light(L,Num_lights-1, 3);
+	//	light_data *L = (light_data*)(void*)l;
+		gr_make_light(l, l->instance, 3);
 	}
 //	light_data *L = (light_data*)(void*)l;
 //	l->API_index = gr_make_light(L);
@@ -772,7 +768,7 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 						vm_vec_sub( &to_light, &l->vec, pos );
 						dist_squared = vm_vec_mag_squared(&to_light);
 
-						max_dist_squared = l->rad2+rad;
+						max_dist_squared = l->radb+rad;
 						max_dist_squared *= max_dist_squared;
 						
 						if ( dist_squared < max_dist_squared )	{
@@ -788,7 +784,7 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 						vm_vec_sub( &to_light, &l->vec, pos );
 						dist_squared = vm_vec_mag_squared(&to_light);
 
-						max_dist_squared = l->rad2+rad;
+						max_dist_squared = l->radb+rad;
 						max_dist_squared *= max_dist_squared;
 						
 						if ( dist_squared < max_dist_squared )	{
@@ -865,14 +861,14 @@ int light_filter_push_box( vec3d *min, vec3d *max )
 
 		case LT_POINT:	{
 				// l->local_vec
-				if ( is_inside( min, max, &l->local_vec, l->rad2 ) )	{
+				if ( is_inside( min, max, &l->local_vec, l->radb ) )	{
 					Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
 				}
 			}
 			break;
 
 		case LT_TUBE:
-			if ( is_inside(min, max, &l->local_vec, l->rad2) || is_inside(min, max, &l->local_vec2, l->rad2) )	{
+			if ( is_inside(min, max, &l->local_vec, l->radb) || is_inside(min, max, &l->local_vec2, l->radb) )	{
 				Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
 			}
 			break;
@@ -953,13 +949,22 @@ void light_set_shadow( int state )
 	Light_in_shadow = state;
 }
 
-void light_set_all_relevent(){
-	int i = 0;
+
+void light_set_all_relevent()
+{
+	int idx;
+
 	gr_reset_lighting();
-	for(int idx=0; idx<Static_light_count; idx++)gr_set_light((light_data*)(void*)Static_light[idx]);
-//	for simplicity sake were going to forget about dynamic lights for the moment
+
+	for (idx = 0; idx < Static_light_count; idx++)
+		gr_set_light( Static_light[idx] );
+
+	// for simplicity sake were going to forget about dynamic lights for the moment
+
 	int n = Num_light_levels-1;
-	for( i=0; i<Num_relevent_lights[n]; i++ )gr_set_light((light_data*)(void*)Relevent_lights[i][n]);
+
+	for (idx = 0; idx < Num_relevent_lights[n]; idx++ )
+		gr_set_light( Relevent_lights[idx][n] );
 }
 
 
@@ -1033,12 +1038,12 @@ ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 		dot = vm_vec_dot(&to_light, norm );
 		if ( dot > 0.0f )	{
 			dist = vm_vec_mag_squared(&to_light);
-			if ( dist < l->rad1_squared )	{
+			if ( dist < l->rada_squared )	{
 				lval += l->intensity*dot;
-			} else if ( dist < l->rad2_squared )	{
+			} else if ( dist < l->radb_squared )	{
 				// dist from 0 to 
-				float n = dist - l->rad1_squared;
-				float d = l->rad2_squared - l->rad1_squared;
+				float n = dist - l->rada_squared;
+				float d = l->radb_squared - l->rada_squared;
 				float ltmp = (1.0f - n / d )*dot*l->intensity;
 				lval += ltmp;
 			}
@@ -1190,18 +1195,18 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 			if(dist < 0.0f){
 				dist = vm_vec_mag_squared(&to_light);
 			}
-			if ( dist < l->rad1_squared )	{
+			if ( dist < l->rada_squared )	{
 				float ratio;
 				ratio = l->intensity*dot*factor;
 				ratio *= 0.25f;
 				rval += l->spec_r*ratio;
 				gval += l->spec_g*ratio;
 				bval += l->spec_b*ratio;
-			} else if ( dist < l->rad2_squared )	{
+			} else if ( dist < l->radb_squared )	{
 				float ratio;
 				// dist from 0 to 
-				float n = dist - l->rad1_squared;
-				float d = l->rad2_squared - l->rad1_squared;
+				float n = dist - l->rada_squared;
+				float d = l->radb_squared - l->rada_squared;
 				ratio = (1.0f - n / d)*dot*l->intensity*factor;
 				ratio *= 0.25f;
 				rval += l->spec_r*ratio;
@@ -1323,7 +1328,7 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 	vec3d temp;
 	for (i=0; i<Num_relevent_lights[n]; i++ )	{
 		l = Relevent_lights[i][n];
-break;
+
 		dist = -1.0f;
 		switch(l->type){
 		// point lights
@@ -1352,18 +1357,18 @@ break;
 			if(dist < 0.0f){
 				dist = vm_vec_mag_squared(&to_light);
 			}
-			if ( dist < l->rad1_squared )	{
+			if ( dist < l->rada_squared )	{
 				float ratio;
 				ratio = l->intensity*dot;
 				ratio *= 0.25f;
 				rval += l->r*ratio;
 				gval += l->g*ratio;
 				bval += l->b*ratio;
-			} else if ( dist < l->rad2_squared )	{
+			} else if ( dist < l->radb_squared )	{
 				float ratio;
 				// dist from 0 to 
-				float n = dist - l->rad1_squared;
-				float d = l->rad2_squared - l->rad1_squared;
+				float n = dist - l->rada_squared;
+				float d = l->radb_squared - l->rada_squared;
 				ratio = (1.0f - n / d)*dot*l->intensity;
 				ratio *= 0.25f;
 				rval += l->r*ratio;
