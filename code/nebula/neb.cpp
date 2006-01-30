@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.47 $
- * $Date: 2006-01-30 06:36:01 $
+ * $Revision: 2.48 $
+ * $Date: 2006-01-30 19:37:33 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2006/01/30 06:36:01  taylor
+ * minor warning fixage
+ *
  * Revision 2.46  2006/01/26 03:59:59  taylor
  * first version of this sucked, this should be a bit better while working with both new and retail data
  *   - get an average color from the palette rather than picking first (unoptimized palettes could have unused pixels in first entry)
@@ -686,9 +689,14 @@ void neb2_post_level_init()
 					}
 				}
 
-				Neb2_fog_color_r = (ubyte)(r / pcount);
-				Neb2_fog_color_g = (ubyte)(g / pcount);
-				Neb2_fog_color_b = (ubyte)(b / pcount);
+				if (pcount > 0) {
+					Neb2_fog_color_r = (ubyte)(r / pcount);
+					Neb2_fog_color_g = (ubyte)(g / pcount);
+					Neb2_fog_color_b = (ubyte)(b / pcount);
+				} else {
+					// it's just black
+					Neb2_fog_color_r = Neb2_fog_color_g = Neb2_fog_color_b = 0;
+				}
 
 				// done, now free up the palette data
 				if ( Neb2_htl_fog_data != NULL ) {
