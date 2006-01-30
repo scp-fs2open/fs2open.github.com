@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/01/09 04:53:41  phreak
+ * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
+ *
  * Revision 2.65  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -606,6 +609,8 @@ extern int Num_weapon_subtypes;
 #define WIF2_CYCLE						(1 << 5)	// will only fire from (shots (defalts to 1)) points at a time
 #define WIF2_SMALL_ONLY					(1 << 6)	// can only be used against small ships like fighters or bombers
 #define WIF2_SAME_TURRET_COOLDOWN		(1 << 7)	// the weapon has the same cooldown time on turrets
+#define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
+#define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
@@ -673,6 +678,10 @@ typedef struct weapon {
 	float lssm_warp_time;		//length of time warphole stays open		
 	float lssm_warp_pct;		//how much of the warphole's life should be dedicated to stage 2
 	vec3d lssm_target_pos;
+
+	// weapon transparency info
+	ubyte alpha_backward;		// 1 = move in reverse (ascending in value)
+	float alpha_current;		// the current alpha value
 
 } weapon;
 
@@ -915,6 +924,10 @@ typedef struct weapon_info {
 	
 	int damage_type_idx;
 
+	// transparency/alpha info
+	float alpha_max;			// maximum alpha value to use
+	float alpha_min;			// minimum alpha value to use
+	float alpha_cycle;			// cycle between max and min by this much each frame
 
 } weapon_info;
 

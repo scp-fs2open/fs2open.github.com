@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.170  2006/01/18 16:02:26  taylor
+ * if a weapon model isn't loaded then be sure to load it in weapon_create() (catches a few weird weapon setups)
+ *
  * Revision 2.169  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -1561,6 +1564,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_SMALL_ONLY;
 		else if (!stricmp(NOX("same turret cooldown"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_SAME_TURRET_COOLDOWN;
+		else if (!stricmp(NOX("apply no light"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 
@@ -1902,6 +1907,10 @@ void init_weapon_entry(int weap_info_index)
 	wip->decal_backface_texture = -1;
 	wip->decal_rad = -1;
 	wip->decal_burn_time = 1000;
+
+	wip->alpha_max = 1.0f;
+	wip->alpha_min = 0.0f;
+	wip->alpha_cycle = 0.0f;
 }
 
 // function to parse the information for a specific weapon type.	
@@ -3185,6 +3194,37 @@ int parse_weapon(int subtype, bool replace)
 		}
 	}
 
+	if (optional_string("$Transparent:")) {
+		wip->wi_flags2 |= WIF2_TRANSPARENT;
+
+		required_string("+Alpha:");
+		stuff_float(&wip->alpha_max);
+
+		if (wip->alpha_max > 1.0f)
+			wip->alpha_max = 1.0f;
+
+		if (wip->alpha_max <= 0.0f) {
+			Warning(LOCATION, "WARNING:  Alpha is set to 0 or a negative value for '%s'!  Defaulting to 1.0!", wip->name);
+		}
+
+		if (optional_string("+Alpha Min:")) {
+			stuff_float(&wip->alpha_min);
+
+			if (wip->alpha_min > 1.0f)
+				wip->alpha_min = 1.0f;
+
+			if (wip->alpha_min < 0.0f)
+				wip->alpha_min = 0.0f;
+		}
+
+		if (optional_string("+Alpha Cycle:")) {
+			stuff_float(&wip->alpha_cycle);
+
+			if (wip->alpha_max == wip->alpha_min)
+				Warning(LOCATION, "WARNING:  Alpha is set to cycle for '%s', but max and min values are the same!", wip->name);
+		}
+	}
+
 	//pretty stupid if a target must be tagged to shoot tag missiles at it
 	if ((wip->wi_flags & WIF_TAG) && (wip->wi_flags2 & WIF2_TAGGED_ONLY))
 	{
@@ -3742,10 +3782,33 @@ void weapon_render(object *obj)
 	wp = &Weapons[num];
 	wip = &Weapon_info[Weapons[num].weapon_info_index];
 
+	if (wip->wi_flags2 & WIF2_TRANSPARENT) {
+		if (wp->alpha_current == -1.0f) {
+			wp->alpha_current = wip->alpha_max;
+		} else if (wip->alpha_cycle > 0.0f) {
+			if (wp->alpha_backward) {
+				wp->alpha_current += wip->alpha_cycle;
+
+				if (wp->alpha_current > wip->alpha_max) {
+					wp->alpha_current = wip->alpha_max;
+					wp->alpha_backward = 0;
+				}
+			} else {
+				wp->alpha_current -= wip->alpha_cycle;
+
+				if (wp->alpha_current < wip->alpha_min) {
+					wp->alpha_current = wip->alpha_min;
+					wp->alpha_backward = 1;
+				}
+			}
+		}
+	}
+
 	switch (wip->render_type) {
 		case WRT_LASER: {
 			// turn off fogging for good measure
 			gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+			int alpha = 255;
 
 			if (wip->laser_bitmap >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
@@ -3757,11 +3820,15 @@ void weapon_render(object *obj)
 				}
 			//	gr_set_bitmap(wip->laser_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 
+				if (wip->wi_flags2 & WIF2_TRANSPARENT) {
+					alpha = fl2i(wp->alpha_current * 255.0f);
+				}
+
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
 			//	if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT) ) {
-				if(	add_laser(wip->laser_bitmap + frame, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, 255, 255, 255)){
+				if(	add_laser(wip->laser_bitmap + frame, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha)){
 					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
 				}
 			}			
@@ -3791,7 +3858,16 @@ void weapon_render(object *obj)
 				}
 			//	gr_set_bitmap(wip->laser_glow_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 
-				int alpha = fl2i(weapon_glow_alpha * 255.0f);
+				if (wip->wi_flags2 & WIF2_TRANSPARENT) {
+					alpha = fl2i(wp->alpha_current * 255.0f);
+					alpha -= 38; // take 1.5f into account for the normal glow alpha
+
+					if (alpha < 0)
+						alpha = 0;
+				} else {
+					alpha = fl2i(weapon_glow_alpha * 255.0f);
+				}
+
 			//	g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
 			//	add_laser(wip->laser_glow_bitmap + frame, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, fl2i(c.red*weapon_glow_alpha), fl2i(c.green*weapon_glow_alpha), fl2i(c.blue*weapon_glow_alpha));
 				add_laser(wip->laser_glow_bitmap + frame, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
@@ -3802,7 +3878,13 @@ void weapon_render(object *obj)
 		case WRT_POF:	{
 				uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_LIGHTING;
 
-				if (Cmdline_missile_lighting) render_flags &= ~MR_NO_LIGHTING;
+				if (Cmdline_missile_lighting && !(wip->wi_flags2 & WIF2_MR_NO_LIGHTING))
+					render_flags &= ~MR_NO_LIGHTING;
+
+				if (wip->wi_flags2 & WIF2_TRANSPARENT) {
+					model_set_alpha(wp->alpha_current);
+					render_flags |= MR_ALL_XPARENT;
+				}
 
 				model_clear_instance(wip->model_num);
 
@@ -5164,7 +5246,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->hull_strength = 0.0f;
 	}
 
-	if ( wip->subtype == WP_MISSILE ){
+	if ( wip->subtype == WP_MISSILE ) {
 		objp->radius = model_get_radius(wip->model_num);
 	} else if ( wip->subtype == WP_LASER ) {
 		objp->radius = wip->laser_head_radius;
@@ -5270,6 +5352,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	if(is_spawned){
 		wp->weapon_flags |= WF_SPAWNED;
 	}
+
+	wp->alpha_current = -1.0f;
+	wp->alpha_backward = 0;
 
 	Num_weapons++;
 	return objnum;
