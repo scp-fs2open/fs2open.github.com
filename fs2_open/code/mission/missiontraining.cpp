@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-01-27 06:21:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.24 $
+ * $Date: 2006-01-30 06:58:10 $
+ * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/01/27 06:21:10  Goober5000
+ * replace quick sort with insertion sort in many places
+ * --Goober5000
+ *
  * Revision 2.22  2005/10/28 14:49:35  taylor
  * some minor cleanup and compiler warning fixes
  *
@@ -928,61 +932,60 @@ void message_translate_tokens(char *buf, char *text)
 			text = toke1 + 1;  // advance pointers past processed data
 
 			toke2 = strchr(text, '$');
-			if (!toke2)  // No second one?
+			if (!toke2 || ((toke2 - text) == 0))  // No second one, or possibly a double?
 				break;
 
-			// make sure we don't any type of out-of-bounds issues
-			if ( ((toke2 - text) <= 0) || ((toke2 - text) >= (ptr_s)sizeof(temp)) ) {
+			// make sure we aren't going to have any type of out-of-bounds issues
+			if ( ((toke2 - text) < 0) || ((toke2 - text) >= (ptr_s)sizeof(temp)) ) {
 				Int3();
-			}
+			} else {
+				strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
+				temp[toke2 - text] = 0;  // null terminate string
+				ptr = translate_key(temp);  // try and translate key
+				if (ptr) {  // was key translated properly?
+					if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
+						if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
+							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
+								XSTR( "Warning\nYou have no control bound to the action \"%s\".  You must do so before you can continue with your training.", 426),
+								XSTR(Control_config[Failed_key_index].text, CONTROL_CONFIG_XSTR + Failed_key_index));
 
-			strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
-			temp[toke2 - text] = 0;  // null terminate string
-			ptr = translate_key(temp);  // try and translate key
-			if (ptr) {  // was key translated properly?
-				if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
-					if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
-						r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
-							XSTR( "Warning\nYou have no control bound to the action \"%s\".  You must do so before you can continue with your training.", 426),
-							XSTR(Control_config[Failed_key_index].text, CONTROL_CONFIG_XSTR + Failed_key_index));
+							if (r) {  // do they want to abort the mission?
+								gameseq_post_event(GS_EVENT_END_GAME);
+								return;
+							}
 
-						if (r) {  // do they want to abort the mission?
-							gameseq_post_event(GS_EVENT_END_GAME);
-							return;
+							gameseq_post_event(GS_EVENT_CONTROL_CONFIG);  // goto control config screen to bind the control
 						}
-
-						gameseq_post_event(GS_EVENT_CONTROL_CONFIG);  // goto control config screen to bind the control
 					}
+
+					buf--;  // erase the $
+					strcpy(buf, ptr);  // put translated key in place of token
+					buf += strlen(buf);
+					text = toke2 + 1;
 				}
-
-				buf--;  // erase the $
-				strcpy(buf, ptr);  // put translated key in place of token
-				buf += strlen(buf);
-				text = toke2 + 1;
 			}
-
 		} else {
 			strncpy(buf, text, toke2 - text + 1);  // copy text up to token
 			buf += toke2 - text + 1;
 			text = toke2 + 1;  // advance pointers past processed data
 
 			toke1 = strchr(text, '#');
-			if (!toke1)  // No second one?
+			if (!toke1 || ((toke1 - text) == 0))  // No second one, or possibly a double?
 				break;
 
 			// make sure we aren't going to have any type of out-of-bounds issues
-			if ( ((toke1 - text) <= 0) || ((toke1 - text) >= (ptr_s)sizeof(temp)) ) {
+			if ( ((toke1 - text) < 0) || ((toke1 - text) >= (ptr_s)sizeof(temp)) ) {
 				Int3();
-			}
-
-			strncpy(temp, text, toke1 - text);  // isolate token into seperate buffer
-			temp[toke1 - text] = 0;  // null terminate string
-			ptr = translate_message_token(temp);  // try and translate key
-			if (ptr) {  // was key translated properly?
-				buf--;  // erase the #
-				strcpy(buf, ptr);  // put translated key in place of token
-				buf += strlen(buf);
-				text = toke1 + 1;
+			} else {
+				strncpy(temp, text, toke1 - text);  // isolate token into seperate buffer
+				temp[toke1 - text] = 0;  // null terminate string
+				ptr = translate_message_token(temp);  // try and translate key
+				if (ptr) {  // was key translated properly?
+					buf--;  // erase the #
+					strcpy(buf, ptr);  // put translated key in place of token
+					buf += strlen(buf);
+					text = toke1 + 1;
+				}
 			}
 		}
 
