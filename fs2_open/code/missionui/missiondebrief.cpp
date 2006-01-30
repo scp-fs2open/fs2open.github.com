@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.48 $
- * $Date: 2006-01-26 03:58:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.49 $
+ * $Date: 2006-01-30 22:09:52 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2006/01/26 03:58:14  Goober5000
+ * added variable replacement to command briefings, briefings, and debriefings
+ * --Goober5000
+ *
  * Revision 2.47  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -835,7 +839,7 @@ static int New_stage;
 static int Current_stage;
 static int Num_stages;
 static int Num_debrief_stages;
-static int Stage_voice;
+static int Stage_voice = -1;
 
 static int Multi_list_size;
 static int Multi_list_offset;
@@ -2825,6 +2829,8 @@ void debrief_close()
 		Debrief_stats_kills = NULL;
 	}
 	game_flush();
+
+	Stage_voice = -1;
 
 	Debriefing_paused = 0;
 
