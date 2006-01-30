@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.141 $
- * $Date: 2006-01-30 06:30:03 $
+ * $Revision: 2.142 $
+ * $Date: 2006-01-30 19:35:41 $
  * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.141  2006/01/30 06:30:03  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 2.140  2006/01/28 02:59:55  Goober5000
  * fixed the bug where wings couldn't be initially docked to stuff
  * --Goober5000
@@ -4389,7 +4392,7 @@ void parse_messages(mission *pm)
 void parse_reinforcement(mission *pm)
 {
 	reinforcements *ptr;
-	int instance;
+	p_object *rforce_obj = NULL;
 
 	Assert(Num_reinforcements < MAX_REINFORCEMENTS);
 	Assert(pm != NULL);
@@ -4419,24 +4422,19 @@ void parse_reinforcement(mission *pm)
 		stuff_string_list( ptr->yes_messages, MAX_REINFORCEMENT_MESSAGES );
 	}	
 
-	// sanity check on the names of reinforcements -- must either be wings/ships/arrival list.
-	if (ship_name_lookup(ptr->name) == -1)
-	{
-		if (wing_name_lookup(ptr->name, 1) == -1)
-		{
-			if (mission_parse_get_arrival_ship(ptr->name) == NULL)
-			{
-				Warning(LOCATION, "Reinforcement %s not found as ship or wing", ptr->name);
-				return;
-			}
-		}
+	// sanity check on the names of reinforcements
+	rforce_obj = mission_parse_get_parse_object(ptr->name);
+
+	if (rforce_obj == NULL) {
+		Warning(LOCATION, "Reinforcement %s not found as ship or wing", ptr->name);
+		return;
 	}
 
 	// now, if the reinforcement is a wing, then set the number of waves of the wing == number of
 	// uses of the reinforcement
-	instance = wing_name_lookup(ptr->name, 1);
-	if ( instance != -1 )
-		Wings[instance].num_waves = ptr->uses;
+	if (rforce_obj->wingnum >= 0) {
+		Wings[rforce_obj->wingnum].num_waves = ptr->uses;
+	}
 
 	Num_reinforcements++;
 }
