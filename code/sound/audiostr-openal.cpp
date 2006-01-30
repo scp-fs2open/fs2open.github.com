@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.20 $
- * $Date: 2006-01-30 06:35:02 $
+ * $Revision: 1.21 $
+ * $Date: 2006-01-30 22:08:59 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/01/30 06:35:02  taylor
+ * (possibly) better fix for some static/stuttering in certain wav files
+ *
  * Revision 1.19  2006/01/19 11:49:12  taylor
  * better error handling for OGG Voris files
  *
@@ -1235,6 +1238,8 @@ BOOL AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 
 		if (m_play_buffer_id >= MAX_STREAM_BUFFERS)
 			m_play_buffer_id = 0;
+
+		*num_bytes_written = num_bytes_read;
 	}
 
 	if ( service ) {
@@ -1421,7 +1426,10 @@ void AudioStream::Cue (void)
 		// Unqueue all buffers
 		ALint p = 0;
 		OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &p) );
-		OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, p, m_buffer_ids) );
+
+		if (p > 0) {
+			OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, p, m_buffer_ids) );
+		}
 
 		// Fill buffer with wave data
 		WriteWaveData (m_cbBufSize, &num_bytes_written, 0);
@@ -1536,6 +1544,14 @@ void AudioStream::Stop_and_Rewind (void)
 		m_timer.destructor();
 
 		m_fPlaying = FALSE;
+	}
+
+	// Unqueue all buffers
+	ALint p = 0;
+	OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &p) );
+
+	if (p > 0) {
+		OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, p, m_buffer_ids) );
 	}
 
 	m_fCued = FALSE;	// this will cause wave file to start from beginning
