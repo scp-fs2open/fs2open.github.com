@@ -688,7 +688,7 @@ LUA_INDEXER(l_Matrix, "p,b,h or 0-9", "Number", "Orientation component - pitch, 
 	int numargs = lua_get_args(L, "os|f", l_Matrix.GetPtr(&mh), &s, &newval);
 
 	if(!numargs || s[1] != '\0')
-		LUA_RETURN_NIL;
+		return LUA_RETURN_NIL;
 
 	int idx=0;
 	if(s[0]=='p')
