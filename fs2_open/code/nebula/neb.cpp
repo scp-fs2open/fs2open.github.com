@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.46 $
- * $Date: 2006-01-26 03:59:59 $
+ * $Revision: 2.47 $
+ * $Date: 2006-01-30 06:36:01 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/01/26 03:59:59  taylor
+ * first version of this sucked, this should be a bit better while working with both new and retail data
+ *   - get an average color from the palette rather than picking first (unoptimized palettes could have unused pixels in first entry)
+ *   - slight cleanup, and s/colour/color/ (yeah, stupid American, deal with it! :))
+ *
  * Revision 2.45  2006/01/18 16:01:14  taylor
  * support only PCX for the nebula background graphics (given how it works that's the fastest and easiest way to get it done)
  *
@@ -332,7 +337,6 @@ static ubyte Neb2_fog_color_g = 0;
 static ubyte Neb2_fog_color_b = 0;
 
 static ubyte *Neb2_htl_fog_data = NULL;
-static int Neb2_cur_fog_value = 0;
 
 // #define NEB2_THUMBNAIL
 
@@ -1571,7 +1575,6 @@ void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
 	Neb2_render_mode = NEB2_RENDER_NONE;
 
 	// draw background stuff nebula			
-	extern void stars_draw_background(int);
 	stars_draw_background(0);		
 
 	Neb2_render_mode = neb_save;
