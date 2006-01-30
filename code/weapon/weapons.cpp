@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.171  2006/01/30 06:33:19  taylor
+ * add transparent, cycling alpha, and no-light options for weapons
+ *
  * Revision 2.170  2006/01/18 16:02:26  taylor
  * if a weapon model isn't loaded then be sure to load it in weapon_create() (catches a few weird weapon setups)
  *
@@ -1980,7 +1983,9 @@ int parse_weapon(int subtype, bool replace)
 			
 			//Skip the rest of the ships in non-modular tables, since we can't add them.
 			if(!replace) {
-				while(skip_to_start_of_string_either("$Name:", "#End"));
+				if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+					Int3();
+				}
 			}
 			return -1;
 		}
