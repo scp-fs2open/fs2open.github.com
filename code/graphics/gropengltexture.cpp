@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.41 $
- * $Date: 2006-01-14 06:23:39 $
+ * $Revision: 1.42 $
+ * $Date: 2006-01-30 06:52:15 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.41  2006/01/14 06:23:39  taylor
+ * be sure to account for skipped mipmap levels in calculation of textures in VRAM
+ *
  * Revision 1.40  2006/01/12 17:42:56  wmcoolmon
  * Even more scripting stuff.
  *
@@ -428,7 +431,7 @@ void opengl_switch_arb(int unit, int state)
 	}
 }
 
-void opengl_tcache_init (int use_sections)
+void opengl_tcache_init()
 {
 	int i;
 
@@ -1155,7 +1158,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	return ret_val;
 }
 
-int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int sx = -1, int sy = -1, int force = 0, int tex_unit = 0)
+int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int tex_unit = 0)
 {
 	int ret_val = 1;
 
@@ -1215,7 +1218,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	return 1;
 }
 
-int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int sx, int sy, int force, int stage)
+int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full, int force, int stage)
 {
 	if (bitmap_handle < 0)
 	{
@@ -1231,7 +1234,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 	//make sure textuing is on
 	opengl_switch_arb(stage, 1);
 
-	return gr_opengl_tcache_set_internal(bitmap_handle, bitmap_type, u_scale, v_scale, fail_on_full, sx, sy, force, stage);
+	return gr_opengl_tcache_set_internal(bitmap_handle, bitmap_type, u_scale, v_scale, fail_on_full, force, stage);
 }
 
 void gr_opengl_preload_init()
