@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.21 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 1.22 $
+ * $Date: 2006-01-30 06:41:34 $
+ * $Author: taylor $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 1.20  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -237,6 +240,8 @@ extern int Num_medals;
 // object.h
 #define MAX_OBJECTS			1000		
 
+// from lighting.cpp
+#define MAX_LIGHTS 256
 
 
 #endif	// _GLOBALS_H
