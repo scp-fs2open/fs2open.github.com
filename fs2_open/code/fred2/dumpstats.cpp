@@ -200,22 +200,22 @@ void DumpStats::get_background_stats(CString &buffer)
 	buffer += temp;
 
 	// Suns
-	temp.Format("Num_suns: %d\r\n", Num_suns);
+	temp.Format("Num_suns: %d\r\n", stars_get_num_suns());
 	buffer += temp;
 	
-	for (i=0; i<Num_suns; i++) {
-		temp.Format("\tSun%d bitmap name: %s\r\n", i, Sun_bitmaps[i].filename);
+	for (i=0; i<stars_get_num_suns(); i++) {
+		temp.Format("\tSun%d bitmap name: %s\r\n", i, stars_get_sun_name(i));
 		buffer += temp;
-		//temp.Format("Sun%d glow name: %s\r\n", i, Sun_bitmaps[i].glow_filename);
+		//temp.Format("Sun%d glow name: %s\r\n", i, Suns[i].glow_filename);
 		//buffer += temp;
 	}
 
 	// Starfield bitmaps
-	temp.Format("Num_starfield_bitmaps: %d\r\n", Num_starfield_bitmaps);
+	temp.Format("Num_starfield_bitmaps: %d\r\n", stars_get_num_bitmaps());
 	buffer += temp;
 
-	for (i=0; i<Num_starfield_bitmaps; i++) {
-		temp.Format("\tStarfield%d bitmap name: %s\r\n", i, Starfield_bitmap_instance[i].filename);
+	for (i=0; i<stars_get_num_bitmaps(); i++) {
+		temp.Format("\tStarfield%d bitmap name: %s\r\n", i, stars_get_bitmap_name(i));
 		buffer += temp;
 	}
 

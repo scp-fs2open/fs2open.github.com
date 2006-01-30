@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-30 06:27:59 $
+ * $Author: taylor $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.114  2006/01/16 00:34:34  Goober5000
  * final (I hope) IFF fixage involving the FRED dialogs :p
  * --Goober5000
@@ -5590,11 +5594,10 @@ sexp_list_item *sexp_tree::get_listing_opf_background_bitmap()
 	sexp_list_item head;
 	int i;
 
-	for (i=0; i < MAX_STARFIELD_BITMAPS; i++)
-	{
-		if (!stricmp(Starfield_bitmaps[i].filename, "")) break;
-		head.add_data(Starfield_bitmaps[i].filename);
-	}
+	for (i=0; i < stars_get_num_bitmaps(); i++)
+ 	{
+		head.add_data( (char*)stars_get_name_FRED(i, false) );
+ 	}
 
 	return head.next;
 }
@@ -5604,11 +5607,10 @@ sexp_list_item *sexp_tree::get_listing_opf_sun_bitmap()
 	sexp_list_item head;
 	int i;
 
-	for (i=0; i < MAX_STARFIELD_BITMAPS; i++)
-	{
-		if (!stricmp(Sun_bitmaps[i].filename, "")) break;
-		head.add_data(Sun_bitmaps[i].filename);
-	}
+	for (i=0; i < stars_get_num_suns(); i++)
+ 	{
+		head.add_data( (char*)stars_get_name_FRED(i, true) );
+ 	}
 
 	return head.next;
 }

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-30 06:27:59 $
+ * $Author: taylor $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,10 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.12  2005/10/29 23:02:33  Goober5000
  * partial FRED commit of changes
  * --Goober5000
@@ -754,7 +758,7 @@ int CFREDDoc::load_mission(char *pathname, int importFSM)
 	view_pos = Parse_viewer_pos;
 	view_orient = Parse_viewer_orient;
 	set_modified(0);
-	stars_generate_bitmap_instance_vertex_buffers();
+	stars_post_level_init();
 
 	return 0;
 }

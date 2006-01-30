@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-26 04:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2006-01-30 06:27:59 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -820,7 +823,7 @@ bool fred_init()
 	Show_waypoints = TRUE;
 	Campaign.filename[0] = 0;  // indicate initialized state
 
-	stars_level_init();
+	stars_post_level_init();
 
 	// neb lightning
 	nebl_init();
@@ -1325,9 +1328,8 @@ void clear_mission()
 	Player_starts = 0;
 	Num_teams = 1;
 
-	// background bitmaps and suns
-	Num_suns = 0;
-	Num_starfield_bitmaps = 0;
+	// reset background bitmaps and suns
+	stars_pre_level_init();
 
 	// reset alternate name stuff
 	for(i=0; i<MAX_SHIPS; i++){
@@ -1381,7 +1383,7 @@ void clear_mission()
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
 	set_physics_controls();
-	Num_starfield_bitmaps = 0;
+	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;
 	Nebula_pitch = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);

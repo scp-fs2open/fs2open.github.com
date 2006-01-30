@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.140 $
- * $Date: 2006-01-28 02:59:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.141 $
+ * $Date: 2006-01-30 06:30:03 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2006/01/28 02:59:55  Goober5000
+ * fixed the bug where wings couldn't be initially docked to stuff
+ * --Goober5000
+ *
  * Revision 2.139  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -4490,11 +4494,10 @@ void parse_bitmap(mission *pm)
 
 void parse_bitmaps(mission *pm)
 {
-	char str[MAX_FILENAME_LEN+1] = "";
+	char str[MAX_FILENAME_LEN] = "";
 	starfield_bitmap_instance b;
 	int z;
 
-	Num_starfield_bitmaps = 0;
 	required_string("#Background bitmaps");
 
 	required_string("$Num stars:");
@@ -4590,10 +4593,11 @@ void parse_bitmaps(mission *pm)
 	}	
 	
 	// parse suns
-	Num_suns = 0;
-	while(optional_string("$Sun:")){
+	while (optional_string("$Sun:")) {
+		memset( &b, 0, sizeof(starfield_bitmap_instance) );
+
 		// filename
-		stuff_string(b.filename, F_NAME, NULL);
+		stuff_string(str, F_NAME, NULL);
 			
 		// angles
 		required_string("+Angles:");
@@ -4607,20 +4611,18 @@ void parse_bitmaps(mission *pm)
 		b.scale_y = b.scale_x;
 		b.div_x = 1;
 		b.div_y = 1;
-		
-		// if we have room, store it
-		if(Num_suns < MAX_STARFIELD_BITMAPS){
-			Suns[Num_suns] = b;
-			strcpy(Suns[Num_suns].filename, b.filename);
-			Num_suns++;
-		}
+
+		// now store it
+		if ( !stars_add_sun_instance(str, &b) )
+			Warning(LOCATION, "Failed to add sun '%s' to the mission!", str);
 	}
 
 	// parse background bitmaps
-	Num_starfield_bitmaps = 0;
-	while(optional_string("$Starbitmap:")){
+	while (optional_string("$Starbitmap:")) {
+		memset( &b, 0, sizeof(starfield_bitmap_instance) );
+
 		// filename
-		stuff_string(b.filename, F_NAME, NULL);
+		stuff_string(str, F_NAME, NULL);
 			
 		// angles
 		required_string("+Angles:");
@@ -4648,13 +4650,10 @@ void parse_bitmaps(mission *pm)
 			required_string("+DivY:");
 			stuff_int(&b.div_y);
 		}		
-		
-		// if we have room, store it
-		if(Num_starfield_bitmaps < MAX_STARFIELD_BITMAPS){
-			Starfield_bitmap_instance[Num_starfield_bitmaps] = b;
-			strcpy(Starfield_bitmap_instance[Num_starfield_bitmaps].filename, b.filename);
-			Num_starfield_bitmaps++;
-		}
+
+		// now store it
+		if ( !stars_add_bitmap_instance(str, &b) )
+			Warning(LOCATION, "Failed to add starfield bitmap '%s' to the mission!", str);
 	}
 
 	if ( optional_string("#Asteroid Fields") ){

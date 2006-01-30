@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.222 $
- * $Date: 2006-01-22 01:26:15 $
+ * $Revision: 2.223 $
+ * $Date: 2006-01-30 06:28:47 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.222  2006/01/22 01:26:15  taylor
+ * fix temp ptr warning, untested but could possibly be less error prone in some situations
+ *
  * Revision 2.221  2006/01/21 02:22:04  wmcoolmon
  * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
  *
@@ -2247,7 +2250,7 @@ void game_sunspot_process(float frametime)
 		Sun_drew = 0;				
 	} else {
 		if ( Sun_drew )	{
-			starfield_bitmap* sbm;
+			starfield_bitmap *sbm;
 			// check sunspots for all suns
 			n_lights = light_get_global_count();
 
@@ -2259,7 +2262,8 @@ void game_sunspot_process(float frametime)
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
-					sbm=stars_lookup_sun(&Suns[idx]);
+					sbm = stars_get_bitmap_entry(idx, true);
+
 					if (!sbm)
 						continue;
 					
@@ -2544,7 +2548,8 @@ void game_level_init(int seed)
 	dogfight_blown = 0;
 
 	shipfx_engine_wash_level_init();
-	
+
+	stars_pre_level_init();
 	neb2_level_init();
 	nebl_level_init();
 
@@ -2932,7 +2937,7 @@ void game_post_level_init()
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
 
-	stars_level_init();	
+	stars_post_level_init();	
 
 	// While trying to track down the nebula bug I encountered a cool effect -
 	// comment this out to fly a mission in a void. Maybe we should develop this
