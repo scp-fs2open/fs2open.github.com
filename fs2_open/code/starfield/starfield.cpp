@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.62 $
- * $Date: 2006-01-19 16:00:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.63 $
+ * $Date: 2006-01-30 06:31:30 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2006/01/19 16:00:04  wmcoolmon
+ * Lua debugging stuff; gr_bitmap_ex stuff for taylor
+ *
  * Revision 2.61  2006/01/02 07:13:38  taylor
  * make sure we clear out the vertex used to render a sun (just to be on the safe side)
  * use parse_modular_table() for -str.tbm
@@ -450,6 +453,7 @@
  */
 
 #include <limits.h>
+#include <vector>
 
 #include "math/vecmat.h"
 #include "render/3d.h"
@@ -495,14 +499,13 @@ int Num_stars = 500;
 fix starfield_timestamp = 0;
 
 // for drawing cool stuff on the background - comes from a table
-starfield_bitmap Starfield_bitmaps[MAX_STARFIELD_BITMAPS];
-starfield_bitmap_instance Starfield_bitmap_instance[MAX_STARFIELD_BITMAPS];
-int Num_starfield_bitmaps = 0;
+static std::vector<starfield_bitmap> Starfield_bitmaps;
+static std::vector<starfield_bitmap_instance> Starfield_bitmap_instance;
 
 // sun bitmaps and sun glow bitmaps
-starfield_bitmap Sun_bitmaps[MAX_STARFIELD_BITMAPS];
-starfield_bitmap_instance Suns[MAX_STARFIELD_BITMAPS];
-int Num_suns = 0;
+static std::vector<starfield_bitmap> Sun_bitmaps;
+static std::vector<starfield_bitmap_instance> Suns;
+
 
 int last_stars_filled = 0;
 color star_colors[8];
@@ -536,29 +539,9 @@ int Stars_background_inited = 0;			// if we're inited
 int Nmodel_num = -1;							// model num
 int Nmodel_bitmap = -1;						// model texture
 
-// given a starfield_bitmap_instance, return a pointer to its parent, for suns
-starfield_bitmap *stars_lookup_sun(starfield_bitmap_instance *s)
-{
-	int idx;
+int Num_debris_normal = 0;
+int Num_debris_nebula = 0;
 
-	// sanity
-	if(s == NULL){
-		return NULL;
-	}
-
-	if (!strlen(s->filename))
-		return NULL;
-
-	// lookup
-	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){
-		if(!stricmp(Sun_bitmaps[idx].filename, s->filename)){
-			return &Sun_bitmaps[idx];
-		}
-	}
-
-	// no findy
-	return NULL;
-}
 
 void stars_load_debris_vclips(debris_vclip *Debris_vclips)
 {
@@ -608,11 +591,22 @@ void perspective_bitmap_allocate_poly_list(int x, int y){
 	perspective_bitmap_list.allocate(x*y*6);
 }
 
+static void starfield_kill_bitmap_buffer()
+{
+	//don't bother with the buffers in HTL
+	if (Cmdline_nohtl) return;
+
+	if(perspective_bitmap_buffer != -1)
+	{
+		gr_destroy_buffer(perspective_bitmap_buffer);
+		perspective_bitmap_buffer=-1;
+	}
+}
 
 // draw a perspective bitmap based on angles and radius
 #define MAX_PERSPECTIVE_DIVISIONS			5
 void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta );
-void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags, int env, ushort *index_buffer)
+static void starfield_create_perspective_bitmap_buffer(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags, int env, ushort *index_buffer)
 {
 	float p_phi = 10.0f;
 	float p_theta = 10.0f;
@@ -769,8 +763,8 @@ void stars_create_perspective_bitmap_buffer(angles *a, float scale_x, float scal
 
 }
 
-//take the Starfield_bitmap_instance[] and make all the vertex buffers that you'll need to draw it 
-void stars_generate_bitmap_instance_vertex_buffers()
+// take the Starfield_bitmap_instance[] and make all the vertex buffers that you'll need to draw it 
+void stars_generate_bitmap_instance_buffers()
 {
 	//don't bother with the buffers in HTL
 	if (Cmdline_nohtl) return;
@@ -778,12 +772,12 @@ void stars_generate_bitmap_instance_vertex_buffers()
 	SAFEPOINT("entering stars_generate_bitmap_instance_vertex_buffers");
 
 	int idx, vert_count = 0;
-	for(idx=0; idx<Num_starfield_bitmaps; idx++){
-		// lookup the info index
-		int star_index = stars_find_bitmap(Starfield_bitmap_instance[idx].filename);
-		if(star_index < 0){
+
+	for (idx = 0; idx < (int)Starfield_bitmap_instance.size(); idx++) {
+		// make sure it's usable
+		if (Starfield_bitmap_instance[idx].star_bitmap_index < 0)
 			continue;
-		}
+
 		int nverts = Starfield_bitmap_instance[idx].div_x * Starfield_bitmap_instance[idx].div_y * 6;
 		vert_count += nverts * 2;
 		Starfield_bitmap_instance[idx].buffer.allocate_index_buffer(nverts);
@@ -794,14 +788,13 @@ void stars_generate_bitmap_instance_vertex_buffers()
 	perspective_bitmap_list.allocate(vert_count);
 	perspective_bitmap_list.n_verts = 0;
 
-	for(idx=0; idx<Num_starfield_bitmaps; idx++){
-		// lookup the info index
-		int star_index = stars_find_bitmap(Starfield_bitmap_instance[idx].filename);
-		if(star_index < 0){
+	for (idx = 0; idx < (int)Starfield_bitmap_instance.size(); idx++) {
+		// make sure it's usable
+		if (Starfield_bitmap_instance[idx].star_bitmap_index < 0)
 			continue;
-		}
-		stars_create_perspective_bitmap_buffer(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 0, Starfield_bitmap_instance[idx].buffer.index_buffer);
-		stars_create_perspective_bitmap_buffer(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 1, Starfield_bitmap_instance[idx].env_buffer.index_buffer);
+
+		starfield_create_perspective_bitmap_buffer(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 0, Starfield_bitmap_instance[idx].buffer.index_buffer);
+		starfield_create_perspective_bitmap_buffer(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT, 1, Starfield_bitmap_instance[idx].env_buffer.index_buffer);
 	}
 
 	if(perspective_bitmap_list.n_verts == 0)return;
@@ -813,88 +806,101 @@ void stars_generate_bitmap_instance_vertex_buffers()
 	SAFEPOINT("leaveing stars_generate_bitmap_instance_vertex_buffers");
 }
 
-void starfield_kill_bitmap_buffer()
+static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 {
-	//don't bother with the buffers in HTL
-	if (Cmdline_nohtl) return;
+	int i;
 
-	if(perspective_bitmap_buffer != -1)
-	{
-		gr_destroy_buffer(perspective_bitmap_buffer);
-		perspective_bitmap_buffer=-1;
+	Assert( sbm != NULL );
+
+	memset( sbm, 0, sizeof(starfield_bitmap) );
+
+	sbm->bitmap = -1;
+	sbm->glow_bitmap = -1;		
+	sbm->glow_n_frames = 1;
+
+	for (i = 0; i < MAX_FLARE_BMP; i++) {
+		sbm->flare_bitmaps[i].bitmap_id = -1;
+	}
+
+	for (i = 0; i < MAX_FLARE_COUNT; i++) {
+		sbm->flare_infos[i].tex_num = -1;
 	}
 }
 
-int Num_starfields = 0;
-int Num_starfield_suns = 0;
-int Num_debris_normal = 0;
-int Num_debris_nebula = 0;
+static int check_for_starfield_duplicate(char *name)
+{
+	int i;
+
+	Assert( name != NULL );
+
+	for (i = 0; i < (int)Starfield_bitmaps.size(); i++) {
+		if ( !stricmp(name, Starfield_bitmaps[i].filename) ) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static int check_for_sun_duplicate(char *name)
+{
+	int i;
+
+	Assert( name != NULL );
+
+	for (i = 0; i < (int)Sun_bitmaps.size(); i++) {
+		if ( !stricmp(name, Sun_bitmaps[i].filename) ) {
+			return i;
+		}
+	}
+
+	return -1;
+}
 
 void parse_startbl(char *longname)
 {
-	char filename[MAX_FILENAME_LEN+1] = "";
-	starfield_bitmap *bm;
-	char glow_filename[MAX_FILENAME_LEN+1] = "";
-	float r, g, b, i, spec_r, spec_g, spec_b;
-	int sun_glare;
-	int flarecount,flaretexcount, isflare;
-	flare_info flares[MAX_FLARE_COUNT];
-	char flare_filenames[MAX_FLARE_BMP][MAX_FILENAME_LEN+1];
-	int j;
+	char filename[MAX_FILENAME_LEN], tempf[16];
+	starfield_bitmap sbm;
+	int idx;
 
-	char tempf[16];
-
-	flarecount = flaretexcount = isflare = 0; //get rid of warnings
 
 	read_file_text(longname);
 	reset_parse();
 
 	while(!optional_string("#end"))
 	{
+		starfield_bitmap_entry_init( &sbm );
+		
 		// intensity alpha bitmap
 		if(optional_string("$Bitmap:"))
 		{
-			stuff_string(filename, F_NAME, NULL);
-			if(Num_starfields < MAX_STARFIELD_BITMAPS)
-			{
-				bm = &Starfield_bitmaps[Num_starfields++];
-				strcpy(bm->filename, filename);
-				bm->xparent = 0;
-				bm->bitmap = bm_load(bm->filename);				
-				if(bm->bitmap == -1)
-				{
-					bm->bitmap = bm_load_animation(bm->filename,  &bm->n_frames, &bm->fps, 1);
-					if(bm->bitmap == -1){
-						Warning(LOCATION, "cannot find bitmap %s", filename);
-					}
+			stuff_string(sbm.filename, F_NAME, NULL);
+			sbm.xparent = 0;
+
+			if ( (idx = check_for_starfield_duplicate(sbm.filename)) >= 0 ) {
+				if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
+					Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+				} else {
+					Warning(LOCATION, "Starfield bitmap '%s' already listed as a xparent bitmap!!  Only using the xparent version!", sbm.filename);
 				}
-			}
-			else
-			{
-				Warning(LOCATION, "Could not add starfield intensity bitmap %s; Maximum limit of %d reached", filename, MAX_STARFIELD_BITMAPS);
+			} else {
+				Starfield_bitmaps.push_back(sbm);
 			}
 		}
 		// green xparency bitmap
 		else if(optional_string("$BitmapX:"))
 		{
-			stuff_string(filename, F_NAME, NULL);
-			if(Num_starfields < MAX_STARFIELD_BITMAPS)
-			{
-				bm = &Starfield_bitmaps[Num_starfields++];
-				strcpy(bm->filename, filename);
-				bm->xparent = 1;
-				bm->bitmap = bm_load(bm->filename);
-				if(bm->bitmap == -1)
-				{
-					bm->bitmap = bm_load_animation(bm->filename,  &bm->n_frames, &bm->fps, 1);
-					if(bm->bitmap == -1){
-						Warning(LOCATION, "cannot find bitmap %s", filename);
-					}
+			stuff_string(sbm.filename, F_NAME, NULL);
+			sbm.xparent = 1;
+
+			if ( (idx = check_for_starfield_duplicate(sbm.filename)) >= 0 ) {
+				if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
+					Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+				} else {
+					Warning(LOCATION, "Starfield xparent bitmap '%s' already listed as a non-xparent bitmap!!  Only using the non-xparent version!", sbm.filename);
 				}
-			}
-			else
-			{
-				Warning(LOCATION, "Could not add starfield transparency bitmap %s; Maximum limit of %d reached", filename, MAX_STARFIELD_BITMAPS);
+			} else {
+				Starfield_bitmaps.push_back(sbm);
 			}
 		}
 	}
@@ -904,130 +910,98 @@ void parse_startbl(char *longname)
 	{
 		if(optional_string("$Sun:"))
 		{
-			stuff_string(filename, F_NAME, NULL);
+			starfield_bitmap_entry_init( &sbm );
+
+			stuff_string(sbm.filename, F_NAME, NULL);
 
 			// associated glow
 			required_string("$Sunglow:");
-			stuff_string(glow_filename, F_NAME, NULL);
+			stuff_string(sbm.glow_filename, F_NAME, NULL);
 
 			// associated lighting values
 			required_string("$SunRGBI:");
-			stuff_float(&r);
-			stuff_float(&g);
-			stuff_float(&b);
-			stuff_float(&i);
+			stuff_float(&sbm.r);
+			stuff_float(&sbm.g);
+			stuff_float(&sbm.b);
+			stuff_float(&sbm.i);
 
-			if(optional_string("$SunSpecularRGB:")){
-				stuff_float(&spec_r);
-				stuff_float(&spec_g);
-				stuff_float(&spec_b);
-			}else{
-				spec_r = r;
-				spec_g = g;
-				spec_b = b;
+			if (optional_string("$SunSpecularRGB:")) {
+				stuff_float(&sbm.spec_r);
+				stuff_float(&sbm.spec_g);
+				stuff_float(&sbm.spec_b);
+			} else {
+				sbm.spec_r = sbm.r;
+				sbm.spec_g = sbm.g;
+				sbm.spec_b = sbm.b;
 			}
-			//lens flare stuff
-			if(optional_string("$Flare:"))
+
+			// lens flare stuff
+			if (optional_string("$Flare:"))
 			{
-				isflare = 1;
 				required_string("+FlareCount:");
-				stuff_int(&flarecount);
+				stuff_int(&sbm.n_flares);
 
-				required_string("$FlareTexture1:"); //if there's a flare, it has to have at least one texture
-				stuff_string(flare_filenames[0],F_NAME,NULL);
+				// if there's a flare, it has to have at least one texture
+				required_string("$FlareTexture1:");
+				stuff_string(sbm.flare_bitmaps[0].filename, F_NAME, NULL);
 
-				flaretexcount = 1;
+				sbm.n_flare_bitmaps = 1;
 
-				for(j = 1; j < MAX_FLARE_BMP; j++)
-				{
-					//allow 9999 textures (theoretically speaking, that is)
-					sprintf(tempf,"$FlareTexture%d:",j+1);
-					if (optional_string(tempf))
-					{
-						flaretexcount++;
-						stuff_string(flare_filenames[j],F_NAME,NULL);
+				for (idx = 1; idx < MAX_FLARE_BMP; idx++) {
+					// allow 9999 textures (theoretically speaking, that is)
+					sprintf(tempf, "$FlareTexture%d:", idx+1);
+
+					if (optional_string(tempf)) {
+						sbm.n_flare_bitmaps++;
+						stuff_string(sbm.flare_bitmaps[idx].filename, F_NAME, NULL);
 					}
-//					else break; //don't allow flaretexture1 and then 3, etc.
+				//	else break; //don't allow flaretexture1 and then 3, etc.
 				}
 
 				required_string("$FlareGlow1:");
+
 				required_string("+FlareTexture:");
-				stuff_int(&flares[0].tex_num);
+				stuff_int(&sbm.flare_infos[0].tex_num);
+
 				required_string("+FlarePos:");
-				stuff_float(&flares[0].pos);
+				stuff_float(&sbm.flare_infos[0].pos);
+
 				required_string("+FlareScale:");
-				stuff_float(&flares[0].scale);
+				stuff_float(&sbm.flare_infos[0].scale);
 				
-				flarecount = 1;
+				sbm.n_flares = 1;
 
-				for(j = 1; j < MAX_FLARE_COUNT; j++)
-				{
-					//allow a lot of glows
-					sprintf(tempf,"$FlareGlow%d:",j+1);
-					if (optional_string(tempf))
-					{
-						flarecount++;
+				for (idx = 1; idx < MAX_FLARE_COUNT; idx++) {
+					// allow a lot of glows
+					sprintf(tempf, "$FlareGlow%d:", idx+1);
+
+					if (optional_string(tempf)) {
+						sbm.n_flares++;
+
 						required_string("+FlareTexture:");
-						stuff_int(&flares[j].tex_num);
+						stuff_int(&sbm.flare_infos[idx].tex_num);
+
 						required_string("+FlarePos:");
-						stuff_float(&flares[j].pos);
+						stuff_float(&sbm.flare_infos[idx].pos);
+
 						required_string("+FlareScale:");
-						stuff_float(&flares[j].scale);
-					} //else break; //don't allow "flare 1" and then "flare 3"
+						stuff_float(&sbm.flare_infos[idx].scale);
+					}
+				//	else break; //don't allow "flare 1" and then "flare 3"
 				}
 			}
 
-			sun_glare=!optional_string("$NoGlare:");
+			sbm.glare = !optional_string("$NoGlare:");
 
-			if(Num_starfield_suns < MAX_STARFIELD_BITMAPS)
-			{
-				bm = &Sun_bitmaps[Num_starfield_suns++];
-				strcpy(bm->filename, filename);
-				strcpy(bm->glow_filename, glow_filename);
-				bm->xparent = 1;
-				bm->bitmap = bm_load(bm->filename);
-				bm->glow_bitmap = bm_load(bm->glow_filename);
-				if(bm->bitmap == -1){
-					bm->bitmap = bm_load_animation(bm->filename,  &bm->n_frames, &bm->fps, 1);
-					if(bm->bitmap == -1){
-						Warning(LOCATION, "cannot find bitmap %s", filename);
-					}
-				}
-				if(bm->glow_bitmap == -1){
-					bm->glow_bitmap = bm_load_animation(bm->glow_filename,  &bm->glow_n_frames, &bm->glow_fps, 1);
-					if(bm->glow_bitmap == -1){
-						Warning(LOCATION, "cannot find bitmap %s", filename);
-					}
-				}
-				if(isflare) { //more flare stuff - texture loading
-					bm->flare = 1;
-					bm->flare_n_flares = flarecount;
-					bm->flare_n_tex = flaretexcount;
-					for ( j = 0; j < flarecount; j++) //yes, a memcpy would be simpler, but this is clearer, and hopefully the M$ compiler can optimize this
-						bm->flare_infos[j] = flares[j];
-					for ( j = 0; j < flaretexcount; j++)
-					{
-						strcpy(bm->flare_filenames[j], flare_filenames[j]);
-						bm->flare_bitmaps[j] = bm_load(bm->flare_filenames[j]);
-						if (bm->flare_bitmaps[j] == -1)
-							Warning(LOCATION, "Cannot find bitmap %s", bm->flare_filenames[j]);
-					}
-				}
-				bm->r = r;
-				bm->g = g;
-				bm->b = b;
-				bm->i = i;
-				bm->glare=sun_glare;
-				bm->spec_r = spec_r;
-				bm->spec_g = spec_g;
-				bm->spec_b = spec_b;
+			sbm.xparent = 1;
+
+			if ( (idx = check_for_sun_duplicate(sbm.filename)) >= 0 ) {
+				Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+			} else {
+				Sun_bitmaps.push_back(sbm);
 			}
 		}
-		else
-		{
-			Warning(LOCATION, "Too many suns in stars.tbl or modular tables. Maximum of %d exceeded.", MAX_STARFIELD_BITMAPS);
-		}
-	}	
+	}
 
 	//Don't parse motion debris if we don't have to.
 	if(Cmdline_nomotiondebris)
@@ -1062,46 +1036,110 @@ void parse_startbl(char *longname)
 	}
 }
 
+void stars_load_all_bitmaps()
+{
+	int idx, i;
+	starfield_bitmap *sb = NULL;
+	static int Star_bitmaps_loaded = 0;
+
+	if (Star_bitmaps_loaded)
+		return;
+
+	// pre-load all starfield bitmaps.  ONLY SHOULD DO THIS FOR FRED!!
+	// this can get nasty when a lot of bitmaps are in use so spare it for
+	// the normal game and only do this in FRED
+	for (idx = 0; idx < (int)Starfield_bitmaps.size(); idx++) {
+		sb = &Starfield_bitmaps[idx];
+
+		if (sb->bitmap < 0) {
+			sb->bitmap = bm_load(sb->filename);
+
+			// maybe didn't load a static image so try for an animated one
+			if (sb->bitmap < 0) {
+				sb->bitmap = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+
+				if (sb->bitmap < 0) {
+					Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", sb->filename);
+				}
+			}
+		}
+	}
+
+	for (idx = 0; idx < (int)Sun_bitmaps.size(); idx++) {
+		sb = &Sun_bitmaps[idx];
+
+		// normal bitmap
+		if (sb->bitmap < 0) {
+			sb->bitmap = bm_load(sb->filename);
+
+			// maybe didn't load a static image so try for an animated one
+			if (sb->bitmap < 0) {
+				sb->bitmap = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+
+				if (sb->bitmap < 0) {
+					Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb->filename);
+				}
+			}
+		}
+
+		// glow bitmap
+		if ( (sb->glow_bitmap < 0) && !sb->used_this_level ) {
+			sb->glow_bitmap = bm_load(sb->glow_filename);
+
+			// maybe didn't load a static image so try for an animated one
+			if (sb->glow_bitmap < 0) {
+				sb->glow_bitmap = bm_load_animation(sb->glow_filename, &sb->glow_n_frames, &sb->glow_fps, 1);
+
+				if (sb->glow_bitmap < 0) {
+					Warning(LOCATION, "Unable to load sun glow bitmap: '%s'!\n", sb->glow_filename);
+				}
+			}
+		}
+
+		if (sb->flare && !sb->used_this_level) {
+			for (i = 0; i < MAX_FLARE_BMP; i++) {
+				if ( !strlen(sb->flare_bitmaps[i].filename) )
+					continue;
+
+				if (sb->flare_bitmaps[i].bitmap_id < 0) {
+					sb->flare_bitmaps[i].bitmap_id = bm_load(sb->flare_bitmaps[i].filename);
+
+					if (sb->flare_bitmaps[i].bitmap_id < 0) {
+						Warning(LOCATION, "Unable to load sun flare bitmap: '%s'!\n", sb->flare_bitmaps[i].filename);
+						continue;
+					}
+				}
+			}
+		}
+	}
+
+	Star_bitmaps_loaded = 1;
+}
+
 // call on game startup
 void stars_init()
 {
-	int idx;
-	// parse stars.tbl
-
-	// make all bitmaps invalid
-	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){
-		Starfield_bitmaps[idx].bitmap = -1;
-		Starfield_bitmaps[idx].n_frames = 0;
-		Starfield_bitmaps[idx].fps = 0;
-		Starfield_bitmaps[idx].glow_bitmap = -1;		
-		Starfield_bitmaps[idx].glow_n_frames = 1;
-		Starfield_bitmaps[idx].glow_fps = 0;
-		strcpy(Starfield_bitmaps[idx].filename, "");
-		strcpy(Starfield_bitmaps[idx].glow_filename, "");
-
-		Sun_bitmaps[idx].bitmap = -1;		
-		Sun_bitmaps[idx].n_frames = 0;
-		Sun_bitmaps[idx].fps = 0;
-		Sun_bitmaps[idx].glow_bitmap = -1;		
-		Sun_bitmaps[idx].glow_n_frames = 1;
-		Sun_bitmaps[idx].glow_fps = 0;
-		strcpy(Sun_bitmaps[idx].filename, "");
-		strcpy(Sun_bitmaps[idx].glow_filename, "");
-	}
-
 	// starfield bitmaps
-	Num_starfields = 0;
-	Num_starfield_suns = 0;
 	Num_debris_normal = 0;
 	Num_debris_nebula = 0;
 
+	// parse stars.tbl
 	parse_startbl("stars.tbl");
 
 	parse_modular_table( "*-str.tbm", parse_startbl );
 }
 
+// called before mission parse so we can clear out all of the old stuff
+void stars_pre_level_init()
+{
+	starfield_kill_bitmap_buffer();
+
+	Starfield_bitmap_instance.clear();
+	Suns.clear();
+}
+
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not
-void stars_level_init()
+void stars_post_level_init()
 {
 	int i;
 	vec3d v;
@@ -1115,7 +1153,7 @@ void stars_level_init()
 		Nmodel_bitmap = -1;
 	}
 
-	stars_set_background_model(The_mission.skybox_model,"");
+	stars_set_background_model(The_mission.skybox_model, "");
 
 	// if (!stars_debris_loaded){
 		stars_load_debris();
@@ -1161,23 +1199,33 @@ void stars_level_init()
 	last_stars_filled = 0;
 
 	// if we have no sun instances, create one
-	if(Num_suns <= 0){
-		mprintf(("Adding default sun\n"));
-		
-		// stuff some values
-		strcpy(Suns[0].filename, Sun_bitmaps[0].filename);
-		Suns[0].scale_x = 1.0f;
-		Suns[0].scale_y = 1.0f;
-		Suns[0].div_x = 1;
-		Suns[0].div_y = 1;
-		memset(&Suns[0].ang, 0, sizeof(angles));
-		Suns[0].ang.h = fl_radian(60.0f);
+	if ( !Suns.size() ) {
+		if ( !strlen(Sun_bitmaps[0].filename) ) {
+			mprintf(("Trying to add default sun but no default exists!!\n"));
+		} else {
+			mprintf(("Adding default sun.\n"));
 
-		// one sun
-		Num_suns = 1;
+			starfield_bitmap_instance def_sun;
+			memset( &def_sun, 0, sizeof(starfield_bitmap_instance) );
+
+			// stuff some values
+			def_sun.star_bitmap_index = 0;
+			def_sun.scale_x = 1.0f;
+			def_sun.scale_y = 1.0f;
+			def_sun.div_x = 1;
+			def_sun.div_y = 1;
+			def_sun.ang.h = fl_radian(60.0f);
+
+			Suns.push_back(def_sun);
+		}
 	}
-	
-	stars_generate_bitmap_instance_vertex_buffers();
+
+	// FRED doesn't do normal page_in stuff so we need to load up the bitmaps here instead
+	if (Fred_running) {
+		stars_load_all_bitmaps();
+	}
+
+	stars_generate_bitmap_instance_buffers();
 }
 
 
@@ -1327,8 +1375,9 @@ void stars_get_sun_pos(int sun_n, vec3d *pos)
 	matrix rot;
 
 	// sanity
-	Assert(sun_n < Num_suns);
-	if((sun_n >= Num_suns) || (sun_n < 0)){
+	Assert( sun_n < (int)Suns.size() );
+
+	if ( (sun_n >= (int)Suns.size()) || (sun_n < 0) ) {
 		return;
 	}
 
@@ -1359,11 +1408,12 @@ void stars_draw_sun( int show_sun, int env )
 	Sun_drew = 0;
 
 	// draw all suns
-	for(idx=0; idx<Num_suns; idx++){		
+	for (idx = 0; idx < (int)Suns.size(); idx++) {
 		// get the instance
-		bm = stars_lookup_sun(&Suns[idx]);
-		if(bm == NULL){
-			continue;
+		if (Suns[idx].star_bitmap_index < 0) {
+			return;
+		} else {
+			bm = &Sun_bitmaps[Suns[idx].star_bitmap_index];
 		}
 
 		// if no bitmap then bail...
@@ -1409,24 +1459,40 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 	int i,j;
 	float dx,dy;
 	vertex flare_vex = *sun_vex; //copy over to flare_vex to get all sorts of properties
-	bm = stars_lookup_sun(&Suns[sun_n]);
+
+	Assert( sun_n < (int)Suns.size() );
+
+	if ( (sun_n >= (int)Suns.size()) || (sun_n < 0) ) {
+		return;
+	}
+
+	// get the instance
+	if (Suns[sun_n].star_bitmap_index < 0) {
+		return;
+	} else {
+		bm = &Sun_bitmaps[Suns[sun_n].star_bitmap_index];
+	}
+
 	
 	dx = 2.0f*(i2fl(gr_screen.clip_right-gr_screen.clip_left)*0.5f - sun_vex->sx); // (dx,dy) is a 2d vector equal to two times the vector from the sun's position to the center fo the screen
 	dy = 2.0f*(i2fl(gr_screen.clip_bottom-gr_screen.clip_top)*0.5f - sun_vex->sy); // meaning it is the vector to the opposite position on the screen
-	for(j = 0; j<bm->flare_n_tex; j++)
+
+	for (j = 0; j < bm->n_flare_bitmaps; j++)
 	{
 		// if no bitmap then bail...
-		if (bm->flare_bitmaps[j] < 0)
+		if (bm->flare_bitmaps[j].bitmap_id < 0)
 			continue;
 
-		gr_set_bitmap(bm->flare_bitmaps[j], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
-		for(i = 0; i<bm->flare_n_flares; i++)
-		if( bm->flare_infos[i].tex_num == j) //draw sorted by texture, to minimize texture changes. not the most efficient way, but better than non-sorted
-		{
-//		gr_set_bitmap(bm->flare_bitmaps[bm->flare_infos[i].tex_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
-			flare_vex.sx = sun_vex->sx + dx * bm->flare_infos[i].pos;
-			flare_vex.sy = sun_vex->sy + dy * bm->flare_infos[i].pos;
-			g3_draw_bitmap(&flare_vex, 0, 0.05f * bm->flare_infos[i].scale, TMAP_FLAG_TEXTURED);
+		gr_set_bitmap(bm->flare_bitmaps[j].bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+
+		for (i = 0; i < bm->n_flares; i++) {
+			// draw sorted by texture, to minimize texture changes. not the most efficient way, but better than non-sorted
+			if (bm->flare_infos[i].tex_num == j) {
+//				gr_set_bitmap(bm->flare_bitmaps[bm->flare_infos[i].tex_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+				flare_vex.sx = sun_vex->sx + dx * bm->flare_infos[i].pos;
+				flare_vex.sy = sun_vex->sy + dy * bm->flare_infos[i].pos;
+				g3_draw_bitmap(&flare_vex, 0, 0.05f * bm->flare_infos[i].scale, TMAP_FLAG_TEXTURED);
+			}
 		}
 	}
 }
@@ -1440,15 +1506,17 @@ void stars_draw_sun_glow(int sun_n)
 	float local_scale = 1.0f;
 
 	// sanity
-	Assert(sun_n < Num_suns);
-	if((sun_n >= Num_suns) || (sun_n < 0)){
+	Assert( sun_n < (int)Suns.size() );
+
+	if ( (sun_n >= (int)Suns.size()) || (sun_n < 0) ) {
 		return;
 	}
 
 	// get the instance
-	bm = stars_lookup_sun(&Suns[sun_n]);
-	if(bm == NULL){
+	if (Suns[sun_n].star_bitmap_index < 0) {
 		return;
+	} else {
+		bm = &Sun_bitmaps[Suns[sun_n].star_bitmap_index];
 	}
 
 	// if no bitmap then bail...
@@ -1488,7 +1556,7 @@ void stars_draw_sun_glow(int sun_n)
 
 
 extern float View_zoom;
-int st___ = -1;
+
 // draw bitmaps
 void stars_draw_bitmaps( int show_bitmaps, int env )
 {
@@ -1514,10 +1582,8 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 	if(!Detail.planets_suns){
 		return;
 	}
-	gr_set_cull(0);
 
-	if(st___ == -1)
-		st___ = bm_load("subspacenode01a");
+	gr_set_cull(0);
 
 	vec3d v = ZERO_VECTOR;
 
@@ -1528,56 +1594,43 @@ void stars_draw_bitmaps( int show_bitmaps, int env )
 
 	// render all bitmaps
 	gr_set_buffer(perspective_bitmap_buffer);
-	for(idx=0; idx<Num_starfield_bitmaps; idx++){
+
+	for (idx = 0; idx < (int)Starfield_bitmap_instance.size(); idx++) {
 		// lookup the info index
-		star_index = stars_find_bitmap(Starfield_bitmap_instance[idx].filename);
-		if(star_index < 0){
+		star_index = Starfield_bitmap_instance[idx].star_bitmap_index;
+
+		if (star_index < 0) {
 			continue;
 		}
-	
+
 		// if no bitmap then bail...
 		if (Starfield_bitmaps[star_index].bitmap < 0) {
 			continue;
 		}
 
-		{
-			
-			if(Starfield_bitmaps[star_index].xparent){
-				if(Starfield_bitmaps[star_index].fps){
-					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)));		
-				}else{
-					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap);
-				}
-				if(Cmdline_nohtl){
-					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
-				}else{
-//					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
-					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
-			/*		gr_set_fill_mode(GR_FILL_MODE_WIRE);
-					gr_set_bitmap(st___);
-					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
-					gr_set_fill_mode(GR_FILL_MODE_SOLID);
-					*/
-				}
-			} else {				
-				if(Starfield_bitmaps[star_index].fps){
-					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
-				}else{
-					gr_set_bitmap(Starfield_bitmaps[star_index].bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
-				}
+		if (Starfield_bitmaps[star_index].xparent) {
+			if (Starfield_bitmaps[star_index].fps) {
+				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)));		
+			} else {
+				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap);
+			}
+
+			if (Cmdline_nohtl) {
+				g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
+			} else {
+				gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
+			}
+		} else {				
+			if (Starfield_bitmaps[star_index].fps) {
+				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps) % Starfield_bitmaps[star_index].n_frames)), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
+			} else {
+				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
+			}
 					
-				if(Cmdline_nohtl){
-					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
-				}else{
-//					g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_XPARENT);
-					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
-				/*	some debugging code, it draws green lines along the tri edges
-					gr_set_fill_mode(GR_FILL_MODE_WIRE);
-					gr_set_bitmap(st___);
-					gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
-					gr_set_fill_mode(GR_FILL_MODE_SOLID);
-					*/
-				}
+			if (Cmdline_nohtl) {
+				g3_draw_perspective_bitmap(&Starfield_bitmap_instance[idx].ang, Starfield_bitmap_instance[idx].scale_x, Starfield_bitmap_instance[idx].scale_y, Starfield_bitmap_instance[idx].div_x, Starfield_bitmap_instance[idx].div_y, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT);
+			} else {
+				gr_render_buffer(0, Starfield_bitmap_instance[idx].n_prim, (env == 1)?Starfield_bitmap_instance[idx].env_buffer.index_buffer:Starfield_bitmap_instance[idx].buffer.index_buffer);
 			}
 		}
 	}
@@ -1830,8 +1883,8 @@ void subspace_render(int env)
 	gr_zbuffer_set(saved_gr_zbuffering);
 }
 
-extern void stars_draw_background(int);
 
+#ifdef NEW_STARS
 //each star is actualy a line
 //so each star point is actualy two points
 struct star_point{
@@ -2024,6 +2077,7 @@ void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interfac
 	gr_draw_line_list(star_list.get_buffer(), stars_to_draw);
 	
 }
+#endif	// NEW_STARS
 
 
 void stars_draw_stars()
@@ -2296,12 +2350,13 @@ void stars_draw( int show_stars, int show_suns, int show_nebulas, int show_subsp
 
 void stars_page_in()
 {
-	int i, j;
+	int i, j, idx;
+	starfield_bitmap_instance *sbi;
+	starfield_bitmap *sb;
 
 	// Initialize the subspace stuff
 
 	if ( Game_subspace_effect )	{
-
 		Subspace_model_inner = model_load( "subspace_small.pof", 0, NULL );
 		Assert(Subspace_model_inner >= 0);
 		Subspace_model_outer = model_load( "subspace_big.pof", 0, NULL );
@@ -2332,47 +2387,152 @@ void stars_page_in()
 				bm_page_in_texture( bitmap_num );
 			}
 		}
+
+		if (Subspace_glow_bitmap < 0) {
+			Subspace_glow_bitmap = bm_load( NOX("SunGlow01"));
+		}
+
+		bm_page_in_xparent_texture(Subspace_glow_bitmap);	
 	} else {
 		Subspace_model_inner = -1;
 		Subspace_model_outer = -1;
+
+		if (Subspace_glow_bitmap >= 0) {
+			bm_release(Subspace_glow_bitmap);
+			Subspace_glow_bitmap = -1;
+		}
 	}
 
-	Subspace_glow_bitmap = bm_load( NOX("SunGlow01"));
-	bm_page_in_xparent_texture(Subspace_glow_bitmap);
+	// mark all starfield and sun bitmaps as unused for this mission and release any current bitmaps
+	// NOTE: that because of how we have to load the bitmaps it's important to release all of
+	//       them first thing rather than after we have marked and loaded only what's needed
+	for (idx = 0; idx < (int)Starfield_bitmaps.size(); idx++) {
+		sb = &Starfield_bitmaps[idx];
 
-	// page in starfield bitmaps
-	int idx, t;
-	idx = 0;
-	while((idx < MAX_STARFIELD_BITMAPS) && (Starfield_bitmaps[idx].bitmap != -1)){	
-		// make sure it's used in this mission before loading - taylor
-		for (t=0; t<Num_starfield_bitmaps; t++) {
-			if (!stricmp(Starfield_bitmaps[idx].filename, Starfield_bitmap_instance[t].filename)) {
-				if(Starfield_bitmaps[idx].xparent){
-					bm_page_in_xparent_texture(Starfield_bitmaps[idx].bitmap);
-				} else { 
-					bm_page_in_texture(Starfield_bitmaps[idx].bitmap);
+		if (sb->bitmap >= 0) {
+			bm_release(sb->bitmap);
+			sb->bitmap = -1;
+		}
+
+		sb->used_this_level = 0;
+	}
+
+	for (idx = 0; idx < (int)Sun_bitmaps.size(); idx++) {
+		sb = &Sun_bitmaps[idx];
+
+		if (sb->bitmap >= 0) {
+			bm_release(sb->bitmap);
+			sb->bitmap = -1;
+		}
+
+		if (sb->glow_bitmap >= 0) {
+			bm_release(sb->glow_bitmap);
+			sb->glow_bitmap = -1;
+		}
+
+		for (i = 0; i < MAX_FLARE_BMP; i++) {
+			if (sb->flare_bitmaps[i].bitmap_id >= 0) {
+				bm_release(sb->flare_bitmaps[i].bitmap_id);
+				sb->flare_bitmaps[i].bitmap_id = -1;
+			}
+		}
+
+		sb->used_this_level = 0;
+	}
+
+	// load and page in needed starfield bitmaps
+	for (idx = 0; idx < (int)Starfield_bitmap_instance.size(); idx++) {
+		sbi = &Starfield_bitmap_instance[idx];
+
+		if (sbi->star_bitmap_index < 0)
+			continue;
+
+		sb = &Starfield_bitmaps[sbi->star_bitmap_index];
+
+		if ( (sb->bitmap < 0) && !sb->used_this_level ) {
+			sb->bitmap = bm_load(sb->filename);
+
+			// maybe didn't load a static image so try for an animated one
+			if (sb->bitmap < 0) {
+				sb->bitmap = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+
+				if (sb->bitmap < 0) {
+					Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", sb->filename);
 				}
 			}
 		}
 
-		// next;
-		idx++;
+		// this happens whether it loaded properly or not, no harm should come from it
+		if (sb->xparent) {
+			bm_page_in_xparent_texture(sb->bitmap);
+		} else {
+			bm_page_in_texture(sb->bitmap);
+		}
+
+		sb->used_this_level++;
 	}
 
-	// sun bitmaps and glows
-	idx = 0;
-	while((idx < MAX_STARFIELD_BITMAPS) && (Sun_bitmaps[idx].bitmap != -1) && (Sun_bitmaps[idx].glow_bitmap != -1)){
-		// make sure it's used in this mission before loading - taylor
-		for (t=0; t<Num_suns; t++) {
-			if (!stricmp(Sun_bitmaps[idx].filename, Suns[t].filename)) {
-				bm_page_in_texture(Sun_bitmaps[idx].bitmap);
-				bm_page_in_texture(Sun_bitmaps[idx].glow_bitmap);
+	// now for sun bitmaps and glows
+	for (idx = 0; idx < (int)Suns.size(); idx++) {
+		sbi = &Suns[idx];
+
+		if (sbi->star_bitmap_index < 0)
+			continue;
+
+		sb = &Sun_bitmaps[sbi->star_bitmap_index];
+
+		// normal bitmap
+		if ( (sb->bitmap < 0) && !sb->used_this_level ) {
+			sb->bitmap = bm_load(sb->filename);
+
+			// maybe didn't load a static image so try for an animated one
+			if (sb->bitmap < 0) {
+				sb->bitmap = bm_load_animation(sb->filename, &sb->n_frames, &sb->fps, 1);
+
+				if (sb->bitmap < 0) {
+					Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb->filename);
+				}
 			}
 		}
 
-		// next 
-		idx++;
+		// glow bitmap
+		if ( (sb->glow_bitmap < 0) && !sb->used_this_level ) {
+			sb->glow_bitmap = bm_load(sb->glow_filename);
+
+			// maybe didn't load a static image so try for an animated one
+			if (sb->glow_bitmap < 0) {
+				sb->glow_bitmap = bm_load_animation(sb->glow_filename, &sb->glow_n_frames, &sb->glow_fps, 1);
+
+				if (sb->glow_bitmap < 0) {
+					Warning(LOCATION, "Unable to load sun glow bitmap: '%s'!\n", sb->glow_filename);
+				}
+			}
+		}
+
+		if (sb->flare && !sb->used_this_level) {
+			for (i = 0; i < MAX_FLARE_BMP; i++) {
+				if ( !strlen(sb->flare_bitmaps[i].filename) )
+					continue;
+
+				if (sb->flare_bitmaps[i].bitmap_id < 0) {
+					sb->flare_bitmaps[i].bitmap_id = bm_load(sb->flare_bitmaps[i].filename);
+
+					if (sb->flare_bitmaps[i].bitmap_id < 0) {
+						Warning(LOCATION, "Unable to load sun flare bitmap: '%s'!\n", sb->flare_bitmaps[i].filename);
+						continue;
+					}
+				}
+
+				bm_page_in_texture(sb->flare_bitmaps[i].bitmap_id);
+			}
+		}
+
+		bm_page_in_texture(sb->bitmap);
+		bm_page_in_texture(sb->glow_bitmap);
+
+		sb->used_this_level++;
 	}
+
 
 	if(Cmdline_nomotiondebris)
 	{
@@ -2445,8 +2605,8 @@ int stars_find_bitmap(char *name)
 		return -1;
 
 	// lookup
-	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){
-		if(!strcmp(name, Starfield_bitmaps[idx].filename)){
+	for (idx = 0; idx < (int)Starfield_bitmaps.size(); idx++) {
+		if ( !strcmp(name, Starfield_bitmaps[idx].filename) ) {
 			return idx;
 		}
 	}
@@ -2460,9 +2620,12 @@ int stars_find_sun(char *name)
 {
 	int idx;
 
+	if (name == NULL)
+		return -1;
+
 	// lookup
-	for(idx=0; idx<MAX_STARFIELD_BITMAPS; idx++){
-		if(!strcmp(name, Sun_bitmaps[idx].filename)){
+	for (idx = 0; idx < (int)Sun_bitmaps.size(); idx++) {
+		if ( !strcmp(name, Sun_bitmaps[idx].filename) ) {
 			return idx;
 		}
 	}
@@ -2470,3 +2633,276 @@ int stars_find_sun(char *name)
 	// not found 
 	return -1;
 }
+
+// add an instance for a sun (something actually used in a mission)
+// NOTE that we assume a duplicate is ok here
+int stars_add_sun_instance(char *name, starfield_bitmap_instance *new_instance)
+{
+	int idx;
+	starfield_bitmap_instance sbi;
+
+	Assert( new_instance != NULL );
+	Assert( name != NULL );
+
+	if (name == NULL)
+		return 0;
+
+	memcpy( &sbi, new_instance, sizeof(starfield_bitmap_instance) );
+
+	idx = check_for_sun_duplicate(name);
+
+	if (idx == -1) {
+		Warning(LOCATION, "Trying to add a sun that does not exist in stars.tbl!");
+		return 0;
+	}
+
+	sbi.star_bitmap_index = idx;
+
+	// now check if we can make use of a previously discarded instance entry
+	// this should never happen with FRED
+	if ( !Fred_running ) {
+		for (int i = 0; i < (int)Suns.size(); i++) {
+			if ( Suns[i].star_bitmap_index < 0 ) {
+				Suns[i] = sbi;
+				goto Done;
+			}
+		}
+	}
+
+	// ... or add a new one
+	Suns.push_back(sbi);
+
+Done:
+//	stars_generate_bitmap_instance_buffers();
+
+	return 1;
+}
+
+// add an instance for a starfield bitmap (something actually used in a mission)
+// NOTE that we assume a duplicate is ok here
+int stars_add_bitmap_instance(char *name, starfield_bitmap_instance *new_instance)
+{
+	int idx;
+	starfield_bitmap_instance sbi;
+
+	Assert( new_instance != NULL );
+	Assert( name != NULL );
+
+	if (name == NULL)
+		return 0;
+
+	memcpy( &sbi, new_instance, sizeof(starfield_bitmap_instance) );
+
+	idx = check_for_starfield_duplicate(name);
+
+	if (idx == -1) {
+		Warning(LOCATION, "Trying to add a bitmap that does not exist in stars.tbl!");
+		return 0;
+	}
+
+	sbi.star_bitmap_index = idx;
+
+	// now check if we can make use of a previously discarded instance entry
+	for (int i = 0; i < (int)Starfield_bitmap_instance.size(); i++) {
+		if ( Starfield_bitmap_instance[i].star_bitmap_index < 0 ) {
+			Starfield_bitmap_instance[i] = sbi;
+			goto Done;
+		}
+	}
+
+	// ... or add a new one
+	Starfield_bitmap_instance.push_back(sbi);
+
+Done:
+//	stars_generate_bitmap_instance_buffers();
+
+	return 1;
+}
+
+// get the number of entries that each vector contains
+// "sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
+// "bitmap_count" will get number of starfield_bitmap entries rather than starfield_bitmap_instance entries
+int stars_get_num_entries(bool sun, bool bitmap_count)
+{
+	// try for instance counts first
+	if (!bitmap_count) {
+		if (sun) {
+			return (int)Suns.size();
+		} else {
+			return (int)Starfield_bitmap_instance.size();
+		}
+	}
+	// looks like we want bitmap counts (probably only FRED uses this)
+	else {
+		if (sun) {
+			return (int)Sun_bitmaps.size();
+		} else {
+			return (int)Starfield_bitmaps.size();
+		}
+	}
+}
+
+
+// get a starfield_bitmap entry providing only an instance
+starfield_bitmap *stars_get_bitmap_entry(int index, bool sun)
+{
+	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instance.size();
+
+	Assert( (index >= 0) && (index < max_index) );
+
+	if ( (index < 0) || (index >= max_index) )
+		return NULL;
+
+	if (sun && (Suns[index].star_bitmap_index >= 0)) {
+		return &Sun_bitmaps[Suns[index].star_bitmap_index];
+	} else if (!sun && (Starfield_bitmap_instance[index].star_bitmap_index >= 0)) {
+		return &Starfield_bitmaps[Starfield_bitmap_instance[index].star_bitmap_index];
+	}
+
+	return NULL;
+}
+
+// get a starfield_bitmap_instance, obviously
+starfield_bitmap_instance *stars_get_instance(int index, bool sun)
+{
+	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instance.size();
+
+	Assert( (index >= 0) && (index < max_index) );
+
+	if ( (index < 0) || (index >= max_index) )
+		return NULL;
+
+	if (sun) {
+		return &Suns[index];
+	} else {
+		return &Starfield_bitmap_instance[index];
+	}
+}
+
+// set an instace to not render
+void stars_mark_instance_unused(int index, bool sun)
+{
+	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instance.size();
+
+	Assert( (index >= 0) && (index < max_index) );
+
+	if ( (index < 0) || (index >= max_index) )
+		return;
+
+	if (sun) {
+		Suns[index].star_bitmap_index =  -1;
+	} else {
+		Starfield_bitmap_instance[index].star_bitmap_index = -1;
+	}
+
+//	stars_generate_bitmap_instance_buffers();
+}
+
+// retrieves the name from starfield_bitmap for the instance index
+// NOTE: it's unsafe to return NULL here so use <none> for invalid entries
+const char *stars_get_name_from_instance(int index, bool sun)
+{
+	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instance.size();
+
+	Assert( (index >= 0) && (index < max_index) );
+
+	if ( (index < 0) || (index >= max_index) )
+		return NOX("<none>");
+
+	if (sun && (Suns[index].star_bitmap_index >= 0)) {
+		return Sun_bitmaps[Suns[index].star_bitmap_index].filename;
+	} else if (!sun && (Starfield_bitmap_instance[index].star_bitmap_index >= 0)) {
+		return Starfield_bitmaps[Starfield_bitmap_instance[index].star_bitmap_index].filename;
+	}
+
+	return NOX("<none>");
+}
+
+// retrieves the name from starfield_bitmap, really only used by FRED2
+// NOTE: it is unsafe to return NULL here, but because that's bad anyway it really shouldn't happen, so we do return NULL.
+const char *stars_get_name_FRED(int index, bool sun)
+{
+	if (!Fred_running)
+		return NULL;
+
+	int max_index = (sun) ? (int)Sun_bitmaps.size() : (int)Starfield_bitmaps.size();
+
+	Assert( (index >= 0) && (index < max_index) );
+
+	if ( (index < 0) || (index >= max_index) )
+		return NULL;
+
+	if (sun) {
+		return Sun_bitmaps[index].filename;
+	} else {
+		return Starfield_bitmaps[index].filename;
+	}
+}
+
+// modify an existing starfield bitmap instance, or add a new one if needed
+void stars_modify_instance_FRED(int index, const char *name, starfield_bitmap_instance *sbi_new, bool sun)
+{
+	if (!Fred_running)
+		return;
+
+	starfield_bitmap_instance sbi;
+	int idx;
+	int add_new = index > ((sun) ? (int)Sun_bitmaps.size() : (int)Starfield_bitmaps.size());
+
+	Assert( index >= 0 );
+	Assert( sbi_new != NULL );
+
+	memcpy( &sbi, sbi_new, sizeof(starfield_bitmap_instance) );
+
+	if (sun) {
+		idx = check_for_sun_duplicate((char*)name);
+	} else {
+		idx = check_for_starfield_duplicate((char*)name);
+	}
+
+	// this shouldn't ever happen from FRED since you select the name from a list of those available
+	if (idx == -1)
+		return;
+//		Int3();
+
+	sbi.star_bitmap_index = idx;
+
+	if (add_new) {
+		if (sun) {
+			Suns.push_back( sbi );
+		} else {
+			Starfield_bitmap_instance.push_back( sbi );
+		}
+	} else {
+		if (sun) {
+			Suns[index] = sbi;
+		} else {
+			Starfield_bitmap_instance[index] = sbi;
+		}
+	}
+
+	stars_generate_bitmap_instance_buffers();
+}
+
+// erase an instance, note that this is very slow so it should only be done in FRED
+void stars_delete_instance_FRED(int index, bool sun)
+{
+	if (!Fred_running)
+		return;
+
+	int max_index = (sun) ? (int)Suns.size() : (int)Starfield_bitmap_instance.size();
+
+	Assert( (index >= 0) && (index < max_index) );
+
+	if ( (index < 0) || (index >= max_index) )
+		return;
+
+	if (sun) {
+		Suns.erase( Suns.begin() + index );
+	} else {
+		Starfield_bitmap_instance.erase( Starfield_bitmap_instance.begin() + index );
+	}
+
+	stars_generate_bitmap_instance_buffers();
+}
+
