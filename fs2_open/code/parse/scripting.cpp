@@ -13,6 +13,7 @@ bool Output_scripting_meta = false;
 
 //*************************Scripting hook globals*************************
 script_hook Script_splashhook;
+script_hook Script_simulationhook;
 script_hook Script_hudhook;
 script_hook Script_globalhook;
 script_hook Script_gameinithook;
@@ -45,6 +46,10 @@ int script_test(script_state *st)
 
 		if(optional_string("$GameInit:")) {
 			Script_gameinithook = st->ParseChunk("GameInit");
+		}
+
+		if(optional_string("$Simulation:")) {
+			Script_simulationhook = st->ParseChunk("Simulation");
 		}
 
 		if(optional_string("$HUD:")) {
@@ -82,29 +87,29 @@ int script_test(script_state *st)
 //script_close is handled by destructors
 void script_init (void)
 {
-#ifdef USE_LUA
+	mprintf(("SCRIPTING: Beginning initialization sequence...\n"));
+
+	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
-#endif
 	if(Output_scripting_meta)
 	{
+		mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
 		Script_system.OutputMeta("scripting.html");
 	}
+	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));
 	script_test(&Script_system);
+	mprintf(("SCRIPTING: Inititialization complete.\n"));
 }
 
 //*************************CLASS: script_state*************************
 //Most of the icky stuff is here. Lots of #ifdefs
-#ifndef USE_LUA
-#pragma message( "WARNING: Lua is not compiled in" )
-#endif
 #ifndef USE_PYTHON
-#pragma message("WARNING: Python is not compiled in")
+#pragma message("NOTE: Python is not compiled in")
 #endif
 
 void script_state::SetGlobal(char *name, char format, void *data)
 {
 	Assert(data != NULL);
-#ifdef USE_LUA
 	if(LuaState != NULL)
 	{
 		char fmt[2] = {format, '\0'};
@@ -122,14 +127,12 @@ void script_state::SetGlobal(char *name, char format, void *data)
 		//lua_set_arg(LuaState, format, data);
 		lua_setglobal(LuaState, name);
 	}
-#endif
 }
 
 //WMC - data can be NULL, if we just want to know if it exists
 bool script_state::GetGlobal(char *name, char format, void *data)
 {
 	bool got_global = false;
-#ifdef USE_LUA
 	if(LuaState != NULL)
 	{
 		//Construct format string
@@ -145,21 +148,18 @@ bool script_state::GetGlobal(char *name, char format, void *data)
 			got_global = true;
 		}
 	}
-#endif
 
 	return got_global;
 }
 
 void script_state::RemGlobal(char *name)
 {
-#ifdef USE_LUA
 	if(LuaState != NULL)
 	{
 		//WMC - Quick and clean. :)
 		lua_pushnil(LuaState);
 		lua_setglobal(LuaState, name);
 	}
-#endif
 }
 
 int script_state::LoadBm(char *name)
@@ -199,7 +199,6 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 	{
 		if(hd.language == SC_LUA)
 		{
-#ifdef USE_LUA
 			int args_start=0;
 			if(data != NULL) {
 				args_start = lua_gettop(LuaState);
@@ -223,7 +222,6 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 			//WMC - Pop anything leftover from the function from the stack
 			args_start = lua_gettop(LuaState) - args_start;
 			for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
-#endif
 		}
 		else if(hd.language == SC_PYTHON)
 		{
@@ -245,11 +243,10 @@ void script_state::Clear()
 {
 	StateName[0] = '\0';
 	Langs = 0;
-#ifdef USE_LUA
+
 	//Don't close this yet
 	LuaState = NULL;
 	LuaLibs = NULL;
-#endif
 #ifdef USE_PYTHON
 	Py_XDECREF(PyGlb);
 	PyGlb = NULL;
@@ -280,17 +277,15 @@ script_state& script_state::operator=(script_state &in)
 
 script_state::~script_state()
 {
-#ifdef USE_LUA
 	if(LuaState != NULL) {
 		lua_close(LuaState);
 	}
-#endif
+
 	Clear();
 }
 
 void script_state::SetLuaSession(lua_State *L)
 {
-#ifdef USE_LUA
 	if(LuaState != NULL)
 	{
 		lua_close(LuaState);
@@ -302,7 +297,6 @@ void script_state::SetLuaSession(lua_State *L)
 	else if(Langs & SC_LUA) {
 		Langs &= ~SC_LUA;
 	}
-#endif
 }
 
 void script_state::SetPySession(PyObject *loc, PyObject *glb)
@@ -420,7 +414,6 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 		*lcp = '\0';
 	}
 
-#ifdef USE_LUA
 	//WMC - Push error handling function
 	lua_pushcfunction(LuaState, lua_friendly_error);
 	//Parse string
@@ -433,9 +426,6 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 
 	//Default return if no return - 0
 	lua_get_args(LuaState, format, *(script_lua_odata*)rtn);
-#else
-	return false;
-#endif
 
 	if(lastchar == ']')
 		*lcp = lastchar;
@@ -468,7 +458,6 @@ script_hook script_state::ParseChunk(char* debug_str)
 
 		char *filename = alloc_block("[[", "]]");
 
-#ifdef USE_LUA
 		//Load from file
 		CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS );
 		if(cfp == NULL)
@@ -491,7 +480,6 @@ script_hook script_state::ParseChunk(char* debug_str)
 			rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 			vm_free(raw_lua);
 		}
-#endif
 		//dealloc
 		//WMC - For some reason these cause crashes
 		//vm_free(filename);
@@ -505,13 +493,13 @@ script_hook script_state::ParseChunk(char* debug_str)
 
 		//Allocate raw script
 		char* raw_lua = alloc_block("[", "]");
-#ifdef USE_LUA
+
 		//Load it into a buffer & parse it
 		luaL_loadbuffer(GetLuaSession(), raw_lua, strlen(raw_lua), debug_str);
 
 		//Stick it in the registry
 		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
-#endif
+
 		//free the mem
 		//vm_free(raw_lua);
 	}
@@ -539,13 +527,12 @@ script_hook script_state::ParseChunk(char* debug_str)
 
 		//Stuff it
 		stuff_string(buf+strlen(buf), F_RAW, NULL, sizeof(buf)-1);
-#ifdef USE_LUA
+
 		//Load it into a buffer & parse it
 		luaL_loadbuffer(GetLuaSession(), buf, strlen(buf), debug_str);
 
 		//Stick it in the registry
 		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
-#endif
 	}
 
 	if(optional_string("+Override:"))
