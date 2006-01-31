@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.27 $
- * $Date: 2006-01-21 00:11:51 $
+ * $Revision: 2.28 $
+ * $Date: 2006-01-31 15:44:55 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/01/21 00:11:51  taylor
+ * fix for LuaError change, *again*  ;)
+ *
  * Revision 2.26  2006/01/13 14:19:34  taylor
  * move SDL autoconf checks up so we get the defines earlier
  * fix some Lua build problems on Linux (enabled by default now, but with configure option)
@@ -263,7 +266,6 @@ void Error( char * filename, int line, char * format, ... )
 
 void LuaError(struct lua_State *L, char *format, ...)
 {
-#ifdef USE_LUA
 	va_list args;
 	memset( &buffer, 0, sizeof(buffer) );
 
@@ -279,7 +281,6 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 	// Order UP!!
 	fprintf(stderr, "LUA ERROR: \"%s\"\n", buffer);
-#endif
 
 	exit(EXIT_FAILURE);
 }
