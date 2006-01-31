@@ -1,6 +1,5 @@
 #ifndef _LUA_H
 #define _LUA_H
-#ifdef USE_LUA
 
 extern "C" {
 	#include "lauxlib.h"
@@ -249,7 +248,7 @@ struct object_h {
 	object *objp;
 	int sig;
 
-	bool IsValid(){return objp->signature == sig;}
+	bool IsValid(){return (this != NULL && objp->signature == sig);}
 	object_h(object *in){objp=in; sig=in->signature;}
 };
 
@@ -257,5 +256,4 @@ struct object_h {
 extern lua_obj<object_h> l_Ship;
 extern lua_obj<object_h> l_Object;
 
-#endif //USE_LUA
 #endif //_LUA_H
