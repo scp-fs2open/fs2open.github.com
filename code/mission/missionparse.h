@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.76 $
- * $Author: wmcoolmon $
- * $Date: 2006-01-14 19:54:55 $
+ * $Revision: 2.77 $
+ * $Author: Goober5000 $
+ * $Date: 2006-01-31 01:53:37 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.75  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -515,8 +518,9 @@ struct p_dock_instance;
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
-// defines used for parse_mission() to tell what kind of information to get from the mission file
-#define MISSION_PARSE_MISSION_INFO	1
+// mission parse flags used for parse_mission() to tell what kind of information to get from the mission file
+#define MPF_ONLY_MISSION_INFO	(1 << 0)
+#define MPF_IMPORT_FSM			(1 << 1)
 
 // bitfield definitions for missions game types
 #define OLD_MAX_GAME_TYPES				4					// needed for compatibility
@@ -878,7 +882,7 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 #define FRED_DUPLICATE_MODEL_TEXTURE_REPLACE	2
 extern texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
 
-int parse_main(char *mission_name, int flags = 0, int importFSM = 0);
+int parse_main(char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(char *name);
 p_object *mission_parse_get_parse_object(ushort net_signature);
@@ -925,16 +929,6 @@ void mission_parse_reset_alt();
 
 // code to save/restore mission parse stuff
 int get_mission_info(char *filename, mission *missionp = NULL);
-
-// Goober5000 - FRED import
-void convertFSMtoFS2();
-void conv_replace_ship_classes();
-void conv_add_alt_names();
-void conv_fix_briefing_stuff();
-void conv_fix_punctuation();
-void restore_default_weapons(char *ships_tbl);
-void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
-void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
 
 // Goober5000
 void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-30 06:27:59 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2006-01-31 01:53:36 $
+ * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/30 06:27:59  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -629,7 +632,7 @@ int CFREDDoc::autoload()
 }
 
 // read in a new mission file from disk
-int CFREDDoc::load_mission(char *pathname, int importFSM)
+int CFREDDoc::load_mission(char *pathname, int flags)
 {
 	// make sure we're in the correct working directory!!!!!!
 	chdir(Fred_base_dir);
@@ -649,8 +652,9 @@ int CFREDDoc::load_mission(char *pathname, int importFSM)
 	clear_mission();
 
 	Fred_found_unknown_ship_during_parsing = 0;
-	if (parse_main(pathname, 0, importFSM)) {
-		if (importFSM)
+	if (parse_main(pathname, flags))
+	{
+		if (flags & MPF_IMPORT_FSM)
 		{
 			Fred_view_wnd->MessageBox("Import failed.");
 		}
@@ -1168,7 +1172,7 @@ void CFREDDoc::OnFileImportFSM()
 	// load mission into memory
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);  // clean things up first
-	if (load_mission(fs1_mission, 1))
+	if (load_mission(fs1_mission, MPF_IMPORT_FSM))
 		return;
 
 	// ugh - change the file name
