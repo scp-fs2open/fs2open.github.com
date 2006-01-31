@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.144 $
- * $Date: 2006-01-31 02:02:33 $
+ * $Revision: 2.145 $
+ * $Date: 2006-01-31 04:24:25 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.144  2006/01/31 02:02:33  Goober5000
+ * fix a potential problem with replacement range
+ * --Goober5000
+ *
  * Revision 2.143  2006/01/31 01:53:37  Goober5000
  * update FSM import for FSPort v3.0
  * --Goober5000
@@ -1254,6 +1258,9 @@ void parse_mission_info(mission *pm)
 {
 	int i;
 	char game_string[NAME_LENGTH];
+
+	// bypass FS1 comments
+	skip_to_string("#Mission Info");
 
 	required_string("#Mission Info");
 	
