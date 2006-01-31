@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.223 $
- * $Date: 2006-01-30 06:28:47 $
- * $Author: taylor $
+ * $Revision: 2.224 $
+ * $Date: 2006-01-31 06:42:00 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.223  2006/01/30 06:28:47  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 2.222  2006/01/22 01:26:15  taylor
  * fix temp ptr warning, untested but could possibly be less error prone in some situations
  *
@@ -5682,6 +5685,8 @@ void game_simulation_frame()
 		}
 #endif
 	}
+
+	Script_system.RunBytecode(Script_simulationhook);
 }
 
 // Maybe render and process the dead-popup
@@ -5886,7 +5891,6 @@ void obj_script_set_global(char *global_name, object *objp)
 		return;
 	}
 
-#ifdef USE_LUA
 	script_lua_odata luaobj;
 
 	if(objp->type == OBJ_SHIP) {
@@ -5896,7 +5900,6 @@ void obj_script_set_global(char *global_name, object *objp)
 	}
 
 	Script_system.SetGlobal(global_name, 'o', &luaobj);
-#endif
 }
 
 void game_frame(int paused)
