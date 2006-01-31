@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.303 $
- * $Date: 2006-01-30 06:34:06 $
- * $Author: taylor $
+ * $Revision: 2.304 $
+ * $Date: 2006-01-31 06:32:42 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.303  2006/01/30 06:34:06  taylor
+ * try and detect some bad path info
+ *
  * Revision 2.302  2006/01/29 18:01:04  wmcoolmon
  * Apologies, don't know how I missed this...
  *
@@ -2447,7 +2450,7 @@ int parse_ship(bool replace)
 	ship_info *sip;
 	int i, j, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
-	int pbank_capacity_specified=0, pbank_capacity_count, sbank_capacity_count;
+	int pbank_capacity_count, sbank_capacity_count;
 	bool create_if_not_found  = true;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH] = "";
@@ -2881,10 +2884,8 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// optional ballistic primary imformation (Goober5000)......
-	pbank_capacity_specified = 0;
 	if(optional_string("$PBank Capacity:"))
 	{
-		pbank_capacity_specified = 1;
 		// get the capacity of each primary bank
 strcat(parse_error_text,"'s default primary banks' ammo");
 		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
@@ -3213,31 +3214,6 @@ strcpy(parse_error_text, temp_error);
 	if ((sip->flags & SIF_PLAYER_SHIP) && (sip->num_secondary_banks > MAX_PLAYER_SECONDARY_BANKS))
 	{
 		Warning(LOCATION, "Player-allowed ship %s has too many secondary banks (%d).  Maximum for player-allowed ships is currently %d; maximum for all other ships is %d.\n", sip->name, sip->num_secondary_banks, MAX_PLAYER_SECONDARY_BANKS, MAX_SHIP_SECONDARY_BANKS);
-	}
-
-	// be friendly; ensure ballistic flags check out
-	if (pbank_capacity_specified)
-	{
-		if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
-		{
-			Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\n", sip->name);
-
-			for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
-			{
-				sip->primary_bank_ammo_capacity[i] = 0;
-			}
-		}
-	}
-	else
-	{
-		if (sip->flags & SIF_BALLISTIC_PRIMARIES)
-		{
-			Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
-			for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
-			{
-				sip->primary_bank_ammo_capacity[i] = 1;
-			}
-		}
 	}
 
 	find_and_stuff_optional("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names, Num_ai_classes, "AI class names");
@@ -4269,6 +4245,31 @@ void parse_shiptbl(char* longname)
 		}
 	}
 	
+	//*****Perform final ship validation checks
+	int idx;
+	for(idx = 0; idx < Num_ship_classes; idx++)
+	{
+		ship_info *sip = &Ship_info[idx];
+		
+		for(i = 0; i < sip->num_primary_banks; i++)
+		{
+			if(sip->primary_bank_weapons[i] > -1)
+			{
+				if(Weapon_info[sip->primary_bank_weapons[i]].wi_flags & WIF2_BALLISTIC)
+				{
+					if(sip->primary_bank_ammo_capacity[i] < 1)
+					{
+						Warning(LOCATION, "No ammo capacity specified for primary bank %d, which can hold ballistic weapons, on ship '%s'", i, sip->name);
+					}
+				}
+				else
+				{
+					//WMC - I doubt this is even worth a warning.
+					sip->primary_bank_ammo_capacity[i] = 0;
+				}
+			}
+		}
+	}
 
 	// Read in a list of ship_info indicies that are an ordering of the player ship precedence.
 	// This list is used to select an alternate ship when a particular ship is not available
