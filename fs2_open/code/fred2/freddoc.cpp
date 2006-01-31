@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-01-31 01:53:36 $
+ * $Revision: 1.4 $
+ * $Date: 2006-01-31 04:13:00 $
  * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
@@ -19,6 +19,10 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/01/31 01:53:36  Goober5000
+ * update FSM import for FSPort v3.0
+ * --Goober5000
+ *
  * Revision 1.2  2006/01/30 06:27:59  taylor
  * dynamic starfield bitmaps
  *
@@ -1187,6 +1191,8 @@ void CFREDDoc::OnFileImportFSM()
 		Fred_view_wnd->MessageBox("Mission successfully imported with no errors.", "Woohoo!");
 	}
 }
+
+void restore_default_weapons(char *ships_tbl);
 
 void CFREDDoc::OnFileImportWeapons() 
 {
