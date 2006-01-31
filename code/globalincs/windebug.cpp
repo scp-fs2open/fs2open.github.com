@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-01-27 06:21:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.36 $
+ * $Date: 2006-01-31 06:42:28 $
+ * $Author: wmcoolmon $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/01/27 06:21:10  Goober5000
+ * replace quick sort with insertion sort in many places
+ * --Goober5000
+ *
  * Revision 2.34  2006/01/19 20:18:11  wmcoolmon
  * More Lua checks; added Lua vector object; better operator support.
  *
@@ -1021,7 +1025,6 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 void LuaError(struct lua_State *L, char *format, ...)
 {
-#ifdef USE_LUA
 	int val;
 
 	gr_force_windowed();
@@ -1104,8 +1107,6 @@ void LuaError(struct lua_State *L, char *format, ...)
 	} else if(val == IDYES) {
 		Int3();
 	}
-
-#endif
 }
 
 void _cdecl Error( char * filename, int line, char * format, ... )
