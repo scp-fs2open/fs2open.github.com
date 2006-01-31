@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.145 $
- * $Date: 2006-01-31 04:24:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.146 $
+ * $Date: 2006-01-31 15:44:29 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.145  2006/01/31 04:24:25  Goober5000
+ * stuff
+ *
  * Revision 2.144  2006/01/31 02:02:33  Goober5000
  * fix a potential problem with replacement range
  * --Goober5000
@@ -1260,7 +1263,7 @@ void parse_mission_info(mission *pm)
 	char game_string[NAME_LENGTH];
 
 	// bypass FS1 comments
-	skip_to_string("#Mission Info");
+	skip_to_start_of_string("#Mission Info");
 
 	required_string("#Mission Info");
 	
