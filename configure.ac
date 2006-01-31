@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.26 2006-01-13 14:19:34 taylor Exp $
+dnl $Id: configure.ac,v 1.27 2006-01-31 15:44:55 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -121,13 +121,6 @@ AC_ARG_WITH(static-jpeg,
 		[fs2_static_jpeg=""],
 )
 
-AC_ARG_ENABLE(lua,
-	AC_HELP_STRING([--disable-lua],
-		[Disable Lua scripting support]),
-		[fs2_lua=$enableval],
-		[fs2_lua=yes],
-)
-
 
 dnl check OS type -- right now, we support
 dnl windows OS (via mingw) and unix (linux, etc.)
@@ -245,10 +238,6 @@ if test "$fs2_gprof" = "yes" ; then
 	FS2_CXXFLAGS="$FS2_CXXFLAGS -pg"
 fi
 
-if test "$fs2_lua" = "yes" ; then
-	AC_DEFINE([USE_LUA])
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -I../lua"
-fi
 
 dnl generate appropriate conditionals for Makefile.am
 AM_CONDITIONAL(FS2_OS_WIN32,   test "$fs2_os_win32" = "yes")
@@ -457,7 +446,6 @@ if test "x$fs2_static_ogg" != "x" ; then
 fi
 echo
 echo Sound enabled .......... : $fs2_sound
-echo Lua scripting enabled .. : $fs2_lua
 echo Text-to-speech enabled . : $fs2_speech
 echo
 echo Debug build ............ : $fs2_debug
