@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.146 $
- * $Date: 2006-01-31 15:44:29 $
+ * $Revision: 2.147 $
+ * $Date: 2006-01-31 17:19:20 $
  * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.146  2006/01/31 15:44:29  taylor
+ * we need to skip to the start of the string, not the end
+ *
  * Revision 2.145  2006/01/31 04:24:25  Goober5000
  * stuff
  *
@@ -4419,6 +4422,7 @@ void parse_reinforcement(mission *pm)
 {
 	reinforcements *ptr;
 	p_object *rforce_obj = NULL;
+	int instance = -1;
 
 	Assert(Num_reinforcements < MAX_REINFORCEMENTS);
 	Assert(pm != NULL);
@@ -4452,14 +4456,18 @@ void parse_reinforcement(mission *pm)
 	rforce_obj = mission_parse_get_parse_object(ptr->name);
 
 	if (rforce_obj == NULL) {
-		Warning(LOCATION, "Reinforcement %s not found as ship or wing", ptr->name);
-		return;
+		if ((instance = wing_name_lookup(ptr->name, 1)) == -1) {
+			Warning(LOCATION, "Reinforcement %s not found as ship or wing", ptr->name);
+			return;
+		}
+	} else {
+		instance = rforce_obj->wingnum;
 	}
 
 	// now, if the reinforcement is a wing, then set the number of waves of the wing == number of
 	// uses of the reinforcement
-	if (rforce_obj->wingnum >= 0) {
-		Wings[rforce_obj->wingnum].num_waves = ptr->uses;
+	if (instance >= 0) {
+		Wings[instance].num_waves = ptr->uses;
 	}
 
 	Num_reinforcements++;
