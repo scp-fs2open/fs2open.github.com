@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/FREDDoc.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-01-31 01:53:36 $
  * $Author: Goober5000 $
  *
  * FREDDoc.h : interface of the CFREDDoc class
@@ -19,6 +19,10 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.8  2005/07/13 02:40:50  Goober5000
  * remove PreProcDefine #includes in FRED
  * --Goober5000
@@ -117,7 +121,7 @@ protected: // create from serialization only
 public:
 	int check_undo();
 	int autoload();
-	int load_mission(char *pathname, int importFSM = 0);
+	int load_mission(char *pathname, int flags = 0);
 	int autosave(char *desc);
 	int save_matrix(matrix &m, FILE *fp);
 	int save_vector(vec3d &v, FILE *fp);

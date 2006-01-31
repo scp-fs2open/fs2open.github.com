@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.142 $
- * $Date: 2006-01-30 19:35:41 $
- * $Author: taylor $
+ * $Revision: 2.143 $
+ * $Date: 2006-01-31 01:53:37 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2006/01/30 19:35:41  taylor
+ * fix parsing of reinforcements
+ *
  * Revision 2.141  2006/01/30 06:30:03  taylor
  * dynamic starfield bitmaps
  *
@@ -1227,6 +1230,15 @@ int parse_object_on_arrival_list(p_object *pobjp);
 void mission_parse_mark_non_arrival(p_object *p_objp);
 void mission_parse_mark_non_arrival(wing *wingp);
 void mission_parse_mark_non_arrivals();
+
+// Goober5000 - FRED import
+void convertFSMtoFS2();
+void conv_fix_briefing_stuff();
+void conv_fix_punctuation();
+void conv_fix_music();
+void restore_default_weapons(char *ships_tbl);
+void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
+void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
 
 
 MONITOR(NumShipArrivals);
@@ -4850,7 +4862,7 @@ void parse_mission(mission *pm, int flag)
 
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
 
-	if ( flag == MISSION_PARSE_MISSION_INFO )
+	if (flag & MPF_ONLY_MISSION_INFO)
 		return;
 
 	parse_plot_info(pm);
@@ -5179,7 +5191,7 @@ void parse_init()
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
 // info such as game type, number of players etc.
 // Goober5000 - allow for import
-int parse_main(char *mission_name, int flags, int importFSM)
+int parse_main(char *mission_name, int flags)
 {
 	int rval, i;
 
@@ -5200,7 +5212,7 @@ int parse_main(char *mission_name, int flags, int importFSM)
 		lcl_ext_open();
 
 		// don't do this for imports
-		if (!importFSM)
+		if (!(flags & MPF_IMPORT_FSM))
 		{
 			CFILE *ftemp = cfopen(mission_name, "rt", CFILE_NORMAL, CF_TYPE_MISSIONS);
 
@@ -5223,7 +5235,7 @@ int parse_main(char *mission_name, int flags, int importFSM)
 		}
 
 		// import?
-		if (importFSM)
+		if (flags & MPF_IMPORT_FSM)
 		{
 			read_file_text(mission_name, CF_TYPE_ANY);
 			convertFSMtoFS2();
@@ -5588,7 +5600,7 @@ int mission_parse_is_multi(char *filename, char *mission_name)
 
 int mission_parse_get_multi_mission_info( char *filename )
 {
-	if ( parse_main(filename, MISSION_PARSE_MISSION_INFO) ){
+	if ( parse_main(filename, MPF_ONLY_MISSION_INFO) ){
 		return -1;
 	}
 
@@ -6884,129 +6896,14 @@ int is_training_mission()
 // Goober5000
 void convertFSMtoFS2()
 {
-	// replace class names
-	conv_replace_ship_classes();
-
-	// add alt names
-	conv_add_alt_names();
-
 	// fix icons
 	conv_fix_briefing_stuff();
 
 	// fix punctuation
 	conv_fix_punctuation();
-}
 
-// Goober5000 - replacement rules according to the Freespace Port
-void conv_replace_ship_classes()
-{
-	// only replace the Terran NavBuoy if it isn't found in the tables
-	// (even if we do replace it, it's still alt-named as a Terran NavBuoy... see below)
-	if (ship_info_lookup("Terran NavBuoy") < 0)
-	{
-		replace_all(Mission_text, "lass: Terran NavBuoy", "lass: GTNB Pharos", MISSION_TEXT_SIZE);
-	}
-
-	// only replace the Prometheus if it isn't found in the tables
-	if (weapon_info_lookup("Prometheus") < 0)
-	{
-		replace_all(Mission_text, "\"Prometheus\"", "\"Prometheus S\"", MISSION_TEXT_SIZE);
-	}
-
-	// change most Vasudan stuff from PV to GV
-	replace_all(Mission_text, "lass: PV", "lass: GV", MISSION_TEXT_SIZE);
-	replace_all(Mission_text, "GVF Anubis", "PVF Anubis", MISSION_TEXT_SIZE);
-	replace_all(Mission_text, "GVB Amun", "PVB Amun", MISSION_TEXT_SIZE);
-	replace_all(Mission_text, "GVFr Ma'at", "PVFr Ma'at", MISSION_TEXT_SIZE);
-	replace_all(Mission_text, "GVFr Bast", "PVFr Bast", MISSION_TEXT_SIZE);
-}
-
-// Goober5000
-void conv_add_alt_names()
-{
-	int flag[MAX_SHIP_CLASSES];
-	int i, idx, alt_tally;
-	char *ch;
-	char ship_class[NAME_LENGTH * 2];
-	char alt_text[NAME_LENGTH * 2 + 10];
-	char alt_section[MAX_ALT_TYPE_NAMES * (NAME_LENGTH + 7) + 35];
-
-	// initialize stuff
-	ch = Mission_text;
-	memset(flag, 0, sizeof(int) * MAX_SHIP_CLASSES);
-	alt_tally = 0;
-
-	// get all ship classes (case sensitive, because lowercase
-	// $class is for briefing icons)
-	while ((ch = strstr(ch + 1, "$Class:")) != NULL)
-	{
-		// extract ship class
-		copy_to_eoln(ship_class, NULL, ch + 7, NAME_LENGTH * 2);
-		drop_white_space(ship_class);
-
-		// handle $alt
-		*alt_text = 0;
-
-		// see if it's Vasudan
-		if (!strnicmp(ship_class, "GV", 2))
-		{
-			if ((idx = ship_info_lookup(ship_class)) >= 0)
-			{
-				// flag for inclusion at the top
-				flag[idx] = 1;
-
-				// add $alt text below ship class
-				sprintf(alt_text, "%s\n$Alt: P%s", ship_class, ship_class + 1);
-			}
-		}
-		// see if it's the navbuoy
-		else if (!stricmp(ship_class, "GTNB Pharos"))
-		{
-			// flag for inclusion
-			flag[ship_info_lookup(ship_class)] = 1;
-
-			// add $alt text below ship class
-			sprintf(alt_text, "GTNB Pharos\n$Alt: Terran NavBuoy");
-		}
-
-		// now actually replace the class with the class plus $alt text
-		if (*alt_text)
-		{
-			replace_one(ch, ship_class, alt_text, MISSION_TEXT_SIZE);
-			alt_tally++;
-		}	
-	}
-
-	// do we get to add the section?
-	if (alt_tally)
-	{
-		// set up the $alt section
-		strcpy(alt_section, "#Alternate Types:\n");
-
-		// find which classes need to be added
-		for (i = 0; i < MAX_SHIP_CLASSES; i++)
-		{
-			if (flag[i])
-			{
-				// Vasudan?
-				if (!strnicmp(Ship_info[i].name, "GV", 2))
-				{
-					strcat(alt_section, "$Alt: P");
-					strcat(alt_section, Ship_info[i].name + 1);
-					strcat(alt_section, "\n");
-				}
-				// navbuoy?
-				else if (!stricmp(Ship_info[i].name, "GTNB Pharos"))
-				{
-					strcat(alt_section, "$Alt: Terran NavBuoy\n");
-				}
-			}
-		}
-		strcat(alt_section, "#end\n\n\n#Players");
-
-		// add it (it goes right before the #Players section)
-		replace_one(Mission_text, "#Players", alt_section, MISSION_TEXT_SIZE);
-	}
+	// fix music
+	conv_fix_music();
 }
 
 // Goober5000
@@ -7023,7 +6920,7 @@ void conv_fix_briefing_stuff()
 }
 
 // Goober5000
-// go through all the displayed text in one section and fix " and ;
+// go through all the displayed text in one section and fix "
 // the section and text delimiters should all be different
 void conv_fix_punctuation_section(char *str, char *section_start, char *section_end, char *text_start, char *text_end)
 {
@@ -7043,7 +6940,6 @@ void conv_fix_punctuation_section(char *str, char *section_start, char *section_
 		if (!t2 || t2 > s2) return;
 
 		replace_all(t1, "\"", "$quote", MISSION_TEXT_SIZE, (t2 - t1));
-		replace_all(t1, ";", "$semicolon", MISSION_TEXT_SIZE, (t2 - t1));
 	}	
 }
 
@@ -7061,6 +6957,34 @@ void conv_fix_punctuation()
 
 	// messages
 	conv_fix_punctuation_section(Mission_text, "#Messages", "#Reinforcements", "$Message:", "\n");
+}
+
+// Goober5000
+void conv_fix_music()
+{
+	char *ch;
+	char *track_ch;
+	char name[NAME_LENGTH];
+	char new_name[NAME_LENGTH];
+
+	// skip to music section
+	ch = strstr(Mission_text, "#Music");
+	if (!ch) return;
+
+	// skip to event music
+	ch = strstr(ch, "$Event Music:");
+	if (!ch) return;
+
+	// get music track name
+	track_ch = ch + 14;
+	copy_to_eoln(name, NULL, track_ch, NAME_LENGTH);
+
+	// form new name
+	strcpy(new_name, "FS1-");
+	strcpy(new_name + 4, name);
+
+	// replace it
+	replace_all(Mission_text, name, new_name, MISSION_TEXT_SIZE);
 }
 
 // Goober5000
@@ -7088,19 +7012,8 @@ void restore_default_weapons(char *ships_tbl)
 			// get ship_info
 			sip = &Ship_info[Ships[i].ship_info_index];
 
-			// get the ship class and adjust as necessary
-			strcpy(ship_class, sip->name);
-			if (!strnicmp(ship_class, "GV", 2))
-			{
-				*ship_class = 'P';
-			}
-			else if (!stricmp(ship_class, "GTNB Pharos"))
-			{
-				strcpy(ship_class, "Terran NavBuoy");
-			}
-
 			// find the ship class
-			ch = stristr(ships_tbl, ship_class);
+			ch = strstr(ships_tbl, ship_class);
 			if (!ch) continue;
 
 			// check pbanks (capital ships have these specified but empty)
@@ -7166,15 +7079,6 @@ void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_we
 
 	// stuff weapon list
 	count = stuff_string_list(weapon_list, MAX_SHIP_PRIMARY_BANKS);
-
-	// possibly replace Prometheus with Prometheus S
-	for (i = 0; i < count; i++)
-	{
-		if (!stricmp(weapon_list[i], "Prometheus"))
-		{
-			strcpy(weapon_list[i], "Prometheus S");
-		}
-	}
 
 	// check for default weapons - if same as default, overwrite with the one from the table
 	for (i = 0; i < count; i++)
