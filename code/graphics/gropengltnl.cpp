@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.38 $
- * $Date: 2006-01-30 06:52:15 $
- * $Author: taylor $
+ * $Revision: 1.39 $
+ * $Date: 2006-01-31 06:43:21 $
+ * $Author: wmcoolmon $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2006/01/30 06:52:15  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ *
  * Revision 1.37  2006/01/25 03:11:52  phreak
  * htl_lines should follow zbuffering rules
  *
@@ -531,7 +535,7 @@ void gr_opengl_destroy_buffer(int idx)
 extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
-GLuint normalisationCubeMap = -1;
+GLuint normalisationCubeMap;
 
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
 void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int flags)

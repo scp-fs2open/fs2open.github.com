@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.65 $
- * $Date: 2006-01-19 20:18:11 $
+ * $Revision: 2.66 $
+ * $Date: 2006-01-31 06:43:21 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/01/19 20:18:11  wmcoolmon
+ * More Lua checks; added Lua vector object; better operator support.
+ *
  * Revision 2.64  2006/01/12 04:16:27  wmcoolmon
  * Oops, missed a file
  *
@@ -1443,6 +1446,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 		}	
 	}
 
+	mprintf(("GRAPHICS: Initializing default colors...\n"));
 	gr_set_color(0,0,0);
 
 	gr_set_clear_color(0, 0, 0);
