@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.143 $
- * $Date: 2006-01-31 01:53:37 $
+ * $Revision: 2.144 $
+ * $Date: 2006-01-31 02:02:33 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2006/01/31 01:53:37  Goober5000
+ * update FSM import for FSPort v3.0
+ * --Goober5000
+ *
  * Revision 2.142  2006/01/30 19:35:41  taylor
  * fix parsing of reinforcements
  *
@@ -6916,7 +6920,7 @@ void conv_fix_briefing_stuff()
 
 	// fix the mismatched briefing icon (there's only one)
 	// jump node: 26 --> 33
-	replace_all(pos1, "$type: 26", "$type: 33", MISSION_TEXT_SIZE, (pos2 - pos1));
+	replace_all(pos1, "$type: 26", "$type: 33", MISSION_TEXT_SIZE - (pos1 - Mission_text), (pos2 - pos1));
 }
 
 // Goober5000
@@ -6939,7 +6943,7 @@ void conv_fix_punctuation_section(char *str, char *section_start, char *section_
 		t2 = strstr(t1, text_end);
 		if (!t2 || t2 > s2) return;
 
-		replace_all(t1, "\"", "$quote", MISSION_TEXT_SIZE, (t2 - t1));
+		replace_all(t1, "\"", "$quote", MISSION_TEXT_SIZE - (str - Mission_text), (t2 - t1));
 	}	
 }
 
@@ -6984,7 +6988,7 @@ void conv_fix_music()
 	strcpy(new_name + 4, name);
 
 	// replace it
-	replace_all(Mission_text, name, new_name, MISSION_TEXT_SIZE);
+	replace_one(track_ch, name, new_name, MISSION_TEXT_SIZE - (track_ch - Mission_text));
 }
 
 // Goober5000
