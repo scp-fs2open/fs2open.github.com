@@ -10,9 +10,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.304 $
- * $Date: 2006-01-31 06:32:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.305 $
+ * $Date: 2006-02-01 05:11:25 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
@@ -2890,7 +2890,7 @@ strcpy(parse_error_text, temp_error);
 strcat(parse_error_text,"'s default primary banks' ammo");
 		pbank_capacity_count = stuff_int_list(sip->primary_bank_ammo_capacity, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
 strcpy(parse_error_text, temp_error);
-		if ( pbank_capacity_count != sip->num_primary_banks )
+		if (pbank_capacity_count != sip->num_primary_banks)
 		{
 			Warning(LOCATION, "Primary bank capacities have not been completely specified for ship class %s... fix this!!", sip->name);
 		}
@@ -4171,8 +4171,46 @@ void parse_shiptype_tbl(char *longname)
 	lcl_ext_close();
 }
 
+// Goober5000 - this works better in its own function
+void ship_set_default_player_ship()
+{
+	int i;
+
+	// already have one
+	if(strlen(default_player_ship))
+		return;
+
+	// find the first with the default flag
+	for(i = 0; i < Num_ship_classes; i++)
+	{
+		if(Ship_info[i].flags & SIF_DEFAULT_PLAYER_SHIP)
+		{
+			strcpy(default_player_ship, Ship_info[i].name);
+			return;
+		}
+	}
+
+	// find the first player ship
+	for(i = 0; i < Num_ship_classes; i++)
+	{
+		if(Ship_info[i].flags & SIF_PLAYER_SHIP)
+		{
+			strcpy(default_player_ship, Ship_info[i].name);
+			return;
+		}
+	}
+
+	// find the first ship
+	if(Num_ship_classes > 0)
+	{
+		strcpy(default_player_ship, Ship_info[0].name);
+	}
+}
+
 void parse_shiptbl(char* longname)
 {
+	int i, j;
+
 	strcpy(current_ship_table, longname);
 	// open localization
 	lcl_ext_open();
@@ -4215,61 +4253,50 @@ void parse_shiptbl(char* longname)
 	}
 
 	//Set default player ship
-	int i = 0;
-	if(!strlen(default_player_ship))
+	ship_set_default_player_ship();
+
+	// Goober5000 - validate ballistic primaries
+	for(i = 0; i < Num_ship_classes; i++)
 	{
-		for(i = 0; i < Num_ship_classes; i++)
+		int pbank_capacity_specified = 0;
+		ship_info *sip = &Ship_info[i];
+
+		// determine whether this ship had primary capacities specified for it
+		for (j = 0; j < sip->num_primary_banks; j++)
 		{
-			if(Ship_info[i].flags & SIF_DEFAULT_PLAYER_SHIP) {
-				strcpy(default_player_ship, Ship_info[i].name);
+			if (sip->primary_bank_ammo_capacity[j] > 0)
+			{
+				pbank_capacity_specified = 1;
 				break;
+			}
+		}
+
+		// be friendly; ensure ballistic flags check out
+		if (pbank_capacity_specified)
+		{
+			if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
+			{
+				Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\n", sip->name);
+	
+				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
+				{
+					sip->primary_bank_ammo_capacity[j] = 0;
+				}
+			}
+		}
+		else
+		{
+			if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+			{
+				Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
+				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
+				{
+					sip->primary_bank_ammo_capacity[j] = 1;
+				}
 			}
 		}
 	}
 
-	if(i == Num_ship_classes)
-	{
-		for(i = 0; i < Num_ship_classes; i++)
-		{
-			if(Ship_info[i].flags & SIF_PLAYER_SHIP) {
-				strcpy(default_player_ship, Ship_info[i].name);
-				break;
-			}
-		}
-	}
-	if(i == Num_ship_classes)
-	{
-		if(Num_ship_classes > 0)
-		{
-			strcpy(default_player_ship, Ship_info[0].name);
-		}
-	}
-	
-	//*****Perform final ship validation checks
-	int idx;
-	for(idx = 0; idx < Num_ship_classes; idx++)
-	{
-		ship_info *sip = &Ship_info[idx];
-		
-		for(i = 0; i < sip->num_primary_banks; i++)
-		{
-			if(sip->primary_bank_weapons[i] > -1)
-			{
-				if(Weapon_info[sip->primary_bank_weapons[i]].wi_flags & WIF2_BALLISTIC)
-				{
-					if(sip->primary_bank_ammo_capacity[i] < 1)
-					{
-						Warning(LOCATION, "No ammo capacity specified for primary bank %d, which can hold ballistic weapons, on ship '%s'", i, sip->name);
-					}
-				}
-				else
-				{
-					//WMC - I doubt this is even worth a warning.
-					sip->primary_bank_ammo_capacity[i] = 0;
-				}
-			}
-		}
-	}
 
 	// Read in a list of ship_info indicies that are an ordering of the player ship precedence.
 	// This list is used to select an alternate ship when a particular ship is not available
