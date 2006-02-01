@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.54 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.55 $
+ * $Date: 2006-02-01 23:43:34 $
+ * $Author: phreak $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.53  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -7791,7 +7795,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if ( homing_object->type == OBJ_WEAPON ) {
-		Assert(Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_BOMB);
+		Assert((Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_COUNTERMEASURE));
 	}
 
 	wp->homing_object = homing_object;
