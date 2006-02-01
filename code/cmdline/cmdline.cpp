@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.132 $
- * $Date: 2006-01-20 07:10:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.133 $
+ * $Date: 2006-02-01 23:35:31 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.131  2006/01/10 18:37:45  randomtiger
  * Improvements to voice recognition system.
  * Also function put on -voicer launcher option.
@@ -994,7 +998,7 @@ cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);
 cmdline_parm d3d_particle_arg("-d3d_particle",NULL);
 cmdline_parm show_mem_usage_arg("-show_mem_usage",NULL);
 cmdline_parm rt_arg("-rt",NULL);
-cmdline_parm ingamejoin_arg("-ingame", NULL);
+cmdline_parm ingamejoin_arg("-ingame_join", NULL);
 cmdline_parm start_mission_arg("-start_mission",NULL);
 cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
 cmdline_parm get_flags_arg("-get_flags",NULL);
