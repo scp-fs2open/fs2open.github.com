@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.147 $
- * $Date: 2006-01-31 17:19:20 $
- * $Author: taylor $
+ * $Revision: 2.148 $
+ * $Date: 2006-02-02 05:48:17 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.147  2006/01/31 17:19:20  taylor
+ * oh the shame   (/me imagines the big grin on Goober's face right now :p)
+ *
  * Revision 2.146  2006/01/31 15:44:29  taylor
  * we need to skip to the start of the string, not the end
  *
@@ -4114,49 +4117,34 @@ void parse_wing(mission *pm)
 	}
 
 	// set the wing number for all ships in the wing
-	for (i = 0; i < wingp->wave_count; i++ ) {
-		//char *ship_name = wingp->ship_names[i];
-		char *ship_name;
-		int num, assigned = 0;
+	for (i = 0; i < wingp->wave_count; i++ )
+	{
+		char *ship_name = ship_names[i];
+		int i, assigned = 0;
 
-		ship_name = ship_names[i];
-		if (Fred_running) {
-			num = wingp->ship_index[i] = ship_name_lookup(ship_name, 1);
-			Assert ( num != -1 );
+		// Goober5000 - since the ship/wing creation stuff is reordered to accommodate multiple docking,
+		// everything is still on the parse list at this point (in both FRED and FS2)
 
-			// hack code -- REMOVE
-			if ( Objects[Ships[num].objnum].flags & OF_PLAYER_SHIP )
-				Ships[num].wingnum = wingnum;
+		// find the parse object and assign it the wing number
+		for (i = 0; i < Num_parse_objects; i++)
+		{
+			p_object *p_objp = &Parse_objects[i];
 
-		} else {
-			// assign the wing number to the ship -- if the ship has arrived, double check that
-			// there is only one wave of this wing since ships with their own arrival cue cannot be
-			// in a wing with > 1 wave.  Otherwise, find the ship on the ship arrival list and set
-			// their wing number
-			if ( (num = ship_name_lookup(ship_name)) != -1 ) {
-				Int3();					// this is impossible under the new system
+			if (!strcmp(ship_name, p_objp->name))
+			{
+				// get Allender -- ship appears to be in multiple wings
+				Assert (p_objp->wingnum == -1);
 
-			} else {
-				for (int i = 0; i < Num_parse_objects; i++)
-				{
-					p_object *p_objp = &Parse_objects[i];
-
-					if (!strcmp(ship_name, p_objp->name))
-					{
-						// get Allender -- ship appears to be in multiple wings
-						Assert (p_objp->wingnum == -1);
-
-						p_objp->wingnum = wingnum;
-						assigned++;
-					}
-				}
+				p_objp->wingnum = wingnum;
+				assigned++;
 			}
-
-			if (assigned == 0)
-				Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_name);
-			else if (assigned > 1)
-				Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is specified multiple times in wing.\n", wingp->name, ship_name);
 		}
+
+		// error checking
+		if (assigned == 0)
+			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_name);
+		else if (assigned > 1)
+			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is specified multiple times in wing.\n", wingp->name, ship_name);
 	}
 
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
