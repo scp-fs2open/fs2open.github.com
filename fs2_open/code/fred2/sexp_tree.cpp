@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-30 06:27:59 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2006-02-02 06:22:58 $
+ * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/30 06:27:59  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -5416,8 +5419,8 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_order()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Fred_comm_orders_max; i++)
-		head.add_data(Fred_comm_orders[i].menu_text);
+	for (i=0; i<Num_comm_orders; i++)
+		head.add_data(comm_order_menu_text(Comm_orders[i].def));
 
 	return head.next;
 }

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/IgnoreOrdersDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-02-02 06:22:58 $
  * $Author: Goober5000 $
  *
  * C code for dialog to set which orders from the player that a particular ship should ignore
@@ -30,26 +30,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 // super cool macro to make IDC_* names
-
-// note: If you change this table at all, keep it in sync with version in HUDsquadmsg.cpp
-//WMC - *sigh* if only we could combine this with the one in hudsquadmsg.cpp
-fred_comm_order Fred_comm_orders[] = {
-	ATTACK_TARGET_ITEM, "Attack my target",
-	DISABLE_TARGET_ITEM, "Disable my target",
-	DISARM_TARGET_ITEM, "Disarm my target",
-	DISABLE_SUBSYSTEM_ITEM, "Destroy my subsystem",
-	PROTECT_TARGET_ITEM, "Protect my target",
-	IGNORE_TARGET_ITEM, "Ignore my target",
-	FORMATION_ITEM, "Form on my wing",
-	COVER_ME_ITEM, "Cover me",
-	ENGAGE_ENEMY_ITEM, "Engage enemy",
-	CAPTURE_TARGET_ITEM, "Capture my target",
-	REARM_REPAIR_ME_ITEM, "Rearm/repair me",
-	ABORT_REARM_REPAIR_ITEM, "Abort rearm repair",
-	DEPART_ITEM, "Depart",
-};
-
-int Fred_comm_orders_max = sizeof(Fred_comm_orders)/sizeof(fred_comm_order);
 
 /////////////////////////////////////////////////////////////////////////////
 // ignore_orders_dlg dialog
@@ -133,11 +113,22 @@ BOOL ignore_orders_dlg::OnInitDialog()
 
 	// set the checkboxes for the orders accepted
 	m_num_checks_active = 0;
-	for (i = 0; i < Fred_comm_orders_max; i++ ) {
-		if ( default_orders & Fred_comm_orders[i].value ) {
-			Assert( m_num_checks_active < MAX_CHECKBOXES );
-			check_boxes[m_num_checks_active].button->SetWindowText( Fred_comm_orders[i].menu_text );
-			check_boxes[m_num_checks_active].id = Fred_comm_orders[i].value;
+	for (i = 0; i < Num_comm_orders; i++ )
+	{
+		int order = Comm_orders[i].def;
+
+		if (default_orders & order)
+		{
+			// Not enough space to display checkboxes for all comm orders!
+			// Need to add more checkboxes.
+			if (m_num_checks_active >= MAX_CHECKBOXES)
+			{
+				Int3();
+				break;
+			}
+
+			check_boxes[m_num_checks_active].button->SetWindowText(comm_order_menu_text(order));
+			check_boxes[m_num_checks_active].id = order;
 			m_num_checks_active++;
 		}
 	}

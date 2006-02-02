@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/IgnoreOrdersDlg.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-02-02 06:22:58 $
  * $Author: Goober5000 $
  *
  * header for dialog to set which orders from the player that a particular ship should ignore
@@ -75,12 +75,3 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
-
-typedef struct fred_comm_order {
-	int value;
-	char *menu_text;
-} fred_comm_order;
-
-fred_comm_order Fred_comm_orders[];
-
-extern int Fred_comm_orders_max;
