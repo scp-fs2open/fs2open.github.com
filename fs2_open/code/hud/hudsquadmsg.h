@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.11 $
- * $Date: 2006-01-13 11:09:45 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2006-02-02 06:04:02 $
+ * $Author: Goober5000 $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/01/13 11:09:45  taylor
+ * fix hud comm message screwups (missing support ship, no coverme, etc) that was part :V: bug and (bigger) part Ship_types related bug
+ *
  * Revision 2.10  2006/01/10 18:37:46  randomtiger
  * Improvements to voice recognition system.
  * Also function put on -voicer launcher option.
@@ -192,23 +195,25 @@ struct object;
 #define ATTACK_TARGET_ITEM			(1<<0)
 #define DISABLE_TARGET_ITEM			(1<<1)
 #define DISARM_TARGET_ITEM			(1<<2)
-#define DISABLE_SUBSYSTEM_ITEM		(1<<3)
-#define PROTECT_TARGET_ITEM			(1<<4)
-#define IGNORE_TARGET_ITEM			(1<<5)
-#define FORMATION_ITEM				(1<<6)
-#define COVER_ME_ITEM				(1<<7)
-#define ENGAGE_ENEMY_ITEM			(1<<8)
-#define CAPTURE_TARGET_ITEM			(1<<9)
+#define PROTECT_TARGET_ITEM			(1<<3)
+#define IGNORE_TARGET_ITEM			(1<<4)
+#define FORMATION_ITEM				(1<<5)
+#define COVER_ME_ITEM				(1<<6)
+#define ENGAGE_ENEMY_ITEM			(1<<7)
+#define CAPTURE_TARGET_ITEM			(1<<8)
 
 // the next are for the support ship only
-#define REARM_REPAIR_ME_ITEM		(1<<10)
-#define ABORT_REARM_REPAIR_ITEM		(1<<11)
-#define STAY_NEAR_ME_ITEM			(1<<12)
-#define STAY_NEAR_TARGET_ITEM		(1<<13)
-#define KEEP_SAFE_DIST_ITEM			(1<<14)
+#define REARM_REPAIR_ME_ITEM		(1<<9)
+#define ABORT_REARM_REPAIR_ITEM		(1<<10)
+#define STAY_NEAR_ME_ITEM			(1<<11)
+#define STAY_NEAR_TARGET_ITEM		(1<<12)
+#define KEEP_SAFE_DIST_ITEM			(1<<13)
 
 // next item for all ships again -- to try to preserve relative order within the message menu
-#define DEPART_ITEM					(1<<15)
+#define DEPART_ITEM					(1<<14)
+
+// out of order, but it was this way in the original source
+#define DISABLE_SUBSYSTEM_ITEM		(1<<15)
 
 
 // data structure to hold character string of commands for comm menu
