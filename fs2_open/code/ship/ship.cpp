@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.305 $
- * $Date: 2006-02-01 05:11:25 $
+ * $Revision: 2.306 $
+ * $Date: 2006-02-02 07:01:16 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.305  2006/02/01 05:11:25  Goober5000
+ * bettered the ballistic primary check
+ * --Goober5000
+ *
  * Revision 2.303  2006/01/30 06:34:06  taylor
  * try and detect some bad path info
  *
@@ -2003,7 +2007,8 @@ std::vector<ship_type_info> Ship_types;
 
 std::vector<ArmorType> Armor_types;
 
-flag_def_list Man_types[] = {
+flag_def_list Man_types[] =
+{
 	{"Bank right",			MT_BANK_RIGHT},
 	{"Bank left",			MT_BANK_LEFT},
 	{"Pitch up",			MT_PITCH_UP},
@@ -2016,6 +2021,37 @@ flag_def_list Man_types[] = {
 	{"Slide down",			MT_SLIDE_DOWN},
 	{"Forward",				MT_FORWARD},
 	{"Reverse",				MT_REVERSE},
+};
+
+// Goober5000 - I figured we should keep this separate
+// from Comm_orders, considering how I redid it :p
+// (and also because we may want to change either
+// the order text or the flag text in the future)
+flag_def_list player_orders[] =
+{
+	// common stuff
+	{ "attack ship",			ATTACK_TARGET_ITEM },
+	{ "disable ship",			DISABLE_TARGET_ITEM },
+	{ "disarm ship",			DISARM_TARGET_ITEM },
+	{ "disable subsys",			DISABLE_SUBSYSTEM_ITEM },
+	{ "guard ship",				PROTECT_TARGET_ITEM },
+	{ "ignore ship",			IGNORE_TARGET_ITEM },
+	{ "form on wing",			FORMATION_ITEM },
+	{ "cover me",				COVER_ME_ITEM },
+	{ "attack any",				ENGAGE_ENEMY_ITEM },
+	{ "depart",					DEPART_ITEM },
+
+	// transports mostly
+	{ "dock",					CAPTURE_TARGET_ITEM },
+
+	// support
+	{ "rearm me",				REARM_REPAIR_ME_ITEM },
+	{ "abort rearm",			ABORT_REARM_REPAIR_ITEM },
+
+	// extra stuff for support
+	{ "stay near me",			STAY_NEAR_ME_ITEM },
+	{ "stay near ship",			STAY_NEAR_TARGET_ITEM },
+	{ "keep safe dist",			KEEP_SAFE_DIST_ITEM },
 };
 
 int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
