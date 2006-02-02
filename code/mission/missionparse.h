@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.77 $
+ * $Revision: 2.78 $
  * $Author: Goober5000 $
- * $Date: 2006-01-31 01:53:37 $
+ * $Date: 2006-02-02 08:12:47 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2006/01/31 01:53:37  Goober5000
+ * update FSM import for FSPort v3.0
+ * --Goober5000
+ *
  * Revision 2.76  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -730,7 +734,10 @@ typedef struct p_object {
 
 	char	misc[NAME_LENGTH];
 	int	determination;
-	int	wingnum;								// set to -1 if not in a wing -- Wing array index otherwise
+
+	int	wingnum;							// set to -1 if not in a wing -- Wing array index otherwise
+	int pos_in_wing;						// Goober5000 - needed for FRED with the new way things work
+
 	int	flags;								// mission savable flags
 	int flags2;								// Goober5000
 	int	escort_priority;					// priority in escort list
