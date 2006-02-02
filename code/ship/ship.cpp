@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.306 $
- * $Date: 2006-02-02 07:01:16 $
+ * $Revision: 2.307 $
+ * $Date: 2006-02-02 07:13:42 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.306  2006/02/02 07:01:16  Goober5000
+ * fixed what I broke for ship types :p
+ * --Goober5000
+ *
  * Revision 2.305  2006/02/01 05:11:25  Goober5000
  * bettered the ballistic primary check
  * --Goober5000
@@ -2027,7 +2031,7 @@ flag_def_list Man_types[] =
 // from Comm_orders, considering how I redid it :p
 // (and also because we may want to change either
 // the order text or the flag text in the future)
-flag_def_list player_orders[] =
+flag_def_list Player_orders[] =
 {
 	// common stuff
 	{ "attack ship",			ATTACK_TARGET_ITEM },
@@ -2055,6 +2059,8 @@ flag_def_list player_orders[] =
 };
 
 int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
+
+int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 
 /*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
@@ -4117,7 +4123,7 @@ void parse_ship_type()
 		}
 
 		if(optional_string("+Player Orders:")) {
-			parse_string_flag_list(&stp->ai_player_orders, Comm_orders, Num_comm_orders);
+			parse_string_flag_list(&stp->ai_player_orders, Player_orders, Num_player_orders);
 		}
 
 		if(optional_string("+Auto attacks:")) {
