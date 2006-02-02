@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-02-02 06:22:58 $
+ * $Revision: 1.4 $
+ * $Date: 2006-02-02 07:00:29 $
  * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/02/02 06:22:58  Goober5000
+ * replaced Fred_comm_orders with proper Comm_orders, just for WMC ;)
+ * --Goober5000
+ *
  * Revision 1.2  2006/01/30 06:27:59  taylor
  * dynamic starfield bitmaps
  *
@@ -5420,7 +5424,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_order()
 	sexp_list_item head;
 
 	for (i=0; i<Num_comm_orders; i++)
-		head.add_data(comm_order_menu_text(Comm_orders[i].def));
+		head.add_data(Comm_orders[i].name);
 
 	return head.next;
 }
