@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.148 $
- * $Date: 2006-02-02 05:48:17 $
+ * $Revision: 2.149 $
+ * $Date: 2006-02-02 08:12:47 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.148  2006/02/02 05:48:17  Goober5000
+ * fixed a FRED problem brought on by the parse reordering
+ * --Goober5000
+ *
  * Revision 2.147  2006/01/31 17:19:20  taylor
  * oh the shame   (/me imagines the big grin on Goober's face right now :p)
  *
@@ -3277,6 +3281,7 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	}
 
 	objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
+	objp->pos_in_wing = -1;				// Goober5000
 
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
 	// allow servers to use the signature with clients when creating new ships, instead of having
@@ -4120,15 +4125,15 @@ void parse_wing(mission *pm)
 	for (i = 0; i < wingp->wave_count; i++ )
 	{
 		char *ship_name = ship_names[i];
-		int i, assigned = 0;
+		int j, assigned = 0;
 
 		// Goober5000 - since the ship/wing creation stuff is reordered to accommodate multiple docking,
-		// everything is still on the parse list at this point (in both FRED and FS2)
+		// everything is still only in the parse array at this point (in both FRED and FS2)
 
 		// find the parse object and assign it the wing number
-		for (i = 0; i < Num_parse_objects; i++)
+		for (j = 0; j < Num_parse_objects; j++)
 		{
-			p_object *p_objp = &Parse_objects[i];
+			p_object *p_objp = &Parse_objects[j];
 
 			if (!strcmp(ship_name, p_objp->name))
 			{
@@ -4136,6 +4141,8 @@ void parse_wing(mission *pm)
 				Assert (p_objp->wingnum == -1);
 
 				p_objp->wingnum = wingnum;
+				p_objp->pos_in_wing = i;
+
 				assigned++;
 			}
 		}
@@ -4179,14 +4186,44 @@ void post_process_ships_wings()
 		mission_parse_maybe_create_parse_object(&Parse_objects[i]);
 	}
 
-	// Goober5000 - now create the wings.  This must be done after both dock stuff and ship stuff.
-	for (i = 0; i < Num_wings; i++)
-	{
-		wing *wingp = &Wings[i];
 
-		// Fred doesn't create the wing.  otherwise, create the wing if is isn't a reinforcement.
-		if (!Fred_running && !(wingp->flags & WF_REINFORCEMENT))
-			parse_wing_create_ships(wingp, wingp->wave_count);
+	// ----------------- at this point the ships have been created -----------------
+	// Now set up the wings.  This must be done after both dock stuff and ship stuff.
+
+
+	// Goober5000 - for FRED, the ships are initialized after the wings, so we must now tell the wings
+	// where their ships are
+	if (Fred_running)
+	{
+		// even though the ships are already created, only the parse objects know the wing info
+		for (i = 0; i < Num_parse_objects; i++)
+		{
+			p_object *p_objp = &Parse_objects[i];
+
+			// link the ship into the wing's array of ship indices (previously done in parse_wing
+			// in a rather less backwards way)
+			if (p_objp->wingnum >= 0)
+			{
+				int shipnum = ship_name_lookup(p_objp->name);
+
+				Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
+				Assert(p_objp->pos_in_wing >= 0 && p_objp->pos_in_wing < MAX_SHIPS_PER_WING);
+
+				Wings[p_objp->wingnum].ship_index[p_objp->pos_in_wing] = shipnum;
+			}
+		}
+	}
+	// Goober5000 - for FS2, the wings are initialized first, so all we have to do is create their ships
+	else
+	{
+		for (i = 0; i < Num_wings; i++)
+		{
+			wing *wingp = &Wings[i];
+
+			// create the wing if is isn't a reinforcement.
+			if (!(wingp->flags & WF_REINFORCEMENT))
+				parse_wing_create_ships(wingp, wingp->wave_count);
+		}
 	}
 }
 
