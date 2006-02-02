@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.24 $
- * $Date: 2006-02-02 06:04:02 $
+ * $Revision: 2.25 $
+ * $Date: 2006-02-02 07:00:29 $
  * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2006/02/02 06:04:02  Goober5000
+ * restore retail compatibility with comm orders: one logic bugfix, one cosmetic bugfix
+ * --Goober5000
+ *
  * Revision 2.23  2006/01/13 11:09:45  taylor
  * fix hud comm message screwups (missing support ship, no coverme, etc) that was part :V: bug and (bigger) part Ship_types related bug
  *
@@ -460,8 +464,8 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 
 // following are defines and character strings that are used as part of messaging mode
 
-#define TYPE_SHIP_ITEM						0
-#define TYPE_WING_ITEM						1
+#define TYPE_SHIP_ITEM					0
+#define TYPE_WING_ITEM					1
 #define TYPE_ALL_FIGHTERS_ITEM			2
 #define TYPE_REINFORCEMENT_ITEM			3
 #define TYPE_REPAIR_REARM_ITEM			4
@@ -469,103 +473,54 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 
 #define NUM_TYPE_SELECT		6
 
-char *type_select_str(int n)
+char *Comm_order_types[] =
 {
-	#if NUM_TYPE_SELECT != 6 
-	#error type_select_Str is not up to date
-	#endif
+	XSTR("Ships", 293),
+	XSTR("Wings", 294),
+	XSTR("All Fighters", 295),
+	XSTR("Reinforcements", 296),
+	XSTR("Rearm/Repair Subsys", 297),
+	XSTR("Abort Rearm", 298)
+};
 
-	switch(n)	{
-	case TYPE_SHIP_ITEM:
-		return XSTR( "Ships", 293);
-	case TYPE_WING_ITEM:
-		return XSTR( "Wings", 294);
-	case TYPE_ALL_FIGHTERS_ITEM:
-		return XSTR( "All Fighters", 295);
-	case TYPE_REINFORCEMENT_ITEM:
-		return XSTR( "Reinforcements", 296);
-	case TYPE_REPAIR_REARM_ITEM:
-		return XSTR( "Rearm/Repair Subsys", 297);
-	case TYPE_REPAIR_REARM_ABORT_ITEM:
-		return XSTR( "Abort Rearm", 298);
-	}
-	
-	return NULL;	
-}
-
-// note: If you change this table at all, keep it in sync with version in IgnoreOrdersDlg.cpp
-// Also make sure you update comm_order_menu_text below this.
-// Goober5000 - reset order to keep original keying and made "name" field blank, given
-// that the hud text is gotten from the function below.  Don't distract coders with superfluous
-// information ;)
-comm_order Comm_orders[] = {
-	{ "",	ATTACK_TARGET_ITEM },
-	{ "",	DISABLE_TARGET_ITEM },
-	{ "",	DISARM_TARGET_ITEM },
-	{ "",	DISABLE_SUBSYSTEM_ITEM },
-	{ "",	PROTECT_TARGET_ITEM },
-	{ "",	IGNORE_TARGET_ITEM },
-	{ "",	FORMATION_ITEM },
-	{ "",	COVER_ME_ITEM },
-	{ "",	ENGAGE_ENEMY_ITEM },
-	{ "",	CAPTURE_TARGET_ITEM },
-	{ "",	REARM_REPAIR_ME_ITEM },
-	{ "",	ABORT_REARM_REPAIR_ITEM },
+// Goober5000 - gah, some idiot changed the first option from "Attack my target"
+// to "Destroy my target", which breaks compatibility with FS1 missions.  So we
+// need to add a special case to avoid a crash in hud_query_order_issued.
+comm_order Comm_orders[] =
+{
+	{ XSTR("Destroy my target", 299),	ATTACK_TARGET_ITEM },
+	{ XSTR("Disable my target", 300),	DISABLE_TARGET_ITEM },
+	{ XSTR("Disarm my target", 301),	DISARM_TARGET_ITEM },
+	{ XSTR("Destroy subsystem", 302),	DISABLE_SUBSYSTEM_ITEM },
+	{ XSTR("Protect my target", 303),	PROTECT_TARGET_ITEM },
+	{ XSTR("Ignore my target", 304),	IGNORE_TARGET_ITEM },
+	{ XSTR("Form on my wing", 305),		FORMATION_ITEM },
+	{ XSTR("Cover me", 306),			COVER_ME_ITEM },
+	{ XSTR("Engage enemy", 307),		ENGAGE_ENEMY_ITEM },
+	{ XSTR("Capture my target", 308),	CAPTURE_TARGET_ITEM },
+	{ XSTR("Rearm me", 309),			REARM_REPAIR_ME_ITEM },
+	{ XSTR("Abort rearm", 310),			ABORT_REARM_REPAIR_ITEM },
 	// all ships
-	{ "",	DEPART_ITEM },
+	{ XSTR("Depart", 311),				DEPART_ITEM },
 
 	// support ships (maintain original comm menu order)
-	{ "",	STAY_NEAR_ME_ITEM},
-	{ "",	STAY_NEAR_TARGET_ITEM},
-	{ "",	KEEP_SAFE_DIST_ITEM},
+	{ XSTR("Stay near me", -1),			STAY_NEAR_ME_ITEM},
+	{ XSTR("Stay near my target", -1),	STAY_NEAR_TARGET_ITEM},
+	{ XSTR("Keep safe distance", -1),	KEEP_SAFE_DIST_ITEM},
 };
 
 const int Num_comm_orders = sizeof(Comm_orders)/sizeof(comm_order);
 
-// Text to display on the menu
-// Given an index into the Comm_orders array, return the text associated with it.
-// MUST BE 1:1 with Comm_orders.
-// Goober5000 - gah, some idiot changed the first option from "Attack my target"
-// to "Destroy my target", which breaks compatibility with FS1 missions.  So we
-// need to add a special case to avoid a crash in hud_query_order_issued.
-// Goober5000 - reset order as per above function
-char *comm_order_menu_text(int index)
-{
-	switch(index)
-	{
-		case 0:	 return XSTR("Destroy my target", 299);
-		case 1:  return XSTR("Disable my target", 300);
-		case 2:  return XSTR("Disarm my target", 301);
-		case 3:  return XSTR("Destroy subsystem", 302);
-		case 4:  return XSTR("Protect my target", 303);
-		case 5:  return XSTR("Ignore my target", 304);
-		case 6:  return XSTR("Form on my wing", 305);
-		case 7:  return XSTR("Cover me", 306);
-		case 8:  return XSTR("Engage enemy", 307);
-		case 9:  return XSTR("Capture my target", 308);
-		case 10: return XSTR("Rearm me", 309);
-		case 11: return XSTR("Abort rearm", 310);
-		case 12: return XSTR("Depart", 311);
-
-		// added commands
-		case 13: return XSTR("Stay near me", -1);
-		case 14: return XSTR("Stay near my target", -1);
-		case 15: return XSTR("Keep safe distance", -1);
-	}
-
-	// not found
-	Int3();
-	return NULL;
-}
 
 // Text to display on the messaging menu when using the shortcut keys
-char *comm_order_hotkey_text( int index )
+char *comm_order_get_text(int index)
 {
 	int i;
 
-	for (i = 0; i < Num_comm_orders; i++ ) {
-		if ( Comm_orders[i].def == index )
-			return comm_order_menu_text(i);
+	for (i = 0; i < Num_comm_orders; i++)
+	{
+		if (Comm_orders[i].def == index)
+			return Comm_orders[i].name;
 	}
 
 	// not found
@@ -1142,7 +1097,7 @@ void hud_squadmsg_display_menu( char *title )
 		if ( none_valid ){
 			gr_printf( sx, by - Mbox_item_h[gr_screen.res] + 2, XSTR( "No valid items", 314));
 		} else if ( !none_valid && (Msg_shortcut_command != -1) ){
-			gr_printf( sx, by - Mbox_item_h[gr_screen.res] + 2, "%s", comm_order_hotkey_text(Msg_shortcut_command));
+			gr_printf( sx, by - Mbox_item_h[gr_screen.res] + 2, "%s", comm_order_get_text(Msg_shortcut_command));
 		}
 	} else {
 		// if this player is not allowed to message, then display message saying so
@@ -2046,8 +2001,9 @@ void hud_squadmsg_type_select( )
 	First_menu_item = 0;	
 
 	// Add the items
-	for (i=0; i<NUM_TYPE_SELECT; i++ )	{
-		strcpy( MsgItems[i].text, type_select_str(i) );
+	for (i = 0; i < NUM_TYPE_SELECT; i++)
+	{
+		strcpy(MsgItems[i].text, Comm_order_types[i]);
 		MsgItems[i].active = 1;						// assume active
 	}
 	Num_menu_items = NUM_TYPE_SELECT;
@@ -2380,7 +2336,7 @@ void hud_squadmsg_ship_command()
 		// the order will be activated if the bit is set for the ship.
 		if ( default_orders & Comm_orders[i].def ) {
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			strcpy( MsgItems[Num_menu_items].text, comm_order_menu_text(i) );
+			strcpy(MsgItems[Num_menu_items].text, Comm_orders[i].name);
 			MsgItems[Num_menu_items].instance = Comm_orders[i].def;
 			MsgItems[Num_menu_items].active = 0;
 			// check the bit to see if the command is active
@@ -2477,7 +2433,7 @@ void hud_squadmsg_wing_command()
 		// to be available in the wing.
 		if ( default_orders & Comm_orders[i].def ) {
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			strcpy( MsgItems[Num_menu_items].text, comm_order_menu_text(i) );
+			strcpy(MsgItems[Num_menu_items].text, Comm_orders[i].name);
 			MsgItems[Num_menu_items].instance = Comm_orders[i].def;
 			MsgItems[Num_menu_items].active = 0;
 
@@ -2845,7 +2801,7 @@ int hud_query_order_issued(char *name, char *order, char *target)
 		t = get_parse_name_index(target);
 
 	for (i=0; i<Num_comm_orders; i++)
-		if (!stricmp(order, comm_order_menu_text(i)) )
+		if (!stricmp(order, Comm_orders[i].name))
 			o = Comm_orders[i].def;
 
 	// Goober5000 - if not found, check compatibility

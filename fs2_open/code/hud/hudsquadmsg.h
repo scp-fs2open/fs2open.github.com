@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.13 $
- * $Date: 2006-02-02 06:22:58 $
+ * $Revision: 2.14 $
+ * $Date: 2006-02-02 07:00:29 $
  * $Author: Goober5000 $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/02/02 06:22:58  Goober5000
+ * replaced Fred_comm_orders with proper Comm_orders, just for WMC ;)
+ * --Goober5000
+ *
  * Revision 2.12  2006/02/02 06:04:02  Goober5000
  * restore retail compatibility with comm orders: one logic bugfix, one cosmetic bugfix
  * --Goober5000
@@ -225,9 +229,6 @@ typedef flag_def_list comm_order;
 
 extern comm_order Comm_orders[];
 extern const int Num_comm_orders;
-
-// for FRED
-extern char *comm_order_menu_text(int index);
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages
