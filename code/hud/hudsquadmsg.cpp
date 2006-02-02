@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-01-13 11:09:45 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2006-02-02 06:04:02 $
+ * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/01/13 11:09:45  taylor
+ * fix hud comm message screwups (missing support ship, no coverme, etc) that was part :V: bug and (bigger) part Ship_types related bug
+ *
  * Revision 2.22  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -492,24 +495,29 @@ char *type_select_str(int n)
 
 // note: If you change this table at all, keep it in sync with version in IgnoreOrdersDlg.cpp
 // Also make sure you update comm_order_menu_text below this.
+// Goober5000 - reset order to keep original keying and made "name" field blank, given
+// that the hud text is gotten from the function below.  Don't distract coders with superfluous
+// information ;)
 comm_order Comm_orders[] = {
-	{ "Attack ship",			ATTACK_TARGET_ITEM },
-	{ "Disable ship",			DISABLE_TARGET_ITEM },
-	{ "Disarm ship",			DISARM_TARGET_ITEM },
-	{ "Disable subsys",			DISABLE_SUBSYSTEM_ITEM },
-	{ "Guard ship",				PROTECT_TARGET_ITEM },
-	{ "Ignore ship",			IGNORE_TARGET_ITEM },
-	{ "Form on wing",			FORMATION_ITEM },
-	{ "Cover me",				COVER_ME_ITEM },
-	{ "Attack any",				ENGAGE_ENEMY_ITEM },
-	{ "Dock",					CAPTURE_TARGET_ITEM },
-	{ "Rearm me",				REARM_REPAIR_ME_ITEM },
-	{ "Abort rearm",			ABORT_REARM_REPAIR_ITEM },
-	{ "stay near me",			STAY_NEAR_ME_ITEM},
-	{ "stay near ship",			STAY_NEAR_TARGET_ITEM},
-	{ "keep safe dist",			KEEP_SAFE_DIST_ITEM},
+	{ "",	ATTACK_TARGET_ITEM },
+	{ "",	DISABLE_TARGET_ITEM },
+	{ "",	DISARM_TARGET_ITEM },
+	{ "",	DISABLE_SUBSYSTEM_ITEM },
+	{ "",	PROTECT_TARGET_ITEM },
+	{ "",	IGNORE_TARGET_ITEM },
+	{ "",	FORMATION_ITEM },
+	{ "",	COVER_ME_ITEM },
+	{ "",	ENGAGE_ENEMY_ITEM },
+	{ "",	CAPTURE_TARGET_ITEM },
+	{ "",	REARM_REPAIR_ME_ITEM },
+	{ "",	ABORT_REARM_REPAIR_ITEM },
 	// all ships
-	{ "Depart",					DEPART_ITEM },
+	{ "",	DEPART_ITEM },
+
+	// support ships (maintain original comm menu order)
+	{ "",	STAY_NEAR_ME_ITEM},
+	{ "",	STAY_NEAR_TARGET_ITEM},
+	{ "",	KEEP_SAFE_DIST_ITEM},
 };
 
 const int Num_comm_orders = sizeof(Comm_orders)/sizeof(comm_order);
@@ -520,28 +528,33 @@ const int Num_comm_orders = sizeof(Comm_orders)/sizeof(comm_order);
 // Goober5000 - gah, some idiot changed the first option from "Attack my target"
 // to "Destroy my target", which breaks compatibility with FS1 missions.  So we
 // need to add a special case to avoid a crash in hud_query_order_issued.
-char	*comm_order_menu_text(int index)
+// Goober5000 - reset order as per above function
+char *comm_order_menu_text(int index)
 {
-	switch( index )	{
-	case 0: return XSTR( "Destroy my target", 299); break;
-	case 1: return XSTR( "Disable my target", 300); break;
-	case 2: return XSTR( "Disarm my target", 301); break;
-	case 3: return XSTR( "Destroy subsystem", 302); break;
-	case 4: return XSTR( "Protect my target", 303); break;
-	case 5: return XSTR( "Ignore my target", 304); break;
-	case 6: return XSTR( "Form on my wing", 305); break;
-	case 7: return XSTR( "Cover me", 306); break;
-	case 8: return XSTR( "Engage enemy", 307); break;
-	case 9: return XSTR( "Capture my target", 308); break;
-	case 10: return XSTR( "Rearm me", 309); break;
-	case 11: return XSTR( "Abort rearm", 310); break;
-	case 12: return XSTR( "Stay near me", -1); break;
-	case 13: return XSTR( "Stay near target", -1); break;
-	case 14: return XSTR( "Keep safe distance", -1); break;
-	case 15: return XSTR( "Depart", 311); break;
-	default:
-		Assert(0);
+	switch(index)
+	{
+		case 0:	 return XSTR("Destroy my target", 299);
+		case 1:  return XSTR("Disable my target", 300);
+		case 2:  return XSTR("Disarm my target", 301);
+		case 3:  return XSTR("Destroy subsystem", 302);
+		case 4:  return XSTR("Protect my target", 303);
+		case 5:  return XSTR("Ignore my target", 304);
+		case 6:  return XSTR("Form on my wing", 305);
+		case 7:  return XSTR("Cover me", 306);
+		case 8:  return XSTR("Engage enemy", 307);
+		case 9:  return XSTR("Capture my target", 308);
+		case 10: return XSTR("Rearm me", 309);
+		case 11: return XSTR("Abort rearm", 310);
+		case 12: return XSTR("Depart", 311);
+
+		// added commands
+		case 13: return XSTR("Stay near me", -1);
+		case 14: return XSTR("Stay near my target", -1);
+		case 15: return XSTR("Keep safe distance", -1);
 	}
+
+	// not found
+	Int3();
 	return NULL;
 }
 
@@ -555,6 +568,7 @@ char *comm_order_hotkey_text( int index )
 			return comm_order_menu_text(i);
 	}
 
+	// not found
 	Int3();
 	return NULL;
 }
