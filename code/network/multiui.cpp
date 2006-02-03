@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.42 $
- * $Date: 2005-10-10 17:21:07 $
+ * $Revision: 2.43 $
+ * $Date: 2006-02-03 22:28:10 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.41  2005/07/18 03:45:09  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -5369,13 +5372,13 @@ void multi_create_list_load_missions()
 				if (!strstr(mcip->filename, ".fs2"))
 					v_string = v_string + ".fs2";
 					
-				v_string = v_string + "'   valid";
+				v_string = v_string + "' ... valid";
 
 				// valid status appears to be the OPPOSITE of what you would expect.....
 				if (mvalid_cfg_buffer != NULL)
 				{
-					ml_printf("Searching for: %s in mvalid.cfg", v_string.c_str());
 					!strstr(mvalid_cfg_buffer, v_string.c_str()) ? mcip->valid_status = 1: mcip->valid_status = 0;
+					ml_printf("Searching for: \"%s\" in mvalid.cfg ... %s", v_string.c_str(), (!mcip->valid_status) ? NOX("found it") : NOX("didn't find it"));
 				}
 				else
 					mcip->valid_status = 1; 
