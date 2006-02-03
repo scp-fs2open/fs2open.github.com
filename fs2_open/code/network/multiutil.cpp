@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2006-02-03 22:28:10 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.42  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -3537,16 +3541,17 @@ void multi_update_valid_missions()
 	// this is a shameless splicing of [V]'s code from the pxo spew below and my code.
 	char **file_names;
 	char full_name[MAX_FILENAME_LEN+1];
-	char wild_card[256];
+	char wild_card[10];
 	int count, idx, i;
-	bool Found;
+	bool Found, Valid;
 	uint checksum;
 //	FILE *out;
 
 	// allocate filename space	
 	file_names = (char**)vm_malloc(sizeof(char*) * 1024); // 1024 files should be safe!
-	if(file_names != NULL){
-		memset(wild_card, 0, 256);
+
+	if (file_names != NULL) {
+		memset(wild_card, 0, sizeof(wild_card));
 		strcpy(wild_card, NOX("*"));
 		strcat(wild_card, FS_MISSION_FILE_EXT);
 		count = cf_get_file_list(1024, file_names, CF_TYPE_MISSIONS, wild_card);	
@@ -3562,47 +3567,68 @@ void multi_update_valid_missions()
 
 			std::string temp = "Validating ";
 			temp = temp + full_name;
+
 #ifndef NO_STANDALONE
 			// if we're a standalone, show a dialog saying "validating missions"
 			if(Game_mode & GM_STANDALONE_SERVER)
 			{
-				
 				std_gen_set_text((char *) temp.c_str(),1);
 			}
 			else
 #endif
 				multi_update_validate_missions_DrawString((char *) temp.c_str());
+
 			cf_chksum_long(full_name, &checksum);
 			
 			Found = false;
+			Valid = false;
 
 			cfputs("'", mvalid_cfg);
 			cfputs(full_name, mvalid_cfg);
 			cfputs("'", mvalid_cfg);
 
-			for (i = 0; i < numFrecs; i++)
+			for (i = 0; (i < numFrecs) && (!Valid); i++)
 			{
-				if (!strcmp(full_name, frecs[i].name))
+				if (!stricmp(full_name, frecs[i].name))
 				{
+					ml_printf("Mission Validation: %s  =>  client checksum: %u, server checksum: %u", full_name, checksum, frecs[i].crc32);
+
+					Found = true;
+
 					// Found now becomes a valid/invalid specifier
 					if (checksum == frecs[i].crc32)
 					{
-						cfputs("   valid\n", mvalid_cfg);
-						Found = true;
+						Valid = true;
 					}
-
-					break;
 				}
 			}
 
 			if (!Found)
 			{
-				cfputs("   invalid\n", mvalid_cfg);
+				cfputs(" ... (not on server)\n", mvalid_cfg);
 			}
-			
+			else
+			{
+				if (Valid)
+				{
+					cfputs(" ... valid\n", mvalid_cfg);
+				}
+				else
+				{
+					cfputs(" ... invalid\n", mvalid_cfg);
+				}
+			}
 		}
 
 		cfclose(mvalid_cfg);
+
+		for (idx = 0; idx < count; idx++) {
+			if (file_names[idx] != NULL) {
+				vm_free(file_names[idx]);
+				file_names[idx] = NULL;
+			}
+		}
+
 		vm_free(file_names);
 	
 	}
@@ -3694,89 +3720,93 @@ void multi_update_valid_tables()
 	// this is a shameless splicing of [V]'s code from the pxo spew below and my code.
 	char **file_names;
 	char full_name[MAX_FILENAME_LEN+1];
-	char wild_card[256];
+	char result[MAX_FILENAME_LEN + 22];
 	int count, idx, i;
-	bool Found, Valid;
 	uint checksum = 0;
-//	FILE *out;
+	bool Valid, Found;
 
 	// allocate filename space	
 	file_names = (char**)vm_malloc(sizeof(char*) * 1024); // 1024 files should be safe!
-	if(file_names != NULL){
-		memset(wild_card, 0, 256);
-		strcpy(wild_card, NOX("*"));
-		strcat(wild_card, ".tbl");
-		count = cf_get_file_list(1024, file_names, CF_TYPE_TABLES, wild_card);	
+
+	if (file_names != NULL) {
+		memset( file_names, 0, 1024 );
+
+		count = cf_get_file_list(1024, file_names, CF_TYPE_TABLES, NOX("*.tbl"));	
 	
 		// open the outfile
 		CFILE *tvalid_cfg = cfopen("tvalid.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
 
-		
 		// do all the checksums
 		for(idx=0; idx<count; idx++){
-			memset(full_name, 0, MAX_FILENAME_LEN+1);			
+			memset(full_name, 0, MAX_FILENAME_LEN+1);
+			memset(result, 0, sizeof(result));
 			strcpy(full_name, cf_add_ext(file_names[idx], ".tbl"));
 
 
 			std::string temp = "Validating ";
 			temp = temp + full_name;
-#ifndef NO_STANDALONE
 
+#ifndef NO_STANDALONE
 			// if we're a standalone, show a dialog saying "validating missions"
 			if(Game_mode & GM_STANDALONE_SERVER)
 			{
-				
 				std_gen_set_text((char *) temp.c_str(),1);
 			}
 #endif
 			//multi_update_validate_tables_DrawString((char *) temp.c_str());
+
 			cf_chksum_long(full_name, &checksum);
-			
-			Found = false;
+
 			Valid = false;
+			Found = false;
 
 			cfputs(full_name, tvalid_cfg);
 
-			for (i = 0; i < numFrecs /*&& !Found*/; i++)
+			for (i = 0; (i < numFrecs) && (!Valid); i++)
 			{
-				if (!strcmp(full_name, frecs[i].name))
+				if ( !stricmp(full_name, frecs[i].name) )
 				{
+					ml_printf("Table Validation: %s  =>  client checksum: %u, server checksum: %u", full_name, checksum, frecs[i].crc32);
+
+					Found = true;
+
 					// Found now becomes a valid/invalid specifier
 					if (checksum == frecs[i].crc32)
 					{
-						//cfputs("   valid\n", tvalid_cfg);
 						Valid = true;
-						Found = true;
-					}
-					else
-					{
-						//cfputs("   invalid\n", tvalid_cfg);
-						Found = true;
 					}
 				}
 			}
 
+
 			if (!Found)
 			{
-				cfputs("   valid\n", tvalid_cfg);
+				cfputs(" ... (not on server)\n", tvalid_cfg);
 			}
 			else
 			{
 				if (Valid)
 				{
-					cfputs("   valid\n", tvalid_cfg);
+					cfputs(" ... valid\n", tvalid_cfg);
 				}
 				else
 				{
-					cfputs("   invalid\n", tvalid_cfg);
+					cfputs(" ... invalid\n", tvalid_cfg);
 				}
 			}
 			
 		}
 
 		cfclose(tvalid_cfg);
+
+		for (idx = 0; idx < count; idx++) {
+			if (file_names[idx] != NULL) {
+				vm_free(file_names[idx]);
+				file_names[idx] = NULL;
+			}
+		}
+
 		vm_free(file_names);
-	
 	}
 
 	delete[] frecs;
@@ -3908,12 +3938,20 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 			strcpy(full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT));
 
 			if(cf_chksum_long(full_name, &checksum)){
-				fprintf(out, "# %s	:	%u\n", full_name, (unsigned int)checksum);
-				fprintf(out, "INSERT INTO Missions SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%s\";\n\n", full_name, (unsigned int)checksum, modname);
+				fprintf(out, "# %s	:	%u\n", full_name, checksum);
+				fprintf(out, "INSERT INTO Missions SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%s\";\n\n", full_name, checksum, modname);
 			}
 		}
 
 		fclose(out);
+
+		for (idx = 0; idx < count; idx++) {
+			if (file_names[idx] != NULL) {
+				vm_free(file_names[idx]);
+				file_names[idx] = NULL;
+			}
+		}
+
 		vm_free(file_names);
 	}
 }
@@ -3957,12 +3995,20 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 			strcpy(full_name, cf_add_ext(file_names[idx], ".tbl"));
 
 			if(cf_chksum_long(full_name, &checksum)){
-				fprintf(out, "# %s	:	%u\n", full_name, (unsigned int)checksum);
-				fprintf(out, "INSERT INTO fstables SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%s\";\n\n", full_name, (unsigned int)checksum, modname);
+				fprintf(out, "# %s	:	%u\n", full_name, checksum);
+				fprintf(out, "INSERT INTO fstables SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%s\";\n\n", full_name, checksum, modname);
 			}
 		}
 
 		fclose(out);
+
+		for (idx = 0; idx < count; idx++) {
+			if (file_names[idx] != NULL) {
+				vm_free(file_names[idx]);
+				file_names[idx] = NULL;
+			}
+		}
+
 		vm_free(file_names);
 	}
 }
