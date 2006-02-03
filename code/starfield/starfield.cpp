@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.63 $
- * $Date: 2006-01-30 06:31:30 $
+ * $Revision: 2.64 $
+ * $Date: 2006-02-03 22:29:01 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/01/30 06:31:30  taylor
+ * dynamic starfield bitmaps (if the thought it was freaky before, just take a look at the new and "improved" version ;))
+ *
  * Revision 2.62  2006/01/19 16:00:04  wmcoolmon
  * Lua debugging stuff; gr_bitmap_ex stuff for taylor
  *
@@ -938,6 +941,8 @@ void parse_startbl(char *longname)
 			// lens flare stuff
 			if (optional_string("$Flare:"))
 			{
+				sbm.flare = 1;
+
 				required_string("+FlareCount:");
 				stuff_int(&sbm.n_flares);
 
@@ -1473,6 +1478,8 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 		bm = &Sun_bitmaps[Suns[sun_n].star_bitmap_index];
 	}
 
+	if (!bm->flare)
+		return;
 	
 	dx = 2.0f*(i2fl(gr_screen.clip_right-gr_screen.clip_left)*0.5f - sun_vex->sx); // (dx,dy) is a 2d vector equal to two times the vector from the sun's position to the center fo the screen
 	dy = 2.0f*(i2fl(gr_screen.clip_bottom-gr_screen.clip_top)*0.5f - sun_vex->sy); // meaning it is the vector to the opposite position on the screen
@@ -1549,7 +1556,7 @@ void stars_draw_sun_glow(int sun_n)
 //	gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
 	g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
 	g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
-	if(!(sun_vex.codes & CC_OFF)) //if sun isn't off-screen, and is visible (since stars_draw_sun_glow() is called only if it is) then draw the lens-flare
+	if ( bm->flare && !(sun_vex.codes & CC_OFF) ) //if sun isn't off-screen, and is visible (since stars_draw_sun_glow() is called only if it is) then draw the lens-flare
 		stars_draw_lens_flare(&sun_vex, sun_n);
 }
 
