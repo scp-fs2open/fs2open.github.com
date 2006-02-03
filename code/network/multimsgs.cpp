@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.55 $
- * $Date: 2006-02-01 23:43:34 $
- * $Author: phreak $
+ * $Revision: 2.56 $
+ * $Date: 2006-02-03 22:25:18 $
+ * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2006/02/01 23:43:34  phreak
+ * Allow weapons to home in on countermeasures as well.  The multiplayer code was only allowing bombs to be homed in on.
+ *
  * Revision 2.54  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -7795,7 +7798,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if ( homing_object->type == OBJ_WEAPON ) {
-		Assert((Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_COUNTERMEASURE));
+		Assert((Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags & WIF_CMEASURE));
 	}
 
 	wp->homing_object = homing_object;
