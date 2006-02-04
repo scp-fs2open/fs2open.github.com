@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BriefingEditorDlg.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-26 04:01:58 $
+ * $Revision: 1.3 $
+ * $Date: 2006-02-04 07:05:03 $
  * $Author: Goober5000 $
  *
  * Briefing editor dialog box class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -601,14 +604,14 @@ void briefing_editor_dlg::update_data(int update)
 			}
 
 			ptr->icons[m_last_icon].type = m_icon_image;
-			if ((ptr->icons[m_last_icon].team != (1 << m_icon_team)) && !m_change_local) {
+			if ((ptr->icons[m_last_icon].team != m_icon_team) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
 				while (get_next_icon(m_id))
-					iconp->team = (1 << m_icon_team);
+					iconp->team = m_icon_team;
 			}
 
-			ptr->icons[m_last_icon].team = (1 << m_icon_team);
+			ptr->icons[m_last_icon].team = m_icon_team;
 			if ((ptr->icons[m_last_icon].ship_class != m_ship_type) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
@@ -696,7 +699,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_hilight = (ptr->icons[m_cur_icon].flags & BI_HIGHLIGHT)?1:0;
 		m_flipicon = (ptr->icons[m_cur_icon].flags & BI_MIRROR_ICON)?1:0;
 		m_icon_image = ptr->icons[m_cur_icon].type;
-		m_icon_team = bitmask_2_bitnum(ptr->icons[m_cur_icon].team);
+		m_icon_team = ptr->icons[m_cur_icon].team;
 		m_icon_label = ptr->icons[m_cur_icon].label;
 		m_ship_type = ptr->icons[m_cur_icon].ship_class;
 //		m_icon_text = convert_multiline_string(ptr->icons[m_cur_icon].text);

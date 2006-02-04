@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/wing_editor.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:32 $
+ * $Revision: 1.2 $
+ * $Date: 2006-02-04 07:05:03 $
  * $Author: Goober5000 $
  *
  * Wing editor dialog box handler code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:32  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.14  2006/01/14 23:49:01  Goober5000
  * second pass; all the errors are fixed now; one more thing to take care of
  * --Goober5000
@@ -643,19 +647,22 @@ void wing_editor::initialize_data_safe(int full_update)
 		// Goober5000 - gah, this is ridiculous!  Prior to this point in the function (and only in this function),
 		// m_arrival_target seems to refer to the arrival anchor.  The rest of the time, it refers to the index
 		// of the drop-down list.
-		if (m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+		if (m_arrival_target >= 0)
 		{
-			// figure out what the box represents this as
-			char tmp[NAME_LENGTH + 15];
-			stuff_special_arrival_anchor_name(tmp, m_arrival_target, 0);
+			if (m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+			{
+				// figure out what the box represents this as
+				char tmp[NAME_LENGTH + 15];
+				stuff_special_arrival_anchor_name(tmp, m_arrival_target, 0);
 	
-			// find it in the box
-			m_arrival_target = arrival_box->FindStringExact(-1, tmp);
-		}
-		else if (m_arrival_target >= 0)
-		{
-			// find it in the box
-			m_arrival_target = arrival_box->FindStringExact(-1, Ships[m_arrival_target].ship_name);
+				// find it in the box
+				m_arrival_target = arrival_box->FindStringExact(-1, tmp);
+			}
+			else
+			{
+				// find it in the box
+				m_arrival_target = arrival_box->FindStringExact(-1, Ships[m_arrival_target].ship_name);
+			}
 		}
 
 		// add the ships to the departure target combo box

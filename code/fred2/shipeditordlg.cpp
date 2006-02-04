@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-02-04 07:05:03 $
  * $Author: Goober5000 $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.20  2006/01/14 23:49:01  Goober5000
  * second pass; all the errors are fixed now; one more thing to take care of
  * --Goober5000
@@ -791,14 +795,14 @@ void CShipEditorDlg::initialize_data(int full_update)
 					i = get_ship_from_obj(objp);
 					if (base_player >= 0) {
 						m_ship_class = Ships[i].ship_info_index;
-						m_team = bitmask_2_bitnum(Ships[i].team);
+						m_team = Ships[i].team;
 						pship = (objp->type == OBJ_START) ? 1 : 0;
 						base_player = -1;
 
 					} else {
 						if (Ships[i].ship_info_index != m_ship_class)
 							m_ship_class = -1;
-						if (bitmask_2_bitnum(Ships[i].team) != m_team)
+						if (Ships[i].team != m_team)
 							m_team = -1;
 
 						pship = tristate_set(Objects[Ships[i].objnum].type == OBJ_START, pship);
@@ -979,13 +983,13 @@ void CShipEditorDlg::initialize_data(int full_update)
 					i = objp->instance;
 					if (base_player >= 0) {
 						m_ship_class = Ships[i].ship_info_index;
-						m_team = bitmask_2_bitnum(Ships[i].team);
+						m_team = Ships[i].team;
 						base_player = -1;
 
 					} else {
 						if (Ships[i].ship_info_index != m_ship_class)
 							m_ship_class = -1;
-						if (bitmask_2_bitnum(Ships[i].team) != m_team)
+						if (Ships[i].team != m_team)
 							m_team = -1;
 					}
 				}
@@ -999,7 +1003,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 			player_ship = Objects[cur_object_index].instance;
 			m_ship_name = Ships[player_ship].ship_name;
 			m_ship_class = Ships[player_ship].ship_info_index;
-			m_team = bitmask_2_bitnum(Ships[player_ship].team);
+			m_team = Ships[player_ship].team;
 			m_player_ship.SetCheck(TRUE);
 
 		} else {  // no ships or players selected..
@@ -1043,19 +1047,22 @@ void CShipEditorDlg::initialize_data(int full_update)
 	// Goober5000 - gah, this is ridiculous!  Prior to this point in the function (and only in this function),
 	// m_arrival_target seems to refer to the arrival anchor.  The rest of the time, it refers to the index
 	// of the drop-down list.
-	if (m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+	if (m_arrival_target >= 0)
 	{
-		// figure out what the box represents this as
-		char tmp[NAME_LENGTH + 15];
-		stuff_special_arrival_anchor_name(tmp, m_arrival_target, 0);
+		if (m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+		{
+			// figure out what the box represents this as
+			char tmp[NAME_LENGTH + 15];
+			stuff_special_arrival_anchor_name(tmp, m_arrival_target, 0);
 
-		// find it in the box
-		m_arrival_target = box->FindStringExact(-1, tmp);
-	}
-	else if (m_arrival_target >= 0)
-	{
-		// find it in the box
-		m_arrival_target = box->FindStringExact(-1, Ships[m_arrival_target].ship_name);
+			// find it in the box
+			m_arrival_target = box->FindStringExact(-1, tmp);
+		}
+		else
+		{
+			// find it in the box
+			m_arrival_target = box->FindStringExact(-1, Ships[m_arrival_target].ship_name);
+		}
 	}
 
 	box = (CComboBox *)GetDlgItem(IDC_DEPARTURE_TARGET);
@@ -1450,7 +1457,7 @@ int CShipEditorDlg::update_ship(int ship)
 	}
 
 	if (m_team != -1)
-		MODIFY(Ships[ship].team, 1 << m_team);
+		MODIFY(Ships[ship].team, m_team);
 
 	if (Objects[Ships[ship].objnum].type != OBJ_SHIP){
 		if (mission_type || (Objects[Ships[ship].objnum].type != OBJ_START)){
