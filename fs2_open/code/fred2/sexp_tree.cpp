@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-02-02 07:00:29 $
+ * $Revision: 1.5 $
+ * $Date: 2006-02-04 07:05:03 $
  * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/02/02 07:00:29  Goober5000
+ * consolidated comm order stuff
+ * --Goober5000
+ *
  * Revision 1.3  2006/02/02 06:22:58  Goober5000
  * replaced Fred_comm_orders with proper Comm_orders, just for WMC ;)
  * --Goober5000
@@ -5294,7 +5298,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_point()
 		char tmp[NAME_LENGTH + 7];
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);
 		strlwr(tmp);
-		head.add_data(tmp);
+		head.add_data_dup(tmp);
 	}
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
