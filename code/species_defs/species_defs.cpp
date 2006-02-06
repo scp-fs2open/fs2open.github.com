@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.29 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 1.30 $
+ * $Date: 2006-02-06 02:29:17 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 1.28  2006/01/05 05:12:11  taylor
  * allow both +Pri style and original style (+Normal, etc) for species_defs TBMs
  * allow for "<none>" as a bitmap/anim name, to have no effect
@@ -266,14 +270,14 @@ void parse_species_tbl(char *longname)
 	}
 
 	required_string("#SPECIES DEFS");
-
+/*
 	// no longer required: counted automatically
 	if (optional_string("$NumSpecies:"))
 	{
 		int temp;
 		stuff_int(&temp);
 	}
-
+*/
 	// begin reading data
 	while (required_string_either("#END","$Species_Name:"))
 	{
