@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.307 $
- * $Date: 2006-02-02 07:13:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.308 $
+ * $Date: 2006-02-06 02:06:02 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.307  2006/02/02 07:13:42  Goober5000
+ * bah and double bah
+ *
  * Revision 2.306  2006/02/02 07:01:16  Goober5000
  * fixed what I broke for ship types :p
  * --Goober5000
@@ -10525,7 +10528,10 @@ int ship_info_base_lookup(int si_index)
 	end_string_at_first_hash_symbol(name);
 
 	i = ship_info_lookup( name );
-	Assert( i != -1 );				// get allender -- there had better be a base ship!
+	if(i < 0)
+	{
+		Error(LOCATION, "Invalid base ship class specified (%s)", name);
+	}
 
 	return i;
 }

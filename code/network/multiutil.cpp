@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-02-03 22:28:10 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2006-02-06 02:06:02 $
+ * $Author: wmcoolmon $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/02/03 22:28:10  taylor
+ * a couple of mvalid.cfg and tvalid.cfg file format changes to give them at least some readability
+ * some cleanup, extra logging, and very slight speedup with mission and table validation checking
+ * fix memory leak from mission and table validation checking
+ *
  * Revision 2.43  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -1095,7 +1100,17 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 		}
 
 		if (i == Num_ship_classes)
-			Assert(0);
+		{
+			if(Num_ship_classes)
+			{
+				player_ship_class = 0;
+				Warning(LOCATION, "Invalid default player ship specified in ship tables. Setting to %s", Ship_info[player_ship_class].name);
+			}
+			else
+			{
+				Error(LOCATION, "No ships have been loaded, but we are attempting to set a ship!!");
+			}
+		}
 	}
 	
 	if ( player_ship_class >= Num_ship_classes ) {

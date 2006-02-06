@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.66 $
+ * $Revision: 2.67 $
  * $Author: wmcoolmon $
- * $Date: 2006-01-19 16:00:04 $
+ * $Date: 2006-02-06 02:06:02 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/01/19 16:00:04  wmcoolmon
+ * Lua debugging stuff; gr_bitmap_ex stuff for taylor
+ *
  * Revision 2.65  2006/01/17 07:10:01  wmcoolmon
  * Various minor improvements
  *
@@ -769,7 +772,7 @@ int required_string(char *pstr)
 	ignore_white_space();
 
 	while (strnicmp(pstr, Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
-		error_display(1, "Required token = [%s], found [%.32s] %s.\n", pstr, next_tokens(), parse_error_text);
+		error_display(1, "Missing required token: [%s]. Found [%.32s] %s instead.\n", pstr, next_tokens(), parse_error_text);
 		advance_to_eoln(NULL);
 		ignore_white_space();
 		count++;
@@ -1856,6 +1859,9 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 	{
 		cfread(raw_text, file_len, 1, mf);
 	}
+
+	//WMC - Slap a NULL character on here for the odd error where we forgot a #End
+	raw_text[file_len] = '\0';
 
 	cfclose(mf);
 }

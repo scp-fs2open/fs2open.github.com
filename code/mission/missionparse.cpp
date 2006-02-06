@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.149 $
- * $Date: 2006-02-02 08:12:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.150 $
+ * $Date: 2006-02-06 02:06:01 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2006/02/02 08:12:47  Goober5000
+ * ugh, more ship/wing fixage
+ * --Goober5000
+ *
  * Revision 2.148  2006/02/02 05:48:17  Goober5000
  * fixed a FRED problem brought on by the parse reordering
  * --Goober5000
@@ -1489,7 +1493,7 @@ void parse_mission_info(mission *pm)
 	if(Game_mode & GM_MULTIPLAYER){
 		strcpy(pm->squad_name, "");
 		strcpy(pm->squad_filename, "");
-		mprintf(("Ignoring squadron reassignment"));
+		mprintf(("Ignoring squadron reassignment in parse_mission_info\n"));
 	}
 	// reassign the player
 	else {		

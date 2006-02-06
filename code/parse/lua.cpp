@@ -991,6 +991,27 @@ LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if o
 	return lua_set_args(L, "ii", vtx.sx, vtx.sy);
 }
 
+//**********CLASS: directive
+lua_obj<int> l_Directive("directive", "Mission directive");
+
+//**********CLASS: directives
+lua_obj<bool> l_Directives("directives", "Mission directives");
+
+LUA_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
+{
+	bool b;
+	int idx;
+	if(!lua_get_args(L, "o|i", l_Directives.Get(&b), &idx))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_FALSE;
+
+	idx--;	//Lua->FS2
+
+	return lua_set_args(L, "o", l_Directive.Set(idx));
+}
+
 //**********CLASS: cmission
 lua_obj<int> l_Cmission("cmission", "Campaign mission object");
 //WMC - We can get away with a pointer right now, but if it ever goes dynamic, it'd be a prob
@@ -3085,7 +3106,7 @@ LUA_FUNC(renderFrame, l_Mission, NULL, NULL, "Renders mission frame, but does no
 	return LUA_RETURN_TRUE;
 }
 
-LUA_FUNC(getShip, l_Mission, "Ship name", "Ship object", "Gets ship object")
+LUA_FUNC(getShipByName, l_Mission, "Ship name", "Ship object", "Gets ship object")
 {
 	char *name;
 	if(!lua_get_args(L, "s", &name))

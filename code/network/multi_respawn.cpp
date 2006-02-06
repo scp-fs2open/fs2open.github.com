@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2006-02-06 02:06:02 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.10  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -349,7 +352,8 @@ void multi_respawn_player_leave(net_player *pl)
 void multi_respawn_normal()
 {
 	// make sure we should be respawning and _not_ as an observer
-	Assert((Net_player->flags & NETINFO_FLAG_RESPAWNING) && !(Net_player->flags & NETINFO_FLAG_LIMBO));
+	Assert((Net_player->flags & NETINFO_FLAG_RESPAWNING));
+	Assert(!(Net_player->flags & NETINFO_FLAG_LIMBO));
 	
 	// server respawns immediately
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
