@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-01-16 11:02:23 $
+ * $Revision: 2.14 $
+ * $Date: 2006-02-08 02:10:39 $
  * $Author: wmcoolmon $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.12  2005/10/11 05:24:34  wmcoolmon
  * Gliding
  *
@@ -808,8 +811,10 @@ void physics_sim(vec3d* position, matrix* orient, physics_info* pi, float sim_ti
 		vec3d final_pos = vmd_zero_vector;
 		if(pi->flags & PF_GLIDING) {
 			vm_vec_scale_add(&final_pos, position, &pi->glide_saved_vel, sim_time);
+		} else {
+			physics_sim_vel(position, pi, sim_time, orient);
 		}
-		physics_sim_vel(position, pi, sim_time, orient);
+
 		if(pi->flags & PF_GLIDING) {
 			*position = final_pos;
 			pi->vel = pi->glide_saved_vel;
