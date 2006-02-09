@@ -1542,7 +1542,7 @@ LUA_VAR(TechDescription, l_Shipclass, "String", "Ship class tech description")
 		return lua_set_args(L, "s", "");
 }
 
-LUA_VAR(Hitpoints, l_Shipclass, "Number", "Ship class hitpoints")
+LUA_VAR(HitpointsMax, l_Shipclass, "Number", "Ship class hitpoints")
 {
 	int idx;
 	float f = -1.0f;
@@ -1557,6 +1557,23 @@ LUA_VAR(Hitpoints, l_Shipclass, "Number", "Ship class hitpoints")
 	}
 
 	return lua_set_args(L, "f", Ship_info[idx].max_hull_strength);
+}
+
+LUA_VAR(CountermeasuresMax, l_Shipclass, "Number", "Ship class countermeasure max")
+{
+	int idx;
+	int i = -1;
+	if(!lua_get_args(L, "o|i", l_Shipclass.Get(&idx), &i))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && i > -1) {
+		Ship_info[idx].cmeasure_max = i;
+	}
+
+	return lua_set_args(L, "i", Ship_info[idx].cmeasure_max);
 }
 
 LUA_VAR(Species, l_Shipclass, "Species", "Ship class species")
@@ -1613,14 +1630,13 @@ LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the
 }
 
 
-LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], [Pitch %], [Bank %], [Zoom multiplier]", "Whether ship was rendered", "Draws ship model as if in techroom")
+LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %], [Pitch %], [Bank %], [Zoom multiplier]", "Whether ship was rendered", "Draws ship model as if in techroom")
 {
 	int x1,y1,x2,y2;
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
-	bool r;
 	int idx;
 	float zoom = 1.3f;
-	if(!lua_get_args(L, "oiiii|bffff", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &r, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom))
+	if(!lua_get_args(L, "oiiii|ffff", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
@@ -1661,7 +1677,7 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Resize], [Rotation %], 
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
 	//Clip
-	gr_set_clip(x1,y1,x2-x1,y2-y1,r);
+	gr_set_clip(x1,y1,x2-x1,y2-y1,false);
 
 	//Handle 3D init stuff
 	g3_start_frame(1);
@@ -2507,6 +2523,24 @@ LUA_VAR(CountermeasureClass, l_Ship, "Number", "Weapon class mounted on this shi
 		return lua_set_args(L, "o", l_Weaponclass.Set(shipp->current_cmeasure));
 	else
 		return LUA_RETURN_NIL;
+}
+
+LUA_VAR(HitpointsMax, l_Ship, "Number", "Total hitpoints")
+{
+	object_h *objh;
+	int newhits = -1;
+	if(!lua_get_args(L, "o|i", l_Ship.GetPtr(&objh), &newhits))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(LUA_SETTING_VAR && newhits > -1)
+		shipp->ship_max_hull_strength = newhits;
+
+	return lua_set_args(L, "f", shipp->ship_max_hull_strength);
 }
 
 LUA_VAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks")
@@ -3553,7 +3587,7 @@ LUA_FUNC(setFont, l_Graphics, "Font index", NULL, "Sets current font")
 
 #define MAX_TEXT_LINES		256
 
-LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [Resize, x2, y2]", NULL, "Draws a string")
+LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [x2, y2]", NULL, "Draws a string")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -3561,13 +3595,12 @@ LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [Resize, x2, y2]", NULL, "Draw
 	int x,y;
 	char *s;
 	int x2=-1,y2=-1;
-	bool r=true;
 
-	if(!lua_get_args(L, "sii|bii", &s, &x, &y, &r, &x2, &y2))
+	if(!lua_get_args(L, "sii|ii", &s, &x, &y, &x2, &y2))
 		return LUA_RETURN_NIL;
 
 	if(x2 < 0) {
-		gr_string(x,y,s,r);
+		gr_string(x,y,s,false);
 	}
 	else
 	{
@@ -3596,7 +3629,7 @@ LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [Resize, x2, y2]", NULL, "Draw
 			*reptr = '\0';
 
 			//Draw the string
-			gr_string(x,y2,linestarts[i],r);
+			gr_string(x,y2,linestarts[i],false);
 
 			//Set character back
 			*reptr = rep;
@@ -3633,93 +3666,88 @@ LUA_FUNC(getTextHeight, l_Graphics, NULL, "Text height", "Gets current font's he
 	return lua_set_args(L, "i", gr_get_font_height());
 }
 
-LUA_FUNC(drawPixel, l_Graphics, "x, y, [Resize]", NULL, "Sets pixel to current color")
+LUA_FUNC(drawPixel, l_Graphics, "x, y", NULL, "Sets pixel to current color")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
 	int x,y;
-	bool r=true;
 
-	if(!lua_get_args(L, "ii|b", &x, &y, &r))
+	if(!lua_get_args(L, "ii", &x, &y))
 		return LUA_RETURN_NIL;
 
-	gr_pixel(x,y,r);
+	gr_pixel(x,y,false);
 
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawLine, l_Graphics, "x1, y1, x2, y2, [Resize]", NULL, "Draws a line with the current color")
+LUA_FUNC(drawLine, l_Graphics, "x1, y1, x2, y2", NULL, "Draws a line with the current color")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
 	int x1,y1,x2,y2;
-	bool r=true;
 
-	if(!lua_get_args(L, "iiii|b", &x1, &y1, &x2, &y2, &r))
+	if(!lua_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return LUA_RETURN_NIL;
 
-	gr_line(x1,y1,x2,y2,r);
+	gr_line(x1,y1,x2,y2,false);
 
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawRectangle, l_Graphics, "x1, y1, x2, y2, [Filled], [Resize]", NULL, "Draws a rectangle with the current color; default is filled")
+LUA_FUNC(drawRectangle, l_Graphics, "x1, y1, x2, y2, [Filled]", NULL, "Draws a rectangle with the current color; default is filled")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
 	int x1,y1,x2,y2;
 	bool f=true;
-	bool r=true;
 
-	if(!lua_get_args(L, "iiii|bb", &x1, &y1, &x2, &y2, &f, &r))
+	if(!lua_get_args(L, "iiii|b", &x1, &y1, &x2, &y2, &f))
 		return LUA_RETURN_NIL;
 
 	if(f)
 	{
-		gr_rect(x1, y1, x2-x1, y2-y1, r);
+		gr_rect(x1, y1, x2-x1, y2-y1, false);
 	}
 	else
 	{
-		gr_line(x1,y1,x2,y1,r);	//Top
-		gr_line(x1,y2,x2,y2,r); //Bottom
-		gr_line(x1,y1,x1,y2,r);	//Left
-		gr_line(x2,y1,x2,y2,r);	//Right
+		gr_line(x1,y1,x2,y1,false);	//Top
+		gr_line(x1,y2,x2,y2,false); //Bottom
+		gr_line(x1,y1,x1,y2,false);	//Left
+		gr_line(x2,y1,x2,y2,false);	//Right
 	}
 
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawGradientLine, l_Graphics, "x1, y1, x2, y2, [Resize]", NULL, "Draws a line that steadily fades out")
+LUA_FUNC(drawGradientLine, l_Graphics, "x1, y1, x2, y2", NULL, "Draws a line that steadily fades out")
 {
 	if(!Gr_inited)
 		return 0;
 
 	int x1,y1,x2,y2;
-	bool r=true;
 
-	if(!lua_get_args(L, "iiii|b", &x1, &y1, &x2, &y2, &r))
+	if(!lua_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return LUA_RETURN_NIL;
 
-	gr_gradient(x1,y1,x2,y2,r);
+	gr_gradient(x1,y1,x2,y2,false);
 
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawCircle, l_Graphics, "Radius, x, y, [Resize]", NULL, "Draws a circle")
+LUA_FUNC(drawCircle, l_Graphics, "Radius, x, y", NULL, "Draws a circle")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
 	int x,y,ra;
-	bool r=true;
 
-	if(!lua_get_args(L, "iii|b", &ra,&x,&y,&r))
+	if(!lua_get_args(L, "iii", &ra,&x,&y))
 		return LUA_RETURN_NIL;
 
-	gr_circle(x,y, ra, r);
+	gr_circle(x,y, ra, false);
 
 	return LUA_RETURN_NIL;
 }
@@ -3731,7 +3759,7 @@ LUA_FUNC(drawCurve, l_Graphics, "x, y, Radius, Direction", NULL, "Draws a curve"
 
 	int x,y,ra,d;
 
-	if(!lua_get_args(L, "iiii|b", &x,&y,&ra,&d))
+	if(!lua_get_args(L, "iiii", &x,&y,&ra,&d))
 		return LUA_RETURN_NIL;
 
 	gr_curve(x,y,ra,d);
@@ -3739,7 +3767,7 @@ LUA_FUNC(drawCurve, l_Graphics, "x, y, Radius, Direction", NULL, "Draws a curve"
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Resize], [Width to show], [Height to show], [X start], [Y start], [Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
+LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show], [Height to show], [X start], [Y start], [Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -3751,10 +3779,9 @@ LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Resize], [Width to
 	int h=0;
 	int sx=0;
 	int sy=0;
-	bool r = true;
 	bool m = false;
 
-	if(!lua_get_args(L, "sii|biiiib", &s,&x,&y,&r,&w,&h,&sx,&sy,&m))
+	if(!lua_get_args(L, "sii|iiiib", &s,&x,&y,&w,&h,&sx,&sy,&m))
 		return LUA_RETURN_NIL;
 
 	int idx = bm_load(s);
@@ -3776,7 +3803,7 @@ LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Resize], [Width to
 		sy = rh + sy;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
-	gr_aabitmap_ex(x, y, w, h, sx, sy, r, m);
+	gr_aabitmap_ex(x, y, w, h, sx, sy, false, m);
 
 	return lua_set_args(L, "b", true);
 }
@@ -3813,7 +3840,7 @@ LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation], [No dr
 	bool b=false;
 	bool d=false;
 
-	if(!lua_get_args(L, "s|b", &s, &b, &d))
+	if(!lua_get_args(L, "s", &s, &b, &d))
 		return LUA_RETURN_NIL;
 
 	idx = bm_load(s);
@@ -3827,7 +3854,7 @@ LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation], [No dr
 	return lua_set_args(L, "o", l_Texture.Set(idx));
 }
 
-LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Resize], [Width to show], [Height to show], [X start], [Y start]", "Whether image or texture was drawn", "Draws an image or texture.")
+LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Width to show], [Height to show], [X start], [Y start]", "Whether image or texture was drawn", "Draws an image or texture.")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -3839,12 +3866,11 @@ LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Resize], [
 	int h=0;
 	int sx=0;
 	int sy=0;
-	bool r;
 
 	if(lua_isstring(L, 1))
 	{
 		char *s;
-		if(!lua_get_args(L, "sii|biiii", &s,&x,&y,&r,&w,&h,&sx,&sy))
+		if(!lua_get_args(L, "sii|iiii", &s,&x,&y,&w,&h,&sx,&sy))
 			return LUA_RETURN_NIL;
 
 		idx = Script_system.LoadBm(s);
@@ -3854,7 +3880,7 @@ LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Resize], [
 	}
 	else
 	{
-		if(!lua_get_args(L, "oii|biiii", l_Texture.Get(&idx),&x,&y,&r,&w,&h,&sx,&sy))
+		if(!lua_get_args(L, "oii|biiii", l_Texture.Get(&idx),&x,&y,&w,&h,&sx,&sy))
 			return LUA_RETURN_NIL;
 	}
 
@@ -3878,11 +3904,10 @@ LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Resize], [
 	return LUA_RETURN_TRUE;
 }
 
-LUA_FUNC(getImageWidth, l_Graphics, "Image name, [Resize]", "Image width", "Gets image width")
+LUA_FUNC(getImageWidth, l_Graphics, "Image name", "Image width", "Gets image width")
 {
 	char *s;
-	bool b = true;
-	if(!lua_get_args(L, "s|b", &s, &b))
+	if(!lua_get_args(L, "s", &s))
 		return LUA_RETURN_NIL;
 
 	int w;
@@ -3896,11 +3921,10 @@ LUA_FUNC(getImageWidth, l_Graphics, "Image name, [Resize]", "Image width", "Gets
 	return lua_set_args(L, "i", w);
 }
 
-LUA_FUNC(getImageHeight, l_Graphics, "Image name, [Resize]", "Image height", "Gets image height")
+LUA_FUNC(getImageHeight, l_Graphics, "Image name", "Image height", "Gets image height")
 {
 	char *s;
-	bool b = true;
-	if(!lua_get_args(L, "s|b", &s, &b))
+	if(!lua_get_args(L, "s", &s))
 		return LUA_RETURN_NIL;
 
 	int h;

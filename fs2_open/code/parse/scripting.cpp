@@ -91,6 +91,7 @@ void script_init (void)
 
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
+
 	if(Output_scripting_meta)
 	{
 		mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
@@ -236,7 +237,7 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 		}
 	}
 
-	return 0;
+	return 1;
 }
 
 void script_state::Clear()
