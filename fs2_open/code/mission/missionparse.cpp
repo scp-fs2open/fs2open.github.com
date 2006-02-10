@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.150 $
- * $Date: 2006-02-06 02:06:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.151 $
+ * $Date: 2006-02-10 23:33:39 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2006/02/06 02:06:01  wmcoolmon
+ * Various fixes; very beginnings of Directives scripting support
+ *
  * Revision 2.149  2006/02/02 08:12:47  Goober5000
  * ugh, more ship/wing fixage
  * --Goober5000
@@ -2594,8 +2597,8 @@ int parse_create_object_sub(p_object *objp)
 			// set up the ai goals for this object.
 			ai_add_ship_goal_sexp( sexp, AIG_TYPE_EVENT_SHIP, aip );
 
-		if ( objp->wingnum == -1 )			// free the sexpression nodes only for non-wing ships.  wing code will handle it's own case
-			free_sexp2(objp->ai_goals);	// free up sexp nodes for reused, since they aren't needed anymore.
+		// free up sexp nodes for reuse, since they aren't needed anymore.
+		free_sexp2(objp->ai_goals);
 	}
 
 	Assert(Ships[shipnum].modelnum != -1);
