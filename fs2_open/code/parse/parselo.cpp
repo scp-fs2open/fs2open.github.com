@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.67 $
- * $Author: wmcoolmon $
- * $Date: 2006-02-06 02:06:02 $
+ * $Revision: 2.68 $
+ * $Author: Goober5000 $
+ * $Date: 2006-02-11 21:23:42 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/02/06 02:06:02  wmcoolmon
+ * Various fixes; very beginnings of Directives scripting support
+ *
  * Revision 2.66  2006/01/19 16:00:04  wmcoolmon
  * Lua debugging stuff; gr_bitmap_ex stuff for taylor
  *
@@ -367,6 +370,7 @@
 #include "cfile/cfile.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "globalincs/version.h"
 
 
 
@@ -1645,34 +1649,172 @@ int maybe_convert_foreign_character(int ch)
 	return ch;
 }
 
+// Goober5000
+void maybe_convert_foreign_characters(char *line)
+{
+	char *ch;
+
+	for (ch = line; *ch != '\0'; ch++)
+	{
+		if (!Fred_running)
+			*ch = (char) maybe_convert_foreign_character(*ch);
+	}
+}
+
+// Goober5000
+int get_number_before_separator(char *text, char separator)
+{
+	char buf[10];
+	char *ch;
+
+	strncpy(buf, text, 9);
+
+	ch = strchr(buf, separator);
+	if (ch == NULL)
+		return 0;
+	*ch = '\0';
+
+	return atoi(buf);	
+}
+
 // Strip comments from a line of input.
-int strip_comments(char *readp, int in_comment)
-{	
-	int	ch;
-	char	*writep = readp;
+// Goober5000 - rewritten to make a lot more sense and to be extensible
+int strip_comments(char *line, int in_multiline_comment)
+{
+	char *ch;
 
-	while ((ch = *readp) != COMMENT_CHAR) {
-		if (*readp == 0) {
-			*writep = 0;
-			return in_comment;
+	// if we're in a comment, see if we can close it
+	if (in_multiline_comment)
+	{
+		ch = strstr(line, "*/");
+		if (ch != NULL)
+		{
+			char *writep = line;
+			char *readp = ch + 2;
+
+			// copy all characters past the close of the comment
+			while (*readp != '\0')
+			{
+				*writep = *readp;
+
+				writep++;
+				readp++;
+			}
+
+			*writep = '\0';
+
+			// recurse with the other characters
+			return strip_comments(line, 0);
 		}
 
-		if (!in_comment) {
-			if (Fred_running)
-				*writep = (char) ch;
-			else
-				*writep = (char) maybe_convert_foreign_character(ch);
-
-			writep++;
-		}
-		
-		readp++;	
+		// can't close it, so drop the whole line
+		ch = line;
+		goto done_with_line;
 	}
 
-	*writep = EOLN;
-	writep[1] = 0;
+
+	// start of a multi-line comment?
+	ch = strstr(line, "/*");
+	if (ch != NULL)
+	{
+		// treat it as the beginning of a new line and recurse
+		return strip_comments(ch, 1);
+	}
+
+
+	// search for //
+	ch = strstr(line, "//");
+	if (ch != NULL)
+		goto done_with_line;
+
+
+	// special version-specific comment
+	// formatted like e.g. ;;FSO 3.7.0;;
+	ch = stristr(line, ";;FSO ");
+	if (ch != NULL)
+	{
+		int major, minor, build;
+		char *numch, *sep, *linech;
+
+		numch = ch + 6;
+		sep = strchr(numch, '.');
+		if (sep == NULL)
+			goto done_with_line;
+
+		major = get_number_before_separator(numch, '.');
+
+		numch = sep + 1;
+		sep = strchr(numch, '.');
+		if (sep == NULL)
+			goto done_with_line;
+
+		minor = get_number_before_separator(numch, '.');
+
+		numch = sep + 1;
+		sep = strchr(numch, ';');
+		if (sep == NULL)
+			goto done_with_line;
+
+		build = get_number_before_separator(numch, ';');
+
+		if (*(sep + 1) != ';')
+			goto done_with_line;
+
+		linech = sep + 2;
+
+
+		// check whether major, minor, and build line up with this version
+		if (major > FS_VERSION_MAJOR)
+			goto done_with_line;
+		if (minor > FS_VERSION_MINOR)
+			goto done_with_line;
+		if (build > FS_VERSION_BUILD)
+			goto done_with_line;
+
 	
-	return in_comment;	
+		// this version is compatible, so copy the line past the tag
+		{
+			char *writep = line;
+			char *readp = linech;
+
+			// copy all characters past the close of the comment
+			while (*readp != '\0')
+			{
+				*writep = *readp;
+
+				writep++;
+				readp++;
+			}
+
+			*writep = '\0';
+
+			// recurse with the other characters
+			return strip_comments(line, 0);
+		}
+	}
+
+
+	// search for ;
+	ch = strchr(line, ';');
+	if (ch != NULL)
+		goto done_with_line;
+
+
+	// no comments found... try to find the newline
+	ch = strchr(line, '\n');
+	if (ch != NULL)
+		goto done_with_line;
+
+
+	// just skip to the end of the line
+	ch = line + strlen(line);
+
+
+done_with_line:
+	ch[0] = EOLN;
+	ch[1] = 0;
+
+	return in_multiline_comment;	
 }
 
 /*#if 0
@@ -1872,7 +2014,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	char	*mp;
 	char	*mp_raw;
 	char outbuf[PARSE_BUF_SIZE], *str;
-	int in_comment = 0;
+	int in_multiline_comment = 0;
 	int raw_text_len = strlen(raw_text);
 
 	mp = processed_text;
@@ -1883,7 +2025,9 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
 		mp_raw += num_chars_read;
 
-		in_comment = strip_comments(outbuf, in_comment);
+		in_multiline_comment = strip_comments(outbuf, in_multiline_comment);
+
+		maybe_convert_foreign_characters(outbuf);
 
 		str = outbuf;
 		while (*str) {
