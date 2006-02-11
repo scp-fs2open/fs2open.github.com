@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-01-26 04:01:58 $
+ * $Revision: 2.33 $
+ * $Date: 2006-02-11 22:08:56 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 2.31  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -304,7 +307,6 @@ static int Mission_over_timestamp;
 static int Victory2_music_played;
 static int Next_arrival_timestamp;
 static int Check_for_battle_music;
-static int Current_soundtrack_fs1_style;
 
 // stores the number of measures for the different patterns (data from music.tbl)
 float	Pattern_num_measures[MAX_SOUNDTRACKS][MAX_PATTERNS];
@@ -546,9 +548,12 @@ void event_music_init()
 	Num_soundtracks = 0;		// Global
 	event_music_reset_choices();
 
-	// Goober5000 - clear all the filenames, so we're compatible with the extra NRMLs in FS1 music
+	// Goober5000
 	for (i = 0; i < MAX_SOUNDTRACKS; i++)
 	{
+		Soundtracks[i].flags = 0;
+
+		// clear all the filenames, so we're compatible with the extra NRMLs in FS1 music
 		for (j = 0; j < MAX_PATTERNS; j++)
 		{
 			strcpy(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
@@ -837,9 +842,6 @@ void event_music_level_init(int force_soundtrack)
 	Victory2_music_played = 0;
 	Check_for_battle_music = 0;
 
-	// Goober5000 - is this FS1 style?
-	Current_soundtrack_fs1_style = stristr(Soundtracks[Current_soundtrack_num].name, "FS1") ? 1 : 0;
-
 	if ( Event_music_level_inited ) {
 		if ( force_soundtrack != -1 )  {
 			event_music_first_pattern();
@@ -1106,22 +1108,25 @@ int event_music_friendly_arrival()
 	// After the second friendly arrival, default to SONG_BTTL_3
 	Num_friendly_arrivals++;
 
-	if ( Current_pattern != -1 ) {
+	if ( Current_pattern != -1 )
+	{
 		// AL 06-24-99: always overlay allied arrivals
-		// Goober5000 - bah, this screws up the FS1 music... so this is a hack to *not* overlay
-		// *if* the soundtrack title includes "FS1" in it (as set in event_music_level_init)
+		// Goober5000 - do this based on a flag (set in music.tbl for FS1 soundtracks)
 
-		// don't overlay
-		if (Current_soundtrack_fs1_style) {
-			Patterns[Current_pattern].next_pattern = next_pattern;
-			Patterns[Current_pattern].force_pattern = TRUE;
 		// overlay
-		} else {
+		if (Soundtracks[Current_soundtrack_num].flags & TSIF_ALLIED_ARRIVAL_OVERLAY)
+		{
 			// Goober5000 - I didn't touch this part... for some reason, FS2 only has one
 			// arrival music pattern, and this is it
 			Assert(Patterns[SONG_AARV_1].handle >= 0 );
 			audiostream_play(Patterns[SONG_AARV_1].handle, Master_event_music_volume, 0);	// no looping
 			audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure) );
+		}
+		// don't overlay
+		else
+		{
+			Patterns[Current_pattern].next_pattern = next_pattern;
+			Patterns[Current_pattern].force_pattern = TRUE;
 		}
 	}
 
@@ -1319,6 +1324,17 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 	if( pattern_idx >= MAX_PATTERNS ) {
 		Warning(LOCATION, "Too many $Name: entries for soundtrack %s", Soundtracks[strack_idx].name);
 		return false;
+	}
+
+	// Goober5000
+	if (optional_string("+Allied Arrival Overlay:"))
+	{
+		stuff_boolean_flag(&Soundtracks[strack_idx].flags, TSIF_ALLIED_ARRIVAL_OVERLAY);
+	}
+	else
+	{
+		// FS2 music does this by default
+		Soundtracks[strack_idx].flags |= TSIF_ALLIED_ARRIVAL_OVERLAY;
 	}
 
 	//We can apparently still add this pattern, so go ahead and do it.
