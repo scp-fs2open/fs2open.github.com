@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.152 $
- * $Date: 2006-02-11 00:13:55 $
+ * $Revision: 2.153 $
+ * $Date: 2006-02-11 01:02:28 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.152  2006/02/11 00:13:55  Goober5000
+ * more FS1 import goodness
+ * --Goober5000
+ *
  * Revision 2.151  2006/02/10 23:33:39  Goober5000
  * fixed an old Volition bug unmasked by my parse changes
  * --Goober5000
@@ -4724,9 +4728,8 @@ void parse_bitmaps(mission *pm)
 			Warning(LOCATION, "Failed to add starfield bitmap '%s' to the mission!", str);
 	}
 
-	if ( optional_string("#Asteroid Fields") ){
-		parse_asteroid_fields(pm);
-	}
+	// bypass spurious stuff from e.g. FS1 missions
+	skip_to_start_of_string("#");
 }
 
 void parse_asteroid_fields(mission *pm)
@@ -4739,7 +4742,10 @@ void parse_asteroid_fields(mission *pm)
 
 	i = 0;
 	count = 0;
-//	required_string("#Asteroid Fields");
+
+	if (!optional_string("#Asteroid Fields"))
+		return;
+
 	while (required_string_either("#", "$density:")) {
 		float speed, density;
 
@@ -4938,6 +4944,7 @@ void parse_mission(mission *pm, int flag)
 	parse_messages(pm);
 	parse_reinforcements(pm);
 	parse_bitmaps(pm);
+	parse_asteroid_fields(pm);
 	parse_music(pm);
 
 	post_process_mission();
