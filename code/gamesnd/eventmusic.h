@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.12 $
- * $Date: 2005-12-28 22:17:01 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2006-02-11 22:08:56 $
+ * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.11  2005/12/13 21:48:39  wmcoolmon
  * Music TBL to proper XMT file (-mus)
  *
@@ -222,8 +228,12 @@ typedef struct menu_music {
 extern menu_music Spooled_music[MAX_SPOOLED_MUSIC];
 extern int Num_music_files;
 
+// Goober5000
+#define TSIF_ALLIED_ARRIVAL_OVERLAY		(1 << 0)
+
 // event music soundtrack storage
 typedef struct tagSOUNDTRACK_INFO {
+	int flags;
 	int	num_patterns;
 	char	name[NAME_LENGTH];
 	char	pattern_fnames[MAX_PATTERNS][MAX_FILENAME_LEN];
