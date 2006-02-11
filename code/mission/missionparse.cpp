@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.153 $
- * $Date: 2006-02-11 01:02:28 $
+ * $Revision: 2.154 $
+ * $Date: 2006-02-11 02:58:23 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.153  2006/02/11 01:02:28  Goober5000
+ * more fixage
+ * --Goober5000
+ *
  * Revision 2.152  2006/02/11 00:13:55  Goober5000
  * more FS1 import goodness
  * --Goober5000
@@ -7056,6 +7060,13 @@ void conv_fix_event_music()
 	// found?
 	if (event_music_get_soundtrack_index(new_name) >= 0)
 	{
+		goto do_replace;
+	}
+
+	// Marauder is in FS2 as Deuteronomy
+	if (!stricmp(name, "7: Marauder") && event_music_get_soundtrack_index("5: Deuteronomy") >= 0)
+	{
+		strcpy(new_name, "5: Deuteronomy");
 		goto do_replace;
 	}
 

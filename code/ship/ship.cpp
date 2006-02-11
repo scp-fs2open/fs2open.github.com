@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.308 $
- * $Date: 2006-02-06 02:06:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.309 $
+ * $Date: 2006-02-11 02:58:23 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.308  2006/02/06 02:06:02  wmcoolmon
+ * Various fixes; very beginnings of Directives scripting support
+ *
  * Revision 2.307  2006/02/02 07:13:42  Goober5000
  * bah and double bah
  *
@@ -2030,6 +2033,8 @@ flag_def_list Man_types[] =
 	{"Reverse",				MT_REVERSE},
 };
 
+int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
+
 // Goober5000 - I figured we should keep this separate
 // from Comm_orders, considering how I redid it :p
 // (and also because we may want to change either
@@ -2060,8 +2065,6 @@ flag_def_list Player_orders[] =
 	{ "stay near ship",			STAY_NEAR_TARGET_ITEM },
 	{ "keep safe dist",			KEEP_SAFE_DIST_ITEM },
 };
-
-int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
 
 int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 

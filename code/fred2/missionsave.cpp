@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-01-30 06:27:59 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2006-02-11 02:58:23 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/01/30 06:27:59  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 1.2  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -899,7 +902,7 @@ int CFred_mission_save::save_plot_info()
 		}
 		else
 		{
-			fout("#Plot Info\n\n");
+			fout("\n\n#Plot Info\n\n");
 
 			fout("$Tour: "); fout_ext("Blah"); fout("\n");
 			fout("$Pre-Briefing Cutscene: Blah\n");
@@ -1091,9 +1094,12 @@ int CFred_mission_save::save_briefing()
 				parse_comments();
 				fout(" %d", (bi->flags & BI_HIGHLIGHT)?1:0 );
 
-				required_string_fred("$mirror:");
-				parse_comments();
-				fout(" %d", (bi->flags & BI_MIRROR_ICON)?1:0 );
+				if (Format_fs2_open)
+				{
+					required_string_fred("$mirror:");
+					parse_comments();
+					fout(" %d", (bi->flags & BI_MIRROR_ICON)?1:0 );
+				}
 
 				required_string_fred("$multi_text");
 				parse_comments();
