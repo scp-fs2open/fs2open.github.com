@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.154 $
- * $Date: 2006-02-11 02:58:23 $
+ * $Revision: 2.155 $
+ * $Date: 2006-02-11 07:31:55 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.154  2006/02/11 02:58:23  Goober5000
+ * yet more various and sundry fixes
+ * --Goober5000
+ *
  * Revision 2.153  2006/02/11 01:02:28  Goober5000
  * more fixage
  * --Goober5000
@@ -2611,6 +2615,7 @@ int parse_create_object_sub(p_object *objp)
 
 		// free up sexp nodes for reuse, since they aren't needed anymore.
 		free_sexp2(objp->ai_goals);
+		objp->ai_goals = -1;
 	}
 
 	Assert(Ships[shipnum].modelnum != -1);
@@ -7053,6 +7058,10 @@ void conv_fix_event_music()
 	if (event_music_get_soundtrack_index(name) >= 0)
 		return;
 
+	// no music?
+	if (!stricmp(name, "none"))
+		return;
+
 	// get the FS1 equivalent
 	strcpy(new_name, "FS1-");
 	strcat(new_name, name);
@@ -7118,6 +7127,10 @@ void conv_fix_briefing_music()
 
 	// found?
 	if (event_music_get_spooled_music_index(name) >= 0)
+		return;
+
+	// no music?
+	if (!stricmp(name, "none"))
 		return;
 
 	// Choco Mousse is the FS1 title soundtrack
