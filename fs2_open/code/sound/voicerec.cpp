@@ -238,6 +238,8 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 				sprintf(shipName,"%s %d", wing_names[wingType], shipNum);
 
 				Msg_instance = ship_name_lookup(shipName);
+				if (Msg_instance < 0)
+					break;
 
 				if(!(Player->flags & PLAYER_FLAGS_MSG_MODE))
 				{
@@ -250,7 +252,10 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 			case VID_WingName: 
 			{
 				int wingType  = pElements->pProperties->vValue.ulVal;
+
 				Msg_instance  = wing_lookup(wing_names[wingType]);
+				if (Msg_instance < 0)
+					break;
 
 				if(!(Player->flags & PLAYER_FLAGS_MSG_MODE))
 				{
