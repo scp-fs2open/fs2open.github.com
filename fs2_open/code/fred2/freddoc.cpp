@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-02-11 00:13:55 $
+ * $Revision: 1.6 $
+ * $Date: 2006-02-11 02:58:23 $
  * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
@@ -19,6 +19,10 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/02/11 00:13:55  Goober5000
+ * more FS1 import goodness
+ * --Goober5000
+ *
  * Revision 1.4  2006/01/31 04:13:00  Goober5000
  * oh noes! :(
  *
@@ -668,19 +672,30 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	{
 		if (flags & MPF_IMPORT_FSM)
 		{
-			Fred_view_wnd->MessageBox("Import failed.");
+			sprintf(name, "Unable to import the file \"%s\".", pathname);
+			Fred_view_wnd->MessageBox(name);
 		}
 		else
 		{
-			sprintf(name, "Unable to load the file \"%s\"", pathname);
+			sprintf(name, "Unable to load the file \"%s\".", pathname);
 			Fred_view_wnd->MessageBox(name);
 		}
 		create_new_mission();		
 		return -1;
 	}
 
-	if(Fred_found_unknown_ship_during_parsing){
-		Fred_view_wnd->MessageBox("Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have");
+	if(Fred_found_unknown_ship_during_parsing)
+	{
+		if (flags & MPF_IMPORT_FSM)
+		{
+			char msg[256];
+			sprintf(msg, "Fred encountered unknown ship/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.", The_mission.name, pathname);
+			Fred_view_wnd->MessageBox(msg);
+		}
+		else
+		{
+			Fred_view_wnd->MessageBox("Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.");
+		}
 	}
 	Fred_found_unknown_ship_during_parsing = 0;
 

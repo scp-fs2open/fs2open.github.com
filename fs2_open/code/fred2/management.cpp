@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-01-30 06:27:59 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2006-02-11 02:58:23 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/01/30 06:27:59  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 1.2  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -2831,16 +2834,10 @@ void generate_weaponry_usage_list(int *arr)
 	for (i=0; i<MAX_WEAPON_TYPES; i++)
 		arr[i] = 0;
 
-	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
-	{
-		for (i=0; i<MAX_TVT_WINGS; i++)
-			generate_weaponry_usage_list(arr, TVT_wings[i]);
-	}
-	else
-	{
-		for (i=0; i<MAX_STARTING_WINGS; i++)
-			generate_weaponry_usage_list(arr, Starting_wings[i]);
-	}
+	// Goober5000 - I have no idea why :V: did things this way (or even what exactly they're doing);
+	// I'm guessing Zeta needs to be accounted for somewhere but I'm not sure how to do that
+	for (i=0; i<MAX_STARTING_WINGS; i++)
+		generate_weaponry_usage_list(arr, Starting_wings[i]);
 }
 
 jump_node *jumpnode_get_by_name(CString& name)
