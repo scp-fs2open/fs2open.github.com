@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-01-31 04:13:00 $
+ * $Revision: 1.5 $
+ * $Date: 2006-02-11 00:13:55 $
  * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/01/31 04:13:00  Goober5000
+ * oh noes! :(
+ *
  * Revision 1.3  2006/01/31 01:53:36  Goober5000
  * update FSM import for FSPort v3.0
  * --Goober5000
@@ -367,6 +370,11 @@ static char THIS_FILE[] = __FILE__;
 
 //	In editor mode, use class CFile, in game, use CFILE (our file)
 #define	XFILE CFile
+
+// stupid
+#ifndef __FOLDERDLG_H__
+    #include "FolderDlg.h"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // CFREDDoc
@@ -1133,63 +1141,131 @@ void cfile_serialize_editor(XFILE *fp, int flag)
 // Goober5000
 void CFREDDoc::OnFileImportFSM() 
 {
-	CString fs1_mission_mfc;
-	char fs1_mission[MAX_PATH_LEN];
-	char *ch;
-	char temp[MAX_PATH_LEN];
+	char fs1_mission_path[MAX_PATH_LEN];
+	char fs2_mission_path[MAX_PATH_LEN];
+
+	// path stuff
+	{
+		char *ch;
+
+		// get base paths
+		strcpy(fs1_mission_path, Fred_exe_dir);
+		ch = strrchr(fs1_mission_path, DIR_SEPARATOR_CHAR);
+		if (ch != NULL)
+			*ch = '\0';
+		strcpy(fs2_mission_path, Fred_exe_dir);
+		ch = strrchr(fs2_mission_path, DIR_SEPARATOR_CHAR);
+		if (ch != NULL)
+			*ch = '\0';
+
+		// estimate the mission path for FS1
+		if ((ch = stristr(fs1_mission_path, "FreeSpace2")) >= 0)
+		{
+			strcpy(ch, "FreeSpace\\Data\\Missions");
+		}
+
+		// estimate the mission path for FS2
+		strcat(fs2_mission_path, "\\Data\\Missions");
+	}
 
 	// if mission has been modified, offer to save before continuing.
 	if (!SaveModified())
 		return;
 
-	// set up import dialog
-	CFileDialog dlg(TRUE, "fsm", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "FreeSpace Missions (*.fsm)|*.fsm|All files (*.*)|*.*||");
-	dlg.m_ofn.lpstrTitle = "Select a mission to import";
 
-	// set initial path
-	strcpy(temp, Fred_exe_dir);
-	if ((ch = stristr(temp, "FreeSpace2")) >= 0)
-	{
-		strcpy(ch, "FreeSpace\\Data\\Missions");
-		dlg.m_ofn.lpstrInitialDir = temp;
-	}
+	// get location to import from
+	CFileDialog dlgFile(TRUE, "fsm", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_ALLOWMULTISELECT, "FreeSpace Missions (*.fsm)|*.fsm|All files (*.*)|*.*||");
+	dlgFile.m_ofn.lpstrTitle = "Select one or more missions to import";
+	dlgFile.m_ofn.lpstrInitialDir = fs1_mission_path;
 
-	// get FSM file
-	if (dlg.DoModal() != IDOK)
+	// get FSM files
+	if (dlgFile.DoModal() != IDOK)
 		return;
 
-	fs1_mission_mfc = dlg.GetPathName();
+	// get location to save to    
+    CFolderDialog dlgFolder(_T("Select a location to save in"), fs2_mission_path, NULL);
+    if(dlgFolder.DoModal() != IDOK)
+        return;
 
-	if (strlen(fs1_mission_mfc) > MAX_PATH_LEN - 1)
-	{
-		MessageBox(NULL, "Path name is too long", "Error", MB_OK);
-		return;
-	}
-
-	if (!strlen(fs1_mission_mfc))
-	{
-		return;
-	}
-
-	strcpy(fs1_mission, fs1_mission_mfc);
-
-	// load mission into memory
+	// clean things up first
 	if (Briefing_dialog)
-		Briefing_dialog->icon_select(-1);  // clean things up first
-	if (load_mission(fs1_mission, MPF_IMPORT_FSM))
-		return;
+		Briefing_dialog->icon_select(-1);
 
-	// ugh - change the file name
-	FREDDoc_ptr->SetPathName("Untitled");
+	clear_mission();
 
-	// we haven't saved it yet
-	set_modified(TRUE);
-
-	// error check and notify
-	if (!Fred_view_wnd->global_error_check())
+	// process all missions
+	POSITION pos(dlgFile.GetStartPosition());
+	while(pos)
 	{
-		Fred_view_wnd->MessageBox("Mission successfully imported with no errors.", "Woohoo!");
+		char *ch;
+		char filename[1024];
+		char fs1_path[MAX_PATH_LEN];
+		char dest_path[MAX_PATH_LEN];
+
+		CString fs1_path_mfc(dlgFile.GetNextPathName(pos));
+		CFred_mission_save save;
+
+		DWORD attrib;
+		FILE *fp;
+
+
+		// path name too long?
+		if (strlen(fs1_path_mfc) > MAX_PATH_LEN - 1)
+			continue;
+
+		// nothing here?
+		if (!strlen(fs1_path_mfc))
+			continue;
+
+		// get our mission
+		strcpy(fs1_path, fs1_path_mfc);
+
+		// load mission into memory
+		if (load_mission(fs1_path, MPF_IMPORT_FSM))
+			continue;
+
+		// get filename
+		ch = strrchr(fs1_path, DIR_SEPARATOR_CHAR) + 1;
+		if (ch != NULL)
+			strcpy(filename, ch);
+		else
+			strcpy(filename, fs1_path);
+
+		// truncate extension
+		ch = strrchr(filename, '.');
+		if (ch != NULL)
+			*ch = '\0';
+
+		// add new extension
+		strcat(filename, ".fs2");
+
+		strcpy(Mission_filename, filename);
+
+		// get new path
+		strcpy(dest_path, dlgFolder.GetFolderPath());
+		strcat(dest_path, "\\");
+		strcat(dest_path, filename);
+
+		// check attributes
+		fp = fopen(dest_path, "r");
+		if (fp)
+		{
+			fclose(fp);
+			attrib = GetFileAttributes(dest_path);
+			if (attrib & FILE_ATTRIBUTE_READONLY)
+				continue;
+		}	
+
+		// try to save it
+		if (save.save_mission_file(dest_path))
+			continue;
+
+		// success
 	}
+
+	clear_mission();
+
+	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
 }
 
 void restore_default_weapons(char *ships_tbl);

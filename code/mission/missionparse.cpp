@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.151 $
- * $Date: 2006-02-10 23:33:39 $
+ * $Revision: 2.152 $
+ * $Date: 2006-02-11 00:13:55 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2006/02/10 23:33:39  Goober5000
+ * fixed an old Volition bug unmasked by my parse changes
+ * --Goober5000
+ *
  * Revision 2.150  2006/02/06 02:06:01  wmcoolmon
  * Various fixes; very beginnings of Directives scripting support
  *
@@ -7014,8 +7018,9 @@ void conv_fix_punctuation()
 }
 
 // Goober5000
-void conv_fix_music()
+void conv_fix_event_music()
 {
+	int i;
 	char *ch;
 	char *track_ch;
 	char name[NAME_LENGTH];
@@ -7033,12 +7038,92 @@ void conv_fix_music()
 	track_ch = ch + 14;
 	copy_to_eoln(name, NULL, track_ch, NAME_LENGTH);
 
-	// form new name
-	strcpy(new_name, "FS1-");
-	strcpy(new_name + 4, name);
+	// found?
+	if (event_music_get_soundtrack_index(name) >= 0)
+		return;
 
+	// get the FS1 equivalent
+	strcpy(new_name, "FS1-");
+	strcat(new_name, name);
+
+	// found?
+	if (event_music_get_soundtrack_index(new_name) >= 0)
+	{
+		goto do_replace;
+	}
+
+	// get the track number
+	strcpy(new_name, name);
+	ch = strchr(new_name, ':');
+	if (ch != NULL)
+		*(ch + 1) = '\0';
+
+	// search for something with the same number
+	for (i = 0; i < Num_soundtracks; i++)
+	{
+		if (!strncmp(new_name, Soundtracks[i].name, strlen(new_name)))
+		{
+			strcpy(new_name, Soundtracks[i].name);
+			goto do_replace;
+		}
+	}
+
+	// last resort: pick a random track
+	strcpy(new_name, Soundtracks[rand() % Num_soundtracks].name);
+
+
+do_replace:
 	// replace it
 	replace_one(track_ch, name, new_name, MISSION_TEXT_SIZE - (track_ch - Mission_text));
+}
+
+// Goober5000
+void conv_fix_briefing_music()
+{
+	int num;
+	char *ch;
+	char *track_ch;
+	char name[NAME_LENGTH];
+	char new_name[NAME_LENGTH];
+
+	// skip to music section
+	ch = strstr(Mission_text, "#Music");
+	if (!ch) return;
+
+	// skip to briefing music
+	ch = strstr(ch, "$Briefing Music:");
+	if (!ch) return;
+
+	// get briefing track name
+	track_ch = ch + 17;
+	copy_to_eoln(name, NULL, track_ch, NAME_LENGTH);
+
+	// found?
+	if (event_music_get_spooled_music_index(name) >= 0)
+		return;
+
+	// Choco Mousse is the FS1 title soundtrack
+	if (!stricmp(name, "Choco Mousse") && event_music_get_spooled_music_index("Aquitaine") >= 0)
+	{
+		strcpy(new_name, "Aquitaine");
+		goto do_replace;
+	}
+
+	// last resort: pick a random track out of the first 7 (the regular ones)...
+	num = (Num_music_files < 7) ? Num_music_files : 7;
+	strcpy(new_name, Spooled_music[rand() % num].name);
+
+
+do_replace:
+	// replace it
+	replace_one(track_ch, name, new_name, MISSION_TEXT_SIZE - (track_ch - Mission_text));
+}
+
+// Goober5000
+void conv_fix_music()
+{
+	conv_fix_event_music();
+	conv_fix_briefing_music();
 }
 
 // Goober5000
