@@ -614,7 +614,7 @@ CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
-    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.7 OpenGL",
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.6.8 OpenGL",
                     IDC_STATIC,39,8,184,10,SS_NOPREFIX
     LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",
                     IDC_STATIC,39,17,164,8
@@ -626,7 +626,7 @@ BEGIN
                     IDC_STATIC,39,32,181,8
     PUSHBUTTON      "Report a Bug",IDC_BUG,227,24,50,14
     PUSHBUTTON      "Visit Forums",IDC_FORUMS,227,41,50,14
-    LTEXT           "Original fs2_open OGL port by Phreak and Fry_day",
+    LTEXT           "Original fs2_open OGL port by Phreak and Fry_Day",
                     IDC_STATIC,39,49,161,8
 END
 
@@ -2375,15 +2375,15 @@ BEGIN
         BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", "Volition Inc.\0"
-            VALUE "FileDescription", "Fred2_open 3.6.7\0"
-            VALUE "FileVersion", "3.6.7\0"
+            VALUE "FileDescription", "Fred2_open 3.6.8\0"
+            VALUE "FileVersion", "3.6.8\0"
             VALUE "InternalName", "FRED\0"
             VALUE "LegalCopyright", "Copyright © 1998\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "FRED.EXE\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "FreeSpace\0"
-            VALUE "ProductVersion", "3.6.7\0"
+            VALUE "ProductVersion", "3.6.8\0"
             VALUE "SpecialBuild", "\0"
         END
     END
@@ -2926,7 +2926,7 @@ IDC_CURSOR2             CURSOR  DISCARDABLE     "res\\cursor2.cur"
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDR_MAINFRAME           "FRED2_OPEN 3.6.7 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+    IDR_MAINFRAME           "FRED2_OPEN 3.6.8 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
 END
 
 STRINGTABLE DISCARDABLE 
