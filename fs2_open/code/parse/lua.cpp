@@ -2026,6 +2026,70 @@ LUA_VAR(AmmoMax, l_WeaponBank, "number", "AmmoMax")
 //**********HANDLE: Weaponbanktype
 lua_obj<ship_banktype_h> l_WeaponBankType("weaponbanktype", "Weapons bank type on a ship or subsystem");
 
+LUA_VAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or unlinked fire mode (Primary-only)")
+{
+	ship_banktype_h *bh;
+	bool newlink = false;
+	int numargs = lua_get_args(L, "o|b", l_WeaponBankType.GetPtr(&bh), &newlink);
+
+	if(!numargs)
+		return LUA_RETURN_NIL;
+
+	if(!bh->IsValid())
+		return LUA_RETURN_NIL;
+
+	switch(bh->type)
+	{
+		case SWH_PRIMARY:
+			if(LUA_SETTING_VAR && numargs > 1) {
+				if(newlink)
+					Ships[bh->objp->instance].flags |= SF_PRIMARY_LINKED;
+				else
+					Ships[bh->objp->instance].flags &= ~SF_PRIMARY_LINKED;
+			}
+
+			return lua_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_PRIMARY_LINKED) > 0);
+
+		case SWH_SECONDARY:
+		case SWH_TERTIARY:
+			return LUA_RETURN_FALSE;
+	}
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_VAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire mode (Secondary-only)")
+{
+	ship_banktype_h *bh;
+	bool newfire = false;
+	int numargs = lua_get_args(L, "o|b", l_WeaponBankType.GetPtr(&bh), &newfire);
+
+	if(!numargs)
+		return LUA_RETURN_NIL;
+
+	if(!bh->IsValid())
+		return LUA_RETURN_NIL;
+
+	switch(bh->type)
+	{
+		case SWH_SECONDARY:
+			if(LUA_SETTING_VAR && numargs > 1) {
+				if(newfire)
+					Ships[bh->objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
+				else
+					Ships[bh->objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+			}
+
+			return lua_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_SECONDARY_DUAL_FIRE) > 0);
+
+		case SWH_PRIMARY:
+		case SWH_TERTIARY:
+			return LUA_RETURN_FALSE;
+	}
+
+	return LUA_RETURN_NIL;
+}
+
 LUA_INDEXER(l_WeaponBankType, "Bank index", "weaponbank handle", "Returns handle to a specific weapon bank")
 {
 	ship_banktype_h *sb=NULL;
@@ -3293,7 +3357,7 @@ LUA_FUNC(getShipClass, l_Tables, "Class name", "Shipclass object", "Gets ship cl
 	return lua_set_args(L, "o", l_Shipclass.Set(idx));
 }
 
-LUA_FUNC(getWeaponClass, l_Tables, "Class name", "Weaponclass object", "Gets weapon class")
+LUA_FUNC(getWeaponClassByName, l_Tables, "Class name", "Weaponclass object", "Gets weapon class")
 {
 	if(!ships_inited)
 		return LUA_RETURN_NIL;
