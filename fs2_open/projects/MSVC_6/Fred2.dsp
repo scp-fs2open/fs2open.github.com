@@ -174,6 +174,10 @@ SOURCE=..\..\code\fred2\EventEditor.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\fred2\folderdlg.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\fred2\FRED.cpp
 # End Source File
 # Begin Source File
@@ -415,6 +419,10 @@ SOURCE=..\..\code\fred2\editor.h
 # Begin Source File
 
 SOURCE=..\..\code\fred2\EventEditor.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fred2\folderdlg.h
 # End Source File
 # Begin Source File
 
