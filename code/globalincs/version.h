@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.h $
- * $Revision: 2.12 $
- * $Date: 2005-07-13 02:50:48 $
+ * $Revision: 2.13 $
+ * $Date: 2006-02-11 22:10:11 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.11  2005/07/11 10:13:09  wmcoolmon
  * Bumped Fs2_open version to 3.6.7
  *
@@ -160,7 +164,7 @@
 
 #define FS_VERSION_MAJOR 3					// major version
 #define FS_VERSION_MINOR 6					// increase by 1 for minor revs
-#define FS_VERSION_BUILD 7					// bugfix release
+#define FS_VERSION_BUILD 8					// bugfix release
 
 #define VERSION_LOC_FNAME			"version.nfo"
 #define MOTD_LOC_FNAME				"motd.txt"
