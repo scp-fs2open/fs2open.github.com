@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.156 $
- * $Date: 2006-02-11 21:24:05 $
+ * $Revision: 2.157 $
+ * $Date: 2006-02-12 01:27:47 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.156  2006/02/11 21:24:05  Goober5000
+ * this isn't needed now
+ * --Goober5000
+ *
  * Revision 2.155  2006/02/11 07:31:55  Goober5000
  * two things I missed before
  * --Goober5000
@@ -1281,9 +1285,6 @@ void mission_parse_mark_non_arrivals();
 
 // Goober5000 - FRED import
 void convertFSMtoFS2();
-void conv_fix_briefing_stuff();
-void conv_fix_punctuation();
-void conv_fix_music();
 void restore_default_weapons(char *ships_tbl);
 void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
@@ -1793,9 +1794,11 @@ void parse_briefing_info(mission *pm)
 }
 
 // parse the event music and briefing music for the mission
-void parse_music(mission *pm)
+void parse_music(mission *pm, int flags)
 {
-	char	name[NAME_LENGTH];
+	int i, index, num;
+	char *ch;
+	char temp[NAME_LENGTH];
 
 	event_music_reset_choices();
 
@@ -1804,21 +1807,126 @@ void parse_music(mission *pm)
 	}
 
 	required_string("$Event Music:");
-	stuff_string(name, F_NAME, NULL);
-	event_music_set_soundtrack(name);
+	stuff_string(pm->event_music_name, F_NAME, NULL);
 
 	required_string("$Briefing Music:");
-	stuff_string(name, F_NAME, NULL);
-	event_music_set_score(SCORE_BRIEFING, name);
+	stuff_string(pm->briefing_music_name, F_NAME, NULL);
 
-	if ( optional_string("$Debriefing Success Music:") ) {
-		stuff_string(name, F_NAME, NULL);
-		event_music_set_score(SCORE_DEBRIEF_SUCCESS, name);
+	// old stuff, apparently
+	if (optional_string("$Debriefing Success Music:"))
+	{
+		stuff_string(temp, F_NAME, NULL);
+		event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
 	}
 
-	if ( optional_string("$Debriefing Fail Music:") ) {
-		stuff_string(name, F_NAME, NULL);
-		event_music_set_score(SCORE_DEBRIEF_FAIL, name);
+	if (optional_string("$Debriefing Fail Music:"))
+	{
+		stuff_string(temp, F_NAME, NULL);
+		event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
+	}
+
+
+	// Goober5000 - grab substitute tracks to play instead (provided they exist)
+	if (optional_string("$Substitute Music:"))
+	{
+		stuff_string(pm->substitute_event_music_name, F_NAME, ",");
+		Mp++;
+		stuff_string(pm->substitute_briefing_music_name, F_NAME, NULL);
+	}
+	// Goober5000 - if the mission is being imported, the substitutes are the specified tracks
+	// (with FS1 prefixes) and we generate new specified tracks
+	else if (flags & MPF_IMPORT_FSM)
+	{
+		// no specified music?
+		if (!stricmp(pm->event_music_name, "none"))
+			goto done_event_music;
+
+		// set the FS1 equivalent as the substitute
+		strcpy(pm->substitute_event_music_name, "FS1-");
+		strcat(pm->substitute_event_music_name, pm->event_music_name);
+
+		// if we have Marauder, it's in FS2 as Deuteronomy, so we're done
+		if (!stricmp(pm->event_music_name, "7: Marauder") && event_music_get_soundtrack_index("5: Deuteronomy") >= 0)
+		{
+			strcpy(pm->event_music_name, "5: Deuteronomy");
+			goto done_event_music;
+		}
+
+		// search for something with the same track number
+		strcpy(temp, pm->event_music_name);
+		ch = strchr(temp, ':');
+		if (ch != NULL)
+		{
+			*(ch + 1) = '\0';
+				
+			for (i = 0; i < Num_soundtracks; i++)
+			{
+				if (!strncmp(temp, Soundtracks[i].name, strlen(temp)))
+				{
+					strcpy(pm->event_music_name, Soundtracks[i].name);
+					goto done_event_music;
+				}
+			}
+		}
+
+		// last resort: pick a random track out of the 7 FS2 soundtracks
+		num = (Num_soundtracks < 7) ? Num_soundtracks : 7;
+		strcpy(pm->event_music_name, Soundtracks[rand() % num].name);
+
+
+done_event_music:
+
+
+		// no specified music?
+		if (!stricmp(pm->briefing_music_name, "none"))
+			goto done_briefing_music;
+
+		// set the FS1 equivalent as the substitute
+		strcpy(pm->substitute_briefing_music_name, "FS1-");
+		strcat(pm->substitute_briefing_music_name, pm->briefing_music_name);
+
+		// Choco Mousse is the FS1 title soundtrack, so use Aquitaine in FS2
+		if (!stricmp(pm->briefing_music_name, "Choco Mousse") && event_music_get_spooled_music_index("Aquitaine") >= 0)
+		{
+			strcpy(pm->briefing_music_name, "Aquitaine");
+			goto done_briefing_music;
+		}
+
+		// we might have a match with the same track number
+		if (event_music_get_spooled_music_index(pm->briefing_music_name) >= 0)
+			goto done_briefing_music;
+
+		// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
+		num = (Num_music_files < 7) ? Num_music_files : 7;
+		strcpy(pm->briefing_music_name, Spooled_music[rand() % num].name);
+
+
+done_briefing_music:
+
+		/* NO-OP */ ;
+	}
+
+
+	// set the soundtrack, preferring the substitute
+	index = event_music_get_soundtrack_index(pm->substitute_event_music_name);
+	if (index >= 0 && Soundtracks[index].flags & TSIF_VALID)
+	{
+		event_music_set_soundtrack(pm->substitute_event_music_name);
+	}
+	else
+	{
+		event_music_set_soundtrack(pm->event_music_name);
+	}
+
+	// set the briefing, preferring the substitute
+	index = event_music_get_spooled_music_index(pm->substitute_briefing_music_name);
+	if (index >= 0)
+	{
+		event_music_set_score(SCORE_BRIEFING, pm->substitute_briefing_music_name);
+	}
+	else
+	{
+		event_music_set_score(SCORE_BRIEFING, pm->briefing_music_name);
 	}
 }
 
@@ -1870,7 +1978,7 @@ void parse_cmd_briefs(mission *pm)
 //
 // NOTE: This updates the global Briefing struct with all the data necessary to drive the briefing
 //
-void parse_briefing(mission *pm)
+void parse_briefing(mission *pm, int flags)
 {
 	int nt, i, j, stage_num = 0, icon_num = 0;
 	brief_stage *bs;
@@ -1973,6 +2081,14 @@ void parse_briefing(mission *pm)
 
 				required_string("$type:");
 				stuff_int(&bi->type);
+
+				// Goober5000 - import
+				if (flags & MPF_IMPORT_FSM)
+				{
+					// someone changed the jump node icon to a Knossos, so change it back
+					if (bi->type == ICON_KNOSSOS_DEVICE)
+						bi->type = ICON_JUMP_NODE;
+				}
 
 				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
@@ -4899,7 +5015,7 @@ void parse_variables()
 	}
 }
 
-void parse_mission(mission *pm, int flag)
+void parse_mission(mission *pm, int flags)
 {
 	int i;
 
@@ -4936,17 +5052,17 @@ void parse_mission(mission *pm, int flag)
 
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
 
-	if (flag & MPF_ONLY_MISSION_INFO)
+	if (flags & MPF_ONLY_MISSION_INFO)
 		return;
 
 	parse_plot_info(pm);
 	parse_variables();
 	parse_briefing_info(pm);	// TODO: obsolete code, keeping so we don't obsolete existing mission files
 	parse_cmd_briefs(pm);
-	parse_briefing(pm);
+	parse_briefing(pm, flags);
 	parse_debriefing_new(pm);
 	parse_player_info(pm);
-	parse_objects(pm, flag);
+	parse_objects(pm, flags);
 	parse_wings(pm);
 	parse_events(pm);
 	parse_goals(pm);
@@ -4955,7 +5071,7 @@ void parse_mission(mission *pm, int flag)
 	parse_reinforcements(pm);
 	parse_bitmaps(pm);
 	parse_asteroid_fields(pm);
-	parse_music(pm);
+	parse_music(pm, flags);
 
 	post_process_mission();
 }
@@ -5309,6 +5425,9 @@ int parse_main(char *mission_name, int flags)
 			cfclose(ftemp);
 		}
 
+		// do this before the import, since the music converter sets some things
+		memset(&The_mission, 0, sizeof(The_mission));
+
 		// import?
 		if (flags & MPF_IMPORT_FSM)
 		{
@@ -5320,7 +5439,6 @@ int parse_main(char *mission_name, int flags)
 			read_file_text(mission_name, CF_TYPE_MISSIONS);
 		}
 
-		memset(&The_mission, 0, sizeof(The_mission));
 		parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
 
@@ -6969,32 +7087,6 @@ int is_training_mission()
 }
 
 // Goober5000
-void convertFSMtoFS2()
-{
-	// fix icons
-	conv_fix_briefing_stuff();
-
-	// fix punctuation
-	conv_fix_punctuation();
-
-	// fix music
-	conv_fix_music();
-}
-
-// Goober5000
-void conv_fix_briefing_stuff()
-{
-	char *pos1, *pos2;
-
-	pos1 = strstr(Mission_text, "#Briefing");
-	pos2 = strstr(pos1, "#Debriefing_info");
-
-	// fix the mismatched briefing icon (there's only one)
-	// jump node: 26 --> 33
-	replace_all(pos1, "$type: 26", "$type: 33", MISSION_TEXT_SIZE - (pos1 - Mission_text), (pos2 - pos1));
-}
-
-// Goober5000
 // go through all the displayed text in one section and fix "
 // the section and text delimiters should all be different
 void conv_fix_punctuation_section(char *str, char *section_start, char *section_end, char *text_start, char *text_end)
@@ -7017,7 +7109,7 @@ void conv_fix_punctuation_section(char *str, char *section_start, char *section_
 		replace_all(t1, "\"", "$quote", MISSION_TEXT_SIZE - (str - Mission_text), (t2 - t1));
 	}	
 }
-
+	
 // Goober5000
 void conv_fix_punctuation()
 {
@@ -7035,127 +7127,10 @@ void conv_fix_punctuation()
 }
 
 // Goober5000
-void conv_fix_event_music()
+void convertFSMtoFS2()
 {
-	int i;
-	char *ch;
-	char *track_ch;
-	char name[NAME_LENGTH];
-	char new_name[NAME_LENGTH];
-
-	// skip to music section
-	ch = strstr(Mission_text, "#Music");
-	if (!ch) return;
-
-	// skip to event music
-	ch = strstr(ch, "$Event Music:");
-	if (!ch) return;
-
-	// get music track name
-	track_ch = ch + 14;
-	copy_to_eoln(name, NULL, track_ch, NAME_LENGTH);
-
-	// found?
-	if (event_music_get_soundtrack_index(name) >= 0)
-		return;
-
-	// no music?
-	if (!stricmp(name, "none"))
-		return;
-
-	// get the FS1 equivalent
-	strcpy(new_name, "FS1-");
-	strcat(new_name, name);
-
-	// found?
-	if (event_music_get_soundtrack_index(new_name) >= 0)
-	{
-		goto do_replace;
-	}
-
-	// Marauder is in FS2 as Deuteronomy
-	if (!stricmp(name, "7: Marauder") && event_music_get_soundtrack_index("5: Deuteronomy") >= 0)
-	{
-		strcpy(new_name, "5: Deuteronomy");
-		goto do_replace;
-	}
-
-	// get the track number
-	strcpy(new_name, name);
-	ch = strchr(new_name, ':');
-	if (ch != NULL)
-		*(ch + 1) = '\0';
-
-	// search for something with the same number
-	for (i = 0; i < Num_soundtracks; i++)
-	{
-		if (!strncmp(new_name, Soundtracks[i].name, strlen(new_name)))
-		{
-			strcpy(new_name, Soundtracks[i].name);
-			goto do_replace;
-		}
-	}
-
-	// last resort: pick a random track
-	strcpy(new_name, Soundtracks[rand() % Num_soundtracks].name);
-
-
-do_replace:
-	// replace it
-	replace_one(track_ch, name, new_name, MISSION_TEXT_SIZE - (track_ch - Mission_text));
-}
-
-// Goober5000
-void conv_fix_briefing_music()
-{
-	int num;
-	char *ch;
-	char *track_ch;
-	char name[NAME_LENGTH];
-	char new_name[NAME_LENGTH];
-
-	// skip to music section
-	ch = strstr(Mission_text, "#Music");
-	if (!ch) return;
-
-	// skip to briefing music
-	ch = strstr(ch, "$Briefing Music:");
-	if (!ch) return;
-
-	// get briefing track name
-	track_ch = ch + 17;
-	copy_to_eoln(name, NULL, track_ch, NAME_LENGTH);
-
-	// found?
-	if (event_music_get_spooled_music_index(name) >= 0)
-		return;
-
-	// no music?
-	if (!stricmp(name, "none"))
-		return;
-
-	// Choco Mousse is the FS1 title soundtrack
-	if (!stricmp(name, "Choco Mousse") && event_music_get_spooled_music_index("Aquitaine") >= 0)
-	{
-		strcpy(new_name, "Aquitaine");
-		goto do_replace;
-	}
-
-	// last resort: pick a random track out of the first 7 (the regular ones)...
-	num = (Num_music_files < 7) ? Num_music_files : 7;
-	strcpy(new_name, Spooled_music[rand() % num].name);
-
-
-do_replace:
-	// replace it
-	replace_one(track_ch, name, new_name, MISSION_TEXT_SIZE - (track_ch - Mission_text));
-}
-
-// Goober5000
-void conv_fix_music()
-{
-	conv_fix_event_music();
-	conv_fix_briefing_music();
+	// fix punctuation
+	conv_fix_punctuation();
 }
 
 // Goober5000

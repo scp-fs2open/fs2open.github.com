@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.78 $
+ * $Revision: 2.79 $
  * $Author: Goober5000 $
- * $Date: 2006-02-02 08:12:47 $
+ * $Date: 2006-02-12 01:27:47 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/02/02 08:12:47  Goober5000
+ * ugh, more ship/wing fixage
+ * --Goober5000
+ *
  * Revision 2.77  2006/01/31 01:53:37  Goober5000
  * update FSM import for FSPort v3.0
  * --Goober5000
@@ -600,6 +604,13 @@ typedef struct mission {
 	int		contrail_threshold;
 	int		ambient_light_level;
 
+	// Goober5000
+	char event_music_name[NAME_LENGTH];
+	char briefing_music_name[NAME_LENGTH];
+	char substitute_event_music_name[NAME_LENGTH];
+	char substitute_briefing_music_name[NAME_LENGTH];
+
+	// Goober5000
 	ai_profile_t *ai_profile;
 } mission;
 

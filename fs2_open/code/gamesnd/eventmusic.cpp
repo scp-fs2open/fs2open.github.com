@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-02-11 22:08:56 $
+ * $Revision: 2.34 $
+ * $Date: 2006-02-12 01:27:47 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/02/11 22:08:56  Goober5000
+ * removed the FS1-specific music hack
+ * --Goober5000
+ *
  * Revision 2.32  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -1326,17 +1330,6 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 		return false;
 	}
 
-	// Goober5000
-	if (optional_string("+Allied Arrival Overlay:"))
-	{
-		stuff_boolean_flag(&Soundtracks[strack_idx].flags, TSIF_ALLIED_ARRIVAL_OVERLAY);
-	}
-	else
-	{
-		// FS2 music does this by default
-		Soundtracks[strack_idx].flags |= TSIF_ALLIED_ARRIVAL_OVERLAY;
-	}
-
 	//We can apparently still add this pattern, so go ahead and do it.
 	token = strtok( line_buf, NOX(" ,\t"));
 	strcpy(fname, token);
@@ -1367,7 +1360,7 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 void parse_soundtrack()
 {
 	char namebuf[NAME_LENGTH];
-	int strack_idx = -1;
+	int i, strack_idx = -1;
 	bool nocreate = false;
 
 	//Start parsing soundtrack
@@ -1408,7 +1401,16 @@ void parse_soundtrack()
 		Num_soundtracks++;
 	}
 
-	int i;
+	// Goober5000
+	if (optional_string("+Allied Arrival Overlay:"))
+	{
+		stuff_boolean_flag(&Soundtracks[strack_idx].flags, TSIF_ALLIED_ARRIVAL_OVERLAY);
+	}
+	else
+	{
+		// FS2 music does this by default
+		Soundtracks[strack_idx].flags |= TSIF_ALLIED_ARRIVAL_OVERLAY;
+	}
 
 	//If the next string is $Name:, use default Volition stuff
 	if(check_for_string("$Name:"))
@@ -1471,6 +1473,21 @@ void parse_soundtrack()
 
 	//We're done here.
 	required_string("#SoundTrack End");
+
+
+	// Goober5000 - set the valid flag according to whether we can load all our patterns
+	// (since someone may be running an enhanced music.tbl without warble_fs1 installed)
+	for (i = 0; i < Soundtracks[strack_idx].num_patterns; i++)
+	{
+		CFILE *sdt = cfopen(Soundtracks[strack_idx].pattern_fnames[i], "rb");
+		if (sdt != NULL)
+			cfclose(sdt);	// pattern exists
+		else
+			return;			// pattern doesn't exist; stop checking this soundtrack
+	}
+
+	// made it here okay, so it's valid
+	Soundtracks[strack_idx].flags |= TSIF_VALID;
 }
 void parse_menumusic()
 {
