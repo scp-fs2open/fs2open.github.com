@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.172  2006/01/30 07:00:14  taylor
+ * fix endless loop when we've got too many weapons
+ *
  * Revision 2.171  2006/01/30 06:33:19  taylor
  * add transparent, cycling alpha, and no-light options for weapons
  *
@@ -1809,6 +1812,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	wip->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
 
+	//customizeable corkscrew stuff
 	wip->cs_num_fired=4;
 	wip->cs_radius=1.25f;
 	wip->cs_delay=30;
@@ -2701,12 +2705,6 @@ int parse_weapon(int subtype, bool replace)
 	float Corkscrew_shrink_val				= 0.3f;		// rate at which the radius shrinks
 	int Corkscrew_down_first				= 1;			// have the corkscrew go "down" first
 */
-	//customizeable corkscrew stuff
-	wip->cs_num_fired=4;
-	wip->cs_radius=1.25f;
-	wip->cs_delay=30;
-	wip->cs_crotate=1;
-	wip->cs_twist=5.0f;
 
 	if (optional_string("$Corkscrew:"))
 	{
