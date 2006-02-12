@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.6 $
- * $Date: 2006-02-12 05:23:16 $
+ * $Revision: 1.7 $
+ * $Date: 2006-02-12 10:42:25 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/02/12 05:23:16  Goober5000
+ * additional fixes and enhancements for substitute music
+ * --Goober5000
+ *
  * Revision 1.5  2006/02/12 01:27:47  Goober5000
  * more cool work on importing, music handling, etc.
  * --Goober5000
@@ -3227,6 +3231,14 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 		{
 			// save Bastion flag properly
 			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall > 0) ? CMISSION_FLAG_BASTION : 0));
+		}
+
+		// Goober5000
+		// unfortunately, retail FRED doesn't preserve comments placed here... however since campaigns are
+		// very seldom edited, this shouldn't be too big of a problem
+		if (Campaign.missions[m].debrief_persona_index >= 0)
+		{
+			fout("\n;;FSO 3.6.8;; +Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
 		}
 
 		// save campaign link sexp

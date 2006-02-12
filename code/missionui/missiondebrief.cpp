@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.49 $
- * $Date: 2006-01-30 22:09:52 $
- * $Author: taylor $
+ * $Revision: 2.50 $
+ * $Date: 2006-02-12 10:42:25 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/01/30 22:09:52  taylor
+ * fix problem that made briefing voice repeat first second or two in OpenAL
+ *
  * Revision 2.48  2006/01/26 03:58:14  Goober5000
  * added variable replacement to command briefings, briefings, and debriefings
  * --Goober5000
@@ -1398,70 +1401,75 @@ void debrief_ui_init()
 	Debrief_multi_loading_bitmap = bm_load(Debrief_loading_bitmap_fname[gr_screen.res]);
 }
 
-// sets Promotion_stage.voice
-// defaults to number 9 (Petrarch) for non-volition missions
-// this is an ugly, nasty way of doing this, but it saves us changing the missions at this point
-void debrief_choose_promotion_voice()
+// Goober5000
+int debrief_find_persona_index()
 {
 	int i, j;
 
-	if(Campaign.current_mission < 0){
-		sprintf(Promotion_stage.voice, NOX("9_%s"), Ranks[Promoted].promotion_voice_base);
-		return;
-	}
+	if ((Campaign.current_mission >= 0) && (Campaign.missions[Campaign.current_mission].name) && (Campaign.filename))
+	{
+		// Goober5000 - first see if the campaign supplied a persona index
+		if (Campaign.missions[Campaign.current_mission].debrief_persona_index >= 0)
+			return Campaign.missions[Campaign.current_mission].debrief_persona_index;
 
-	// search thru all official campaigns for our current campaign
-	if ((Campaign.missions[Campaign.current_mission].name) && (Campaign.filename)) {
-		for (i=0; i<NUM_VOLITION_CAMPAIGNS; i++) {
-			if ((Campaign.filename != NULL) && !stricmp(Campaign.filename, Volition_campaigns[i].campaign_name)) {	
-				// now search thru the mission filenames, 
-				for (j=0; j<Volition_campaigns[i].num_missions; j++) {
-					if ((Campaign.missions[Campaign.current_mission].name != NULL) && !stricmp(Campaign.missions[Campaign.current_mission].name, Debrief_promotion_voice_mapping[i][j].mission_file)) {
-						// found it!  set the persona and bail
-						sprintf(Promotion_stage.voice, NOX("%d_%s"), Debrief_promotion_voice_mapping[i][j].persona_index, Ranks[Promoted].promotion_voice_base);
-						return;
+		// search through all official campaigns for our current campaign
+		for (i = 0; i < NUM_VOLITION_CAMPAIGNS; i++)
+		{
+			if (!stricmp(Campaign.filename, Volition_campaigns[i].campaign_name))
+			{
+				// now search through the mission filenames
+				for (j = 0; j < Volition_campaigns[i].num_missions; j++)
+				{
+					// found it!
+					if (!stricmp(Campaign.missions[Campaign.current_mission].name, Debrief_promotion_voice_mapping[i][j].mission_file))
+					{
+						return Debrief_promotion_voice_mapping[i][j].persona_index;
 					}
 				}
 			}
 		}
 	}
 
-	// default to petrarch
-	sprintf(Promotion_stage.voice, NOX("9_%s"), Ranks[Promoted].promotion_voice_base);
+	// not found
+	return -1;
 }
 
-// sets Promotion_stage.voice
-// defaults to number 9 (Petrarch) for non-volition missions
-// this is an ugly, nasty, hateful way of doing this, but it saves us changing the missions at this point
-void debrief_choose_badge_voice()
+// Goober5000
+// V sez: "defaults to number 9 (Petrarch) for non-volition missions
+// this is an ugly, nasty, hateful way of doing this, but it saves us changing the missions at this point"
+void debrief_choose_voice(char *voice_dest, char *voice_base, int default_to_base = 0)
 {
-	int i, j;
+	// see if we have a persona
+	int persona_index = debrief_find_persona_index();
+	if (persona_index >= 0)
+	{
+		// get voice file
+		sprintf(voice_dest, NOX("%d_%s"), persona_index, voice_base);
 
-	if(Campaign.current_mission < 0){
-		// default to petrarch
-		sprintf(Badge_stage.voice, NOX("9_%s"), Medals[Player->stats.m_badge_earned].voice_base);
-	}
-
-	if ((Campaign.missions[Campaign.current_mission].name) && (Campaign.filename)) {
-		// search thru all official campaigns for our current campaign
-		for (i=0; i<NUM_VOLITION_CAMPAIGNS; i++) {
-			if ((Campaign.filename != NULL) && !stricmp(Campaign.filename, Volition_campaigns[i].campaign_name)) {	
-				// now search thru the mission filenames, 
-				for (j=0; j<Campaign.num_missions; j++) {
-					if ((Campaign.missions[Campaign.current_mission].name != NULL) && !stricmp(Campaign.missions[Campaign.current_mission].name, Debrief_promotion_voice_mapping[i][j].mission_file)) {
-						// found it!  set the persona and bail
-						sprintf(Badge_stage.voice, NOX("%d_%s"), Debrief_promotion_voice_mapping[i][j].persona_index, Medals[Player->stats.m_badge_earned].voice_base);
-						return;
-					}
-				}
-			}
+		// check that it exists
+		CFILE *sdt = cfopen(voice_dest, "rb");
+		if (sdt != NULL)
+		{
+			// we're done
+			cfclose(sdt);
+			return;
 		}
 	}
 
-	// default to petrarch
-	sprintf(Badge_stage.voice, NOX("9_%s"), Medals[Player->stats.m_badge_earned].voice_base);
-}
+	// that didn't work, so use the default
 
+	// use the base file; don't prepend anything to it
+	if (default_to_base)
+	{
+		strcpy(voice_dest, voice_base);
+	}
+	// default to Petrarch
+	else
+	{
+		strcpy(voice_dest, "9_");
+		strcpy(voice_dest + 2, voice_base);
+	}
+}
 
 void debrief_award_init()
 {
@@ -1510,7 +1518,7 @@ void debrief_award_init()
 		Promotion_stage.new_recommendation_text = NULL;
 
 		// choose appropriate promotion voice for this mission
-		debrief_choose_promotion_voice();
+		debrief_choose_voice(Promotion_stage.voice, Ranks[Promoted].promotion_voice_base);
 
 		debrief_add_award_text(Ranks[Promoted].name);
 	}
@@ -1526,7 +1534,7 @@ void debrief_award_init()
 		Badge_stage.new_recommendation_text = NULL;
 
 		// choose appropriate voice
-		debrief_choose_badge_voice();
+		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned].voice_base);
 
 		debrief_add_award_text(Medals[i].name);
 	}
@@ -1590,7 +1598,8 @@ void debrief_traitor_init()
 //			strcpy(stagep->voice, NOX("1_"));
 //		}
 
-		strcat(stagep->voice, traitor_voice_file);
+		// Goober5000
+		debrief_choose_voice(stagep->voice, traitor_voice_file, 1);
 
 		required_string("$Recommendation text:");
 		if ( Fred_running )	{
