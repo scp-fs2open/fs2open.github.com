@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.13 $
- * $Date: 2006-02-11 22:08:56 $
+ * $Revision: 2.14 $
+ * $Date: 2006-02-12 01:27:47 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/02/11 22:08:56  Goober5000
+ * removed the FS1-specific music hack
+ * --Goober5000
+ *
  * Revision 2.12  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -230,6 +234,7 @@ extern int Num_music_files;
 
 // Goober5000
 #define TSIF_ALLIED_ARRIVAL_OVERLAY		(1 << 0)
+#define TSIF_VALID						(1 << 1)
 
 // event music soundtrack storage
 typedef struct tagSOUNDTRACK_INFO {
