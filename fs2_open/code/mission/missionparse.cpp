@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.157 $
- * $Date: 2006-02-12 01:27:47 $
+ * $Revision: 2.158 $
+ * $Date: 2006-02-12 05:23:16 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157  2006/02/12 01:27:47  Goober5000
+ * more cool work on importing, music handling, etc.
+ * --Goober5000
+ *
  * Revision 2.156  2006/02/11 21:24:05  Goober5000
  * this isn't needed now
  * --Goober5000
@@ -1907,9 +1911,9 @@ done_briefing_music:
 	}
 
 
-	// set the soundtrack, preferring the substitute
+	// set the soundtrack, preferring the substitute in FS2 (not FRED!)
 	index = event_music_get_soundtrack_index(pm->substitute_event_music_name);
-	if (index >= 0 && Soundtracks[index].flags & TSIF_VALID)
+	if ((index >= 0) && (Soundtracks[index].flags & EMF_VALID) && !Fred_running)
 	{
 		event_music_set_soundtrack(pm->substitute_event_music_name);
 	}
@@ -1918,9 +1922,9 @@ done_briefing_music:
 		event_music_set_soundtrack(pm->event_music_name);
 	}
 
-	// set the briefing, preferring the substitute
+	// set the briefing, preferring the substitute in FS2 (not FRED!)
 	index = event_music_get_spooled_music_index(pm->substitute_briefing_music_name);
-	if (index >= 0)
+	if ((index >= 0) && (Spooled_music[index].flags & EMF_VALID) && !Fred_running)
 	{
 		event_music_set_score(SCORE_BRIEFING, pm->substitute_briefing_music_name);
 	}
@@ -5425,9 +5429,6 @@ int parse_main(char *mission_name, int flags)
 			cfclose(ftemp);
 		}
 
-		// do this before the import, since the music converter sets some things
-		memset(&The_mission, 0, sizeof(The_mission));
-
 		// import?
 		if (flags & MPF_IMPORT_FSM)
 		{
@@ -5439,6 +5440,7 @@ int parse_main(char *mission_name, int flags)
 			read_file_text(mission_name, CF_TYPE_MISSIONS);
 		}
 
+		memset(&The_mission, 0, sizeof(The_mission));
 		parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
 

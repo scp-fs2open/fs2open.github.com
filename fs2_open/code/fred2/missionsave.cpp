@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-02-12 01:27:47 $
+ * $Revision: 1.6 $
+ * $Date: 2006-02-12 05:23:16 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/02/12 01:27:47  Goober5000
+ * more cool work on importing, music handling, etc.
+ * --Goober5000
+ *
  * Revision 1.4  2006/02/11 02:58:23  Goober5000
  * yet more various and sundry fixes
  * --Goober5000
@@ -3006,25 +3010,43 @@ int CFred_mission_save::save_music()
 	if (Current_soundtrack_num < 0)
 		fout(" None");
 	else
-		fout(" %s", The_mission.event_music_name);
+		fout(" %s", Soundtracks[Current_soundtrack_num].name);
 
 	required_string_fred("$Briefing Music:");
 	parse_comments();
 	if (Mission_music[SCORE_BRIEFING] < 0)
 		fout(" None");
 	else
-		fout(" %s", The_mission.briefing_music_name);
+		fout(" %s", Spooled_music[Mission_music[SCORE_BRIEFING]].name);
 
 	// Goober5000
 	// This doesn't need Format_fs2_open because it uses the special comment prefix. :)
 	if (strlen(The_mission.substitute_event_music_name) && strlen(The_mission.substitute_briefing_music_name))
 	{
-		fout("\n");
+		char *ch;
 
+		fout("\n");
 		fout(";;FSO 3.6.8;; $Substitute Music:");
-		fout(" %s, %s\n", The_mission.substitute_event_music_name, The_mission.substitute_briefing_music_name);
+		fout(" %s, %s", The_mission.substitute_event_music_name, The_mission.substitute_briefing_music_name);
 
-		fout("\n");
+		// bypass the comment that's already there so it doesn't show up twice
+		ch = strstr(raw_ptr, ";;FSO 3.6.8;; $Substitute Music:");
+		if (ch != NULL)
+		{
+			char *writep = ch;
+			char *readp = strchr(writep, '\n');
+
+			// copy all characters past it
+			while (*readp != '\0')
+			{
+				*writep = *readp;
+
+				writep++;
+				readp++;
+			}
+
+			*writep = '\0';
+		}
 	}
 
 	return err;

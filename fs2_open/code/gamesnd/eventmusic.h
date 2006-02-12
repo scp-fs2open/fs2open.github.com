@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.14 $
- * $Date: 2006-02-12 01:27:47 $
+ * $Revision: 2.15 $
+ * $Date: 2006-02-12 05:23:16 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/02/12 01:27:47  Goober5000
+ * more cool work on importing, music handling, etc.
+ * --Goober5000
+ *
  * Revision 2.13  2006/02/11 22:08:56  Goober5000
  * removed the FS1-specific music hack
  * --Goober5000
@@ -221,8 +225,16 @@ extern int Mission_music[NUM_SCORES];		// indicies into Spooled_music[]
 
 extern int Current_soundtrack_num;		// index into Soundtracks[]
 
+
+// Goober5000 - event music flags
+// used for both spooled music and soundtracks since there aren't many
+#define EMF_VALID						(1 << 0)
+#define EMF_ALLIED_ARRIVAL_OVERLAY		(1 << 1)
+
+
 // menu music storage
 typedef struct menu_music {
+	int flags;
 	char name[NAME_LENGTH];				// name music is known by
 	char filename[MAX_FILENAME_LEN];	// name music is stored on disk as
 } menu_music;
@@ -232,9 +244,6 @@ typedef struct menu_music {
 extern menu_music Spooled_music[MAX_SPOOLED_MUSIC];
 extern int Num_music_files;
 
-// Goober5000
-#define TSIF_ALLIED_ARRIVAL_OVERLAY		(1 << 0)
-#define TSIF_VALID						(1 << 1)
 
 // event music soundtrack storage
 typedef struct tagSOUNDTRACK_INFO {
@@ -248,6 +257,7 @@ typedef struct tagSOUNDTRACK_INFO {
 
 extern SOUNDTRACK_INFO Soundtracks[MAX_SOUNDTRACKS];
 extern int Num_soundtracks;
+
 
 #ifndef NO_SOUND
 
