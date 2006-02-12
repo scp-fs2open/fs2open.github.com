@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-01-18 17:45:01 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2006-02-12 10:42:25 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/01/18 17:45:01  taylor
+ * this is probably going to end up doing something bad again when switching mods, hopefully it's not still necessary though
+ *
  * Revision 2.36  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -782,14 +785,17 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 			// Goober5000 - new main hall stuff!
 			cm->main_hall = 0;
+			if (optional_string("+Main Hall:"))
+				stuff_ubyte(&cm->main_hall);
 
 			// deal with previous campaign versions
 			if (cm->flags & CMISSION_FLAG_BASTION)
 				cm->main_hall = 1;
 
-			// specify up to 256 main halls :)
-			if (optional_string("+Main Hall:"))
-				stuff_ubyte(&cm->main_hall);
+			// Goober5000 - new debriefing persona stuff!
+			cm->debrief_persona_index = -1;
+			if (optional_string("+Debriefing Persona Index:"))
+				stuff_ubyte(&cm->debrief_persona_index);
 
 			cm->formula = -1;
 			if ( optional_string("+Formula:") ) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.9 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10 $
+ * $Date: 2006-02-12 10:42:25 $
+ * $Author: Goober5000 $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.8  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -392,6 +395,7 @@ typedef struct cmission {
 	int				pos;						// what x position on level it's on (Fred)
 	int				flags;
 	ubyte			main_hall;				// which main hall the player is in - Goober5000
+	ubyte			debrief_persona_index;	// Goober5000
 	scoring_struct	stats;
 } cmission;
 
