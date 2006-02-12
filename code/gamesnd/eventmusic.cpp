@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-02-12 05:23:16 $
+ * $Revision: 2.36 $
+ * $Date: 2006-02-12 08:39:32 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/02/12 05:23:16  Goober5000
+ * additional fixes and enhancements for substitute music
+ * --Goober5000
+ *
  * Revision 2.34  2006/02/12 01:27:47  Goober5000
  * more cool work on importing, music handling, etc.
  * --Goober5000
@@ -1490,7 +1494,7 @@ void parse_soundtrack()
 	for (i = 0; i < Soundtracks[strack_idx].num_patterns; i++)
 	{
 		// check for "none"
-		if (!strnicmp(Soundtracks[strack_idx].pattern_fnames[i], "none", 4))
+		if (!strlen(Soundtracks[strack_idx].pattern_fnames[i]) || !strnicmp(Soundtracks[strack_idx].pattern_fnames[i], "none", 4))
 			continue;
 
 		// check for existence of file
@@ -1504,6 +1508,7 @@ void parse_soundtrack()
 	// made it here okay, so it's valid
 	Soundtracks[strack_idx].flags |= EMF_VALID;
 }
+
 void parse_menumusic()
 {
 	char spoolname[NAME_LENGTH];
@@ -1550,6 +1555,16 @@ void parse_menumusic()
 			//Clear this
 			strcpy( Spooled_music[idx].filename, "");
 		}
+	}
+
+	// Goober5000 - check for existence of file
+	CFILE *sdt = cfopen(Spooled_music[idx].filename, "rb");
+	if (sdt != NULL)
+	{
+		// pattern exists
+		cfclose(sdt);
+
+		Spooled_music[idx].flags |= EMF_VALID;
 	}
 
 	Num_music_files++;	
