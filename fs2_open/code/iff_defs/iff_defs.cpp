@@ -6,11 +6,15 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.7 $
- * $Date: 2006-01-28 04:33:06 $
+ * $Revision: 1.8 $
+ * $Date: 2006-02-13 00:20:45 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2006/01/28 04:33:06  Goober5000
+ * fix all teams at war IFF behavior
+ * --Goober5000
+ *
  * Revision 1.6  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -37,7 +41,6 @@
 #include "globalincs/def_files.h"
 #include "iff_defs/iff_defs.h"
 #include "parse/parselo.h"
-#include "cfile/cfile.h"
 #include "hud/hud.h"
 #include "mission/missionparse.h"
 #include "ship/ship.h"
@@ -134,14 +137,8 @@ void iff_init()
 	int num_attack_names[MAX_IFFS];
 	int num_observed_colors[MAX_IFFS];
 
-	// Goober5000 - condensed check for table file
-	CFILE *idt = cfopen("iff_defs.tbl", "rb");
-	int table_exists = (idt != NULL);
-	if (table_exists)
-		cfclose(idt);
-
 	// Goober5000 - if table doesn't exist, use the default table
-	if (table_exists)
+	if (cf_exists_full("iff_defs.tbl", CF_TYPE_TABLES))
 		read_file_text("iff_defs.tbl");
 	else
 		read_file_text_from_array(defaults_get_file("iff_defs.tbl"));

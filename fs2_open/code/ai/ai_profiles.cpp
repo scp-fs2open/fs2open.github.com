@@ -8,11 +8,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.8 $
- * $Date: 2005-12-22 04:32:44 $
- * $Author: taylor $
+ * $Revision: 1.9 $
+ * $Date: 2006-02-13 00:20:44 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/12/22 04:32:44  taylor
+ * GCC knows that fix == int so it hates the utility functions here, for sanity sake just rename them to type specific to avoid rampant casting
+ *
  * Revision 1.7  2005/12/06 03:17:48  taylor
  * cleanup some debug log messages:
  *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
@@ -49,7 +52,6 @@
 
 
 #include "ai/ai_profiles.h"
-#include "cfile/cfile.h"
 #include "parse/parselo.h"
 
 
@@ -177,17 +179,12 @@ void ai_profiles_init()
 	Default_ai_profile = 0;
 	Num_ai_profiles = 1;
 
-	// Goober5000 - check for table file
-	CFILE *sdt = cfopen("ai_profiles.tbl", "rb");
-	int table_exists = (sdt != NULL);
-	if (table_exists)
-		cfclose(sdt);
-
-	// Goober5000 - if table doesn't exist, just use the defaults
-	if (table_exists)
+	// load file
+	if (cf_exists_full("ai_profiles.tbl", CF_TYPE_TABLES))
 	{
 		read_file_text("ai_profiles.tbl");
 	}
+	// if table doesn't exist, just use the defaults
 	else
 	{
 		mprintf(("No ai_profiles.tbl found; using defaults.\n"));

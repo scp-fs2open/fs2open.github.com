@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.23 $
- * $Date: 2005-12-28 22:17:02 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2006-02-13 00:20:46 $
+ * $Author: Goober5000 $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2005/12/28 22:17:02  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.22  2005/12/04 19:02:36  wmcoolmon
  * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
  *
@@ -775,8 +781,8 @@ void shockwave_level_init()
 	mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
 
 	// Goober5000 - check for existence of file before trying to load it
-	// taylor - changed to use cf_find_file_location() rather than cfopen()
-	if ( cf_find_file_location("shockwave.pof", CF_TYPE_MODELS, 0, NULL, NULL, NULL) ) {
+	if (cf_exists_full("shockwave.pof", CF_TYPE_MODELS))
+	{
 		default_shockwave_model = model_load("shockwave.pof", 0, NULL, 0);
 	}
 

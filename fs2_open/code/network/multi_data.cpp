@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_data.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.9  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -319,7 +322,7 @@ void multi_data_handle_incoming(int handle)
 
 	// if we already have a copy of this file, abort the xfer		
 	// Does file exist in \multidata?
-	if( cf_exist(fname, CF_TYPE_MULTI_CACHE) ){			
+	if (cf_exists(fname, CF_TYPE_MULTI_CACHE)) {
 		nprintf(("Network", "Not accepting file xfer because a duplicate exists!\n"));			
 	
 		// kill the stream		

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-01-18 06:13:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.68 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/01/18 06:13:18  wmcoolmon
+ * Various scripting updates
+ *
  * Revision 2.66  2006/01/03 06:02:00  taylor
  * fix freaky nan error on line drawing where model would get loaded on second entry into WS screen when it should be animation
  *
@@ -1984,17 +1987,6 @@ void wl_load_anim(int weapon_class)
 				strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
 				icon->wl_anim = anim_load(animation_filename, 1);
 			}
-
-			/*
-			if (!cf_exist(animation_filename, CF_TYPE_INTERFACE)) {
-				// file does not exist, use original low res version
-				mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
-				strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
-			} else {
-				animation_filename[strlen(animation_filename) - 4] = '\0';
-				mprintf(("Weapon ANI: Found hires version of %s\n",animation_filename));
-			}
-			*/
 		} else {
 			strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
 			// load the compressed ship animation into memory 

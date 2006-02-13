@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.50 $
- * $Date: 2006-02-12 10:42:25 $
+ * $Revision: 2.51 $
+ * $Date: 2006-02-13 00:20:45 $
  * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2006/02/12 10:42:25  Goober5000
+ * allow specification of debriefing personas
+ * --Goober5000
+ *
  * Revision 2.49  2006/01/30 22:09:52  taylor
  * fix problem that made briefing voice repeat first second or two in OpenAL
  *
@@ -1446,14 +1450,9 @@ void debrief_choose_voice(char *voice_dest, char *voice_base, int default_to_bas
 		// get voice file
 		sprintf(voice_dest, NOX("%d_%s"), persona_index, voice_base);
 
-		// check that it exists
-		CFILE *sdt = cfopen(voice_dest, "rb");
-		if (sdt != NULL)
-		{
-			// we're done
-			cfclose(sdt);
+		// if it exists, we're done
+		if (cf_exists_full(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
 			return;
-		}
 	}
 
 	// that didn't work, so use the default

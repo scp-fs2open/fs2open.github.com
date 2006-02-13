@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-01-17 02:33:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.36 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/01/17 02:33:20  wmcoolmon
+ * data/scripts directory
+ *
  * Revision 2.34  2005/12/28 22:06:47  taylor
  * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
  *
@@ -741,7 +744,7 @@ char *cf_add_ext(char *filename, char *ext)
 }
 
 // Deletes a file. Returns 0 if an error occurs, 1 on success
-int cf_delete( char *filename, int dir_type )
+int cf_delete(char *filename, int dir_type)
 {
 	char longname[MAX_PATH_LEN];
 
@@ -772,7 +775,7 @@ int cf_delete( char *filename, int dir_type )
 
 
 // Same as _access function to read a file's access bits
-int cf_access( char *filename, int dir_type, int mode )
+int cf_access(char *filename, int dir_type, int mode)
 {
 	char longname[MAX_PATH_LEN];
 
@@ -784,23 +787,33 @@ int cf_access( char *filename, int dir_type, int mode )
 }
 
 
-// Returns 1 if file exists, 0 if not.
-int cf_exist( char *filename, int dir_type )
+// Returns 1 if the file exists, 0 if not.
+// Checks only the file system.
+int cf_exists(char *filename, int dir_type)
 {
 	char longname[MAX_PATH_LEN];
 
-	Assert( CF_TYPE_SPECIFIED(dir_type) );
+	Assert(CF_TYPE_SPECIFIED(dir_type));
 
-	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
+	cf_create_default_path_string(longname, sizeof(longname) - 1, dir_type, filename);
 
 	FILE *fp = fopen(longname, "rb");
-	if (fp) {
+	if (fp)
+	{
 		// Goober5000 - these were switched, causing the fclose to be unreachable
 		fclose(fp);
 		return 1;
 	}
 
 	return 0;
+}
+
+// Goober5000
+// Returns !0 if the file exists, 0 if not.
+// Checks both the file system and the VPs.
+int cf_exists_full(char *filename, int dir_type)
+{
+	return cf_find_file_location(filename, dir_type, 0, NULL, NULL, NULL);
 }
 
 #ifdef _WIN32

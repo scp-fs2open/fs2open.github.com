@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.224 $
- * $Date: 2006-01-31 06:42:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.225 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.224  2006/01/31 06:42:00  wmcoolmon
+ * Scripting simulation hook; removed USE_LUA
+ *
  * Revision 2.223  2006/01/30 06:28:47  taylor
  * dynamic starfield bitmaps
  *
@@ -69,7 +72,7 @@
  * Finished committing codebase
  *
  * Revision 2.206  2006/01/11 05:40:59  taylor
- * use cf_find_file_location() check instead of cfopen() for is_spary_hi check
+ * use cf_find_file_location() check instead of cfopen() for has_sparky_hi check
  *
  * Revision 2.205  2006/01/11 01:35:53  wmcoolmon
  * Complete the HUD scripting hook. (Eight lines of code, and I still miss three of them. :P
@@ -3467,10 +3470,7 @@ void game_init()
 /////////////////////////////
 
 	// check for hi res pack file 
-	int has_sparky_hi = 0;
-
-	if ( cf_find_file_location("2_ChoosePilot-m.pcx", CF_TYPE_ANY, 0, NULL, NULL, NULL) )
-		has_sparky_hi = 1;
+	int has_sparky_hi = cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY);
 
 
 	if(!Is_standalone)
@@ -10651,7 +10651,7 @@ int Lang_auto_detect_checksums[LCL_NUM_LANGUAGES] = {
 
 // default setting is "-1" to use registry setting with English as fall back
 // DO NOT change that default setting here or something uncouth might happen
-// int the localization code
+// in the localization code
 int detect_lang()
 {
 	uint file_checksum;
@@ -10860,7 +10860,7 @@ int game_hacked_data()
 		return retval;
 	}
 
-	if (!cf_exist( "tvalid.cfg", CF_TYPE_DATA ))
+	if (!cf_exists("tvalid.cfg", CF_TYPE_DATA))
 	{
 		// create the tvalid.cfg
 		multi_update_valid_tables();
