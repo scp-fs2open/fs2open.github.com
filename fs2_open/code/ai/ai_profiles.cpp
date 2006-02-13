@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-02-13 00:20:44 $
+ * $Revision: 1.10 $
+ * $Date: 2006-02-13 04:56:58 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/02/13 00:20:44  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 1.8  2005/12/22 04:32:44  taylor
  * GCC knows that fix == int so it hates the utility functions here, for sanity sake just rename them to type specific to avoid rampant casting
  *
@@ -51,32 +55,22 @@
  */
 
 
+#include "globalincs/pstypes.h"
+#include "globalincs/def_files.h"
 #include "ai/ai_profiles.h"
 #include "parse/parselo.h"
+#include "localization/localize.h"
 
 
+// global stuff
 int Num_ai_profiles;
 int Default_ai_profile;
 ai_profile_t Ai_profiles[MAX_AI_PROFILES];
 
+// local to this file
+static int Ai_profiles_initted = 0;
+static char Default_profile_name[NAME_LENGTH];
 
-// utility
-void skill_level_array_copy_int(int dest[], int src[])
-{
-	memcpy(dest, src, NUM_SKILL_LEVELS * sizeof(int));
-}
-
-// utility
-void skill_level_array_copy_fix(fix dest[], fix src[])
-{
-	memcpy(dest, src, NUM_SKILL_LEVELS * sizeof(fix));
-}
-
-// utility
-void skill_level_array_copy_float(float dest[], float src[])
-{
-	memcpy(dest, src, NUM_SKILL_LEVELS * sizeof(float));
-}
 
 // utility
 void set_flag(ai_profile_t *profile, char *name, int flag)
@@ -93,118 +87,46 @@ void set_flag(ai_profile_t *profile, char *name, int flag)
 	}
 }
 
-// This function initializes the given profile with the default data.
-// We need to do it this way instead of through a default table because
-// 1) the default profiles always need to be available; and 2) the
-// other profiles inherit their unspecified options from this profile,
-// which means it must be initialized before any others.
-void init_profile_to_default(ai_profile_t *profile)
+void parse_ai_profiles_tbl(char *longname)
 {
-	strcpy(profile->profile_name, "FS2 RETAIL");
+	int i, rval;
+	bool no_create = false;
+	char profile_name[NAME_LENGTH];
+	ai_profile_t dummy_profile;
 
-	profile->flags = 0;
+	// open localization
+	lcl_ext_open();
 
-	int	max_incoming_asteroids[NUM_SKILL_LEVELS] = {3, 4, 5, 7, 10};
-	skill_level_array_copy_int(profile->max_incoming_asteroids, max_incoming_asteroids);
-
-	int	max_allowed_player_homers[NUM_SKILL_LEVELS] = {2, 3, 4, 7, 99};
-	skill_level_array_copy_int(profile->max_allowed_player_homers, max_allowed_player_homers);
-
-	int	max_attackers[NUM_SKILL_LEVELS] = {2, 3, 4, 5, 99};
-	skill_level_array_copy_int(profile->max_attackers, max_attackers);
-
-	fix predict_position_delay[NUM_SKILL_LEVELS] = {2*F1_0, 3*F1_0/2, 4*F1_0/3, F1_0/2, 0};
-	skill_level_array_copy_fix(profile->predict_position_delay, predict_position_delay);
-
-	float cmeasure_life_scale[NUM_SKILL_LEVELS] = {3.0f, 2.0f, 1.5f, 1.25f, 1.0f};
-	skill_level_array_copy_float(profile->cmeasure_life_scale, cmeasure_life_scale);
-
-	float weapon_energy_scale[NUM_SKILL_LEVELS] = {10.0f, 4.0f, 2.5f, 2.0f, 1.5f};
-	skill_level_array_copy_float(profile->weapon_energy_scale, weapon_energy_scale);
-
-	float shield_energy_scale[NUM_SKILL_LEVELS] = {4.0f, 2.0f, 1.5f, 1.25f, 1.0f};
-	skill_level_array_copy_float(profile->shield_energy_scale, shield_energy_scale);
-
-	float afterburner_recharge_scale[NUM_SKILL_LEVELS] = {5.0f, 3.0f, 2.0f, 1.5f, 1.0f};
-	skill_level_array_copy_float(profile->afterburner_recharge_scale, afterburner_recharge_scale);
-
-	float player_damage_scale[NUM_SKILL_LEVELS] = {0.25f, 0.5f, 0.65f, 0.85f, 1.0f};
-	skill_level_array_copy_float(profile->player_damage_scale, player_damage_scale);
-
-	float subsys_damage_scale[NUM_SKILL_LEVELS] = {0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
-	skill_level_array_copy_float(profile->subsys_damage_scale, subsys_damage_scale);
-
-	float beam_friendly_damage_cap[NUM_SKILL_LEVELS] = { 0.0f, 5.0f, 10.0f, 20.0f, 30.0f };
-	skill_level_array_copy_float(profile->beam_friendly_damage_cap, beam_friendly_damage_cap);
-
-	float turn_time_scale[NUM_SKILL_LEVELS] = {3.0f, 2.2f, 1.6f, 1.3f, 1.0f};
-	skill_level_array_copy_float(profile->turn_time_scale, turn_time_scale);
-
-	float link_energy_levels_always[NUM_SKILL_LEVELS] = {100.0f, 80.0f, 60.0f, 40.0f, 20.0f};
-	skill_level_array_copy_float(profile->link_energy_levels_always, link_energy_levels_always);
-
-	float link_energy_levels_maybe[NUM_SKILL_LEVELS] = {90.0f, 60.0f, 40.0f, 20.0f, 10.0f};
-	skill_level_array_copy_float(profile->link_energy_levels_maybe, link_energy_levels_maybe);
-
-	float link_ammo_levels_always[NUM_SKILL_LEVELS] = {95.0f, 80.0f, 60.0f, 40.0f, 20.0f};
-	skill_level_array_copy_float(profile->link_ammo_levels_always, link_ammo_levels_always);
-
-	float link_ammo_levels_maybe[NUM_SKILL_LEVELS] = {90.0f, 60.0f, 40.0f, 20.0f, 10.0f};
-	skill_level_array_copy_float(profile->link_ammo_levels_maybe, link_ammo_levels_maybe);
-
-	float in_range_time[NUM_SKILL_LEVELS] = {2.0f, 1.4f, 0.75f, 0.0f, -1.0f};
-	skill_level_array_copy_float(profile->in_range_time, in_range_time);
-
-	float cmeasure_fire_chance[NUM_SKILL_LEVELS] = {0.2f, 0.3f, 0.5f, 0.9f, 1.1f};
-	skill_level_array_copy_float(profile->cmeasure_fire_chance, cmeasure_fire_chance);
-
-	float shield_manage_delay[NUM_SKILL_LEVELS] = {5.0f, 4.0f, 2.5f, 1.2f, 0.1f};
-	skill_level_array_copy_float(profile->shield_manage_delay, shield_manage_delay);
-
-	float ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS] = {4.0f, 2.5f, 1.75f, 1.25f, 1.0f};
-	skill_level_array_copy_float(profile->ship_fire_delay_scale_hostile, ship_fire_delay_scale_hostile);
-
-	float ship_fire_delay_scale_friendly[NUM_SKILL_LEVELS] = {2.0f, 1.4f, 1.25f, 1.1f, 1.0f};
-	skill_level_array_copy_float(profile->ship_fire_delay_scale_friendly, ship_fire_delay_scale_friendly);
-}
-
-// This function parses the data from ai_profiles.tbl
-
-void ai_profiles_init()
-{
-	char default_profile_name[NAME_LENGTH];
-
-	// init retail entry first
-	init_profile_to_default(&Ai_profiles[0]);
-	Default_ai_profile = 0;
-	Num_ai_profiles = 1;
-
-	// load file
-	if (cf_exists_full("ai_profiles.tbl", CF_TYPE_TABLES))
+	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		read_file_text("ai_profiles.tbl");
+		mprintf(("Unable to parse %s!  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
 	}
-	// if table doesn't exist, just use the defaults
 	else
 	{
-		mprintf(("No ai_profiles.tbl found; using defaults.\n"));
-		return;
+		if (longname == NULL)
+		{
+			read_file_text_from_array(defaults_get_file("ai_profiles.tbl"));
+		}
+		else
+		{
+			read_file_text(longname);
+		}
+
+		reset_parse();		
 	}
 
-	reset_parse();
 
+	// start parsing
 	required_string("#AI Profiles");
 
-	// different default?
+	// new default?
 	if (optional_string("$Default Profile:"))
-		stuff_string(default_profile_name, F_NAME, NULL, NAME_LENGTH);
-	else
-		default_profile_name[0] = '\0';
+		stuff_string(Default_profile_name, F_NAME, NULL, NAME_LENGTH);
 
 	// begin reading data
 	while (required_string_either("#End","$Profile Name:"))
 	{
-		ai_profile_t *profile;
+		ai_profile_t *profile = &dummy_profile;
 		
 		// make sure we're under the limit
 		if (Num_ai_profiles >= MAX_AI_PROFILES)
@@ -214,15 +136,48 @@ void ai_profiles_init()
 			break;
 		}
 
-		profile = &Ai_profiles[Num_ai_profiles];
-		Num_ai_profiles++;
-
-		// initialize
-		memcpy(profile, &Ai_profiles[0], sizeof(ai_profile_t));
-
 		// get the name
 		required_string("$Profile Name:");
-		stuff_string(profile->profile_name, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(profile_name, F_NAME, NULL, NAME_LENGTH);
+
+		// modular table stuff
+		if (optional_string("+nocreate"))
+		{
+			no_create = true;
+
+			for (i = 0; i < Num_ai_profiles; i++)
+			{
+				if (!stricmp(Ai_profiles[i].profile_name, profile_name))
+				{
+					profile = &Ai_profiles[i];
+					break;
+				}
+			}
+		}
+		else
+		{
+			profile = &Ai_profiles[Num_ai_profiles];
+			Num_ai_profiles++;
+		}
+
+		// initialize profile if we're not building from a previously parsed one
+		if (!no_create)
+		{
+			// base profile, so zero it out
+			if (Num_ai_profiles == 1)
+			{
+				memset(profile, 0, sizeof(ai_profile_t));
+			}
+			// brand new profile, so set it to the base defaults
+			else
+			{
+				memcpy(profile, &Ai_profiles[0], sizeof(ai_profile_t));
+			}
+		}
+
+		// set the name
+		strcpy(profile->profile_name, profile_name);
+
 
 		// fill in any and all settings; they're all optional and can be in any order
 		while (!check_for_string("$Profile Name:") && !check_for_string("#End"))
@@ -265,6 +220,9 @@ void ai_profiles_init()
 
 			if (optional_string("$Player Damage Factor:") || optional_string("$AI Damage Reduction to Player Hull:"))
 				parse_float_list(profile->player_damage_scale, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
+				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
 			// represented in fractions of F1_0
 			if (optional_string("$Predict Position Delay:"))
@@ -330,10 +288,37 @@ void ai_profiles_init()
 	
 	required_string("#End");
 
+	// close localization
+	lcl_ext_close();
+}
+
+void ai_profiles_init()
+{
+	int temp;
+
+	if (Ai_profiles_initted)
+		return;
+
+	Num_ai_profiles = 0;
+	Default_ai_profile = 0;
+	Default_profile_name[0] = '\0';
+
+	// init retail entry first
+	parse_ai_profiles_tbl(NULL);
+
+	// now parse the supplied table (if any)
+	if (cf_exists_full("ai_profiles.tbl", CF_TYPE_TABLES))
+		parse_ai_profiles_tbl("ai_profiles.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-aip.tbm", parse_ai_profiles_tbl);
+
 	// set default if specified
-	int temp = ai_profile_lookup(default_profile_name);
+	temp = ai_profile_lookup(Default_profile_name);
 	if (temp >= 0)
 		Default_ai_profile = temp;
+
+	Ai_profiles_initted = 1;
 }
 
 int ai_profile_lookup(char *name)
