@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-02-12 08:39:32 $
+ * $Revision: 2.37 $
+ * $Date: 2006-02-13 00:20:45 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/02/12 08:39:32  Goober5000
+ * whoops, forgot this
+ *
  * Revision 2.35  2006/02/12 05:23:16  Goober5000
  * additional fixes and enhancements for substitute music
  * --Goober5000
@@ -582,7 +585,7 @@ void event_music_init()
 	event_music_parse_musictbl("music.tbl");
 
 	// look for any modular tables
-	parse_modular_table( NOX("*-mus.tbm"), event_music_parse_musictbl );
+	parse_modular_table(NOX("*-mus.tbm"), event_music_parse_musictbl);
 
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;
@@ -1497,12 +1500,9 @@ void parse_soundtrack()
 		if (!strlen(Soundtracks[strack_idx].pattern_fnames[i]) || !strnicmp(Soundtracks[strack_idx].pattern_fnames[i], "none", 4))
 			continue;
 
-		// check for existence of file
-		CFILE *sdt = cfopen(Soundtracks[strack_idx].pattern_fnames[i], "rb");
-		if (sdt != NULL)
-			cfclose(sdt);	// pattern exists
-		else
-			return;			// pattern doesn't exist; stop checking this soundtrack
+		// check for file
+		if (!cf_exists_full(Soundtracks[strack_idx].pattern_fnames[i], CF_TYPE_MUSIC))
+			return;
 	}
 
 	// made it here okay, so it's valid
@@ -1558,14 +1558,8 @@ void parse_menumusic()
 	}
 
 	// Goober5000 - check for existence of file
-	CFILE *sdt = cfopen(Spooled_music[idx].filename, "rb");
-	if (sdt != NULL)
-	{
-		// pattern exists
-		cfclose(sdt);
-
+	if (cf_exists_full(Spooled_music[idx].filename, CF_TYPE_MUSIC))
 		Spooled_music[idx].flags |= EMF_VALID;
-	}
 
 	Num_music_files++;	
 }

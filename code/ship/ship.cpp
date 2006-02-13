@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.309 $
- * $Date: 2006-02-11 02:58:23 $
+ * $Revision: 2.310 $
+ * $Date: 2006-02-13 00:20:45 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.309  2006/02/11 02:58:23  Goober5000
+ * yet more various and sundry fixes
+ * --Goober5000
+ *
  * Revision 2.308  2006/02/06 02:06:02  wmcoolmon
  * Various fixes; very beginnings of Directives scripting support
  *
@@ -4198,15 +4202,15 @@ void init_shiptype_defs()
 void parse_shiptype_tbl(char *longname)
 {
 	lcl_ext_open();
-	if(longname != NULL) {
+
+	if (longname != NULL)
 		read_file_text(longname);
-	} else {
+	else
 		read_file_text_from_array(defaults_get_file("objecttypes.tbl"));
-		//init_shiptype_defs();
-	}
+
 	reset_parse();
 
-	if(optional_string("#Ship Types"))
+	if (optional_string("#Ship Types"))
 	{
 		while (required_string_either("#End", "$Name:"))
 		{
@@ -4386,14 +4390,14 @@ void ship_init()
 	{
 		int num_files;
 
-		// Goober5000 - if table doesn't exist, use the default table (see above)
-		if ( cf_find_file_location("objecttypes.tbl", CF_TYPE_TABLES, 0, NULL, NULL, NULL) )
+		//Parse main TBL first
+		if (cf_exists_full("objecttypes.tbl", CF_TYPE_TABLES))
 			parse_shiptype_tbl("objecttypes.tbl");
 		else
 			parse_shiptype_tbl(NULL);
 
 		//Then other ones
-		num_files = parse_modular_table( NOX("*-obt.tbm"), parse_shiptype_tbl );
+		num_files = parse_modular_table(NOX("*-obt.tbm"), parse_shiptype_tbl);
 
 		if ( num_files > 0 ) {
 			Module_ship_weapons_loaded = true;
@@ -4433,7 +4437,7 @@ void ship_init()
 			parse_shiptbl("ships.tbl");
 
 			//Then other ones
-			num_files = parse_modular_table( NOX("*-shp.tbm"), parse_shiptbl );
+			num_files = parse_modular_table(NOX("*-shp.tbm"), parse_shiptbl);
 
 			if ( num_files > 0 ) {
 				Module_ship_weapons_loaded = true;
@@ -15588,7 +15592,7 @@ void armor_init()
 	if (!armor_inited) {
 		armor_parse_table("armor.tbl");
 
-		parse_modular_table( NOX("*-amr.tbm"), armor_parse_table );
+		parse_modular_table(NOX("*-amr.tbm"), armor_parse_table);
 
 		armor_inited = 1;
 	}

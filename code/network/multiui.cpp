@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-02-03 22:28:10 $
- * $Author: taylor $
+ * $Revision: 2.44 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/02/03 22:28:10  taylor
+ * a couple of mvalid.cfg and tvalid.cfg file format changes to give them at least some readability
+ * some cleanup, extra logging, and very slight speedup with mission and table validation checking
+ * fix memory leak from mission and table validation checking
+ *
  * Revision 2.42  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -5285,7 +5290,7 @@ void multi_create_list_scroll_down()
 // gets a list of multiplayer misisons
 void multi_create_list_load_missions()
 {
-	if (!cf_exist( "mvalid.cfg", CF_TYPE_DATA ))
+	if (!cf_exists("mvalid.cfg", CF_TYPE_DATA))
 	{
 		// create the mvalid.cfg
 		multi_update_valid_missions();

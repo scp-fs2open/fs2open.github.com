@@ -7,13 +7,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.41 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.42 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.40  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -1027,13 +1030,12 @@ void hud_positions_init()
 	load_hud_defaults(&default_hud);
 #ifndef NEW_HUD
 
-	if ( cf_find_file_location("hud_gauges.tbl", CF_TYPE_TABLES, 0, NULL, NULL, NULL) ) {
+	if (cf_exists_full("hud_gauges.tbl", CF_TYPE_TABLES))
 		parse_hud_gauges_tbl("hud_gauges.tbl");
-	} else {
+	else
 		calculate_gauges(&default_hud);
-	}
 
-	parse_modular_table( NOX("*-hdg.tbm"), parse_hud_gauges_tbl );
+	parse_modular_table(NOX("*-hdg.tbm"), parse_hud_gauges_tbl);
 
 	set_current_hud(-1);
 #endif

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 2.32 $
+ * $Date: 2006-02-13 00:20:45 $
  * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.30  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -631,7 +635,7 @@ void fireball_parse_tbl()
 	parse_fireball_tbl("fireball.tbl");
 
 	// look for any modular tables
-	parse_modular_table( NOX("*-fbl.tbm"), parse_fireball_tbl );
+	parse_modular_table(NOX("*-fbl.tbm"), parse_fireball_tbl);
 
 	// we've got our list so pass it off for final checking and loading.
 	// we assume that entries in fireball.tbl are in the correct order
@@ -727,14 +731,12 @@ void fireball_init()
 	Warp_model = -1;
 
 	// Goober5000 - check for existence of file before trying to load it
-	// taylor - changed to use cf_find_file_location() rather than cfopen()
-	if ( cf_find_file_location("warp.pof", CF_TYPE_MODELS, 0, NULL, NULL, NULL) ) {
+	if (cf_exists_full("warp.pof", CF_TYPE_MODELS))
+	{
 		Warp_model = model_load("warp.pof", 0, NULL, 0);
 	}
 
 	mprintf((" %d\n", Warp_model));
-
-
 }
 
 MONITOR( NumFireballsRend );	

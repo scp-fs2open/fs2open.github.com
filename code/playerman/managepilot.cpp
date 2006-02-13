@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.25 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.23  2005/10/10 17:21:09  taylor
  * remove NO_NETWORK
  *
@@ -568,7 +571,7 @@ int pilot_file_upgrade_check(char *callsign, int single)
 	strcat( pname, NOX(".plr") );
 
 	// check if we've actually got an old file and make sure the user knows what's going to happen
-	if ( cf_exist(pname, CF_TYPE_SINGLE_PLAYERS) ) {
+	if (cf_exists(pname, CF_TYPE_SINGLE_PLAYERS)) {
 		// give a popup warning about the conversion process before proceeding - taylor
 		char confirm_string[300];
 #ifndef _WIN32

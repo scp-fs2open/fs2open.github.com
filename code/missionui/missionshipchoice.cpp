@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.57 $
- * $Date: 2006-01-30 06:37:49 $
- * $Author: taylor $
+ * $Revision: 2.58 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2006/01/30 06:37:49  taylor
+ * account for a freaky wing issue (saw this in Derelict, or somewhere)
+ *
  * Revision 2.56  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -2443,17 +2446,6 @@ anim* ss_load_individual_animation(int ship_class)
 		} else {
 			mprintf(("SHIP ANI: Found hires version of %s\n",animation_filename));
 		}
-		/*
-		// this is lame and doesnt work cuz cf_exist() doesnt search the packfiles
-		if (!cf_exist(animation_filename, CF_TYPE_INTERFACE)) {
-			// file does not exist, use original low res version
-			strcpy(animation_filename, Ship_info[ship_class].anim_filename);
-			mprintf(("Ship ANI: Can not find %s, using lowres version instead.\n", animation_filename)); 
-		} else {
-			animation_filename[strlen(animation_filename) - 4] = '\0';
-			mprintf(("SHIP ANI: Found hires version of %s\n",animation_filename));
-		}
-		*/
 	} else {
 		strcpy(animation_filename, Ship_info[ship_class].anim_filename);
 		p_anim = anim_load(animation_filename, 1);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.16 $
- * $Date: 2006-01-17 02:33:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.17 $
+ * $Date: 2006-02-13 00:20:45 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/01/17 02:33:20  wmcoolmon
+ * data/scripts directory
+ *
  * Revision 2.15  2005/12/28 22:06:47  taylor
  * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
  *
@@ -517,13 +520,19 @@ int cflush(CFILE *cfile);
 void cf_set_version( CFILE * cfile, int version );
 
 // Deletes a file. Returns 0 on error, 1 if successful
-int cf_delete( char *filename, int dir_type );
+int cf_delete(char *filename, int dir_type);
 
 // Same as _access function to read a file's access bits
-int cf_access( char *filename, int dir_type, int mode );
+int cf_access(char *filename, int dir_type, int mode);
 
-// Returns 1 if file exists, 0 if not.
-int cf_exist( char *filename, int dir_type );
+// Returns 1 if the file exists, 0 if not.
+// Checks only the file system.
+int cf_exists(char *filename, int dir_type);
+
+// Goober5000
+// Returns 1 if the file exists, 0 if not.
+// Checks both the file system and the VPs.
+int cf_exists_full(char *filename, int dir_type);
 
 // ctmpfile() opens a temporary file stream.  File is deleted automatically when closed
 CFILE *ctmpfile();

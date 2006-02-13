@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.64 $
- * $Date: 2006-02-03 22:29:01 $
- * $Author: taylor $
+ * $Revision: 2.65 $
+ * $Date: 2006-02-13 00:20:46 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2006/02/03 22:29:01  taylor
+ * fix sun flares that I had broken previously
+ *
  * Revision 2.63  2006/01/30 06:31:30  taylor
  * dynamic starfield bitmaps (if the thought it was freaky before, just take a look at the new and "improved" version ;))
  *
@@ -1131,7 +1134,7 @@ void stars_init()
 	// parse stars.tbl
 	parse_startbl("stars.tbl");
 
-	parse_modular_table( "*-str.tbm", parse_startbl );
+	parse_modular_table("*-str.tbm", parse_startbl);
 }
 
 // called before mission parse so we can clear out all of the old stuff

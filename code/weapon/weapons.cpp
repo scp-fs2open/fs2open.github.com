@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.173  2006/02/12 17:54:35  wmcoolmon
+ * Remove initial corkscrew values from parse_weapon
+ *
  * Revision 2.172  2006/01/30 07:00:14  taylor
  * fix endless loop when we've got too many weapons
  *
@@ -3615,7 +3618,7 @@ void weapon_expl_info_init()
 	parse_weapon_expl_tbl("weapon_expl.tbl");
 
 	// check for, and load, modular tables
-	parse_modular_table( NOX("*-wxp.tbm"), parse_weapon_expl_tbl );
+	parse_modular_table(NOX("*-wxp.tbm"), parse_weapon_expl_tbl);
 
 	// we've got our list so pass it off for final checking and loading
 	for (i = 0; i < (int)LOD_checker.size(); i++) {
@@ -3648,7 +3651,7 @@ void weapon_init()
 
 			parse_weaponstbl("weapons.tbl");
 
-			int num_files = parse_modular_table( NOX("*-wep.tbm"), parse_weaponstbl );
+			int num_files = parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
 
 			if ( num_files > 0 ) {
 				Module_ship_weapons_loaded = true;
