@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.31 $
- * $Date: 2006-02-13 00:20:46 $
+ * $Revision: 1.32 $
+ * $Date: 2006-02-13 03:11:19 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2006/02/13 00:20:46  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 1.30  2006/02/06 02:29:17  wmcoolmon
  * WMC-Since we're abusing species_defs.tbl anyways, remove $NumSpecies
  *
@@ -308,7 +312,7 @@ void parse_species_tbl(char *longname)
 	// begin reading data
 	while (required_string_either("#END","$Species_Name:"))
 	{
-		species_info *species = NULL;
+		species_info *species = &dummy_info;
 		
 		// make sure we're under the limit
 		if (Num_species >= MAX_SPECIES)
@@ -340,11 +344,6 @@ void parse_species_tbl(char *longname)
 			species = &Species_info[Num_species];
 			strcpy(species->species_name, species_name);
 			Num_species++;
-		}
-
-		if (species == NULL)
-		{
-			species = &dummy_info;
 		}
 
 		// Goober5000 - IFF
