@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.175  2006/02/15 07:19:50  wmcoolmon
+ * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
+ *
  * Revision 2.174  2006/02/13 00:20:46  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -1001,6 +1004,7 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "parse/scripting.h"
 
 
 #ifndef NDEBUG
