@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.38 $
+ * $Date: 2006-02-15 07:30:54 $
+ * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.36  2006/02/12 08:39:32  Goober5000
  * whoops, forgot this
  *
@@ -1558,7 +1562,7 @@ void parse_menumusic()
 	}
 
 	// Goober5000 - check for existence of file
-	if (cf_exists_full(Spooled_music[idx].filename, CF_TYPE_MUSIC))
+	if (strlen(Spooled_music[idx].filename) && cf_exists_full(Spooled_music[idx].filename, CF_TYPE_MUSIC))
 		Spooled_music[idx].flags |= EMF_VALID;
 
 	Num_music_files++;	
