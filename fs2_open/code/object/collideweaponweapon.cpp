@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-01-15 01:02:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2006-02-15 07:19:49 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2006/01/15 01:02:01  Goober5000
+ * fix some tweaky thing that isn't even used :p
+ * --Goober5000
+ *
  * Revision 2.7  2005/10/30 06:44:58  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -100,7 +104,8 @@
 #include "object/object.h"
 #include "weapon/weapon.h"
 #include "ship/ship.h"
-
+#include "parse/lua.h"
+#include "parse/scripting.h"
 
 
 #define	BOMB_ARM_TIME	1.5f
@@ -139,6 +144,8 @@ int collide_weapon_weapon( obj_pair * pair )
 
 	// UnknownPlayer : Should we even be bothering with collision detection is neither one of these is a bomb?
 
+	//WMC - Here's a reason why...scripting now!
+
 	if (wipA->wi_flags & WIF_BOMB) {
 		A_radius *= 2;		// Makes bombs easier to hit
 		if (wipA->lifetime - wpA->lifeleft < BOMB_ARM_TIME)
@@ -152,7 +159,39 @@ int collide_weapon_weapon( obj_pair * pair )
 	}
 
 	//	Rats, do collision detection.
-	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius)) {
+	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
+	{
+		//WMC - If one is an override, favor it.
+		//WMC - If both are overrides, favor A.
+		if(wipA->sc_collide_weapon.IsValid() && (!wipB->sc_collide_weapon.IsOverride() || wipA->sc_collide_weapon.IsOverride()))
+		{
+			Script_system.SetGlobal("Self", 'o', &l_Weapon.Set(object_h(A)));
+			Script_system.SetGlobal("Weapon", 'o', &l_Weapon.Set(object_h(B)));
+
+			Script_system.RunBytecode(wipA->sc_collide_weapon);
+
+			Script_system.RemGlobal("Self");
+			Script_system.RemGlobal("Global");
+		}
+
+		if(wipA->sc_collide_weapon.IsOverride())
+			return 1;
+
+		if(!wipA->sc_collide_weapon.IsOverride() && wipB->sc_collide_weapon.IsValid())
+		{
+			Script_system.SetGlobal("Self", 'o', &l_Weapon.Set(object_h(B)));
+			Script_system.SetGlobal("Weapon", 'o', &l_Weapon.Set(object_h(A)));
+
+			Script_system.RunBytecode(wipB->sc_collide_weapon);
+
+			Script_system.RemGlobal("Self");
+			Script_system.RemGlobal("Global");
+		}
+
+		if(wipB->sc_collide_weapon.IsOverride())
+			return 1;
+
+		//Do the normal stuff if no override -C
 		ship	*sap, *sbp;
 
 		sap = &Ships[Objects[A->parent].instance];

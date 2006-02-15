@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174  2006/02/13 00:20:46  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.173  2006/02/12 17:54:35  wmcoolmon
  * Remove initial corkscrew values from parse_weapon
  *
@@ -2635,6 +2639,15 @@ int parse_weapon(int subtype, bool replace)
 	if ( optional_string("$Anim:") ) {
 		stuff_string(wip->anim_filename, F_NAME, NULL);
 	}
+
+	if(optional_string("$Collide Ship:")) {
+		wip->sc_collide_ship = Script_system.ParseChunk("$Collide Ship");
+	}
+
+	if(optional_string("$Collide Weapon:")) {
+		wip->sc_collide_weapon = Script_system.ParseChunk("$Collide Weapon");
+	}
+
 
 	char impact_ani_file[FILESPEC_LENGTH];
 	if ( optional_string("$Impact Explosion:") ) {

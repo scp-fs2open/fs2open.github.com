@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/01/30 06:33:19  taylor
+ * add transparent, cycling alpha, and no-light options for weapons
+ *
  * Revision 2.66  2006/01/09 04:53:41  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
  *
@@ -928,6 +931,10 @@ typedef struct weapon_info {
 	float alpha_max;			// maximum alpha value to use
 	float alpha_min;			// minimum alpha value to use
 	float alpha_cycle;			// cycle between max and min by this much each frame
+
+	//WMC - scripting stuff
+	script_hook sc_collide_ship;
+	script_hook sc_collide_weapon;
 
 } weapon_info;
 
