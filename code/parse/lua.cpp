@@ -20,6 +20,7 @@
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "particle/particle.h"
+#include "iff_defs/iff_defs.h"
 
 //*************************Lua funcs*************************
 int script_remove_lib(lua_State *L, char *name);
@@ -1761,6 +1762,35 @@ LUA_INDEXER(l_Shields, "Front, left, right, back, or 1-4", "Number", "Gets or se
 	return lua_set_args(L, "f", objp->shield_quadrant[qdx]);
 }
 
+//**********HANDLE: Team
+lua_obj<int> l_Team("Team", "Team handle");
+
+LUA_FUNC(__eq, l_Team, "team, team", "true if equal", "Checks whether two teams are the same team")
+{
+	int t1, t2;
+	if(!lua_get_args(L, "oo", l_Team.Get(&t1), l_Team.Get(&t2)))
+		return LUA_RETURN_FALSE;
+
+	return lua_set_args(L, "b", (t1 == t2));
+}
+
+LUA_VAR(Name, l_Team, "string", "Team name")
+{
+	int tdx=-1;
+	char *s=NULL;
+	if(!lua_get_args(L, "o|s", l_Team.Get(&tdx), &s))
+		return LUA_RETURN_NIL;
+
+	if(tdx < 0 || tdx > Num_iffs)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		strncpy(Iff_info[tdx].iff_name, s, NAME_LENGTH-1);
+	}
+
+	return lua_set_args(L, "s", Iff_info[tdx].iff_name);
+}
+
 //**********CLASS: Object
 lua_obj<object_h> l_Object("object", "Object");
 //Helper function
@@ -1888,6 +1918,91 @@ LUA_FUNC(getBreed, l_Object, NULL, "Object type name", "Gets object type")
 		return LUA_RETURN_NIL;
 
 	return lua_set_args(L, "s", Object_type_names[objh->objp->type]);
+}
+
+//**********HANDLE: Weapon
+lua_obj<object_h> l_Weapon("Weapon", "Weapon ordinance handle", &l_Object);
+
+LUA_VAR(Class, l_Weapon, "weaponclass", "Weapon's class")
+{
+	object_h *oh=NULL;
+	int nc=-1;
+	if(!lua_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Weaponclass.Get(&nc)))
+		return LUA_RETURN_NIL;
+
+	if(!oh->IsValid())
+		return LUA_RETURN_NIL;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(LUA_SETTING_VAR && nc > -1) {
+		wp->weapon_info_index = nc;
+	}
+
+	return lua_set_args(L, "o", l_Weaponclass.Set(wp->weapon_info_index));
+}
+
+LUA_VAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroyed by another weapon")
+{
+	object_h *oh=NULL;
+	bool b = false;
+
+	int numargs = lua_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &b);
+	
+	if(!numargs)
+		return LUA_RETURN_NIL;
+
+	if(!oh->IsValid())
+		return LUA_RETURN_NIL;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(LUA_SETTING_VAR && numargs > 1) {
+		if(b)
+			wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+		else
+			wp->weapon_flags &= ~WF_DESTROYED_BY_WEAPON;
+	}
+
+	return lua_set_args(L, "b", (wp->weapon_flags & WF_DESTROYED_BY_WEAPON) > 0);
+}
+
+LUA_VAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)")
+{
+	object_h *oh=NULL;
+	float nll = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Weapon.GetPtr(&oh), &nll))
+		return LUA_RETURN_NIL;
+
+	if(!oh->IsValid())
+		return LUA_RETURN_NIL;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(LUA_SETTING_VAR && nll > -1.0f) {
+		wp->lifeleft = nll;
+	}
+
+	return lua_set_args(L, "f", wp->lifeleft);
+}
+
+LUA_VAR(Team, l_Weapon, "weaponclass", "Weapon's team")
+{
+	object_h *oh=NULL;
+	int nt=-1;
+	if(!lua_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Team.Get(&nt)))
+		return LUA_RETURN_NIL;
+
+	if(!oh->IsValid())
+		return LUA_RETURN_NIL;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(LUA_SETTING_VAR && nt > -1) {
+		wp->team = nt;
+	}
+
+	return lua_set_args(L, "o", l_Team.Set(wp->team));
 }
 
 //**********HANDLE: Weaponbank
@@ -2592,8 +2707,8 @@ LUA_VAR(CountermeasureClass, l_Ship, "Number", "Weapon class mounted on this shi
 LUA_VAR(HitpointsMax, l_Ship, "Number", "Total hitpoints")
 {
 	object_h *objh;
-	int newhits = -1;
-	if(!lua_get_args(L, "o|i", l_Ship.GetPtr(&objh), &newhits))
+	float newhits = -1;
+	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh), &newhits))
 		return LUA_RETURN_NIL;
 
 	if(!objh->IsValid())

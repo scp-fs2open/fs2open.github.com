@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-01-31 06:43:21 $
+ * $Revision: 2.67 $
+ * $Date: 2006-02-15 07:19:49 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/01/31 06:43:21  wmcoolmon
+ * Debug warning; compiler warning fix.
+ *
  * Revision 2.65  2006/01/19 20:18:11  wmcoolmon
  * More Lua checks; added Lua vector object; better operator support.
  *
@@ -1520,7 +1523,7 @@ void gr_force_windowed()
 
 		case GR_OPENGL:
 			extern void opengl_minimize();
-			opengl_minimize();
+			//opengl_minimize();
 			break;
 
 		case GR_STUB: break;

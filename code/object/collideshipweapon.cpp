@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-11-08 01:04:00 $
+ * $Revision: 2.25 $
+ * $Date: 2006-02-15 07:19:49 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/11/08 01:04:00  wmcoolmon
+ * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
+ *
  * Revision 2.23  2005/10/30 06:44:58  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -253,8 +256,8 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
-
-
+#include "parse/lua.h"
+#include "parse/scripting.h"
 
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
@@ -493,9 +496,23 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 			return 1;
 	}
 
-	if ( valid_hit_occured )	{
-		ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
-	} else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_obj)) {
+	if ( valid_hit_occured )
+	{
+		if(!wip->sc_collide_ship.IsOverride()) {
+			ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
+		}
+
+		if(wip->sc_collide_ship.IsValid()) {
+			Script_system.SetGlobal("Self", 'o', &l_Weapon.Set(object_h(weapon_obj)));
+			Script_system.SetGlobal("Ship", 'o', &l_Ship.Set(object_h(ship_obj)));
+
+			Script_system.RunBytecode(wip->sc_collide_ship);
+
+			Script_system.RemGlobal("Self");
+			Script_system.RemGlobal("Ship");
+		}
+	}
+	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_obj)) {
 		if (dist < wip->shockwave.inner_rad) {
 			vec3d	vec_to_ship;
 

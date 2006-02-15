@@ -253,7 +253,8 @@ struct object_h {
 };
 
 //*************************Lua globals*************************
-extern lua_obj<object_h> l_Ship;
 extern lua_obj<object_h> l_Object;
+extern lua_obj<object_h> l_Weapon;
+extern lua_obj<object_h> l_Ship;
 
 #endif //_LUA_H
