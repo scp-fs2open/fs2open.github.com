@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.90 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.91 $
+ * $Date: 2006-02-16 05:31:00 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.89  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -1114,10 +1118,10 @@ static int model_initted = 0;
 extern int Cmdline_nohtl;
 
 #ifndef NDEBUG
-CFILE *ss_fp;			// file pointer used to dump subsystem information
+CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
 char  model_filename[_MAX_PATH];		// temp used to store filename
 char	debug_name[_MAX_PATH];
-int ss_warning_shown;		// have we shown the warning dialog concerning the subsystems?
+int ss_warning_shown = 0;		// have we shown the warning dialog concerning the subsystems?
 char	Global_filename[256];
 int Model_ram = 0;			// How much RAM the models use total
 #endif
@@ -1267,6 +1271,17 @@ void model_unload(int modelnum, int force)
 
 	if ( pm->gun_banks )	{
 		vm_free(pm->gun_banks);
+	}
+
+	// run through Ship_info[] and if the model has been loaded we'll need to reset the modelnum to -1.
+	for (i = 0; i < Num_ship_classes; i++) {
+		if ( pm->id == Ship_info[i].modelnum ) {
+			Ship_info[i].modelnum = -1;
+		}
+
+		if ( pm->id == Ship_info[i].modelnum_hud ) {
+			Ship_info[i].modelnum_hud = -1;
+		}
 	}
 
 	pm->id = 0;
@@ -1620,18 +1635,20 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		}
 	}
 #ifndef NDEBUG
+	char bname[_MAX_FNAME];
+
 	if ( !ss_warning_shown) {
-		char bname[_MAX_FNAME];
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
-//		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname);
-		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, bname));
+//		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname);
 		ss_warning_shown = 1;
 	} else
 #endif
-	mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata\\tables\\%s.subsystems for inclusion\n into ships.tbl.", model_filename, model_filename));
-//	nprintf(("warning", "Subsystem %s in ships.tbl not found in model!\n", subobj_name));
+		mprintf(("Subsystem %s in ships.tbl not found in model!\n", subobj_name));
+
 #ifndef NDEBUG
 	if ( ss_fp )	{
+		_splitpath(model_filename, NULL, NULL, bname, NULL);
+		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.\n", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname));
 		char tmp_buffer[128];
 		sprintf(tmp_buffer, "$Subsystem:\t\t\t%s,1,0.0\n", subobj_name);
 		cfputs(tmp_buffer, ss_fp);
