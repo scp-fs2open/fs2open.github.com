@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.26 $
- * $Date: 2005-10-22 06:26:30 $
+ * $Revision: 2.27 $
+ * $Date: 2006-02-16 05:09:26 $
  * $Author: taylor $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2005/10/22 06:26:30  taylor
+ * couple of changes to NULL vec fixes which better match what Volition would have done (makes both Goober and myself happier :))
+ * keep track of what was an error (even if erroneous) and why with "VECMAT-ERROR" comment
+ *
  * Revision 2.25  2005/10/21 11:32:15  taylor
  * fix main NULL vec errors, still at least one left but these were those that happened most often:
  *   modelinterp.cpp:parse_tmap() -> first IS_VEC_NULL() check would fail, wasn't a second on reassign
@@ -926,7 +930,8 @@ float vm_vec_normalized_dir(vec3d *dest,vec3d *end,vec3d *start)
 	float t;
 
 	vm_vec_sub(dest,end,start);
-	t = vm_vec_normalize(dest);
+	// VECMAT-ERROR: NULL VEC3D (end == start)
+	t = vm_vec_normalize_safe(dest);
 	return t;
 }
 
