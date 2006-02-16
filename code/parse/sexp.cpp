@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.210 $
- * $Date: 2006-01-30 06:30:03 $
+ * $Revision: 2.211 $
+ * $Date: 2006-02-16 05:40:58 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.210  2006/01/30 06:30:03  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 2.209  2006/01/29 07:41:57  wmcoolmon
  * Minor warning update
  *
@@ -13470,7 +13473,7 @@ void sexp_reset_camera()
 	Viewer_mode &= ~VM_FREECAMERA;
 }
 
-void sexp_show_subtitle(int n)
+void sexp_show_subtitle(int node)
 {
 	//These should be set to the default if not required to be explicitly defined
 	int x_pos, y_pos, width=200;
@@ -13478,10 +13481,11 @@ void sexp_show_subtitle(int n)
 	float display_time, fade_time=0.0f;
 	int r=255, g=255, b=255;
 	bool center_x=false, center_y=false;
+	int n = -1;
 
-	x_pos = eval_num(n);
+	x_pos = eval_num(node);
 
-	n = CDR(n);
+	n = CDR(node);
 	y_pos = eval_num(n);
 
 	n = CDR(n);
