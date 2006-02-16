@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.58 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.59 $
+ * $Date: 2006-02-16 05:19:46 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.57  2006/01/30 06:37:49  taylor
  * account for a freaky wing issue (saw this in Derelict, or somewhere)
  *
@@ -1605,7 +1609,7 @@ void ship_select_blit_ship_info()
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->ship_length);
 	}
-	else if(ShipSelectModelNum)
+	else if(ShipSelectModelNum >= 0)
 	{
 		polymodel *pm = model_get(ShipSelectModelNum);
 		itoa(fl2i(pm->maxs.xyz.z - pm->mins.xyz.z), str, 10);
@@ -1635,7 +1639,7 @@ void ship_select_blit_ship_info()
 	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->maneuverability_str);
 	}
-	else if(ShipSelectModelNum)
+	else if(ShipSelectModelNum >= 0)
 	{
 		int sum = fl2i(sip->rotation_time.xyz.x + sip->rotation_time.xyz.y);
 		if(sum <= 6)
@@ -1709,7 +1713,7 @@ void ship_select_blit_ship_info()
 		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->gun_mounts);
 	}
-	else if(ShipSelectModelNum)
+	else if(ShipSelectModelNum >= 0)
 	{
 		//Calculate the number of gun mounts
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Gun Mounts",746));
@@ -1767,7 +1771,7 @@ void ship_select_blit_ship_info()
 	}
 	y_start += 10;
 
-	if(ShipSelectModelNum)
+	if(ShipSelectModelNum >= 0)
 	{
 		int num_turrets = 0;
 		int x;
