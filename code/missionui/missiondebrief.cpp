@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.51 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.52 $
+ * $Date: 2006-02-16 05:15:48 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.50  2006/02/12 10:42:25  Goober5000
  * allow specification of debriefing personas
  * --Goober5000
@@ -1413,7 +1417,7 @@ int debrief_find_persona_index()
 	if ((Campaign.current_mission >= 0) && (Campaign.missions[Campaign.current_mission].name) && (Campaign.filename))
 	{
 		// Goober5000 - first see if the campaign supplied a persona index
-		if (Campaign.missions[Campaign.current_mission].debrief_persona_index >= 0)
+		if (Campaign.missions[Campaign.current_mission].debrief_persona_index != 0xff)
 			return Campaign.missions[Campaign.current_mission].debrief_persona_index;
 
 		// search through all official campaigns for our current campaign
