@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.68 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.69 $
+ * $Date: 2006-02-16 05:24:35 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.67  2006/01/18 06:13:18  wmcoolmon
  * Various scripting updates
  *
@@ -2135,6 +2139,7 @@ void wl_unload_icons()
 		}
 
 		if(icon->model_index >= 0) {
+			model_unload(icon->model_index);
 			icon->model_index = -1;
 		}
 		if(icon->laser_bmap >= 0) {
@@ -2753,6 +2758,7 @@ void weapon_select_close_team()
 	if (Weapon_select_open)
 		return;
 
+	wl_unload_icons();
 	wl_unload_all_anim_instances();
 	wl_unload_all_anims();
 }
@@ -4336,6 +4342,9 @@ void start_weapon_animation(int weapon_class)
 		return;
 
 	if ( weapon_class == Weapon_anim_class ) 
+		return;
+
+	if ( Wl_icons[weapon_class].model_index >= 0 )
 		return;
 
 	// get the correct weapon animations coords
