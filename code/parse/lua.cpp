@@ -657,9 +657,9 @@ int lua_index_handler(lua_State *L)
 //If you are a coder who wants to add functionality to Lua, you want to be
 //below this point.
 
-//**********CLASS: orientation matrix
+//**********OBJECT: orientation matrix
 //WMC - So matrix can use vector, I define it up here.
-lua_obj<vec3d> l_Vector("vector", "Vector");
+lua_obj<vec3d> l_Vector("vector", "Vector object");
 //WMC - Due to the exorbitant times required to store matrix data,
 //I initially store the matrix in this struct.
 #define MH_FINE					0
@@ -694,7 +694,7 @@ struct matrix_h {
 	//LOOK LOOK LOOK LOOK LOOK LOOK 
 	//Don't forget to set status appropriately when you change ang or mtx.
 };
-lua_obj<matrix_h> l_Matrix("orientation", "Orientation matrix");
+lua_obj<matrix_h> l_Matrix("orientation", "Orientation matrix object");
 
 LUA_INDEXER(l_Matrix, "p,b,h or 0-9", "Number", "Orientation component - pitch, bank, heading, or index into 3x3 matrix (1-9)")
 {
@@ -800,7 +800,7 @@ LUA_FUNC(unrotateVector, l_Matrix, "Vector object", "Unrotated vector", "Returns
 	return lua_set_args(L, "o", l_Vector.Set(v3r));
 }
 
-//**********CLASS: vector
+//**********OBJECT: vector
 //WMC - see matrix for lua_obj def
 
 LUA_INDEXER(l_Vector, "x,y,z or 1-3", "Vector", "Vector component")
@@ -992,11 +992,11 @@ LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if o
 	return lua_set_args(L, "ii", vtx.sx, vtx.sy);
 }
 
-//**********CLASS: directive
-lua_obj<int> l_Directive("directive", "Mission directive");
+//**********HANDLE: directive
+lua_obj<int> l_Directive("directive", "Mission directive handle");
 
-//**********CLASS: directives
-lua_obj<bool> l_Directives("directives", "Mission directives");
+//**********HANDLE: directives
+lua_obj<bool> l_Directives("directives", "Mission directives handle");
 
 LUA_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
 {
@@ -1013,8 +1013,8 @@ LUA_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
 	return lua_set_args(L, "o", l_Directive.Set(idx));
 }
 
-//**********CLASS: cmission
-lua_obj<int> l_Cmission("cmission", "Campaign mission object");
+//**********HANDLE: cmission
+lua_obj<int> l_Cmission("cmission", "Campaign mission handle");
 //WMC - We can get away with a pointer right now, but if it ever goes dynamic, it'd be a prob
 
 int lua_cmission_helper(lua_State *L, int *idx)
@@ -1268,7 +1268,7 @@ LUA_FUNC(getVariableValue, l_Cmission, "Variable number (Zero-based)", "Variable
 	return LUA_RETURN_FALSE;
 }
 
-//**********CLASS: Species
+//**********HANDLE: Species
 lua_obj<int> l_Species("species", "Species handle");
 extern int Species_initted;
 
@@ -1292,7 +1292,7 @@ LUA_VAR(Name, l_Species, "String", "Species name")
 	return lua_set_args(L, "s", Species_info[idx].species_name);
 }
 
-//**********CLASS: Shiptype
+//**********HANDLE: Shiptype
 lua_obj<int> l_Shiptype("shiptype", "Ship type handle");
 extern int Species_initted;
 
@@ -1316,7 +1316,7 @@ LUA_VAR(Name, l_Shiptype, "String", "Ship type name")
 	return lua_set_args(L, "s", Ship_types[idx].name);
 }
 
-//**********CLASS: Weaponclass
+//**********HANDLE: Weaponclass
 lua_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
 
 LUA_VAR(Name, l_Weaponclass, "string", "Weapon class name")
@@ -1336,7 +1336,7 @@ LUA_VAR(Name, l_Weaponclass, "string", "Weapon class name")
 	return lua_set_args(L, "s", Weapon_info[idx].name);
 }
 
-//**********CLASS: Shipclass
+//**********HANDLE: Shipclass
 lua_obj<int> l_Shipclass("shipclass", "Ship class handle");
 extern int ships_inited;
 
@@ -1712,7 +1712,7 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %], [Pitch %],
 	return lua_set_args(L, "b", true);
 }
 
-//**********CLASS: Shields
+//**********HANDLE: Shields
 lua_obj<object_h> l_Shields("shields", "Shields handle");
 
 LUA_INDEXER(l_Shields, "Front, left, right, back, or 1-4", "Number", "Gets or sets shield quadrant strength")
@@ -1791,8 +1791,8 @@ LUA_VAR(Name, l_Team, "string", "Team name")
 	return lua_set_args(L, "s", Iff_info[tdx].iff_name);
 }
 
-//**********CLASS: Object
-lua_obj<object_h> l_Object("object", "Object");
+//**********HANDLE: Object
+lua_obj<object_h> l_Object("object", "Object handle");
 //Helper function
 //Returns 1 if object sig stored in idx exists, and stores Objects[] index in idx
 //Returns 0 if object sig does not exist, and does not change idx
@@ -1921,7 +1921,7 @@ LUA_FUNC(getBreed, l_Object, NULL, "Object type name", "Gets object type")
 }
 
 //**********HANDLE: Weapon
-lua_obj<object_h> l_Weapon("Weapon", "Weapon ordinance handle", &l_Object);
+lua_obj<object_h> l_Weapon("Weapon", "Weapon handle", &l_Object);
 
 LUA_VAR(Class, l_Weapon, "weaponclass", "Weapon's class")
 {
@@ -2030,7 +2030,8 @@ struct ship_bank_h : public ship_banktype_h
 	}
 };
 
-lua_obj<ship_bank_h> l_WeaponBank("weaponbank", "Weapons bank on a ship or subsystem");
+//**********HANDLE: Ship bank
+lua_obj<ship_bank_h> l_WeaponBank("weaponbank", "Ship/subystem weapons bank handle");
 
 LUA_VAR(Weapon, l_WeaponBank, "weaponclass", "Weapon")
 {
@@ -2139,7 +2140,7 @@ LUA_VAR(AmmoMax, l_WeaponBank, "number", "AmmoMax")
 }
 
 //**********HANDLE: Weaponbanktype
-lua_obj<ship_banktype_h> l_WeaponBankType("weaponbanktype", "Weapons bank type on a ship or subsystem");
+lua_obj<ship_banktype_h> l_WeaponBankType("weaponbanktype", "Ship/subsystem weapons bank type handle");
 
 LUA_VAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or unlinked fire mode (Primary-only)")
 {
@@ -2277,7 +2278,7 @@ LUA_FUNC(getNum, l_WeaponBank, NULL, "Number of weapons mounted in bank", "Gets 
 	}
 }
 
-//**********CLASS: Subsystem
+//**********HANDLE: Subsystem
 struct ship_subsys_h : public object_h
 {
 	ship_subsys *ss;	//Pointer to subsystem, or NULL for the hull
@@ -2287,7 +2288,7 @@ struct ship_subsys_h : public object_h
 		ss = sub;
 	}
 };
-lua_obj<ship_subsys_h> l_Subsystem("subsystem", "Ship subsystem object");
+lua_obj<ship_subsys_h> l_Subsystem("subsystem", "Ship subsystem handle");
 
 LUA_VAR(AWACSIntensity, l_Subsystem, "Number", "Subsystem AWACS intensity")
 {
@@ -2501,7 +2502,7 @@ struct ship_textures_h : public object_h
 	ship_textures_h(object *objp) : object_h(objp){}
 };
 
-lua_obj<ship_textures_h> l_ShipTextures("shiptextures", "Ship textures");
+lua_obj<ship_textures_h> l_ShipTextures("shiptextures", "Ship textures handle");
 
 LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 {
@@ -2574,8 +2575,8 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 		return LUA_RETURN_FALSE;
 }
 
-//**********CLASS: Ship
-lua_obj<object_h> l_Ship("ship", "Ship object", &l_Object);
+//**********HANDLE: Ship
+lua_obj<object_h> l_Ship("ship", "Ship handle", &l_Object);
 
 LUA_INDEXER(l_Ship, "Subsystem name or index", "Subsystem", "Returns subsystem based on name or index passed")
 {
@@ -2936,7 +2937,7 @@ LUA_INDEXER(l_Wing, "Index", "Ship", "Ship via number in wing")
 	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
 }
 //**********HANDLE: Player
-lua_obj<int> l_Player("player", "Player object");
+lua_obj<int> l_Player("player", "Player handle");
 
 int player_helper(lua_State *L, int *idx)
 {
@@ -3136,7 +3137,7 @@ LUA_FUNC(getPlayerByIndex, l_Base, "Player index", "Player object", "Gets the na
 //**********LIBRARY: Math
 lua_lib l_Math("Math", "ma", "Math library");
 
-LUA_FUNC(getRandomNumber, l_Math, "[Smallest number], [Largest number]", "Random number", "Returns a random number; default is 0 to 1. May be non-whole.")
+LUA_FUNC(getRandomNumber, l_Math, "[Smallest number, Largest number]", "Random number", "Returns a random number; default is 0 to 1. May be non-whole.")
 {
 	float min = 0.0f;
 	float max = 1.0f;
@@ -3148,7 +3149,7 @@ LUA_FUNC(getRandomNumber, l_Math, "[Smallest number], [Largest number]", "Random
 	return lua_set_args(L, "f", frand_range(min, max));
 }
 
-LUA_FUNC(newVector, l_Math, "[x], [y], [z]", "Vector object", "Creates a vector object")
+LUA_FUNC(newVector, l_Math, "[x, y, z]", "Vector object", "Creates a vector object")
 {
 	vec3d v3;
 	lua_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
@@ -3539,41 +3540,31 @@ lua_lib l_Mouse("Mouse", "ms", "Mouse library");
 
 extern int mouse_inited;
 
-LUA_FUNC(getX, l_Mouse, "[Unscale]", "X pos (Number)", "Gets Mouse X pos")
+LUA_FUNC(getX, l_Mouse, NULL, "X pos (Number)", "Gets Mouse X pos")
 {
 	if(!mouse_inited)
 		return LUA_RETURN_NIL;
 
 	int x;
-	bool u = false;
-	lua_get_args(L, "|b", &u);
 
-	if(u)
-		mouse_get_pos_unscaled(&x, NULL);
-	else
-		mouse_get_pos(&x, NULL);
+	mouse_get_pos_unscaled(&x, NULL);
 
 	return lua_set_args(L, "i", x);
 }
 
-LUA_FUNC(getY, l_Mouse, "[Unscale]", "Y pos (Number)", "Gets Mouse Y pos")
+LUA_FUNC(getY, l_Mouse, NULL, "Y pos (Number)", "Gets Mouse Y pos")
 {
 	if(!mouse_inited)
 		return LUA_RETURN_NIL;
 
 	int y;
-	bool u = false;
-	lua_get_args(L, "|b", &u);
 
-	if(u)
-		mouse_get_pos_unscaled(NULL, &y);
-	else
-		mouse_get_pos(NULL, &y);
+	mouse_get_pos_unscaled(NULL, &y);
 
 	return lua_set_args(L, "i", y);
 }
 
-LUA_FUNC(isButtonDown, l_Mouse, "{Left, Right, or Middle}, [...], [...]", "Whether specified buttons are pressed (Boolean)", "Returns whether the specified mouse buttons are up or down")
+LUA_FUNC(isButtonDown, l_Mouse, "{Left, Right, or Middle}, [..., ...]", "Whether specified buttons are pressed (Boolean)", "Returns whether the specified mouse buttons are up or down")
 {
 	if(!mouse_inited)
 		return LUA_RETURN_NIL;
@@ -3646,7 +3637,7 @@ LUA_FUNC(setMouseHidden, l_Mouse, "True to hide mouse, false to show it", NULL, 
 //**********LIBRARY: Graphics
 lua_lib l_Graphics("Graphics", "gr", "Graphics Library");
 
-LUA_FUNC(clearScreen, l_Graphics, "[Red], [Green], [Blue]", NULL, "Clears the screen to black, or the color specified.")
+LUA_FUNC(clearScreen, l_Graphics, "[Red, green, blue]", NULL, "Clears the screen to black, or the color specified.")
 {
 	int r,g,b;
 	r=g=b=0;
@@ -3946,7 +3937,7 @@ LUA_FUNC(drawCurve, l_Graphics, "x, y, Radius, Direction", NULL, "Draws a curve"
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show], [Height to show], [X start], [Y start], [Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
+LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show, Height to show, X start, Y start, Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -4008,7 +3999,7 @@ LUA_FUNC(createTexture, l_Graphics, "Width, Height, Type", "Handle to new textur
 	return lua_set_args(L, "o", l_Texture.Set(idx));
 }
 
-LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation], [No drop frames]", "Texture handle, false if invalid name",
+LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation, No drop frames]", "Texture handle, false if invalid name",
 		 "Gets a handle to a texture. If second argument is set to true, animations will also be loaded."
 		 "If third argument is set to true, every other animation frame will not be loaded if system has less than 48 MB memory."
 		 "<br><strong>IMPORTANT:</strong> Textures will not be unloaded unless you explicitly tell them to do so."
@@ -4033,7 +4024,7 @@ LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation], [No dr
 	return lua_set_args(L, "o", l_Texture.Set(idx));
 }
 
-LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Width to show], [Height to show], [X start], [Y start]", "Whether image or texture was drawn", "Draws an image or texture.")
+LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Width to show, Height to show, X start, Y start]", "Whether image or texture was drawn", "Draws an image or texture.")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -4135,7 +4126,7 @@ LUA_FUNC(flashScreen, l_Graphics, "Red, Green, Blue", NULL, "Flashes the screen"
 //**********LIBRARY: Sound
 lua_lib l_SoundLib("Sound", "sd", "Sound Library");
 
-LUA_FUNC(playGameSound, l_SoundLib, "Sound filename, [Panning (-1.0 left to 1.0 right)], [Volume %], [Priority 0-3] [Voice Message?]", "True if sound was played, false if not (Replaced with a sound instance object in the future)", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played")
+LUA_FUNC(playGameSound, l_SoundLib, "Sound filename, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "True if sound was played, false if not (Replaced with a sound instance object in the future)", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played")
 {
 	char *s;
 	float pan=0.0f;
