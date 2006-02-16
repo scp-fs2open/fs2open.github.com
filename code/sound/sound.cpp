@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-01-20 07:10:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2006-02-16 05:47:32 $
+ * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.30  2005/10/23 19:08:01  taylor
  * fix crashes and minor slowdowns when sound is disabled (-nosound)
  *
@@ -711,6 +715,9 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	}
 
 	si = &snd->info;
+
+	si->data = NULL;
+	si->size = 0;
 
 	CFILE * fp = cfopen(gs->filename, "rb");
 
