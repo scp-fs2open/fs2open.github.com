@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.310 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.311 $
+ * $Date: 2006-02-16 05:44:53 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.310  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.309  2006/02/11 02:58:23  Goober5000
  * yet more various and sundry fixes
  * --Goober5000
@@ -2493,6 +2497,9 @@ void init_ship_entry(int ship_info_index)
 
 	sip->ispew_max_particles = -1;
 	sip->dspew_max_particles = -1;
+
+	sip->modelnum = -1;
+	sip->modelnum_hud = -1;
 }
 
 // function to parse the information for a specific ship type.	
@@ -4465,14 +4472,6 @@ void ship_level_init()
 
 	// Reset everything between levels
 
-
-	// Mark all the models as invalid, since all the models get paged out 
-	// between levels.
-	for (i=0; i<MAX_SHIP_CLASSES; i++ )	{
-		Ship_info[i].modelnum = -1;
-		Ship_info[i].modelnum_hud = -1;
-	}
-
 	// mwa removed 11/24/97  num_ships = 0;
 	Num_exited_ships = 0;
 	for (i=0; i<MAX_SHIPS; i++ )
@@ -4505,7 +4504,6 @@ void ship_level_init()
 
 	for (i=0; i<MAX_TVT_WINGS; i++)
 		TVT_wings[i] = -1;
-
 
 	// Goober5000
 
@@ -8271,6 +8269,11 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 
 	// reset model subsys stuff
 	ship_model_subsystems_delete(sp);
+
+	// unload old model if we should, helps keep refcount correct and avoid excessive memory usage
+	if (sp->modelnum >= 0) {
+		model_unload(sp->modelnum);
+	}
 
 	// get new model
 	if (sip->modelnum == -1) {
@@ -13796,6 +13799,12 @@ void ship_page_in()
 					// Model already loaded
 					model_previously_loaded = Ship_info[j].modelnum;
 					ship_previously_loaded = j;
+
+					// the model should already be loaded so this wouldn't take long, but
+					// we need to make sure that the load count for the model is correct
+					int test_id = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+					Assert( test_id == model_previously_loaded );
+
 					break;
 				}
 			}
