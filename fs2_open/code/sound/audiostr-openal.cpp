@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.21 $
- * $Date: 2006-01-30 22:08:59 $
+ * $Revision: 1.22 $
+ * $Date: 2006-02-16 05:47:32 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2006/01/30 22:08:59  taylor
+ * some minor fixage
+ *
  * Revision 1.20  2006/01/30 06:35:02  taylor
  * (possibly) better fix for some static/stuttering in certain wav files
  *
@@ -1222,12 +1225,12 @@ BOOL AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 
 		// unqueue and recycle a processed buffer
 		ALint p = 0;
-		ALuint bid;
+		ALuint bid[MAX_STREAM_BUFFERS];
 
 		OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_BUFFERS_PROCESSED, &p) );
 
 		if ( p > 0 ) {
-			OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, 1, &bid) );
+			OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, p, bid) );
 		}
 
 		OpenAL_ErrorCheck( alBufferData(m_buffer_ids[m_play_buffer_id], format, uncompressed_wave_data, num_bytes_read, m_pwavefile->m_wfmt.nSamplesPerSec), return FAILURE );
