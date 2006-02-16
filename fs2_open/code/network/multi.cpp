@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.31 $
+ * $Date: 2006-02-16 05:39:13 $
+ * $Author: taylor $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.29  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -1403,6 +1407,8 @@ DCF(eye_tog, "")
 	}
 }
 
+extern int Multi_force_heartbeat;
+
 void multi_do_frame()
 {	
 	/* FS2NetD Heartbeat Continue */
@@ -1411,29 +1417,29 @@ void multi_do_frame()
 	char packetbuffer[1024], long_str[512];
 	int *pid = (int *)packetbuffer;
 	int bytes_read, bytes_processed, itemp;
-	static int LastSend = -1;
+	static fix NextPing = -1, NextHeartBeat = -1;
+
 	if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
 	{
-		
 		// should never have to init here
 		//fs2netd_maybe_init();
 
-		// -------------------- send
-		if ((clock() - LastSend) >= 30000 || LastSend == -1)
-		{
-			LastSend = clock();
+		// send out ping every 30 seconds
+		if ( (NextPing== -1) || (timer_get_fixed_seconds() >= NextPing) ) {
+			NextPing = timer_get_fixed_seconds() + (30 * F1_0);
 
-			// finish implementation!
-			//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
-			if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
-			{
-	
-				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, Netgame.mission_name, Netgame.title, Netgame.type_flags, Netgame.server_addr.port, multi_num_players());
-			}
 			Ping(PXO_Server, FS2OpenPXO_Socket);
-			ml_printf("Network FS2netD sent PING\n");
-			
+			ml_printf("FS2netD sent PING");
+		}
 
+		// send out server heartbeat every 2 minutes, unless forced to by an update
+		if ( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Multi_force_heartbeat || (NextHeartBeat == -1) || (timer_get_fixed_seconds() >= NextHeartBeat)) )
+		{
+			Multi_force_heartbeat = 0;
+			NextHeartBeat = timer_get_fixed_seconds() + (120 * F1_0);
+
+			SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, Netgame.mission_name, Netgame.title, Netgame.type_flags, Netgame.server_addr.port, multi_num_players());
+			ml_printf("FS2NetD sent HeartBeat");
 		}
 
 		
@@ -1454,7 +1460,7 @@ void multi_do_frame()
 					case PCKT_PING:
 						// 8 bytes should never be segmented
 						itemp = ((fs2open_ping*)(packetbuffer+bytes_processed))->time;
-						ml_printf("FS2netD received PING: %d\n", itemp);
+						ml_printf("FS2NetD received PING: %d", itemp);
 						SendPingReply(FS2OpenPXO_Socket, itemp);
 						bytes_processed += 8;
 						break;
@@ -1464,7 +1470,7 @@ void multi_do_frame()
 					case PCKT_PINGREPLY:
 						// 8 bytes should never be segmented
 						itemp = (clock() - ((fs2open_pingreply *)(packetbuffer + bytes_processed))->time) / 2;
-						ml_printf("FS2netD received PONG: %d ms\n", itemp);
+						ml_printf("FS2NetD received PONG: %d ms", itemp);
 
 						bytes_processed += 8;
 						break;
@@ -1475,7 +1481,7 @@ void multi_do_frame()
 						{
 							bytes_read += FS2OpenPXO_Socket.GetData(packetbuffer+bytes_read, 256-bytes_read);
 						}
-						ml_printf("Fs2netD WALL received MSG: %s\n", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
+						ml_printf("FS2NetD WALL received MSG: %s", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
 
 						sprintf(long_str, "FS2NETD SYSTEM MESSAGE: %s", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
 						switch (Netgame.game_state)
@@ -1509,7 +1515,7 @@ void multi_do_frame()
 
 
 					default:
-						ml_printf("Unexpected FS2netD Packet - PID=%d\n", *pid);
+						ml_printf("Unexpected FS2NetD Packet - PID=%d", *pid);
 						bytes_processed=bytes_read;
 						break;
 				} // switch
