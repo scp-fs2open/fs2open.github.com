@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-02-12 10:42:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2006-02-16 05:15:48 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/02/12 10:42:25  Goober5000
+ * allow specification of debriefing personas
+ * --Goober5000
+ *
  * Revision 2.37  2006/01/18 17:45:01  taylor
  * this is probably going to end up doing something bad again when switching mods, hopefully it's not still necessary though
  *
@@ -793,9 +797,14 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				cm->main_hall = 1;
 
 			// Goober5000 - new debriefing persona stuff!
-			cm->debrief_persona_index = -1;
-			if (optional_string("+Debriefing Persona Index:"))
+			cm->debrief_persona_index = 0xff;
+			if (optional_string("+Debriefing Persona Index:")) {
 				stuff_ubyte(&cm->debrief_persona_index);
+
+				if (cm->debrief_persona_index == 0xff) {
+					Warning(LOCATION, "Debriefing persona index must be in the range of 0 and 254 for mission '%s'!\n", cm->name);
+				}
+			}
 
 			cm->formula = -1;
 			if ( optional_string("+Formula:") ) {
@@ -1505,8 +1514,6 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		
 		// be sure to malloc out space for the events stuff, then zero the memory!!!  Don't do malloc
 		// if there are no events
-//		if (Campaign.missions[num].events < 0)
-//			Campaign.missions[num].events = 0;
 		if ( Campaign.missions[num].num_events > 0 ) {
 			Campaign.missions[num].events = (mevent *)vm_malloc( Campaign.missions[num].num_events * sizeof(mevent) );
 
@@ -2300,8 +2307,11 @@ void mission_campaign_mission_over()
 	if ( Campaign.next_mission != mission_num ) {
 		Campaign.prev_mission = mission_num;
 		Campaign.current_mission = -1;
-		Campaign.num_missions_completed++;
-		Campaign.missions[mission_num].completed = 1;
+		// very minor support for non-linear campaigns - taylor
+		if (Campaign.missions[mission_num].completed != 1) {
+			Campaign.num_missions_completed++;
+			Campaign.missions[mission_num].completed = 1;
+		}
 
 		// save the scoring values from the previous mission at the start of this mission -- for red alert
 
