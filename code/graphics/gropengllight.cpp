@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.25 $
- * $Date: 2006-01-30 06:40:49 $
+ * $Revision: 1.26 $
+ * $Date: 2006-02-16 04:55:53 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/01/30 06:40:49  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ * some basic lighting code cleanup
+ *
  * Revision 1.24  2006/01/20 17:15:16  taylor
  * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
  * several other very minor changes as well
@@ -206,7 +211,7 @@ void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
 	GLLight->SpotDir.y = 0.0f;
 	GLLight->SpotDir.z = -1.0f;
 	// spot exponent
-	GLLight->SpotExp = Cmdline_ogl_spec;
+	GLLight->SpotExp = Cmdline_ogl_spec / 2.0f;
 	// spot cutoff
 	GLLight->SpotCutOff = 180.0f; // special value, light in all directions
 	// defaults to disable attenuation
@@ -237,7 +242,7 @@ void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
 			GLLight->Specular.r *= static_point_factor;
 			GLLight->Specular.g *= static_point_factor;
 			GLLight->Specular.b *= static_point_factor;
-			GLLight->LinearAtten *= 2.0f;
+			GLLight->LinearAtten *= 1.25f;
 		}else{
 			GLLight->Specular.r *= static_tube_factor;
 			GLLight->Specular.g *= static_tube_factor;
