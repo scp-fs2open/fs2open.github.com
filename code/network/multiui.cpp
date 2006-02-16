@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.45 $
+ * $Date: 2006-02-16 05:39:13 $
+ * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.43  2006/02/03 22:28:10  taylor
  * a couple of mvalid.cfg and tvalid.cfg file format changes to give them at least some readability
  * some cleanup, extra logging, and very slight speedup with mission and table validation checking
@@ -688,6 +692,8 @@ char Multi_common_text[MULTI_COMMON_TEXT_MAX_LINES][MULTI_COMMON_TEXT_MAX_LINE_L
 
 int Multi_common_top_text_line = -1;		// where to start displaying from
 int Multi_common_num_text_lines = 0;		// how many lines we have
+
+int Multi_force_heartbeat = 0;			// to force a master heardbeat packet be sent (rather than waiting for timeout)
 
 void multi_common_scroll_text_up();
 void multi_common_scroll_text_down();
@@ -2391,18 +2397,15 @@ void multi_join_do_netstuff()
 	//char textbuffer[17];
 	//active_game *Cur;
 
-	static int last_pxo_refresh = -1;
+	static fix next_pxo_refresh = -1;
 
 
-
-	if (Om_tracker_flag && (last_pxo_refresh == -1 || clock() - last_pxo_refresh > 15000))
+	if ( Om_tracker_flag && ((next_pxo_refresh == -1) || (timer_get_fixed_seconds() >= next_pxo_refresh)) )
 	{
-		
 		//multi_join_load_tcp_addrs();
 
-		last_pxo_refresh = clock();
+		next_pxo_refresh = timer_get_fixed_seconds() + (15 * F1_0);
 		multi_servers_query();
-
 	}
 
 
@@ -5614,7 +5617,9 @@ void multi_create_list_select_item(int n)
 		}
 
 		Multi_create_list_select = n;
-				
+
+		Multi_force_heartbeat = 1;
+
 		// set the mission name
 		if(Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS){
 			multi_create_select_to_filename(n,ng->mission_name);		
