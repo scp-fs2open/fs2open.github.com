@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.144 $
- * $Date: 2006-01-19 14:06:33 $
+ * $Revision: 2.145 $
+ * $Date: 2006-02-16 05:31:00 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.144  2006/01/19 14:06:33  taylor
+ * don't attempt to draw glowpoints or engine glows when in wireframe mode (this may need to be a flag or something, but I'm not sure)
+ *
  * Revision 2.143  2006/01/18 16:36:32  taylor
  * oops! :)
  *
@@ -4397,10 +4400,12 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 						
 // the following replaces Bobboau's code, commented out below - Goober5000
 					float magnitude;
-					vec3d scale_vec;
+					vec3d scale_vec = { 1.0f, 0.0f, 0.0f };
 
 					// normalize banks, in case of incredibly big normals
-					vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
+					// VECMAT-ERROR: NULL VEC3D (norm == nul)
+					if ( !IS_VEC_NULL(&bank->point[j].norm) )
+						vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
 
 					// adjust for thrust
 					(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
@@ -5279,7 +5284,12 @@ void model_page_out_textures(int model_num, bool release)
 	for (i=0; i<pm->n_textures; i++) {
 		if ( pm->original_textures[i] > -1 ) {
 			if (release) {
-				bm_release( pm->original_textures[i] );
+				if ( bm_release(pm->original_textures[i]) ) {
+					if (pm->textures[i] == pm->original_textures[i])
+						pm->textures[i] = -1;
+
+					pm->original_textures[i] = -1;
+				}
 			} else {
 				bm_unload_fast( pm->original_textures[i] );
 			}
@@ -5287,7 +5297,12 @@ void model_page_out_textures(int model_num, bool release)
 
 		if ( pm->glow_original_textures[i] > -1 ) {
 			if (release) {
-				bm_release( pm->glow_original_textures[i] );
+				if ( bm_release(pm->glow_original_textures[i]) ) {
+					if (pm->glow_textures[i] == pm->glow_original_textures[i])
+						pm->glow_textures[i] = -1;
+
+					pm->glow_original_textures[i] = -1;
+				}
 			} else {
 				bm_unload_fast( pm->glow_original_textures[i] );
 			}
@@ -5295,7 +5310,12 @@ void model_page_out_textures(int model_num, bool release)
 
 		if ( pm->specular_original_textures[i] > -1 ) {
 			if (release) {
-				bm_release( pm->specular_original_textures[i] );
+				if ( bm_release(pm->specular_original_textures[i]) ) {
+					if (pm->specular_textures[i] == pm->specular_original_textures[i])
+						pm->specular_textures[i] = -1;
+
+					pm->specular_original_textures[i] = -1;
+				}
 			} else {
 				bm_unload_fast( pm->specular_original_textures[i] );
 			}
