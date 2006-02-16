@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.34 $
- * $Date: 2006-01-21 02:22:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.35 $
+ * $Date: 2006-02-16 05:00:01 $
+ * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/01/21 02:22:04  wmcoolmon
+ * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
+ *
  * Revision 2.33  2005/12/06 03:05:53  taylor
  * add base support for 8-bit DDS images
  * clean up some DDS error messages and other minor bug/comment fixes
@@ -504,7 +507,7 @@ int bm_unload_fast( int n, bool = false );
 // Frees up a bitmap's data, and it's slot, so bitmap 
 // number 'n' cannot be used anymore, and bm_load or
 // bm_create might reuse the slot.
-void bm_release(int n);
+int bm_release(int n);
 
 // This loads a bitmap sequence so we can draw with it later.
 // It returns a negative number if it couldn't load

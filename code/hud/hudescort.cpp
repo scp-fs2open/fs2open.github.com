@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.28 $
- * $Date: 2006-01-27 06:21:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2006-02-16 05:00:01 $
+ * $Author: taylor $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/01/27 06:21:10  Goober5000
+ * replace quick sort with insertion sort in many places
+ * --Goober5000
+ *
  * Revision 2.27  2006/01/16 05:54:21  Goober5000
  * use IFF colors in escort list
  *
@@ -332,22 +336,24 @@ void hud_escort_init()
 
 	if ( !Escort_gauges_loaded ) {
 		for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
-			if(strlen(current_hud->Escort_filename[i]))
-			{
+			if ( strlen(current_hud->Escort_filename[i]) ) {
 				Escort_gauges[i].first_frame = bm_load_animation(current_hud->Escort_filename[i], &Escort_gauges[i].num_frames);
-				if ( Escort_gauges[i].first_frame == -1) {
+
+				if (Escort_gauges[i].first_frame == -1) {
 					Warning(LOCATION, "Could not load in ani: %s\n", current_hud->Escort_filename[i]);
 					return;
 				}
+			} else {
+				Escort_gauges[i].first_frame = -1;
 			}
 		}
+
 		Escort_gauges_loaded = 1;
 	}
 
 	Last_target_index = -1;
 
-	if(Max_escort_ships > MAX_COMPLETE_ESCORT_LIST)
-	{
+	if (Max_escort_ships > MAX_COMPLETE_ESCORT_LIST) {
 		Max_escort_ships = MAX_COMPLETE_ESCORT_LIST;
 	}
 #endif
