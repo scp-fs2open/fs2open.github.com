@@ -47,6 +47,8 @@ public:
 class subtitle
 {
 private:
+	void clone(const subtitle &sub);
+
 	std::vector<std::string> text_lines;
 	int text_pos[2];
 
@@ -64,9 +66,13 @@ private:
 
 	//When to end it
 	float time_displayed_end;
+
 public:
 	subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim = NULL, float in_fade_time = 0.0f, color *in_text_color = NULL, bool center_x = false, bool center_y = false, int in_width = 200);
 	~subtitle();
+
+    subtitle(const subtitle &sub) { clone(sub); }
+    const subtitle &operator=(const subtitle &sub);
 
 	void do_frame(float frametime);
 };

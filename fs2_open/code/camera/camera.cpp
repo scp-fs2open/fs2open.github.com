@@ -330,20 +330,27 @@ void camera::do_frame(float in_frametime)
 #define MAX_SUBTITLE_LINES		10
 subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width)
 {
-	//Setup text
-	int len = strlen(in_text);
-	if(len == 0)
+	// basic init, this always has to be done
+	memset( imageanim, 0, sizeof(imageanim) );
+	image_id = -1;
+
+	if ( ((in_text != NULL) && (strlen(in_text) <= 0)) && ((in_imageanim != NULL) && (strlen(in_imageanim) <= 0)) )
 		return;
 
-	int num_text_lines;
+
+	int num_text_lines = 0;
 	char *text_line_ptrs[MAX_SUBTITLE_LINES];
 	int text_line_lens[MAX_SUBTITLE_LINES];
-	num_text_lines = split_str(in_text, in_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
-	std::string temp_str;
-	for(int i = 0; i < num_text_lines; i++)
-	{
-		temp_str.assign(text_line_ptrs[i], text_line_lens[i]);
-		text_lines.push_back(temp_str);
+
+	//Setup text
+	if ( (in_text != NULL) && (strlen(in_text) > 0) ) {
+		num_text_lines = split_str(in_text, in_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
+		std::string temp_str;
+		for(int i = 0; i < num_text_lines; i++)
+		{
+			temp_str.assign(text_line_ptrs[i], text_line_lens[i]);
+			text_lines.push_back(temp_str);
+		}
 	}
 
 	//Setup text color
@@ -357,16 +364,12 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 	fade_time = fl_abs(in_fade_time);
 
 	//Setup image
-	image_id = -1;
-	if(in_imageanim != NULL)
+	if ( (in_imageanim != NULL) && (strlen(in_imageanim) > 0) )
 	{
-		len = strlen(in_imageanim);
-		if(len != 0 && len < MAX_FILENAME_LEN)
-		{
-			image_id = bm_load(in_imageanim);
-			if(image_id != -1)
-				strcpy(imageanim, in_imageanim);
-		}
+		image_id = bm_load(in_imageanim);
+
+		if (image_id >= 0)
+			strncpy(imageanim, in_imageanim, sizeof(imageanim) - 1);
 	}
 
 	//Setup pos
@@ -420,6 +423,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 	time_displayed = 0.0f;
 	time_displayed_end = 2.0f*fade_time + display_time;
 }
+
 void subtitle::do_frame(float frametime)
 {
 	//Figure out how much alpha
@@ -430,11 +434,6 @@ void subtitle::do_frame(float frametime)
 	else if(time_displayed > time_displayed_end)
 	{
 		//We're finished
-		if(image_id != -1)
-		{
-			bm_unload(image_id);
-			image_id = -1;
-		}
 		return;
 	}
 	else if((time_displayed - fade_time) > display_time)
@@ -465,10 +464,60 @@ void subtitle::do_frame(float frametime)
 
 	time_displayed += frametime;
 }
+
 subtitle::~subtitle()
 {
-	if(image_id != -1)
-		bm_unload(image_id);
+	if (image_id != -1) {
+		if ( bm_release(image_id) ) {
+			image_id = -1;
+		}
+	}
+}
+
+void subtitle::clone(const subtitle &sub)
+{
+	uint i = 0;
+
+	for (i = 0; i < text_lines.size(); i++) {
+		text_lines.push_back(sub.text_lines[i]);
+	}
+
+	text_pos[0] = sub.text_pos[0];
+	text_pos[1] = sub.text_pos[1];
+
+	display_time = sub.display_time;
+	fade_time = sub.fade_time;
+	memcpy( &text_color, &sub.text_color, sizeof(color) );
+
+	if ( strlen(sub.imageanim) ) {
+		memcpy( imageanim, sub.imageanim, MAX_FILENAME_LEN );
+		// we bm_load() again here to kick the refcount up
+		image_id = bm_load(imageanim);
+	} else {
+		memset( imageanim, 0, MAX_FILENAME_LEN );
+		image_id = -1;
+	}
+
+	image_pos[0] = sub.image_pos[0];
+	image_pos[1] = sub.image_pos[1];
+
+	time_displayed = sub.time_displayed;
+	time_displayed_end = sub.time_displayed_end;
+}
+
+const subtitle &subtitle::operator=(const subtitle &sub)
+{
+	if (this != &sub) {
+		if (image_id != -1) {
+			if ( bm_release(image_id) ) {
+				image_id = -1;
+			}
+		}
+
+		clone(sub);
+	}
+
+	return *this;
 }
 
 void cameras_init()
