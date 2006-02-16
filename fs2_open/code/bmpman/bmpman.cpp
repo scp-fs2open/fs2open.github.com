@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.79 $
- * $Date: 2006-01-21 02:22:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.80 $
+ * $Date: 2006-02-16 05:00:01 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2006/01/21 02:22:04  wmcoolmon
+ * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
+ *
  * Revision 2.78  2006/01/21 01:56:58  taylor
  * that wasn't too smart of me, move extra anim filename size check to *after* we have found an anim
  *
@@ -1501,6 +1504,7 @@ DCF(bm_frag,"Shows BmpMan fragmentation")
 				gr_set_color(0,255,0);
 				break;
 			case BM_TYPE_ANI:
+			case BM_TYPE_EFF:
 				gr_set_color(0,0,255);
 				break;
 			}
@@ -2439,7 +2443,7 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	MONITOR_INC( NumBitmapPage, 1 );
 	MONITOR_INC( SizeBitmapPage, bmp->w*bmp->h );
 
-	if ( be->type == BM_TYPE_ANI ) {
+	if ( (be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF) ) {
 		int i,first = bm_bitmaps[bitmapnum].info.ani.first_frame;
 
 		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
@@ -2531,9 +2535,9 @@ void bm_get_palette(int handle, ubyte *pal, char *name)
 //
 // parameters:		n		=>		index into bm_bitmaps ( index returned from bm_load() or bm_create() )
 //
-// returns:			nothing
+// returns:			1 on successful release, 0 otherwise
 
-void bm_release(int handle)
+int bm_release(int handle)
 {
 	bitmap_entry	*be;
 
@@ -2543,15 +2547,15 @@ void bm_release(int handle)
 	be = &bm_bitmaps[n];
 
 	if ( be->type == BM_TYPE_NONE ) {
-		return;	// Already been released?
+		return 0;	// Already been released?
 	}
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0) {
-		nprintf(("BmpMan", "Tried to release %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
-		return;
+		nprintf(("BmpMan", "Tried to release %s that has a lock count of %d.. not releasing\n", be->filename, be->ref_count));
+		return 0;
 	}
 
 	// kind of like ref_count except it gets around the lock/unlock usage problem
@@ -2561,8 +2565,8 @@ void bm_release(int handle)
 		be->load_count--;
 
 	if ( be->load_count != 0 ) {
-		nprintf(("BmpMan", "Tried to release %s that has a load count of %d.. not unloading\n", be->filename, be->load_count));
-		return;
+		nprintf(("BmpMan", "Tried to release %s that has a load count of %d.. not releasing\n", be->filename, be->load_count + 1));
+		return 0;
 	}
 
 	if ( be->type != BM_TYPE_USER )	{
@@ -2570,13 +2574,13 @@ void bm_release(int handle)
 	}
 
 	// be sure that all frames of an ani are unloaded - taylor
-	if ( be->type == BM_TYPE_ANI ) {
+	if ( (be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF) ) {
 		int i, first = be->info.ani.first_frame, total = bm_bitmaps[first].info.ani.num_frames;
 
 		for (i = 0; i < total; i++)	{
 			bm_free_data(first+i);		// clears flags, bbp, data, etc
 
-			bm_bitmaps[first+i].bm.true_bpp = 0;
+			memset( &bm_bitmaps[first+i], 0, sizeof(bitmap_entry) );
 
 			bm_bitmaps[first+i].type = BM_TYPE_NONE;
 			bm_bitmaps[first+i].comp_type = BM_TYPE_NONE;
@@ -2589,17 +2593,9 @@ void bm_release(int handle)
 			bm_bitmaps[first+i].palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
 			// bookeeping
-#ifdef BMPMAN_NDEBUG
-			bm_bitmaps[first+i].data_size = -1;									// How much data this bitmap uses
-#endif
 			bm_bitmaps[first+i].ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
 
-			// Bitmap info
-			bm_bitmaps[first+i].bm.w = bm_bitmaps[first+i].bm.h = bm_bitmaps[first+i].mem_taken = -1;
-	
 			// Stuff needed for animations
-			// Stuff needed for user bitmaps
-			memset( &bm_bitmaps[first+i].info, 0, sizeof(bm_extra_info) );
 			bm_bitmaps[first+i].info.ani.first_frame = -1;
 
 			bm_bitmaps[first+i].handle = -1;
@@ -2607,12 +2603,7 @@ void bm_release(int handle)
 	} else {
 		bm_free_data(n);		// clears flags, bbp, data, etc
 
-	//	if ( bm_bitmaps[n].type == BM_TYPE_USER )	{
-	//		bm_bitmaps[n].info.user.data = NULL;
-	//		bm_bitmaps[n].info.user.bpp = 0;
-	//	}
-
-		bm_bitmaps[n].bm.true_bpp = 0;
+		memset( &bm_bitmaps[n], 0, sizeof(bitmap_entry) );
 
 		bm_bitmaps[n].type = BM_TYPE_NONE;
 		bm_bitmaps[n].comp_type = BM_TYPE_NONE;
@@ -2625,26 +2616,16 @@ void bm_release(int handle)
 		bm_bitmaps[n].palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
 		// bookeeping
-#ifdef BMPMAN_NDEBUG
-		bm_bitmaps[n].data_size = -1;									// How much data this bitmap uses
-#endif
 		bm_bitmaps[n].ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
 
-		// Bitmap info
-		bm_bitmaps[n].bm.w = bm_bitmaps[n].bm.h = bm_bitmaps[n].mem_taken = -1;
-	
 		// Stuff needed for animations
-		// Stuff needed for user bitmaps
-		memset( &bm_bitmaps[n].info, 0, sizeof(bm_extra_info) );
+		bm_bitmaps[n].info.ani.first_frame = -1;
 
 		bm_bitmaps[n].handle = -1;
 	}
+
+	return 1;
 }
-
-
-
-
-
 
 // --------------------------------------------------------------------------------------
 // bm_unload()  - unloads the data, but not the bitmap info.
@@ -2688,13 +2669,13 @@ int bm_unload( int handle, bool clear_render_targets )
 			be->load_count--;
 
 		if ( be->load_count != 0 ) {
-			nprintf(("BmpMan", "Tried to unload %s that has a load count of %d.. not unloading\n", be->filename, be->load_count));
+			nprintf(("BmpMan", "Tried to unload %s that has a load count of %d.. not unloading\n", be->filename, be->load_count + 1));
 			return 0;
 		}
 	}
 
 	// be sure that all frames of an ani are unloaded - taylor
-	if ( be->type == BM_TYPE_ANI ) {
+	if ( (be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF) ) {
 		int i,first = be->info.ani.first_frame;
 
 		// for the unload all case, don't try to unload every frame of every frame
@@ -2748,7 +2729,7 @@ int bm_unload_fast( int handle, bool clear_render_targets )
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE!
 
 	// be sure that all frames of an ani are unloaded - taylor
-	if ( be->type == BM_TYPE_ANI ) {
+	if ( (be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF) ) {
 		int i,first = be->info.ani.first_frame;
 
 		// for the unload all case, don't try to unload every frame of every frame
@@ -2843,6 +2824,8 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 	if (n < 0)
 		return;
 
+	Assert( bm_bitmaps[n].handle == bitmapnum );
+
 	for (i=0; i<nframes;i++ )	{
 		bm_bitmaps[n+i].preloaded = 1;
 
@@ -2877,6 +2860,8 @@ void bm_page_in_nondarkening_texture( int bitmapnum, int nframes )
 	if (n == -1)
 		return;
 
+	Assert( bm_bitmaps[n].handle == bitmapnum );
+
 	for (i=0; i<nframes;i++ )	{
 		bm_bitmaps[n+i].preloaded = 4;
 
@@ -2896,6 +2881,8 @@ void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 
 	if (n == -1)
 		return;
+
+	Assert( bm_bitmaps[n].handle == bitmapnum );
 
 	for (i=0; i<nframes;i++ )	{
 		bm_bitmaps[n+i].preloaded = 3;
@@ -2930,6 +2917,8 @@ void bm_page_in_aabitmap( int bitmapnum, int nframes )
 	if (n == -1)
 		return;
 
+	Assert( bm_bitmaps[n].handle == bitmapnum );
+
 	for (i=0; i<nframes;i++ )	{
 		bm_bitmaps[n+i].preloaded = 2;
 
@@ -2951,7 +2940,7 @@ void bm_page_in_start()
 	// Mark all as inited
 	for (i = 0; i < MAX_BITMAPS; i++)	{
 		if ( !Cmdline_cache_bitmaps && (bm_bitmaps[i].type != BM_TYPE_NONE) )	{
-			bm_unload(bm_bitmaps[i].handle);
+			bm_unload_fast(bm_bitmaps[i].handle);
 		}
 		bm_bitmaps[i].preloaded = 0;
 		bm_bitmaps[i].preload_count = 0;
@@ -3008,7 +2997,7 @@ void bm_page_in_stop()
 #endif
 
 				if ( bm_preloading ) {
-					if ( !gr_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded==2) ) )	{
+					if ( !gr_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded==2)) )	{
 						mprintf(( "Out of VRAM.  Done preloading.\n" ));
 						bm_preloading = 0;
 					} else {
@@ -3049,7 +3038,7 @@ void bm_page_in_stop()
 					}
 				}
 			} else {
-				bm_unload(bm_bitmaps[i].handle);
+				bm_unload_fast(bm_bitmaps[i].handle);
 			}
 		}
 
@@ -3113,7 +3102,7 @@ int bm_page_out( int bitmap_id )
 		return 0;
 	}
 
-	return ( bm_unload( bitmap_id) == 1 );
+	return ( bm_unload(bitmap_id) == 1 );
 }
 
 int bm_get_cache_slot( int bitmap_id, int separate_ani_frames )

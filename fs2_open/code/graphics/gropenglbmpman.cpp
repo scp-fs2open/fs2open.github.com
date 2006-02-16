@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-11-13 06:44:18 $
+ * $Revision: 1.13 $
+ * $Date: 2006-02-16 05:00:01 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 1.11  2005/08/20 20:34:51  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -431,10 +439,8 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 		}
 
 		if ( !Bm_paging )	{
-			if ( be->type != BM_TYPE_USER ) {
-				char flag_text[64];
-				strcpy( flag_text, "--" );							
-				nprintf(( "Paging", "Loading %s (%dx%dx%dx%s)\n", be->filename, bmp->w, bmp->h, true_bpp, flag_text ));
+			if ( be->type != BM_TYPE_USER ) {							
+				nprintf(( "Paging", "Loading %s (%dx%dx%d)\n", be->filename, bmp->w, bmp->h, true_bpp ));
 			}
 		}
 
