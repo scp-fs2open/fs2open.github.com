@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.176  2006/02/15 07:26:52  wmcoolmon
+ * Blah, pulled a Goober.
+ *
  * Revision 2.175  2006/02/15 07:19:50  wmcoolmon
  * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
  *
@@ -5116,7 +5119,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	// make sure we are loaded and useable
-	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
+	if (wip->render_type == WRT_POF) {
 		wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
 
 		if (wip->model_num < 0) {
