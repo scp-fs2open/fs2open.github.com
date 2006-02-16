@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.158 $
- * $Date: 2006-02-12 05:23:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.159 $
+ * $Date: 2006-02-16 05:18:48 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.158  2006/02/12 05:23:16  Goober5000
+ * additional fixes and enhancements for substitute music
+ * --Goober5000
+ *
  * Revision 2.157  2006/02/12 01:27:47  Goober5000
  * more cool work on importing, music handling, etc.
  * --Goober5000
@@ -1299,7 +1303,7 @@ MONITOR(NumShipDepartures);
 
 
 extern int Num_species;
-void parse_mission_info(mission *pm)
+void parse_mission_info(mission *pm, bool basic = false)
 {
 	int i;
 	char game_string[NAME_LENGTH];
@@ -1377,7 +1381,9 @@ void parse_mission_info(mission *pm)
 	}
 	if(optional_string("+Storm:")){
 		stuff_string(Mission_parse_storm_name, F_NAME, NULL);
-		nebl_set_storm(Mission_parse_storm_name);
+
+		if (!basic)
+			nebl_set_storm(Mission_parse_storm_name);
 	}
 
 	// Goober5000 - ship contrail speed threshold
@@ -1422,6 +1428,16 @@ void parse_mission_info(mission *pm)
 		else
 			pm->flags &= ~MISSION_FLAG_SCRAMBLE;
 	}
+
+	// if we are just requesting basic info then skip everything else.  the reason
+	// for this is to make sure that we don't modify things outside of the mission struct
+	// that might not get reset afterwards (like what can happen in the techroom) - taylor
+	//
+	// NOTE: this can be dangerous so be sure that any get_mission_info() call (defaults to basic info) will
+	//       only reference data parsed before this point!! (like current FRED2 and game code does)
+	if (basic == true)
+		return;
+
 
 	// set up support ships
 	pm->support_ships.arrival_location = 0;		// ASSUMPTION: hyperspace
@@ -5360,7 +5376,7 @@ int get_mission_info(char *filename, mission *mission_p)
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
 		memset( mission_p, 0, sizeof(mission) );
 		parse_init();
-		parse_mission_info(mission_p);
+		parse_mission_info(mission_p, true);
 
 		// close localization
 		lcl_ext_close();
