@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.134 $
- * $Date: 2006-01-20 07:10:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.135 $
+ * $Date: 2006-02-16 05:44:53 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2006/01/20 07:10:34  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.133  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -788,6 +792,7 @@
 #include "globalincs/pstypes.h"
 
 #include <vector>
+#include <string>
 
 struct object;
 
