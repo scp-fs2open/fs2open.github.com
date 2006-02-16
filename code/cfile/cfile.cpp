@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.37 $
+ * $Date: 2006-02-16 05:07:50 $
+ * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.35  2006/01/17 02:33:20  wmcoolmon
  * data/scripts directory
  *
@@ -1796,9 +1800,9 @@ int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 		if(cf_len > 0){
 			// do the proper short or long checksum
 			if(is_long){
-				*chk_long = cf_add_chksum_long(*chk_long, cf_buffer, cf_len);
+				*chk_long = (uint)cf_add_chksum_long(*chk_long, cf_buffer, cf_len);
 			} else {
-				*chk_short = cf_add_chksum_short(*chk_short, cf_buffer, cf_len);
+				*chk_short = (ushort)cf_add_chksum_short(*chk_short, cf_buffer, cf_len);
 			}
 		}
 	} while((cf_len > 0) && (cf_total < max_size));
