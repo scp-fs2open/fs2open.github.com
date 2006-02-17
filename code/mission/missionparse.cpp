@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.159 $
- * $Date: 2006-02-16 05:18:48 $
- * $Author: taylor $
+ * $Revision: 2.160 $
+ * $Date: 2006-02-17 08:13:53 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.159  2006/02/16 05:18:48  taylor
+ * all just getting basic info in parse_mission_info(), this fixes several parsing/warning issues that can show up
+ *   from going in the techroom and some similar FRED2 issues as this stuff doesn't get reset between get_mission_info() calls.
+ *   this also should make the mission simulator screen load a bit faster
+ *
  * Revision 2.158  2006/02/12 05:23:16  Goober5000
  * additional fixes and enhancements for substitute music
  * --Goober5000
@@ -3717,6 +3722,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	int wingnum, objnum, num_create_save;
 	int time_to_arrive;
 	int pre_create_count;
+	int i;
 
 	// we need to send this in multiplayer
 	pre_create_count = wingp->total_arrived_count;
@@ -3851,116 +3857,132 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 	objnum = -1;
 
-	// we have to do a sneaky increment because the current object
-	// might get removed from the list in the middle of the loop!
-	for (p_object *objp = GET_FIRST(&Ship_arrival_list), *next_objp = GET_NEXT(objp); objp != END_OF_LIST(&Ship_arrival_list); objp = next_objp, next_objp = GET_NEXT(objp))
+	// we have to do this via the array because we have no guarantee we'll be able to iterate along the list
+	// (since created objects plus anything they're docked to will be removed from it)
+	for (i = 0; i < Num_parse_objects; i++)
 	{
+		int index;
+		ai_info *aip;
+		p_object *p_objp = &Parse_objects[i];
+
+		// ensure on arrival list
+		if (!parse_object_on_arrival_list(p_objp))
+			continue;
+
 		// compare the wingnums.  When they are equal, we can create the ship.  In the case of
 		// wings that have multiple waves, this code implies that we essentially creating clones
 		// of the ships that were created in Fred for the wing when more ships for a new wave
 		// arrive.  The threshold value of a wing can also make one of the ships in a wing be "cloned"
 		// more often than other ships in the wing.  I don't think this matters much.
-		if ( objp->wingnum == wingnum ) {
-			ai_info *aip;
+		if (p_objp->wingnum != wingnum)
+			continue;
 
-			// when ingame joining, we need to create a specific ship out of the list of ships for a
-			// wing.  specific_instance is a 0 based integer which specified which ship in the wing
-			// to create.  So, only create the ship we actually need to.
-			if ( (Game_mode & GM_MULTIPLAYER) && (specific_instance > 0) ) {
-				specific_instance--;
-				continue;
-			}
+		// when ingame joining, we need to create a specific ship out of the list of ships for a
+		// wing.  specific_instance is a 0 based integer which specified which ship in the wing
+		// to create.  So, only create the ship we actually need to.
+		if ((Game_mode & GM_MULTIPLAYER) && (specific_instance > 0))
+		{
+			specific_instance--;
+			continue;
+		}
 
-			Assert ( !(objp->flags & P_SF_CANNOT_ARRIVE) );		// get allender
+		Assert (!(p_objp->flags & P_SF_CANNOT_ARRIVE));		// get allender
 
-			int index;
+		// if we have the maximum number of ships in the wing, we must bail as well
+		if (wingp->current_count >= MAX_SHIPS_PER_WING)
+		{
+			Int3();					// this is bogus -- we should always allow all ships to be created
+			num_to_create = 0;
+			break;
+		}
 
-			// if we have the maximum number of ships in the wing, we must bail as well
-			if ( wingp->current_count >= MAX_SHIPS_PER_WING ) {
-				Int3();					// this is bogus -- we should always allow all ships to be created
-				num_to_create = 0;
-				break;
-			}
+		// bash the ship name to be the name of the wing + sone number if there is > 1 wave in this wing
+		// also, if multplayer, set the parse object's net signature to be wing's net signature
+		// base + total_arrived_count (before adding 1)
+		if (Game_mode & GM_MULTIPLAYER)
+		{
+			p_objp->net_signature = (ushort)(wingp->net_signature + wingp->total_arrived_count);
+		}
 
-			// bash the ship name to be the name of the wing + sone number if there is > 1 wave in
-			// this wing
-			// also, if multplayer, set the parse object's net signature to be wing's net signature
-			// base + total_arrived_count (before adding 1)
-			if ( Game_mode & GM_MULTIPLAYER ){
-				objp->net_signature = (ushort)(wingp->net_signature + wingp->total_arrived_count);
-			}
+		wingp->total_arrived_count++;
+		if (wingp->num_waves > 1)
+		{
+			sprintf(p_objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
+		}
 
-			wingp->total_arrived_count++;
-			if ( wingp->num_waves > 1 ){
-				sprintf(objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
-			}
 
-			objnum = parse_create_object(objp);
-			aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
+		objnum = parse_create_object(p_objp);
+		aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
 
-			// copy any goals from the wing to the newly created ship
-			for (index = 0; index < MAX_AI_GOALS; index++) {
-				if ( wingp->ai_goals[index].ai_mode != AI_GOAL_NONE ){
-					ai_copy_mission_wing_goal( &wingp->ai_goals[index], aip );
+		// copy any goals from the wing to the newly created ship
+		for (index = 0; index < MAX_AI_GOALS; index++)
+		{
+			if (wingp->ai_goals[index].ai_mode != AI_GOAL_NONE)
+				ai_copy_mission_wing_goal(&wingp->ai_goals[index], aip);
+		}
+
+		Ai_info[Ships[Objects[objnum].instance].ai_index].wing = wingnum;
+
+		if (wingp->flags & WF_NO_DYNAMIC)
+			aip->ai_flags |= AIF_NO_DYNAMIC;
+
+		// update housekeeping variables
+		wingp->ship_index[wingp->current_count] = Objects[objnum].instance;
+
+		// set up wingman status index
+		hud_wingman_status_set_index(wingp->ship_index[wingp->current_count]);
+
+		p_objp->wing_status_wing_index = Ships[Objects[objnum].instance].wing_status_wing_index;
+		p_objp->wing_status_wing_pos = Ships[Objects[objnum].instance].wing_status_wing_pos;
+
+		wingp->current_count++;
+
+		// keep any player ship on the parse object list -- used for respawns
+		// 5/8/98 -- MWA -- don't remove ships from the list when you are ingame joining
+		if (!(p_objp->flags & P_OF_PLAYER_START))
+		{
+			if ((Game_mode & GM_NORMAL) || !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
+			{
+				// only remove ship if one wave in wing
+				if (wingp->num_waves == wingp->current_wave)
+				{
+					// remove p_objp from the list
+					list_remove(&Ship_arrival_list, p_objp);
+					
+					// free up sexp nodes for reuse
+					if (p_objp->ai_goals != -1)
+						free_sexp2(p_objp->ai_goals);
 				}
-			}
-
-			Ai_info[Ships[Objects[objnum].instance].ai_index].wing = wingnum;
-
-			if ( wingp->flags & WF_NO_DYNAMIC ){
-				aip->ai_flags |= AIF_NO_DYNAMIC;
-			}
-
-			// update housekeeping variables
-			wingp->ship_index[wingp->current_count] = Objects[objnum].instance;
-
-			// set up wingman status index
-			hud_wingman_status_set_index(wingp->ship_index[wingp->current_count]);
-
-			objp->wing_status_wing_index = Ships[Objects[objnum].instance].wing_status_wing_index;
-			objp->wing_status_wing_pos = Ships[Objects[objnum].instance].wing_status_wing_pos;
-
-			wingp->current_count++;
-
-			// keep any player ship on the parse object list -- used for respawns
-			// 5/8/98 -- MWA -- don't remove ships from the list when you are ingame joining
-			if ( !(objp->flags & P_OF_PLAYER_START) ) {
-				if ( (Game_mode & GM_NORMAL) || !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
-					if ( wingp->num_waves == wingp->current_wave ) {	// only remove ship if one wave in wing
-						list_remove(&Ship_arrival_list, objp);			// remove objp from the list
-						if ( objp->ai_goals != -1 ){
-							free_sexp2(objp->ai_goals);						// free up sexp nodes for reuse
-						}
-					}
-				}
-			}
-
-			// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
-			if ( (Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) ) {
-				// different for tvt -- Goober5000
-				for (int i = 0; i < MAX_TVT_WINGS; i++ ) {
-					if ( !stricmp(TVT_wing_names[i], wingp->name) ) {
-						Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
-					} 
-				}
-			} else {
-				for (int i = 0; i < MAX_STARTING_WINGS; i++ ) {
-					if ( !stricmp(Starting_wing_names[i], wingp->name) ) {
-						Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
-					} 
-				}
-			}
-
-			// keep track of how many ships to create.  Stop when we have done all that we are supposed
-			// to do.
-			num_to_create--;
-			if ( !num_to_create ){
-				break;
 			}
 		}
+
+		// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
+		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+		{
+			// different for tvt -- Goober5000
+			for (i = 0; i < MAX_TVT_WINGS; i++)
+			{
+				if (!stricmp(TVT_wing_names[i], wingp->name))
+					Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
+			}
+		}
+		else
+		{
+			for (i = 0; i < MAX_STARTING_WINGS; i++)
+			{
+				if (!stricmp(Starting_wing_names[i], wingp->name))
+					Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
+			}
+		}
+
+		// keep track of how many ships to create.  Stop when we have done all that we are supposed to do.
+		num_to_create--;
+		if (num_to_create == 0)
+			break;
 	}
 
-	Assert ( num_to_create == 0 );		// we should always have enough ships in the list!!!
+	// we should always have enough ships in the list!!!
+	Assert (num_to_create == 0);
 
 	// possibly play some event driven music here.  Send a network packet indicating the wing was
 	// created.  Only do this stuff if actually in the mission.
