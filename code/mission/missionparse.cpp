@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.160 $
- * $Date: 2006-02-17 08:13:53 $
+ * $Revision: 2.161 $
+ * $Date: 2006-02-17 08:36:16 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.160  2006/02/17 08:13:53  Goober5000
+ * fix subtle bug
+ * --Goober5000
+ *
  * Revision 2.159  2006/02/16 05:18:48  taylor
  * all just getting basic info in parse_mission_info(), this fixes several parsing/warning issues that can show up
  *   from going in the techroom and some similar FRED2 issues as this stuff doesn't get reset between get_mission_info() calls.
@@ -3722,7 +3726,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	int wingnum, objnum, num_create_save;
 	int time_to_arrive;
 	int pre_create_count;
-	int i;
+	int i, j;
 
 	// we need to send this in multiplayer
 	pre_create_count = wingp->total_arrived_count;
@@ -3960,17 +3964,17 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
 		{
 			// different for tvt -- Goober5000
-			for (i = 0; i < MAX_TVT_WINGS; i++)
+			for (j = 0; j < MAX_TVT_WINGS; j++)
 			{
-				if (!stricmp(TVT_wing_names[i], wingp->name))
+				if (!stricmp(TVT_wing_names[j], wingp->name))
 					Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
 			}
 		}
 		else
 		{
-			for (i = 0; i < MAX_STARTING_WINGS; i++)
+			for (j = 0; j < MAX_STARTING_WINGS; j++)
 			{
-				if (!stricmp(Starting_wing_names[i], wingp->name))
+				if (!stricmp(Starting_wing_names[j], wingp->name))
 					Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
 			}
 		}
@@ -4030,7 +4034,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		if ( Fred_running ) {
 			Assert( wingp->ship_index[wingp->special_ship] != -1 );
 			int orders = Ships[wingp->ship_index[0]].orders_accepted;
-			for (int i = 0; i < wingp->current_count; i++ ) {
+			for (i = 0; i < wingp->current_count; i++ ) {
 				if (i == wingp->special_ship)
 					continue;
 
