@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.311 $
- * $Date: 2006-02-16 05:44:53 $
- * $Author: taylor $
+ * $Revision: 2.312 $
+ * $Date: 2006-02-17 21:47:47 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.311  2006/02/16 05:44:53  taylor
+ * remove reset of modelnums on level start (more properly moved to model_unload())
+ * minor change ship class fixage to clear out old model
+ * take better care to make sure that a ship model has the proper refcount (this needs further work, I don't like :V:'s crap here)
+ * add <string> to includes in ship.h, fixes a compile issue that I forgot to fix properly before (thanks Jens)
+ *
  * Revision 2.310  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -3242,7 +3248,7 @@ strcpy(parse_error_text, temp_error);
 			else if ( !stricmp( NOX("no_fred"), ship_strings[i]))
 				sip->flags |= SIF_NO_FRED;
 			else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
-				break;	//Do nothing
+				Warning(LOCATION, "Use of 'ballistic primaries' flag for ship '%s' - this flag is no longer needed.", sip->name);
 			else if( !stricmp( NOX("flash"), ship_strings[i]))
 				sip->flags2 |= SIF2_FLASH;
 			else if ( !stricmp( NOX("surface shields"), ship_strings[i]))
