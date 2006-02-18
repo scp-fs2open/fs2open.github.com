@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-12-29 08:08:36 $
+ * $Revision: 2.30 $
+ * $Date: 2006-02-18 00:42:51 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.28  2005/11/16 05:46:27  taylor
  * bunch of error checking and code cleanup for the team stuff in ship/weapon select
  *
@@ -1849,7 +1852,8 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		//Find the center of teh submodel
 		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
 		weap_closeup.xyz.y = -(bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f);
-		weap_closeup.xyz.z = (weap_closeup.xyz.x/tanf(zoom / 2.0f));
+		//weap_closeup.xyz.z = (weap_closeup.xyz.x/tanf(zoom / 2.0f));
+		weap_closeup.xyz.z = -(bs->rad/tanf(zoom/2.0f));
 
 		y_closeup = -(weap_closeup.xyz.y/tanf(zoom / 2.0f));
 		if(y_closeup < weap_closeup.xyz.z)
@@ -1892,6 +1896,65 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 	g3_end_frame();
 	gr_reset_clip();
+}
+
+void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, bool resize)
+{
+	angles rot_angles, view_angles;
+	matrix model_orient;
+
+	// rotate the ship as much as required for this frame
+	*rotation_buffer += PI2 * flFrametime / rev_rate;
+	while (*rotation_buffer > PI2){
+		*rotation_buffer -= PI2;	
+	}
+
+	view_angles.p = -0.6f;
+	view_angles.b = 0.0f;
+	view_angles.h = 0.0f;
+	vm_angles_2_matrix(&model_orient, &view_angles);
+
+	rot_angles.p = 0.0f;
+	rot_angles.b = 0.0f;
+	rot_angles.h = *rotation_buffer;
+	vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
+	
+	gr_set_clip(x1, y1, x2, y2, resize);		
+
+	// render the ship
+	g3_start_frame(1);
+	if(closeup_pos != NULL)
+	{
+		g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
+	}
+	else
+	{
+		polymodel *pm = model_get(model_id);
+		vec3d pos = {0.0f, 0.0f, -pm->rad*1.5f};
+		g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
+	}
+	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	// lighting for techroom
+	light_reset();
+	vec3d light_dir = vmd_zero_vector;
+	light_dir.xyz.y = 1.0f;	
+	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+	light_rotate_all();
+	// lighting for techroom
+
+	model_clear_instance(model_id);
+	model_set_detail_level(0);
+	model_render(model_id, &model_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+
+	if (!Cmdline_nohtl) 
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+
+	g3_end_frame();
 }
 
 // NEWSTUFF END
