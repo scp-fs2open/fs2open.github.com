@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.59 $
- * $Date: 2006-02-16 05:19:46 $
- * $Author: taylor $
+ * $Revision: 2.60 $
+ * $Date: 2006-02-18 00:42:51 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2006/02/16 05:19:46  taylor
+ * I would say this is another selling point for the boozer-svn plugin, but I would have needed it too as I've missed this stuff several times
+ *
  * Revision 2.58  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -2119,89 +2122,23 @@ void ship_select_do(float frametime)
 		// check we have a valid ship class selected
 		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
 		{
-	
-			// now render the trackball ship, which is unique to the ships tab
-			float rev_rate;
-			angles rot_angles, view_angles;
-			int z;
 			ship_info *sip = &Ship_info[Selected_ss_class];
-	
-			// get correct revolution rate
-	
-			rev_rate = REVOLUTION_RATE;
-			z = sip->flags;
-			if (z & SIF_BIG_SHIP) {
+			float rev_rate = REVOLUTION_RATE;
+			if (sip->flags & SIF_BIG_SHIP) {
 				rev_rate *= 1.7f;
 			}
-			if (z & SIF_HUGE_SHIP) {
+			if (sip->flags & SIF_HUGE_SHIP) {
 				rev_rate *= 3.0f;
 			}
-	
-			// rotate the ship as much as required for this frame
-			ShipSelectScreenShipRot += PI2 * frametime / rev_rate;
-			while (ShipSelectScreenShipRot > PI2){
-				ShipSelectScreenShipRot -= PI2;	
-			}
-	
-			// turn off fogging
-			//gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-
-			//	reorient ship
-			/*	if (Trackball_active) {
-				int dx, dy;
-				matrix mat1, mat2;
-
-				if (Trackball_active) {
-					mouse_get_delta(&dx, &dy);
-					if (dx || dy) {
-						vm_trackball(-dx, -dy, &mat1);
-						vm_matrix_x_matrix(&mat2, &mat1, &Techroom_ship_orient);
-						Techroom_ship_orient = mat2;
-					}
-				}
-	
-			} else {
-				*/		// setup stuff needed to render the ship
-				view_angles.p = -0.6f;
-				view_angles.b = 0.0f;
-				view_angles.h = 0.0f;
-				vm_angles_2_matrix(&ShipScreenOrient, &view_angles);
-	
-				rot_angles.p = 0.0f;
-				rot_angles.b = 0.0f;
-				rot_angles.h = ShipSelectScreenShipRot;
-				vm_rotate_matrix_by_angles(&ShipScreenOrient, &rot_angles);
-		//	}
-	
-		//	gr_set_clip(Tech_ship_display_coords[gr_screen.res][0], Tech_ship_display_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);	
-			gr_set_clip(Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], Tech_ship_display_coords[gr_screen.res][2], Tech_ship_display_coords[gr_screen.res][3]);		
-	
-			// render the ship
-			g3_start_frame(1);
-			g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
-			if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-			if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	
-			// lighting for techroom
-			light_reset();
-			vec3d light_dir = vmd_zero_vector;
-			light_dir.xyz.y = 1.0f;	
-			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-			// light_filter_reset();
-			light_rotate_all();
-			// lighting for techroom
-	
-			model_clear_instance(ShipSelectModelNum);
-			model_set_detail_level(0);
-			model_render(ShipSelectModelNum, &ShipScreenOrient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
-
-			if (!Cmdline_nohtl) 
-			{
-				gr_end_view_matrix();
-				gr_end_proj_matrix();
-			}
-
-			g3_end_frame();
+			draw_model_rotating(ShipSelectModelNum,
+				Ship_anim_coords[gr_screen.res][0],
+				Ship_anim_coords[gr_screen.res][1],
+				Ship_anim_coords[gr_screen.res][2],
+				Ship_anim_coords[gr_screen.res][3],
+				&ShipSelectScreenShipRot,
+				&sip->closeup_pos,
+				sip->closeup_zoom * 1.3f,
+				rev_rate);
 		}
 	}
 

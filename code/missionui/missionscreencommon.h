@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.12 $
- * $Date: 2005-12-29 08:08:36 $
+ * $Revision: 2.13 $
+ * $Date: 2006-02-18 00:42:51 $
  * $Author: wmcoolmon $
  *
  * $NoKeywords: $
@@ -20,8 +20,9 @@
 #ifndef _MISSION_SCREEN_COMMON_HEADER_FILE
 #define _MISSION_SCREEN_COMMON_HEADER_FILE
 
-#include "ui/ui.h"
 #include "globalincs/globals.h"
+#include "ui/ui.h"
+#include "model/model.h"
 
 #define BACKGROUND_FRAME_TO_START_SHIP_ANIM	87
 #define BUTTON_SLIDE_IN_FRAME						1
@@ -205,6 +206,7 @@ int restore_wss_data(ubyte *block);
 
 struct ship_info;
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip=NULL, bool resize=true);
+void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos=NULL, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, int flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, bool resize=true);
 
 void common_set_team_pointers(int team);
 void common_reset_team_pointers();

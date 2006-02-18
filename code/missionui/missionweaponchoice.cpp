@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.69 $
- * $Date: 2006-02-16 05:24:35 $
- * $Author: taylor $
+ * $Revision: 2.70 $
+ * $Date: 2006-02-18 00:42:51 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2006/02/16 05:24:35  taylor
+ * should fix some of the model/bmpman errors off of the weaponchoice screen
+ *
  * Revision 2.68  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -3570,114 +3573,14 @@ void weapon_select_do(float frametime)
 	}
 	else if(Wl_icons[Selected_wl_class].model_index != -1)
 	{
-		static float WeapSelectScreenWeapRot	= 0.0f;
+		static float WeapSelectScreenWeapRot = 0.0f;
 		wl_icon_info *sel_icon					= &Wl_icons[Selected_wl_class];
-		matrix	object_orient					= IDENTITY_MATRIX;
-//		matrix	view_orient						= IDENTITY_MATRIX;
-		float zoom								= 1.0f;
-		angles rot_angles						= {0.0f,0.0f,0.0f};
-		polymodel *pm;
-		bsp_info *bs;
-		vec3d weap_closeup;
-		float y_closeup;
-
-		WeapSelectScreenWeapRot += PI2 * frametime / REVOLUTION_RATE;
-		while (WeapSelectScreenWeapRot > PI2){
-			WeapSelectScreenWeapRot -= PI2;	
-		}
-
-		rot_angles.p = 0.0;
-		rot_angles.b = 0.0f;
-		rot_angles.h = -(PI/2.0f);
-		vm_angles_2_matrix(&object_orient, &rot_angles);
-
-		/*rot_angles.p = 0.0f;
-		rot_angles.b = 0.0f;
-		rot_angles.h = WeapSelectScreenWeapRot;
-		vm_angles_2_matrix(&object_orient, &rot_angles);*/
-		//vm_rotate_matrix_by_angles(&object_orient, &rot_angles);
-	//	rot_angles.h = -(PI/2);
-		vm_angles_2_matrix(&object_orient, &rot_angles);
-
-		gr_set_clip(weapon_ani_coords[0], weapon_ani_coords[1], gr_screen.res == 0 ? 202 : 332, gr_screen.res == 0 ? 185 : 304);
-		g3_start_frame(1);
-
-		//Get the missile dimension stuffs
-		pm = model_get(sel_icon->model_index);
-		bs = NULL;	//tehe
-		for(int i = 0; i < pm->n_models; i++)
-		{
-			if(!pm->submodel[i].is_thruster)
-			{
-				bs = &pm->submodel[i];
-				break;
-			}
-		}
-
-		if(bs == NULL)
-		{
-			bs = &pm->submodel[0];
-		}
-
-		//Find the center of teh submodel
-		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
-		weap_closeup.xyz.y = bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f;
-		weap_closeup.xyz.z = (float) (weap_closeup.xyz.x/tan(zoom / 2.0f));
-
-		y_closeup = (float) -(weap_closeup.xyz.y/tan(zoom / 2.0f));
-		if(y_closeup < weap_closeup.xyz.z)
-		{
-			weap_closeup.xyz.z = y_closeup;
-		}
-
-		/*weap_closeup.xyz.x = weap_closeup.xyz.z * sin(WeapSelectScreenWeapRot);
-		weap_closeup.xyz.z = weap_closeup.xyz.z * cos(WeapSelectScreenWeapRot);
-		rot_angles.h = 0.0f;
-		rot_angles.b = 90.0f - WeapSelectScreenWeapRot;
-		vm_angles_2_matrix(&view_orient, &rot_angles);*/
-
-		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
-		model_set_detail_level(0);
-		if (!Cmdline_nohtl) gr_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.05f, 1000.0f);
-		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.x = -0.5;
-		light_dir.xyz.y = 2.0f;
-		light_dir.xyz.z = -2.0f;	
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		light_rotate_all();
-		// lighting for techroom
-
-		model_clear_instance(sel_icon->model_index);
-		/*if ( (wip->wi_flags & WIF_THRUSTER) && (wp->thruster_bitmap > -1) ) {
-			float	ft;
-
-			//	Add noise to thruster geometry.
-			//ft = obj->phys_info.forward_thrust;					
-			ft = 1.0f;		// Always use 1.0f for missiles					
-			ft *= (1.0f + frand()/5.0f - 1.0f/10.0f);
-			if (ft > 1.0f)
-				ft = 1.0f;
-
-			vec3d temp;
-			temp.xyz.x = ft;
-			temp.xyz.y = ft;
-			temp.xyz.z = ft;
-
-			model_set_thrust( wip->model_num, &temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
-			render_flags |= MR_SHOW_THRUSTERS;
-		}*/
-		model_render(sel_icon->model_index, &object_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING | MR_SHOW_THRUSTERS, -1, -1);
-
-		if (!Cmdline_nohtl) 
-		{
-			gr_end_view_matrix();
-			gr_end_proj_matrix();
-		}
-
-		g3_end_frame();
+		draw_model_rotating(sel_icon->model_index,
+			weapon_ani_coords[0],
+			weapon_ani_coords[1],
+			gr_screen.res == 0 ? 202 : 332,
+			gr_screen.res == 0 ? 185 : 304,
+			&WeapSelectScreenWeapRot);
 		gr_reset_clip();
 	}
 
@@ -4344,9 +4247,6 @@ void start_weapon_animation(int weapon_class)
 	if ( weapon_class == Weapon_anim_class ) 
 		return;
 
-	if ( Wl_icons[weapon_class].model_index >= 0 )
-		return;
-
 	// get the correct weapon animations coords
 	if (Game_mode & GM_MULTIPLAYER) {
 		weapon_ani_coords = Wl_weapon_ani_coords_multi[gr_screen.res];
@@ -4359,6 +4259,14 @@ void start_weapon_animation(int weapon_class)
 	// stop current animation playing
 	if(Weapon_anim_class >= 0)
 		stop_weapon_animation();
+
+	// start the text wipe
+	wl_weapon_desc_start_wipe();
+
+	Weapon_anim_class = weapon_class;
+
+	if ( Wl_icons[weapon_class].model_index >= 0 )
+		return;
 
 	// see if we need to load in the animation from disk
 	if ( icon->wl_anim == NULL ) {
@@ -4383,11 +4291,6 @@ void start_weapon_animation(int weapon_class)
 		icon->wl_anim_instance = anim_play(&aps);
 		gamesnd_play_iface(SND_WEAPON_ANIM_START);
 	}
-
-	Weapon_anim_class = weapon_class;
-
-	// start the text wipe
-	wl_weapon_desc_start_wipe();
 }
 
 // reset the weapons loadout to the defaults in the mission
