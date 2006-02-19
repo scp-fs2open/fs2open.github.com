@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.h $
- * $Revision: 1.3 $
- * $Date: 2005-12-29 08:08:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.4 $
+ * $Date: 2006-02-19 22:00:09 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2005/12/29 08:08:33  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 1.2  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -184,6 +187,7 @@ struct ai_goal;
 // ai_update_goal_references() and query_referenced_in_ai_goals() or else risk breaking
 // Fred.  If the goal you add doesn't have a target (such as chase_any), then you don't have
 // to worry about doing this.  Also add it to list in Fred\Management.cpp, and let Hoffoss know!
+// WMC - Oh and add them to Ai_goal_names plz. TY! :)
 #define AI_GOAL_CHASE					(1<<1)
 #define AI_GOAL_DOCK						(1<<2)		// used for undocking as well
 #define AI_GOAL_WAYPOINTS				(1<<3)
@@ -210,25 +214,14 @@ struct ai_goal;
 #define AI_GOAL_PLAY_DEAD				(1<<21)
 #define AI_GOAL_CHASE_WEAPON			(1<<22)
 
-
-// Goober5000: new goals go here
-
-// Goober5000: this new goal is special: it doesn't take the usual kind of argument; it takes
-// many arguments, requiring a modification to the ai_goal data type.  Therefore, I didn't
-// add it to ai_update_goal_references() or ai_query_goal_references().  I also didn't add it
-// to the list in Fred\Management.cpp, because it can't be specified as an initial order - it
-// can only be specified through a sexp.
-//WMC - Oh and add them to Ai_goal_names plz. TY! :)
-#define AI_GOAL_CHASE_ANY_EXCEPT		(1<<23)		// hey Hoffoss!  I added a new goal! :p
-
-#define AI_GOAL_FLY_TO_SHIP				(1<<24) // kazan
+#define AI_GOAL_FLY_TO_SHIP				(1<<23) // kazan
 
 // now the masks for ship types
 
 // Goober5000: added AI_GOAL_STAY_NEAR_SHIP and AI_GOAL_KEEP_SAFE_DISTANCE as valid for fighters
 //WMC - Don't need these anymore. Whee!
 /*
-#define AI_GOAL_ACCEPT_FIGHTER		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_CHASE | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_DESTROY_SUBSYSTEM | AI_GOAL_CHASE_WING | AI_GOAL_GUARD | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE_ANY | AI_GOAL_IGNORE | AI_GOAL_GUARD_WING | AI_GOAL_EVADE_SHIP | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD | AI_GOAL_STAY_NEAR_SHIP | AI_GOAL_KEEP_SAFE_DISTANCE | AI_GOAL_CHASE_ANY_EXCEPT )
+#define AI_GOAL_ACCEPT_FIGHTER		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_CHASE | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_DESTROY_SUBSYSTEM | AI_GOAL_CHASE_WING | AI_GOAL_GUARD | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE_ANY | AI_GOAL_IGNORE | AI_GOAL_GUARD_WING | AI_GOAL_EVADE_SHIP | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD | AI_GOAL_STAY_NEAR_SHIP | AI_GOAL_KEEP_SAFE_DISTANCE )
 #define AI_GOAL_ACCEPT_BOMBER			( AI_GOAL_FLY_TO_SHIP | AI_GOAL_ACCEPT_FIGHTER | AI_GOAL_STAY_NEAR_SHIP )
 #define AI_GOAL_ACCEPT_STEALTH		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_ACCEPT_FIGHTER | AI_GOAL_STAY_NEAR_SHIP )
 #define AI_GOAL_ACCEPT_TRANSPORT		( AI_GOAL_FLY_TO_SHIP | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_DOCK | AI_GOAL_WAYPOINTS | AI_GOAL_WAYPOINTS_ONCE | AI_GOAL_WARP | AI_GOAL_UNDOCK | AI_GOAL_STAY_STILL | AI_GOAL_PLAY_DEAD| AI_GOAL_STAY_NEAR_SHIP )
