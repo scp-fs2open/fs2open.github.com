@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.212 $
- * $Date: 2006-02-19 00:32:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.213 $
+ * $Date: 2006-02-19 02:04:40 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.212  2006/02/19 00:32:47  Goober5000
+ * additional error checking
+ * --Goober5000
+ *
  * Revision 2.211  2006/02/16 05:40:58  taylor
  * please stop modifying the passed node value in sexp functions, it makes it very difficult to debug problems
  *
@@ -4914,7 +4918,7 @@ int sexp_ship_type_destroyed( int n )
 		return 0;
 	}
 
-	if ( type <= Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
+	if ( type >= Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
 		return 0;
 
 	//We are safe from array indexing probs b/c of previous if.
