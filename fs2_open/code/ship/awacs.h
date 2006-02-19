@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.h $
- * $Revision: 2.6 $
- * $Date: 2005-09-27 02:36:57 $
+ * $Revision: 2.7 $
+ * $Date: 2006-02-19 03:17:01 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.5  2005/07/25 03:13:24  Goober5000
  * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
  * should now be added to all places where it is needed (except the turret code, which I still
@@ -76,7 +80,7 @@ struct ship;
 // DAVE'S OFFICIAL DEFINITION OF AWACS
 
 // total awacs levels for all teams
-extern float Awacs_team[MAX_TVT_TEAMS];	// total AWACS capabilities for each team
+extern float Awacs_team[MAX_IFFS];	// total AWACS capabilities for each team
 extern float Awacs_level;				// Awacs_friendly - Awacs_hostile
 
 // ----------------------------------------------------------------------------------------------------
