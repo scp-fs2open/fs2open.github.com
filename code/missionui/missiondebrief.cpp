@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.52 $
- * $Date: 2006-02-16 05:15:48 $
- * $Author: taylor $
+ * $Revision: 2.53 $
+ * $Date: 2006-02-19 00:32:47 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2006/02/16 05:15:48  taylor
+ * fix strangeness with persona index thingy (ubyte can't be -1, this needs to be left like this or make an int)
+ * address some pilot file corruption using non-linear campaigns, rather simple fix for something that took quite a while to track down
+ *
  * Revision 2.51  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -2491,7 +2495,8 @@ void debrief_init()
 	// Goober5000 - replace any variables with their values
 	for (i = 0; i < Debriefing->num_stages; i++)
 	{
-		sexp_replace_variable_names_with_values(Debriefing->stages[i].new_text, MAX_DEBRIEF_LEN);
+		if (Debriefing->stages[i].new_text)
+			sexp_replace_variable_names_with_values(Debriefing->stages[i].new_text, MAX_DEBRIEF_LEN);
 	}
 
 	// no longer is mission

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-02-19 00:29:39 $
+ * $Revision: 2.19 $
+ * $Date: 2006-02-19 00:32:47 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/02/19 00:29:39  Goober5000
+ * center cbanis
+ * --Goober5000
+ *
  * Revision 2.17  2006/01/26 03:58:14  Goober5000
  * added variable replacement to command briefings, briefings, and debriefings
  * --Goober5000
@@ -862,7 +866,8 @@ void cmd_brief_init(int team)
 	// Goober5000 - replace any variables (probably persistent variables) with their values
 	for (i = 0; i < Cur_cmd_brief->num_stages; i++)
 	{
-		sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text, CMD_BRIEF_TEXT_MAX);
+		if (Cur_cmd_brief->stage[i].text)
+			sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text, CMD_BRIEF_TEXT_MAX);
 	}
 
 	if ( red_alert_mission() ) {
