@@ -1631,7 +1631,7 @@ LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the
 }
 
 
-LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %], [Pitch %], [Bank %], [Zoom multiplier]", "Whether ship was rendered", "Draws ship model as if in techroom")
+LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Bank %, Zoom multiplier]", "Whether ship was rendered", "Draws ship model as if in techroom")
 {
 	int x1,y1,x2,y2;
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
@@ -2527,7 +2527,7 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 		if(pm->textures[i] > -1)
 		{
 			bm_get_filename(pm->textures[i], fname);
-			
+
 			//Get rid of extension
 			p = strchr( fname, '.' );
 			if ( p != NULL)
@@ -2557,9 +2557,11 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 	if(idx < 0)
 	{
 		i = atoi(s);
+		if(i < 1 || i > pm->n_textures)
+			return LUA_RETURN_FALSE;
+
 		i--; //Lua->FS2
-		if(i < 0 || i >= pm->n_textures || (pm->textures[i] < 0 && shipp->replacement_textures[i] < 0))
-			return LUA_RETURN_NIL;
+		idx = i;
 	}
 
 	if(LUA_SETTING_VAR && tdx > -1) {
