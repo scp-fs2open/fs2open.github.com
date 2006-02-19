@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.7 $
- * $Date: 2006-02-12 10:42:25 $
+ * $Revision: 1.8 $
+ * $Date: 2006-02-19 00:49:41 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2006/02/12 10:42:25  Goober5000
+ * allow specification of debriefing personas
+ * --Goober5000
+ *
  * Revision 1.6  2006/02/12 05:23:16  Goober5000
  * additional fixes and enhancements for substitute music
  * --Goober5000
@@ -413,6 +417,47 @@
 #include "object/objectdock.h"
 #include "iff_defs/iff_defs.h"
 
+void CFred_mission_save::convert_special_tags_to_retail(char *text, int max_len)
+{
+	replace_all(Mp, "$quote", "''", max_len);
+	replace_all(Mp, "$semicolon", ",", max_len);
+}
+
+// Goober5000 - convert $quote and $semicolon to '' and ,
+void CFred_mission_save::convert_special_tags_to_retail()
+{
+	int i, team, stage;
+
+	if (Format_fs2_open)
+		return;
+
+	for (team = 0; team < Num_teams; team++)
+	{
+		// command briefing
+		for (stage = 0; stage < Cmd_briefs[team].num_stages; stage++)
+		{
+			convert_special_tags_to_retail(Cmd_briefs[team].stage[stage].text, CMD_BRIEF_TEXT_MAX);
+		}
+
+		// briefing
+		for (stage = 0; stage < Briefings[team].num_stages; stage++)
+		{
+			convert_special_tags_to_retail(Briefings[team].stages[stage].new_text, MAX_BRIEF_LEN);
+		}
+
+		// debriefing
+		for (stage = 0; stage < Debriefings[team].num_stages; stage++)
+		{
+			convert_special_tags_to_retail(Debriefings[team].stages[stage].new_text, MAX_DEBRIEF_LEN);
+		}
+	}
+
+	for (i = Num_builtin_messages; i < Num_messages; i++)
+	{
+		convert_special_tags_to_retail(Messages[i].message, MESSAGE_LENGTH);
+	}
+}
+
 int CFred_mission_save::save_mission_file(char *pathname)
 {
 	char backup_name[256], savepath[MAX_PATH_LEN], *p;
@@ -439,12 +484,8 @@ int CFred_mission_save::save_mission_file(char *pathname)
 		return -1;
 	}	
 
-	// Goober5000 - convert $quote and $semicolon to '' and ,
-	if (!Format_fs2_open)
-	{
-		replace_all(Mp, "$quote", "''", MISSION_TEXT_SIZE);
-		replace_all(Mp, "$semicolon", ",", MISSION_TEXT_SIZE);
-	}
+	// Goober5000
+	convert_special_tags_to_retail();
 
 	if (save_mission_info())
 		err = -2;
@@ -538,12 +579,8 @@ int CFred_mission_save::autosave_mission_file(char *pathname)
 		return -1;
 	}
 
-	// Goober5000 - convert $quote and $semicolon to '' and ,
-	if (!Format_fs2_open)
-	{
-		replace_all(Mp, "$quote", "''", MISSION_TEXT_SIZE);
-		replace_all(Mp, "$semicolon", ",", MISSION_TEXT_SIZE);
-	}
+	// Goober5000
+	convert_special_tags_to_retail();
 
 	if (save_mission_info())
 		err = -2;
