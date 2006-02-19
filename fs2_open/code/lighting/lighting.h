@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.h $
- * $Revision: 2.7 $
- * $Date: 2006-01-30 06:38:34 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2006-02-19 23:14:22 $
+ * $Author: Goober5000 $
  *
  * Include file for lighting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2006/01/30 06:38:34  taylor
+ * clean up lighting stuff a little
+ *
  * Revision 2.6  2005/07/13 03:15:53  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -151,7 +154,7 @@ typedef struct light {
 	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
 	float		r,g,b;						// The color components of the light
 	float		spec_r,spec_g,spec_b;		// The specular color components of the light
-	int		ignore_objnum;				// Don't light this object.  Used to optimize weapons casting light on parents.
+	int		light_ignore_objnum;			// Don't light this object.  Used to optimize weapons casting light on parents.
 	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
 	int instance;
 } light;
@@ -162,7 +165,7 @@ void light_set_ambient(float ambient_light);
 // Intensity - how strong the light is.  1.0 will cast light around 5meters or so.
 // r,g,b - only used for colored lighting. Ignored currently.
 void light_add_directional( vec3d *dir, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
-void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
+void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
 void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 void light_rotate_all();
