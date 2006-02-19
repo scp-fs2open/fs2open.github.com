@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.17 $
- * $Date: 2006-01-26 03:58:14 $
+ * $Revision: 2.18 $
+ * $Date: 2006-02-19 00:29:39 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/01/26 03:58:14  Goober5000
+ * added variable replacement to command briefings, briefings, and debriefings
+ * --Goober5000
+ *
  * Revision 2.16  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -321,7 +325,8 @@
 
 #define NUM_CMD_SETTINGS	2
 
-char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] = {
+char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
+{
 	{
 		"CommandBrief",
 		"2_CommandBrief"
@@ -333,7 +338,8 @@ char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] = {
 };
 
 
-char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] = {
+char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
+{
 	{
 		"CommandBrief-m",
 		"2_CommandBrief-m"
@@ -351,7 +357,8 @@ char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] = {
 #define CMD_W_COORD 2
 #define CMD_H_COORD 3
 
-int Cmd_text_wnd_coords[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS][4] = {
+int Cmd_text_wnd_coords[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS][4] =
+{
 	// original
 	{
 		{
@@ -372,23 +379,38 @@ int Cmd_text_wnd_coords[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-
-int Cmd_stage_y[GR_NUM_RESOLUTIONS] = {
+int Cmd_stage_y[GR_NUM_RESOLUTIONS] =
+{
 	90,		// GR_640
 	145		// GR_1024
 };
 
-int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
+/*
+int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] =
+{
 	{
-		26, 258, 441, 204				// GR_640
+		26, 258, 441, 204		// GR_640
 	},
 	{
 		155, 475, 706, 327		// GR_1024
 	}
 };
+*/
+
+// Goober5000 - center coordinates only
+int Cmd_image_center_coords[GR_NUM_RESOLUTIONS][2] =
+{
+	{
+		246, 358				// GR_640
+	},
+	{
+		394, 573				// GR_1024
+	}
+};
 
 int Top_cmd_brief_text_line;
-int Cmd_brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
+int Cmd_brief_text_max_lines[GR_NUM_RESOLUTIONS] =
+{
 	10, 17
 };
 
@@ -408,7 +430,8 @@ int Cmd_brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
 #define CMD_BRIEF_BUTTON_SCROLL_DOWN	9
 
 // buttons
-ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][MAX_CMD_BRIEF_BUTTONS] = {
+ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][MAX_CMD_BRIEF_BUTTONS] =
+{
 	{ // GR_640
 		ui_button_info("CBB_00",	504,	221,	-1,	-1,	0),
 		ui_button_info("CBB_01",	527,	221,	-1,	-1,	1),
@@ -437,7 +460,8 @@ ui_button_info Cmd_brief_buttons[GR_NUM_RESOLUTIONS][MAX_CMD_BRIEF_BUTTONS] = {
 
 // text
 #define CMD_BRIEF_NUM_TEXT		3
-UI_XSTR Cmd_brief_text[GR_NUM_RESOLUTIONS][CMD_BRIEF_NUM_TEXT] = {
+UI_XSTR Cmd_brief_text[GR_NUM_RESOLUTIONS][CMD_BRIEF_NUM_TEXT] =
+{
 	{ // GR_640
 		{ "Help",		928,	500,	440,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[0][CMD_BRIEF_BUTTON_HELP].button },
 		{ "Options",	1036,	479,	464,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[0][CMD_BRIEF_BUTTON_OPTIONS].button },
@@ -604,9 +628,15 @@ void cmd_brief_new_stage(int stage)
 
 	cmd_brief_stop_anim(i);
 
-	if (i != Anim_playing_id) {
-		if (Cur_cmd_brief->stage[i].cmd_anim) {
-			anim_play_init(&aps, Cur_cmd_brief->stage[i].cmd_anim,Cmd_image_wnd_coords[gr_screen.res][CMD_X_COORD], Cmd_image_wnd_coords[gr_screen.res][CMD_Y_COORD]);
+	if (i != Anim_playing_id)
+	{
+		if (Cur_cmd_brief->stage[i].cmd_anim)
+		{
+			// Goober5000
+			int x = Cmd_image_center_coords[gr_screen.res][CMD_X_COORD] - Cur_cmd_brief->stage[i].cmd_anim->width / 2;
+			int y = Cmd_image_center_coords[gr_screen.res][CMD_Y_COORD] - Cur_cmd_brief->stage[i].cmd_anim->height / 2;
+
+			anim_play_init(&aps, Cur_cmd_brief->stage[i].cmd_anim, x, y);
 			aps.looped = 1;
 			Cur_anim_instance = anim_play(&aps);
 			Last_anim_frame_num = 0;
