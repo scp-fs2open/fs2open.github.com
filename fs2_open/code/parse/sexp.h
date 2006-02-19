@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.102 $
- * $Author: wmcoolmon $
- * $Date: 2006-01-21 09:36:58 $
+ * $Revision: 2.103 $
+ * $Author: Goober5000 $
+ * $Date: 2006-02-19 22:00:10 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2006/01/21 09:36:58  wmcoolmon
+ * Texture replacement stuff
+ *
  * Revision 2.101  2006/01/06 04:18:55  wmcoolmon
  * turret-target-order SEXPs, ship thrusters
  *
@@ -1215,7 +1218,6 @@ struct ship_subsys;
 #define OP_AI_IGNORE						(0x000e | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
 #define OP_AI_STAY_STILL					(0x000f | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
 #define OP_AI_PLAY_DEAD						(0x0010 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
-#define OP_AI_CHASE_ANY_EXCEPT				(0x0011 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define OP_GOALS_ID							(0x0000 | OP_CATEGORY_UNLISTED)
 #define OP_NEXT_MISSION						(0x0001 | OP_CATEGORY_UNLISTED)		// used in campaign files for branching

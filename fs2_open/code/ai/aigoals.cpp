@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.18 $
- * $Date: 2006-01-27 06:21:10 $
+ * $Revision: 1.19 $
+ * $Date: 2006-02-19 22:00:09 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2006/01/27 06:21:10  Goober5000
+ * replace quick sort with insertion sort in many places
+ * --Goober5000
+ *
  * Revision 1.17  2006/01/25 22:51:07  taylor
  * quick and ugly hack to get aigoal sorting working on Windows again (temporary, should be replaced by better and permanent sorting function)
  *
@@ -702,7 +706,6 @@ ai_goal_list Ai_goal_names[] = {
 	{"Stay still",				AI_GOAL_STAY_STILL},
 	{"Play dead",				AI_GOAL_PLAY_DEAD},
 	{"Attack weapon",			AI_GOAL_CHASE_WEAPON},
-	{"Attack besides",			AI_GOAL_CHASE_ANY_EXCEPT},
 	{"Fly to ship",				AI_GOAL_FLY_TO_SHIP},
 };
 
@@ -1369,7 +1372,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 // common routine to add a sexpression mission goal to the appropriate goal structure.
 void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 {
-	int n, node, dummy, op;
+	int node, dummy, op;
 	char *text;
 
 	Assert ( Sexp_nodes[sexp].first != -1 );
@@ -1479,49 +1482,6 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	case OP_AI_CHASE_ANY:
 		aigp->priority = atoi( CTEXT(CDR(node)) );
 		aigp->ai_mode = AI_GOAL_CHASE_ANY;
-		break;
-
-	// Goober5000
-	case OP_AI_CHASE_ANY_EXCEPT:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
-		aigp->ai_mode = AI_GOAL_CHASE_ANY_EXCEPT;
-
-		// reset goal stuff
-		aigp->num_special_objects = 0;
-		aigp->special_object_flags = 0;
-
-		// get list of exceptions
-		n = CDR(CDR(node));
-		for ( ; n != -1; n = CDR(n) )
-		{
-			aigp->special_object[aigp->num_special_objects] = ai_get_goal_ship_name( CTEXT(n), &aigp->special_object_index[aigp->num_special_objects] );
-			aigp->special_object_num[aigp->num_special_objects] = -1;
-
-			// do we have a ship?
-			if ( (dummy = ship_name_lookup(aigp->special_object[aigp->num_special_objects], 1)) != -1 )
-			{
-				aigp->special_object_num[aigp->num_special_objects] = dummy;
-			}
-
-			// do we have a wing?
-			if ( (dummy = wing_name_lookup(aigp->special_object[aigp->num_special_objects], 1)) != -1 )
-			{
-				aigp->special_object_num[aigp->num_special_objects] = dummy;
-				aigp->special_object_flags |= (1 << (aigp->num_special_objects));	// set wing flag
-			}
-
-			// make sure we got something assigned
-			Assert(aigp->special_object_num[aigp->num_special_objects] != -1);
-
-			aigp->num_special_objects++;
-		}
-
-		if (!aigp->num_special_objects)	// found any?
-		{
-			// just make it ai-chase-any
-			aigp->ai_mode = AI_GOAL_CHASE_ANY;
-		}
-
 		break;
 
 	case OP_AI_PLAY_DEAD:
@@ -1769,7 +1729,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	//  these orders are always achievable.
 	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE)
 		|| (aigp->ai_mode == AI_GOAL_CHASE_ANY) || (aigp->ai_mode == AI_GOAL_STAY_STILL)
-		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_CHASE_ANY_EXCEPT) )
+		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) )
 		return AI_GOAL_ACHIEVABLE;
 
 	// warp (depart) only achievable if there's somewhere to depart to
@@ -2565,13 +2525,6 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	case AI_GOAL_CHASE_ANY:
 		ai_attack_object( objp, NULL, current_goal->priority, NULL );
-		break;
-
-	// Goober5000
-	case AI_GOAL_CHASE_ANY_EXCEPT:
-		aip->target_objnum = -1;	// force reacquisition of target in case we're attacking an exception
-		aip->enemy_wing = -1;		// same with any current enemy wing
-		ai_attack_object( objp, NULL, current_goal->priority, NULL, 1 );
 		break;
 
 	case AI_GOAL_WARP: {
