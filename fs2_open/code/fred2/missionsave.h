@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MissionSave.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-02-19 00:49:41 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.8  2005/10/30 06:23:23  Goober5000
  * multiple docking support for FRED
  * --Goober5000
@@ -155,6 +159,9 @@ private:
 	int save_music();
 	void save_campaign_sexp(int node, int link);
 	void save_single_dock_instance(ship *shipp, dock_instance *dock_ptr);
+
+	void convert_special_tags_to_retail(char *text, int max_len);
+	void convert_special_tags_to_retail();
 
 public:
 	void save_turret_info(ship_subsys *ptr, int ship);
