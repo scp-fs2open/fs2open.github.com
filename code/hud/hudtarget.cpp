@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.82 $
- * $Date: 2006-01-27 06:21:10 $
+ * $Revision: 2.83 $
+ * $Date: 2006-02-19 00:59:49 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2006/01/27 06:21:10  Goober5000
+ * replace quick sort with insertion sort in many places
+ * --Goober5000
+ *
  * Revision 2.81  2006/01/17 17:41:05  wmcoolmon
  * Switch ballistic weapon hudgauge to show "Energy" field in place of pure-energy weapons
  *
@@ -1807,7 +1811,7 @@ object *advance_fb(object *objp, int next_flag)
 	if (next_flag)
 		return GET_NEXT(objp);
 	else
-		return GET_LAST(objp);
+		return GET_PREV(objp);
 }
 
 //	Target the previous subobject on the currently selected ship.
@@ -2074,19 +2078,16 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	// ignore cargo that has already been scanned
-	if ( shipp->flags & SF_CARGO_REVEALED ) {
+	if (shipp->flags & SF_CARGO_REVEALED)
 		return 0;
-	}
 
 	// allow ships with scannable flag set
-	if ( shipp->flags & SF_SCANNABLE ) {
+	if (shipp->flags & SF_SCANNABLE)
 		return 1;
-	}
 
 	// ignore ships that don't carry cargo
-	if ( sip->class_type < 0 || !Ship_types[sip->class_type].ship_bools & STI_SHIP_SCANNABLE ) {
+	if ((sip->class_type < 0) || !(Ship_types[sip->class_type].ship_bools & STI_SHIP_SCANNABLE))
 		return 0;
-	}
 
 	return 1;
 }
