@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-01-26 03:58:14 $
+ * $Revision: 2.41 $
+ * $Date: 2006-02-19 00:32:47 $
  * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/01/26 03:58:14  Goober5000
+ * added variable replacement to command briefings, briefings, and debriefings
+ * --Goober5000
+ *
  * Revision 2.39  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -1308,7 +1312,8 @@ void brief_init()
 	// Goober5000 - replace any variables (probably persistent variables) with their values
 	for (i = 0; i < Briefing->num_stages; i++)
 	{
-		sexp_replace_variable_names_with_values(Briefing->stages[i].new_text, MAX_BRIEF_LEN);
+		if (Briefing->stages[i].new_text)
+			sexp_replace_variable_names_with_values(Briefing->stages[i].new_text, MAX_BRIEF_LEN);
 	}
 
 	Brief_last_auto_advance = 0;

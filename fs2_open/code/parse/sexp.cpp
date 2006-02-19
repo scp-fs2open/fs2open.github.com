@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.211 $
- * $Date: 2006-02-16 05:40:58 $
- * $Author: taylor $
+ * $Revision: 2.212 $
+ * $Date: 2006-02-19 00:32:47 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.211  2006/02/16 05:40:58  taylor
+ * please stop modifying the passed node value in sexp functions, it makes it very difficult to debug problems
+ *
  * Revision 2.210  2006/01/30 06:30:03  taylor
  * dynamic starfield bitmaps
  *
@@ -17486,6 +17489,9 @@ int get_index_sexp_variable_name_special(const char *startpos)
 // Goober5000
 bool sexp_replace_variable_names_with_values(char *text, int max_len)
 {
+	Assert(text != NULL);
+	Assert(max_len >= 0);
+
 	bool replaced_anything = false;
 	char *pos = text;
 	do {
