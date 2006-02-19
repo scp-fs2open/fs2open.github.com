@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-01-30 06:38:34 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2006-02-19 23:14:22 $
+ * $Author: Goober5000 $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/01/30 06:38:34  taylor
+ * clean up lighting stuff a little
+ *
  * Revision 2.18  2006/01/19 16:00:04  wmcoolmon
  * Lua debugging stuff; gr_bitmap_ex stuff for taylor
  *
@@ -292,7 +295,7 @@ int cell_shaded_lightmap = -1;
 	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
 	float		r,g,b;						// The color components of the light
 	float		spec_r,spec_g,spec_b;		// The specular color components of the light
-	int		ignore_objnum;				// Don't light this object.  Used to optimize weapons casting light on parents.
+	int		light_ignore_objnum;			// Don't light this object.  Used to optimize weapons casting light on parents.
 	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
 	int instance;
 } light;*/
@@ -544,7 +547,7 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 	l->radb = 0.0f;
 	l->rada_squared = l->rada*l->rada;
 	l->radb_squared = l->radb*l->radb;
-	l->ignore_objnum = -1;
+	l->light_ignore_objnum = -1;
 	l->affected_objnum = -1;
 	l->instance = Num_lights-1;
 		
@@ -561,7 +564,7 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 }
 
 
-void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
+void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
 {
 	Assert( r1 > 0.0f );
 	Assert( r2 > 0.0f );
@@ -600,7 +603,7 @@ void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r,
 	l->radb = r2;
 	l->rada_squared = l->rada*l->rada;
 	l->radb_squared = l->radb*l->radb;
-	l->ignore_objnum = ignore_objnum;
+	l->light_ignore_objnum = light_ignore_objnum;
 	l->affected_objnum = -1;
 	l->instance = Num_lights-1;
 
@@ -649,7 +652,7 @@ void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, f
 	l->radb = r2;
 	l->rada_squared = l->rada*l->rada;
 	l->radb_squared = l->radb*l->radb;
-	l->ignore_objnum = -1;
+	l->light_ignore_objnum = -1;
 	l->affected_objnum = affected_objnum;
 	l->instance = Num_lights-1;
 
@@ -699,7 +702,7 @@ void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, f
 	l->radb = r2;
 	l->rada_squared = l->rada*l->rada;
 	l->radb_squared = l->radb*l->radb;
-	l->ignore_objnum = -1;
+	l->light_ignore_objnum = -1;
 	l->affected_objnum = affected_objnum;
 	l->instance = Num_lights-1;
 
@@ -778,7 +781,7 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 				}
 				// otherwise check all relevant objects
 				else {
-					// if ( (l->ignore_objnum<0) || (l->ignore_objnum != objnum) )	{
+					// if ( (l->light_ignore_objnum < 0) || (l->light_ignore_objnum != objnum) )	{
 						vec3d to_light;
 						float dist_squared, max_dist_squared;
 						vm_vec_sub( &to_light, &l->vec, pos );
