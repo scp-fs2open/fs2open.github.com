@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.215 $
- * $Date: 2006-02-20 02:13:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.216 $
+ * $Date: 2006-02-20 07:30:14 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.215  2006/02/20 02:13:08  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 2.214  2006/02/19 22:00:10  Goober5000
  * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
  * --Goober5000
@@ -3527,6 +3531,18 @@ int get_sexp(char *token)
 				n = CDDDR(start);
 
 				weapon_mark_as_used( weapon_info_lookup(CTEXT(n) ));
+				break;
+
+			case OP_ADD_SUN_BITMAP:
+				n = CDR(start);
+
+				stars_preload_sun_bitmap( CTEXT(n) );
+				break;
+
+			case OP_ADD_BACKGROUND_BITMAP:
+				n = CDR(start);
+
+				stars_preload_background_bitmap( CTEXT(n) );
 				break;
 		}
 	}
@@ -9285,7 +9301,6 @@ void sexp_add_background_bitmap(int n)
 	}
 
 	// add this new instance
-	memset( &sbip, 0, sizeof(starfield_bitmap_instance) );
 	sbip.ang = ang;
 	sbip.div_x = dx;
 	sbip.div_y = dy;
@@ -9294,8 +9309,6 @@ void sexp_add_background_bitmap(int n)
 
 	if ( !stars_add_bitmap_instance(bg_bitmap_fname, &sbip) ) {
 		Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", bg_bitmap_fname);
-	} else {
-		stars_generate_bitmap_instance_buffers();
 	}
 }
 
@@ -9305,7 +9318,6 @@ void sexp_remove_background_bitmap(int n)
 
 	if (slot >= 0) {
 		stars_mark_bitmap_unused( slot );
-		stars_generate_bitmap_instance_buffers();
 	}
 }
 
@@ -9374,7 +9386,6 @@ void sexp_add_sun_bitmap(int n)
 	}
 
 	// add this new instance
-	memset( &sbip, 0, sizeof(starfield_bitmap_instance) );
 	sbip.ang = ang;
 	sbip.div_x = 1;
 	sbip.div_y = 1;
@@ -9383,8 +9394,6 @@ void sexp_add_sun_bitmap(int n)
 
 	if ( !stars_add_sun_instance(sun_bitmap_fname, &sbip) ) {
 		Warning(LOCATION, "Unable to add sun: '%s'!", sun_bitmap_fname);
-	} else {
-		stars_generate_bitmap_instance_buffers();
 	}
 }
 
@@ -9394,7 +9403,6 @@ void sexp_remove_sun_bitmap(int n)
 
 	if (slot >= 0) {
 		stars_mark_sun_unused( slot );
-		stars_generate_bitmap_instance_buffers();
 	}
 }
 

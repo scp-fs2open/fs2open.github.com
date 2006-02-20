@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.14 $
- * $Date: 2006-01-30 06:31:30 $
+ * $Revision: 2.15 $
+ * $Date: 2006-02-20 07:30:15 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/01/30 06:31:30  taylor
+ * dynamic starfield bitmaps (if the thought it was freaky before, just take a look at the new and "improved" version ;))
+ *
  * Revision 2.13  2005/10/09 08:03:21  wmcoolmon
  * New SEXP stuff
  *
@@ -214,17 +217,20 @@ typedef struct starfield_bitmap {
 	int n_flares;										// number of flares actually used
 	int n_flare_bitmaps;								// number of flare bitmaps available
 	int used_this_level;
+	int preload;
 } starfield_bitmap;
 
 // starfield bitmap instance
 typedef struct starfield_bitmap_instance {
-	index_list buffer;
-	index_list env_buffer;
 	float scale_x, scale_y;							// x and y scale
 	int div_x, div_y;								// # of x and y divisions
-	angles ang;	
-	int n_prim;// angles from fred
+	angles ang;										// angles from FRED
+	int n_prim;										// number of primitives in buffer
 	int star_bitmap_index;							// index into starfield_bitmap array
+	ushort *buffer;
+	ushort *env_buffer;
+
+	starfield_bitmap_instance() { memset(this, 0, sizeof(starfield_bitmap_instance)); star_bitmap_index = -1; };
 } starfield_bitmap_instance;
 
 
@@ -264,10 +270,10 @@ const char *stars_get_name_from_instance(int index, bool sun);
 extern const int MAX_STARS;
 extern int Num_stars;
 
-void stars_generate_bitmap_instance_buffers();
-
 // call on game startup
 void stars_init();
+// call on game shutdown
+void stars_close();
 
 // call this before mission parse to reset all data to a sane state
 void stars_pre_level_init();
@@ -302,6 +308,11 @@ int stars_find_sun(char *name);
 
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos);
+
+// for SEXP stuff so that we can mark a bitmap as being used regardless of whether 
+// or not there is an instance for it yet
+void stars_preload_sun_bitmap(char *fname);
+void stars_preload_background_bitmap(char *fname);
 
 
 typedef struct debris_vclip {
