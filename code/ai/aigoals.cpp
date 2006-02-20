@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.20 $
- * $Date: 2006-02-20 02:13:07 $
+ * $Revision: 1.21 $
+ * $Date: 2006-02-20 07:59:26 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/02/20 02:13:07  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 1.19  2006/02/19 22:00:09  Goober5000
  * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
  * --Goober5000
@@ -672,7 +676,11 @@
 #define PLAYER_PRIORITY_SUPPORT_LOW		10
 
 // define for which goals cause other goals to get purged
-#define PURGE_GOALS		(AI_GOAL_IGNORE | AI_GOAL_IGNORE_NEW | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
+// Goober5000 - okay, this seems really stupid.  If any ship in the mission is assigned a goal
+// in PURGE_GOALS_ALL_SHIPS, *every* other ship will have certain goals purged.  So I added
+// PURGE_GOALS_ONE_SHIP for goals which should only purge other goals in the one ship.
+#define PURGE_GOALS_ALL_SHIPS		(AI_GOAL_IGNORE | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
+#define PURGE_GOALS_ONE_SHIP		(AI_GOAL_IGNORE_NEW)
 
 // goals given from the player to other ships in the game are also handled in this
 // code
@@ -1091,46 +1099,46 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list )
 		} else if ( purge_wing != wingnum )
 			continue;
 
-		switch( mode ) {
-		// ignore goals should get rid of any kind of attack goal
-		case AI_GOAL_IGNORE:
-		case AI_GOAL_IGNORE_NEW:
-			if ( purge_ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_DESTROY_SUBSYSTEM) )
-				purge_goal->flags |= AIGF_PURGE;
-			break;
+		switch (mode)
+		{
+			// ignore goals should get rid of any kind of attack goal
+			case AI_GOAL_IGNORE:
+			case AI_GOAL_IGNORE_NEW:
+				if ( purge_ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_DESTROY_SUBSYSTEM) )
+					purge_goal->flags |= AIGF_PURGE;
+				break;
 
-		// disarm/disable goals should remove any general attack
-		case AI_GOAL_DISABLE_SHIP:
-		case AI_GOAL_DISARM_SHIP:
-			if ( purge_ai_mode & (AI_GOAL_CHASE | AI_GOAL_CHASE_WING) )
-				purge_goal->flags |= AIGF_PURGE;
-			break;
+			// disarm/disable goals should remove any general attack
+			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISARM_SHIP:
+				if ( purge_ai_mode & (AI_GOAL_CHASE | AI_GOAL_CHASE_WING) )
+					purge_goal->flags |= AIGF_PURGE;
+				break;
 		}
 	}
 }
 
-// function to purge the goals of all ships in the game based on the incoming goal structure
-void ai_goal_purge_all_invalid_goals( ai_goal *aigp )
+// function to purge the goals of *all* ships in the game based on the incoming goal structure
+void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 {
-	int mode, i;
+	int i;
 	ship_obj *sop;
 
-	mode = aigp->ai_mode;
-
 	// only purge goals if a new goal is one of the types in next statement
-	if ( !(mode & PURGE_GOALS) )
+	if (!(aigp->ai_mode & PURGE_GOALS_ALL_SHIPS))
 		return;
 
-	for ( sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop) ) {
-		ship *shipp;
-
-		shipp = &Ships[Objects[sop->objnum].instance];
-		ai_goal_purge_invalid_goals( aigp, Ai_info[shipp->ai_index].goals );
+	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
+	{
+		ship *shipp = &Ships[Objects[sop->objnum].instance];
+		ai_goal_purge_invalid_goals(aigp, Ai_info[shipp->ai_index].goals);
 	}
 
 	// we must do the same for the wing goals
-	for (i = 0; i < Num_wings; i++ )
-		ai_goal_purge_invalid_goals( aigp, Wings[i].ai_goals );
+	for (i = 0; i < Num_wings; i++)
+	{
+		ai_goal_purge_invalid_goals(aigp, Wings[i].ai_goals);
+	}
 }
 
 // Goober5000
@@ -1955,11 +1963,20 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	}
 
 	// if the goal is an ignore/disable/disarm goal, then 
-	if ( (status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode & PURGE_GOALS) && !(aigp->flags & AIGF_GOALS_PURGED) ) {
-		ai_goal_purge_all_invalid_goals( aigp );
-		aigp->flags |= AIGF_GOALS_PURGED;
-	}
-		
+	// Goober5000 - see note at PURGE_GOALS_ALL_SHIPS... this is bizarre
+	if ((status == SHIP_STATUS_ARRIVED) && !(aigp->flags & AIGF_GOALS_PURGED))
+	{
+		if (aigp->ai_mode & PURGE_GOALS_ALL_SHIPS)
+		{
+			ai_goal_purge_all_invalid_goals(aigp);
+			aigp->flags |= AIGF_GOALS_PURGED;
+		}
+		else if (aigp->ai_mode & PURGE_GOALS_ONE_SHIP)
+		{
+			ai_goal_purge_invalid_goals(aigp, aip->goals);
+			aigp->flags |= AIGF_GOALS_PURGED;
+		}
+	}	
 
 	// if we are docking, validate the docking indices on both ships.  We might have to change names to indices.
 	// only enter this calculation if the ship we are docking with has arrived.  If the ship is gone, then

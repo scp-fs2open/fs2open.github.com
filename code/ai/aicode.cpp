@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.61 $
- * $Date: 2006-02-20 02:13:07 $
+ * $Revision: 1.62 $
+ * $Date: 2006-02-20 07:59:26 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.61  2006/02/20 02:13:07  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 1.60  2006/02/19 22:00:09  Goober5000
  * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
  * --Goober5000
@@ -2688,14 +2692,14 @@ void set_global_ignore_object(int objnum)
 
 */
 
+// Goober5000 - fixed up a bit
 //	Determine if object objnum is supposed to be ignored by object with ai_info *aip.
 //	Return:
 //		TRUE	if objnum is aip->ignore_objnum (and signatures match)
 //				or objnum is in ignore wing
 //		FALSE	otherwise
-int is_ignore_object(ai_info *aip, int objnum)
+int is_ignore_object_sub(int *ignore_objnum, int *ignore_signature, int objnum)
 {
-
 /*	// First, scan all objects in global array of objects to be ignored.
 	for (int i=0; i<MAX_IGNORE_OBJECTS; i++)
 		if (Ignore_objects[i].objnum != -1)
@@ -2707,31 +2711,27 @@ int is_ignore_object(ai_info *aip, int objnum)
 	// Didn't find in global list.  Now check 
 
 	// Not ignoring anything.
-	if (aip->ignore_objnum == UNUSED_OBJNUM)
+	if (*ignore_objnum == UNUSED_OBJNUM)
 	{
 		return 0;									
 	}
 	// This means it's ignoring an object, not a wing.
-	else if (aip->ignore_objnum >= 0)
+	else if (*ignore_objnum >= 0)
 	{
-		if (aip->ignore_objnum == objnum)
+		// see if this object became invalid
+		if (Objects[*ignore_objnum].signature != *ignore_signature)
 		{
-			// numbers and signatures match
-			if (Objects[aip->ignore_objnum].signature == aip->ignore_signature)
-			{
-				return 1;
-			}
-			// object is no longer valid; reset
-			else
-			{
-				aip->ignore_objnum = UNUSED_OBJNUM;
-				return 0;
-			}
+			// reset
+			*ignore_objnum = UNUSED_OBJNUM;
 		}
-		else
+		// objects and signatures match
+		else if (*ignore_objnum == objnum)
 		{
-			return 0;
+			// found it
+			return 1;
 		}
+
+		return 0;
 	}
 	// Ignoring a wing.
 	else
@@ -2740,10 +2740,9 @@ int is_ignore_object(ai_info *aip, int objnum)
 		return 0;
 
 		/*
-		int	ignore_wingnum = -(aip->ignore_objnum + 1);
+		int	ignore_wingnum = -(*ignore_objnum + 1);
 
 		Assert(ignore_wingnum < MAX_WINGS);
-		Assert(aip->shipnum >= 0);
 		return (Ships[Objects[objnum].instance].wingnum == ignore_wingnum);
 		*/
 	}
@@ -2756,57 +2755,28 @@ int find_ignore_new_object_index(ai_info *aip, int objnum)
 
 	for (i = 0; i < MAX_IGNORE_NEW_OBJECTS; i++)
 	{
-		// Not ignoring anything.
-		if (aip->ignore_new_objnums[i] == UNUSED_OBJNUM)
-		{
-			continue;
-		}
-		// This means it's ignoring an object, not a wing.
-		else if (aip->ignore_new_objnums[i] >= 0)
-		{
-			if (aip->ignore_new_objnums[i] == objnum)
-			{
-				// numbers and signatures match
-				if (Objects[aip->ignore_new_objnums[i]].signature == aip->ignore_new_signatures[i])
-				{
-					return i;
-				}
-				// object is no longer valid; reset
-				else
-				{
-					aip->ignore_new_objnums[i] = UNUSED_OBJNUM;
-					continue;
-				}
-			}
-			else
-			{
-				continue;
-			}
-		}
-		// Ignoring a wing.
-		else
-		{
-			Int3(); // Should never happen.  I thought I removed this behavior! -- MK, 5/17/98
-			continue;
-
-			/*
-			int	ignore_wingnum = -(aip->ignore_objnums[i] + 1);
-	
-			Assert(ignore_wingnum < MAX_WINGS);
-			Assert(aip->shipnum >= 0);
-			return (Ships[Objects[objnum].instance].wingnum == ignore_wingnum);
-			*/
-		}
+		if (is_ignore_object_sub(&aip->ignore_new_objnums[i], &aip->ignore_new_signatures[i], objnum))
+			return i;
 	}
 
 	return -1;
 }
 
 // Goober5000
-// Like above, but using ignore-new.
-int is_ignore_new_object(ai_info *aip, int objnum)
+int is_ignore_object(ai_info *aip, int objnum, int just_the_original = 0)
 {
-	return (find_ignore_new_object_index(aip, objnum) >= 0);
+	// check original (retail) ignore
+	if (is_ignore_object_sub(&aip->ignore_objnum, &aip->ignore_signature, objnum))
+		return 1;
+
+	// check new ignore
+	if (!just_the_original)
+	{
+		if (find_ignore_new_object_index(aip, objnum) >= 0)
+			return 1;
+	}
+
+	return 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -2870,7 +2840,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 			if (shipp->flags & SF_DYING)
 				return;
 
-			if (is_ignore_object(aip, ((eno->trial_objp)-Objects)))
+			if (is_ignore_object(aip, OBJ_INDEX(eno->trial_objp)))
 				return;
 
 			if (eno->trial_objp->flags & OF_PROTECTED)
@@ -3227,13 +3197,15 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 			aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 	}
 
-	if (is_ignore_object(aip, aip->target_objnum))
-		aip->ignore_objnum = UNUSED_OBJNUM;
-
 	// Goober5000
 	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
+	{
 		aip->ignore_new_objnums[temp] = UNUSED_OBJNUM;
-
+	}
+	else if (is_ignore_object(aip, aip->target_objnum, 1))
+	{
+		aip->ignore_objnum = UNUSED_OBJNUM;
+	}
 
 	aip->mode = AIM_CHASE;
 	aip->submode = SM_ATTACK;				// AL 12-15-97: need to set submode?  I got an assert() where submode was bogus
@@ -8098,7 +8070,13 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 
 	// Goober5000
 	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
+	{
 		aip->ignore_new_objnums[temp] = UNUSED_OBJNUM;
+	}
+	else if (is_ignore_object(aip, aip->target_objnum, 1))
+	{
+		aip->ignore_objnum = UNUSED_OBJNUM;
+	}
 
 	// -- Done at caller in ai_process_mission_orders -- attacked_objp->flags |= OF_PROTECTED;
 
@@ -10084,7 +10062,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 
 	if ( hitter_objp->type == OBJ_SHIP ) {
 		//	If the hitter object is the ignore object, don't attack it.
-		if (is_ignore_object(aip, hitter_objp-Objects))
+		if (is_ignore_object(aip, OBJ_INDEX(hitter_objp)))
 			return;
 
 		//	If hitter is on same team as me, don't attack him.
@@ -12656,23 +12634,6 @@ void ai_preprocess_ignore_objnum(object *objp, ai_info *aip)
 	}
 
 	if (is_ignore_object(aip, aip->target_objnum))
-		aip->target_objnum = -1;
-}
-
-// Goober5000
-void ai_preprocess_ignore_new_objnums(object *objp, ai_info *aip)
-{
-	if (is_ignore_new_object(aip, aip->goal_objnum))
-	{
-		aip->goal_objnum = -1;
-
-		// AL 12-11-97: If in STRAFE mode, we need to ensure that target_objnum is also
-		//              set to -1
-		if (aip->mode == AIM_STRAFE)
-			aip->target_objnum = -1;
-	}
-
-	if (is_ignore_new_object(aip, aip->target_objnum))
 		aip->target_objnum = -1;
 }
 
