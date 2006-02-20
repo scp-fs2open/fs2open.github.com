@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-30 06:27:59 $
+ * $Revision: 1.3 $
+ * $Date: 2006-02-20 07:30:14 $
  * $Author: taylor $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/30 06:27:59  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -526,7 +529,6 @@ void bg_bitmap_dlg::OnClose()
 	// close bitmap data
 	bitmap_data_close();
 
-	stars_generate_bitmap_instance_buffers();
 	theApp.record_window_data(&Bg_wnd_data, this);
 	delete Bg_bitmap_dialog;
 	Bg_bitmap_dialog = NULL;
@@ -957,8 +959,6 @@ void bg_bitmap_dlg::OnBitmapChange()
 			((CComboBox*)GetDlgItem(IDC_SBITMAP))->SetCurSel(drop_index);
 		}
 	}
-
-	stars_generate_bitmap_instance_buffers();
 }
 
 void bg_bitmap_dlg::OnAddBitmap()

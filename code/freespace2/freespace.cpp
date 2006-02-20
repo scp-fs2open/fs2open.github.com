@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.225 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.226 $
+ * $Date: 2006-02-20 07:30:14 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.225  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.224  2006/01/31 06:42:00  wmcoolmon
  * Scripting simulation hook; removed USE_LUA
  *
@@ -9037,6 +9041,7 @@ void game_shutdown(void)
 	multi_lag_close();
 #endif
 	obj_pairs_close();		// free memory from object collision pairs
+	stars_close();			// clean out anything used by stars code
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
 #if !defined(PRESS_TOUR_BUILD) && !defined(PD_BUILD)
