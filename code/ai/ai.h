@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.10 $
- * $Date: 2006-02-19 22:00:09 $
+ * $Revision: 1.11 $
+ * $Date: 2006-02-20 02:13:07 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/02/19 22:00:09  Goober5000
+ * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
+ * --Goober5000
+ *
  * Revision 1.9  2005/11/24 08:46:11  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only
@@ -534,6 +538,9 @@ typedef struct pnode {
 extern pnode	Path_points[MAX_PATH_POINTS];
 extern pnode	*Ppfp;			//	Free pointer in path points.
 
+// Goober5000 (based on the "you can only remember 7 things in short-term memory" assumption)
+#define MAX_IGNORE_NEW_OBJECTS	7
+
 typedef struct ai_info {
 	int		ai_flags;				//	Special flags for AI behavior.
 	int		shipnum;					// Ship using this slot, -1 means none.
@@ -569,6 +576,10 @@ typedef struct ai_info {
 
 	int		ignore_objnum;			//	ship to be ignored, based on player order.  UNUSED_OBJNUM if none.  -(wing_num+1) if ignoring wing.
 	int		ignore_signature;		//	signature of ship to be ignored
+
+	// Goober5000
+	int		ignore_new_objnums[MAX_IGNORE_NEW_OBJECTS];
+	int		ignore_new_signatures[MAX_IGNORE_NEW_OBJECTS];
 
 	int		ai_class;				//	Class.  Might be override of default.
 
@@ -773,7 +784,7 @@ extern int	Num_waypoint_lists;
 extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, int priority, ship_subsys *ssp);
 extern void ai_evade_object(object *evader, object *evaded, int priority);
-extern void ai_ignore_object(object *ignorer, object *ignored, int priority);
+extern void ai_ignore_object(object *ignorer, object *ignored, int priority, int ignore_new);
 extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
 extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int priority, int dock_type);
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);

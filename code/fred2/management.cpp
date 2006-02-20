@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-02-11 02:58:23 $
+ * $Revision: 1.5 $
+ * $Date: 2006-02-20 02:13:07 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/02/11 02:58:23  Goober5000
+ * yet more various and sundry fixes
+ * --Goober5000
+ *
  * Revision 1.3  2006/01/30 06:27:59  taylor
  * dynamic starfield bitmaps
  *
@@ -520,6 +524,7 @@ ai_goal_list Ai_goal_list[] = {
 	"Disarm ship",				AI_GOAL_DISARM_SHIP,
 	"Evade ship",				AI_GOAL_EVADE_SHIP,
 	"Ignore ship",				AI_GOAL_IGNORE,
+	"Ignore ship (new)",		AI_GOAL_IGNORE_NEW,
 	"Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,
 	"Keep safe distance",	AI_GOAL_KEEP_SAFE_DISTANCE,
 	"Stay still",				AI_GOAL_STAY_STILL,

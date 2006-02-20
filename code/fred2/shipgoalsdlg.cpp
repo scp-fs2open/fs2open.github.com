@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipGoalsDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:32 $
+ * $Revision: 1.2 $
+ * $Date: 2006-02-20 02:13:07 $
  * $Author: Goober5000 $
  *
  * Initial orders editor dialog box handling code.  This dialog is used for both
  * ship and wing initial orders, and can support more if need be without modification.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:32  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.4  2005/08/23 07:28:02  Goober5000
  * grammar
  * --Goober5000
@@ -659,6 +663,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_DISABLE_SHIP:
 			case AI_GOAL_DISARM_SHIP:
 			case AI_GOAL_IGNORE:
+			case AI_GOAL_IGNORE_NEW:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
 				break;
@@ -845,6 +850,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 		case AI_GOAL_DISARM_SHIP:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_IGNORE:
+		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_STAY_STILL:
 			ptr = GET_FIRST(&obj_used_list);
@@ -1110,6 +1116,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_DISABLE_SHIP:
 		case AI_GOAL_DISARM_SHIP:
 		case AI_GOAL_IGNORE:
+		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_STAY_STILL:

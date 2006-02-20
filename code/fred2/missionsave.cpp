@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-02-19 00:49:41 $
+ * $Revision: 1.9 $
+ * $Date: 2006-02-20 02:13:07 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/02/19 00:49:41  Goober5000
+ * fixed saving of special tags
+ * --Goober5000
+ *
  * Revision 1.7  2006/02/12 10:42:25  Goober5000
  * allow specification of debriefing personas
  * --Goober5000
@@ -2647,6 +2651,10 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 
 					case AI_GOAL_IGNORE:
 						str = "ai-ignore";
+						break;
+
+					case AI_GOAL_IGNORE_NEW:
+						str = "ai-ignore-new";
 						break;
 
 					case AI_GOAL_EVADE_SHIP:
