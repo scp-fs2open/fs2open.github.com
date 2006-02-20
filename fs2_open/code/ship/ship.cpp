@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.312 $
- * $Date: 2006-02-17 21:47:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.313 $
+ * $Date: 2006-02-20 07:26:07 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.312  2006/02/17 21:47:47  wmcoolmon
+ * Fix a silly bug
+ *
  * Revision 2.311  2006/02/16 05:44:53  taylor
  * remove reset of modelnums on level start (more properly moved to model_unload())
  * minor change ship class fixage to clear out old model
@@ -8397,14 +8400,17 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		if (sp->special_hitpoint_index != -1) {
 			hull_pct = objp->hull_strength / (float) atoi(Sexp_variables[sp->special_hitpoint_index+HULL_STRENGTH].text);
 		} else {
+			Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
 			hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
 		}
 
 		// shield
 		if (sp->special_hitpoint_index != -1) {
 			shield_pct = get_shield_strength(objp) / (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
-		} else {
+		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
 			shield_pct = get_shield_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
+		} else {
+			shield_pct = 0.0f;
 		}
 	}
 	// set to 100% otherwise
