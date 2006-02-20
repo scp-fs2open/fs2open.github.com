@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.162 $
- * $Date: 2006-01-30 06:40:49 $
+ * $Revision: 2.163 $
+ * $Date: 2006-02-20 07:23:29 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.162  2006/01/30 06:40:49  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ * some basic lighting code cleanup
+ *
  * Revision 2.161  2006/01/24 13:38:30  taylor
  * break out of error check loop after the first check in FRED since it doesn't like this for some reason
  *
@@ -991,6 +996,7 @@
 #endif
 
 
+static int GL_initted = 0;
 
 //0==no fog
 //1==linear
@@ -1078,11 +1084,17 @@ extern void opengl_tcache_frame();
 extern void opengl_tcache_flush();
 extern void opengl_tcache_cleanup();
 
+static int GL_fullscreen = 0;
+static int GL_windowed = 0;
+static int GL_minimized = 0;
 
 
 void opengl_go_fullscreen()
 {
 	if (Cmdline_window)
+		return;
+
+	if (GL_fullscreen)
 		return;
 
 #ifdef _WIN32
@@ -1144,10 +1156,84 @@ void opengl_go_fullscreen()
 		os_resume();
 	}
 #endif
+
+	GL_fullscreen = 1;
+}
+
+void opengl_go_windowed()
+{
+	int width, height;
+
+	if (Cmdline_window)
+		return;
+
+	if (GL_windowed) {
+		GL_windowed = 0;
+		opengl_go_fullscreen();
+	}
+
+	if (gr_screen.max_w >= 1024 && gr_screen.max_h >= 768) {
+		width = 1024;
+		height = 768;
+	} else {
+		width = 640;
+		height = 480;
+	}
+
+#ifdef _WIN32
+	DEVMODE dm;
+	HWND wnd = (HWND)os_get_window();
+
+	Assert( wnd );
+
+	os_suspend();
+	SetWindowLong( wnd, GWL_EXSTYLE, 0 );
+	SetWindowLong( wnd, GWL_STYLE, WS_POPUP );
+	ShowWindow(wnd, SW_SHOWNORMAL );
+	SetWindowPos( wnd, HWND_TOPMOST, 0, 0, width, height, 0 );	
+	SetActiveWindow(wnd);
+	SetForegroundWindow(wnd);
+
+	memset((void*)&dm, 0, sizeof(DEVMODE));
+
+	dm.dmSize = sizeof(DEVMODE);
+	dm.dmPelsHeight = height;
+	dm.dmPelsWidth = width;
+	dm.dmBitsPerPel = gr_screen.bits_per_pixel;
+	dm.dmDisplayFrequency = 0;
+	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+
+
+	if ( (ChangeDisplaySettings(&dm, 0)) != DISP_CHANGE_SUCCESSFUL ) {
+		Warning( LOCATION, "Unable to enter windowed mode!" );
+	}
+
+	os_resume();  
+
+#else
+
+	if (SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) {
+		os_suspend();
+
+	//	SDL_WM_ToggleFullScreen( SDL_GetVideoSurface() );
+		if ( (SDL_SetVideoMode(width, height, 0, SDL_OPENGL)) == NULL ) {
+			Warning( LOCATION, "Unable to enter windowed mode!" );
+		}
+
+		os_resume();
+	}
+#endif
+
+	GL_fullscreen = 0;
+	GL_windowed = 1;
 }
 
 void opengl_minimize()
 {
+	// don't attempt to minimize if we are already in a window or already minimized
+	if (GL_minimized || GL_windowed || Cmdline_window)
+		return;
+
 #ifdef _WIN32
 	HWND wnd = (HWND)os_get_window();
 
@@ -1164,6 +1250,8 @@ void opengl_minimize()
 	SDL_WM_IconifyWindow();
 	os_resume();
 #endif
+
+	GL_minimized = 1;
 }
 
 void opengl_set_tex_state_combine_arb(gr_texture_source ts)
@@ -1347,7 +1435,8 @@ void gr_opengl_activate(int active)
 #endif
 	} else {
 		GL_deactivate++;
-		opengl_minimize();
+	//	opengl_minimize();
+		opengl_go_windowed();
 
 #ifdef SCP_UNIX
 		// let go of mouse/keyboard
@@ -1374,7 +1463,7 @@ void gr_opengl_clear()
 
 void gr_opengl_flip()
 {
-	if (!OGL_enabled)
+	if (!GL_initted)
 		return;
 
 	gr_reset_clip();
@@ -2947,7 +3036,7 @@ int gr_opengl_supports_res_interface(int res)
 
 void gr_opengl_cleanup(int minimize)
 {	
-	if ( !OGL_enabled )
+	if ( !GL_initted )
 		return;
 
 	if (!Fred_running) {
@@ -2956,7 +3045,7 @@ void gr_opengl_cleanup(int minimize)
 		gr_flip();
 	}
 
-	OGL_enabled = 0;
+	GL_initted = 0;
 
 	opengl_tcache_flush();
 
@@ -3302,14 +3391,6 @@ int gr_opengl_save_screen()
 
 	gr_reset_clip();
 
-/*	if (gr_screen.bits_per_pixel == 32) {
-		fmt = GL_UNSIGNED_INT_8_8_8_8_REV;
-	//	fmt = GL_UNSIGNED_INT_8_8_8_8;
-	} else {
-		fmt = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-	//	fmt = GL_UNSIGNED_SHORT_5_5_5_1;
-	}*/
-
 	fmt = GL_UNSIGNED_BYTE;
 
 	if (!GL_saved_screen)
@@ -3493,7 +3574,7 @@ uint gr_opengl_lock()
 {
 	return 1;
 }
-        
+
 void gr_opengl_unlock()
 {
 }
@@ -3824,10 +3905,11 @@ int opengl_check_for_errors()
 	return num_errors;
 }
 
+// NOTE: This should only ever be called through atexit()!!!
 void opengl_close()
 {
-	if (!OGL_enabled || (gr_screen.mode != GR_OPENGL))
-		return;
+//	if (!GL_initted)
+//		return;
 
 	if (currently_enabled_lights != NULL) {
 		vm_free(currently_enabled_lights);
@@ -3850,7 +3932,7 @@ void opengl_close()
 	SetDeviceGammaRamp( dev_context, original_gamma_ramp );
 #endif
 
-	OGL_enabled = 0;
+	GL_initted = 0;
 }
 
 int opengl_init_display_device()
@@ -3958,7 +4040,7 @@ int opengl_init_display_device()
 	int PixelFormat;
 	HWND wnd = 0;
 
-	mprintf(("  Initializing OpenGL W32...\n"));
+	mprintf(("  Initializing WGL...\n"));
 
 	memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
 	
@@ -3966,57 +4048,51 @@ int opengl_init_display_device()
 	pfd.nVersion = 1;
 	pfd.cColorBits = (ubyte)bpp;
 	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.cDepthBits = 24;
+	pfd.cDepthBits = (bpp == 32) ? 24 : 16;
 	pfd.iPixelType = PFD_TYPE_RGBA;
-	pfd.cRedBits = (ubyte)Gr_red.bits;
-	pfd.cRedShift = (ubyte)Gr_red.shift;
-	pfd.cBlueBits = (ubyte)Gr_blue.bits;
-	pfd.cBlueShift = (ubyte)Gr_blue.shift;
-	pfd.cGreenBits = (ubyte)Gr_green.bits;
-	pfd.cGreenShift = (ubyte)Gr_green.shift;
-	//	pfd.cAlphaBits = (ubyte)Gr_alpha.bits;
-	//	pfd.cAlphaShift = (ubyte)Gr_alpha.shift;
+	pfd.cAlphaBits = (bpp == 32) ? (ubyte)Gr_alpha.bits : 0;
 
 	wnd = (HWND)os_get_window();
-	
+
 	Assert( wnd != NULL );
-		
+
 	dev_context = GetDC(wnd);
-	
-	if (!dev_context)
-	{
+
+	if (!dev_context) {
 		MessageBox(wnd, "Unable to get Device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
-	
+
 	PixelFormat = ChoosePixelFormat(dev_context, &pfd);
 
-	if (!PixelFormat)
-	{
+	if (!PixelFormat) {
 		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
-	
-	if (!SetPixelFormat(dev_context, PixelFormat, &pfd))
-	{
+
+	if (!SetPixelFormat(dev_context, PixelFormat, &pfd)) {
 		MessageBox(wnd, "Unable to set pixel format for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
-	
+
 	rend_context = wglCreateContext(dev_context);
 
-	if (!rend_context)
-	{
+	if (!rend_context) {
 		MessageBox(wnd, "Unable to create rendering context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
-	
-	if (!wglMakeCurrent(dev_context, rend_context))
-	{
+
+	if (!wglMakeCurrent(dev_context, rend_context)) {
 		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
-	
+
+	mprintf(("  Requested WGL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, pfd.cDepthBits, (pfd.dwFlags & PFD_DOUBLEBUFFER) > 0));
+
+	DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+
+	mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", pfd.cRedBits, pfd.cGreenBits, pfd.cBlueBits, pfd.cDepthBits, (pfd.dwFlags & PFD_DOUBLEBUFFER) > 0));
+
 	// get the default gamma ramp so that we can restore it on close
 	GetDeviceGammaRamp( dev_context, &original_gamma_ramp );
 
@@ -4040,13 +4116,13 @@ int opengl_init_display_device()
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, Gr_red.bits);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, Gr_green.bits);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, Gr_blue.bits);
-//	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, bpp);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, (bpp == 32) ? 24 : 16);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, db);
 
-	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, bpp, db));
+	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, db));
 
-	if (SDL_SetVideoMode (gr_screen.max_w, gr_screen.max_h, bpp, flags) == NULL) {
-		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError ());
+	if (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, bpp, flags) == NULL) {
+		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError());
 		return 1;
 	}
 
@@ -4280,13 +4356,13 @@ void gr_opengl_init(int reinit)
 	//shut these command line parameters down if they are in use
 	Cmdline_batch_3dunlit = 0;
 
-	if ( !OGL_enabled ) {
+	if ( !GL_initted ) {
 		atexit(opengl_close);
 	}
 
-	if ( OGL_enabled )	{
+	if ( GL_initted )	{
 		gr_opengl_cleanup();
-		OGL_enabled = 0;
+		GL_initted = 0;
 	}
 
 	mprintf(( "Initializing OpenGL graphics device at %ix%i with %i-bit color...\n", gr_screen.max_w, gr_screen.max_h, gr_screen.bits_per_pixel ));
@@ -4303,6 +4379,8 @@ void gr_opengl_init(int reinit)
 		Error(LOCATION, "Current GL Version of %i.%i is less than the required version of %i.%i.\nSwitch video modes or update your drivers.", major, minor, REQUIRED_GL_MAJOR_VERSION, REQUIRED_GL_MINOR_VERSION);
 	}
 
+	GL_initted = 1;
+	// set global too
 	OGL_enabled = 1;
 
 	// this MUST be done before any other gr_opengl_* or opengl_* funcion calls!!
