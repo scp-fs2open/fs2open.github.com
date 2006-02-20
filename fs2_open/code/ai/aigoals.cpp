@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.19 $
- * $Date: 2006-02-19 22:00:09 $
+ * $Revision: 1.20 $
+ * $Date: 2006-02-20 02:13:07 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2006/02/19 22:00:09  Goober5000
+ * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
+ * --Goober5000
+ *
  * Revision 1.18  2006/01/27 06:21:10  Goober5000
  * replace quick sort with insertion sort in many places
  * --Goober5000
@@ -668,7 +672,7 @@
 #define PLAYER_PRIORITY_SUPPORT_LOW		10
 
 // define for which goals cause other goals to get purged
-#define PURGE_GOALS		(AI_GOAL_IGNORE | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
+#define PURGE_GOALS		(AI_GOAL_IGNORE | AI_GOAL_IGNORE_NEW | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
 
 // goals given from the player to other ships in the game are also handled in this
 // code
@@ -683,33 +687,35 @@ int	Ai_goal_signature;
 int	Num_ai_dock_names = 0;
 char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 
-ai_goal_list Ai_goal_names[] = {
-	{"Attack ship",			AI_GOAL_CHASE},
-	{"Dock",					AI_GOAL_DOCK},
-	{"Waypoints",				AI_GOAL_WAYPOINTS},
-	{"Waypoints once",			AI_GOAL_WAYPOINTS_ONCE},
-	{"Depart",					AI_GOAL_WARP},
-	{"Attack subsys",			AI_GOAL_DESTROY_SUBSYSTEM},
-	{"Form on wing",			AI_GOAL_FORM_ON_WING},
-	{"Undock",					AI_GOAL_UNDOCK},
-	{"Attack wing",				AI_GOAL_CHASE_WING},
-	{"Guard ship",					AI_GOAL_GUARD},
-	{"Disable ship",			AI_GOAL_DISABLE_SHIP},
-	{"Disarm ship",				AI_GOAL_DISARM_SHIP},
-	{"Attack any",				AI_GOAL_CHASE_ANY},
-	{"Ignore ship",			AI_GOAL_IGNORE},
-	{"Guard wing",				AI_GOAL_GUARD_WING},
-	{"Evade ship",				AI_GOAL_EVADE_SHIP},
-	{"Stay near ship",			AI_GOAL_STAY_NEAR_SHIP},
-	{"keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE},
-	{"Rearm ship",				AI_GOAL_REARM_REPAIR},
-	{"Stay still",				AI_GOAL_STAY_STILL},
-	{"Play dead",				AI_GOAL_PLAY_DEAD},
-	{"Attack weapon",			AI_GOAL_CHASE_WEAPON},
-	{"Fly to ship",				AI_GOAL_FLY_TO_SHIP},
+ai_goal_list Ai_goal_names[] =
+{
+	{ "Attack ship",			AI_GOAL_CHASE },
+	{ "Dock",					AI_GOAL_DOCK },
+	{ "Waypoints",				AI_GOAL_WAYPOINTS },
+	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE },
+	{ "Depart",					AI_GOAL_WARP },
+	{ "Attack subsys",			AI_GOAL_DESTROY_SUBSYSTEM },
+	{ "Form on wing",			AI_GOAL_FORM_ON_WING },
+	{ "Undock",					AI_GOAL_UNDOCK },
+	{ "Attack wing",			AI_GOAL_CHASE_WING },
+	{ "Guard ship",				AI_GOAL_GUARD },
+	{ "Disable ship",			AI_GOAL_DISABLE_SHIP },
+	{ "Disarm ship",			AI_GOAL_DISARM_SHIP },
+	{ "Attack any",				AI_GOAL_CHASE_ANY },
+	{ "Ignore ship",			AI_GOAL_IGNORE },
+	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW },
+	{ "Guard wing",				AI_GOAL_GUARD_WING },
+	{ "Evade ship",				AI_GOAL_EVADE_SHIP },
+	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP },
+	{ "keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE },
+	{ "Rearm ship",				AI_GOAL_REARM_REPAIR },
+	{ "Stay still",				AI_GOAL_STAY_STILL },
+	{ "Play dead",				AI_GOAL_PLAY_DEAD },
+	{ "Attack weapon",			AI_GOAL_CHASE_WEAPON },
+	{ "Fly to ship",			AI_GOAL_FLY_TO_SHIP },
 };
 
-int Num_ai_goals = sizeof(Ai_goal_names)/sizeof(ai_goal_list);
+int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 
 // AL 11-17-97: A text description of the AI goals.  This is used for printing out on the
 // HUD what a ship's current orders are.  If the AI goal doesn't correspond to something that
@@ -1088,6 +1094,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list )
 		switch( mode ) {
 		// ignore goals should get rid of any kind of attack goal
 		case AI_GOAL_IGNORE:
+		case AI_GOAL_IGNORE_NEW:
 			if ( purge_ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_DESTROY_SUBSYSTEM) )
 				purge_goal->flags |= AIGF_PURGE;
 			break;
@@ -1501,6 +1508,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	case OP_AI_EVADE_SHIP:
 	case OP_AI_STAY_NEAR_SHIP:
 	case OP_AI_IGNORE:
+	case OP_AI_IGNORE_NEW:
 		aigp->ship_name = ai_get_goal_ship_name( CTEXT(CDR(node)), &aigp->ship_name_index );
 		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
 
@@ -1529,6 +1537,8 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 			aigp->ai_mode = AI_GOAL_STAY_NEAR_SHIP;
 		} else if ( op == OP_AI_IGNORE ) {
 			aigp->ai_mode = AI_GOAL_IGNORE;
+		} else if ( op == OP_AI_IGNORE_NEW ) {
+			aigp->ai_mode = AI_GOAL_IGNORE_NEW;
 		} else
 			Int3();		// this is impossible
 
@@ -1838,6 +1848,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		// or has departed.
 	case AI_GOAL_GUARD:
 	case AI_GOAL_IGNORE:
+	case AI_GOAL_IGNORE_NEW:
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_CHASE:
 	case AI_GOAL_STAY_NEAR_SHIP:
@@ -2054,7 +2065,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				return AI_GOAL_NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
-	} else if ( (aigp->ai_mode == AI_GOAL_IGNORE) && (status == SHIP_STATUS_ARRIVED) ) {
+	} else if ( ((aigp->ai_mode == AI_GOAL_IGNORE) || (aigp->ai_mode == AI_GOAL_IGNORE_NEW)) && (status == SHIP_STATUS_ARRIVED) ) {
 		int shipnum;
 		object *ignored;
 
@@ -2062,7 +2073,8 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		shipnum = ship_name_lookup( aigp->ship_name );
 		Assert( shipnum != -1 );		// should be true because of above status
 		ignored = &Objects[Ships[shipnum].objnum];
-		ai_ignore_object(objp, ignored, 100);
+
+		ai_ignore_object(objp, ignored, 100, (aigp->ai_mode == AI_GOAL_IGNORE_NEW));
 		return AI_GOAL_SATISFIED;
 	}
 
@@ -2077,6 +2089,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	case AI_GOAL_DISABLE_SHIP:
 	case AI_GOAL_DISARM_SHIP:
 	case AI_GOAL_IGNORE:
+	case AI_GOAL_IGNORE_NEW:
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_STAY_NEAR_SHIP:
 	case AI_GOAL_FLY_TO_SHIP:
@@ -2621,6 +2634,7 @@ void ai_update_goal_references(ai_goal *goals, int type, char *old_name, char *n
 					case AI_GOAL_DISABLE_SHIP:
 					case AI_GOAL_DISARM_SHIP:
 					case AI_GOAL_IGNORE:
+					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:
 					case AI_GOAL_STAY_NEAR_SHIP:
 						flag = 1;
@@ -2686,6 +2700,7 @@ int query_referenced_in_ai_goals(ai_goal *goals, int type, char *name)
 					case AI_GOAL_DISABLE_SHIP:
 					case AI_GOAL_DISARM_SHIP:
 					case AI_GOAL_IGNORE:
+					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:
 					case AI_GOAL_STAY_NEAR_SHIP:
 						flag = 1;

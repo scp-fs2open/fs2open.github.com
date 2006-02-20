@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.25 $
- * $Date: 2006-02-02 07:00:29 $
+ * $Revision: 2.26 $
+ * $Date: 2006-02-20 02:13:08 $
  * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2006/02/02 07:00:29  Goober5000
+ * consolidated comm order stuff
+ * --Goober5000
+ *
  * Revision 2.24  2006/02/02 06:04:02  Goober5000
  * restore retail compatibility with comm orders: one logic bugfix, one cosmetic bugfix
  * --Goober5000
@@ -1340,7 +1344,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 {
 	ai_info *aip;
 	ship *shipp, *ordering_shipp;
-	int i, send_message, do_ship;
+	int i, send_message;//, do_ship = 0;
 	object *objp;
 
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
@@ -1358,7 +1362,6 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	}
 
 	send_message = 1;									// internal flag to dictate who sends message
-	do_ship = 0;
 	aip = Player_ai;
 
 	if ( player_num != -1 )
@@ -1367,6 +1370,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	Assert( aip->shipnum != -1 );
 	ordering_shipp = &Ships[aip->shipnum];
 
+	/* Goober5000 - this relies on the weird calling logic that is now disabled
 	if ( command == IGNORE_TARGET_ITEM ) {
 		// if we were messaging a ship directly, set flag to send no messages.  We will send one
 		// specifically from the ship player is ordering
@@ -1375,6 +1379,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			send_message = 0;
 		}
 	}
+	*/
 
 	for ( i = 0; i < Num_wings; i++ ) {
 		int shipnum;
@@ -1385,8 +1390,8 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 		if ( Wings[i].flags & WF_WING_DEPARTING )
 			continue;
 
-		// get the first ship on the wing list and look at it's team and then it's type
-		shipnum = Wings[i].ship_index[0];
+		// get the first ship on the wing list and look at its team and then its type
+		shipnum = Wings[i].ship_index[Wings[i].special_ship];
 		Assert( shipnum != -1 );
 		shipp = &Ships[shipnum];
 
@@ -1399,7 +1404,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
-		// the set of orders accepted for the first ship in the wing.
+		// the set of orders accepted for the wing leader
 		if ( !(command & shipp->orders_accepted) )
 			continue;
 
@@ -1441,10 +1446,12 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	// we might send the ship command again if we are ignoring a target, and the guy
 	// we ordered directly is a ship -- we want the response to come directly from the
 	// guy we orders
+	/* Goober5000 - yet again with the weird logic
 	if ( do_ship ) {
 		Assert( Msg_instance != MESSAGE_ALL_FIGHTERS );
 		hud_squadmsg_send_ship_command( Msg_instance, command, 1 );
 	}
+	*/
 }
 
 // Check if any enemy ships are in the mission
@@ -1623,7 +1630,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			Assert( target_shipname );
 			Assert( ship_team != target_team );
 
-			ai_mode = AI_GOAL_IGNORE;
+			ai_mode = AI_GOAL_IGNORE_NEW;
 			ai_submode = 0;
 			message = MESSAGE_YESSIR;
 			break;
@@ -1858,7 +1865,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			Assert( target_shipname );
 			Assert( wing_team != target_team );
 
-			ai_mode = AI_GOAL_IGNORE;
+			ai_mode = AI_GOAL_IGNORE_NEW;
 			ai_submode = 0;	//	actually, a don't care.
 			message = MESSAGE_YESSIR;
 			break;
@@ -2128,7 +2135,7 @@ void hud_squadmsg_ship_select()
 		} else {
 			// we must convert the Msg_shortcut_command value to a value that the message
 			// system normally uses to select a command.  Since the menu 
-			Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
+			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
 			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1 );
 			hud_squadmsg_toggle();
 		}
@@ -2153,7 +2160,7 @@ void hud_squadmsg_wing_select()
 			Msg_instance = MsgItems[First_menu_item + k].instance;	// store the instance id in a global
 			hud_squadmsg_do_mode( SM_MODE_WING_COMMAND );				// and move to a new mode
 		} else {
-			Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
+			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
 			hud_squadmsg_send_wing_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1 );
 			hud_squadmsg_toggle();
 		}
@@ -2398,10 +2405,12 @@ void hud_squadmsg_ship_command()
 	if ( k != -1 ) {
 		Assert ( k < Num_menu_items );
 		// when messaging all fighters or ignoring target, call the send_to_all_fighters routine
-		if ( (Msg_instance != MESSAGE_ALL_FIGHTERS) && (MsgItems[k].instance != IGNORE_TARGET_ITEM) )
-			hud_squadmsg_send_ship_command( Msg_instance, MsgItems[k].instance, 1 );
+		// Goober5000 - ignore no longer sends to all fighters
+		if ((Msg_instance == MESSAGE_ALL_FIGHTERS)/* || (MsgItems[k].instance == IGNORE_TARGET_ITEM)*/)
+			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance);
 		else
-			hud_squadmsg_send_to_all_fighters( MsgItems[k].instance );
+			hud_squadmsg_send_ship_command(Msg_instance, MsgItems[k].instance, 1);
+
 		hud_squadmsg_toggle();
 	}
 }
@@ -2456,10 +2465,12 @@ void hud_squadmsg_wing_command()
 	if ( k != -1 ) {
 
 		// ignore target gets sent to everyone.
-		if ( MsgItems[k].instance != IGNORE_TARGET_ITEM )
-			hud_squadmsg_send_wing_command( Msg_instance, MsgItems[k].instance, 1 );
-		else
-			hud_squadmsg_send_to_all_fighters( MsgItems[k].instance );
+		/* Goober5000 - not anymore
+		if (MsgItems[k].instance == IGNORE_TARGET_ITEM)
+			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance);
+		else */
+			hud_squadmsg_send_wing_command(Msg_instance, MsgItems[k].instance, 1);
+
 		hud_squadmsg_toggle();
 	}
 }
@@ -2592,12 +2603,16 @@ void hud_squadmsg_shortcut( int command )
 		return;
 	hud_squadmsg_toggle();
 	Msg_shortcut_command = command;									// save the command for later use
-	if ( Msg_shortcut_command == CAPTURE_TARGET_ITEM )			// some commands only apply to wings or ships
+
+	if (Msg_shortcut_command == CAPTURE_TARGET_ITEM)			// some commands only apply to wings or ships
 		Squad_msg_mode = SM_MODE_SHIP_SELECT;						//  -- don't offer choice
+
+	/* Goober5000 - again with the stupid logic
 	else if ( Msg_shortcut_command == IGNORE_TARGET_ITEM ) {	//  ignoring target applied to all ships
 		hud_squadmsg_toggle();											// turns off mode which was turned on above
 		hud_squadmsg_send_to_all_fighters( Msg_shortcut_command );
 	}
+	*/
 }
 
 // external entry point which is called when the player hits a selection key (1-0) while in messaging

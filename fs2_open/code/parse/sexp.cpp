@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.214 $
- * $Date: 2006-02-19 22:00:10 $
+ * $Revision: 2.215 $
+ * $Date: 2006-02-20 02:13:08 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.214  2006/02/19 22:00:10  Goober5000
+ * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
+ * --Goober5000
+ *
  * Revision 2.213  2006/02/19 02:04:40  wmcoolmon
  * Oops
  *
@@ -1566,6 +1570,7 @@ sexp_oper Operators[] = {
 	{ "ai-waypoints",				OP_AI_WAYPOINTS,				2, 2, },
 	{ "ai-waypoints-once",		OP_AI_WAYPOINTS_ONCE,		2, 2, },
 	{ "ai-ignore",					OP_AI_IGNORE,					2, 2, },
+	{ "ai-ignore-new",				OP_AI_IGNORE_NEW,				2, 2, },
 	{ "ai-stay-near-ship",		OP_AI_STAY_NEAR_SHIP,		2, 2, },
 	{ "ai-evade-ship",			OP_AI_EVADE_SHIP,				2, 2,	},
 	{ "ai-keep-safe-distance",	OP_AI_KEEP_SAFE_DISTANCE,	1, 1, },
@@ -1642,6 +1647,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_STAY_NEAR_SHIP, OP_AI_STAY_NEAR_SHIP },
 	{ AI_GOAL_KEEP_SAFE_DISTANCE, OP_AI_KEEP_SAFE_DISTANCE },
 	{ AI_GOAL_IGNORE, OP_AI_IGNORE },
+	{ AI_GOAL_IGNORE_NEW, OP_AI_IGNORE_NEW },
 	{ AI_GOAL_STAY_STILL, OP_AI_STAY_STILL },
 	{ AI_GOAL_PLAY_DEAD, OP_AI_PLAY_DEAD },
 };
@@ -15575,6 +15581,7 @@ int query_operator_return_type(int op)
 		case OP_AI_STAY_NEAR_SHIP:
 		case OP_AI_KEEP_SAFE_DISTANCE:
 		case OP_AI_IGNORE:
+		case OP_AI_IGNORE_NEW:
 		case OP_AI_STAY_STILL:
 		case OP_AI_PLAY_DEAD:
 			return OPR_AI_GOAL;
@@ -16000,6 +16007,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_EVADE_SHIP:
 		case OP_AI_STAY_NEAR_SHIP:
 		case OP_AI_IGNORE:
+		case OP_AI_IGNORE_NEW:
 			if (!argnum)
 				return OPF_SHIP;
 			else
@@ -19082,6 +19090,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
 	{ OP_AI_IGNORE, "Ai-ignore (Ship goal)\r\n"
+		"\tTells all ships to ignore the given ship and not consider it as a valid "
+		"target to attack.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to ignore.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	// Goober5000
+	{ OP_AI_IGNORE_NEW, "Ai-ignore-new (Ship goal)\r\n"
 		"\tTells the specified ship to ignore the given ship and not consider it as a valid "
 		"target to attack.\r\n\r\n"
 		"Takes 2 arguments...\r\n"

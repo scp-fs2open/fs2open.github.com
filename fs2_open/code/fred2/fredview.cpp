@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-01-30 06:27:59 $
- * $Author: taylor $
+ * $Revision: 1.5 $
+ * $Date: 2006-02-20 02:13:07 $
+ * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/01/30 06:27:59  taylor
+ * dynamic starfield bitmaps
+ *
  * Revision 1.3  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -3923,6 +3926,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
 			case AI_GOAL_IGNORE:
+			case AI_GOAL_IGNORE_NEW:
 				flag = 2;
 				break;
 
