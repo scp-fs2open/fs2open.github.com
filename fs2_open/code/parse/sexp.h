@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.104 $
- * $Author: Goober5000 $
- * $Date: 2006-02-20 02:13:08 $
+ * $Revision: 2.105 $
+ * $Author: karajorma $
+ * $Date: 2006-02-20 20:53:11 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2006/02/20 02:13:08  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 2.103  2006/02/19 22:00:10  Goober5000
  * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
  * --Goober5000
@@ -1006,6 +1010,8 @@ struct ship_subsys;
 #define OP_NUM_WITHIN_BOX					(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// WMCoolmon
 #define OP_SCRIPT_EVAL_NUM					(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 #define OP_SCRIPT_EVAL_STRING				(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
+#define OP_NUM_SHIPS_IN_WING				(0x0030 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define	OP_GET_SECONDARY_AMMO				(0x0031 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -1196,6 +1202,7 @@ struct ship_subsys;
 #define OP_TURRET_CHANGE_WEAPON				(0x00c1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_TURRET_SET_TARGET_ORDER			(0x00c2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SHIP_TURRET_TARGET_ORDER			(0x00c3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
+#define OP_SET_SECONDARY_AMMO				(0x00c4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 
