@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.68 $
+ * $Revision: 2.69 $
  * $Author: Goober5000 $
- * $Date: 2006-02-11 21:23:42 $
+ * $Date: 2006-02-20 05:54:44 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/02/11 21:23:42  Goober5000
+ * reworked how comments are parsed and added version-specific commenting
+ * --Goober5000
+ *
  * Revision 2.67  2006/02/06 02:06:02  wmcoolmon
  * Various fixes; very beginnings of Directives scripting support
  *
@@ -1722,10 +1726,12 @@ int strip_comments(char *line, int in_multiline_comment)
 	}
 
 
+	/* Goober5000 - this interferes with hyperlinks, heh
 	// search for //
 	ch = strstr(line, "//");
 	if (ch != NULL)
 		goto done_with_line;
+	*/
 
 
 	// special version-specific comment
