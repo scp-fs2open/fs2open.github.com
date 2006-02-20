@@ -1,12 +1,16 @@
 /*
  * $Logfile: $
- * $Revision: 1.22 $
- * $Date: 2006-02-16 05:47:32 $
+ * $Revision: 1.23 $
+ * $Date: 2006-02-20 07:25:14 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2006/02/16 05:47:32  taylor
+ * I never did really like the old audiostr OpenAL change here, this just seems safer
+ * initialize si->data and si->size before loading sound buffer (fixes OGG issue for plats that don't zero-initialize <vector>, this will be handled differently in the new code)
+ *
  * Revision 1.21  2006/01/30 22:08:59  taylor
  * some minor fixage
  *
@@ -912,9 +916,12 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 
 			if ( rc == -1 ) {
 				goto READ_ERROR;
-			}
-			if ( convert_len == 0 ) {
-				Int3();
+			} else if ( convert_len == 0 ) {
+				if (num_bytes_read < m_nBlockAlign) {
+					mprintf(("AUDIOSTR => Warning: Short read detected in ACM decode of '%s'!!\n", m_wFilename));
+				} else {
+					Int3();
+				}
 			}
 		}
 
