@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.218 $
- * $Date: 2006-02-21 07:58:01 $
+ * $Revision: 2.219 $
+ * $Date: 2006-02-21 09:08:10 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.218  2006/02/21 07:58:01  Goober5000
+ * add a bunch of tweaks to hopefully lessen the possibility of misinterpreting special return values (such as nan) as true or false
+ * --Goober5000
+ *
  * Revision 2.217  2006/02/20 20:53:11  karajorma
  * Added the num-ships-in-wing, get-secondary-ammo and set-secondary-ammo SEXPs
  *
@@ -1351,15 +1355,12 @@ sexp_oper Operators[] = {
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
-	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,				2,	2	},	// WMC
-	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,				2,	2	},	// WMC
-	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,				2,	2	},	// WMC
-	{ "get-object-x",				OP_GET_OBJECT_X,				1,	2	},	// Goober5000
-	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	2	},	// Goober5000
-	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	2	},	// Goober5000
-	{ "get-object-relative-x",		OP_GET_OBJECT_RELATIVE_X,			4,	5	},	// Goober5000
-	{ "get-object-relative-y",		OP_GET_OBJECT_RELATIVE_Y,			4,	5	},	// Goober5000
-	{ "get-object-relative-z",		OP_GET_OBJECT_RELATIVE_Z,			4,	5	},	// Goober5000
+	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,				2,	3	},	// WMC
+	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,				2,	3	},	// WMC
+	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,				2,	3	},	// WMC
+	{ "get-object-x",				OP_GET_OBJECT_X,				1,	5	},	// Goober5000
+	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	5	},	// Goober5000
+	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	5	},	// Goober5000
 	{ "set-object-position",		OP_SET_OBJECT_POSITION,				4,	4	},	//WMC
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
@@ -1598,6 +1599,7 @@ sexp_oper Operators[] = {
 
 	{ "key-pressed",				OP_KEY_PRESSED,				1,	2,			},
 	{ "key-reset",					OP_KEY_RESET,					1, INT_MAX,	},
+	{ "key-reset-multiple",			OP_KEY_RESET_MULTIPLE,			1, INT_MAX,	},
 	{ "targeted",					OP_TARGETED,					1, 3,			},
 	{ "missile-locked",				OP_MISSILE_LOCKED,			1,	3	},	// Sesquipedalian
 	{ "speed",						OP_SPEED,						1, 1,			},
@@ -4407,8 +4409,8 @@ int sexp_current_speed(int n)
 	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
 		return SEXP_NAN;
 
-	// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
+	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL) ) 
 		return SEXP_NAN;
 
 /*	int team = sexp_determine_team(object_name);
@@ -5189,7 +5191,7 @@ int sexp_time_wing_departed(int n)
 	fix time;
 
 	Assert( n != -1 );
-	if ( !mission_log_get_time( LOG_WING_DEPART, CTEXT(n), NULL, &time ) ){
+	if ( !mission_log_get_time(LOG_WING_DEPART, CTEXT(n), NULL, &time ) ){
 		return SEXP_NAN;
 	}
 
@@ -5461,9 +5463,9 @@ int sexp_distance(int n)
 		  mission_log_get_time(LOG_SHIP_DESTROYED, sname2, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, sname2, NULL, NULL) ) 
 		return SEXP_NAN_FOREVER;
 
-	// one of the names might be the name of a wing.  Check to see if the wing is detroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, sname1, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, sname1, NULL, NULL) ||
-		  mission_log_get_time(LOG_WING_DESTROYED, sname2, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, sname2, NULL, NULL) ) 
+	// one of the names might be the name of a wing.  Check to see if the wing is destroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, sname1, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, sname1, NULL, NULL) ||
+		  mission_log_get_time(LOG_WING_DESTROYED, sname2, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, sname2, NULL, NULL) ) 
 		return SEXP_NAN_FOREVER;
 
 	team = sexp_determine_team(sname1);
@@ -5605,7 +5607,7 @@ int sexp_distance3(int obj1, int obj2)
 }
 
 // locate the subsystem on a ship - Goober5000
-void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vec3d *subsys_world_pos)
+void sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, int shipnum, char *subsys_name)
 {
 	Assert(subsys_name);
 	Assert(subsys_world_pos);
@@ -5632,7 +5634,7 @@ void sexp_get_subsystem_pos(int shipnum, char *subsys_name, vec3d *subsys_world_
 		ss = GET_NEXT( ss );
 	}
 	// we reached end of ship subsys list without finding subsys_name
-	Error(LOCATION, "sexp_get_subsystem_pos could not find subsystem '%s'", subsys_name);
+	Error(LOCATION, "sexp_get_subsystem_world_pos could not find subsystem '%s'", subsys_name);
 	Int3();
 }
 
@@ -5658,8 +5660,8 @@ int sexp_distance_subsystem(int n)	// Goober5000
 		  mission_log_get_time(LOG_SHIP_DESTROYED, ship_with_subsys, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_with_subsys, NULL, NULL) ) 
 		return SEXP_NAN_FOREVER;
 
-	// the object might a wing.  Check to see if the wing is detroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, obj_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, obj_name, NULL, NULL) ) 
+	// the object might a wing.  Check to see if the wing is destroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, obj_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, obj_name, NULL, NULL) ) 
 		return SEXP_NAN_FOREVER;
 
 	// find the ship with the subsystem
@@ -5670,7 +5672,7 @@ int sexp_distance_subsystem(int n)	// Goober5000
 	}
 
 	// get the subsystem's coordinates
-	sexp_get_subsystem_pos(obj, subsys_name, &subsys_pos);
+	sexp_get_subsystem_world_pos(&subsys_pos, obj, subsys_name);
 
 	// check if the first object is on a team
 	team = sexp_determine_team(obj_name);
@@ -5809,262 +5811,260 @@ int sexp_num_within_box(int n)
 	return retval;
 }
 
-void sos_helper(object *objp, int speed, int axis)
+// Goober5000
+void sexp_set_object_speed(object *objp, int speed, int axis, bool subjective)
 {
-	switch(axis)
+	Assert(axis >= 0 && axis <= 2);
+
+	if (subjective)
 	{
-		case 0:
-			objp->phys_info.vel.xyz.x = i2fl(speed);
-			break;
-		case 1:
-			objp->phys_info.vel.xyz.y = i2fl(speed);
-			break;
-		case 2:
-			objp->phys_info.vel.xyz.z = i2fl(speed);
-			break;
-		default:
-			Warning(LOCATION,"Invalid axis %d passed to sexp_sos_helper", axis);
-			return;
+		vec3d subjective_vel;
+
+		// translate objective into subjective velocity
+		vm_vec_unrotate(&subjective_vel, &objp->phys_info.vel, &objp->orient);
+
+		// set it
+		subjective_vel.a1d[axis] = i2fl(speed);
+
+		// translate it back to objective
+		vm_vec_rotate(&objp->phys_info.vel, &subjective_vel, &objp->orient);
+	}
+	else
+	{
+		objp->phys_info.vel.a1d[axis] = i2fl(speed);
 	}
 }
 
+// Goober5000
 void sexp_set_object_speed(int n, int axis)
 {
-	ship_obj *so;
-	int idx;
+	Assert(n >= 0);
 
-	Assert( n >= 0 );
+	char *object_name = NULL;
+	int speed, team, obj;
+	bool subjective;
 
-	char *object_name = CTEXT(n);
+	object_name = CTEXT(n);
 	n = CDR(n);
-	int object_speed = eval_num(n);
 
-	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
-		return;
+	speed = eval_num(n);
+	n = CDR(n);
 
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
-		return;
-
-	idx = sexp_determine_team(object_name);
-	if (idx)
+	if (n >= 0)
 	{
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list))
-		{
-			if (Ships[Objects[so->objnum].instance].team == idx) {
-				sos_helper(&Objects[so->objnum], object_speed, axis);
-			}
+		int result = eval_sexp(n);
+		n = CDR(n);
 
-			so = GET_NEXT(so);
-		}
-
-		return;
+		subjective = ((result == SEXP_TRUE) || (result == SEXP_KNOWN_TRUE));
 	}
 
-	idx = ship_name_lookup(object_name);
-	if(idx > -1) {
-		sos_helper(&Objects[Ships[idx].objnum], object_speed, axis);
-		return;
-	}
-
-	idx = waypoint_lookup(object_name);
-	if(idx > -1) {
-		sos_helper(&Objects[idx], object_speed, axis);
-		return;
-	}
-
-	idx = wing_name_lookup(object_name);
-	if(idx > 0)
-	{
-		for(int i = 0; i < Wings[idx].current_count; i++) {
-			sos_helper(&Objects[Ships[Wings[idx].ship_index[i]].objnum], object_speed, axis);
-		}
-	}
-}
-
-// Goober5000
-int sexp_vec_coordinate(vec3d *v, int index)
-{
-	Assert(v);
-
-	// return result:
-	switch(index)
-	{
-		case 0:
-			return (int)v->xyz.x;
-		case 1:
-			return (int)v->xyz.y;
-		case 2:
-			return (int)v->xyz.z;
-		default:
-			Error(LOCATION, "Invalid coordinate index %d passed to sexp_vec_coordinate", index);
-			return 0;
-	}
-}
-
-// Goober5000
-int sexp_calculate_new_world_coordinate(vec3d *origin, matrix *orient, vec3d *relative_location, int index)
-{
-	Assert(origin && orient && relative_location);
-
-	vec3d new_world_pos;
-
-	vm_vec_unrotate(&new_world_pos, relative_location, orient);
-	vm_vec_add2(&new_world_pos, origin);
-
-	return sexp_vec_coordinate(&new_world_pos, index);
-}
-
-// Goober5000
-int sexp_get_object_relative_coordinates(int n, int index)
-{
-	vec3d relative_location;
-	ship_obj *so;
-
-	Assert( n >= 0 );
-
-	char *object_name = CTEXT(n);
-	n = CDR(n);
-	int team, obj;
-
-	relative_location.xyz.x = (float)eval_num(n);
-	n = CDR(n);
-	relative_location.xyz.y = (float)eval_num(n);
-	n = CDR(n);
-	relative_location.xyz.z = (float)eval_num(n);
-	n = CDR(n);
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
-		return SEXP_NAN;
+		return;
 
-	// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
-		return SEXP_NAN;
+	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL) ) 
+		return;
 
+
+	// if we have a team type, pick the first ship of that team
 	team = sexp_determine_team(object_name);
-	if (team >= 0)	// we have a team type, so pick the first ship of that type
+	if (team >= 0)
 	{
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list))
-		{
-			if (Ships[Objects[so->objnum].instance].team == team)
-			{
-				return sexp_calculate_new_world_coordinate(&Objects[so->objnum].pos, &Objects[so->objnum].orient, &relative_location, index); 
-			}
+		ship_obj *so;
 
-			so = GET_NEXT(so);
+		for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+		{
+			object *objp = &Objects[so->objnum];
+
+			if (Ships[objp->instance].team == team)
+			{
+				sexp_set_object_speed(objp, speed, axis, subjective);
+				return;
+			}			
 		}
 
-		return SEXP_NAN;	// if no match
+		// no match
+		return;
 	}
+
 
 	// at this point, we must have a wing, ship or point for a target
 	obj = ship_name_lookup(object_name);
 	if (obj >= 0)
 	{
-		// see if we have a subsys
-		if (n != -1)
-		{
-			vec3d subsys_pos;
-			sexp_get_subsystem_pos(obj, CTEXT(n), &subsys_pos);
+		object *objp = &Objects[Ships[obj].objnum];
 
-			return sexp_calculate_new_world_coordinate(&subsys_pos, &Objects[Ships[obj].objnum].orient, &relative_location, index);
-		}
-
-		return sexp_calculate_new_world_coordinate(&Objects[Ships[obj].objnum].pos, &Objects[Ships[obj].objnum].orient, &relative_location, index);
+		sexp_set_object_speed(objp, speed, axis, subjective);
+		return;
 	}
+
 
 	// at this point, we must have a wing or point for a target
 	obj = waypoint_lookup(object_name);
 	if (obj >= 0)
 	{
-		return sexp_calculate_new_world_coordinate(&Objects[obj].pos, &Objects[obj].orient, &relative_location, index);
+		object *objp = &Objects[obj];
+
+		sexp_set_object_speed(objp, speed, axis, subjective);
+		return;
 	}
+
 
 	// at this point, we must have a wing for a target
 	obj = wing_name_lookup(object_name);
-	if (obj < 0)
-		return SEXP_NAN;  // we apparently don't have anything legal
+	if (obj >= 0)
+	{
+		// make sure at least one ship exists
+		if (Wings[obj].current_count >= 0)
+		{
+			// point to wing leader
+			object *objp = &Objects[Ships[Wings[obj].ship_index[Wings[obj].special_ship]].objnum];
 
-	// make sure at least one ship exists
-	if (!Wings[obj].current_count)
-		return SEXP_NAN;
+			sexp_set_object_speed(objp, speed, axis, subjective);
+			return;
+		}
+	}
 
-	// point to wing leader
-	return sexp_calculate_new_world_coordinate(&Objects[Ships[Wings[obj].ship_index[0]].objnum].pos, &Objects[Ships[Wings[obj].ship_index[0]].objnum].orient, &relative_location, index);
+
+	// we apparently don't have anything legal
+	return;
 }
 
 // Goober5000
-int sexp_get_object_coordinates(int n, int index) 
+int sexp_calculate_coordinate(vec3d *origin, matrix *orient, vec3d *relative_location, int axis)
 {
-	ship_obj *so;
+	Assert(origin != NULL);
+	Assert(orient != NULL);
+	Assert(axis >= 0 && axis <= 2);
 
-	Assert( n >= 0 );
+	if (relative_location == NULL)
+	{
+		return origin->a1d[axis];
+	}
+	else
+	{
+		vec3d new_world_pos;
 
-	char *object_name = CTEXT(n);
-	n = CDR(n);
+		vm_vec_unrotate(&new_world_pos, relative_location, orient);
+		vm_vec_add2(&new_world_pos, origin);
+
+		return new_world_pos.a1d[axis];
+	}
+}
+
+// Goober5000
+int sexp_get_object_coordinate(int n, int axis) 
+{
+	Assert(n >= 0);
+
+	char *object_name = NULL, *subsystem_name = NULL;
 	int team, obj;
+	vec3d *relative_location = NULL, relative_location_buf;
+
+	object_name = CTEXT(n);
+	n = CDR(n);
+
+	if (n >= 0)
+	{
+		subsystem_name = CTEXT(n);
+		n = CDR(n);
+
+		if (n >= 0)
+		{
+			relative_location = &relative_location_buf;
+
+			relative_location->xyz.x = (float) eval_num(n);
+			n = CDR(n);
+			relative_location->xyz.y = (float) eval_num(n);
+			n = CDR(n);
+			relative_location->xyz.z = (float) eval_num(n);
+			n = CDR(n);
+		}
+	}
+
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
 		return SEXP_NAN;
 
-	// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
+	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL) ) 
 		return SEXP_NAN;
 
-	team = sexp_determine_team(object_name);
-	if (team >= 0)	// we have a team type, so pick the first ship of that type
-	{
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list))
-		{
-			if (Ships[Objects[so->objnum].instance].team == team)
-			{
-				return sexp_vec_coordinate(&Objects[so->objnum].pos, index);
-			}
 
-			so = GET_NEXT(so);
+	// if we have a team type, pick the first ship of that team
+	team = sexp_determine_team(object_name);
+	if (team >= 0)
+	{
+		ship_obj *so;
+
+		for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+		{
+			object *objp = &Objects[so->objnum];
+
+			if (Ships[objp->instance].team == team)
+			{
+				return sexp_calculate_coordinate(&objp->pos, &objp->orient, relative_location, axis);
+			}			
 		}
 
-		return SEXP_NAN;	// if no match
+		// no match
+		return SEXP_NAN;
 	}
+
 
 	// at this point, we must have a wing, ship or point for a target
 	obj = ship_name_lookup(object_name);
 	if (obj >= 0)
 	{
-		// see if we have a subsys
-		if (n != -1)
-		{
-			vec3d subsys_pos = ZERO_VECTOR;
-			sexp_get_subsystem_pos(obj, CTEXT(n), &subsys_pos);
+		vec3d *pos, subsys_pos_buf;
+		object *objp = &Objects[Ships[obj].objnum];
 
-			return sexp_vec_coordinate(&subsys_pos, index);
+		// see if we have a subsys
+		if ((subsystem_name != NULL) && stricmp(subsystem_name, SEXP_NONE_STRING) && stricmp(subsystem_name, SEXP_HULL_STRING))
+		{
+			pos = &subsys_pos_buf;
+			sexp_get_subsystem_world_pos(pos, obj, subsystem_name);
+		}
+		// plain old ship
+		else
+		{
+			pos = &objp->pos;
 		}
 
-		return sexp_vec_coordinate(&Objects[Ships[obj].objnum].pos, index);
+		return sexp_calculate_coordinate(pos, &objp->orient, relative_location, axis);
 	}
+
 
 	// at this point, we must have a wing or point for a target
 	obj = waypoint_lookup(object_name);
 	if (obj >= 0)
 	{
-		return sexp_vec_coordinate(&Objects[obj].pos, index);
+		object *objp = &Objects[obj];
+
+		return sexp_calculate_coordinate(&objp->pos, &objp->orient, relative_location, axis);
 	}
-		
+
+
 	// at this point, we must have a wing for a target
 	obj = wing_name_lookup(object_name);
-	if (obj < 0)
-		return SEXP_NAN;  // we apparently don't have anything legal
+	if (obj >= 0)
+	{
+		// make sure at least one ship exists
+		if (Wings[obj].current_count >= 0)
+		{
+			// point to wing leader
+			object *objp = &Objects[Ships[Wings[obj].ship_index[Wings[obj].special_ship]].objnum];
 
-	// make sure at least one ship exists
-	if (!Wings[obj].current_count)
-		return SEXP_NAN;
+			return sexp_calculate_coordinate(&objp->pos, &objp->orient, relative_location, axis);
+		}
+	}
 
-	// point to wing leader
-	return sexp_vec_coordinate(&Objects[Ships[Wings[obj].ship_index[0]].objnum].pos, index);
+
+	// we apparently don't have anything legal
+	return SEXP_NAN;
 }
 
 void sexp_set_object_position(int n) 
@@ -6090,8 +6090,8 @@ void sexp_set_object_position(int n)
 	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
 		return;
 
-	// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL) ) 
+	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL) ) 
 		return;
 
 	i = 0;
@@ -6326,8 +6326,8 @@ void sexp_set_ship_facing_object(int n)
 	if (ship_num < 0)
 		return;
 
-	// the second name might be the name of a wing.  Check to see if the wing is detroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, target_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, target_name, NULL, NULL) ) 
+	// the second name might be the name of a wing.  Check to see if the wing is destroyed or departed
+	if ( mission_log_get_time(LOG_WING_DESTROYED, target_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, target_name, NULL, NULL) ) 
 		return;
 
 	team = sexp_determine_team(target_name);
@@ -7498,8 +7498,8 @@ int sexp_is_iff( int n )
 		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
 			continue;
 
-		// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
-		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
+		// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
+		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
 			continue;
 
 		// see if we can find anything
@@ -7575,8 +7575,8 @@ void sexp_change_iff( int n )
 		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
 			continue;
 
-		// the object might be the name of a wing.  Check to see if the wing is detroyed or departed
-		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time( LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
+		// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
+		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
 			continue;
 
 		// search for it
@@ -10817,12 +10817,14 @@ int sexp_key_pressed(int node)
 
 void sexp_key_reset(int node)
 {
-	int z;
+	int n, z;
 
-	Assert(node != -1);
-	z = translate_key_to_index(CTEXT(node));
-	if (z >= 0)
-		Control_config[z].used = 0;
+	for (n = node; n != -1; n = CDR(n))
+	{
+		z = translate_key_to_index(CTEXT(n));
+		if (z >= 0)
+			Control_config[z].used = 0;
+	}
 }
 
 int sexp_targeted(int node)
@@ -13556,7 +13558,7 @@ void sexp_set_camera_facing_object(int n)
 	if(mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL)
 		|| mission_log_get_time( LOG_SHIP_DEPART, object_name, NULL, NULL)
 		|| mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL)
-		|| mission_log_get_time( LOG_WING_DEPART, object_name, NULL, NULL))
+		|| mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL))
 	{
 		Warning(LOCATION, "Camera tried to face destroyed/departed object %s", object_name);
 		return;
@@ -14091,7 +14093,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_MODIFY_VARIABLE:
 				sexp_modify_variable( node );
-				sexp_val = 1;	// 1 means only do once.
+				sexp_val = SEXP_TRUE;	// SEXP_TRUE means only do once.
 				break;
 
 			case OP_TIME_SHIP_DESTROYED:
@@ -14265,140 +14267,140 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_INVALIDATE_ARGUMENT:
 				sexp_invalidate_argument( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// sexpressions with side effects
 			case OP_CHANGE_IFF:
 				sexp_change_iff( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ADD_SHIP_GOAL:
 				sexp_add_ship_goal( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ADD_WING_GOAL:
 				sexp_add_wing_goal( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ADD_GOAL:
 				sexp_add_goal( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CLEAR_SHIP_GOALS:
 				sexp_clear_ship_goals( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CLEAR_WING_GOALS:
 				sexp_clear_wing_goals( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CLEAR_GOALS:
 				sexp_clear_goals( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_PROTECT_SHIP:
 			case OP_UNPROTECT_SHIP:
 				sexp_protect_ships( node, (op_num==OP_PROTECT_SHIP?1:0) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_BEAM_PROTECT_SHIP:
 			case OP_BEAM_UNPROTECT_SHIP:
 				sexp_beam_protect_ships( node, (op_num==OP_BEAM_PROTECT_SHIP?1:0) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_STEALTHY:
 			case OP_SHIP_UNSTEALTHY:
 				sexp_ships_stealthy( node, (op_num == OP_SHIP_STEALTHY) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_FRIENDLY_STEALTH_INVISIBLE:
 			case OP_FRIENDLY_STEALTH_VISIBLE:
 				sexp_friendly_stealth_invisible( node, (op_num == OP_FRIENDLY_STEALTH_INVISIBLE) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_INVISIBLE:
 			case OP_SHIP_VISIBLE:
 				sexp_ships_visible( node, (op_num==OP_SHIP_VISIBLE?1:0) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000
 			case OP_SHIP_TAG:
 			case OP_SHIP_UNTAG:
 				sexp_ship_tag(node, op_num==OP_SHIP_TAG?1:0);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_CHANGE_ALT_NAME:
 				sexp_ship_change_alt_name(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_VULNERABLE:
 			case OP_SHIP_INVULNERABLE:
 				sexp_ships_invulnerable( node, (op_num==OP_SHIP_INVULNERABLE?1:0) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_GUARDIAN:
 			case OP_SHIP_NO_GUARDIAN:
 				sexp_ships_guardian( node, (op_num==OP_SHIP_GUARDIAN?1:0) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_GUARDIAN_THRESHOLD:
 				sexp_ship_guardian_threshold(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 				sexp_ship_subsys_guardian_threshold(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 			
 			case OP_SHIP_CREATE:
 				sexp_ship_create ( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_WEAPON_CREATE:
 				sexp_weapon_create ( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_VANISH:
 				sexp_ship_vanish( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			//-Sesquipedalian
 			case OP_SHIELDS_ON: 
 			case OP_SHIELDS_OFF:
 				sexp_shields_off( node, (op_num==OP_SHIELDS_OFF?1:0) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			//-Sesquipedalian
 			case OP_KAMIKAZE: 
 				sexp_kamikaze(node, op_num==OP_KAMIKAZE?1:0);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_CARGO:
 				sexp_set_cargo(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_IS_CARGO:
@@ -14407,7 +14409,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_CHANGE_AI_CLASS:
 				sexp_change_ai_class(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_IS_AI_CLASS:
@@ -14424,244 +14426,244 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_CHANGE_SOUNDTRACK:
 				sexp_change_soundtrack(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_PLAY_SOUND_FROM_TABLE:
 				sexp_play_sound_from_table(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_PLAY_SOUND_FROM_FILE:
 				sexp_play_sound_from_file(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CLOSE_SOUND_FROM_FILE:
 				sexp_close_sound_from_file(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_HUD_DISABLE:
 				sexp_hud_disable(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 				sexp_hud_disable_except_messages(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_HUD_SET_TEXT:
 				sexp_hud_set_text(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_HUD_SET_TEXT_NUM:
 				sexp_hud_set_text_num(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_HUD_SET_COORDS:
 				sexp_hud_set_coords(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_HUD_SET_FRAME:
 				sexp_hud_set_frame(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_HUD_SET_COLOR:
 				sexp_hud_set_color(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_RADAR_SET_MAXRANGE: //Kazan
 				sexp_radar_set_maxrange(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
 				sexp_player_use_ai(op_num == OP_PLAYER_USE_AI);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000
 			case OP_EXPLOSION_EFFECT:
 				sexp_explosion_effect(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000
 			case OP_WARP_EFFECT:
 				sexp_warp_effect(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SEND_MESSAGE:
 				sexp_send_message( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SEND_MESSAGE_LIST:
 				sexp_send_message_list( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SEND_RANDOM_MESSAGE:
 				sexp_send_random_message( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SELF_DESTRUCT:
 				sexp_self_destruct( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_NEXT_MISSION:
 				sexp_next_mission( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 				
 			case OP_END_OF_CAMPAIGN:
 				sexp_end_of_campaign( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_END_CAMPAIGN:
 				sexp_end_campaign( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SABOTAGE_SUBSYSTEM:
 				sexp_sabotage_subsystem( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_REPAIR_SUBSYSTEM:
 				sexp_repair_subsystem( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_SUBSYSTEM_STRNGTH:
 				sexp_set_subsystem_strength( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_INVALIDATE_GOAL:
 			case OP_VALIDATE_GOAL:
 				sexp_change_goal_validity( node, (op_num==OP_INVALIDATE_GOAL?0:1) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TRANSFER_CARGO:
 				sexp_transfer_cargo( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_EXCHANGE_CARGO:
 				sexp_exchange_cargo( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 
 			case OP_JETTISON_CARGO:
 				sexp_jettison_cargo( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CARGO_NO_DEPLETE:
 				sexp_cargo_no_deplete( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_SCANNED:	// Goober5000
 			case OP_SET_UNSCANNED:
 				sexp_set_scanned_unscanned(node, op_num == OP_SET_SCANNED);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_SPECIAL_WARPOUT_NAME:
 				sexp_special_warpout_name( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			//-WMC
 			case OP_MISSION_SET_NEBULA:
 				sexp_mission_set_nebula( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
 				sexp_add_background_bitmap(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_REMOVE_BACKGROUND_BITMAP:
 				sexp_remove_background_bitmap(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ADD_SUN_BITMAP:
 				sexp_add_sun_bitmap(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_REMOVE_SUN_BITMAP:
 				sexp_remove_sun_bitmap(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_NEBULA_CHANGE_STORM:
 				sexp_nebula_change_storm(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_NEBULA_TOGGLE_POOF:
 				sexp_nebula_toggle_poof(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_END_MISSION:
 				sexp_end_mission( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000
 			case OP_FORCE_JUMP:
 				sexp_force_jump();
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 				// sexpressions for setting flag for good/bad time for someone to reasm
 			case OP_GOOD_REARM_TIME:
 				sexp_good_time_to_rearm( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_GRANT_PROMOTION:
 				sexp_grant_promotion();
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_GRANT_MEDAL:
 				sexp_grant_medal( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_VAPORIZE:
 			case OP_SHIP_NO_VAPORIZE:
 				sexp_ships_vaporize( node, (op_num == OP_SHIP_VAPORIZE) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_DONT_COLLIDE_INVISIBLE:
 			case OP_COLLIDE_INVISIBLE:
 				sexp_dont_collide_invisible( node, (op_num == OP_DONT_COLLIDE_INVISIBLE) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000 - sigh, was this messed up all along?
@@ -14671,97 +14673,83 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_WARP_ALLOWED:
 				sexp_deal_with_warp( node, (op_num==OP_WARP_BROKEN) || (op_num==OP_WARP_NOT_BROKEN),
 					(op_num==OP_WARP_BROKEN) || (op_num==OP_WARP_NEVER) );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_GOOD_SECONDARY_TIME:
 				sexp_good_secondary_time( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// sexpressions to allow shpis/weapons during the course of a mission
 			case OP_ALLOW_SHIP:
 				sexp_allow_ship( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ALLOW_WEAPON:
 				sexp_allow_weapon( node );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TECH_ADD_SHIP:
 				sexp_tech_add_ship(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TECH_ADD_WEAPON:
 				sexp_tech_add_weapon(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TECH_ADD_INTEL:
 				sexp_tech_add_intel(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TECH_RESET_TO_DEFAULT:
 				sexp_tech_reset_to_default();
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 				// in the case of a red_alert mission, simply call the red alert function to close
 				// the current campaign's mission and move forward to the next mission
 			case OP_RED_ALERT:
 				red_alert_start_mission();
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_OBJECT_SPEED_X:
-				sexp_set_object_speed(node, 0);
-				sexp_val = 1;
-				break;
-
 			case OP_SET_OBJECT_SPEED_Y:
-				sexp_set_object_speed(node, 1);
-				sexp_val = 1;
-				break;
-
 			case OP_SET_OBJECT_SPEED_Z:
-				sexp_set_object_speed(node, 2);
-				sexp_val = 1;
+				sexp_set_object_speed(node, op_num - OP_SET_OBJECT_SPEED_X);
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_GET_OBJECT_X:
 			case OP_GET_OBJECT_Y:
 			case OP_GET_OBJECT_Z:
-				sexp_val = sexp_get_object_coordinates(node, (op_num==OP_GET_OBJECT_X)?0:((op_num==OP_GET_OBJECT_Y)?1:2));
-				break;
-
-			case OP_GET_OBJECT_RELATIVE_X:
-			case OP_GET_OBJECT_RELATIVE_Y:
-			case OP_GET_OBJECT_RELATIVE_Z:
-				sexp_val = sexp_get_object_relative_coordinates(node, (op_num==OP_GET_OBJECT_RELATIVE_X)?0:((op_num==OP_GET_OBJECT_RELATIVE_Y)?1:2));
+				sexp_val = sexp_get_object_coordinate(node, op_num - OP_GET_OBJECT_X);
 				break;
 
 			case OP_SET_OBJECT_POSITION:
 				sexp_set_object_position(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_SHIP_POSITION:
 				sexp_set_ship_position(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_SHIP_FACING:
 				sexp_set_ship_facing(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_SHIP_FACING_OBJECT:
 				sexp_set_ship_facing_object(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// training operators
@@ -14776,6 +14764,10 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_KEY_RESET:
 				sexp_key_reset(node);
 				sexp_val = SEXP_KNOWN_TRUE;  // only do it first time in repeating events.
+				break;
+
+			case OP_KEY_RESET_MULTIPLE:
+				sexp_key_reset(node);
 				break;
 
 			case OP_MISSILE_LOCKED:
@@ -14824,28 +14816,28 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_TRAINING_MSG:
 				sexp_send_training_message(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_FLASH_HUD_GAUGE:
 				sexp_flash_hud_gauge(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_TRAINING_CONTEXT_FLY_PATH:
 				sexp_set_training_context_fly_path(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_TRAINING_CONTEXT_SPEED:
 				sexp_set_training_context_speed(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 /*			// debugging operators
 			case OP_INT3:
 				Int3();
-				sexp_val = 0;
+				sexp_val = SEXP_FALSE;
 				break;
 */
 
@@ -14853,12 +14845,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				return eval_num(cur_node);
 
 			case OP_NOP:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_BEAM_FIRE:
 				sexp_beam_fire(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_IS_TAGGED:
@@ -14878,107 +14870,107 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_BEAM_FREE:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_beam_free(node);
 				break;
 
 			case OP_BEAM_FREE_ALL:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_beam_free_all(node);
 				break;
 
 			case OP_BEAM_LOCK:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_beam_lock(node);
 				break;
 
 			case OP_BEAM_LOCK_ALL:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_beam_lock_all(node);
 				break;
 
 			case OP_TURRET_FREE:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_turret_free(node);
 				break;
 
 			case OP_TURRET_FREE_ALL:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_turret_free_all(node);
 				break;
 
 			case OP_TURRET_LOCK:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_turret_lock(node);
 				break;
 
 			case OP_TURRET_LOCK_ALL:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_turret_lock_all(node);
 				break;
 
 			case OP_TURRET_CHANGE_WEAPON:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_turret_change_weapon(node);
 				break;
 
 			case OP_TURRET_SET_TARGET_ORDER:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_turret_set_target_order(node);
 				break;
 
 			case OP_SHIP_TURRET_TARGET_ORDER:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_ship_turret_target_order(node);
 				break;
 
 			case OP_ADD_REMOVE_ESCORT:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_add_remove_escort(node);
 				break;
 			
 			case OP_DAMAGED_ESCORT_LIST:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_damage_escort_list(node);
 				break;
 
 			case OP_DAMAGED_ESCORT_LIST_ALL:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_damage_escort_list_all(node);
 				break;
 
 			case OP_AWACS_SET_RADIUS:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_awacs_set_radius(node);
 				break;
 
 			case OP_PRIMITIVE_SENSORS_SET_RANGE:
 				sexp_primitive_sensors_set_range(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CAP_WAYPOINT_SPEED:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_cap_waypoint_speed(node);
 				break;
 
 			case OP_TURRET_TAGGED_ONLY_ALL:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_turret_tagged_only_all(node);
 				break;
 
 			case OP_TURRET_TAGGED_CLEAR_ALL:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_turret_tagged_clear_all(node);
 				break;
 
 			case OP_SUBSYS_SET_RANDOM:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_subsys_set_random(node);
 				break;
 
 			case OP_SUPERNOVA_START:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_supernova_start(node);
 				break;
 
@@ -15022,78 +15014,78 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_SET_SUPPORT_SHIP:
 				sexp_set_support_ship(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000
 			case OP_CHANGE_SHIP_MODEL:
 				sexp_change_ship_model(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000
 			case OP_CHANGE_SHIP_CLASS:
 				sexp_change_ship_class(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			//-Bobboau
 			case OP_ACTIVATE_GLOW_POINTS:
 			case OP_DEACTIVATE_GLOW_POINTS:
 				sexp_activate_deactivate_glow_points(node, op_num == OP_ACTIVATE_GLOW_POINTS);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			//-Bobboau
 			case OP_ACTIVATE_GLOW_MAPS:
 			case OP_DEACTIVATE_GLOW_MAPS:
 				sexp_activate_deactivate_glow_maps(node, op_num == OP_ACTIVATE_GLOW_MAPS);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			//-Bobboau
 			case OP_ACTIVATE_GLOW_POINT_BANK:
 			case OP_DEACTIVATE_GLOW_POINT_BANK:
 				sexp_activate_deactivate_glow_point_bank(node, op_num == OP_ACTIVATE_GLOW_POINT_BANK);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			// taylor
 			case OP_SET_SKYBOX_MODEL:
 				sexp_set_skybox_model(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TURRET_TAGGED_SPECIFIC:
 				sexp_turret_tagged_specific(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TURRET_TAGGED_CLEAR_SPECIFIC:
 				sexp_turret_tagged_clear_specific(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_LOCK_ROTATING_SUBSYSTEM:
 			case OP_FREE_ROTATING_SUBSYSTEM:
 				sexp_set_subsys_rotation_lock(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_REVERSE_ROTATING_SUBSYSTEM:
 				sexp_reverse_rotating_subsystem(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 				sexp_rotating_subsys_set_turn_time(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 				
 			// Karajorma
 			case OP_SET_SECONDARY_AMMO:
 				sexp_set_secondary_ammo(node);
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_NUM_SHIPS_IN_BATTLE:	// phreak
@@ -15117,141 +15109,141 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_NAV_ADD_WAYPOINT: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				add_nav_waypoint(node);
 				break;
 
 			case OP_NAV_ADD_SHIP: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				add_nav_ship(node);
 				break;
 
 			case OP_NAV_DEL: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				del_nav(node);
 				break;
 
 			case OP_NAV_HIDE: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				hide_nav(node);
 				break;
 
 			case OP_NAV_RESTRICT: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				restrict_nav(node);
 				break;
 
 			case OP_NAV_UNHIDE: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				unhide_nav(node);
 				break;
 
 			case OP_NAV_UNRESTRICT: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				unrestrict_nav(node);
 				break;
 
 			case OP_NAV_SET_VISITED: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				set_nav_visited(node);
 				break;
 
 			case OP_NAV_UNSET_VISITED: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				unset_nav_visited(node);
 				break;
 
 			case OP_NAV_SET_CARRY: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				set_nav_carry_status(node);
 				break;
 
 			case OP_NAV_UNSET_CARRY: //kazan
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				unset_nav_carry_status(node);
 				break;
 
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
 				sexp_scramble_messages(op_num == OP_SCRAMBLE_MESSAGES );
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CUTSCENES_SET_CUTSCENE_BARS:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_cutscene_bars(node);
 				break;
 			case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_unset_cutscene_bars(node);
 				break;
 			case OP_CUTSCENES_FADE_IN:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_fade_in(node);
 				break;
 			case OP_CUTSCENES_FADE_OUT:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_fade_out(node);
 				break;
 			case OP_CUTSCENES_SET_CAMERA_POSITION:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_camera_position(node);
 				break;
 			case OP_CUTSCENES_SET_CAMERA_FACING:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_camera_facing(node);
 				break;
 			case OP_CUTSCENES_SET_CAMERA_FACING_OBJECT:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_camera_facing_object(node);
 				break;
 			case OP_CUTSCENES_SET_CAMERA_ROTATION:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_camera_rotation(node);
 				break;
 			case OP_CUTSCENES_SET_FOV:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_fov(node);
 				break;
 			case OP_CUTSCENES_RESET_FOV:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_reset_fov();
 				break;
 			case OP_CUTSCENES_RESET_CAMERA:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_reset_camera();
 				break;
 			case OP_CUTSCENES_SHOW_SUBTITLE:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_show_subtitle(node);
 				break;
 			case OP_CUTSCENES_SET_TIME_COMPRESSION:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_time_compression(node);
 				break;
 			case OP_CUTSCENES_RESET_TIME_COMPRESSION:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_reset_time_compression();
 				break;
 			case OP_CUTSCENES_FORCE_PERSPECTIVE:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_force_perspective(node);
 				break;
 
 			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_jumpnode_color(node);
 				break;
 			case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_set_jumpnode_model(node);
 				break;
 			case OP_JUMP_NODE_SHOW_JUMPNODE:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_show_jumpnode(node);
 				break;
 			case OP_JUMP_NODE_HIDE_JUMPNODE:
-				sexp_val = 1;
+				sexp_val = SEXP_TRUE;
 				sexp_hide_jumpnode(node);
 				break;
 
@@ -15509,9 +15501,6 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
-		case OP_GET_OBJECT_RELATIVE_X:
-		case OP_GET_OBJECT_RELATIVE_Y:
-		case OP_GET_OBJECT_RELATIVE_Z:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
 			return OPR_NUMBER;
@@ -15590,6 +15579,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SCANNED:
 		case OP_SET_UNSCANNED:
 		case OP_KEY_RESET:
+		case OP_KEY_RESET_MULTIPLE:
 		case OP_TRAINING_MSG:
 		case OP_SET_TRAINING_CONTEXT_FLY_PATH:
 		case OP_SET_TRAINING_CONTEXT_SPEED:
@@ -16001,25 +15991,19 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
-			if (argnum==0)
+			if (argnum == 0)
 				return OPF_SHIP_WING_POINT;
-			else
+			else if (argnum == 1)
 				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
 
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
-			if (argnum==0)
+			if (argnum == 0)
 				return OPF_SHIP_WING_POINT;
-			else
-				return OPF_SUBSYSTEM;
-
-		case OP_GET_OBJECT_RELATIVE_X:
-		case OP_GET_OBJECT_RELATIVE_Y:
-		case OP_GET_OBJECT_RELATIVE_Z:
-			if (argnum==0)
-				return OPF_SHIP_WING_POINT;
-			else if (argnum==4)
+			else if (argnum == 1)
 				return OPF_SUBSYSTEM;
 			else
 				return OPF_NUMBER;
@@ -16031,7 +16015,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 
 		case OP_SET_SHIP_POSITION:
-			if (argnum==0)
+			if (argnum == 0)
 				return OPF_SHIP;
 			else
 				return OPF_NUMBER;
@@ -16429,6 +16413,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_KEY_RESET:
+		case OP_KEY_RESET_MULTIPLE:
 			return OPF_KEYPRESS;
 
 		case OP_EVENT_TRUE:
@@ -18192,86 +18177,71 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_AVG, "Average value (Arithmetic operator)\r\n"
 		"\tReturns the average (rounded to the nearest integer) of a set of numbers.  Takes 1 or more numeric arguments.\r\n" },
 
-	{OP_SET_OBJECT_SPEED_X, "set-object-speed-x\r\n"
-		"\tSets the X speed of a ship, wing, waypoint, or ship."
-		"Takes 2 arguments...\r\n"
+	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x\r\n"
+		"\tSets the X speed of a ship, wing, or waypoint."
+		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
-		"\t2: The speed to set." },
+		"\t2: The speed to set.\r\n"
+		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
 
-	{OP_SET_OBJECT_SPEED_Y, "set-object-speed-y\r\n"
-		"\tSets the Y speed of a ship, wing, waypoint, or ship."
-		"Takes 2 arguments...\r\n"
+	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y\r\n"
+		"\tSets the Y speed of a ship, wing, or waypoint."
+		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
-		"\t2: The speed to set." },
+		"\t2: The speed to set.\r\n"
+		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
 
-	{OP_SET_OBJECT_SPEED_Z, "set-object-speed-z\r\n"
-		"\tSets the Z speed of a ship, wing, waypoint, or ship."
-		"Takes 2 arguments...\r\n"
+	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z\r\n"
+		"\tSets the Z speed of a ship, wing, or waypoint."
+		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
-		"\t2: The speed to set." },
+		"\t2: The speed to set.\r\n"
+		"\t3: Whether the speed should be set subjectively; i.e. from the object's point of view (optional; defaults to false).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_X, "get-object-x\r\n"
-		"\tReturns the X position of a ship, wing, waypoint, or ship subsystem.  "
-		"Takes 1 or 2 arguments...\r\n"
+		"\tReturns the absolute X coordinate of a set of coordinates relative to a particular object (or object's "
+		"subsystem).  The input coordinates are the coordinates relative to the object's position and orientation.  "
+		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
+		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
 		"\t1: The name of a ship, wing, or waypoint.\r\n"
-		"\t2: A ship subsystem (optional; ignored if the first argument is not a ship)." },
+		"\t2: A ship subsystem (or \""SEXP_NONE_STRING"\" if the first argument is not a ship - optional).\r\n"
+		"\t3: The relative X coordinate (optional).\r\n"
+		"\t4: The relative Y coordinate (optional).\r\n"
+		"\t5: The relative Z coordinate (optional).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_Y, "get-object-y\r\n"
-		"\tReturns the Y position of a ship, wing, waypoint, or ship subsystem.  "
-		"Takes 1 or 2 arguments...\r\n"
-		"\t1: The name of a ship.\r\n"
-		"\t2: A ship subsystem (optional; ignored if the first argument is not a ship)." },
+		"\tReturns the absolute Y coordinate of a set of coordinates relative to a particular object (or object's "
+		"subsystem).  The input coordinates are the coordinates relative to the object's position and orientation.  "
+		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
+		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
+		"\t1: The name of a ship, wing, or waypoint.\r\n"
+		"\t2: A ship subsystem (or \""SEXP_NONE_STRING"\" if the first argument is not a ship - optional).\r\n"
+		"\t3: The relative X coordinate (optional).\r\n"
+		"\t4: The relative Y coordinate (optional).\r\n"
+		"\t5: The relative Z coordinate (optional).\r\n" },
 
 	// Goober5000
 	{ OP_GET_OBJECT_Z, "get-object-z\r\n"
-		"\tReturns the Z position of a ship, wing, waypoint, or ship subsystem.  "
-		"Takes 1 or 2 arguments...\r\n"
-		"\t1: The name of a ship.\r\n"
-		"\t2: A ship subsystem (optional; ignored if the first argument is not a ship)." },
-
-	// Goober5000
-	{ OP_GET_OBJECT_RELATIVE_X, "get-object-relative-x\r\n"
-		"\tReturns the absolute X coordinate of a set of coordinates relative to a particular object.  "
-		"In other words, the input coordinates are the coordinates relative to the object's position and orientation.  "
-		"The coordinate returned is the absolute spatial coordinate.  Takes 4 or 5 arguments...\r\n"
+		"\tReturns the absolute Z coordinate of a set of coordinates relative to a particular object (or object's "
+		"subsystem).  The input coordinates are the coordinates relative to the object's position and orientation.  "
+		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
+		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
 		"\t1: The name of a ship, wing, or waypoint.\r\n"
-		"\t2: The relative X coordinate.\r\n"
-		"\t3: The relative Y coordinate.\r\n"
-		"\t4: The relative Z coordinate.\r\n"
-		"\t5: The name of a ship subsystem (optional)." },
+		"\t2: A ship subsystem (or \""SEXP_NONE_STRING"\" if the first argument is not a ship - optional).\r\n"
+		"\t3: The relative X coordinate (optional).\r\n"
+		"\t4: The relative Y coordinate (optional).\r\n"
+		"\t5: The relative Z coordinate (optional).\r\n" },
 
-	// Goober5000
-	{ OP_GET_OBJECT_RELATIVE_Y, "get-object-relative-y\r\n"
-		"\tReturns the absolute Y coordinate of a set of coordinates relative to a particular object.  "
-		"In other words, the input coordinates are the coordinates relative to the object's position and orientation.  "
-		"The coordinate returned is the absolute spatial coordinate.  Takes 4 or 5 arguments...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n"
-		"\t2: The relative X coordinate.\r\n"
-		"\t3: The relative Y coordinate.\r\n"
-		"\t4: The relative Z coordinate.\r\n"
-		"\t5: The name of a ship subsystem (optional)." },
-
-	// Goober5000
-	{ OP_GET_OBJECT_RELATIVE_Z, "get-object-relative-z\r\n"
-		"\tReturns the absolute Z coordinate of a set of coordinates relative to a particular object.  "
-		"In other words, the input coordinates are the coordinates relative to the object's position and orientation.  "
-		"The coordinate returned is the absolute spatial coordinate.  Takes 4 or 5 arguments...\r\n"
-		"\t1: The name of a ship, wing, or waypoint.\r\n"
-		"\t2: The relative X coordinate.\r\n"
-		"\t3: The relative Y coordinate.\r\n"
-		"\t4: The relative Z coordinate.\r\n"
-		"\t5: The name of a ship subsystem (optional)." },
-
-	// Goober5000
+		// Goober5000
 	{ OP_SET_SHIP_POSITION, "set-ship-position\r\n"
 		"\tInstantaneously sets a ship's spatial coordinates."
 		"Takes 4 arguments...\r\n"
 		"\t1: The name of a ship.\r\n"
-		"\t2: The desired new X coordinate.\r\n"
-		"\t3: The desired new Y coordinate.\r\n"
-		"\t4: The desired new Z coordinate." },
+		"\t2: The new X coordinate.\r\n"
+		"\t3: The new Y coordinate.\r\n"
+		"\t4: The new Z coordinate." },
 
 	{ OP_TRUE, "True (Boolean operator)\r\n"
 		"\tA true boolean state\r\n\r\n"
@@ -19058,8 +19028,19 @@ sexp_help_struct Sexp_help[] = {
 		"\tMarks the specified default key as having not been pressed, so key-pressed will be false "
 		"until the player presses it again.  See key-pressed help for more information about "
 		"what a default key is.\r\n\r\n"
-		"Returns a boolean value.  Takes 1 argument...\r\n"
-		"\t1:\tDefault key to reset." },
+		"\tNote that this sexp will not work properly in repeating events.  Use key-reset-multiple "
+		"if this is to be called multiple times in one event.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tDefault key to reset." },
+
+	// Goober5000
+	{ OP_KEY_RESET_MULTIPLE, "Key-reset-multiple (Training operator)\r\n"
+		"\tMarks the specified default key as having not been pressed, so key-pressed will be false "
+		"until the player presses it again.  See key-pressed help for more information about "
+		"what a default key is.\r\n\r\n"
+		"\tThis sexp, unlike key-reset, will work properly if called multiple times in one event.\r\n\r\n"
+		"Returns a boolean value.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tDefault key to reset." },
 
 	{ OP_TARGETED, "Targeted (Boolean training operator)\r\n"
 		"\tIs true as long as the player has the specified ship (or ship's subsystem) targeted, "
