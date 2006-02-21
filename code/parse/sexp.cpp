@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.217 $
- * $Date: 2006-02-20 20:53:11 $
- * $Author: karajorma $
+ * $Revision: 2.218 $
+ * $Date: 2006-02-21 07:58:01 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.217  2006/02/20 20:53:11  karajorma
+ * Added the num-ships-in-wing, get-secondary-ammo and set-secondary-ammo SEXPs
+ *
  * Revision 2.216  2006/02/20 07:30:14  taylor
  * updated to newest dynamic starfield code
  *  - this mainly is to just better support SEXP based starfield bitmap changes (preloading, better in-mission stuff loading)
@@ -4055,34 +4058,40 @@ int sexp_or(int n)
 
 	all_false = 1;
 	result = 0;
-	if (n != -1) {
-		if (Sexp_nodes[n].first != -1) {
-			result |= eval_sexp(Sexp_nodes[n].first);
-			if ( Sexp_nodes[Sexp_nodes[n].first].value == SEXP_KNOWN_TRUE )
-				return SEXP_KNOWN_TRUE;															// if one of the OR clauses is TRUE, whole clause is true
-			if ( Sexp_nodes[Sexp_nodes[n].first].value != SEXP_KNOWN_FALSE )		// if the value is still unknown, they all can't be false
+	if (n != -1)
+	{
+		if (CAR(n) != -1)
+		{
+			result |= is_sexp_true(CAR(n));
+			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE )
+				return SEXP_KNOWN_TRUE;								// if one of the OR clauses is TRUE, whole clause is true
+			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_FALSE )		// if the value is still unknown, they all can't be false
 				all_false = 0;
-		} else
+		}
+		else
 			result |= atoi(CTEXT(n));
 
 		// don't return on true value -- keep evaluating for mission log purposes
 		//if ( result )
 		//	return result;
 
-		while (Sexp_nodes[n].rest != -1) {
-			result |= eval_sexp(Sexp_nodes[n].rest);
-			if ( Sexp_nodes[Sexp_nodes[n].rest].value == SEXP_KNOWN_TRUE )
-				return SEXP_KNOWN_TRUE;															// if one of the OR clauses is TRUE, whole clause is true
-			if ( Sexp_nodes[Sexp_nodes[n].rest].value != SEXP_KNOWN_FALSE )		// if the value is still unknown, they all can't be false
+		while (CDR(n) != -1)
+		{
+			result |= is_sexp_true(CDR(n));
+			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_TRUE )
+				return SEXP_KNOWN_TRUE;								// if one of the OR clauses is TRUE, whole clause is true
+			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_FALSE )		// if the value is still unknown, they all can't be false
 				all_false = 0;
-			n = Sexp_nodes[n].rest;
+
 			// don't return on true value -- keep evaluating for mission log purposes
 			//if ( result )
 			//	return result;
+
+			n = CDR(n);
 		}
 	}
 
-	if ( all_false )
+	if (all_false)
 		return SEXP_KNOWN_FALSE;
 
 	return result;
@@ -4097,38 +4106,43 @@ int sexp_and(int n)
 
 	result = -1;
 	all_true = 1;
-	if (n != -1) {
-		if (Sexp_nodes[n].first != -1) {
-			result &= eval_sexp( CAR(n) );
-			if ( Sexp_nodes[Sexp_nodes[n].first].value == SEXP_KNOWN_FALSE )
-				return SEXP_KNOWN_FALSE;														// if one of the AND clauses is FALSE, whole clause is false
-			if ( Sexp_nodes[Sexp_nodes[n].first].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
+	if (n != -1)
+	{
+		if (CAR(n) != -1)
+		{
+			result &= is_sexp_true(CAR(n));
+			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE )
+				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
+			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
 				all_true = 0;
-		} else
+		}
+		else
 			result &= atoi(CTEXT(n));
 
 		// don't short circuit -- evaluate everything for purposes of marking mission log
 		//if ( !result )
 		//	return result;
 
-		while (Sexp_nodes[n].rest != -1) {
+		while (CDR(n) != -1)
+		{
 			int new_result;
 
-			new_result = eval_sexp( CDR(n) );
+			new_result = is_sexp_true(CDR(n));
 			result &= new_result;
-			if ( Sexp_nodes[Sexp_nodes[n].rest].value == SEXP_KNOWN_FALSE )
-				return SEXP_KNOWN_FALSE;															// if one of the OR clauses is TRUE, whole clause is true
-			if ( Sexp_nodes[Sexp_nodes[n].rest].value != SEXP_KNOWN_TRUE )				// if the value is still unknown, they all can't be false
+			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE )
+				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
+			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
 				all_true = 0;
+
 			// don't short circuit -- evaluate everything for purposes of marking mission log
 			//if ( !result )
 				//return result;
 
-			n = Sexp_nodes[n].rest;
+			n = CDR(n);
 		}
 	}
 
-	if ( all_true )
+	if (all_true)
 		return SEXP_KNOWN_TRUE;
 
 	return result;
@@ -4143,14 +4157,17 @@ int sexp_and_in_sequence(int n)
 	int all_true;
 
 	all_true = 1;											// represents whether or not all nodes we have seen so far are true
-	if (n != -1) {
-		if (Sexp_nodes[n].first != -1) {
-			result &= eval_sexp( CAR(n) );
-			if ( Sexp_nodes[Sexp_nodes[n].first].value == SEXP_KNOWN_FALSE )
+	if (n != -1)
+	{
+		if (CAR(n) != -1)
+		{
+			result &= is_sexp_true(CAR(n));
+			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE )
 				return SEXP_KNOWN_FALSE;														// if one of the AND clauses is FALSE, whole clause is false
-			if ( Sexp_nodes[Sexp_nodes[n].first].value != SEXP_KNOWN_TRUE )		// if value is true, mark our all_true variable for later checking
+			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_TRUE )		// if value is true, mark our all_true variable for later checking
 				all_true = 0;
-		} else
+		}
+		else
 			result &= atoi(CTEXT(n));
 
 		// a little test -- if the previous sexpressions was true, then mark the node itself as always
@@ -4158,23 +4175,26 @@ int sexp_and_in_sequence(int n)
 		// the second evalation, it might become false, rendering this function false.  So, when one becomes
 		// true -- mark it true forever.
 		if ( result )
-			Sexp_nodes[Sexp_nodes[n].first].value = SEXP_KNOWN_TRUE;
+			Sexp_nodes[CAR(n)].value = SEXP_KNOWN_TRUE;
 
-		while (Sexp_nodes[n].rest != -1) {
+		while (CDR(n) != -1)
+		{
 			int next_result;
 
-			next_result = eval_sexp( CDR(n) );
+			next_result = is_sexp_true(CDR(n));
 			if ( next_result && !result )				// if current result is true, and our running result is false, thngs didn't become true in order
 				return SEXP_KNOWN_FALSE;
 			result &= next_result;
-			if ( Sexp_nodes[Sexp_nodes[n].rest].value == SEXP_KNOWN_FALSE )
+			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE )
 				return SEXP_KNOWN_FALSE;															// if one of the OR clauses is TRUE, whole clause is true
-			if ( Sexp_nodes[Sexp_nodes[n].rest].value != SEXP_KNOWN_TRUE )				// if the value is still unknown, they all can't be false
+			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )				// if the value is still unknown, they all can't be false
 				all_true = 0;
+
 			// see comment above for explanation of next lines
 			if ( result )
-				Sexp_nodes[Sexp_nodes[n].rest].value = SEXP_KNOWN_TRUE;
-			n = Sexp_nodes[n].rest;
+				Sexp_nodes[CDR(n)].value = SEXP_KNOWN_TRUE;
+
+			n = CDR(n);
 		}
 	}
 
@@ -4192,18 +4212,21 @@ int sexp_not( int n )
 {
 	int result = 0;
 
-	if (n != -1) {
-		if (Sexp_nodes[n].first != -1) {
-			result = eval_sexp( CAR(n) );
+	if (n != -1)
+	{
+		if (CAR(n) != -1)
+		{
+			result = is_sexp_true(CAR(n));
 			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE )
 				return SEXP_KNOWN_TRUE;												// not KNOWN_FALSE == KNOWN_TRUE;
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE )		// not KNOWN_TRUE == KNOWN_FALSE
 				return SEXP_KNOWN_FALSE;
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )				// not NAN == TRUE (I think)
-				return 1;
+				return SEXP_TRUE;
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
-				return 1;
-		} else
+				return SEXP_TRUE;
+		}
+		else
 			result = atoi(CTEXT(n));
 	}
 
@@ -4457,7 +4480,7 @@ int sexp_is_destroyed(int n, fix *latest_time)
 		if ( mission_log_get_time (LOG_SHIP_DEPART, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPART, name, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
 
-		// check the mission log.  If ship/wing not destroyed, immediately return 0.
+		// check the mission log.  If ship/wing not destroyed, immediately return SEXP_FALSE.
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_SELF_DESTRUCT, name, NULL, &time)) {
 			num_destroyed++;
 			if ( latest_time && (time > *latest_time) )
@@ -4484,7 +4507,7 @@ int sexp_is_destroyed(int n, fix *latest_time)
 	if ( count == num_destroyed )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 
@@ -4508,7 +4531,7 @@ int sexp_is_subsystem_destroyed(int n)
 	if ( mission_log_get_time(LOG_SHIP_SUBSYS_DESTROYED, ship_name, subsys_name, NULL) )
 		return SEXP_KNOWN_TRUE;
 
-	return 0;
+	return SEXP_FALSE;
 
 }
 
@@ -4530,7 +4553,7 @@ int sexp_has_docked(int n)
 		return SEXP_KNOWN_FALSE;
 
 	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCK, docker, dockee, count, NULL) )
-		return 0;
+		return SEXP_FALSE;
 
 	return SEXP_KNOWN_TRUE;
 }
@@ -4554,7 +4577,7 @@ int sexp_has_undocked(int n)
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
 		else
-			return 0;
+			return SEXP_FALSE;
 	}
 
 	return SEXP_KNOWN_TRUE;
@@ -4584,7 +4607,7 @@ int sexp_has_arrived(int n, fix *latest_time)
 	if ( count == num_arrived )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 // determines if a ship/wing has departed
@@ -4618,7 +4641,7 @@ int sexp_has_departed(int n, fix *latest_time)
 	if ( count == num_departed )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 // determines if ships are disabled
@@ -4652,7 +4675,7 @@ int sexp_is_disabled( int n, fix *latest_time )
 	if ( count == num_disabled )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 // function to determine if a ship is done flying waypoints
@@ -4676,7 +4699,7 @@ int sexp_are_waypoints_done( int n )
 	if ( mission_log_get_time(LOG_WAYPOINTS_DONE, ship_name, waypoint_name, NULL) )
 		return SEXP_KNOWN_TRUE;
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 
@@ -4711,7 +4734,7 @@ int sexp_is_disarmed( int n, fix *latest_time )
 	if ( count == num_disarmed )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 // the following functions are similar to the above objective functions but return true/false
@@ -4741,7 +4764,7 @@ int sexp_is_destroyed_delay(int n)
 			return SEXP_KNOWN_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_is_subsystem_destroyed_delay( int n )
@@ -4767,7 +4790,7 @@ int sexp_is_subsystem_destroyed_delay( int n )
 			return SEXP_KNOWN_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_is_disabled_delay( int n )
@@ -4793,7 +4816,7 @@ int sexp_is_disabled_delay( int n )
 			return SEXP_KNOWN_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_is_disarmed_delay( int n )
@@ -4819,7 +4842,7 @@ int sexp_is_disarmed_delay( int n )
 			return SEXP_KNOWN_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_has_docked_delay( int n )
@@ -4841,12 +4864,12 @@ int sexp_has_docked_delay( int n )
 		return SEXP_CANT_EVAL;
 
 	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCK, docker, dockee, count, &time) )
-		return 0;
+		return SEXP_FALSE;
 
 	if ( (Missiontime - time) >= delay )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 int sexp_has_undocked_delay( int n )
@@ -4869,13 +4892,13 @@ int sexp_has_undocked_delay( int n )
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
 		else
-			return 0;
+			return SEXP_FALSE;
 	}
 
 	if ( (Missiontime - time) >= delay )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 int sexp_has_arrived_delay( int n )
@@ -4901,7 +4924,7 @@ int sexp_has_arrived_delay( int n )
 			return SEXP_KNOWN_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_has_departed_delay( int n )
@@ -4928,7 +4951,7 @@ int sexp_has_departed_delay( int n )
 			return SEXP_KNOWN_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // function to determine if a ship is done flying waypoints after N seconds
@@ -4961,7 +4984,7 @@ int sexp_are_waypoints_done_delay( int n )
 			return SEXP_KNOWN_FALSE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // function to determine is all of a given ship type are destroyed
@@ -4979,18 +5002,18 @@ int sexp_ship_type_destroyed( int n )
 	// bogus if we reach the end of this array!!!!
 	if ( type < 0 ) {
 		Warning(LOCATION, "Invalid shiptype passed to ship-type-destroyed");
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	if ( type >= Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
-		return 0;
+		return SEXP_FALSE;
 
 	//We are safe from array indexing probs b/c of previous if.
 	// determine if the percentage of killed/total is >= percentage given in the expression
 	if ( (Ship_type_counts[type].killed * 100 / Ship_type_counts[type].total) >= percent)
 		return SEXP_KNOWN_TRUE;
 	
-	return 0;
+	return SEXP_FALSE;
 }
 
 
@@ -5002,7 +5025,7 @@ int sexp_has_time_elapsed(int n)
 	if ( f2i(Missiontime) >= time )
 		return SEXP_KNOWN_TRUE;
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // next function returns the time into the mission
@@ -6374,8 +6397,8 @@ int sexp_last_order_time( int n )
 			aigp = Ai_info[Ships[instance].ai_index].goals;
 		} else {
 			instance = wing_name_lookup(name);
-			if ( instance == -1 )						// if we cannot find ship or wing, return 0
-				return 0;
+			if ( instance == -1 )						// if we cannot find ship or wing, return SEXP_FALSE
+				return SEXP_FALSE;
 			aigp = Wings[instance].ai_goals;
 		}
 
@@ -6391,12 +6414,12 @@ int sexp_last_order_time( int n )
 			aigp++;
 		}
 		if ( i == MAX_AI_GOALS )
-			return 1;
+			return SEXP_TRUE;
 
 		n = CDR(n);
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // sexpression to return the number of players in the mission
@@ -6424,28 +6447,28 @@ int sexp_skill_level_at_least( int n )
 	level_name = CTEXT(n);
 
 	if (level_name == NULL)
-		return 0;
+		return SEXP_FALSE;
 
 	for (i = 0; i < NUM_SKILL_LEVELS; i++ ) {
 		if ( !stricmp(level_name, Skill_level_names(i, 0)) ) {
 			if ( Game_skill_level >= i ){
-				return 1;
+				return SEXP_TRUE;
 			} else {
-				return 0;
+				return SEXP_FALSE;
 			}
 		}
 	}
 
-	// return 0 if not found!!!
-	return 0;
+	// return SEXP_FALSE if not found!!!
+	return SEXP_FALSE;
 }
 
 int sexp_was_promotion_granted(int n)
 {
 	if (Player->flags & PLAYER_FLAGS_PROMOTED)
-		return 1;
+		return SEXP_TRUE;
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_was_medal_granted(int n)
@@ -6455,15 +6478,15 @@ int sexp_was_medal_granted(int n)
 
 	if (n < 0) {
 		if (Player->stats.m_medal_earned >= 0)
-			return 1;
+			return SEXP_TRUE;
 
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	medal_name = CTEXT(n);
 
 	if (medal_name == NULL)
-		return 0;
+		return SEXP_FALSE;
 
 	for (i=0; i<Num_medals; i++) {
 		if (!stricmp(medal_name, Medals[i].name))
@@ -6471,9 +6494,9 @@ int sexp_was_medal_granted(int n)
 	}
 
 	if ( (i < Num_medals) && (Player->stats.m_medal_earned == i) )
-		return 1;
+		return SEXP_TRUE;
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // function which returns true if the percentage of ships (and ships in wings) departed is at
@@ -6576,7 +6599,7 @@ int sexp_depart_node_delay( int n )
 	if ( (count == num_departed) && ((Missiontime - latest_time) >= delay) )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 // sexpression which returns true when the listed ships/wings have all been destroyed or
@@ -6630,7 +6653,7 @@ int sexp_destroyed_departed_delay( int n )
 	if ( (count == total) && (Missiontime > (latest_time + delay)) )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 int sexp_special_warpout_name( int node )
@@ -6661,7 +6684,7 @@ int sexp_special_warpout_name( int node )
 
 	// set special warpout objnum
 	Ships[shipnum].special_warp_objnum = knossos_num;
-	return 0;
+	return SEXP_FALSE;
 }
 
 // function which determines if N seconds have elapsed since all discovery of all cargo
@@ -7049,7 +7072,7 @@ int sexp_has_been_tagged_delay(int n)
 	if ( count == num_known )
 		return SEXP_KNOWN_TRUE;
 	else
-		return 0;
+		return SEXP_FALSE;
 }
 
 // return object index of waypoint or -1 if no such waypoint
@@ -7159,7 +7182,7 @@ int eval_when(int n, int use_arguments)
 	}
 
 	// if value is true, perform the actions in the 'then' part
-	if (val)
+	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
 	{
 		// loop through every action
 		while (actions != -1)
@@ -7200,22 +7223,25 @@ int eval_when(int n, int use_arguments)
 // eval_cond() evaluates the cond conditional
 int eval_cond( int n )
 {
-	int cond = 0, node, val = 0;
+	int cond = 0, node, val = SEXP_FALSE;
 
 	Assert (n >= 0);
-	while (n >= 0) {
+	while (n >= 0)
+	{
 		node = CAR(n);
 		cond = CAR(node);
 		val = eval_sexp(cond);
 
 		// if the conditional evaluated to true, then we must evaluate the rest of the expression returning
 		// the value of this evaluation
-		if (val) {
+		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		{
 			int actions, exp;
 
-			val = 0;
+			val = SEXP_FALSE;
 			actions = CDR(node);
-			while (actions >= 0) {
+			while (actions >= 0)
+			{
 				exp = CAR(actions);
 				if (exp >= -1)
 					val = eval_sexp(exp);								// these sexp evaled only for side effects
@@ -7257,7 +7283,7 @@ int test_argument_list_for_condition(int n, int condition_node)
 			val = eval_sexp(condition_node);
 
 			// true?
-			if (val)
+			if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
 			{
 				num_true++;
 				Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
@@ -7379,7 +7405,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 		val = eval_sexp(condition_node);
 
 		// true?
-		if (val)
+		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
 		}
@@ -8707,14 +8733,7 @@ void sexp_repair_subsystem( int n )
 	subsystem = CTEXT(CDR(n));
 	shipnum = ship_name_lookup(shipname);
 	
-	if (CDDDR(n) == -1)
-	{
-		do_submodel_repair = 1;
-	}
-	else
-	{
-		do_submodel_repair = eval_sexp(CADDDR(n));
-	}
+	do_submodel_repair = is_sexp_true(CDDDR(n));
 	
 	// if no ship, then return immediately.
 	if ( shipnum == -1 ) {
@@ -8722,12 +8741,8 @@ void sexp_repair_subsystem( int n )
 	}
 	shipp = &Ships[shipnum];
 	
-	// check if we've got a number or an op
-	if ( CAR(CDR(CDR(n))) != -1) {
-		percentage = eval_sexp( CAR(CDR(CDR(n))) );
-	} else {
-		percentage = eval_num(CDR(CDR(n)));
-	}
+	// get percentage
+	percentage = eval_num(CDR(CDR(n)));
 
 	// see if we are dealing with the HULL
 	if ( !stricmp( subsystem, SEXP_HULL_STRING) ) {
@@ -8781,14 +8796,7 @@ void sexp_set_subsystem_strength( int n )
 	subsystem = CTEXT(CDR(n));
 	percentage = eval_num(CDR(CDR(n)));
 
-	if (CDDDR(n) == -1)
-	{
-		do_submodel_repair = 1;
-	}
-	else
-	{
-		do_submodel_repair = eval_sexp(CADDDR(n));
-	}
+	do_submodel_repair = is_sexp_true(CDDDR(n));
 
 	shipnum = ship_name_lookup(shipname);
 	
@@ -9355,7 +9363,7 @@ void sexp_add_background_bitmap(int n)
 
 void sexp_remove_background_bitmap(int n)
 {
-	int slot = eval_sexp(n);
+	int slot = eval_num(n);
 
 	if (slot >= 0) {
 		stars_mark_bitmap_unused( slot );
@@ -9440,7 +9448,7 @@ void sexp_add_sun_bitmap(int n)
 
 void sexp_remove_sun_bitmap(int n)
 {
-	int slot = eval_sexp(n);
+	int slot = eval_num(n);
 
 	if (slot >= 0) {
 		stars_mark_sun_unused( slot );
@@ -9457,7 +9465,7 @@ void sexp_nebula_change_storm(int n)
 void sexp_nebula_toggle_poof(int n)
 {
 	char *name = CTEXT(n);
-	int result = eval_sexp(CAR(CDR(n)));
+	int result = is_sexp_true(CDR(n));
 	int i;
 
 	if (name == NULL) return;
@@ -9836,7 +9844,7 @@ int sexp_previous_goal_status( int n, int status )
 	// check for possible next optional argument
 	n = CDR(CDR(n));
 	if ( n != -1 ) {
-		default_value = eval_sexp(n);
+		default_value = is_sexp_true(n);
 	}
 
 	// try to find the given mission name in the current list of missions in the campaign.
@@ -9915,7 +9923,7 @@ int sexp_previous_event_status( int n, int status )
 	// check for possible optional parameter
 	n = CDR(CDR(n));
 	if ( n != -1 ){
-		default_value = eval_sexp(n);
+		default_value = is_sexp_true(n);
 	}
 
 	if ( Game_mode & GM_CAMPAIGN_MODE ) {
@@ -9989,7 +9997,7 @@ int sexp_event_status( int n, int want_true )
 
 	if (name == NULL) {
 		Int3();
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	for (i = 0; i < Num_mission_events; i++ ) {
@@ -10011,7 +10019,7 @@ int sexp_event_status( int n, int want_true )
 		}
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // function to return the status of an event N seconds after the event is true or false.  Similar
@@ -10026,7 +10034,7 @@ int sexp_event_delay_status( int n, int want_true )
 
 	if (name == NULL) {
 		Int3();
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	delay = i2f(eval_num(CDR(n)));
@@ -10052,7 +10060,7 @@ int sexp_event_delay_status( int n, int want_true )
 		}
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // function which returns true if the given event is still incomplete
@@ -10065,7 +10073,7 @@ int sexp_event_incomplete( int n )
 
 	if (name == NULL) {
 		Int3();
-		return 0;
+		return SEXP_FALSE;
 	}
 	
 	for (i = 0; i < Num_mission_events; i++ ) {
@@ -10079,7 +10087,7 @@ int sexp_event_incomplete( int n )
 		}
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // function to return the status of an goal N seconds after the goal is true or false.  Similar
@@ -10110,7 +10118,7 @@ int sexp_goal_delay_status( int n, int want_true )
 		}
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // function which returns true if the given goal is still incomplete
@@ -10792,15 +10800,15 @@ int sexp_key_pressed(int node)
 	Assert(node != -1);
 	z = translate_key_to_index(CTEXT(node));
 	if (z < 0){
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	if (!Control_config[z].used){
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	if (CDR(node) < 0){
-		return 1;
+		return SEXP_TRUE;
 	}
 
 	t = eval_num(CDR(node));
@@ -10831,24 +10839,24 @@ int sexp_targeted(int node)
 
 	z = ship_name_lookup(CTEXT(node), 1);
 	if ((z < 0) || !Player_ai || (Ships[z].objnum != Player_ai->target_objnum)){
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	if (CDR(node) >= 0) {
 		z = eval_num(CDR(node)) * 1000;
 		if (!timestamp_has_time_elapsed(Players_target_timestamp, z)){
-			return 0;
+			return SEXP_FALSE;
 		}
 
 		if (CDR(CDR(node)) >= 0) {
 			ptr = Player_ai->targeted_subsys;
 			if (!ptr || subsystem_stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
-				return 0;
+				return SEXP_FALSE;
 			}
 		}
 	}
 
-	return 1;
+	return SEXP_TRUE;
 }
 
 int sexp_speed(int node)
@@ -10861,7 +10869,7 @@ int sexp_speed(int node)
 		}
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // Goober5000
@@ -10873,17 +10881,17 @@ int sexp_primaries_depleted(int node)
 	// get ship
 	sindex = ship_name_lookup(CTEXT(node));
 	if (sindex < 0) {
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	shipp = &Ships[sindex];
 	if (shipp->objnum < 0) {
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	// see if ship has ballistic primary weapons   
 	if (!(Ship_info[shipp->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES))   
-		return 0; 
+		return SEXP_FALSE; 
 
 	// get num primary banks
 	num_banks = shipp->weapons.num_primary_banks;
@@ -10915,12 +10923,12 @@ int sexp_secondaries_depleted(int node)
 	// get ship
 	sindex = ship_name_lookup(CTEXT(node));
 	if (sindex < 0) {
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	shipp = &Ships[sindex];
 	if (shipp->objnum < 0) {
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	// get num secondary banks
@@ -10950,7 +10958,7 @@ int sexp_facing(int node)
 
 	sh = ship_name_lookup(CTEXT(node));
 	if ((sh < 0) || !Player_obj){
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	obj = Ships[sh].objnum;
@@ -10961,10 +10969,10 @@ int sexp_facing(int node)
 	a1 = vm_vec_dotprod(&v1, &v2);
 	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
 	if (a1 >= a2){
-		return 1;
+		return SEXP_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // is ship facing first waypoint in waypoint path
@@ -11006,10 +11014,10 @@ int sexp_facing2(int node)
 	a1 = vm_vec_dotprod(&v1, &v2);
 	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
 	if (a1 >= a2){
-		return 1;
+		return SEXP_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 // implemented by Goober5000
@@ -11029,33 +11037,33 @@ int sexp_waypoint_missed()
 {
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
 		if (Training_context_at_waypoint > Training_context_goal_waypoint){
-			return 1;
+			return SEXP_TRUE;
 		}
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_waypoint_twice()
 {
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
 		if (Training_context_at_waypoint < Training_context_goal_waypoint - 1){
-			return 1;
+			return SEXP_TRUE;
 		}
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_path_flown()
 {
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
 		if (Training_context_goal_waypoint == Waypoint_lists[Training_context_path].count){
-			return 1;
+			return SEXP_TRUE;
 		}
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 void sexp_send_training_message(int node)
@@ -11148,18 +11156,18 @@ int sexp_shield_quad_low(int node)
 	// get the ship
 	sindex = ship_name_lookup(CTEXT(node));
 	if(sindex < 0){
-		return 0;
+		return SEXP_FALSE;
 	}
 	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
-		return 0;
+		return SEXP_FALSE;
 	}
 	if((Ships[sindex].ship_info_index < 0) || (Ships[sindex].ship_info_index >= Num_ship_classes)){
-		return 0;
+		return SEXP_FALSE;
 	}
 	objp = &Objects[Ships[sindex].objnum];
 	sip = &Ship_info[Ships[sindex].ship_info_index];
 	if(!(sip->flags & SIF_SMALL_SHIP)){
-		return 0;
+		return SEXP_FALSE;
 	}
 	max_quad = get_max_shield_quad(objp);	
 
@@ -11169,12 +11177,12 @@ int sexp_shield_quad_low(int node)
 	// check his quadrants
 	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
 		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
-			return 1;
+			return SEXP_TRUE;
 		}
 	}
 
 	// all good
-	return 0;	
+	return SEXP_FALSE;	
 }
 
 // Goober5000
@@ -12790,20 +12798,20 @@ int sexp_is_tagged(int node)
 	// get the firing ship
 	sindex = ship_name_lookup(CTEXT(node));
 	if(sindex < 0){
-		return 0;
+		return SEXP_FALSE;
 	}
 	if(Ships[sindex].objnum < 0){
-		return 0;
+		return SEXP_FALSE;
 	}
 	object *caller = &Objects[Ships[sindex].objnum];
 	if(ship_is_tagged(caller)) { // This line and the one above were added.
 	// if(Ships[sindex].tag_left> 0.0f) The broken code. Changed by EdrickV@HLP
 
-		return 1;
+		return SEXP_TRUE;
 	}
 
 	// not tagged
-	return 0;
+	return SEXP_FALSE;
 }
 
 // Joint effort of Sesquipedalian and Goober5000.  Sesq found the code, mucked around making
@@ -12817,29 +12825,29 @@ int sexp_missile_locked(int node)
 
 	// if we aren't targeting anything, it's false
 	if ((Players_target == -1) || (Players_target == UNINITIALIZED))
-		return 0;
+		return SEXP_FALSE;
 
 	// if we aren't locked on to anything, it's false
 	if (!Players_mlocked)
-		return 0;
+		return SEXP_FALSE;
 
 	// do we have a specific ship?
 	if (CDR(node) != -1)
 	{
 		// if we're not targeting the specific ship, it's false
 		if (stricmp(Ships[Objects[Players_target].instance].ship_name, CTEXT(CDR(node))))
-			return 0;
+			return SEXP_FALSE;
 
 		// do we have a specific subsystem?
 		if (CDR(CDR(node)) != -1)
 		{
 			// if we aren't targeting a subsystem at all, it's false
 			if (!Player_ai->targeted_subsys)
-				return 0;
+				return SEXP_FALSE;
 
 			// if we're not targeting the specific subsystem, it's false
 			if (subsystem_stricmp(Player_ai->targeted_subsys->system_info->name, CTEXT(CDR(CDR(node)))))
-				return 0;
+				return SEXP_FALSE;
 		}
 	}
 
@@ -12848,10 +12856,10 @@ int sexp_missile_locked(int node)
 	z = eval_num(node) * 1000;
 	if (timestamp_has_time_elapsed(Players_mlocked_timestamp, z))
 	{
-		return 1;
+		return SEXP_TRUE;
 	}
 
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_num_kills(int node)
@@ -13073,26 +13081,26 @@ int sexp_is_secondary_selected(int node)
 	// lookup ship
 	sindex = ship_name_lookup(CTEXT(node));
 	if(sindex < 0){
-		return 0;
+		return SEXP_FALSE;
 	}
 	if(Ships[sindex].objnum < 0){
-		return 0;
+		return SEXP_FALSE;
 	}
 	shipp = &Ships[sindex];
 
 	// bogus value?
 	bank = eval_num(CDR(node));
 	if(bank >= shipp->weapons.num_secondary_banks){
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	// is this the bank currently selected
 	if(bank == shipp->weapons.current_secondary_bank){
-		return 1;
+		return SEXP_TRUE;
 	}
 
 	// nope
-	return 0;
+	return SEXP_FALSE;
 }
 
 int sexp_is_primary_selected(int node)
@@ -13104,26 +13112,26 @@ int sexp_is_primary_selected(int node)
 	// lookup ship
 	sindex = ship_name_lookup(CTEXT(node));
 	if(sindex < 0){
-		return 0;
+		return SEXP_FALSE;
 	}
 	if(Ships[sindex].objnum < 0){
-		return 0;
+		return SEXP_FALSE;
 	}
 	shipp = &Ships[sindex];
 
 	// bogus value?
 	bank = eval_num(CDR(node));
 	if(bank >= shipp->weapons.num_primary_banks){
-		return 0;
+		return SEXP_FALSE;
 	}
 
 	// is this the bank currently selected
 	if(bank == shipp->weapons.current_primary_bank){
-		return 1;
+		return SEXP_TRUE;
 	}
 
 	// nope
-	return 0;
+	return SEXP_FALSE;
 }
 
 #define	RIGHT_QUAD	0
@@ -13817,12 +13825,20 @@ int sexp_script_eval(int n, bool return_text)
 	return r;
 }
 
+// Goober5000 - needed because any nonzero integer value is "true"
+int is_sexp_true(int cur_node, int referenced_node)
+{
+	int result = eval_sexp(cur_node, referenced_node);
+
+	return ((result == SEXP_TRUE) || (result == SEXP_KNOWN_TRUE));
+}
+
 // high-level sexpression evaluator
 int eval_sexp(int cur_node, int referenced_node)
 {
 	int node, type, sexp_val = UNINITIALIZED;
 	if (cur_node == -1)  // empty list, i.e. sexp: ( )
-		return FALSE;
+		return SEXP_FALSE;
 
 	Assert(cur_node >= 0);			// we have special sexp nodes <= -1!!!  MWA
 									// which should be intercepted before we get here.  HOFFOSS
@@ -13833,9 +13849,9 @@ int eval_sexp(int cur_node, int referenced_node)
 	// they may yet evaluate to true or false.
 
 	if (Sexp_nodes[cur_node].value == SEXP_KNOWN_TRUE)
-		return 1;
+		return SEXP_TRUE;
 	else if (Sexp_nodes[cur_node].value == SEXP_KNOWN_FALSE)
-		return 0;
+		return SEXP_FALSE;
 
 	if (Sexp_nodes[cur_node].first != -1) {
 		node = CAR(cur_node);
@@ -15259,28 +15275,28 @@ int eval_sexp(int cur_node, int referenced_node)
 		// short circuit eval (and return that special value as well).
 		if (sexp_val == SEXP_KNOWN_TRUE) {
 			Sexp_nodes[cur_node].value = SEXP_KNOWN_TRUE;
-			return 1;
+			return SEXP_TRUE;
 		}
 
 		if (sexp_val == SEXP_KNOWN_FALSE) {
 			Sexp_nodes[cur_node].value = SEXP_KNOWN_FALSE;
-			return 0;
+			return SEXP_FALSE;
 		}
 
 		if ( sexp_val == SEXP_NAN ) {
 			Sexp_nodes[cur_node].value = SEXP_NAN;			// not a number values are false I would suspect
-			return 0;
+			return SEXP_FALSE;
 		}
 
 		if ( sexp_val == SEXP_NAN_FOREVER ) {
 			Sexp_nodes[cur_node].value = SEXP_NAN_FOREVER;
-			return sexp_val;
+			return SEXP_FALSE;	// Goober5000 changed from sexp_val to SEXP_FALSE on 2/21/2006 in accordance with above comment
 		}
 
 		if ( sexp_val == SEXP_CANT_EVAL ) {
 			Sexp_nodes[cur_node].value = SEXP_CANT_EVAL;
 			Sexp_useful_number = 0;  // indicate sexp isn't current yet
-			return 0;
+			return SEXP_FALSE;
 		}
 
 		if ( Sexp_nodes[cur_node].value == SEXP_NAN ) {	// if we had a nan, but now don't, reset the value
