@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.58 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.59 $
+ * $Date: 2006-02-21 07:12:59 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.57  2006/01/22 01:32:07  taylor
  * newline fixage
  *
@@ -1621,7 +1625,7 @@ void obj_check_object( object *obj )
 			// ok.
 			CheckObjects[objnum].type = OBJ_SHIP;
 		} else {
-			mprintf(( "Object type changed!\n" ));
+			mprintf(( "Object type changed! Old: %i, Current: %i\n", CheckObjects[objnum].type, obj->type ));
 			Int3();
 		}
 	}
