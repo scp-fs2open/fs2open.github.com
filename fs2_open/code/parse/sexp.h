@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.105 $
- * $Author: karajorma $
- * $Date: 2006-02-20 20:53:11 $
+ * $Revision: 2.106 $
+ * $Author: Goober5000 $
+ * $Date: 2006-02-21 07:58:01 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2006/02/20 20:53:11  karajorma
+ * Added the num-ships-in-wing, get-secondary-ammo and set-secondary-ammo SEXPs
+ *
  * Revision 2.104  2006/02/20 02:13:08  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -1566,6 +1569,7 @@ extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive
 extern int get_sexp_main(void);	//	Returns start node
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
+extern int is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(char *old_name, char *new_name);
