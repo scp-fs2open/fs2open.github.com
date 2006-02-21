@@ -9,13 +9,22 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.107 $
- * $Author: Goober5000 $
- * $Date: 2006-02-21 09:08:10 $
+ * $Revision: 2.108 $
+ * $Author: karajorma $
+ * $Date: 2006-02-21 21:40:25 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.107  2006/02/21 09:08:10  Goober5000
+ * more true/false tweaks and redid the get-object-* and set-object-speed-* sexps to be more flexible and extensible
+ *
+ * this will break compatibility with certain uses of these sexps in existing missions; I don't think there are any released campaigns
+ * with the old versions so hopefully mission designers can simply update unreleased missions... however if it gets to be a problem
+ * I will code in some reverse compatibility
+ *
+ * --Goober5000
+ *
  * Revision 2.106  2006/02/21 07:58:01  Goober5000
  * add a bunch of tweaks to hopefully lessen the possibility of misinterpreting special return values (such as nan) as true or false
  * --Goober5000
@@ -1015,7 +1024,8 @@ struct ship_subsys;
 #define OP_SCRIPT_EVAL_NUM					(0x002b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 #define OP_SCRIPT_EVAL_STRING				(0x002c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // WMCoolmon
 #define OP_NUM_SHIPS_IN_WING				(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_SECONDARY_AMMO				(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_GET_PRIMARY_AMMO					(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_GET_SECONDARY_AMMO				(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -1206,7 +1216,8 @@ struct ship_subsys;
 #define OP_TURRET_CHANGE_WEAPON				(0x00c1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_TURRET_SET_TARGET_ORDER			(0x00c2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
 #define OP_SHIP_TURRET_TARGET_ORDER			(0x00c3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
-#define OP_SET_SECONDARY_AMMO				(0x00c4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_PRIMARY_AMMO					(0x00c4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_SECONDARY_AMMO				(0x00c5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 
