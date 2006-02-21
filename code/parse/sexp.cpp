@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.219 $
- * $Date: 2006-02-21 09:08:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.220 $
+ * $Date: 2006-02-21 21:40:25 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.219  2006/02/21 09:08:10  Goober5000
+ * more true/false tweaks and redid the get-object-* and set-object-speed-* sexps to be more flexible and extensible
+ *
+ * this will break compatibility with certain uses of these sexps in existing missions; I don't think there are any released campaigns
+ * with the old versions so hopefully mission designers can simply update unreleased missions... however if it gets to be a problem
+ * I will code in some reverse compatibility
+ *
+ * --Goober5000
+ *
  * Revision 2.218  2006/02/21 07:58:01  Goober5000
  * add a bunch of tweaks to hopefully lessen the possibility of misinterpreting special return values (such as nan) as true or false
  * --Goober5000
@@ -1345,6 +1354,7 @@ sexp_oper Operators[] = {
 	{ "shield-quad-low",						OP_SHIELD_QUAD_LOW,					2,	2			},
 	{ "primary-ammo-pct",					OP_PRIMARY_AMMO_PCT,				2,	2			},
 	{ "secondary-ammo-pct",					OP_SECONDARY_AMMO_PCT,				2,	2			},
+	{ "get-primary-ammo",					OP_GET_PRIMARY_AMMO,				2,	2			}, // Karajorma
 	{ "get-secondary-ammo",					OP_GET_SECONDARY_AMMO,				2,	2			}, // Karajorma
 	{ "is-primary-selected",				OP_IS_PRIMARY_SELECTED,				2,	2			},
 	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
@@ -1436,10 +1446,11 @@ sexp_oper Operators[] = {
 	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
 	{ "reverse-rotating-subsystem",	OP_REVERSE_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
 	{ "rotating-subsys-set-turn-time", OP_ROTATING_SUBSYS_SET_TURN_TIME,	3, INT_MAX	},	// Goober5000
+	{ "set-primary-ammo",			OP_SET_PRIMARY_AMMO,			3, 3 },		// Karajorma
+	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 3 },		// Karajorma
 	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
 	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
 	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
-	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 3 },		// Karajorma
 
 	{ "is-nav-visited",				OP_NAV_ISVISITED,				1, 1 }, // Kazan
 	{ "distance-to-nav",			OP_NAV_DISTANCE,				1, 1 }, // Kazan
@@ -11305,6 +11316,117 @@ int sexp_secondary_ammo_pct(int node)
 	return ret;
 }
 
+
+// Karajorma - returns the number of bullets left in an ballistic ammo bank. Unlike primary_ammo_pct
+// it does this as a numerical value rather than as a percentage of the maximum
+int sexp_get_primary_ammo(int node)
+{
+	ship *shipp;
+	int ammo_left = 0;
+	int sindex;
+	int check;
+
+	// get the ship
+	sindex = ship_name_lookup(CTEXT(node));
+	if(sindex < 0)
+	{
+		return 0;
+	}
+	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS))
+	{
+		return 0;
+	}
+	shipp = &Ships[sindex];
+	
+	// bank to check
+	check = eval_num(CDR(node));
+
+	// bogus check? (MAX_SHIP_PRIMARY_BANKS == cumulative sum of all banks)
+	if((check != MAX_SHIP_PRIMARY_BANKS) && (check > shipp->weapons.num_primary_banks)){
+		return 0;
+	}
+
+	// cumulative sum?
+	if(check == MAX_SHIP_PRIMARY_BANKS)
+	{
+		for(int bank=0; bank<shipp->weapons.num_primary_banks; bank++)
+		{
+			// Only ballistic weapons need to be counted
+			if (Weapon_info[shipp->weapons.primary_bank_weapons[bank]].wi_flags2 & WIF2_BALLISTIC)
+			{
+				ammo_left += shipp->weapons.primary_bank_ammo[bank] ;
+			}
+		}
+	}
+	else
+	{
+		// Again only ballistic weapons need to be counted
+		if (Weapon_info[shipp->weapons.primary_bank_weapons[check]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			ammo_left = shipp->weapons.primary_bank_ammo[check] ;
+		}
+	}	
+
+	// return
+	return ammo_left;
+}
+
+// Karajorma - sets the amount of ammo in a certain ballistic weapon bank to the specified value
+void sexp_set_primary_ammo (int node) 
+{
+	ship *shipp;
+	int sindex;
+	int requested_bank ;
+	int requested_weapons ;
+	int maximum_allowed ;
+
+	// Check that a ship has been supplied
+	sindex = ship_name_lookup(CTEXT(node));
+	if (sindex < 0) 
+	{
+		return ;
+	}
+
+	// Check that it's valid
+	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
+		return ;
+	}
+	shipp = &Ships[sindex];
+	
+	// Get the bank to set the number on
+	requested_bank = eval_num(CDR(node));
+
+	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
+	// the banks or a non-existant bank
+	if (requested_bank > shipp->weapons.num_primary_banks) 
+	{
+		return ;
+	}
+
+	// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
+	if (!Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].wi_flags2 & WIF2_BALLISTIC)
+	{
+		return ;
+	}
+
+	//  Get the number of weapons requested
+	requested_weapons = eval_num(CDR(node+1)); 
+	if (requested_weapons < 0)
+	{
+		return ;
+	}
+
+	// Is the number requested larger than the maximum allowed for that particular bank? 
+	maximum_allowed = shipp->weapons.primary_bank_capacity[requested_bank] ;
+	if (maximum_allowed < requested_weapons) 
+	{
+		requested_weapons = maximum_allowed ;
+	}
+
+	// Set the number of weapons
+	shipp->weapons.primary_bank_ammo[requested_bank] = requested_weapons ;
+}
+
 // karajorma - returns the number of missiles left in an ammo bank. Unlike secondary_ammo_pct
 // it does this as a numerical value rather than as a percentage of the maximum
 int sexp_get_secondary_ammo (int node)
@@ -11313,7 +11435,6 @@ int sexp_get_secondary_ammo (int node)
 	ship *shipp ;
 	int sindex ; 
 	int check ;
-	int idx ;
 
 	// Get the ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -11338,9 +11459,9 @@ int sexp_get_secondary_ammo (int node)
 	// Are we looking at the number of secondaries in all banks? 
 	if(check == MAX_SHIP_SECONDARY_BANKS)
 	{
-		for(idx=0; idx<shipp->weapons.num_secondary_banks; idx++)
+		for(int bank=0; bank<shipp->weapons.num_secondary_banks; bank++)
 		{
-			ammo_left += shipp->weapons.secondary_bank_ammo[idx] ;
+			ammo_left += shipp->weapons.secondary_bank_ammo[bank] ;
 		}
 	}
 	// If not return the value for the bank requested.
@@ -11377,7 +11498,7 @@ void sexp_set_secondary_ammo (int node)
 	// Get the bank to set the number on
 	requested_bank = eval_num(CDR(node));
 
-	// Can only check one bank at a time. Check that someone hasn't asked for the contents of all 
+	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
 	// the banks or a non-existant bank
 	if (requested_bank > shipp->weapons.num_secondary_banks) 
 	{
@@ -11392,7 +11513,7 @@ void sexp_set_secondary_ammo (int node)
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = shipp->weapons.secondary_bank_start_ammo[requested_bank] ;
+	maximum_allowed = shipp->weapons.secondary_bank_capacity[requested_bank] ;
 	if (maximum_allowed < requested_weapons) 
 	{
 		requested_weapons = maximum_allowed ;
@@ -14999,6 +15120,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			// Karajorma
+			case OP_GET_PRIMARY_AMMO:
+				sexp_val = sexp_get_primary_ammo(node);
+				break;
+
+			// Karajorma
 			case OP_GET_SECONDARY_AMMO:
 				sexp_val = sexp_get_secondary_ammo(node);
 				break;
@@ -15083,6 +15209,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 				
 			// Karajorma
+			case OP_SET_PRIMARY_AMMO:
+				sexp_set_primary_ammo(node);
+				sexp_val = SEXP_TRUE;
+				break;
+				
+			// Karajorma
 			case OP_SET_SECONDARY_AMMO:
 				sexp_set_secondary_ammo(node);
 				sexp_val = SEXP_TRUE;
@@ -15092,7 +15224,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val=sexp_num_ships_in_battle(node);
 				break;
 
-			case OP_NUM_SHIPS_IN_WING:	// Karajorma
+			// Karajorma
+			case OP_NUM_SHIPS_IN_WING:
 				sexp_val=sexp_num_ships_in_wing(node);
 				break;
 
@@ -15530,6 +15663,7 @@ int query_operator_return_type(int op)
 		case OP_WEAPON_RECHARGE_PCT:
 		case OP_PRIMARY_AMMO_PCT:
 		case OP_SECONDARY_AMMO_PCT:
+		case OP_GET_PRIMARY_AMMO:	// Karajorma
 		case OP_GET_SECONDARY_AMMO:	// Karajorma
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
@@ -16735,21 +16869,16 @@ int query_operator_argument_type(int op, int argnum)
 			}
 			
 		// Karajorma
+		case OP_GET_PRIMARY_AMMO:
+		case OP_SET_PRIMARY_AMMO:
 		case OP_GET_SECONDARY_AMMO:
-			if(argnum == 0){
-				return OPF_SHIP;
-			} else {
-				return OPF_NUMBER;
-			}
-			
-		// Karajorma
 		case OP_SET_SECONDARY_AMMO:
 			if(argnum == 0){
 				return OPF_SHIP;
 			} else {
 				return OPF_NUMBER;
 			}
-
+			
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_IS_PRIMARY_SELECTED:
 			if(argnum == 0){
@@ -17928,6 +18057,7 @@ int get_subcategory(int sexp_id)
 		case OP_FREE_ROTATING_SUBSYSTEM:
 		case OP_REVERSE_ROTATING_SUBSYSTEM:
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
+		case OP_SET_PRIMARY_AMMO:		// Karajorma
 		case OP_SET_SECONDARY_AMMO:		// Karajorma
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
@@ -19715,12 +19845,19 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_PRIMARY_AMMO_PCT, "primary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified ballistic primary bank (0 to 100).  Non-ballistic primary banks return as 100%.\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0 and 1 are legal banks. 2 will return the cumulative average for all banks" },
+		"\t2: Bank to check (0 and 1 are legal banks. 2 will return the cumulative average for all banks)" },
 
+	// Karajorma
+	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
+		"\tReturns the amount of ammo remaining in the specified bank (0 to 100)\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Bank to check (0, 1, 2 are legal banks. 3 will return the cumulative average for all banks)" },
+
+	
 	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1, 2 are legal banks. 3 will return the cumulative average for all banks" },
+		"\t2: Bank to check (0, 1, 2 are legal banks. 3 will return the cumulative average for all banks)" },
 
 	// Karajorma
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
@@ -19952,8 +20089,15 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	// Karajorma
+	{ OP_SET_PRIMARY_AMMO, "set-primary-ammo\r\n"
+		"\tSets the amount of ammo for the specified ballistic bank\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Bank to check (0, 1, and 2 are legal banks)\r\n" 
+		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)."},
+
+	// Karajorma
 	{ OP_SET_SECONDARY_AMMO, "set-secondary-ammo\r\n"
-		"\tSets the amount of ammo for the specified bank (0 to 100)\r\n"
+		"\tSets the amount of ammo for the specified bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
 		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)."},
