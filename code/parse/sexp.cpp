@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.220 $
- * $Date: 2006-02-21 21:40:25 $
+ * $Revision: 2.221 $
+ * $Date: 2006-02-21 22:20:04 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.220  2006/02/21 21:40:25  karajorma
+ * Added the get and set-primary-ammo SEXPs. The set-primary-ammo
+ * and set-secondary-ammo SEXPs appear to be broken at the moment though
+ *
  * Revision 2.219  2006/02/21 09:08:10  Goober5000
  * more true/false tweaks and redid the get-object-* and set-object-speed-* sexps to be more flexible and extensible
  *
@@ -11417,7 +11421,7 @@ void sexp_set_primary_ammo (int node)
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = shipp->weapons.primary_bank_capacity[requested_bank] ;
+	maximum_allowed = shipp->weapons.primary_bank_start_ammo[requested_bank] ;
 	if (maximum_allowed < requested_weapons) 
 	{
 		requested_weapons = maximum_allowed ;
@@ -11513,7 +11517,7 @@ void sexp_set_secondary_ammo (int node)
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = shipp->weapons.secondary_bank_capacity[requested_bank] ;
+	maximum_allowed = shipp->weapons.secondary_bank_start_ammo[requested_bank] ;
 	if (maximum_allowed < requested_weapons) 
 	{
 		requested_weapons = maximum_allowed ;
@@ -15865,6 +15869,8 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_SET_PRIMARY_AMMO:	// Karajorma
+		case OP_SET_SECONDARY_AMMO:	// Karajorma
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
