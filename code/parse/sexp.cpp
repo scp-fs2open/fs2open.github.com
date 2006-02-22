@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.221 $
- * $Date: 2006-02-21 22:20:04 $
+ * $Revision: 2.222 $
+ * $Date: 2006-02-22 00:04:04 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.221  2006/02/21 22:20:04  karajorma
+ * Fixed the problems with set-primary-ammo and set-secondary-ammo SEXPs
+ *
  * Revision 2.220  2006/02/21 21:40:25  karajorma
  * Added the get and set-primary-ammo SEXPs. The set-primary-ammo
  * and set-secondary-ammo SEXPs appear to be broken at the moment though
@@ -11421,7 +11424,8 @@ void sexp_set_primary_ammo (int node)
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = shipp->weapons.primary_bank_start_ammo[requested_bank] ;
+	maximum_allowed = shipp->weapons.primary_bank_capacity[requested_bank] 
+		/ (Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size) ;
 	if (maximum_allowed < requested_weapons) 
 	{
 		requested_weapons = maximum_allowed ;
@@ -11517,7 +11521,8 @@ void sexp_set_secondary_ammo (int node)
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = shipp->weapons.secondary_bank_start_ammo[requested_bank] ;
+	maximum_allowed = shipp->weapons.secondary_bank_capacity[requested_bank]  
+		/ (Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]].cargo_size) ;
 	if (maximum_allowed < requested_weapons) 
 	{
 		requested_weapons = maximum_allowed ;
@@ -19851,7 +19856,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_PRIMARY_AMMO_PCT, "primary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified ballistic primary bank (0 to 100).  Non-ballistic primary banks return as 100%.\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0 and 1 are legal banks. 2 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (0, 1 and 2 are legal banks. 3 will return the cumulative average for all banks)" },
 
 	// Karajorma
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
@@ -19863,7 +19868,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
 		"\tReturns the percentage of ammo remaining in the specified bank (0 to 100)\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0, 1, 2 are legal banks. 3 will return the cumulative average for all banks)" },
+		"\t2: Bank to check (0, 1, 2 and 3 are legal banks. 4 will return the cumulative average for all banks)" },
 
 	// Karajorma
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
