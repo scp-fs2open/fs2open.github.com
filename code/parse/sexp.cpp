@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.222 $
- * $Date: 2006-02-22 00:04:04 $
- * $Author: karajorma $
+ * $Revision: 2.223 $
+ * $Date: 2006-02-22 18:32:18 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.222  2006/02/22 00:04:04  karajorma
+ * Changed the set-secondary-ammo and set-primary-ammo SEXPs to use the banks
+ * capacity rather than starting ammo.
+ *
  * Revision 2.221  2006/02/21 22:20:04  karajorma
  * Fixed the problems with set-primary-ammo and set-secondary-ammo SEXPs
  *
@@ -5724,14 +5728,14 @@ int sexp_distance_subsystem(int n)	// Goober5000
 
 	// at this point, we must have a wing, ship or point for a subj
 	obj = ship_name_lookup(obj_name);
-	if ( !(obj < 0) )	// do we have a ship?
+	if ( obj >= 0 )	// do we have a ship?
 	{
-		return (int) vm_vec_dist_quick( &Objects[obj].pos, &subsys_pos );
+		return (int) vm_vec_dist_quick( &Objects[Ships[obj].objnum].pos, &subsys_pos );
 	}
 
 	// at this point, we must have a wing or point for a subj
 	obj = waypoint_lookup(obj_name);
-	if ( !(obj < 0) )	// do we have a point?
+	if ( obj >= 0 )	// do we have a point?
 	{
 		return (int) vm_vec_dist_quick( &Objects[obj].pos, &subsys_pos );
 	}
