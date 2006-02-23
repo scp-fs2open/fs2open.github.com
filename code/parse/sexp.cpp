@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.223 $
- * $Date: 2006-02-22 18:32:18 $
- * $Author: taylor $
+ * $Revision: 2.224 $
+ * $Date: 2006-02-23 01:37:51 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.223  2006/02/22 18:32:18  taylor
+ * fix subsystem distance check from single ship to subsystem (this has been broken since day 1, over 3 years ago, so there could be other Mantis bugs relating to this)
+ *
  * Revision 2.222  2006/02/22 00:04:04  karajorma
  * Changed the set-secondary-ammo and set-primary-ammo SEXPs to use the banks
  * capacity rather than starting ammo.
@@ -1636,6 +1639,7 @@ sexp_oper Operators[] = {
 	{ "primaries-depleted",		OP_PRIMARIES_DEPLETED,		1, 1,			},
 	{ "secondaries-depleted",	OP_SECONDARIES_DEPLETED,	1, 1,			},
 	{ "special-check",			OP_SPECIAL_CHECK,				1, 1,			},
+	{ "string-to-int",			OP_STRING_TO_INT,				1, 1,			}, // Karajorma
 
 	{ "set-training-context-fly-path",	OP_SET_TRAINING_CONTEXT_FLY_PATH,	2, 2, },
 	{ "set-training-context-speed",		OP_SET_TRAINING_CONTEXT_SPEED,		2, 2, },
@@ -13425,6 +13429,14 @@ int process_special_sexps(int index)
 	return SEXP_FALSE;
 }
 
+// Karajorma
+int sexp_string_to_int (int n)
+{
+	Assert (n != -1);
+	return atoi(CTEXT(n));
+}
+
+
 // custom sexp operator for handling misc training stuff
 int sexp_special_training_check(int node)
 {
@@ -14967,6 +14979,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_training_context_speed(node);
 				sexp_val = SEXP_TRUE;
 				break;
+			
+			// Karajorma
+			case OP_STRING_TO_INT:
+				sexp_val = sexp_string_to_int(node);
+				break;
 
 /*			// debugging operators
 			case OP_INT3:
@@ -15649,6 +15666,7 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_Z:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
+		case OP_STRING_TO_INT:		// Karajorma
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -15982,6 +16000,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_STRING_EQUALS:
 		case OP_STRING_GREATER_THAN:
 		case OP_STRING_LESS_THAN:
+		case OP_STRING_TO_INT:		// Karajorma
 			return OPF_STRING;
 
 		case OP_HAS_TIME_ELAPSED:
@@ -19276,6 +19295,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tMinimum speed of range player is to fly between.\r\n"
 		"\t2:\tMaximum speed of range player is to fly between." },
+
+	// Karajorma
+	{ OP_STRING_TO_INT, "String-to-int \r\n"
+		"\tConverts a string into an integer. The string must only contain numeric characters "
+		"or zero is returned \r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\String to convert." },
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
