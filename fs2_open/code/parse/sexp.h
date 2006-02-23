@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.108 $
+ * $Revision: 2.109 $
  * $Author: karajorma $
- * $Date: 2006-02-21 21:40:25 $
+ * $Date: 2006-02-23 01:37:51 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2006/02/21 21:40:25  karajorma
+ * Added the get and set-primary-ammo SEXPs. The set-primary-ammo
+ * and set-secondary-ammo SEXPs appear to be broken at the moment though
+ *
  * Revision 2.107  2006/02/21 09:08:10  Goober5000
  * more true/false tweaks and redid the get-object-* and set-object-speed-* sexps to be more flexible and extensible
  *
@@ -1325,6 +1329,7 @@ struct ship_subsys;
 #define OP_SET_TRAINING_CONTEXT_SPEED		(0x0011 | OP_CATEGORY_TRAINING)
 
 #define OP_KEY_RESET_MULTIPLE				(0x0012 | OP_CATEGORY_TRAINING)	// Goober5000
+#define OP_STRING_TO_INT					(0x0013 | OP_CATEGORY_TRAINING) // Karajorma
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
