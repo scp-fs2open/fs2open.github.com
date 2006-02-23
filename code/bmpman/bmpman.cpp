@@ -10,13 +10,21 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.80 $
- * $Date: 2006-02-16 05:00:01 $
+ * $Revision: 2.81 $
+ * $Date: 2006-02-23 06:21:56 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2006/02/16 05:00:01  taylor
+ * various bmpman related fixes
+ *  - some new error checking (and fixes related to that) and cleanup
+ *  - fix EFFs not getting released/unloaded properly (was in a local tree but apparently missed CVS)
+ *  - minor fixes for bm_release() to produce a more properly cleaned slot
+ *  - use fast unloading for page_in stuff since we don't actually want really want the load count changing for texture maps
+ *    and to make sure that we free the memory usage regardless of load count
+ *
  * Revision 2.79  2006/01/21 02:22:04  wmcoolmon
  * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
  *
@@ -1635,7 +1643,17 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	int bpp = 0, mm_lvl = 0, img_size = 0;
 	char clean_name[MAX_FILENAME_LEN];
 
-	if ( !bm_inited ) bm_init();
+
+	if ( !bm_inited )
+		bm_init();
+
+	// set defaults for frame count and fps before going any further
+	if (nframes)
+		*nframes = 0;
+
+	if (fps)
+		*fps = 0;
+
 
 	memset( filename, 0, MAX_FILENAME_LEN );
 	strncpy( filename, real_filename, MAX_FILENAME_LEN-1 );
@@ -1687,7 +1705,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		}
 		
 		// No match was found
-		if(found == false) {
+		if (found == false) {
 			return -1;
 		}
 	}
