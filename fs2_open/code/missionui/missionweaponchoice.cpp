@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.70 $
- * $Date: 2006-02-18 00:42:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.71 $
+ * $Date: 2006-02-23 06:21:56 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2006/02/18 00:42:51  wmcoolmon
+ * Introducing draw_model_rotating; many improvements to weapon selection missile rendering
+ *
  * Revision 2.69  2006/02/16 05:24:35  taylor
  * should fix some of the model/bmpman errors off of the weaponchoice screen
  *
@@ -1925,7 +1928,7 @@ void wl_load_icons(int weapon_class)
 {
 	wl_icon_info	*icon;
 	int				first_frame = -1;
-	int num_frames, i;
+	int num_frames = 0, i;
 	weapon_info *wip = &Weapon_info[weapon_class];
 
 	Assert( Wl_icons != NULL );
@@ -1936,7 +1939,7 @@ void wl_load_icons(int weapon_class)
 	{
 		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
 
-		for ( i = 0; i < num_frames ; i++ ) {
+		for ( i = 0; (i < num_frames) && (i < NUM_ICON_FRAMES); i++ ) {
 			icon->icon_bmaps[i] = first_frame+i;
 		}
 	}
