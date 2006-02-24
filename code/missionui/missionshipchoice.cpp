@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.60 $
- * $Date: 2006-02-18 00:42:51 $
+ * $Revision: 2.61 $
+ * $Date: 2006-02-24 04:45:00 $
  * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2006/02/18 00:42:51  wmcoolmon
+ * Introducing draw_model_rotating; many improvements to weapon selection missile rendering
+ *
  * Revision 2.59  2006/02/16 05:19:46  taylor
  * I would say this is another selling point for the boozer-svn plugin, but I would have needed it too as I've missed this stuff several times
  *
@@ -2133,8 +2136,8 @@ void ship_select_do(float frametime)
 			draw_model_rotating(ShipSelectModelNum,
 				Ship_anim_coords[gr_screen.res][0],
 				Ship_anim_coords[gr_screen.res][1],
-				Ship_anim_coords[gr_screen.res][2],
-				Ship_anim_coords[gr_screen.res][3],
+				Tech_ship_display_coords[gr_screen.res][2],
+				Tech_ship_display_coords[gr_screen.res][3],
 				&ShipSelectScreenShipRot,
 				&sip->closeup_pos,
 				sip->closeup_zoom * 1.3f,
