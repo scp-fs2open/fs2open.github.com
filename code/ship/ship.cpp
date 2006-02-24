@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.313 $
- * $Date: 2006-02-20 07:26:07 $
- * $Author: taylor $
+ * $Revision: 2.314 $
+ * $Date: 2006-02-24 05:02:34 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.313  2006/02/20 07:26:07  taylor
+ * div-by-0 bug fixage
+ *
  * Revision 2.312  2006/02/17 21:47:47  wmcoolmon
  * Fix a silly bug
  *
@@ -6078,25 +6081,10 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 void ship_destroyed( int num )
 {
 	ship		*shipp;
-	ship_subsys *temp_subsys;
 	object	*objp;
 
 	shipp = &Ships[num];
 	objp = &Objects[shipp->objnum];
-
-	// anti-frustration: beam-lock the ship - Goober5000 :)
-	temp_subsys = GET_FIRST(&shipp->subsys_list);
-	while(temp_subsys != END_OF_LIST(&shipp->subsys_list))
-	{
-		// mark all turrets as beam locked
-		if(temp_subsys->system_info->type == SUBSYSTEM_TURRET)
-		{
-			temp_subsys->weapons.flags &= ~SW_FLAG_BEAM_FREE;
-		}
-
-		// next item
-		temp_subsys = GET_NEXT(temp_subsys);
-	}
 
 	// add the information to the exited ship list
 	ship_add_exited_ship( shipp, SEF_DESTROYED );
