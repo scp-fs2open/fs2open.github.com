@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.45 $
- * $Date: 2006-02-16 05:39:13 $
+ * $Revision: 2.46 $
+ * $Date: 2006-02-24 07:31:18 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2006/02/16 05:39:13  taylor
+ * some FS2NetD fixes
+ *  - timer/timeout issues
+ *  - keep server heartbeats to a minimum in order to save some bandwidth
+ *  - clean up some debug message a little
+ *
  * Revision 2.44  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -1391,43 +1397,46 @@ int multi_join_autojoin_do()
 
 void fs2netd_maybe_init()
 {
-		if (PXO_port == -1)
-		{
-			CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-			if(file == NULL){
-				ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
-				return;
-			}
+	if (!Om_tracker_flag)
+		return;
+
+	if (PXO_port == -1)
+	{
+		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
+		if(file == NULL){
+			ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
+			return;
+		}
 				
 
-			char Port[32];
-			if (cfgets(PXO_Server, 32, file) == NULL)
-			{
-				ml_printf("Network", "No Masterserver definition!\n");
-				return;
-			}
-
-			if (strstr(PXO_Server, "\n"))
-				*strstr(PXO_Server, "\n") = '\0';
-
-			if (cfgets(Port, 32, file) != NULL)
-				PXO_port = atoi(Port);
-			else
-				PXO_port = 12000;
-		}
-
-		// FS2OpenPXO code
-		if (!FS2OpenPXO_Socket.isInitialized())
+		char Port[32];
+		if (cfgets(PXO_Server, 32, file) == NULL)
 		{
-#if !defined(PXO_TCP)
-				if (!FS2OpenPXO_Socket.InitSocket())
-#else
-				if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
-#endif
-				{
-					ml_printf("Network (FS2OpenPXO): Could not initialize Socket!!\n");
-				}
+			ml_printf("Network", "No Masterserver definition!\n");
+			return;
 		}
+
+		if (strstr(PXO_Server, "\n"))
+			*strstr(PXO_Server, "\n") = '\0';
+
+		if (cfgets(Port, 32, file) != NULL)
+			PXO_port = atoi(Port);
+		else
+			PXO_port = 12000;
+	}
+
+	// FS2OpenPXO code
+	if (!FS2OpenPXO_Socket.isInitialized())
+	{
+#if !defined(PXO_TCP)
+		if (!FS2OpenPXO_Socket.InitSocket())
+#else
+		if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
+#endif
+		{
+			ml_printf("Network (FS2OpenPXO): Could not initialize Socket!!\n");
+		}
+	}
 }
 
 void multi_join_game_init()
@@ -2195,8 +2204,11 @@ void multi_join_blit_game_status(active_game *game, int y)
 
 void multi_servers_query()
 {
-	
-	broadcast_game_query();	
+	broadcast_game_query();
+
+	if (!Om_tracker_flag)
+		return;
+
 	/*
 	active_game *Cur = Active_game_head;
 	if (Cur != NULL)
@@ -2413,7 +2425,6 @@ void multi_join_do_netstuff()
 	if(Multi_join_glr_stamp == -1){
 		broadcast_game_query();
 
-
 		if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
 		} else {
@@ -2423,8 +2434,6 @@ void multi_join_do_netstuff()
 	// otherwise send out game query and restamp
 	else if(timestamp_elapsed(Multi_join_glr_stamp)){			
 		broadcast_game_query();
-
-
 
 		if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
 			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
