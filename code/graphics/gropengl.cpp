@@ -2,13 +2,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.163 $
- * $Date: 2006-02-20 07:23:29 $
+ * $Revision: 2.164 $
+ * $Date: 2006-02-24 07:35:48 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.163  2006/02/20 07:23:29  taylor
+ * start of some of the newer GL stuff
+ *  - initial support for dropping from fullscreen to windowed mode (will get more changes in another day or so, mainly because of FRED2)
+ *  - a little cleanup
+ *  - init change for WGL to be a little safer and to help report what it tried to use and what it got in the way of pixelformat
+ *  - don't use global OGL_enabled to decide if GL is initialized or not (also getting more changes shortly)
+ *  - make sure opengl_close() will always execute properly through atexit() (also getting changed later to not run through atexit())
+ *
  * Revision 2.162  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -946,12 +954,6 @@
  * $NoKeywords: $
  */
 
-#ifdef WIN32
-#include <windows.h>
-#include <windowsx.h>
-#include <direct.h>
-#endif
-
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
@@ -979,6 +981,17 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengltnl.h"
 #include "graphics/gropenglbmpman.h"
+
+#if defined(_WIN32)
+#include <windows.h>
+#include <windowsx.h>
+#include <direct.h>
+#elif defined(__APPLE__)
+#include "OpenGL.h"
+#else
+#define GLX_GLXEXT_PROTOTYPES
+#include <GL/glx.h>
+#endif
 
 
 #if defined(_WIN32) && !defined(__GNUC__)
@@ -3905,6 +3918,30 @@ int opengl_check_for_errors()
 	return num_errors;
 }
 
+void opengl_set_vsync(int status)
+{
+	Assert( (status == 0) || (status == 1) );
+
+	if ( (status < 0) || (status > 1) )
+		return;
+
+#if defined(__APPLE__)
+	CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, (long*)&status);
+#elif defined(_WIN32)
+	if ( opengl_extension_is_enabled(GL_SPC_WGL_SWAP_INTERVAL, 1) ) {
+		wglSwapIntervalEXT(status);
+	}
+#else
+	// NOTE: this may not work well with the closed NVIDIA drivers since those use the
+	//       special "__GL_SYNC_TO_VBLANK" environment variable to manage sync
+	if ( opengl_extension_is_enabled(GL_SPC_GLX_SWAP_INTERVAL, 1) ) {
+		glXSwapIntervalSGI(status);
+	}
+#endif
+
+	opengl_check_for_errors();
+}
+
 // NOTE: This should only ever be called through atexit()!!!
 void opengl_close()
 {
@@ -4402,6 +4439,9 @@ void gr_opengl_init(int reinit)
 
 		opengl_go_fullscreen();
 	}
+
+	// must be called after extensions are setup
+	opengl_set_vsync( !Cmdline_no_vsync );
 
 	opengl_switch_arb(-1, 0);
 	opengl_switch_arb(0, 1);

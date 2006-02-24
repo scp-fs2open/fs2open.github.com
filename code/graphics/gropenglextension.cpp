@@ -10,13 +10,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.12 $
- * $Date: 2005-12-28 22:28:44 $
+ * $Revision: 1.13 $
+ * $Date: 2006-02-24 07:35:48 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2005/12/28 22:28:44  taylor
+ * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
+ * better support for mipmaps and mipmap filtering
+ * add reg option "TextureFilter" to set bilinear or trilinear filter
+ * clean up bitmap_id/bitmap_handle/texture_handle madness that made things difficult to understand
+ * small fix for using 24-bit images on 16-bit bpp visual (untested)
+ *
  * Revision 1.11  2005/12/08 15:10:07  taylor
  * add APPLE_client_storage support to improve texture performance and reduce memory usage a tiny bit on OS X
  *
@@ -88,31 +95,8 @@
 
 
 char *OGL_extension_string;
-/*
-typedef struct ogl_extension
-{
-	int enabled;					//is this extension enabled
-	const char* extension_name;		//name found in extension string
-	int required_to_run;			//is this extension required for use	
-} ogl_extension;
 
-ogl_extension GL_Extensions[GL_NUM_EXTENSIONS]=
-{
-	{0, "GL_EXT_fog_coord",0},
-	{0, "GL_ARB_multitexture",1},		//required for glow maps
-	{0, "GL_ARB_texture_env_add", 1},					//required for glow maps
-	{0, "GL_ARB_texture_compression",0},
-	{0, "GL_EXT_texture_compression_s3tc",0},
-	{0, "GL_EXT_texture_filter_anisotropic", 0},
-	{0, "GL_NV_fog_distance", 0},
-	{0, "GL_EXT_secondary_color", 0},
-	{0, "GL_ARB_texture_env_combine",0},
-	{0, "GL_EXT_texture_env_combine",0},
-	{0, "GL_EXT_compiled_vertex_array",0},
-	{0, "GL_ARB_transpose_matrix",1},
-	{0, "GL_ARB_vertex_buffer_object",0}
-};*/
-
+// normal GL extensions
 ogl_extension GL_Extensions[GL_NUM_EXTENSIONS] =
 {
 	{0, 0, "glFogCoordfEXT", "GL_EXT_fog_coord", 0},
@@ -151,6 +135,14 @@ ogl_extension GL_Extensions[GL_NUM_EXTENSIONS] =
 //	{0, 0, "glFramebufferRenderbufferEXT", "GL_EXT_framebuffer_object", 0}
 };
 
+// special extensions (only special functions are supported at the moment)
+ogl_extension GL_EXT_Special[GL_NUM_EXT_SPECIAL] = {
+	{ 0, 0, "wglSwapIntervalEXT", NULL, 0 },
+	{ 0, 0, "glXSwapIntervalSGI", NULL, 0 }
+};
+
+
+
 //tries to find a certain extension
 static inline int opengl_find_extension(const char* ext_to_find)
 {
@@ -176,10 +168,50 @@ void opengl_print_extensions()
 	vm_free(extlist);
 }
 
-int opengl_extension_is_enabled(int idx)
+int opengl_extension_is_enabled(int idx, int special)
 {
-	if ((idx < 0) || (idx >= GL_NUM_EXTENSIONS)) return 0;
+	if (idx < 0)
+		return 0;
+
+	if (special) {
+		if (idx >= GL_NUM_EXT_SPECIAL)
+			return 0;
+
+		return GL_EXT_Special[idx].enabled;
+	}
+
+	if (idx >= GL_NUM_EXTENSIONS)
+		return 0;
+
 	return GL_Extensions[idx].enabled;
+}
+
+// these extensions may not be listed the normal way so we don't check the extension string for them
+static int opengl_get_extensions_special()
+{
+	int i, num_found = 0;
+	ogl_extension *cur = NULL;
+
+	for (i = 0; i < GL_NUM_EXT_SPECIAL; i++) {
+		cur = &GL_EXT_Special[i];
+
+		Assert( cur->function_name != NULL );
+
+#ifdef _WIN32
+		cur->func_pointer = (ptr_u)wglGetProcAddress(cur->function_name);
+#else
+		cur->func_pointer = (ptr_u)SDL_GL_GetProcAddress(cur->function_name);
+#endif
+
+		if (cur->func_pointer) {
+			cur->enabled = 1;
+
+			mprintf(("  Found special extension function \"%s\".\n", cur->function_name));
+			num_found++;
+		}
+	}
+
+	return num_found;
 }
 
 //finds OGL extension functions
@@ -242,6 +274,8 @@ int opengl_get_extensions()
 			}
 		}
 	}
+
+	num_found += opengl_get_extensions_special();
 
 	mprintf(( "\n" ));
 

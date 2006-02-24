@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.9 $
- * $Date: 2005-12-28 22:28:44 $
+ * $Revision: 1.10 $
+ * $Date: 2006-02-24 07:35:48 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/12/28 22:28:44  taylor
+ * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
+ * better support for mipmaps and mipmap filtering
+ * add reg option "TextureFilter" to set bilinear or trilinear filter
+ * clean up bitmap_id/bitmap_handle/texture_handle madness that made things difficult to understand
+ * small fix for using 24-bit images on 16-bit bpp visual (untested)
+ *
  * Revision 1.8  2005/12/08 15:10:07  taylor
  * add APPLE_client_storage support to improve texture performance and reduce memory usage a tiny bit on OS X
  *
@@ -85,6 +92,7 @@ typedef struct ogl_extension
 } ogl_extension;
 
 extern ogl_extension GL_Extensions[];
+extern ogl_extension GL_EXT_Special[];
 
 /*#define GL_FOG_COORD_EXT				0
 #define GL_MULTITEXTURE_ARB				1
@@ -144,25 +152,25 @@ extern ogl_extension GL_Extensions[];
 //#define GL_NUM_EXTENSIONS				32
 #define GL_NUM_EXTENSIONS				28
 
+
+// special extensions (OS specific, non-GL stuff)
+#define GL_SPC_WGL_SWAP_INTERVAL		0
+#define GL_SPC_GLX_SWAP_INTERVAL		1
+
+#define GL_NUM_EXT_SPECIAL				2
+
+
 int opengl_get_extensions();
 void opengl_print_extensions();
-int opengl_extension_is_enabled(int idx);
+int opengl_extension_is_enabled(int idx, int special = 0);
 
 #ifdef _WIN32
 #define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
 							((x)GL_Extensions[i].func_pointer)
 
-//void glFogCoordfEXT(float value);
-//void glFogCoordPointerEXT(unsigned int, unsigned int, void*);
-//void glMultiTexCoord2fARB(unsigned int tex_unit, float u_coord, float v_coord);
-//void glActiveTextureARB(unsigned int tex_unit);
-//void CompressedTexImage2DARB(unsigned int target, int level, unsigned int internalformat, unsigned int width, unsigned int height, int border, unsigned int sizeinbytes, const void *data);
-//void glSecondaryColor3fvEXT(float* v);
-//void glSecondaryColor3ubEXT(unsigned char* v);
-//void glLockArraysEXT(int first, int count);
-//void glUnlockArraysEXT();
-//void glLoadTransposeMatrixfARB(unsigned int type, float *m);			 
-//void glBindBufferARB(unsigned int count, int* buffers);
+#define GLEXT_SPC_CALL(x,i) if (GL_EXT_Special[i].enabled)	\
+							((x)GL_EXT_Special[i].func_pointer)
+
 
 #define glFogCoordfEXT GLEXT_CALL(PFNGLFOGCOORDFEXTPROC, GL_FOG_COORDF)
 #define glFogCoordPointerEXT GLEXT_CALL(PFNGLFOGCOORDPOINTEREXTPROC, GL_FOG_COORD_POINTER);
@@ -189,6 +197,10 @@ int opengl_extension_is_enabled(int idx);
 //#define glFramebufferTexture2DEXT GLEXT_CALL(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC, GL_EXT_FRAMEBUFFER_TEX2D);
 //#define glRenderbufferStorageEXT GLEXT_CALL(PFNGLRENDERBUFFERSTORAGEEXTPROC, GL_EXT_RENDERBUFFER_STORAGE);
 //#define glFramebufferRenderbufferEXT GLEXT_CALL(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC, GL_EXT_FRAMEBUFFER_RENDERBUF);
+
+// special extensions
+#define wglSwapIntervalEXT GLEXT_SPC_CALL(PFNWGLSWAPINTERVALEXTPROC, GL_SPC_WGL_SWAP_INTERVAL);
+
 #endif // _WIN32
 
 #endif // _GROPENGLEXT_H

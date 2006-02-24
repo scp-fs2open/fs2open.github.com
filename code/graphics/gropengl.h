@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.16 $
- * $Date: 2006-01-30 06:40:49 $
+ * $Revision: 2.17 $
+ * $Date: 2006-02-24 07:35:48 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/01/30 06:40:49  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ * some basic lighting code cleanup
+ *
  * Revision 2.15  2006/01/20 17:15:16  taylor
  * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
  * several other very minor changes as well
@@ -137,6 +142,7 @@
 	#include "graphics/gl/gl.h"
 	#include "graphics/gl/glu.h"
 	#include "graphics/gl/glext.h"
+ 	#include "graphics/gl/wglext.h"
 
 	#define STUB_FUNCTION 0
 #elif defined(SCP_UNIX)
