@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.224 $
- * $Date: 2006-02-23 01:37:51 $
- * $Author: karajorma $
+ * $Revision: 2.225 $
+ * $Date: 2006-02-24 07:30:23 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.224  2006/02/23 01:37:51  karajorma
+ * Added the String-to-int SEXP.
+ *
  * Revision 2.223  2006/02/22 18:32:18  taylor
  * fix subsystem distance check from single ship to subsystem (this has been broken since day 1, over 3 years ago, so there could be other Mantis bugs relating to this)
  *
@@ -5967,7 +5970,7 @@ int sexp_calculate_coordinate(vec3d *origin, matrix *orient, vec3d *relative_loc
 
 	if (relative_location == NULL)
 	{
-		return origin->a1d[axis];
+		return fl2i(origin->a1d[axis]);
 	}
 	else
 	{
@@ -5976,7 +5979,7 @@ int sexp_calculate_coordinate(vec3d *origin, matrix *orient, vec3d *relative_loc
 		vm_vec_unrotate(&new_world_pos, relative_location, orient);
 		vm_vec_add2(&new_world_pos, origin);
 
-		return new_world_pos.a1d[axis];
+		return fl2i(new_world_pos.a1d[axis]);
 	}
 }
 
@@ -11433,7 +11436,7 @@ void sexp_set_primary_ammo (int node)
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
 	maximum_allowed = shipp->weapons.primary_bank_capacity[requested_bank] 
-		/ (Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size) ;
+		/ fl2i(Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size);
 	if (maximum_allowed < requested_weapons) 
 	{
 		requested_weapons = maximum_allowed ;
@@ -11530,7 +11533,7 @@ void sexp_set_secondary_ammo (int node)
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
 	maximum_allowed = shipp->weapons.secondary_bank_capacity[requested_bank]  
-		/ (Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]].cargo_size) ;
+		/ fl2i(Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]].cargo_size);
 	if (maximum_allowed < requested_weapons) 
 	{
 		requested_weapons = maximum_allowed ;
@@ -19301,7 +19304,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tConverts a string into an integer. The string must only contain numeric characters "
 		"or zero is returned \r\n"
 		"Takes 1 argument...\r\n"
-		"\t1:\String to convert." },
+		"\t1:\tString to convert." },
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
