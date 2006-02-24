@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.314 $
- * $Date: 2006-02-24 05:02:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.315 $
+ * $Date: 2006-02-24 05:13:26 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.314  2006/02/24 05:02:34  Goober5000
+ * remove my old anti-frustration thing since it's not what retail does
+ * --Goober5000
+ *
  * Revision 2.313  2006/02/20 07:26:07  taylor
  * div-by-0 bug fixage
  *
@@ -2590,9 +2594,10 @@ int parse_ship(bool replace)
 			Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first %d will be used", buf, MAX_SHIP_CLASSES, Num_ship_classes);
 			
 			//Skip the rest of the ships in non-modular tables, since we can't add them.
-			if(!replace) {
-				while(skip_to_start_of_string_either("$Name:", "#End"));
-			}
+			//WMC - nm, skip just one.
+			//if(!replace) {
+				skip_to_start_of_string_either("$Name:", "#End");
+			//}
 			return -1;
 		}
 		
