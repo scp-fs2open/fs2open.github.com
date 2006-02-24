@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.79 $
- * $Author: Goober5000 $
- * $Date: 2006-02-12 01:27:47 $
+ * $Revision: 2.80 $
+ * $Author: taylor $
+ * $Date: 2006-02-24 07:34:07 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2006/02/12 01:27:47  Goober5000
+ * more cool work on importing, music handling, etc.
+ * --Goober5000
+ *
  * Revision 2.78  2006/02/02 08:12:47  Goober5000
  * ugh, more ship/wing fixage
  * --Goober5000
@@ -946,7 +950,7 @@ int mission_parse_add_alt(char *name);
 void mission_parse_reset_alt();
 
 // code to save/restore mission parse stuff
-int get_mission_info(char *filename, mission *missionp = NULL);
+int get_mission_info(char *filename, mission *missionp = NULL, bool basic = true);
 
 // Goober5000
 void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);
