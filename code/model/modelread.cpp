@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.91 $
- * $Date: 2006-02-16 05:31:00 $
+ * $Revision: 2.92 $
+ * $Date: 2006-02-24 07:32:11 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2006/02/16 05:31:00  taylor
+ * NULL vec warning fix (basically just setup as if it were NULL and skip the extra work if needed)
+ * more bmpman related fixes, mainly addresses the condition where it would try to render textures that have been released
+ * have model_unload() run through Ship_info[] and clear out modelnum's when they are free'd (makes more sense here than doing it on level load to keep counts right)
+ * fix missing subsystem warning messages
+ *
  * Revision 2.90  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -4042,20 +4048,20 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	// by extracting them from the of_dst vector.
 	// Call this the desired_angles
 	angles desired_angles;
-	vm_extract_angles_vector(&desired_angles, &of_dst);
-/*
+//	vm_extract_angles_vector(&desired_angles, &of_dst);
+
 	desired_angles.p = (float)acos(of_dst.xyz.z);
 	desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
 	desired_angles.b = 0.0f;
-*/
+
 	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
 
 	//------------	
 	// Gradually turn the turret towards the desired angles
 	float step_size = turret->turret_turning_rate * flFrametime;
 
-	vm_interp_angle(&base_angles->h,desired_angles.h,step_size);
-	vm_interp_angle(&gun_angles->p,desired_angles.p,step_size);
+	vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
+	vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
 
 //	base_angles->h -= step_size*(key_down_timef(KEY_1)-key_down_timef(KEY_2) );
 //	gun_angles->p += step_size*(key_down_timef(KEY_3)-key_down_timef(KEY_4) );
