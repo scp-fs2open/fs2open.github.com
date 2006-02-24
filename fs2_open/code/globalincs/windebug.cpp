@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-01-31 06:42:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.37 $
+ * $Date: 2006-02-24 07:36:49 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/01/31 06:42:28  wmcoolmon
+ * Removed USE_LUA
+ *
  * Revision 2.35  2006/01/27 06:21:10  Goober5000
  * replace quick sort with insertion sort in many places
  * --Goober5000
@@ -982,7 +985,7 @@ void dump_text_to_clipboard(char *text)
 
 void _cdecl WinAssert(char * text, char * filename, int linenum )
 {
-	if (CmdLine_NoWarn)
+	if (Cmdline_nowarn)
 		return;
 
 	int val;
@@ -1157,7 +1160,7 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 {
 #ifdef FRED
 
-	if (!CmdLine_NoWarn)
+	if (!Cmdline_nowarn)
 	{
 		va_list args;
 		static bool show_warnings = true;
@@ -1192,7 +1195,7 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 #ifndef NDEBUG
 #ifndef DONT_SHOW_WARNINGS	// Goober5000
 
-	if (CmdLine_NoWarn)
+	if (Cmdline_nowarn)
 		return;
 
 	va_list args;

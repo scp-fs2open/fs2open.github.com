@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.84 $
- * $Date: 2006-01-10 18:37:45 $
- * $Author: randomtiger $
+ * $Revision: 2.85 $
+ * $Date: 2006-02-24 07:36:49 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2006/01/10 18:37:45  randomtiger
+ * Improvements to voice recognition system.
+ * Also function put on -voicer launcher option.
+ *
  * Revision 2.83  2005/11/24 06:37:47  phreak
  * Added -missile_lighting command line
  *
@@ -541,116 +545,127 @@ int fred2_parse_cmdline(int argc, char *argv[]);
 // Add any extern definitions here and put the actual variables inside of cmdline.cpp for ease of use
 // Also, check to make sure anything you add doesn't break Fred or TestCode
 
-extern int Cmdline_multi_stream_chat_to_file;
-extern int Cmdline_freespace_no_sound;
-extern int Cmdline_freespace_no_music;
-extern int Cmdline_gimme_all_medals;
-extern int Cmdline_use_last_pilot;
-extern int Cmdline_cd_check;
-extern int Cmdline_start_netgame;
-extern int Cmdline_closed_game;
-extern int Cmdline_restricted_game;
-extern int Cmdline_network_port;
+
+// RETAIL OPTIONS ----------------------------------------------
+extern char *Cmdline_connect_addr;
 extern char *Cmdline_game_name;
 extern char *Cmdline_game_password;
 extern char *Cmdline_rank_above;
 extern char *Cmdline_rank_below;
-extern char *Cmdline_connect_addr;
-extern int Cmdline_multi_log;
-extern int Cmdline_server_firing;
+extern int Cmdline_cd_check;
 extern int Cmdline_client_dodamage;
-extern int Cmdline_spew_pof_info;
+extern int Cmdline_closed_game;
+extern int Cmdline_freespace_no_music;
+extern int Cmdline_freespace_no_sound;
+extern int Cmdline_gimme_all_medals;
 extern int Cmdline_mouse_coords;
+extern int Cmdline_multi_log;
+extern int Cmdline_multi_stream_chat_to_file;
+extern int Cmdline_network_port;
+extern int Cmdline_restricted_game;
+extern int Cmdline_server_firing;
+extern int Cmdline_spew_pof_info;
+extern int Cmdline_start_netgame;
 extern int Cmdline_timeout;
+extern int Cmdline_use_last_pilot;
+extern int Cmdline_window;
+
+
+// FSO OPTIONS -------------------------------------------------
+
+// Graphics related
+extern double specular_exponent_value;
+extern float Cmdline_clip_dist;
+extern float Cmdline_fov;
+extern float Cmdline_max_subdivide;
+extern float Cmdline_ogl_spec;
+extern float static_light_factor;
+extern float static_point_factor;
+extern float static_tube_factor;
+extern int Cmdline_2d_poof;
+extern int Cmdline_alpha_env;
+extern int Cmdline_ambient_factor;
+extern int Cmdline_cache_bitmaps;
+extern int Cmdline_cell;
+extern int Cmdline_decals;
+extern int Cmdline_env;
+extern int Cmdline_jpgtga;
+extern int Cmdline_mipmap;
+extern int Cmdline_missile_lighting;
+extern int Cmdline_noglow;
+extern int Cmdline_nomotiondebris;
+extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
+extern int Cmdline_nospec;
+extern int Cmdline_pcx32;
+extern int Cmdline_tga16;
+
+// Game Speed related
+extern int Cmdline_batch_3dunlit;
+extern int Cmdline_d3d_particle;
+extern int Cmdline_img2dds;
+extern int Cmdline_NoFPSCap;
+extern int Cmdline_no_vsync;
+
+// HUD related
+extern int Cmdline_ballistic_gauge;
+extern int Cmdline_dualscanlines;
+extern int Cmdline_orb_radar;
+extern int Cmdline_rearm_timer;
+extern int Cmdline_targetinfo;
+
+// Gameplay related
+extern int Cmdline_3dwarp;
+extern int Cmdline_beams_no_pierce_shields;	// Goober5000
+extern int Cmdline_ship_choice_3d;
+extern int Cmdline_warp_flash;
+
+// Audio related
+extern int Cmdline_query_speech;
+extern int Cmdline_snd_preload;
+extern int Cmdline_voice_recognition;
+
+// MOD related
+extern char *Cmdline_mod;	 // DTP for mod support
+extern int Cmdline_tbp;
+extern int Cmdline_wcsaga;
+
+// Multiplayer/Network related
+extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
+extern int Cmdline_ingamejoin;
+extern int Cmdline_mpnoreturn;
 extern int Cmdline_SpewMission_CRCs;
 extern int Cmdline_SpewTable_CRCs;
 
-extern int Cmdline_window;
-extern char *Cmdline_almission;	//DTP for autoload mission
-extern int Cmdline_gf4fix;	//DTP for Random tigers GF4fix.
-extern int Cmdline_allslev;
-extern int Cmdline_dualscanlines;
-extern int Cmdline_nomovies;	//WMC Toggles movie playing support
-extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
-extern char *Cmdline_mod; //DTP for mod support
-extern int Cmdline_show_fps;//DTP moved here because it is the correct place for it to be.
-extern int Cmdline_show_stats;
-extern int Cmdline_safeloading;
-extern int Cmdline_nospec;
-extern int Cmdline_orb_radar;
-
-extern int Cmdline_mipmap;
-
-extern int Cmdline_beams_no_pierce_shields;	// Goober5000
-extern float Cmdline_fov;
-
-extern float static_light_factor;
-extern float static_tube_factor;
-extern float static_point_factor;
-extern double specular_exponent_value;
-extern float Cmdline_ogl_spec;
-
-extern int Cmdline_cell;
-extern int Cmdline_nohtl;
-extern int Cmdline_jpgtga;
-extern int Cmdline_no_set_gamma;
-extern int Cmdline_no_vsync;
-extern int Cmdline_pcx32;
-extern int Cmdline_nomotiondebris;
-extern int Cmdline_cache_bitmaps;
-extern int Cmdline_noibx;
-extern int Cmdline_img2dds;
+// Troubleshooting
+extern int Cmdline_d3d_lesstmem;
+extern int Cmdline_FRED2_htl;
 extern int Cmdline_load_all_weapons;
+extern int Cmdline_nohtl;
+extern int Cmdline_noibx;
+extern int Cmdline_nomovies;	// WMC Toggles movie playing support
+extern int Cmdline_no_set_gamma;
+extern int Cmdline_novbo;
+extern int Cmdline_safeloading;
+extern int Cmdline_ybugfix;		// Temporary... REMOVEME LATER!!
 
+// Developer/Testing related
+extern char *Cmdline_start_mission;
+extern int Cmdline_allslev;
+extern int Cmdline_dis_collisions;
+extern int Cmdline_dis_weapons;
+extern int Cmdline_noparseerrors;
+extern int Cmdline_nowarn;
+extern int Cmdline_rt;
+extern int Cmdline_show_fps;	// DTP moved here because it is the correct place for it to be.
+extern int Cmdline_show_mem_usage;
+extern int Cmdline_show_pos;
+extern int Cmdline_show_stats;
+extern int Cmdline_timerbar;
 #ifdef SCP_UNIX
-	extern int Cmdline_no_grab;
+extern int Cmdline_no_grab;
 #endif
 
-extern int Cmdline_noglow;
-extern int Cmdline_timerbar;
-extern int Cmdline_query_speech;
-extern int Cmdline_ship_choice_3d;
-extern int Cmdline_d3d_particle;
 
-extern int Cmdline_ambient_factor;
-extern int Cmdline_show_mem_usage;
-extern int Cmdline_rt;
-extern int Cmdline_ingamejoin;
-extern char *Cmdline_start_mission;
-
-extern int Cmdline_d3d_lesstmem;
-extern int Cmdline_batch_3dunlit;
-
-extern int Cmdline_2d_poof;
-extern int Cmdline_3dwarp;
-extern int Cmdline_warp_flash;
-
-extern int Cmdline_FRED2_htl;
-extern int CmdLine_NoWarn;
-
-extern int Cmdline_novbo;
-extern int Cmdline_snd_preload;
-extern int Cmdline_NoFPSCap;
-
-extern float Cmdline_max_subdivide;
-
-extern int Cmdline_alpha_env;
-extern int Cmdline_env;
-extern int Cmdline_decals;
-
-extern int Cmdline_ballistic_gauge;
-
-extern int Cmdline_tga16;
-
-extern int Cmdline_wcsaga;
-extern int Cmdline_tbp;
-
-extern int Cmdline_voice_recognition;
-
-extern int Cmdline_rearm_timer;
-extern int Cmdline_missile_lighting;
-
-extern int Cmdline_ybugfix;  // Temporary... REMOVEME LATER!!
 
 //extern char FreeSpace_Directory[]; // allievating a cfilesystem problem caused by fred -- Kazan
 #endif

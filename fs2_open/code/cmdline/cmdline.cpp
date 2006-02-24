@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.133 $
- * $Date: 2006-02-01 23:35:31 $
- * $Author: phreak $
+ * $Revision: 2.134 $
+ * $Date: 2006-02-24 07:36:49 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2006/02/01 23:35:31  phreak
+ * -ingame should be -ingame_join
+ *
  * Revision 2.132  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -804,11 +807,13 @@ public:
 	char *str();
 };
 
-float Cmdline_max_subdivide = 0.0f;
+static cmdline_parm Parm_list(NULL, NULL);
+static int Parm_list_inited = 0;
 
-int Cmdline_env = 0;
-int Cmdline_decals = 0;
-int Cmdline_alpha_env = 0;
+
+extern float VIEWER_ZOOM_DEFAULT;
+extern float Viewer_zoom;
+
 
 enum
 {
@@ -938,233 +943,238 @@ Flag exe_params[] =
 };
 
 // here are the command line parameters that we will be using for FreeSpace
+
+// RETAIL options ----------------------------------------------
+cmdline_parm connect_arg("-connect", NULL);			// Cmdline_connect_addr
+cmdline_parm gamename_arg("-gamename", NULL);		// Cmdline_game_name
+cmdline_parm gamepassword_arg("-password", NULL);	// Cmdline_game_password
+cmdline_parm allowabove_arg("-allowabove", NULL);	// Cmdline_rank_above
+cmdline_parm allowbelow_arg("-allowbelow", NULL);	// Cmdline_rank_below
 cmdline_parm standalone_arg("-standalone", NULL);
-cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL);	//Removes 'Return to Flight Deck' in respawn dialog -C
-cmdline_parm nosound_arg("-nosound", NULL);
-cmdline_parm nomusic_arg("-nomusic", NULL);
-cmdline_parm startgame_arg("-startgame", NULL);
-cmdline_parm gamename_arg("-gamename", NULL);
-cmdline_parm gamepassword_arg("-password", NULL);
-cmdline_parm gameclosed_arg("-closed", NULL);
-cmdline_parm gamerestricted_arg("-restricted", NULL);
-cmdline_parm allowabove_arg("-allowabove", NULL);
-cmdline_parm allowbelow_arg("-allowbelow", NULL);
+cmdline_parm nosound_arg("-nosound", NULL);			// Cmdline_freespace_no_sound
+cmdline_parm nomusic_arg("-nomusic", NULL);			// Cmdline_freespace_no_music
+cmdline_parm startgame_arg("-startgame", NULL);		// Cmdline_start_netgame
+cmdline_parm gameclosed_arg("-closed", NULL);		// Cmdline_closed_game
+cmdline_parm gamerestricted_arg("-restricted", NULL);	// Cmdline_restricted_game
 cmdline_parm port_arg("-port", NULL);
-cmdline_parm connect_arg("-connect", NULL);
-cmdline_parm multilog_arg("-multilog", NULL);
-cmdline_parm server_firing_arg("-oldfire", NULL);
-cmdline_parm client_dodamage("-clientdamage", NULL);
-cmdline_parm pof_spew("-pofspew", NULL);
-cmdline_parm mouse_coords("-coords", NULL);
-cmdline_parm timeout("-timeout", NULL);
-cmdline_parm window("-window", NULL);
-cmdline_parm almission_arg("-almission", NULL); //DTP for autoload Multi mission
-cmdline_parm allslev_arg("-allslev", NULL); //Give access to all single player missions
-cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Change to phreaks options including new targetting code
-cmdline_parm targetinfo_arg("-targetinfo", NULL);	//Adds ship name/class to right of target box -C
-cmdline_parm nomovies_arg("-nomovies", NULL); // Allows video streaming
-cmdline_parm noscalevid_arg("-noscalevid", NULL); // disable video scaling that fits to window
-cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	//turns off parsing errors -C
-cmdline_parm mod_arg("-mod", NULL); //DTP modsupport
-cmdline_parm fps_arg("-fps", NULL);
-cmdline_parm pos_arg("-pos", NULL);
-cmdline_parm mipmap_arg("-mipmap", NULL);
-cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// beams do not pierce shields - Goober5000
-cmdline_parm fov_arg("-fov", NULL);	// comand line FOV -Bobboau
-cmdline_parm clip_dist_arg("-clipdist", NULL);
-cmdline_parm spec_exp_arg("-spec_exp", NULL);	// comand line FOV -Bobboau
-cmdline_parm spec_point_arg("-spec_point", NULL);	// comand line FOV -Bobboau
-cmdline_parm spec_static_arg("-spec_static", NULL);	// comand line FOV -Bobboau
-cmdline_parm spec_tube_arg("-spec_tube", NULL);	// comand line FOV -Bobboau
-cmdline_parm safeloading_arg("-safeloading", NULL); //Uses old loading method -C
-cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); //Removes those ugly floating rocks -C
-cmdline_parm spec_arg("-spec", NULL); // use specular highlighting -Sticks
-cmdline_parm glow_arg("-glow", NULL); // use Bobs glow code
-cmdline_parm MissionCRCs("-missioncrcs", NULL);
-cmdline_parm TableCRCs("-tablecrcs", NULL);
-cmdline_parm htl_arg("-nohtl", NULL); //Use HT&L	  
-cmdline_parm cell_arg("-cell", NULL);
-cmdline_parm jpgtga_arg("-jpgtga",NULL);
-cmdline_parm no_set_gamma_arg("-no_set_gamma",NULL);
-cmdline_parm no_vsync_arg("-no_vsync", NULL);
+cmdline_parm multilog_arg("-multilog", NULL);		// Cmdline_multi_log
+cmdline_parm server_firing_arg("-oldfire", NULL);	// Cmdline_server_firing
+cmdline_parm client_dodamage("-clientdamage", NULL);	// Cmdline_client_dodamage
+cmdline_parm pof_spew("-pofspew", NULL);			// Cmdline_spew_pof_info
+cmdline_parm mouse_coords("-coords", NULL);			// Cmdline_mouse_coords
+cmdline_parm timeout("-timeout", NULL);				// Cmdline_timeout
+cmdline_parm window("-window", NULL);				// Cmdline_window
+
+char *Cmdline_connect_addr = NULL;
+char *Cmdline_game_name = NULL;
+char *Cmdline_game_password = NULL;
+char *Cmdline_rank_above = NULL;
+char *Cmdline_rank_below = NULL;
+int Cmdline_cd_check = 1;
+int Cmdline_client_dodamage = 0;
+int Cmdline_closed_game = 0;
+int Cmdline_freespace_no_music = 0;
+int Cmdline_freespace_no_sound = 0;
+int Cmdline_gimme_all_medals = 0;
+int Cmdline_mouse_coords = 0;
+int Cmdline_multi_log = 0;
+int Cmdline_multi_stream_chat_to_file = 0;
+int Cmdline_network_port = -1;
+int Cmdline_restricted_game = 0;
+int Cmdline_server_firing = 0;
+int Cmdline_spew_pof_info = 0;
+int Cmdline_start_netgame = 0;
+int Cmdline_timeout = -1;
+int Cmdline_use_last_pilot = 0;
+int Cmdline_window = 0;
+
+
+// FSO options -------------------------------------------------
+
+// Graphics related
+cmdline_parm spec_exp_arg("-spec_exp", NULL);		// comand line FOV -Bobboau
+cmdline_parm clip_dist_arg("-clipdist", NULL);		// Cmdline_clip_dist
+cmdline_parm fov_arg("-fov", NULL);					// Cmdline_fov  -- comand line FOV -Bobboau
+cmdline_parm max_subdivide_arg("-max_subdivide", NULL);	// Cmdline_max_subdivide  -- comand line maximum level of tesleation for n-patches -Bobboau
+cmdline_parm ogl_spec_arg("-ogl_spec", NULL);		// Cmdline_ogl_spec
+cmdline_parm spec_static_arg("-spec_static", NULL);
+cmdline_parm spec_point_arg("-spec_point", NULL);
+cmdline_parm spec_tube_arg("-spec_tube", NULL);
+cmdline_parm poof_2d_arg("-2d_poof", NULL);			// Cmdline_2d_poof
+cmdline_parm alpha_env("-alpha_env", NULL);			// Cmdline_alpha_env
+cmdline_parm ambient_factor_arg("-ambient_factor", NULL);	// Cmdline_ambient_factor
+cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
+cmdline_parm cell_arg("-cell", NULL);				// Cmdline_cell
+cmdline_parm decals("-decals", NULL);				// Cmdline_decals
+cmdline_parm env("-env", NULL);						// Cmdline_env
+cmdline_parm jpgtga_arg("-jpgtga", NULL);			// Cmdline_jpgtga
+cmdline_parm mipmap_arg("-mipmap", NULL);			// Cmdline_mipmap
+cmdline_parm missile_lighting_arg("-missile_lighting", NULL);	// Cmdline_missile_lighting
+cmdline_parm glow_arg("-glow", NULL); 				// Cmdline_noglow  -- use Bobs glow code
+cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); // Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
+cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disable video scaling that fits to window
+cmdline_parm spec_arg("-spec", NULL);				// Cmdline_nospec  -- use specular highlighting -Sticks
+cmdline_parm pcx32_arg("-pcx32", NULL);				// Cmdline_pcx32
+cmdline_parm tga16_arg("-tga16", NULL);				// Cmdline_tga16  -- 32-bit TGA to 16-bit conversion
+
+float Cmdline_clip_dist = Default_min_draw_distance;
+float Cmdline_fov = 0.75f;
+float Cmdline_max_subdivide = 0.0f;
+float Cmdline_ogl_spec = 80.0f;
+int Cmdline_2d_poof = 0;
+int Cmdline_alpha_env = 0;
+int Cmdline_ambient_factor = 128;
+int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
+int Cmdline_cell = 0;
+int Cmdline_decals = 0;
+int Cmdline_env = 0;
+int Cmdline_jpgtga = 0;
+int Cmdline_mipmap = 0;
+int Cmdline_missile_lighting = 0;
+int Cmdline_noglow = 1;
+int Cmdline_nomotiondebris = 0;
+int Cmdline_noscalevid = 0;
+int Cmdline_nospec = 1;
+int Cmdline_pcx32 = 0;
+int Cmdline_tga16 = 0;
+
+// Game Speed related
+cmdline_parm batch_3dunlit_arg("-batch_3dunlit", NULL);	// Cmdline_batch_3dunlit
+cmdline_parm d3d_particle_arg("-d3d_particle", NULL);	// Cmdline_d3d_particle
+cmdline_parm img2dds_arg("-img2dds", NULL);			// Cmdline_img2dds
+cmdline_parm no_fpscap("-no_fps_capping", NULL);	// Cmdline_NoFPSCap
+cmdline_parm no_vsync_arg("-no_vsync", NULL);		// Cmdline_no_vsync
+
+int Cmdline_batch_3dunlit = 0;
+int Cmdline_d3d_particle = 0;
+int Cmdline_img2dds = 0;
+int Cmdline_NoFPSCap = 0; // Disable FPS capping - kazan
+int Cmdline_no_vsync = 0;
+
+// HUD related
+cmdline_parm ballistic_gauge("-ballistic_gauge", NULL);	// Cmdline_ballistic_gauge
+cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Cmdline_dualscanlines  -- Change to phreaks options including new targetting code
+cmdline_parm orb_radar("-orbradar", NULL);			// Cmdline_orb_radar
+cmdline_parm rearm_timer_arg("-rearm_timer", NULL);	// Cmdline_rearm_timer
+cmdline_parm targetinfo_arg("-targetinfo", NULL);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C
+cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
+
+int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
+int Cmdline_dualscanlines = 0;
+int Cmdline_orb_radar = 0;
+int Cmdline_rearm_timer = 0;
+int Cmdline_targetinfo = 0;
+
+// Gameplay related
+cmdline_parm use_3dwarp("-3dwarp", NULL);			// Cmdline_3dwarp
+cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// Cmdline_beams_no_pierce_shields  -- beams do not pierce shields - Goober5000
+cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);	// Cmdline_ship_choice_3d
+cmdline_parm use_warp_flash("-warp_flash", NULL);	// Cmdline_warp_flash
+
+int Cmdline_3dwarp = 0;
+int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
+int Cmdline_ship_choice_3d = 0;
+int Cmdline_warp_flash = 0;
+
+// Audio related
+cmdline_parm query_speech_arg("-query_speech", NULL);	// Cmdline_query_speech
+cmdline_parm snd_preload_arg("-snd_preload", NULL);		// Cmdline_snd_preload
+cmdline_parm voice_recognition_arg("-voicer", NULL);	// Cmdline_voice_recognition
+
+int Cmdline_query_speech = 0;
+int Cmdline_snd_preload = 0; // preload game sounds during mission load
+int Cmdline_voice_recognition = 0;
+
+// MOD related
+cmdline_parm mod_arg("-mod", NULL);		// Cmdline_mod  -- DTP modsupport
+cmdline_parm tbp("-tbp", NULL);			// Cmdline_tbp  -- TBP warp effects -Et1
+cmdline_parm wcsaga("-wcsaga", NULL);	// Cmdline_wcsaga
+
+char *Cmdline_mod = NULL; //DTP for mod arguement
+int Cmdline_tbp = 0;
+int Cmdline_wcsaga = 0;
+
+// Multiplayer/Network related
+cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
+cmdline_parm ingamejoin_arg("-ingame_join", NULL);	// Cmdline_ingamejoin
+cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
+cmdline_parm MissionCRCs("-missioncrcs", NULL);		// Cmdline_SpewMission_CRCs
+cmdline_parm TableCRCs("-tablecrcs", NULL);			// Cmdline_SpewTable_CRCs
+
+char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
+int Cmdline_ingamejoin = 0;
+int Cmdline_mpnoreturn = 0;
+int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
+int Cmdline_SpewTable_CRCs = 0;
+
+// Troubleshooting
+cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys", NULL);	// Cmdline_d3d_lesstmem
+cmdline_parm fred2_htl_arg("-fredhtl", NULL);		// Cmdline_FRED2_htl
+cmdline_parm loadallweapons_arg("-loadallweps", NULL);	// Cmdline_load_all_weapons
+cmdline_parm htl_arg("-nohtl", NULL);				// Cmdline_nohtl  -- don't use HT&L
+cmdline_parm noibx_arg("-noibx", NULL);				// Cmdline_noibx
+cmdline_parm nomovies_arg("-nomovies", NULL);		// Cmdline_nomovies  -- Allows video streaming
+cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL);	// Cmdline_no_set_gamma
+cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
+cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- Uses old loading method -C
+cmdline_parm ybugfix_arg("-y_bug_fix", NULL); 		// Cmdline_ybugfix  -- Temporary... REMOVEME LATER!!
+
+int Cmdline_d3d_lesstmem = 0;
+int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
+int Cmdline_load_all_weapons = 0;
+int Cmdline_nohtl = 0;
+int Cmdline_noibx = 0;
+int Cmdline_nomovies = 0;
+int Cmdline_no_set_gamma = 0;
+int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
+int Cmdline_safeloading = 0;
+int Cmdline_ybugfix = 0; // Temporary... REMOVEME LATER!!
+
+// Developer/Testing related
+cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
+cmdline_parm allslev_arg("-allslev", NULL);			// Cmdline_allslev  -- Give access to all single player missions
+cmdline_parm dis_collisions("-dis_collisions", NULL);	// Cmdline_dis_collisions
+cmdline_parm dis_weapons("-dis_weapons", NULL);		// Cmdline_dis_weapons
+cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	// Cmdline_noparseerrors  -- turns off parsing errors -C
+cmdline_parm nowarn_arg("-no_warn", NULL);			// Cmdline_nowarn
+cmdline_parm rt_arg("-rt", NULL);					// Cmdline_rt
+cmdline_parm fps_arg("-fps", NULL);					// Cmdline_show_fps
+cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL);	// Cmdline_show_mem_usage
+cmdline_parm pos_arg("-pos", NULL);					// Cmdline_show_pos
+cmdline_parm stats_arg("-stats", NULL);				// Cmdline_show_stats
+cmdline_parm timerbar_arg("-timerbar", NULL);		// Cmdline_timerbar
 #ifdef SCP_UNIX
-	cmdline_parm no_grab("-nograb", NULL);
+cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
-cmdline_parm pcx32_arg("-pcx32",NULL);
-cmdline_parm timerbar_arg("-timerbar", NULL);
-cmdline_parm stats_arg("-stats", NULL);
-cmdline_parm query_speech_arg("-query_speech", NULL);
-cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);
-cmdline_parm d3d_particle_arg("-d3d_particle",NULL);
-cmdline_parm show_mem_usage_arg("-show_mem_usage",NULL);
-cmdline_parm rt_arg("-rt",NULL);
-cmdline_parm ingamejoin_arg("-ingame_join", NULL);
-cmdline_parm start_mission_arg("-start_mission",NULL);
-cmdline_parm ambient_factor_arg("-ambient_factor",NULL);
-cmdline_parm get_flags_arg("-get_flags",NULL);
-cmdline_parm output_sexp_arg("-output_sexps",NULL);	//WMC - outputs all SEXPs to sexps.html
-cmdline_parm output_scripting_arg("-output_scripting",NULL);	//WMC
-cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys",NULL);
-cmdline_parm batch_3dunlit_arg("-batch_3dunlit",NULL);
-cmdline_parm fred2_htl_arg("-fredhtl",NULL);
-cmdline_parm nowarn_arg("-no_warn", NULL);
-cmdline_parm max_subdivide_arg("-max_subdivide", NULL);	// comand line maximum level of tesleation for n-patches -Bobboau
-cmdline_parm env("-env", NULL);	
-cmdline_parm alpha_env("-alpha_env", NULL);	
-cmdline_parm decals("-decals", NULL);	
-cmdline_parm orb_radar("-orbradar",NULL);
-cmdline_parm use_3dwarp("-3dwarp", NULL);
-cmdline_parm use_warp_flash("-warp_flash", NULL);
-cmdline_parm ballistic_gauge("-ballistic_gauge", NULL );
-cmdline_parm dis_collisions("-dis_collisions", NULL);
-cmdline_parm dis_weapons("-dis_weapons", NULL);
-cmdline_parm noibx_arg("-noibx", NULL);
-cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);
-cmdline_parm img2dds_arg("-img2dds", NULL);
-cmdline_parm loadallweapons_arg("-loadallweps", NULL);
+
+char *Cmdline_start_mission = NULL;
+int Cmdline_allslev = 0;
+int Cmdline_dis_collisions = 0;
+int Cmdline_dis_weapons = 0;
+int Cmdline_noparseerrors = 0;
+int Cmdline_nowarn = 0; // turn warnings off in FRED
+int Cmdline_rt = 0;
+int Cmdline_show_fps = 0;
+int Cmdline_show_mem_usage = 0;
+int Cmdline_show_pos = 0;
+int Cmdline_show_stats = 0;
+int Cmdline_timerbar = 0;
+#ifdef SCP_UNIX
+int Cmdline_no_grab = 0;
+#endif
+
+// Other
+cmdline_parm get_flags_arg("-get_flags", NULL);
+cmdline_parm output_sexp_arg("-output_sexps", NULL); //WMC - outputs all SEXPs to sexps.html
+cmdline_parm output_scripting_arg("-output_scripting", NULL);	//WMC
+
+// Totally useless crap...
 #ifdef WIN32
 cmdline_parm fix_bugs("-fixbugs", NULL);
 cmdline_parm disable_crashing("-nocrash", NULL);
 #endif
 
-//Experimental
-cmdline_parm tga16_arg("-tga16", NULL); // 32-bit TGA to 16-bit conversion
 
-cmdline_parm voice_recognition_arg("-voicer", NULL);
-cmdline_parm poof_2d_arg("-2d_poof", NULL);
-cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
-
-cmdline_parm no_vbo_arg("-novbo", NULL);
-cmdline_parm snd_preload_arg("-snd_preload", NULL);
-
-cmdline_parm no_fpscap("-no_fps_capping", NULL);
-
-cmdline_parm tbp("-tbp", NULL ); // TBP warp effects -Et1
-cmdline_parm wcsaga("-wcsaga", NULL);
-
-cmdline_parm ogl_spec_arg("-ogl_spec", NULL);
-
-cmdline_parm ybugfix_arg("-y_bug_fix", NULL);  // Temporary... REMOVEME LATER!!
-
-cmdline_parm rearm_timer_arg("-rearm_timer", NULL);
-cmdline_parm missile_lighting_arg("-missile_lighting", NULL);
-
-int Cmdline_ybugfix = 0; // Temporary... REMOVEME LATER!!
-
-int Cmdline_mpnoreturn = 0;
-int Cmdline_show_stats = 0;
-int Cmdline_timerbar = 0;
-int Cmdline_multi_stream_chat_to_file = 0;
-int Cmdline_freespace_no_sound = 0;
-int Cmdline_freespace_no_music = 0;
-int Cmdline_gimme_all_medals = 0;
-int Cmdline_use_last_pilot = 0;
-int Cmdline_multi_protocol = -1;
-int Cmdline_cd_check = 1;
-int Cmdline_start_netgame = 0;
-int Cmdline_closed_game = 0;
-int Cmdline_restricted_game = 0;
-int Cmdline_network_port = -1;
-char *Cmdline_game_name = NULL;
-char *Cmdline_game_password = NULL;
-char *Cmdline_rank_above= NULL;
-char *Cmdline_rank_below = NULL;
-char *Cmdline_connect_addr = NULL;
-char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
-char *Cmdline_mod = NULL; //DTP for mod arguement
-int Cmdline_multi_log = 0;
-int Cmdline_server_firing = 0;
-int Cmdline_client_dodamage = 0;
-int Cmdline_spew_pof_info = 0;
-int Cmdline_mouse_coords = 0;
-int Cmdline_timeout = -1;
-int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
-int Cmdline_SpewTable_CRCs = 0;
-int Cmdline_ship_choice_3d = 0;
-int Cmdline_d3d_particle = 0;
-int Cmdline_orb_radar = 0;
-int Cmdline_3dwarp = 0;
-int Cmdline_warp_flash = 0;
-int Cmdline_dis_collisions = 0;
-int Cmdline_dis_weapons = 0;
-int Cmdline_noibx = 0;
-
-int Cmdline_window = 0;
-int Cmdline_allslev = 0;
-int Cmdline_dualscanlines	= 0;
-int Cmdline_targetinfo = 0;
-int Cmdline_nomovies = 0;
-int Cmdline_noscalevid = 0;
-int Cmdline_noparseerrors = 0;
-int Cmdline_show_fps = 0;
-int Cmdline_show_pos = 0;
-int Cmdline_safeloading = 0;
-int Cmdline_nospec = 0;
-int Cmdline_noglow = 0;
-
-int Cmdline_mipmap = 0;
-int Cmdline_rt = 0;
-int Cmdline_ingamejoin = 0;
-char *Cmdline_start_mission = NULL;
-int Cmdline_ambient_factor  = 128;
-int Cmdline_2d_poof			= 0;
-int Cmdline_voice_recognition = 0;
-
-#ifdef SCP_UNIX
-	int Cmdline_no_grab = 0;
-#endif
-
-// Lets keep a convention here
-int Cmdline_nohtl = 0;
-int Cmdline_jpgtga = 0;
-int Cmdline_no_set_gamma = 0;
-int Cmdline_no_vsync = 0;
-int Cmdline_pcx32 = 0;
-int Cmdline_nomotiondebris = 0;
-int Cmdline_query_speech = 0;
-int Cmdline_img2dds = 0;
-
-int Cmdline_show_mem_usage = 0;
-int Cmdline_d3d_lesstmem = 0;
-
-int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
-int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
-int CmdLine_NoWarn = 0; // turn warnings off in FRED
-
-int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
-
-int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
-
-//Experimental
-int Cmdline_load_all_weapons = 0;
-int Cmdline_tga16 = 0;
-
-int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
-int Cmdline_snd_preload = 0; // preload game sounds during mission load
-
-int Cmdline_NoFPSCap; // Disable FPS capping - kazan
-
-//char FreeSpace_Directory[256]; // allievating a cfilesystem problem caused by fred -- Kazan
-
-static cmdline_parm Parm_list(NULL, NULL);
-static int Parm_list_inited = 0;
-
-float Cmdline_fov = 0.75f;
-float Cmdline_clip_dist = Default_min_draw_distance;
-extern float VIEWER_ZOOM_DEFAULT;
-extern float Viewer_zoom;
-
-float Cmdline_ogl_spec = 80.0f;
-
-int Cmdline_cell = 0;
-int Cmdline_batch_3dunlit = 0;
-
-// Goober5000
-int Cmdline_wcsaga = 0;
-int Cmdline_tbp = 0;
-
-int Cmdline_rearm_timer = 0;
-int Cmdline_missile_lighting = 0;
 
 
 #ifndef NDEBUG
@@ -1588,7 +1598,7 @@ bool SetCmdlineParams()
 
 	if (nowarn_arg.found())
 	{
-		CmdLine_NoWarn = 1;
+		Cmdline_nowarn = 1;
 	}
 
 	if (fred2_htl_arg.found())
@@ -1607,7 +1617,6 @@ bool SetCmdlineParams()
 	if (TableCRCs.found()) {
 		Cmdline_SpewTable_CRCs = 1;
 	}
-
 
 	// is this a standalone server??
 	if (standalone_arg.found()) {
@@ -1867,10 +1876,6 @@ bool SetCmdlineParams()
 	{
 		Cmdline_nospec = 0;
 	}
-	else
-	{
-		Cmdline_nospec = 1;
-	}
 
 	if ( htl_arg.found() ) 
 	{
@@ -1913,10 +1918,6 @@ bool SetCmdlineParams()
 	if(glow_arg.found() )
 	{
 		Cmdline_noglow = 0;
-	}
-	else
-	{
-		Cmdline_noglow = 1;
 	}
 
 	if(query_speech_arg.found() )
@@ -2113,32 +2114,22 @@ bool SetCmdlineParams()
 
 	if ( max_subdivide_arg.found() ) {
 		Cmdline_max_subdivide = max_subdivide_arg.get_float();
-	}else{
-		Cmdline_max_subdivide = 0;
 	}
 
 	if ( alpha_env.found() ) {
 		Cmdline_alpha_env = 1;
-	}else{
-		Cmdline_alpha_env = 0;
 	}
 
 	if ( env.found() ) {
 		Cmdline_env = 1;
-	}else{
-		Cmdline_env = 0;
 	}
 
 	if ( decals.found() ) {
 		Cmdline_decals = 1;
-	}else{
-		Cmdline_decals = 0;
 	}
 
 	if ( ballistic_gauge.found() ) {
 		Cmdline_ballistic_gauge = 1;
-	} else {
-		Cmdline_ballistic_gauge = 0;
 	}
 
 	if (wcsaga.found())
@@ -2148,8 +2139,6 @@ bool SetCmdlineParams()
 
 	if ( cache_bitmaps_arg.found() ) {
 		Cmdline_cache_bitmaps = 1;
-	} else {
-		Cmdline_cache_bitmaps = 0;
 	}
 
 	if(dis_collisions.found())
