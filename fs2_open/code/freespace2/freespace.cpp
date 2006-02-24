@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.226 $
- * $Date: 2006-02-20 07:30:14 $
+ * $Revision: 2.227 $
+ * $Date: 2006-02-24 07:34:07 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.226  2006/02/20 07:30:14  taylor
+ * updated to newest dynamic starfield code
+ *  - this mainly is to just better support SEXP based starfield bitmap changes (preloading, better in-mission stuff loading)
+ *  - also fixes index_buffer related double-free()
+ *  - done waste memory for env index buffer if env is not enabled
+ *  - address a couple of bm load/release issues and comment a little to tell why
+ *
  * Revision 2.225  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -2978,7 +2985,7 @@ int game_start_mission()
 {	
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
-	get_mission_info(Game_current_mission_filename, &The_mission);
+	get_mission_info(Game_current_mission_filename, &The_mission, false);
 
 	game_loading_callback_init();
 
@@ -3402,6 +3409,14 @@ void game_init()
 #ifndef NDEBUG
 	Use_fullscreen_at_startup = os_config_read_uint( NULL, NOX("ForceFullscreen"), 1 );
 #endif
+
+	// change FPS cap if told to do so (for those who can't use vsync or where vsync it's enough)
+	uint max_fps = 0;
+	if ( (max_fps = os_config_read_uint(NULL, NOX("MaxFPS"), 0)) != 0 ) {
+		if ( (max_fps > 15) && (max_fps < 120) ) {
+			Framerate_cap = (int)max_fps;
+		}
+	}
 
 	Asteroids_enabled = 1;		
 
@@ -4083,7 +4098,6 @@ void game_show_framerate()
 #endif
 }
 
-extern int Cmdline_show_pos;
 void game_show_eye_pos(vec3d *eye_pos, matrix* eye_orient)
 {
 	if(!Cmdline_show_pos)

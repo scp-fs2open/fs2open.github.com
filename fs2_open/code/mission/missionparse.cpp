@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.161 $
- * $Date: 2006-02-17 08:36:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.162 $
+ * $Date: 2006-02-24 07:34:07 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.161  2006/02/17 08:36:16  Goober5000
+ * bother those variables
+ *
  * Revision 2.160  2006/02/17 08:13:53  Goober5000
  * fix subtle bug
  * --Goober5000
@@ -1602,12 +1605,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_string(pm->loading_screen[GR_1024],F_NAME,NULL);
 	}
 
-	strcpy(pm->skybox_model, "");
-	if (optional_string("$Skybox model:"))
-	{
-		stuff_string(pm->skybox_model,F_NAME,NULL);
-	}
-
 	//error testing
 	if ((found640) && !(found1024))
 	{
@@ -1616,6 +1613,12 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (!(found640) && (found1024))
 	{
 		Warning(LOCATION, "Mission: %s\nhas a 1024x768 loading screen but no 640x480 loading screen!",pm->name);
+	}
+
+	strcpy(pm->skybox_model, "");
+	if (optional_string("$Skybox model:"))
+	{
+		stuff_string(pm->skybox_model,F_NAME,NULL);
 	}
 
 	// Goober5000 - AI on a per-mission basis
@@ -5356,7 +5359,7 @@ void post_process_mission()
 	Last_file_checksum = Current_file_checksum;
 }
 
-int get_mission_info(char *filename, mission *mission_p)
+int get_mission_info(char *filename, mission *mission_p, bool basic)
 {
 
 	char real_fname[MAX_FILENAME_LEN];
@@ -5402,7 +5405,7 @@ int get_mission_info(char *filename, mission *mission_p)
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
 		memset( mission_p, 0, sizeof(mission) );
 		parse_init();
-		parse_mission_info(mission_p, true);
+		parse_mission_info(mission_p, basic);
 
 		// close localization
 		lcl_ext_close();
