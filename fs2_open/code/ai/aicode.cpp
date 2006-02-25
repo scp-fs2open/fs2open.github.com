@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.62 $
- * $Date: 2006-02-20 07:59:26 $
+ * $Revision: 1.63 $
+ * $Date: 2006-02-25 19:03:39 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.62  2006/02/20 07:59:26  Goober5000
+ * fixed several more things in the new ignore code
+ * --Goober5000
+ *
  * Revision 1.61  2006/02/20 02:13:07  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -3295,7 +3299,13 @@ int compact_ignore_new_objects(ai_info *aip, int force = 0)
 
 		// skip occupied slots
 		if (aip->ignore_new_objnums[current_index] != UNUSED_OBJNUM)
-			continue;
+		{
+			// prune invalid objects
+			if (Objects[aip->ignore_new_objnums[current_index]].signature != aip->ignore_new_signatures[current_index])
+				aip->ignore_new_objnums[current_index] = UNUSED_OBJNUM;
+			else
+				continue;
+		}
 
 		// find an index to move downward
 		for (int i = current_index + 1; i < MAX_IGNORE_NEW_OBJECTS; i++)
@@ -3370,6 +3380,10 @@ void ai_ignore_object(object *ignorer, object *ignored, int priority, int ignore
 
 		// compact the array
 		num_objects = compact_ignore_new_objects(aip);
+
+		// make sure we're not adding a duplicate
+		if (find_ignore_new_object_index(aip, OBJ_INDEX(ignored)) >= 0)
+			return;
 
 		// if we can't add a new one; "forget" one
 		if (num_objects >= MAX_IGNORE_NEW_OBJECTS)
