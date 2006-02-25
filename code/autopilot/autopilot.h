@@ -4,11 +4,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.8 $
- * $Date: 2005-07-13 02:50:49 $
+ * $Revision: 1.9 $
+ * $Date: 2006-02-25 21:42:31 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/07/13 02:50:49  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.7  2005/04/05 05:53:14  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -62,7 +66,7 @@ struct NavPoint
 	void *target_obj;
 	int waypoint_num; //only used when flags & NP_WAYPOINT
 
-	vec3d GetPosition();
+	vec3d *GetPosition();
 	char* GetInteralName();
 };
 

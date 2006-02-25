@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDNavigation.cpp $
- * $Revision: 1.16 $
- * $Date: 2005-08-23 07:37:14 $
- * $Author: taylor $
+ * $Revision: 1.17 $
+ * $Date: 2006-02-25 21:42:31 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/08/23 07:37:14  taylor
+ * fix navpoint hud brackets and text display in non-standard resolutions
+ *
  * Revision 1.15  2005/07/18 03:44:01  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -82,8 +85,6 @@
 #include "hud/hudtargetbox.h"
 
 
-
-extern int sexp_distance2(int obj1, char *subj);
 extern void hud_target_show_dist_on_bracket(int x, int y, float distance);
 extern void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick);
 // Draws the Navigation stuff on the HUD
@@ -91,33 +92,18 @@ void HUD_Draw_Navigation()
 {
 	if (CurrentNav != -1 && Navs[CurrentNav].flags & NP_VALIDTYPE && !(Navs[CurrentNav].flags & NP_NOSELECT))
 	{
-		
-		// ----------------- debug stuff -----------------
-		/*char *name = Navs[CurrentNav].GetInteralName();
-		int dista = sexp_distance2(Player_ship->objnum, name);
-		delete[] name;
-
-
-		char diststr[128];
-		sprintf(diststr, "Range to Nav: %d", dista);
-		gr_string( 20, 130, diststr);
-		gr_string( 20, 120, Navs[CurrentNav].NavName);*/
-		// ------------------------------------------------
-
 		int in_cockpit;
 		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
 			in_cockpit = 1;
 		else  
 			in_cockpit = 0;
 
-		vertex target_point;					// temp vertex used to find screen position for 3-D object;
-		vec3d target_pos;
-
 		//Players[Player_num].lead_indicator_active = 0;
 
+		vertex target_point;					// temp vertex used to find screen position for 3-D object;
+		vec3d *target_pos = Navs[CurrentNav].GetPosition();
 
-		target_pos = Navs[CurrentNav].GetPosition();//get it's position
-		float dist = vm_vec_dist_quick(&Objects[Player_ship->objnum].pos,&target_pos);
+		float dist = vm_vec_dist_quick(&Objects[Player_ship->objnum].pos, target_pos);
 
 		// find the current target vertex 
 		//
@@ -140,7 +126,7 @@ void HUD_Draw_Navigation()
 		
 
 
-		g3_rotate_vertex(&target_point,&target_pos);
+		g3_rotate_vertex(&target_point, target_pos);
 		g3_project_vertex(&target_point);
 
 
@@ -173,7 +159,7 @@ void HUD_Draw_Navigation()
 
 		if ( in_cockpit && target_point.codes != 0) {
 			gr_set_color_fast(&NavColor);
-			hud_draw_offscreen_indicator(&target_point, &target_pos, dist);	
+			hud_draw_offscreen_indicator(&target_point, target_pos, dist);	
 		}
 	}
 	/*
