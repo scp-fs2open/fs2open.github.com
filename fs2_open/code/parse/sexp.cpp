@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.225 $
- * $Date: 2006-02-24 07:30:23 $
- * $Author: taylor $
+ * $Revision: 2.226 $
+ * $Date: 2006-02-25 17:34:23 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.225  2006/02/24 07:30:23  taylor
+ * compiler warning fixage
+ *
  * Revision 2.224  2006/02/23 01:37:51  karajorma
  * Added the String-to-int SEXP.
  *
@@ -1290,8 +1293,8 @@ sexp_oper Operators[] = {
 	{ "*",					OP_MUL,				2,	INT_MAX	},
 	{ "/",					OP_DIV,				2,	INT_MAX	},
 	{ "mod",				OP_MOD,				2,	INT_MAX	},
-	{ "rand",				OP_RAND,			2,	2	},
-	{ "rand-multiple",		OP_RAND_MULTIPLE,	2,	2	},	// Goober5000
+	{ "rand",				OP_RAND,			2,	3	},
+	{ "rand-multiple",		OP_RAND_MULTIPLE,	2,	3	},	// Goober5000
 	{ "abs",				OP_ABS,				1,	1 },	// Goober5000
 	{ "min",				OP_MIN,				1,	INT_MAX },	// Goober5000
 	{ "max",				OP_MAX,				1,	INT_MAX },	// Goober5000
@@ -3973,6 +3976,12 @@ int rand_internal(int low, int high)
 	return (low + rand() % (diff + 1));
 }
 
+int seeded_rand_internal(int low, int high, int seed)
+{
+	srand(seed) ;
+	return rand_internal (low, high);
+}
+
 // Goober5000
 int abs_sexp(int n)
 {
@@ -4031,11 +4040,13 @@ int avg_sexp(int n)
 	return (int) floor(((double) avg_val / num) + 0.5);
 }
 
+// Karajorma - Added the ability to specify a seed. 
 int rand_sexp(int n, int multiple=0)
 {
 	int low = 0;
 	int high = 0;
 	int rand_num = 0;
+	int seed = 0;
 
 	if (n != -1) {
 		if (Sexp_nodes[n].value == SEXP_NUM_EVAL) {
@@ -4053,8 +4064,18 @@ int rand_sexp(int n, int multiple=0)
 			// get high
 			high = eval_num(CDR(n));
 
-			// get the random number
-			rand_num = rand_internal(low, high);
+			// is there a seed provided?
+			seed = eval_num(CDR(n+1));
+
+			if (!seed) 
+			{
+				// get the random number
+				rand_num = rand_internal(low, high);
+			}
+			else 
+			{
+				rand_num = seeded_rand_internal (low, high, seed); 
+			}
 
 			if (!multiple) {
 				// set .value and .text so random number is generated only once.
@@ -4067,7 +4088,8 @@ int rand_sexp(int n, int multiple=0)
 	return rand_num;
 }
 
-// Goober5000
+// Goober5000 
+// Karajorma - Added seeding funtionality. 
 int rand_multiple_sexp(int n)
 {
 	// get lower bound
@@ -4075,9 +4097,20 @@ int rand_multiple_sexp(int n)
 
 	// get upper bound
 	int high = eval_num(CDR(n));
+	
+	int seed = eval_num(CDR(n+1));
+	if (!seed)
+	{
+		// get the random number
+		return rand_internal(low, high);
+	}
+	else 
+	{
+		// Set the seed to a new seeded random value.
+		sprintf(Sexp_nodes[n+2].text, "%d", seeded_rand_internal(low, high, seed));
+		return seeded_rand_internal(low, high, seed);
+	}
 
-	// get the random number
-	return rand_internal(low, high);
 }
 
 // boolean evaluation functions.  Evaluate all sexpressions in the 'or' operator.  Needed to mark
@@ -18269,16 +18302,18 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_RAND, "Rand (Arithmetic operator)\r\n"
 		"\tGets a random number.  This number will not change on successive calls to this sexp.\r\n\r\n"
-		"Returns a number.  Takes 2 numeric arguments...\r\n"
+		"Returns a number.  Takes 2 or 3 numeric arguments...\r\n"
 		"\t1:\tLow range of random number.\r\n"
-		"\t2:\tHigh range of random number." },
+		"\t2:\tHigh range of random number.\r\n" 
+		"\t3:\t(optional) A seed to use when generating numbers" },
 
 	// Goober5000
 	{ OP_RAND_MULTIPLE, "Rand-multiple (Arithmetic operator)\r\n"
 		"\tGets a random number.  This number can and will change between successive calls to this sexp.\r\n\r\n"
-		"Returns a number.  Takes 2 numeric arguments...\r\n"
+		"Returns a number.  Takes 2 or 3 numeric arguments...\r\n"
 		"\t1:\tLow range of random number.\r\n"
-		"\t2:\tHigh range of random number." },
+		"\t2:\tHigh range of random number.\r\n" 
+		"\t3:\t(optional) A seed to use when generating numbers" },
 
 	// -------------------------- Nav Points --- Kazan -------------------------- 
 	{ OP_NAV_ISVISITED, "Takes 1 argument: The Nav Point Name\r\n"
