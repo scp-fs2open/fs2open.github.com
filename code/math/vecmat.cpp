@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-02-16 05:09:26 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2006-02-25 21:47:00 $
+ * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/02/16 05:09:26  taylor
+ * NULL vec warning fix (I don't really like this one that much so it may get replaced later)
+ *
  * Revision 2.26  2005/10/22 06:26:30  taylor
  * couple of changes to NULL vec fixes which better match what Volition would have done (makes both Goober and myself happier :))
  * keep track of what was an error (even if erroneous) and why with "VECMAT-ERROR" comment
@@ -127,7 +130,7 @@
  * added bank specific compatabilities
  *
  * Revision 2.2  2002/12/07 01:37:41  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
@@ -2833,7 +2836,7 @@ void vm_find_bounding_sphere(vec3d *pnts, int num_pnts, vec3d *center, float *ra
 		dia2 = zmax;
 	}
 
-	// calc inital center
+	// calc initial center
 	vm_vec_add(center, &dia1, &dia2);
 	vm_vec_scale(center, 0.5f);
 

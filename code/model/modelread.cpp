@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.92 $
- * $Date: 2006-02-24 07:32:11 $
- * $Author: taylor $
+ * $Revision: 2.93 $
+ * $Date: 2006-02-25 21:47:07 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2006/02/24 07:32:11  taylor
+ * vm_extract_angles_vector() doesn't do the same thing that this code used to so don't use it
+ *
  * Revision 2.91  2006/02/16 05:31:00  taylor
  * NULL vec warning fix (basically just setup as if it were NULL and skip the extra work if needed)
  * more bmpman related fixes, mainly addresses the condition where it would try to render textures that have been released
@@ -400,7 +403,7 @@
  * and... oh ya, added glow mapping
  *
  * Revision 2.6  2002/12/07 01:37:42  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
@@ -411,7 +414,7 @@
  * some general improvement to fighter beams,
  *
  * Revision 2.4  2002/10/19 19:29:27  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.3  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -3879,7 +3882,7 @@ void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii)
 						if(*current_vel / fabs(*current_vel) != *rot_accel / fabs(*rot_accel) ){
 							//this is gona be some messy stuff in here to figure out when it should start to slow down again
 							//it'll have to make a new slow angle I guess
-							//with an inital v in the oposite direction the time it will take for it to stop
+							//with an initial v in the oposite direction the time it will take for it to stop
 							//will be v/a, to get back up to the same speed again we will need twice that 
 							//it should be back to were it was in terms of both speed and position then
 							//so...

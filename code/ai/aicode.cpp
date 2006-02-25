@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.63 $
- * $Date: 2006-02-25 19:03:39 $
+ * $Revision: 1.64 $
+ * $Date: 2006-02-25 21:46:59 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.63  2006/02/25 19:03:39  Goober5000
+ * some tweaks to the ignore code
+ *
  * Revision 1.62  2006/02/20 07:59:26  Goober5000
  * fixed several more things in the new ignore code
  * --Goober5000
@@ -605,7 +608,7 @@
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
  * Revision 2.8  2002/10/19 19:29:28  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.7  2002/08/01 01:41:09  penguin
  * The big include file move

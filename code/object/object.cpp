@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.59 $
- * $Date: 2006-02-21 07:12:59 $
- * $Author: taylor $
+ * $Revision: 2.60 $
+ * $Date: 2006-02-25 21:47:07 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2006/02/21 07:12:59  taylor
+ * make changed object type debug message a bit more useful
+ *
  * Revision 2.58  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -231,7 +234,7 @@
  * some general improvement to fighter beams,
  *
  * Revision 2.2  2002/10/19 19:29:27  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/08/01 01:41:08  penguin
  * The big include file move

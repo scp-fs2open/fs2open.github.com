@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-02-20 07:30:15 $
- * $Author: taylor $
+ * $Revision: 2.67 $
+ * $Date: 2006-02-25 21:47:19 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/02/20 07:30:15  taylor
+ * updated to newest dynamic starfield code
+ *  - this mainly is to just better support SEXP based starfield bitmap changes (preloading, better in-mission stuff loading)
+ *  - also fixes index_buffer related double-free()
+ *  - done waste memory for env index buffer if env is not enabled
+ *  - address a couple of bm load/release issues and comment a little to tell why
+ *
  * Revision 2.65  2006/02/13 00:20:46  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -258,7 +265,7 @@
  * --Goober5000
  *
  * Revision 2.3  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.2  2002/09/20 20:05:29  phreak
  * glare parser stuff in stars_init()

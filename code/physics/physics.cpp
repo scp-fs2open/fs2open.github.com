@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-02-08 02:10:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2006-02-25 21:47:07 $
+ * $Author: Goober5000 $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/02/08 02:10:39  wmcoolmon
+ * Maybe fix gliding insta-turn problem
+ *
  * Revision 2.13  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -52,7 +55,7 @@
  * since the afterburners are routed through the physics engine, i needed to route the boost pod through here too
  *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move

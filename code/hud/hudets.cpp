@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-01-09 04:54:51 $
- * $Author: phreak $
+ * $Revision: 2.20 $
+ * $Date: 2006-02-25 21:47:00 $
+ * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/01/09 04:54:51  phreak
+ * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
+ *
  * Revision 2.18  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -328,7 +331,7 @@ void hud_init_ets()
 
 // -------------------------------------------------------------------------------------------------
 // ets_init_ship() is called by a ship when it is created (effectively, for every ship at the start
-// of a mission).  This will set the default charge rates for the different systems and initalialize
+// of a mission).  This will set the default charge rates for the different systems and initialize
 // the weapon energy reserve.
 //
 void ets_init_ship(object* obj)

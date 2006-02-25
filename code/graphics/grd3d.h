@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.21 $
- * $Date: 2006-01-18 16:14:04 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2006-02-25 21:47:00 $
+ * $Author: Goober5000 $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 2.20  2005/10/16 11:20:43  taylor
  * use unsigned index buffers
  *
@@ -178,7 +184,7 @@ struct colored_vector;
 void gr_d3d_exb_flush(int end_of_frame);
 
 extern DWORD 
-inital_state_block, 
+initial_state_block, 
 defuse_state_block, 
 glow_mapped_defuse_state_block, 
 nonmapped_specular_state_block, 

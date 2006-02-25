@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-01-18 16:14:04 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2006-02-25 21:47:07 $
+ * $Author: Goober5000 $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 2.11  2005/10/28 14:45:55  taylor
  * more TMAP_MAX_VERTS overflow protection for non-HTL usage (these are the things that need to be addressed to fix non-HTL)
  * fix some compiler warning messages
@@ -51,7 +57,7 @@
  * --Goober5000
  *
  * Revision 2.2  2002/12/07 01:37:42  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code

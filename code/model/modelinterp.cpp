@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.145 $
- * $Date: 2006-02-16 05:31:00 $
- * $Author: taylor $
+ * $Revision: 2.146 $
+ * $Date: 2006-02-25 21:47:07 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.145  2006/02/16 05:31:00  taylor
+ * NULL vec warning fix (basically just setup as if it were NULL and skip the extra work if needed)
+ * more bmpman related fixes, mainly addresses the condition where it would try to render textures that have been released
+ * have model_unload() run through Ship_info[] and clear out modelnum's when they are free'd (makes more sense here than doing it on level load to keep counts right)
+ * fix missing subsystem warning messages
+ *
  * Revision 2.144  2006/01/19 14:06:33  taylor
  * don't attempt to draw glowpoints or engine glows when in wireframe mode (this may need to be a flag or something, but I'm not sure)
  *
@@ -624,7 +630,7 @@
  * --Goober5000
  *
  * Revision 2.9  2002/12/07 01:37:42  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
@@ -645,7 +651,7 @@
  * Fixed bug that changes HUD colour when targetting debris in a full nebula. - RT
  *
  * Revision 2.4  2002/10/19 19:29:27  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.3.2.1  2002/10/30 22:57:21  randomtiger
  *
@@ -6430,14 +6436,15 @@ void get_silhouette_from_point(vec3d *point_list, ubyte *bsp_data, vec3d* point)
 //*** triggered submodel animation ***//
 //************************************//
 
-char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] = {
-"\"inital\"",
-"\"docking\"",
-"\"docked\"",
-"\"primary_bank\"",
-"\"secondary_bank\"",
-"\"door\"",
-"\"afterburner\"",
+char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
+{
+	"\"initial\"",
+	"\"docking\"",
+	"\"docked\"",
+	"\"primary_bank\"",
+	"\"secondary_bank\"",
+	"\"door\"",
+	"\"afterburner\"",
 };
 
 

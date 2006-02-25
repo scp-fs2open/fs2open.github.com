@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.37 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.38 $
+ * $Date: 2006-02-25 21:47:08 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.36  2005/10/10 17:21:10  taylor
  * remove NO_NETWORK
  *
@@ -458,7 +461,7 @@ int	Poly_count = 0;
 // ---------------------------------------------------------------------
 // shield_hit_close()
 //
-// De-initalize the shield hit system.  Called from game_level_close().
+// De-initialize the shield hit system.  Called from game_level_close().
 //
 // TODO: We should probably not bother releasing the shield hit bitmaps every level.
 //

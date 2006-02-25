@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.14 $
- * $Date: 2005-10-11 05:24:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2006-02-25 21:46:59 $
+ * $Author: Goober5000 $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/10/11 05:24:33  wmcoolmon
+ * Gliding
+ *
  * Revision 2.13  2005/07/13 02:50:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -56,7 +59,7 @@
  * fixed misspelling of "category" as "catagory"
  *
  * Revision 2.2  2002/10/19 19:29:27  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/10/17 20:40:50  randomtiger
  * Added ability to remove HUD ingame on keypress shift O

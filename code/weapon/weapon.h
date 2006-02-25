@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/02/15 07:19:50  wmcoolmon
+ * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
+ *
  * Revision 2.67  2006/01/30 06:33:19  taylor
  * add transparent, cycling alpha, and no-light options for weapons
  *
@@ -254,7 +257,7 @@
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
  * Revision 2.5  2002/12/07 01:37:43  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
@@ -268,7 +271,7 @@
  * changed around the 'weapon_info' struct to allow for custom corkscrew missiles
  *
  * Revision 2.2  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/08/01 01:41:11  penguin
  * The big include file move

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.135 $
- * $Date: 2006-02-16 05:44:53 $
- * $Author: taylor $
+ * $Revision: 2.136 $
+ * $Date: 2006-02-25 21:47:08 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2006/02/16 05:44:53  taylor
+ * remove reset of modelnums on level start (more properly moved to model_unload())
+ * minor change ship class fixage to clear out old model
+ * take better care to make sure that a ship model has the proper refcount (this needs further work, I don't like :V:'s crap here)
+ * add <string> to includes in ship.h, fixes a compile issue that I forgot to fix properly before (thanks Jens)
+ *
  * Revision 2.134  2006/01/20 07:10:34  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -542,7 +548,7 @@
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
  * Revision 2.7  2002/12/07 01:37:42  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
@@ -554,7 +560,7 @@
  * DTP Bumped Max_exited_ships from 200 to double that of MAX_SHIPS = 800 . make sense ehh. for logging effect.
  *
  * Revision 2.4  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.3  2002/08/01 01:41:10  penguin
  * The big include file move
@@ -1049,7 +1055,7 @@ typedef struct ship_subsys_info {
 #define	SF_WARP_BROKEN				(1	<< 18)	// set when warp drive is not working, but is repairable
 #define	SF_WARP_NEVER				(1	<< 17)	// set when ship can never warp
 #define	SF_TRIGGER_DOWN			(1 << 16)	// ship has its "trigger" held down
-#define	SF_AMMO_COUNT_RECORDED	(1	<<	15)	// we've recorded the inital secondary weapon count (which is used to limit support ship rearming)
+#define	SF_AMMO_COUNT_RECORDED	(1	<<	15)	// we've recorded the initial secondary weapon count (which is used to limit support ship rearming)
 #define	SF_HIDDEN_FROM_SENSORS	(1	<< 14)	// ship doesn't show up on sensors, blinks in/out on radar
 #define	SF_SCANNABLE				(1	<< 13)	// ship is "scannable".  Play scan effect and report as "Scanned" or "not scanned".
 #define	SF_WARPED_SUPPORT			(1 << 12)	// set when this is a support ship which was warped in automatically
@@ -2210,7 +2216,7 @@ void ship_start_animation_type(ship *shipp, int animation_type, int subtype, int
 //how long untill the animation is done
 int ship_get_animation_time_type(ship *shipp, int animation_type, int subtype);
 
-void ship_animation_set_inital_states(ship *shipp);
+void ship_animation_set_initial_states(ship *shipp);
 
 // Goober5000
 int ship_starting_wing_lookup(char *wing_name);

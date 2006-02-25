@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.65 $
- * $Date: 2006-01-25 07:46:13 $
- * $Author: wmcoolmon $
+ * $Revision: 2.66 $
+ * $Date: 2006-02-25 21:47:00 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/01/25 07:46:13  wmcoolmon
+ * Maybe fix G3_count error
+ *
  * Revision 2.64  2006/01/17 03:46:56  phreak
  * Modified the formatting for the rearm countdown timer once docked.
  *
@@ -1176,7 +1179,7 @@ void hud_init_mission_time_gauge()
 // ----------------------------------------------------------------------
 // HUD_init()
 //
-// Called each level to initalize HUD systems
+// Called each level to initialize HUD systems
 //
 void HUD_init()
 {

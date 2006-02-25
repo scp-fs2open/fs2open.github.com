@@ -9,6 +9,10 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2006/01/20 17:15:16  taylor
+ * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
+ * several other very minor changes as well
+ *
  * Revision 2.53  2005/12/06 02:53:02  taylor
  * clean up some D3D debug messages to better match new OGL messages (for easier debugging)
  * remove D3D_32bit variable since it's basically useless and the same thing can be done another way
@@ -1378,7 +1382,7 @@ bool d3d_inspect_caps()
 /*
 enum stage_state{
 	NONE = -1, 
-	INITAL = 0, 
+	INITIAL = 0, 
 	DEFUSE = 1, 
 	GLOW_MAPPED_DEFUSE = 2, 
 	NONMAPPED_SPECULAR = 3, 
@@ -1410,7 +1414,7 @@ void set_stage_for_single_pass_glow_specmapping(int SAME, bool set = true);
 */
 
 DWORD 
-inital_state_block, 
+initial_state_block, 
 defuse_state_block, 
 glow_mapped_defuse_state_block, 
 nonmapped_specular_state_block, 
@@ -1426,7 +1430,7 @@ env_state_block,
 cloak_state_block;
 
 void d3d_generate_state_blocks(){
-	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &inital_state_block);
+	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &initial_state_block);
 	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &defuse_state_block);
 	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &glow_mapped_defuse_state_block);
 	GlobalD3DVars::lpD3DDevice->CreateStateBlock(D3DSBT_PIXELSTATE, &nonmapped_specular_state_block);
@@ -1443,7 +1447,7 @@ void d3d_generate_state_blocks(){
 
 	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
 	d3d_set_initial_render_state(true);
-	GlobalD3DVars::lpD3DDevice->EndStateBlock(&inital_state_block);
+	GlobalD3DVars::lpD3DDevice->EndStateBlock(&initial_state_block);
 
 	GlobalD3DVars::lpD3DDevice->BeginStateBlock();
 	set_stage_for_defuse(true);
@@ -1492,7 +1496,7 @@ void d3d_generate_state_blocks(){
 }
 
 void d3d_kill_state_blocks(){
-	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( inital_state_block);
+	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( initial_state_block);
 	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( defuse_state_block);
 	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( glow_mapped_defuse_state_block);
 	GlobalD3DVars::lpD3DDevice->DeleteStateBlock( nonmapped_specular_state_block);

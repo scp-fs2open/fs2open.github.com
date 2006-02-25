@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.72 $
- * $Date: 2006-01-18 16:14:04 $
- * $Author: taylor $
+ * $Revision: 2.73 $
+ * $Date: 2006-02-25 21:47:07 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 2.71  2006/01/11 21:23:43  wmcoolmon
  * Made turret handling code more descriptive
  *
@@ -285,7 +291,7 @@
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
  * Revision 2.10  2002/12/07 01:37:42  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
@@ -305,7 +311,7 @@
  * some general improvement to fighter beams,
  *
  * Revision 2.5  2002/10/19 19:29:27  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.4  2002/08/01 01:41:07  penguin
  * The big include file move
@@ -680,7 +686,7 @@ typedef struct stepped_rotation {
 #define MAX_TRIGGERED_ANIMATIONS 15
 
 #define TRIGGER_TYPE_NONE					-1		//no animation
-#define TRIGGER_TYPE_INITAL					0		//this is just the position the subobject should be placed in
+#define TRIGGER_TYPE_INITIAL				0		//this is just the position the subobject should be placed in
 #define TRIGGER_TYPE_DOCKING				1		//before you dock
 #define TRIGGER_TYPE_DOCKED					2		//after you have docked
 #define TRIGGER_TYPE_PRIMARY_BANK			3		//primary banks
